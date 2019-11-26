@@ -352,14 +352,10 @@ def copy_stage_config(stage_config, prototype):
 
 
 def check_license(bundle):
-    b = Bundle.objects.filter(name=bundle.name).order_by('version_order').last()
+    b = Bundle.objects.filter(license_hash=bundle.license_hash, license='accepted')
     if not b:
         return False
-    if b.license != 'accepted':
-        return False
-    if b.license_hash == bundle.license_hash:
-        return True
-    return False
+    return True
 
 
 def copy_stage(bundle_hash, bundle_proto):
