@@ -1,0 +1,25 @@
+
+- type: cluster
+  name: invisible_false_advanced_false_password
+  version: 1
+  config:
+    - name: password
+      type: password
+      default: password
+      read_only: [created]
+      ui_options:
+         invisible: false
+         advanced: false
+  actions:
+    install:
+      type: job
+      script_type: ansible
+      script: ansible/install.yaml
+      params:
+        ansible_tags: install
+
+      states:
+        available:
+          - created
+        on_success: installed
+        on_fail: created

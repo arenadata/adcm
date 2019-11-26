@@ -66,6 +66,8 @@ class Common:
     group_field = bys.by_class("app-group-fields")
     tooltip = bys.by_tag("app-tooltip")
     mat_slide_toggle = bys.by_class("mat-slide-toggle")
+    mat_raised_button = bys.by_class("mat-raised-button")
+    mat_form_field = bys.by_tag("mat-form-field")
 
     # Comon elements
     all_childs = bys.by("*")
@@ -116,6 +118,7 @@ class ConfigurationLocators:
     app_fields_textarea = bys.by_tag("app-fields-textarea")
     app_fields_json = bys.by_tag("app-fields-json")
     app_fields_list = bys.by_tag("app-fields-list")
+    app_field = bys.by_tag("app-field")
     map_key = bys.by_xpath("//*[@formcontrolname='key']")
     map_value = bys.by_xpath("//*[@formcontrolname='value']")
     app_conf_fields = bys.by_tag("app-config-fields")
