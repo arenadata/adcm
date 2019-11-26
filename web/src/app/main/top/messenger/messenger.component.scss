@@ -1,0 +1,38 @@
+:host {
+  .notification-panel {
+    position: absolute;
+    z-index: 3;
+    right: 16px;
+    top: 52px;
+    width: 440px;
+    opacity: .9;
+    text-align: left;
+  }
+}
+
+.list {
+  min-height: 380px;
+  overflow: auto;
+  padding: 5px 2px 16px;
+  max-height: 60vh;
+
+  & .mat-list {
+
+    & h3 {
+      font-weight: bold;
+    }
+
+    & .mat-line {
+      white-space: normal;
+    }
+
+    & .mat-list-item {
+      min-height: 72px;
+
+      &.mat-2-line {
+        height: auto;
+        padding-top: 10px;
+      }
+    }
+  }
+}

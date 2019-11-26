@@ -1,0 +1,56 @@
+
+<mat-horizontal-stepper [linear]="isLinear" #stepper>
+    <mat-step [stepControl]="firstFormGroup">
+        <form [formGroup]="firstFormGroup">
+            <ng-template matStepLabel>Basic settings</ng-template>
+            <mat-form-field>
+                    <input matInput placeholder="Title" formControlName="title">
+                </mat-form-field>
+            
+                <mat-form-field>
+                    <mat-select placeholder="Width" formControlName="width">
+                        <mat-option value="0">small</mat-option>
+                        <mat-option value="1">medium</mat-option>
+                        <mat-option value="2">large</mat-option>
+                    </mat-select>
+                </mat-form-field>
+            
+                <mat-form-field>
+                    <input matInput placeholder="Height" formControlName="height">
+                </mat-form-field>
+            <div>
+                <button mat-button matStepperNext>Next</button>
+            </div>
+        </form>
+    </mat-step>
+    <mat-step [stepControl]="secondFormGroup">
+        <form [formGroup]="secondFormGroup">
+            <ng-template matStepLabel>Select widget type</ng-template>
+            <mat-form-field>
+                <mat-select placeholder="Select widget type" formControlName="type">
+                    <mat-optgroup *ngFor="let group of typeGroups" 
+                        [label]="group.name"
+                        [disabled]="!!group.disabled">
+                    <mat-option *ngFor="let type of group.types" [value]="type.value">{{ type.title }}</mat-option>
+                    </mat-optgroup>
+                </mat-select>
+            </mat-form-field>
+
+            <p>
+                <button mat-button matStepperPrevious>Back</button>
+                <button mat-button matStepperNext>Next</button>
+            </p>
+        </form>
+    </mat-step>
+    <mat-step>
+        <ng-template matStepLabel>Preview</ng-template>
+        <span>You are now done.</span>
+
+        <div>preview widget</div>
+
+        <p>
+            <button mat-button matStepperPrevious>Back</button>
+            <button mat-button (click)="_add()">Add</button>
+        </p>
+    </mat-step>
+</mat-horizontal-stepper>

@@ -1,0 +1,19 @@
+---
+- type: cluster
+  name: fail_cluster
+  version: 1
+
+  actions:
+    do:
+      script_type: ansible
+      script: do.yaml
+      config:
+        name:
+          type: string
+          default: "xxx"
+          required: yes
+      params:
+        ansible_python_interpreter: '/usr/local/bin/python'
+      type: job
+      states:
+        available: any

@@ -1,0 +1,171 @@
+- config:
+  - description: 'Configuration for group UI options tests with disabled UI options'
+    display_name: group_ui_options_disabled
+    name: group_ui_options_disabled
+    type: group
+    ui_options:
+      advanced: false
+      invisible: false
+    subs: &id001
+    - name: field_for_group_without_options
+      default: default_value
+      display_name: field_for_group_without_options
+      type: string
+  - description: 'Configuration for advanced_group'
+    display_name: advanced_group
+    name: advanced_group
+    type: group
+    ui_options:
+      advanced: true
+      invisible: false
+    subs: &id002
+    - name: field_advanced_group
+      default: default_value
+      display_name: field_advanced_group
+      type: string
+  - description: 'Configuration for invisible_group'
+    display_name: invisible_group
+    name: invisible_group
+    type: group
+    ui_options:
+      advanced: false
+      invisible: true
+    subs: &id003
+      - name: field_invisible_group
+        default: default_value
+        display_name: field_invisible_group
+        type: string
+  - description: 'Configuration for advanced invisible group'
+    display_name: advanced_invisible_group
+    name: advanced_invisible_group
+    type: group
+    ui_options:
+      advanced: true
+      invisible: true
+    subs: &id004
+      - name: field_advanced_invisible_group
+        default: default_value
+        display_name: field_advanced_invisible_group
+        type: string
+###################################################################
+  - description: 'Advanced activatable inactive group'
+    activatable: true
+    active: false
+    display_name: advanced_inactive_activatable_group
+    name: advanced_inactive_activatable_group
+    type: group
+    ui_options:
+      advanced: true
+      invisible: false
+    subs: &id005
+      - name: field_advanced_inactive_activatable_group
+        default: default_value
+        display_name: field_advanced_inactive_activatable_group
+        type: string
+  - description: 'Activatable inactive group'
+    activatable: true
+    active: false
+    display_name: activatable_group
+    name: activatable_group
+    type: group
+    ui_options:
+      advanced: false
+      invisible: false
+    subs: &id006
+      - name: field_activatable_group
+        default: default_value
+        display_name: field_activatable_group
+        type: string
+  - description: 'Invisible activatable inactive group'
+    activatable: true
+    active: false
+    display_name: invisible_inactive_activatable_group
+    name: invisible_inactive_activatable_group
+    type: group
+    ui_options:
+      advanced: false
+      invisible: true
+    subs: &id007
+      - name: field_invisible_inactive_activatable_group
+        default: invisible_inactive_activatable_group
+        display_name: field_advanced_inactive_activatable_group
+        type: string
+  - description: 'Advanced invisible activatable inactive group'
+    activatable: true
+    active: false
+    display_name: advanced_invisible_inactive_activatable_group
+    name: advanced_invisible_inactive_activatable_group
+    type: group
+    ui_options:
+      advanced: true
+      invisible: true
+    subs: &id008
+      - name: field_advanced_invisible_inactive_activatable_group
+        default: advanced_invisible_inactive_activatable_group
+        display_name: field_advanced_invisible_inactive_activatable_group
+        type: string
+###########################################################################
+  - description: 'Advanced activatable active group'
+    activatable: true
+    active: true
+    display_name: advanced_activatable_active_group
+    name: advanced_activatable_active_group
+    type: group
+    ui_options:
+      advanced: true
+      invisible: false
+    subs: &id009
+    - name: field_advanced_active_activatable_group
+      default: default_value
+      display_name: field_advanced_active_activatable_group
+      type: string
+  - description: 'Invisible activatable active group'
+    activatable: true
+    active: false
+    display_name: invisible_activatable_active_group
+    name: invisible_activatable_active_group
+    type: group
+    ui_options:
+      advanced: false
+      invisible: true
+    subs: &id0010
+      - name: field_invisible_activatable_active_group
+        default: invisible_activatable_active_group
+        display_name: field_invisible_activatable_active_group
+        type: string
+  - description: 'Invisible advanced activatable active group'
+    activatable: true
+    active: true
+    display_name: invisible_advanced_activatable_active_group
+    name: invisible_advanced_activatable_active_group
+    type: group
+    ui_options:
+      advanced: true
+      invisible: true
+    subs: &id011
+      - name: field_invisible_advanced_activatable_active_group
+        default: invisible_advanced_activatable_active_group
+        display_name: field_invisible_advanced_activatable_active_group
+        type: string
+  - description: 'Activatable active group'
+    activatable: true
+    active: true
+    display_name: activatable_active_group
+    name: activatable_active_group
+    type: group
+    ui_options:
+      advanced: false
+      invisible: false
+    subs: &id012
+      - name: field_activatable_active_group
+        default: activatable_active_group
+        display_name: field_activatable_active_group
+        type: string
+  display_name: Group UI options test
+  name: group_ui_options_test
+  type: service
+  version: '100600'
+
+
+
+

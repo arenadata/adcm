@@ -1,0 +1,35 @@
+<div [ngClass]="{tools: true, rightmargin: field.description, hidden: field.read_only}">
+  <button color="primary" mat-icon-button (click)="reload()">
+    <mat-icon>refresh</mat-icon>
+  </button>
+  &nbsp;
+  <button color="primary" mat-icon-button (click)="add()">
+    <mat-icon>add</mat-icon>
+  </button>
+</div>
+
+<div class="value">
+  <label [ngClass]="{ advanced: field.ui_options && field.ui_options.advanced }">{{ field.label }}:</label>
+
+  <div class="fields">
+    <ng-container *ngIf="field.value">
+      <div *ngFor="let item of items.controls; let i = index" class="item" [formGroup]="item">
+        <mat-form-field class="key-field" *ngIf="!asList">
+          <span matSuffix>:</span>
+          <input matInput formControlName="key" [readonly]="field.read_only" />
+          <mat-error *ngIf="check(item)">Map property name is required!</mat-error>
+        </mat-form-field>
+        <mat-form-field class="value-field">
+          <button mat-icon-button matSuffix (click)="clear(i)" *ngIf="!field.read_only">
+            <mat-icon>clear</mat-icon>
+          </button>
+          <input matInput formControlName="value" [readonly]="field.read_only" />
+        </mat-form-field>
+      </div>
+    </ng-container>
+    <mat-error *ngIf="hasError('required')" class="error">Field [{{ field.label }}] is required!</mat-error>
+  </div>
+  <mat-icon *ngIf="field.description" [appTooltip]="field.description" class="description">
+    info_outline
+  </mat-icon>
+</div>

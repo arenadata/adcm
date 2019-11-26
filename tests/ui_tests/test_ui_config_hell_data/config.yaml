@@ -1,0 +1,1052 @@
+---
+- type: service
+  name: bookkeeper
+  display_name: BookKeeper service
+  version: &bookkeeper_version 1.0.11
+
+  config:
+    __main_info:
+      type: file
+      default: "bookkeeper_info.txt"
+
+    client_port:
+      type: string
+      default: "2181"
+      display_name: client_port
+    dirs:
+      data:
+        type: string
+        default: "/var/lib/bookkeeper"
+        display_name: data dirs for bookkeeper
+    svc-file:
+        type: file
+        required: false
+    svc-text-area:
+        type: text
+        required: false
+        default: big dataaaaaaaaaaaaa
+    svc-password:
+        type: password
+        default: qwerty1234
+        required: false
+    svc-ro-created:
+      display_name:
+      type: string
+      default: bluh
+      required: false
+      read_only: [created]
+    svc-w-installed:
+      type: integer
+      default: 222
+      required: false
+      writable: [installed]
+    svc-read-only:
+      type: float
+      default: 2.5
+      required: false
+      read_only: any
+    mount_points:
+      type: list
+      default:
+        - /dev/rdisk0s1
+        - /dev/rdisk0s2
+        - /dev/rdisk0s3
+    mount_points1:
+      type: list
+
+    mount_points2:
+      type: list
+      required: false
+    person:
+      type: map
+      default:
+        name: Joe
+        age: "24"
+        sex: m
+
+    person2:
+      type: map
+      required: false
+
+    person3:
+      type: map
+      required: false
+
+  export:
+    dirs
+
+  components:
+    BOOKKEEPER_SERVER:
+      display_name: pretty bookkeeper server
+      constraint: [1,+]
+    BOOKKEEPER_CLIENT:
+      constraint: [0,+]
+    BOOKKEEPER_NON_MONITORING:
+      display_name: Disabled monitoring component
+      monitoring: passive
+
+  actions:
+
+    sleep: &sleep_action
+      type: job
+      script_type: ansible
+      script: ansible/sleep.yaml
+      config:
+        sleeptime:
+            display_name: "leep time (sec)"
+            type: integer
+            required: true
+            default: 60
+      states:
+        available: any
+
+    server_remove:
+      <<: *sleep_action
+      hc_acl:
+        - service: "bookkeeper"
+          component: "BOOKKEEPER_SERVER"
+          action: "remove"
+
+    server_add:
+      <<: *sleep_action
+      hc_acl:
+        - service: "bookkeeper"
+          component: "BOOKKEEPER_SERVER"
+          action: "add"
+
+    server_client_add:
+      <<: *sleep_action
+      hc_acl:
+        - service: "bookkeeper"
+          component: "BOOKKEEPER_SERVER"
+          action: "add"
+        - service: "bookkeeper"
+          component: "BOOKKEEPER_CLIENT"
+          action: "add"
+
+    server_add_client_del:
+      <<: *sleep_action
+      hc_acl:
+        - service: "bookkeeper"
+          component: "BOOKKEEPER_SERVER"
+          action: "add"
+        - service: "bookkeeper"
+          component: "BOOKKEEPER_CLIENT"
+          action: "remove"
+
+    server_add_del:
+      <<: *sleep_action
+      hc_acl:
+        - service: "bookkeeper"
+          component: "BOOKKEEPER_SERVER"
+          action: "add"
+        - service: "bookkeeper"
+          component: "BOOKKEEPER_SERVER"
+          action: "remove"
+
+    install:
+      type: job
+      script_type: ansible
+      script: ansible/nothing.yaml
+      params:
+          ansible_tags: install
+      states:
+          available:
+            - created
+          on_success: installed
+          on_fail: created
+    check_sample: &check_sample
+      display_name: let me introduce you new display names
+      type: job
+      script_type: ansible
+      script: ansible/check_sample.yaml
+      states:
+          available: any
+      log_files:
+        - check
+    expand-bookkeeper:
+      display_name: Expand bookkeeper node
+      type: job
+      script_type: ansible
+      script: ansible/nothing.yaml
+      states:
+          available:
+              - created
+          on_success: created
+          on_fail: did_not_expand
+    expand-fail:
+      type: job
+      script_type: ansible
+      script: role/fail.yaml
+      states:
+          available:
+              - created
+          on_success: created
+          on_fail: expand_failed
+      config:
+          quorum:
+              type: integer
+              required: false
+              read_only: any
+              default: 100
+          simple_string:
+              type: string
+              required: false
+              default: lorem ipsum
+          add-text-field:
+              type: text
+              required: false
+
+    should_be_failed:
+      display_name: Simple fail
+      type: job
+      script_type: ansible
+      script: ansible/failed.yaml
+      params:
+        ansible_tags: should_be_failed
+      states:
+        available:
+          - created
+          - installed
+        on_success: failed
+        on_fail: created
+      config:
+        failed-param:
+          type: boolean
+          default: true
+          required: true
+
+    components:
+      type: job
+      script_type: ansible
+      script: ansible/nothing.yaml
+
+- type: service
+  name: sample_service
+  display_name: Simple sample service
+  version: &sample_service_version 2.0.6
+
+  config:
+    new-param-export:
+        datatypes:
+          type: string
+          default: xlsx
+          required: false
+        exported-int:
+          type: integer
+          default: 19
+          required: false
+        exp-file:
+            type: file
+            required: false
+        exp-text-area:
+            type: text
+            required: false
+            default: try to export this text area into another cluster/service and work with those parameters
+    svc-w-installed:
+      type: boolean
+      default: true
+      required: false
+      writable: [installed]
+    svc-read-only:
+      type: float
+      default: 2.5
+      required: false
+      read_only: any
+  export:
+    new-param-export
+
+  components:
+    sample_service_component:
+      display_name: hampty dumpty service component
+      constraint: [1]
+    all_hosts_component:
+      constraint: [+]
+
+  actions:
+    install:
+      type: job
+      script_type: ansible
+      script: ansible/nothing.yaml
+      params:
+        ansible_tags: install
+      states:
+        available:
+          - created
+        on_success: installed
+        on_fail: created
+
+    should_be_failed:
+      type: job
+      script_type: ansible
+      script: ansible/failed.yaml
+      params:
+        ansible_tags: should_be_failed
+      states:
+        available:
+          - created
+          - installed
+        on_success: failed
+        on_fail: created
+
+    components:
+      type: job
+      script_type: ansible
+      script: ansible/nothing.yaml
+
+- type: service
+  name: new-service
+  display_name: New cool service
+  version: &new-service_version 1.0.10
+
+  config:
+    expparams:
+      maindata:
+        type: string
+        default: "/var/lib/bookkeeper"
+        display_name: data dirs for new-service
+      new-file:
+          type: file
+          required: false
+      new-text-area:
+          type: text
+          required: false
+          default: big dataaaaaaaaaaaaa
+      new-password:
+          type: password
+          default: qwerty1234
+          required: false
+  components:
+    default-nonmon:
+      display_name: Passive monitoring
+      monitoring: passive
+  export:
+    expparams
+
+- type: service
+  name: preload_svc
+  display_name: Beautiful service)
+  version: &preload_svc_version 0.3.1
+
+  config:
+    preload_param:
+      maindata:
+        type: string
+        default: "/var/lib/preload_svc"
+        display_name: data dirs for preload_svc
+      new-file:
+          type: file
+          required: false
+      new-text-area:
+          type: text
+          required: false
+          default: bluuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuhhhh, ma brotha kill himself xD
+      new-password:
+          type: password
+          required: false
+  export:
+    preload_param
+
+- type: service
+  name: fuskin_service
+  version: &fuskin_service_version 0.3.1
+
+  config:
+    fuskin_service_data:
+      maindata:
+        type: string
+        default: "/var/lib/fuskin_service"
+        display_name: data dirs for fuskin_service
+      new-file:
+          type: file
+          required: false
+      new-text-area:
+          type: text
+          required: false
+          default: full bag of fools
+      new-password:
+          type: password
+          required: false
+  export:
+    fuskin_service_data
+  components:
+    fuskin_component:
+      constraint: [0,1]
+    one_or_two_fuckin:
+      constraint: [1,2]
+
+- type: service
+  name: yetanotherservice
+  version: &yetanother_service_version 0.7
+
+  config:
+    yet_another_data:
+      maindata:
+        type: string
+        default: "/var/lib/yetanother"
+        display_name: data dirs for yetanother
+      new-file:
+          type: file
+          required: false
+      new-text-area:
+          type: text
+          required: false
+          default: stop abusing yet another words in your work and let's find another yet word
+      new-password:
+          type: password
+          required: false
+  components:
+    yet_another_component:
+      display_name: Yet another component
+      constraint: [0,+]
+    only_one_component:
+      constraint: [1]
+  export:
+    yet_another_data
+
+- type: service
+  name: kafkagrefnevaya
+  version: &kafkagrefnevaya_version 11
+
+  config:
+    grecha:
+      maindata:
+        type: string
+        default: "/var/lib/kafkagrefnevaya"
+        display_name: data dirs for kafkagrefnevaya
+      new-file:
+          type: file
+          required: false
+      new-text-area:
+          type: text
+          required: false
+          default: stop abusing yet another words in your work and let's find another yet word
+      new-password:
+          type: password
+          required: false
+  export:
+    grecha
+
+-   type: cluster
+    name: sample_cluster
+    version: &cluster_version '1.032'
+    import:
+        ADH:
+            versions:
+                min: 1.000
+                max: 1.8
+        Hive3:
+            versions:
+               min: 1.000
+               max: 3.5
+        Monitoring:
+            versions:
+               min: 0.5
+               max: 3.0
+        ZOOKEEPER:
+            versions:
+               min: 0.002
+               max: 3.2
+        hookahkeeper:
+            versions:
+               min: 0.01
+               max: 11
+    upgrade:
+        -
+            versions:
+                min: 0.4
+                max: 2.0
+            description: New cool upgrade
+            name: *cluster_version
+            states:
+                available: any
+                on_success: upgradable
+        -
+            versions:
+                min: 1.0
+                max_strict: 3.0
+            description: Super new upgrade
+            name: *cluster_version
+            states:
+                available: [created, installed]
+                on_success: ver2.4
+
+    actions:
+
+        sleep: *sleep_action
+
+        check_sample: *check_sample
+
+        expand_bookkeeper:
+            type: job
+            script_type: ansible
+            script: ansible/sleep.yaml
+            states:
+              available: any
+            hc_acl:
+              - service: "bookkeeper"
+                component: "BOOKKEEPER_SERVER"
+                action: "add"
+              - service: "bookkeeper"
+                component: "BOOKKEEPER_CLIENT"
+                action: "add"
+
+        install:
+            display_name: Install cluster
+            type: job
+            script: ansible/install.yaml
+            script_type: ansible
+            states:
+                available:
+                    - created
+                on_success: installed
+                on_fail: created
+            params:
+                qwe: 42
+            config:
+              cluster-actiom-param:
+                type: float
+                required: false
+                default: 0.4
+
+        diskoteka:
+            type: job
+            script: ansible/status_disco.yaml
+            script_type: ansible
+            states:
+                available: any
+        run:
+            type: job
+            script: ansible/run.yaml
+            script_type: ansible
+            states:
+                available:
+                    - installed
+                on_success: runned
+                on_fail: installed
+        wait:
+            type: job
+            script: ansible/wait.yaml
+            script_type: ansible
+            states:
+                available: any
+        stop:
+            display_name: Stop cluster
+            type: job
+            script: ansible/stop.yaml
+            script_type: ansible
+            states:
+                available:
+                    - runned
+                on_success: installed
+                on_fail: runned
+        delete:
+            type: job
+            script: ansible/delete.yaml
+            script_type: ansible
+            states:
+                available:
+                    - installed
+                on_success: deleted
+                on_fail: created
+        add-new-node:
+            display_name: Add new node
+            type: job
+            script: ansible/install.yaml
+            script_type: ansible
+            states:
+                available: any
+                on_success: any
+                on_fail: any
+        remove-node:
+            type: job
+            script: ansible/install.yaml
+            script_type: ansible
+            states:
+                available:
+                    any
+                on_success:
+                    any
+                on_fail:
+                    any
+        change-map-failed:
+            type: job
+            script: role/failed.yaml
+            script_type: ansible
+            states:
+                available:
+                    any
+                on_success:
+                    any
+                on_fail:
+                    any
+
+        map_and_lists:
+            type: job
+            script: role/failed.yaml
+            script_type: ansible
+            states:
+                available:
+                    any
+            config:
+                mount_points:
+                  type: list
+                  default:
+                    - /dev/rdisk0s1
+                    - /dev/rdisk0s2
+                    - /dev/rdisk0s3
+                mount_points1:
+                  type: list
+
+                mount_points2:
+                  type: list
+                  required: false
+                person:
+                  type: map
+                  default:
+                    name: Joe
+                    age: "24"
+                    sex: m
+
+                person2:
+                  type: map
+
+                person3:
+                  type: map
+                  required: false
+
+    config:
+        __main_info:
+            type: file
+            default: "cluster_sample_info.txt"
+        required_integer:
+            type: integer
+            required: true
+            default: 10
+            display_name: required integer key
+        int_key:
+            type: integer
+            required: false
+            default: 150
+        str-key:
+            default: value
+            type: string
+            required: false
+            display_name: string key, not required
+        required-string:
+            type: string
+            required: true
+            default: this is required string, lets's try to save config without me)
+
+        float_key:
+            type: float
+            required: false
+            default: 34.7
+        required-float:
+            type: float
+            required: true
+            default: 0.0
+            display_name: very important float number
+
+        magic_bool:
+            type: boolean
+            required : false
+            default: false
+        required_boolean:
+            type: boolean
+            required: true
+        option:
+            type: option
+            option:
+                http: 80
+                https: 443
+                ftp: 21
+            required: FALSE
+        reqired-choise:
+            type: option
+            option:
+                tic: 0
+                tac: 1
+                toe: 2
+            required: true
+        password:
+            default: qwerty
+            type: password
+            required: false
+        vip:
+            type: password
+            required: true
+            display_name: very important password
+        json:
+            type: json
+            required: false
+            default: {}
+        required_json_template:
+            type: json
+            required: true
+            display_name: required JSON-template
+
+        text-type:
+            type: text
+            default: lorem ipsum
+            required: false
+        required_text:
+            type: text
+            default: You should fill this field
+            required: true
+
+        file-type:
+            type: file
+            required: false
+        required_ssh_file:
+            type: file
+            required: true
+            display_name: SSH Key
+
+        specified-states:
+            read-only-int:
+                type: integer
+                required: false
+                read_only: any
+            writable-when-installed:
+                type: string
+                required: false
+                writable: [installed]
+            read-only-when-runned:
+                type: boolean
+                required: false
+                read_only: [runned]
+        to-export:
+            cluster-export:
+              type: string
+              required: false
+              default: /opt/cluster/params/
+            fuskin-int:
+              type: integer
+              required: false
+              default: 8
+    export:
+      to-export
+
+
+- type: service
+  name: ui_options_invisible
+  display_name: UI Options Invisible Vars
+  version: *cluster_version
+
+  config:
+    group_of_visible: &group_of_visible
+      int:
+        type: integer
+        default: 1
+        required: no
+
+      float:
+        type: float
+        default: 1.0
+        required: no
+
+      text:
+        type: text
+        default: |
+          xxx
+          xxx
+        required: no
+
+      file:
+        type: file
+        default: "file.txt"
+        required: no
+
+      string:
+        type: string
+        default: "zzz"
+        required: no
+
+      json:
+        type: json
+        default:
+          - x: "y"
+          - y: "z"
+        required: no
+
+      map:
+        type: map
+        default:
+          "one": "two"
+          two: "three"
+        required: no
+
+      list:
+        type: list
+        default:
+          - "one"
+          - "two"
+          - "three"
+        required: no
+    group_on_invisible: &group_on_invisible
+      int_invisible:
+        type: integer
+        default: 1
+        required: no
+        ui_options:
+          invisible: true
+
+      float_invisible:
+        type: float
+        default: 1.0
+        required: no
+        ui_options:
+          invisible: true
+
+      text_invisible:
+        type: text
+        default: |
+          xxx
+          xxx
+        required: no
+        ui_options:
+          invisible: true
+
+      file_invisible:
+        type: file
+        default: "file.txt"
+        required: no
+        ui_options:
+          invisible: true
+
+      string_invisible:
+        type: string
+        default: "zzz"
+        required: no
+        ui_options:
+          invisible: true
+
+      json_invisible:
+        type: json
+        default:
+          - x: "y"
+          - y: "z"
+        required: no
+        ui_options:
+          invisible: true
+
+      map:
+        type: map
+        default:
+          "one": "two"
+          two: "three"
+        required: no
+        ui_options:
+          invisible: true
+
+      list:
+        type: list
+        default:
+          - "one"
+          - "two"
+          - "three"
+        required: no
+        ui_options:
+          invisible: true
+    <<: *group_of_visible
+    <<: *group_on_invisible
+
+
+- type: service
+  name: ui_options_no_confirm
+  display_name: UI Options No Confirm
+  version: *cluster_version
+
+  config:
+    passwd_confirm:
+      type: password
+      required: yes
+      ui_options:
+        no_confirm: false
+
+    passwd_confirm_default:
+      type: password
+      required: yes
+
+    passwd_no_confirm:
+      type: password
+      required: yes
+      ui_options:
+        no_confirm: true
+
+- type: service
+  name: ui_options_advanced
+  display_name: UI Options Advanced Vars
+  version: *cluster_version
+
+  config:
+    group: 
+      int:
+        type: integer
+        default: 1
+        required: no
+        ui_options:
+          invisible: true
+
+      float:
+        type: float
+        default: 1.0
+        required: no
+        ui_options:
+          advanced: true
+
+      text:
+        type: text
+        default: |
+          xxx
+          xxx
+        required: no
+        ui_options:
+          advanced: false
+
+      file:
+        type: file
+        default: "file.txt"
+        required: no
+
+      string:
+        type: string
+        default: "zzz"
+        required: no
+
+      json:
+        type: json
+        default:
+          - x: "y"
+          - y: "z"
+        required: no
+
+      map:
+        type: map
+        default:
+          "one": "two"
+          two: "three"
+        required: no
+        ui_options:
+          advanced: true
+
+    list1:
+      type: list
+      default:
+        - "one"
+        - "two"
+        - "three"
+      required: no
+
+    json:
+      type: json
+      default:
+        - x: "y"
+        - y: "z"
+      required: no
+      ui_options:
+        advanced: true
+
+
+- type: service
+  name: groups
+  display_name: For testing of config groups
+  version: *cluster_version
+
+  config:
+    - name: simple_group
+      display_name: Simple Group
+      type: group
+      subs: 
+        - name: int
+          type: integer
+          display_name: That is INT
+          required: false
+
+        - name: float
+          type: float
+          display_name: That is Float
+          required: false
+
+    - name: non_group_element
+      type: integer
+      required: false
+
+    - name: one_more_group
+      display_name: Another Group
+      type: group
+      subs: 
+        - name: int
+          type: integer
+          display_name: That is INT
+          required: false
+
+        - name: float
+          type: float
+          display_name: That is Float
+          required: false
+
+    - name: advanced_group
+      display_name: Advanced Group
+      type: group
+      ui_options:
+        advanced: true
+      subs: 
+        - name: int
+          type: integer
+          display_name: That is INT
+          required: false
+
+        - name: float
+          type: float
+          display_name: That is Float
+          required: false
+
+    - name: invisible_group
+      display_name: Invisible Group
+      type: group
+      ui_options:
+        invisible: true
+      subs: 
+        - name: int
+          type: integer
+          display_name: That is INT
+          required: false
+
+        - name: float
+          type: float
+          display_name: That is Float
+          required: false
+
+    - name: activatable_group1
+      display_name: Activatable Group 1
+      type: group
+      activatable: true
+      active: false
+      subs: 
+        - name: int
+          type: integer
+          display_name: That is INT
+          required: false
+
+        - name: float
+          type: float
+          display_name: That is Float
+          required: false
+
+    - name: activatable_group2
+      display_name: Activatable Group 2
+      type: group
+      activatable: true
+      active: true
+      subs: 
+        - name: int
+          type: integer
+          display_name: That is INT
+          required: false
+
+        - name: float
+          type: float
+          display_name: That is Float
+          required: false

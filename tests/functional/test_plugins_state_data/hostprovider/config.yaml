@@ -1,0 +1,24 @@
+---
+
+- type: provider
+  name: Plugins testing
+  version: 1
+
+  actions:
+    set_state:
+      type: job
+      script_type: ansible
+      script: set_provider.yaml
+      states:
+        available: any
+
+- type: host
+  name: plugins
+  version: 1
+  actions:
+    set_host:
+      type: job
+      script_type: ansible
+      script: set_host.yaml
+      states:
+        available: any

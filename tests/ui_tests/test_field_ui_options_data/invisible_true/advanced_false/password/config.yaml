@@ -1,0 +1,11 @@
+
+- type: cluster
+  name: invisible_true_advanced_false_password
+  version: 1
+  config:
+    - name: password
+      type: password
+      default: password
+      ui_options:
+         invisible: true
+         advanced: false

@@ -1,0 +1,98 @@
+<button mat-raised-button color="accent" (click)="hideLeft=!hideLeft" class="add-button">
+    <mat-icon>library_add</mat-icon> Add user
+</button>
+
+<mat-card [class.hidden]="hideLeft" style="float:right;width: 250px;">
+  <mat-card-content>
+    <div [formGroup]="addForm">
+      <div style="display: flex">
+        <mat-form-field class="full-width">
+          <input matInput placeholder="Username" formControlName="username">
+          <mat-error *ngIf="username.invalid && (username.dirty || username.touched)">
+            <mat-error *ngIf="username.hasError('required')">
+              Username is
+              <b>required</b>
+            </mat-error>
+            <mat-error *ngIf="username.hasError('pattern')">
+              Username is
+              <b>not valid</b>
+            </mat-error>
+          </mat-error>
+        </mat-form-field>
+      </div>
+      <div>
+        <div formGroupName="xxx">
+          <div style="display: flex">
+            <mat-form-field class="full-width">
+              <input type="password" matInput formControlName="password" placeholder="Password" (input)="cpassword.updateValueAndValidity()">
+              <mat-error *ngIf="password.invalid && (password.dirty || password.touched)">
+                <mat-error *ngIf="password.hasError('required')">
+                  Password is
+                  <b>required</b>
+                </mat-error>
+              </mat-error>
+            </mat-form-field>
+          </div>
+          <div style="display: flex">
+            <mat-form-field class="full-width">
+              <input type="password" matInput formControlName="cpassword" appConfirmEqualValidator="password"
+                placeholder="Confirm Password">
+              <mat-error *ngIf="cpassword.invalid && (cpassword.dirty || cpassword.touched)">
+                <mat-error *ngIf="cpassword.hasError('required')">
+                  Confirm password is
+                  <b>required</b>
+                </mat-error>
+                <mat-error *ngIf="cpassword.hasError('notEqual')">
+                  Password and confirm password does not match
+                </mat-error>
+              </mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+        <p class="controls">
+          <button mat-raised-button (click)="addUser()" [disabled]="!addForm.valid" color="primary">
+            Save
+          </button>
+        </p>
+      </div>
+    </div>
+  </mat-card-content>
+</mat-card>
+
+<mat-table #table [dataSource]="users" style="margin-right: 300px;">
+
+  <mat-header-row *matHeaderRowDef="['username', 'password', 'action']"></mat-header-row>
+  <mat-row *matRowDef="let row; columns: ['username', 'password', 'action'];"></mat-row>
+
+  <ng-container matColumnDef="username">
+    <mat-header-cell *matHeaderCellDef> UserName </mat-header-cell>
+    <mat-cell *matCellDef="let row">
+      {{ row.username }}
+    </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="password">
+    <mat-header-cell *matHeaderCellDef> Password </mat-header-cell>
+    <mat-cell *matCellDef="let row" style="flex-basis: 260px;">
+      <mat-form-field>
+        <input type="password" matInput placeholder="Password" [(ngModel)]="row.password" required #pass="ngModel">
+      </mat-form-field>
+      &nbsp;
+      <mat-form-field>
+        <input type="password" matInput placeholder="Confirm Password" [(ngModel)]="row.confirm" required #cpass="ngModel">
+      </mat-form-field>
+      <button mat-icon-button (click)="changePassword(row)" [disabled]="!validRow(pass, cpass)">
+        <mat-icon>done</mat-icon>
+      </button>
+    </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="action">
+    <mat-header-cell *matHeaderCellDef></mat-header-cell>
+    <mat-cell *matCellDef="let row" style="text-align: right; width: 100px;">
+      <button *ngIf="row.username !== currentUserName" mat-icon-button (click)="clearUser(row)" [disabled]="row.username=== 'status'">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </mat-cell>
+  </ng-container>
+</mat-table>

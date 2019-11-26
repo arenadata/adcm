@@ -1,0 +1,11 @@
+
+- type: cluster
+  name: invisible_false_advanced_false_float
+  version: 1
+  config:
+    - name: float
+      type: float
+      default: 1
+      ui_options:
+         invisible: false
+         advanced: false

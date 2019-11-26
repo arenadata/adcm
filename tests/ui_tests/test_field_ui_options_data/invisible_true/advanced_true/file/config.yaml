@@ -1,0 +1,10 @@
+
+- type: cluster
+  name: invisible_true_advanced_true_file
+  version: 1
+  config:
+    - name: file
+      type: file
+      ui_options:
+         invisible: true
+         advanced: true

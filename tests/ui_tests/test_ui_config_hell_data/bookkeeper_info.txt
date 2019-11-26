@@ -1,0 +1,50 @@
+
+        Release Notes - Arenadata Cluster Manager - Version 2019.01.30
+    
+<h2>        Bug
+</h2>
+<ul>
+<li>[<a href='https://jira.arenadata.io/browse/ADCM-467'>ADCM-467</a>] -         Cluster action button not refresh
+</li>
+<li>[<a href='https://jira.arenadata.io/browse/ADCM-531'>ADCM-531</a>] -         HTTP-500 when try to upgrade cluster
+</li>
+<li>[<a href='https://jira.arenadata.io/browse/ADCM-532'>ADCM-532</a>] -         Unhanded exception on run first CM job
+</li>
+<li>[<a href='https://jira.arenadata.io/browse/ADCM-534'>ADCM-534</a>] -         When try to get cluster service page we have a PageNotFound error
+</li>
+<li>[<a href='https://jira.arenadata.io/browse/ADCM-538'>ADCM-538</a>] -         Cluster config field wasn&#39;t described as a required
+</li>
+<li>[<a href='https://jira.arenadata.io/browse/ADCM-543'>ADCM-543</a>] -         Inconsistency between POST and GET requests when adding the host to the cluster
+</li>
+<li>[<a href='https://jira.arenadata.io/browse/ADCM-550'>ADCM-550</a>] -         Unhandled exception on run cluster host action
+</li>
+</ul>
+        
+<h2>        New Feature
+</h2>
+<ul>
+<li>[<a href='https://jira.arenadata.io/browse/ADCM-485'>ADCM-485</a>] -         API refactoring
+</li>
+<li>[<a href='https://jira.arenadata.io/browse/ADCM-542'>ADCM-542</a>] -         Job&#39;s API refactoring
+</li>
+</ul>
+            
+<h2>        Sub-task
+</h2>
+<ul>
+<li>[<a href='https://jira.arenadata.io/browse/ADCM-405'>ADCM-405</a>] -         Backend realisation of check-actions
+</li>
+<li>[<a href='https://jira.arenadata.io/browse/ADCM-464'>ADCM-464</a>] -         Separate pages for every object
+</li>
+<li>[<a href='https://jira.arenadata.io/browse/ADCM-498'>ADCM-498</a>] -         UI checks support
+</li>
+<li>[<a href='https://jira.arenadata.io/browse/ADCM-547'>ADCM-547</a>] -         Add display names to everything in sample bundles
+</li>
+</ul>
+                    
+<h2>        Story
+</h2>
+<ul>
+<li>[<a href='https://jira.arenadata.io/browse/ADCM-434'>ADCM-434</a>] -         Make separate pages for every object
+</li>
+</ul>

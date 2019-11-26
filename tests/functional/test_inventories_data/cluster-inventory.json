@@ -1,0 +1,52 @@
+{
+  "all": {
+    "children": {
+         "CLUSTER": {
+            "hosts": {},
+            "vars": {
+               "cluster": {
+                  "config": {
+                     "required": 10,
+                     "str-key": "value",
+                     "int_key": 150,
+                     "float_key": 34.7,
+                     "bool": false,
+                     "option": null,
+                     "password": "qwerty",
+                     "json": {},
+                     "text-type": "lorem ipsum",
+                     "file-type": null,
+                     "read-only-int": null,
+                     "writable-when-installed": null,
+                     "read-only-when-runned": null
+                  },
+                  "name": "new_",
+                  "id": 1
+               },
+               "services": {
+                  "zookeeper": {
+                     "config": {
+                        "client_port": "2181",
+                        "dirs": {
+                           "data": "/var/lib/zookeeper"
+                        },
+                        "svc-file": null,
+                        "svc-text-area": "big dataaaaaaaaaaaaa",
+                        "svc-password": "qwerty1234",
+                        "svc-ro-created": "bluh",
+                        "svc-w-installed": 222,
+                        "svc-read-only": 2.5
+                     },
+                     "ZOOKEEPER_SERVER": {
+                        "component_id": 1
+                     },
+                     "ZOOKEEPER_CLIENT": {
+                        "component_id": 2
+                     }
+                  }
+               }
+            }
+         }
+      }
+   }
+}

@@ -1,0 +1,11 @@
+
+- type: cluster
+  name: invisible_true_advanced_false_string
+  version: 1
+  config:
+    - name: string
+      type: string
+      default: string
+      ui_options:
+         invisible: true
+         advanced: false

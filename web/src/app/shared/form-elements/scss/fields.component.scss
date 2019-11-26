@@ -1,0 +1,24 @@
+:host {
+  display: flex;
+  align-items: center;
+  width: 100%
+}
+
+label {
+  font-size: 16px;
+  flex-basis: 25%;
+  border-bottom: dotted 1px #606060;
+  margin-right: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.info {
+  margin-left: 10px;
+  width: 24px;
+  display: inline-block;
+
+  .icon-info {
+    vertical-align: middle;
+  }
+}

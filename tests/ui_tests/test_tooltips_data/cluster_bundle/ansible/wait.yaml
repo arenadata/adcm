@@ -1,0 +1,12 @@
+---
+- name: just wait some seconds
+  hosts: all
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: wait for 500 seconds
+      pause:
+        seconds: 500
+    - debug:
+        msg: "Unstucked now"

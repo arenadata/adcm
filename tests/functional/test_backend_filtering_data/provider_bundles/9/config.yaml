@@ -1,0 +1,9 @@
+
+---
+- type: provider
+  name: provider9
+  version: 1
+
+- type: host
+  name: host9
+  version: 1

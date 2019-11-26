@@ -1,0 +1,23 @@
+---
+- cluster:
+    attrs:
+      - prototype_id
+      - name
+      - description
+      - state
+    structs:
+      - issue
+    subobjects:
+      - action
+      - service
+      - config
+      - upgrade
+      - imports
+      - bind
+      - hostcomponent
+    related:
+      - host
+      - bundle
+    parent:
+      - prototype
+    

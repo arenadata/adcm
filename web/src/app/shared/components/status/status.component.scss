@@ -1,0 +1,50 @@
+:host {
+  flex: 1;
+  padding: 20px;
+
+  .select-view {
+    position: fixed;
+    margin-top: -70px;
+    right: 80px;
+  }
+
+  .services-in-host {
+    display: flex;
+    flex-direction: column;
+    margin: 10px 40px 40px;
+  }
+
+  .mat-icon {
+    margin: 0 8px;
+  }
+
+  .label {
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+  }
+
+  .service {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+
+    &>div:first-child {
+      margin: 8px 0;
+    }
+
+    & .components {
+      display: flex;
+      flex-direction: column;
+    }
+
+  }
+
+  .component {
+    font-size: 16px;
+
+    &>.label {
+      font-size: 16px;
+    }
+  }
+}

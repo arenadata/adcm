@@ -1,0 +1,12 @@
+
+- type: cluster
+  name: invisible_true_advanced_false_option
+  version: 1
+  config:
+    - name: option
+      type: option
+      option: {http: 80, https: 443}
+      default: 80
+      ui_options:
+         invisible: true
+         advanced: false

@@ -1,0 +1,14 @@
+
+- type: cluster
+  name: invisible_false_advanced_true_map
+  version: 1
+  config:
+    - name: map
+      type: map
+      default:
+        name: Joe
+        age: "24"
+        sex: m
+      ui_options:
+         invisible: false
+         advanced: true

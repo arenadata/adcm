@@ -1,0 +1,284 @@
+---
+-   type: cluster
+    name: cluster_config_string_fields_test
+    version: &cluster_version '1.032'
+    import:
+        ADH:
+            versions:
+                min: 1.000
+                max: 1.8
+        Hive3:
+            versions:
+               min: 1.000
+               max: 3.5
+        Monitoring:
+            versions:
+               min: 0.5
+               max: 3.0
+        ZOOKEEPER:
+            versions:
+               min: 0.002
+               max: 3.2
+        hookahkeeper:
+            versions:
+               min: 0.01
+               max: 11
+    upgrade:
+        -
+            versions:
+                min: 0.4
+                max: 2.0
+            description: New cool upgrade
+            name: *cluster_version
+            states:
+                available: any
+                on_success: upgradable
+        -
+            versions:
+                min: 1.0
+                max_strict: 3.0
+            description: Super new upgrade
+            name: *cluster_version
+            states:
+                available: [created, installed]
+                on_success: ver2.4
+
+    actions:
+        install:
+            display_name: Install cluster
+            type: job
+            script: ansible/install.yaml
+            script_type: ansible
+            states:
+                available:
+                    - created
+                on_success: installed
+                on_fail: created
+            params:
+                qwe: 42
+            config:
+              cluster-actiom-param:
+                type: float
+                required: false
+                default: 0.4
+
+        diskoteka:
+            type: job
+            script: ansible/status_disco.yaml
+            script_type: ansible
+            states:
+                available: any
+        run:
+            type: job
+            script: ansible/run.yaml
+            script_type: ansible
+            states:
+                available:
+                    - installed
+                on_success: runned
+                on_fail: installed
+        wait:
+            type: job
+            script: ansible/wait.yaml
+            script_type: ansible
+            states:
+                available: any
+        stop:
+            display_name: Stop cluster
+            type: job
+            script: ansible/stop.yaml
+            script_type: ansible
+            states:
+                available:
+                    - runned
+                on_success: installed
+                on_fail: runned
+        delete:
+            type: job
+            script: ansible/delete.yaml
+            script_type: ansible
+            states:
+                available:
+                    - installed
+                on_success: deleted
+                on_fail: created
+        add-new-node:
+            display_name: Add new node
+            type: job
+            script: ansible/install.yaml
+            script_type: ansible
+            states:
+                available: any
+                on_success: any
+                on_fail: any
+        remove-node:
+            type: job
+            script: ansible/install.yaml
+            script_type: ansible
+            states:
+                available:
+                    any
+                on_success:
+                    any
+                on_fail:
+                    any
+        change-map-failed:
+            type: job
+            script: role/failed.yaml
+            script_type: ansible
+            states:
+                available:
+                    any
+                on_success:
+                    any
+                on_fail:
+                    any
+
+        map_and_lists:
+            type: job
+            script: role/failed.yaml
+            script_type: ansible
+            states:
+                available:
+                    any
+            config:
+                mount_points:
+                  type: list
+                  default:
+                    - /dev/rdisk0s1
+                    - /dev/rdisk0s2
+                    - /dev/rdisk0s3
+                mount_points1:
+                  type: list
+
+                mount_points2:
+                  type: list
+                  required: false
+                person:
+                  type: map
+                  default:
+                    name: Joe
+                    age: "24"
+                    sex: m
+
+                person2:
+                  type: map
+
+                person3:
+                  type: map
+                  required: false
+
+    config:
+        __main_info:
+            type: string
+            default: "Cluster for test string fields in config"
+        required_integer:
+            type: integer
+            required: true
+            default: 10
+            display_name: required integer key
+        int_key:
+            type: integer
+            required: false
+            default: 150
+        str-key:
+            default: value
+            type: string
+            required: false
+            display_name: string key, not required
+        required-string:
+            type: string
+            required: true
+            default: this is required string, lets's try to save config without me)
+
+        float_key:
+            type: float
+            required: false
+            default: 34.7
+        required-float:
+            type: float
+            required: true
+            default: 0.0
+            display_name: very important float number
+
+        magic_bool:
+            type: boolean
+            required : false
+            default: false
+        required_boolean:
+            type: boolean
+            required: true
+        option:
+            type: option
+            option:
+                http: 80
+                https: 443
+                ftp: 21
+            required: FALSE
+        reqired-choise:
+            type: option
+            option:
+                tic: 0
+                tac: 1
+                toe: 2
+            required: true
+        password:
+            default: qwerty
+            type: password
+            required: false
+        vip:
+            type: password
+            required: true
+            display_name: very important password
+        json:
+            type: json
+            required: false
+            default: {}
+        required_json_template:
+            type: json
+            required: true
+            display_name: required JSON-template
+
+        text-type:
+            type: text
+            default: lorem ipsum
+            required: false
+        required_text:
+            type: text
+            default: You should fill this field
+            required: true
+
+        file-type:
+            type: file
+            required: false
+        required_ssh_file:
+            type: file
+            required: true
+            display_name: SSH Key
+
+        specified-states:
+            read-only-int:
+                type: integer
+                required: false
+                read_only: any
+            writable-when-installed:
+                type: string
+                required: false
+                writable: [installed]
+            read-only-when-runned:
+                type: boolean
+                required: false
+                read_only: [runned]
+        to-export:
+            cluster-export:
+              type: string
+              required: false
+              default: /opt/cluster/params/
+            fuskin-int:
+              type: integer
+              required: false
+              default: 8
+    export:
+      to-export
+
+

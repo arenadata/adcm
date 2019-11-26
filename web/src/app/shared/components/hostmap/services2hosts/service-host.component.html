@@ -1,0 +1,34 @@
+<div class="controls" [ngStyle]="{'position': fixedButton ? 'fixed': 'initial'}">  
+  <span [@popup]="showPopup? 'show': 'hide'" style="opacity: 0;">
+    <mat-icon color="accent">done</mat-icon>&nbsp;
+    <span style="line-height: 24px; vertical-align: text-bottom;">Settings saved.</span>
+  </span>
+  &nbsp;&nbsp;
+  <button [disabled]="noValid" mat-raised-button color="accent" (click)="save()" *ngIf="!hideButton">Save</button>
+  <button mat-raised-button color="primary" (click)="cancel()">Restore</button>
+</div>
+
+<div class="holder" [appHolder]="scrollEventData">
+  <div>
+    <h3>Components</h3>
+    <div class="wrapper">
+      <div *ngIf="!sourceMap.get('compo').length">
+        Add services on the <a [routerLink]="['/cluster', cluster.id, 'service']">services page.</a>
+      </div>
+      <app-much-2-many *ngFor="let service of sourceMap.get('compo')" [model]="service" (clickToTitleEvt)="selectService($event)"
+        (clearRelationEvt)="clearHostFromService($event)">
+      </app-much-2-many>
+    </div>
+  </div>
+  <div>
+    <h3>Hosts</h3>
+    <div class="wrapper">
+      <div *ngIf="!sourceMap.get('host').length">
+        Add hosts on the <a [routerLink]="['/cluster', cluster.id, 'host']">hosts page.</a>
+      </div>
+      <app-much-2-many *ngFor="let host of sourceMap.get('host')" [model]="host" (clickToTitleEvt)="selectHost($event)"
+        (clearRelationEvt)="clearServiceFromHost($event)">
+      </app-much-2-many>
+    </div>
+  </div>
+</div>

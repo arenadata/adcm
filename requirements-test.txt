@@ -1,0 +1,15 @@
+--extra-index-url https://ci.arenadata.io/artifactory/api/pypi/python-packages/simple
+adcm-client
+adcm_pytest_plugin >= 1.2.0
+-r ./requirements.txt
+allure-pytest==2.5.4
+#arenadata_test_suite
+delayed_assert
+docker
+jsonschema
+pytest
+pytest-lazy-fixture
+pytest-xdist  # pytest distributed testing plugin (for parallel tests)
+pyyaml
+requests
+selenium

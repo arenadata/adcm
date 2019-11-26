@@ -1,0 +1,18 @@
+.col {
+    min-height: 200px;
+    padding-top: 6px;
+}
+
+.editMode {
+    .col {
+        border: solid 1px #333;
+        border-top-color: #565656;
+        border-right-color: #000;
+        border-bottom-color: #000;
+        border-left-color: #565656;
+    }
+}
+
+.dnd-sortable-drag {
+    border: dashed 2px #ccc;
+}

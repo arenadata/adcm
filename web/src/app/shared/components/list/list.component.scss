@@ -1,0 +1,17 @@
+.m-left {
+    display: inline-block;
+    margin-left: 40px;
+}
+
+.col-odd {
+    padding: 0 10px;
+}
+
+.select-in-cell {
+    flex-basis: 80%;
+    max-width: 240px;
+}
+
+mat-header-cell.control, mat-cell.control {
+    flex-basis: 60px;
+}

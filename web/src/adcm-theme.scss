@@ -1,0 +1,87 @@
+@import '~@angular/material/theming';
+@include mat-core();
+
+$app-primary: mat-palette($mat-blue-grey, A400);
+$app-secondary: mat-palette($mat-light-green, A500);
+$app-accent: mat-palette($mat-green, A400);
+$app-warn: mat-palette($mat-orange);
+$app-theme: mat-dark-theme($app-primary, $app-accent, $app-warn);
+
+@include angular-material-theme($app-theme);
+
+app-root {
+  background-color: mat-color($mat-grey, 800)
+}
+
+a {
+  color: mat-color($mat-blue, 200);
+  text-decoration: none;
+
+  &:hover {
+    color: mat-color($mat-blue, 300);
+    text-decoration: underline;
+  }
+}
+
+.select-table-item {
+  background-color: mat-color($mat-blue-grey, 500)!important;
+
+  & button.mat-icon-button.mat-primary {
+    color: mat-color($mat-green, A400);
+  }
+}
+
+
+.accent {
+  color: mat-color($mat-green, A400);
+}
+
+.warn {
+  color: mat-color($mat-orange, 500);
+}
+
+.running {
+  color: mat-color($mat-yellow, 500);
+}
+
+.success {
+  color: mat-color($mat-green, A400);
+}
+
+.failed {
+  color: mat-color($mat-red, A100);
+}
+
+.created {
+  color: mat-color($mat-blue-grey, 200);
+}
+
+.mat-list-item.primary {
+  border: solid 1px mat-color($mat-blue-grey, A400);
+}
+
+.mat-list-item.accent {
+  border: solid 1px mat-color($mat-green, A400);
+}
+
+.mat-list-item.warn {
+  border: solid 1px mat-color($mat-orange, 500);
+}
+
+.mat-list-item.mat-warn {
+  color: mat-color($mat-orange, 500);
+}
+
+a.active .mat-list-item-content {
+  // font-weight: bold;
+  text-decoration: none;
+  color: mat-color($mat-green, A400);
+}
+
+.mat-nav-list a {
+  color: mat-color($mat-blue-grey, 200) !important;
+
+  &:hover {
+    color: mat-color($mat-blue-grey, 50) !important;
+  }
+}

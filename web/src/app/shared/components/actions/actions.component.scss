@@ -1,0 +1,22 @@
+:host {
+    display: flex;
+    overflow: hidden;
+
+    & > div {
+        overflow: hidden;
+        margin-top: 4px;
+    }
+}
+
+.button-more {
+    display: none;
+}
+
+.menu-more-action {
+    display: block;
+    margin: 4px;
+}
+
+button {
+    margin-left: 10px;
+}

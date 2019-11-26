@@ -1,0 +1,14 @@
+
+- type: cluster
+  name: invisible_true_advanced_true_list
+  version: 1
+  config:
+    - name: list
+      type: list
+      default:
+        - /dev/rdisk0s1
+        - /dev/rdisk0s2
+        - /dev/rdisk0s3
+      ui_options:
+         invisible: true
+         advanced: true

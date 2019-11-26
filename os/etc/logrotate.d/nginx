@@ -1,0 +1,11 @@
+/adcm/data/log/nginx/error.log /adcm/data/log/nginx/access.log {
+	size 50M
+        missingok
+        sharedscripts
+	compress
+	delaycompress
+	rotate 10
+        postrotate
+		kill -USR1 `cat /run/nginx/nginx.pid`
+        endscript
+}

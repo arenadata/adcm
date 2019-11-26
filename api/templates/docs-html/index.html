@@ -1,0 +1,25 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	    <title>{{ document.title }}</title>
+
+        <link href="{% static 'rest_framework/docs/css/bootstrap.min.css' %}" rel="stylesheet">
+        <link href="{% static 'rest_framework/docs/css/bootstrap-theme.min.css' %}" rel="stylesheet">
+        <link href="{% static 'rest_framework/docs/css/font-awesome-4.0.3.css' %}" rel="stylesheet">
+        <link href="{% static 'rest_framework/docs/css/base.css' %}" rel="stylesheet">
+        <link href="{% static 'rest_framework/docs/css/jquery.json-view.min.css' %}" rel="stylesheet">
+    </head>
+
+    <body>
+
+        <div class="container">
+             {% include "docs-html/document.html" %}
+        </div>
+
+    </body>
+</html>

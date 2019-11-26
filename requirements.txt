@@ -1,0 +1,22 @@
+# ansible==2.8.3
+git+https://github.com/arenadata/ansible.git@v2.8.6-p1
+coreapi
+django
+django-cors-headers
+django-filter
+django-rest-swagger
+djangorestframework < 3.10
+social-auth-app-django
+git+git://github.com/arenadata/django-generate-secret-key.git
+jinja2
+markdown==2.6.11 # Due to bug in djangorestframework
+pyyaml
+toml
+uwsgi
+version_utils
+# Custom bundle libs
+apache-libcloud
+jmespath
+lxml
+pycrypto
+pyvcloud

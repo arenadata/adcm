@@ -1,0 +1,44 @@
+.holder {
+    display: flex;
+    justify-content: space-around;
+    margin: 10px 0;
+
+    
+    h3 {
+        margin: 10px;
+        padding: 6px;
+
+        .slide-toggle {
+            margin-left: 20px;
+        }
+    }
+
+    div {
+        padding: 6px;
+        flex: 1 0 auto;
+        margin: 0 10px;
+    }
+}
+
+p {
+    padding-right: 40px;
+    text-align: right;
+}
+
+.wrapper {    
+    overflow: auto;
+    transition-property: margin-top;
+    transition-duration: .5s;
+    transition-timing-function: ease-out-cubic;
+    margin-top: 0px;
+}
+
+.link {
+    font-size: 1em;
+}
+
+.controls {
+    // position: fixed;
+    top: 130px;
+    right: 80px;
+}

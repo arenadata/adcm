@@ -1,0 +1,30 @@
+---
+
+- type: cluster
+  name: azaza_cluster
+  version: 1.4
+  description: "That is description"
+
+  actions:
+    install:
+      type: job
+      script_type: ansible
+      script: do.yaml
+      states:
+        available: any
+
+
+- type: service
+  name: ahaha_service
+  version: 1.0
+
+  actions:
+    install:
+      type: job
+      script_type: ansible
+      script: do.yaml
+      states:
+        available: any
+  components:
+    firstone:
+    second:

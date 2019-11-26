@@ -1,0 +1,53 @@
+:host {
+  display: block;
+  margin: 0 -20px;
+
+  &:nth-child(odd) {
+    background-color: #4e4e4e;
+  }
+
+  &.alone {
+    margin: 0 !important;
+  }
+
+  &.read-only {
+    background-color: #484848;
+    font-style: italic;
+    color: #a7a7a7;
+  }
+
+  &>.read-only {
+    background-color: #484848;
+    font-style: italic;
+    color: #a7a7a7;
+    padding: 0 20px;
+    margin: 0 -20px;
+  }
+
+  &:not(.alone) {
+    padding: 0 20px;
+  }
+}
+
+.field-group {
+  display: flex;
+  align-items: center;
+}
+
+.advanced {
+  * {
+    // border: solid 1px #ffe0b23d;
+    padding: 0 24px;
+    margin: 0px -24px;
+    background-image:
+      repeating-linear-gradient(-45deg, #ffe0b20d 0px, #ffe0b20d 2px, transparent 2px, transparent 16px);
+  }
+}
+
+.compare-list-container {
+  .compare-list {
+    .label {
+      margin: 0 10px;
+    }
+  }
+}

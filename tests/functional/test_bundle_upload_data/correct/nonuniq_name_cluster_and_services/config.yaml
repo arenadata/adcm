@@ -1,0 +1,8 @@
+---
+- type: cluster
+  name: &name Something
+  version: &version 1.4
+
+- type: service
+  name: *name
+  version: *version

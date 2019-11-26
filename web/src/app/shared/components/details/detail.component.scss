@@ -1,0 +1,67 @@
+@import "~@angular/material/theming";
+
+.main {
+    position: absolute;
+    top: 50px;
+    bottom: 0;
+    left: 5px;
+    right: 5px;
+    display: flex;
+    margin-bottom: 5px;
+
+    & .mat-nav-list {
+        padding-top: 20px;
+    }
+
+    & .mat-card {
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+
+        & .mat-card-header {
+            min-height: 40px;
+            & .mat-card-title {
+                font-size: 26px;
+            }
+        }
+    }
+
+    & .content {
+        display: flex;
+        flex-grow: 1;
+        overflow: auto;
+    }
+}
+
+.issue-warning {
+    width: 40px;
+    height: 40px;
+    position: relative;
+    cursor: pointer;
+
+    .mat-icon {
+        margin: 8px 0 0 8px;
+    }
+
+    div {
+        width: 40px;
+        height: 40px;
+        position: absolute;
+        background: mat-color($mat-orange, 500);
+        border-radius: 20px;
+        top: 0;
+        opacity: 0;
+        animation: ripple 2s infinite ease-in-out;
+    }
+}
+
+
+@keyframes ripple {
+    0% {
+        opacity: .5;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}

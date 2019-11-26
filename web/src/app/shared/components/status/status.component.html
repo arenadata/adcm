@@ -1,0 +1,72 @@
+<ng-template #loading>
+  <p>{{ loadString }}</p>
+</ng-template>
+
+<ng-container *ngIf="statusInfo$ | async as statusInfo; else loading">
+  <ng-container *ngIf="!statusInfo.length; else ui">
+    <p>Nothing to display.</p>
+  </ng-container>
+
+  <ng-template #ui>
+    <div class="select-view" *ngIf="showChangeView">
+      <button mat-icon-button (click)="toggleExpand()" [matTooltip]="listTooltip">
+        <mat-icon>{{ listIcon }}</mat-icon>
+      </button>
+      &nbsp;&nbsp;
+      <mat-form-field>
+        <mat-label>Show by:</mat-label>
+        <mat-select (selectionChange)="changeView($event)" [value]="view">
+          <mat-option value="host">Hosts</mat-option>
+          <mat-option value="service">Services</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <mat-expansion-panel *ngFor="let host of statusInfo" class="panel" [expanded]="!showChangeView">
+      <mat-expansion-panel-header>
+        <ng-container
+          *ngTemplateOutlet="
+            label;
+            context: { icon: view === 'host' ? 'storage' : 'settings', name: host.name, status: host.status }
+          "
+        ></ng-container>
+      </mat-expansion-panel-header>
+      <div class="services-in-host">
+        <div *ngFor="let service of host.relations" class="service group">
+          <div>
+            <ng-container
+              *ngTemplateOutlet="label; context: { icon: view === 'host' ? 'settings': '', name: service.name, status: service.status }">
+            </ng-container>
+          </div>
+          <div class="components">
+            <ng-container *ngTemplateOutlet="components; context: { service: service }"></ng-container>
+          </div>
+        </div>
+      </div>
+    </mat-expansion-panel>
+  </ng-template>
+</ng-container>
+
+<ng-template #label let-icon="icon" let-name="name" let-sta="status">
+  <span class="label">
+    <mat-icon *ngIf="icon">{{ icon }}</mat-icon>
+    <span>{{ name }}</span>
+    <ng-container *ngTemplateOutlet="status; context: { status: sta }"></ng-container>
+  </span>
+</ng-template>
+
+<ng-template #components let-service="service">
+  <div *ngFor="let component of service.components" class="component" [attr.data-rowid]="component.component_id">
+    <ng-container
+      *ngTemplateOutlet="
+        label;
+        context: { icon: view === 'service' ? 'storage' : '', name: component.name, status: component.status }
+      "
+    ></ng-container>
+  </div>
+</ng-template>
+
+<ng-template #status let-status="status">
+  <mat-icon *ngIf="status === 0" color="accent">check_circle_outline</mat-icon>
+  <mat-icon *ngIf="status !== 0" color="warn">error_outline</mat-icon>
+</ng-template>

@@ -1,0 +1,11 @@
+---
+- name: Do nothing playbook
+  hosts: localhost 
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - pause:
+        seconds: 5
+    - debug:
+        msg: "Unstucked now"

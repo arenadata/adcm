@@ -1,0 +1,23 @@
+---
+ - type: cluster
+   name: {{ config_type }}
+   version: &version 0.02
+   upgrade:
+     - versions:
+         min: 0.1
+         max_strict: *version
+       description: &upgrd 'Upgrade to version'
+       name: [*upgrd, *version]
+       states:
+         available: any
+         on_success: upgraded
+   actions:
+
+   config:
+     required:
+       type: {{ config_type }}
+       required: true
+       display_name: required key
+     following:
+       type: {{ config_type }}
+       required: false

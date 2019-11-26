@@ -1,0 +1,49 @@
+<div class="container" [style.margin-top.px]="50" [class.editMode]="editMode">
+  <div class="row">
+    <div class="col s12 m12 l12" [style.min-height]="'auto'">
+      <!-- [style.max-height]="'40vh'" -->
+      <app-widget *ngIf="dashboard[3] && dashboard[3][0]" [widget]="dashboard[3][0]"         
+        [dragEnabled]="editMode" 
+        (clearWidget)="_clearWidget(dashboard[3][0],3,0)"></app-widget>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col s12 m6 l4" dnd-sortable-container [sortableData]="dashboard[0][0]" [dropZones]="['zone1']">
+      <app-widget dnd-sortable *ngFor="let widget of dashboard[0][0]; let i=index" [widget]="widget" [sortableIndex]="i"
+        [dragEnabled]="editMode" [dragData]="widget" (onDropSuccess)="drop($event)" (updateWidget)="_updateWidget(widget)"
+        (clearWidget)="_clearWidget(widget,0,0)"></app-widget>
+    </div>
+    <div class="col s12 m6 l4" dnd-sortable-container [sortableData]="dashboard[0][1]" [dropZones]="['zone1']">
+      <app-widget dnd-sortable *ngFor="let widget of dashboard[0][1]; let i=index" [widget]="widget" [sortableIndex]="i"
+        [dragEnabled]="editMode" [dragData]="widget" (onDropSuccess)="drop($event)" (updateWidget)="_updateWidget(widget)"
+        (clearWidget)="_clearWidget(widget, 0, 1)"></app-widget>
+    </div>
+    <div class="col s12 m6 l4" dnd-sortable-container [sortableData]="dashboard[0][2]" [dropZones]="['zone1']">
+      <app-widget dnd-sortable *ngFor="let widget of dashboard[0][2]; let i=index" [widget]="widget" [sortableIndex]="i"
+        [dragEnabled]="editMode" [dragData]="widget" (onDropSuccess)="drop($event)" (updateWidget)="_updateWidget(widget)"
+        (clearWidget)="_clearWidget(widget, 0, 2)"></app-widget>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col s12 m12 l6" dnd-sortable-container [sortableData]="dashboard[1][0]" [dropZones]="['zone1']">
+      <app-widget dnd-sortable *ngFor="let widget of dashboard[1][0]; let i=index;" [widget]="widget" [sortableIndex]="i"
+        [dragEnabled]="editMode" [dragData]="widget" (onDropSuccess)="drop($event)" (updateWidget)="_updateWidget(widget)"
+        (clearWidget)="_clearWidget(widget, 1, 0)"></app-widget>
+    </div>
+    <div class="col s12 m12 l6" dnd-sortable-container [sortableData]="dashboard[1][1]" [dropZones]="['zone1']">
+      <app-widget dnd-sortable *ngFor="let widget of dashboard[1][1]; let i=index" [widget]="widget" [sortableIndex]="i"
+        [dragEnabled]="editMode" [dragData]="widget" (onDropSuccess)="drop($event)" (updateWidget)="_updateWidget(widget)"
+        (clearWidget)="_clearWidget(widget, 1, 1)"></app-widget>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col s12 m12 l12" dnd-sortable-container [sortableData]="dashboard[2][0]" [dropZones]="['zone1']">
+      <app-widget dnd-sortable *ngFor="let widget of dashboard[2][0]; let i=index;" [widget]="widget" [sortableIndex]="i"
+        [dragEnabled]="editMode" [dragData]="widget" (onDropSuccess)="drop($event)" (updateWidget)="_updateWidget(widget)"
+        (clearWidget)="_clearWidget(widget, 2, 0)"></app-widget>
+    </div>
+  </div>
+
+</div>

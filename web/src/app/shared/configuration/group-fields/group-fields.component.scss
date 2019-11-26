@@ -1,0 +1,19 @@
+.pad {
+  padding: 0 24px
+}
+
+.title {
+  font-size: 22px;
+}
+
+.title>mat-slide-toggle {
+  margin-left: 20px;
+}
+
+mat-panel-description {
+  justify-content: flex-end;
+}
+
+.advanced {
+  border: solid 1px #ffe0b23d;
+}

@@ -1,0 +1,15 @@
+---
+- hosts: localhost
+  gather_facts: false
+  connection: local
+  tasks:
+    - adcm_state:
+        type: "service"
+        service_name: "Second"
+        state: "state2"
+      register: out
+
+    - name: "Check return value"
+      fail:
+        msg: "Expected value is state2, actual value is {{ out.state }}"
+      when: out.state != "state2"

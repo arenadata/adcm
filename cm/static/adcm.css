@@ -1,0 +1,42 @@
+
+.red { color: red; }
+.green { color: green; }
+
+table.records {
+	margin-top:	15px;
+	margin-bottom: 20px;
+}
+
+table.records th { 
+	text-align: right;
+	padding: 10px 12px;
+}
+
+table.records caption {
+	text-align: left;
+}
+
+table.records th {
+	background: #eee;
+	border: solid 1px #444;
+}
+
+table.records td {
+	text-align: right;
+	border: solid 1px #444;
+	padding: 2px 12px;
+}
+
+table.records td.action {
+	text-align: center;
+	border: none;
+	padding: 18px 20px;
+}
+
+table.edit th {
+	padding: 6px 16px 6px 0px;
+	}
+
+table.edit td {
+	padding: 6px 16px 6px 0px;
+}

@@ -1,0 +1,18 @@
+<mat-expansion-panel *ngIf="panel.options.length >= 1" [expanded]="checked" [disabled]="!checked"
+  [ngClass]="{ panel: true, advanced: isAdvanced() }" #ep>
+  <mat-expansion-panel-header>
+    <mat-panel-title class="title">
+      <span>{{ panel.title }}</span>
+      <mat-slide-toggle *ngIf="panel.activatable" [checked]="checked" (change)="activeToggle($event)">
+      </mat-slide-toggle>
+    </mat-panel-title>
+    <mat-panel-description>
+      <mat-icon *ngIf="panel.description" matSuffix [appTooltip]="panel.description">
+        info_outline
+      </mat-icon>
+    </mat-panel-description>
+  </mat-expansion-panel-header>
+  <div class="pad">
+    <app-field *ngFor="let options of panel.options" [form]="form" [options]="options"></app-field>
+  </div>
+</mat-expansion-panel>

@@ -1,0 +1,38 @@
+-
+
+  type: adcm
+  name: ADCM
+  version: 0.8
+
+  config:
+    - name: "global"
+      display_name: "Global Options"
+      type: "group"
+      subs:
+        - name: "send_stats"
+          display_name: "Send Anonymous Statistics"
+          description: |
+            We will send anonymous statistic about number of bundles your use and number of hosts and clusters, but without any config or names.
+          type: boolean
+          default: true
+        - name: "adcm_url"
+          display_name: "ADCM's URL"
+          description: |
+            We have to know ADCM's Url to send information from host. We try to gues that information from url you enter in browser.
+            But if your network has more complicated structure and we gues wrong, please fix that here.
+          type: string
+    - name: "google_oauth"
+      display_name: "Google Auth"
+      type: "group"
+      subs:
+        - name: "client_id"
+          type: string
+          required: false
+        - name: "secret"
+          type: password
+          required: false
+          ui_options:
+            no_confirm: true
+        - name: "whitelisted_domains"
+          type: list
+          required: false

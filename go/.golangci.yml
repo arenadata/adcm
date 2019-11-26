@@ -1,0 +1,32 @@
+
+linters-settings:
+    lll:
+        line-length: 100
+
+linters:
+    disable-all: true
+    enable:
+        - deadcode
+        - depguard
+        - dupl
+        - errcheck
+        - gosimple
+        - goconst
+        - gocyclo
+        - gosec
+        - govet
+        - lll
+        - misspell
+        - nakedret
+        - ineffassign
+        - interfacer
+        - prealloc
+        - scopelint
+        - staticcheck
+        - structcheck
+        - typecheck
+        - unconvert
+        - unparam
+        - unused
+        - varcheck
+        

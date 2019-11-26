@@ -1,0 +1,14 @@
+.full-width {
+  height: 58px;
+
+  &>div {
+    padding: 14px 0;
+    display: flex;
+    justify-content: space-between;
+
+  }
+}
+
+.mat-error {
+  font-size: 0.75em;
+}

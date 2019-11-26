@@ -1,0 +1,51 @@
+---
+
+- type: cluster
+  name: Plugins testing
+  version: 1
+
+  actions:
+    set_first_service:
+      type: job
+      script_type: ansible
+      script: set_first_service.yaml
+      states:
+        available: any
+
+    set_second_service:
+      type: job
+      script_type: ansible
+      script: set_second_service.yaml
+      states:
+        available: any
+
+    set_cluster:
+      type: job
+      script_type: ansible
+      script: set_cluster_directly.yaml
+      states:
+        available: any
+
+- type: service
+  name: First
+  version: 1
+  actions: &service_actions
+    set_service:
+      type: job
+      script_type: ansible
+      script: set_service_directly.yaml
+      states:
+        available: any
+
+    set_cluster:
+      type: job
+      script_type: ansible
+      script: set_cluster_directly.yaml
+      states:
+        available: any
+
+- type: service
+  name: Second
+  version: 1
+  actions:
+    <<: *service_actions

@@ -1,0 +1,23 @@
+<mat-expansion-panel class="notification-panel" [expanded]="expanded">
+  <div class="list">
+    <mat-list *ngFor="let message of messages$ | async; trackBy:trackByMessages;">
+      <mat-list-item [ngClass]="message.kind">
+        <div mat-line>{{ message.date | date:'mediumTime' }} :: {{ message.title }}</div>
+        <p mat-line><i>{{ message.subtitle }}</i></p>
+        <button *ngIf="message.link" mat-icon-button (click)="goToLink(message.link)">
+          <mat-icon>link</mat-icon>
+        </button>
+        <button *ngIf="message.information" mat-icon-button (click)="showInfo()">
+          <mat-icon>info</mat-icon>
+        </button>
+        <button mat-icon-button (click)="clear(message)">
+          <mat-icon>clear</mat-icon>
+        </button>
+      </mat-list-item>
+    </mat-list>
+  </div>
+  <mat-action-row>
+    <button mat-button (click)="cleanAll()">Clean All</button>
+    <button mat-button (click)="onHide()">Hide</button>
+  </mat-action-row>
+</mat-expansion-panel>

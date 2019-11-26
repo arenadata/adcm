@@ -1,0 +1,49 @@
+<div class="field-group" [formGroup]="form" [ngSwitch]="options.controlType" [ngClass]="{
+    'read-only': options.disabled,
+    hidden: options.hidden,
+    advanced: isAdvanced(),
+    required: options.required
+  }">
+
+  <ng-container *ngSwitchCase="'map'">
+    <app-fields-map [appForTest]="options.key" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="form"></app-fields-map>
+  </ng-container>
+
+  <ng-container *ngSwitchCase="'list'">
+    <app-fields-list [appForTest]="options.key" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="form"></app-fields-list>
+  </ng-container>
+
+  <ng-container *ngSwitchCase="'password'">
+    <app-fields-password [appForTest]="options.key" [field]="options" [form]="form" [appForTest]="getTestName()"></app-fields-password>
+  </ng-container>
+
+  <ng-container *ngSwitchCase="'boolean'">
+    <app-fields-boolean [appForTest]="options.key" [field]="options" [form]="form" [appForTest]="getTestName()"></app-fields-boolean>
+  </ng-container>
+
+  <ng-container *ngSwitchCase="'textbox'">
+    <app-fields-textbox [appForTest]="options.key" [field]="options" [form]="form" [appForTest]="getTestName()"></app-fields-textbox>
+  </ng-container>
+
+  <ng-container *ngSwitchCase="'textarea'">
+    <app-fields-textarea [appForTest]="options.key" [field]="options" [form]="form" [appForTest]="getTestName()"></app-fields-textarea>
+  </ng-container>
+
+  <ng-container *ngSwitchCase="'json'">
+    <app-fields-json [appForTest]="options.key" [field]="options" [form]="form" [appForTest]="getTestName()"></app-fields-json>
+  </ng-container>
+
+  <ng-container *ngSwitchCase="'option'">
+    <app-fields-dropdown [appForTest]="options.key" [field]="options" [form]="form" [appForTest]="getTestName()"></app-fields-dropdown>
+  </ng-container>
+
+</div>
+
+<mat-list class="compare-list-container" dense *ngIf="!options.hidden && compare.length">
+  <mat-list-item *ngFor="let item of compare" class="compare-list">
+    <mat-icon matListIcon [style.backgroundColor]="item.config.color">more_vert</mat-icon>
+    <span class="label">
+      {{ item.config.date | date: 'short' }}
+    </span>&nbsp;----&nbsp;&nbsp;<span [appTooltip]="outputTooltip(item.stack.value)" class="accent">{{ outputValue(item.stack.value) }}</span>
+  </mat-list-item>
+</mat-list>

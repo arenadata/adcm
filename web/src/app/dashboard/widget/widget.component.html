@@ -1,0 +1,20 @@
+<mat-card [style.height.px]="widget.height">
+  <mat-card-header>
+    <mat-card-title [style.margin]="'0 -16px 12px'">
+      {{ widget.title }}
+    </mat-card-title>
+    <span *ngIf="dragEnabled">
+      <button mat-icon-button (click)="_settingsWidget(widget)">
+        <mat-icon>settings_applications</mat-icon>
+      </button>
+      <button mat-icon-button (click)="_clearWidget(widget)">
+        <mat-icon>clear</mat-icon>
+      </button>
+    </span>
+  </mat-card-header>
+
+  <mat-card-content>
+    <ng-template appDynamic></ng-template>
+  </mat-card-content>
+  
+</mat-card>

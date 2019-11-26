@@ -1,0 +1,260 @@
+<!-- <div class="filter-header">
+  <mat-form-field>
+    <input matInput (keyup)="applyFilter($event.target.value)" placeholder="Filter">
+  </mat-form-field>
+</div> -->
+<mat-table [dataSource]="data" [trackBy]="trackBy" matSort>
+  <mat-header-row *matHeaderRowDef="columns" [appMultiSort]="sortParam"></mat-header-row>
+  <mat-row
+    appHover
+    *matRowDef="let row; columns: columns"
+    (click)="clickCell($event, 'title', row)"
+    [ngClass]="{ 'select-table-item': current ? row.id === current.id : false }"
+  ></mat-row>
+
+  <!-- Checkbox Column -->
+  <ng-container matColumnDef="select">
+    <mat-header-cell *matHeaderCellDef style="flex: 0 0 50px;">
+      <mat-checkbox
+        (change)="$event ? masterToggle() : null"
+        [checked]="selection.hasValue() && isAllSelected()"
+        [indeterminate]="selection.hasValue() && !isAllSelected()"
+      ></mat-checkbox>
+    </mat-header-cell>
+    <mat-cell *matCellDef="let row" style="flex: 0 0 50px;">
+      <mat-checkbox (click)="$event.stopPropagation()" (change)="$event ? selection.toggle(row) : null" [checked]="selection.isSelected(row)"></mat-checkbox>
+    </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="id">
+    <mat-header-cell *matHeaderCellDef mat-sort-header class="control">#</mat-header-cell>
+    <mat-cell *matCellDef="let row" class="control">
+      <span>{{ row.id }}</span>
+    </mat-cell>
+  </ng-container>
+
+  <!--  jobs -->
+  <ng-container matColumnDef="start_date">
+    <mat-header-cell *matHeaderCellDef mat-sort-header>Start date</mat-header-cell>
+    <mat-cell *matCellDef="let row">{{ row.start_date | date: 'medium' }}</mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="finish_date">
+    <mat-header-cell *matHeaderCellDef mat-sort-header>Finish date</mat-header-cell>
+    <mat-cell *matCellDef="let row">
+      {{ row.status === 'success' || row.status === 'failed' ? (row.finish_date | date: 'medium') : '' }}
+    </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="action">
+    <mat-header-cell *matHeaderCellDef>Action</mat-header-cell>
+    <mat-cell *matCellDef="let row">{{ row.action.name.toLocaleUpperCase() }}</mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="prototype">
+    <mat-header-cell *matHeaderCellDef mat-sort-header>Prototype</mat-header-cell>
+    <mat-cell *matCellDef="let row">{{ row.prototype }}</mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="objects">
+    <mat-header-cell *matHeaderCellDef>Objects</mat-header-cell>
+    <mat-cell *matCellDef="let row">
+      <a *ngFor="let obj of row.objects; let odd = odd" [class.col-odd]="odd" [routerLink]="['/', obj.type, obj.id]">{{ obj.name }}</a>
+    </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="logs">
+    <mat-header-cell *matHeaderCellDef>Log files</mat-header-cell>
+    <mat-cell *matCellDef="let row">
+      <mat-form-field *ngIf="row.log_files as logs; else dumb">
+        <mat-select #logFiles placeholder="Select log file" (selectionChange)="clickCell($event, 'logfiles', row, logFiles.value)">
+          <mat-option>...</mat-option>
+          <mat-option *ngFor="let log of logs" [value]="log.url">
+            {{ log.file }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+      <ng-template #dumb>
+        <i>select job</i>
+      </ng-template>
+    </mat-cell>
+  </ng-container>
+
+  <!-- common use -->
+  <ng-container matColumnDef="version">
+    <mat-header-cell *matHeaderCellDef mat-sort-header>Version</mat-header-cell>
+    <mat-cell *matCellDef="let row">{{ row.version }}</mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="version_no_sort">
+    <mat-header-cell *matHeaderCellDef>Version</mat-header-cell>
+    <mat-cell *matCellDef="let row">{{ row.version }}</mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="edition">
+    <mat-header-cell *matHeaderCellDef>Edition</mat-header-cell>
+    <mat-cell *matCellDef="let row">
+      {{ row.edition }}
+      <ng-container *ngIf="row.license === 'unaccepted'">
+        <button mat-icon-button color="warn" matTooltip="Accept license agreement" (click)="clickCell($event, 'license', row)"><mat-icon>warning</mat-icon></button>
+      </ng-container>
+    </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="prototype_version">
+    <mat-header-cell *matHeaderCellDef mat-sort-header>Bundle</mat-header-cell>
+    <mat-cell *matCellDef="let row">{{ row.prototype_display_name || row.prototype_name }} {{ row.prototype_version }} {{ row.edition }}</mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="provider_name">
+    <mat-header-cell *matHeaderCellDef mat-sort-header>Provider</mat-header-cell>
+    <mat-cell *matCellDef="let row">
+      <a [routerLink]="['/provider', row.provider_id]">{{ row.provider_name }}</a>
+    </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="description">
+    <mat-header-cell *matHeaderCellDef>Description</mat-header-cell>
+    <mat-cell *matCellDef="let row">{{ row.description }}</mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="state">
+    <mat-header-cell *matHeaderCellDef mat-sort-header>State</mat-header-cell>
+    <mat-cell *matCellDef="let row">
+      <mat-icon class="icon-locked" color="accent" *ngIf="row.state === 'locked'; else title">autorenew</mat-icon>
+      <ng-template #title>{{ row.state }}</ng-template>
+    </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="config">
+    <mat-header-cell *matHeaderCellDef class="control">Config</mat-header-cell>
+    <mat-cell *matCellDef="let row" class="control">
+      <button [appForTest]="'row_config'" class="list_button_config" mat-icon-button color="primary" (click)="clickCell($event, 'config', row)">
+        <mat-icon>settings</mat-icon>
+      </button>
+    </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="actions">
+    <mat-header-cell *matHeaderCellDef class="control">Actions</mat-header-cell>
+    <mat-cell *matCellDef="let row" class="control">
+      <button [appForTest]="'row_actions'" mat-icon-button color="warn" *ngIf="checkIssue(row.issue); else actions" [appTooltip]="row">
+        <mat-icon>priority_hight</mat-icon>
+      </button>
+      <ng-template #actions>
+        <button color="primary" mat-icon-button [matMenuTriggerFor]="actionsMenu" (click)="clickCell($event, 'getActions', row)">
+          <mat-icon>local_activity</mat-icon>
+        </button>
+        <mat-menu #actionsMenu="matMenu" [overlapTrigger]="false" xPosition="before">
+          <div *ngIf="row.actions && !row.actions.length" style="padding: 6px 10px;color:#fff;">
+            <i>No actions</i>
+          </div>
+          <button [appForTest]="'action_btn'" mat-menu-item *ngFor="let b of row.actions" [appActions]="{ cluster: getClusterData(row), actions: [b] }">
+            <span>{{ b.display_name }}</span>
+          </button>
+        </mat-menu>
+      </ng-template>
+    </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="controls">
+    <mat-header-cell *matHeaderCellDef class="control"></mat-header-cell>
+    <mat-cell *matCellDef="let row" class="control">
+      <button [appForTest]="'row_delete'" mat-icon-button color="primary" (click)="delete($event, row)">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="remove">
+    <mat-header-cell *matHeaderCellDef class="control"></mat-header-cell>
+    <mat-cell *matCellDef="let row" class="control">
+      <button mat-icon-button color="primary" [appForTest]="'row_delete'" [matTooltip]="'Remove from cluster'" (click)="delete($event, row)">
+        <mat-icon>link_off</mat-icon>
+      </button>
+    </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="upgrade">
+    <mat-header-cell *matHeaderCellDef class="control">Upgrade</mat-header-cell>
+    <mat-cell *matCellDef="let row" class="control">
+      <app-upgrade [dataRow]="row"></app-upgrade>
+    </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="name">
+    <mat-header-cell *matHeaderCellDef mat-sort-header>Name</mat-header-cell>
+    <mat-cell *matCellDef="let row">
+      <span>{{ row.display_name || row.name }}</span>
+    </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="display_name">
+    <mat-header-cell *matHeaderCellDef mat-sort-header>Name</mat-header-cell>
+    <mat-cell *matCellDef="let row">{{ row.display_name }}</mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="import">
+    <mat-header-cell *matHeaderCellDef class="control">Import</mat-header-cell>
+    <mat-cell *matCellDef="let row" class="control">
+      <button [appForTest]="'row_import'" mat-icon-button color="primary" (click)="clickCell($event, 'import', row)">
+        <mat-icon>import_export</mat-icon>
+      </button>
+    </mat-cell>
+  </ng-container>
+
+  <!-- hosts -->
+  <ng-container matColumnDef="fqdn">
+    <mat-header-cell *matHeaderCellDef mat-sort-header>FQDN</mat-header-cell>
+    <mat-cell *matCellDef="let row">
+      <span>{{ row.fqdn }}</span>
+    </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="host2cluster">
+    <mat-header-cell *matHeaderCellDef mat-sort-header="cluster_name">Cluster</mat-header-cell>
+    <mat-cell *matCellDef="let row">
+      <a *ngIf="row.cluster_id; else clusterlist" [routerLink]="['/cluster', row.cluster_id]">{{ row.cluster_name }}</a>
+      <ng-template #clusterlist>
+        <mat-select
+          placeholder="Assign to cluster"
+          class="select-in-cell"
+          (click)="stopPropagation($event)"
+          (openedChange)="clickCell($event, 'getClusters', row)"
+          (valueChange)="clickCell($event, 'addCluster', row, clusters.value)"
+          #clusters
+        >
+          <mat-option>...</mat-option>
+          <mat-option *ngFor="let cluster of row.clusters" [value]="cluster.id">
+            {{ cluster.name }}
+          </mat-option>
+        </mat-select>
+      </ng-template>
+    </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="status">
+    <mat-header-cell *matHeaderCellDef class="control">Status</mat-header-cell>
+    <mat-cell *matCellDef="let row" class="control">
+      <span *ngIf="row.status && row.status.length; else icons" [class]="row.status">{{ row.status }}</span>
+      <ng-template #icons>
+        <button *ngIf="row.status === 0" [appForTest]="'row_status'" mat-icon-button color="accent" (click)="clickCell($event, 'status', row)">
+          <mat-icon>check_circle_outline</mat-icon>
+        </button>
+        <button
+          *ngIf="row.status !== 0"
+          [appForTest]="'row_status'"
+          mat-icon-button
+          color="warn"
+          [appTooltip]="row"
+          [appTooltipComponent]="'status'"
+          (click)="clickCell($event, 'status', row)"
+        >
+          <mat-icon>error_outline</mat-icon>
+        </button>
+      </ng-template>
+    </mat-cell>
+  </ng-container>
+</mat-table>
+
+<mat-paginator [pageSizeOptions]="[10, 25, 50, 100]" (page)="pageHandler($event)"></mat-paginator>
