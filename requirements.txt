@@ -1,5 +1,5 @@
 # ansible==2.8.3
-git+https://github.com/arenadata/ansible.git@v2.8.6-p1
+git+https://github.com/arenadata/ansible.git@v2.8.7-p1
 coreapi
 django
 django-cors-headers
