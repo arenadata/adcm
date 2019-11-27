@@ -83,4 +83,5 @@ export interface FieldOptions extends ConfigOptions {
   validator: ValidatorInfo;
   disabled?: boolean;
   limits: any;
+  required: boolean;
 }
