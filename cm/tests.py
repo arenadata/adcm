@@ -24,7 +24,9 @@ from cm.errors import AdcmEx, AdcmApiEx
 class TestUpgradeVersion(TestCase):
 
     def cook_cluster(self):
-        return Cluster(prototype=Prototype(type="cluster", name="ADH"), issue='{}')
+        b = Bundle(name="ADH", version="1.0")
+        proto = Prototype(type="cluster", name="ADH", bundle=b)
+        return Cluster(prototype=proto, issue='{}')
 
     def cook_upgrade(self):
         return Upgrade(
