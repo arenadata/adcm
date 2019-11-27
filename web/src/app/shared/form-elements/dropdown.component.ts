@@ -21,7 +21,6 @@ import { FieldDirective } from './field.directive';
       <label>{{ field.label }}:</label>
       <mat-form-field class="full-width">
         <mat-select [(value)]="field.value" [formControlName]="field.key">
-          <mat-option>...</mat-option>
           <mat-option *ngFor="let option of options$ | async" [value]="option.id">{{ option.name }}</mat-option>
         </mat-select>
       </mat-form-field>
