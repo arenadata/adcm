@@ -151,7 +151,10 @@ class ClusterHostDetail(ListView):
         Remove host from cluster
         """
         host = self.get_obj(cluster_id, host_id)
-        cm.api.remove_host_from_cluster(host)
+        try:
+            cm.api.remove_host_from_cluster(host)
+        except AdcmEx as e:
+            raise AdcmApiEx(e.code, e.msg, e.http_code)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -334,7 +337,7 @@ class ClusterUpgrade(PageView):
         List all avaliable upgrades for specified cluster
         """
         cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        obj = cm.api.get_upgrade(cluster, self.get_ordering(request, self.queryset, self))
+        obj = cm.upgrade.get_upgrade(cluster, self.get_ordering(request, self.queryset, self))
         serializer = self.serializer_class(obj, many=True, context={
             'cluster_id': cluster.id, 'request': request
         })
