@@ -16,14 +16,14 @@
       <div *ngFor="let item of items.controls; let i = index" class="item" [formGroup]="item">
         <mat-form-field class="key-field" *ngIf="!asList">
           <span matSuffix>:</span>
-          <input matInput formControlName="key" />
+          <input matInput formControlName="key" [readonly]="field.read_only" />
           <mat-error *ngIf="check(item)">Map property name is required!</mat-error>
         </mat-form-field>
         <mat-form-field class="value-field">
-          <button mat-icon-button matSuffix (click)="clear(i)">
+          <button mat-icon-button matSuffix (click)="clear(i)" *ngIf="!field.read_only">
             <mat-icon>clear</mat-icon>
           </button>
-          <input matInput formControlName="value" />
+          <input matInput formControlName="value" [readonly]="field.read_only" />
         </mat-form-field>
       </div>
     </ng-container>
