@@ -1,5 +1,4 @@
-<mat-expansion-panel *ngIf="panel.options.length >= 1" [expanded]="checked" [disabled]="!checked"
-  [ngClass]="{ panel: true, advanced: isAdvanced() }" #ep>
+<mat-expansion-panel [expanded]="checked" [disabled]="!checked" [ngClass]="{ panel: true, advanced: isAdvanced() }" #ep>
   <mat-expansion-panel-header>
     <mat-panel-title class="title">
       <span>{{ panel.label }}</span>

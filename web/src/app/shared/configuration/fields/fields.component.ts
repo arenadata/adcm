@@ -24,12 +24,12 @@ import { FormGroup } from '@angular/forms';
       <app-field
         class="alone"
         [form]="form"
-        *ngIf="panel.options.length === 1 && !panel.options[0].subname; else more"
+        *ngIf="panel.options.length === 1 && !panel.options[0].subname && !panel.options[0].hidden; else more"
         [options]="panel.options[0]"
         [ngClass]="{ 'read-only': panel.options[0].disabled }"
       ></app-field>
       <ng-template #more>
-        <app-group-fields [ngClass]="{ hidden: panel.hidden }" [panel]="panel" [form]="form"></app-group-fields>
+        <app-group-fields *ngIf="!panel.hidden" [panel]="panel" [form]="form"></app-group-fields>
       </ng-template>
     </ng-container>
   `
