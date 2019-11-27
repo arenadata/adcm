@@ -24,15 +24,15 @@ import cm.job
 
 
 def open_file(root, tag, job_id):
-    fname = '{}/{}-{}.txt'.format(root, job_id, tag)
-    f = open(fname, 'w')
-    return f
+    file_path = '{}/{}-{}.txt'.format(root, job_id, tag)
+    file_descriptor = open(file_path, 'w')
+    return file_descriptor
 
 
 def read_config(job_id):
-    fd = open('{}/{}-config.json'.format(config.RUN_DIR, job_id))
-    conf = json.load(fd)
-    fd.close()
+    file_descriptor = open('{}/{}-config.json'.format(config.RUN_DIR, job_id))
+    conf = json.load(file_descriptor)
+    file_descriptor.close()
     return conf
 
 
