@@ -605,13 +605,26 @@ class ClusterServiceDetail(DetailViewRO):
         Show service in a specified cluster
         """
         cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        try:
-            obj = self.get_queryset().get(cluster=cluster, id=service_id)
-        except ClusterObject.DoesNotExist:
-            raise AdcmApiEx('CLUSTER_SERVICE_NOT_FOUND')
-        serializer_class = self.select_serializer(request)
-        serializer = serializer_class(obj, context={'request': request, 'cluster_id': cluster_id})
+        service = check_obj(
+            ClusterObject, {'id': service_id, 'cluster': cluster}, 'SERVICE_NOT_FOUND'
+        )
+        serial_class = self.select_serializer(request)
+        serializer = serial_class(service, context={'request': request, 'cluster_id': cluster_id})
         return Response(serializer.data)
+
+    def delete(self, request, cluster_id, service_id):
+        """
+        Remove service from cluster
+        """
+        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
+        service = check_obj(
+            ClusterObject, {'id': service_id, 'cluster': cluster}, 'SERVICE_NOT_FOUND'
+        )
+        try:
+            cm.api.delete_service(service)
+        except AdcmEx as e:
+            raise AdcmApiEx(e.code, e.msg, e.http_code)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ServiceComponentList(PageView):

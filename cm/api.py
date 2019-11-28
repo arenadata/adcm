@@ -134,6 +134,17 @@ def delete_host(host):
 
 
 @transaction.atomic
+def delete_service(service):
+    if HostComponent.objects.filter(cluster=service.cluster, service=service):
+        err('SERVICE_CONFLICT', 'Service #{} has component(s) on host(s)'.format(service.id))
+    if ClusterBind.objects.filter(source_service=service):
+        err('SERVICE_CONFLICT', 'Service #{} has exports(s)'.format(service.id))
+    cm.status_api.post_event('delete', 'service', service.id)
+    service.delete()
+    cm.status_api.load_service_map()
+
+
+@transaction.atomic
 def delete_cluster(cluster):
     cm.status_api.post_event('delete', 'cluster', cluster.id)
     cluster.delete()
@@ -145,7 +156,7 @@ def remove_host_from_cluster(host):
     cluster = host.cluster
     hc = HostComponent.objects.filter(cluster=cluster, host=host)
     if hc:
-        return err('HOST_CONFLICT', 'Host #{} has component'.format(host.id))
+        return err('HOST_CONFLICT', 'Host #{} has component(s)'.format(host.id))
     host.cluster = None
     host.save()
     cm.status_api.post_event('remove', 'host', host.id, 'cluster', str(cluster.id))
