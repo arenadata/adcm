@@ -15,13 +15,13 @@ import os
 import sys
 import subprocess
 
-import adcm.init_django		# pylint: disable=unused-import
+import adcm.init_django  # pylint: disable=unused-import
 
 from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
 from cm.models import TaskLog, JobLog
 
-from cm.logger import log as logger
+from cm.logger import log
 import cm.config as config
 import cm.job
 
@@ -33,16 +33,16 @@ def open_file(root, tag, task_id):
 
 
 def run_job(task_id, job_id, out_file, err_file):
-    logger.debug("run job #%s of task #%s", job_id, task_id,)
+    log.debug("run job #%s of task #%s", job_id, task_id, )
     try:
         process = subprocess.Popen([
             '{}/job_runner.py'.format(config.BASE_DIR),
             str(job_id)
         ], stdout=out_file, stderr=err_file)
-        res = process.wait()
-        return res
+        code = process.wait()
+        return code
     except:  # pylint: disable=bare-except
-        logger.error("exception runnung job %s", job_id)
+        log.error("exception running job %s", job_id)
         return 1
 
 
@@ -50,44 +50,50 @@ def get_task(task_id):
     try:
         return TaskLog.objects.get(id=task_id)
     except ObjectDoesNotExist:
-        logger.error("no task %s", task_id)
+        log.error("no task %s", task_id)
         return
 
 
+def get_jobs(task):
+    jobs = JobLog.objects.filter(task_id=task.id).order_by('id')
+    return jobs
+
+
 def run_task(task_id, args=None):
-    logger.debug("task_runner.py called as: %s", sys.argv)
+    log.debug("task_runner.py called as: %s", sys.argv)
     task = get_task(task_id)
     if task is None:
         return
 
-    jobs = JobLog.objects.filter(task_id=task.id).order_by('id')
+    jobs = get_jobs(task)
     if not jobs:
-        logger.error("no jobs for task %s", task.id)
+        log.error("no jobs for task %s", task.id)
         cm.job.finish_task(task, None, config.Job.FAILED)
         return
 
     out_file = open_file(config.LOG_DIR, 'task-out', task_id)
     err_file = open_file(config.LOG_DIR, 'task-err', task_id)
 
-    logger.info("run task #%s", task_id)
+    log.info("run task #%s", task_id)
     cm.job.set_task_status(task, config.Job.RUNNING)
 
     job = None
+    code = 1
     count = 0
     for job in jobs:
         if args == 'restart' and job.status == config.Job.SUCCESS:
-            logger.info('skip job #%s status "%s" of task #%s', job.id, job.status, task_id)
+            log.info('skip job #%s status "%s" of task #%s', job.id, job.status, task_id)
             continue
         if count:
             cm.job.re_prepare_job(task, job)
         job.start_date = timezone.now()
         job.save()
-        res = run_job(task.id, job.id, out_file, err_file)
+        code = run_job(task.id, job.id, out_file, err_file)
         count += 1
-        if res != 0:
+        if code != 0:
             break
 
-    if res == 0:
+    if code == 0:
         cm.job.finish_task(task, job, config.Job.SUCCESS)
     else:
         cm.job.finish_task(task, job, config.Job.FAILED)
@@ -95,7 +101,7 @@ def run_task(task_id, args=None):
     out_file.close()
     err_file.close()
 
-    logger.info("finish task #%s, ret %s", task_id, res)
+    log.info("finish task #%s, ret %s", task_id, code)
 
 
 def do():

@@ -74,18 +74,18 @@ def run_ansible(job_id):
         if 'ansible_tags' in conf['job']['params']:
             cmd.append('--tags=' + conf['job']['params']['ansible_tags'])
 
-    proc = subprocess.Popen(cmd, env=set_pythonpath(), stdout=out_file, stderr=err_file)
+    process = subprocess.Popen(cmd, env=set_pythonpath(), stdout=out_file, stderr=err_file)
     log.info("job #%s run cmd: %s", job_id, ' '.join(cmd))
-    cm.job.set_job_status(job_id, config.Job.RUNNING, proc.pid)
-    log.info("run ansible job #%s, pid %s, playbook %s", job_id, proc.pid, playbook)
-    ret = proc.wait()
-    res = set_job_status(job_id, ret, proc.pid)
+    cm.job.set_job_status(job_id, config.Job.RUNNING, process.pid)
+    log.info("run ansible job #%s, pid %s, playbook %s", job_id, process.pid, playbook)
+    ret = process.wait()
+    code = set_job_status(job_id, ret, process.pid)
 
     out_file.close()
     err_file.close()
 
-    log.info("finish ansible job #%s, pid %s, ret %s", job_id, proc.pid, res)
-    sys.exit(res)
+    log.info("finish ansible job #%s, pid %s, ret %s", job_id, process.pid, code)
+    sys.exit(code)
 
 
 def do():
