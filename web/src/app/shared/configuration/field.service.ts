@@ -146,10 +146,13 @@ export class FieldService {
           });
 
         //group
-        a.hidden = a.options.filter(b => !b.hidden).length === 0;
-
-        if (this.isAdvancedField(a)) {
-          a.hidden = !c.advanced; // && a.options.filter(b => !b.hidden).length > 0);
+        if (c.search) {
+          a.hidden = a.options.filter(b => !b.hidden).length === 0;
+        } else {
+          a.hidden = false;
+          if (this.isAdvancedField(a)) {
+            a.hidden = !c.advanced; // && a.options.filter(b => !b.hidden).length > 0);
+          }
         }
       });
 
