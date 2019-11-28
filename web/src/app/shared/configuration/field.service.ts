@@ -55,7 +55,7 @@ export class FieldService {
           description: a.description
         }));
     }
-    
+
     return this.panelOptions;
   }
 
@@ -133,6 +133,7 @@ export class FieldService {
     this.panelOptions
       .filter(a => this.isVisibleField(a))
       .map(a => {
+        // fields
         a.options
           .filter(b => this.isVisibleField(b))
           .map(b => {
@@ -144,10 +145,11 @@ export class FieldService {
             b.hidden = !c.advanced;
           });
 
+        //group
         a.hidden = a.options.filter(b => !b.hidden).length === 0;
 
         if (this.isAdvancedField(a)) {
-          a.hidden = !(c.advanced && a.options.filter(b => !b.hidden).length > 0);
+          a.hidden = !c.advanced; // && a.options.filter(b => !b.hidden).length > 0);
         }
       });
 
