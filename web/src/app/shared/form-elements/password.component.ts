@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 
 import { FieldDirective } from './field.directive';
 
@@ -44,7 +44,13 @@ import { FieldDirective } from './field.directive';
   `,
   styleUrls: ['./scss/fields.component.scss', './scss/password.scss']
 })
-export class PasswordComponent extends FieldDirective {
+export class PasswordComponent extends FieldDirective implements OnInit {
+  ngOnInit() {
+    super.ngOnInit();
+    const confirm = this.getConfirmPasswordField();
+    if (confirm) confirm.markAllAsTouched();
+  }
+
   getConfirmPasswordField() {
     return this.form.controls['confirm_' + this.field.key];
   }

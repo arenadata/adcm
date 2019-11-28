@@ -41,6 +41,7 @@ export class FieldService {
       this.formOptions = data.config.filter(a => a.type !== 'group').map((a: FieldStack) => this.getFieldBy(a));
 
       this.panelOptions = data.config
+        .filter(a => a.name !== '__main_info')
         .filter(a => a.type === 'group' || !a.subname)
         .map(a => ({
           name: a.name,
@@ -53,6 +54,7 @@ export class FieldService {
           description: a.description
         }));
     }
+    this.filterApply({advanced: false, search: ''});
     return this.panelOptions;
   }
 
@@ -128,7 +130,6 @@ export class FieldService {
 
   filterApply(c: { advanced: boolean; search: string }): PanelOptions[] {
     this.panelOptions
-      .filter(a => a.label !== '__main_info')
       .filter(a => this.isVisibleField(a))
       .map(a => {
         a.options
