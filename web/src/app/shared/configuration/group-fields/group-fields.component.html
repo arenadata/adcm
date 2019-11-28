@@ -12,6 +12,8 @@
     </mat-panel-description>
   </mat-expansion-panel-header>
   <div class="pad">
-    <app-field *ngFor="let options of panel.options" [form]="form" [options]="options"></app-field>
+    <ng-container *ngFor="let options of panel.options">
+        <app-field *ngIf="!options.hidden" [form]="form" [options]="options"></app-field>
+    </ng-container>    
   </div>
 </mat-expansion-panel>
