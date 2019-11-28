@@ -32,6 +32,7 @@ export class FieldService {
   isVisibleField = (a: ConfigOptions) => !a.ui_options || !a.ui_options.invisible;
   isInvisibleField = (a: ConfigOptions) => a.ui_options && a.ui_options.invisible;
   isAdvancedField = (a: ConfigOptions) => a.ui_options && a.ui_options.advanced && !a.ui_options.invisible;
+  isHidden = (a: FieldStack) => a.ui_options && (a.ui_options.invisible || a.ui_options.advanced);
 
   getPanels(data: IConfig) {
     this.globalConfig = data;
@@ -47,14 +48,14 @@ export class FieldService {
           name: a.name,
           label: a.display_name,
           read_only: a.read_only,
-          hidden: a.ui_options ? !!a.ui_options['invisible'] || !!a.ui_options['advanced'] : false,
+          hidden: this.isHidden(a),
           ui_options: a.ui_options,
           options: this.formOptions.filter(b => b.name === a.name),
           activatable: a.activatable,
           description: a.description
         }));
     }
-    this.filterApply({advanced: false, search: ''});
+    
     return this.panelOptions;
   }
 
@@ -72,7 +73,7 @@ export class FieldService {
         pattern: this.getPattern(item.type)
       },
       controlType: this.controlType(item.type),
-      hidden: item.name === '__main_info' || (item.ui_options && (item.ui_options.advanced || item.ui_options.invisible))
+      hidden: item.name === '__main_info' || this.isHidden(item)
     };
     return params;
   }

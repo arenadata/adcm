@@ -12,7 +12,7 @@
     </mat-panel-description>
   </mat-expansion-panel-header>
   <div class="pad">
-    <ng-container *ngFor="let options of panel.options">
+    <ng-container *ngFor="let options of panel.options; trackBy: trackBy">
         <app-field *ngIf="!options.hidden" [form]="form" [options]="options"></app-field>
     </ng-container>    
   </div>

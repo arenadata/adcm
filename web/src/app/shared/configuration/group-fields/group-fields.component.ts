@@ -73,4 +73,8 @@ export class GroupFieldsComponent implements OnInit {
       this.form.updateValueAndValidity();
     }
   }
+
+  trackBy(index: number, item: FieldOptions): string {
+    return item.key;
+  }
 }

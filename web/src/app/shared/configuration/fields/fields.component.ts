@@ -20,7 +20,7 @@ import { FormGroup } from '@angular/forms';
 @Component({
   selector: 'app-config-fields',
   template: `
-    <ng-container *ngFor="let panel of panels">
+    <ng-container *ngFor="let panel of panels; trackBy: trackBy">
       <app-field
         class="alone"
         [form]="form"
@@ -37,7 +37,6 @@ import { FormGroup } from '@angular/forms';
 export class ConfigFieldsComponent {
   panels: PanelOptions[] = [];
   form = new FormGroup({});
-  // fieldsData: FieldOptions[] = [];
 
   @Output()
   event = new EventEmitter<{ name: string; data?: any }>();
@@ -54,11 +53,13 @@ export class ConfigFieldsComponent {
   set model(data: IConfig) {
     this.panels = this.service.getPanels(data);
     this.form = this.service.toFormGroup();
-    //Object.keys(this.form.controls).map(name => this.form.removeControl(name));
-    //Object.keys(this.form.controls).forEach(controlName => this.form.controls[controlName].markAsTouched());
     this.shapshot = { ...this.form.value };
     this.event.emit({ name: 'load', data: { form: this.form } });
   }
 
   constructor(private service: FieldService) {}
+
+  trackBy(index: number, item: PanelOptions): string {
+    return item.name;
+  }
 }
