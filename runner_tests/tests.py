@@ -12,25 +12,52 @@
 
 import os
 from io import TextIOWrapper
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, mock_open
 
 from django.test import TestCase
 from django.utils import timezone
 from cm.models import TaskLog, JobLog
+from cm.logger import log
 import task_runner
 import job_runner
 
 
-class TestTaskRunner(TestCase):
+class PreparationData:
 
-    def setUp(self):
-        task = TaskLog(action_id=1, object_id=1, selector={'cluster': 1}, status='success',
-                       start_date=timezone.now(), finish_date=timezone.now())
-        task.save()
-        job = JobLog(task_id=task.id, action_id=task.action_id, selector={'cluster': 1},
-                     status='success', start_date=timezone.now(), finish_date=timezone.now())
-        job.save()
-        super().setUp()
+    @staticmethod
+    def generate_data(task_number, job_number):
+        for tn in range(task_number):
+            task_log_data = {
+                'action_id': tn + 1,
+                'object_id': tn + 1,
+                'pid': tn + 1,
+                'selector': {'cluster': tn + 1},
+                'status': 'success',
+                'config': '',
+                'hostcomponentmap': '',
+                'start_date': timezone.now(),
+                'finish_date': timezone.now()
+            }
+            for jn in range(job_number):
+                job_log_data = {
+                    'task_id': tn + 1,
+                    'action_id': tn + 1,
+                    'pid': jn + 1,
+                    'selector': {'cluster': tn + 1},
+                    'status': 'success',
+                    'start_date': timezone.now(),
+                    'finish_date': timezone.now()
+                }
+                yield task_log_data, job_log_data
+
+    @staticmethod
+    def preparation_one():
+        for task_data, job_data in PreparationData.generate_data(1, 1):
+            TaskLog.objects.create(**task_data)
+            JobLog.objects.create(**job_data)
+
+
+class TestTaskRunner(TestCase):
 
     def test_open_file(self):
         root = os.path.dirname(__file__)
@@ -45,17 +72,20 @@ class TestTaskRunner(TestCase):
         os.remove(file_path)
 
     def test_get_task(self):
+        PreparationData.preparation_one()
         task = task_runner.get_task(task_id=1)
         self.assertEqual(task.action_id, 1)
 
     def test_get_jobs(self):
+        PreparationData.preparation_one()
         task = TaskLog.objects.get(id=1)
         jobs = task_runner.get_jobs(task)
         self.assertEqual(jobs[0].action_id, 1)
 
+    @patch.object(log, 'debug')
     @patch('subprocess.Popen')
-    def test_run_job(self, mock_subprocess_popen):
-        # TODO: added mock for logger
+    def test_run_job(self, mock_subprocess_popen, mock_logger):
+        mock_logger.return_value = None
         process_mock = Mock()
         attrs = {'wait.return_value': 0}
         process_mock.configure_mock(**attrs)
@@ -85,11 +115,9 @@ class TestJobRunner(TestCase):
         os.remove(file_path)
 
     @patch('json.load')
-    @patch('builtins.open')
-    def test_read_config(self, mock_open, mock_json):
-        mock_file_descriptor = Mock()
-        mock_file_descriptor.close.return_value = None
-        mock_open.return_value = mock_file_descriptor
+    @patch('builtins.open', create=True)
+    def test_read_config(self, mo, mock_json):
+        mo.side_effect = mock_open(read_data='').return_value
         mock_json.return_value = {}
         conf = job_runner.read_config(1)
         self.assertDictEqual(conf, {})
@@ -109,7 +137,23 @@ class TestJobRunner(TestCase):
         cmd_env['PYTHONPATH'] = ':'.join(python_paths)
         self.assertDictEqual(cmd_env, job_runner.set_pythonpath())
 
-    def test_run_andible(self):
+    @patch.object(log, 'debug')
+    @patch.object(log, 'info')
+    @patch('subprocess.Popen')
+    @patch('job_runner.open_file')
+    @patch('job_runner.read_config')
+    def test_run_ansible(self, mock_read_config, mock_open_file, mock_subprocess_popen,
+                         mock_log_info, mock_log_debug):
+
+        mock_read_config.return_value = {'job': {'playbook': 'test'}}
+        mock_open_file.return_value = None
+        mock_open_file.close.return_value = None
+        process_mock = Mock()
+        attrs = {'wait.return_value': 0}
+        process_mock.configure_mock(**attrs)
+        mock_subprocess_popen.return_value = process_mock
+        mock_log_info.return_value = None
+        mock_log_debug.return_value = None
         pass
 
     def test_do(self):

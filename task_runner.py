@@ -27,9 +27,8 @@ import cm.job
 
 
 def open_file(root, tag, task_id):
-    file_path = "{}/{}-{}.txt".format(root, task_id, tag)
-    file_descriptor = open(file_path, 'w')
-    return file_descriptor
+    f = open("{}/{}-{}.txt".format(root, task_id, tag), 'w')
+    return f
 
 
 def run_job(task_id, job_id, out_file, err_file):

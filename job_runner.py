@@ -23,16 +23,21 @@ import cm.config as config
 import cm.job
 
 
+class JobException(Exception):
+    pass
+
+
 def open_file(root, tag, job_id):
-    file_path = '{}/{}-{}.txt'.format(root, job_id, tag)
-    file_descriptor = open(file_path, 'w')
-    return file_descriptor
+    f = open('{}/{}-{}.txt'.format(root, job_id, tag), 'w')
+    return f
 
 
 def read_config(job_id):
-    file_descriptor = open('{}/{}-config.json'.format(config.RUN_DIR, job_id))
-    conf = json.load(file_descriptor)
-    file_descriptor.close()
+    try:
+        with open('{}/{}-config.json'.format(config.RUN_DIR, job_id)) as f:
+            conf = json.load(f)
+    except FileNotFoundError:
+        raise JobException
     return conf
 
 
