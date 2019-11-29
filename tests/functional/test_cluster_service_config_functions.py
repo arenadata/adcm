@@ -340,7 +340,7 @@ class TestClusterServiceConfig:
             err.CONFIG_VALUE_ERROR.equal(e, 'should be flat')
         steps.delete_all_data(client)
 
-    def test_when_delete_host_all_children_must_be_deleted(self, client):
+    def test_when_delete_host_all_children_cannot_be_deleted(self, client):
         # Should be faild if random service has not components
         cluster = steps.create_cluster(client)
         provider = client.provider.create(prototype_id=client.stack.provider.list()[0]['id'],
@@ -351,14 +351,10 @@ class TestClusterServiceConfig:
         steps.add_host_to_cluster(client, host, cluster)
         service = steps.create_random_service(client, cluster['id'])
         component = utils.get_random_cluster_service_component(client, cluster, service)
-        hs = steps.create_hostcomponent_in_cluster(
-            client, cluster, host, service, component)
-        client.cluster.host.delete(host_id=host['id'], cluster_id=cluster['id'])
-        steps.delete_host(client, host['fqdn'])
+        steps.create_hostcomponent_in_cluster(client, cluster, host, service, component)
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-            client.cluster.hostcomponent.read(hs_id=hs[0]['id'], cluster_id=cluster['id'])
-        err.HOSTSERVICE_NOT_FOUND.equal(e)
-        steps.delete_all_data(client)
+            client.cluster.host.delete(host_id=host['id'], cluster_id=cluster['id'])
+        err.HOST_CONFLICT.equal(e)
 
     def test_should_throws_exception_when_havent_previous_config(self, client):
         cluster = steps.create_cluster(client)
