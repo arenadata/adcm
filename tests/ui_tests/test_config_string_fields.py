@@ -101,6 +101,7 @@ class TestStringFields:
         """Insert search string and check that on page only searched fields
         """
         ui_config.set_search_field(pattern)
+        time.sleep(2)
         textboxes = ui_config.get_textboxes()
         visible_textboxes = [textbox.text for textbox in textboxes if textbox.is_displayed()]
         result = [textbox for textbox in visible_textboxes if textbox != '']
