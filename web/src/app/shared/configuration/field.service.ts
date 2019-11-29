@@ -149,10 +149,7 @@ export class FieldService {
         if (c.search) {
           a.hidden = a.options.filter(b => !b.hidden).length === 0;
         } else {
-          a.hidden = false;
-          if (this.isAdvancedField(a)) {
-            a.hidden = !c.advanced; // && a.options.filter(b => !b.hidden).length > 0);
-          }
+          a.hidden = this.isAdvancedField(a) ? !c.advanced : false; // && a.options.filter(b => !b.hidden).length > 0);
         }
       });
 
