@@ -101,13 +101,13 @@ class TestStringFields:
         """Insert search string and check that on page only searched fields
         """
         ui_config.set_search_field(pattern)
+        time.sleep(2)
         textboxes = ui_config.get_textboxes()
-        visible_textboxes = [textbox for textbox in textboxes if textbox.is_displayed()]
-        result = [textbox for textbox in visible_textboxes if textbox.text != '']
-        result_texts = [r.text for r in result]
-        assert len(result) == 5, result_texts
+        visible_textboxes = [textbox.text for textbox in textboxes if textbox.is_displayed()]
+        result = [textbox for textbox in visible_textboxes if textbox != '']
+        assert len(result) == 5, result
         for textbox in result:
-            assert pattern in textbox.text
+            assert pattern in textbox
 
     def test_save_configuration(self, ui_config):
         """Check that we can click save configuration if no errors on page

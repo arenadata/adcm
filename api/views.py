@@ -791,7 +791,7 @@ class ProviderUpgrade(PageView):
         List all avaliable upgrades for specified host provider
         """
         provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        obj = cm.api.get_upgrade(provider, self.get_ordering(request, self.queryset, self))
+        obj = cm.upgrade.get_upgrade(provider, self.get_ordering(request, self.queryset, self))
         serializer = self.serializer_class(obj, many=True, context={
             'provider_id': provider.id, 'request': request
         })

@@ -43,7 +43,7 @@ def check_obj(model, req, error):
 
 
 def get_upgradable_func(self, obj):
-    return bool(cm.api.get_upgrade(obj))
+    return bool(cm.upgrade.get_upgrade(obj))
 
 
 def filter_actions(obj, actions_set):
@@ -660,7 +660,7 @@ class DoUpgradeSerializer(serializers.Serializer):
     def create(self, validated_data):
         try:
             upgrade = check_obj(Upgrade, validated_data.get('upgrade_id'), 'UPGRADE_NOT_FOUND')
-            return cm.api.do_upgrade(validated_data.get('obj'), upgrade)
+            return cm.upgrade.do_upgrade(validated_data.get('obj'), upgrade)
         except AdcmEx as e:
             raise AdcmApiEx(e.code, e.msg, e.http_code)
 

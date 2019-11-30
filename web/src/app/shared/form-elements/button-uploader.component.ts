@@ -29,7 +29,6 @@ import { CanColor } from '@angular/material/core';
   `
 })
 export class ButtonUploaderComponent {
-
   @Input() color: CanColor;
   @Input() label: string;
   @Input() asIcon = false;
