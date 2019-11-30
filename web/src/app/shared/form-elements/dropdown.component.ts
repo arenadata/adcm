@@ -9,10 +9,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit, Input } from '@angular/core';
-import { FormGroup } from '@angular/forms';
-import { FieldOptions } from '@app/core/types';
+import { Component, OnInit } from '@angular/core';
 import { Observable, of } from 'rxjs';
+
+import { FieldDirective } from './field.directive';
 
 @Component({
   selector: 'app-fields-dropdown',
@@ -27,18 +27,17 @@ import { Observable, of } from 'rxjs';
       <span class="info"><mat-icon *ngIf="field.description" matSuffix [appTooltip]="field.description">info_outline</mat-icon></span>
     </ng-container>
   `,
-  styleUrls: ['./scss/fields.component.scss'],
+  styleUrls: ['./scss/fields.component.scss']
 })
-export class DropdownComponent implements OnInit {
-  @Input() form: FormGroup;
-  @Input() field: FieldOptions;
+export class DropdownComponent extends FieldDirective implements OnInit {
   options$: Observable<{ id: number | string; name: string }[]>;
 
   ngOnInit() {
+    super.ngOnInit();
     if (this.field.limits) {
       const o = Object.entries<string | number>(this.field.limits.option).map(e => ({
         id: String(e[1]),
-        name: e[0],
+        name: e[0]
       }));
       this.options$ = of(o);
     }

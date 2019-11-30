@@ -26,6 +26,7 @@ import { BaseMapListDirective, FieldListComponent, FieldMapComponent } from './m
 import { PasswordComponent } from './password.component';
 import { TextBoxComponent } from './text-box.component';
 import { TextareaComponent } from './textarea.component';
+import { FieldDirective } from './field.directive';
 
 @NgModule({
   declarations: [
@@ -42,6 +43,7 @@ import { TextareaComponent } from './textarea.component';
     InputComponent,
     BaseMapListDirective,
     ConfirmEqualValidatorDirective,
+    FieldDirective
   ],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, MaterialModule, StuffModule],
   exports: [
