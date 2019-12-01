@@ -57,25 +57,31 @@ export interface IConfig {
   attr?: { [group: string]: { active: boolean } };
 }
 
+export interface ConfigOptions {
+  label: string;
+  name: string;
+  hidden: boolean;
+  read_only: boolean;
+  ui_options?: UIoptions;
+  description?: string;
+}
+
+export interface PanelOptions extends ConfigOptions { 
+  options: FieldOptions[];  
+  activatable?: boolean;
+}
+
 /**
  * For Material form controls 
  */
-export interface FieldOptions {
-  value: string | number | boolean | object | string[] | null;
-  //display_name: string;
+export interface FieldOptions extends ConfigOptions {
   key: string;
-  label: string;
-  required?: boolean;
-  order?: number;
+  subname: string;
+  value: string | number | boolean | object | string[] | null;
   controlType: string;
   type: string;
-  description?: string;
   validator: ValidatorInfo;
   disabled?: boolean;
   limits: any;
-  hidden: boolean;
-  name: string;
-  subname: string;
-  ui_options?: UIoptions;
-  read_only: boolean;
+  required: boolean;
 }

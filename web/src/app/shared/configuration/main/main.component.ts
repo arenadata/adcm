@@ -20,8 +20,7 @@ import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 
-import { IToolsEvent } from '../field.service';
-import { FieldComponent } from '../field/field.component';
+import { FieldService, IToolsEvent } from '../field.service';
 import { ConfigFieldsComponent } from '../fields/fields.component';
 import { HistoryComponent } from '../tools/history.component';
 import { ToolsComponent } from '../tools/tools.component';
@@ -38,8 +37,8 @@ import { ToolsComponent } from '../tools/tools.component';
       state('showTools', style({ opacity: 0.8 })),
       transition('hideTools => showTools', animate('.5s .3s ease-in')),
       transition('showTools => hideTools', animate('.2s ease-out')),
-      transition('hide <=> show', animate('.3s')),
-    ]),
+      transition('hide <=> show', animate('.3s'))
+    ])
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -55,7 +54,7 @@ export class ConfigComponent extends SocketListener implements OnInit {
 
   @ViewChild('fields', { static: false }) fields: ConfigFieldsComponent;
   @ViewChild('history', { static: false }) historyComponent: HistoryComponent;
-  @ViewChild('tools', {static: false}) tools: ToolsComponent;
+  @ViewChild('tools', { static: false }) tools: ToolsComponent;
 
   @Input()
   set configUrl(url: string) {
@@ -67,7 +66,13 @@ export class ConfigComponent extends SocketListener implements OnInit {
     return `${this._url}history/`;
   }
 
-  constructor(private api: ApiService, private current: ClusterService, socket: Store<SocketState>, private cdRef: ChangeDetectorRef) {
+  constructor(
+    private api: ApiService,
+    private current: ClusterService,
+    private cdRef: ChangeDetectorRef,
+    private service: FieldService,
+    socket: Store<SocketState>
+  ) {
     super(socket);
   }
 
@@ -75,7 +80,7 @@ export class ConfigComponent extends SocketListener implements OnInit {
     if (!this._url && this.current.Current) {
       this.configUrl = this.current.Current.config;
     }
-   
+
     super.startListenSocket();
   }
 
@@ -84,51 +89,15 @@ export class ConfigComponent extends SocketListener implements OnInit {
   }
 
   get formValid() {
-    return this.fields ? this.fields.form.valid : false;
+    return this.service.form.valid;
   }
 
   history(flag: boolean) {
     this.historyShow = flag;
   }
 
-  filter(c: {advanced: boolean, search: string}) {
-    const fields = this.fields.fields.filter(a => a.options.name !== '__main_info').filter(a => a.options.type !== 'group');
-
-    this.applyFields(fields, c);
-
-    this.fields.panels
-      .filter(p => p.ui_options && p.ui_options.advanced && !p.ui_options.invisible)
-      .map(p => {
-        p.hidden = !c.advanced;
-        /**
-         * TODO:
-         * this.fields.fields
-         * this.fields.panels.fields
-         * this.fields.groups.fields
-         */
-        if (p.options.length === 1 && p.options[0].ui_options && !p.options[0].ui_options.invisible) {
-          p.options[0].hidden = !c.advanced;
-        }
-        return p;
-      });
-
-    this.fields.groups.forEach(g => this.applyFields(g.fields.toArray(), c));
-  }
-
-  applyFields(fields: FieldComponent[], co: {advanced: boolean, search: string}) {
-    fields
-      .filter(a => !a.options.ui_options || !a.options.ui_options.invisible)
-      .map(c => {
-        c.options.hidden = !(c.options.label.includes(co.search) || JSON.stringify(c.options.value).includes(co.search));
-        c.cdetector.markForCheck();
-        return c;
-      })
-      .filter(a => !a.options.hidden && a.options.ui_options && a.options.ui_options.advanced)
-      .map(a => {
-        a.options.hidden = !co.advanced;
-        a.cdetector.markForCheck();
-        return a;
-      });
+  filter(c: { advanced: boolean; search: string }) {
+    this.fields.panels = this.service.filterApply(c);
   }
 
   socketListener(m: EventMessage) {
@@ -156,10 +125,13 @@ export class ConfigComponent extends SocketListener implements OnInit {
   }
 
   save() {
-    const form = this.fields.form;
+    const form = this.service.form;
     if (form.valid) {
       this.saveFlag = true;
-      const config = parseValueConfig(this.rawConfig.config.filter(a => !a.read_only && a.type !== 'group'), form.value),
+      const config = parseValueConfig(
+          this.rawConfig.config.filter(a => !a.read_only && a.type !== 'group'),
+          form.value
+        ),
         attr = this.rawConfig.attr,
         description = this.tools.descriptionFormControl.value;
 
@@ -184,5 +156,4 @@ export class ConfigComponent extends SocketListener implements OnInit {
   changeVersion(a: { id: number }) {
     this.config$ = this.api.get<IConfig>(`${this.historyUrl}${a.id}/`);
   }
-
 }
