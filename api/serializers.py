@@ -199,6 +199,10 @@ class ProfileSerializer(ProfileDetailSerializer):
             raise AdcmApiEx("USER_CONFLICT")
 
 
+class EmptySerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+
+
 class AdcmSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField()
