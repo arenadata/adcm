@@ -21,7 +21,7 @@
             <div class="multi-title" (click)="expandedTask = expandedTask === element ? null : element">
               <span>{{ element.action?.display_name || 'Object has been deleted' }}</span>
               &nbsp;
-              <mat-icon>{{ expandedTask === element ? 'expand_less' : 'expand_more' }}</mat-icon>
+              <mat-icon>{{ expandedTask?.id === element.id ? 'expand_less' : 'expand_more' }}</mat-icon>
             </div>
           </ng-template>
         </td>
@@ -63,7 +63,7 @@
 
       <ng-container matColumnDef="expandedDetail">
         <td mat-cell *matCellDef="let element" [attr.colspan]="columnsToDisplay.length">
-          <div class="expand-jobs" [@jobsExpand]="element === expandedTask ? 'expanded' : 'collapsed'">
+          <div class="expand-jobs" [@jobsExpand]="element.id === expandedTask?.id ? 'expanded' : 'collapsed'">
             <table mat-table [dataSource]="element.jobs" class="inner">
               <ng-container matColumnDef="name">
                 <td mat-cell *matCellDef="let row">
