@@ -154,45 +154,7 @@ export class FieldService {
       });
 
     return [...this.panelOptions];
-
-    // const fields = this.fields.fields.filter(a => a.options.name !== '__main_info').filter(a => a.options.type !== 'group');
-
-    // this.applyFields(fields, c);
-
-    // // advanced fields only
-    // this.fields.panels
-    //   .filter(p => p.ui_options && p.ui_options.advanced && !p.ui_options.invisible)
-    //   .map(p => {
-    //     p.hidden = !c.advanced;
-
-    //     if (p.options.length === 1 && p.options[0].ui_options && !p.options[0].ui_options.invisible) {
-    //       p.options[0].hidden = !c.advanced;
-    //     }
-    //     return p;
-    //   });
-
-    // // all fields without advanced and invisible
-    // this.fields.groups.forEach(g => {
-    //   this.applyFields(g.fields.toArray(), c);
-    //   if (!g.panel.ui_options) g.panel.hidden = g.panel.options.filter(a => !a.hidden).length < 1;
-    // });
   }
-
-  // applyFields(fields: FieldComponent[], co: { advanced: boolean; search: string }) {
-  //   fields
-  //     .filter(a => !a.options.ui_options || !a.options.ui_options.invisible)
-  //     .map(c => {
-  //       c.options.hidden = !(c.options.label.includes(co.search) || JSON.stringify(c.options.value).includes(co.search));
-  //       c.cdetector.markForCheck();
-  //       return c;
-  //     })
-  //     .filter(a => !a.options.hidden && a.options.ui_options && a.options.ui_options.advanced)
-  //     .map(a => {
-  //       a.options.hidden = !co.advanced;
-  //       a.cdetector.markForCheck();
-  //       return a;
-  //     });
-  // }
 
   controlType(name: string): string {
     const ControlsTypes = {
