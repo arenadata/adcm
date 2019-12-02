@@ -85,6 +85,7 @@ export class TasksComponent extends SocketListener implements OnInit {
   }
 
   socketListener(m: EventMessage) {
+    
     if (m.object.type === 'task' && m.event === 'change_job_status' && m.object.details.type === 'status' && m.object.details.value === 'created') {
       this.refresh();
       return;
