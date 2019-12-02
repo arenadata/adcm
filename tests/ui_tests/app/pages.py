@@ -747,12 +747,14 @@ class Configuration(BasePage):
         :param element:
         :return:
         """
-        if 'read-only' not in element.get_attribute("class"):
+        if 'read-only' in element.get_attribute("class"):
             return True
         return False
 
     @staticmethod
     def editable_element(element):
         if "field-disabled" in element.get_attribute("class"):
+            return False
+        elif element.is_enabled():
             return False
         return True
