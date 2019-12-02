@@ -26,13 +26,21 @@ import cm.config as config
 import cm.job
 
 
+class TaskDoesNotExist(Exception):
+    pass
+
+
+class JobsDoesNotExist(Exception):
+    pass
+
+
 def open_file(root, tag, task_id):
     f = open("{}/{}-{}.txt".format(root, task_id, tag), 'w')
     return f
 
 
 def run_job(task_id, job_id, out_file, err_file):
-    log.debug("run job #%s of task #%s", job_id, task_id, )
+    log.debug("run job #%s of task #%s", job_id, task_id)
     try:
         process = subprocess.Popen([
             '{}/job_runner.py'.format(config.BASE_DIR),
@@ -40,7 +48,7 @@ def run_job(task_id, job_id, out_file, err_file):
         ], stdout=out_file, stderr=err_file)
         code = process.wait()
         return code
-    except:  # pylint: disable=bare-except
+    except subprocess.TimeoutExpired:  # pylint: disable=bare-except
         log.error("exception running job %s", job_id)
         return 1
 
@@ -50,57 +58,55 @@ def get_task(task_id):
         return TaskLog.objects.get(id=task_id)
     except ObjectDoesNotExist:
         log.error("no task %s", task_id)
-        return
+        raise TaskDoesNotExist
 
 
 def get_jobs(task):
     jobs = JobLog.objects.filter(task_id=task.id).order_by('id')
+    if not jobs:
+        raise JobsDoesNotExist
     return jobs
 
 
 def run_task(task_id, args=None):
-    log.debug("task_runner.py called as: %s", sys.argv)
-    task = get_task(task_id)
-    if task is None:
-        return
+    code = 0
+    try:
+        log.debug("task_runner.py called as: %s", sys.argv)
+        task = get_task(task_id)
+        jobs = get_jobs(task)
+        out_file = open_file(config.LOG_DIR, 'task-out', task_id)
+        err_file = open_file(config.LOG_DIR, 'task-err', task_id)
 
-    jobs = get_jobs(task)
-    if not jobs:
+        log.info("run task #%s", task_id)
+        cm.job.set_task_status(task, config.Job.RUNNING)
+
+        count = 0
+        for job in jobs:
+            if args == 'restart' and job.status == config.Job.SUCCESS:
+                log.info('skip job #%s status "%s" of task #%s', job.id, job.status, task_id)
+                continue
+            if count:
+                cm.job.re_prepare_job(task, job)
+            job.start_date = timezone.now()
+            job.save()
+            code = run_job(task.id, job.id, out_file, err_file)
+            count += 1
+            if code == 0:
+                cm.job.finish_task(task, job, config.Job.SUCCESS)
+            else:
+                cm.job.finish_task(task, job, config.Job.FAILED)
+                break
+
+        out_file.close()
+        err_file.close()
+
+    except TaskDoesNotExist:
+        pass
+    except JobsDoesNotExist:
         log.error("no jobs for task %s", task.id)
         cm.job.finish_task(task, None, config.Job.FAILED)
-        return
-
-    out_file = open_file(config.LOG_DIR, 'task-out', task_id)
-    err_file = open_file(config.LOG_DIR, 'task-err', task_id)
-
-    log.info("run task #%s", task_id)
-    cm.job.set_task_status(task, config.Job.RUNNING)
-
-    job = None
-    code = 1
-    count = 0
-    for job in jobs:
-        if args == 'restart' and job.status == config.Job.SUCCESS:
-            log.info('skip job #%s status "%s" of task #%s', job.id, job.status, task_id)
-            continue
-        if count:
-            cm.job.re_prepare_job(task, job)
-        job.start_date = timezone.now()
-        job.save()
-        code = run_job(task.id, job.id, out_file, err_file)
-        count += 1
-        if code != 0:
-            break
-
-    if code == 0:
-        cm.job.finish_task(task, job, config.Job.SUCCESS)
-    else:
-        cm.job.finish_task(task, job, config.Job.FAILED)
-
-    out_file.close()
-    err_file.close()
-
-    log.info("finish task #%s, ret %s", task_id, code)
+    finally:
+        log.info("finish task #%s, ret %s", task_id, code)
 
 
 def do():
