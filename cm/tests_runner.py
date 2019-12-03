@@ -11,12 +11,12 @@
 # limitations under the License.
 
 import os
-from io import TextIOWrapper
 from unittest.mock import patch, Mock, mock_open
 
 from django.test import TestCase
 from django.utils import timezone
 
+import cm.config as config
 import job_runner
 import task_runner
 from cm.logger import log
@@ -67,34 +67,31 @@ class PreparationData:
 
 class TestTaskRunner(TestCase):
 
-    def test_open_file(self):
-        root = os.path.dirname(__file__)
-        task_id = 1
-        tag = 'tag'
-        file_path = "{}/{}-{}.txt".format(root, tag, task_id)
-        file_descriptor = task_runner.open_file(root, task_id, tag)
-        self.assertTrue(isinstance(file_descriptor, TextIOWrapper))
-        self.assertEqual(file_path, file_descriptor.name)
-        self.assertTrue(os.path.exists(file_path))
-        file_descriptor.close()
-        os.remove(file_path)
+    def setUp(self):
+        log.debug = Mock()
+        log.error = Mock()
+        log.info = Mock()
+
+    @patch('builtins.open')
+    def test_open_file(self, _mock_open):
+        file_path = "{}/{}-{}.txt".format('root', 'tag', 1)
+        task_runner.open_file('root', 1, 'tag')
+        self.assertEqual(_mock_open.call_args.args, (file_path, 'w'))
 
     def test_get_task(self):
         pd = PreparationData(1, 0)
         task = task_runner.get_task(task_id=1)
-        self.assertTrue(pd.get_task(1), task)
+        self.assertTrue(pd.get_task(1) == task)
 
     def test_get_jobs(self):
         pd = PreparationData(1, 1)
         task = pd.get_task(1)
         jobs = task_runner.get_jobs(task)
         self.assertEqual(len(jobs), 1)
-        self.assertEqual(pd.get_job(1), jobs[0])
+        self.assertTrue(pd.get_job(1) == jobs[0])
 
-    @patch.object(log, 'debug')
     @patch('subprocess.Popen')
-    def test_run_job(self, mock_subprocess_popen, mock_logger):
-        mock_logger.return_value = None
+    def test_run_job(self, mock_subprocess_popen):
         process_mock = Mock()
         attrs = {'wait.return_value': 0}
         process_mock.configure_mock(**attrs)
@@ -102,33 +99,59 @@ class TestTaskRunner(TestCase):
         code = task_runner.run_job(1, 1, '', '')
         self.assertEqual(code, 0)
 
-    def test_run_task(self):
-        pass
+    @patch('task_runner.open_file')
+    @patch('cm.job.set_task_status')
+    @patch('cm.job.re_prepare_job')
+    @patch('task_runner.run_job')
+    @patch('cm.job.finish_task')
+    def test_run_task(self, mock_finish_task, mock_run_job, mock_re_prepare_job,
+                      mock_set_task_status, mock_open_file):
+        mock_run_job.return_value = 0
+        _file = Mock()
+        mock_open_file.return_value = _file
 
-    def test_do(self):
-        pass
+        pd = PreparationData(1, 1)
+        task_runner.run_task(1)
+        task = pd.get_task(1)
+        job = pd.get_job(1)
+
+        self.assertEqual(mock_finish_task.call_args.args, (task, job, config.Job.SUCCESS))
+        self.assertEqual(mock_run_job.call_args.args, (task.id, job.id, _file, _file))
+        self.assertEqual(mock_re_prepare_job.call_count, 0)
+        self.assertEqual(mock_set_task_status.call_args.args, (task, config.Job.RUNNING))
+        self.assertTrue(JobLog.objects.get(id=1).start_date != job.start_date)
+
+    @patch('task_runner.run_task')
+    @patch('sys.exit')
+    def test_do(self, mock_exit, mock_run_task):
+        with patch('sys.argv', [__file__, 1]):
+            task_runner.do()
+            self.assertEqual(mock_exit.call_count, 0)
+            self.assertEqual(mock_run_task.call_count, 1)
+            self.assertEqual(mock_run_task.call_args.args, (1,))
 
 
 class TestJobRunner(TestCase):
 
-    def test_open_file(self):
-        root = os.path.dirname(__file__)
-        job_id = 1
-        tag = 'tag'
-        file_path = "{}/{}-{}.txt".format(root, tag, job_id)
-        file_descriptor = job_runner.open_file(root, job_id, tag)
-        self.assertTrue(isinstance(file_descriptor, TextIOWrapper))
-        self.assertEqual(file_path, file_descriptor.name)
-        self.assertTrue(os.path.exists(file_path))
-        file_descriptor.close()
-        os.remove(file_path)
+    def setUp(self):
+        log.info = Mock()
+        log.debug = Mock()
+        log.error = Mock()
+
+    @patch('builtins.open')
+    def test_open_file(self, _mock_open):
+        file_path = "{}/{}-{}.txt".format('root', 'tag', 1)
+        job_runner.open_file('root', 1, 'tag')
+        self.assertEqual(_mock_open.call_args.args, (file_path, 'w'))
 
     @patch('json.load')
     @patch('builtins.open', create=True)
-    def test_read_config(self, mo, mock_json):
-        mo.side_effect = mock_open(read_data='').return_value
+    def test_read_config(self, _mock_open, mock_json):
+        _mock_open.side_effect = mock_open(read_data='').return_value
         mock_json.return_value = {}
         conf = job_runner.read_config(1)
+        file_name = '{}/{}-config.json'.format(config.RUN_DIR, 1)
+        self.assertEqual(_mock_open.call_args.args, (file_name,))
         self.assertDictEqual(conf, {})
 
     @patch('cm.job.set_job_status')
@@ -136,9 +159,9 @@ class TestJobRunner(TestCase):
         mock_set_job_status.return_value = None
         code = job_runner.set_job_status(1, 0, 1)
         self.assertEqual(code, 0)
+        self.assertEqual(mock_set_job_status.call_args.args, (1, config.Job.SUCCESS, 1))
 
     def test_set_pythonpath(self):
-        # TODO: is this test needed?
         cmd_env = os.environ.copy()
         python_paths = filter(
             lambda x: x != '',
@@ -146,26 +169,84 @@ class TestJobRunner(TestCase):
         cmd_env['PYTHONPATH'] = ':'.join(python_paths)
         self.assertDictEqual(cmd_env, job_runner.set_pythonpath())
 
+    @patch('job_runner.set_pythonpath')
+    @patch('cm.job.set_job_status')
     @patch('subprocess.Popen')
-    def test_run_playbook(self, mock_subprocess_popen):
+    def test_run_playbook(self, mock_subprocess_popen, mock_set_job_status, mock_set_pythonpath):
         process_mock = Mock()
+        process_mock.pid = 1
         attrs = {'wait.return_value': 0}
         process_mock.configure_mock(**attrs)
         mock_subprocess_popen.return_value = process_mock
+        python_path = Mock()
+        mock_set_pythonpath.return_value = python_path
+        process, code = job_runner.run_playbook(['ansible playbook'], 1, 'init.yaml', '', '')
+        self.assertEqual(process, process_mock)
+        self.assertEqual(code, 0)
+        self.assertEqual(mock_subprocess_popen.call_args.args, (['ansible playbook'],))
+        self.assertDictEqual(mock_subprocess_popen.call_args.kwargs,
+                             {'env': python_path,
+                              'stdout': '',
+                              'stderr': ''})
+        self.assertEqual(mock_set_job_status.call_args.args, (1, config.Job.RUNNING, 1))
+        self.assertEqual(mock_set_pythonpath.call_count, 1)
 
-    @patch.object(log, 'debug')
-    @patch.object(log, 'info')
+    @patch('sys.exit')
+    @patch('job_runner.set_job_status')
+    @patch('job_runner.run_playbook')
+    @patch('os.chdir')
     @patch('job_runner.open_file')
     @patch('job_runner.read_config')
-    def test_run_ansible(self, mock_read_config, mock_open_file, mock_log_info, mock_log_debug):
+    def test_run_ansible(self, mock_read_config, mock_open_file, mock_chdir, mock_run_playbook,
+                         mock_set_job_status, mock_exit):
+        conf = {
+            'job': {'playbook': 'test'},
+            'env': {'stack_dir': 'test'}
+        }
+        mock_read_config.return_value = conf
+        _file = Mock()
+        mock_open_file.return_value = _file
+        mock_process = Mock()
+        mock_process.pid = 1
+        mock_run_playbook.return_value = (mock_process, 0)
 
-        mock_read_config.return_value = {'job': {'playbook': 'test'}}
-        mock_open_file.return_value = None
-        mock_open_file.close.return_value = None
+        job_runner.run_ansible(1)
 
-        mock_log_info.return_value = None
-        mock_log_debug.return_value = None
-        pass
+        self.assertEqual(mock_read_config.call_count, 1)
+        self.assertEqual(mock_read_config.call_args.args, (1,))
 
-    def test_do(self):
-        pass
+        self.assertEqual(mock_open_file.call_count, 2)
+        self.assertEqual(mock_open_file.call_args_list[0].args, (config.LOG_DIR, 'ansible-out', 1))
+        self.assertEqual(mock_open_file.call_args_list[1].args, (config.LOG_DIR, 'ansible-err', 1))
+
+        self.assertEqual(mock_chdir.call_args.args, (conf['env']['stack_dir'],))
+
+        self.assertEqual(mock_run_playbook.call_count, 1)
+        args = (
+            [
+                'ansible-playbook',
+                '-e',
+                '@{}/{}-config.json'.format(config.RUN_DIR, 1),
+                '-i',
+                '{}/{}-inventory.json'.format(config.RUN_DIR, 1),
+                conf['job']['playbook']
+            ],
+            1,
+            conf['job']['playbook'],
+            _file, _file
+        )
+        self.assertEqual(mock_run_playbook.call_args.args, args)
+
+        self.assertEqual(mock_set_job_status.call_count, 1)
+        self.assertEqual(mock_set_job_status.call_args.args, (1, 0, 1))
+
+        self.assertEqual(mock_exit.call_count, 1)
+
+    @patch('job_runner.run_ansible')
+    @patch('sys.exit')
+    def test_do(self, mock_exit, mock_run_ansible):
+        with patch('sys.argv', [__file__, 1]):
+            job_runner.do()
+            self.assertEqual(mock_exit.call_count, 0)
+            self.assertEqual(mock_run_ansible.call_count, 1)
+            self.assertEqual(mock_run_ansible.call_args.args, (1,))
