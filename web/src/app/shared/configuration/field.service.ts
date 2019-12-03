@@ -122,7 +122,7 @@ export class FieldService {
       this.form.setControl(field.key, new FormControl({ value: field.value, disabled: field.disabled }, this.setValidator(field)));
       if (field.controlType === 'password') {
         if (!field.ui_options || (field.ui_options && !field.ui_options.no_confirm)) {
-          this.form.setControl(`confirm_${field.key}`, new FormControl(field.value || '', field.validator.required ? [Validators.required] : null));
+          this.form.setControl(`confirm_${field.key}`, new FormControl({ value: field.value, disabled: field.disabled }, this.setValidator(field)));
         }
       }
     });
@@ -149,7 +149,7 @@ export class FieldService {
         if (c.search) {
           a.hidden = a.options.filter(b => !b.hidden).length === 0;
         } else {
-          a.hidden = this.isAdvancedField(a) ? !c.advanced : false; // && a.options.filter(b => !b.hidden).length > 0);
+          a.hidden = this.isAdvancedField(a) ? !c.advanced : false;
         }
       });
 
