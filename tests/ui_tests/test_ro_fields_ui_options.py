@@ -52,7 +52,7 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app, login):
         assert group.is_displayed(), group.get_attribute("class")
     fields = config.get_app_fields()
     assert len(fields) == 1
-    assert not config.read_only_element(fields[0])
+    assert config.read_only_element(fields[0])
     form_fields = fields[0].find_elements(*Common.mat_form_field)
     for form_field in form_fields:
         assert not config.editable_element(form_field)
