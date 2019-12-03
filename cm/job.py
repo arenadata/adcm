@@ -379,7 +379,7 @@ def check_host(host_id, selector):
 
 def get_bundle_root(action):
     if action.prototype.type == 'adcm':
-        return '{}/conf'.format(config.BASE_DIR)
+        return os.path.join(config.BASE_DIR, 'conf')
     return config.BUNDLE_DIR
 
 
@@ -388,7 +388,9 @@ def cook_script(action, sub_action):
     script = action.script
     if sub_action:
         script = sub_action.script
-    return '{}/{}/{}'.format(get_bundle_root(action), prefix, script)
+    if script[0:2] == './':
+        script = os.path.join(action.prototype.path, script[2:])
+    return os.path.join(get_bundle_root(action), prefix, script)
 
 
 def get_adcm_config():

@@ -155,7 +155,7 @@ def load_adcm():
         log.warning('Empty adcm config (%s)', adcm_file)
         return
     try:
-        cm.stack.save_definition(adcm_file, conf, {}, 'adcm', True)
+        cm.stack.save_definition('', adcm_file, conf, {}, 'adcm', True)
         process_adcm()
     except:
         clear_stage()
@@ -208,10 +208,10 @@ def upgrade_adcm(adcm, bundle):
 
 def process_bundle(path, bundle_hash):
     obj_list = {}
-    for conf_file, conf_type in cm.stack.get_config_files(path):
+    for conf_path, conf_file, conf_type in cm.stack.get_config_files(path, bundle_hash):
         conf = cm.stack.read_definition(conf_file, conf_type)
         if conf:
-            cm.stack.save_definition(conf_file, conf, obj_list, bundle_hash)
+            cm.stack.save_definition(conf_path, conf_file, conf, obj_list, bundle_hash)
 
 
 def check_stage():
@@ -258,7 +258,7 @@ def copy_stage_prototype(stage_prototypes, bundle):
     prototypes = []  # Map for stage prototype id: new prototype
     for sp in stage_prototypes:
         p = copy_obj(sp, Prototype, (
-            'type', 'name', 'version', 'required', 'shared', 'monitoring',
+            'type', 'path', 'name', 'version', 'required', 'shared', 'monitoring',
             'display_name', 'description', 'adcm_min_version'
         ))
         p.bundle = bundle
@@ -396,6 +396,7 @@ def update_bundle_from_stage(bundle):   # pylint: disable=too-many-locals,too-ma
     for sp in StagePrototype.objects.all():
         try:
             p = Prototype.objects.get(bundle=bundle, type=sp.type, name=sp.name, version=sp.version)
+            p.path = sp.path
             p.description = sp.description
             p.display_name = sp.display_name
             p.required = sp.required
@@ -404,7 +405,7 @@ def update_bundle_from_stage(bundle):   # pylint: disable=too-many-locals,too-ma
             p.adcm_min_version = sp.adcm_min_version
         except Prototype.DoesNotExist:
             p = copy_obj(sp, Prototype, (
-                'type', 'name', 'version', 'required', 'shared', 'monitoring',
+                'type', 'path', 'name', 'version', 'required', 'shared', 'monitoring',
                 'display_name', 'description', 'adcm_min_version'
             ))
             p.bundle = bundle
