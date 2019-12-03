@@ -10,6 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+export type stateType = 'created' | 'locked';
+
 export interface UIoptions {
   invisible?: boolean;
   no_confirm?: boolean;
@@ -39,6 +41,7 @@ export interface FieldStack {
     min?: number;
     max?: number;
     option?: any;
+    read_only: stateType[];
   };
   read_only: boolean;
   hidden: boolean;
