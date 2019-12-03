@@ -1,0 +1,28 @@
+
+- type: cluster
+  name: invisible_true_advanced_false_list
+  version: 1
+  config:
+    - name: list
+      type: list
+      read_only: [created]
+      default:
+        - /dev/rdisk0s1
+        - /dev/rdisk0s2
+        - /dev/rdisk0s3
+      ui_options:
+         invisible: true
+         advanced: false
+  actions:
+    install:
+      type: job
+      script_type: ansible
+      script: ansible/install.yaml
+      params:
+        ansible_tags: install
+
+      states:
+        available:
+          - created
+        on_success: installed
+        on_fail: created
