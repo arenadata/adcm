@@ -101,14 +101,12 @@ export class ConfigComponent extends SocketListener implements OnInit {
   }
 
   socketListener(m: EventMessage) {
-    if (
-      this.current.Current &&
-      m.event === 'change_config' &&
-      m.object.type === this.current.Current.typeName &&
-      m.object.id === this.current.Current.id &&
-      !this.saveFlag
-    )
-      this.config$ = this.getConfig();
+    if (this.current.Current && m.object.type === this.current.Current.typeName && m.object.id === this.current.Current.id && !this.saveFlag) {
+      if (m.event === 'change_config' || m.event === 'change_state') {
+        this.config$ = this.getConfig();
+        this.cdRef.detectChanges();
+      }
+    }
   }
 
   getConfig() {
