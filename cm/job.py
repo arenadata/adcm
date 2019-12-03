@@ -725,7 +725,7 @@ def log_check(job_id, title, res, msg):
         msg = 'job #{} has status "{}", not "running"'
         err('JOB_NOT_FOUND', msg.format(job.id, job.status))
 
-    log_name = '{}/{}'.format(config.LOG_DIR, cook_log_name(job_id, 'check', 'out', 'json'))
+    log_name = os.path.join(config.LOG_DIR, cook_log_name(job_id, 'check', 'out', 'json'))
     if os.path.exists(log_name):
         f = open(log_name, 'r+')
         raw = f.read()
@@ -745,9 +745,9 @@ def check_all_status():
 
 
 def run_task(task, args=''):
-    err_file = open('{}/task_runner.err'.format(config.LOG_DIR), 'a+')
+    err_file = open(os.path.join(config.LOG_DIR, 'task_runner.err'), 'a+')
     proc = subprocess.Popen([
-        '{}/task_runner.py'.format(config.BASE_DIR),
+        os.path.join(config.BASE_DIR, 'task_runner.py'),
         str(task.id),
         args
     ], stderr=err_file)

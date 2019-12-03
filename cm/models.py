@@ -243,9 +243,6 @@ class HostComponent(models.Model):
     class Meta:
         unique_together = (('host', 'service', 'component'),)
 
-    def __str__(self):
-        return "{}: {}/{}".format(self.host.fqdn, self.service.prototype.name, self.component)
-
 
 CONFIG_FIELD_TYPE = (
     ('string', 'string'),

@@ -70,7 +70,7 @@ def load_bundle(bundle_file):
 def update_bundle(bundle):
     try:
         check_stage()
-        process_bundle('{}/{}'.format(config.BUNDLE_DIR, bundle.hash), bundle.hash)
+        process_bundle(os.path.join(config.BUNDLE_DIR, bundle.hash), bundle.hash)
         get_stage_bundle(bundle.name)
         second_pass()
         update_bundle_from_stage(bundle)
@@ -105,7 +105,7 @@ def order_versions():
 
 
 def process_file(bundle_file):
-    path = "{}/{}".format(config.DOWNLOAD_DIR, bundle_file)
+    path = os.path.join(config.DOWNLOAD_DIR, bundle_file)
     bundle_hash = get_hash_safe(path)
     dir_path = untar_safe(bundle_hash, path)
     return (bundle_hash, dir_path)
@@ -120,7 +120,7 @@ def untar_safe(bundle_hash, path):
 
 
 def untar(bundle_hash, bundle):
-    path = '{}/{}'.format(config.BUNDLE_DIR, bundle_hash)
+    path = os.path.join(config.BUNDLE_DIR, bundle_hash)
     if os.path.isdir(path):
         err('BUNDLE_ERROR', 'bundle directory "{}" already exists'.format(path))
     tar = tarfile.open(bundle)
@@ -149,7 +149,7 @@ def get_hash(bundle_file):
 
 def load_adcm():
     check_stage()
-    adcm_file = '{}/conf/adcm/config.yaml'.format(config.BASE_DIR)
+    adcm_file = os.path.join(config.BASE_DIR, 'conf', 'adcm', 'config.yaml')
     conf = cm.stack.read_definition(adcm_file, 'yaml')
     if not conf:
         log.warning('Empty adcm config (%s)', adcm_file)
@@ -508,7 +508,7 @@ def delete_bundle(bundle):
         err('BUNDLE_CONFLICT', msg.format(bundle.id, bundle.name, bundle.version))
     Prototype.objects.filter(bundle=bundle).delete()
     if bundle.hash != 'adcm':
-        shutil.rmtree('{}/{}'.format(config.BUNDLE_DIR, bundle.hash))
+        shutil.rmtree(os.path.join(config.BUNDLE_DIR, bundle.hash))
     cm.status_api.post_event('delete', 'bundle', bundle.id)
     bundle.delete()
 
