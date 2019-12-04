@@ -1,0 +1,8 @@
+
+- type: cluster
+  name: string_required_false
+  version: 1
+  config:
+    - name: string_required_false
+      type: string
+      required: false
