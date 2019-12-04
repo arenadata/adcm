@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import json
 import time
 import unittest
@@ -20,7 +21,7 @@ token = None
 
 
 class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
-    debug = False
+    debug = os.environ.get('BASE_DEBUG', False)
     # debug = True
     url = 'http://localhost:8040/api/v1'
     cluster = 'adh42'
