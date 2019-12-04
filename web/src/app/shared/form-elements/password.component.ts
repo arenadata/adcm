@@ -18,7 +18,7 @@ import { FieldDirective } from './field.directive';
   template: `
     <ng-container [formGroup]="form">
       <div>
-        <label>{{ field.label }}:</label>
+        <label [appTooltip]="field.label" [appTooltipShowByCondition]="true">{{ field.label }}:</label>
         <mat-form-field class="full-width" [floatLabel]="'never'">
           <input matInput (input)="confirmPasswordFieldUpdate()" [formControlName]="field.key" type="password" [readonly]="field.disabled" />
           <mat-error *ngIf="!isValid"> Field [{{ field.label }}] is required! </mat-error>

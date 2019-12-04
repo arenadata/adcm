@@ -17,7 +17,7 @@ import { FieldDirective } from './field.directive';
   selector: 'app-fields-textbox',
   template: `
     <ng-container [formGroup]="form">
-      <label>{{ field.label }}:</label>
+      <label [appTooltip]="field.label" [appTooltipShowByCondition]="true">{{ field.label }}:</label>
       <mat-form-field class="full-width" [floatLabel]="'never'">
         <input matInput [formControlName]="field.key" [readonly]="field.disabled" [type]="field.type" />
         <mat-error *ngIf="!isValid">
