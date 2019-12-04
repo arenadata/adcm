@@ -1,0 +1,8 @@
+
+- type: cluster
+  name: map_required_false
+  version: 1
+  config:
+    - name: map_required_false
+      type: map
+      required: false

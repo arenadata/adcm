@@ -1,0 +1,8 @@
+
+- type: cluster
+  name: file_required_true
+  version: 1
+  config:
+    - name: file_required_true
+      type: file
+      required: true

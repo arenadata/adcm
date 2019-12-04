@@ -1,0 +1,8 @@
+
+- type: cluster
+  name: float_required_true
+  version: 1
+  config:
+    - name: float_required_true
+      type: float
+      required: true
