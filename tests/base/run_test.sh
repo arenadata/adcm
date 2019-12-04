@@ -31,13 +31,15 @@ run_debug() {
     ../../manage.py runserver 8040
 }
 
+
 run_test() {
     rm -f db_test.db
     cp fixture.db db_test.db
-    cd ../..
+    cd ../.. || exit 1
     ./server.sh start "${port}"
     echo "tests/base/test_api.py ${1} ${2}"
     TEST_CASE=""
+    # shellcheck disable=SC2068
     for arg in $@; do
        if [[ "$arg" = '-d' ]]; then
           export BASE_DEBUG="True";
