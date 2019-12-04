@@ -18,7 +18,7 @@ import { FieldDirective } from './field.directive';
   selector: 'app-fields-dropdown',
   template: `
     <ng-container [formGroup]="form">
-      <label>{{ field.label }}:</label>
+      <label [appTooltip]="field.label" [appTooltipShowByCondition]="true">{{ field.label }}:</label>
       <mat-form-field class="full-width">
         <mat-select [(value)]="field.value" [formControlName]="field.key">
           <mat-option *ngFor="let option of options$ | async" [value]="option.id">{{ option.name }}</mat-option>

@@ -140,7 +140,7 @@
     <mat-header-cell *matHeaderCellDef class="control">Actions</mat-header-cell>
     <mat-cell *matCellDef="let row" class="control">
       <button [appForTest]="'row_actions'" mat-icon-button color="warn" *ngIf="checkIssue(row.issue); else actions"
-        [appTooltip]="row">
+        [appTooltip]="row" appTooltipComponent="issue">
         <mat-icon>priority_hight</mat-icon>
       </button>
       <ng-template #actions>
