@@ -18,7 +18,7 @@ import { FieldDirective } from './field.directive';
   selector: 'app-fields-boolean',
   template: `
     <ng-container [formGroup]="form">
-      <label>{{ field.label }}:</label>
+      <label [appTooltip]="field.label" [appTooltipShowByCondition]="true">{{ field.label }}:</label>
       <div class="full-width">
         <div>
           <mat-checkbox [labelPosition]="'before'" [formControlName]="field.key" [indeterminate]="field.value === null" (click)="cbChange()"></mat-checkbox>

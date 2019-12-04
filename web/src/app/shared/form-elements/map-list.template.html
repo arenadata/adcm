@@ -9,7 +9,7 @@
 </div>
 
 <div class="value">
-  <label [ngClass]="{ advanced: field.ui_options && field.ui_options.advanced }">{{ field.label }}:</label>
+  <label [appTooltip]="field.label" [appTooltipShowByCondition]="true" [ngClass]="{ advanced: field.ui_options && field.ui_options.advanced }">{{ field.label }}:</label>
 
   <div class="fields">
     <ng-container *ngIf="field.value">

@@ -18,7 +18,7 @@ import { FieldDirective } from './field.directive';
   selector: 'app-fields-json',
   template: `
     <ng-container [formGroup]="form">
-      <label>{{ field.label }}:</label>
+      <label [appTooltip]="field.label" [appTooltipShowByCondition]="true">{{ field.label }}:</label>
       <mat-form-field class="full-width" [floatLabel]="'never'">
         <mat-error *ngIf="!isValid">
           <mat-error *ngIf="hasError('required')">Field [{{ field.label }}] is required!</mat-error>

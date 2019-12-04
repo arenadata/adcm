@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, ViewEncapsulation } from '@angular/core';
 import { Issue } from '@app/core/types';
 
 import { ComponentData } from './tooltip/tooltip.service';
@@ -32,7 +32,7 @@ import { ComponentData } from './tooltip/tooltip.service';
       </ng-template>
     </div>
   `,
-  styles: ['a, .item-step { display: block; margin: 6px 0 8px 12px;}'],
+  styles: ['a, .item-step { display: block; margin: 6px 0 8px 12px; white-space: nowrap;}'],
 })
 export class IssueInfoComponent implements OnInit {
   issues: Issue;
