@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 from unittest.mock import patch, Mock
 
 from django.test import TestCase
@@ -18,7 +19,8 @@ from django.utils import timezone
 import cm.config as config
 import cm.job as job_module
 from cm.logger import log
-from cm.models import (JobLog, TaskLog, Bundle, Cluster, Prototype, ObjectConfig, Action)
+from cm.models import (JobLog, TaskLog, Bundle, Cluster, Prototype, ObjectConfig,
+                       Action, ClusterObject, ADCM)
 
 
 class TestJob(TestCase):
@@ -58,6 +60,14 @@ class TestJob(TestCase):
             'current': 1,
             'previous': 1
         })
+        self.adcm = ADCM.objects.create(**{
+            'prototype': self.prototype,
+            'name': 'ADCM',
+            'config': self.object_config,
+            'state': 'created',
+            'stack': '',
+            'issue': ''
+        })
         self.cluster = Cluster.objects.create(**{
             'prototype': self.prototype,
             'name': 'Fear Limpopo',
@@ -66,6 +76,14 @@ class TestJob(TestCase):
             'state': 'installed',
             'stack': '[]',
             'issue': '{}'
+        })
+        self.cluster_object = ClusterObject.objects.create(**{
+            'cluster': self.cluster,
+            'prototype': self.prototype,
+            'config': self.object_config,
+            'state': 'created',
+            'stack': '',
+            'issue': ''
         })
         self.action = Action.objects.create(**{
             'prototype': self.prototype,
@@ -87,7 +105,7 @@ class TestJob(TestCase):
             'action_id': self.action.id,
             'object_id': self.cluster.id,
             'pid': 1,
-            'selector': '{"cluster": 1}',
+            'selector': f'{{"cluster": {self.cluster.id}}}',
             'status': 'success',
             'config': '',
             'hostcomponentmap': '',
@@ -97,8 +115,9 @@ class TestJob(TestCase):
         self.job = JobLog.objects.create(**{
             'task_id': self.task.id,
             'action_id': self.action.id,
+            'sub_action_id': 0,
             'pid': 1,
-            'selector': '{"cluster": 1}',
+            'selector': f'{{"cluster": {self.cluster.id}}}',
             'status': 'success',
             'start_date': timezone.now(),
             'finish_date': timezone.now()
@@ -164,8 +183,8 @@ class TestJob(TestCase):
         self.assertEqual(task_obj.issue, self.cluster.issue)
 
     def test_set_action_state(self):
-        # IS CALLED: cm.job.get_task_obj and cm.api.push_obj
-        status = 'failed'
+        # IS CALLED: cm.job.get_task_obj, cm.api.push_obj
+        status = config.Job.FAILED
         action, cluster = job_module.set_action_state(self.task, self.job, status)
         self.assertEqual(cluster.id, self.cluster.id)
         self.assertEqual(cluster.prototype_id, self.cluster.prototype_id)
@@ -197,3 +216,130 @@ class TestJob(TestCase):
         self.assertEqual(self.cluster.stack, '[]')
 
     # TODO: added test for restore_hc from finish_task
+
+    @patch('cm.api.save_hc')
+    def test_restore_hc(self, mock_save_hc):
+        job_module.restore_hc(self.task, self.action, config.Job.SUCCESS)
+        self.assertEqual(mock_save_hc.call_count, 0)
+
+    def test_finish_task(self):
+        # IS CALLED: cm.job.set_action_state, cm.job.unlock_objects,
+        # cm.job.restore_hc, cm.job.set_task_status
+        pass
+
+    @patch('cm.job.err')
+    def test_check_selector(self, mock_err):
+        selector = job_module.check_selector({'cluster': 1}, 'cluster')
+        self.assertEqual(selector, 1)
+        self.assertEqual(mock_err.call_count, 0)
+
+    @patch('cm.job.err')
+    def test_check_service_task(self, mock_err):
+        service = job_module.check_service_task(self.cluster.id, self.action)
+        self.assertEqual(self.cluster_object, service)
+        self.assertEqual(mock_err.call_count, 0)
+
+    @patch('cm.job.err')
+    def test_check_cluster(self, mock_err):
+        cluster = job_module.check_cluster(self.cluster.id)
+        self.assertEqual(cluster, self.cluster)
+        self.assertEqual(mock_err.call_count, 0)
+
+    def test_get_action_context(self):
+        obj, cluster = job_module.get_action_context(self.action, {'cluster': 1})
+        self.assertEqual(obj, cluster)
+        self.assertEqual(cluster, self.cluster)
+
+    @patch('cm.job.prepare_job_config')
+    @patch('cm.inventory.prepare_job_inventory')
+    def test_prepare_job(self, mock_prepare_job_inventory, mock_prepare_job_config):
+        job_module.prepare_job(self.action, None, {'cluster': 1}, self.job.id, self.cluster, '', {})
+
+        mock_prepare_job_inventory.assert_called_once_with({'cluster': 1}, self.job.id, {})
+        mock_prepare_job_config.assert_called_once_with(self.action, None, {'cluster': 1},
+                                                        self.job.id, self.cluster, '')
+
+    @patch('cm.job.get_obj_config')
+    def test_get_adcm_config(self, mock_get_obj_config):
+        mock_get_obj_config.return_value = {}
+
+        conf = job_module.get_adcm_config()
+
+        self.assertEqual(conf, {})
+        mock_get_obj_config.assert_called_once_with(self.adcm)
+
+    def test_prepare_context(self):
+        context = job_module.prepare_context({'cluster': 1})
+
+        self.assertDictEqual(context, {'type': 'cluster', 'cluster_id': 1})
+
+    def test_get_bundle_root(self):
+        path = job_module.get_bundle_root(self.action)
+
+        self.assertEqual(path, config.BUNDLE_DIR)
+
+    @patch('cm.job.get_bundle_root')
+    def test_cook_script(self, mock_get_bundle_root):
+        mock_get_bundle_root.return_value = config.BUNDLE_DIR
+
+        path = job_module.cook_script(self.action, None)
+
+        test_path = os.path.join(
+            config.BUNDLE_DIR, self.action.prototype.bundle.hash, self.action.script)
+        self.assertEqual(path, test_path)
+        mock_get_bundle_root.assert_called_once_with(self.action)
+
+    @patch('cm.job.cook_script')
+    @patch('cm.job.get_bundle_root')
+    @patch('cm.job.prepare_context')
+    @patch('cm.job.get_adcm_config')
+    @patch("json.dump")
+    @patch("builtins.open")
+    def test_prepare_job_config(self, mock_open, mock_dump, mock_get_adcm_config,
+                                mock_prepare_context, mock_get_bundle_root, mock_cook_script):
+        fd = Mock()
+        mock_open.return_value = fd
+        mock_get_adcm_config.return_value = {}
+        mock_prepare_context.return_value = {'type': 'cluster', 'cluster_id': 1}
+        mock_get_bundle_root.return_value = config.BUNDLE_DIR
+        mock_cook_script.return_value = os.path.join(
+            config.BUNDLE_DIR, self.action.prototype.bundle.hash, self.action.script)
+
+        job_module.prepare_job_config(
+            self.action, None, {'cluster': 1}, self.job.id, self.cluster, '')
+
+        value = {
+            'adcm': {
+                'config': {}
+            },
+            'context': {
+                'type': 'cluster',
+                'cluster_id': 1
+            },
+            'env': {
+                'run_dir': '/home/aalferov/PycharmProjects/adcm/data/run',
+                'log_dir': '/home/aalferov/PycharmProjects/adcm/data/log',
+                'stack_dir': ('/home/aalferov/PycharmProjects/adcm/data/bundle/'
+                              '2232f33c6259d44c23046fce4382f16c450f8ba5'),
+                'status_api_token': 'FIdpaSMoTRrseUesUzsmSVmfAscMePLZmQrGujuf'
+            },
+            'job': {
+                'id': 1,
+                'command': 're-start',
+                'script': '',
+                'playbook': ('/home/aalferov/PycharmProjects/adcm/data/bundle/'
+                             '2232f33c6259d44c23046fce4382f16c450f8ba5/'),
+                'cluster_id': 1,
+                'hostgroup': 'CLUSTER'
+            }
+        }
+        mock_open.assert_called_once_with(
+            '{}/{}-config.json'.format(config.RUN_DIR, self.job.id), 'w')
+        mock_dump.assert_called_once_with(value, fd, indent=3, sort_keys=True)
+        mock_get_adcm_config.assert_called_once_with()
+        mock_prepare_context.assert_called_once_with({'cluster': 1})
+        mock_get_bundle_root.assert_called_once_with(self.action)
+        mock_cook_script.assert_called_once_with(self.action, None)
+
+    def test_re_prepare_job(self):
+        pass
