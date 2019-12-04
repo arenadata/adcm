@@ -55,3 +55,10 @@ ng_tests: ## Run Angular tests
 linters : ## Run linters
 	docker pull ci.arenadata.io/pr-builder:3-x64
 	docker run -i --rm -v $(CURDIR)/:/source -w /source ci.arenadata.io/pr-builder:3-x64 /linters.sh shellcheck pylint pep8
+
+npm_check: ## Run npm-check
+	docker pull ci.arenadata.io/functest:u18-x64
+	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web/src ci.arenadata.io/functest:u18-x64 \
+	/bin/bash -c 'npm i --production && { ignore=`cat ../../.npmcheckignore | grep -v "#"`\; npm-check --production --skip-unused --ignore $$ignore; }'
+
+	
