@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Directive, Input, ElementRef, HostListener } from '@angular/core';
-import { TooltipService } from '../tooltip/tooltip.service';
+import { TooltipService, PositionType, ComponentName } from '../tooltip/tooltip.service';
 import { ApiBase } from '@app/core/types/api';
 
 @Directive({
@@ -18,17 +18,31 @@ import { ApiBase } from '@app/core/types/api';
 })
 export class TooltipDirective {
   @Input() appTooltip: string | ApiBase;
-  @Input() TooltipPosition: 'top' | 'right' | 'bottom' | 'left' = 'top';
-  @Input() appTooltipComponent: 'issue' | 'status' = 'issue';
+  @Input() appTooltipPosition: PositionType = 'bottom';
+  @Input() appTooltipComponent: ComponentName;
+
+  /**
+   * TODO: To show tooltip by condition [04.12.2019]
+   * ConditionType - under construction, 
+   * Now - one the condition this is width and scroll of source
+   * tooltip.component.ts line: 118 checkBuild()
+   * @type boolean
+   * @memberof TooltipDirective
+   */
+  @Input() appTooltipShowByCondition: boolean;
 
   constructor(private el: ElementRef, private tooltip: TooltipService) {}
 
   @HostListener('mouseenter', ['$event']) menter(e: MouseEvent) {
     e.stopPropagation();
-    if (this.appTooltip) this.tooltip.show(e, this.appTooltip, this.el.nativeElement, this.appTooltipComponent);
+    const options = {
+      content: this.appTooltip,
+      componentName: this.appTooltipComponent,
+      position: this.appTooltipPosition,
+      condition: this.appTooltipShowByCondition
+    };
+    if (this.appTooltip) this.tooltip.show(e, this.el.nativeElement, options);
   }
-
-  @HostListener('mousedown') mdown() {}
 
   @HostListener('mouseleave') mleave() {
     this.tooltip.hide();

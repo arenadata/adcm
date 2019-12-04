@@ -9,24 +9,29 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import {
-  Component,
-  ElementRef,
-  EventEmitter,
-  HostListener,
-  Injector,
-  OnDestroy,
-  OnInit,
-  Renderer2,
-  Type,
-} from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, Injector, Input, OnDestroy, OnInit, Renderer2, Type } from '@angular/core';
 import { Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { BaseDirective } from '@app/shared/directives';
 import { delay } from 'rxjs/operators';
 
 import { IssueInfoComponent } from '../issue-info.component';
 import { StatusInfoComponent } from '../status-info.component';
 import { ComponentData, TooltipOptions, TooltipService } from './tooltip.service';
+
+const POSITION_MARGIN = 10;
+
+@Component({
+  selector: 'app-simple-text',
+  template: '{{ current }}'
+})
+export class SimpleTextComponent implements OnInit {
+  @Input() current: any;
+  constructor(private componentData: ComponentData) {}
+  ngOnInit(): void {
+    this.current = this.current || this.componentData.current;
+    this.componentData.emitter.emit('Done');
+  }
+}
 
 @Component({
   selector: 'app-tooltip',
@@ -34,111 +39,96 @@ import { ComponentData, TooltipOptions, TooltipService } from './tooltip.service
     {{ contentAsString }}
     <ng-container *ngComponentOutlet="CurrentComponent; injector: componentInjector"></ng-container>
   `,
-  styleUrls: ['./tooltip.component.scss'],
+  styleUrls: ['./tooltip.component.scss']
 })
-export class TooltipComponent implements OnInit, OnDestroy {
+export class TooltipComponent extends BaseDirective implements OnInit, OnDestroy {
   private options: TooltipOptions;
   contentAsString: string;
-  to: any;
-  ss: Subscription;
-  es: Subscription;
+  timeOut: any;
 
-  CurrentComponent: Type<IssueInfoComponent | StatusInfoComponent>;
+  CurrentComponent: Type<SimpleTextComponent | IssueInfoComponent | StatusInfoComponent>;
   componentInjector: Injector;
 
-  constructor(
-    private el: ElementRef,
-    private service: TooltipService,
-    private renderer: Renderer2,
-    private router: Router,
-    private parentInjector: Injector
-  ) {}
-
-  @HostListener('mouseenter', ['$event']) menter() {
-    clearTimeout(this.to);
+  constructor(private el: ElementRef, private service: TooltipService, private renderer: Renderer2, private router: Router, private parentInjector: Injector) {
+    super();
   }
 
-  @HostListener('mousedown') mdown() {}
+  @HostListener('mouseenter', ['$event']) menter() {
+    clearTimeout(this.timeOut);
+  }
 
   @HostListener('mouseleave') mleave() {
-    this.render().position();
+    this.timeOut = setTimeout(() => this.hide(), 500);
   }
 
   ngOnInit(): void {
-    this.ss = this.service.position$.subscribe(o => {
-      clearTimeout(this.to);
-      if (!o) this.to = setTimeout(() => this.render().position(), 500);
-      else this.render(o);
+    this.service.position$.pipe(this.takeUntil()).subscribe(o => {
+      clearTimeout(this.timeOut);
+      if (o) {
+        // this.clear();
+        this.options = o;
+        this.buildComponent();
+      } else this.timeOut = setTimeout(() => this.hide(), 500);
     });
   }
 
-  ngOnDestroy() {
-    this.ss.unsubscribe();
-    this.es.unsubscribe();
-  }
-
-  render(o?: TooltipOptions) {
-    this.options = o;
-    this.clear().content();
-    if (o)
-      this.options.source.onclick = () => {
-        this.clear();
-        this.renderer.setAttribute(this.el.nativeElement, 'style', `opacity: 0`);
-      };
-    return this;
-  }
-
   clear() {
-    this.contentAsString = '';
-    this.CurrentComponent = null;
-    return this;
+    const source = this.service.source;
+    if (source) this.renderer.removeChild(this.renderer.parentNode(source), this.el.nativeElement);
   }
 
-  content() {
-    if (!this.options) return;
-    if (typeof this.options.content === 'string') {
-      this.contentAsString = this.options.content;
-      this.position();
-    }
-
-    if (typeof this.options.content === 'object') {
-      this.buildComponent();
-    }
+  hide() {
+    this.renderer.setAttribute(this.el.nativeElement, 'style', `opacity: 0`);
+    setTimeout(() => this.clear(), 300);
   }
 
   position() {
     const o = this.options;
     const el = this.el.nativeElement;
-    if (o) {
-      const bodyWidth = document.querySelector('body').offsetWidth,
-        bodyHeight = (document.getElementsByTagName('app-root')[0] as HTMLElement).offsetHeight,
-        extRight = o.event.x + el.offsetWidth + o.source.offsetWidth / 2,
-        extBottom = o.event.y + el.offsetHeight;
 
-      const dx = bodyWidth < extRight ? o.event.x - (extRight - bodyWidth) : o.event.x + o.source.offsetWidth / 2,
-        dy = o.event.y,
-        b = bodyHeight < extBottom ? 'bottom: 20px;' : '';
-      this.renderer.setAttribute(el, 'style', `left:${dx}px; top:${dy}px; ${b} opacity: .9`);
-    } else {
-      this.renderer.setAttribute(el, 'style', `opacity: 0`);
+    this.renderer.appendChild(this.renderer.parentNode(o.source), el);
+
+    const bodyWidth = document.querySelector('body').offsetWidth,
+      bodyHeight = (document.getElementsByTagName('app-root')[0] as HTMLElement).offsetHeight,
+      extLeft = o.event.x - el.offsetWidth,
+      extRight = o.event.x + el.offsetWidth + o.source.offsetWidth / 2,
+      extTop = o.event.y - el.offsetHeight,
+      extBottom = o.event.y + el.offsetHeight;
+
+    const dx = extRight - bodyWidth,
+      dy = o.source.offsetHeight / 2 + el.offsetHeight / 2 + POSITION_MARGIN,
+      bottom = bodyHeight < extBottom ? `bottom: ${POSITION_MARGIN}px;` : '';
+
+    let xMargin = '';
+    let yMargin = '';
+
+    if (o.options.position === 'top' || o.options.position === 'bottom') {
+      xMargin = bodyWidth < extRight ? `margin-left: -${dx}px;` : '';
+      yMargin = `margin-top: ${o.options.position === 'top' ? '-' : ''}${dy}px;`;
     }
+
+    if (o.options.position === 'left' || o.options.position === 'right') {
+      yMargin = '';
+      xMargin = `margin-left: ${dx}px;`;
+    }
+
+    this.renderer.setAttribute(el, 'style', `opacity: .9; ${yMargin} ${xMargin}`);
   }
 
   buildComponent() {
-    const component = { issue: IssueInfoComponent, status: StatusInfoComponent }[this.options.componentName];
-    this.CurrentComponent = component;
+    this.CurrentComponent = { issue: IssueInfoComponent, status: StatusInfoComponent }[this.options.options.componentName] || SimpleTextComponent;
 
     const emitter = new EventEmitter();
-    this.es = emitter.pipe(delay(100)).subscribe(() => this.position());
+    emitter.pipe(delay(100), this.takeUntil()).subscribe(() => this.position());
 
     this.componentInjector = Injector.create({
       providers: [
         {
           provide: ComponentData,
-          useValue: { typeName: this.router.url, current: this.options.content, emitter: emitter },
-        },
+          useValue: { typeName: this.router.url, current: this.options.options.content, emitter: emitter }
+        }
       ],
-      parent: this.parentInjector,
+      parent: this.parentInjector
     });
   }
 }

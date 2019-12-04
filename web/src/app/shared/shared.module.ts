@@ -51,6 +51,7 @@ import { MaterialModule } from './material.module';
 import { BreakRowPipe, TagEscPipe } from './pipes';
 import { StuffModule } from './stuff.module';
 import { ActionsDirective } from './components/actions/actions.directive';
+import { SimpleTextComponent } from './components/tooltip';
 
 @NgModule({
   imports: [CommonModule, MaterialModule, FormsModule, ReactiveFormsModule, RouterModule, StuffModule, FormElementsModule, ConfigurationModule],
@@ -70,6 +71,7 @@ import { ActionsDirective } from './components/actions/actions.directive';
     ServiceHostComponent,
     TagEscPipe,
     IssueInfoComponent,
+    SimpleTextComponent,
     AddButtonComponent,
     AddFormComponent,
     BaseListDirective,
@@ -97,6 +99,7 @@ import { ActionsDirective } from './components/actions/actions.directive';
     AddFormComponent,
     IssueInfoComponent,
     StatusInfoComponent,
+    SimpleTextComponent
   ],
   exports: [
     FormsModule,
