@@ -1,0 +1,8 @@
+
+- type: cluster
+  name: list_required_true
+  version: 1
+  config:
+    - name: list_required_true
+      type: list
+      required: true

@@ -33,19 +33,19 @@ NAME_REGEX = r'[0-9a-zA-Z_\.-]+'
 MAX_NAME_LENGTH = 256
 
 
-def save_definition(fname, conf, obj_list, bundle_hash, adcm=False):
+def save_definition(path, fname, conf, obj_list, bundle_hash, adcm=False):
     if isinstance(conf, dict):
-        save_object_definition(fname, conf, obj_list, bundle_hash, adcm)
+        save_object_definition(path, fname, conf, obj_list, bundle_hash, adcm)
     else:
         for obj_def in conf:
-            save_object_definition(fname, obj_def, obj_list, bundle_hash, adcm)
+            save_object_definition(path, fname, obj_def, obj_list, bundle_hash, adcm)
 
 
 def cook_obj_id(conf):
     return '{}.{}.{}'.format(conf['type'], conf['name'], conf['version'])
 
 
-def save_object_definition(fname, conf, obj_list, bundle_hash, adcm=False):
+def save_object_definition(path, fname, conf, obj_list, bundle_hash, adcm=False):
     if not isinstance(conf, dict):
         msg = 'Object definition should be a map ({})'
         return err('INVALID_OBJECT_DEFINITION', msg.format(fname))
@@ -64,7 +64,7 @@ def save_object_definition(fname, conf, obj_list, bundle_hash, adcm=False):
         return err('INVALID_OBJECT_DEFINITION', msg.format(def_type, fname))
 
     check_object_definition(fname, conf, def_type, obj_list)
-    obj = save_prototype(conf, def_type, bundle_hash)
+    obj = save_prototype(path, conf, def_type, bundle_hash)
     log.info('Save definition of %s "%s" %s to stage', def_type, conf['name'], conf['version'])
     obj_list[cook_obj_id(conf)] = fname
     return obj
@@ -98,7 +98,7 @@ def check_extra_keys(conf, acceptable, ref):
             err('INVALID_OBJECT_DEFINITION', msg.format(key, ref))
 
 
-def get_config_files(path):
+def get_config_files(path, bundle_hash):
     conf_list = []
     conf_types = [
         ('config.yaml', 'yaml'),
@@ -115,7 +115,9 @@ def get_config_files(path):
     for root, _, files in os.walk(path):
         for conf_file, conf_type in conf_types:
             if conf_file in files:
-                conf_list.append((root + '/' + conf_file, conf_type))
+                dirs = root.split('/')
+                path = os.path.join('', *dirs[dirs.index(bundle_hash) + 1:])
+                conf_list.append((path, root + '/' + conf_file, conf_type))
                 break
     if not conf_list:
         msg = 'no config files in stack directory "{}"'
@@ -163,9 +165,9 @@ def get_license_hash(proto, conf, bundle_hash):
 
 
 @transaction.atomic
-def save_prototype(conf, def_type, bundle_hash):
+def save_prototype(path, conf, def_type, bundle_hash):
     # validate_name(type_name, '{} type name "{}"'.format(def_type, conf['name']))
-    proto = StagePrototype(name=conf['name'], type=def_type, version=conf['version'])
+    proto = StagePrototype(name=conf['name'], type=def_type, path=path, version=conf['version'])
     dict_to_obj(conf, 'required', proto)
     dict_to_obj(conf, 'shared', proto)
     dict_to_obj(conf, 'monitoring', proto)

@@ -105,7 +105,7 @@ def read_file_type(default, ref, bundle_hash, name, subname):
 
 
 def read_bundle_file(fname, bundle_hash, pattern, ref):
-    path = '{}/{}/{}'.format(config.BUNDLE_DIR, bundle_hash, fname)
+    path = os.path.join(config.BUNDLE_DIR, bundle_hash, fname)
     try:
         fd = open(path, 'r')
     except FileNotFoundError:

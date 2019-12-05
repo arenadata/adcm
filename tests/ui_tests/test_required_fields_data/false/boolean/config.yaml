@@ -1,0 +1,8 @@
+
+- type: cluster
+  name: boolean_required_false
+  version: 1
+  config:
+    - name: boolean_required_false
+      type: boolean
+      required: false

@@ -69,6 +69,7 @@ MONITORING_TYPE = (
 class Prototype(models.Model):
     bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE)
     type = models.CharField(max_length=16, choices=PROTO_TYPE)
+    path = models.CharField(max_length=160, default='')
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     version = models.CharField(max_length=80)
@@ -242,9 +243,6 @@ class HostComponent(models.Model):
     class Meta:
         unique_together = (('host', 'service', 'component'),)
 
-    def __str__(self):
-        return "{}: {}/{}".format(self.host.fqdn, self.service.prototype.name, self.component)
-
 
 CONFIG_FIELD_TYPE = (
     ('string', 'string'),
@@ -360,6 +358,7 @@ class TaskLog(models.Model):
 class StagePrototype(models.Model):
     type = models.CharField(max_length=16, choices=PROTO_TYPE)
     name = models.CharField(max_length=160)
+    path = models.CharField(max_length=160, default='')
     display_name = models.CharField(max_length=160, blank=True)
     version = models.CharField(max_length=80)
     edition = models.CharField(max_length=80, default='community')
