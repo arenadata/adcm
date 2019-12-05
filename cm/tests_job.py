@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import os
 from unittest.mock import patch, Mock
 
@@ -144,8 +145,7 @@ class TestJob(TestCase):
         self.assertEqual(job.start_date, self.job.start_date)
         self.assertTrue(job.finish_date != self.job.finish_date)
 
-        self.assertEqual(mock_set_job_status.call_count, 1)
-        self.assertEqual(mock_set_job_status.call_args.args, (job.task_id, status))
+        mock_set_job_status.assert_called_once_with(job.task_id, status)
 
     @patch('cm.status_api.set_task_status')
     def test_set_task_status(self, mock_set_task_status):
@@ -167,8 +167,7 @@ class TestJob(TestCase):
         self.assertEqual(task.start_date, self.task.start_date)
         self.assertTrue(task.finish_date != finish_date)
 
-        self.assertEqual(mock_set_task_status.call_count, 1)
-        self.assertEqual(mock_set_task_status.call_args.args, (task.id, status))
+        mock_set_task_status.assert_called_once_with(task.id, status)
 
     def test_get_task_obj(self):
         task_obj = job_module.get_task_obj('cluster', 1)
@@ -182,45 +181,73 @@ class TestJob(TestCase):
         self.assertEqual(task_obj.stack, self.cluster.stack)
         self.assertEqual(task_obj.issue, self.cluster.issue)
 
-    def test_set_action_state(self):
-        # IS CALLED: cm.job.get_task_obj, cm.api.push_obj
+    @patch('cm.api.push_obj')
+    @patch('cm.job.get_task_obj')
+    def test_set_action_state(self, mock_get_task_obj, mock_push_obj):
+
+        mock_get_task_obj.return_value = self.cluster
+
+        def push_obj(obj, state):
+            obj.stack = json.dumps([state])
+            obj.save()
+
+        mock_push_obj.side_effect = push_obj
         status = config.Job.FAILED
+
         action, cluster = job_module.set_action_state(self.task, self.job, status)
+
         self.assertEqual(cluster.id, self.cluster.id)
         self.assertEqual(cluster.prototype_id, self.cluster.prototype_id)
         self.assertEqual(cluster.name, self.cluster.name)
         self.assertEqual(cluster.description, self.cluster.description)
         self.assertEqual(cluster.config, self.cluster.config)
         self.assertEqual(cluster.state, self.cluster.state)
-        self.assertTrue(cluster.stack != self.cluster.stack)
+        self.assertEqual(cluster.stack, self.cluster.stack)
         self.assertEqual(cluster.issue, self.cluster.issue)
 
         self.assertEqual(f'["{self.action.state_on_fail}"]', cluster.stack)
 
-    def test_unlock_obj(self):
-        # IS CALLED: cm.api.set_object_state
+    @patch('cm.api.set_object_state')
+    def test_unlock_obj(self, mock_set_object_state):
         self.cluster.stack = '["created"]'
         self.cluster.save()
+
+        def set_object_state(obj, state):
+            obj.state = state
+            obj.save()
+
+        mock_set_object_state.side_effect = set_object_state
 
         job_module.unlock_obj(self.cluster)
 
         self.assertEqual(self.cluster.stack, '[]')
+        self.assertEqual(self.cluster.state, 'created')
 
-    def test_unlock_objects(self):
-        # IS CALLED: cm.job.unlock_obj
+    @patch('cm.job.unlock_obj')
+    def test_unlock_objects(self, mock_unlock_obj):
         self.cluster.stack = '["created"]'
         self.cluster.save()
+        self.cluster_object.stack = '["created"]'
+        self.cluster_object.save()
 
-        job_module.unlock_obj(self.cluster)
+        def unlock_obj(obj):
+            stack = json.loads(obj.stack)
+            state = stack.pop()
+            obj.stack = json.dumps(stack)
+            obj.state = state
+            obj.save()
+
+        mock_unlock_obj.side_effect = unlock_obj
+
+        job_module.unlock_objects(self.cluster)
 
         self.assertEqual(self.cluster.stack, '[]')
-
-    # TODO: added test for restore_hc from finish_task
+        self.assertEqual(self.cluster.state, 'created')
 
     @patch('cm.api.save_hc')
     def test_restore_hc(self, mock_save_hc):
+        # TODO: continue
         job_module.restore_hc(self.task, self.action, config.Job.SUCCESS)
-        self.assertEqual(mock_save_hc.call_count, 0)
 
     def test_finish_task(self):
         # IS CALLED: cm.job.set_action_state, cm.job.unlock_objects,
