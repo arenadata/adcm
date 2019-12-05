@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -13,14 +13,14 @@
 
 port=8040
 
-export DJANGO_SETTINGS_MODULE=tests.settings
-export ADCM_STACK_DIR="tests"
+export DJANGO_SETTINGS_MODULE=tests.base.settings
+export ADCM_STACK_DIR="tests/base"
 
 
 init_db() {
     rm -f db_test.db
-    ../manage.py migrate
-    ../init_db.py 
+    ../../manage.py migrate
+    ../../init_db.py 
     cp db_test.db fixture.db
 }
 
@@ -28,27 +28,37 @@ init_db() {
 run_debug() {
     rm -f db_test.db
     cp fixture.db db_test.db
-    ../manage.py runserver 8040
+    ../../manage.py runserver 8040
 }
+
 
 run_test() {
     rm -f db_test.db
     cp fixture.db db_test.db
-    cd ..
+    cd ../.. || exit 1
     ./server.sh start "${port}"
-    echo "tests/test_api.py ${1}"
-    if [ "${1}" !=  '' ]; then
-        ./tests/test_api.py "${1}"
+    echo "tests/base/test_api.py ${1} ${2}"
+    TEST_CASE=""
+    # shellcheck disable=SC2068
+    for arg in $@; do
+       if [[ "$arg" = '-d' ]]; then
+          export BASE_DEBUG="True";
+       else
+          TEST_CASE="TestAPI.$arg"
+       fi;
+    done
+    if [[ $TEST_CASE != '' ]]; then
+    	./tests/base/test_api.py "$TEST_CASE"
     else
-        ./tests/test_api.py
-    fi
+    	./tests/base/test_api.py
+    fi;
     ./server.sh stop
 }
 
 
-if [ ! -f fixture.db ]; then
+if [[ ! -f fixture.db ]]; then
     init_db
 fi
 
-run_test "${1}"
+run_test "${1}" "${2}"
 #run_debug

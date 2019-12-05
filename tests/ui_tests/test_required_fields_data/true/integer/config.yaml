@@ -1,0 +1,8 @@
+
+- type: cluster
+  name: integer_required_true
+  version: 1
+  config:
+    - name: integer_required_true
+      type: integer
+      required: true

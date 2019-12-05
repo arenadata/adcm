@@ -1,0 +1,8 @@
+
+- type: cluster
+  name: password_required_true
+  version: 1
+  config:
+    - name: password_required_true
+      type: password
+      required: true

@@ -41,7 +41,7 @@ testpyreqs: ## Install test prereqs into user's pip target dir
 
 unittests: ## Run unittests
 	docker pull $(ADCMBASE_IMAGE):$(ADCMBASE_TAG)
-	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/tests $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /bin/sh -e ./run_test.sh
+	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/tests/base $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /bin/sh -e ./run_test.sh
 
 pytest: ## Run functional tests
 	docker pull ci.arenadata.io/functest:u18-x64
@@ -60,5 +60,3 @@ npm_check: ## Run npm-check
 	docker pull ci.arenadata.io/functest:u18-x64
 	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web/src ci.arenadata.io/functest:u18-x64 \
 	/bin/bash -c 'npm i --production && { ignore=`cat ../../.npmcheckignore | grep -v "#"`\; npm-check --production --skip-unused --ignore $$ignore || true; } && npm audit'
-
-	

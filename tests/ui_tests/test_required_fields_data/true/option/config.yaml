@@ -1,0 +1,9 @@
+
+- type: cluster
+  name: option_required_true
+  version: 1
+  config:
+    - name: option_required_true
+      type: option
+      option: {http: 80, https: 443}
+      required: true

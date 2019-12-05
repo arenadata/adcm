@@ -379,7 +379,7 @@ def check_host(host_id, selector):
 
 def get_bundle_root(action):
     if action.prototype.type == 'adcm':
-        return '{}/conf'.format(config.BASE_DIR)
+        return os.path.join(config.BASE_DIR, 'conf')
     return config.BUNDLE_DIR
 
 
@@ -388,7 +388,9 @@ def cook_script(action, sub_action):
     script = action.script
     if sub_action:
         script = sub_action.script
-    return '{}/{}/{}'.format(get_bundle_root(action), prefix, script)
+    if script[0:2] == './':
+        script = os.path.join(action.prototype.path, script[2:])
+    return os.path.join(get_bundle_root(action), prefix, script)
 
 
 def get_adcm_config():
@@ -723,7 +725,7 @@ def log_check(job_id, title, res, msg):
         msg = 'job #{} has status "{}", not "running"'
         err('JOB_NOT_FOUND', msg.format(job.id, job.status))
 
-    log_name = '{}/{}'.format(config.LOG_DIR, cook_log_name(job_id, 'check', 'out', 'json'))
+    log_name = os.path.join(config.LOG_DIR, cook_log_name(job_id, 'check', 'out', 'json'))
     if os.path.exists(log_name):
         f = open(log_name, 'r+')
         raw = f.read()
@@ -743,9 +745,9 @@ def check_all_status():
 
 
 def run_task(task, args=''):
-    err_file = open('{}/task_runner.err'.format(config.LOG_DIR), 'a+')
+    err_file = open(os.path.join(config.LOG_DIR, 'task_runner.err'), 'a+')
     proc = subprocess.Popen([
-        '{}/task_runner.py'.format(config.BASE_DIR),
+        os.path.join(config.BASE_DIR, 'task_runner.py'),
         str(task.id),
         args
     ], stderr=err_file)

@@ -78,6 +78,7 @@ class LicenseSerializer(serializers.Serializer):
 class PrototypeSerializer(serializers.Serializer):
     bundle_id = serializers.IntegerField(read_only=True)
     id = serializers.IntegerField(read_only=True)
+    path = serializers.CharField(read_only=True)
     name = serializers.CharField(read_only=True)
     display_name = serializers.CharField(required=False)
     version = serializers.CharField(read_only=True)
