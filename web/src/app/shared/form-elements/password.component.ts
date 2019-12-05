@@ -30,7 +30,7 @@ import { FieldDirective } from './field.directive';
         >
       </div>
       <div *ngIf="getConfirmPasswordField()">
-        <label>confirm [ {{ field.label }} ]:</label>
+        <label [appTooltip]="'confirm [ ' + field.label + ' ]'" [appTooltipShowByCondition]="true">confirm [ {{ field.label }} ]:</label>
         <mat-form-field class="full-width" [floatLabel]="'never'">
           <input matInput appConfirmEqualValidator="{{ field.key }}" [formControlName]="'confirm_' + field.key" type="password" [readonly]="field.disabled" />
           <mat-error *ngIf="getConfirmPasswordFieldErrors('required') && (form.touched || form.dirty)"> Confirm [{{ field.label }}] is required! </mat-error>

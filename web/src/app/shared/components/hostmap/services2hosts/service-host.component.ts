@@ -26,7 +26,6 @@ import { CompTile, HostTile, Post, StatePost, Stream, Tile } from '../types';
   selector: 'app-service-host',
   templateUrl: './service-host.component.html',
   styleUrls: ['./service-host.component.scss'],
-  // changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [
     trigger('popup', [
       state('show', style({ opacity: 1 })),
@@ -81,9 +80,6 @@ export class ServiceHostComponent extends SocketListener implements OnInit {
   }
 
   ngOnInit() {
-    // deprecated
-    // this.all$.pipe(this.takeUntil()).subscribe(z => this.sourceMap.set('compo', [...this.sourceMap.get('compo'), ...z]));
-
     this.init();
     super.startListenSocket();
 
