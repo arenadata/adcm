@@ -1,7 +1,8 @@
 # Set number of threads
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 ADCMBASE_IMAGE ?= arenadata/adcmbase
-ADCMBASE_TAG ?= 20191129171856
+ADCMBASE_TAG ?= 20191206180316
+
 
 # Default target
 .PHONY: help
