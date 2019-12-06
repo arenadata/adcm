@@ -1,13 +1,13 @@
-// Colors
-@import "~materialize-css/sass/components/color-variables";
-@import "~materialize-css/sass/components/color-classes";
+// // Colors
+// @import "~materialize-css/sass/components/color-variables";
+// @import "~materialize-css/sass/components/color-classes";
 
-// Variables;
-@import "~materialize-css/sass/components/variables";
+// // Variables;
+// @import "~materialize-css/sass/components/variables";
 
-// Reset
-@import "~materialize-css/sass/components/normalize";
-@import "~materialize-css/sass/components/grid";
+// // Reset
+// @import "~materialize-css/sass/components/normalize";
+// @import "~materialize-css/sass/components/grid";
 
 body {
   margin: 0;
@@ -150,6 +150,14 @@ body {
 
 .row {
   display: flex;
+
+  & .col-4 {
+    flex: 1 0 20%;
+  }
+
+  & .col-8 {
+    flex: 0 1 80%;
+  }
 
   & .star {
     flex-basis: 20px;
