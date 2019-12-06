@@ -61,6 +61,6 @@ npm_check: ## Run npm-check
 	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web/src ci.arenadata.io/functest:u18-x64 \
 	/bin/bash -c 'npm i --production && { ignore=`cat ../../.npmcheckignore | grep -v "#"`\; npm-check --production --skip-unused --ignore $$ignore || true; } && npm audit'
 	
-django_tests : ## Run django tests
-	docker pull ci.arenadata.io/adcm:latest
-	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/ ci.arenadata.io/adcm:latest python manage.py test cm
+django_tests : ## Run django tests. For local usage call "make build" before this operation
+	docker pull $(ADCMBASE_IMAGE):$(ADCMBASE_TAG)
+	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) python manage.py test cm
