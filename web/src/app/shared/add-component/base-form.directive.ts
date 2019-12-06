@@ -13,7 +13,7 @@ import { Directive, EventEmitter, OnDestroy, Output } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { Entities } from '@app/core/types';
 
-import { BaseDirective } from '../../directives/base.directive';
+import { BaseDirective } from '../directives/base.directive';
 import { AddService } from './add.service';
 
 @Directive({

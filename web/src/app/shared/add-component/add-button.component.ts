@@ -12,8 +12,8 @@
 import { Component, EventEmitter, Input, OnDestroy, Output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 
-import { DialogComponent } from '../../components/dialog.component';
-import { BaseDirective } from '../../directives/base.directive';
+import { DialogComponent } from '../components/dialog.component';
+import { BaseDirective } from '../directives/base.directive';
 import { AddFormComponent as component } from './add-form.component';
 import { AddService } from './add.service';
 
