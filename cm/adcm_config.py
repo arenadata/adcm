@@ -13,6 +13,7 @@
 import os
 import json
 import collections
+import yspec.checker
 from django.conf import settings
 from django.db.utils import OperationalError
 
@@ -94,7 +95,7 @@ def get_default(c, proto=None):   # pylint: disable=too-many-branches
 
 
 def type_is_complex(conf_type):
-    if conf_type in ('json', 'list', 'map'):
+    if conf_type in ('json', 'structure', 'list', 'map'):
         return True
     return False
 
@@ -519,6 +520,12 @@ def check_config_type(ref, key, subkey, spec, value, default=False, inactive=Fal
             )
             err('CONFIG_VALUE_ERROR', msg)
 
+    def get_limits():
+        if default:
+            return spec['limits']
+        else:
+            return json.loads(spec['limits'])
+
     if value is None:
         if inactive:
             return
@@ -559,6 +566,14 @@ def check_config_type(ref, key, subkey, spec, value, default=False, inactive=Fal
                 err('CONFIG_VALUE_ERROR', tmpl1.format("is too long"))
             read_file_type(value, ref, default, key, subkey)
 
+    if spec['type'] == 'structure':
+        schema = get_limits()['yspec']
+        try:
+            yspec.checker.process_rule(value, schema, 'root')
+        except yspec.checker.FormatError as e:
+            msg = tmpl1.format("yspec error: {} at block {}".format(str(e), e.data))
+            err('CONFIG_VALUE_ERROR', msg)
+
     if spec['type'] == 'boolean':
         if not isinstance(value, bool):
             err('CONFIG_VALUE_ERROR', tmpl2.format("should be boolean"))
@@ -573,10 +588,7 @@ def check_config_type(ref, key, subkey, spec, value, default=False, inactive=Fal
 
     if spec['type'] == 'integer' or spec['type'] == 'float':
         if 'limits' in spec:
-            if default:
-                limits = spec['limits']
-            else:
-                limits = json.loads(spec['limits'])
+            limits = get_limits()
             if 'min' in limits:
                 if value < limits['min']:
                     msg = 'should be more than {}'.format(limits['min'])
@@ -587,11 +599,7 @@ def check_config_type(ref, key, subkey, spec, value, default=False, inactive=Fal
                     err('CONFIG_VALUE_ERROR', tmpl2.format(msg))
 
     if spec['type'] == 'option':
-        if default:
-            option = spec['option']
-        else:
-            limits = json.loads(spec['limits'])
-            option = limits['option']
+        option = get_limits()['option']
         check = False
         for _, v in option.items():
             if v == value:
