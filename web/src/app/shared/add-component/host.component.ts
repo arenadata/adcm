@@ -14,9 +14,9 @@ import { clearEmptyField, Cluster, Provider } from '@app/core/types';
 import { BehaviorSubject } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
 
+import { ActionsDirective } from '../components/actions/actions.directive';
 import { AddService } from './add.service';
 import { BaseFormDirective } from './base-form.directive';
-import { ActionsDirective } from '../actions/actions.directive';
 
 @Component({
   selector: 'app-add-host',
