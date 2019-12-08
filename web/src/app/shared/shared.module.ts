@@ -14,34 +14,29 @@ import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
+import { AddingModule } from './add-component/adding.module';
 import {
   ActionMasterComponent,
   ActionsComponent,
-  AddButtonComponent,
-  AddFormComponent,
-  BaseFormDirective,
   BaseListDirective,
   ButtonSpinnerComponent,
-  ClusterComponent,
   CrumbsComponent,
   DetailComponent,
   DialogComponent,
   ExportComponent,
-  Host2clusterComponent,
-  HostComponent,
   ImportComponent,
   IssueInfoComponent,
   ListComponent,
   MainInfoComponent,
   Much2ManyComponent,
-  ProviderComponent,
-  ServiceComponent,
   ServiceHostComponent,
   StatusComponent,
   StatusInfoComponent,
   UpgradeComponent,
 } from './components';
+import { ActionsDirective } from './components/actions/actions.directive';
 import { HolderDirective } from './components/hostmap/holder.directive';
+import { SimpleTextComponent } from './components/tooltip';
 import { ConfigurationModule } from './configuration/configuration.module';
 import { DynamicDirective, HoverDirective, ScrollDirective } from './directives';
 import { InfinityScrollDirective } from './directives/infinity-scroll.directive';
@@ -50,11 +45,9 @@ import { FormElementsModule } from './form-elements/form-elements.module';
 import { MaterialModule } from './material.module';
 import { BreakRowPipe, TagEscPipe } from './pipes';
 import { StuffModule } from './stuff.module';
-import { ActionsDirective } from './components/actions/actions.directive';
-import { SimpleTextComponent } from './components/tooltip';
 
 @NgModule({
-  imports: [CommonModule, MaterialModule, FormsModule, ReactiveFormsModule, RouterModule, StuffModule, FormElementsModule, ConfigurationModule],
+  imports: [CommonModule, MaterialModule, FormsModule, ReactiveFormsModule, RouterModule, StuffModule, FormElementsModule, ConfigurationModule, AddingModule],
   declarations: [
     DetailComponent,
     DialogComponent,
@@ -72,17 +65,9 @@ import { SimpleTextComponent } from './components/tooltip';
     TagEscPipe,
     IssueInfoComponent,
     SimpleTextComponent,
-    AddButtonComponent,
-    AddFormComponent,
     BaseListDirective,
     StatusComponent,
     StatusInfoComponent,
-    ProviderComponent,
-    ClusterComponent,
-    HostComponent,
-    ServiceComponent,
-    Host2clusterComponent,
-    BaseFormDirective,
     MainInfoComponent,
     ActionsComponent,
     ScrollDirective,
@@ -90,17 +75,9 @@ import { SimpleTextComponent } from './components/tooltip';
     MultiSortDirective,
     ImportComponent,
     ExportComponent,
-    InfinityScrollDirective,
+    InfinityScrollDirective
   ],
-  entryComponents: [
-    DialogComponent,
-    ActionMasterComponent,
-    IssueInfoComponent,
-    AddFormComponent,
-    IssueInfoComponent,
-    StatusInfoComponent,
-    SimpleTextComponent
-  ],
+  entryComponents: [DialogComponent, ActionMasterComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent],
   exports: [
     FormsModule,
     ReactiveFormsModule,
@@ -108,6 +85,7 @@ import { SimpleTextComponent } from './components/tooltip';
     StuffModule,
     FormElementsModule,
     ConfigurationModule,
+    AddingModule,
     DetailComponent,
     DialogComponent,
     ListComponent,
@@ -117,7 +95,6 @@ import { SimpleTextComponent } from './components/tooltip';
     HoverDirective,
     DynamicDirective,
     ButtonSpinnerComponent,
-    AddButtonComponent,
     UpgradeComponent,
     ActionsDirective,
     ServiceHostComponent,
@@ -125,18 +102,12 @@ import { SimpleTextComponent } from './components/tooltip';
     BaseListDirective,
     StatusComponent,
     StatusInfoComponent,
-    ProviderComponent,
-    ClusterComponent,
-    HostComponent,
-    ServiceComponent,
-    Host2clusterComponent,
-    BaseFormDirective,
     MainInfoComponent,
     ActionsComponent,
     ScrollDirective,
     ImportComponent,
     ExportComponent,
-    InfinityScrollDirective,
-  ],
+    InfinityScrollDirective
+  ]
 })
 export class SharedModule {}

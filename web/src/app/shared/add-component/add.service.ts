@@ -18,10 +18,10 @@ import { Prototype, Provider, ServicePrototype, StackBase, TypeName } from '@app
 import { Cluster, Host } from '@app/core/types/api';
 import { environment } from '@env/environment';
 import { Observable, of } from 'rxjs';
-import { concatAll, filter, map, switchMap, tap } from 'rxjs/operators';
+import { concatAll, filter, map, switchMap } from 'rxjs/operators';
 
-import { DialogComponent } from '../../components/dialog.component';
-import { ListResult } from '../list/list.component';
+import { DialogComponent } from '../components/dialog.component';
+import { ListResult } from '../components/list/list.component';
 
 export interface FormModel {
   name: string;
