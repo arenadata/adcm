@@ -17,6 +17,7 @@ import json
 import yaml
 import toml
 import hashlib
+import yspec.checker
 
 from django.db import transaction
 from rest_framework import status
@@ -567,6 +568,27 @@ def is_group(conf):
     return False
 
 
+def get_yspec(proto, ref, bundle_hash, conf, name, subname):
+    if 'yspec' not in conf:
+        msg = 'Config key "{}/{}" of {} has no mandatory yspec key'
+        err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
+    if not isinstance(conf['yspec'], str):
+        msg = 'Config key "{}/{}" of {} yspec field should be string'
+        err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
+    msg = 'yspec file of config key "{}/{}":'.format(name, subname)
+    yspec_body = read_bundle_file(conf['yspec'], bundle_hash, msg, ref)
+    try:
+        schema = yaml.safe_load(yspec_body)
+    except yaml.parser.ParserError as e:
+        msg = 'yspec file of config key "{}/{}" yaml decode error: {}'
+        err('CONFIG_TYPE_ERROR', msg.format(name, subname, e))
+    ok, error = yspec.checker.check_rule(schema)
+    if not ok:
+        msg = 'yspec file of config key "{}/{}" error: {}'
+        err('CONFIG_TYPE_ERROR', msg.format(name, subname, error))
+    return schema
+
+
 def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pylint: disable=too-many-locals,too-many-statements,too-many-branches
     if not in_dict(proto_conf, 'config'):
         return
@@ -636,6 +658,8 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
             if 'max' in conf:
                 check_limit(conf['type'], conf['max'], name, subname, 'max')
                 opt['max'] = conf['max']
+        elif conf['type'] == 'structure':
+            opt['yspec'] = get_yspec(proto, ref, bundle_hash, conf, name, subname)
         elif is_group(conf):
             if 'activatable' in conf:
                 valudate_bool(conf['activatable'], 'activatable', name)
@@ -684,7 +708,7 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
             )
         else:
             allow = (
-                'type', 'description', 'display_name', 'default', 'required', 'name',
+                'type', 'description', 'display_name', 'default', 'required', 'name', 'yspec',
                 'option', 'limits', 'max', 'min', 'read_only', 'writable', 'ui_options'
             )
         check_extra_keys(conf, allow, 'config key "{}/{}" of {}'.format(name, subname, ref))
