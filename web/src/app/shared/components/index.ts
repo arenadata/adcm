@@ -25,4 +25,3 @@ export * from './upgrade.component';
 export * from './actions/actions.component';
 export * from './actions/master/master.component';
 export * from './import/import.component';
-export * from './add-component';

@@ -256,6 +256,7 @@ CONFIG_FIELD_TYPE = (
     ('file', 'file'),
     ('list', 'list'),
     ('map', 'map'),
+    ('structure', 'structure'),
     ('group', 'group'),
 )
 

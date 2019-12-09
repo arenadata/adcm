@@ -1,4 +1,4 @@
-FROM arenadata/adcmbase:20191129171856
+FROM arenadata/adcmbase:20191206180316
 
 COPY . /adcm/
 
