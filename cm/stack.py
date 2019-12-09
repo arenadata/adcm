@@ -159,7 +159,7 @@ def get_license_hash(proto, conf, bundle_hash):
     if not isinstance(conf['license'], str):
         err('INVALID_OBJECT_DEFINITION', 'license should be a string ({})'.format(proto_ref(proto)))
     msg = 'license file'
-    body = read_bundle_file(conf['license'], bundle_hash, msg, proto_ref(proto))
+    body = read_bundle_file(proto, conf['license'], bundle_hash, msg)
     sha1 = hashlib.sha256()
     sha1.update(body.encode('utf-8'))
     return sha1.hexdigest()
@@ -576,7 +576,7 @@ def get_yspec(proto, ref, bundle_hash, conf, name, subname):
         msg = 'Config key "{}/{}" of {} yspec field should be string'
         err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
     msg = 'yspec file of config key "{}/{}":'.format(name, subname)
-    yspec_body = read_bundle_file(conf['yspec'], bundle_hash, msg, ref)
+    yspec_body = read_bundle_file(proto, conf['yspec'], bundle_hash, msg)
     try:
         schema = yaml.safe_load(yspec_body)
     except yaml.parser.ParserError as e:
@@ -733,7 +733,7 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
                 err('INVALID_CONFIG_DEFINITION', msg.format(name, subname, ref))
         dict_json_to_obj(conf, 'ui_options', sc)
         if 'default' in conf:
-            check_config_type(ref, name, subname, conf, conf['default'], bundle_hash)
+            check_config_type(proto, name, subname, conf, conf['default'], bundle_hash)
         if type_is_complex(conf['type']):
             dict_json_to_obj(conf, 'default', sc)
         else:
