@@ -84,4 +84,4 @@ def test_password_noconfirm_true_required_true(sdk_client_fs: ADCMClient, login,
     password_field = config.get_password_elements()[0]
     forms = [form.text for form in password_field.find_elements(*Common.mat_form_field)]
     assert len(forms) == 1, forms
-    assert 'Field [password] is required!' == forms[0], forms
+    assert forms[0] == 'Field [password] is required!', forms
