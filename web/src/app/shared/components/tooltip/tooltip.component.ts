@@ -35,16 +35,12 @@ export class SimpleTextComponent implements OnInit {
 
 @Component({
   selector: 'app-tooltip',
-  template: `
-    {{ contentAsString }}
-    <ng-container *ngComponentOutlet="CurrentComponent; injector: componentInjector"></ng-container>
-  `,
+  template: '<ng-container *ngComponentOutlet="CurrentComponent; injector: componentInjector"></ng-container>',
   styleUrls: ['./tooltip.component.scss']
 })
 export class TooltipComponent extends BaseDirective implements OnInit, OnDestroy {
   private options: TooltipOptions;
-  contentAsString: string;
-  timeOut: any;
+  source: HTMLElement;
 
   CurrentComponent: Type<SimpleTextComponent | IssueInfoComponent | StatusInfoComponent>;
   componentInjector: Injector;
@@ -54,32 +50,32 @@ export class TooltipComponent extends BaseDirective implements OnInit, OnDestroy
   }
 
   @HostListener('mouseenter', ['$event']) menter() {
-    clearTimeout(this.timeOut);
+    this.service.mouseEnterTooltip();
   }
 
   @HostListener('mouseleave') mleave() {
-    this.timeOut = setTimeout(() => this.hide(), 500);
+    this.service.mouseLeaveTooltip();
   }
 
   ngOnInit(): void {
     this.service.position$.pipe(this.takeUntil()).subscribe(o => {
-      clearTimeout(this.timeOut);
       if (o) {
-        // this.clear();
-        this.options = o;
-        this.buildComponent();
-      } else this.timeOut = setTimeout(() => this.hide(), 500);
+        this.clear();
+        this.buildComponent(o);
+      } else this.hide();
     });
-  }
-
-  clear() {
-    const source = this.service.source;
-    if (source) this.renderer.removeChild(this.renderer.parentNode(source), this.el.nativeElement);
   }
 
   hide() {
     this.renderer.setAttribute(this.el.nativeElement, 'style', `opacity: 0`);
     setTimeout(() => this.clear(), 300);
+  }
+
+  clear() {
+    if (this.source) {
+      this.renderer.removeChild(this.renderer.parentNode(this.source), this.el.nativeElement);
+      this.source = null;
+    }
   }
 
   position() {
@@ -90,14 +86,15 @@ export class TooltipComponent extends BaseDirective implements OnInit, OnDestroy
 
     const bodyWidth = document.querySelector('body').offsetWidth,
       bodyHeight = (document.getElementsByTagName('app-root')[0] as HTMLElement).offsetHeight,
-      extLeft = o.event.x - el.offsetWidth,
+      // extLeft = o.event.x - el.offsetWidth,
       extRight = o.event.x + el.offsetWidth + o.source.offsetWidth / 2,
-      extTop = o.event.y - el.offsetHeight,
+      // extTop = o.event.y - el.offsetHeight,
       extBottom = o.event.y + el.offsetHeight;
 
     const dx = extRight - bodyWidth,
       dy = o.source.offsetHeight / 2 + el.offsetHeight / 2 + POSITION_MARGIN,
-      bottom = bodyHeight < extBottom ? `bottom: ${POSITION_MARGIN}px;` : '';
+      dH = bodyHeight - o.event.y - o.source.offsetHeight - POSITION_MARGIN,
+      bottom = bodyHeight < extBottom ? (o.event.y + el.offsetHeight > bodyHeight ? `bottom: 0px; height: ${dH}px;` : `bottom: ${POSITION_MARGIN}px;`) : '';
 
     let xMargin = '';
     let yMargin = '';
@@ -112,10 +109,12 @@ export class TooltipComponent extends BaseDirective implements OnInit, OnDestroy
       xMargin = `margin-left: ${dx}px;`;
     }
 
-    this.renderer.setAttribute(el, 'style', `opacity: .9; ${yMargin} ${xMargin}`);
+    this.renderer.setAttribute(el, 'style', `opacity: .9; ${yMargin} ${xMargin} ${bottom}`);
   }
 
-  buildComponent() {
+  buildComponent(o: TooltipOptions) {
+    this.options = o;
+    this.source = this.options.source;
     this.CurrentComponent = { issue: IssueInfoComponent, status: StatusInfoComponent }[this.options.options.componentName] || SimpleTextComponent;
 
     const emitter = new EventEmitter();
