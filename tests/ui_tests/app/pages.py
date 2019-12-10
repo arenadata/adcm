@@ -662,6 +662,9 @@ class Configuration(BasePage):
         jsons = self._getelements(ConfigurationLocators.app_fields_json)
         return textboxes + maps + passwords + textareas + jsons
 
+    def get_password_elements(self):
+        return self.driver.find_elements(*ConfigurationLocators.app_fields_password)
+
     def _get_config_full_names(self):
         textboxes = self.driver.find_elements(*ConfigurationLocators.app_fields_text_boxes)
         maps = self.driver.find_elements(*ConfigurationLocators.app_fields_text_boxes)

@@ -27,7 +27,7 @@ import { exhaustMap, filter, map } from 'rxjs/operators';
         <div class="example-spacer"></div>
       </mat-toolbar>
       <div class="row main">
-        <mat-nav-list class="col s12 m3 l2">
+        <mat-nav-list class="col-4">
           <a
             mat-list-item
             [appForTest]="'tab_' + item.url"
@@ -37,7 +37,7 @@ import { exhaustMap, filter, map } from 'rxjs/operators';
             >{{ item.title }}
           </a>
         </mat-nav-list>
-        <mat-card class="col s12 m9 l10">
+        <mat-card class="col-8">
           <mat-card-header [style.minHeight.px]="40">
             <mat-card-title>{{ title }}</mat-card-title>
           </mat-card-header>

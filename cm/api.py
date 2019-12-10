@@ -207,11 +207,17 @@ def add_components_to_service(cluster, service):
         sc.save()
 
 
+def get_bundle_proto(bundle):
+    proto = Prototype.objects.filter(bundle=bundle, name=bundle.name)
+    return proto[0]
+
+
 def get_license(bundle):
     if not bundle.license_path:
         return None
     ref = 'bundle "{}" {}'.format(bundle.name, bundle.version)
-    return read_bundle_file(bundle.license_path, bundle.hash, 'license file', ref)
+    proto = get_bundle_proto(bundle)
+    return read_bundle_file(proto, bundle.license_path, bundle.hash, 'license file', ref)
 
 
 @transaction.atomic
