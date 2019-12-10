@@ -89,7 +89,7 @@ def get_default(c, proto=None):   # pylint: disable=too-many-branches
         if proto:
             if c.default:
                 value = read_file_type(
-                    c.default, proto_ref(proto), proto.bundle.hash, c.name, c.subname
+                    proto, c.default, proto.bundle.hash, c.name, c.subname
                 )
     return value
 
@@ -100,13 +100,18 @@ def type_is_complex(conf_type):
     return False
 
 
-def read_file_type(default, ref, bundle_hash, name, subname):
+def read_file_type(proto, default, bundle_hash, name, subname):
     msg = 'config key "{}/{}" default file'.format(name, subname)
-    return read_bundle_file(default, bundle_hash, msg, ref)
+    return read_bundle_file(proto, default, bundle_hash, msg)
 
 
-def read_bundle_file(fname, bundle_hash, pattern, ref):
-    path = os.path.join(config.BUNDLE_DIR, bundle_hash, fname)
+def read_bundle_file(proto, fname, bundle_hash, pattern, ref=None):
+    if not ref:
+        ref = proto_ref(proto)
+    if fname[0:2] == './':
+        path = os.path.join(config.BUNDLE_DIR, bundle_hash, proto.path, fname)
+    else:
+        path = os.path.join(config.BUNDLE_DIR, bundle_hash, fname)
     try:
         fd = open(path, 'r')
     except FileNotFoundError:
@@ -459,7 +464,8 @@ def check_config_spec(proto, obj, spec, flat_spec, conf, old_conf=None, attr=Non
         for subkey in spec[key]:
             if subkey in conf[key]:
                 check_config_type(
-                    ref, key, subkey, spec[key][subkey], conf[key][subkey], False, is_inactive(key)
+                    proto, key, subkey, spec[key][subkey],
+                    conf[key][subkey], False, is_inactive(key)
                 )
             elif key_is_required(key, subkey, spec[key][subkey]):
                 msg = 'There is no required subkey "{}" for key "{}" ({})'
@@ -485,7 +491,7 @@ def check_config_spec(proto, obj, spec, flat_spec, conf, old_conf=None, attr=Non
     for key in spec:
         if 'type' in spec[key] and spec[key]['type'] != 'group':
             if key in conf:
-                check_config_type(ref, key, '', spec[key], conf[key])
+                check_config_type(proto, key, '', spec[key], conf[key])
             elif key_is_required(key, '', spec[key]):
                 msg = 'There is no required key "{}" in input config ({})'
                 err('CONFIG_KEY_ERROR', msg.format(key, ref))
@@ -504,7 +510,8 @@ def check_config_spec(proto, obj, spec, flat_spec, conf, old_conf=None, attr=Non
     return conf
 
 
-def check_config_type(ref, key, subkey, spec, value, default=False, inactive=False):   # pylint: disable=too-many-branches,too-many-statements,too-many-locals
+def check_config_type(proto, key, subkey, spec, value, default=False, inactive=False):   # pylint: disable=too-many-branches,too-many-statements,too-many-locals
+    ref = proto_ref(proto)
     if default:
         label = 'Default value'
     else:
@@ -564,7 +571,7 @@ def check_config_type(ref, key, subkey, spec, value, default=False, inactive=Fal
         if default:
             if len(value) > 2048:
                 err('CONFIG_VALUE_ERROR', tmpl1.format("is too long"))
-            read_file_type(value, ref, default, key, subkey)
+            read_file_type(proto, value, default, key, subkey)
 
     if spec['type'] == 'structure':
         schema = get_limits()['yspec']
@@ -693,8 +700,7 @@ def set_object_config(obj, keys, value):
         msg = '{} does not has config key "{}/{}"'
         err('CONFIG_NOT_FOUND', msg.format(proto_ref(proto), key, subkey))
 
-    ref = proto_ref(obj.prototype)
-    check_config_type(ref, key, subkey, obj_to_dict(pconf, ('type', 'limits', 'option')), value)
+    check_config_type(proto, key, subkey, obj_to_dict(pconf, ('type', 'limits', 'option')), value)
     # if config_is_ro(obj, keys, pconf.limits):
     #    msg = 'config key {} of {} is read only'
     #    err('CONFIG_VALUE_ERROR', msg.format(key, ref))
