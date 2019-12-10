@@ -9,19 +9,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { IConfig } from '@app/shared/configuration/types';
+import { Component, OnInit, Input } from '@angular/core';
+import { FieldOptions } from '../types';
+import { FormGroup } from '@angular/forms';
 
-export interface IActionParameter {
-  action: 'add' | 'remove';
-  component: string;
-  service: string;
-}
+@Component({
+  selector: 'app-yspec-fields',
+  templateUrl: './yspec-fields.component.html',
+  styleUrls: ['./yspec-fields.component.scss']
+})
+export class YspecFieldsComponent implements OnInit {
+  @Input()
+  options: FieldOptions;
+  @Input()
+  form: FormGroup;
 
-export interface IAction {
-  name: string;
-  display_name: string;
-  run: string;
-  config: IConfig;
-  hostcomponentmap: IActionParameter | null;
-  button: 'create_host' | null;
+  constructor() { }
+
+  ngOnInit() {
+  }
+
 }

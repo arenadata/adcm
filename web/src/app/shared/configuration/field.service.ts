@@ -11,7 +11,7 @@
 // limitations under the License.
 import { Injectable } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ValidatorFn, Validators } from '@angular/forms';
-import { ConfigOptions, FieldOptions, FieldStack, IConfig, PanelOptions } from '@app/core/types';
+import { ConfigOptions, FieldOptions, FieldStack, IConfig, PanelOptions } from './types';
 
 export interface CompareConfig extends IConfig {
   color: string;

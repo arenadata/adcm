@@ -14,31 +14,30 @@
   </ng-container>
 
   <ng-container *ngSwitchCase="'password'">
-    <app-fields-password [appForTest]="options.key" [field]="options" [form]="form" [appForTest]="getTestName()"></app-fields-password>
+    <app-fields-password [appForTest]="getTestName()" [field]="options" [form]="form"></app-fields-password>
   </ng-container>
 
   <ng-container *ngSwitchCase="'boolean'">
-    <app-fields-boolean [appForTest]="options.key" [field]="options" [form]="form" [appForTest]="getTestName()"></app-fields-boolean>
+    <app-fields-boolean [field]="options" [form]="form" [appForTest]="getTestName()"></app-fields-boolean>
   </ng-container>
 
   <ng-container *ngSwitchCase="'textbox'">
-    <app-fields-textbox [appForTest]="options.key" [field]="options" [form]="form" [appForTest]="getTestName()"></app-fields-textbox>
+    <app-fields-textbox [field]="options" [form]="form" [appForTest]="getTestName()"></app-fields-textbox>
   </ng-container>
 
   <ng-container *ngSwitchCase="'textarea'">
-    <app-fields-textarea [appForTest]="options.key" [field]="options" [form]="form" [appForTest]="getTestName()"></app-fields-textarea>
+    <app-fields-textarea [field]="options" [form]="form" [appForTest]="getTestName()"></app-fields-textarea>
   </ng-container>
 
   <ng-container *ngSwitchCase="'json'">
-    <app-fields-json [appForTest]="options.key" [field]="options" [form]="form" [appForTest]="getTestName()"></app-fields-json>
+    <app-fields-json [field]="options" [form]="form" [appForTest]="getTestName()"></app-fields-json>
   </ng-container>
 
   <ng-container *ngSwitchCase="'option'">
-    <app-fields-dropdown [appForTest]="options.key" [field]="options" [form]="form" [appForTest]="getTestName()"></app-fields-dropdown>
+    <app-fields-dropdown [field]="options" [form]="form" [appForTest]="getTestName()"></app-fields-dropdown>
   </ng-container>
 
 </div>
-
 <mat-list class="compare-list-container" dense *ngIf="!options.hidden && compare.length">
   <mat-list-item *ngFor="let item of compare" class="compare-list">
     <mat-icon matListIcon [style.backgroundColor]="item.config.color">more_vert</mat-icon>

@@ -13,10 +13,10 @@ import { Component, Input, OnInit, QueryList, ViewChild, ViewChildren } from '@a
 import { AbstractControl, FormGroup } from '@angular/forms';
 import { MatExpansionPanel } from '@angular/material/expansion';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
-import { FieldOptions, PanelOptions } from '@app/core/types';
 
 import { FieldService } from '../field.service';
 import { FieldComponent } from '../field/field.component';
+import { FieldOptions, PanelOptions } from '../types';
 
 @Component({
   selector: 'app-group-fields',

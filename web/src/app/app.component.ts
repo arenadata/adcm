@@ -106,7 +106,7 @@ export class AppComponent implements OnInit {
     // error notification
     this.message.message$.subscribe((error: Message) =>
       this.snackBar.open(`${error.title} ${error.subtitle || ''}`, 'Hide', {
-        duration: 5000,
+        // duration: 5000,
         panelClass: 'snack-bar-error',
       })
     );

@@ -37,11 +37,12 @@ export interface FieldStack {
   value: null | string | number | boolean;
   required: boolean;
   description: string;
-  limits: {
+  limits?: {
     min?: number;
     max?: number;
     option?: any;
-    read_only: stateType[];
+    read_only?: stateType[];
+    yspec?: Object;
   };
   read_only: boolean;
   hidden: boolean;
@@ -85,6 +86,6 @@ export interface FieldOptions extends ConfigOptions {
   type: string;
   validator: ValidatorInfo;
   disabled?: boolean;
-  limits: any;
+  limits?: any;
   required: boolean;
 }
