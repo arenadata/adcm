@@ -48,7 +48,6 @@ class Common:
 
     # Error dialog elemetns
     error = bys.by_class('snack-bar-error')
-    form_field_error = bys.by_tag("mat-error")
     hide_err = ''
 
     # Action elements
