@@ -6,11 +6,11 @@
   }">
 
   <ng-container *ngSwitchCase="'map'">
-    <app-fields-map [appForTest]="options.key" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="form"></app-fields-map>
+    <app-fields-map [appForTest]="getTestName()" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="form"></app-fields-map>
   </ng-container>
 
   <ng-container *ngSwitchCase="'list'">
-    <app-fields-list [appForTest]="options.key" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="form"></app-fields-list>
+    <app-fields-list [appForTest]="getTestName()" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="form"></app-fields-list>
   </ng-container>
 
   <ng-container *ngSwitchCase="'password'">

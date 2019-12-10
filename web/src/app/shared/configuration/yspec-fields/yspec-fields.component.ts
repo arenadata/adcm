@@ -24,9 +24,19 @@ export class YspecFieldsComponent implements OnInit {
   @Input()
   form: FormGroup;
 
+  data: any;
+  scheme: any;
+
   constructor() { }
 
   ngOnInit() {
+
+    this.data =  this.options.default;
+
+    this.scheme = this.options.limits.yspec;
+
+    const output = [];
+
   }
 
 }

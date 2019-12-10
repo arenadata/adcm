@@ -33,7 +33,7 @@ export interface FieldStack {
   name: string;
   display_name: string;
   subname: string;
-  default: null | string | number | boolean;
+  default: null | string | number | boolean | object | any[];
   value: null | string | number | boolean;
   required: boolean;
   description: string;
@@ -81,6 +81,7 @@ export interface PanelOptions extends ConfigOptions {
 export interface FieldOptions extends ConfigOptions {
   key: string;
   subname: string;
+  default: null | string | number | boolean | object | any[];
   value: string | number | boolean | object | string[] | null;
   controlType: string;
   type: string;
