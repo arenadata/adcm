@@ -50,7 +50,7 @@ export function isNumber(value) {
 
 const IssueName = {
   config: 'configuration',
-  host_component: 'host - components',
+  host_component: 'host - components'
 };
 export function issueMessage(e: { id: number; name: string; issue: Issue }, typeName: string) {
   if (e.issue)
@@ -151,7 +151,7 @@ export function parseValueConfig(input: any[], value: any) {
   }, {});
 }
 
-export type ConfigValueTypes = 'string' | 'integer' | 'float' | 'boolean' | 'option' | 'json' | 'map' | 'list' | 'file' | 'text' | 'password';
+export type ConfigValueTypes = 'structure' | 'string' | 'integer' | 'float' | 'boolean' | 'option' | 'json' | 'map' | 'list' | 'file' | 'text' | 'password';
 
 /**
  * Type casting after form editing
@@ -170,6 +170,8 @@ export function checkValue(value: string | boolean | object | Array<string> | nu
         }, {});
     case 'list':
       return (value as Array<string>).filter(a => a);
+    case 'structure':
+      return value;
   }
 
   if (typeof value === 'boolean') return value;

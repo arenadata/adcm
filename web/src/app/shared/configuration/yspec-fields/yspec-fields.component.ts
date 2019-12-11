@@ -28,16 +28,19 @@ export class YspecFieldsComponent implements OnInit {
   form: FormGroup;
 
   output: FieldOptions[];
+  schemeFormGroup = new FormGroup({});
 
   constructor(private yspec: YspecService, private field: FieldService) {}
 
   ngOnInit() {
     const scheme = this.options.limits.yspec;
-
     this.output = this.yspec.prepare(scheme, this.options.default as {});
 
     this.output.forEach(field => {
-      this.form.setControl(field.key, new FormControl({ value: field.value, disabled: false }, this.field.setValidator(field)));
+      this.schemeFormGroup.setControl(field.key, new FormControl({ value: field.value, disabled: false }, this.field.setValidator(field)));
     });
+
+    this.form.setControl(this.options.key, this.schemeFormGroup);
+    
   }
 }
