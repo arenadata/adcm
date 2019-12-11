@@ -25,10 +25,12 @@
           {{ model.current.display_name || model.current.name || model.current.fqdn }}
         </mat-card-title>
         <mat-card-subtitle>
-          
+
           <ng-container *ngIf="model.current.typeName==='job'; else link">
-            <a *ngFor="let o of model.current.objects; index as i; last as lastElement"
-              [routerLink]="getParentLink(model.current.objects, i)">{{ o.name }}<span *ngIf="!lastElement"> / </span></a>
+            <ng-container *ngFor="let o of model.current.objects; index as i; last as lastElement">
+              <a [routerLink]="getParentLink(model.current.objects, i)">{{ o.name }}</a>
+              <span *ngIf="!lastElement"> / </span>
+            </ng-container>
           </ng-container>
           <ng-template #link>
             <a [routerLink]="[
