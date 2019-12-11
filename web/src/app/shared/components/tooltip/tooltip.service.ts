@@ -42,14 +42,7 @@ export class ComponentData {
 export class TooltipService {
   private positionSource = new Subject<TooltipOptions>();
   position$ = this.positionSource.asObservable();
-  source: HTMLElement;
-
-  show(event: MouseEvent, source: HTMLElement, options: TooltipDisplayOptions) {
-    if (this.isShow(source, options)) {
-      this.positionSource.next({ event, source, options });
-      this.source = source;
-    }
-  }
+  timeOut: any;
 
   /**
    * TODO: show a tooltip if there is a condition
@@ -64,7 +57,22 @@ export class TooltipService {
     return true;
   }
 
+  show(event: MouseEvent, source: HTMLElement, options: TooltipDisplayOptions) {
+    clearTimeout(this.timeOut);
+    if (this.isShow(source, options)) {
+      this.positionSource.next({ event, source, options });
+    }
+  }
+
   hide() {
-    this.positionSource.next();
+    this.timeOut = setTimeout(() => this.positionSource.next(), 500);
+  }
+
+  mouseEnterTooltip() {
+    clearTimeout(this.timeOut);
+  }
+
+  mouseLeaveTooltip() {
+    this.hide();
   }
 }
