@@ -11,12 +11,15 @@
 // limitations under the License.
 import { Component, OnInit, Input } from '@angular/core';
 import { FieldOptions } from '../types';
-import { FormGroup } from '@angular/forms';
+import { FormGroup, FormControl } from '@angular/forms';
+import { YspecService } from './yspec.service';
+import { FieldService } from '../field.service';
 
 @Component({
   selector: 'app-yspec-fields',
   templateUrl: './yspec-fields.component.html',
-  styleUrls: ['./yspec-fields.component.scss']
+  styleUrls: ['./yspec-fields.component.scss'],
+  providers: [YspecService]
 })
 export class YspecFieldsComponent implements OnInit {
   @Input()
@@ -24,19 +27,17 @@ export class YspecFieldsComponent implements OnInit {
   @Input()
   form: FormGroup;
 
-  data: any;
-  scheme: any;
+  output: FieldOptions[];
 
-  constructor() { }
+  constructor(private yspec: YspecService, private field: FieldService) {}
 
   ngOnInit() {
+    const scheme = this.options.limits.yspec;
 
-    this.data =  this.options.default;
+    this.output = this.yspec.prepare(scheme, this.options.default as {});
 
-    this.scheme = this.options.limits.yspec;
-
-    const output = [];
-
+    this.output.forEach(field => {
+      this.form.setControl(field.key, new FormControl({ value: field.value, disabled: false }, this.field.setValidator(field)));
+    });
   }
-
 }

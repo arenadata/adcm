@@ -11,6 +11,27 @@
 // limitations under the License.
 import { InnerIssue, Issue } from './issue';
 
+export function getPattern(name: string): RegExp {
+  const fn = {
+    integer: () => new RegExp(/^\d+$/),
+    int: () => new RegExp(/^\d+$/),
+    float: () => new RegExp(/^[0-9]+(\.[0-9]+)?$/)
+  };
+  return fn[name] ? fn[name]() : null;
+}
+
+export function controlType(name: string): string {
+  const ControlsTypes = {
+    bool: 'boolean',
+    file: 'textarea',
+    text: 'textarea',
+    integer: 'textbox',
+    float: 'textbox',
+    string: 'textbox'
+  };
+  return ControlsTypes[name] || name;
+}
+
 export function getTypeName(name: string) {
   return name ? name.split('2')[0] : name;
 }
