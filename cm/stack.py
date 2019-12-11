@@ -204,8 +204,10 @@ def check_component_constraint_definition(proto, name, conf):
             return
         elif item == '+':
             return
+        elif item == 'odd':
+            return
         else:
-            msg = 'constraint item of component "{}" in {} should be only digit or "+"'
+            msg = 'constraint item of component "{}" in {} should be only digit or "+" or "odd"'
             err('INVALID_COMPONENT_DEFINITION', msg.format(name, ref))
 
     if not isinstance(const, list):
