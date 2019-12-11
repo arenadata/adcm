@@ -25,7 +25,8 @@ def login(app):
 @parametrize_by_data_subdirs(
     __file__, "integer")
 def test_integer(sdk_client_fs: ADCMClient, path, app, login):
-    """Check that we have errors and save button is not active for integer field with values out of range
+    """Check that we have errors and save button is not active
+     for integer field with values out of range
     """
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
@@ -61,7 +62,8 @@ def test_integer(sdk_client_fs: ADCMClient, path, app, login):
 @parametrize_by_data_subdirs(
     __file__, "float")
 def test_float(sdk_client_fs: ADCMClient, path, app, login):
-    """Check that we have errors and save button is not active for float field with values out of range
+    """Check that we have errors and save button is not active
+     for float field with values out of range
     """
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
