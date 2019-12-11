@@ -29,7 +29,7 @@ interface Upgrade {
   name: string;
   description: string;
   do: string;
-  upgradable: boolean;  
+  upgradable: boolean;
   from_edition: string[];
 }
 
@@ -37,7 +37,8 @@ interface Upgrade {
   selector: 'app-upgrade',
   template: `
     <ng-container *ngIf="row.upgradable && !checkIssue(row.issue); else dumb">
-      <button [appForTest]="'upgrade_btn'"
+      <button
+        [appForTest]="'upgrade_btn'"
         matTooltip="There are a pending upgrades of object here"
         mat-icon-button
         color="warn"
@@ -48,8 +49,8 @@ interface Upgrade {
       </button>
       <mat-menu #menu="matMenu" [overlapTrigger]="false" xPosition="before">
         <ng-template matMenuContent>
-          <button *ngFor="let item of (list$ | async)" mat-menu-item (click)="runUpgrade(item)">
-            <span>{{ item.name || 'No name' }} {{ item.from_edition.join('; ') }}</span>
+          <button *ngFor="let item of list$ | async" mat-menu-item (click)="runUpgrade(item)">
+            <span>{{ item.name || 'No name' }}</span>
           </button>
         </ng-template>
       </mat-menu>
@@ -57,7 +58,7 @@ interface Upgrade {
     <ng-template #dumb>
       <button mat-icon-button color="primary" [disabled]="true"><mat-icon>sync_disabled</mat-icon></button>
     </ng-template>
-  `,
+  `
 })
 export class UpgradeComponent {
   list$: Observable<Upgrade[]>;
@@ -83,16 +84,12 @@ export class UpgradeComponent {
           title: 'Are you sure you want to upgrade?',
           text: item.description,
           disabled: !item.upgradable,
-          controls: ['Yes', 'No'],
-        },
+          controls: ['Yes', 'No']
+        }
       })
       .beforeClosed()
       .pipe(filter(yes => yes))
-      .subscribe(() =>
-        this.api
-          .post(item.do, {})
-          .subscribe((result: { id: number }) => this.refresh.emit({ cmd: 'refresh', row: result }))
-      );
+      .subscribe(() => this.api.post(item.do, {}).subscribe((result: { id: number }) => this.refresh.emit({ cmd: 'refresh', row: result })));
   }
 
   checkIssue(issue: any): boolean {

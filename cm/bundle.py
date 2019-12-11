@@ -70,7 +70,7 @@ def load_bundle(bundle_file):
 def update_bundle(bundle):
     try:
         check_stage()
-        process_bundle('{}/{}'.format(config.BUNDLE_DIR, bundle.hash), bundle.hash)
+        process_bundle(os.path.join(config.BUNDLE_DIR, bundle.hash), bundle.hash)
         get_stage_bundle(bundle.name)
         second_pass()
         update_bundle_from_stage(bundle)
@@ -105,7 +105,7 @@ def order_versions():
 
 
 def process_file(bundle_file):
-    path = "{}/{}".format(config.DOWNLOAD_DIR, bundle_file)
+    path = os.path.join(config.DOWNLOAD_DIR, bundle_file)
     bundle_hash = get_hash_safe(path)
     dir_path = untar_safe(bundle_hash, path)
     return (bundle_hash, dir_path)
@@ -120,7 +120,7 @@ def untar_safe(bundle_hash, path):
 
 
 def untar(bundle_hash, bundle):
-    path = '{}/{}'.format(config.BUNDLE_DIR, bundle_hash)
+    path = os.path.join(config.BUNDLE_DIR, bundle_hash)
     if os.path.isdir(path):
         err('BUNDLE_ERROR', 'bundle directory "{}" already exists'.format(path))
     tar = tarfile.open(bundle)
@@ -149,13 +149,13 @@ def get_hash(bundle_file):
 
 def load_adcm():
     check_stage()
-    adcm_file = '{}/conf/adcm/config.yaml'.format(config.BASE_DIR)
+    adcm_file = os.path.join(config.BASE_DIR, 'conf', 'adcm', 'config.yaml')
     conf = cm.stack.read_definition(adcm_file, 'yaml')
     if not conf:
         log.warning('Empty adcm config (%s)', adcm_file)
         return
     try:
-        cm.stack.save_definition(adcm_file, conf, {}, 'adcm', True)
+        cm.stack.save_definition('', adcm_file, conf, {}, 'adcm', True)
         process_adcm()
     except:
         clear_stage()
@@ -208,10 +208,10 @@ def upgrade_adcm(adcm, bundle):
 
 def process_bundle(path, bundle_hash):
     obj_list = {}
-    for conf_file, conf_type in cm.stack.get_config_files(path):
+    for conf_path, conf_file, conf_type in cm.stack.get_config_files(path, bundle_hash):
         conf = cm.stack.read_definition(conf_file, conf_type)
         if conf:
-            cm.stack.save_definition(conf_file, conf, obj_list, bundle_hash)
+            cm.stack.save_definition(conf_path, conf_file, conf, obj_list, bundle_hash)
 
 
 def check_stage():
@@ -258,7 +258,7 @@ def copy_stage_prototype(stage_prototypes, bundle):
     prototypes = []  # Map for stage prototype id: new prototype
     for sp in stage_prototypes:
         p = copy_obj(sp, Prototype, (
-            'type', 'name', 'version', 'required', 'shared', 'monitoring',
+            'type', 'path', 'name', 'version', 'required', 'shared', 'monitoring',
             'display_name', 'description', 'adcm_min_version'
         ))
         p.bundle = bundle
@@ -352,14 +352,10 @@ def copy_stage_config(stage_config, prototype):
 
 
 def check_license(bundle):
-    b = Bundle.objects.filter(name=bundle.name).order_by('version_order').last()
+    b = Bundle.objects.filter(license_hash=bundle.license_hash, license='accepted')
     if not b:
         return False
-    if b.license != 'accepted':
-        return False
-    if b.license_hash == bundle.license_hash:
-        return True
-    return False
+    return True
 
 
 def copy_stage(bundle_hash, bundle_proto):
@@ -400,6 +396,7 @@ def update_bundle_from_stage(bundle):   # pylint: disable=too-many-locals,too-ma
     for sp in StagePrototype.objects.all():
         try:
             p = Prototype.objects.get(bundle=bundle, type=sp.type, name=sp.name, version=sp.version)
+            p.path = sp.path
             p.description = sp.description
             p.display_name = sp.display_name
             p.required = sp.required
@@ -408,7 +405,7 @@ def update_bundle_from_stage(bundle):   # pylint: disable=too-many-locals,too-ma
             p.adcm_min_version = sp.adcm_min_version
         except Prototype.DoesNotExist:
             p = copy_obj(sp, Prototype, (
-                'type', 'name', 'version', 'required', 'shared', 'monitoring',
+                'type', 'path', 'name', 'version', 'required', 'shared', 'monitoring',
                 'display_name', 'description', 'adcm_min_version'
             ))
             p.bundle = bundle
@@ -511,7 +508,7 @@ def delete_bundle(bundle):
         err('BUNDLE_CONFLICT', msg.format(bundle.id, bundle.name, bundle.version))
     Prototype.objects.filter(bundle=bundle).delete()
     if bundle.hash != 'adcm':
-        shutil.rmtree('{}/{}'.format(config.BUNDLE_DIR, bundle.hash))
+        shutil.rmtree(os.path.join(config.BUNDLE_DIR, bundle.hash))
     cm.status_api.post_event('delete', 'bundle', bundle.id)
     bundle.delete()
 

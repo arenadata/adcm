@@ -62,8 +62,8 @@ import { JobInfoComponent } from './job-info.component';
     'textarea.log, textarea.check {background-color: #424242; border: 0; color: #fff;flex: 1;}',
     'textarea.check {height: 300px;width: 100%;}',
     '.accordion {flex: 1; display: flex; flex-direction: column;}',
-    '.status {white-space: nowrap;}',
-  ],
+    '.status {white-space: nowrap;}'
+  ]
 })
 export class LogComponent extends SocketListener implements OnInit, AfterViewInit, DoCheck {
   content: string | CheckLog[] = '';
@@ -149,12 +149,14 @@ export class LogComponent extends SocketListener implements OnInit, AfterViewIni
   refresh() {
     if (this.current) {
       const [tag, level] = this.current.split('_');
-      this.asJson = tag === 'check';
       if (this.asJson) this.content = [];
       this.service
         .getLog(tag, level)
         .pipe(map((log: Log) => log.content))
-        .subscribe(c => (this.content = c || 'Nothing to display...'));
+        .subscribe(c => {
+          this.content = c || 'Nothing to display...';
+          this.asJson = tag === 'check';
+        });
     }
   }
 }

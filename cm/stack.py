@@ -17,6 +17,7 @@ import json
 import yaml
 import toml
 import hashlib
+import yspec.checker
 
 from django.db import transaction
 from rest_framework import status
@@ -33,19 +34,19 @@ NAME_REGEX = r'[0-9a-zA-Z_\.-]+'
 MAX_NAME_LENGTH = 256
 
 
-def save_definition(fname, conf, obj_list, bundle_hash, adcm=False):
+def save_definition(path, fname, conf, obj_list, bundle_hash, adcm=False):
     if isinstance(conf, dict):
-        save_object_definition(fname, conf, obj_list, bundle_hash, adcm)
+        save_object_definition(path, fname, conf, obj_list, bundle_hash, adcm)
     else:
         for obj_def in conf:
-            save_object_definition(fname, obj_def, obj_list, bundle_hash, adcm)
+            save_object_definition(path, fname, obj_def, obj_list, bundle_hash, adcm)
 
 
 def cook_obj_id(conf):
     return '{}.{}.{}'.format(conf['type'], conf['name'], conf['version'])
 
 
-def save_object_definition(fname, conf, obj_list, bundle_hash, adcm=False):
+def save_object_definition(path, fname, conf, obj_list, bundle_hash, adcm=False):
     if not isinstance(conf, dict):
         msg = 'Object definition should be a map ({})'
         return err('INVALID_OBJECT_DEFINITION', msg.format(fname))
@@ -64,7 +65,7 @@ def save_object_definition(fname, conf, obj_list, bundle_hash, adcm=False):
         return err('INVALID_OBJECT_DEFINITION', msg.format(def_type, fname))
 
     check_object_definition(fname, conf, def_type, obj_list)
-    obj = save_prototype(conf, def_type, bundle_hash)
+    obj = save_prototype(path, conf, def_type, bundle_hash)
     log.info('Save definition of %s "%s" %s to stage', def_type, conf['name'], conf['version'])
     obj_list[cook_obj_id(conf)] = fname
     return obj
@@ -98,7 +99,7 @@ def check_extra_keys(conf, acceptable, ref):
             err('INVALID_OBJECT_DEFINITION', msg.format(key, ref))
 
 
-def get_config_files(path):
+def get_config_files(path, bundle_hash):
     conf_list = []
     conf_types = [
         ('config.yaml', 'yaml'),
@@ -115,7 +116,9 @@ def get_config_files(path):
     for root, _, files in os.walk(path):
         for conf_file, conf_type in conf_types:
             if conf_file in files:
-                conf_list.append((root + '/' + conf_file, conf_type))
+                dirs = root.split('/')
+                path = os.path.join('', *dirs[dirs.index(bundle_hash) + 1:])
+                conf_list.append((path, root + '/' + conf_file, conf_type))
                 break
     if not conf_list:
         msg = 'no config files in stack directory "{}"'
@@ -156,16 +159,16 @@ def get_license_hash(proto, conf, bundle_hash):
     if not isinstance(conf['license'], str):
         err('INVALID_OBJECT_DEFINITION', 'license should be a string ({})'.format(proto_ref(proto)))
     msg = 'license file'
-    body = read_bundle_file(conf['license'], bundle_hash, msg, proto_ref(proto))
+    body = read_bundle_file(proto, conf['license'], bundle_hash, msg)
     sha1 = hashlib.sha256()
     sha1.update(body.encode('utf-8'))
     return sha1.hexdigest()
 
 
 @transaction.atomic
-def save_prototype(conf, def_type, bundle_hash):
+def save_prototype(path, conf, def_type, bundle_hash):
     # validate_name(type_name, '{} type name "{}"'.format(def_type, conf['name']))
-    proto = StagePrototype(name=conf['name'], type=def_type, version=conf['version'])
+    proto = StagePrototype(name=conf['name'], type=def_type, path=path, version=conf['version'])
     dict_to_obj(conf, 'required', proto)
     dict_to_obj(conf, 'shared', proto)
     dict_to_obj(conf, 'monitoring', proto)
@@ -565,6 +568,27 @@ def is_group(conf):
     return False
 
 
+def get_yspec(proto, ref, bundle_hash, conf, name, subname):
+    if 'yspec' not in conf:
+        msg = 'Config key "{}/{}" of {} has no mandatory yspec key'
+        err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
+    if not isinstance(conf['yspec'], str):
+        msg = 'Config key "{}/{}" of {} yspec field should be string'
+        err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
+    msg = 'yspec file of config key "{}/{}":'.format(name, subname)
+    yspec_body = read_bundle_file(proto, conf['yspec'], bundle_hash, msg)
+    try:
+        schema = yaml.safe_load(yspec_body)
+    except yaml.parser.ParserError as e:
+        msg = 'yspec file of config key "{}/{}" yaml decode error: {}'
+        err('CONFIG_TYPE_ERROR', msg.format(name, subname, e))
+    ok, error = yspec.checker.check_rule(schema)
+    if not ok:
+        msg = 'yspec file of config key "{}/{}" error: {}'
+        err('CONFIG_TYPE_ERROR', msg.format(name, subname, error))
+    return schema
+
+
 def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pylint: disable=too-many-locals,too-many-statements,too-many-branches
     if not in_dict(proto_conf, 'config'):
         return
@@ -634,6 +658,8 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
             if 'max' in conf:
                 check_limit(conf['type'], conf['max'], name, subname, 'max')
                 opt['max'] = conf['max']
+        elif conf['type'] == 'structure':
+            opt['yspec'] = get_yspec(proto, ref, bundle_hash, conf, name, subname)
         elif is_group(conf):
             if 'activatable' in conf:
                 valudate_bool(conf['activatable'], 'activatable', name)
@@ -682,7 +708,7 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
             )
         else:
             allow = (
-                'type', 'description', 'display_name', 'default', 'required', 'name',
+                'type', 'description', 'display_name', 'default', 'required', 'name', 'yspec',
                 'option', 'limits', 'max', 'min', 'read_only', 'writable', 'ui_options'
             )
         check_extra_keys(conf, allow, 'config key "{}/{}" of {}'.format(name, subname, ref))
@@ -707,7 +733,7 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
                 err('INVALID_CONFIG_DEFINITION', msg.format(name, subname, ref))
         dict_json_to_obj(conf, 'ui_options', sc)
         if 'default' in conf:
-            check_config_type(ref, name, subname, conf, conf['default'], bundle_hash)
+            check_config_type(proto, name, subname, conf, conf['default'], bundle_hash)
         if type_is_complex(conf['type']):
             dict_json_to_obj(conf, 'default', sc)
         else:

@@ -16,7 +16,7 @@ import { BehaviorSubject, throwError } from 'rxjs';
 import { catchError, map, tap, filter } from 'rxjs/operators';
 
 import { InputComponent } from './input.component';
-import { AddService } from '../components/add-component/add.service';
+import { AddService } from '../add-component/add.service';
 import { ButtonUploaderComponent } from './button-uploader.component';
 
 @Component({

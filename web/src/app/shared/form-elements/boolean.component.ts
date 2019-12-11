@@ -9,37 +9,29 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, Input } from '@angular/core';
-import { FormGroup } from '@angular/forms';
+import { Component } from '@angular/core';
 import { MAT_CHECKBOX_CLICK_ACTION } from '@angular/material/checkbox';
-import { FieldOptions } from '@app/core/types';
+
+import { FieldDirective } from './field.directive';
 
 @Component({
   selector: 'app-fields-boolean',
   template: `
     <ng-container [formGroup]="form">
-      <label>{{ field.label }}:</label>
+      <label [appTooltip]="field.label" [appTooltipShowByCondition]="true">{{ field.label }}:</label>
       <div class="full-width">
         <div>
           <mat-checkbox [labelPosition]="'before'" [formControlName]="field.key" [indeterminate]="field.value === null" (click)="cbChange()"></mat-checkbox>
           <mat-icon class="icon-info" *ngIf="field.description" matSuffix [appTooltip]="field.description">info_outline</mat-icon>
         </div>
         <mat-error *ngIf="!isValid">Field [{{ field.label }}] is required!</mat-error>
-      </div>     
+      </div>
     </ng-container>
   `,
   styleUrls: ['./scss/fields.component.scss', './scss/boolean.scss'],
-  providers: [{ provide: MAT_CHECKBOX_CLICK_ACTION, useValue: 'noop' }],
+  providers: [{ provide: MAT_CHECKBOX_CLICK_ACTION, useValue: 'noop' }]
 })
-export class BooleanComponent {
-  @Input() form: FormGroup;
-  @Input() field: FieldOptions;
-
-  get isValid() {
-    const field = this.form.controls[this.field.key];
-    return field.disabled || (field.valid && (field.dirty || field.touched));
-  }
-
+export class BooleanComponent extends FieldDirective {
   cbChange() {
     if (this.field.disabled) return;
     const tape = this.field.validator.required ? [true, false] : [null, true, false];

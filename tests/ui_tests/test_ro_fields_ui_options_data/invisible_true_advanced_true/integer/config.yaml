@@ -1,0 +1,25 @@
+
+- type: cluster
+  name: invisible_true_advanced_true_integer
+  version: 1
+  config:
+    - name: integer
+      type: integer
+      default: 1
+      read_only: [created]
+      ui_options:
+         invisible: true
+         advanced: true
+  actions:
+    install:
+      type: job
+      script_type: ansible
+      script: ansible/install.yaml
+      params:
+        ansible_tags: install
+
+      states:
+        available:
+          - created
+        on_success: installed
+        on_fail: created

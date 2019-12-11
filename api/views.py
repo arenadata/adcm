@@ -106,6 +106,7 @@ class GetAuthToken(ObtainAuthToken, GenericAPIView):
 
 class ADCMInfo(GenericAPIView):
     permission_classes = (rest_framework.permissions.AllowAny,)
+    serializer_class = api.serializers.EmptySerializer
 
     def get(self, request):
         """
@@ -499,6 +500,7 @@ class Stats(GenericAPIView):
 
 class JobStats(GenericAPIView):
     queryset = JobLog.objects.all()
+    serializer_class = api.serializers.EmptySerializer
 
     def get(self, request, job_id):
         """
@@ -515,6 +517,7 @@ class JobStats(GenericAPIView):
 
 class TaskStats(GenericAPIView):
     queryset = TaskLog.objects.all()
+    serializer_class = api.serializers.EmptySerializer
 
     def get(self, request, task_id):
         """
@@ -788,7 +791,7 @@ class ProviderUpgrade(PageView):
         List all avaliable upgrades for specified host provider
         """
         provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        obj = cm.api.get_upgrade(provider, self.get_ordering(request, self.queryset, self))
+        obj = cm.upgrade.get_upgrade(provider, self.get_ordering(request, self.queryset, self))
         serializer = self.serializer_class(obj, many=True, context={
             'provider_id': provider.id, 'request': request
         })

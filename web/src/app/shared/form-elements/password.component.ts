@@ -9,26 +9,28 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, Input } from '@angular/core';
-import { FormGroup } from '@angular/forms';
-import { FieldOptions } from '@app/core/types';
+import { Component, OnInit } from '@angular/core';
+
+import { FieldDirective } from './field.directive';
 
 @Component({
   selector: 'app-fields-password',
   template: `
     <ng-container [formGroup]="form">
       <div>
-        <label>{{ field.label }}:</label>
+        <label [appTooltip]="field.label" [appTooltipShowByCondition]="true">{{ field.label }}:</label>
         <mat-form-field class="full-width" [floatLabel]="'never'">
           <input matInput (input)="confirmPasswordFieldUpdate()" [formControlName]="field.key" type="password" [readonly]="field.disabled" />
           <mat-error *ngIf="!isValid"> Field [{{ field.label }}] is required! </mat-error>
         </mat-form-field>
-        <span class="info"><mat-icon *ngIf="field.description" matSuffix [appTooltip]="field.description">
-        info_outline
-      </mat-icon></span>
+        <span class="info"
+          ><mat-icon *ngIf="field.description" matSuffix [appTooltip]="field.description">
+            info_outline
+          </mat-icon></span
+        >
       </div>
       <div *ngIf="getConfirmPasswordField()">
-        <label>confirm 	[ {{ field.label }} ]:</label>
+        <label [appTooltip]="'confirm [ ' + field.label + ' ]'" [appTooltipShowByCondition]="true">confirm [ {{ field.label }} ]:</label>
         <mat-form-field class="full-width" [floatLabel]="'never'">
           <input matInput appConfirmEqualValidator="{{ field.key }}" [formControlName]="'confirm_' + field.key" type="password" [readonly]="field.disabled" />
           <mat-error *ngIf="getConfirmPasswordFieldErrors('required') && (form.touched || form.dirty)"> Confirm [{{ field.label }}] is required! </mat-error>
@@ -40,15 +42,13 @@ import { FieldOptions } from '@app/core/types';
       </div>
     </ng-container>
   `,
-  styleUrls: ['./scss/fields.component.scss', './scss/password.scss'],
+  styleUrls: ['./scss/fields.component.scss', './scss/password.scss']
 })
-export class PasswordComponent {
-  @Input() form: FormGroup;
-  @Input() field: FieldOptions;
-
-  get isValid() {
-    const field = this.form.controls[this.field.key];
-    return field.disabled || (field.valid && (field.dirty || field.touched));
+export class PasswordComponent extends FieldDirective implements OnInit {
+  ngOnInit() {
+    super.ngOnInit();
+    const confirm = this.getConfirmPasswordField();
+    if (confirm) confirm.markAllAsTouched();
   }
 
   getConfirmPasswordField() {

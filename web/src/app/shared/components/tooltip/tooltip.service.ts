@@ -10,16 +10,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Injectable } from '@angular/core';
-import { Subject } from 'rxjs';
 import { ApiBase, TypeName } from '@app/core/types/api';
 import { EventEmitter } from 'events';
+import { Subject } from 'rxjs';
 
-export type ComponentName = 'issue' | 'status';
+export type ComponentName = 'issue' | 'status' | undefined;
+export type PositionType = 'top' | 'right' | 'bottom' | 'left';
 export interface TooltipOptions {
   event: MouseEvent;
-  content: string | ApiBase;
   source: HTMLElement;
+  options: TooltipDisplayOptions;
+}
+
+export interface TooltipDisplayOptions {
+  content: string | ApiBase;
   componentName: ComponentName;
+  position: PositionType;
+  condition: boolean;
 }
 
 @Injectable()
@@ -30,19 +37,42 @@ export class ComponentData {
 }
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: 'root'
 })
 export class TooltipService {
   private positionSource = new Subject<TooltipOptions>();
   position$ = this.positionSource.asObservable();
+  timeOut: any;
 
-  constructor() {}
+  /**
+   * TODO: show a tooltip if there is a condition
+   *
+   * @returns
+   * @memberof TooltipComponent
+   */
+  isShow(source: HTMLElement, options: TooltipDisplayOptions) {
+    if (options.condition) {
+      return source.offsetWidth !== source.scrollWidth;
+    }
+    return true;
+  }
 
-  show(event: MouseEvent, content: string | ApiBase, source: HTMLElement, componentName: ComponentName) {
-    this.positionSource.next({ event, content, source, componentName });
+  show(event: MouseEvent, source: HTMLElement, options: TooltipDisplayOptions) {
+    clearTimeout(this.timeOut);
+    if (this.isShow(source, options)) {
+      this.positionSource.next({ event, source, options });
+    }
   }
 
   hide() {
-    this.positionSource.next();
+    this.timeOut = setTimeout(() => this.positionSource.next(), 500);
+  }
+
+  mouseEnterTooltip() {
+    clearTimeout(this.timeOut);
+  }
+
+  mouseLeaveTooltip() {
+    this.hide();
   }
 }

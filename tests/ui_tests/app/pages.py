@@ -120,14 +120,26 @@ class BasePage:
         else:
             raise InvalidElementStateException
 
-    def _click_button_with_sleep(self, button):
+    def _click_button_with_sleep(self, button, t=0.5):
         try:
             button.click()
             return True
         except (NoSuchElementException, ElementClickInterceptedException):
-            sleep(0.5)
+            sleep(t)
             self.driver.execute_script("arguments[0].click();", button)
             return True
+
+    def _click_button_by_name(self, button_name, by, locator):
+        buttons = self.driver.find_elements(by, locator)
+        for button in buttons:
+            if button.text == button_name:
+                try:
+                    button.click()
+                    return True
+                except (NoSuchElementException, ElementClickInterceptedException):
+                    self.driver.execute_script("arguments[0].click();", button)
+                    return True
+        return False
 
     # def _wait_for_menu_element_generator(self, classname):
     #     def func(args):
@@ -503,6 +515,9 @@ class Configuration(BasePage):
             return True
         return False
 
+    def get_app_fields(self):
+        return self.driver.find_elements(*ConfigurationLocators.app_field)
+
     def _get_group_element_by_name(self, name):
         config_groups = self.driver.find_elements(*Common.mat_expansion_panel)
         for group in config_groups:
@@ -518,6 +533,12 @@ class Configuration(BasePage):
         """
         toogle = group_element.find_element(*Common.mat_slide_toggle)
         if 'mat-checked' in toogle.get_attribute("class"):
+            return True
+        return False
+
+    @staticmethod
+    def field_is_ro(field_element):
+        if "read-only" in field_element.get_attribute("class"):
             return True
         return False
 
@@ -560,7 +581,7 @@ class Configuration(BasePage):
         buttons = self._getelements(Common.mat_checkbox)
         for button in buttons:
             if button.text == 'Advanced':
-                button.click()
+                self._click_button_with_sleep(button, 10)
                 return True
         return False
 
@@ -641,6 +662,9 @@ class Configuration(BasePage):
         jsons = self._getelements(ConfigurationLocators.app_fields_json)
         return textboxes + maps + passwords + textareas + jsons
 
+    def get_password_elements(self):
+        return self.driver.find_elements(*ConfigurationLocators.app_fields_password)
+
     def _get_config_full_names(self):
         textboxes = self.driver.find_elements(*ConfigurationLocators.app_fields_text_boxes)
         maps = self.driver.find_elements(*ConfigurationLocators.app_fields_text_boxes)
@@ -694,3 +718,46 @@ class Configuration(BasePage):
         except StaleElementReferenceException:
             sleep(5)
             return self.driver.find_elements(*Common.display_names)
+
+    def execute_action(self, action_name):
+        """Click action
+        :param action_name:
+        :return:
+        """
+        assert self._click_button_by_name(action_name, *Common.mat_raised_button)
+        return self._click_button_by_name("Run", *Common.mat_raised_button)
+
+    def element_presented_by_name_and_locator(self, name, by, value):
+        """
+
+        :param name:
+        :param by:
+        :param value:
+        :return:
+        """
+        elements = self.driver.find_elements(by, value)
+        if not elements:
+            return False
+        for el in elements:
+            if el.text == name:
+                return True
+        return False
+
+    @staticmethod
+    def read_only_element(element):
+        """Check that field have read-only attribute
+
+        :param element:
+        :return:
+        """
+        if 'read-only' in element.get_attribute("class"):
+            return True
+        return False
+
+    @staticmethod
+    def editable_element(element):
+        if "field-disabled" in element.get_attribute("class"):
+            return False
+        elif element.is_enabled():
+            return False
+        return True

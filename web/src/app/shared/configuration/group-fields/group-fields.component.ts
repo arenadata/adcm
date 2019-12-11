@@ -13,20 +13,19 @@ import { Component, Input, OnInit, QueryList, ViewChild, ViewChildren } from '@a
 import { AbstractControl, FormGroup } from '@angular/forms';
 import { MatExpansionPanel } from '@angular/material/expansion';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
-import { IConfig, FieldOptions } from '@app/core/types';
+import { FieldOptions, PanelOptions } from '@app/core/types';
 
-import { FieldService, PanelInfo } from '../field.service';
+import { FieldService } from '../field.service';
 import { FieldComponent } from '../field/field.component';
 
 @Component({
   selector: 'app-group-fields',
   templateUrl: './group-fields.component.html',
-  styleUrls: ['./group-fields.component.scss'],
+  styleUrls: ['./group-fields.component.scss']
 })
 export class GroupFieldsComponent implements OnInit {
-  @Input() panel: PanelInfo;
+  @Input() panel: PanelOptions;
   @Input() form: FormGroup;
-  @Input() globalConfig: IConfig;
   @ViewChild('ep', { static: false }) expanel: MatExpansionPanel;
   checked = true;
 
@@ -36,9 +35,8 @@ export class GroupFieldsComponent implements OnInit {
   constructor(private service: FieldService) {}
 
   ngOnInit(): void {
-    if (this.globalConfig.attr && this.globalConfig.attr[this.panel.name]) {
-      this.checked = this.globalConfig.attr[this.panel.name].active;
-      // this.globalConfig.config.filter(a => a.name === this.panel.name).forEach(a => (a.read_only = !this.checked));
+    if (this.service.globalConfig.attr && this.service.globalConfig.attr[this.panel.name]) {
+      this.checked = this.service.globalConfig.attr[this.panel.name].active;
       this.checkFields(this.checked);
     }
   }
@@ -48,7 +46,7 @@ export class GroupFieldsComponent implements OnInit {
   }
 
   activeToggle(e: MatSlideToggleChange) {
-    this.globalConfig.attr[this.panel.name].active = e.checked;
+    this.service.globalConfig.attr[this.panel.name].active = e.checked;
     this.checked = e.checked;
     this.checkFields(e.checked);
   }
@@ -74,5 +72,9 @@ export class GroupFieldsComponent implements OnInit {
       formControl.updateValueAndValidity();
       this.form.updateValueAndValidity();
     }
+  }
+
+  trackBy(index: number, item: FieldOptions): string {
+    return item.key;
   }
 }
