@@ -252,6 +252,24 @@ def check_component_constraint(service, hc_in):
     ref = 'in host component list for {}'.format(obj_ref(service))
     all_host = Host.objects.filter(cluster=service.cluster)
 
+    def cc_err(msg):
+        raise AdcmApiEx('COMPONENT_CONSTRAINT_ERROR', msg)
+
+    def check_min(count, const, comp):
+        if count < const:
+            msg = 'less then {} required component "{}" ({}) {}'
+            cc_err(msg.format(const, comp.name, count, ref))
+
+    def check_max(count, const, comp):
+        if count > const:
+            msg = 'amount ({}) of component "{}" more then maximum ({}) {}'
+            cc_err(msg.format(count, comp.name, const, ref))
+
+    def check_odd(count, const, comp):
+        if count % 2 == 0:
+            msg = 'amount ({}) of component "{}" should be odd ({}) {}'
+            cc_err(msg.format(count, comp.name, const, ref))
+
     def check(comp, const):
         count = 0
         for (_, _, c) in hc_in:
@@ -259,30 +277,20 @@ def check_component_constraint(service, hc_in):
                 count += 1
 
         if isinstance(const[0], int):
-            if count < const[0]:
-                msg = 'less then {} required component "{}" ({}) {}'
-                raise AdcmApiEx(
-                    'COMPONENT_CONSTRAINT_ERROR', msg.format(const[0], comp.name, count, ref)
-                )
-            if len(const) < 2 and count > const[0]:
-                msg = 'amount ({}) of component "{}" more then maximum ({}) {}'
-                raise AdcmApiEx(
-                    'COMPONENT_CONSTRAINT_ERROR', msg.format(count, comp.name, const[0], ref)
-                )
+            check_min(count, const[0], comp)
+            if len(const) < 2:
+                check_max(count, const[0], comp)
 
-        if len(const) > 1 and isinstance(const[1], int):
-            if count > const[1]:
-                msg = 'amount ({}) of component "{}" more then maximum ({}) {}'
-                raise AdcmApiEx(
-                    'COMPONENT_CONSTRAINT_ERROR', msg.format(count, comp.name, const[1], ref)
-                )
+        if len(const) > 1:
+            if isinstance(const[1], int):
+                check_max(count, const[1], comp)
+            elif const[1] == 'odd' and count:
+                check_odd(count, const[1], comp)
 
         if const[0] == '+':
-            if count < len(all_host):
-                msg = 'less than {} required component "{}" ({}) {}'
-                raise AdcmApiEx(
-                    'COMPONENT_CONSTRAINT_ERROR', msg.format(len(all_host), comp.name, count, ref)
-                )
+            check_min(count, len(all_host), comp)
+        elif const[0] == 'odd':
+            check_odd(count, const[0], comp)
 
     for c in Component.objects.filter(prototype=service.prototype):
         if not c.constraint:
