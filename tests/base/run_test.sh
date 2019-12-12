@@ -47,7 +47,7 @@ run_test() {
           TEST_CASE="TestAPI.$arg"
        fi;
     done
-    if [[ $TEST_CASE != '' ]]; then
+    if [[ "$TEST_CASE" != '' ]]; then
     	./tests/base/test_api.py "$TEST_CASE"
     else
     	./tests/base/test_api.py

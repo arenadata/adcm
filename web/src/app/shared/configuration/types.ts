@@ -33,15 +33,16 @@ export interface FieldStack {
   name: string;
   display_name: string;
   subname: string;
-  default: null | string | number | boolean;
+  default: null | string | number | boolean | object | any[];
   value: null | string | number | boolean;
   required: boolean;
   description: string;
-  limits: {
+  limits?: {
     min?: number;
     max?: number;
     option?: any;
-    read_only: stateType[];
+    read_only?: stateType[];
+    yspec?: Object;
   };
   read_only: boolean;
   hidden: boolean;
@@ -80,11 +81,12 @@ export interface PanelOptions extends ConfigOptions {
 export interface FieldOptions extends ConfigOptions {
   key: string;
   subname: string;
+  default: null | string | number | boolean | object | any[];
   value: string | number | boolean | object | string[] | null;
   controlType: string;
   type: string;
   validator: ValidatorInfo;
   disabled?: boolean;
-  limits: any;
+  limits?: any;
   required: boolean;
 }
