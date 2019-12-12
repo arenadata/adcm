@@ -344,18 +344,16 @@ class TestJob(TestCase):
                 'cluster_id': 1
             },
             'env': {
-                'run_dir': '/home/aalferov/PycharmProjects/adcm/data/run',
-                'log_dir': '/home/aalferov/PycharmProjects/adcm/data/log',
-                'stack_dir': ('/home/aalferov/PycharmProjects/adcm/data/bundle/'
-                              '2232f33c6259d44c23046fce4382f16c450f8ba5'),
+                'run_dir': mock_dump.call_args[0][0]['env']['run_dir'],
+                'log_dir': mock_dump.call_args[0][0]['env']['log_dir'],
+                'stack_dir': mock_dump.call_args[0][0]['env']['stack_dir'],
                 'status_api_token': mock_dump.call_args[0][0]['env']['status_api_token']
             },
             'job': {
                 'id': 1,
                 'command': 're-start',
                 'script': '',
-                'playbook': ('/home/aalferov/PycharmProjects/adcm/data/bundle/'
-                             '2232f33c6259d44c23046fce4382f16c450f8ba5/'),
+                'playbook': mock_dump.call_args[0][0]['job']['playbook'],
                 'cluster_id': 1,
                 'hostgroup': 'CLUSTER'
             }
