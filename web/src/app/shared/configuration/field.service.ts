@@ -83,8 +83,8 @@ export class FieldService {
 
     if (field.validator.required) v.push(Validators.required);
     if (field.validator.pattern) v.push(Validators.pattern(field.validator.pattern));
-    if (field.validator.max) v.push(Validators.max(field.validator.max));
-    if (field.validator.min) v.push(Validators.min(field.validator.min));
+    if (field.validator.max !== undefined) v.push(Validators.max(field.validator.max));
+    if (field.validator.min !== undefined) v.push(Validators.min(field.validator.min));
 
     if (field.controlType === 'json') {
       const jsonParse = (): ValidatorFn => {
