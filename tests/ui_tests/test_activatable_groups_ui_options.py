@@ -1,4 +1,6 @@
 import pytest
+import random
+import string
 # pylint: disable=W0611, W0621, C0302
 
 from adcm_client.objects import ADCMClient
@@ -7,6 +9,12 @@ from adcm_pytest_plugin.utils import parametrize_by_data_subdirs
 
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.pages import Configuration, LoginPage
+
+
+def random_string(lenght=8):
+    """Generate a random string of fixed length """
+    letters = string.ascii_lowercase
+    return ''.join(random.sample(letters, lenght))
 
 
 @pytest.fixture(scope="module")
@@ -31,7 +39,7 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_fal
     """
     bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -70,7 +78,7 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_fal
     """
     bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -109,7 +117,7 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_tru
     """
     bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -148,7 +156,7 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_tru
     """
     bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -187,7 +195,7 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_fals
     """
     bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -226,7 +234,7 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_fals
     """
     bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -265,7 +273,7 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_true
     """
     bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -304,7 +312,7 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_true
     """
     bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -342,7 +350,7 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_fals
     """Check thats all fields and groups invisible.
     """
     bundle = sdk_client_ms.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -370,7 +378,7 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_fals
     """Check thats all fields and groups invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -398,7 +406,7 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_true
     """Check that fields and groups invisible.
     """
     bundle = sdk_client_ms.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -426,7 +434,7 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_true
     """All invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -454,7 +462,7 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false
     """All invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -483,7 +491,7 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false
     :return:
     """
     bundle = sdk_client_ms.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -511,7 +519,7 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true_
     """All invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -539,7 +547,7 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true_
     """All invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -568,7 +576,7 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_fals
     """
     bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -603,7 +611,7 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_fals
     """
     bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -638,7 +646,7 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true
     """
     bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -675,7 +683,7 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true
     """
     bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -708,7 +716,7 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_false
     """
     bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -746,7 +754,7 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_false
     """
     bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -779,7 +787,7 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true_
     """
     bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -813,7 +821,7 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true_
     """
     bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -845,7 +853,7 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_false
     """All invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -873,7 +881,7 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_false
     """All invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -901,7 +909,7 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true_
     """All invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -929,7 +937,7 @@ def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false_
     """All invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -958,7 +966,7 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true_
 
     """
     bundle = sdk_client_ms.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -986,7 +994,7 @@ def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false_
     """All invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -1014,7 +1022,7 @@ def test_group_advanced_true_invisible_true_field_advanced_true_invisible_true_a
     """All invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -1042,7 +1050,7 @@ def test_group_advanced_true_invisible_true_field_advanced_true_invisible_true_a
     """All invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
