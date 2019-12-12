@@ -13,7 +13,6 @@ export * from './func';
 export * from './button';
 export * from './api';
 export * from './utils';
-export * from './configs';
 export * from './actions';
 export * from './stack';
 export * from './host-component';

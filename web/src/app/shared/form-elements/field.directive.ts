@@ -11,7 +11,7 @@
 // limitations under the License.
 import { Directive, OnInit, Input } from '@angular/core';
 import { FormGroup } from '@angular/forms';
-import { FieldOptions } from '@app/core/types';
+import { FieldOptions } from '../configuration/types';
 
 @Directive({
   selector: '[appField]'

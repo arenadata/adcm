@@ -14,7 +14,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit, V
 import { ClusterService } from '@app/core';
 import { ApiService } from '@app/core/api';
 import { EventMessage, SocketState } from '@app/core/store';
-import { IConfig, parseValueConfig } from '@app/core/types';
+import { parseValueConfig } from '@app/core/types';
 import { SocketListener } from '@app/shared/directives';
 import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
@@ -24,6 +24,7 @@ import { FieldService, IToolsEvent } from '../field.service';
 import { ConfigFieldsComponent } from '../fields/fields.component';
 import { HistoryComponent } from '../tools/history.component';
 import { ToolsComponent } from '../tools/tools.component';
+import { IConfig } from '../types';
 
 @Component({
   selector: 'app-config-form',
