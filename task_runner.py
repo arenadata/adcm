@@ -15,7 +15,7 @@ import os
 import sys
 import subprocess
 
-import adcm.init_django  # pylint: disable=unused-import
+import adcm.init_django		# pylint: disable=unused-import
 
 from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
@@ -26,87 +26,70 @@ import cm.config as config
 import cm.job
 
 
-class TaskDoesNotExist(Exception):
-    pass
-
-
-class JobsDoesNotExist(Exception):
-    pass
-
-
 def open_file(root, tag, task_id):
-    f = open("{}/{}-{}.txt".format(root, task_id, tag), 'w')
+    fname = "{}/{}-{}.txt".format(root, task_id, tag)
+    f = open(fname, 'w')
     return f
 
 
 def run_job(task_id, job_id, out_file, err_file):
-    log.debug("run job #%s of task #%s", job_id, task_id)
+    log.debug("run job #%s of task #%s", job_id, task_id,)
     try:
-        process = subprocess.Popen([
+        proc = subprocess.Popen([
             '{}/job_runner.py'.format(config.BASE_DIR),
             str(job_id)
         ], stdout=out_file, stderr=err_file)
-        code = process.wait()
-        return code
-    except subprocess.TimeoutExpired:  # pylint: disable=bare-except
-        log.error("exception running job %s", job_id)
-        return 1
+    except:		# pylint: disable=bare-except
+        log.error("exception runnung job %s", job_id)
 
-
-def get_task(task_id):
-    try:
-        return TaskLog.objects.get(id=task_id)
-    except ObjectDoesNotExist:
-        log.error("no task %s", task_id)
-        raise TaskDoesNotExist
-
-
-def get_jobs(task):
-    jobs = JobLog.objects.filter(task_id=task.id).order_by('id')
-    if not jobs:
-        raise JobsDoesNotExist
-    return jobs
+    res = proc.wait()
+    return res
 
 
 def run_task(task_id, args=None):
-    code = 0
+    log.debug("task_runner.py called as: %s", sys.argv)
     try:
-        log.debug("task_runner.py called as: %s", sys.argv)
-        task = get_task(task_id)
-        jobs = get_jobs(task)
-        out_file = open_file(config.LOG_DIR, 'task-out', task_id)
-        err_file = open_file(config.LOG_DIR, 'task-err', task_id)
+        task = TaskLog.objects.get(id=task_id)
+    except ObjectDoesNotExist:
+        log.error("no task %s", task_id)
+        return
 
-        log.info("run task #%s", task_id)
-        cm.job.set_task_status(task, config.Job.RUNNING)
-
-        count = 0
-        for job in jobs:
-            if args == 'restart' and job.status == config.Job.SUCCESS:
-                log.info('skip job #%s status "%s" of task #%s', job.id, job.status, task_id)
-                continue
-            if count:
-                cm.job.re_prepare_job(task, job)
-            job.start_date = timezone.now()
-            job.save()
-            code = run_job(task.id, job.id, out_file, err_file)
-            count += 1
-            if code == 0:
-                cm.job.finish_task(task, job, config.Job.SUCCESS)
-            else:
-                cm.job.finish_task(task, job, config.Job.FAILED)
-                break
-
-        out_file.close()
-        err_file.close()
-
-    except TaskDoesNotExist:
-        pass
-    except JobsDoesNotExist:
+    jobs = JobLog.objects.filter(task_id=task.id).order_by('id')
+    if not jobs:
         log.error("no jobs for task %s", task.id)
         cm.job.finish_task(task, None, config.Job.FAILED)
-    finally:
-        log.info("finish task #%s, ret %s", task_id, code)
+        return
+
+    out_file = open_file(config.LOG_DIR, 'task-out', task_id)
+    err_file = open_file(config.LOG_DIR, 'task-err', task_id)
+
+    log.info("run task #%s", task_id)
+    cm.job.set_task_status(task, config.Job.RUNNING)
+
+    job = None
+    count = 0
+    for job in jobs:
+        if args == 'restart' and job.status == config.Job.SUCCESS:
+            log.info('skip job #%s status "%s" of task #%s', job.id, job.status, task_id)
+            continue
+        if count:
+            cm.job.re_prepare_job(task, job)
+        job.start_date = timezone.now()
+        job.save()
+        res = run_job(task.id, job.id, out_file, err_file)
+        count += 1
+        if res != 0:
+            break
+
+    if res == 0:
+        cm.job.finish_task(task, job, config.Job.SUCCESS)
+    else:
+        cm.job.finish_task(task, job, config.Job.FAILED)
+
+    out_file.close()
+    err_file.close()
+
+    log.info("finish task #%s, ret %s", task_id, res)
 
 
 def do():

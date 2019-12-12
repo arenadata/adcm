@@ -78,18 +78,6 @@ class TestTaskRunner(TestCase):
         task_runner.open_file('root', 1, 'tag')
         _mock_open.assert_called_once_with(file_path, 'w')
 
-    def test_get_task(self):
-        pd = PreparationData(1, 0)
-        task = task_runner.get_task(task_id=1)
-        self.assertTrue(pd.get_task(1) == task)
-
-    def test_get_jobs(self):
-        pd = PreparationData(1, 1)
-        task = pd.get_task(1)
-        jobs = task_runner.get_jobs(task)
-        self.assertEqual(len(jobs), 1)
-        self.assertTrue(pd.get_job(1) == jobs[0])
-
     @patch('subprocess.Popen')
     def test_run_job(self, mock_subprocess_popen):
         process_mock = Mock()
@@ -168,33 +156,17 @@ class TestJobRunner(TestCase):
         cmd_env['PYTHONPATH'] = ':'.join(python_paths)
         self.assertDictEqual(cmd_env, job_runner.set_pythonpath())
 
-    @patch('job_runner.set_pythonpath')
     @patch('cm.job.set_job_status')
-    @patch('subprocess.Popen')
-    def test_run_playbook(self, mock_subprocess_popen, mock_set_job_status, mock_set_pythonpath):
-        process_mock = Mock()
-        process_mock.pid = 1
-        attrs = {'wait.return_value': 0}
-        process_mock.configure_mock(**attrs)
-        mock_subprocess_popen.return_value = process_mock
-        python_path = Mock()
-        mock_set_pythonpath.return_value = python_path
-        process, code = job_runner.run_playbook(['ansible playbook'], 1, 'init.yaml', '', '')
-        self.assertEqual(process, process_mock)
-        self.assertEqual(code, 0)
-        mock_subprocess_popen.assert_called_once_with(
-            ['ansible playbook'], env=python_path, stdout='', stderr='')
-        mock_set_job_status.assert_called_with(1, config.Job.RUNNING, 1)
-        self.assertEqual(mock_set_pythonpath.call_count, 1)
-
     @patch('sys.exit')
     @patch('job_runner.set_job_status')
-    @patch('job_runner.run_playbook')
+    @patch('job_runner.set_pythonpath')
+    @patch('subprocess.Popen')
     @patch('os.chdir')
     @patch('job_runner.open_file')
     @patch('job_runner.read_config')
-    def test_run_ansible(self, mock_read_config, mock_open_file, mock_chdir, mock_run_playbook,
-                         mock_set_job_status, mock_exit):
+    def test_run_ansible(  # pylint: disable=too-many-arguments
+            self, mock_read_config, mock_open_file, mock_chdir, mock_subprocess_popen,
+            mock_set_pythonpath, mock_set_job_status, mock_exit, mock_job_set_job_status):
         conf = {
             'job': {'playbook': 'test'},
             'env': {'stack_dir': 'test'}
@@ -202,9 +174,13 @@ class TestJobRunner(TestCase):
         mock_read_config.return_value = conf
         _file = Mock()
         mock_open_file.return_value = _file
-        mock_process = Mock()
-        mock_process.pid = 1
-        mock_run_playbook.return_value = (mock_process, 0)
+        process_mock = Mock()
+        process_mock.pid = 1
+        attrs = {'wait.return_value': 0}
+        process_mock.configure_mock(**attrs)
+        mock_subprocess_popen.return_value = process_mock
+        python_path = Mock()
+        mock_set_pythonpath.return_value = python_path
 
         job_runner.run_ansible(1)
 
@@ -216,7 +192,8 @@ class TestJobRunner(TestCase):
 
         mock_chdir.assert_called_with(conf['env']['stack_dir'])
 
-        mock_run_playbook.assert_called_once_with(
+        mock_set_job_status.assert_called_once_with(1, 0, 1)
+        mock_subprocess_popen.assert_called_once_with(
             [
                 'ansible-playbook',
                 '-e',
@@ -224,11 +201,10 @@ class TestJobRunner(TestCase):
                 '-i',
                 '{}/{}-inventory.json'.format(config.RUN_DIR, 1),
                 conf['job']['playbook']
-            ], 1, conf['job']['playbook'], _file, _file)
-
-        mock_set_job_status.assert_called_once_with(1, 0, 1)
-
+            ], env=python_path, stdout=_file, stderr=_file)
+        self.assertEqual(mock_set_pythonpath.call_count, 1)
         self.assertEqual(mock_exit.call_count, 1)
+        mock_job_set_job_status.assert_called_with(1, config.Job.RUNNING, 1)
 
     @patch('job_runner.run_ansible')
     @patch('sys.exit')
