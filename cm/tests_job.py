@@ -25,7 +25,7 @@ from cm.models import (JobLog, TaskLog, Bundle, Cluster, Prototype, ObjectConfig
 
 
 class TestJob(TestCase):
-
+    # pylint: disable=too-many-instance-attributes
     def setUp(self):
         log.debug = Mock()
         log.error = Mock()
@@ -194,7 +194,7 @@ class TestJob(TestCase):
         mock_push_obj.side_effect = push_obj
         status = config.Job.FAILED
 
-        action, cluster = job_module.set_action_state(self.task, self.job, status)
+        _, cluster = job_module.set_action_state(self.task, self.job, status)
 
         self.assertEqual(cluster.id, self.cluster.id)
         self.assertEqual(cluster.prototype_id, self.cluster.prototype_id)
@@ -348,7 +348,7 @@ class TestJob(TestCase):
                 'log_dir': '/home/aalferov/PycharmProjects/adcm/data/log',
                 'stack_dir': ('/home/aalferov/PycharmProjects/adcm/data/bundle/'
                               '2232f33c6259d44c23046fce4382f16c450f8ba5'),
-                'status_api_token': 'FIdpaSMoTRrseUesUzsmSVmfAscMePLZmQrGujuf'
+                'status_api_token': mock_dump.call_args[0][0]['env']['status_api_token']
             },
             'job': {
                 'id': 1,

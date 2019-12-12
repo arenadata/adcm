@@ -76,7 +76,7 @@ class TestTaskRunner(TestCase):
     def test_open_file(self, _mock_open):
         file_path = "{}/{}-{}.txt".format('root', 'tag', 1)
         task_runner.open_file('root', 1, 'tag')
-        self.assertEqual(_mock_open.call_args.args, (file_path, 'w'))
+        _mock_open.assert_called_once_with(file_path, 'w')
 
     def test_get_task(self):
         pd = PreparationData(1, 0)
@@ -115,10 +115,10 @@ class TestTaskRunner(TestCase):
         task = pd.get_task(1)
         job = pd.get_job(1)
 
-        self.assertEqual(mock_finish_task.call_args.args, (task, job, config.Job.SUCCESS))
-        self.assertEqual(mock_run_job.call_args.args, (task.id, job.id, _file, _file))
-        self.assertEqual(mock_re_prepare_job.call_count, 0)
-        self.assertEqual(mock_set_task_status.call_args.args, (task, config.Job.RUNNING))
+        mock_finish_task.assert_called_once_with(task, job, config.Job.SUCCESS)
+        mock_run_job.assert_called_once_with(task.id, job.id, _file, _file)
+        mock_re_prepare_job.assert_not_called()
+        mock_set_task_status.assert_called_once_with(task, config.Job.RUNNING)
         self.assertTrue(JobLog.objects.get(id=1).start_date != job.start_date)
 
     @patch('task_runner.run_task')
@@ -127,8 +127,7 @@ class TestTaskRunner(TestCase):
         with patch('sys.argv', [__file__, 1]):
             task_runner.do()
             self.assertEqual(mock_exit.call_count, 0)
-            self.assertEqual(mock_run_task.call_count, 1)
-            self.assertEqual(mock_run_task.call_args.args, (1,))
+            mock_run_task.assert_called_once_with(1)
 
 
 class TestJobRunner(TestCase):
@@ -142,7 +141,7 @@ class TestJobRunner(TestCase):
     def test_open_file(self, _mock_open):
         file_path = "{}/{}-{}.txt".format('root', 'tag', 1)
         job_runner.open_file('root', 1, 'tag')
-        self.assertEqual(_mock_open.call_args.args, (file_path, 'w'))
+        _mock_open.assert_called_once_with(file_path, 'w')
 
     @patch('json.load')
     @patch('builtins.open', create=True)
@@ -151,7 +150,7 @@ class TestJobRunner(TestCase):
         mock_json.return_value = {}
         conf = job_runner.read_config(1)
         file_name = '{}/{}-config.json'.format(config.RUN_DIR, 1)
-        self.assertEqual(_mock_open.call_args.args, (file_name,))
+        _mock_open.assert_called_once_with(file_name)
         self.assertDictEqual(conf, {})
 
     @patch('cm.job.set_job_status')
@@ -159,7 +158,7 @@ class TestJobRunner(TestCase):
         mock_set_job_status.return_value = None
         code = job_runner.set_job_status(1, 0, 1)
         self.assertEqual(code, 0)
-        self.assertEqual(mock_set_job_status.call_args.args, (1, config.Job.SUCCESS, 1))
+        mock_set_job_status.assert_called_once_with(1, config.Job.SUCCESS, 1)
 
     def test_set_pythonpath(self):
         cmd_env = os.environ.copy()
@@ -183,12 +182,9 @@ class TestJobRunner(TestCase):
         process, code = job_runner.run_playbook(['ansible playbook'], 1, 'init.yaml', '', '')
         self.assertEqual(process, process_mock)
         self.assertEqual(code, 0)
-        self.assertEqual(mock_subprocess_popen.call_args.args, (['ansible playbook'],))
-        self.assertDictEqual(mock_subprocess_popen.call_args.kwargs,
-                             {'env': python_path,
-                              'stdout': '',
-                              'stderr': ''})
-        self.assertEqual(mock_set_job_status.call_args.args, (1, config.Job.RUNNING, 1))
+        mock_subprocess_popen.assert_called_once_with(
+            ['ansible playbook'], env=python_path, stdout='', stderr='')
+        mock_set_job_status.assert_called_with(1, config.Job.RUNNING, 1)
         self.assertEqual(mock_set_pythonpath.call_count, 1)
 
     @patch('sys.exit')
@@ -212,17 +208,15 @@ class TestJobRunner(TestCase):
 
         job_runner.run_ansible(1)
 
-        self.assertEqual(mock_read_config.call_count, 1)
-        self.assertEqual(mock_read_config.call_args.args, (1,))
+        mock_read_config.assert_called_once_with(1)
 
         self.assertEqual(mock_open_file.call_count, 2)
-        self.assertEqual(mock_open_file.call_args_list[0].args, (config.LOG_DIR, 'ansible-out', 1))
-        self.assertEqual(mock_open_file.call_args_list[1].args, (config.LOG_DIR, 'ansible-err', 1))
+        mock_open_file.assert_any_call(config.LOG_DIR, 'ansible-out', 1)
+        mock_open_file.assert_any_call(config.LOG_DIR, 'ansible-err', 1)
 
-        self.assertEqual(mock_chdir.call_args.args, (conf['env']['stack_dir'],))
+        mock_chdir.assert_called_with(conf['env']['stack_dir'])
 
-        self.assertEqual(mock_run_playbook.call_count, 1)
-        args = (
+        mock_run_playbook.assert_called_once_with(
             [
                 'ansible-playbook',
                 '-e',
@@ -230,15 +224,9 @@ class TestJobRunner(TestCase):
                 '-i',
                 '{}/{}-inventory.json'.format(config.RUN_DIR, 1),
                 conf['job']['playbook']
-            ],
-            1,
-            conf['job']['playbook'],
-            _file, _file
-        )
-        self.assertEqual(mock_run_playbook.call_args.args, args)
+            ], 1, conf['job']['playbook'], _file, _file)
 
-        self.assertEqual(mock_set_job_status.call_count, 1)
-        self.assertEqual(mock_set_job_status.call_args.args, (1, 0, 1))
+        mock_set_job_status.assert_called_once_with(1, 0, 1)
 
         self.assertEqual(mock_exit.call_count, 1)
 
@@ -249,4 +237,4 @@ class TestJobRunner(TestCase):
             job_runner.do()
             self.assertEqual(mock_exit.call_count, 0)
             self.assertEqual(mock_run_ansible.call_count, 1)
-            self.assertEqual(mock_run_ansible.call_args.args, (1,))
+            mock_run_ansible.assert_called_once_with(1)

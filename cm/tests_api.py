@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from django.test import TestCase
 from django.utils import timezone
@@ -90,9 +90,8 @@ class TestApi(TestCase):
         self.assertEqual(cluster.config_id, self.cluster.config_id)
         self.assertTrue(cluster.state != state)
         self.assertEqual(cluster.state, 'created')
-        self.assertEqual(cluster.stack,  self.cluster.stack)
+        self.assertEqual(cluster.stack, self.cluster.stack)
         self.assertEqual(cluster.issue, self.cluster.issue)
 
-        self.assertEqual(mock_set_obj_state.call_count, 1)
-        self.assertEqual(mock_set_obj_state.call_args.args,
-                         (self.cluster.prototype.type, self.cluster.id, 'created'))
+        mock_set_obj_state.assert_called_once_with(
+            self.cluster.prototype.type, self.cluster.id, 'created')

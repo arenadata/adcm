@@ -15,7 +15,6 @@ import json
 from django.test import TestCase
 from django.utils import timezone
 
-import cm.inventory as inventory_module
 from cm.models import ObjectConfig, ConfigLog, ADCM, Prototype, Bundle
 
 
@@ -83,4 +82,3 @@ class TestInventory(TestCase):
 
     def test_get_obj_config(self):
         pass
-
