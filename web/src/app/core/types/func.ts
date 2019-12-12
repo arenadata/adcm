@@ -23,6 +23,7 @@ export function getPattern(name: string): RegExp {
 export function controlType(name: string): string {
   const ControlsTypes = {
     bool: 'boolean',
+    int: 'textbox',
     file: 'textarea',
     text: 'textarea',
     integer: 'textbox',
