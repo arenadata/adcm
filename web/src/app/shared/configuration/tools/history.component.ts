@@ -12,7 +12,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { ApiService } from '@app/core/api';
-import { getRandomColor, IConfig, isObject } from '@app/core/types';
+import { getRandomColor, isObject } from '@app/core/types';
 import { BaseDirective } from '@app/shared/directives/base.directive';
 import { forkJoin, Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
@@ -20,6 +20,7 @@ import { map, tap } from 'rxjs/operators';
 import { CompareConfig } from '../field.service';
 import { FieldComponent } from '../field/field.component';
 import { ConfigFieldsComponent as FieldsComponent } from '../fields/fields.component';
+import { IConfig } from '../types';
 
 @Component({
   selector: 'app-history',

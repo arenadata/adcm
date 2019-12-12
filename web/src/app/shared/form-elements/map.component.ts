@@ -11,7 +11,7 @@
 // limitations under the License.
 import { Component, Directive, Input, OnInit } from '@angular/core';
 import { AbstractControl, FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { FieldOptions } from '@app/core/types';
+import { FieldOptions } from '../configuration/types';
 
 @Directive({
   selector: '[appBaseMapList]'

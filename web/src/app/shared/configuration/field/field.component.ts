@@ -9,11 +9,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input } from '@angular/core';
+import { ChangeDetectorRef, Component, Input } from '@angular/core';
 import { FormGroup } from '@angular/forms';
-import { FieldOptions, FieldStack, isObject } from '@app/core/types';
+import { isObject } from '@app/core/types';
 
 import { CompareConfig } from '../field.service';
+import { FieldOptions, FieldStack } from '../types';
 
 interface Compare {
   config: CompareConfig;
@@ -24,7 +25,6 @@ interface Compare {
   selector: 'app-field',
   templateUrl: './field.component.html',
   styleUrls: ['./field.component.scss'],
-  //changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FieldComponent {
   @Input()

@@ -13,8 +13,8 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { ApiService } from '@app/core/api';
 import { getProfileSelector, settingsSave, State } from '@app/core/store';
-import { IConfig } from '@app/core/types';
 import { BaseDirective } from '@app/shared';
+import { IConfig } from '@app/shared/configuration/types';
 import { select, Store } from '@ngrx/store';
 import { exhaustMap, filter, map } from 'rxjs/operators';
 
