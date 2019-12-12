@@ -11,6 +11,28 @@
 // limitations under the License.
 import { InnerIssue, Issue } from './issue';
 
+export function getPattern(name: string): RegExp {
+  const fn = {
+    integer: () => new RegExp(/^[-]?\d+$/),
+    int: () => new RegExp(/^[-]?\d+$/),
+    float: () => new RegExp(/^[0-9]+(\.[0-9]+)?$/)
+  };
+  return fn[name] ? fn[name]() : null;
+}
+
+export function controlType(name: string): string {
+  const ControlsTypes = {
+    bool: 'boolean',
+    int: 'textbox',
+    file: 'textarea',
+    text: 'textarea',
+    integer: 'textbox',
+    float: 'textbox',
+    string: 'textbox'
+  };
+  return ControlsTypes[name] || name;
+}
+
 export function getTypeName(name: string) {
   return name ? name.split('2')[0] : name;
 }
@@ -29,7 +51,7 @@ export function isNumber(value) {
 
 const IssueName = {
   config: 'configuration',
-  host_component: 'host - components',
+  host_component: 'host - components'
 };
 export function issueMessage(e: { id: number; name: string; issue: Issue }, typeName: string) {
   if (e.issue)
@@ -130,7 +152,7 @@ export function parseValueConfig(input: any[], value: any) {
   }, {});
 }
 
-export type ConfigValueTypes = 'string' | 'integer' | 'float' | 'boolean' | 'option' | 'json' | 'map' | 'list' | 'file' | 'text' | 'password';
+export type ConfigValueTypes = 'structure' | 'string' | 'integer' | 'float' | 'boolean' | 'option' | 'json' | 'map' | 'list' | 'file' | 'text' | 'password';
 
 /**
  * Type casting after form editing
@@ -149,6 +171,8 @@ export function checkValue(value: string | boolean | object | Array<string> | nu
         }, {});
     case 'list':
       return (value as Array<string>).filter(a => a);
+    case 'structure':
+      return value;
   }
 
   if (typeof value === 'boolean') return value;

@@ -10,12 +10,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, EventEmitter, Input, Output, QueryList, ViewChildren } from '@angular/core';
-import { IConfig, PanelOptions } from '@app/core/types';
+import { FormGroup } from '@angular/forms';
 
 import { FieldService } from '../field.service';
 import { FieldComponent } from '../field/field.component';
 import { GroupFieldsComponent } from '../group-fields/group-fields.component';
-import { FormGroup } from '@angular/forms';
+import { IConfig, PanelOptions } from '../types';
 
 @Component({
   selector: 'app-config-fields',
