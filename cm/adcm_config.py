@@ -125,8 +125,7 @@ def read_bundle_file(proto, fname, bundle_hash, pattern, ref=None):
     return body
 
 
-def init_object_config(proto):
-    spec, _, conf, attr = get_prototype_config(proto)
+def init_object_config(spec, conf, attr):
     if not conf:
         return (None, spec, conf)
     obj_conf = ObjectConfig(
@@ -135,7 +134,7 @@ def init_object_config(proto):
     )
     obj_conf.save()
     save_obj_config(obj_conf, conf, 'init', attr)
-    return (obj_conf, spec, conf)
+    return obj_conf
 
 
 def prepare_social_auth(conf):
@@ -193,16 +192,20 @@ def get_prototype_config(proto, action=None):
     return (spec, flat_spec, conf, attr)
 
 
-def switch_config(obj, new_proto):
+def switch_config(obj, new_proto, old_proto=None):   # pylint: disable=too-many-locals, too-many-branches
+    if not old_proto:
+        old_proto = obj.prototype
+
     if not obj.config:
-        obj_conf, _, _ = init_object_config(new_proto)
+        spec, _, conf, attr = get_prototype_config(new_proto)
+        obj_conf = init_object_config(spec, conf, attr)
         if obj_conf:
             obj.config = obj_conf
             obj.save()
         return
 
     cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-    _, old_spec, _, _ = get_prototype_config(obj.prototype)
+    _, old_spec, _, _ = get_prototype_config(old_proto)
     new_unflat_spec, new_spec, _, _ = get_prototype_config(new_proto)
     old_conf = to_flat_dict(json.loads(cl.config), old_spec)
 
@@ -211,7 +214,7 @@ def switch_config(obj, new_proto):
             return False
         if old_spec[key].default:
             if key in old_conf:
-                return bool(get_default(old_spec[key], obj.prototype) == old_conf[key])
+                return bool(get_default(old_spec[key], old_proto) == old_conf[key])
             else:
                 return True
         return False
