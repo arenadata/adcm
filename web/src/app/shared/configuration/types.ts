@@ -9,13 +9,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
+import { IYspec } from './yspec-fields/yspec.service';
 export type stateType = 'created' | 'locked';
 
 export interface UIoptions {
   invisible?: boolean;
   no_confirm?: boolean;
   advanced?: boolean;
+}
+
+export interface ILimits {
+  min?: number;
+  max?: number;
+  option?: any;
+  read_only?: stateType[];
+  yspec?: IYspec;
 }
 
 interface ValidatorInfo {
@@ -37,13 +45,7 @@ export interface FieldStack {
   value: null | string | number | boolean;
   required: boolean;
   description: string;
-  limits?: {
-    min?: number;
-    max?: number;
-    option?: any;
-    read_only?: stateType[];
-    yspec?: Object;
-  };
+  limits?: ILimits;
   read_only: boolean;
   hidden: boolean;
   ui_options?: UIoptions;
@@ -70,13 +72,13 @@ export interface ConfigOptions {
   description?: string;
 }
 
-export interface PanelOptions extends ConfigOptions { 
-  options: FieldOptions[];  
+export interface PanelOptions extends ConfigOptions {
+  options: FieldOptions[];
   activatable?: boolean;
 }
 
 /**
- * For Material form controls 
+ * For Material form controls
  */
 export interface FieldOptions extends ConfigOptions {
   key: string;
@@ -87,6 +89,5 @@ export interface FieldOptions extends ConfigOptions {
   type: string;
   validator: ValidatorInfo;
   disabled?: boolean;
-  limits?: any;
-  required: boolean;
+  limits?: ILimits;
 }

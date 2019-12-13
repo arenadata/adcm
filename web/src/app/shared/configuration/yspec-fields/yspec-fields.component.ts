@@ -19,7 +19,6 @@ import { FieldService } from '../field.service';
   selector: 'app-yspec-fields',
   templateUrl: './yspec-fields.component.html',
   styleUrls: ['./yspec-fields.component.scss'],
-  providers: [YspecService]
 })
 export class YspecFieldsComponent implements OnInit {
   @Input()
@@ -33,8 +32,7 @@ export class YspecFieldsComponent implements OnInit {
   constructor(private yspec: YspecService, private field: FieldService) {}
 
   ngOnInit() {
-    const scheme = this.options.limits.yspec;
-    this.output = this.yspec.prepare(scheme, this.options.default as {});
+    this.output = this.yspec.prepare(this.options);
 
     this.output.forEach(field => {
       this.schemeFormGroup.setControl(field.key, new FormControl({ value: field.value, disabled: false }, this.field.setValidator(field)));
