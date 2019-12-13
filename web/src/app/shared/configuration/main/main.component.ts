@@ -14,7 +14,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit, V
 import { ClusterService } from '@app/core';
 import { ApiService } from '@app/core/api';
 import { EventMessage, SocketState } from '@app/core/store';
-import { IConfig, parseValueConfig } from '@app/core/types';
+import { parseValueConfig } from '@app/core/types';
 import { SocketListener } from '@app/shared/directives';
 import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
@@ -24,6 +24,8 @@ import { FieldService, IToolsEvent } from '../field.service';
 import { ConfigFieldsComponent } from '../fields/fields.component';
 import { HistoryComponent } from '../tools/history.component';
 import { ToolsComponent } from '../tools/tools.component';
+import { IConfig } from '../types';
+import { YspecService } from '../yspec-fields/yspec.service';
 
 @Component({
   selector: 'app-config-form',
@@ -71,6 +73,7 @@ export class ConfigComponent extends SocketListener implements OnInit {
     private current: ClusterService,
     private cdRef: ChangeDetectorRef,
     private service: FieldService,
+    private yspec: YspecService,
     socket: Store<SocketState>
   ) {
     super(socket);
@@ -126,6 +129,14 @@ export class ConfigComponent extends SocketListener implements OnInit {
     const form = this.service.form;
     if (form.valid) {
       this.saveFlag = true;
+
+      if (this.rawConfig.config.some(a => a.type === 'structure')) {
+        this.yspec.checkValue(
+          this.rawConfig.config.filter(a => a.type === 'structure'),
+          form
+        );
+      }
+
       const config = parseValueConfig(
           this.rawConfig.config.filter(a => !a.read_only && a.type !== 'group'),
           form.value

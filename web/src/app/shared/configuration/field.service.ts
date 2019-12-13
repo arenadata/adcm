@@ -9,9 +9,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Injectable } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ValidatorFn, Validators } from '@angular/forms';
-import { ConfigOptions, FieldOptions, FieldStack, IConfig, PanelOptions } from '@app/core/types';
+
+import { ConfigOptions, FieldOptions, FieldStack, IConfig, PanelOptions } from './types';
+import { getPattern, controlType } from '@app/core/types';
 
 export interface CompareConfig extends IConfig {
   color: string;
@@ -22,7 +23,6 @@ export interface IToolsEvent {
   conditions?: { advanced: boolean; search: string } | boolean;
 }
 
-@Injectable({ providedIn: 'root' })
 export class FieldService {
   globalConfig: IConfig;
   panelOptions: PanelOptions[];
@@ -70,9 +70,9 @@ export class FieldService {
         required: item.required,
         min: item.limits ? item.limits.min : null,
         max: item.limits ? item.limits.max : null,
-        pattern: this.getPattern(item.type)
+        pattern: getPattern(item.type)
       },
-      controlType: this.controlType(item.type),
+      controlType: controlType(item.type),
       hidden: item.name === '__main_info' || this.isHidden(item)
     };
     return params;
@@ -83,8 +83,8 @@ export class FieldService {
 
     if (field.validator.required) v.push(Validators.required);
     if (field.validator.pattern) v.push(Validators.pattern(field.validator.pattern));
-    if (field.validator.max) v.push(Validators.max(field.validator.max));
-    if (field.validator.min) v.push(Validators.min(field.validator.min));
+    if (field.validator.max !== undefined) v.push(Validators.max(field.validator.max));
+    if (field.validator.min !== undefined) v.push(Validators.min(field.validator.min));
 
     if (field.controlType === 'json') {
       const jsonParse = (): ValidatorFn => {
@@ -154,25 +154,6 @@ export class FieldService {
       });
 
     return [...this.panelOptions];
-  }
-
-  controlType(name: string): string {
-    const ControlsTypes = {
-      file: 'textarea',
-      text: 'textarea',
-      integer: 'textbox',
-      float: 'textbox',
-      string: 'textbox'
-    };
-    return ControlsTypes[name] || name;
-  }
-
-  getPattern(name: string): RegExp {
-    const fn = {
-      integer: () => new RegExp(/^\d+$/),
-      float: () => new RegExp(/^[0-9]+(\.[0-9]+)?$/)
-    };
-    return fn[name] ? fn[name]() : null;
   }
 
   getValue(name: string) {
