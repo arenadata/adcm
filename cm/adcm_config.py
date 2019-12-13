@@ -127,7 +127,7 @@ def read_bundle_file(proto, fname, bundle_hash, pattern, ref=None):
 
 def init_object_config(spec, conf, attr):
     if not conf:
-        return (None, spec, conf)
+        return None
     obj_conf = ObjectConfig(
         current=0,
         previous=0
