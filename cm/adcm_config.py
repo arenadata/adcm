@@ -192,10 +192,7 @@ def get_prototype_config(proto, action=None):
     return (spec, flat_spec, conf, attr)
 
 
-def switch_config(obj, new_proto, old_proto=None):   # pylint: disable=too-many-locals, too-many-branches
-    if not old_proto:
-        old_proto = obj.prototype
-
+def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-locals
     if not obj.config:
         spec, _, conf, attr = get_prototype_config(new_proto)
         obj_conf = init_object_config(spec, conf, attr)

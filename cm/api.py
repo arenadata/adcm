@@ -331,7 +331,6 @@ def check_hc(cluster, hc_in):   # pylint: disable=too-many-branches
     return host_comp_list
 
 
-@transaction.atomic
 def save_hc(cluster, host_comp_list):
     HostComponent.objects.filter(cluster=cluster).delete()
     result = []
@@ -352,7 +351,9 @@ def save_hc(cluster, host_comp_list):
 
 def add_hc(cluster, hc_in):
     host_comp_list = check_hc(cluster, hc_in)
-    return save_hc(cluster, host_comp_list)
+    with transaction.atomic():
+        new_hc = save_hc(cluster, host_comp_list)
+    return new_hc
 
 
 def get_bind(cluster, service, source_cluster, source_service):
