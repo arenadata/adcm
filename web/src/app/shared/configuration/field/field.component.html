@@ -1,8 +1,7 @@
 <div class="field-group" [formGroup]="form" [ngSwitch]="options.controlType" [ngClass]="{
     'read-only': options.disabled,
     hidden: options.hidden,
-    advanced: isAdvanced(),
-    required: options.required
+    advanced: isAdvanced()
   }">
 
   <ng-container *ngSwitchCase="'map'">

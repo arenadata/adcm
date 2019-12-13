@@ -26,6 +26,7 @@ import { HistoryComponent } from './tools/history.component';
 import { SearchComponent } from './tools/search.component';
 import { ToolsComponent } from './tools/tools.component';
 import { YspecFieldsComponent } from './yspec-fields/yspec-fields.component';
+import { YspecService } from './yspec-fields/yspec.service';
 
 @NgModule({
   declarations: [
@@ -41,6 +42,6 @@ import { YspecFieldsComponent } from './yspec-fields/yspec-fields.component';
   ],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, MaterialModule, StuffModule, FormElementsModule],
   exports: [ConfigComponent, ConfigFieldsComponent],
-  providers: [FieldService]
+  providers: [FieldService, YspecService]
 })
 export class ConfigurationModule {}
