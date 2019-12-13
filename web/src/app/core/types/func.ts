@@ -15,7 +15,7 @@ export function getPattern(name: string): RegExp {
   const fn = {
     integer: () => new RegExp(/^[-]?\d+$/),
     int: () => new RegExp(/^[-]?\d+$/),
-    float: () => new RegExp(/^[0-9]+(\.[0-9]+)?$/)
+    float: () => new RegExp(/^[-]?[0-9]+(\.[0-9]+)?$/)
   };
   return fn[name] ? fn[name]() : null;
 }

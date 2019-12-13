@@ -64,7 +64,7 @@ export interface IConfig {
 }
 
 export interface ConfigOptions {
-  label: string;
+  display_name: string;
   name: string;
   hidden: boolean;
   read_only: boolean;

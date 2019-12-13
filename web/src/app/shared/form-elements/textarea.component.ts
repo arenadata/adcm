@@ -17,13 +17,13 @@ import { FieldDirective } from './field.directive';
   selector: 'app-fields-textarea',
   template: `
     <ng-container [formGroup]="form">
-      <label [appTooltip]="field.label" [appTooltipShowByCondition]="true">{{ field.label }}:</label>
+      <label [appTooltip]="field.display_name" [appTooltipShowByCondition]="true">{{ field.display_name }}:</label>
       <mat-form-field class="full-width" [floatLabel]="'never'">
         <mat-error *ngIf="!isValid">
-          <mat-error *ngIf="hasError('required')">Field [{{ field.label }}] is required!</mat-error>
-          <mat-error *ngIf="hasError('pattern')">Field [{{ field.label }}] is invalid!</mat-error>
-          <mat-error *ngIf="hasError('min')">Field [{{ field.label }}] value cannot be less than {{ field.validator.min }}!</mat-error>
-          <mat-error *ngIf="hasError('max')">Field [{{ field.label }}] value cannot be greater than {{ field.validator.max }}!</mat-error>
+          <mat-error *ngIf="hasError('required')">Field [{{ field.display_name }}] is required!</mat-error>
+          <mat-error *ngIf="hasError('pattern')">Field [{{ field.display_name }}] is invalid!</mat-error>
+          <mat-error *ngIf="hasError('min')">Field [{{ field.display_name }}] value cannot be less than {{ field.validator.min }}!</mat-error>
+          <mat-error *ngIf="hasError('max')">Field [{{ field.display_name }}] value cannot be greater than {{ field.validator.max }}!</mat-error>
         </mat-error>
         <div class="textarea-wrapper">
           <textarea matInput class="full-width json_field" [appMTextarea]="field.key" [formControlName]="field.key" [readonly]="field.disabled"></textarea>

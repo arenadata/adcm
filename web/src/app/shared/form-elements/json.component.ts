@@ -18,10 +18,10 @@ import { FieldDirective } from './field.directive';
   selector: 'app-fields-json',
   template: `
     <ng-container [formGroup]="form">
-      <label [appTooltip]="field.label" [appTooltipShowByCondition]="true">{{ field.label }}:</label>
+      <label [appTooltip]="field.display_name" [appTooltipShowByCondition]="true">{{ field.display_name }}:</label>
       <mat-form-field class="full-width" [floatLabel]="'never'">
         <mat-error *ngIf="!isValid">
-          <mat-error *ngIf="hasError('required')">Field [{{ field.label }}] is required!</mat-error>
+          <mat-error *ngIf="hasError('required')">Field [{{ field.display_name }}] is required!</mat-error>
           <mat-error *ngIf="hasError('jsonParseError') && (form.touched || form.dirty)">Json parsing error!</mat-error>
         </mat-error>
         <div class="textarea-wrapper">
