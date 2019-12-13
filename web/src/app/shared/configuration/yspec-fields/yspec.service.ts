@@ -65,17 +65,21 @@ export class YspecService {
         case 'dict':
           const items = root.items;
           if (items) {
-            return Object.keys(items)
-              .filter(k => scheme[items[k]].match !== 'dict')
-              .map(k => {
-                const rule = scheme[items[k]];
+            return Object.keys(items).map(k => {
+              const rule = scheme[items[k]];
+
+              if (rule.match !== 'dict') {
                 return {
-                  label: k,
+                  display_name: k,
                   name: k,
                   key: k,
                   subname: null,
                   default: null,
-                  value: value[k],
+                  /**
+                   * value never empty
+                   *
+                   */
+                  value: value ? value[k] : null,
                   hidden: false,
                   read_only: false,
                   controlType: controlType(rule.match),
@@ -85,36 +89,73 @@ export class YspecService {
                     pattern: getPattern(rule.match)
                   }
                 };
-              });
+              } else {
+                scheme.root = rule;
+                return {
+                  display_name: k,
+                  name: k,
+                  subname: null,
+                  key: items[k],
+                  limits: {
+                    yspec: scheme
+                  },
+                  default: null,
+                  /**
+                   * value never empty
+                   *
+                   */
+                  value: value ? value[k] : null,
+                  hidden: false,
+                  read_only: false,
+                  controlType: controlType(rule.match),
+                  type: rule.match,
+                  validator: {}
+                };
+              }
+            });
           }
           break;
       }
     }
   }
 
-  checkValue(data: FieldStack[], form: FormGroup) {
-    data.map(field => this.checkField(field.limits.yspec, form.controls[`${field.subname ? field.subname + '/' : ''}${field.name}`] as FormGroup));
+  checkValue(data: FieldStack[], form: FormGroup): { [key: string]: any } {
+    return data.reduce((output, field) => {
+      const key = `${field.subname ? field.subname + '/' : ''}${field.name}`;
+      output[key] = this.checkField(field.limits.yspec, form.controls[key] as FormGroup);
+      return output;
+    }, {});
   }
 
-  checkField(yspec: IYspec, form: FormGroup) {
+  checkField(yspec: IYspec, form: FormGroup): { [key: string]: any } {
     const value = form.value;
-    const checked = Object.keys(value).reduce((output, key) => {
+    return Object.keys(value).reduce((output, key) => {
       let checkValue = value[key];
       if (yspec.root.match === 'dict') {
         /** */
-        const rule = yspec[yspec.root.items[key]];
+        const rule = yspec[yspec.root.items[key]] || yspec[key];
         /** */
         if (rule.match !== 'dict' && rule.match !== 'string') {
-          if (rule.match === 'list') checkValue = (checkValue as string[]).map(a => this.checkSimple(a, rule.item as matchType));
+          if (rule.match === 'list') {
+            /** TODO
+             *  !!!!!!!!! checkValue never empty
+             */
+            checkValue = checkValue && (checkValue as string[]).map(a => this.checkSimple(a, rule.item as matchType));
+          }
 
           checkValue = this.checkSimple(checkValue, rule.match);
+        } else if (rule.match === 'dict') {
+          /** recursion this */
+
+          const fg = form.controls[key] as FormGroup;
+          checkValue = this.checkField(yspec, fg);
+
+          //debugger;
         }
       }
       output[key] = checkValue;
       return output;
     }, {});
-
-    form.setValue(checked);
   }
 
   checkSimple(value: string, match: matchType) {

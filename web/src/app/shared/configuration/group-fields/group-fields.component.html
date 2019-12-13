@@ -1,7 +1,7 @@
 <mat-expansion-panel [expanded]="checked" [disabled]="!checked" [ngClass]="{ panel: true, advanced: isAdvanced() }" #ep>
   <mat-expansion-panel-header>
     <mat-panel-title class="title">
-      <span>{{ panel.label }}</span>
+      <span>{{ panel.display_name }}</span>
       <mat-slide-toggle *ngIf="panel.activatable" [checked]="checked" (change)="activeToggle($event)">
       </mat-slide-toggle>
     </mat-panel-title>
