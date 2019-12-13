@@ -69,7 +69,8 @@ class BasePage:
             field.clear()
             field.send_keys(value)
 
-    def _set_element_value(self, element, value):
+    @staticmethod
+    def set_element_value(element, value):
         if element.is_displayed():
             element.clear()
             element.send_keys(value)
