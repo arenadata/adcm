@@ -27,8 +27,6 @@ from tests.ui_tests.app.app import ADCMTest
 DATADIR = utils.get_data_dir(__file__)
 BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
 
-pytestmark = pytest.mark.skip(reason="It is flaky. Just skip this")
-
 
 @pytest.fixture(scope="function")
 def adcm(image, request):
