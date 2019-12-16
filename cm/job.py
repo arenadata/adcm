@@ -654,7 +654,6 @@ def restore_hc(task, action, status):
         host_comp_list.append((service, host, comp))
 
     log.warning('task #%s is failed, restore old hc', task.id)
-    # TODO: inserted atomic in save_hc
     api.save_hc(cluster, host_comp_list)
 
 
