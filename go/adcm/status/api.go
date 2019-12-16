@@ -26,11 +26,13 @@ type AdcmApi struct {
 	Url        string
 	token      string
 	httpClient *http.Client
+	Secrets    *SecretConfig
 }
 
-func newAdcmApi() *AdcmApi {
+func newAdcmApi(secrets *SecretConfig) *AdcmApi {
 	return &AdcmApi{
-		Url: "http://127.0.0.1:8000/api/v1",
+		Url:     "http://127.0.0.1:8000/api/v1",
+		Secrets: secrets,
 	}
 }
 
@@ -46,7 +48,10 @@ func (api *AdcmApi) getToken() (string, bool) {
 		return api.token, true
 	}
 	resp, err := http.PostForm(api.Url+"/token/",
-		url.Values{"username": {"admin"}, "password": {"admin"}})
+		url.Values{
+			"username": {api.Secrets.ADCMUser.User},
+			"password": {api.Secrets.ADCMUser.Password},
+		})
 	if err != nil {
 		logg.E.l("getToken: http error: ", err)
 		return "", false
