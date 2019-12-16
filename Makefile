@@ -1,5 +1,5 @@
 # Set number of threads
-BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD | tr '/' '_')
+BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 ADCMBASE_IMAGE ?= arenadata/adcmbase
 ADCMBASE_TAG ?= 20191206180316
 
@@ -30,7 +30,7 @@ buildbase: ## Build base image for ADCM's container. That is alpine with all pac
 	@docker build --pull=true -f Dockerfile_base --no-cache=true -t $(ADCMBASE_IMAGE):$$(date '+%Y%m%d%H%M%S') -t $(ADCMBASE_IMAGE):latest .
 
 build: describe buildss buildjs ## Build final docker image and all depended targets except baseimage.
-	@docker build --no-cache=true --pull=true -t ci.arenadata.io/adcm:$(BRANCH_NAME) .
+	@docker build --no-cache=true --pull=true -t ci.arenadata.io/adcm:$(subst /,_,$(BRANCH_NAME)) .
 
 
 ##################################################
@@ -47,7 +47,7 @@ unittests: ## Run unittests
 pytest: ## Run functional tests
 	docker pull ci.arenadata.io/functest:u18-x64
 	docker run -i --rm -v /var/run/docker.sock:/var/run/docker.sock --network=host -v $(CURDIR)/:/adcm -w /adcm/ \
-	-e BUILD_TAG=${BUILD_TAG} -e ADCM_TAG=${BRANCH_NAME} -e ADCMPATH=/adcm/ ci.arenadata.io/functest:u18-x64 /bin/sh -e ./pytest.sh
+	-e BUILD_TAG=${BUILD_TAG} -e ADCM_TAG=$(subst /,_,$(BRANCH_NAME)) -e ADCMPATH=/adcm/ ci.arenadata.io/functest:u18-x64 /bin/sh -e ./pytest.sh
 
 ng_tests: ## Run Angular tests
 	docker pull ci.arenadata.io/functest:u18-x64

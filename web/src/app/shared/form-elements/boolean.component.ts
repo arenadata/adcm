@@ -18,13 +18,13 @@ import { FieldDirective } from './field.directive';
   selector: 'app-fields-boolean',
   template: `
     <ng-container [formGroup]="form">
-      <label [appTooltip]="field.label" [appTooltipShowByCondition]="true">{{ field.label }}:</label>
+      <label [appTooltip]="field.display_name" [appTooltipShowByCondition]="true">{{ field.display_name }}:</label>
       <div class="full-width">
         <div>
           <mat-checkbox [labelPosition]="'before'" [formControlName]="field.key" [indeterminate]="field.value === null" (click)="cbChange()"></mat-checkbox>
           <mat-icon class="icon-info" *ngIf="field.description" matSuffix [appTooltip]="field.description">info_outline</mat-icon>
         </div>
-        <mat-error *ngIf="!isValid">Field [{{ field.label }}] is required!</mat-error>
+        <mat-error *ngIf="!isValid">Field [{{ field.display_name }}] is required!</mat-error>
       </div>
     </ng-container>
   `,

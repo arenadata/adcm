@@ -1,1 +1,7 @@
-<app-field *ngFor="let field of output" class="alone" [form]="schemeFormGroup" [options]="field"></app-field>
+<label>{{ options.display_name }}</label>
+<ng-container *ngFor="let field of output">
+  <app-field *ngIf="field.type !== 'dict'; else recu" class="alone" [form]="schemeFormGroup" [options]="field"></app-field>
+  <ng-template #recu>
+    <app-yspec-fields [form]="getForm(field)" [options]="field"></app-yspec-fields>
+  </ng-template>
+</ng-container>

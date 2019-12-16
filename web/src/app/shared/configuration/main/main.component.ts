@@ -131,10 +131,11 @@ export class ConfigComponent extends SocketListener implements OnInit {
       this.saveFlag = true;
 
       if (this.rawConfig.config.some(a => a.type === 'structure')) {
-        this.yspec.checkValue(
+        const checked = this.yspec.checkValue(
           this.rawConfig.config.filter(a => a.type === 'structure'),
           form
         );
+        form.setValue(checked);
       }
 
       const config = parseValueConfig(
