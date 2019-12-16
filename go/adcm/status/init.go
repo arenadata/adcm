@@ -52,7 +52,7 @@ func Start(secrets *SecretConfig, logFile string, logLevel string) {
 	hub.EventWS = newWsHub()
 	go hub.EventWS.run()
 
-	hub.AdcmApi = newAdcmApi()
+	hub.AdcmApi = newAdcmApi(secrets)
 	go func() {
 		time.Sleep(time.Second)
 		hub.AdcmApi.getServiceMap()
