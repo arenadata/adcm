@@ -33,7 +33,7 @@ export interface IYspec {
 export class YspecService {
   prepare(field: FieldOptions): FieldOptions[] {
     const scheme = field.limits.yspec,
-      value: { [key: string]: string } = field.default as {};
+      value = typeof field.value === 'object' ? field.value : typeof field.default === 'object' ? field.default : null;
 
     const root = scheme.root;
     if (root) {
@@ -74,12 +74,8 @@ export class YspecService {
                   name: k,
                   key: k,
                   subname: null,
-                  default: null,
-                  /**
-                   * value never empty
-                   *
-                   */
-                  value: value ? value[k] : null,
+                  default: field.default,
+                  value: value[k],
                   hidden: false,
                   read_only: false,
                   controlType: controlType(rule.match),
@@ -99,12 +95,8 @@ export class YspecService {
                   limits: {
                     yspec: scheme
                   },
-                  default: null,
-                  /**
-                   * value never empty
-                   *
-                   */
-                  value: value ? value[k] : null,
+                  default: field.default,
+                  value: value[k],
                   hidden: false,
                   read_only: false,
                   controlType: controlType(rule.match),
