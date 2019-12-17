@@ -26,6 +26,7 @@ from cm.models import (JobLog, TaskLog, Bundle, Cluster, Prototype, ObjectConfig
 
 class TestJob(TestCase):
     # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-public-methods
     def setUp(self):
         log.debug = Mock()
         log.error = Mock()
@@ -181,31 +182,16 @@ class TestJob(TestCase):
         self.assertEqual(task_obj.stack, self.cluster.stack)
         self.assertEqual(task_obj.issue, self.cluster.issue)
 
+    def test_get_state(self):
+        status = config.Job.SUCCESS
+        state = job_module.get_state(self.action, self.job, status)
+        self.assertEqual(state, self.action.state_on_success)
+
     @patch('cm.api.push_obj')
-    @patch('cm.job.get_task_obj')
-    def test_set_action_state(self, mock_get_task_obj, mock_push_obj):
-
-        mock_get_task_obj.return_value = self.cluster
-
-        def push_obj(obj, state):
-            obj.stack = json.dumps([state])
-            obj.save()
-
-        mock_push_obj.side_effect = push_obj
-        status = config.Job.FAILED
-
-        _, cluster = job_module.set_action_state(self.task, self.job, status)
-
-        self.assertEqual(cluster.id, self.cluster.id)
-        self.assertEqual(cluster.prototype_id, self.cluster.prototype_id)
-        self.assertEqual(cluster.name, self.cluster.name)
-        self.assertEqual(cluster.description, self.cluster.description)
-        self.assertEqual(cluster.config, self.cluster.config)
-        self.assertEqual(cluster.state, self.cluster.state)
-        self.assertEqual(cluster.stack, self.cluster.stack)
-        self.assertEqual(cluster.issue, self.cluster.issue)
-
-        self.assertEqual(f'["{self.action.state_on_fail}"]', cluster.stack)
+    def test_set_action_state(self, mock_push_obj):
+        state = ''
+        job_module.set_action_state(self.action, self.task, self.cluster, state)
+        mock_push_obj.assert_called_once_with(self.cluster, state)
 
     @patch('cm.api.set_object_state')
     def test_unlock_obj(self, mock_set_object_state):
