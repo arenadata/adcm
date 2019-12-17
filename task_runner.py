@@ -39,11 +39,11 @@ def run_job(task_id, job_id, out_file, err_file):
             '{}/job_runner.py'.format(config.BASE_DIR),
             str(job_id)
         ], stdout=out_file, stderr=err_file)
+        res = proc.wait()
+        return res
     except:		# pylint: disable=bare-except
         log.error("exception runnung job %s", job_id)
-
-    res = proc.wait()
-    return res
+        return 1
 
 
 def run_task(task_id, args=None):
@@ -68,6 +68,7 @@ def run_task(task_id, args=None):
 
     job = None
     count = 0
+    res = 0
     for job in jobs:
         if args == 'restart' and job.status == config.Job.SUCCESS:
             log.info('skip job #%s status "%s" of task #%s', job.id, job.status, task_id)

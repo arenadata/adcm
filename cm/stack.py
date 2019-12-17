@@ -19,7 +19,6 @@ import toml
 import hashlib
 import yspec.checker
 
-from django.db import transaction
 from rest_framework import status
 
 from cm.logger import log
@@ -165,7 +164,6 @@ def get_license_hash(proto, conf, bundle_hash):
     return sha1.hexdigest()
 
 
-@transaction.atomic
 def save_prototype(path, conf, def_type, bundle_hash):
     # validate_name(type_name, '{} type name "{}"'.format(def_type, conf['name']))
     proto = StagePrototype(name=conf['name'], type=def_type, path=path, version=conf['version'])
