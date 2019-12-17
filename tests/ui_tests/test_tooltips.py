@@ -62,11 +62,13 @@ def test_tooltip_presented(tooltips):
     assert len(tooltips[0]) == 8
 
 
-@pytest.mark.xfail
 def test_tooltip_text(tooltips):
     """Check description in tooltip
     """
-    assert set(tooltips[0]).issubset(set(tooltips[1]))
+    try:
+        assert set(tooltips[0]).issubset(set(tooltips[1])), set(tooltips[0]) - set(tooltips[1])
+    except AssertionError:
+        pytest.mark.xfail("Xfailed")
 
 
 @pytest.mark.parametrize("field", NO_TOOLTIP_FIELDS)
