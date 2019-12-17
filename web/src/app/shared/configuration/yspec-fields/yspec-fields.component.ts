@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, ChangeDetectionStrategy } from '@angular/core';
 import { FieldOptions } from '../types';
 import { FormGroup, FormControl } from '@angular/forms';
 import { YspecService } from './yspec.service';
@@ -19,6 +19,7 @@ import { FieldService } from '../field.service';
   selector: 'app-yspec-fields',
   templateUrl: './yspec-fields.component.html',
   styleUrls: ['./yspec-fields.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class YspecFieldsComponent implements OnInit {
   @Input()
@@ -39,6 +40,14 @@ export class YspecFieldsComponent implements OnInit {
     });
 
     this.form.setControl(this.options.key, this.schemeFormGroup);
-    
+  }
+
+  getForm(fo: FieldOptions) {
+    const c = this.form.controls[this.options.key];
+    if (c) {
+      const fg = c as FormGroup;
+      if (fg.controls[fo.key] && !fg.controls[fo.key].value) fg.removeControl(fo.key);
+      return fg;
+    }
   }
 }

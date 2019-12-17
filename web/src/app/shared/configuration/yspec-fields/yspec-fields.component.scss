@@ -1,0 +1,9 @@
+:host {
+  & .mat-expansion-panel {
+    margin: 10px auto;
+  }
+}
+
+label {
+  font-size: 18px;
+}
