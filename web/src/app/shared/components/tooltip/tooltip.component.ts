@@ -68,7 +68,7 @@ export class TooltipComponent extends BaseDirective implements OnInit, OnDestroy
 
   hide() {
     this.renderer.setAttribute(this.el.nativeElement, 'style', `opacity: 0`);
-    setTimeout(() => this.clear(), 300);
+    this.clear();
   }
 
   clear() {
@@ -87,21 +87,25 @@ export class TooltipComponent extends BaseDirective implements OnInit, OnDestroy
     const bodyWidth = document.querySelector('body').offsetWidth,
       bodyHeight = (document.getElementsByTagName('app-root')[0] as HTMLElement).offsetHeight,
       // extLeft = o.event.x - el.offsetWidth,
-      extRight = o.event.x + el.offsetWidth + o.source.offsetWidth / 2,
+      extRight = o.event.x + el.offsetWidth + o.source.offsetWidth / 2 + POSITION_MARGIN,
       // extTop = o.event.y - el.offsetHeight,
       extBottom = o.event.y + el.offsetHeight;
 
     const dx = extRight - bodyWidth,
       dy = o.source.offsetHeight / 2 + el.offsetHeight / 2 + POSITION_MARGIN,
       dH = bodyHeight - o.event.y - o.source.offsetHeight - POSITION_MARGIN,
+      dX = bodyWidth - o.event.x - o.source.offsetWidth - POSITION_MARGIN,
       bottom = bodyHeight < extBottom ? (o.event.y + el.offsetHeight > bodyHeight ? `bottom: 0px; height: ${dH}px;` : `bottom: ${POSITION_MARGIN}px;`) : '';
 
     let xMargin = '';
     let yMargin = '';
 
     if (o.options.position === 'top' || o.options.position === 'bottom') {
-      xMargin = bodyWidth < extRight ? `margin-left: -${dx}px;` : '';
-      yMargin = `margin-top: ${o.options.position === 'top' ? '-' : ''}${dy}px;`;
+      if (bodyWidth < extRight) {
+        xMargin = `right: ${POSITION_MARGIN}px;`;
+      } else {
+        yMargin = `margin-top: ${o.options.position === 'top' ? '-' : ''}${dy}px;`;
+      }
     }
 
     if (o.options.position === 'left' || o.options.position === 'right') {

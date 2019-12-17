@@ -21,7 +21,7 @@ import cm.status_api
 from cm.logger import log   # pylint: disable=unused-import
 from cm.upgrade import check_license, version_in
 from cm.adcm_config import proto_ref, obj_ref, prepare_social_auth
-from cm.adcm_config import process_file_type, read_bundle_file
+from cm.adcm_config import process_file_type, read_bundle_file, get_prototype_config
 from cm.adcm_config import init_object_config, save_obj_config, check_json_config
 from cm.errors import AdcmApiEx
 from cm.errors import raise_AdcmEx as err
@@ -36,33 +36,41 @@ def check_proto_type(proto, check_type):
         err('OBJ_TYPE_ERROR', msg.format(check_type, proto.type))
 
 
-@transaction.atomic
 def add_cluster(proto, name, desc=''):
     check_proto_type(proto, 'cluster')
     check_license(proto.bundle)
-    obj_conf, spec, conf = init_object_config(proto)
-    cluster = Cluster(prototype=proto, name=name, config=obj_conf, description=desc)
-    cluster.save()
-    process_file_type(cluster, spec, conf)
+    spec, _, conf, attr = get_prototype_config(proto)
+    with transaction.atomic():
+        obj_conf = init_object_config(spec, conf, attr)
+        cluster = Cluster(prototype=proto, name=name, config=obj_conf, description=desc)
+        cluster.save()
+        process_file_type(cluster, spec, conf)
+        cm.issue.save_issue(cluster)
     cm.status_api.post_event('create', 'cluster', cluster.id)
-    cm.issue.save_issue(cluster)
     cm.status_api.load_service_map()
     return cluster
 
 
-@transaction.atomic
 def add_host(proto, provider, fqdn, desc=''):
     check_proto_type(proto, 'host')
     check_license(proto.bundle)
     if proto.bundle != provider.prototype.bundle:
         msg = 'Host prototype bundle #{} does not match with host provider bundle #{}'
         err('FOREIGN_HOST', msg.format(proto.bundle.id, provider.prototype.bundle.id))
-    (obj_conf, spec, conf) = init_object_config(proto)
-    host = Host(prototype=proto, provider=provider, fqdn=fqdn, config=obj_conf, description=desc)
-    host.save()
-    process_file_type(host, spec, conf)
+    spec, _, conf, attr = get_prototype_config(proto)
+    with transaction.atomic():
+        obj_conf = init_object_config(spec, conf, attr)
+        host = Host(
+            prototype=proto,
+            provider=provider,
+            fqdn=fqdn,
+            config=obj_conf,
+            description=desc
+        )
+        host.save()
+        process_file_type(host, spec, conf)
+        cm.issue.save_issue(host)
     cm.status_api.post_event('create', 'host', host.id, 'provider', str(provider.id))
-    cm.issue.save_issue(host)
     cm.status_api.load_service_map()
     return host
 
@@ -81,20 +89,20 @@ def add_provider_host(provider_id, fqdn, desc=''):
     return add_host(proto, provider, fqdn, desc)
 
 
-@transaction.atomic
 def add_host_provider(proto, name, desc=''):
     check_proto_type(proto, 'provider')
     check_license(proto.bundle)
-    (obj_conf, spec, conf) = init_object_config(proto)
-    provider = HostProvider(prototype=proto, name=name, config=obj_conf, description=desc)
-    provider.save()
-    process_file_type(provider, spec, conf)
+    spec, _, conf, attr = get_prototype_config(proto)
+    with transaction.atomic():
+        obj_conf = init_object_config(spec, conf, attr)
+        provider = HostProvider(prototype=proto, name=name, config=obj_conf, description=desc)
+        provider.save()
+        process_file_type(provider, spec, conf)
+        cm.issue.save_issue(provider)
     cm.status_api.post_event('create', 'provider', provider.id)
-    cm.issue.save_issue(provider)
     return provider
 
 
-@transaction.atomic
 def delete_host_provider(provider):
     hosts = Host.objects.filter(provider=provider)
     if hosts:
@@ -104,25 +112,23 @@ def delete_host_provider(provider):
     provider.delete()
 
 
-@transaction.atomic
 def add_host_to_cluster(cluster, host):
-    if not host.cluster:
-        host.cluster = cluster
-        host.save()
-    else:
+    if host.cluster:
         if host.cluster.id != cluster.id:
             msg = 'Host #{} belong to cluster {}'.format(host.id, host.cluster.id)
             err('FOREIGN_HOST', msg)
         else:
             err('HOST_CONFLICT')
+    with transaction.atomic():
+        host.cluster = cluster
+        host.save()
+        cm.issue.save_issue(host)
+        cm.issue.save_issue(cluster)
     cm.status_api.post_event('add', 'host', host.id, 'cluster', str(cluster.id))
-    cm.issue.save_issue(host)
-    cm.issue.save_issue(cluster)
     cm.status_api.load_service_map()
     return host
 
 
-@transaction.atomic
 def delete_host(host):
     cluster = host.cluster
     if cluster:
@@ -133,7 +139,6 @@ def delete_host(host):
     cm.status_api.load_service_map()
 
 
-@transaction.atomic
 def delete_service(service):
     if HostComponent.objects.filter(cluster=service.cluster, service=service):
         err('SERVICE_CONFLICT', 'Service #{} has component(s) on host(s)'.format(service.id))
@@ -144,38 +149,36 @@ def delete_service(service):
     cm.status_api.load_service_map()
 
 
-@transaction.atomic
 def delete_cluster(cluster):
     cm.status_api.post_event('delete', 'cluster', cluster.id)
     cluster.delete()
     cm.status_api.load_service_map()
 
 
-@transaction.atomic
 def remove_host_from_cluster(host):
     cluster = host.cluster
     hc = HostComponent.objects.filter(cluster=cluster, host=host)
     if hc:
         return err('HOST_CONFLICT', 'Host #{} has component(s)'.format(host.id))
-    host.cluster = None
-    host.save()
+    with transaction.atomic():
+        host.cluster = None
+        host.save()
+        cm.issue.save_issue(cluster)
     cm.status_api.post_event('remove', 'host', host.id, 'cluster', str(cluster.id))
-    cm.issue.save_issue(cluster)
     cm.status_api.load_service_map()
     return host
 
 
-@transaction.atomic
 def unbind(cbind):
     import_obj = get_bind_obj(cbind.cluster, cbind.service)
     export_obj = get_bind_obj(cbind.source_cluster, cbind.source_service)
     check_import_default(import_obj, export_obj)
     cm.status_api.post_event('delete', 'bind', cbind.id, 'cluster', str(cbind.cluster.id))
-    cbind.delete()
-    cm.issue.save_issue(cbind.cluster)
+    with transaction.atomic():
+        cbind.delete()
+        cm.issue.save_issue(cbind.cluster)
 
 
-@transaction.atomic
 def add_service_to_cluster(cluster, proto):
     check_proto_type(proto, 'service')
     check_license(proto.bundle)
@@ -185,18 +188,16 @@ def add_service_to_cluster(cluster, proto):
             err('SERVICE_CONFLICT', msg.format(
                 proto_ref(proto), cluster.prototype.bundle.name, cluster.prototype.version
             ))
-    (obj_conf, spec, conf) = init_object_config(proto)
-    cs = ClusterObject(
-        cluster=cluster,
-        prototype=proto,
-        config=obj_conf,
-    )
-    cs.save()
-    add_components_to_service(cluster, cs)
-    process_file_type(cs, spec, conf)
+    spec, _, conf, attr = get_prototype_config(proto)
+    with transaction.atomic():
+        obj_conf = init_object_config(spec, conf, attr)
+        cs = ClusterObject(cluster=cluster, prototype=proto, config=obj_conf)
+        cs.save()
+        add_components_to_service(cluster, cs)
+        process_file_type(cs, spec, conf)
+        cm.issue.save_issue(cs)
+        cm.issue.save_issue(cluster)
     cm.status_api.post_event('add', 'service', cs.id, 'cluster', str(cluster.id))
-    cm.issue.save_issue(cs)
-    cm.issue.save_issue(cluster)
     cm.status_api.load_service_map()
     return cs
 
@@ -220,7 +221,6 @@ def get_license(bundle):
     return read_bundle_file(proto, bundle.license_path, bundle.hash, 'license file', ref)
 
 
-@transaction.atomic
 def accept_license(bundle):
     if not bundle.license_path:
         err('LICENSE_ERROR', 'This bundle has no license')
@@ -230,7 +230,6 @@ def accept_license(bundle):
     bundle.save()
 
 
-@transaction.atomic
 def update_obj_config(obj_conf, conf, attr=None, desc=''):
     if hasattr(obj_conf, 'adcm'):
         obj = obj_conf.adcm
@@ -254,11 +253,12 @@ def update_obj_config(obj_conf, conf, attr=None, desc=''):
         if old_conf.attr:
             attr = json.loads(old_conf.attr)
     new_conf = check_json_config(proto, obj, conf, old_conf.config, attr)
-    cl = save_obj_config(obj_conf, new_conf, desc, attr)
+    with transaction.atomic():
+        cl = save_obj_config(obj_conf, new_conf, desc, attr)
+        cm.issue.save_issue(obj)
     if hasattr(obj_conf, 'adcm'):
         prepare_social_auth(new_conf)
     cm.status_api.post_event('change_config', proto.type, obj.id, 'version', str(cl.id))
-    cm.issue.save_issue(obj)
     return cl
 
 
@@ -331,7 +331,6 @@ def check_hc(cluster, hc_in):   # pylint: disable=too-many-branches
     return host_comp_list
 
 
-@transaction.atomic
 def save_hc(cluster, host_comp_list):
     HostComponent.objects.filter(cluster=cluster).delete()
     result = []
@@ -352,7 +351,9 @@ def save_hc(cluster, host_comp_list):
 
 def add_hc(cluster, hc_in):
     host_comp_list = check_hc(cluster, hc_in)
-    return save_hc(cluster, host_comp_list)
+    with transaction.atomic():
+        new_hc = save_hc(cluster, host_comp_list)
+    return new_hc
 
 
 def get_bind(cluster, service, source_cluster, source_service):
@@ -461,7 +462,6 @@ def get_bind_obj(cluster, service):
     return obj
 
 
-@transaction.atomic
 def multi_bind(cluster, service, bind_list):   # pylint: disable=too-many-locals,too-many-statements
     def get_pi(import_id, import_obj):
         try:
@@ -530,26 +530,28 @@ def multi_bind(cluster, service, bind_list):   # pylint: disable=too-many-locals
         )
         new_bind[cook_key(export_cluster, export_co)] = (pi, cbind, export_obj)
 
-    for key in old_bind:
-        if key not in new_bind:
+    with transaction.atomic():
+        for key in new_bind:
+            if key in old_bind:
+                continue
+            (pi, cbind, export_obj) = new_bind[key]
+            cbind.save()
+            check_multi_bind(pi, cluster, service, cbind.source_cluster, cbind.source_service)
+            log.info('bind %s to %s', obj_ref(export_obj), obj_ref(import_obj))
+
+        for key in old_bind:
+            if key in new_bind:
+                continue
             export_obj = get_bind_obj(old_bind[key].source_cluster, old_bind[key].source_service)
             check_import_default(import_obj, export_obj)
             old_bind[key].delete()
             log.info('unbind %s from %s', obj_ref(export_obj), obj_ref(import_obj))
 
-    for key in new_bind:
-        if key in old_bind:
-            continue
-        (pi, cbind, export_obj) = new_bind[key]
-        check_multi_bind(pi, cluster, service, cbind.source_cluster, cbind.source_service)
-        cbind.save()
-        log.info('bind %s to %s', obj_ref(export_obj), obj_ref(import_obj))
+        cm.issue.save_issue(cluster)
 
-    cm.issue.save_issue(cluster)
     return get_import(cluster, service)
 
 
-@transaction.atomic
 def bind(cluster, export_cluster, export_service_id):   # pylint: disable=too-many-branches
     if cluster.id == export_cluster.id:
         err('BIND_ERROR', 'can not bind cluster to themself')
@@ -595,11 +597,12 @@ def bind(cluster, export_cluster, export_service_id):   # pylint: disable=too-ma
     try:
         if bool(get_bind(cluster, None, export_cluster, export_service)):
             err('BIND_ERROR', 'cluster already binded')
-        cbind = ClusterBind(
-            cluster=cluster, source_cluster=export_cluster, source_service=export_service
-        )
-        cbind.save()
-        cm.issue.save_issue(cbind.cluster)
+        with transaction.atomic():
+            cbind = ClusterBind(
+                cluster=cluster, source_cluster=export_cluster, source_service=export_service
+            )
+            cbind.save()
+            cm.issue.save_issue(cbind.cluster)
     except IntegrityError:
         err('BIND_ERROR', 'cluster already binded')
     return {
@@ -628,7 +631,6 @@ def check_multi_bind(actual_import, cluster, service, export_cluster, export_ser
                 err('BIND_ERROR', msg.format(proto_ref(source_proto), obj_ref(cluster)))
 
 
-@transaction.atomic
 def bind_service(cluster, service, export_cluster, export_service):
     if service.id == export_service.id:
         err('BIND_ERROR', 'can not bind service to themself')
@@ -648,14 +650,15 @@ def bind_service(cluster, service, export_cluster, export_service):
     check_multi_bind(actual_import, cluster, service, export_cluster, export_service)
     # To do: check versions
     try:
-        cbind = ClusterBind(
-            cluster=cluster,
-            service=service,
-            source_cluster=export_cluster,
-            source_service=export_service
-        )
-        cbind.save()
-        cm.issue.save_issue(cbind.cluster)
+        with transaction.atomic():
+            cbind = ClusterBind(
+                cluster=cluster,
+                service=service,
+                source_cluster=export_cluster,
+                source_service=export_service
+            )
+            cbind.save()
+            cm.issue.save_issue(cbind.cluster)
     except IntegrityError:
         err('BIND_ERROR', 'service already binded')
     return {

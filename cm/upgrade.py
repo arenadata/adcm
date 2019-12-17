@@ -42,7 +42,7 @@ def version_in(version, min_ver, max_ver):
 
 def switch_service(co, new_proto):
     log.info('upgrade switch from %s to %s', proto_ref(co.prototype), proto_ref(new_proto))
-    switch_config(co, new_proto)
+    switch_config(co, new_proto, co.prototype)
     co.prototype = new_proto
     co.save()
 
@@ -241,43 +241,47 @@ def get_upgrade(obj, order=None):
         return res
 
 
-@transaction.atomic
 def do_upgrade(obj, upgrade):
+    old_proto = obj.prototype
     check_license(obj.prototype.bundle)
     check_license(upgrade.bundle)
     ok, msg = check_upgrade(obj, upgrade)
     if not ok:
         return err('UPGRADE_ERROR', msg)
-    log.info('upgrade %s version %s (upgrade #%s)', obj_ref(obj), obj.prototype.version, upgrade.id)
+    log.info('upgrade %s version %s (upgrade #%s)', obj_ref(obj), old_proto.version, upgrade.id)
 
     if obj.prototype.type == 'cluster':
-        for p in Prototype.objects.filter(bundle=upgrade.bundle, type='service'):
-            try:
-                co = ClusterObject.objects.get(cluster=obj, prototype__name=p.name)
-                switch_service(co, p)
-                switch_components(obj, co, p)
-            except ClusterObject.DoesNotExist:
-                # co.delete() ?!
-                pass
         new_proto = Prototype.objects.get(bundle=upgrade.bundle, type='cluster')
     elif obj.prototype.type == 'provider':
-        for p in Prototype.objects.filter(bundle=upgrade.bundle, type='host'):
-            for host in Host.objects.filter(provider=obj, prototype__name=p.name):
-                switch_service(host, p)
         new_proto = Prototype.objects.get(bundle=upgrade.bundle, type='provider')
     else:
         return err('UPGRADE_ERROR', 'can upgrade only cluster or host provider')
 
-    switch_config(obj, new_proto)
-    obj.prototype = new_proto
-    if upgrade.state_on_success:
-        obj.state = upgrade.state_on_success
-    obj.save()
-    if obj.prototype.type == 'cluster':
-        switch_hc(obj, upgrade)
+    with transaction.atomic():
+        obj.prototype = new_proto
+        if upgrade.state_on_success:
+            obj.state = upgrade.state_on_success
+        obj.save()
+        switch_config(obj, new_proto, old_proto)
+
+        if obj.prototype.type == 'cluster':
+            for p in Prototype.objects.filter(bundle=upgrade.bundle, type='service'):
+                try:
+                    co = ClusterObject.objects.get(cluster=obj, prototype__name=p.name)
+                    switch_service(co, p)
+                    switch_components(obj, co, p)
+                except ClusterObject.DoesNotExist:
+                    # co.delete() ?!
+                    pass
+            switch_hc(obj, upgrade)
+        elif obj.prototype.type == 'provider':
+            for p in Prototype.objects.filter(bundle=upgrade.bundle, type='host'):
+                for host in Host.objects.filter(provider=obj, prototype__name=p.name):
+                    switch_service(host, p)
+        cm.issue.save_issue(obj)
+
     log.info('upgrade %s OK to version %s', obj_ref(obj), obj.prototype.version)
     cm.status_api.post_event(
         'upgrade', obj.prototype.type, obj.id, 'version', str(obj.prototype.version)
     )
-    cm.issue.save_issue(obj)
     return {'id': obj.id, 'upgradable': bool(get_upgrade(obj))}
