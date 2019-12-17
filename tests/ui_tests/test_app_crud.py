@@ -153,7 +153,11 @@ def test_deletion_provider_while_it_has_host(app, provider, data):
 def test_addition_host_to_cluster(app, cluster, host):
     app.ui.session.login('admin', 'admin')
     app.ui.clusters.details.add_host_in_cluster()
-    app.ui.clusters.details.host_tab.list_element_contains(host)
+    try:
+        app.ui.clusters.details.host_tab.list_element_contains(host)
+    except TimeoutException:
+        app.ui.driver.refresh()
+        app.ui.clusters.details.host_tab.list_element_contains(host)
 
 
 def test_cluster_action_must_be_run(app, cluster):
