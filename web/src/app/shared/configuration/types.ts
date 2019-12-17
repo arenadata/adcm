@@ -73,7 +73,7 @@ export interface ConfigOptions {
 }
 
 export interface PanelOptions extends ConfigOptions {
-  options: FieldOptions[];
+  options: (FieldOptions | PanelOptions)[];
   activatable?: boolean;
 }
 

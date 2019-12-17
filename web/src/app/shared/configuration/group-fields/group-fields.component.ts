@@ -41,6 +41,10 @@ export class GroupFieldsComponent implements OnInit {
     }
   }
 
+  panelsOnly(item: FieldOptions | PanelOptions) {
+    return 'options' in item && !item.hidden;
+  }
+
   isAdvanced() {
     return this.panel.ui_options && this.panel.ui_options.advanced;
   }
@@ -52,14 +56,17 @@ export class GroupFieldsComponent implements OnInit {
   }
 
   checkFields(flag: boolean) {
-    this.panel.options.forEach(a => {
-      const name = `${a.subname ? a.subname + '/' : ''}${this.panel.name}`;
-      const formControl = this.form.controls[name];
-      this.updateValidator(formControl, a, flag);
-      if (a.type === 'password') {
-        this.updateValidator(this.form.controls['confirm_' + name], a, flag);
-      }
-    });
+
+    console.warn('TODO');
+
+    // this.panel.options.forEach(a => {
+    //   const name = `${a.subname ? a.subname + '/' : ''}${this.panel.name}`;
+    //   const formControl = this.form.controls[name];
+    //   this.updateValidator(formControl, a, flag);
+    //   if (a.type === 'password') {
+    //     this.updateValidator(this.form.controls['confirm_' + name], a, flag);
+    //   }
+    // });
   }
 
   updateValidator(formControl: AbstractControl, a: FieldOptions, flag: boolean) {

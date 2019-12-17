@@ -91,7 +91,7 @@ export class YspecService {
                   display_name: k,
                   name: k,
                   subname: null,
-                  key: items[k],
+                  key: k,
                   limits: {
                     yspec: scheme
                   },
