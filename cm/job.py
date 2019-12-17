@@ -36,9 +36,14 @@ def start_task(action_id, selector, conf, hc):
 
     obj, act_conf, old_hc, delta, host_map, cluster = get_data_for_task(action, selector, conf, hc)
 
+    if action.type not in ['task', 'job']:
+        msg = f'unknown type "{action.type}" for action: {action}, {action.context}: {obj.name}'
+        err('WRONG_ACTION_TYPE', msg)
+
     with transaction.atomic():
         task = lock_create_task(action, obj, selector, act_conf, old_hc, delta, host_map, cluster)
     run_task(task)
+
     return task
 
 
@@ -56,17 +61,17 @@ def get_data_for_task(action, selector, conf, hc):
 
 def lock_create_task(action, obj, selector, act_conf, old_hc, delta, host_map, cluster):  # pylint: disable=too-many-arguments
     lock_objects(obj)
+
     if host_map:
         api.save_hc(cluster, host_map)
+
     if action.type == 'task':
         task = create_task(action, selector, obj, act_conf, old_hc, delta)
-    elif action.type == 'job':
+    else:
         task = create_one_job_task(action.id, selector, obj, act_conf, old_hc)
         job = create_job(action, None, selector, task.id)
         prepare_job(action, None, selector, job.id, obj, act_conf, delta)
-    else:
-        msg = f'unknown type "{action.type}" for action: {action}, {action.context}: {obj.name}'
-        err('WRONG_ACTION_TYPE', msg)
+
     return task
 
 
