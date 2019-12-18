@@ -24,8 +24,10 @@ from cm.adcm_config import obj_ref
 from cm.errors import raise_AdcmEx as err
 from cm.inventory import get_obj_config
 from cm.logger import log
-from cm.models import (Cluster, Action, SubAction, TaskLog, JobLog, Host, ADCM,
-                       ClusterObject, HostComponent, ServiceComponent, HostProvider)
+from cm.models import (
+    Cluster, Action, SubAction, TaskLog, JobLog, CheckLog, Host, ADCM,
+    ClusterObject, HostComponent, ServiceComponent, HostProvider,
+)
 
 
 def start_task(action_id, selector, conf, hc):
@@ -729,20 +731,22 @@ def log_check(job_id, title, res, msg):
             err('JOB_NOT_FOUND', f'job #{job.id} has status "{job.status}", not "running"')
     except JobLog.DoesNotExist:
         err('JOB_NOT_FOUND', f'no job with id #{job_id}')
+    cl = CheckLog(job_id=job.id, title=title, message=msg, result=res)
+    cl.save()
+    return cl
 
+
+def finish_check(job_id):
+    data = []
+    for cl in CheckLog.objects.filter(job_id=int(job_id)):
+        data.append({'title': cl.title, 'message': cl.message, 'result': cl.result})
+    if not data:
+        return
     log_name = os.path.join(config.LOG_DIR, cook_log_name(job_id, 'check', 'out', 'json'))
-    if os.path.exists(log_name):
-        f = open(log_name, 'r+')
-        raw = f.read()
-        data = json.loads(raw)
-        f.seek(0)
-    else:
-        f = open(log_name, 'w+')
-        data = []
-    data.append({'title': title, 'message': msg, 'result': res})
+    f = open(log_name, 'w+')
     f.write(json.dumps(data, indent=3))
     f.close()
-    return data
+    CheckLog.objects.filter(job_id=job_id).delete()
 
 
 def check_all_status():
