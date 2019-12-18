@@ -13,6 +13,7 @@
 import json
 import os
 import re
+import signal
 import subprocess
 
 from django.db import transaction
@@ -84,6 +85,15 @@ def restart_task(task):
         run_task(task, 'restart')
     else:
         err('TASK_ERROR', f'task #{task.id} has unexpected status: {task.status}')
+
+
+def cancel_task(task):
+    if task.status == config.Job.RUNNING:
+        running_jobs = JobLog.objects.filter(task_id=task.id, status='running')
+        for job in running_jobs:
+            os.killpg(os.getpgid(job.pid), signal.SIGTERM)
+    else:
+        err('TASK_ERROR', f'task #{task.id} is {task.status}')
 
 
 def get_action_context(action, selector):
@@ -755,7 +765,7 @@ def run_task(task, args=''):
         os.path.join(config.BASE_DIR, 'task_runner.py'),
         str(task.id),
         args
-    ], stderr=err_file)
+    ], stderr=err_file, preexec_fn=os.setsid)
     log.info("run task #%s, python process %s", task.id, proc.pid)
     task.pid = proc.pid
     task.save()

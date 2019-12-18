@@ -641,6 +641,19 @@ class TaskReStart(GenericAPIView):
         return Response(status.HTTP_200_OK)
 
 
+class TaskCancel(GenericAPIView):
+    queryset = TaskLog.objects.all()
+    serializer_class = api.serializers.TaskRunSerializer
+
+    def post(self, request, task_id):
+        task = check_obj(TaskLog, task_id, 'TASK_NOT_FOUND')
+        try:
+            cm.job.cancel_task(task)
+        except AdcmEx as e:
+            raise AdcmApiEx(e.code, e.msg, e.http_code)
+        return Response(status.HTTP_200_OK)
+
+
 class ProviderConfig(ListView):
     queryset = ConfigLog.objects.all()
     serializer_class = api.cluster_serial.ProviderConfigSerializer

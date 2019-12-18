@@ -156,6 +156,7 @@ class TestJobRunner(TestCase):
         cmd_env['PYTHONPATH'] = ':'.join(python_paths)
         self.assertDictEqual(cmd_env, job_runner.set_pythonpath())
 
+    @patch('os.setsid')
     @patch('cm.job.set_job_status')
     @patch('sys.exit')
     @patch('job_runner.set_job_status')
@@ -166,7 +167,8 @@ class TestJobRunner(TestCase):
     @patch('job_runner.read_config')
     def test_run_ansible(  # pylint: disable=too-many-arguments
             self, mock_read_config, mock_open_file, mock_chdir, mock_subprocess_popen,
-            mock_set_pythonpath, mock_set_job_status, mock_exit, mock_job_set_job_status):
+            mock_set_pythonpath, mock_set_job_status, mock_exit, mock_job_set_job_status,
+            mock_setsid):
         conf = {
             'job': {'playbook': 'test'},
             'env': {'stack_dir': 'test'}
@@ -201,7 +203,7 @@ class TestJobRunner(TestCase):
                 '-i',
                 '{}/{}-inventory.json'.format(config.RUN_DIR, 1),
                 conf['job']['playbook']
-            ], env=python_path, stdout=_file, stderr=_file)
+            ], env=python_path, stdout=_file, stderr=_file, preexec_fn=mock_setsid)
         self.assertEqual(mock_set_pythonpath.call_count, 1)
         self.assertEqual(mock_exit.call_count, 1)
         mock_job_set_job_status.assert_called_with(1, config.Job.RUNNING, 1)

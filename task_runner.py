@@ -38,7 +38,7 @@ def run_job(task_id, job_id, out_file, err_file):
         proc = subprocess.Popen([
             '{}/job_runner.py'.format(config.BASE_DIR),
             str(job_id)
-        ], stdout=out_file, stderr=err_file)
+        ], stdout=out_file, stderr=err_file, preexec_fn=os.setsid)
         res = proc.wait()
         return res
     except:		# pylint: disable=bare-except
@@ -84,6 +84,10 @@ def run_task(task_id, args=None):
 
     if res == 0:
         cm.job.finish_task(task, job, config.Job.SUCCESS)
+    elif res == 15:
+        cm.job.finish_task(task, job, config.Job.ABORTED)
+        for job in jobs[count:]:
+            cm.job.set_job_status(job.id, config.Job.ABORTED)
     else:
         cm.job.finish_task(task, job, config.Job.FAILED)
 
