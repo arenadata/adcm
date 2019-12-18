@@ -46,7 +46,7 @@ export class ConfigFieldsComponent {
   @Input()
   set model(data: IConfig) {
     this.dataOptions = this.service.getPanels(data);
-    this.form = this.service.toFormGroup();
+    this.form = this.service.toFormGroup(this.dataOptions);
     this.shapshot = { ...this.form.value };
     this.event.emit({ name: 'load', data: { form: this.form } });
   }

@@ -74,6 +74,19 @@ export class YspecStructure {
             }
           };
         } else {
+          return {
+            display_name: k,
+            name: k,
+            subname: null,
+            key: k,
+            default: this.source.default[k],
+            value: value[k],
+            hidden: false,
+            read_only: false,
+            controlType: controlType(rule.match),
+            type: rule.match,
+            validator: {}
+          };
         }
       });
     }

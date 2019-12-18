@@ -9,11 +9,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { AbstractControl, FormControl, FormGroup, ValidatorFn, Validators } from '@angular/forms';
+import { AbstractControl, FormControl, FormGroup, ValidatorFn, Validators, FormBuilder } from '@angular/forms';
 
 import { ConfigOptions, FieldOptions, FieldStack, IConfig, PanelOptions } from './types';
 import { getPattern, controlType } from '@app/core/types';
 import { YspecStructure } from './YspecStructure';
+import { Injectable } from '@angular/core';
 
 export interface CompareConfig extends IConfig {
   color: string;
@@ -24,11 +25,14 @@ export interface IToolsEvent {
   conditions?: { advanced: boolean; search: string } | boolean;
 }
 
+@Injectable()
 export class FieldService {
   globalConfig: IConfig;
   dataOptions: (FieldOptions | PanelOptions)[];
   formOptions: FieldOptions[];
   form = new FormGroup({});
+
+  constructor(private fb: FormBuilder) {}
 
   isVisibleField = (a: ConfigOptions) => !a.ui_options || !a.ui_options.invisible;
   isInvisibleField = (a: ConfigOptions) => a.ui_options && a.ui_options.invisible;
@@ -120,23 +124,33 @@ export class FieldService {
     return v;
   }
 
-  toFormGroup(): FormGroup {
-    this.form = new FormGroup({});
-    this.dataOptions.forEach(field => {
-      if ('options' in field) {
-
-        // add FormGroup
-        
-      } else {
-        this.form.setControl(field.key, new FormControl({ value: field.value, disabled: field.disabled }, this.setValidator(field)));
-        if (field.controlType === 'password') {
-          if (!field.ui_options || (field.ui_options && !field.ui_options.no_confirm)) {
-            this.form.setControl(`confirm_${field.key}`, new FormControl({ value: field.value, disabled: field.disabled }, this.setValidator(field)));
-          }
-        }
-      }
-    });
+  toFormGroup(options: (FieldOptions | PanelOptions)[]): FormGroup {
+    this.form = this.fb.group(options.reduce((p, c) => this.runByTree(c, p), {}));
     return this.form;
+  }
+
+  runByTree(field: FieldOptions | PanelOptions, controls: { [key: string]: {} }): { [key: string]: {} } {
+    if ('options' in field) {
+      return field.options.reduce((p, a) => {
+        
+        if ('options' in a) {
+          p[field.name] = this.fb.group(this.runByTree(a, p));
+          return p;
+        } else return this.fillForm(a, p);
+      }, controls);
+    } else {
+      return this.fillForm(field, controls);
+    }
+  }
+
+  fillForm(field: FieldOptions, controls: {}) {
+    controls[field.key] = this.fb.control({ value: field.value, disabled: field.disabled }, this.setValidator(field));
+    if (field.controlType === 'password') {
+      if (!field.ui_options || (field.ui_options && !field.ui_options.no_confirm)) {
+        controls[`confirm_${field.key}`] = this.fb.control({ value: field.value, disabled: field.disabled }, this.setValidator(field));
+      }
+    }
+    return controls;
   }
 
   filterApply(c: { advanced: boolean; search: string }): (FieldOptions | PanelOptions)[] {
