@@ -132,7 +132,6 @@ export class FieldService {
   runByTree(field: FieldOptions | PanelOptions, controls: { [key: string]: {} }): { [key: string]: {} } {
     if ('options' in field) {
       return field.options.reduce((p, a) => {
-        
         if ('options' in a) {
           p[field.name] = this.fb.group(this.runByTree(a, p));
           return p;
@@ -157,23 +156,18 @@ export class FieldService {
     this.dataOptions
       .filter(a => this.isVisibleField(a))
       .map(a => {
-        // fields
-        // a.options
-        //   .filter(b => this.isVisibleField(b))
-        //   .map(b => {
-        //     b.hidden = !(b.display_name.toLowerCase().includes(c.search.toLowerCase()) || JSON.stringify(b.value).includes(c.search));
-        //     return b;
-        //   })
-        //   .filter(b => !b.hidden && this.isAdvancedField(b))
-        //   .map(b => {
-        //     b.hidden = !c.advanced;
-        //   });
+        if ('options' in a) {
 
-        //group
-        if (c.search) {
-          //a.hidden = a.options.filter(b => !b.hidden).length === 0;
-        } else {
-          a.hidden = this.isAdvancedField(a) ? !c.advanced : false;
+          //group
+          // if (c.search) {
+          //   a.hidden = a.options.filter(b => !b.hidden).length === 0;
+          // } else {
+          //   a.hidden = this.isAdvancedField(a) ? !c.advanced : false;
+          // }
+
+        } else if (this.isVisibleField(a)) {
+          a.hidden = !(a.display_name.toLowerCase().includes(c.search.toLowerCase()) || JSON.stringify(a.value).includes(c.search));
+          if (!a.hidden && this.isAdvancedField(a)) a.hidden = !c.advanced;
         }
       });
 

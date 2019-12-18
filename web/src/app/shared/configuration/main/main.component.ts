@@ -100,7 +100,7 @@ export class ConfigComponent extends SocketListener implements OnInit {
   }
 
   filter(c: { advanced: boolean; search: string }) {
-    this.fields.panels = this.service.filterApply(c);
+    this.fields.dataOptions = this.service.filterApply(c);
   }
 
   socketListener(m: EventMessage) {
@@ -130,13 +130,13 @@ export class ConfigComponent extends SocketListener implements OnInit {
     if (form.valid) {
       this.saveFlag = true;
 
-      if (this.rawConfig.config.some(a => a.type === 'structure')) {
-        const checked = this.yspec.checkValue(
-          this.rawConfig.config.filter(a => a.type === 'structure'),
-          form
-        );
-        form.setValue(checked);
-      }
+      // if (this.rawConfig.config.some(a => a.type === 'structure')) {
+      //   const checked = this.yspec.checkValue(
+      //     this.rawConfig.config.filter(a => a.type === 'structure'),
+      //     form
+      //   );
+      //   form.setValue(checked);
+      // }
 
       const config = parseValueConfig(
           this.rawConfig.config.filter(a => !a.read_only && a.type !== 'group'),

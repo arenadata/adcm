@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { FieldOptions, ConfigOptions, PanelOptions } from './types';
-import { controlType, getPattern } from '@app/core/types';
+import { controlType, getPattern, IRoot } from '@app/core/types';
 
 type matchType = 'string' | 'int' | 'float' | 'bool' | 'list' | 'dict';
 
@@ -36,23 +36,24 @@ export class YspecStructure {
   constructor(options: FieldOptions) {
     this.source = options;
     this.yspec = options.limits.yspec;
-    this.output = this[this.yspec.root.match]();
+    this.output = this[this.yspec.root.match](options);
   }
 
-  dict() {
+  dict(source: FieldOptions) {
     return {
-      ...this.source,
+      ...source,
       type: 'group',
-      options: this.getFields()
+      options: this.getFields(source)
     };
   }
 
-  getFields() {
-    const scheme = this.yspec,
-      root = scheme.root,
-      value = typeof this.source.value === 'object' ? this.source.value : typeof this.source.default === 'object' ? this.source.default : null;
+  getFields(source: FieldOptions, selector = 'root') {
+    let scheme = { ...source.limits.yspec };
 
-    const items = this.yspec.root.items;
+    const root = scheme[selector],
+      value = typeof source.value === 'object' ? source.value : typeof source.default === 'object' ? source.default : null;
+
+    const items = root.items;
     if (items) {
       return Object.keys(items).map(k => {
         const rule = scheme[items[k]];
@@ -60,9 +61,9 @@ export class YspecStructure {
           return {
             display_name: k,
             name: k,
-            key: `${k}/${this.source.key}`,
+            key: `${k}/${source.key}`,
             subname: null,
-            default: this.source.default[k],
+            default: source.default[k],
             value: value[k],
             hidden: false,
             read_only: false,
@@ -74,18 +75,21 @@ export class YspecStructure {
             }
           };
         } else {
+          scheme.root = rule;
           return {
             display_name: k,
             name: k,
             subname: null,
             key: k,
-            default: this.source.default[k],
+            default: source.default[k],
             value: value[k],
             hidden: false,
             read_only: false,
-            controlType: controlType(rule.match),
-            type: rule.match,
-            validator: {}
+            type: 'group',
+            options: this.getFields(source, items[k]),
+            limits: {
+              yspec: scheme
+            },
           };
         }
       });
