@@ -38,7 +38,7 @@ def run_job(task_id, job_id, out_file, err_file):
         proc = subprocess.Popen([
             '{}/job_runner.py'.format(config.BASE_DIR),
             str(job_id)
-        ], stdout=out_file, stderr=err_file, preexec_fn=os.setsid)
+        ], stdout=out_file, stderr=err_file)
         res = proc.wait()
         return res
     except:		# pylint: disable=bare-except

@@ -77,8 +77,7 @@ def run_ansible(job_id):
         if 'ansible_tags' in conf['job']['params']:
             cmd.append('--tags=' + conf['job']['params']['ansible_tags'])
 
-    proc = subprocess.Popen(cmd, env=set_pythonpath(), stdout=out_file, stderr=err_file,
-                            preexec_fn=os.setsid)
+    proc = subprocess.Popen(cmd, env=set_pythonpath(), stdout=out_file, stderr=err_file)
     log.info("job #%s run cmd: %s", job_id, ' '.join(cmd))
     cm.job.set_job_status(job_id, config.Job.RUNNING, proc.pid)
     log.info("run ansible job #%s, pid %s, playbook %s", job_id, proc.pid, playbook)
