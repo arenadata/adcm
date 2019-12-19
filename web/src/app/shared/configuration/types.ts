@@ -12,6 +12,8 @@
 import { IYspec } from './yspec-fields/yspec.service';
 export type stateType = 'created' | 'locked';
 
+export type ConfigValueTypes = 'structure' | 'group' | 'string' | 'integer' | 'float' | 'boolean' | 'option' | 'json' | 'map' | 'list' | 'file' | 'text' | 'password';
+
 export interface UIoptions {
   invisible?: boolean;
   no_confirm?: boolean;
@@ -37,7 +39,7 @@ interface ValidatorInfo {
  * Property config object from backend
  */
 export interface FieldStack {
-  type: string;
+  type: ConfigValueTypes;
   name: string;
   display_name: string;
   subname: string;
@@ -64,8 +66,11 @@ export interface IConfig {
 }
 
 export interface ConfigOptions {
+  key?: string;  
+  type: ConfigValueTypes;
   display_name: string;
   name: string;
+  subname: string;
   hidden: boolean;
   read_only: boolean;
   ui_options?: UIoptions;
@@ -80,13 +85,10 @@ export interface PanelOptions extends ConfigOptions {
 /**
  * For Material form controls
  */
-export interface FieldOptions extends ConfigOptions {
-  key: string;
-  subname: string;
+export interface FieldOptions extends ConfigOptions {  
   default: null | string | number | boolean | object | any[];
   value: string | number | boolean | object | string[] | null;
-  controlType: string;
-  type: string;
+  controlType: string;  
   validator: ValidatorInfo;
   disabled?: boolean;
   limits?: ILimits;

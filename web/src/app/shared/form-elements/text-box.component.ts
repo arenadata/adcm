@@ -16,10 +16,10 @@ import { FieldDirective } from './field.directive';
 @Component({
   selector: 'app-fields-textbox',
   template: `
-    <ng-container [formGroup]="form">
+    <ng-container [formGroup]="getGroup()">
       <label [appTooltip]="field.display_name" [appTooltipShowByCondition]="true">{{ field.display_name }}:</label>
       <mat-form-field class="full-width" [floatLabel]="'never'">
-        <input matInput [formControlName]="field.key" [readonly]="field.disabled" [type]="field.type" />
+        <input matInput [formControlName]="field.name" [readonly]="field.disabled" [type]="field.type" />
         <mat-error *ngIf="!isValid">
           <mat-error *ngIf="hasError('required')">Field [{{ field.display_name }}] is required!</mat-error>
           <mat-error *ngIf="hasError('pattern')">Field [{{ field.display_name }}] is invalid!</mat-error>

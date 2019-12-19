@@ -138,10 +138,11 @@ export class ConfigComponent extends SocketListener implements OnInit {
       //   form.setValue(checked);
       // }
 
-      const config = parseValueConfig(
-          this.rawConfig.config.filter(a => !a.read_only && a.type !== 'group'),
-          form.value
-        ),
+      const config = form.value,
+      // parseValueConfig(
+      //     this.rawConfig.config.filter(a => !a.read_only && a.type !== 'group'),
+      //     form.value
+      //   ),
         attr = this.rawConfig.attr,
         description = this.tools.descriptionFormControl.value;
 

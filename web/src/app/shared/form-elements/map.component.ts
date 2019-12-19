@@ -12,41 +12,30 @@
 import { Component, Directive, Input, OnInit } from '@angular/core';
 import { AbstractControl, FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FieldOptions } from '../configuration/types';
+import { FieldDirective } from './field.directive';
 
 @Directive({
   selector: '[appBaseMapList]'
 })
-export class BaseMapListDirective implements OnInit {
+export class BaseMapListDirective extends FieldDirective implements OnInit {
   @Input() form: FormGroup;
   @Input() field: FieldOptions;
   asList: boolean;
   items = new FormArray([]);
   entry: AbstractControl[];
 
-  constructor(private fb: FormBuilder) {}
+  constructor(private fb: FormBuilder) {
+    super();
+  }
 
   ngOnInit() {
-    if (!Object.keys(this.field.value).length) this.form.controls[this.field.key].setValue('');
+    if (!Object.keys(this.field.value).length) this.find().setValue('');
     this.reload();
     this.items.valueChanges.subscribe((a: { key: string; value: string }[]) => this.prepare(a));
-    // this.entry = [...this.items.controls];
-  }
-
-  get isValid() {
-    const field = this.form.controls[this.field.key];
-    return field.disabled || (field.valid && (field.dirty || field.touched));
-  }
-
-  hasError(name: string) {
-    return this.form.controls[this.field.key].hasError(name);
   }
 
   prepare(a: { key: string; value: string }[]) {
-    let value = this.asList
-      ? a.map(b => b.value).filter(c => c)
-      : a.length
-      ? a.reduce((p, c) => ({ ...p, [c.key]: c.value }), {})
-      : null;
+    let value = this.asList ? a.map(b => b.value).filter(c => c) : a.length ? a.reduce((p, c) => ({ ...p, [c.key]: c.value }), {}) : null;
 
     if (value && this.asList) value = (value as Array<string>).length ? value : null;
 
@@ -56,9 +45,7 @@ export class BaseMapListDirective implements OnInit {
   reload() {
     this.items.controls = [];
     const fieldValue = this.field.value as Object;
-    Object.keys(fieldValue).forEach(a =>
-      this.items.push(this.fb.group({ key: [a, Validators.required], value: fieldValue[a] }))
-    );
+    Object.keys(fieldValue).forEach(a => this.items.push(this.fb.group({ key: [a, Validators.required], value: fieldValue[a] })));
   }
 
   add() {
@@ -79,7 +66,7 @@ export class BaseMapListDirective implements OnInit {
 @Component({
   selector: 'app-fields-list',
   templateUrl: './map-list.template.html',
-  styleUrls: ['./scss/map.component.scss'],
+  styleUrls: ['./scss/map.component.scss']
 })
 export class FieldListComponent extends BaseMapListDirective {
   asList = true;
@@ -88,7 +75,7 @@ export class FieldListComponent extends BaseMapListDirective {
 @Component({
   selector: 'app-fields-map',
   templateUrl: './map-list.template.html',
-  styleUrls: ['./scss/map.component.scss'],
+  styleUrls: ['./scss/map.component.scss']
 })
 export class FieldMapComponent extends BaseMapListDirective {
   asList = false;

@@ -79,8 +79,7 @@ export class YspecStructure {
           return {
             display_name: k,
             name: k,
-            subname: null,
-            key: k,
+            key: `${k}/${source.key}`,
             default: source.default[k],
             value: value[k],
             hidden: false,

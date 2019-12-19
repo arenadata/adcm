@@ -61,6 +61,11 @@ export class FieldService {
   }
 
   checkYspec(a: FieldOptions): FieldOptions | PanelOptions {
+    /**
+     * Very important for build tree
+     */
+    a.name = a.subname || a.name;
+
     if (a.limits && a.limits.yspec) {
       const yspec = new YspecStructure(a);
       return yspec.output;
@@ -131,22 +136,25 @@ export class FieldService {
 
   runByTree(field: FieldOptions | PanelOptions, controls: { [key: string]: {} }): { [key: string]: {} } {
     if ('options' in field) {
-      return field.options.reduce((p, a) => {
-        if ('options' in a) {
-          p[field.name] = this.fb.group(this.runByTree(a, p));
+      controls[field.name] = this.fb.group(
+        field.options.reduce((p, a) => {
+          if ('options' in a) this.fb.group(this.runByTree(a, p));
+          else this.fillForm(a, p);
           return p;
-        } else return this.fillForm(a, p);
-      }, controls);
+        }, {})
+      );
+      return controls;
     } else {
       return this.fillForm(field, controls);
     }
   }
 
   fillForm(field: FieldOptions, controls: {}) {
-    controls[field.key] = this.fb.control({ value: field.value, disabled: field.disabled }, this.setValidator(field));
+    const name = field.subname || field.name;
+    controls[name] = this.fb.control({ value: field.value, disabled: field.disabled }, this.setValidator(field));
     if (field.controlType === 'password') {
       if (!field.ui_options || (field.ui_options && !field.ui_options.no_confirm)) {
-        controls[`confirm_${field.key}`] = this.fb.control({ value: field.value, disabled: field.disabled }, this.setValidator(field));
+        controls[`confirm_${name}`] = this.fb.control({ value: field.value, disabled: field.disabled }, this.setValidator(field));
       }
     }
     return controls;
@@ -157,14 +165,12 @@ export class FieldService {
       .filter(a => this.isVisibleField(a))
       .map(a => {
         if ('options' in a) {
-
           //group
           // if (c.search) {
           //   a.hidden = a.options.filter(b => !b.hidden).length === 0;
           // } else {
           //   a.hidden = this.isAdvancedField(a) ? !c.advanced : false;
           // }
-
         } else if (this.isVisibleField(a)) {
           a.hidden = !(a.display_name.toLowerCase().includes(c.search.toLowerCase()) || JSON.stringify(a.value).includes(c.search));
           if (!a.hidden && this.isAdvancedField(a)) a.hidden = !c.advanced;
@@ -192,5 +198,10 @@ export class FieldService {
 
   getFieldsBy(items: Array<FieldStack>): FieldOptions[] {
     return items.map(o => this.getFieldBy(o));
+  }
+
+  parseValue(raw: FieldStack[]) {
+    const value = this.form.value;
+
   }
 }
