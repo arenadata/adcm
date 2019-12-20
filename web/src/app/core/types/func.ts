@@ -188,11 +188,7 @@ export function checkValue(value: ConfigResultTypes, type: ConfigValueTypes) {
       case 'float':
         return parseFloat(value);
       case 'json':
-        try {
-          return JSON.stringify(JSON.parse(value));
-        } catch (e) {
-          return undefined;
-        }
+        return JSON.parse(value);
       default:
         return value;
     }
