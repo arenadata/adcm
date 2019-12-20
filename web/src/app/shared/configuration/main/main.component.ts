@@ -24,7 +24,6 @@ import { ConfigFieldsComponent } from '../fields/fields.component';
 import { HistoryComponent } from '../tools/history.component';
 import { ToolsComponent } from '../tools/tools.component';
 import { IConfig } from '../types';
-import { YspecService } from '../yspec-fields/yspec.service';
 
 @Component({
   selector: 'app-config-form',
@@ -72,7 +71,6 @@ export class ConfigComponent extends SocketListener implements OnInit {
     private current: ClusterService,
     private cdRef: ChangeDetectorRef,
     private service: FieldService,
-    private yspec: YspecService,
     socket: Store<SocketState>
   ) {
     super(socket);

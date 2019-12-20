@@ -9,13 +9,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { AbstractControl, FormControl, FormGroup, ValidatorFn, Validators, FormBuilder } from '@angular/forms';
-
-import { ConfigOptions, FieldOptions, FieldStack, IConfig, PanelOptions, ConfigResultTypes, ConfigValueTypes } from './types';
-import { getPattern, controlType, isObject } from '@app/core/types';
-import { YspecStructure } from './YspecStructure';
 import { Injectable } from '@angular/core';
-import { IYspec } from './yspec-fields/yspec.service';
+import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
+import { controlType, getPattern, isObject } from '@app/core/types';
+
+import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, PanelOptions } from './types';
+import { YspecStructure } from './YspecStructure';
 
 export interface CompareConfig extends IConfig {
   color: string;
@@ -237,7 +236,7 @@ export class FieldService {
     return Object.keys(value).reduce((p, c) => {
       const data = value[c];
       const key = op.options.find(a => a.name === c);
-      if (isObject(data) && !Array.isArray(data)) p[c] = this.runYspecByOptions(data, (key as PanelOptions));
+      if (isObject(data) && !Array.isArray(data)) p[c] = this.runYspecByOptions(data, key as PanelOptions);
       else if (key) p[c] = this.checkValue(data, key.type);
       return p;
     }, {});
