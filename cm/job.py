@@ -88,12 +88,7 @@ def restart_task(task):
 
 
 def cancel_task(task):
-    if task.status == config.Job.RUNNING:
-        running_jobs = JobLog.objects.filter(task_id=task.id, status='running')
-        for job in running_jobs:
-            os.kill(job.pid, signal.SIGTERM)
-    else:
-        err('TASK_ERROR', f'task #{task.id} is {task.status}')
+    os.kill(task.pid, signal.SIGTERM)
 
 
 def get_action_context(action, selector):

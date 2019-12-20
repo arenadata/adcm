@@ -12,18 +12,18 @@
 # limitations under the License.
 
 import os
-import sys
+import signal
 import subprocess
+import sys
 
-import adcm.init_django		# pylint: disable=unused-import
-
-from django.utils import timezone
+import adcm.init_django  # pylint: disable=unused-import
 from django.core.exceptions import ObjectDoesNotExist
-from cm.models import TaskLog, JobLog
+from django.utils import timezone
 
-from cm.logger import log
 import cm.config as config
 import cm.job
+from cm.logger import log
+from cm.models import TaskLog, JobLog
 
 
 def open_file(root, tag, task_id):
@@ -33,7 +33,7 @@ def open_file(root, tag, task_id):
 
 
 def run_job(task_id, job_id, out_file, err_file):
-    log.debug("run job #%s of task #%s", job_id, task_id,)
+    log.debug("run job #%s of task #%s", job_id, task_id)
     try:
         proc = subprocess.Popen([
             '{}/job_runner.py'.format(config.BASE_DIR),
@@ -41,7 +41,7 @@ def run_job(task_id, job_id, out_file, err_file):
         ], stdout=out_file, stderr=err_file)
         res = proc.wait()
         return res
-    except:		# pylint: disable=bare-except
+    except:  # pylint: disable=bare-except
         log.error("exception runnung job %s", job_id)
         return 1
 
@@ -62,6 +62,21 @@ def run_task(task_id, args=None):
 
     out_file = open_file(config.LOG_DIR, 'task-out', task_id)
     err_file = open_file(config.LOG_DIR, 'task-err', task_id)
+
+    def terminate_task(signum, frame):
+        log.info("cancel task #%s, signal: #%s", task_id, signum)
+        running_jobs = JobLog.objects.filter(task_id=task_id, status=config.Job.RUNNING)
+        if running_jobs:
+            os.kill(running_jobs[0].pid, signal.SIGTERM)
+            cm.job.finish_task(task, running_jobs[0], config.Job.ABORTED)
+        else:
+            cm.job.finish_task(task, None, config.Job.ABORTED)
+
+        out_file.close()
+        err_file.close()
+        return
+
+    signal.signal(signal.SIGTERM, terminate_task)
 
     log.info("run task #%s", task_id)
     cm.job.set_task_status(task, config.Job.RUNNING)
@@ -85,9 +100,9 @@ def run_task(task_id, args=None):
     if res == 0:
         cm.job.finish_task(task, job, config.Job.SUCCESS)
     elif res == 15:
-        cm.job.finish_task(task, job, config.Job.ABORTED)
         for job in jobs[count:]:
             cm.job.set_job_status(job.id, config.Job.ABORTED)
+        return
     else:
         cm.job.finish_task(task, job, config.Job.FAILED)
 
