@@ -63,7 +63,7 @@ def run_task(task_id, args=None):
     out_file = open_file(config.LOG_DIR, 'task-out', task_id)
     err_file = open_file(config.LOG_DIR, 'task-err', task_id)
 
-    def terminate_task(signum, frame):
+    def terminate_task(signum, frame):  # pylint: disable=useless-return
         log.info("cancel task #%s, signal: #%s", task_id, signum)
         running_jobs = JobLog.objects.filter(task_id=task_id, status=config.Job.RUNNING)
         if running_jobs:
@@ -74,7 +74,7 @@ def run_task(task_id, args=None):
 
         out_file.close()
         err_file.close()
-        return
+        os._exit(signum)  # pylint: disable=protected-access
 
     signal.signal(signal.SIGTERM, terminate_task)
 
@@ -99,10 +99,6 @@ def run_task(task_id, args=None):
 
     if res == 0:
         cm.job.finish_task(task, job, config.Job.SUCCESS)
-    elif res == 15:
-        for job in jobs[count:]:
-            cm.job.set_job_status(job.id, config.Job.ABORTED)
-        return
     else:
         cm.job.finish_task(task, job, config.Job.FAILED)
 
