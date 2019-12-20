@@ -45,14 +45,9 @@ export class FieldService {
         .filter(a => a.name !== '__main_info')
         .filter(a => a.type === 'group' || !a.subname)
         .map(a => ({
-          name: a.name,
-          label: a.display_name,
-          read_only: a.read_only,
+          ...a,
           hidden: this.isHidden(a),
-          ui_options: a.ui_options,
-          options: this.formOptions.filter(b => b.name === a.name),
-          activatable: a.activatable,
-          description: a.description
+          options: this.formOptions.filter(b => b.name === a.name)
         }));
     }
 
@@ -63,7 +58,6 @@ export class FieldService {
     const params: FieldOptions = {
       ...item,
       key: `${item.subname ? item.subname + '/' : ''}${item.name}`,
-      label: item.display_name,
       disabled: item.read_only,
       value: this.getValue(item.type)(item.value, item.default, item.required),
       validator: {
@@ -83,8 +77,8 @@ export class FieldService {
 
     if (field.validator.required) v.push(Validators.required);
     if (field.validator.pattern) v.push(Validators.pattern(field.validator.pattern));
-    if (field.validator.max) v.push(Validators.max(field.validator.max));
-    if (field.validator.min) v.push(Validators.min(field.validator.min));
+    if (field.validator.max !== undefined) v.push(Validators.max(field.validator.max));
+    if (field.validator.min !== undefined) v.push(Validators.min(field.validator.min));
 
     if (field.controlType === 'json') {
       const jsonParse = (): ValidatorFn => {
@@ -137,7 +131,7 @@ export class FieldService {
         a.options
           .filter(b => this.isVisibleField(b))
           .map(b => {
-            b.hidden = !(b.label.toLowerCase().includes(c.search.toLowerCase()) || JSON.stringify(b.value).includes(c.search));
+            b.hidden = !(b.display_name.toLowerCase().includes(c.search.toLowerCase()) || JSON.stringify(b.value).includes(c.search));
             return b;
           })
           .filter(b => !b.hidden && this.isAdvancedField(b))

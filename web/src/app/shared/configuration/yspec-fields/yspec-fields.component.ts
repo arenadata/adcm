@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, ChangeDetectionStrategy } from '@angular/core';
 import { FieldOptions } from '../types';
 import { FormGroup, FormControl } from '@angular/forms';
 import { YspecService } from './yspec.service';
@@ -19,7 +19,7 @@ import { FieldService } from '../field.service';
   selector: 'app-yspec-fields',
   templateUrl: './yspec-fields.component.html',
   styleUrls: ['./yspec-fields.component.scss'],
-  providers: [YspecService]
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class YspecFieldsComponent implements OnInit {
   @Input()
@@ -33,14 +33,21 @@ export class YspecFieldsComponent implements OnInit {
   constructor(private yspec: YspecService, private field: FieldService) {}
 
   ngOnInit() {
-    const scheme = this.options.limits.yspec;
-    this.output = this.yspec.prepare(scheme, this.options.default as {});
+    this.output = this.yspec.prepare(this.options);
 
     this.output.forEach(field => {
       this.schemeFormGroup.setControl(field.key, new FormControl({ value: field.value, disabled: false }, this.field.setValidator(field)));
     });
 
     this.form.setControl(this.options.key, this.schemeFormGroup);
-    
+  }
+
+  getForm(fo: FieldOptions) {
+    const c = this.form.controls[this.options.key];
+    if (c) {
+      const fg = c as FormGroup;
+      if (fg.controls[fo.key] && !fg.controls[fo.key].value) fg.removeControl(fo.key);
+      return fg;
+    }
   }
 }

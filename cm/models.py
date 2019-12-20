@@ -354,6 +354,13 @@ class TaskLog(models.Model):
     finish_date = models.DateTimeField()
 
 
+class CheckLog(models.Model):
+    job_id = models.PositiveIntegerField(default=0)
+    title = models.TextField()
+    message = models.TextField()
+    result = models.BooleanField()
+
+
 # Stage: Temporary tables to load bundle
 
 class StagePrototype(models.Model):
