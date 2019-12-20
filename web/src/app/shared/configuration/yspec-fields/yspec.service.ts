@@ -12,15 +12,13 @@
 import { FormGroup } from '@angular/forms';
 import { controlType, getPattern } from '@app/core/types';
 
-import { FieldOptions, FieldStack } from '../types';
-
-type matchType = 'string' | 'int' | 'float' | 'bool' | 'list' | 'dict';
+import { FieldOptions, FieldStack, ConfigValueTypes } from '../types';
 
 interface Iroot {
-  match: matchType;
+  match: ConfigValueTypes;
   selector?: string;
   variants?: { [key: string]: string };
-  item?: string | matchType;
+  item?: string | ConfigValueTypes;
   items?: { [key: string]: string };
   required_items?: string[];
   default_item?: string;
@@ -31,7 +29,7 @@ export interface IYspec {
 }
 
 export class YspecService {
-  prepare(field: FieldOptions): FieldOptions[] {
+ prepare(field: FieldOptions): FieldOptions[] {
     const scheme = field.limits.yspec,
       value = typeof field.value === 'object' ? field.value : typeof field.default === 'object' ? field.default : null;
 
@@ -109,7 +107,7 @@ export class YspecService {
           break;
       }
     }
-  }
+  } 
 
   checkValue(data: FieldStack[], form: FormGroup): { [key: string]: any } {
     return data.reduce((output, field) => {
@@ -132,7 +130,7 @@ export class YspecService {
             /** TODO
              *  !!!!!!!!! checkValue never empty
              */
-            checkValue = checkValue && (checkValue as string[]).map(a => this.checkSimple(a, rule.item as matchType));
+            checkValue = checkValue && (checkValue as string[]).map(a => this.checkSimple(a, rule.item as ConfigValueTypes));
           }
 
           checkValue = this.checkSimple(checkValue, rule.match);
@@ -150,10 +148,10 @@ export class YspecService {
     }, {});
   }
 
-  checkSimple(value: string, match: matchType) {
+  checkSimple(value: string, match: ConfigValueTypes) {
     if (typeof value === 'string')
       switch (match) {
-        case 'int':
+        case 'integer':
           return parseInt(value, 10);
         case 'float':
           return parseFloat(value);

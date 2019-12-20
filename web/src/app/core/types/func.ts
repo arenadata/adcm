@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { InnerIssue, Issue } from './issue';
-import { FieldStack, ConfigValueTypes } from '@app/shared/configuration/types';
+import { FieldStack, ConfigValueTypes, ConfigResultTypes } from '@app/shared/configuration/types';
 
 export function getPattern(name: string): RegExp {
   const fn = {
@@ -159,7 +159,7 @@ function nameCheck(value: any, a: FieldStack, p: {}) {
  * Type casting after form editing
  * Option type may be string | number
  */
-export function checkValue(value: string | boolean | object | Array<string> | null, type: ConfigValueTypes) {
+export function checkValue(value: ConfigResultTypes, type: ConfigValueTypes) {
   if (value === '' || value === null) return null;
 
   switch (type) {

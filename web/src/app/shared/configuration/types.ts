@@ -12,7 +12,9 @@
 import { IYspec } from './yspec-fields/yspec.service';
 export type stateType = 'created' | 'locked';
 
-export type ConfigValueTypes = 'structure' | 'group' | 'string' | 'integer' | 'float' | 'boolean' | 'option' | 'json' | 'map' | 'list' | 'file' | 'text' | 'password';
+export type ConfigValueTypes = 'structure' | 'group' | 'dict' | 'string' | 'integer' | 'float' | 'boolean' | 'option' | 'json' | 'map' | 'list' | 'file' | 'text' | 'password';
+export type simpleTypes = string | number | boolean;
+export type ConfigResultTypes = simpleTypes | simpleTypes[] | object | null;
 
 export interface UIoptions {
   invisible?: boolean;

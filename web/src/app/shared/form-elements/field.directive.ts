@@ -14,8 +14,6 @@ import { FormGroup } from '@angular/forms';
 
 import { FieldOptions } from '../configuration/types';
 import { BaseDirective } from '../directives';
-import { checkValue } from '@app/core/types';
-import { debounceTime, filter, tap } from 'rxjs/operators';
 
 @Directive({
   selector: '[appField]'
@@ -26,27 +24,7 @@ export class FieldDirective extends BaseDirective implements OnInit {
 
   ngOnInit() {
     const field = this.find();
-    field.markAsTouched();
-    // let rightValue = false;
-    // field.valueChanges
-    //   .pipe(
-    //     filter(v => v !== '' && v !== undefined),
-    //     filter(() => this.field.type !== 'option' && this.field.type !== 'text' && this.field.type !== 'file'),
-    //     filter(() => (rightValue ? (rightValue = false) : true)),
-    //     debounceTime(300),
-    //     this.takeUntil(),
-    //     tap((v) => {
-    //       console.log('tap', v);
-    //     })
-    //   )
-    //   .subscribe(value => {
-    //     const v = checkValue(value, this.field.type);
-    //     if (value !== v && !isNaN(v) && v !== undefined) {
-    //       rightValue = true;
-    //       console.log(v);
-    //       field.setValue(v);
-    //     }
-    //   });
+    field.markAsTouched();    
   }
 
   find() {

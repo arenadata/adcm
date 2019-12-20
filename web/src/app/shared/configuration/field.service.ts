@@ -11,8 +11,8 @@
 // limitations under the License.
 import { AbstractControl, FormControl, FormGroup, ValidatorFn, Validators, FormBuilder } from '@angular/forms';
 
-import { ConfigOptions, FieldOptions, FieldStack, IConfig, PanelOptions } from './types';
-import { getPattern, controlType } from '@app/core/types';
+import { ConfigOptions, FieldOptions, FieldStack, IConfig, PanelOptions, ConfigResultTypes, ConfigValueTypes } from './types';
+import { getPattern, controlType, isObject } from '@app/core/types';
 import { YspecStructure } from './YspecStructure';
 import { Injectable } from '@angular/core';
 
@@ -200,8 +200,57 @@ export class FieldService {
     return items.map(o => this.getFieldBy(o));
   }
 
-  parseValue(raw: FieldStack[]) {
-    const value = this.form.value;
+  parseValue(): { [key: string]: string | number | boolean | object | [] } {
+    const __main_info = this.findField('__main_info');
+    const value = __main_info && __main_info.required ? { ...this.form.value, __main_info } : { ...this.form.value };
+    return this.runParse(value);
+  }
 
+  runParse(value: { [key: string]: any }): { [key: string]: ConfigResultTypes } {
+    return Object.keys(value).reduce((p, c) => {
+      const data = value[c];
+      const field = this.findField(c);
+      if (isObject(data) && field.type !== 'json') p[c] = this.runParse(data);
+      else if (field) p[c] = this.checkValue(data, field.type);
+      return p;
+    }, {});
+  }
+
+  findField(name: string): FieldStack {
+    return this.globalConfig.config.find(a => a.name === name || a.subname === name);
+  }
+
+  checkValue(value: ConfigResultTypes, type: ConfigValueTypes) {
+    if (value === '' || value === null) return null;
+
+    switch (type) {
+      case 'map':
+        return Object.keys(value)
+          .filter(a => a)
+          .reduce((p, c) => {
+            p[c] = value[c];
+            return p;
+          }, {});
+      case 'list':
+        return (value as Array<string>).filter(a => a);
+    }
+
+    if (typeof value === 'boolean') return value;
+
+    if (typeof value === 'string')
+      switch (type) {
+        case 'option':
+          if (!isNaN(+value)) return parseInt(value, 10);
+          else return value;
+        case 'integer':
+          return parseInt(value, 10);
+        case 'float':
+          return parseFloat(value);
+        case 'json':
+          return JSON.parse(value);
+        default:
+          return value;
+      }
+    return value;
   }
 }
