@@ -743,9 +743,8 @@ def finish_check(job_id):
     if not data:
         return
     log_name = os.path.join(config.LOG_DIR, cook_log_name(job_id, 'check', 'out', 'json'))
-    f = open(log_name, 'w+')
-    f.write(json.dumps(data, indent=3))
-    f.close()
+    with open(log_name, 'w+') as f:
+        f.write(json.dumps(data, indent=3))
     CheckLog.objects.filter(job_id=job_id).delete()
 
 
