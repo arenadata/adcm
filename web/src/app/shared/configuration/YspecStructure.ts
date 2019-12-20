@@ -9,8 +9,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { FieldOptions, ConfigOptions, PanelOptions } from './types';
-import { controlType, getPattern, IRoot } from '@app/core/types';
+import { controlType, getPattern } from '@app/core/types';
+
+import { FieldOptions, PanelOptions } from './types';
 
 type matchType = 'string' | 'int' | 'float' | 'bool' | 'list' | 'dict';
 
@@ -24,7 +25,7 @@ interface Iroot {
   default_item?: string;
 }
 
-interface IYspec {
+export interface IYspec {
   [key: string]: Iroot;
 }
 
@@ -94,4 +95,5 @@ export class YspecStructure {
       });
     }
   }
+
 }

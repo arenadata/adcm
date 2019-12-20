@@ -15,6 +15,7 @@ import { ConfigOptions, FieldOptions, FieldStack, IConfig, PanelOptions, ConfigR
 import { getPattern, controlType, isObject } from '@app/core/types';
 import { YspecStructure } from './YspecStructure';
 import { Injectable } from '@angular/core';
+import { IYspec } from './yspec-fields/yspec.service';
 
 export interface CompareConfig extends IConfig {
   color: string;
@@ -200,6 +201,10 @@ export class FieldService {
     return items.map(o => this.getFieldBy(o));
   }
 
+  /**
+   * Check the data
+   *
+   */
   parseValue(): { [key: string]: string | number | boolean | object | [] } {
     const __main_info = this.findField('__main_info');
     const value = __main_info && __main_info.required ? { ...this.form.value, __main_info } : { ...this.form.value };
@@ -210,7 +215,8 @@ export class FieldService {
     return Object.keys(value).reduce((p, c) => {
       const data = value[c];
       const field = this.findField(c);
-      if (isObject(data) && field.type !== 'json') p[c] = this.runParse(data);
+      if (field.type === 'structure') p[c] = this.runYspecParse(data, field);
+      else if (isObject(data) && field.type !== 'json') p[c] = this.runParse(data);
       else if (field) p[c] = this.checkValue(data, field.type);
       return p;
     }, {});
@@ -218,6 +224,23 @@ export class FieldService {
 
   findField(name: string): FieldStack {
     return this.globalConfig.config.find(a => a.name === name || a.subname === name);
+  }
+
+  runYspecParse(value: any, field: FieldStack) {
+    const name = field.subname || field.name;
+    const yo = this.dataOptions.find(a => a.name === field.name) as PanelOptions;
+    const po = yo.options.find(a => a.name === field.subname) as PanelOptions;
+    return this.runYspecByOptions(value, po);
+  }
+
+  runYspecByOptions(value: any, op: PanelOptions) {
+    return Object.keys(value).reduce((p, c) => {
+      const data = value[c];
+      const key = op.options.find(a => a.name === c);
+      if (isObject(data) && !Array.isArray(data)) p[c] = this.runYspecByOptions(data, (key as PanelOptions));
+      else if (key) p[c] = this.checkValue(data, key.type);
+      return p;
+    }, {});
   }
 
   checkValue(value: ConfigResultTypes, type: ConfigValueTypes) {
@@ -231,8 +254,8 @@ export class FieldService {
             p[c] = value[c];
             return p;
           }, {});
-      case 'list':
-        return (value as Array<string>).filter(a => a);
+      // case 'list':
+      //   return (value as Array<string>).filter(a => a);
     }
 
     if (typeof value === 'boolean') return value;
@@ -243,6 +266,7 @@ export class FieldService {
           if (!isNaN(+value)) return parseInt(value, 10);
           else return value;
         case 'integer':
+        case 'int':
           return parseInt(value, 10);
         case 'float':
           return parseFloat(value);

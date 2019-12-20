@@ -9,10 +9,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { IYspec } from './yspec-fields/yspec.service';
+import { IYspec } from './YspecStructure';
+
 export type stateType = 'created' | 'locked';
 
-export type ConfigValueTypes = 'structure' | 'group' | 'dict' | 'string' | 'integer' | 'float' | 'boolean' | 'option' | 'json' | 'map' | 'list' | 'file' | 'text' | 'password';
+export type ConfigValueTypes = 'structure' | 'group' | 'dict' | 'string' | 'integer' | 'int' | 'float' | 'boolean' | 'option' | 'json' | 'map' | 'list' | 'file' | 'text' | 'password';
 export type simpleTypes = string | number | boolean;
 export type ConfigResultTypes = simpleTypes | simpleTypes[] | object | null;
 

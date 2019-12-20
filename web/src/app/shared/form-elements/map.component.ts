@@ -39,7 +39,7 @@ export class BaseMapListDirective extends FieldDirective implements OnInit {
 
     if (value && this.asList) value = (value as Array<string>).length ? value : null;
 
-    this.form.controls[this.field.key].setValue(value);
+    this.find().setValue(value);
   }
 
   reload() {
