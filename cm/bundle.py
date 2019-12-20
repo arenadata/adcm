@@ -27,7 +27,7 @@ from cm.logger import log
 import cm.config as config
 import cm.stack
 import cm.status_api
-from cm.adcm_config import proto_ref, init_object_config, switch_config
+from cm.adcm_config import proto_ref, get_prototype_config, init_object_config, switch_config
 from cm.errors import raise_AdcmEx as err
 from cm.models import Cluster, Host, Upgrade, StageUpgrade, ADCM
 from cm.models import Bundle, Prototype, Component, Action, SubAction, PrototypeConfig
@@ -182,26 +182,27 @@ def process_adcm():
         init_adcm(bundle)
 
 
-@transaction.atomic
 def init_adcm(bundle):
     proto = Prototype.objects.get(type='adcm', bundle=bundle)
-    obj_conf, _, _ = init_object_config(proto)
-    adcm = ADCM(prototype=proto, name='ADCM', config=obj_conf)
-    adcm.save()
+    spec, _, conf, attr = get_prototype_config(proto)
+    with transaction.atomic():
+        obj_conf = init_object_config(spec, conf, attr)
+        adcm = ADCM(prototype=proto, name='ADCM', config=obj_conf)
+        adcm.save()
     log.info('init adcm object version %s OK', proto.version)
     return adcm
 
 
-@transaction.atomic
 def upgrade_adcm(adcm, bundle):
     old_proto = adcm.prototype
     new_proto = Prototype.objects.get(type='adcm', bundle=bundle)
     if rpm.compare_versions(old_proto.version, new_proto.version) >= 0:
         msg = 'Current adcm version {} is more than or equal to upgrade version {}'
         err('UPGRADE_ERROR', msg.format(old_proto.version, new_proto.version))
-    switch_config(adcm, new_proto)
-    adcm.prototype = new_proto
-    adcm.save()
+    with transaction.atomic():
+        adcm.prototype = new_proto
+        adcm.save()
+        switch_config(adcm, new_proto, old_proto)
     log.info('upgrade adcm OK from version %s to %s', old_proto.version, adcm.prototype.version)
     return adcm
 
@@ -490,7 +491,6 @@ def clear_stage():
         model.objects.all().delete()
 
 
-@transaction.atomic
 def delete_bundle(bundle):
     hosts = Host.objects.filter(prototype__bundle=bundle)
     if hosts:
@@ -506,11 +506,12 @@ def delete_bundle(bundle):
     if adcm:
         msg = 'There is adcm object of bundle #{} "{}" {}'
         err('BUNDLE_CONFLICT', msg.format(bundle.id, bundle.name, bundle.version))
-    Prototype.objects.filter(bundle=bundle).delete()
     if bundle.hash != 'adcm':
         shutil.rmtree(os.path.join(config.BUNDLE_DIR, bundle.hash))
     cm.status_api.post_event('delete', 'bundle', bundle.id)
-    bundle.delete()
+    with transaction.atomic():
+        Prototype.objects.filter(bundle=bundle).delete()
+        bundle.delete()
 
 
 def check_services():

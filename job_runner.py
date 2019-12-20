@@ -79,6 +79,7 @@ def run_ansible(job_id):
     cm.job.set_job_status(job_id, config.Job.RUNNING, proc.pid)
     log.info("run ansible job #%s, pid %s, playbook %s", job_id, proc.pid, playbook)
     ret = proc.wait()
+    cm.job.finish_check(job_id)
     res = set_job_status(job_id, ret, proc.pid)
 
     out_file.close()

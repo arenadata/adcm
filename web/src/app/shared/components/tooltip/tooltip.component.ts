@@ -12,7 +12,7 @@
 import { Component, ElementRef, EventEmitter, HostListener, Injector, Input, OnDestroy, OnInit, Renderer2, Type } from '@angular/core';
 import { Router } from '@angular/router';
 import { BaseDirective } from '@app/shared/directives';
-import { delay } from 'rxjs/operators';
+import { delay, take } from 'rxjs/operators';
 
 import { IssueInfoComponent } from '../issue-info.component';
 import { StatusInfoComponent } from '../status-info.component';
@@ -67,14 +67,15 @@ export class TooltipComponent extends BaseDirective implements OnInit, OnDestroy
   }
 
   hide() {
-    this.renderer.setAttribute(this.el.nativeElement, 'style', `opacity: 0`);
-    setTimeout(() => this.clear(), 300);
+    this.renderer.setAttribute(this.el.nativeElement, 'style', `opacity: 0; height: auto; margin: auto; bottom: initial;`);
+    this.clear();
   }
 
   clear() {
     if (this.source) {
       this.renderer.removeChild(this.renderer.parentNode(this.source), this.el.nativeElement);
       this.source = null;
+      this.CurrentComponent = null;
     }
   }
 
@@ -82,26 +83,31 @@ export class TooltipComponent extends BaseDirective implements OnInit, OnDestroy
     const o = this.options;
     const el = this.el.nativeElement;
 
+    this.renderer.setAttribute(this.el.nativeElement, 'style', `opacity: 0; height: auto; margin: auto; bottom: initial;`);
     this.renderer.appendChild(this.renderer.parentNode(o.source), el);
 
     const bodyWidth = document.querySelector('body').offsetWidth,
       bodyHeight = (document.getElementsByTagName('app-root')[0] as HTMLElement).offsetHeight,
       // extLeft = o.event.x - el.offsetWidth,
-      extRight = o.event.x + el.offsetWidth + o.source.offsetWidth / 2,
+      extRight = o.event.x + el.offsetWidth + o.source.offsetWidth / 2 + POSITION_MARGIN,
       // extTop = o.event.y - el.offsetHeight,
       extBottom = o.event.y + el.offsetHeight;
 
     const dx = extRight - bodyWidth,
       dy = o.source.offsetHeight / 2 + el.offsetHeight / 2 + POSITION_MARGIN,
       dH = bodyHeight - o.event.y - o.source.offsetHeight - POSITION_MARGIN,
+      dX = bodyWidth - o.event.x - o.source.offsetWidth - POSITION_MARGIN,
       bottom = bodyHeight < extBottom ? (o.event.y + el.offsetHeight > bodyHeight ? `bottom: 0px; height: ${dH}px;` : `bottom: ${POSITION_MARGIN}px;`) : '';
 
     let xMargin = '';
     let yMargin = '';
 
     if (o.options.position === 'top' || o.options.position === 'bottom') {
-      xMargin = bodyWidth < extRight ? `margin-left: -${dx}px;` : '';
-      yMargin = `margin-top: ${o.options.position === 'top' ? '-' : ''}${dy}px;`;
+      if (bodyWidth < extRight) {
+        xMargin = `right: ${POSITION_MARGIN}px;`;
+      } else {
+        yMargin = `margin-top: ${o.options.position === 'top' ? '-' : ''}${dy}px;`;
+      }
     }
 
     if (o.options.position === 'left' || o.options.position === 'right') {
@@ -118,7 +124,7 @@ export class TooltipComponent extends BaseDirective implements OnInit, OnDestroy
     this.CurrentComponent = { issue: IssueInfoComponent, status: StatusInfoComponent }[this.options.options.componentName] || SimpleTextComponent;
 
     const emitter = new EventEmitter();
-    emitter.pipe(delay(100), this.takeUntil()).subscribe(() => this.position());
+    emitter.pipe(take(1), delay(100), this.takeUntil()).subscribe(() => this.position());
 
     this.componentInjector = Injector.create({
       providers: [
