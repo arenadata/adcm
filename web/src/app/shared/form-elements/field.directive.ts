@@ -28,15 +28,7 @@ export class FieldDirective extends BaseDirective implements OnInit {
   }
 
   find() {
-    return this.field.key
-      .split('/')
-      .reverse()
-      .reduce((p, c) => p.controls[c], this.form);
-  }
-
-  getGroup() {
-    const [key, ...other] = this.field.key.split('/');
-    return other.reverse().reduce((p, c) => p.get(c), this.form);
+    return this.form.controls[this.field.name];
   }
 
   get isValid() {

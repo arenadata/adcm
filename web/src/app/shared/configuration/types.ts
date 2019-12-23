@@ -13,7 +13,22 @@ import { IYspec } from './YspecStructure';
 
 export type stateType = 'created' | 'locked';
 
-export type ConfigValueTypes = 'structure' | 'group' | 'dict' | 'string' | 'integer' | 'int' | 'float' | 'boolean' | 'option' | 'json' | 'map' | 'list' | 'file' | 'text' | 'password';
+export type ConfigValueTypes =
+  | 'structure'
+  | 'group'
+  | 'dict'
+  | 'string'
+  | 'integer'
+  | 'int'
+  | 'float'
+  | 'boolean'
+  | 'option'
+  | 'json'
+  | 'map'
+  | 'list'
+  | 'file'
+  | 'text'
+  | 'password';
 export type simpleTypes = string | number | boolean;
 export type ConfigResultTypes = simpleTypes | simpleTypes[] | object | null;
 
@@ -62,14 +77,14 @@ export interface FieldStack {
  */
 export interface IConfig {
   id?: number;
-  date?: Date;
+  date?: string;
   description?: string;
   config: FieldStack[];
   attr?: { [group: string]: { active: boolean } };
 }
 
 export interface ConfigOptions {
-  key?: string;  
+  key?: string;
   type: ConfigValueTypes;
   display_name: string;
   name: string;
@@ -85,14 +100,26 @@ export interface PanelOptions extends ConfigOptions {
   activatable?: boolean;
 }
 
+export interface CompareConfig extends IConfig {
+  color: string;
+}
+
+interface Compare {
+  id: number;
+  date: string;
+  value: string;
+  color: string;
+}
+
 /**
  * For Material form controls
  */
-export interface FieldOptions extends ConfigOptions {  
+export interface FieldOptions extends ConfigOptions {
   default: null | string | number | boolean | object | any[];
   value: string | number | boolean | object | string[] | null;
-  controlType: string;  
+  controlType: string;
   validator: ValidatorInfo;
   disabled?: boolean;
   limits?: ILimits;
+  compare: Compare[];
 }

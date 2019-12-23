@@ -17,7 +17,7 @@ import { FieldDirective } from './field.directive';
 @Component({
   selector: 'app-fields-boolean',
   template: `
-    <ng-container [formGroup]="getGroup()">
+    <ng-container [formGroup]="form">
       <label [appTooltip]="field.display_name" [appTooltipShowByCondition]="true">{{ field.display_name }}:</label>
       <div class="full-width">
         <div>

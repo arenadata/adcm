@@ -140,6 +140,10 @@ export class ConfigComponent extends SocketListener implements OnInit {
         .pipe(this.takeUntil())
         .subscribe(c => {
           this.saveFlag = false;
+          /**
+           * TODO: history does not update! 
+           *  => her need the new this.field.dataOptions
+           */
           this.historyComponent.versionID = c.id;
           this.historyComponent.getData();
           this.cdRef.detectChanges();

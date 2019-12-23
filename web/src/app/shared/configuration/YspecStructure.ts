@@ -73,7 +73,8 @@ export class YspecStructure {
             validator: {
               required: !!(root.required_items && root.required_items.includes[k]),
               pattern: getPattern(rule.match)
-            }
+            },
+            compare: []
           };
         } else {
           scheme.root = rule;

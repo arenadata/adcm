@@ -16,10 +16,6 @@ import { controlType, getPattern, isObject } from '@app/core/types';
 import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, PanelOptions } from './types';
 import { YspecStructure } from './YspecStructure';
 
-export interface CompareConfig extends IConfig {
-  color: string;
-}
-
 export interface IToolsEvent {
   name: string;
   conditions?: { advanced: boolean; search: string } | boolean;
@@ -86,7 +82,8 @@ export class FieldService {
         pattern: getPattern(item.type)
       },
       controlType: controlType(item.type),
-      hidden: item.name === '__main_info' || this.isHidden(item)
+      hidden: item.name === '__main_info' || this.isHidden(item),
+      compare: []
     };
     return params;
   }
@@ -161,23 +158,21 @@ export class FieldService {
   }
 
   filterApply(c: { advanced: boolean; search: string }): (FieldOptions | PanelOptions)[] {
-    this.dataOptions
-      .filter(a => this.isVisibleField(a))
-      .map(a => {
-        if ('options' in a) {
-          //group
-          // if (c.search) {
-          //   a.hidden = a.options.filter(b => !b.hidden).length === 0;
-          // } else {
-          //   a.hidden = this.isAdvancedField(a) ? !c.advanced : false;
-          // }
-        } else if (this.isVisibleField(a)) {
-          a.hidden = !(a.display_name.toLowerCase().includes(c.search.toLowerCase()) || JSON.stringify(a.value).includes(c.search));
-          if (!a.hidden && this.isAdvancedField(a)) a.hidden = !c.advanced;
-        }
-      });
-
+    this.dataOptions.filter(a => this.isVisibleField(a)).map(a => this.handleTree(a, c));
     return [...this.dataOptions];
+  }
+
+  handleTree(a: FieldOptions | PanelOptions, c: { advanced: boolean; search: string }) {
+    if ('options' in a) {
+      const result = a.options.map(b => this.handleTree(b, c));
+      if (c.search) a.hidden = a.options.filter(b => !b.hidden).length === 0;
+      else a.hidden = this.isAdvancedField(a) ? !c.advanced : false;
+      return result;
+    } else if (this.isVisibleField(a)) {
+      a.hidden = !(a.display_name.toLowerCase().includes(c.search.toLowerCase()) || JSON.stringify(a.value).includes(c.search));
+      if (!a.hidden && this.isAdvancedField(a)) a.hidden = !c.advanced;
+      return a;
+    }
   }
 
   getValue(name: string) {
@@ -211,11 +206,12 @@ export class FieldService {
   }
 
   runParse(value: { [key: string]: any }): { [key: string]: ConfigResultTypes } {
+    const excluteTypes = ['json', 'map', 'list'];
     return Object.keys(value).reduce((p, c) => {
       const data = value[c];
       const field = this.findField(c);
       if (field.type === 'structure') p[c] = this.runYspecParse(data, field);
-      else if (isObject(data) && field.type !== 'json') p[c] = this.runParse(data);
+      else if (isObject(data) && !excluteTypes.includes(field.type)) p[c] = this.runParse(data);
       else if (field) p[c] = this.checkValue(data, field.type);
       return p;
     }, {});

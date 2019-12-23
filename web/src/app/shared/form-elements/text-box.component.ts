@@ -16,7 +16,7 @@ import { FieldDirective } from './field.directive';
 @Component({
   selector: 'app-fields-textbox',
   template: `
-    <ng-container [formGroup]="getGroup()">
+    <ng-container [formGroup]="form">
       <label [appTooltip]="field.display_name" [appTooltipShowByCondition]="true">{{ field.display_name }}:</label>
       <mat-form-field class="full-width" [floatLabel]="'never'">
         <input matInput [formControlName]="field.name" [readonly]="field.disabled" [type]="field.type" />
