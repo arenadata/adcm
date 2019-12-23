@@ -681,7 +681,7 @@ def cook_log_name(job_id, tag, level, ext='txt'):
 
 
 def read_log(job_id, tag, level, log_type):
-    fname = os.path.join(config.LOG_DIR, f'{job_id}{tag}-{level}.{log_type}')
+    fname = os.path.join(config.LOG_DIR, f'{job_id}-{tag}-{level}.{log_type}')
     try:
         f = open(fname, 'r')
         data = f.read()
