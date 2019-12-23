@@ -66,7 +66,7 @@ def run_task(task_id, args=None):
     def terminate_task(signum, frame):  # pylint: disable=useless-return
         log.info("cancel task #%s, signal: #%s", task_id, signum)
         running_jobs = JobLog.objects.filter(task_id=task_id, status=config.Job.RUNNING)
-        if running_jobs:
+        if running_jobs and running_jobs[0].pid:
             os.kill(running_jobs[0].pid, signal.SIGTERM)
             cm.job.finish_task(task, running_jobs[0], config.Job.ABORTED)
         else:

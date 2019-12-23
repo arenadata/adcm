@@ -15,6 +15,7 @@ import os
 import re
 import signal
 import subprocess
+import time
 
 from django.db import transaction
 from django.utils import timezone
@@ -88,6 +89,20 @@ def restart_task(task):
 
 
 def cancel_task(task):
+    errors = {
+        config.Job.FAILED: ('TASK_IS_FAILED', f'task #{task.id} is failed'),
+        config.Job.ABORTED: ('TASK_IS_ABORTED', f'task #{task.id} is aborted'),
+        config.Job.SUCCESS: ('TASK_IS_SUCCESS', f'task #{task.id} is success')
+
+    }
+    if task.status in [config.Job.FAILED, config.Job.ABORTED, config.Job.SUCCESS]:
+        err(*errors.get(task.status))
+    if task.status == config.Job.CREATED:
+        while True:
+            time.sleep(0.5)
+            task = TaskLog.objects.get(id=task.id)
+            if task.status == config.Job.RUNNING:
+                break
     os.kill(task.pid, signal.SIGTERM)
 
 
