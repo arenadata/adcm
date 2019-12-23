@@ -338,6 +338,7 @@ class TestJob(TestCase):
             'job': {
                 'id': 1,
                 'action': 're-start',
+                'job_name': 're-start',                
                 'command': 're-start',
                 'script': '',
                 'playbook': mock_dump.call_args[0][0]['job']['playbook'],
