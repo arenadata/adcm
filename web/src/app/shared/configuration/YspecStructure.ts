@@ -78,10 +78,14 @@ export class YspecStructure {
           };
         } else {
           scheme.root = rule;
+          const key = `${k}/${source.key}`;
+          source.key = key;
+          source.value = value[k];
+          source.default = source.default[k];
           return {
             display_name: k,
             name: k,
-            key: `${k}/${source.key}`,
+            key,
             default: source.default[k],
             value: value[k],
             hidden: false,
