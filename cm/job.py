@@ -484,6 +484,7 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
         'job': {
             'id': job_id,
             'action': action.name,
+            'job_name': action.name,
             'command': action.name,
             'script': action.script,
             'playbook': cook_script(action, sub_action)
@@ -494,6 +495,7 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
 
     if sub_action:
         job_conf['job']['script'] = sub_action.script
+        job_conf['job']['job_name'] = sub_action.name
         job_conf['job']['command'] = sub_action.name
         if sub_action.params:
             job_conf['job']['params'] = json.loads(sub_action.params)
