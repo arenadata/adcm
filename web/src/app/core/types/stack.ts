@@ -19,6 +19,7 @@ export interface StackBase {
   display_name: string;
   license: 'unaccepted' | 'accepted' | 'absent';
   bundle_id: number;
+  bundle_edition: string;
 }
 
 export type Prototype = StackBase & {bundle_id: number};
