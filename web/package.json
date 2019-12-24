@@ -39,7 +39,7 @@
     "@ngrx/schematics": "^8.0.1",
     "@types/jasmine": "~3.5.0",
     "@types/jasminewd2": "~2.0.6",
-    "@types/node": "~12.12.14",
+    "@types/node": "~13.1.0",
     "codelyzer": "^5.0.1",
     "eslint": "^6.7.2",
     "jasmine-core": "~3.5.0",
