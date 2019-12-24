@@ -20,7 +20,7 @@ import { FieldDirective } from './field.directive';
       <div>
         <label [appTooltip]="field.display_name" [appTooltipShowByCondition]="true">{{ field.display_name }}:</label>
         <mat-form-field class="full-width" [floatLabel]="'never'">
-          <input matInput (input)="confirmPasswordFieldUpdate()" [formControlName]="field.key" type="password" [readonly]="field.disabled" />
+          <input matInput (input)="confirmPasswordFieldUpdate()" [formControlName]="field.name" type="password" [readonly]="field.disabled" />
           <mat-error *ngIf="!isValid"> Field [{{ field.display_name }}] is required! </mat-error>
         </mat-form-field>
         <span class="info"
@@ -32,7 +32,7 @@ import { FieldDirective } from './field.directive';
       <div *ngIf="getConfirmPasswordField()">
         <label [appTooltip]="'confirm [ ' + field.display_name + ' ]'" [appTooltipShowByCondition]="true">confirm [ {{ field.display_name }} ]:</label>
         <mat-form-field class="full-width" [floatLabel]="'never'">
-          <input matInput appConfirmEqualValidator="{{ field.key }}" [formControlName]="'confirm_' + field.key" type="password" [readonly]="field.disabled" />
+          <input matInput appConfirmEqualValidator="{{ field.name }}" [formControlName]="'confirm_' + field.name" type="password" [readonly]="field.disabled" />
           <mat-error *ngIf="getConfirmPasswordFieldErrors('required') && (form.touched || form.dirty)"> Confirm [{{ field.display_name }}] is required! </mat-error>
           <mat-error *ngIf="getConfirmPasswordFieldErrors('notEqual') && (form.touched || form.dirty)">
             Field [{{ field.display_name }}] and confirm [{{ field.display_name }}] does not match!

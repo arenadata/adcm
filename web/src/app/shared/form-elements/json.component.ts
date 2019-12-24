@@ -30,7 +30,7 @@ import { FieldDirective } from './field.directive';
             [appMTextarea]="field.key"
             matInput
             class="full-width json_field"
-            [formControlName]="field.key"
+            [formControlName]="field.name"
             [readonly]="field.disabled"
           ></textarea>
         </div>
@@ -43,7 +43,7 @@ import { FieldDirective } from './field.directive';
 export class JsonComponent extends FieldDirective implements OnInit {
   ngOnInit() {
     super.ngOnInit();
-    const control = this.form.controls[this.field.key];
+    const control = this.form.controls[this.field.name];
     control.valueChanges.pipe(debounceTime(500)).subscribe(value => {
       try {
         const v = JSON.parse(value);

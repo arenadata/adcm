@@ -9,49 +9,64 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { AbstractControl, FormControl, FormGroup, ValidatorFn, Validators } from '@angular/forms';
+import { Injectable } from '@angular/core';
+import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
+import { controlType, getPattern, isObject } from '@app/core/types';
 
-import { ConfigOptions, FieldOptions, FieldStack, IConfig, PanelOptions } from './types';
-import { getPattern, controlType } from '@app/core/types';
-
-export interface CompareConfig extends IConfig {
-  color: string;
-}
+import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, PanelOptions } from './types';
+import { YspecStructure } from './YspecStructure';
 
 export interface IToolsEvent {
   name: string;
   conditions?: { advanced: boolean; search: string } | boolean;
 }
 
+@Injectable()
 export class FieldService {
   globalConfig: IConfig;
-  panelOptions: PanelOptions[];
+  dataOptions: (FieldOptions | PanelOptions)[];
   formOptions: FieldOptions[];
   form = new FormGroup({});
+
+  constructor(private fb: FormBuilder) {}
 
   isVisibleField = (a: ConfigOptions) => !a.ui_options || !a.ui_options.invisible;
   isInvisibleField = (a: ConfigOptions) => a.ui_options && a.ui_options.invisible;
   isAdvancedField = (a: ConfigOptions) => a.ui_options && a.ui_options.advanced && !a.ui_options.invisible;
   isHidden = (a: FieldStack) => a.ui_options && (a.ui_options.invisible || a.ui_options.advanced);
 
-  getPanels(data: IConfig) {
+  getPanels(data: IConfig): (FieldOptions | PanelOptions)[] {
     this.globalConfig = data;
-    this.panelOptions = [];
+    this.dataOptions = [];
 
     if (data && data.config.length) {
       this.formOptions = data.config.filter(a => a.type !== 'group').map((a: FieldStack) => this.getFieldBy(a));
-
-      this.panelOptions = data.config
-        .filter(a => a.name !== '__main_info')
-        .filter(a => a.type === 'group' || !a.subname)
-        .map(a => ({
-          ...a,
-          hidden: this.isHidden(a),
-          options: this.formOptions.filter(b => b.name === a.name)
-        }));
+      data.config.filter(a => a.name !== '__main_info').map(a => this.fillDataOptions(a));
     }
+    return this.dataOptions;
+  }
 
-    return this.panelOptions;
+  fillDataOptions(a: FieldStack) {
+    if (a.type === 'group') {
+      this.dataOptions.push({
+        ...a,
+        hidden: this.isHidden(a),
+        options: this.formOptions.filter(b => b.name === a.name).map(b => this.checkYspec(b))
+      });
+    } else if (!a.subname) this.dataOptions.push(this.checkYspec(this.getFieldBy(a)));
+  }
+
+  checkYspec(a: FieldOptions): FieldOptions | PanelOptions {
+    /**
+     * Very important for build tree
+     */
+    a.name = a.subname || a.name;
+
+    if (a.limits && a.limits.yspec) {
+      const yspec = new YspecStructure(a);
+      return yspec.output;
+    }
+    return a;
   }
 
   getFieldBy(item: FieldStack): FieldOptions {
@@ -67,7 +82,8 @@ export class FieldService {
         pattern: getPattern(item.type)
       },
       controlType: controlType(item.type),
-      hidden: item.name === '__main_info' || this.isHidden(item)
+      hidden: item.name === '__main_info' || this.isHidden(item),
+      compare: []
     };
     return params;
   }
@@ -110,44 +126,53 @@ export class FieldService {
     return v;
   }
 
-  toFormGroup(): FormGroup {
-    this.form = new FormGroup({});
-    this.formOptions.forEach(field => {
-      this.form.setControl(field.key, new FormControl({ value: field.value, disabled: field.disabled }, this.setValidator(field)));
-      if (field.controlType === 'password') {
-        if (!field.ui_options || (field.ui_options && !field.ui_options.no_confirm)) {
-          this.form.setControl(`confirm_${field.key}`, new FormControl({ value: field.value, disabled: field.disabled }, this.setValidator(field)));
-        }
-      }
-    });
+  toFormGroup(options: (FieldOptions | PanelOptions)[]): FormGroup {
+    this.form = this.fb.group(options.reduce((p, c) => this.runByTree(c, p), {}));
     return this.form;
   }
 
-  filterApply(c: { advanced: boolean; search: string }): PanelOptions[] {
-    this.panelOptions
-      .filter(a => this.isVisibleField(a))
-      .map(a => {
-        // fields
-        a.options
-          .filter(b => this.isVisibleField(b))
-          .map(b => {
-            b.hidden = !(b.display_name.toLowerCase().includes(c.search.toLowerCase()) || JSON.stringify(b.value).includes(c.search));
-            return b;
-          })
-          .filter(b => !b.hidden && this.isAdvancedField(b))
-          .map(b => {
-            b.hidden = !c.advanced;
-          });
+  runByTree(field: FieldOptions | PanelOptions, controls: { [key: string]: {} }): { [key: string]: {} } {
+    if ('options' in field) {
+      controls[field.name] = this.fb.group(
+        field.options.reduce((p, a) => {
+          if ('options' in a) this.fb.group(this.runByTree(a, p));
+          else this.fillForm(a, p);
+          return p;
+        }, {})
+      );
+      return controls;
+    } else {
+      return this.fillForm(field, controls);
+    }
+  }
 
-        //group
-        if (c.search) {
-          a.hidden = a.options.filter(b => !b.hidden).length === 0;
-        } else {
-          a.hidden = this.isAdvancedField(a) ? !c.advanced : false;
-        }
-      });
+  fillForm(field: FieldOptions, controls: {}) {
+    const name = field.subname || field.name;
+    controls[name] = this.fb.control({ value: field.value, disabled: field.disabled }, this.setValidator(field));
+    if (field.controlType === 'password') {
+      if (!field.ui_options || (field.ui_options && !field.ui_options.no_confirm)) {
+        controls[`confirm_${name}`] = this.fb.control({ value: field.value, disabled: field.disabled }, this.setValidator(field));
+      }
+    }
+    return controls;
+  }
 
-    return [...this.panelOptions];
+  filterApply(c: { advanced: boolean; search: string }): (FieldOptions | PanelOptions)[] {
+    this.dataOptions.filter(a => this.isVisibleField(a)).map(a => this.handleTree(a, c));
+    return [...this.dataOptions];
+  }
+
+  handleTree(a: FieldOptions | PanelOptions, c: { advanced: boolean; search: string }) {
+    if ('options' in a) {
+      const result = a.options.map(b => this.handleTree(b, c));
+      if (c.search) a.hidden = a.options.filter(b => !b.hidden).length === 0;
+      else a.hidden = this.isAdvancedField(a) ? !c.advanced : false;
+      return result;
+    } else if (this.isVisibleField(a)) {
+      a.hidden = !(a.display_name.toLowerCase().includes(c.search.toLowerCase()) || JSON.stringify(a.value).includes(c.search));
+      if (!a.hidden && this.isAdvancedField(a)) a.hidden = !c.advanced;
+      return a;
+    }
   }
 
   getValue(name: string) {
@@ -168,5 +193,83 @@ export class FieldService {
 
   getFieldsBy(items: Array<FieldStack>): FieldOptions[] {
     return items.map(o => this.getFieldBy(o));
+  }
+
+  /**
+   * Check the data
+   *
+   */
+  parseValue(): { [key: string]: string | number | boolean | object | [] } {
+    const __main_info = this.findField('__main_info');
+    const value = __main_info && __main_info.required ? { ...this.form.value, __main_info } : { ...this.form.value };
+    return this.runParse(value);
+  }
+
+  runParse(value: { [key: string]: any }): { [key: string]: ConfigResultTypes } {
+    const excluteTypes = ['json', 'map', 'list'];
+    return Object.keys(value).reduce((p, c) => {
+      const data = value[c];
+      const field = this.findField(c);
+      if (field.type === 'structure') p[c] = this.runYspecParse(data, field);
+      else if (isObject(data) && !excluteTypes.includes(field.type)) p[c] = this.runParse(data);
+      else if (field) p[c] = this.checkValue(data, field.type);
+      return p;
+    }, {});
+  }
+
+  findField(name: string): FieldStack {
+    return this.globalConfig.config.find(a => a.name === name || a.subname === name);
+  }
+
+  runYspecParse(value: any, field: FieldStack) {
+    const name = field.subname || field.name;
+    const yo = this.dataOptions.find(a => a.name === field.name) as PanelOptions;
+    const po = yo.options.find(a => a.name === field.subname) as PanelOptions;
+    return this.runYspecByOptions(value, po);
+  }
+
+  runYspecByOptions(value: any, op: PanelOptions) {
+    return Object.keys(value).reduce((p, c) => {
+      const data = value[c];
+      const key = op.options.find(a => a.name === c);
+      if (isObject(data) && !Array.isArray(data)) p[c] = this.runYspecByOptions(data, key as PanelOptions);
+      else if (key) p[c] = this.checkValue(data, key.type);
+      return p;
+    }, {});
+  }
+
+  checkValue(value: ConfigResultTypes, type: ConfigValueTypes) {
+    if (value === '' || value === null) return null;
+
+    switch (type) {
+      case 'map':
+        return Object.keys(value)
+          .filter(a => a)
+          .reduce((p, c) => {
+            p[c] = value[c];
+            return p;
+          }, {});
+      // case 'list':
+      //   return (value as Array<string>).filter(a => a);
+    }
+
+    if (typeof value === 'boolean') return value;
+
+    if (typeof value === 'string')
+      switch (type) {
+        case 'option':
+          if (!isNaN(+value)) return parseInt(value, 10);
+          else return value;
+        case 'integer':
+        case 'int':
+          return parseInt(value, 10);
+        case 'float':
+          return parseFloat(value);
+        case 'json':
+          return JSON.parse(value);
+        default:
+          return value;
+      }
+    return value;
   }
 }
