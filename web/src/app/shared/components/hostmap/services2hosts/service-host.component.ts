@@ -106,6 +106,7 @@ export class ServiceHostComponent extends SocketListener implements OnInit {
 
   init() {
     if (this.initFlag) return;
+    this.initFlag = true;
 
     this.sourceMap.set('host', []);
     this.sourceMap.set('compo', []);
