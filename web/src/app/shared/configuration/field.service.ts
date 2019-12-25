@@ -201,7 +201,7 @@ export class FieldService {
    */
   parseValue(): { [key: string]: string | number | boolean | object | [] } {
     const __main_info = this.findField('__main_info');
-    const value = __main_info && __main_info.required ? { ...this.form.value, __main_info } : { ...this.form.value };
+    const value = __main_info && __main_info.required ? { ...this.form.value, __main_info: __main_info.value } : { ...this.form.value };
     return this.runParse(value);
   }
 
@@ -210,9 +210,11 @@ export class FieldService {
     return Object.keys(value).reduce((p, c) => {
       const data = value[c];
       const field = this.findField(c);
-      if (field.type === 'structure') p[c] = this.runYspecParse(data, field);
-      else if (isObject(data) && !excluteTypes.includes(field.type)) p[c] = this.runParse(data);
-      else if (field) p[c] = this.checkValue(data, field.type);
+      if (field) {
+        if (field.type === 'structure') p[c] = this.runYspecParse(data, field);
+        else if (isObject(data) && !excluteTypes.includes(field.type)) p[c] = this.runParse(data);
+        else if (field) p[c] = this.checkValue(data, field.type);
+      }
       return p;
     }, {});
   }
