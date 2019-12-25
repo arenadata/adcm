@@ -829,10 +829,9 @@ def validate_name(value, name):
 
 
 def fix_display_name(conf, obj):
-    if not conf:
+    if isinstance(conf, dict) and 'display_name' in conf:
         return
-    if 'display_name' not in conf:
-        obj.display_name = obj.name
+    obj.display_name = obj.name
 
 
 def in_dict(dictionary, key):
