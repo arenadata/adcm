@@ -473,9 +473,7 @@ def prepare_context(selector):
 
 def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
     job_conf = {
-        'adcm': {
-            'config': get_adcm_config()
-        },
+        'adcm': {'config': get_adcm_config()},
         'context': prepare_context(selector),
         'env': {
             'run_dir': config.RUN_DIR,
@@ -485,6 +483,8 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
         },
         'job': {
             'id': job_id,
+            'action': action.name,
+            'job_name': action.name,
             'command': action.name,
             'script': action.script,
             'playbook': cook_script(action, sub_action)
@@ -495,6 +495,8 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
 
     if sub_action:
         job_conf['job']['script'] = sub_action.script
+        job_conf['job']['job_name'] = sub_action.name
+        job_conf['job']['command'] = sub_action.name
         if sub_action.params:
             job_conf['job']['params'] = json.loads(sub_action.params)
 
@@ -524,7 +526,7 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
     if conf:
         job_conf['job']['config'] = conf
 
-    fd = open('{}/{}-config.json'.format(config.RUN_DIR, job_id), 'w')
+    fd = open(os.path.join(config.RUN_DIR, f'{job_id}-config.json'), 'w')
     json.dump(job_conf, fd, indent=3, sort_keys=True)
     fd.close()
 
@@ -677,11 +679,11 @@ def finish_task(task, job, status):
 
 
 def cook_log_name(job_id, tag, level, ext='txt'):
-    return '{}-{}-{}.{}'.format(job_id, tag, level, ext)
+    return f'{job_id}-{tag}-{level}.{ext}'
 
 
 def read_log(job_id, tag, level, log_type):
-    fname = f'{config.LOG_DIR}/{job_id}-{tag}-{level}.{log_type}'
+    fname = os.path.join(config.LOG_DIR, f'{job_id}-{tag}-{level}.{log_type}')
     try:
         f = open(fname, 'r')
         data = f.read()
