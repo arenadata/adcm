@@ -97,12 +97,6 @@ def cancel_task(task):
     }
     if task.status in [config.Job.FAILED, config.Job.ABORTED, config.Job.SUCCESS]:
         err(*errors.get(task.status))
-    if task.status == config.Job.CREATED:
-        while True:
-            time.sleep(0.5)
-            task = TaskLog.objects.get(id=task.id)
-            if task.status == config.Job.RUNNING:
-                break
     os.kill(task.pid, signal.SIGTERM)
 
 
@@ -778,4 +772,4 @@ def run_task(task, args=''):
     ], stderr=err_file)
     log.info("run task #%s, python process %s", task.id, proc.pid)
     task.pid = proc.pid
-    task.save()
+    set_task_status(task, config.Job.RUNNING)

@@ -15,6 +15,7 @@ import os
 import signal
 import subprocess
 import sys
+import time
 
 import adcm.init_django  # pylint: disable=unused-import
 from django.core.exceptions import ObjectDoesNotExist
@@ -47,6 +48,36 @@ def run_job(task_id, job_id, out_file, err_file):
 
 
 def run_task(task_id, args=None):
+    def terminate_task(signum, frame):  # pylint: disable=useless-return
+        log.info("cancel task #%s, signal: #%s", task_id, signum)
+        _task = TaskLog.objects.get(id=task_id)
+        if _task.status == config.Job.CREATED:
+            cm.job.finish_task(_task, None, config.Job.ABORTED)
+        else:
+            created_jobs = JobLog.objects.filter(task_id=task_id, status=config.Job.CREATED)
+            if created_jobs:
+                while True:
+                    time.sleep(0.5)
+                    try:
+                        running_job = JobLog.objects.get(task_id=task_id, status=config.Job.RUNNING)
+                        break
+                    except JobLog.DoesNotExist:
+                        pass
+            else:
+                running_job = JobLog.objects.get(task_id=task_id, status=config.Job.RUNNING)
+
+            if running_job and running_job.pid:
+                os.kill(running_job.pid, signal.SIGTERM)
+                cm.job.finish_task(_task, running_job, config.Job.ABORTED)
+            else:
+                cm.job.finish_task(_task, None, config.Job.ABORTED)
+
+        out_file.close()
+        err_file.close()
+        os._exit(signum)  # pylint: disable=protected-access
+
+    signal.signal(signal.SIGTERM, terminate_task)
+
     log.debug("task_runner.py called as: %s", sys.argv)
     try:
         task = TaskLog.objects.get(id=task_id)
@@ -63,23 +94,7 @@ def run_task(task_id, args=None):
     out_file = open_file(config.LOG_DIR, 'task-out', task_id)
     err_file = open_file(config.LOG_DIR, 'task-err', task_id)
 
-    def terminate_task(signum, frame):  # pylint: disable=useless-return
-        log.info("cancel task #%s, signal: #%s", task_id, signum)
-        running_jobs = JobLog.objects.filter(task_id=task_id, status=config.Job.RUNNING)
-        if running_jobs and running_jobs[0].pid:
-            os.kill(running_jobs[0].pid, signal.SIGTERM)
-            cm.job.finish_task(task, running_jobs[0], config.Job.ABORTED)
-        else:
-            cm.job.finish_task(task, None, config.Job.ABORTED)
-
-        out_file.close()
-        err_file.close()
-        os._exit(signum)  # pylint: disable=protected-access
-
-    signal.signal(signal.SIGTERM, terminate_task)
-
     log.info("run task #%s", task_id)
-    cm.job.set_task_status(task, config.Job.RUNNING)
 
     job = None
     count = 0
