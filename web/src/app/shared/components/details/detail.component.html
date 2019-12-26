@@ -2,14 +2,13 @@
   <mat-toolbar class="toolbar">
     <app-crumbs [navigation]="crumbs"></app-crumbs>
     <div class="example-spacer"></div>
-    <app-upgrade *ngIf="!isIssue && model.current.upgradable" [dataRow]="model.current"></app-upgrade>
+    <app-upgrade *ngIf="!isIssue && isUpgradable(model.current)" [dataRow]="model.current"></app-upgrade>
     <app-actions [source]="actions$" [isIssue]="isIssue" [cluster]="model.cluster"></app-actions>
   </mat-toolbar>
 
   <div class="row main">
     <mat-nav-list class="col s12 m3 l2">
-      <a mat-list-item [appForTest]="'tab_' + item.url" *ngFor="let item of leftMenu" [routerLink]="[item.url]"
-        routerLinkActive="active">
+      <a mat-list-item [appForTest]="'tab_' + item.url" *ngFor="let item of leftMenu" [routerLink]="[item.url]" routerLinkActive="active">
         {{ item.title }}
         &nbsp;
         <mat-icon *ngIf="item.issue" color="warn">priority_hight</mat-icon>
@@ -22,7 +21,7 @@
     <mat-card class="col s12 m9 l10">
       <mat-card-header [style.minHeight.px]="40">
         <mat-card-title>
-          {{ model.current.display_name || model.current.name || model.current.fqdn }}
+          {{ getDisplayName(model.current) }}
         </mat-card-title>
         <mat-card-subtitle>
 

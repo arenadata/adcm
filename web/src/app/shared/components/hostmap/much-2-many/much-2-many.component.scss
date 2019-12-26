@@ -67,6 +67,9 @@ div.m2m {
         font-weight: 500;
         flex: 1 0 auto;
         line-height: 40px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 1px;
       }
 
       & button {

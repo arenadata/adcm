@@ -8,7 +8,7 @@
   </div>
   <div [ngClass]="{'relations-list':true, 'show': model.relations.length && isShow}">
     <div *ngFor="let rel of model.relations">
-      <span>{{ rel.name }}</span>
+      <span [appTooltip]="rel.name" [appTooltipShowByCondition]="true">{{ rel.name }}</span>
       <button [disabled]="clearDisabled(rel)" mat-icon-button color="primary" (click)="clearRelation(rel)">
         <mat-icon>clear</mat-icon>
       </button>
