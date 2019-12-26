@@ -18,7 +18,7 @@ import { Component, Input } from '@angular/core';
       <a [routerLink]="['/admin']"><mat-icon>{{ icon ? icon : 'apps' }}</mat-icon></a><span>&nbsp;/&nbsp;</span>
       <span *ngFor="let item of navigation; last as isLast; trackBy: _trackBy">
         <a [routerLink]="[item.path]">{{ item.name | uppercase }}</a>
-        <mat-icon *ngIf="item.issue" [appTooltip]="item.issue" TooltipPosition="bottom" color="warn">priority_hight</mat-icon>
+        <mat-icon *ngIf="item.issue" [matTooltip]="item.issue" color="warn">priority_hight</mat-icon>
         <span *ngIf="!isLast">&nbsp;/&nbsp;</span>
       </span>
     </mat-nav-list>
