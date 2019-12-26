@@ -10,6 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=too-many-arguments
+# pylint: disable=too-many-branches
+
 import json
 import os
 import re
@@ -61,7 +64,7 @@ def get_data_for_task(action, selector, conf, hc):
     return obj, act_conf, old_hc, delta, host_map, cluster
 
 
-def lock_create_task(action, obj, selector, act_conf, old_hc, delta, host_map, cluster):  # pylint: disable=too-many-arguments
+def lock_create_task(action, obj, selector, act_conf, old_hc, delta, host_map, cluster):
     lock_objects(obj)
 
     if host_map:
@@ -97,6 +100,8 @@ def cancel_task(task):
     }
     if task.status in [config.Job.FAILED, config.Job.ABORTED, config.Job.SUCCESS]:
         err(*errors.get(task.status))
+    while not JobLog.objects.filter(task_id=task.id, status=config.Job.RUNNING):
+        time.sleep(0.5)
     os.kill(task.pid, signal.SIGTERM)
 
 
@@ -279,7 +284,7 @@ def cook_comp_key(name, subname):
     return f'{name}.{subname}'
 
 
-def cook_delta(cluster, new_hc, action_hc, old=None):  # pylint: disable=too-many-branches
+def cook_delta(cluster, new_hc, action_hc, old=None):
     def add_delta(delta, action, key, fqdn, host):
         service, comp = key.split('.')
         if not check_action_hc(action_hc, service, comp, action):

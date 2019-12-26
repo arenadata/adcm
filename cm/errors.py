@@ -91,6 +91,9 @@ ERRORS = {
     'UPGRADE_ERROR': ("upgrade error", rfs.HTTP_409_CONFLICT, ERR),
 
     'TASK_ERROR': ("task error", rfs.HTTP_409_CONFLICT, ERR),
+    'TASK_IS_FAILED': ("task is failed", rfs.HTTP_409_CONFLICT, WARN),
+    'TASK_IS_ABORTED': ("task is aborted", rfs.HTTP_409_CONFLICT, WARN),
+    'TASK_IS_SUCCESS': ("task is success", rfs.HTTP_409_CONFLICT, WARN),
     'WRONG_SELECTOR': ("selector error", rfs.HTTP_409_CONFLICT, ERR),
 
     'WRONG_JOB_TYPE': ("unknown job type", rfs.HTTP_409_CONFLICT, ERR),
