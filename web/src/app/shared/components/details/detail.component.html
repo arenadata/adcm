@@ -7,7 +7,7 @@
   </mat-toolbar>
 
   <div class="row main">
-    <mat-nav-list class="col-4">
+    <mat-nav-list class="col s12 m3 l2">
       <a mat-list-item [appForTest]="'tab_' + item.url" *ngFor="let item of leftMenu" [routerLink]="[item.url]"
         routerLinkActive="active">
         {{ item.title }}
@@ -19,7 +19,7 @@
       </a>
     </mat-nav-list>
 
-    <mat-card class="col-8">
+    <mat-card class="col s12 m9 l10">
       <mat-card-header [style.minHeight.px]="40">
         <mat-card-title>
           {{ model.current.display_name || model.current.name || model.current.fqdn }}
