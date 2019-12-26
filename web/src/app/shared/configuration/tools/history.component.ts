@@ -14,13 +14,11 @@ import { FormControl } from '@angular/forms';
 import { ApiService } from '@app/core/api';
 import { getRandomColor, isObject } from '@app/core/types';
 import { BaseDirective } from '@app/shared/directives/base.directive';
-import { forkJoin, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 
-import { CompareConfig } from '../field.service';
-import { FieldComponent } from '../field/field.component';
 import { ConfigFieldsComponent as FieldsComponent } from '../fields/fields.component';
-import { IConfig } from '../types';
+import { CompareConfig, FieldOptions, IConfig, PanelOptions } from '../types';
 
 @Component({
   selector: 'app-history',
@@ -44,7 +42,7 @@ import { IConfig } from '../types';
       </mat-form-field>
     </mat-toolbar>
   `,
-  styles: [':host {height: 64px;}', 'mat-form-field {flex: auto; margin: 0 10px; font-size: 14px; }'],
+  styles: [':host {height: 64px;}', 'mat-form-field {flex: auto; margin: 0 10px; font-size: 14px; }']
 })
 export class HistoryComponent extends BaseDirective implements OnInit {
   @Input() fields: FieldsComponent;
@@ -56,6 +54,7 @@ export class HistoryComponent extends BaseDirective implements OnInit {
   history$: Observable<CompareConfig[]>;
   comparator = new FormControl();
   compare: CompareConfig[];
+  current: IConfig;
 
   constructor(private api: ApiService) {
     super();
@@ -68,33 +67,16 @@ export class HistoryComponent extends BaseDirective implements OnInit {
   ngOnInit() {
     this.getData();
 
-    /** toolbar comparator current with history item */
-    this.comparator.valueChanges.pipe(this.takeUntil()).subscribe((valueChange: number[]) => {
-      this.fields.fields.map(f => this.clearCheck(f, valueChange));
-      this.fields.groups.forEach(g => g.fields.map(f => this.clearCheck(f, valueChange)));
-
-      /** 
-       * TODO: excessive requests
-      */
-      const comp = valueChange.map(id => this.compare.find(a => a.id === id));
-
-      forkJoin(
-        comp.map(config =>
-          this.api.get<IConfig>(`${this.historyUrl}${config.id}/`).pipe(
-            tap(v => {
-              this.fields.fields.filter(c => c.options.name !== '__main_info').map(c => this.checkField(v, c, config));
-              this.fields.groups.forEach(g => g.fields.filter(c => c.options.type !== 'group').map(c => this.checkField(v, c, config)));
-            })
-          )
-        )
-      )
-        .pipe(this.takeUntil())
-        .subscribe();
+    /**  */
+    this.comparator.valueChanges.pipe(this.takeUntil()).subscribe((configIDs: number[]) => {
+      this.clearCompare(configIDs);
+      this.checkValue(configIDs.map(id => this.compare.find(a => a.id === id)));
     });
   }
 
   getData() {
     this.history$ = this.api.get<IConfig[]>(this.historyUrl).pipe(
+      tap(history => (this.current = history.find(a => a.id === this.versionID))),
       map(history => history.filter(a => a.id !== this.versionID).map(b => ({ ...b, color: getRandomColor() }))),
       tap(a => {
         this.compare = a;
@@ -103,19 +85,44 @@ export class HistoryComponent extends BaseDirective implements OnInit {
     );
   }
 
-  clearCheck(field: FieldComponent, valueChange: number[]) {
-    field.clearCompare(valueChange);
-    field.cdetector.markForCheck();
+  clearCompare(configIDs: number[]) {
+    this.fields.dataOptions.map(a => this.runClear(a, configIDs));
   }
 
-  checkField(c: IConfig, field: FieldComponent, config: CompareConfig) {
-    const stack = c.config.find(a => a.name === field.options.name && a.subname === field.options.subname && !field.options.hidden);
-    if (
-      stack &&
-      (String(stack.value) !== String(field.options.value) || (isObject(stack.value) && JSON.stringify(stack.value) !== JSON.stringify(field.options.value)))
-    ) {
-      field.addCompare({ config, stack });
-      field.cdetector.markForCheck();
+  runClear(a: FieldOptions | PanelOptions, configIDs: number[]) {
+    if ('options' in a) a.options.map(b => this.runClear(b, configIDs));
+    else if (a.compare.length) a.compare = a.compare.filter(b => configIDs.includes(b.id));
+    return a;
+  }
+
+  checkValue(configs: CompareConfig[]) {
+    this.fields.dataOptions.map(a => this.runCheck(a, configs));
+  }
+
+  runCheck(a: FieldOptions | PanelOptions, configs: CompareConfig[]) {
+    if ('options' in a) a.options.map(b => this.runCheck(b, configs));
+    else this.checkField(a, configs);
+    return a;
+  }
+
+  checkField(a: FieldOptions, configs: CompareConfig[]) {
+    configs
+      .filter(b => a.compare.every(e => e.id !== b.id))
+      .map(c => {
+        const co = this.findOldField(a.key, c);
+        if (co && (String(co.value) !== String(a.value) || (isObject(a.value) && JSON.stringify(a.value) !== JSON.stringify(co.value)))) a.compare.push(co);
+      });
+    return a;
+  }
+
+  findOldField(key: string, cc: CompareConfig) {
+    const value = key
+      .split('/')
+      .reverse()
+      .reduce((p, c) => p[c], cc.config);
+    if (value !== null && value !== undefined && String(value)) {
+      const { id, date, color } = { ...cc };
+      return { id, date, color, value };
     }
   }
 

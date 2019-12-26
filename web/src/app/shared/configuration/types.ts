@@ -9,8 +9,28 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { IYspec } from './yspec-fields/yspec.service';
+import { IYspec } from './YspecStructure';
+
 export type stateType = 'created' | 'locked';
+
+export type ConfigValueTypes =
+  | 'structure'
+  | 'group'
+  | 'dict'
+  | 'string'
+  | 'integer'
+  | 'int'
+  | 'float'
+  | 'boolean'
+  | 'option'
+  | 'json'
+  | 'map'
+  | 'list'
+  | 'file'
+  | 'text'
+  | 'password';
+export type simpleTypes = string | number | boolean;
+export type ConfigResultTypes = simpleTypes | simpleTypes[] | object | null;
 
 export interface UIoptions {
   invisible?: boolean;
@@ -37,7 +57,7 @@ interface ValidatorInfo {
  * Property config object from backend
  */
 export interface FieldStack {
-  type: string;
+  type: ConfigValueTypes;
   name: string;
   display_name: string;
   subname: string;
@@ -57,15 +77,18 @@ export interface FieldStack {
  */
 export interface IConfig {
   id?: number;
-  date?: Date;
+  date?: string;
   description?: string;
   config: FieldStack[];
   attr?: { [group: string]: { active: boolean } };
 }
 
 export interface ConfigOptions {
+  key?: string;
+  type: ConfigValueTypes;
   display_name: string;
   name: string;
+  subname: string;
   hidden: boolean;
   read_only: boolean;
   ui_options?: UIoptions;
@@ -73,21 +96,30 @@ export interface ConfigOptions {
 }
 
 export interface PanelOptions extends ConfigOptions {
-  options: FieldOptions[];
+  options: (FieldOptions | PanelOptions)[];
   activatable?: boolean;
+}
+
+export interface CompareConfig extends IConfig {
+  color: string;
+}
+
+interface Compare {
+  id: number;
+  date: string;
+  value: string;
+  color: string;
 }
 
 /**
  * For Material form controls
  */
 export interface FieldOptions extends ConfigOptions {
-  key: string;
-  subname: string;
   default: null | string | number | boolean | object | any[];
   value: string | number | boolean | object | string[] | null;
   controlType: string;
-  type: string;
   validator: ValidatorInfo;
   disabled?: boolean;
   limits?: ILimits;
+  compare: Compare[];
 }
