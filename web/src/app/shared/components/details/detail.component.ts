@@ -13,7 +13,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ChannelService, ClusterService } from '@app/core';
 import { EventMessage, SocketState } from '@app/core/store';
-import { IAction, Entities, Issue } from '@app/core/types';
+import { IAction, Entities, Issue, Cluster, Host } from '@app/core/types';
 import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
 import { switchMap, tap } from 'rxjs/operators';
@@ -42,6 +42,14 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
     private channel: ChannelService
   ) {
     super(socket);
+  }
+
+  isUpgradable(current: Entities) {
+    return (current as Cluster).upgradable;
+  }
+
+  getDisplayName(current: Entities) {
+    return 'display_name' in current ? current.display_name || current.name : (current as Host).fqdn;
   }
 
   getParentLink(objects: { id: number; type: string }[], ind: number) {
