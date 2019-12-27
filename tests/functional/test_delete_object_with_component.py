@@ -9,10 +9,10 @@ from tests.library import errorcodes as err
 
 @pytest.fixture()
 def cluster(sdk_client_fs: ADCMClient):
-    hostprovider_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__) + '/hostprovider')
+    hostprovider_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
     provider = hostprovider_bundle.provider_create("test")
     host = provider.host_create("test_host")
-    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__) + '/cluster_bundle')
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_bundle'))
     cluster = bundle.cluster_create("test")
     service = cluster.service_add(name="zookeeper")
     cluster.host_add(host)

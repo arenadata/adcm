@@ -10,10 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-- type: provider
-  name: sample_provider
-  version: &version 0.4
+-
+  type: cluster
+  name: Hive
+  version: 4
 
-- type: host
-  name: vHost
-  version: "1.0"
+- type: service
+  name: hadoop
+  version: 2.1
+
+  import:
+     hadoop:
+        versions:
+           min: 1.8
+           max: 2.5
