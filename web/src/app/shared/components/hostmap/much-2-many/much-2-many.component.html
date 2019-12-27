@@ -1,6 +1,6 @@
 <div [ngClass]="{'m2m':true, 'selected': model.isSelected, 'linked': model.isLink}">
   <div class="title-container">
-    <button mat-button [disabled]="isDisabled()" class="title" (click)="clickToTitle()">
+    <button mat-button [disabled]="isDisabled()" class="title" [appTooltip]="model.name" [appTooltipShowByCondition]="true" (click)="clickToTitle()">
       <span>{{ model.name }}</span>
     </button>
     <button mat-raised-button color="primary"   
@@ -8,7 +8,7 @@
   </div>
   <div [ngClass]="{'relations-list':true, 'show': model.relations.length && isShow}">
     <div *ngFor="let rel of model.relations">
-      <span>{{ rel.name }}</span>
+      <span [appTooltip]="rel.name" [appTooltipShowByCondition]="true">{{ rel.name }}</span>
       <button [disabled]="clearDisabled(rel)" mat-icon-button color="primary" (click)="clearRelation(rel)">
         <mat-icon>clear</mat-icon>
       </button>

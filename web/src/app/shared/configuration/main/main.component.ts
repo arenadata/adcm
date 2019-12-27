@@ -14,7 +14,6 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit, V
 import { ClusterService } from '@app/core';
 import { ApiService } from '@app/core/api';
 import { EventMessage, SocketState } from '@app/core/store';
-import { IConfig, parseValueConfig } from '@app/core/types';
 import { SocketListener } from '@app/shared/directives';
 import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
@@ -24,6 +23,7 @@ import { FieldService, IToolsEvent } from '../field.service';
 import { ConfigFieldsComponent } from '../fields/fields.component';
 import { HistoryComponent } from '../tools/history.component';
 import { ToolsComponent } from '../tools/tools.component';
+import { IConfig } from '../types';
 
 @Component({
   selector: 'app-config-form',
@@ -97,7 +97,7 @@ export class ConfigComponent extends SocketListener implements OnInit {
   }
 
   filter(c: { advanced: boolean; search: string }) {
-    this.fields.panels = this.service.filterApply(c);
+    this.fields.dataOptions = this.service.filterApply(c);
   }
 
   socketListener(m: EventMessage) {
@@ -126,10 +126,8 @@ export class ConfigComponent extends SocketListener implements OnInit {
     const form = this.service.form;
     if (form.valid) {
       this.saveFlag = true;
-      const config = parseValueConfig(
-          this.rawConfig.config.filter(a => !a.read_only && a.type !== 'group'),
-          form.value
-        ),
+
+      const config = this.service.parseValue(),
         attr = this.rawConfig.attr,
         description = this.tools.descriptionFormControl.value;
 
@@ -142,6 +140,10 @@ export class ConfigComponent extends SocketListener implements OnInit {
         .pipe(this.takeUntil())
         .subscribe(c => {
           this.saveFlag = false;
+          /**
+           * TODO: history does not update! 
+           *  => her need the new this.field.dataOptions
+           */
           this.historyComponent.versionID = c.id;
           this.historyComponent.getData();
           this.cdRef.detectChanges();

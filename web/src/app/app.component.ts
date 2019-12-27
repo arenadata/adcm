@@ -51,7 +51,7 @@ import { filter, tap } from 'rxjs/operators';
         <span>ARENADATA &copy; {{ currentYear }}</span>
       </div>
     </footer>
-  `,
+  `
 })
 export class AppComponent implements OnInit {
   currentYear = new Date().getFullYear();
@@ -107,7 +107,7 @@ export class AppComponent implements OnInit {
     this.message.message$.subscribe((error: Message) =>
       this.snackBar.open(`${error.title} ${error.subtitle || ''}`, 'Hide', {
         duration: 5000,
-        panelClass: 'snack-bar-error',
+        panelClass: 'snack-bar-error'
       })
     );
 

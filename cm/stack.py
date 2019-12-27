@@ -19,7 +19,6 @@ import toml
 import hashlib
 import yspec.checker
 
-from django.db import transaction
 from rest_framework import status
 
 from cm.logger import log
@@ -165,7 +164,6 @@ def get_license_hash(proto, conf, bundle_hash):
     return sha1.hexdigest()
 
 
-@transaction.atomic
 def save_prototype(path, conf, def_type, bundle_hash):
     # validate_name(type_name, '{} type name "{}"'.format(def_type, conf['name']))
     proto = StagePrototype(name=conf['name'], type=def_type, path=path, version=conf['version'])
@@ -204,8 +202,10 @@ def check_component_constraint_definition(proto, name, conf):
             return
         elif item == '+':
             return
+        elif item == 'odd':
+            return
         else:
-            msg = 'constraint item of component "{}" in {} should be only digit or "+"'
+            msg = 'constraint item of component "{}" in {} should be only digit or "+" or "odd"'
             err('INVALID_COMPONENT_DEFINITION', msg.format(name, ref))
 
     if not isinstance(const, list):
@@ -466,6 +466,7 @@ def save_actions(proto, conf, bundle_hash):
         dict_to_obj(ac, 'button', action)
         dict_to_obj(ac, 'display_name', action)
         dict_to_obj(ac, 'description', action)
+        dict_to_obj(ac, 'disclaimer', action)
         dict_json_to_obj(ac, 'params', action)
         dict_json_to_obj(ac, 'log_files', action)
         fix_display_name(ac, action)
@@ -557,7 +558,7 @@ def check_action(proto, action, act_config):
             err('WRONG_ACTION_TYPE', '{} has unknown script_type "{}"'.format(ref, script_type))
     allow = (
         'type', 'script', 'script_type', 'scripts', 'states', 'params', 'config',
-        'log_files', 'hc_acl', 'button', 'display_name', 'description',
+        'log_files', 'hc_acl', 'button', 'display_name', 'description', 'disclaimer',
     )
     check_extra_keys(act_config, allow, ref)
 
@@ -828,10 +829,9 @@ def validate_name(value, name):
 
 
 def fix_display_name(conf, obj):
-    if not conf:
+    if isinstance(conf, dict) and 'display_name' in conf:
         return
-    if 'display_name' not in conf:
-        obj.display_name = obj.name
+    obj.display_name = obj.name
 
 
 def in_dict(dictionary, key):

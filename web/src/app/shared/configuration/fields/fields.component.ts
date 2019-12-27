@@ -10,32 +10,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, EventEmitter, Input, Output, QueryList, ViewChildren } from '@angular/core';
-import { IConfig, PanelOptions } from '@app/core/types';
+import { FormGroup } from '@angular/forms';
 
 import { FieldService } from '../field.service';
 import { FieldComponent } from '../field/field.component';
 import { GroupFieldsComponent } from '../group-fields/group-fields.component';
-import { FormGroup } from '@angular/forms';
+import { IConfig, PanelOptions, FieldOptions } from '../types';
 
 @Component({
   selector: 'app-config-fields',
   template: `
-    <ng-container *ngFor="let panel of panels; trackBy: trackBy">
-      <app-field
-        class="alone"
-        [form]="form"
-        *ngIf="panel.options.length === 1 && !panel.options[0].subname && !panel.options[0].hidden; else more"
-        [options]="panel.options[0]"
-        [ngClass]="{ 'read-only': panel.options[0].disabled }"
-      ></app-field>
+    <ng-container *ngFor="let item of dataOptions; trackBy: trackBy">
+      <app-group-fields *ngIf="panelsOnly(item); else more" [panel]="item" [form]="form"></app-group-fields>
       <ng-template #more>
-        <app-group-fields *ngIf="!panel.hidden" [panel]="panel" [form]="form"></app-group-fields>
+        <app-field *ngIf="!item.hidden" class="alone" [form]="form" [options]="item" [ngClass]="{ 'read-only': item.disabled }"></app-field>
       </ng-template>
     </ng-container>
   `
 })
 export class ConfigFieldsComponent {
-  panels: PanelOptions[] = [];
+  dataOptions: (FieldOptions | PanelOptions)[] = [];
   form = new FormGroup({});
 
   @Output()
@@ -51,13 +45,17 @@ export class ConfigFieldsComponent {
 
   @Input()
   set model(data: IConfig) {
-    this.panels = this.service.getPanels(data);
-    this.form = this.service.toFormGroup();
+    this.dataOptions = this.service.getPanels(data);
+    this.form = this.service.toFormGroup(this.dataOptions);
     this.shapshot = { ...this.form.value };
     this.event.emit({ name: 'load', data: { form: this.form } });
   }
 
   constructor(private service: FieldService) {}
+
+  panelsOnly(item: FieldOptions | PanelOptions) {
+    return 'options' in item && !item.hidden;
+  }
 
   trackBy(index: number, item: PanelOptions): string {
     return item.name;

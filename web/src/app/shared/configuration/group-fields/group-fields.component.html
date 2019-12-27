@@ -1,7 +1,7 @@
 <mat-expansion-panel [expanded]="checked" [disabled]="!checked" [ngClass]="{ panel: true, advanced: isAdvanced() }" #ep>
   <mat-expansion-panel-header>
     <mat-panel-title class="title">
-      <span>{{ panel.label }}</span>
+      <span>{{ panel.display_name }}</span>
       <mat-slide-toggle *ngIf="panel.activatable" [checked]="checked" (change)="activeToggle($event)">
       </mat-slide-toggle>
     </mat-panel-title>
@@ -12,8 +12,13 @@
     </mat-panel-description>
   </mat-expansion-panel-header>
   <div class="pad">
-    <ng-container *ngFor="let options of panel.options; trackBy: trackBy">
-        <app-field *ngIf="!options.hidden" [form]="form" [options]="options"></app-field>
-    </ng-container>    
+    <ng-container *ngFor="let item of panel.options; trackBy: trackBy">
+      <ng-container *ngIf="panelsOnly(item); else simple">
+        <app-group-fields *ngIf="!item.hidden" [panel]="item" [form]="form" class="asfield"></app-group-fields>
+      </ng-container>
+      <ng-template #simple>
+        <app-field *ngIf="!item.hidden" [form]="form" [options]="item"></app-field>
+      </ng-template>
+    </ng-container>
   </div>
 </mat-expansion-panel>

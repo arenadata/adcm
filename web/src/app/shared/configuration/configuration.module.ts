@@ -16,18 +16,29 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { FormElementsModule } from '../form-elements/form-elements.module';
 import { MaterialModule } from '../material.module';
 import { StuffModule } from '../stuff.module';
+import { FieldService } from './field.service';
 import { FieldComponent } from './field/field.component';
 import { ConfigFieldsComponent } from './fields/fields.component';
 import { GroupFieldsComponent } from './group-fields/group-fields.component';
 import { ConfigComponent } from './main/main.component';
 import { ColorOptionDirective } from './tools/color-option.directive';
-import { SearchComponent } from './tools/search.component';
 import { HistoryComponent } from './tools/history.component';
+import { SearchComponent } from './tools/search.component';
 import { ToolsComponent } from './tools/tools.component';
 
 @NgModule({
-  declarations: [FieldComponent, ConfigFieldsComponent, GroupFieldsComponent, ConfigComponent, HistoryComponent, SearchComponent, ColorOptionDirective, ToolsComponent],
+  declarations: [
+    FieldComponent,
+    ConfigFieldsComponent,
+    GroupFieldsComponent,
+    ConfigComponent,
+    HistoryComponent,
+    SearchComponent,
+    ColorOptionDirective,
+    ToolsComponent
+  ],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, MaterialModule, StuffModule, FormElementsModule],
   exports: [ConfigComponent, ConfigFieldsComponent],
+  providers: [FieldService]
 })
 export class ConfigurationModule {}

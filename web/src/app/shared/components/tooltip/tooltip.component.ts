@@ -12,13 +12,13 @@
 import { Component, ElementRef, EventEmitter, HostListener, Injector, Input, OnDestroy, OnInit, Renderer2, Type } from '@angular/core';
 import { Router } from '@angular/router';
 import { BaseDirective } from '@app/shared/directives';
-import { delay } from 'rxjs/operators';
+import { delay, take } from 'rxjs/operators';
 
 import { IssueInfoComponent } from '../issue-info.component';
 import { StatusInfoComponent } from '../status-info.component';
 import { ComponentData, TooltipOptions, TooltipService } from './tooltip.service';
 
-const POSITION_MARGIN = 10;
+const POSITION_MARGIN = 20;
 
 @Component({
   selector: 'app-simple-text',
@@ -67,49 +67,52 @@ export class TooltipComponent extends BaseDirective implements OnInit, OnDestroy
   }
 
   hide() {
-    this.renderer.setAttribute(this.el.nativeElement, 'style', `opacity: 0`);
-    setTimeout(() => this.clear(), 300);
+    this.renderer.setAttribute(this.el.nativeElement, 'style', `opacity: 0; height: auto;`);
+    this.clear();
   }
 
   clear() {
     if (this.source) {
-      this.renderer.removeChild(this.renderer.parentNode(this.source), this.el.nativeElement);
       this.source = null;
+      this.CurrentComponent = null;
     }
   }
 
   position() {
     const o = this.options;
     const el = this.el.nativeElement;
-
-    this.renderer.appendChild(this.renderer.parentNode(o.source), el);
-
     const bodyWidth = document.querySelector('body').offsetWidth,
       bodyHeight = (document.getElementsByTagName('app-root')[0] as HTMLElement).offsetHeight,
-      // extLeft = o.event.x - el.offsetWidth,
-      extRight = o.event.x + el.offsetWidth + o.source.offsetWidth / 2,
-      // extTop = o.event.y - el.offsetHeight,
-      extBottom = o.event.y + el.offsetHeight;
+      eLeft = o.event.x - el.offsetWidth,
+      eRight = o.event.x + el.offsetWidth,
+      eTop = o.event.y - el.offsetHeight,
+      eBottom = o.event.y + el.offsetHeight;
+    const position: any = { left: '', top: '', bottom: '', right: '', height: '' };
 
-    const dx = extRight - bodyWidth,
-      dy = o.source.offsetHeight / 2 + el.offsetHeight / 2 + POSITION_MARGIN,
-      dH = bodyHeight - o.event.y - o.source.offsetHeight - POSITION_MARGIN,
-      bottom = bodyHeight < extBottom ? (o.event.y + el.offsetHeight > bodyHeight ? `bottom: 0px; height: ${dH}px;` : `bottom: ${POSITION_MARGIN}px;`) : '';
+    this.renderer.setAttribute(this.el.nativeElement, 'style', `opacity: 0; height: auto;`);
 
-    let xMargin = '';
-    let yMargin = '';
+    switch (o.options.position) {
+      case 'bottom':
+        position.top = o.event.y + o.source.offsetHeight / 2;
 
-    if (o.options.position === 'top' || o.options.position === 'bottom') {
-      xMargin = bodyWidth < extRight ? `margin-left: -${dx}px;` : '';
-      yMargin = `margin-top: ${o.options.position === 'top' ? '-' : ''}${dy}px;`;
+        if (eRight > bodyWidth) {
+          position.right = POSITION_MARGIN * 2;
+        } else {
+          position.left = o.event.x;
+        }
+
+        if (eBottom > bodyHeight) {
+          position.height = bodyHeight - position.top - POSITION_MARGIN;
+        }
+
+        break;
     }
 
-    if (o.options.position === 'left' || o.options.position === 'right') {
-      yMargin = '';
-      xMargin = `margin-left: ${dx}px;`;
-    }
+    this.renderer.setAttribute(el, 'style', `opacity: .9; ${this.getPositionString(position)}`);
+  }
 
-    this.renderer.setAttribute(el, 'style', `opacity: .9; ${yMargin} ${xMargin} ${bottom}`);
+  getPositionString(po: any) {
+    return Object.keys(po).reduce((p, c) => p + (po[c] ? `${c}: ${po[c]}px;` : ''), '');
   }
 
   buildComponent(o: TooltipOptions) {
@@ -118,7 +121,7 @@ export class TooltipComponent extends BaseDirective implements OnInit, OnDestroy
     this.CurrentComponent = { issue: IssueInfoComponent, status: StatusInfoComponent }[this.options.options.componentName] || SimpleTextComponent;
 
     const emitter = new EventEmitter();
-    emitter.pipe(delay(100), this.takeUntil()).subscribe(() => this.position());
+    emitter.pipe(take(1), delay(100), this.takeUntil()).subscribe(() => this.position());
 
     this.componentInjector = Injector.create({
       providers: [

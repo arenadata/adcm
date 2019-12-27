@@ -9,39 +9,35 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input } from '@angular/core';
+import { ChangeDetectorRef, Component, Input, OnInit } from '@angular/core';
 import { FormGroup } from '@angular/forms';
-import { FieldOptions, FieldStack, isObject } from '@app/core/types';
+import { isObject } from '@app/core/types';
 
-import { CompareConfig } from '../field.service';
-
-interface Compare {
-  config: CompareConfig;
-  stack: FieldStack;
-}
+import { FieldOptions } from '../types';
 
 @Component({
   selector: 'app-field',
   templateUrl: './field.component.html',
-  styleUrls: ['./field.component.scss'],
-  //changeDetection: ChangeDetectionStrategy.OnPush,
+  styleUrls: ['./field.component.scss']
 })
-export class FieldComponent {
+export class FieldComponent implements OnInit {
   @Input()
   options: FieldOptions;
   @Input()
   form: FormGroup;
 
-  compare: Compare[] = [];
+  currentFormGroup: FormGroup;
 
   constructor(public cdetector: ChangeDetectorRef) {}
 
-  getTestName() {
-    return `${this.options.name}${this.options.subname ? '/' + this.options.subname : ''}`;
+  ngOnInit() {
+    const [name, ...other] = this.options.key.split('/');
+    this.currentFormGroup = other.reverse().reduce((p, c) => p.get(c), this.form) as FormGroup;
+    return this.currentFormGroup;
   }
 
-  addCompare(c: { config: CompareConfig; stack: FieldStack }) {
-    if (!this.compare.some(a => a.config.id === c.config.id && a.stack.name === c.stack.name)) this.compare.push(c);
+  getTestName() {
+    return `${this.options.name}${this.options.subname ? '/' + this.options.subname : ''}`;
   }
 
   outputValue(value: any) {
@@ -54,22 +50,8 @@ export class FieldComponent {
     return v.length > 80 ? v : '';
   }
 
-  clearCompare(c: number[]) {
-    this.compare = this.compare.filter(a => c.includes(a.config.id));
-  }
-
   isAdvanced() {
     return this.options.ui_options && this.options.ui_options.advanced;
   }
 
-  // for all children
-  // TODO: https://angular.io/guide/dependency-injection-navtree
-  get isValid() {
-    const field = this.form.controls[this.options.key];
-    return field.disabled || (field.valid && (field.dirty || field.touched));
-  }
-
-  hasError(name: string) {
-    return this.form.controls[this.options.key].hasError(name);
-  }
 }

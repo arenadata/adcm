@@ -88,11 +88,11 @@ export class HostComponent implements DynamicComponent, OnInit, OnDestroy {
     const a$ = this.api.post<Host>(this.url, value);
     const b$ = a$.pipe(map(host => (value.cluster_id ? this.api.post(link, { id: host.id }) : of(true))));
 
-    b$.pipe(
-      concatAll(),
-      tap(() => (this.model.actions.find(a => a.name === 'addHost').title = 'Add host')),
-      tap(() => (this.expanded = false))
-    ).subscribe(() => this.refresh());
+    // b$.pipe(
+    //   concatAll(),
+    //   tap(() => (this.model.actions.find(a => a.name === 'addHost').title = 'Add host')),
+    //   tap(() => (this.expanded = false))
+    // ).subscribe(() => this.refresh());
   }
 
   action(b: IButton) {

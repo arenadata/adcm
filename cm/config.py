@@ -32,7 +32,7 @@ LOG_FILE = os.path.join(LOG_DIR, 'adcm.log')
 
 SECRETS_FILE = os.path.join(BASE_DIR, 'data', 'var', 'secrets.json')
 
-STATUS_SECRET_KEY = None
+STATUS_SECRET_KEY = ''
 
 if os.path.exists(SECRETS_FILE):
     with open(SECRETS_FILE) as f:

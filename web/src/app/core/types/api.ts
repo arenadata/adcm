@@ -59,6 +59,7 @@ export interface Cluster extends ApiBase {
   imports: string;
   bind: string;
   serviceprototype: string;
+  upgradable: boolean;
 }
 
 export interface Provider extends ApiBase {

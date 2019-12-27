@@ -9,27 +9,34 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Directive, OnInit, Input } from '@angular/core';
+import { Directive, Input, OnInit } from '@angular/core';
 import { FormGroup } from '@angular/forms';
-import { FieldOptions } from '@app/core/types';
+
+import { FieldOptions } from '../configuration/types';
+import { BaseDirective } from '../directives';
 
 @Directive({
   selector: '[appField]'
 })
-export class FieldDirective implements OnInit {
+export class FieldDirective extends BaseDirective implements OnInit {
   @Input() form: FormGroup;
   @Input() field: FieldOptions;
 
   ngOnInit() {
-    this.form.controls[this.field.key].markAsTouched();
+    const field = this.find();
+    field.markAsTouched();    
+  }
+
+  find() {
+    return this.form.controls[this.field.name];
   }
 
   get isValid() {
-    const field = this.form.controls[this.field.key];
+    const field = this.find();
     return field.disabled || (field.valid && (field.dirty || field.touched));
   }
 
   hasError(name: string) {
-    return this.form.controls[this.field.key].hasError(name);
+    return this.find().hasError(name);
   }
 }

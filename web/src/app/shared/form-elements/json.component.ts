@@ -18,10 +18,10 @@ import { FieldDirective } from './field.directive';
   selector: 'app-fields-json',
   template: `
     <ng-container [formGroup]="form">
-      <label [appTooltip]="field.label" [appTooltipShowByCondition]="true">{{ field.label }}:</label>
+      <label [appTooltip]="field.display_name" [appTooltipShowByCondition]="true">{{ field.display_name }}:</label>
       <mat-form-field class="full-width" [floatLabel]="'never'">
         <mat-error *ngIf="!isValid">
-          <mat-error *ngIf="hasError('required')">Field [{{ field.label }}] is required!</mat-error>
+          <mat-error *ngIf="hasError('required')">Field [{{ field.display_name }}] is required!</mat-error>
           <mat-error *ngIf="hasError('jsonParseError') && (form.touched || form.dirty)">Json parsing error!</mat-error>
         </mat-error>
         <div class="textarea-wrapper">
@@ -30,7 +30,7 @@ import { FieldDirective } from './field.directive';
             [appMTextarea]="field.key"
             matInput
             class="full-width json_field"
-            [formControlName]="field.key"
+            [formControlName]="field.name"
             [readonly]="field.disabled"
           ></textarea>
         </div>
@@ -43,7 +43,7 @@ import { FieldDirective } from './field.directive';
 export class JsonComponent extends FieldDirective implements OnInit {
   ngOnInit() {
     super.ngOnInit();
-    const control = this.form.controls[this.field.key];
+    const control = this.form.controls[this.field.name];
     control.valueChanges.pipe(debounceTime(500)).subscribe(value => {
       try {
         const v = JSON.parse(value);

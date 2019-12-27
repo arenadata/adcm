@@ -200,6 +200,7 @@ class Action(models.Model):
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
+    disclaimer = models.TextField(blank=True)
 
     type = models.CharField(max_length=16, choices=ACTION_TYPE)
     button = models.CharField(max_length=64, default=None, null=True)
@@ -354,6 +355,13 @@ class TaskLog(models.Model):
     finish_date = models.DateTimeField()
 
 
+class CheckLog(models.Model):
+    job_id = models.PositiveIntegerField(default=0)
+    title = models.TextField()
+    message = models.TextField()
+    result = models.BooleanField()
+
+
 # Stage: Temporary tables to load bundle
 
 class StagePrototype(models.Model):
@@ -408,6 +416,7 @@ class StageAction(models.Model):
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
+    disclaimer = models.TextField(blank=True)
 
     type = models.CharField(max_length=16, choices=ACTION_TYPE)
     button = models.CharField(max_length=64, default=None, null=True)
