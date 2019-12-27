@@ -47,25 +47,26 @@ import { BaseFormDirective } from './base-form.directive';
       <div *ngIf="expanded" class="inner">
         <app-add-provider [displayMode]="1" (cancel)="createdProvider($event)"></app-add-provider>
       </div>
-
       <app-input [form]="form" [label]="'Fully qualified domain name'" [controlName]="'fqdn'" [isRequired]="true"></app-input>
 
-      <div class="row" *ngIf="!noCluster">
-        <mat-form-field class="full-width">
-          <mat-select appInfinityScroll (topScrollPoint)="getNextPage()" placeholder="Cluster" formControlName="cluster_id">
-            <mat-option value="">...</mat-option>
-            <mat-option *ngFor="let c of clusters$ | async" [value]="c.id">{{ c.name }}</mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <p class="controls">
-        <button mat-raised-button [disabled]="!form.valid" color="accent" (click)="save()">Save</button>
-        <button mat-raised-button color="primary" (click)="onCancel()">Cancel</button>
-      </p>
+      <ng-container *ngIf="!noCluster">
+        <div class="row">
+          <mat-form-field class="full-width">
+            <mat-select appInfinityScroll (topScrollPoint)="getNextPage()" placeholder="Cluster" formControlName="cluster_id">
+              <mat-option value="">...</mat-option>
+              <mat-option *ngFor="let c of clusters$ | async" [value]="c.id">{{ c.name }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <p class="controls">
+          <button mat-raised-button [disabled]="!form.valid" color="accent" (click)="save()">Save</button>
+          <button mat-raised-button color="primary" (click)="onCancel()">Cancel</button>
+        </p>
+      </ng-container>
     </ng-container>
   `,
   styles: ['.inner {padding: 6px 8px;background-color: #4e4e4e;margin: 0 -6px;}'],
-  providers: [ActionsDirective],
+  providers: [ActionsDirective]
 })
 export class HostComponent extends BaseFormDirective implements OnInit {
   @Input() noCluster = false;
@@ -89,7 +90,7 @@ export class HostComponent extends BaseFormDirective implements OnInit {
       .get('provider_id')
       .valueChanges.pipe(
         this.takeUntil(),
-        filter(a => a),
+        filter(a => a)
       )
       .subscribe(value => this.checkAction(+value));
   }
@@ -125,9 +126,9 @@ export class HostComponent extends BaseFormDirective implements OnInit {
       .addHost(data)
       .pipe(
         this.takeUntil(),
-        tap(() => this.form.controls['fqdn'].setValue('')),
+        tap(() => this.form.controls['fqdn'].setValue(''))
       )
-      .subscribe(host => this.onCancel(host, false));
+      .subscribe(host => this.onCancel(host));
   }
 
   createdProvider(id: number) {
