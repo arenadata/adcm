@@ -31,9 +31,9 @@ import { CompTile, HostTile, Post, StatePost, Stream, Tile } from '../types';
       state('show', style({ opacity: 1 })),
       state('hide', style({ opacity: 0 })),
       transition('hide => show', [animate('.2s')]),
-      transition('show => hide', [animate('2s')]),
-    ]),
-  ],
+      transition('show => hide', [animate('2s')])
+    ])
+  ]
 })
 export class ServiceHostComponent extends SocketListener implements OnInit {
   countConstraint = 0;
@@ -63,7 +63,10 @@ export class ServiceHostComponent extends SocketListener implements OnInit {
 
   statePost = new StatePost();
   loadPost = new StatePost();
-  sourceMap = new Map<string, Tile[]>([['host', []], ['compo', []]]);
+  sourceMap = new Map<string, Tile[]>([
+    ['host', []],
+    ['compo', []]
+  ]);
   stream = new Stream();
 
   saveFlag = false;
@@ -125,12 +128,16 @@ export class ServiceHostComponent extends SocketListener implements OnInit {
       .get<{ component: adcmComponent[]; host: Host[]; hc: Post[] }>(this.cluster.hostcomponent)
       .pipe(
         tap(a => {
-          if (a.host) this.sourceMap.set('host', a.host.map(h => new HostTile(h.id, h.fqdn)));
+          if (a.host)
+            this.sourceMap.set(
+              'host',
+              a.host.map(h => new HostTile(h.id, h.fqdn))
+            );
         }),
         tap(a => {
           if (a.component) {
             const list = a.component.map(
-              c => new CompTile(c.id, c.service_id, c.display_name, constraint(c.constraint), c.service_state !== 'created', getActions(c)),
+              c => new CompTile(c.id, c.service_id, c.display_name, constraint(c.constraint), c.service_state !== 'created', getActions(c))
             );
 
             this.sourceMap.set('compo', [...this.sourceMap.get('compo'), ...list]);
@@ -145,7 +152,7 @@ export class ServiceHostComponent extends SocketListener implements OnInit {
             this.initFlag = false;
           }
         }),
-        this.takeUntil(),
+        this.takeUntil()
       )
       .subscribe();
   }
@@ -286,7 +293,7 @@ export class ServiceHostComponent extends SocketListener implements OnInit {
         catchError(e => {
           this.showPopup = false;
           return throwError(e);
-        }),
+        })
       )
       .subscribe(data => {
         this.loadPost.update(data);
@@ -319,6 +326,9 @@ export class ServiceHostComponent extends SocketListener implements OnInit {
       const a = comp.limit,
         b = a.length - 1,
         c = comp.relations.length;
+      // if (a.includes('odd')) {
+      //   //return comp.relations.length === 0 || comp.relations.length % 2 === 0;
+      // }
       return a[b] === '+' || a[b] > c;
     } else return true;
   }
