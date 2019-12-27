@@ -494,7 +494,8 @@ def multi_bind(cluster, service, bind_list):   # pylint: disable=too-many-locals
     check_bind_post(bind_list)
     import_obj = get_bind_obj(cluster, service)
     old_bind = {}
-    for cb in ClusterBind.objects.filter(cluster=cluster, service=service):
+    cb_list = ClusterBind.objects.filter(cluster=cluster, service=service)
+    for cb in cb_list:
         old_bind[cook_key(cb.source_cluster, cb.source_service)] = cb
 
     new_bind = {}
@@ -534,9 +535,9 @@ def multi_bind(cluster, service, bind_list):   # pylint: disable=too-many-locals
         for key in new_bind:
             if key in old_bind:
                 continue
-            (pi, cbind, export_obj) = new_bind[key]
-            cbind.save()
-            check_multi_bind(pi, cluster, service, cbind.source_cluster, cbind.source_service)
+            (pi, cb, export_obj) = new_bind[key]
+            check_multi_bind(pi, cluster, service, cb.source_cluster, cb.source_service, cb_list)
+            cb.save()
             log.info('bind %s to %s', obj_ref(export_obj), obj_ref(import_obj))
 
         for key in old_bind:
@@ -613,10 +614,12 @@ def bind(cluster, export_cluster, export_service_id):   # pylint: disable=too-ma
     }
 
 
-def check_multi_bind(actual_import, cluster, service, export_cluster, export_service):
+def check_multi_bind(actual_import, cluster, service, export_cluster, export_service, cb_list=None):
     if actual_import.multibind:
         return
-    for cb in ClusterBind.objects.filter(cluster=cluster, service=service):
+    if not cb_list:
+        cb_list = ClusterBind.objects.filter(cluster=cluster, service=service)
+    for cb in cb_list:
         if cb.source_service:
             source_proto = cb.source_service.prototype
         else:

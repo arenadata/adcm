@@ -10,6 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { InnerIssue, Issue } from './issue';
+import { FieldStack, ConfigValueTypes, ConfigResultTypes } from '@app/shared/configuration/types';
 
 export function getPattern(name: string): RegExp {
   const fn = {
@@ -142,23 +143,23 @@ export function randomInteger(max: number, min: number = 0): number {
  * @param {*} value - Form value
  * @returns collection with inner properties
  */
-export function parseValueConfig(input: any[], value: any) {
-  return input.reduce((p, a) => {
-    if (a.subname) {
-      if (!p.hasOwnProperty(a.name)) p[a.name] = {};
-      p[a.name][a.subname] = checkValue(value[`${a.subname ? a.subname + '/' : ''}${a.name}`], a.type);
-    } else p[a.name] = checkValue(value[a.name], a.type);
-    return p;
-  }, {});
+export function parseValueConfig(input: FieldStack[], value: any) {
+  return input.reduce((p, a) => nameCheck(value, a, p), {});
 }
 
-export type ConfigValueTypes = 'structure' | 'string' | 'integer' | 'float' | 'boolean' | 'option' | 'json' | 'map' | 'list' | 'file' | 'text' | 'password';
+function nameCheck(value: any, a: FieldStack, p: {}) {
+  if (a.subname) {
+    if (!p.hasOwnProperty(a.name)) p[a.name] = {};
+    p[a.name][a.subname] = checkValue(value[`${a.subname ? a.subname + '/' : ''}${a.name}`], a.type);
+  } else p[a.name] = checkValue(value[a.name], a.type);
+  return p;
+}
 
 /**
  * Type casting after form editing
  * Option type may be string | number
  */
-export function checkValue(value: string | boolean | object | Array<string> | null, type: ConfigValueTypes) {
+export function checkValue(value: ConfigResultTypes, type: ConfigValueTypes) {
   if (value === '' || value === null) return null;
 
   switch (type) {
@@ -191,4 +192,5 @@ export function checkValue(value: string | boolean | object | Array<string> | nu
       default:
         return value;
     }
+  return value;
 }

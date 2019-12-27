@@ -26,7 +26,7 @@ import { FieldDirective } from './field.directive';
           <mat-error *ngIf="hasError('max')">Field [{{ field.display_name }}] value cannot be greater than {{ field.validator.max }}!</mat-error>
         </mat-error>
         <div class="textarea-wrapper">
-          <textarea matInput class="full-width json_field" [appMTextarea]="field.key" [formControlName]="field.key" [readonly]="field.disabled"></textarea>
+          <textarea matInput class="full-width json_field" [appMTextarea]="field.key" [formControlName]="field.name" [readonly]="field.disabled"></textarea>
         </div>
       </mat-form-field>
       <span class="info"><mat-icon matSuffix *ngIf="field.description" [appTooltip]="field.description"> info_outline</mat-icon></span>

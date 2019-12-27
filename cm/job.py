@@ -29,8 +29,10 @@ from cm.adcm_config import obj_ref
 from cm.errors import raise_AdcmEx as err
 from cm.inventory import get_obj_config
 from cm.logger import log
-from cm.models import (Cluster, Action, SubAction, TaskLog, JobLog, Host, ADCM,
-                       ClusterObject, HostComponent, ServiceComponent, HostProvider)
+from cm.models import (
+    Cluster, Action, SubAction, TaskLog, JobLog, CheckLog, Host, ADCM,
+    ClusterObject, HostComponent, ServiceComponent, HostProvider,
+)
 
 
 def start_task(action_id, selector, conf, hc):
@@ -490,9 +492,7 @@ def prepare_context(selector):
 
 def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
     job_conf = {
-        'adcm': {
-            'config': get_adcm_config()
-        },
+        'adcm': {'config': get_adcm_config()},
         'context': prepare_context(selector),
         'env': {
             'run_dir': config.RUN_DIR,
@@ -502,6 +502,8 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
         },
         'job': {
             'id': job_id,
+            'action': action.name,
+            'job_name': action.name,
             'command': action.name,
             'script': action.script,
             'playbook': cook_script(action, sub_action)
@@ -512,6 +514,8 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
 
     if sub_action:
         job_conf['job']['script'] = sub_action.script
+        job_conf['job']['job_name'] = sub_action.name
+        job_conf['job']['command'] = sub_action.name
         if sub_action.params:
             job_conf['job']['params'] = json.loads(sub_action.params)
 
@@ -541,7 +545,7 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
     if conf:
         job_conf['job']['config'] = conf
 
-    fd = open('{}/{}-config.json'.format(config.RUN_DIR, job_id), 'w')
+    fd = open(os.path.join(config.RUN_DIR, f'{job_id}-config.json'), 'w')
     json.dump(job_conf, fd, indent=3, sort_keys=True)
     fd.close()
 
@@ -694,11 +698,11 @@ def finish_task(task, job, status):
 
 
 def cook_log_name(job_id, tag, level, ext='txt'):
-    return '{}-{}-{}.{}'.format(job_id, tag, level, ext)
+    return f'{job_id}-{tag}-{level}.{ext}'
 
 
 def read_log(job_id, tag, level, log_type):
-    fname = f'{config.LOG_DIR}/{job_id}-{tag}-{level}.{log_type}'
+    fname = os.path.join(config.LOG_DIR, f'{job_id}-{tag}-{level}.{log_type}')
     try:
         f = open(fname, 'r')
         data = f.read()
@@ -748,20 +752,21 @@ def log_check(job_id, title, res, msg):
             err('JOB_NOT_FOUND', f'job #{job.id} has status "{job.status}", not "running"')
     except JobLog.DoesNotExist:
         err('JOB_NOT_FOUND', f'no job with id #{job_id}')
+    cl = CheckLog(job_id=job.id, title=title, message=msg, result=res)
+    cl.save()
+    return cl
 
+
+def finish_check(job_id):
+    data = []
+    for cl in CheckLog.objects.filter(job_id=int(job_id)):
+        data.append({'title': cl.title, 'message': cl.message, 'result': cl.result})
+    if not data:
+        return
     log_name = os.path.join(config.LOG_DIR, cook_log_name(job_id, 'check', 'out', 'json'))
-    if os.path.exists(log_name):
-        f = open(log_name, 'r+')
-        raw = f.read()
-        data = json.loads(raw)
-        f.seek(0)
-    else:
-        f = open(log_name, 'w+')
-        data = []
-    data.append({'title': title, 'message': msg, 'result': res})
-    f.write(json.dumps(data, indent=3))
-    f.close()
-    return data
+    with open(log_name, 'w+') as f:
+        f.write(json.dumps(data, indent=3))
+    CheckLog.objects.filter(job_id=job_id).delete()
 
 
 def check_all_status():
