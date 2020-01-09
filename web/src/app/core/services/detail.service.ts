@@ -179,12 +179,12 @@ export class ClusterService {
 
       const sec = Math.floor(ttm / 1000);
       const min = Math.floor(sec / 60);
-      const time = status !== 'running' ? `${min}m. ${sec - min * 60}s.` : ' - ';
+      const time = status !== 'running' ? `${min}m. ${sec - min * 60}s.` : '';
 
       const a = new Date(sdn);
       const b = new Date(fdn);
 
-      return { start: a.toLocaleTimeString(), end: status !== 'running' ? b.toLocaleTimeString() : ' - ', time };
+      return { start: a.toLocaleTimeString(), end: status !== 'running' ? b.toLocaleTimeString() : '', time };
     }
   }
 }
