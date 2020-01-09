@@ -2,6 +2,7 @@
   <div class="title-container">
     <button mat-button [disabled]="isDisabled()" class="title" [appTooltip]="model.name" [appTooltipShowByCondition]="true" (click)="clickToTitle()">
       <span>{{ model.name }}</span>
+      <span *ngIf="checkLimit()" class="warn">*</span>
     </button>
     <button mat-raised-button color="primary"   
       (click)="toggleRelations()">{{ checkLimit() ? setNotify() : model.relations.length }}</button>

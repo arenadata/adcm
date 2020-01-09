@@ -11,10 +11,11 @@
 // limitations under the License.
 import { Injectable } from '@angular/core';
 import { ApiService } from '@app/core/api';
+import { IActionParameter, Component } from '@app/core/types';
 import { take, tap } from 'rxjs/operators';
 
-import { CompTile, HostTile, IRawHosComponent, Post, StatePost, Stream, Tile, ActionParam } from './types';
-import { IActionParameter } from '@app/core/types';
+import { CompTile, HostTile, IRawHosComponent, Post, StatePost, Stream, Tile } from './types';
+import { FormGroup, ValidatorFn, AbstractControl, FormControl } from '@angular/forms';
 
 @Injectable({
   providedIn: 'root'
@@ -29,6 +30,11 @@ export class TakeService {
   ]);
 
   actionParameters: IActionParameter[];
+
+  /**
+   * Validation only
+   */
+  formGroup = new FormGroup({});
 
   //
   countConstraint = 0;
@@ -48,6 +54,7 @@ export class TakeService {
     this.sourceMap.set('host', []);
     this.sourceMap.set('compo', []);
     this.statePost.clear();
+    this.formGroup = new FormGroup({});
 
     return this.api.get<IRawHosComponent>(url).pipe(
       tap(a => {
@@ -56,8 +63,9 @@ export class TakeService {
           this.statePost.update(a.hc);
           this.loadPost.update(a.hc);
           this.setRelations(a.hc);
-          this.checkConstraints();
+          // this.checkConstraints();
         }
+        this.formFill();
       })
     );
   }
@@ -74,7 +82,7 @@ export class TakeService {
   }
 
   setSource(raw: IRawHosComponent) {
-    const getActions = c => {
+    const getActions = (c: Component) => {
       if (this.actionParameters) return this.actionParameters.filter(a => a.service === c.service_name && a.component === c.name).map(b => b.action);
     };
 
@@ -87,6 +95,23 @@ export class TakeService {
       const list = raw.component.map(c => new CompTile(c, getActions(c)));
       this.sourceMap.set('compo', [...this.sourceMap.get('compo'), ...list]);
     }
+  }
+
+  validateConstraints(a: CompTile): ValidatorFn {
+    return (control: AbstractControl) => {
+      console.log(a.limit, a.relations.length);
+      if (a.limit && a.limit[0]) {
+        if (a.limit[0] === '+' && a.relations.length < this.Hosts.length) return { 'Fucking constraints': a.name };
+        else if (a.limit[0] > a.relations.length) return { 'Fucking constraints': a.name };
+      }
+      return null;
+    };
+  }
+
+  formFill() {
+    this.Components.map(a => {
+      this.formGroup.addControl(`${a.service_id}/${a.id}`, new FormControl(a.relations.length, this.validateConstraints(a)));
+    });
   }
 
   setRelations(a: Post[]) {
@@ -110,16 +135,19 @@ export class TakeService {
   clearAllRelations() {
     this.sourceMap.get('host').map(h => (h.relations = []));
     this.sourceMap.get('compo').map(s => (s.relations = []));
+    this.formFill();
   }
 
   clearServiceFromHost(data: { rel: CompTile; model: HostTile }) {
     this.clear([data.model, data.rel]);
     this.statePost.delete(new Post(data.model.id, data.rel.service_id, data.rel.id));
+    this.setFormValue(data.rel);
   }
 
   clearHostFromService(data: { rel: HostTile; model: CompTile }) {
     this.clear([data.rel, data.model]);
     this.statePost.delete(new Post(data.rel.id, data.model.service_id, data.model.id));
+    this.setFormValue(data.model);
   }
 
   takeHost(host: HostTile) {
@@ -177,7 +205,14 @@ export class TakeService {
       str.target.isLink = true;
       this.statePost.add(post);
     }
-    this.checkConstraints();
+    // this.checkConstraints();
+
+    this.setFormValue((isComp ? this.stream.target : this.stream.link) as CompTile);
+  }
+
+  setFormValue(c: CompTile) {
+    const id = `${c.service_id}/${c.id}`;
+    this.formGroup.controls[id].setValue(c.relations);
   }
 
   clear(tiles: Tile[]) {
@@ -188,7 +223,7 @@ export class TakeService {
       link.relations = link.relations.filter(r => r.id !== rel.id);
       a.isLink = false;
     }
-    this.checkConstraints();
+    // this.checkConstraints();
   }
 
   checkActions(host: HostTile, com: CompTile, action: 'add' | 'remove'): boolean {
@@ -205,15 +240,15 @@ export class TakeService {
     } else return true;
   }
 
-  checkConstraints() {
-    this.countConstraint = this.sourceMap.get('compo').reduce((a, c) => {
-      if (c.limit && c.limit[0]) {
-        if (c.limit[0] === '+' && c.relations.length < this.sourceMap.get('host').length) a++;
-        else if (c.limit[0] > c.relations.length) a++;
-      }
-      return a;
-    }, 0);
-  }
+  // checkConstraints() {
+  //   this.countConstraint = this.sourceMap.get('compo').reduce((a, c) => {
+  //     if (c.limit && c.limit[0]) {
+  //       if (c.limit[0] === '+' && c.relations.length < this.sourceMap.get('host').length) a++;
+  //       else if (c.limit[0] > c.relations.length) a++;
+  //     }
+  //     return a;
+  //   }, 0);
+  // }
 
   noLimit(comp: Tile) {
     if (comp.limit && Array.isArray(comp.limit) && comp.limit.length) {
@@ -232,7 +267,9 @@ export class TakeService {
     this.statePost.update(this.loadPost.data);
     this.clearAllRelations();
     this.setRelations(this.loadPost.data);
-    this.checkConstraints();
+    // this.checkConstraints();
+    this.formFill();
+
     this.sourceMap.get('host').map(a => {
       a.isSelected = false;
       a.isLink = false;

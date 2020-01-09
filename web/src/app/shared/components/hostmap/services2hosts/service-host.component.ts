@@ -11,7 +11,6 @@
 // limitations under the License.
 import { animate, state, style, transition, trigger } from '@angular/animations';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { FormGroup } from '@angular/forms';
 import { ChannelService } from '@app/core';
 import { EventMessage, SocketState } from '@app/core/store';
 import { IActionParameter } from '@app/core/types';
@@ -41,11 +40,6 @@ export class ServiceHostComponent extends SocketListener implements OnInit {
 
   serviceComponents: CompTile[];
   hosts: HostTile[];
-
-  /**
-   * Validation only
-   */
-  formGroup = new FormGroup({});
 
   @Input()
   cluster: { id: number; hostcomponent: string };
@@ -77,7 +71,7 @@ export class ServiceHostComponent extends SocketListener implements OnInit {
   }
 
   public get noValid() {
-    return !!this.service.countConstraint || !this.service.statePost.data.length;
+    return /*!!this.service.countConstraint */ !this.service.formGroup.valid || !this.service.statePost.data.length;
   }
 
   ngOnInit() {
@@ -99,7 +93,7 @@ export class ServiceHostComponent extends SocketListener implements OnInit {
       ((m.event === 'add' || m.event === 'remove') && m.object.details.type === 'cluster' && +m.object.details.value === this.cluster.id)
     ) {
       this.clearRelations();
-      this.service.checkConstraints();
+      // this.service.checkConstraints();
       this.init();
       this.initFlag = true;
     }
