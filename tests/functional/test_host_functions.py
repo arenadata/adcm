@@ -74,11 +74,11 @@ class TestHost:
             assert actual == expected
         steps.delete_all_data(client)
 
-    def test_shouldnt_create_duplicate_host(self, client):
-        steps.create_host_w_default_provider(client, 'duplicate')
-        with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-            steps.create_host_w_default_provider(client, 'duplicate')
-        err.HOST_CONFLICT.equal(e, 'duplicate host')
+    def test_should_create_duplicate_host(self, client):
+        one = steps.create_host_w_default_provider(client, 'duplicate')
+        two = steps.create_host_w_default_provider(client, 'duplicate')
+        assert one['fqdn'] == two['fqdn']
+        assert one['id'] != two['id']
         steps.delete_all_data(client)
 
     def test_shouldnt_create_host_with_unknown_prototype(self, client):

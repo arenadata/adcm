@@ -251,10 +251,14 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         r1 = self.api_post('/host/', {
             'fqdn': host, 'prototype_id': host_proto, 'provider_id': provider_id
         })
-        self.assertEqual(r1.status_code, 409)
-        self.assertEqual(r1.json()['code'], 'HOST_CONFLICT')
+        # self.assertEqual(r1.status_code, 409)
+        # self.assertEqual(r1.json()['code'], 'HOST_CONFLICT')
+        self.assertEqual(r1.status_code, 201)
+        host2_id = r1.json()['id']
 
         r1 = self.api_delete('/host/' + str(host_id) + '/')
+        self.assertEqual(r1.status_code, 204)
+        r1 = self.api_delete('/host/' + str(host2_id) + '/')
         self.assertEqual(r1.status_code, 204)
         r1 = self.api_delete('/stack/bundle/' + str(ssh_bundle_id) + '/')
         self.assertEqual(r1.status_code, 204)
