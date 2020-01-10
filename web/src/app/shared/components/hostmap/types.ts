@@ -9,9 +9,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Constraint } from '@app/core/types';
+import { Component, Host } from '@app/core/types';
 
 export type ActionParam = 'add' | 'remove';
+
+export type ConstraintValue = number | '+' | 'odd';
+export type Constraint = [ConstraintValue, ConstraintValue];
+
+
+
+export interface IRawHosComponent {
+  component: Component[];
+  host: Host[];
+  hc: Post[];
+}
 
 export interface Post {
   id?: number;
@@ -36,14 +47,22 @@ export class Tile {
 }
 
 export class HostTile extends Tile {
-  constructor(public id: number, public name: string) {
+  constructor(rawHost: Host) {
     super();
+    this.id = rawHost.id;
+    this.name = rawHost.fqdn;
   }
 }
 
 export class CompTile extends Tile {
-  constructor(public id: number, public service_id: number, public name: string, public limit: any, public disabled = false, public actions?: ActionParam[]) {
+  service_id: number;
+  constructor(rawComponent: Component, public actions?: ActionParam[]) {
     super();
+    this.id = rawComponent.id;
+    this.service_id = rawComponent.service_id;
+    this.name = rawComponent.display_name;
+    this.disabled = rawComponent.service_state !== 'created';
+    this.limit = rawComponent.constraint;
   }
 }
 
