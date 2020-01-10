@@ -31,6 +31,15 @@ a {
   }
 }
 
+.primary {
+  color: mat-color($app-primary);
+  border-color: mat-color($app-primary);
+}
+
+.secondary {
+  color: mat-color($app-secondary);
+  border-color: mat-color($app-secondary);
+}
 
 .accent {
   color: mat-color($mat-green, A400);

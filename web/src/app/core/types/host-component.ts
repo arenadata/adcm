@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export type Constraint = [number | string, string?];
+
 
 /**
  * Information about the installed service component on a specific host
@@ -21,7 +21,6 @@ export interface HostComponent {
   host: string;
   host_id: number;
   /** component name */
-
   component: string;
   component_display_name: string;
   component_id: number;
@@ -45,7 +44,7 @@ export interface Component {
   service_name: string;
   service_state: string;
   name: string;
-  display_name?: string;
+  display_name: string;
   status: number;
   constraint: any;
   monitoring: 'passive' | 'active';
