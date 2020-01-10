@@ -41,6 +41,15 @@ export class Much2ManyComponent {
     } else return false;
   }
 
+  errorMessage() {
+    const form = this.service.formGroup;
+    if ('service_id' in this.model) {
+      const sc = this.model as CompTile;
+      const control = form.controls[`${sc.service_id}/${sc.id}`];
+      return control.errors.error;
+    }
+  }
+
   clearDisabled(rel: Tile) {
     if (this.model.actions) return this.model.actions.every(e => e !== 'remove');
     return rel.disabled || this.model.disabled;
