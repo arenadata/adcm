@@ -113,6 +113,7 @@ ERRORS = {
 
     'TOO_LONG': ("response is too long", rfs.HTTP_400_BAD_REQUEST, WARN),
     'NOT_IMPLEMENTED': ("not implemented yet", rfs.HTTP_501_NOT_IMPLEMENTED, ERR),
+    'NO_JOBS_RUNNING': ("no jobs running", rfs.HTTP_409_CONFLICT, WARN),
 }
 
 

@@ -102,8 +102,12 @@ def cancel_task(task):
     }
     if task.status in [config.Job.FAILED, config.Job.ABORTED, config.Job.SUCCESS]:
         err(*errors.get(task.status))
-    while not JobLog.objects.filter(task_id=task.id, status=config.Job.RUNNING):
+    i = 0
+    while not JobLog.objects.filter(task_id=task.id, status=config.Job.RUNNING) and i < 10:
         time.sleep(0.5)
+        i += 1
+    if i == 10:
+        err('NO_JOBS_RUNNING', 'no jobs running')
     os.kill(task.pid, signal.SIGTERM)
 
 

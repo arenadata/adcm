@@ -22,6 +22,7 @@ import os
 import signal
 import subprocess
 import sys
+import time
 
 import adcm.init_django
 from django.core.exceptions import ObjectDoesNotExist
@@ -36,20 +37,28 @@ from cm.models import TaskLog, JobLog
 TASK_ID = 0
 
 
+def terminate_job(task, jobs):
+    running_job = jobs.get(status=config.Job.RUNNING)
+
+    if running_job.pid:
+        os.kill(running_job.pid, signal.SIGTERM)
+        cm.job.finish_task(task, running_job, config.Job.ABORTED)
+    else:
+        cm.job.finish_task(task, None, config.Job.ABORTED)
+
+
 def terminate_task(signum, frame):
     log.info("cancel task #%s, signal: #%s", TASK_ID, signum)
-    _task = TaskLog.objects.get(id=TASK_ID)
+    task = TaskLog.objects.get(id=TASK_ID)
     jobs = JobLog.objects.filter(task_id=TASK_ID)
-    if jobs.filter(status__in=[config.Job.FAILED, config.Job.ABORTED, config.Job.CREATED]):
-        cm.job.finish_task(_task, None, config.Job.ABORTED)
-    else:
-        running_job = jobs.get(status=config.Job.RUNNING)
 
-        if running_job.pid:
-            os.kill(running_job.pid, signal.SIGTERM)
-            cm.job.finish_task(_task, running_job, config.Job.ABORTED)
-        else:
-            cm.job.finish_task(_task, None, config.Job.ABORTED)
+    i = 0
+    while i < 10:
+        if jobs.filter(status=config.Job.RUNNING):
+            terminate_job(task, jobs)
+            break
+        i += 1
+        time.sleep(0.5)
 
     os._exit(signum)
 
