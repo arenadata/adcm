@@ -20,32 +20,20 @@ ANSIBLE_METADATA = {'metadata_version': '1.1', 'supported_by': 'Arenadata'}
 
 DOCUMENTATION = r'''
 ---
-module: adcm_add_host
-short_description: add host to ADCM DB
+module: adcm_delete_host
+short_description: delete host from ADCM DB
 description:
-    - The C(adcm_add_host) module is intended to add host to ADCM DB.
-      This module should be run in host provider context.
+    - The C(adcm_delete_host) module is intended to delete host from ADCM DB.
+      This module should be run in host context. Host Id is taken from context.
 options:
-  fqdn:
-    description:
-      - Fully qualified domain name of added host
-    required: yes
-  description:
-    description:
-      - Comment
-    required: no
 '''
 
 EXAMPLES = r'''
- - name: add new host
-   adcm_add_host:
-     fqdn: my.host.org
-     description: "add my host"
+ - name: delete current host
+   adcm_delete_host:
 '''
 
 RETURN = r'''
-result:
-  host_id: ID of new created host
 '''
 
 import sys
@@ -61,7 +49,7 @@ from cm.logger import log
 class ActionModule(ActionBase):
 
     TRANSFERS_FILES = False
-    _VALID_ARGS = frozenset(('fqdn', 'description'))
+    _VALID_ARGS = frozenset(())
 
     def run(self, tmp=None, task_vars=None):
         def err(msg):
@@ -70,23 +58,15 @@ class ActionModule(ActionBase):
         if not task_vars or 'context' not in task_vars:
             return err("There is no сontext in task vars")
 
-        if task_vars['context']['type'] != 'provider':
-            return err('you can add host only in provider context')
-        provider_id = task_vars['context']['provider_id']
+        if task_vars['context']['type'] != 'host':
+            return err('you can delete host only in host context')
+        host_id = task_vars['context']['host_id']
 
-        if 'fqdn' not in self._task.args:
-            return err("fqdn is mandatory args of adcm_add_host")
-
-        desc = None
-        fqdn = self._task.args['fqdn']
-        if 'description' in self._task.args:
-            desc = self._task.args['description']
-
-        log.info('ansible module adcm_add_host: provider %s, fqdn %s', provider_id, fqdn)
+        log.info('ansible module adcm_delete_host: host #%s', host_id)
 
         try:
-            host = cm.api.add_provider_host(provider_id, fqdn, desc)
+            cm.api.delete_host_by_id(host_id)
         except AdcmEx as e:
             return err(e.code + ":" + e.msg)
 
-        return {"failed": False, "changed": True, "host_id": host.id}
+        return {"failed": False, "changed": True}
