@@ -1,7 +1,7 @@
 <div [ngClass]="{'m2m':true, 'selected': model.isSelected, 'linked': model.isLink}">
   <div class="title-container">
     <button mat-button [disabled]="isDisabled()" class="title" [appTooltip]="model.name" [appTooltipShowByCondition]="true" (click)="clickToTitle()">
-      <span>{{ model.name }}</span>
+      <span *ngIf="isError()" class="warn" [matTooltip]="errorMessage()">*</span>&nbsp;<span>{{ model.name }}</span>      
     </button>
     <button mat-raised-button color="primary"   
       (click)="toggleRelations()">{{ checkLimit() ? setNotify() : model.relations.length }}</button>
