@@ -1,7 +1,11 @@
 :host {
   display: flex;
   align-items: center;
-  width: 100%
+  width: 100%;
+
+  &.advanced {    
+    label {border-bottom: dotted 1px #00e676 !important;}    
+  }
 }
 
 label {
