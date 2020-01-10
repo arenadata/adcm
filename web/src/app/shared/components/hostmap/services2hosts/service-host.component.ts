@@ -11,6 +11,7 @@
 // limitations under the License.
 import { animate, state, style, transition, trigger } from '@angular/animations';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { FormGroup } from '@angular/forms';
 import { ChannelService } from '@app/core';
 import { EventMessage, SocketState } from '@app/core/store';
 import { IActionParameter } from '@app/core/types';
@@ -40,6 +41,7 @@ export class ServiceHostComponent extends SocketListener implements OnInit {
 
   serviceComponents: CompTile[];
   hosts: HostTile[];
+  form: FormGroup;
 
   @Input()
   cluster: { id: number; hostcomponent: string };
@@ -113,6 +115,7 @@ export class ServiceHostComponent extends SocketListener implements OnInit {
       .subscribe(_ => {
         this.serviceComponents = this.service.Components;
         this.hosts = this.service.Hosts;
+        this.form = this.service.formGroup;
       });
   }
 

@@ -14,8 +14,8 @@ import { ApiService } from '@app/core/api';
 import { IActionParameter, Component } from '@app/core/types';
 import { take, tap } from 'rxjs/operators';
 
-import { CompTile, HostTile, IRawHosComponent, Post, StatePost, Stream, Tile } from './types';
-import { FormGroup, ValidatorFn, AbstractControl, FormControl } from '@angular/forms';
+import { CompTile, HostTile, IRawHosComponent, Post, StatePost, Stream, Tile, Constraint } from './types';
+import { FormGroup, ValidatorFn, AbstractControl, FormControl, ValidationErrors } from '@angular/forms';
 
 @Injectable({
   providedIn: 'root'
@@ -30,14 +30,7 @@ export class TakeService {
   ]);
 
   actionParameters: IActionParameter[];
-
-  /**
-   * Validation only
-   */
   formGroup = new FormGroup({});
-
-  //
-  countConstraint = 0;
 
   constructor(private api: ApiService) {}
 
@@ -63,7 +56,6 @@ export class TakeService {
           this.statePost.update(a.hc);
           this.loadPost.update(a.hc);
           this.setRelations(a.hc);
-          // this.checkConstraints();
         }
         this.formFill();
       })
@@ -97,15 +89,67 @@ export class TakeService {
     }
   }
 
-  validateConstraints(a: CompTile): ValidatorFn {
-    return (control: AbstractControl) => {
-      console.log(a.limit, a.relations.length);
-      if (a.limit && a.limit[0]) {
-        if (a.limit[0] === '+' && a.relations.length < this.Hosts.length) return { 'Fucking constraints': a.name };
-        else if (a.limit[0] > a.relations.length) return { 'Fucking constraints': a.name };
+  /**
+ * https://docs.arenadata.io/adcm/sdk/config.html#components
+    [1] – exactly once component shoud be installed;
+    [0,1] – one or zero component shoud be installed;
+    [1,2] – one or two component shoud be installed;
+    [0,+] – zero or any more component shoud be installed (default value);
+    [1,odd] – one or more component shoud be installed; total amount should be odd
+    [0,odd] – zero or more component shoud be installed; if more than zero, total amount should be odd
+    [odd] – the same as [1,odd]
+    [1,+] – one or any more component shoud be installed;
+    [+] – component shoud be installed on all hosts of cluster.
+ *
+ */
+  validateConstraints(cti: CompTile): ValidatorFn {
+    const oneConstraint = (a: Constraint, ins: number) => {
+      switch (a[0]) {
+        case 0:
+          return null;
+        case '+':
+          return ins < this.Hosts.length ? 'Component should be installed on all hosts of cluster.' : null;
+        case 'odd':
+          return ins % 2 === 0 ? 'One or more component should be installed. Total amount should be odd.' : null;
+        default:
+          return ins !== a[0] ? `Exactly ${a[0]} component should be installed` : null;
+      }
+    };
+    const twoConstraint = (a: Constraint, ins: number) => {
+      switch (a[1]) {
+        case '+':
+          return a[0] !== 0 && ins < a[0] ? `Must be installed at least ${a[0]} components.` : null;
+        case 'odd':
+          return ins % 2 === 0
+            ? a[0] !== 0
+              ? `Must be installed at least ${a[0]} components. Total amount should be odd.`
+              : 'Total amount should be odd'
+            : null;
+        default:
+          return a[0] !== 0 && ins < a[0] ? `Must be installed at least ${a[0]} components.` : null;
+      }
+    };
+    const limitLength = (length: number) => {
+      return length === 1 ? oneConstraint : twoConstraint;
+    };
+
+    return (control: AbstractControl): ValidationErrors => {
+      // console.log(cti.limit, cti.relations.length);
+      const limit = cti.limit;
+      if (limit) {
+        const error = limitLength(limit.length)(limit, cti.relations.length);
+        return error ? { error } : null;
       }
       return null;
     };
+  }
+
+  noLimit(comp: Tile) {
+    const a = comp.limit;
+    if (a) {
+      const last = a.length - 1;
+      return a[last] === '+' || a[last] === 'odd' || a[last] > comp.relations.length;
+    } else return true;
   }
 
   formFill() {
@@ -205,7 +249,6 @@ export class TakeService {
       str.target.isLink = true;
       this.statePost.add(post);
     }
-    // this.checkConstraints();
 
     this.setFormValue((isComp ? this.stream.target : this.stream.link) as CompTile);
   }
@@ -223,7 +266,6 @@ export class TakeService {
       link.relations = link.relations.filter(r => r.id !== rel.id);
       a.isLink = false;
     }
-    // this.checkConstraints();
   }
 
   checkActions(host: HostTile, com: CompTile, action: 'add' | 'remove'): boolean {
@@ -240,34 +282,11 @@ export class TakeService {
     } else return true;
   }
 
-  // checkConstraints() {
-  //   this.countConstraint = this.sourceMap.get('compo').reduce((a, c) => {
-  //     if (c.limit && c.limit[0]) {
-  //       if (c.limit[0] === '+' && c.relations.length < this.sourceMap.get('host').length) a++;
-  //       else if (c.limit[0] > c.relations.length) a++;
-  //     }
-  //     return a;
-  //   }, 0);
-  // }
-
-  noLimit(comp: Tile) {
-    if (comp.limit && Array.isArray(comp.limit) && comp.limit.length) {
-      const a = comp.limit,
-        b = a.length - 1,
-        c = comp.relations.length;
-      // if (a.includes('odd')) {
-      //   //return comp.relations.length === 0 || comp.relations.length % 2 === 0;
-      // }
-      return a[b] === '+' || a[b] > c;
-    } else return true;
-  }
-
   cancel() {
     this.statePost.clear();
     this.statePost.update(this.loadPost.data);
     this.clearAllRelations();
     this.setRelations(this.loadPost.data);
-    // this.checkConstraints();
     this.formFill();
 
     this.sourceMap.get('host').map(a => {

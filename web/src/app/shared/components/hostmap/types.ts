@@ -13,7 +13,10 @@ import { Component, Host } from '@app/core/types';
 
 export type ActionParam = 'add' | 'remove';
 
-export type Constraint = [number | string, string?];
+export type ConstraintValue = number | '+' | 'odd';
+export type Constraint = [ConstraintValue, ConstraintValue];
+
+
 
 export interface IRawHosComponent {
   component: Component[];

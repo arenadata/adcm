@@ -10,12 +10,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { Tile } from '../types';
+import { Tile, CompTile } from '../types';
+import { TakeService } from '../take.service';
 
 @Component({
   selector: 'app-much-2-many',
   templateUrl: './much-2-many.component.html',
-  styleUrls: ['./much-2-many.component.scss'],
+  styleUrls: ['./much-2-many.component.scss']
 })
 export class Much2ManyComponent {
   isShow = false;
@@ -24,9 +25,20 @@ export class Much2ManyComponent {
   @Output() clearRelationEvt: EventEmitter<any> = new EventEmitter();
   @Input() model: Tile;
 
+  constructor(private service: TakeService) {}
+
   isDisabled() {
-    if (this.model.actions) return !this.model.actions.length; //.every(e => e !== 'add');
+    if (this.model.actions) return !this.model.actions.length;
     return this.model.disabled;
+  }
+
+  isError() {
+    const form = this.service.formGroup;
+    if ('service_id' in this.model) {
+      const sc = this.model as CompTile;
+      const control = form.controls[`${sc.service_id}/${sc.id}`];
+      return control.invalid;
+    } else return false;
   }
 
   clearDisabled(rel: Tile) {
@@ -53,7 +65,8 @@ export class Much2ManyComponent {
 
   setNotify() {
     const a = this.model.limit[0],
-      b = this.model.limit[1];
-    return `${this.model.relations.length}/${b !== '+' && b ? b : false || a} ${b && b === '+' ? '+' : ''}`;
+      b = this.model.limit[1],
+      lim = b && b !== '+' && b !== 'odd' ? b : a === 'odd' ? 1 : a;
+    return `${this.model.relations.length}${lim !== 0 ? ` / ${lim}` : ''}`;
   }
 }
