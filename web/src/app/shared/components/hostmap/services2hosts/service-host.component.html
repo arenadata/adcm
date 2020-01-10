@@ -12,10 +12,10 @@
   <div>
     <h3>Components</h3>
     <div class="wrapper">
-      <div *ngIf="!sourceMap.get('compo').length">
+      <div *ngIf="!serviceComponents?.length">
         Add services on the <a [routerLink]="['/cluster', cluster.id, 'service']">services page.</a>
       </div>
-      <app-much-2-many *ngFor="let service of sourceMap.get('compo')" [model]="service" (clickToTitleEvt)="selectService($event)"
+      <app-much-2-many *ngFor="let service of serviceComponents" [model]="service" (clickToTitleEvt)="selectService($event)"
         (clearRelationEvt)="clearHostFromService($event)">
       </app-much-2-many>
     </div>
@@ -23,10 +23,10 @@
   <div>
     <h3>Hosts</h3>
     <div class="wrapper">
-      <div *ngIf="!sourceMap.get('host').length">
+      <div *ngIf="!hosts?.length">
         Add hosts on the <a [routerLink]="['/cluster', cluster.id, 'host']">hosts page.</a>
       </div>
-      <app-much-2-many *ngFor="let host of sourceMap.get('host')" [model]="host" (clickToTitleEvt)="selectHost($event)"
+      <app-much-2-many *ngFor="let host of hosts" [model]="host" (clickToTitleEvt)="selectHost($event)"
         (clearRelationEvt)="clearServiceFromHost($event)">
       </app-much-2-many>
     </div>
