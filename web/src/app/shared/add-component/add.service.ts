@@ -33,39 +33,39 @@ export interface FormModel {
 const fromBundle = new FormGroup({
   prototype_id: new FormControl('', Validators.required),
   name: new FormControl('', Validators.required),
-  description: new FormControl(),
+  description: new FormControl()
 });
 
 const MODELS: { [key: string]: FormModel } = {
   provider: {
     title: 'hostprovider',
     name: 'provider',
-    form: fromBundle,
+    form: fromBundle
   },
   host: {
     name: 'host',
     form: new FormGroup({
       fqdn: new FormControl('', [Validators.required, Validators.pattern(new RegExp(/^[A-Za-z0-9_\.\-]+$/))]),
       cluster_id: new FormControl(),
-      provider_id: new FormControl('', Validators.required),
-    }),
+      provider_id: new FormControl('', Validators.required)
+    })
   },
   cluster: {
     name: 'cluster',
-    form: fromBundle,
+    form: fromBundle
   },
   service: {
     name: 'service',
-    title: 'service',
+    title: 'service'
   },
   host2cluster: {
     name: 'host2cluster',
-    title: 'free host',
-  },
+    title: 'free host'
+  }
 };
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: 'root'
 })
 export class AddService {
   currentPrototype: StackBase;
@@ -73,6 +73,10 @@ export class AddService {
 
   model(name: string) {
     return MODELS[name];
+  }
+
+  get Cluster() {
+    return this.cluster.Cluster;
   }
 
   add<T>(data: Partial<T>, name: TypeName) {
@@ -86,8 +90,8 @@ export class AddService {
                   data: {
                     title: `Accept license agreement`,
                     text: info.text,
-                    controls: ['Yes', 'No'],
-                  },
+                    controls: ['Yes', 'No']
+                  }
                 })
                 .beforeClosed()
                 .pipe(
@@ -106,12 +110,9 @@ export class AddService {
   }
 
   addHost(host: Partial<Host>): Observable<Host> {
-    if (!host.cluster_id && this.cluster.Cluster) host.cluster_id = this.cluster.Cluster.id;
-    const pid = host.provider_id;
-    const link = `${environment.apiRoot}cluster/${host.cluster_id}/host/`;
-    const a$ = this.api.post<Host>(`${environment.apiRoot}provider/${pid}/host/`, { fqdn: host.fqdn });
+    const a$ = this.api.post<Host>(`${environment.apiRoot}provider/${host.provider_id}/host/`, { fqdn: host.fqdn });
     const b$ = a$.pipe(
-      map(h => (host.cluster_id ? this.api.post<Host>(link, { host_id: h.id }) : of(h)))
+      map(h => (host.cluster_id ? this.api.post<Host>(`${environment.apiRoot}cluster/${host.cluster_id}/host/`, { host_id: h.id }) : of(h)))
     );
     return b$.pipe(concatAll());
   }
@@ -133,7 +134,7 @@ export class AddService {
           .get<ListResult<Cluster>>(root.cluster, {
             limit: limit.toString(),
             offset: offset.toString(),
-            ordering: 'display_name',
+            ordering: 'display_name'
           })
           .pipe(map(list => list.results))
       )
@@ -155,7 +156,7 @@ export class AddService {
           .filter(b => !b.selected)
           .map(b => ({
             ...b,
-            name: `${b.display_name} - ${b.version}`,
+            name: `${b.display_name} - ${b.version}`
           }))
       )
     );
