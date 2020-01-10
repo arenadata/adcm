@@ -9,7 +9,7 @@
   <div class="row main">
     <mat-nav-list class="col s12 m3 l2">
       <a mat-list-item [appForTest]="'tab_' + item.url" *ngFor="let item of leftMenu" [routerLink]="[item.url]" routerLinkActive="active">
-        {{ item.title }}
+        <span>{{ item.title }}</span>
         &nbsp;
         <mat-icon *ngIf="item.issue" color="warn">priority_hight</mat-icon>
         <ng-container *ngIf="item.url==='status'">
