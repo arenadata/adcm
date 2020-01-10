@@ -20,4 +20,3 @@ apache-libcloud
 jmespath
 lxml
 pycrypto
-adcm-client
