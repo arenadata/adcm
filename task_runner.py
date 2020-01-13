@@ -60,6 +60,10 @@ def terminate_task(signum, frame):
         i += 1
         time.sleep(0.5)
 
+    if i == 10:
+        log.warning("no jobs running for task #%s", TASK_ID)
+        cm.job.finish_task(task, None, config.Job.ABORTED)
+
     os._exit(signum)
 
 
