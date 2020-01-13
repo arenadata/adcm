@@ -228,7 +228,7 @@ class TestCluster:
                                       prototype_id=service[0]['id'])
         result = client.cluster.action.run.create(cluster_id=cluster['id'],
                                                   action_id=action[0]['id'])
-        assert result['status'] == 'created'
+        assert result['status'] == 'running'
         steps.delete_all_data(client)
 
 
@@ -414,5 +414,5 @@ class TestClusterService:
         actions = client.cluster.action.list(cluster_id=cluster['id'])
         task = client.cluster.action.run.create(cluster_id=cluster['id'],
                                                 action_id=random.choice(actions)['id'])
-        assert (task['status'] == 'created') is True
+        assert (task['status'] == 'running') is True
         steps.delete_all_data(client)
