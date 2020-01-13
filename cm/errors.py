@@ -91,6 +91,9 @@ ERRORS = {
     'UPGRADE_ERROR': ("upgrade error", rfs.HTTP_409_CONFLICT, ERR),
 
     'TASK_ERROR': ("task error", rfs.HTTP_409_CONFLICT, ERR),
+    'TASK_IS_FAILED': ("task is failed", rfs.HTTP_409_CONFLICT, WARN),
+    'TASK_IS_ABORTED': ("task is aborted", rfs.HTTP_409_CONFLICT, WARN),
+    'TASK_IS_SUCCESS': ("task is success", rfs.HTTP_409_CONFLICT, WARN),
     'WRONG_SELECTOR': ("selector error", rfs.HTTP_409_CONFLICT, ERR),
 
     'WRONG_JOB_TYPE': ("unknown job type", rfs.HTTP_409_CONFLICT, ERR),
@@ -110,6 +113,7 @@ ERRORS = {
 
     'TOO_LONG': ("response is too long", rfs.HTTP_400_BAD_REQUEST, WARN),
     'NOT_IMPLEMENTED': ("not implemented yet", rfs.HTTP_501_NOT_IMPLEMENTED, ERR),
+    'NO_JOBS_RUNNING': ("no jobs running", rfs.HTTP_409_CONFLICT, WARN),
 }
 
 
