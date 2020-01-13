@@ -22,17 +22,20 @@ import { IToolsEvent } from '../field.service';
       <input matInput placeholder="Description configuration" [formControl]="descriptionFormControl" [value]="description" />
     </mat-form-field>
     <app-search (pattern)="filter($event)"></app-search>
-    <mat-checkbox [(ngModel)]="advanced">Advanced</mat-checkbox>
+    <mat-checkbox [(ngModel)]="advanced" id="acbx">Advanced</mat-checkbox>
     <div class="control-buttons">
       <button mat-raised-button color="accent" class="form_config_button_save" [disabled]="disabledSave" (click)="save()">
         Save
       </button>
-      <button mat-icon-button [disabled]="disabledHistory" (click)="history()" [matTooltip]="(historyShow ? 'Hide history' : 'Show history')">
+      <button mat-icon-button [disabled]="disabledHistory" (click)="history()" [matTooltip]="historyShow ? 'Hide history' : 'Show history'">
         <mat-icon>history</mat-icon>
       </button>
     </div>
   `,
-  styles: [':host {display: flex;justify-content: space-between;align-items: baseline;}', '.form_config_button_save { margin: 0 16px 0 30px;}'],
+  styles: [
+    ':host {display: flex;justify-content: space-between;align-items: baseline;}',
+    '.form_config_button_save { margin: 0 16px 0 30px;}'
+  ]
 })
 export class ToolsComponent extends BaseDirective implements OnInit {
   historyShow = false;
@@ -41,7 +44,7 @@ export class ToolsComponent extends BaseDirective implements OnInit {
   private _search = '';
   private _filter = new Subject<{ a: boolean; s: string }>();
 
-  @Input() description = ''; 
+  @Input() description = '';
   @Input() disabledSave = true;
   @Input() disabledHistory = true;
   @Output() event = new EventEmitter<IToolsEvent>();
