@@ -452,6 +452,7 @@ urlpatterns = [
     path('task/', views.Task.as_view(), name='task'),
     path('task/<int:task_id>/', views.TaskDetail.as_view(), name='task-details'),
     path('task/<int:task_id>/restart/', views.TaskReStart.as_view(), name='task-restart'),
+    path('task/<int:task_id>/cancel/', views.TaskCancel.as_view(), name='task-cancel'),
 
     path('job/', views.JobList.as_view(), name='job'),
     path('job/<int:job_id>/', views.JobDetail.as_view(), name='job-details'),
