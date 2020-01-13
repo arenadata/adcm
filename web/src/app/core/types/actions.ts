@@ -24,4 +24,5 @@ export interface IAction {
   config: IConfig;
   hostcomponentmap: IActionParameter | null;
   button: 'create_host' | null;
+  disclaimer?: string;
 }
