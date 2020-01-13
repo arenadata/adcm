@@ -11,7 +11,7 @@
 # limitations under the License.
 
 import os
-from unittest.mock import patch, Mock, mock_open
+from unittest.mock import patch, Mock, mock_open, call
 
 from django.test import TestCase
 from django.utils import timezone
@@ -85,6 +85,12 @@ class TestTaskRunner(TestCase):
         process_mock.configure_mock(**attrs)
         mock_subprocess_popen.return_value = process_mock
         code = task_runner.run_job(1, 1, '', '')
+        cmd = [
+            '{}/job_runner.py'.format(config.BASE_DIR),
+            str(1)
+        ]
+        mock_subprocess_popen.assert_called_once_with(cmd, stdout='', stderr='')
+        process_mock.wait.assert_called_once()
         self.assertEqual(code, 0)
 
     @patch('task_runner.open_file')
@@ -114,7 +120,7 @@ class TestTaskRunner(TestCase):
     def test_do(self, mock_exit, mock_run_task):
         with patch('sys.argv', [__file__, 1]):
             task_runner.do()
-            self.assertEqual(mock_exit.call_count, 0)
+            mock_exit.assert_not_called()
             mock_run_task.assert_called_once_with(1)
 
 
@@ -186,10 +192,10 @@ class TestJobRunner(TestCase):
 
         mock_read_config.assert_called_once_with(1)
 
-        self.assertEqual(mock_open_file.call_count, 2)
-        mock_open_file.assert_any_call(config.LOG_DIR, 'ansible-out', 1)
-        mock_open_file.assert_any_call(config.LOG_DIR, 'ansible-err', 1)
-
+        mock_open_file.assert_has_calls([
+            call(config.LOG_DIR, 'ansible-out', 1),
+            call(config.LOG_DIR, 'ansible-err', 1)
+        ])
         mock_chdir.assert_called_with(conf['env']['stack_dir'])
 
         mock_set_job_status.assert_called_once_with(1, 0, 1)
@@ -202,8 +208,8 @@ class TestJobRunner(TestCase):
                 '{}/{}-inventory.json'.format(config.RUN_DIR, 1),
                 conf['job']['playbook']
             ], env=python_path, stdout=_file, stderr=_file)
-        self.assertEqual(mock_set_pythonpath.call_count, 1)
-        self.assertEqual(mock_exit.call_count, 1)
+        mock_set_pythonpath.assert_called_once()
+        mock_exit.assert_called_once()
         mock_job_set_job_status.assert_called_with(1, config.Job.RUNNING, 1)
 
     @patch('job_runner.run_ansible')
@@ -211,6 +217,6 @@ class TestJobRunner(TestCase):
     def test_do(self, mock_exit, mock_run_ansible):
         with patch('sys.argv', [__file__, 1]):
             job_runner.do()
-            self.assertEqual(mock_exit.call_count, 0)
-            self.assertEqual(mock_run_ansible.call_count, 1)
+            mock_exit.assert_not_called()
+            mock_run_ansible.assert_called_once()
             mock_run_ansible.assert_called_once_with(1)
