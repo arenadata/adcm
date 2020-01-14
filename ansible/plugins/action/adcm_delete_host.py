@@ -37,11 +37,13 @@ RETURN = r'''
 '''
 
 import sys
+from ansible.errors import AnsibleError
 from ansible.plugins.action import ActionBase
 
 sys.path.append('/adcm')
 import adcm.init_django
 import cm.api
+from cm.ansible_plugin import get_context_id
 from cm.errors import AdcmEx
 from cm.logger import log
 
@@ -52,21 +54,13 @@ class ActionModule(ActionBase):
     _VALID_ARGS = frozenset(())
 
     def run(self, tmp=None, task_vars=None):
-        def err(msg):
-            return {"failed": True, "msg": msg}
-
-        if not task_vars or 'context' not in task_vars:
-            return err("There is no сontext in task vars")
-
-        if task_vars['context']['type'] != 'host':
-            return err('you can delete host only in host context')
-        host_id = task_vars['context']['host_id']
-
+        msg = 'You can delete host only in host context'
+        host_id = get_context_id(task_vars, 'host', 'host_id', msg)
         log.info('ansible module adcm_delete_host: host #%s', host_id)
 
         try:
             cm.api.delete_host_by_id(host_id)
         except AdcmEx as e:
-            return err(e.code + ":" + e.msg)
+            raise AnsibleError(e.code + ":" + e.msg)
 
         return {"failed": False, "changed": True}

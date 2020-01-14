@@ -49,11 +49,13 @@ result:
 '''
 
 import sys
+from ansible.errors import AnsibleError
 from ansible.plugins.action import ActionBase
 
 sys.path.append('/adcm')
 import adcm.init_django
 import cm.api
+from cm.ansible_plugin import get_context_id
 from cm.errors import AdcmEx
 from cm.logger import log
 
@@ -64,21 +66,13 @@ class ActionModule(ActionBase):
     _VALID_ARGS = frozenset(('fqdn', 'description'))
 
     def run(self, tmp=None, task_vars=None):
-        def err(msg):
-            return {"failed": True, "msg": msg}
-
-        if not task_vars or 'context' not in task_vars:
-            return err("There is no сontext in task vars")
-
-        if task_vars['context']['type'] != 'provider':
-            return err('you can add host only in provider context')
-        provider_id = task_vars['context']['provider_id']
+        msg = 'You can add host only in host provider context'
+        provider_id = get_context_id(task_vars, 'provider', 'provider_id', msg)
 
         if 'fqdn' not in self._task.args:
-            return err("fqdn is mandatory args of adcm_add_host")
-
-        desc = None
+            raise AnsibleError("fqdn is mandatory args of adcm_add_host")
         fqdn = self._task.args['fqdn']
+        desc = ''
         if 'description' in self._task.args:
             desc = self._task.args['description']
 
@@ -87,6 +81,6 @@ class ActionModule(ActionBase):
         try:
             host = cm.api.add_provider_host(provider_id, fqdn, desc)
         except AdcmEx as e:
-            return err(e.code + ":" + e.msg)
+            raise AnsibleError(e.code + ":" + e.msg)
 
         return {"failed": False, "changed": True, "host_id": host.id}
