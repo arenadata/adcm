@@ -10,10 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=too-many-arguments
+# pylint: disable=too-many-branches
+
 import json
 import os
 import re
+import signal
 import subprocess
+import time
 
 from django.db import transaction
 from django.utils import timezone
@@ -61,7 +66,7 @@ def get_data_for_task(action, selector, conf, hc):
     return obj, act_conf, old_hc, delta, host_map, cluster
 
 
-def lock_create_task(action, obj, selector, act_conf, old_hc, delta, host_map, cluster):  # pylint: disable=too-many-arguments
+def lock_create_task(action, obj, selector, act_conf, old_hc, delta, host_map, cluster):
     lock_objects(obj)
 
     if host_map:
@@ -86,6 +91,24 @@ def restart_task(task):
         run_task(task, 'restart')
     else:
         err('TASK_ERROR', f'task #{task.id} has unexpected status: {task.status}')
+
+
+def cancel_task(task):
+    errors = {
+        config.Job.FAILED: ('TASK_IS_FAILED', f'task #{task.id} is failed'),
+        config.Job.ABORTED: ('TASK_IS_ABORTED', f'task #{task.id} is aborted'),
+        config.Job.SUCCESS: ('TASK_IS_SUCCESS', f'task #{task.id} is success')
+
+    }
+    if task.status in [config.Job.FAILED, config.Job.ABORTED, config.Job.SUCCESS]:
+        err(*errors.get(task.status))
+    i = 0
+    while not JobLog.objects.filter(task_id=task.id, status=config.Job.RUNNING) and i < 10:
+        time.sleep(0.5)
+        i += 1
+    if i == 10:
+        err('NO_JOBS_RUNNING', 'no jobs running')
+    os.kill(task.pid, signal.SIGTERM)
 
 
 def get_action_context(action, selector):
@@ -267,7 +290,7 @@ def cook_comp_key(name, subname):
     return f'{name}.{subname}'
 
 
-def cook_delta(cluster, new_hc, action_hc, old=None):  # pylint: disable=too-many-branches
+def cook_delta(cluster, new_hc, action_hc, old=None):
     def add_delta(delta, action, key, fqdn, host):
         service, comp = key.split('.')
         if not check_action_hc(action_hc, service, comp, action):
@@ -763,4 +786,4 @@ def run_task(task, args=''):
     ], stderr=err_file)
     log.info("run task #%s, python process %s", task.id, proc.pid)
     task.pid = proc.pid
-    task.save()
+    set_task_status(task, config.Job.RUNNING)

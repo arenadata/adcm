@@ -94,12 +94,10 @@ class TestTaskRunner(TestCase):
         self.assertEqual(code, 0)
 
     @patch('task_runner.open_file')
-    @patch('cm.job.set_task_status')
     @patch('cm.job.re_prepare_job')
     @patch('task_runner.run_job')
     @patch('cm.job.finish_task')
-    def test_run_task(self, mock_finish_task, mock_run_job, mock_re_prepare_job,
-                      mock_set_task_status, mock_open_file):
+    def test_run_task(self, mock_finish_task, mock_run_job, mock_re_prepare_job, mock_open_file):
         mock_run_job.return_value = 0
         _file = Mock()
         mock_open_file.return_value = _file
@@ -112,7 +110,6 @@ class TestTaskRunner(TestCase):
         mock_finish_task.assert_called_once_with(task, job, config.Job.SUCCESS)
         mock_run_job.assert_called_once_with(task.id, job.id, _file, _file)
         mock_re_prepare_job.assert_not_called()
-        mock_set_task_status.assert_called_once_with(task, config.Job.RUNNING)
         self.assertTrue(JobLog.objects.get(id=1).start_date != job.start_date)
 
     @patch('task_runner.run_task')
