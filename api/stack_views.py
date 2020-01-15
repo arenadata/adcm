@@ -136,6 +136,7 @@ class BundleUpdate(GenericAPIView):
 
 
 class BundleLicense(GenericAPIView):
+    action = 'retrieve'
     queryset = Bundle.objects.all()
     serializer_class = api.stack_serial.LicenseSerializer
 

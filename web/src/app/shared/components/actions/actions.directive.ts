@@ -34,12 +34,13 @@ export class ActionsDirective {
 
   @HostListener('click')
   onClick() {
-    const flag = this.data.actions[0].config.config.length || this.data.actions[0].hostcomponentmap;
+    const raw = this.data.actions[0];
+    const flag = raw.config.config.length || raw.hostcomponentmap;
     this.dialog.open(DialogComponent, {
       width: flag ? '90%' : '400px',
       maxWidth: '1400px',
       data: {
-        title: 'Run an action?',
+        title: raw.disclaimer ? raw.disclaimer : 'Run an action?',
         component: ActionMasterComponent,
         model: this.data,
       },

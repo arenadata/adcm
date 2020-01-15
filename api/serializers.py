@@ -805,6 +805,7 @@ class TaskSerializer(TaskListSerializer):
     objects = serializers.SerializerMethodField()
     jobs = serializers.SerializerMethodField()
     restart = hlink('task-restart', 'id', 'task_id')
+    cancel = hlink('task-cancel', 'id', 'task_id')
 
     def get_jobs(self, obj):
         task_jobs = JobLog.objects.filter(task_id=obj.id)
