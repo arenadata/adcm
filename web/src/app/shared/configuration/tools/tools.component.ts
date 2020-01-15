@@ -22,7 +22,7 @@ import { IToolsEvent } from '../field.service';
       <input matInput placeholder="Description configuration" [formControl]="descriptionFormControl" [value]="description" />
     </mat-form-field>
     <app-search (pattern)="filter($event)"></app-search>
-    <mat-checkbox [(ngModel)]="advanced" id="acbx">Advanced</mat-checkbox>
+    <mat-checkbox [(ngModel)]="advanced" [ngClass]="{ advanced: isAdvanced }">Advanced</mat-checkbox>
     <div class="control-buttons">
       <button mat-raised-button color="accent" class="form_config_button_save" [disabled]="disabledSave" (click)="save()">
         Save
@@ -32,10 +32,7 @@ import { IToolsEvent } from '../field.service';
       </button>
     </div>
   `,
-  styles: [
-    ':host {display: flex;justify-content: space-between;align-items: baseline;}',
-    '.form_config_button_save { margin: 0 16px 0 30px;}'
-  ]
+  styles: [':host {display: flex;justify-content: space-between;align-items: baseline;}', '.form_config_button_save { margin: 0 16px 0 30px;}']
 })
 export class ToolsComponent extends BaseDirective implements OnInit {
   historyShow = false;
@@ -47,6 +44,7 @@ export class ToolsComponent extends BaseDirective implements OnInit {
   @Input() description = '';
   @Input() disabledSave = true;
   @Input() disabledHistory = true;
+  @Input() isAdvanced = false;
   @Output() event = new EventEmitter<IToolsEvent>();
 
   ngOnInit() {
