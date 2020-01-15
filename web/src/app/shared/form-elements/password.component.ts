@@ -52,7 +52,7 @@ export class PasswordComponent extends FieldDirective implements OnInit {
   }
 
   getConfirmPasswordField() {
-    return this.form.controls['confirm_' + this.field.key];
+    return this.form.controls['confirm_' + this.field.name];
   }
 
   confirmPasswordFieldUpdate() {
