@@ -100,6 +100,10 @@ def cancel_task(task):
         config.Job.SUCCESS: ('TASK_IS_SUCCESS', f'task #{task.id} is success')
 
     }
+    action = Action.objects.get(id=task.action_id)
+    if not action.allow_to_termination:
+        err('NOT_ALLOWED_TERMINATION',
+            f'not allowed termination task #{task.id} for action #{action.id}')
     if task.status in [config.Job.FAILED, config.Job.ABORTED, config.Job.SUCCESS]:
         err(*errors.get(task.status))
     i = 0

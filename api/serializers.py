@@ -472,6 +472,7 @@ class ActionSerializer(serializers.Serializer):
     state_on_success = serializers.CharField()
     state_on_fail = serializers.CharField()
     hostcomponentmap = JSONField(required=False)
+    allow_to_termination = serializers.BooleanField(read_only=True)
 
 
 class SubActionSerializer(serializers.Serializer):
@@ -778,7 +779,15 @@ class TaskListSerializer(serializers.Serializer):
     status = serializers.CharField(read_only=True)
     start_date = serializers.DateTimeField(read_only=True)
     finish_date = serializers.DateTimeField(read_only=True)
+    to_terminatable = serializers.SerializerMethodField()
     url = hlink('task-details', 'id', 'task_id')
+
+    def get_to_terminatable(self, obj):
+        action = Action.objects.get(id=obj.action_id)
+        if action.allow_to_termination and obj.status in [config.Job.CREATED, config.Job.RUNNING]:
+            return 1
+        else:
+            return 0
 
 
 class JobShort(serializers.Serializer):
