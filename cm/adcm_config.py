@@ -274,7 +274,10 @@ def save_obj_config(obj_conf, conf, desc='', attr=None):
 
 
 def cook_file_type_name(obj, key, subkey):
-    return '{}/{}.{}.{}.{}'.format(config.FILE_DIR, obj.prototype.type, obj.id, key, subkey)
+    obj_type = 'task'
+    if hasattr(obj, 'prototype'):
+        obj_type = obj.prototype.type
+    return os.path.join(config.FILE_DIR, '{}.{}.{}.{}'.format(obj_type, obj.id, key, subkey))
 
 
 def save_file_type(obj, key, subkey, value):
@@ -310,6 +313,20 @@ def process_file_type(obj, spec, conf):
             for subkey in conf[key]:
                 if spec[key][subkey]['type'] == 'file':
                     save_file_type(obj, key, subkey, conf[key][subkey])
+    return conf
+
+
+def process_config(obj, spec, conf):
+    if not conf:
+        return conf
+    for key in conf:
+        if 'type' in spec[key]:
+            if spec[key]['type'] == 'file' and conf[key] is not None:
+                conf[key] = cook_file_type_name(obj, key, '')
+        else:
+            for subkey in conf[key]:
+                if spec[key][subkey]['type'] == 'file' and conf[key][subkey] is not None:
+                    conf[key][subkey] = cook_file_type_name(obj, key, subkey)
     return conf
 
 
