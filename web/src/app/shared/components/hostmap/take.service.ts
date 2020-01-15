@@ -74,33 +74,34 @@ export class TakeService {
   }
 
   setSource(raw: IRawHosComponent) {
-    const getActions = (c: Component) => {
-      if (this.actionParameters) return this.actionParameters.filter(a => a.service === c.service_name && a.component === c.name).map(b => b.action);
-    };
-
     if (raw.host) {
       const list = raw.host.map(h => new HostTile(h));
       this.sourceMap.set('host', [...list]);
     }
 
     if (raw.component) {
-      const list = raw.component.map(c => new CompTile(c, getActions(c)));
+      const list = raw.component.map(
+        c =>
+          new CompTile(
+            c,
+            this.actionParameters ? this.actionParameters.filter(a => a.service === c.service_name && a.component === c.name).map(b => b.action) : null
+          )
+      );
       this.sourceMap.set('compo', [...this.sourceMap.get('compo'), ...list]);
     }
   }
 
   /**
- * https://docs.arenadata.io/adcm/sdk/config.html#components
-    [1] – exactly once component shoud be installed;
-    [0,1] – one or zero component shoud be installed;
-    [1,2] – one or two component shoud be installed;
-    [0,+] – zero or any more component shoud be installed (default value);
-    [1,odd] – one or more component shoud be installed; total amount should be odd
-    [0,odd] – zero or more component shoud be installed; if more than zero, total amount should be odd
-    [odd] – the same as [1,odd]
-    [1,+] – one or any more component shoud be installed;
-    [+] – component shoud be installed on all hosts of cluster.
- *
+  https://docs.arenadata.io/adcm/sdk/config.html#components
+  [1] – exactly once component shoud be installed;
+  [0,1] – one or zero component shoud be installed;
+  [1,2] – one or two component shoud be installed;
+  [0,+] – zero or any more component shoud be installed (default value);
+  [1,odd] – one or more component shoud be installed; total amount should be odd
+  [0,odd] – zero or more component shoud be installed; if more than zero, total amount should be odd
+  [odd] – the same as [1,odd]
+  [1,+] – one or any more component shoud be installed;
+  [+] – component shoud be installed on all hosts of cluster.
  */
   validateConstraints(cti: CompTile): ValidatorFn {
     const oneConstraint = (a: Constraint, ins: number) => {
@@ -129,10 +130,7 @@ export class TakeService {
           return a[0] !== 0 && ins < a[0] ? `Must be installed at least ${a[0]} components.` : null;
       }
     };
-    const limitLength = (length: number) => {
-      return length === 1 ? oneConstraint : twoConstraint;
-    };
-
+    const limitLength = (length: number) => (length === 1 ? oneConstraint : twoConstraint);
     return (control: AbstractControl): ValidationErrors => {
       // console.log(cti.limit, cti.relations.length);
       const limit = cti.limit;
@@ -153,9 +151,7 @@ export class TakeService {
   }
 
   formFill() {
-    this.Components.map(a => {
-      this.formGroup.addControl(`${a.service_id}/${a.id}`, new FormControl(a.relations.length, this.validateConstraints(a)));
-    });
+    this.Components.map(a => this.formGroup.addControl(`${a.service_id}/${a.id}`, new FormControl(a.relations.length, this.validateConstraints(a))));
   }
 
   setRelations(a: Post[]) {
