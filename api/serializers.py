@@ -455,7 +455,8 @@ class ConfigSerializer(serializers.Serializer):
         return cm.adcm_config.get_default(obj)
 
     def get_value(self, obj):     # pylint: disable=arguments-differ
-        return cm.adcm_config.get_default(obj)
+        proto = self.context.get('prototype', None)
+        return cm.adcm_config.get_default(obj, proto)
 
 
 class ActionSerializer(serializers.Serializer):
@@ -493,7 +494,9 @@ class ActionDetailSerializer(ActionSerializer):
 
     def get_config(self, obj):
         aconf = PrototypeConfig.objects.filter(prototype=obj.prototype, action=obj).order_by('id')
-        conf = ConfigSerializer(aconf, many=True, context=self.context, read_only=True)
+        context = self.context
+        context['prototype'] = obj.prototype
+        conf = ConfigSerializer(aconf, many=True, context=context, read_only=True)
         return {'attr': None, 'config': conf.data}
 
     def get_subs(self, obj):
@@ -598,7 +601,9 @@ class ActionShort(serializers.Serializer):
     hostcomponentmap = JSONField(read_only=False)
 
     def get_config(self, obj):
-        conf = ConfigSerializer(obj.config, many=True, context=self.context, read_only=True)
+        context = self.context
+        context['prototype'] = obj.prototype
+        conf = ConfigSerializer(obj.config, many=True, context=context, read_only=True)
         return {'attr': None, 'config': conf.data}
 
 
