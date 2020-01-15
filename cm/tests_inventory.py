@@ -10,74 +10,89 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
+from unittest.mock import patch, Mock, call
 
 from django.test import TestCase
-from django.utils import timezone
 
-from cm.models import ObjectConfig, ConfigLog, ADCM, Prototype, Bundle
+import cm.inventory
+from cm.models import (
+    ObjectConfig, ConfigLog, ADCM, Prototype, Bundle, Cluster
+)
 
 
 class TestInventory(TestCase):
 
     def setUp(self):
-        self.bundle = Bundle.objects.create(**{
-            'name': 'ADB',
-            'version': '2.5',
-            'version_order': 4,
-            'edition': 'community',
-            'license': 'absent',
-            'license_path': None,
-            'license_hash': None,
-            'hash': '2232f33c6259d44c23046fce4382f16c450f8ba5',
-            'description': '',
-            'date': timezone.now()
-        })
-        self.prototype = Prototype.objects.create(**{
-            'bundle': self.bundle,
-            'type': 'cluster',
-            'name': 'ADB',
-            'display_name': 'ADB',
-            'version': '2.5',
-            'version_order': 11,
-            'required': False,
-            'shared': False,
-            'adcm_min_version': None,
-            'monitoring': 'active',
-            'description': ''
-        })
-        self.object_config = ObjectConfig.objects.create(**{
-            'current': 1,
-            'previous': 1
-        })
-        self.config_log = ConfigLog.objects.create(**{
-            'obj_ref': self.object_config,
-            'config': json.dumps(
-                {
-                    "global": {
-                        "send_stats": True,
-                        "adcm_url": None
-                    },
-                    "google_oauth": {
-                        "client_id": None,
-                        "secret": None,
-                        "whitelisted_domains": None
-                    }
-                }),
-            'attr': '{}',
-            'date': timezone.now(),
-            'description': ''
-        })
-        self.adcm = ADCM.objects.create(**{
-            'prototype': self.prototype,
-            'name': 'ADCM',
-            'config': self.object_config,
-            'state': 'created',
-            'stack': '',
-            'issue': ''
-        })
+        self.bundle = Bundle.objects.create(
+            version='1.0',
+            hash='2232f33c6259d44c23046fce4382f16c450f8ba5')
+        self.prototype = Prototype.objects.create(
+            bundle=self.bundle,
+            type='adcm',
+            version='1.0'
+        )
+        self.cluster = Cluster.objects.create(
+            prototype=self.prototype
+        )
+        self.object_config = ObjectConfig.objects.create(
+            current=1,
+            previous=1
+        )
+        self.config_log = ConfigLog.objects.create(
+            obj_ref=self.object_config,
+            config='{}'
+        )
+        self.adcm = ADCM.objects.create(
+            prototype=self.prototype
+        )
 
-    def test_process_config(self):
+    @patch('cm.inventory.cook_file_type_name')
+    @patch('cm.inventory.get_prototype_config')
+    def test_process_config(self, mock_get_prototype_config, mock_cook_file_type_name):
+        mock_cook_file_type_name.return_value = 'data_from_file'
+        obj_mock = Mock()
+        obj_mock.prototype = Mock()
+
+        test_data = [
+            (
+                {'global': ''},
+                ({'global': {'type': 'file'}}, {}, {}, {}),
+                None,
+                {'global': 'data_from_file'}
+            ),
+            (
+                {'global': {'test': ''}},
+                ({'global': {'test': {'type': 'file'}}}, {}, {}, {}),
+                None,
+                {'global': {'test': 'data_from_file'}}
+            ),
+            (
+                {},
+                ({}, {}, {}, {}),
+                '{"global": {"active": false}}',
+                {'global': None}
+            ),
+        ]
+
+        for conf, spec, attr, test_conf in test_data:
+            with self.subTest(conf=conf, spec=spec, attr=attr):
+                mock_get_prototype_config.return_value = spec
+
+                config = cm.inventory.process_config(obj_mock, conf, attr)
+
+                self.assertDictEqual(config, test_conf)
+
+        mock_get_prototype_config.assert_has_calls([
+            call(obj_mock.prototype),
+            call(obj_mock.prototype),
+            call(obj_mock.prototype),
+        ])
+        mock_cook_file_type_name.assert_has_calls([
+            call(obj_mock, 'global', ''),
+            call(obj_mock, 'global', 'test'),
+        ])
+
+    def test_get_import(self):
         pass
 
     def test_get_obj_config(self):
