@@ -786,13 +786,14 @@ class TaskListSerializer(serializers.Serializer):
     finish_date = serializers.DateTimeField(read_only=True)
     to_terminatable = serializers.SerializerMethodField()
     url = hlink('task-details', 'id', 'task_id')
+    cancel = hlink('task-cancel', 'id', 'task_id')
 
     def get_to_terminatable(self, obj):
         action = Action.objects.get(id=obj.action_id)
         if action.allow_to_termination and obj.status in [config.Job.CREATED, config.Job.RUNNING]:
-            return 1
+            return True
         else:
-            return 0
+            return False
 
 
 class JobShort(serializers.Serializer):
@@ -819,7 +820,6 @@ class TaskSerializer(TaskListSerializer):
     objects = serializers.SerializerMethodField()
     jobs = serializers.SerializerMethodField()
     restart = hlink('task-restart', 'id', 'task_id')
-    cancel = hlink('task-cancel', 'id', 'task_id')
 
     def get_jobs(self, obj):
         task_jobs = JobLog.objects.filter(task_id=obj.id)
