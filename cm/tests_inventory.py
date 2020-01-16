@@ -9,42 +9,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import json
 from unittest.mock import patch, Mock, call
 
 from django.test import TestCase
 
 import cm.inventory
 from cm.models import (
-    ObjectConfig, ConfigLog, ADCM, Prototype, Bundle, Cluster
+    ObjectConfig, ConfigLog, Prototype, Bundle, Cluster, HostProvider, Host
 )
 
 
 class TestInventory(TestCase):
 
     def setUp(self):
-        self.bundle = Bundle.objects.create(
-            version='1.0',
-            hash='2232f33c6259d44c23046fce4382f16c450f8ba5')
-        self.prototype = Prototype.objects.create(
-            bundle=self.bundle,
-            type='adcm',
-            version='1.0'
-        )
-        self.cluster = Cluster.objects.create(
-            prototype=self.prototype
-        )
-        self.object_config = ObjectConfig.objects.create(
-            current=1,
-            previous=1
-        )
-        self.config_log = ConfigLog.objects.create(
-            obj_ref=self.object_config,
-            config='{}'
-        )
-        self.adcm = ADCM.objects.create(
-            prototype=self.prototype
-        )
+        pass
 
     @patch('cm.inventory.cook_file_type_name')
     @patch('cm.inventory.get_prototype_config')
@@ -95,5 +74,114 @@ class TestInventory(TestCase):
     def test_get_import(self):
         pass
 
-    def test_get_obj_config(self):
-        pass
+    @patch('cm.inventory.process_config')
+    def test_get_obj_config(self, mock_process_config):
+        bundle = Bundle.objects.create()
+        prototype = Prototype.objects.create(bundle=bundle)
+        object_config = ObjectConfig.objects.create(current=1, previous=1)
+        cluster = Cluster.objects.create(prototype=prototype, config=object_config)
+        config_log = ConfigLog.objects.create(obj_ref=object_config, config='{}')
+
+        cm.inventory.get_obj_config(cluster)
+        mock_process_config.assert_called_once_with(
+            cluster, json.loads(config_log.config), config_log.attr)
+
+    @patch('cm.inventory.get_import')
+    @patch('cm.inventory.get_obj_config')
+    def test_get_cluster_config(self, mock_get_obj_config, mock_get_import):
+        mock_get_obj_config.return_value = {}
+        mock_get_import.return_value = {}
+
+        bundle = Bundle.objects.create()
+        prototype = Prototype.objects.create(bundle=bundle)
+        object_config = ObjectConfig.objects.create(current=1, previous=1)
+        cluster = Cluster.objects.create(prototype=prototype, config=object_config)
+
+        res = cm.inventory.get_cluster_config(cluster.id)
+        test_res = {
+            'cluster': {
+                'config': {},
+                'name': '',
+                'id': 1
+            },
+            'services': {}
+        }
+        self.assertDictEqual(res, test_res)
+
+        mock_get_obj_config.assert_called_once_with(cluster)
+        mock_get_import.assert_called_once_with(cluster)
+
+    @patch('cm.inventory.get_obj_config')
+    def test_get_provider_config(self, mock_get_obj_config):
+        mock_get_obj_config.return_value = {}
+
+        bundle = Bundle.objects.create()
+        prototype = Prototype.objects.create(bundle=bundle, type='host')
+        object_config = ObjectConfig.objects.create(current=1, previous=1)
+        provider = HostProvider.objects.create(prototype=prototype, config=object_config)
+
+        config = cm.inventory.get_provider_config(provider.id)
+
+        test_config = {
+            'provider': {
+                'config': {},
+                'name': '',
+                'id': 1,
+                'host_prototype_id': 1
+            }
+        }
+        self.assertDictEqual(config, test_config)
+        mock_get_obj_config.assert_called_once_with(provider)
+
+    @patch('cm.inventory.get_obj_config')
+    def test_get_host_groups(self, mock_get_obj_config):
+        mock_get_obj_config.return_value = {}
+
+        bundle = Bundle.objects.create()
+        prototype = Prototype.objects.create(bundle=bundle)
+        object_config = ObjectConfig.objects.create(current=1, previous=1)
+        cluster = Cluster.objects.create(prototype=prototype, config=object_config)
+
+        groups = cm.inventory.get_host_groups(cluster.id, {})
+
+        self.assertDictEqual(groups, {})
+        mock_get_obj_config.assert_not_called()
+
+    @patch('cm.inventory.get_obj_config')
+    def test_get_host(self, mock_get_obj_config):
+        mock_get_obj_config.return_value = {}
+        bundle = Bundle.objects.create()
+        prototype = Prototype.objects.create(bundle=bundle)
+        host = Host.objects.create(prototype=prototype, fqdn='test')
+        host_list = [host]
+
+        qroup = cm.inventory.get_hosts(host_list)
+
+        test_group = {
+            'test': {
+                'adcm_hostid': 1
+            }
+        }
+        self.assertDictEqual(qroup, test_group)
+        mock_get_obj_config.assert_called_once_with(host)
+
+    @patch('cm.inventory.get_hosts')
+    @patch('cm.inventory.get_cluster_config')
+    def test_get_cluster_hosts(self, mock_get_cluster_config, mock_get_hosts):
+        mock_get_cluster_config.return_value = []
+        mock_get_hosts.return_value = []
+
+        bundle = Bundle.objects.create()
+        prototype = Prototype.objects.create(bundle=bundle)
+        cluster = Cluster.objects.create(prototype=prototype)
+
+        test_cluster_hosts = {
+            'CLUSTER': {
+                'hosts': [],
+                'vars': []
+            }
+        }
+
+        cluster_hosts = cm.inventory.get_cluster_hosts(cluster.id)
+
+        self.assertDictEqual(cluster_hosts, test_cluster_hosts)
