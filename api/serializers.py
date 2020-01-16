@@ -790,7 +790,9 @@ class TaskListSerializer(serializers.Serializer):
 
     def get_to_terminatable(self, obj):
         action = Action.objects.get(id=obj.action_id)
+        # pylint: disable=simplifiable-if-statement
         if action.allow_to_termination and obj.status in [config.Job.CREATED, config.Job.RUNNING]:
+            # pylint: enable=simplifiable-if-statement
             return True
         else:
             return False
