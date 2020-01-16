@@ -80,11 +80,6 @@ def add_provider_host(provider_id, fqdn, desc=''):
         provider = HostProvider.objects.get(id=provider_id)
     except HostProvider.DoesNotExist:
         err('PROVIDER_NOT_FOUND', 'Host Provider with id #{} is not found'.format(provider_id))
-    try:
-        Host.objects.get(fqdn=fqdn)
-        err('HOST_CONFLICT', 'Host with fqdn "{}" already exists'.format(fqdn))
-    except Host.DoesNotExist:
-        pass
     proto = Prototype.objects.get(bundle=provider.prototype.bundle, type='host')
     return add_host(proto, provider, fqdn, desc)
 
@@ -137,6 +132,14 @@ def delete_host(host):
     cm.status_api.post_event('delete', 'host', host.id)
     host.delete()
     cm.status_api.load_service_map()
+
+
+def delete_host_by_id(host_id):
+    try:
+        host = Host.objects.get(id=host_id)
+    except Host.DoesNotExist:
+        err('HOST_NOT_FOUND', 'Host with id #{} is not found'.format(host_id))
+    delete_host(host)
 
 
 def delete_service(service):
