@@ -25,7 +25,7 @@ from django.utils import timezone
 
 import cm.config as config
 from cm import api, status_api, issue, inventory, adcm_config
-from cm.adcm_config import obj_ref
+from cm.adcm_config import obj_ref, process_file_type, process_config
 from cm.errors import raise_AdcmEx as err
 from cm.inventory import get_obj_config
 from cm.logger import log
@@ -41,14 +41,18 @@ def start_task(action_id, selector, conf, hc):
     except Action.DoesNotExist:
         err('ACTION_NOT_FOUND')
 
-    obj, act_conf, old_hc, delta, host_map, cluster = get_data_for_task(action, selector, conf, hc)
+    obj, act_conf, spec, old_hc, delta, host_map, cluster = get_data_for_task(
+        action, selector, conf, hc
+    )
 
     if action.type not in ['task', 'job']:
         msg = f'unknown type "{action.type}" for action: {action}, {action.context}: {obj.name}'
         err('WRONG_ACTION_TYPE', msg)
 
     with transaction.atomic():
-        task = lock_create_task(action, obj, selector, act_conf, old_hc, delta, host_map, cluster)
+        task = lock_create_task(
+            action, obj, selector, act_conf, spec, old_hc, delta, host_map, cluster
+        )
     run_task(task)
 
     return task
@@ -60,13 +64,13 @@ def get_data_for_task(action, selector, conf, hc):
     iss = issue.get_issue(obj)
     if not issue.issue_to_bool(iss):
         err('TASK_ERROR', 'action has issues', iss)
-    act_conf = check_action_config(action, conf)
+    act_conf, spec = check_action_config(action, conf)
     host_map, delta = check_hostcomponentmap(cluster, action, hc)
     old_hc = get_hc(cluster)
-    return obj, act_conf, old_hc, delta, host_map, cluster
+    return obj, act_conf, spec, old_hc, delta, host_map, cluster
 
 
-def lock_create_task(action, obj, selector, act_conf, old_hc, delta, host_map, cluster):
+def lock_create_task(action, obj, selector, act_conf, spec, old_hc, delta, host_map, cluster):
     lock_objects(obj)
 
     if host_map:
@@ -74,10 +78,17 @@ def lock_create_task(action, obj, selector, act_conf, old_hc, delta, host_map, c
 
     if action.type == 'task':
         task = create_task(action, selector, obj, act_conf, old_hc, delta)
+        new_conf = process_config(task, spec, act_conf)
     else:
         task = create_one_job_task(action.id, selector, obj, act_conf, old_hc)
         job = create_job(action, None, selector, task.id)
-        prepare_job(action, None, selector, job.id, obj, act_conf, delta)
+        new_conf = process_config(task, spec, act_conf)
+        prepare_job(action, None, selector, job.id, obj, new_conf, delta)
+
+    if act_conf:
+        process_file_type(task, spec, act_conf)
+        task.config = json.dumps(new_conf)
+        task.save()
 
     return task
 
@@ -255,8 +266,8 @@ def check_action_config(action, conf):
         if not conf:
             err('TASK_ERROR', 'action config is required')
     else:
-        return None
-    return adcm_config.check_config_spec(action.prototype, action, spec, flat_spec, conf)
+        return None, None
+    return adcm_config.check_config_spec(action.prototype, action, spec, flat_spec, conf), spec
 
 
 def add_to_dict(my_dict, key, subkey, value):
