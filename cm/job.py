@@ -633,7 +633,10 @@ def get_task_obj(context, obj_id):
     if context == 'service':
         obj = ClusterObject.objects.get(id=obj_id)
     elif context == 'host':
-        obj = Host.objects.get(id=obj_id)
+        try:
+            obj = Host.objects.get(id=obj_id)
+        except Host.DoesNotExist:
+            return None
     elif context == 'cluster':
         obj = Cluster.objects.get(id=obj_id)
     elif context == 'provider':
@@ -672,6 +675,9 @@ def get_state(action, job, status):
 
 
 def set_action_state(action, task, obj, state):
+    if not obj:
+        log.warning('empty object for action %s of task #%s', action.name, task.id)
+        return
     msg = 'action "%s" of task #%s will set %s state to "%s"'
     log.info(msg, action.name, task.id, obj_ref(obj), state)
     api.push_obj(obj, state)
