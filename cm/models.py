@@ -216,6 +216,7 @@ class Action(models.Model):
     log_files = models.TextField(blank=True)          # JSON
 
     hostcomponentmap = models.TextField(blank=True)   # JSON
+    allow_to_termination = models.BooleanField(default=True)
 
     def __str__(self):
         return "{} {}".format(self.prototype, self.name)
@@ -432,6 +433,7 @@ class StageAction(models.Model):
     log_files = models.TextField(blank=True)          # JSON
 
     hostcomponentmap = models.TextField(blank=True)   # JSON
+    allow_to_termination = models.BooleanField(default=True)
 
     def __str__(self):
         return "{}:{}".format(self.prototype, self.name)
