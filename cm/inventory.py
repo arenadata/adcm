@@ -22,11 +22,11 @@ from cm.models import ClusterBind, PrototypeExport, HostProvider, Prototype, Pro
 
 def process_config_and_attr(obj, conf, attr=None):
     spec, _, _, _ = get_prototype_config(obj.prototype)
+    new_conf = process_config(obj, spec, conf)
     if attr:
         for key, val in json.loads(attr).items():
             if 'active' in val and not val['active']:
-                conf[key] = None
-    new_conf = process_config(obj, spec, conf)
+                new_conf[key] = None
     return new_conf
 
 
