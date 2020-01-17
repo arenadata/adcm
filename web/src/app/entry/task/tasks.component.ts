@@ -34,14 +34,15 @@ import { ActivatedRoute, Router, ParamMap } from '@angular/router';
 })
 export class TasksComponent extends SocketListener implements OnInit {
   dataSource = new MatTableDataSource<Task>([]);
-  columnsToDisplay = ['id', 'name', 'objects', 'start_date', 'finish_date', 'status'];
+  columnsToDisplay = ['id', 'name', 'objects', 'cancel', 'start_date', 'finish_date', 'status'];
   expandedTask: Task | null;
 
   iconDisplay = {
     created: 'watch_later',
     running: 'autorenew',
     success: 'done',
-    failed: 'error'
+    failed: 'error',
+    aborted: ''
   };
 
   paramMap: ParamMap;
@@ -80,6 +81,15 @@ export class TasksComponent extends SocketListener implements OnInit {
     super.startListenSocket();
   }
 
+  cancelTask(url: string) {
+    this.api
+      .post(url, {
+        config: null,
+        hc: null
+      })
+      .subscribe();
+  }
+
   getParentLink(objects: { id: number; type: string }[], ind: number) {
     return objects.filter((a, i) => i <= ind).reduce((a, c) => [...a, c.type, c.id], ['/']);
   }
@@ -114,7 +124,7 @@ export class TasksComponent extends SocketListener implements OnInit {
   addTask(id: number) {
     this.api.getOne<Task>('task', id).subscribe(task => {
       this.dataSource.data = [task, ...this.dataSource.data];
-      this.dataSource._updateChangeSubscription();      
+      this.dataSource._updateChangeSubscription();
     });
   }
 

@@ -39,6 +39,13 @@
         </td>
       </ng-container>
 
+      <ng-container matColumnDef="cancel">
+        <th mat-header-cell *matHeaderCellDef class="control"></th>
+        <td mat-cell *matCellDef="let row">
+          <button [disabled]="!row.terminatable" (click)="cancelTask(row.cancel)" mat-icon-button><mat-icon>cancel</mat-icon></button>
+        </td>
+      </ng-container>
+
       <ng-container matColumnDef="start_date">
         <th mat-header-cell *matHeaderCellDef class="action_date">Start date</th>
         <td mat-cell *matCellDef="let element">{{ element.start_date | date: 'medium' }}</td>
