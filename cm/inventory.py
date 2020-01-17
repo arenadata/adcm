@@ -169,7 +169,6 @@ def get_cluster_hosts(cluster_id):
 def get_provider_hosts(provider_id):
     return {'PROVIDER': {
         'hosts': get_hosts(Host.objects.filter(provider__id=provider_id)),
-        'vars': get_provider_config(provider_id)
     }}
 
 
@@ -191,5 +190,6 @@ def prepare_job_inventory(selector, job_id, delta):
         inv['all']['children'].update(get_host(selector['host']))
     if 'provider' in selector:
         inv['all']['children'].update(get_provider_hosts(selector['provider']))
+        inv['all']['vars'] = get_provider_config(selector['provider'])
     json.dump(inv, fd, indent=3)
     fd.close()
