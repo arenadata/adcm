@@ -639,7 +639,7 @@ class TaskReStart(GenericAPIView):
             cm.job.restart_task(task)
         except AdcmEx as e:
             raise AdcmApiEx(e.code, e.msg, e.http_code)
-        return Response(status.HTTP_200_OK)
+        return Response(status=status.HTTP_200_OK)
 
 
 class TaskCancel(GenericAPIView):
@@ -652,7 +652,7 @@ class TaskCancel(GenericAPIView):
             cm.job.cancel_task(task)
         except AdcmEx as e:
             raise AdcmApiEx(e.code, e.msg, e.http_code)
-        return Response(status.HTTP_200_OK)
+        return Response(status=status.HTTP_200_OK)
 
 
 class ProviderConfig(ListView):

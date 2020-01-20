@@ -68,6 +68,11 @@
       width: auto;
     }
   }
+
+  &.advanced .value {    
+    label {border-bottom: dotted 1px #00e676 !important;}    
+  }
+
   .error {
     font-size: 75%;
   }
