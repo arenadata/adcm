@@ -3,7 +3,7 @@ FROM python:3-alpine
 COPY requirements.txt /
 
 RUN apk add --update --no-cache --virtual .pynacl_deps build-base python3-dev libffi-dev openssl-dev linux-headers libxslt-dev \
-&& apk add --update --no-cache libffi openssl libxslt \
+&& apk add --update --no-cache libffi openssl libxslt libstdc++ \
 && apk add --update --no-cache nginx sshpass runit openssh-keygen openssh-client git dcron logrotate curl \
 && pip install --no-cache-dir -r /requirements.txt \
 && rm /requirements.txt \
