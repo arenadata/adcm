@@ -119,8 +119,9 @@ body {
   }
 }
 
-// check-box for advanced fields
-#acbx.mat-checkbox-checked label.mat-checkbox-layout span.mat-checkbox-label {border-bottom: dotted 1px #00e676;}
+mat-checkbox.advanced>label>span {
+  border-bottom: dotted 1px #00e676;
+}
 
 .icon-locked {
   animation: rotate 2s infinite linear;
