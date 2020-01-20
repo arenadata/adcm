@@ -9,11 +9,41 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+import { Component, DebugElement } from '@angular/core';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { SharedModule } from '@app/shared';
+
 import { HoverDirective } from './hover.directive';
 
+@Component({
+  template: `
+    <button appHoverStatusTask mat-raised-button matTooltip="Stop task">
+      <mat-icon class="icon-locked running" #taskIcon>autorenew</mat-icon>
+    </button>
+  `
+})
+export class TestComponent {}
+
 describe('HoverDirective', () => {
-  it('should create an instance', () => {
-    const directive = new HoverDirective();
-    expect(directive).toBeTruthy();
+  let fixture: ComponentFixture<TestComponent>;
+  let debs: DebugElement[];
+  let den: DebugElement;
+
+  beforeEach(() => {
+    fixture = TestBed.configureTestingModule({
+      imports: [SharedModule],
+      declarations: [TestComponent, HoverDirective]
+    }).createComponent(TestComponent);
+
+    fixture.detectChanges();
+
+    debs = fixture.debugElement.queryAll(By.directive(HoverDirective));
+
+  });
+
+  it('can inject `HoverDirective` in 1st <button>', () => {
+    const dir = debs[0].injector.get(HoverDirective);
+    expect(dir).toBeTruthy();
   });
 });
