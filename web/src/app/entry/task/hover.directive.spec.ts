@@ -39,11 +39,30 @@ describe('HoverDirective', () => {
     fixture.detectChanges();
 
     debs = fixture.debugElement.queryAll(By.directive(HoverDirective));
-
   });
 
   it('can inject `HoverDirective` in 1st <button>', () => {
     const dir = debs[0].injector.get(HoverDirective);
     expect(dir).toBeTruthy();
+  });
+
+  it('should have `HoverDirective` in 1st <button> providerTokens', () => {
+    expect(debs[0].providerTokens).toContain(HoverDirective);
+  });
+
+  // mousehover
+  it('should change icon by mouseover', () => {
+    const a = debs[0];
+    a.triggerEventHandler('mouseover', {});
+    fixture.detectChanges();
+    expect(a.nativeElement.querySelector('mat-icon').innerText).toEqual('block');
+  });
+
+  // mouseleave
+  it('should change icon by mouseout', () => {
+    const a = debs[0];
+    a.triggerEventHandler('mouseout', {});
+    fixture.detectChanges();
+    expect(a.nativeElement.querySelector('mat-icon').innerText).toEqual('autorenew');
   });
 });
