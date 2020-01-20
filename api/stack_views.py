@@ -158,7 +158,7 @@ class AcceptLicense(GenericAPIView):
         bundle = check_obj(Bundle, bundle_id, 'BUNDLE_NOT_FOUND')
         try:
             cm.api.accept_license(bundle)
-            return Response(status.HTTP_200_OK)
+            return Response(status=status.HTTP_200_OK)
         except AdcmEx as e:
             raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds)
 
