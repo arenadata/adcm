@@ -628,6 +628,7 @@ class TaskDetail(DetailViewRO):
 
 class TaskReStart(GenericAPIView):
     queryset = TaskLog.objects.all()
+    serializer_class = api.serializers.TaskSerializer
 
     def put(self, request, task_id):
         task = check_obj(TaskLog, task_id, 'TASK_NOT_FOUND')
@@ -640,6 +641,7 @@ class TaskReStart(GenericAPIView):
 
 class TaskCancel(GenericAPIView):
     queryset = TaskLog.objects.all()
+    serializer_class = api.serializers.TaskSerializer
 
     def put(self, request, task_id):
         task = check_obj(TaskLog, task_id, 'TASK_NOT_FOUND')
