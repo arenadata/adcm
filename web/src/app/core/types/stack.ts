@@ -24,14 +24,3 @@ export interface StackBase {
 
 export type Prototype = StackBase & {bundle_id: number};
 export type ServicePrototype = StackBase & {selected: boolean};
-
-// export interface StackService extends StackBase {
-//   components: StackServiceComponent[];
-// }
-
-// export interface StackServiceComponent {
-//   name: string;
-//   description: string;
-//   params: {};
-//   constraint: Constraint;
-// }
