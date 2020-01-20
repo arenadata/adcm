@@ -293,6 +293,8 @@ class PrototypeImport(models.Model):
     name = models.CharField(max_length=160)
     min_version = models.CharField(max_length=80)
     max_version = models.CharField(max_length=80)
+    min_strict = models.BooleanField(default=False)
+    max_strict = models.BooleanField(default=False)
     default = models.TextField(null=True, default=None)   # JSON
     required = models.BooleanField(default=False)
     multibind = models.BooleanField(default=False)
@@ -482,6 +484,8 @@ class StagePrototypeImport(models.Model):
     name = models.CharField(max_length=160)
     min_version = models.CharField(max_length=80)
     max_version = models.CharField(max_length=80)
+    min_strict = models.BooleanField(default=False)
+    max_strict = models.BooleanField(default=False)
     default = models.TextField(null=True, default=None)   # JSON
     required = models.BooleanField(default=False)
     multibind = models.BooleanField(default=False)
