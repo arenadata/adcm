@@ -185,3 +185,59 @@ class TestInventory(TestCase):
         cluster_hosts = cm.inventory.get_cluster_hosts(cluster.id)
 
         self.assertDictEqual(cluster_hosts, test_cluster_hosts)
+        mock_get_hosts.assert_called_once()
+        mock_get_cluster_config.assert_called_once_with(cluster.id)
+
+    @patch('cm.inventory.get_provider_config')
+    @patch('cm.inventory.get_hosts')
+    def test_get_provider_hosts(self, mock_get_hosts, mock_get_provider_config):
+        mock_get_hosts.return_value = []
+        mock_get_provider_config.return_value = []
+
+        bundle = Bundle.objects.create()
+        prototype = Prototype.objects.create(bundle=bundle)
+        provider = HostProvider.objects.create(prototype=prototype)
+        Host.objects.create(prototype=prototype, provider=provider)
+
+        provider_hosts = cm.inventory.get_provider_hosts(provider.id)
+
+        test_provider_hosts = {
+            'PROVIDER': {
+                'hosts': [],
+                'vars': []
+            }
+        }
+
+        self.assertDictEqual(provider_hosts, test_provider_hosts)
+        mock_get_hosts.assert_called_once()
+        mock_get_provider_config.assert_called_once_with(provider.id)
+
+    @patch('cm.inventory.get_provider_hosts')
+    @patch('cm.inventory.get_hosts')
+    def test_get_host(self, mock_get_hosts, mock_get_provider_hosts):
+        mock_get_hosts.return_value = []
+        mock_get_provider_hosts.return_value = {
+            'PROVIDER': {
+                'hosts': [],
+                'vars': []
+            }
+        }
+
+        bundle = Bundle.objects.create()
+        prototype = Prototype.objects.create(bundle=bundle)
+        provider = HostProvider.objects.create(prototype=prototype)
+        host = Host.objects.create(prototype=prototype, provider=provider)
+
+        groups = cm.inventory.get_host(host.id)
+        test_groups = {
+            'HOST': {
+                'hosts': []
+            },
+            'PROVIDER': {
+                'hosts': [],
+                'vars': []
+            }
+        }
+        self.assertDictEqual(groups, test_groups)
+        mock_get_hosts.assert_called_once_with([host])
+        mock_get_provider_hosts.assert_called_once_with(host.provider.id)
