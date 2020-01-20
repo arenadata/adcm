@@ -13,9 +13,10 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AuthGuard } from '@app/core';
-
-import { TasksComponent } from './tasks.component';
 import { SharedModule } from '@app/shared';
+
+import { HoverDirective } from './hover.directive';
+import { TasksComponent } from './tasks.component';
 
 const routes: Routes = [
   {
@@ -27,12 +28,12 @@ const routes: Routes = [
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule],
+  exports: [RouterModule]
 })
 export class TaskRoutingModule {}
 
 @NgModule({
   imports: [CommonModule, TaskRoutingModule, SharedModule],
-  declarations: [TasksComponent],
+  declarations: [TasksComponent, HoverDirective],
 })
 export class TaskModule {}

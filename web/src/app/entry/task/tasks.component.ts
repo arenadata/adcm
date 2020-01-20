@@ -34,7 +34,7 @@ import { ActivatedRoute, Router, ParamMap } from '@angular/router';
 })
 export class TasksComponent extends SocketListener implements OnInit {
   dataSource = new MatTableDataSource<Task>([]);
-  columnsToDisplay = ['id', 'name', 'objects', 'cancel', 'start_date', 'finish_date', 'status'];
+  columnsToDisplay = ['id', 'name', 'objects', 'start_date', 'finish_date', 'status'];
   expandedTask: Task | null;
 
   iconDisplay = {
@@ -42,7 +42,7 @@ export class TasksComponent extends SocketListener implements OnInit {
     running: 'autorenew',
     success: 'done',
     failed: 'error',
-    aborted: ''
+    aborted: 'block'
   };
 
   paramMap: ParamMap;
@@ -57,6 +57,15 @@ export class TasksComponent extends SocketListener implements OnInit {
 
   constructor(private api: ApiService, protected store: Store<SocketState>, public router: Router, public route: ActivatedRoute) {
     super(store);
+  }
+
+  getIcon(status: string) {
+    switch (status) {
+      case 'aborted':
+        return 'block';
+      default:
+        return 'done_all';
+    }
   }
 
   ngOnInit() {
@@ -82,12 +91,7 @@ export class TasksComponent extends SocketListener implements OnInit {
   }
 
   cancelTask(url: string) {
-    this.api
-      .post(url, {
-        config: null,
-        hc: null
-      })
-      .subscribe();
+    this.api.put(url, {}).subscribe();
   }
 
   getParentLink(objects: { id: number; type: string }[], ind: number) {
