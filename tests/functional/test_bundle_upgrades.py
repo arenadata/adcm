@@ -18,8 +18,10 @@ from adcm_pytest_plugin import utils
 
 # pylint: disable=W0611, W0621
 from tests.library import steps
-from tests.library.errorcodes import (INVALID_UPGRADE_DEFINITION,
-                                      UPGRADE_ERROR, UPGRADE_NOT_FOUND)
+from tests.library.errorcodes import (
+    INVALID_UPGRADE_DEFINITION, INVALID_VERSION_DEFINITION,
+    UPGRADE_ERROR, UPGRADE_NOT_FOUND
+)
 
 BUNDLES = os.path.join(os.path.dirname(__file__), "stacks/")
 
