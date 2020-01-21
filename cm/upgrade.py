@@ -31,12 +31,20 @@ def check_license(bundle):
         err('LICENSE_ERROR', msg.format(bundle.name, bundle.version, bundle.edition))
 
 
-def version_in(version, min_ver, max_ver):
-    # log.debug('version_in: %s < %s > %s', min_ver, version, max_ver)
-    if rpm.compare_versions(version, min_ver) < 0:
-        return False
-    if rpm.compare_versions(version, max_ver) > 0:
-        return False
+def version_in(version, ver):
+    # log.debug('version_in: %s < %s > %s', ver.min_version, version, ver.max_version)
+    if ver.min_strict:
+        if rpm.compare_versions(version, ver.min_version) <= 0:
+            return False
+    else:
+        if rpm.compare_versions(version, ver.min_version) < 0:
+            return False
+    if ver.max_strict:
+        if rpm.compare_versions(version, ver.max_version) >= 0:
+            return False
+    else:
+        if rpm.compare_versions(version, ver.max_version) > 0:
+            return False
     return True
 
 
@@ -143,7 +151,7 @@ def check_upgrade_import(obj, upgrade):   # pylint: disable=too-many-branches
         except PrototypeImport.DoesNotExist:
             msg = 'New version of {} does not have import "{}"'
             return (False, msg.format(proto_ref(proto), export.prototype.name))
-        if not version_in(export.prototype.version, pi.min_version, pi.max_version):
+        if not version_in(export.prototype.version, pi):
             msg = 'Import "{}" of {} versions ({}, {}) does not match export version: {} ({})'
             return (False, msg.format(
                 export.prototype.name, proto_ref(proto), pi.min_version, pi.max_version,
@@ -161,7 +169,7 @@ def check_upgrade_import(obj, upgrade):   # pylint: disable=too-many-branches
             return (False, msg.format(proto_ref(export)))
         import_obj = get_import(cbind)
         pi = PrototypeImport.objects.get(prototype=import_obj.prototype, name=export.prototype.name)
-        if not version_in(proto.version, pi.min_version, pi.max_version):
+        if not version_in(proto.version, pi):
             msg = 'Export of {} does not match import versions: ({}, {}) ({})'
             return (False, msg.format(
                 proto_ref(proto), pi.min_version, pi.max_version, obj_ref(import_obj)

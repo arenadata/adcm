@@ -380,7 +380,7 @@ def get_import(cluster, service=None):
             if pe.prototype.id in export_proto:
                 continue
             export_proto[pe.prototype.id] = True
-            if not version_in(pe.prototype.version, pi.min_version, pi.max_version):
+            if not version_in(pe.prototype.version, pi):
                 continue
             if pe.prototype.type == 'cluster':
                 for cls in Cluster.objects.filter(prototype=pe.prototype):
@@ -520,7 +520,7 @@ def multi_bind(cluster, service, bind_list):   # pylint: disable=too-many-locals
         if pi.name != export_obj.prototype.name:
             msg = 'Export {} does not match import name "{}"'
             err('BIND_ERROR', msg.format(obj_ref(export_obj), pi.name))
-        if not version_in(export_obj.prototype.version, pi.min_version, pi.max_version):
+        if not version_in(export_obj.prototype.version, pi):
             msg = 'Import "{}" of {} versions ({}, {}) does not match export version: {} ({})'
             err('BIND_ERROR', msg.format(
                 export_obj.prototype.name, proto_ref(pi.prototype), pi.min_version, pi.max_version,
