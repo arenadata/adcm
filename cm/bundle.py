@@ -295,7 +295,7 @@ def copy_stage_actons(stage_actions, prototype):
         prototype,
         ('name', 'type', 'script', 'script_type', 'state_on_success',
          'state_on_fail', 'state_available', 'params', 'log_files',
-         'hostcomponentmap', 'button', 'display_name', 'description', 'disclaimer',
+         'hostcomponentmap', 'button', 'display_name', 'description', 'ui_options',
          'allow_to_termination')
     )
     Action.objects.bulk_create(actions)
@@ -430,13 +430,13 @@ def update_bundle_from_stage(bundle):   # pylint: disable=too-many-locals,too-ma
                 update_obj(action, saction, (
                     'type', 'script', 'script_type', 'state_on_success',
                     'state_on_fail', 'state_available', 'params', 'log_files',
-                    'hostcomponentmap', 'button', 'display_name', 'description', 'disclaimer',
+                    'hostcomponentmap', 'button', 'display_name', 'description', 'ui_options',
                 ))
             except Action.DoesNotExist:
                 action = copy_obj(saction, Action, (
                     'name', 'type', 'script', 'script_type', 'state_on_success',
                     'state_on_fail', 'state_available', 'params', 'log_files',
-                    'hostcomponentmap', 'button', 'display_name', 'description', 'disclaimer',
+                    'hostcomponentmap', 'button', 'display_name', 'description', 'ui_options',
                 ))
                 action.prototype = p
             action.save()
