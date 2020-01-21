@@ -19,7 +19,7 @@ import adcm.init_django		# pylint: disable=unused-import
 from django.contrib.auth.models import User
 
 from cm.logger import log
-from cm.models import UserProfile
+from cm.models import UserProfile, DummyData
 from cm.bundle import load_adcm
 from cm.config import SECRETS_FILE
 from cm.job import unlock_all
@@ -49,6 +49,10 @@ def create_status_user():
     log.info('Update secret file %s OK', SECRETS_FILE)
 
 
+def create_dummy_data():
+    DummyData.objects.create()
+
+
 def init():
     log.info("Start initializing ADCM DB...")
     try:
@@ -62,6 +66,7 @@ def init():
     create_status_user()
     unlock_all()
     load_adcm()
+    create_dummy_data()
     log.info("ADCM DB is initialized")
 
 
