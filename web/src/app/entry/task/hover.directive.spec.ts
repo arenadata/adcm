@@ -25,10 +25,10 @@ import { HoverDirective } from './hover.directive';
 })
 export class TestComponent {}
 
-describe('HoverDirective', () => {
+describe('HoverStatusTaskDirective', () => {
   let fixture: ComponentFixture<TestComponent>;
   let debs: DebugElement[];
-  let den: DebugElement;
+  let a: DebugElement;
 
   beforeEach(() => {
     fixture = TestBed.configureTestingModule({
@@ -39,30 +39,48 @@ describe('HoverDirective', () => {
     fixture.detectChanges();
 
     debs = fixture.debugElement.queryAll(By.directive(HoverDirective));
+    a = debs[0];
+
   });
 
-  it('can inject `HoverDirective` in 1st <button>', () => {
-    const dir = debs[0].injector.get(HoverDirective);
-    expect(dir).toBeTruthy();
+  // afterEach(() => {
+  //   fixture.destroy();
+  // });
+
+  it('can inject `HoverStatusTaskDirective` in 1st <button>', () => {
+    expect(a.injector.get(HoverDirective)).toBeTruthy();
   });
 
-  it('should have `HoverDirective` in 1st <button> providerTokens', () => {
-    expect(debs[0].providerTokens).toContain(HoverDirective);
+  it('should have `HoverStatusTaskDirective` in 1st <button> providerTokens', () => {
+    expect(a.providerTokens).toContain(HoverDirective);
   });
 
   // mousehover
-  it('should change icon by mouseover', () => {
-    const a = debs[0];
+  it('should change icon `block` by mouseover', () => {    
     a.triggerEventHandler('mouseover', {});
     fixture.detectChanges();
     expect(a.nativeElement.querySelector('mat-icon').innerText).toEqual('block');
   });
 
+  it('should remove class `icon-locked` on icon by mouseover', () => {
+    a.triggerEventHandler('mouseover', {});
+    fixture.detectChanges();
+    const b: HTMLElement = a.nativeElement.querySelector('mat-icon');
+    expect(b.classList.contains('icon-locked')).toBeFalse();
+  });
+
   // mouseleave
-  it('should change icon by mouseout', () => {
-    const a = debs[0];
+  it('should return icon `autorenew` by mouseout', () => {
     a.triggerEventHandler('mouseout', {});
     fixture.detectChanges();
     expect(a.nativeElement.querySelector('mat-icon').innerText).toEqual('autorenew');
   });
+
+  it('should return class `icon-locked` on icon by mouseout', () => {
+    a.triggerEventHandler('mouseout', {});
+    fixture.detectChanges();
+    const b: HTMLElement = a.nativeElement.querySelector('mat-icon');
+    expect(b.classList.contains('icon-locked')).toBeTrue();
+  });
+
 });

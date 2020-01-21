@@ -11,15 +11,14 @@
 // limitations under the License.
 import { animate, state, style, transition, trigger, useAnimation, animation } from '@angular/animations';
 import { Component, ElementRef, OnInit, QueryList, ViewChild, ViewChildren, HostBinding } from '@angular/core';
-import { MatPaginator, MatSort, MatSortHeader, PageEvent, MatTableDataSource } from '@angular/material';
+import { MatPaginator, MatSort, MatSortHeader, PageEvent, MatTableDataSource, MatDialog } from '@angular/material';
 import { ApiService } from '@app/core/api';
 import { EventMessage, SocketState } from '@app/core/store';
 import { Task, JobStatus } from '@app/core/types';
-import { SocketListener } from '@app/shared';
+import { SocketListener, DialogComponent } from '@app/shared';
 import { Store } from '@ngrx/store';
-import { switchMap } from 'rxjs/operators';
+import { switchMap, filter } from 'rxjs/operators';
 import { ActivatedRoute, Router, ParamMap } from '@angular/router';
-
 
 @Component({
   selector: 'app-tasks',
@@ -34,7 +33,6 @@ import { ActivatedRoute, Router, ParamMap } from '@angular/router';
   ]
 })
 export class TasksComponent extends SocketListener implements OnInit {
-
   isDisabled = false;
 
   dataSource = new MatTableDataSource<Task>([]);
@@ -59,7 +57,7 @@ export class TasksComponent extends SocketListener implements OnInit {
 
   @ViewChildren(MatSortHeader, { read: ElementRef }) matSortHeader: QueryList<ElementRef>;
 
-  constructor(private api: ApiService, protected store: Store<SocketState>, public router: Router, public route: ActivatedRoute) {
+  constructor(private api: ApiService, protected store: Store<SocketState>, public router: Router, public route: ActivatedRoute, public dialog: MatDialog) {
     super(store);
   }
 
@@ -95,7 +93,19 @@ export class TasksComponent extends SocketListener implements OnInit {
   }
 
   cancelTask(url: string) {
-    this.api.put(url, {}).subscribe();
+    this.dialog
+      .open(DialogComponent, {
+        data: {
+          text: 'Are you sure?',
+          controls: ['Yes', 'No']
+        }
+      })
+      .beforeClosed()
+      .pipe(
+        filter(yes => yes),
+        switchMap(() => this.api.put(url, {}))
+      )
+      .subscribe();
   }
 
   getParentLink(objects: { id: number; type: string }[], ind: number) {
@@ -133,8 +143,8 @@ export class TasksComponent extends SocketListener implements OnInit {
     this.isDisabled = true;
     this.api.getOne<Task>('task', id).subscribe(task => {
       this.dataSource.data = [task, ...this.dataSource.data];
-      this.dataSource._updateChangeSubscription();     
-      setTimeout(_ => this.isDisabled = false, 500);
+      this.dataSource._updateChangeSubscription();
+      setTimeout(_ => (this.isDisabled = false), 500);
     });
   }
 

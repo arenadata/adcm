@@ -123,6 +123,14 @@ mat-checkbox.advanced>label>span {
   border-bottom: dotted 1px #00e676;
 }
 
+.mat-dialog-title {
+  margin: -6px -16px 20px!important;
+  padding: 2px 10px;
+  background-color: #191919;
+  border: solid 1px #5d5d5d;
+  font-size: large;
+}
+
 .icon-locked {
   animation: rotate 2s infinite linear;
 }
