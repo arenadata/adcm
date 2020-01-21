@@ -17,12 +17,21 @@ import { StoreModule } from '@ngrx/store';
 
 import { TakeService } from './take.service';
 import { CompTile } from './types';
-import { AbstractControl } from '@angular/forms';
 
-describe('TakeService', () => {
+describe('HostComponentsMap :: TakeService', () => {
   beforeEach(() =>
     TestBed.configureTestingModule({
-      imports: [HttpClientModule, StoreModule.forRoot(reducers)],
+      imports: [
+        HttpClientModule,
+        StoreModule.forRoot(reducers, {
+          runtimeChecks: {
+            strictStateImmutability: true,
+            strictActionImmutability: true,
+            strictStateSerializability: true,
+            strictActionSerializability: true
+          }
+        })
+      ],
       providers: [ApiService]
     })
   );
