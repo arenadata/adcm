@@ -121,6 +121,7 @@ body {
 
 mat-checkbox.advanced>label>span {
   border-bottom: dotted 1px #00e676;
+  line-height: 20px!important;
 }
 
 .mat-dialog-title {
@@ -136,8 +137,13 @@ mat-checkbox.advanced>label>span {
 }
 
 @keyframes rotate {
-  0% { transform: rotate(0deg) }   
-  100% { transform: rotate(360deg) }
+  0% {
+    transform: rotate(0deg)
+  }
+
+  100% {
+    transform: rotate(360deg)
+  }
 }
 
 .mat-menu-panel {
@@ -238,9 +244,10 @@ mat-cell.control {
 }
 
 .mat-expansion-panel {
-  box-shadow: 0px 3px 1px -2px rgba(0, 0, 0, 0.6), 0px 2px 2px 0px rgba(2, 2, 2, 0.8), 0px 1px 5px 0px rgba(10, 10, 10, 0.9)!important;
+  box-shadow: 0px 3px 1px -2px rgba(0, 0, 0, 0.6), 0px 2px 2px 0px rgba(2, 2, 2, 0.8), 0px 1px 5px 0px rgba(10, 10, 10, 0.9) !important;
+
   &.panel {
-    margin: 6px 0;    
+    margin: 6px 0;
   }
 }
 

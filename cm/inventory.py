@@ -176,6 +176,7 @@ def get_host(host_id):
     host = Host.objects.get(id=host_id)
     groups = {'HOST': {'hosts': get_hosts([host])}}
     groups.update(get_provider_hosts(host.provider.id))
+    groups['PROVIDER']['vars'] = get_provider_config(host.provider.id)
     return groups
 
 
