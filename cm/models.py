@@ -488,3 +488,7 @@ class StagePrototypeImport(models.Model):
 
     class Meta:
         unique_together = (('prototype', 'name'),)
+
+
+class DummyData(models.Model):
+    date = models.DateTimeField(auto_now=True)

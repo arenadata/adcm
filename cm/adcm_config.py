@@ -11,6 +11,7 @@
 # limitations under the License.
 
 import os
+import copy
 import json
 import collections
 import yspec.checker
@@ -316,9 +317,10 @@ def process_file_type(obj, spec, conf):
     return conf
 
 
-def process_config(obj, spec, conf):
-    if not conf:
-        return conf
+def process_config(obj, spec, old_conf):
+    if not old_conf:
+        return old_conf
+    conf = copy.deepcopy(old_conf)
     for key in conf:
         if 'type' in spec[key]:
             if spec[key]['type'] == 'file' and conf[key] is not None:

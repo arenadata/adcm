@@ -15,9 +15,9 @@
 import rest_framework
 from django.contrib.auth.models import User
 from django.db import transaction
+from django.utils import timezone
 from django_filters import rest_framework as drf_filters
-from rest_framework import routers
-from rest_framework import status
+from rest_framework import routers, status
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
@@ -31,18 +31,21 @@ import cm.job
 import cm.stack
 import cm.status_api
 from adcm.settings import ADCM_VERSION
-from api.api_views import DetailViewRO, DetailViewDelete, ActionFilter
-from api.api_views import ListView, PageView, PageViewAdd
-from api.api_views import create, update
+from api.api_views import (
+    DetailViewRO, DetailViewDelete, ActionFilter, ListView,
+    PageView, PageViewAdd, create, update
+)
 from api.serializers import check_obj, filter_actions, get_config_version
 from cm.errors import AdcmEx, AdcmApiEx
-from cm.models import HostProvider, Host, ADCM, Action
-from cm.models import JobLog, TaskLog, Upgrade
-from cm.models import ObjectConfig, ConfigLog, UserProfile
+from cm.models import (
+    HostProvider, Host, ADCM, Action, JobLog, TaskLog, Upgrade, ObjectConfig,
+    ConfigLog, UserProfile, DummyData
+)
 
 
 @transaction.atomic
 def delete_user(username):
+    DummyData.objects.filter(id=1).update(date=timezone.now())
     user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
     try:
         profile = UserProfile.objects.get(login=user.username)
@@ -628,9 +631,9 @@ class TaskDetail(DetailViewRO):
 
 class TaskReStart(GenericAPIView):
     queryset = TaskLog.objects.all()
-    serializer_class = api.serializers.TaskRunSerializer
+    serializer_class = api.serializers.TaskSerializer
 
-    def post(self, request, task_id):
+    def put(self, request, task_id):
         task = check_obj(TaskLog, task_id, 'TASK_NOT_FOUND')
         try:
             cm.job.restart_task(task)
@@ -641,9 +644,9 @@ class TaskReStart(GenericAPIView):
 
 class TaskCancel(GenericAPIView):
     queryset = TaskLog.objects.all()
-    serializer_class = api.serializers.TaskRunSerializer
+    serializer_class = api.serializers.TaskSerializer
 
-    def post(self, request, task_id):
+    def put(self, request, task_id):
         task = check_obj(TaskLog, task_id, 'TASK_NOT_FOUND')
         try:
             cm.job.cancel_task(task)

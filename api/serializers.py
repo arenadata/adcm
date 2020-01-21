@@ -141,8 +141,7 @@ class UserSerializer(serializers.Serializer):
                 password=validated_data.get('password'),
                 is_superuser=True
             )
-            up = UserProfile.objects.create(login=validated_data.get('username'))
-            up.save()
+            UserProfile.objects.create(login=validated_data.get('username'))
             return user
         except IntegrityError:
             raise AdcmApiEx("USER_CONFLICT", 'user already exists')
@@ -154,9 +153,9 @@ class UserPasswdSerializer(serializers.Serializer):
 
     @transaction.atomic
     def update(self, user, validated_data):   # pylint: disable=arguments-differ
-        token = Token.objects.get(user=user)
         user.set_password(validated_data.get('password'))
         user.save()
+        token = Token.objects.get(user=user)
         token.delete()
         token.key = token.generate_key()
         token.user = user
