@@ -141,8 +141,7 @@ class UserSerializer(serializers.Serializer):
                 password=validated_data.get('password'),
                 is_superuser=True
             )
-            up = UserProfile.objects.create(login=validated_data.get('username'))
-            up.save()
+            UserProfile.objects.create(login=validated_data.get('username'))
             return user
         except IntegrityError:
             raise AdcmApiEx("USER_CONFLICT", 'user already exists')
@@ -154,9 +153,9 @@ class UserPasswdSerializer(serializers.Serializer):
 
     @transaction.atomic
     def update(self, user, validated_data):   # pylint: disable=arguments-differ
-        token = Token.objects.get(user=user)
         user.set_password(validated_data.get('password'))
         user.save()
+        token = Token.objects.get(user=user)
         token.delete()
         token.key = token.generate_key()
         token.user = user
@@ -455,7 +454,8 @@ class ConfigSerializer(serializers.Serializer):
         return cm.adcm_config.get_default(obj)
 
     def get_value(self, obj):     # pylint: disable=arguments-differ
-        return cm.adcm_config.get_default(obj)
+        proto = self.context.get('prototype', None)
+        return cm.adcm_config.get_default(obj, proto)
 
 
 class ActionSerializer(serializers.Serializer):
@@ -472,6 +472,7 @@ class ActionSerializer(serializers.Serializer):
     state_on_success = serializers.CharField()
     state_on_fail = serializers.CharField()
     hostcomponentmap = JSONField(required=False)
+    allow_to_termination = serializers.BooleanField(read_only=True)
 
 
 class SubActionSerializer(serializers.Serializer):
@@ -492,7 +493,9 @@ class ActionDetailSerializer(ActionSerializer):
 
     def get_config(self, obj):
         aconf = PrototypeConfig.objects.filter(prototype=obj.prototype, action=obj).order_by('id')
-        conf = ConfigSerializer(aconf, many=True, context=self.context, read_only=True)
+        context = self.context
+        context['prototype'] = obj.prototype
+        conf = ConfigSerializer(aconf, many=True, context=context, read_only=True)
         return {'attr': None, 'config': conf.data}
 
     def get_subs(self, obj):
@@ -597,7 +600,9 @@ class ActionShort(serializers.Serializer):
     hostcomponentmap = JSONField(read_only=False)
 
     def get_config(self, obj):
-        conf = ConfigSerializer(obj.config, many=True, context=self.context, read_only=True)
+        context = self.context
+        context['prototype'] = obj.prototype
+        conf = ConfigSerializer(obj.config, many=True, context=context, read_only=True)
         return {'attr': None, 'config': conf.data}
 
 
@@ -805,7 +810,17 @@ class TaskSerializer(TaskListSerializer):
     objects = serializers.SerializerMethodField()
     jobs = serializers.SerializerMethodField()
     restart = hlink('task-restart', 'id', 'task_id')
+    terminatable = serializers.SerializerMethodField()
     cancel = hlink('task-cancel', 'id', 'task_id')
+
+    def get_terminatable(self, obj):
+        action = Action.objects.get(id=obj.action_id)
+        # pylint: disable=simplifiable-if-statement
+        if action.allow_to_termination and obj.status in [config.Job.CREATED, config.Job.RUNNING]:
+            # pylint: enable=simplifiable-if-statement
+            return True
+        else:
+            return False
 
     def get_jobs(self, obj):
         task_jobs = JobLog.objects.filter(task_id=obj.id)

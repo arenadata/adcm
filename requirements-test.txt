@@ -7,7 +7,7 @@ allure-pytest==2.5.4
 delayed_assert
 docker
 jsonschema
-pytest
+pytest==5.3.2
 pytest-lazy-fixture
 pytest-xdist  # pytest distributed testing plugin (for parallel tests)
 pyyaml

@@ -295,7 +295,8 @@ def copy_stage_actons(stage_actions, prototype):
         prototype,
         ('name', 'type', 'script', 'script_type', 'state_on_success',
          'state_on_fail', 'state_available', 'params', 'log_files',
-         'hostcomponentmap', 'button', 'display_name', 'description', 'disclaimer')
+         'hostcomponentmap', 'button', 'display_name', 'description', 'disclaimer',
+         'allow_to_termination')
     )
     Action.objects.bulk_create(actions)
 
@@ -509,9 +510,7 @@ def delete_bundle(bundle):
     if bundle.hash != 'adcm':
         shutil.rmtree(os.path.join(config.BUNDLE_DIR, bundle.hash))
     cm.status_api.post_event('delete', 'bundle', bundle.id)
-    with transaction.atomic():
-        Prototype.objects.filter(bundle=bundle).delete()
-        bundle.delete()
+    bundle.delete()
 
 
 def check_services():
