@@ -39,6 +39,15 @@
         </td>
       </ng-container>
 
+      <!-- <ng-container matColumnDef="cancel">
+        <th mat-header-cell *matHeaderCellDef class="control"></th>
+        <td mat-cell *matCellDef="let row">
+          <button [disabled]="!row.terminatable" mat-icon-button>
+            <mat-icon>cancel</mat-icon>
+          </button>
+        </td>
+      </ng-container> -->
+
       <ng-container matColumnDef="start_date">
         <th mat-header-cell *matHeaderCellDef class="action_date">Start date</th>
         <td mat-cell *matCellDef="let element">{{ element.start_date | date: 'medium' }}</td>
@@ -54,10 +63,18 @@
       <ng-container matColumnDef="status">
         <th mat-header-cell *matHeaderCellDef class="parent-end center">Status</th>
         <td mat-cell *matCellDef="let row" class="center">
-          <mat-icon class="icon-locked running" *ngIf="row.status === 'running'; else done">autorenew</mat-icon>
+          <ng-container *ngIf="row.status === 'running'; else done">
+            <button appHoverStatusTask mat-raised-button [style.minWidth]="'auto'"
+              *ngIf="row.terminatable; else iconStatus" (click)="cancelTask(row.cancel)" matTooltip="Stop task">
+              <mat-icon class="icon-locked running" #taskIcon>autorenew</mat-icon>
+            </button>
+            <ng-template #iconStatus>
+              <mat-icon class="icon-locked running">autorenew</mat-icon>
+            </ng-template>
+          </ng-container>
           <ng-template #done>
             <span [class]="row.status" [matTooltip]="row.status">
-              <mat-icon>done_all</mat-icon>
+              <mat-icon>{{ getIcon(row.status) }}</mat-icon>
             </span>
           </ng-template>
         </td>
