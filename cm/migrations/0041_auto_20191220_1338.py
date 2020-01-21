@@ -23,12 +23,12 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name='action',
-            name='disclaimer',
-            field=models.TextField(blank=True),
+            name='ui_options',
+            field=models.TextField(blank=True, null=True, default=None),
         ),
         migrations.AddField(
             model_name='stageaction',
-            name='disclaimer',
-            field=models.TextField(blank=True),
+            name='ui_options',
+            field=models.TextField(blank=True, null=True, default=None),
         ),
     ]

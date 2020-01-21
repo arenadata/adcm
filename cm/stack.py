@@ -466,8 +466,8 @@ def save_actions(proto, conf, bundle_hash):
         dict_to_obj(ac, 'button', action)
         dict_to_obj(ac, 'display_name', action)
         dict_to_obj(ac, 'description', action)
-        dict_to_obj(ac, 'disclaimer', action)
         dict_to_obj(ac, 'allow_to_termination', action)
+        dict_json_to_obj(ac, 'ui_options', action)
         dict_json_to_obj(ac, 'params', action)
         dict_json_to_obj(ac, 'log_files', action)
         fix_display_name(ac, action)
@@ -559,7 +559,7 @@ def check_action(proto, action, act_config):
             err('WRONG_ACTION_TYPE', '{} has unknown script_type "{}"'.format(ref, script_type))
     allow = (
         'type', 'script', 'script_type', 'scripts', 'states', 'params', 'config',
-        'log_files', 'hc_acl', 'button', 'display_name', 'description', 'disclaimer',
+        'log_files', 'hc_acl', 'button', 'display_name', 'description', 'ui_options',
         'allow_to_termination'
     )
     check_extra_keys(act_config, allow, ref)
