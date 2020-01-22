@@ -814,9 +814,13 @@ class TaskSerializer(TaskListSerializer):
     cancel = hlink('task-cancel', 'id', 'task_id')
 
     def get_terminatable(self, obj):
-        action = Action.objects.get(id=obj.action_id)
+        try:
+            action = Action.objects.get(id=obj.action_id)
+            allow_to_termination = action.allow_to_termination
+        except Action.DoesNotExist:
+            allow_to_termination = True
         # pylint: disable=simplifiable-if-statement
-        if action.allow_to_termination and obj.status in [config.Job.CREATED, config.Job.RUNNING]:
+        if allow_to_termination and obj.status in [config.Job.CREATED, config.Job.RUNNING]:
             # pylint: enable=simplifiable-if-statement
             return True
         else:
