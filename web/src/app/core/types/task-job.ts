@@ -19,6 +19,8 @@ interface TaskBase {
   objects: { id: number; name: string; type: string }[];  
   status: JobStatus;
   action: JobAction;
+  terminatable: boolean;
+  cancel: string;
 }
 
 export interface JobAction {

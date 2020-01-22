@@ -9,42 +9,43 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 # pylint: disable=duplicate-except,attribute-defined-outside-init,too-many-lines
 
-from django.db import transaction
-from django.contrib.auth.models import User
-from django_filters import rest_framework as drf_filters
-
 import rest_framework
-from rest_framework import routers
-from rest_framework import status
-from rest_framework.reverse import reverse
-from rest_framework.response import Response
-from rest_framework.generics import GenericAPIView
+from django.contrib.auth.models import User
+from django.db import transaction
+from django.utils import timezone
+from django_filters import rest_framework as drf_filters
+from rest_framework import routers, status
 from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.generics import GenericAPIView
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
 
-from adcm.settings import ADCM_VERSION
-import cm.job
+import api.cluster_serial
+import api.serializers
 import cm.api
+import cm.config as config
+import cm.job
 import cm.stack
 import cm.status_api
-import cm.config as config
-from cm.errors import AdcmEx, AdcmApiEx
-from cm.models import HostProvider, Host, ADCM, Action
-from cm.models import JobLog, TaskLog, Upgrade
-from cm.models import ObjectConfig, ConfigLog, UserProfile
-from cm.logger import log   # pylint: disable=unused-import
-
-import api.serializers
-import api.cluster_serial
+from adcm.settings import ADCM_VERSION
+from api.api_views import (
+    DetailViewRO, DetailViewDelete, ActionFilter, ListView,
+    PageView, PageViewAdd, create, update
+)
 from api.serializers import check_obj, filter_actions, get_config_version
-from api.api_views import create, update
-from api.api_views import ListView, PageView, PageViewAdd
-from api.api_views import DetailViewRO, DetailViewDelete, ActionFilter
+from cm.errors import AdcmEx, AdcmApiEx
+from cm.models import (
+    HostProvider, Host, ADCM, Action, JobLog, TaskLog, Upgrade, ObjectConfig,
+    ConfigLog, UserProfile, DummyData
+)
 
 
 @transaction.atomic
 def delete_user(username):
+    DummyData.objects.filter(id=1).update(date=timezone.now())
     user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
     try:
         profile = UserProfile.objects.get(login=user.username)
@@ -630,15 +631,28 @@ class TaskDetail(DetailViewRO):
 
 class TaskReStart(GenericAPIView):
     queryset = TaskLog.objects.all()
-    serializer_class = api.serializers.TaskRunSerializer
+    serializer_class = api.serializers.TaskSerializer
 
-    def post(self, request, task_id):
+    def put(self, request, task_id):
         task = check_obj(TaskLog, task_id, 'TASK_NOT_FOUND')
         try:
             cm.job.restart_task(task)
         except AdcmEx as e:
             raise AdcmApiEx(e.code, e.msg, e.http_code)
-        return Response(status.HTTP_200_OK)
+        return Response(status=status.HTTP_200_OK)
+
+
+class TaskCancel(GenericAPIView):
+    queryset = TaskLog.objects.all()
+    serializer_class = api.serializers.TaskSerializer
+
+    def put(self, request, task_id):
+        task = check_obj(TaskLog, task_id, 'TASK_NOT_FOUND')
+        try:
+            cm.job.cancel_task(task)
+        except AdcmEx as e:
+            raise AdcmApiEx(e.code, e.msg, e.http_code)
+        return Response(status=status.HTTP_200_OK)
 
 
 class ProviderConfig(ListView):

@@ -84,6 +84,10 @@ export class ConfigComponent extends SocketListener implements OnInit {
     super.startListenSocket();
   }
 
+  isAdvanced(data: IConfig) {
+    return data.config.some(a => a.ui_options && a.ui_options.advanced);
+  }
+
   toolsEvent(toolsEvent: IToolsEvent) {
     this[toolsEvent.name](toolsEvent.conditions);
   }
@@ -141,7 +145,7 @@ export class ConfigComponent extends SocketListener implements OnInit {
         .subscribe(c => {
           this.saveFlag = false;
           /**
-           * TODO: history does not update! 
+           * TODO: history does not update!
            *  => her need the new this.field.dataOptions
            */
           this.historyComponent.versionID = c.id;

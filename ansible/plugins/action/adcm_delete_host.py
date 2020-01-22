@@ -20,62 +20,47 @@ ANSIBLE_METADATA = {'metadata_version': '1.1', 'supported_by': 'Arenadata'}
 
 DOCUMENTATION = r'''
 ---
-module: adcm_add_host
-short_description: create new host
+module: adcm_delete_host
+short_description: delete host from ADCM DB
 description:
-    - The C(adcm_add_host) module create new host in ADCM DB
+    - The C(adcm_delete_host) module is intended to delete host from ADCM DB.
+      This module should be run in host context. Host Id is taken from context.
 options:
-  provider:
-    description:
-      - ADCM host provider id
-    required: yes
-    type: int
-  fqdn:
-    description:
-      - Host FQDN
-    required: yes
 '''
 
 EXAMPLES = r'''
-- name: add host
-  adcm_add_host:
-    provider: "{{provider.id}}"
-    fqdn: my.host.com
+ - name: delete current host
+   adcm_delete_host:
 '''
 
 RETURN = r'''
-result:
-  host: id of new created host
 '''
 
 import sys
-
-from ansible.module_utils.basic import AnsibleModule
+from ansible.errors import AnsibleError
+from ansible.plugins.action import ActionBase
 
 sys.path.append('/adcm')
 import adcm.init_django
 import cm.api
-import cm.status_api
+from cm.ansible_plugin import get_context_id
 from cm.errors import AdcmEx
 from cm.logger import log
 
 
-def main():
-    module = AnsibleModule(argument_spec={
-        'provider': {'type': 'int', 'required': True},
-        'fqdn': {'type': 'str', 'required': True},
-    })
+class ActionModule(ActionBase):
 
-    provider_id = module.params['provider']
-    fqdn = module.params['fqdn']
+    TRANSFERS_FILES = False
+    _VALID_ARGS = frozenset(())
 
-    log.debug('ansible adcm_add_host: %s, %s', provider_id, fqdn)
-    try:
-        host = cm.api.add_provider_host(provider_id, fqdn)
-    except AdcmEx as e:
-        module.fail_json(code=e.code, msg=e.msg)
-    module.exit_json(host=host.id)
+    def run(self, tmp=None, task_vars=None):
+        msg = 'You can delete host only in host context'
+        host_id = get_context_id(task_vars, 'host', 'host_id', msg)
+        log.info('ansible module adcm_delete_host: host #%s', host_id)
 
+        try:
+            cm.api.delete_host_by_id(host_id)
+        except AdcmEx as e:
+            raise AnsibleError(e.code + ":" + e.msg)
 
-if __name__ == '__main__':
-    main()
+        return {"failed": False, "changed": True}
