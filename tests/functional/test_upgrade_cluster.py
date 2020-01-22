@@ -134,8 +134,8 @@ def test_changed_variable_type(sdk_client_fs: ADCMClient):
     assert isinstance(cluster_config_after['required'], str)
     assert isinstance(service_config_after['required_service'], str)
     assert int(cluster_config_after['required']) == cluster_config_before['required']
-    assert int(service_config_after[
-                   'required_service']) == service_config_before['required_service']
+    assert int(
+        service_config_after['required_service']) == service_config_before['required_service']
 
 
 def test_multiple_upgrade_bundles(sdk_client_fs: ADCMClient):
