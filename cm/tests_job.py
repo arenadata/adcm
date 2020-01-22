@@ -20,152 +20,63 @@ from django.utils import timezone
 import cm.config as config
 import cm.job as job_module
 from cm.logger import log
-from cm.models import (JobLog, TaskLog, Bundle, Cluster, Prototype, ObjectConfig,
-                       Action, ClusterObject, ADCM)
+from cm import models
 
 
 class TestJob(TestCase):
     # pylint: disable=too-many-instance-attributes
     # pylint: disable=too-many-public-methods
+    # pylint: disable=too-many-locals
     def setUp(self):
         log.debug = Mock()
         log.error = Mock()
         log.info = Mock()
         log.warning = Mock()
 
-        self.bundle = Bundle.objects.create(**{
-            'name': 'ADB',
-            'version': '2.5',
-            'version_order': 4,
-            'edition': 'community',
-            'license': 'absent',
-            'license_path': None,
-            'license_hash': None,
-            'hash': '2232f33c6259d44c23046fce4382f16c450f8ba5',
-            'description': '',
-            'date': timezone.now()
-        })
-        self.prototype = Prototype.objects.create(**{
-            'bundle': self.bundle,
-            'type': 'cluster',
-            'name': 'ADB',
-            'display_name': 'ADB',
-            'version': '2.5',
-            'version_order': 11,
-            'required': False,
-            'shared': False,
-            'adcm_min_version': None,
-            'monitoring': 'active',
-            'description': ''
-        })
-        self.object_config = ObjectConfig.objects.create(**{
-            'current': 1,
-            'previous': 1
-        })
-        self.adcm = ADCM.objects.create(**{
-            'prototype': self.prototype,
-            'name': 'ADCM',
-            'config': self.object_config,
-            'state': 'created',
-            'stack': '',
-            'issue': ''
-        })
-        self.cluster = Cluster.objects.create(**{
-            'prototype': self.prototype,
-            'name': 'Fear Limpopo',
-            'description': '',
-            'config': self.object_config,
-            'state': 'installed',
-            'stack': '[]',
-            'issue': '{}'
-        })
-        self.cluster_object = ClusterObject.objects.create(**{
-            'cluster': self.cluster,
-            'prototype': self.prototype,
-            'config': self.object_config,
-            'state': 'created',
-            'stack': '',
-            'issue': ''
-        })
-        self.action = Action.objects.create(**{
-            'prototype': self.prototype,
-            'name': 're-start',
-            'display_name': 're-start',
-            'description': '',
-            'type': 'task',
-            'button': None,
-            'script': '',
-            'script_type': '',
-            'state_on_success': 'installed',
-            'state_on_fail': 'created',
-            'state_available': '["created", "installed"]',
-            'params': '',
-            'log_files': '',
-            'hostcomponentmap': '',
-        })
-        self.task = TaskLog.objects.create(**{
-            'action_id': self.action.id,
-            'object_id': self.cluster.id,
-            'pid': 1,
-            'selector': f'{{"cluster": {self.cluster.id}}}',
-            'status': 'success',
-            'config': '',
-            'hostcomponentmap': '',
-            'start_date': timezone.now(),
-            'finish_date': timezone.now()
-        })
-        self.job = JobLog.objects.create(**{
-            'task_id': self.task.id,
-            'action_id': self.action.id,
-            'sub_action_id': 0,
-            'pid': 1,
-            'selector': f'{{"cluster": {self.cluster.id}}}',
-            'status': 'success',
-            'start_date': timezone.now(),
-            'finish_date': timezone.now()
-        })
+        self.bundle = models.Bundle.objects.create()
+        self.prototype = models.Prototype.objects.create(bundle=self.bundle)
+        self.object_config = models.ObjectConfig.objects.create(current=1, previous=1)
+        self.adcm = models.ADCM.objects.create(prototype=self.prototype)
+        self.cluster = models.Cluster.objects.create(prototype=self.prototype)
+        self.cluster_object = models.ClusterObject.objects.create(
+            prototype=self.prototype, cluster=self.cluster)
+        self.action = models.Action.objects.create(prototype=self.prototype)
 
     @patch('cm.status_api.set_job_status')
     def test_set_job_status(self, mock_set_job_status):
-        job_id = 1
+        job = models.JobLog.objects.create(
+            action_id=self.action.id, start_date=timezone.now(), finish_date=timezone.now())
         status = config.Job.RUNNING
         pid = 10
 
-        job_module.set_job_status(job_id, status, pid)
-
-        self.assertEqual(JobLog.objects.count(), 1)
-        job = JobLog.objects.get(id=1)
-        self.assertEqual(job.id, job_id)
-        self.assertEqual(job.task_id, self.job.task_id)
-        self.assertEqual(job.action_id, self.job.action_id)
-        self.assertEqual(job.sub_action_id, self.job.sub_action_id)
-        self.assertEqual(job.pid, pid)
-        self.assertEqual(job.selector, self.job.selector)
-        self.assertEqual(job.log_files, self.job.log_files)
+        job_module.set_job_status(job.id, status, pid)
+        job = models.JobLog.objects.get(id=job.id)
         self.assertEqual(job.status, status)
-        self.assertEqual(job.start_date, self.job.start_date)
-        self.assertTrue(job.finish_date != self.job.finish_date)
+        self.assertEqual(job.pid, pid)
 
-        mock_set_job_status.assert_called_once_with(job.task_id, status)
+        mock_set_job_status.assert_called_once_with(job.id, status)
 
     @patch('cm.status_api.set_task_status')
     def test_set_task_status(self, mock_set_task_status):
         status = config.Job.RUNNING
-        finish_date = self.task.finish_date
+        task = models.TaskLog.objects.create(
+            action_id=self.action.id, object_id=self.cluster.id,
+            start_date=timezone.now(), finish_date=timezone.now())
+        finish_date = task.finish_date
 
-        job_module.set_task_status(self.task, status)
+        job_module.set_task_status(task, status)
 
-        self.assertEqual(TaskLog.objects.count(), 1)
-        task = TaskLog.objects.get(id=1)
-        self.assertEqual(task.id, self.task.id)
-        self.assertEqual(task.action_id, self.task.action_id)
-        self.assertEqual(task.object_id, self.task.object_id)
-        self.assertEqual(task.pid, self.task.pid)
-        self.assertEqual(task.selector, self.task.selector)
+        self.assertEqual(models.TaskLog.objects.count(), 1)
+        task = models.TaskLog.objects.get(id=1)
+        self.assertEqual(task.id, task.id)
+        self.assertEqual(task.action_id, task.action_id)
+        self.assertEqual(task.object_id, task.object_id)
+        self.assertEqual(task.pid, task.pid)
+        self.assertEqual(task.selector, task.selector)
         self.assertEqual(task.status, status)
-        self.assertEqual(task.config, self.task.config)
-        self.assertEqual(task.hostcomponentmap, self.task.hostcomponentmap)
-        self.assertEqual(task.start_date, self.task.start_date)
+        self.assertEqual(task.config, task.config)
+        self.assertEqual(task.hostcomponentmap, task.hostcomponentmap)
+        self.assertEqual(task.start_date, task.start_date)
         self.assertTrue(task.finish_date != finish_date)
 
         mock_set_task_status.assert_called_once_with(task.id, status)
@@ -183,14 +94,38 @@ class TestJob(TestCase):
         self.assertEqual(task_obj.issue, self.cluster.issue)
 
     def test_get_state(self):
-        status = config.Job.SUCCESS
-        state = job_module.get_state(self.action, self.job, status)
-        self.assertEqual(state, self.action.state_on_success)
+        self.action.state_on_success = 'create'
+        self.action.state_on_fail = 'installed'
+        self.action.save()
+
+        job = models.JobLog(
+            action_id=self.action.id, selector=f'{{"cluster": {self.cluster.id}}}',
+            start_date=timezone.now(), finish_date=timezone.now())
+
+        data = [
+            (config.Job.SUCCESS, False, 'create'),
+            (config.Job.FAILED, False, 'installed'),
+            (config.Job.FAILED, True, 'installed'),
+            (config.Job.ABORTED, False, None)
+        ]
+
+        for status, create_sub_action, test_state in data:
+            with self.subTest(status=status, create_sub_action=create_sub_action,
+                              test_state=test_state):
+
+                if create_sub_action:
+                    sub_action = models.SubAction.objects.create(
+                        action=self.action, state_on_fail='installed')
+                    job.sub_action_id = sub_action.id
+
+                state = job_module.get_state(self.action, job, status)
+                self.assertEqual(state, test_state)
 
     @patch('cm.api.push_obj')
     def test_set_action_state(self, mock_push_obj):
         state = ''
-        job_module.set_action_state(self.action, self.task, self.cluster, state)
+        task = models.TaskLog(action_id=self.action.id, object_id=self.cluster.id)
+        job_module.set_action_state(self.action, task, self.cluster, state)
         mock_push_obj.assert_called_once_with(self.cluster, state)
 
     @patch('cm.api.set_object_state')
@@ -233,7 +168,7 @@ class TestJob(TestCase):
     @patch('cm.api.save_hc')
     def test_restore_hc(self, mock_save_hc):
         # TODO: continue
-        job_module.restore_hc(self.task, self.action, config.Job.SUCCESS)
+        pass
 
     def test_finish_task(self):
         # IS CALLED: cm.job.set_action_state, cm.job.unlock_objects,
@@ -259,6 +194,8 @@ class TestJob(TestCase):
         self.assertEqual(mock_err.call_count, 0)
 
     def test_get_action_context(self):
+        self.prototype.type = 'cluster'
+
         obj, cluster = job_module.get_action_context(self.action, {'cluster': 1})
         self.assertEqual(obj, cluster)
         self.assertEqual(cluster, self.cluster)
@@ -266,11 +203,13 @@ class TestJob(TestCase):
     @patch('cm.job.prepare_job_config')
     @patch('cm.inventory.prepare_job_inventory')
     def test_prepare_job(self, mock_prepare_job_inventory, mock_prepare_job_config):
-        job_module.prepare_job(self.action, None, {'cluster': 1}, self.job.id, self.cluster, '', {})
+        job = models.JobLog.objects.create(
+            action_id=self.action.id, start_date=timezone.now(), finish_date=timezone.now())
+        job_module.prepare_job(self.action, None, {'cluster': 1}, job.id, self.cluster, '', {})
 
-        mock_prepare_job_inventory.assert_called_once_with({'cluster': 1}, self.job.id, {})
+        mock_prepare_job_inventory.assert_called_once_with({'cluster': 1}, job.id, {})
         mock_prepare_job_config.assert_called_once_with(self.action, None, {'cluster': 1},
-                                                        self.job.id, self.cluster, '')
+                                                        job.id, self.cluster, '')
 
     @patch('cm.job.get_obj_config')
     def test_get_adcm_config(self, mock_get_obj_config):
@@ -318,41 +257,96 @@ class TestJob(TestCase):
         mock_cook_script.return_value = os.path.join(
             config.BUNDLE_DIR, self.action.prototype.bundle.hash, self.action.script)
 
-        job_module.prepare_job_config(
-            self.action, None, {'cluster': 1}, self.job.id, self.cluster, '')
+        job = models.JobLog.objects.create(
+            action_id=self.action.id, start_date=timezone.now(), finish_date=timezone.now())
 
-        value = {
-            'adcm': {
-                'config': {}
-            },
-            'context': {
-                'type': 'cluster',
-                'cluster_id': 1
-            },
-            'env': {
-                'run_dir': mock_dump.call_args[0][0]['env']['run_dir'],
-                'log_dir': mock_dump.call_args[0][0]['env']['log_dir'],
-                'stack_dir': mock_dump.call_args[0][0]['env']['stack_dir'],
-                'status_api_token': mock_dump.call_args[0][0]['env']['status_api_token']
-            },
-            'job': {
-                'id': 1,
-                'action': 're-start',
-                'job_name': 're-start',
-                'command': 're-start',
-                'script': '',
-                'playbook': mock_dump.call_args[0][0]['job']['playbook'],
-                'cluster_id': 1,
-                'hostgroup': 'CLUSTER'
-            }
-        }
-        mock_open.assert_called_once_with(
-            '{}/{}-config.json'.format(config.RUN_DIR, self.job.id), 'w')
-        mock_dump.assert_called_once_with(value, fd, indent=3, sort_keys=True)
-        mock_get_adcm_config.assert_called_once_with()
-        mock_prepare_context.assert_called_once_with({'cluster': 1})
-        mock_get_bundle_root.assert_called_once_with(self.action)
-        mock_cook_script.assert_called_once_with(self.action, None)
+        self.action.params = '{"ansible_tags": "create_users"}'
+        self.action.save()
+        sub_action = models.SubAction(action=self.action)
+        selector = {'cluster': 1}
+        conf = 'test'
+        provider = models.HostProvider(prototype=self.prototype)
+        host = models.Host(prototype=self.prototype, provider=provider)
+        provider = models.HostProvider(prototype=self.prototype)
+
+        data = [
+            ('service', self.cluster_object),
+            ('cluster', self.cluster),
+            ('host', host),
+            ('provider', provider),
+            ('adcm', self.adcm),
+        ]
+
+        for prototype_type, obj in data:
+            with self.subTest(provider_type=prototype_type, obj=obj):
+                self.prototype.type = prototype_type
+                self.prototype.save()
+
+                job_module.prepare_job_config(
+                    self.action, sub_action, selector, job.id, obj, conf)
+
+                job_config = {
+                    'adcm': {
+                        'config': {}
+                    },
+                    'context': {
+                        'type': 'cluster',
+                        'cluster_id': 1
+                    },
+                    'env': {
+                        'run_dir': mock_dump.call_args[0][0]['env']['run_dir'],
+                        'log_dir': mock_dump.call_args[0][0]['env']['log_dir'],
+                        'stack_dir': mock_dump.call_args[0][0]['env']['stack_dir'],
+                        'status_api_token': mock_dump.call_args[0][0]['env']['status_api_token']},
+                    'job': {
+                        'id': 1,
+                        'action': '',
+                        'job_name': '',
+                        'command': '',
+                        'script': '',
+                        'playbook': mock_dump.call_args[0][0]['job']['playbook'],
+                        'params': {
+                            'ansible_tags': 'create_users'
+                        },
+                        'cluster_id': 1,
+                        'config': 'test'
+                    }
+                }
+                if prototype_type == 'service':
+                    job_config['job'].update(
+                        {
+                            'hostgroup': obj.prototype.name,
+                            'service_id': obj.id,
+                            'service_type_id': obj.prototype.id
+                        })
+
+                elif prototype_type == 'cluster':
+                    job_config['job']['hostgroup'] = 'CLUSTER'
+                elif prototype_type == 'host':
+                    job_config['job'].update(
+                        {
+                            'hostgroup': 'HOST',
+                            'hostname': obj.fqdn,
+                            'host_id': obj.id,
+                            'host_type_id': obj.prototype.id,
+                            'provider_id': obj.provider.id
+                        })
+                elif prototype_type == 'provider':
+                    job_config['job'].update(
+                        {
+                            'hostgroup': 'PROVIDER',
+                            'provider_id': obj.id
+                        })
+                elif prototype_type == 'adcm':
+                    job_config['job']['hostgroup'] = '127.0.0.1'
+
+                mock_open.assert_called_with(
+                    '{}/{}-config.json'.format(config.RUN_DIR, job.id), 'w')
+                mock_dump.assert_called_with(job_config, fd, indent=3, sort_keys=True)
+                mock_get_adcm_config.assert_called()
+                mock_prepare_context.assert_called_with({'cluster': 1})
+                mock_get_bundle_root.assert_called_with(self.action)
+                mock_cook_script.assert_called_with(self.action, sub_action)
 
     def test_re_prepare_job(self):
         pass

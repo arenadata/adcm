@@ -10,13 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
-from unittest.mock import patch, Mock, call
+from unittest.mock import patch, Mock
 
 from django.test import TestCase
 
 import cm.inventory
 from cm.models import (
-    ObjectConfig, ConfigLog, Prototype, Bundle, Cluster, HostProvider, Host
+    ObjectConfig, ConfigLog, Prototype, Bundle, Cluster, HostProvider, Host,
 )
 
 
@@ -25,57 +25,22 @@ class TestInventory(TestCase):
     def setUp(self):
         pass
 
-    @patch('cm.inventory.cook_file_type_name')
-    @patch('cm.inventory.get_prototype_config')
-    def test_process_config(self, mock_get_prototype_config, mock_cook_file_type_name):
-        mock_cook_file_type_name.return_value = 'data_from_file'
-        obj_mock = Mock()
-        obj_mock.prototype = Mock()
-
-        test_data = [
-            (
-                {'global': ''},
-                ({'global': {'type': 'file'}}, {}, {}, {}),
-                None,
-                {'global': 'data_from_file'}
-            ),
-            (
-                {'global': {'test': ''}},
-                ({'global': {'test': {'type': 'file'}}}, {}, {}, {}),
-                None,
-                {'global': {'test': 'data_from_file'}}
-            ),
-            (
-                {},
-                ({}, {}, {}, {}),
-                '{"global": {"active": false}}',
-                {'global': None}
-            ),
-        ]
-
-        for conf, spec, attr, test_conf in test_data:
-            with self.subTest(conf=conf, spec=spec, attr=attr):
-                mock_get_prototype_config.return_value = spec
-
-                config = cm.inventory.process_config(obj_mock, conf, attr)
-
-                self.assertDictEqual(config, test_conf)
-
-        mock_get_prototype_config.assert_has_calls([
-            call(obj_mock.prototype),
-            call(obj_mock.prototype),
-            call(obj_mock.prototype),
-        ])
-        mock_cook_file_type_name.assert_has_calls([
-            call(obj_mock, 'global', ''),
-            call(obj_mock, 'global', 'test'),
-        ])
-
-    def test_get_import(self):
-        pass
-
     @patch('cm.inventory.process_config')
-    def test_get_obj_config(self, mock_process_config):
+    @patch('cm.inventory.get_prototype_config')
+    def test_process_config_and_attr(self, mock_get_prototype_config, mock_process_config):
+        mock_get_prototype_config.return_value = ({}, {}, {}, {})
+        mock_process_config.return_value = {}
+        obj_mock = Mock(prototype={})
+
+        attr = '{"global": {"active": ""}}'
+        conf = cm.inventory.process_config_and_attr(obj_mock, {}, attr)
+
+        self.assertDictEqual(conf, {'global': None})
+        mock_get_prototype_config.assert_called_once_with({})
+        mock_process_config.assert_called_once_with(obj_mock, {}, {})
+
+    @patch('cm.inventory.process_config_and_attr')
+    def test_get_obj_config(self, mock_process_config_and_attr):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
         object_config = ObjectConfig.objects.create(current=1, previous=1)
@@ -83,7 +48,7 @@ class TestInventory(TestCase):
         config_log = ConfigLog.objects.create(obj_ref=object_config, config='{}')
 
         cm.inventory.get_obj_config(cluster)
-        mock_process_config.assert_called_once_with(
+        mock_process_config_and_attr.assert_called_once_with(
             cluster, json.loads(config_log.config), config_log.attr)
 
     @patch('cm.inventory.get_import')
@@ -147,24 +112,6 @@ class TestInventory(TestCase):
         self.assertDictEqual(groups, {})
         mock_get_obj_config.assert_not_called()
 
-    @patch('cm.inventory.get_obj_config')
-    def test_get_host(self, mock_get_obj_config):
-        mock_get_obj_config.return_value = {}
-        bundle = Bundle.objects.create()
-        prototype = Prototype.objects.create(bundle=bundle)
-        host = Host.objects.create(prototype=prototype, fqdn='test')
-        host_list = [host]
-
-        qroup = cm.inventory.get_hosts(host_list)
-
-        test_group = {
-            'test': {
-                'adcm_hostid': 1
-            }
-        }
-        self.assertDictEqual(qroup, test_group)
-        mock_get_obj_config.assert_called_once_with(host)
-
     @patch('cm.inventory.get_hosts')
     @patch('cm.inventory.get_cluster_config')
     def test_get_cluster_hosts(self, mock_get_cluster_config, mock_get_hosts):
@@ -188,11 +135,9 @@ class TestInventory(TestCase):
         mock_get_hosts.assert_called_once()
         mock_get_cluster_config.assert_called_once_with(cluster.id)
 
-    @patch('cm.inventory.get_provider_config')
     @patch('cm.inventory.get_hosts')
-    def test_get_provider_hosts(self, mock_get_hosts, mock_get_provider_config):
+    def test_get_provider_hosts(self, mock_get_hosts):
         mock_get_hosts.return_value = []
-        mock_get_provider_config.return_value = []
 
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
@@ -203,14 +148,12 @@ class TestInventory(TestCase):
 
         test_provider_hosts = {
             'PROVIDER': {
-                'hosts': [],
-                'vars': []
+                'hosts': []
             }
         }
 
         self.assertDictEqual(provider_hosts, test_provider_hosts)
         mock_get_hosts.assert_called_once()
-        mock_get_provider_config.assert_called_once_with(provider.id)
 
     @patch('cm.inventory.get_provider_hosts')
     @patch('cm.inventory.get_hosts')
