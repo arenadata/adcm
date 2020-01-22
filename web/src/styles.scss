@@ -127,9 +127,10 @@ mat-checkbox.advanced>label>span {
 .mat-dialog-title {
   margin: -6px -16px 20px!important;
   padding: 2px 10px;
-  background-color: #191919;
-  border: solid 1px #5d5d5d;
+  background-color: #2d2d2d;
+  border-radius: 2px;
   font-size: large;
+  //box-shadow: 0px 3px 5px -1px rgba(0, 0, 0, 0.2), 0px 6px 10px 0px rgba(0, 0, 0, 0.14), 0px 1px 18px 0px rgba(0, 0, 0, 0.12);
 }
 
 .icon-locked {

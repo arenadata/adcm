@@ -138,12 +138,13 @@ export class ClusterService {
     return this.api.post(this.Cluster.host, { host_id: host.id });
   }
 
-  reset() {
+  reset(): Observable<WorkerInstance> {
     const typeName = this.Current.typeName;
     return this.api.get<Entities>(this.Current.url).pipe(
-      tap(a => {
+      map(a => {
         if (typeName === 'cluster') this.worker.cluster = { ...(a as Cluster), typeName };
         this.worker.current = { ...a, typeName };
+        return this.worker;
       })
     );
   }
