@@ -45,6 +45,7 @@ import { FormElementsModule } from './form-elements/form-elements.module';
 import { MaterialModule } from './material.module';
 import { BreakRowPipe, TagEscPipe } from './pipes';
 import { StuffModule } from './stuff.module';
+import { SubtitleComponent } from './components/details/subtitle.component';
 
 @NgModule({
   imports: [CommonModule, MaterialModule, FormsModule, ReactiveFormsModule, RouterModule, StuffModule, FormElementsModule, ConfigurationModule, AddingModule],
@@ -75,7 +76,8 @@ import { StuffModule } from './stuff.module';
     MultiSortDirective,
     ImportComponent,
     ExportComponent,
-    InfinityScrollDirective
+    InfinityScrollDirective,
+    SubtitleComponent
   ],
   entryComponents: [DialogComponent, ActionMasterComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent],
   exports: [
