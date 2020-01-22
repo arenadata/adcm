@@ -200,5 +200,3 @@ def test_cannot_upgrade_with_state(sdk_client_fs: ADCMClient):
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         upgr.do()
     UPGRADE_ERROR.equal(e, 'cluster state', 'is not in available states list')
-
-
