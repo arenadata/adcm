@@ -12,10 +12,12 @@
 import { HttpClientModule } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { ApiService } from '@app/core/api';
+import { reducers } from '@app/core/store';
 import { StoreModule } from '@ngrx/store';
 
 import { TakeService } from './take.service';
-import { reducers } from '@app/core/store';
+import { CompTile } from './types';
+import { AbstractControl } from '@angular/forms';
 
 describe('TakeService', () => {
   beforeEach(() =>
@@ -30,7 +32,20 @@ describe('TakeService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should be init take', () => {
+  const mockCompTile = new CompTile({
+    id: 1,
+    service_id: 2,
+    service_name: 'test_service',
+    service_state: 'created',
+    name: 'test',
+    display_name: 'test',
+    status: 16,
+    constraint: '',
+    monitoring: 'passive'
+  });
+
+  it('validateConstraints fn should be null if argument is null', () => {
     const service: TakeService = TestBed.get(TakeService);
+    expect(service.validateConstraints(mockCompTile)(null)).toBeNull();
   });
 });

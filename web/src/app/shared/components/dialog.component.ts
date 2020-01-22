@@ -28,7 +28,7 @@ export interface DialogData {
 @Component({
   selector: 'app-dialog',
   template: `
-    <h3 mat-dialog-title [style.marginBottom.px]="10">{{ data.title || 'Notification' }}</h3>
+    <h3 mat-dialog-title>{{ data.title || 'Notification' }}</h3>
     <mat-dialog-content class="content" appScroll (read)="scroll($event)">
       <div *ngIf="data.text" [innerHTML]="data.text | breakRow"></div>
       <ng-template appDynamic></ng-template>

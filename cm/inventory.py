@@ -15,26 +15,19 @@ import json
 
 import cm.config as config
 from cm.logger import log
-from cm.adcm_config import get_prototype_config, cook_file_type_name
+from cm.adcm_config import get_prototype_config, process_config
 from cm.models import Cluster, ClusterObject, ServiceComponent, HostComponent, Host, ConfigLog
 from cm.models import ClusterBind, PrototypeExport, HostProvider, Prototype, PrototypeImport
 
 
-def process_config(obj, conf, attr=None):
+def process_config_and_attr(obj, conf, attr=None):
     spec, _, _, _ = get_prototype_config(obj.prototype)
-    for key in conf:
-        if 'type' in spec[key]:
-            if spec[key]['type'] == 'file' and conf[key] is not None:
-                conf[key] = cook_file_type_name(obj, key, '')
-        else:
-            for subkey in conf[key]:
-                if spec[key][subkey]['type'] == 'file' and conf[key][subkey] is not None:
-                    conf[key][subkey] = cook_file_type_name(obj, key, subkey)
+    new_conf = process_config(obj, spec, conf)
     if attr:
         for key, val in json.loads(attr).items():
             if 'active' in val and not val['active']:
-                conf[key] = None
-    return conf
+                new_conf[key] = None
+    return new_conf
 
 
 def get_import(cluster):   # pylint: disable=too-many-branches
@@ -55,7 +48,7 @@ def get_import(cluster):   # pylint: disable=too-many-branches
                     imports[imp.name] = {}
                 for group in json.loads(imp.default):
                     cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-                    conf = process_config(obj, json.loads(cl.config), cl.attr)
+                    conf = process_config_and_attr(obj, json.loads(cl.config), cl.attr)
                     if imp.multibind:
                         imports[imp.name].append({group: conf[group]})
                     else:
@@ -70,7 +63,7 @@ def get_import(cluster):   # pylint: disable=too-many-branches
         conf_ref = obj.config
         export_proto = obj.prototype
         cl = ConfigLog.objects.get(obj_ref=conf_ref, id=conf_ref.current)
-        conf = process_config(obj, json.loads(cl.config), cl.attr)
+        conf = process_config_and_attr(obj, json.loads(cl.config), cl.attr)
         actual_import = get_actual_import(bind, obj)
         if actual_import.multibind:
             if export_proto.name not in imports:
@@ -93,7 +86,7 @@ def get_obj_config(obj):
         return {}
     cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
     js_conf = json.loads(cl.config)
-    return process_config(obj, js_conf, cl.attr)
+    return process_config_and_attr(obj, js_conf, cl.attr)
 
 
 def get_cluster_config(cluster_id):
@@ -176,7 +169,6 @@ def get_cluster_hosts(cluster_id):
 def get_provider_hosts(provider_id):
     return {'PROVIDER': {
         'hosts': get_hosts(Host.objects.filter(provider__id=provider_id)),
-        'vars': get_provider_config(provider_id)
     }}
 
 
@@ -184,6 +176,7 @@ def get_host(host_id):
     host = Host.objects.get(id=host_id)
     groups = {'HOST': {'hosts': get_hosts([host])}}
     groups.update(get_provider_hosts(host.provider.id))
+    groups['PROVIDER']['vars'] = get_provider_config(host.provider.id)
     return groups
 
 
@@ -198,5 +191,6 @@ def prepare_job_inventory(selector, job_id, delta):
         inv['all']['children'].update(get_host(selector['host']))
     if 'provider' in selector:
         inv['all']['children'].update(get_provider_hosts(selector['provider']))
+        inv['all']['vars'] = get_provider_config(selector['provider'])
     json.dump(inv, fd, indent=3)
     fd.close()
