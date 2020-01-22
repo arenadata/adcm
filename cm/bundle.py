@@ -511,9 +511,7 @@ def delete_bundle(bundle):
     if bundle.hash != 'adcm':
         shutil.rmtree(os.path.join(config.BUNDLE_DIR, bundle.hash))
     cm.status_api.post_event('delete', 'bundle', bundle.id)
-    with transaction.atomic():
-        Prototype.objects.filter(bundle=bundle).delete()
-        bundle.delete()
+    bundle.delete()
 
 
 def check_services():

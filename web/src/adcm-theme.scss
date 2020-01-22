@@ -65,6 +65,10 @@ a {
   color: mat-color($mat-blue-grey, 200);
 }
 
+.aborted {
+  color: mat-color($mat-deep-orange, 200);
+}
+
 .mat-list-item.primary {
   border: solid 1px mat-color($mat-blue-grey, A400);
 }

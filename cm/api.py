@@ -13,6 +13,7 @@
 import json
 
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 
 import cm.errors
 import cm.issue
@@ -20,14 +21,17 @@ import cm.config as config
 import cm.status_api
 from cm.logger import log   # pylint: disable=unused-import
 from cm.upgrade import check_license, version_in
-from cm.adcm_config import proto_ref, obj_ref, prepare_social_auth
-from cm.adcm_config import process_file_type, read_bundle_file, get_prototype_config
-from cm.adcm_config import init_object_config, save_obj_config, check_json_config
+from cm.adcm_config import (
+    proto_ref, obj_ref, prepare_social_auth, process_file_type, read_bundle_file,
+    get_prototype_config, init_object_config, save_obj_config, check_json_config
+)
 from cm.errors import AdcmApiEx
 from cm.errors import raise_AdcmEx as err
-from cm.models import Cluster, Prototype, Component, Host, HostComponent, ADCM
-from cm.models import ClusterObject, ServiceComponent, ConfigLog, HostProvider
-from cm.models import PrototypeImport, PrototypeExport, ClusterBind
+from cm.models import (
+    Cluster, Prototype, Component, Host, HostComponent, ADCM, ClusterObject,
+    ServiceComponent, ConfigLog, HostProvider, PrototypeImport, PrototypeExport,
+    ClusterBind, DummyData
+)
 
 
 def check_proto_type(proto, check_type):
@@ -178,6 +182,7 @@ def unbind(cbind):
     check_import_default(import_obj, export_obj)
     cm.status_api.post_event('delete', 'bind', cbind.id, 'cluster', str(cbind.cluster.id))
     with transaction.atomic():
+        DummyData.objects.filter(id=1).update(date=timezone.now())
         cbind.delete()
         cm.issue.save_issue(cbind.cluster)
 
@@ -355,6 +360,7 @@ def save_hc(cluster, host_comp_list):
 def add_hc(cluster, hc_in):
     host_comp_list = check_hc(cluster, hc_in)
     with transaction.atomic():
+        DummyData.objects.filter(id=1).update(date=timezone.now())
         new_hc = save_hc(cluster, host_comp_list)
     return new_hc
 
@@ -620,7 +626,7 @@ def bind(cluster, export_cluster, export_service_id):   # pylint: disable=too-ma
 def check_multi_bind(actual_import, cluster, service, export_cluster, export_service, cb_list=None):
     if actual_import.multibind:
         return
-    if not cb_list:
+    if cb_list is None:
         cb_list = ClusterBind.objects.filter(cluster=cluster, service=service)
     for cb in cb_list:
         if cb.source_service:
