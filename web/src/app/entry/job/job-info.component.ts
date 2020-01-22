@@ -22,18 +22,18 @@ import { Store } from '@ngrx/store';
       <div>
         <mat-icon color="primary" style="transform:rotate(30deg);font-size: 20px;margin-top: 8px;">outlined_flag</mat-icon>
         <span>{{ dataTime.start }}</span>
-      </div>     
+      </div>
       <div>
         <mat-icon class="icon-locked running" *ngIf="status === 'running'; else done">autorenew</mat-icon>
         <ng-template #done>
-          <i [class]="status"><mat-icon>done_all</mat-icon></i>
+          <i [class]="status"><mat-icon>{{ getIcon(status) }}</mat-icon></i>
         </ng-template>
         <span>{{ dataTime.time }}</span>
       </div>
       <div *ngIf="dataTime.end">
-      <mat-icon color="primary" style="transform:rotate(150deg);font-size: 20px;">outlined_flag</mat-icon>
-      <span>{{ dataTime.end }}</span>
-    </div>
+        <mat-icon color="primary" style="transform:rotate(150deg);font-size: 20px;">outlined_flag</mat-icon>
+        <span>{{ dataTime.end }}</span>
+      </div>
     </div>
   `,
   styles: [
@@ -53,6 +53,15 @@ export class JobInfoComponent extends SocketListener implements OnInit {
     this.status = (this.service.Current as Job).status;
     this.dataTime = this.service.getOperationTimeData();
     this.startListenSocket();
+  }
+
+  getIcon(status: string) {
+    switch (status) {
+      case 'aborted':
+        return 'block';
+      default:
+        return 'done_all';
+    }
   }
 
   socketListener(m: EventMessage) {
