@@ -47,7 +47,9 @@ def test_with_new_default_values(sdk_client_fs: ADCMClient):
     :return:
     """
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
-    upgr_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_hostprovider_new_default_values'))
+    upgr_bundle = sdk_client_fs.upload_from_fs(
+        get_data_dir(__file__,
+                     'upgradable_hostprovider_new_default_values'))
     upgr_hostprovider_prototype = upgr_bundle.provider_prototype().config
     hostprovider = bundle.provider_create("test")
     host = hostprovider.host_create('localhost')
@@ -61,11 +63,13 @@ def test_with_new_default_values(sdk_client_fs: ADCMClient):
 
 
 def test_with_new_default_variables(sdk_client_fs: ADCMClient):
-    """Upgrade hostprovider with new default fields. Old and new config variables should be presented
+    """Upgrade hostprovider with new default fields.
+     Old and new config variables should be presented
     :return:
     """
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
-    upgr_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_hostprovider_new_default_variables'))
+    upgr_bundle = sdk_client_fs.upload_from_fs(get_data_dir(
+        __file__, 'upgradable_hostprovider_new_default_variables'))
     upgr_hostprovider_prototype = upgr_bundle.provider_prototype().config
     hostprovider = bundle.provider_create("test")
     host = hostprovider.host_create('localhost')
@@ -82,7 +86,8 @@ def test_decrase_config(sdk_client_fs: ADCMClient):
     """Upgrade cluster with config without old values in config. Deleted lines not presented
     """
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
-    sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_hostprovider_decrase_variables'))
+    sdk_client_fs.upload_from_fs(get_data_dir(
+        __file__, 'upgradable_hostprovider_decrase_variables'))
     hostprovider = bundle.provider_create("test")
     host = hostprovider.host_create('localhost')
     hostprovider_config_before = hostprovider.config()
@@ -108,7 +113,8 @@ def test_changed_variable_type(sdk_client_fs: ADCMClient):
     :return:
     """
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
-    sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_hostprovider_change_variable_type'))
+    sdk_client_fs.upload_from_fs(get_data_dir(
+        __file__, 'upgradable_hostprovider_change_variable_type'))
     hostprovider = bundle.provider_create("test")
     host = hostprovider.host_create('localhost')
     hostprovider_config_before = hostprovider.config()
@@ -147,7 +153,8 @@ def test_change_config(sdk_client_fs: ADCMClient):
     """Upgrade hostprovider with other config
     """
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
-    sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_hostprovider_new_change_values'))
+    sdk_client_fs.upload_from_fs(get_data_dir(
+        __file__, 'upgradable_hostprovider_new_change_values'))
     hostprovider = bundle.provider_create("test")
     host = hostprovider.host_create('localhost')
     hostprovider_config_before = hostprovider.config()
@@ -177,7 +184,8 @@ def test_cannot_upgrade_with_state(sdk_client_fs: ADCMClient):
     :return:
     """
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
-    sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_hostprovider_unsupported_state'))
+    sdk_client_fs.upload_from_fs(get_data_dir(
+        __file__, 'upgradable_hostprovider_unsupported_state'))
     hostprovider = bundle.provider_create("test")
     upgr = hostprovider.upgrade(name='upgrade to 2.0')
     upgr.do()

@@ -47,7 +47,8 @@ def test_with_new_default_values(sdk_client_fs: ADCMClient):
     :return:
     """
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
-    upgr_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster_new_default_values'))
+    upgr_bundle = sdk_client_fs.upload_from_fs(get_data_dir(
+        __file__, 'upgradable_cluster_new_default_values'))
     upgr_cluster_prototype = upgr_bundle.cluster_prototype().config
     upgr_service_prototype = upgr_bundle.service_prototype().config
     cluster = bundle.cluster_create("test")
@@ -69,7 +70,8 @@ def test_with_new_default_variables(sdk_client_fs: ADCMClient):
     :return:
     """
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
-    upgr_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster_new_default_variables'))
+    upgr_bundle = sdk_client_fs.upload_from_fs(get_data_dir(
+        __file__, 'upgradable_cluster_new_default_variables'))
     upgr_cluster_prototype = upgr_bundle.cluster_prototype().config
     upgr_service_prototype = upgr_bundle.service_prototype().config
     cluster = bundle.cluster_create("test")
@@ -90,7 +92,8 @@ def test_decrase_config(sdk_client_fs: ADCMClient):
     """Upgrade cluster with config without old values in config. Deleted lines not presented
     """
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
-    sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster_decrase_variables'))
+    sdk_client_fs.upload_from_fs(get_data_dir(
+        __file__, 'upgradable_cluster_decrase_variables'))
     cluster = bundle.cluster_create("test")
     service = cluster.service_add(name="zookeeper")
     cluster_config_before = cluster.config()
@@ -116,7 +119,8 @@ def test_changed_variable_type(sdk_client_fs: ADCMClient):
     :return:
     """
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
-    sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster_change_variable_type'))
+    sdk_client_fs.upload_from_fs(get_data_dir(
+        __file__, 'upgradable_cluster_change_variable_type'))
     cluster = bundle.cluster_create("test")
     service = cluster.service_add(name="zookeeper")
     cluster_config_before = cluster.config()
@@ -130,7 +134,8 @@ def test_changed_variable_type(sdk_client_fs: ADCMClient):
     assert isinstance(cluster_config_after['required'], str)
     assert isinstance(service_config_after['required_service'], str)
     assert int(cluster_config_after['required']) == cluster_config_before['required']
-    assert int(service_config_after['required_service']) == service_config_before['required_service']
+    assert int(service_config_after[
+                   'required_service']) == service_config_before['required_service']
 
 
 def test_multiple_upgrade_bundles(sdk_client_fs: ADCMClient):
