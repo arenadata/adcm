@@ -29,7 +29,7 @@
     "@ngrx/store-devtools": "^8.6.0",
     "hammerjs": "^2.0.8",
     "rxjs": "^6.5.4",
-    "zone.js": "~0.10.2"
+    "zone.js": "~0.9.1"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "~0.803.22",
