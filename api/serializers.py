@@ -141,8 +141,7 @@ class UserSerializer(serializers.Serializer):
                 password=validated_data.get('password'),
                 is_superuser=True
             )
-            up = UserProfile.objects.create(login=validated_data.get('username'))
-            up.save()
+            UserProfile.objects.create(login=validated_data.get('username'))
             return user
         except IntegrityError:
             raise AdcmApiEx("USER_CONFLICT", 'user already exists')
@@ -154,9 +153,9 @@ class UserPasswdSerializer(serializers.Serializer):
 
     @transaction.atomic
     def update(self, user, validated_data):   # pylint: disable=arguments-differ
-        token = Token.objects.get(user=user)
         user.set_password(validated_data.get('password'))
         user.save()
+        token = Token.objects.get(user=user)
         token.delete()
         token.key = token.generate_key()
         token.user = user
@@ -466,7 +465,7 @@ class ActionSerializer(serializers.Serializer):
     type = serializers.CharField()
     display_name = serializers.CharField(required=False)
     description = serializers.CharField(required=False)
-    disclaimer = serializers.CharField(required=False)
+    ui_options = JSONField(required=False)
     button = serializers.CharField(required=False)
     script = serializers.CharField()
     script_type = serializers.CharField()
@@ -815,9 +814,13 @@ class TaskSerializer(TaskListSerializer):
     cancel = hlink('task-cancel', 'id', 'task_id')
 
     def get_terminatable(self, obj):
-        action = Action.objects.get(id=obj.action_id)
+        try:
+            action = Action.objects.get(id=obj.action_id)
+            allow_to_termination = action.allow_to_termination
+        except Action.DoesNotExist:
+            allow_to_termination = True
         # pylint: disable=simplifiable-if-statement
-        if action.allow_to_termination and obj.status in [config.Job.CREATED, config.Job.RUNNING]:
+        if allow_to_termination and obj.status in [config.Job.CREATED, config.Job.RUNNING]:
             # pylint: enable=simplifiable-if-statement
             return True
         else:

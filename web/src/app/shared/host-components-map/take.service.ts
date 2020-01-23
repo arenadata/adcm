@@ -9,17 +9,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Injectable } from '@angular/core';
+import { AbstractControl, FormControl, FormGroup, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { ApiService } from '@app/core/api';
-import { IActionParameter, Component } from '@app/core/types';
+import { IActionParameter } from '@app/core/types';
 import { take, tap } from 'rxjs/operators';
 
-import { CompTile, HostTile, IRawHosComponent, Post, StatePost, Stream, Tile, Constraint } from './types';
-import { FormGroup, ValidatorFn, AbstractControl, FormControl, ValidationErrors } from '@angular/forms';
+import { CompTile, Constraint, HostTile, IRawHosComponent, Post, StatePost, Stream, Tile } from './types';
+import { Injectable } from '@angular/core';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable()
 export class TakeService {
   stream = new Stream();
   statePost = new StatePost();

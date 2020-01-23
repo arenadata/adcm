@@ -200,7 +200,7 @@ class Action(models.Model):
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
-    disclaimer = models.TextField(blank=True)
+    ui_options = models.TextField(blank=True, null=True, default=None)   # JSON
 
     type = models.CharField(max_length=16, choices=ACTION_TYPE)
     button = models.CharField(max_length=64, default=None, null=True)
@@ -417,7 +417,7 @@ class StageAction(models.Model):
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
-    disclaimer = models.TextField(blank=True)
+    ui_options = models.TextField(blank=True, null=True, default=None)   # JSON
 
     type = models.CharField(max_length=16, choices=ACTION_TYPE)
     button = models.CharField(max_length=64, default=None, null=True)
@@ -488,3 +488,7 @@ class StagePrototypeImport(models.Model):
 
     class Meta:
         unique_together = (('prototype', 'name'),)
+
+
+class DummyData(models.Model):
+    date = models.DateTimeField(auto_now=True)

@@ -11,29 +11,19 @@
 // limitations under the License.
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
-import { AuthGuard } from '@app/core';
-import { SharedModule } from '@app/shared';
+import { RouterModule } from '@angular/router';
 
-import { HoverDirective } from './hover.directive';
-import { TasksComponent } from './tasks.component';
-
-const routes: Routes = [
-  {
-    path: '',
-    canActivate: [AuthGuard],
-    component: TasksComponent,
-  },
-];
+import { MaterialModule } from '../material.module';
+import { StuffModule } from '../stuff.module';
+import { HolderDirective } from './holder.directive';
+import { Much2ManyComponent } from './much-2-many/much-2-many.component';
+import { ServiceHostComponent } from './services2hosts/service-host.component';
+import { TakeService } from './take.service';
 
 @NgModule({
-  imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule]
+  declarations: [HolderDirective, ServiceHostComponent, Much2ManyComponent],
+  imports: [CommonModule, MaterialModule, RouterModule, StuffModule],
+  exports: [ServiceHostComponent],
+  providers: [TakeService]
 })
-export class TaskRoutingModule {}
-
-@NgModule({
-  imports: [CommonModule, TaskRoutingModule, SharedModule],
-  declarations: [TasksComponent, HoverDirective],
-})
-export class TaskModule {}
+export class HostComponentsMapModule {}

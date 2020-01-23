@@ -38,7 +38,7 @@ const requiredObject = (): ValidatorFn => (control: AbstractControl): { [key: st
       </ng-container>
     </ng-container>
   `,
-  styles: ['.component {padding: 6px 8px; margin-bottom: 18px; font-size: 18px;}', '.component div {font-size: 12px;margin-left: 24px; margin-top: 4px;}'],
+  styles: ['.component {padding: 6px 8px; margin-bottom: 18px; font-size: 18px;}', '.component div {font-size: 12px;margin-left: 24px; margin-top: 4px;}']
 })
 export class ExportComponent {
   @Input() form: FormGroup;
@@ -87,12 +87,7 @@ export class ExportComponent {
       </div>
     </div>
   `,
-  styles: [
-    '.controls {position: fixed; top: 110px; right: 80px;}',
-    '.group {margin: .2em;}',
-    '.items {display: flex; flex-wrap: wrap;}',
-    'mat-error {display: block;margin-top: 6px; font-weight: normal;}',
-  ],
+  styleUrls: ['./import.component.scss']
 })
 export class ImportComponent implements OnInit {
   form = new FormGroup({});
