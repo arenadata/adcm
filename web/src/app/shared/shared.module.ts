@@ -28,14 +28,11 @@ import {
   IssueInfoComponent,
   ListComponent,
   MainInfoComponent,
-  Much2ManyComponent,
-  ServiceHostComponent,
   StatusComponent,
   StatusInfoComponent,
-  UpgradeComponent,
+  UpgradeComponent
 } from './components';
 import { ActionsDirective } from './components/actions/actions.directive';
-import { HolderDirective } from './components/hostmap/holder.directive';
 import { SimpleTextComponent } from './components/tooltip';
 import { ConfigurationModule } from './configuration/configuration.module';
 import { DynamicDirective, HoverDirective, ScrollDirective } from './directives';
@@ -45,15 +42,27 @@ import { FormElementsModule } from './form-elements/form-elements.module';
 import { MaterialModule } from './material.module';
 import { BreakRowPipe, TagEscPipe } from './pipes';
 import { StuffModule } from './stuff.module';
+import { HostComponentsMapModule } from './host-components-map/host-components-map.module';
 import { SubtitleComponent } from './components/details/subtitle.component';
 
+
 @NgModule({
-  imports: [CommonModule, MaterialModule, FormsModule, ReactiveFormsModule, RouterModule, StuffModule, FormElementsModule, ConfigurationModule, AddingModule],
+  imports: [
+    CommonModule,
+    MaterialModule,
+    FormsModule,
+    ReactiveFormsModule,
+    RouterModule,
+    StuffModule,
+    FormElementsModule,
+    ConfigurationModule,
+    AddingModule,
+    HostComponentsMapModule
+  ],
   declarations: [
     DetailComponent,
     DialogComponent,
     ListComponent,
-    Much2ManyComponent,
     CrumbsComponent,
     BreakRowPipe,
     HoverDirective,
@@ -62,7 +71,6 @@ import { SubtitleComponent } from './components/details/subtitle.component';
     UpgradeComponent,
     ActionsDirective,
     ActionMasterComponent,
-    ServiceHostComponent,
     TagEscPipe,
     IssueInfoComponent,
     SimpleTextComponent,
@@ -72,7 +80,6 @@ import { SubtitleComponent } from './components/details/subtitle.component';
     MainInfoComponent,
     ActionsComponent,
     ScrollDirective,
-    HolderDirective,
     MultiSortDirective,
     ImportComponent,
     ExportComponent,
@@ -88,10 +95,10 @@ import { SubtitleComponent } from './components/details/subtitle.component';
     FormElementsModule,
     ConfigurationModule,
     AddingModule,
+    HostComponentsMapModule,
     DetailComponent,
     DialogComponent,
     ListComponent,
-    Much2ManyComponent,
     CrumbsComponent,
     BreakRowPipe,
     HoverDirective,
@@ -99,7 +106,6 @@ import { SubtitleComponent } from './components/details/subtitle.component';
     ButtonSpinnerComponent,
     UpgradeComponent,
     ActionsDirective,
-    ServiceHostComponent,
     TagEscPipe,
     BaseListDirective,
     StatusComponent,
