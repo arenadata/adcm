@@ -135,11 +135,11 @@ def test_upgrade_cluster_without_old_config(client):
 
 
 @pytest.mark.parametrize("boundary, expected", [
-    ("min_cluster", "min and min_strict"), ("max_cluster", "max and max_strict"),
-    ("min_hostprovider", "min and min_strict"), ("max_hostprovider", "max and max_strict")
+    ("min_cluster", "should be present"), ("max_cluster", "should be present"),
+    ("min_hostprovider", "should be present"), ("max_hostprovider", "should be present")
 ])
 def test_upgrade_contains_strict_and_nonstrict_value(client, boundary, expected):
     bundledir = os.path.join(BUNDLES, 'strict_and_non_strict_upgrade/' + boundary)
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         steps.upload_bundle(client, bundledir)
-    INVALID_VERSION_DEFINITION.equal(e, expected, 'can not be used simultaneously')
+    INVALID_UPGRADE_DEFINITION.equal(e, expected, 'should be present')
