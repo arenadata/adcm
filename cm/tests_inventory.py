@@ -166,7 +166,7 @@ class TestInventory(TestCase):
         }
 
         bundle = models.Bundle.objects.create()
-        prototype = models.Prototype.objects.create(bundle=bundle)
+        prototype = models.Prototype.objects.create(bundle=bundle, type='host')
         provider = models.HostProvider.objects.create(prototype=prototype)
         host = models.Host.objects.create(prototype=prototype, provider=provider)
 
@@ -177,7 +177,14 @@ class TestInventory(TestCase):
             },
             'PROVIDER': {
                 'hosts': [],
-                'vars': []
+                'vars': {
+                    'provider': {
+                        'config': {},
+                        'name': '',
+                        'id': 1,
+                        'host_prototype_id': 1
+                    }
+                }
             }
         }
         self.assertDictEqual(groups, test_groups)
@@ -204,42 +211,54 @@ class TestInventory(TestCase):
 
         data = [
             ({'cluster': cluster.id}, 'cluster',
-             {'all': {
-                 'children': {
-                     'CLUSTER': {
-                         'hosts': {
-                             '': {
-                                 'adcm_hostid': 1}
-                         },
-                         'vars': {
-                             'cluster': {
-                                 'config': {},
-                                 'name': '',
-                                 'id': 1
+             {
+                 'all': {
+                     'children': {
+                         'CLUSTER': {
+                             'hosts': {
+                                 '': {
+                                     'adcm_hostid': 1}
                              },
-                             'services': {}
+                             'vars': {
+                                 'cluster': {
+                                     'config': {},
+                                     'name': '',
+                                     'id': 1
+                                 },
+                                 'services': {}
+                             }
                          }
                      }
                  }
-             }
              }),
             ({'host': host.id}, 'host',
-             {'all': {
-                 'children': {
-                     'HOST': {
-                         'hosts': {
-                             '': {
-                                 'adcm_hostid': 1}
-                         }
-                     },
-                     'PROVIDER': {
-                         'hosts': {
-                             '': {
-                                 'adcm_hostid': 1}
+             {
+                 'all': {
+                     'children': {
+                         'HOST': {
+                             'hosts': {
+                                 '': {
+                                     'adcm_hostid': 1
+                                 }
+                             }
+                         },
+                         'PROVIDER': {
+                             'hosts': {
+                                 '': {
+                                     'adcm_hostid': 1
+                                 }
+                             },
+                             'vars': {
+                                 'provider': {
+                                     'config': {},
+                                     'name': '',
+                                     'id': 1,
+                                     'host_prototype_id': 1
+                                 }
+                             }
                          }
                      }
                  }
-             }
              }),
             ({'provider': host_provider.id}, 'host',
              {
@@ -248,7 +267,8 @@ class TestInventory(TestCase):
                          'PROVIDER': {
                              'hosts': {
                                  '': {
-                                     'adcm_hostid': 1}
+                                     'adcm_hostid': 1
+                                 }
                              }
                          }
                      },
@@ -257,7 +277,8 @@ class TestInventory(TestCase):
                              'config': {},
                              'name': '',
                              'id': 1,
-                             'host_prototype_id': 1}
+                             'host_prototype_id': 1
+                         }
                      }
                  }
              }),
