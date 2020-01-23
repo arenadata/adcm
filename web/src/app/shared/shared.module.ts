@@ -25,15 +25,13 @@ import {
   IssueInfoComponent,
   ListComponent,
   MainInfoComponent,
-  Much2ManyComponent,
-  ServiceHostComponent,
   StatusComponent,
   StatusInfoComponent,
+  UpgradeComponent,
 } from './components';
-import { HolderDirective } from './components/hostmap/holder.directive';
+import { ActionsDirective } from './components/actions/actions.directive';
 import { SimpleTextComponent } from './components/tooltip';
 import { ConfigurationModule } from './configuration/configuration.module';
-import { DetailsModule } from './details/details.module';
 import {
   DynamicDirective,
   HoverDirective,
@@ -42,9 +40,11 @@ import {
   ScrollDirective,
 } from './directives';
 import { FormElementsModule } from './form-elements/form-elements.module';
+import { HostComponentsMapModule } from './host-components-map/host-components-map.module';
 import { MaterialModule } from './material.module';
 import { BreakRowPipe, TagEscPipe } from './pipes';
 import { StuffModule } from './stuff.module';
+
 
 @NgModule({
   imports: [
@@ -57,18 +57,16 @@ import { StuffModule } from './stuff.module';
     FormElementsModule,
     ConfigurationModule,
     AddingModule,
-    DetailsModule
+    HostComponentsMapModule
   ],
   declarations: [
     DialogComponent,
     ListComponent,
-    Much2ManyComponent,
     BreakRowPipe,
     HoverDirective,
     DynamicDirective,
     ButtonSpinnerComponent,
     ActionMasterComponent,
-    ServiceHostComponent,
     TagEscPipe,
     IssueInfoComponent,
     SimpleTextComponent,
@@ -77,7 +75,6 @@ import { StuffModule } from './stuff.module';
     StatusInfoComponent,
     MainInfoComponent,
     ScrollDirective,
-    HolderDirective,
     MultiSortDirective,
     ImportComponent,
     ExportComponent,
@@ -92,15 +89,15 @@ import { StuffModule } from './stuff.module';
     FormElementsModule,
     ConfigurationModule,
     AddingModule,
-    DetailsModule,
+    HostComponentsMapModule,
     DialogComponent,
     ListComponent,
-    Much2ManyComponent,
     BreakRowPipe,
     HoverDirective,
     DynamicDirective,
     ButtonSpinnerComponent,
-    ServiceHostComponent,
+    UpgradeComponent,
+    ActionsDirective,
     TagEscPipe,
     BaseListDirective,
     StatusComponent,

@@ -11,8 +11,6 @@
 // limitations under the License.
 
 export * from './button-spinner.component';
-export * from './hostmap/much-2-many/much-2-many.component';
-export * from './hostmap/services2hosts/service-host.component';
 export * from './issue-info.component';
 export * from './status/status.component';
 export * from './status-info.component';
