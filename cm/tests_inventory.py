@@ -13,11 +13,10 @@ import json
 from unittest.mock import patch, Mock
 
 from django.test import TestCase
+from django.utils import timezone
 
 import cm.inventory
-from cm.models import (
-    ObjectConfig, ConfigLog, Prototype, Bundle, Cluster, HostProvider, Host,
-)
+from cm import models
 
 
 class TestInventory(TestCase):
@@ -41,11 +40,11 @@ class TestInventory(TestCase):
 
     @patch('cm.inventory.process_config_and_attr')
     def test_get_obj_config(self, mock_process_config_and_attr):
-        bundle = Bundle.objects.create()
-        prototype = Prototype.objects.create(bundle=bundle)
-        object_config = ObjectConfig.objects.create(current=1, previous=1)
-        cluster = Cluster.objects.create(prototype=prototype, config=object_config)
-        config_log = ConfigLog.objects.create(obj_ref=object_config, config='{}')
+        bundle = models.Bundle.objects.create()
+        prototype = models.Prototype.objects.create(bundle=bundle)
+        object_config = models.ObjectConfig.objects.create(current=1, previous=1)
+        cluster = models.Cluster.objects.create(prototype=prototype, config=object_config)
+        config_log = models.ConfigLog.objects.create(obj_ref=object_config, config='{}')
 
         cm.inventory.get_obj_config(cluster)
         mock_process_config_and_attr.assert_called_once_with(
@@ -57,10 +56,10 @@ class TestInventory(TestCase):
         mock_get_obj_config.return_value = {}
         mock_get_import.return_value = {}
 
-        bundle = Bundle.objects.create()
-        prototype = Prototype.objects.create(bundle=bundle)
-        object_config = ObjectConfig.objects.create(current=1, previous=1)
-        cluster = Cluster.objects.create(prototype=prototype, config=object_config)
+        bundle = models.Bundle.objects.create()
+        prototype = models.Prototype.objects.create(bundle=bundle)
+        object_config = models.ObjectConfig.objects.create(current=1, previous=1)
+        cluster = models.Cluster.objects.create(prototype=prototype, config=object_config)
 
         res = cm.inventory.get_cluster_config(cluster.id)
         test_res = {
@@ -80,10 +79,10 @@ class TestInventory(TestCase):
     def test_get_provider_config(self, mock_get_obj_config):
         mock_get_obj_config.return_value = {}
 
-        bundle = Bundle.objects.create()
-        prototype = Prototype.objects.create(bundle=bundle, type='host')
-        object_config = ObjectConfig.objects.create(current=1, previous=1)
-        provider = HostProvider.objects.create(prototype=prototype, config=object_config)
+        bundle = models.Bundle.objects.create()
+        prototype = models.Prototype.objects.create(bundle=bundle, type='host')
+        object_config = models.ObjectConfig.objects.create(current=1, previous=1)
+        provider = models.HostProvider.objects.create(prototype=prototype, config=object_config)
 
         config = cm.inventory.get_provider_config(provider.id)
 
@@ -102,10 +101,10 @@ class TestInventory(TestCase):
     def test_get_host_groups(self, mock_get_obj_config):
         mock_get_obj_config.return_value = {}
 
-        bundle = Bundle.objects.create()
-        prototype = Prototype.objects.create(bundle=bundle)
-        object_config = ObjectConfig.objects.create(current=1, previous=1)
-        cluster = Cluster.objects.create(prototype=prototype, config=object_config)
+        bundle = models.Bundle.objects.create()
+        prototype = models.Prototype.objects.create(bundle=bundle)
+        object_config = models.ObjectConfig.objects.create(current=1, previous=1)
+        cluster = models.Cluster.objects.create(prototype=prototype, config=object_config)
 
         groups = cm.inventory.get_host_groups(cluster.id, {})
 
@@ -118,9 +117,9 @@ class TestInventory(TestCase):
         mock_get_cluster_config.return_value = []
         mock_get_hosts.return_value = []
 
-        bundle = Bundle.objects.create()
-        prototype = Prototype.objects.create(bundle=bundle)
-        cluster = Cluster.objects.create(prototype=prototype)
+        bundle = models.Bundle.objects.create()
+        prototype = models.Prototype.objects.create(bundle=bundle)
+        cluster = models.Cluster.objects.create(prototype=prototype)
 
         test_cluster_hosts = {
             'CLUSTER': {
@@ -139,10 +138,10 @@ class TestInventory(TestCase):
     def test_get_provider_hosts(self, mock_get_hosts):
         mock_get_hosts.return_value = []
 
-        bundle = Bundle.objects.create()
-        prototype = Prototype.objects.create(bundle=bundle)
-        provider = HostProvider.objects.create(prototype=prototype)
-        Host.objects.create(prototype=prototype, provider=provider)
+        bundle = models.Bundle.objects.create()
+        prototype = models.Prototype.objects.create(bundle=bundle)
+        provider = models.HostProvider.objects.create(prototype=prototype)
+        models.Host.objects.create(prototype=prototype, provider=provider)
 
         provider_hosts = cm.inventory.get_provider_hosts(provider.id)
 
@@ -166,10 +165,10 @@ class TestInventory(TestCase):
             }
         }
 
-        bundle = Bundle.objects.create()
-        prototype = Prototype.objects.create(bundle=bundle)
-        provider = HostProvider.objects.create(prototype=prototype)
-        host = Host.objects.create(prototype=prototype, provider=provider)
+        bundle = models.Bundle.objects.create()
+        prototype = models.Prototype.objects.create(bundle=bundle)
+        provider = models.HostProvider.objects.create(prototype=prototype)
+        host = models.Host.objects.create(prototype=prototype, provider=provider)
 
         groups = cm.inventory.get_host(host.id)
         test_groups = {
@@ -184,3 +183,91 @@ class TestInventory(TestCase):
         self.assertDictEqual(groups, test_groups)
         mock_get_hosts.assert_called_once_with([host])
         mock_get_provider_hosts.assert_called_once_with(host.provider.id)
+
+    @patch('json.dump')
+    @patch('cm.inventory.open')
+    def test_prepare_job_inventory(self, mock_open, mock_dump):
+        bundle = models.Bundle.objects.create()
+        prototype = models.Prototype.objects.create(bundle=bundle)
+        cluster = models.Cluster.objects.create(prototype=prototype)
+        # cluster_object = models.ClusterObject.objects.create(prototype=prototype, cluster=cluster)
+        host_provider = models.HostProvider.objects.create(prototype=prototype)
+        host = models.Host.objects.create(
+            prototype=prototype, cluster=cluster, provider=host_provider)
+
+        action = models.Action.objects.create(prototype=prototype)
+        job = models.JobLog.objects.create(
+            action_id=action.id, start_date=timezone.now(), finish_date=timezone.now())
+
+        fd = Mock()
+        mock_open.return_value = fd
+
+        data = [
+            ({'cluster': cluster.id}, 'cluster',
+             {'all': {
+                 'children': {
+                     'CLUSTER': {
+                         'hosts': {
+                             '': {
+                                 'adcm_hostid': 1}
+                         },
+                         'vars': {
+                             'cluster': {
+                                 'config': {},
+                                 'name': '',
+                                 'id': 1
+                             },
+                             'services': {}
+                         }
+                     }
+                 }
+             }
+             }),
+            ({'host': host.id}, 'host',
+             {'all': {
+                 'children': {
+                     'HOST': {
+                         'hosts': {
+                             '': {
+                                 'adcm_hostid': 1}
+                         }
+                     },
+                     'PROVIDER': {
+                         'hosts': {
+                             '': {
+                                 'adcm_hostid': 1}
+                         }
+                     }
+                 }
+             }
+             }),
+            ({'provider': host_provider.id}, 'host',
+             {
+                 'all': {
+                     'children': {
+                         'PROVIDER': {
+                             'hosts': {
+                                 '': {
+                                     'adcm_hostid': 1}
+                             }
+                         }
+                     },
+                     'vars': {
+                         'provider': {
+                             'config': {},
+                             'name': '',
+                             'id': 1,
+                             'host_prototype_id': 1}
+                     }
+                 }
+             }),
+        ]
+
+        for selector, prototype_type, inv in data:
+            with self.subTest(selector=selector, prototype_type=prototype_type, inv=inv):
+                prototype.type = prototype_type
+                prototype.save()
+
+                cm.inventory.prepare_job_inventory(selector, job.id, [])
+                mock_dump.assert_called_once_with(inv, fd, indent=3)
+                mock_dump.reset_mock()
