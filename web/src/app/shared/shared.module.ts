@@ -17,11 +17,8 @@ import { RouterModule } from '@angular/router';
 import { AddingModule } from './add-component/adding.module';
 import {
   ActionMasterComponent,
-  ActionsComponent,
   BaseListDirective,
   ButtonSpinnerComponent,
-  CrumbsComponent,
-  DetailComponent,
   DialogComponent,
   ExportComponent,
   ImportComponent,
@@ -32,35 +29,44 @@ import {
   ServiceHostComponent,
   StatusComponent,
   StatusInfoComponent,
-  UpgradeComponent,
 } from './components';
-import { ActionsDirective } from './components/actions/actions.directive';
 import { HolderDirective } from './components/hostmap/holder.directive';
 import { SimpleTextComponent } from './components/tooltip';
 import { ConfigurationModule } from './configuration/configuration.module';
-import { DynamicDirective, HoverDirective, ScrollDirective } from './directives';
-import { InfinityScrollDirective } from './directives/infinity-scroll.directive';
-import { MultiSortDirective } from './directives/multi-sort.directive';
+import { DetailsModule } from './details/details.module';
+import {
+  DynamicDirective,
+  HoverDirective,
+  InfinityScrollDirective,
+  MultiSortDirective,
+  ScrollDirective,
+} from './directives';
 import { FormElementsModule } from './form-elements/form-elements.module';
 import { MaterialModule } from './material.module';
 import { BreakRowPipe, TagEscPipe } from './pipes';
 import { StuffModule } from './stuff.module';
-import { SubtitleComponent } from './components/details/subtitle.component';
 
 @NgModule({
-  imports: [CommonModule, MaterialModule, FormsModule, ReactiveFormsModule, RouterModule, StuffModule, FormElementsModule, ConfigurationModule, AddingModule],
+  imports: [
+    CommonModule,
+    MaterialModule,
+    FormsModule,
+    ReactiveFormsModule,
+    RouterModule,
+    StuffModule,
+    FormElementsModule,
+    ConfigurationModule,
+    AddingModule,
+    DetailsModule
+  ],
   declarations: [
-    DetailComponent,
     DialogComponent,
     ListComponent,
     Much2ManyComponent,
-    CrumbsComponent,
     BreakRowPipe,
     HoverDirective,
     DynamicDirective,
     ButtonSpinnerComponent,
-    UpgradeComponent,
-    ActionsDirective,
     ActionMasterComponent,
     ServiceHostComponent,
     TagEscPipe,
@@ -70,14 +76,12 @@ import { SubtitleComponent } from './components/details/subtitle.component';
     StatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
-    ActionsComponent,
     ScrollDirective,
     HolderDirective,
     MultiSortDirective,
     ImportComponent,
     ExportComponent,
-    InfinityScrollDirective,
-    SubtitleComponent
+    InfinityScrollDirective
   ],
   entryComponents: [DialogComponent, ActionMasterComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent],
   exports: [
@@ -88,24 +92,20 @@ import { SubtitleComponent } from './components/details/subtitle.component';
     FormElementsModule,
     ConfigurationModule,
     AddingModule,
-    DetailComponent,
+    DetailsModule,
     DialogComponent,
     ListComponent,
     Much2ManyComponent,
-    CrumbsComponent,
     BreakRowPipe,
     HoverDirective,
     DynamicDirective,
     ButtonSpinnerComponent,
-    UpgradeComponent,
-    ActionsDirective,
     ServiceHostComponent,
     TagEscPipe,
     BaseListDirective,
     StatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
-    ActionsComponent,
     ScrollDirective,
     ImportComponent,
     ExportComponent,

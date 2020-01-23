@@ -15,3 +15,4 @@ export * from './components';
 export * from './directives';
 export * from './pipes';
 export * from './configuration/main/main.component';
+export * from './details/detail.component';
