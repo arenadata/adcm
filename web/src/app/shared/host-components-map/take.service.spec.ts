@@ -11,8 +11,8 @@
 // limitations under the License.
 import { HttpClientModule } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { ApiService } from '@app/core/api';
-import { reducers } from '@app/core/store';
+import { ApiService } from '../../core/api';
+import { reducers } from '../../core/store';
 import { StoreModule } from '@ngrx/store';
 
 import { TakeService } from './take.service';
@@ -32,7 +32,7 @@ describe('HostComponentsMap :: TakeService', () => {
           }
         })
       ],
-      providers: [ApiService]
+      providers: [ApiService, TakeService]
     })
   );
 
