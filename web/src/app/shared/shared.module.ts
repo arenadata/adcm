@@ -43,6 +43,8 @@ import { MaterialModule } from './material.module';
 import { BreakRowPipe, TagEscPipe } from './pipes';
 import { StuffModule } from './stuff.module';
 import { HostComponentsMapModule } from './host-components-map/host-components-map.module';
+import { SubtitleComponent } from './components/details/subtitle.component';
+
 
 @NgModule({
   imports: [
@@ -81,7 +83,8 @@ import { HostComponentsMapModule } from './host-components-map/host-components-m
     MultiSortDirective,
     ImportComponent,
     ExportComponent,
-    InfinityScrollDirective
+    InfinityScrollDirective,
+    SubtitleComponent
   ],
   entryComponents: [DialogComponent, ActionMasterComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent],
   exports: [
