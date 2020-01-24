@@ -47,7 +47,7 @@
 
 - type: service
   name: zookeeper
-  version: '3.4.10'
+  version: '3.4.11'
   config:
     required_service:
       type: integer

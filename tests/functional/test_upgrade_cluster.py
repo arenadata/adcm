@@ -36,6 +36,7 @@ def test_check_config(sdk_client_fs: ADCMClient):
     cluster_config_after = cluster.config()
     service_config_after = service.config()
     assert cluster.prototype().version == '1.6'
+    assert service.prototype().version == '3.4.11'
     for variable in cluster_config_before:
         assert cluster_config_before[variable] == cluster_config_after[variable]
     for variable in service_config_before:
