@@ -1,0 +1,20 @@
+.controls {
+  position: fixed;
+  top: 110px;
+  right: 80px;
+}
+
+.group {
+  margin: 0.2em;
+}
+
+.items {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+mat-error {
+  display: block;
+  margin-top: 6px;
+  font-weight: normal;
+}
