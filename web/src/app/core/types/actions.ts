@@ -17,6 +17,10 @@ export interface IActionParameter {
   service: string;
 }
 
+export interface IUIOptions {
+  disclaimer?: string;
+}
+
 export interface IAction {
   name: string;
   display_name: string;
@@ -24,5 +28,5 @@ export interface IAction {
   config: IConfig;
   hostcomponentmap: IActionParameter | null;
   button: 'create_host' | null;
-  disclaimer?: string;
+  ui_options: IUIOptions;
 }
