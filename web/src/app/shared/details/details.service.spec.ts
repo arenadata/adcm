@@ -9,15 +9,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { TestBed } from '@angular/core/testing';
+import { convertToParamMap, ParamMap, Params } from '@angular/router';
+import { ClusterService } from '@app/core';
+import { ApiService } from '@app/core/api';
 
-import { ChannelService } from './channel.service';
+const mockParams = [{}, { cluser: 1 }, { service: 1 }, { cluser: 1, service: 1 }, null];
 
-describe('ChannelService', () => {
-  beforeEach(() => TestBed.configureTestingModule({}));
+describe('DetailsService', () => {
+  const service: ClusterService = new ClusterService({} as ApiService);
+  const input = (params: Params): ParamMap => convertToParamMap(params);
 
   it('should be created', () => {
-    const service: ChannelService = TestBed.get(ChannelService);
     expect(service).toBeTruthy();
   });
+
+  it('check input data', () => {});
+
+  it('input data should be convert to CurrentParam object', () => {});
+
+  it('equal new CurrentParam and exists CurrentParam', () => {});
 });
