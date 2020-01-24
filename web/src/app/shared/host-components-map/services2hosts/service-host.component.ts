@@ -18,7 +18,7 @@ import { IActionParameter } from '@app/core/types';
 import { Store } from '@ngrx/store';
 import { tap } from 'rxjs/operators';
 
-import { SocketListener } from '../../../directives/base.directive';
+import { SocketListener } from '../../directives/base.directive';
 import { TakeService } from '../take.service';
 import { CompTile, HostTile, Post } from '../types';
 
