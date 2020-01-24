@@ -20,6 +20,7 @@ from cm import models
 
 
 class TestInventory(TestCase):
+    # pylint: disable=too-many-locals
 
     def setUp(self):
         pass
@@ -197,7 +198,6 @@ class TestInventory(TestCase):
         bundle = models.Bundle.objects.create()
         prototype = models.Prototype.objects.create(bundle=bundle)
         cluster = models.Cluster.objects.create(prototype=prototype)
-        # cluster_object = models.ClusterObject.objects.create(prototype=prototype, cluster=cluster)
         host_provider = models.HostProvider.objects.create(prototype=prototype)
         host = models.Host.objects.create(
             prototype=prototype, cluster=cluster, provider=host_provider)
@@ -208,80 +208,81 @@ class TestInventory(TestCase):
 
         fd = Mock()
         mock_open.return_value = fd
+        cluster_inv = {
+            'all': {
+                'children': {
+                    'CLUSTER': {
+                        'hosts': {
+                            '': {
+                                'adcm_hostid': 1
+                            }
+                        },
+                        'vars': {
+                            'cluster': {
+                                'config': {},
+                                'name': '',
+                                'id': 1
+                            },
+                            'services': {}
+                        }
+                    }
+                }
+            }
+        }
+        host_inv = {
+            'all': {
+                'children': {
+                    'HOST': {
+                        'hosts': {
+                            '': {
+                                'adcm_hostid': 1
+                            }
+                        }
+                    },
+                    'PROVIDER': {
+                        'hosts': {
+                            '': {
+                                'adcm_hostid': 1
+                            }
+                        },
+                        'vars': {
+                            'provider': {
+                                'config': {},
+                                'name': '',
+                                'id': 1,
+                                'host_prototype_id': 1
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        provider_inv = {
+            'all': {
+                'children': {
+                    'PROVIDER': {
+                        'hosts': {
+                            '': {
+                                'adcm_hostid': 1
+                            }
+                        }
+                    }
+                },
+                'vars': {
+                    'provider': {
+                        'config': {},
+                        'name': '',
+                        'id': 1,
+                        'host_prototype_id': 1
+                    }
+                }
+            }
+        }
 
         data = [
-            ({'cluster': cluster.id}, 'cluster',
-             {
-                 'all': {
-                     'children': {
-                         'CLUSTER': {
-                             'hosts': {
-                                 '': {
-                                     'adcm_hostid': 1}
-                             },
-                             'vars': {
-                                 'cluster': {
-                                     'config': {},
-                                     'name': '',
-                                     'id': 1
-                                 },
-                                 'services': {}
-                             }
-                         }
-                     }
-                 }
-             }),
-            ({'host': host.id}, 'host',
-             {
-                 'all': {
-                     'children': {
-                         'HOST': {
-                             'hosts': {
-                                 '': {
-                                     'adcm_hostid': 1
-                                 }
-                             }
-                         },
-                         'PROVIDER': {
-                             'hosts': {
-                                 '': {
-                                     'adcm_hostid': 1
-                                 }
-                             },
-                             'vars': {
-                                 'provider': {
-                                     'config': {},
-                                     'name': '',
-                                     'id': 1,
-                                     'host_prototype_id': 1
-                                 }
-                             }
-                         }
-                     }
-                 }
-             }),
-            ({'provider': host_provider.id}, 'host',
-             {
-                 'all': {
-                     'children': {
-                         'PROVIDER': {
-                             'hosts': {
-                                 '': {
-                                     'adcm_hostid': 1
-                                 }
-                             }
-                         }
-                     },
-                     'vars': {
-                         'provider': {
-                             'config': {},
-                             'name': '',
-                             'id': 1,
-                             'host_prototype_id': 1
-                         }
-                     }
-                 }
-             }),
+            ({'cluster': cluster.id}, 'cluster', cluster_inv),
+            ({'host': host.id}, 'host', host_inv),
+            ({'provider': host_provider.id}, 'host', provider_inv),
         ]
 
         for selector, prototype_type, inv in data:
