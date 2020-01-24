@@ -135,8 +135,10 @@ def test_upgrade_cluster_without_old_config(client):
 
 
 @pytest.mark.parametrize("boundary, expected", [
-    ("min_cluster", "should be present"), ("max_cluster", "should be present"),
-    ("min_hostprovider", "should be present"), ("max_hostprovider", "should be present")
+    ("min_cluster", "can not be used simultaneously"),
+    ("max_cluster", "should be present"),
+    ("min_hostprovider", "can not be used simultaneously"),
+    ("max_hostprovider", "can not be used simultaneously")
 ])
 def test_upgrade_contains_strict_and_nonstrict_value(client, boundary, expected):
     bundledir = os.path.join(BUNDLES, 'strict_and_non_strict_upgrade/' + boundary)
