@@ -9,16 +9,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+import { CommonModule } from '@angular/common';
+import { NgModule } from '@angular/core';
+import { RouterModule } from '@angular/router';
 
-export * from './button-spinner.component';
-export * from './issue-info.component';
-export * from './status/status.component';
-export * from './status-info.component';
-export * from './crumbs/crumbs.component';
-export * from './dialog.component';
-export * from './main-info.component';
-export * from './list/index';
-export * from './upgrade.component';
-export * from './actions/actions.component';
-export * from './actions/master/master.component';
-export * from './import/import.component';
+import { MaterialModule } from '../material.module';
+import { StuffModule } from '../stuff.module';
+import { DetailComponent } from './detail.component';
+import { SubtitleComponent } from './subtitle.component';
+
+@NgModule({
+    imports: [CommonModule, RouterModule, MaterialModule, StuffModule ],
+    exports: [DetailComponent],
+    declarations: [DetailComponent, SubtitleComponent]
+})
+export class DetailsModule {}
