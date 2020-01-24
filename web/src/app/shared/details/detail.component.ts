@@ -13,12 +13,12 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ChannelService, ClusterService } from '@app/core';
 import { EventMessage, SocketState } from '@app/core/store';
-import { IAction, Entities, Issue, Cluster, Host } from '@app/core/types';
+import { Cluster, Entities, Host, IAction, Issue } from '@app/core/types';
 import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
 import { switchMap, tap } from 'rxjs/operators';
 
-import { SocketListener } from '../../directives/base.directive';
+import { SocketListener } from '../directives/base.directive';
 import { CrumbsItem, NavigationService } from './navigation.service';
 
 @Component({
