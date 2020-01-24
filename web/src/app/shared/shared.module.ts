@@ -44,6 +44,7 @@ import { HostComponentsMapModule } from './host-components-map/host-components-m
 import { MaterialModule } from './material.module';
 import { BreakRowPipe, TagEscPipe } from './pipes';
 import { StuffModule } from './stuff.module';
+import { DetailsModule } from './details/details.module';
 
 
 @NgModule({
@@ -57,7 +58,8 @@ import { StuffModule } from './stuff.module';
     FormElementsModule,
     ConfigurationModule,
     AddingModule,
-    HostComponentsMapModule
+    HostComponentsMapModule,
+    DetailsModule
   ],
   declarations: [
     DialogComponent,
@@ -90,6 +92,7 @@ import { StuffModule } from './stuff.module';
     ConfigurationModule,
     AddingModule,
     HostComponentsMapModule,
+    DetailsModule,
     DialogComponent,
     ListComponent,
     BreakRowPipe,

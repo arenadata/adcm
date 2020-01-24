@@ -13,6 +13,8 @@ import { convertToParamMap, ParamMap, Params } from '@angular/router';
 import { ClusterService } from '@app/core';
 import { ApiService } from '@app/core/api';
 
+type pages = 'cluster' | 'host' | 'provider' | 'service' | 'job' | 'bundle';
+
 const mockParams = [{}, { cluser: 1 }, { service: 1 }, { cluser: 1, service: 1 }, null];
 
 describe('DetailsService', () => {
@@ -23,9 +25,26 @@ describe('DetailsService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('check input data', () => {});
+  /**
+   * обработать входящие параметры,
+   *  - проверить наличае кластера (cluster_id)
+   *  - проверить текущий объект (current_id, typeName)
+   *  - сравнить новые параметры с текущими _currentParamMap
+   * обновить модель данных для компонента
+   * сохранить их в свойство _currentParamMap
+   *
+   */
 
-  it('input data should be convert to CurrentParam object', () => {});
-
-  it('equal new CurrentParam and exists CurrentParam', () => {});
+  /**
+   * Модель данных для компонента
+   *  toolbar: {
+   *     crumbs: [],
+   *     actions: [],
+   *     upgradable: boolean,
+   *     issues: boolean
+   *  },
+   *  left: {title: string, url: string, status: number, issue: boolean}[],
+   *  title: (): string,
+   *  subtitle: (): string
+   */
 });
