@@ -19,6 +19,31 @@ from adcm_pytest_plugin.utils import get_data_dir
 from tests.library.errorcodes import UPGRADE_ERROR
 
 
+def test_check_prototype(sdk_client_fs: ADCMClient):
+    """Check prototype for service and cluster after upgrade
+    :param sdk_client_fs:
+    :return:
+    """
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
+    sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster'))
+    cluster = bundle.cluster_create("test")
+    cl_id_before = cluster.id
+    service = cluster.service_add(name="zookeeper")
+    serv_id_before = service.id
+    cluster_proto_before = cluster.prototype()
+    service_proto_before = service.prototype()
+    upgr = cluster.upgrade(name='upgrade to 1.6')
+    upgr.do()
+    cluster.reread()
+    service.reread()
+    cluster_proto_after = cluster.prototype()
+    service_proto_after = service.prototype()
+    assert cl_id_before == cluster.id
+    assert serv_id_before == service.id
+    assert cluster_proto_before.id != cluster_proto_after.id
+    assert service_proto_before.id != service_proto_after.id
+
+
 def test_check_config(sdk_client_fs: ADCMClient):
     """Check default service and cluster config fields after upgrade
     :return:

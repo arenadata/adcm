@@ -63,7 +63,7 @@
 
 - type: host
   name: vHost
-  version: 00.09
+  version: '00.10'
 
   config:
       str_param:

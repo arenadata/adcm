@@ -19,6 +19,31 @@ from adcm_pytest_plugin.utils import get_data_dir
 from tests.library.errorcodes import UPGRADE_ERROR
 
 
+def test_check_prototype(sdk_client_fs: ADCMClient):
+    """Check prototype for service and cluster after upgrade
+    :param sdk_client_fs:
+    :return:
+    """
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
+    sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_hostprovider'))
+    hostprovider = bundle.provider_create("test")
+    host = hostprovider.host_create(fqdn="localhost")
+    hostprovider_proto_before = hostprovider.prototype()
+    hp_id_before = hostprovider.id
+    host_proto_before = host.prototype()
+    ht_id_before = host.id
+    upgr = hostprovider.upgrade(name='upgrade to 2.0')
+    upgr.do()
+    hostprovider.reread()
+    host.reread()
+    hostprovider_proto_after = hostprovider.prototype()
+    host_proto_after = host.prototype()
+    assert hp_id_before == hostprovider.id
+    assert ht_id_before == host.id
+    assert hostprovider_proto_before.id != hostprovider_proto_after.id
+    assert host_proto_before.id != host_proto_after.id
+
+
 def test_check_config(sdk_client_fs: ADCMClient):
     """Check default host and hostprovider config fields after upgrade
     :return:
@@ -36,6 +61,7 @@ def test_check_config(sdk_client_fs: ADCMClient):
     hostprovider_config_after = hostprovider.config()
     host_config_after = host.config()
     assert hostprovider.prototype().version == '2.0'
+    assert host.prototype().version == '00.10'
     for variable in hostprovider_config_before:
         assert hostprovider_config_before[variable] == hostprovider_config_after[variable]
     for variable in host_config_before:
