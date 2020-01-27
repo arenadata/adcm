@@ -248,20 +248,52 @@ def save_components(proto, conf):
 
 
 def check_upgrade(proto, conf):
-    ref = proto_ref(proto)
     check_key(proto.type, proto.name, '', 'upgrade', 'name', conf)
-    check_key(proto.type, proto.name, '', 'upgrade', 'versions', conf)
+    check_versions(proto, conf, f"upgrade \"{conf['name']}\"")
+
+
+def check_versions(proto, conf, label):
+    ref = proto_ref(proto)
+    msg = '{} has no mandatory \"versions\" key ({})'
+    if not conf:
+        err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
+    if 'versions' not in conf:
+        err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
+    if not isinstance(conf['versions'], dict):
+        err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
     check_extra_keys(
         conf['versions'],
         ('min', 'max', 'min_strict', 'max_strict'),
-        'upgrade versions of {}'.format(proto_ref(proto))
+        '{} versions of {}'.format(label, proto_ref(proto))
     )
     if 'min' in conf['versions'] and 'min_strict' in conf['versions']:
-        msg = 'min and min_strict can not be used simultaneously ({})'
-        err('INVALID_UPGRADE_DEFINITION', msg.format(ref))
+        msg = 'min and min_strict can not be used simultaneously in versions of {} ({})'
+        err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
+    if 'min' not in conf['versions'] and 'min_strict' not in conf['versions']:
+        msg = 'min or min_strict should be present in versions of {} ({})'
+        err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
     if 'max' in conf['versions'] and 'max_strict' in conf['versions']:
-        msg = 'max and max_strict can not be used simultaneously ({})'
-        err('INVALID_UPGRADE_DEFINITION', msg.format(ref))
+        msg = 'max and max_strict can not be used simultaneously in versions of {} ({})'
+        err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
+    if 'max' not in conf['versions'] and 'max_strict' not in conf['versions']:
+        msg = 'max and max_strict should be present in versions of {} ({})'
+        err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
+
+
+def set_version(obj, conf):
+    if 'min' in conf['versions']:
+        obj.min_version = conf['versions']['min']
+        obj.min_strict = False
+    elif 'min_strict' in conf['versions']:
+        obj.min_version = conf['versions']['min_strict']
+        obj.min_strict = True
+
+    if 'max' in conf['versions']:
+        obj.max_version = conf['versions']['max']
+        obj.max_strict = False
+    elif 'max_strict' in conf['versions']:
+        obj.max_version = conf['versions']['max_strict']
+        obj.max_strict = True
 
 
 def check_upgrade_edition(proto, conf):
@@ -286,24 +318,7 @@ def save_upgrade(proto, conf):
         check_extra_keys(item, allow, 'upgrade of {}'.format(ref))
         check_upgrade(proto, item)
         upg = StageUpgrade(name=item['name'])
-        if 'min' in item['versions']:
-            upg.min_version = item['versions']['min']
-            upg.min_strict = False
-        elif 'min_strict' in item['versions']:
-            upg.min_version = item['versions']['min_strict']
-            upg.min_strict = True
-        else:
-            msg = 'No min version in upgrade of {}'
-            err('INVALID_UPGRADE_DEFINITION', msg.format(ref))
-        if 'max' in item['versions']:
-            upg.max_version = item['versions']['max']
-            upg.max_strict = False
-        elif 'max_strict' in item['versions']:
-            upg.max_version = item['versions']['max_strict']
-            upg.max_strict = True
-        else:
-            msg = 'No max version in upgrade of {}'
-            err('INVALID_UPGRADE_DEFINITION', msg.format(ref))
+        set_version(upg, item)
         dict_to_obj(item, 'description', upg)
         if 'states' in item:
             check_upgrade_states(proto, item)
@@ -376,16 +391,13 @@ def save_import(proto, conf):
     allowed_keys = ('versions', 'default', 'required', 'multibind')
     for key in conf['import']:
         check_extra_keys(conf['import'][key], allowed_keys, ref + ' import')
-        check_key(proto.type, proto.name, 'Import', key, 'versions', conf['import'][key])
-        check_key(proto.type, proto.name, 'Import', key, 'min', conf['import'][key]['versions'])
-        check_key(proto.type, proto.name, 'Import', key, 'max', conf['import'][key]['versions'])
+        check_versions(proto, conf['import'][key], f'import "{key}"')
         if 'default' in conf['import'][key] and 'required' in conf['import'][key]:
             msg = 'Import can\'t have default and be required in the same time ({})'
             err('INVALID_OBJECT_DEFINITION', msg.format(ref))
         check_default_import(proto, conf['import'][key])
         si = StagePrototypeImport(prototype=proto, name=key)
-        si.min_version = conf['import'][key]['versions']['min']
-        si.max_version = conf['import'][key]['versions']['max']
+        set_version(si, conf['import'][key])
         dict_to_obj(conf['import'][key], 'required', si)
         dict_to_obj(conf['import'][key], 'multibind', si)
         dict_json_to_obj(conf['import'][key], 'default', si)

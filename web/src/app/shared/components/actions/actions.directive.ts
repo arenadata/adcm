@@ -40,7 +40,7 @@ export class ActionsDirective {
       width: flag ? '90%' : '400px',
       maxWidth: '1400px',
       data: {
-        title: raw.disclaimer ? raw.disclaimer : 'Run an action?',
+        title: raw.ui_options && raw.ui_options.disclaimer ? raw.ui_options.disclaimer : 'Run an action?',
         component: ActionMasterComponent,
         model: this.data,
       },
