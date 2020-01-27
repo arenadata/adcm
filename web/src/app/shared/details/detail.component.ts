@@ -13,19 +13,19 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ChannelService, ClusterService } from '@app/core';
 import { EventMessage, SocketState } from '@app/core/store';
-import { IAction, Entities, Issue, Cluster, Host } from '@app/core/types';
+import { Cluster, Entities, Host, IAction, Issue } from '@app/core/types';
 import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
 import { switchMap, tap } from 'rxjs/operators';
 
-import { SocketListener } from '../../directives/base.directive';
+import { SocketListener } from '../directives/base.directive';
 import { CrumbsItem, NavigationService } from './navigation.service';
 
 @Component({
   selector: 'app-detail',
   templateUrl: './detail.component.html',
   styleUrls: ['./detail.component.scss'],
-  providers: [NavigationService],
+  providers: [NavigationService]
 })
 export class DetailComponent extends SocketListener implements OnInit, OnDestroy {
   actions$: Observable<IAction[]>;
@@ -44,16 +44,16 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
     super(socket);
   }
 
+  get isIssue() {
+    return this.current.Current.issue && !!Object.keys(this.current.Current.issue).length;
+  }
+
   isUpgradable(current: Entities) {
     return (current as Cluster).upgradable;
   }
 
   getDisplayName(current: Entities) {
     return 'display_name' in current ? current.display_name || current.name : (current as Host).fqdn;
-  }
-
-  getParentLink(objects: { id: number; type: string }[], ind: number) {
-    return objects.filter((a, i) => i <= ind).reduce((a, c) => [...a, c.type, c.id], ['/']);
   }
 
   scroll(stop: { direct: -1 | 1 | 0; screenTop: number }) {
@@ -64,15 +64,23 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
     super.startListenSocket();
   }
 
+  ngOnDestroy(): void {
+    this.current.clearWorker();
+  }
+
   socketListener(m: EventMessage) {
+    if (m.event === 'create' && this.current.Current && m.object.type === 'cluster' && this.current.Current.typeName === 'cluster') {
+      // check the upgradable prop
+      this.model$ = this.current.reset();
+    }
+
     if (this.current.Current && this.current.Current.typeName === m.object.type && this.current.Current.id === m.object.id) {
-      
       if (m.event === 'change_job_status' && this.current.Current.typeName === 'job') {
-        this.current.reset().subscribe(a => this.initValue(a, m));
+        this.current.reset().subscribe(a => this.initValue(a.current, m));
       }
-      
+
       if (m.event === 'change_state' || m.event === 'upgrade' || m.event === 'raise_issue') {
-        this.current.reset().subscribe(a => this.initValue(a, m));
+        this.current.reset().subscribe(a => this.initValue(a.current, m));
       }
 
       if (m.event === 'clear_issue') {
@@ -108,11 +116,7 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
     this.leftMenu = this.nav.getMenu(this.current.Current);
     this.crumbs = this.nav.getCrumbs({
       cluster: this.current.Cluster,
-      current: this.current.Current,
+      current: this.current.Current
     });
-  }
-
-  get isIssue() {
-    return this.current.Current.issue && !!Object.keys(this.current.Current.issue).length;
   }
 }

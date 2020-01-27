@@ -11,19 +11,28 @@
 // limitations under the License.
 import { HttpClientModule } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { ApiService } from '@app/core/api';
-import { reducers } from '@app/core/store';
+import { ApiService } from '../../core/api';
+import { reducers } from '../../core/store';
 import { StoreModule } from '@ngrx/store';
 
 import { TakeService } from './take.service';
 import { CompTile } from './types';
-import { AbstractControl } from '@angular/forms';
 
-describe('TakeService', () => {
+describe('HostComponentsMap :: TakeService', () => {
   beforeEach(() =>
     TestBed.configureTestingModule({
-      imports: [HttpClientModule, StoreModule.forRoot(reducers)],
-      providers: [ApiService]
+      imports: [
+        HttpClientModule,
+        StoreModule.forRoot(reducers, {
+          runtimeChecks: {
+            strictStateImmutability: true,
+            strictActionImmutability: true,
+            strictStateSerializability: true,
+            strictActionSerializability: true
+          }
+        })
+      ],
+      providers: [ApiService, TakeService]
     })
   );
 

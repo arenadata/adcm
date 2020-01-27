@@ -15,3 +15,5 @@ export * from './components';
 export * from './directives';
 export * from './pipes';
 export * from './configuration/main/main.component';
+export * from './host-components-map/services2hosts/service-host.component';
+export * from './details/detail.component';
