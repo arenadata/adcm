@@ -21,7 +21,7 @@ export interface DialogData {
   model?: any;
   event?: EventEmitter<any>;
   text?: string;
-  controls?: any[];
+  controls?: any[] | any;
   disabled?: boolean;
 }
 
@@ -34,11 +34,20 @@ export interface DialogData {
       <ng-template appDynamic></ng-template>
     </mat-dialog-content>
     <mat-dialog-actions class="controls" *ngIf="data.controls">
-      <button mat-raised-button color="accent" [mat-dialog-close]="true" [disabled]="data?.disabled" tabindex="2">
-        {{ data.controls[0] }}
-      </button>
-      <button mat-raised-button color="primary" (click)="_noClick()" tabindex="-1">{{ data.controls[1] }}</button>
+      <ng-container *ngIf="controlsIsArray(); else withLabel">
+        <ng-template *ngTemplateOutlet="isArray; context: { buttons: data.controls }"></ng-template>
+      </ng-container>
     </mat-dialog-actions>
+    <ng-template #withLabel>
+      <label class="warn" style="margin-right: 30px;">{{ data.controls.label }}</label>
+      <ng-container *ngTemplateOutlet="isArray; context: { buttons: data.controls.buttons }"></ng-container>
+    </ng-template>
+    <ng-template #isArray let-buttons="buttons">
+      <button mat-raised-button color="accent" [mat-dialog-close]="true" [disabled]="data?.disabled" tabindex="2">
+        {{ buttons[0] }}
+      </button>
+      <button mat-raised-button color="primary" (click)="_noClick()" tabindex="-1">{{ buttons[1] }}</button>
+    </ng-template>
   `,
   styles: ['pre {white-space: pre-wrap;}']
 })
@@ -54,6 +63,10 @@ export class DialogComponent implements OnInit {
     private componentFactoryResolever: ComponentFactoryResolver,
     private channel: ChannelService
   ) {}
+
+  controlsIsArray() {
+    return Array.isArray(this.data.controls);
+  }
 
   ngOnInit(): void {
     if (this.data.component) {
