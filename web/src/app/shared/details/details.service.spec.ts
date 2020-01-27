@@ -17,6 +17,8 @@ type pages = 'cluster' | 'host' | 'provider' | 'service' | 'job' | 'bundle';
 
 const mockParams = [{}, { cluser: 1 }, { service: 1 }, { cluser: 1, service: 1 }, null];
 
+const mockOutput = {};
+
 describe('DetailsService', () => {
   const service: ClusterService = new ClusterService({} as ApiService);
   const input = (params: Params): ParamMap => convertToParamMap(params);
@@ -24,27 +26,4 @@ describe('DetailsService', () => {
   it('should be created', () => {
     expect(service).toBeTruthy();
   });
-
-  /**
-   * обработать входящие параметры,
-   *  - проверить наличае кластера (cluster_id)
-   *  - проверить текущий объект (current_id, typeName)
-   *  - сравнить новые параметры с текущими _currentParamMap
-   * обновить модель данных для компонента
-   * сохранить их в свойство _currentParamMap
-   *
-   */
-
-  /**
-   * Модель данных для компонента
-   *  toolbar: {
-   *     crumbs: [],
-   *     actions: [],
-   *     upgradable: boolean,
-   *     issues: boolean
-   *  },
-   *  left: {title: string, url: string, status: number, issue: boolean}[],
-   *  title: (): string,
-   *  subtitle: (): string
-   */
 });
