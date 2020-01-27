@@ -331,10 +331,10 @@ def copy_stage_component(stage_components, prototype):
 
 def copy_stage_import(stage_imports, prototype):
     imports = prepare_bulk(
-        stage_imports,
-        PrototypeImport,
-        prototype,
-        ('name', 'min_version', 'max_version', 'default', 'required', 'multibind')
+        stage_imports, PrototypeImport, prototype, (
+            'name', 'min_version', 'max_version', 'min_strict', 'max_strict',
+            'default', 'required', 'multibind'
+        )
     )
     PrototypeImport.objects.bulk_create(imports)
 
@@ -472,7 +472,8 @@ def update_bundle_from_stage(bundle):   # pylint: disable=too-many-locals,too-ma
         PrototypeImport.objects.filter(prototype=p).delete()
         for si in StagePrototypeImport.objects.filter(prototype=sp):
             pi = copy_obj(si, PrototypeImport, (
-                'name', 'min_version', 'max_version', 'default', 'required', 'multibind'
+                'name', 'min_version', 'max_version', 'min_strict', 'max_strict',
+                'default', 'required', 'multibind'
             ))
             pi.prototype = p
             pi.save()
