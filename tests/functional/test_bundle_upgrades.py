@@ -135,4 +135,4 @@ def test_upgrade_contains_strict_and_nonstrict_value(sdk_client_fs: ADCMClient, 
     bundledir = os.path.join(BUNDLES, 'strict_and_non_strict_upgrade/' + boundary)
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(bundledir)
-    INVALID_VERSION_DEFINITION.equal(e, expected, 'should be present')
+    INVALID_VERSION_DEFINITION.equal(e, expected)
