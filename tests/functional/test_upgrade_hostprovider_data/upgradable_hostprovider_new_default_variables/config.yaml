@@ -12,32 +12,9 @@
 
 -
 
-    type: host
-    name: sample host
+    type: provider
+    name: sample hostprovider
     version: 2.0
-
-    actions:
-        init:
-            type: job
-            log_files: [remote]
-            script: host/init.yaml
-            script_type: ansible
-            params:
-                qwe: 42
-            states:
-                available:
-                  - created
-                on_success: created
-                on_fail: created
-        delete:
-            type: job
-            script: host/delete.yaml
-            script_type: ansible
-            states:
-                available:
-                  - created
-                on_success: created
-                on_fail: created
     upgrade:
         -
             versions:
@@ -83,6 +60,7 @@
             type: boolean
             required : no
             default: false
+
         option:
             type: option
             option:
@@ -129,4 +107,18 @@
             default: 33.6
             required: false
             read_only: [installed]
-            
+- type: host
+  name: vHost
+  version: 00.09
+
+  config:
+      str_param:
+        type: string
+        required: false
+        default: '123'
+        description: must be changed to bar()
+      int:
+        type: integer
+        required: false
+        default: 2
+        description: must be changed to 5

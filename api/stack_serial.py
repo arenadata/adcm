@@ -117,6 +117,8 @@ class ImportSerializer(serializers.Serializer):
     name = serializers.CharField(read_only=True)
     min_version = serializers.CharField(read_only=True)
     max_version = serializers.CharField(read_only=True)
+    min_strict = serializers.BooleanField(required=False)
+    max_strict = serializers.BooleanField(required=False)
     default = JSONField(read_only=True)
     required = serializers.BooleanField(read_only=True)
     multibind = serializers.BooleanField(read_only=True)

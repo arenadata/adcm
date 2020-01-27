@@ -70,6 +70,7 @@ ERRORS = {
     'INVALID_COMPONENT_DEFINITION': ("invalid component definition", rfs.HTTP_409_CONFLICT, ERR),
     'INVALID_ACTION_DEFINITION': ("invalid action definition", rfs.HTTP_409_CONFLICT, ERR),
     'INVALID_UPGRADE_DEFINITION': ("invalid upgrade definition", rfs.HTTP_409_CONFLICT, ERR),
+    'INVALID_VERSION_DEFINITION': ("invalid version definition", rfs.HTTP_409_CONFLICT, ERR),
 
     'INVALID_OBJECT_UPDATE': ("invalid update of object definition", rfs.HTTP_409_CONFLICT, ERR),
     'INVALID_CONFIG_UPDATE': ("invalid update of config definition", rfs.HTTP_409_CONFLICT, ERR),

@@ -37,7 +37,6 @@ import {
   HoverDirective,
   InfinityScrollDirective,
   MultiSortDirective,
-  ScrollDirective,
 } from './directives';
 import { FormElementsModule } from './form-elements/form-elements.module';
 import { HostComponentsMapModule } from './host-components-map/host-components-map.module';
@@ -59,7 +58,7 @@ import { DetailsModule } from './details/details.module';
     ConfigurationModule,
     AddingModule,
     HostComponentsMapModule,
-    DetailsModule,
+    DetailsModule
   ],
   declarations: [
     DialogComponent,
@@ -76,7 +75,6 @@ import { DetailsModule } from './details/details.module';
     StatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
-    ScrollDirective,
     MultiSortDirective,
     ImportComponent,
     ExportComponent,
@@ -106,7 +104,6 @@ import { DetailsModule } from './details/details.module';
     StatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
-    ScrollDirective,
     ImportComponent,
     ExportComponent,
     InfinityScrollDirective

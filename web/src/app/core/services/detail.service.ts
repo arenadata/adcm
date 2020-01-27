@@ -23,6 +23,7 @@ export interface WorkerInstance {
   current: Entities;
   cluster: Cluster | null;
 }
+type pagesType = 'cluster' | 'host' | 'provider' | 'service' | 'job' | 'bundle';
 
 @Injectable({
   providedIn: 'root'
@@ -31,6 +32,8 @@ export class ClusterService {
   private worker: WorkerInstance | null;
   private workerSubject = new BehaviorSubject<WorkerInstance>(null);
   public worker$ = this.workerSubject.asObservable();
+
+  private _currentParamMap: { [key in pagesType]: number };
 
   get Cluster() {
     return this.worker ? this.worker.cluster : null;
