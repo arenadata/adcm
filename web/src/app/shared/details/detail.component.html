@@ -7,6 +7,7 @@
   </mat-toolbar>
 
   <div class="row main">
+    
     <mat-nav-list class="col s12 m3 l2">
       <a mat-list-item [appForTest]="'tab_' + item.url" *ngFor="let item of leftMenu" [routerLink]="[item.url]" routerLinkActive="active">
         <span>{{ item.title }}</span>
