@@ -20,7 +20,7 @@ export interface DialogData {
   component: Type<any>;
   model?: any;
   event?: EventEmitter<any>;
-  text?: string;  
+  text?: string;
   controls?: any[];
   disabled?: boolean;
 }
@@ -30,16 +30,17 @@ export interface DialogData {
   template: `
     <h3 mat-dialog-title>{{ data.title || 'Notification' }}</h3>
     <mat-dialog-content class="content" appScroll (read)="scroll($event)">
-      <div *ngIf="data.text" [innerHTML]="data.text | breakRow"></div>
+      <pre *ngIf="data.text">{{ data.text }}</pre>
       <ng-template appDynamic></ng-template>
     </mat-dialog-content>
-    <mat-dialog-actions *ngIf="data.controls" style="text-align: right;">
-      <button mat-raised-button color="primary" [mat-dialog-close]="true" [disabled]="data?.disabled" tabindex="2">
+    <mat-dialog-actions class="controls" *ngIf="data.controls">
+      <button mat-raised-button color="accent" [mat-dialog-close]="true" [disabled]="data?.disabled" tabindex="2">
         {{ data.controls[0] }}
       </button>
-      <button mat-button (click)="_noClick()" tabindex="-1">{{ data.controls[1] }}</button>
+      <button mat-raised-button color="primary" (click)="_noClick()" tabindex="-1">{{ data.controls[1] }}</button>
     </mat-dialog-actions>
   `,
+  styles: ['pre {white-space: pre-wrap;}']
 })
 export class DialogComponent implements OnInit {
   controls: string[];
@@ -70,7 +71,7 @@ export class DialogComponent implements OnInit {
     }
   }
 
-  scroll(stop: { direct: -1 | 1 | 0, screenTop: number }) {
+  scroll(stop: { direct: -1 | 1 | 0; screenTop: number }) {
     this.channel.next('scroll', stop);
   }
 
