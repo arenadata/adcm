@@ -12,15 +12,15 @@
 
 -
 
-    type: host
-    name: sample host
-    version: 1.0
+    type: provider
+    name: sample hostprovider
+    version: 2.0
 
     actions:
         init:
             type: job
             log_files: [remote]
-            script: host/init.yaml
+            script: hostprovider/init.yaml
             script_type: ansible
             params:
                 qwe: 42
@@ -38,11 +38,32 @@
                   - created
                 on_success: created
                 on_fail: created
+    upgrade:
+        -
+            versions:
+                min: 0.4
+                max: 1.9
+            description: New cool upgrade
+            name: upgrade to 2.0
+            states:
+                available: any
+                on_success: upgradable
+        -
+            versions:
+                min: 1.0
+                max: 1.9
+            description: Super new upgrade
+            name: upgrade 2
+            states:
+                available: [started]
+                on_success: ver2.4
     config:
         required:
             type: integer
             required: yes
-            default: 40
+            default: 400
+            max: 500
+            min: 200
         str-key:
             default: value
             type: string
@@ -51,7 +72,7 @@
         int_key:
             type: integer
             required: NO
-            default: 3
+            default: 60
 
         fkey:
             type: float
@@ -94,6 +115,7 @@
             default: lorem ipsum
         read-only-string:
             type: string
+            display_name: just read only string for display it name
             default: default value
             required: false
             read_only: any
@@ -108,3 +130,19 @@
             required: false
             read_only: [installed]
             
+- type: host
+  name: vHost
+  version: 00.09
+
+  config:
+    usual:
+      str_param:
+        type: string
+        required: false
+        default: foo
+        description: must be changed to bar()
+      int:
+        type: integer
+        required: false
+        default: 2
+        description: must be changed to 5
