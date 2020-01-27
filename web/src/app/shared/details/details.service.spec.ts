@@ -9,15 +9,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { TestBed } from '@angular/core/testing';
+import { convertToParamMap, ParamMap, Params } from '@angular/router';
+import { ClusterService } from '@app/core';
+import { ApiService } from '@app/core/api';
 
-import { ChannelService } from './channel.service';
+type pages = 'cluster' | 'host' | 'provider' | 'service' | 'job' | 'bundle';
 
-describe('ChannelService', () => {
-  beforeEach(() => TestBed.configureTestingModule({}));
+const mockParams = [{}, { cluser: 1 }, { service: 1 }, { cluser: 1, service: 1 }, null];
+
+const mockOutput = {};
+
+describe('DetailsService', () => {
+  const service: ClusterService = new ClusterService({} as ApiService);
+  const input = (params: Params): ParamMap => convertToParamMap(params);
 
   it('should be created', () => {
-    const service: ChannelService = TestBed.get(ChannelService);
     expect(service).toBeTruthy();
   });
 });
