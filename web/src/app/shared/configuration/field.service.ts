@@ -205,22 +205,22 @@ export class FieldService {
     return this.runParse(value);
   }
 
-  runParse(value: { [key: string]: any }): { [key: string]: ConfigResultTypes } {
+  runParse(value: { [key: string]: any }, parentName?: string): { [key: string]: ConfigResultTypes } {
     const excluteTypes = ['json', 'map', 'list'];
     return Object.keys(value).reduce((p, c) => {
       const data = value[c];
-      const field = this.findField(c);
+      const field = this.findField(c, parentName);
       if (field) {
         if (field.type === 'structure') p[c] = this.runYspecParse(data, field);
-        else if (isObject(data) && !excluteTypes.includes(field.type)) p[c] = this.runParse(data);
+        else if (isObject(data) && !excluteTypes.includes(field.type)) p[c] = this.runParse(data, field.name);
         else if (field) p[c] = this.checkValue(data, field.type);
       }
       return p;
     }, {});
   }
 
-  findField(name: string): FieldStack {
-    return this.globalConfig.config.find(a => a.name === name || a.subname === name);
+  findField(name: string, parentName?: string): FieldStack {
+    return this.globalConfig.config.find(a => a.name === name || (a.name === parentName && a.subname === name));
   }
 
   runYspecParse(value: any, field: FieldStack) {
@@ -251,8 +251,8 @@ export class FieldService {
             p[c] = value[c];
             return p;
           }, {});
-      // case 'list':
-      //   return (value as Array<string>).filter(a => a);
+      case 'list':
+        return (value as Array<string>).filter(a => !!a);
     }
 
     if (typeof value === 'boolean') return value;

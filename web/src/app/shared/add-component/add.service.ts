@@ -90,7 +90,7 @@ export class AddService {
                   data: {
                     title: `Accept license agreement`,
                     text: info.text,
-                    controls: ['Yes', 'No']
+                    controls: { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] }
                   }
                 })
                 .beforeClosed()
