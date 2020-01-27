@@ -16,8 +16,11 @@ import pytest
 from adcm_pytest_plugin import utils
 # pylint: disable=W0611, W0621
 from adcm_client.objects import ADCMClient
-from tests.library.errorcodes import (INVALID_UPGRADE_DEFINITION,
-                                      UPGRADE_ERROR, UPGRADE_NOT_FOUND)
+from tests.library.errorcodes import (
+    INVALID_UPGRADE_DEFINITION, INVALID_VERSION_DEFINITION,
+    UPGRADE_ERROR, UPGRADE_NOT_FOUND
+)
+
 
 BUNDLES = os.path.join(os.path.dirname(__file__), "stacks/")
 
@@ -122,12 +125,14 @@ def test_upgrade_cluster_without_old_config(sdk_client_fs: ADCMClient):
 
 
 @pytest.mark.parametrize("boundary, expected", [
-    ("min_cluster", "min and min_strict"), ("max_cluster", "max and max_strict"),
-    ("min_hostprovider", "min and min_strict"), ("max_hostprovider", "max and max_strict")
+    ("min_cluster", "can not be used simultaneously"),
+    ("max_cluster", "should be present"),
+    ("min_hostprovider", "can not be used simultaneously"),
+    ("max_hostprovider", "can not be used simultaneously")
 ])
 def test_upgrade_contains_strict_and_nonstrict_value(sdk_client_fs: ADCMClient, boundary,
                                                      expected):
     bundledir = os.path.join(BUNDLES, 'strict_and_non_strict_upgrade/' + boundary)
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(bundledir)
-    INVALID_UPGRADE_DEFINITION.equal(e, expected, 'can not be used simultaneously')
+    INVALID_VERSION_DEFINITION.equal(e, expected)
