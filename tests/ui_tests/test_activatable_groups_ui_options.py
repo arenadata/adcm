@@ -18,8 +18,8 @@ def random_string(lenght=8):
 
 
 @pytest.fixture(scope="module")
-def app(adcm):
-    app = ADCMTest(adcm)
+def app(adcm_ms):
+    app = ADCMTest(adcm_ms)
     return app
 
 
