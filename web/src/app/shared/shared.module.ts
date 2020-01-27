@@ -17,11 +17,8 @@ import { RouterModule } from '@angular/router';
 import { AddingModule } from './add-component/adding.module';
 import {
   ActionMasterComponent,
-  ActionsComponent,
   BaseListDirective,
   ButtonSpinnerComponent,
-  CrumbsComponent,
-  DetailComponent,
   DialogComponent,
   ExportComponent,
   ImportComponent,
@@ -30,20 +27,24 @@ import {
   MainInfoComponent,
   StatusComponent,
   StatusInfoComponent,
-  UpgradeComponent
+  UpgradeComponent,
 } from './components';
 import { ActionsDirective } from './components/actions/actions.directive';
 import { SimpleTextComponent } from './components/tooltip';
 import { ConfigurationModule } from './configuration/configuration.module';
-import { DynamicDirective, HoverDirective, ScrollDirective } from './directives';
-import { InfinityScrollDirective } from './directives/infinity-scroll.directive';
-import { MultiSortDirective } from './directives/multi-sort.directive';
+import {
+  DynamicDirective,
+  HoverDirective,
+  InfinityScrollDirective,
+  MultiSortDirective,
+  ScrollDirective,
+} from './directives';
 import { FormElementsModule } from './form-elements/form-elements.module';
+import { HostComponentsMapModule } from './host-components-map/host-components-map.module';
 import { MaterialModule } from './material.module';
 import { BreakRowPipe, TagEscPipe } from './pipes';
 import { StuffModule } from './stuff.module';
-import { HostComponentsMapModule } from './host-components-map/host-components-map.module';
-import { SubtitleComponent } from './components/details/subtitle.component';
+import { DetailsModule } from './details/details.module';
 
 
 @NgModule({
@@ -57,19 +58,16 @@ import { SubtitleComponent } from './components/details/subtitle.component';
     FormElementsModule,
     ConfigurationModule,
     AddingModule,
-    HostComponentsMapModule
+    HostComponentsMapModule,
+    DetailsModule
   ],
   declarations: [
-    DetailComponent,
     DialogComponent,
     ListComponent,
-    CrumbsComponent,
     BreakRowPipe,
     HoverDirective,
     DynamicDirective,
     ButtonSpinnerComponent,
-    UpgradeComponent,
-    ActionsDirective,
     ActionMasterComponent,
     TagEscPipe,
     IssueInfoComponent,
@@ -78,13 +76,11 @@ import { SubtitleComponent } from './components/details/subtitle.component';
     StatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
-    ActionsComponent,
     ScrollDirective,
     MultiSortDirective,
     ImportComponent,
     ExportComponent,
-    InfinityScrollDirective,
-    SubtitleComponent
+    InfinityScrollDirective
   ],
   entryComponents: [DialogComponent, ActionMasterComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent],
   exports: [
@@ -96,10 +92,9 @@ import { SubtitleComponent } from './components/details/subtitle.component';
     ConfigurationModule,
     AddingModule,
     HostComponentsMapModule,
-    DetailComponent,
+    DetailsModule,
     DialogComponent,
     ListComponent,
-    CrumbsComponent,
     BreakRowPipe,
     HoverDirective,
     DynamicDirective,
@@ -111,7 +106,6 @@ import { SubtitleComponent } from './components/details/subtitle.component';
     StatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
-    ActionsComponent,
     ScrollDirective,
     ImportComponent,
     ExportComponent,
