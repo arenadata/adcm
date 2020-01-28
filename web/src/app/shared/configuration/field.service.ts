@@ -206,7 +206,7 @@ export class FieldService {
   }
 
   runParse(value: { [key: string]: any }, parentName?: string): { [key: string]: ConfigResultTypes } {
-    const excluteTypes = ['json', 'map', 'list'];
+    const excluteTypes = ['json', 'map', 'list', 'file'];
     return Object.keys(value).reduce((p, c) => {
       const data = value[c];
       const field = this.findField(c, parentName);
@@ -220,7 +220,7 @@ export class FieldService {
   }
 
   findField(name: string, parentName?: string): FieldStack {
-    return this.globalConfig.config.find(a => a.name === name || (a.name === parentName && a.subname === name));
+    return this.globalConfig.config.find(a => (parentName ? a.name === parentName && a.subname === name : a.name === name));
   }
 
   runYspecParse(value: any, field: FieldStack) {
