@@ -220,7 +220,7 @@ export class FieldService {
   }
 
   findField(name: string, parentName?: string): FieldStack {
-    return this.globalConfig.config.find(a => a.name === name || (a.name === parentName && a.subname === name));
+    return this.globalConfig.config.find(a => (parentName ? a.name === parentName && a.subname === name : a.name === name));
   }
 
   runYspecParse(value: any, field: FieldStack) {
