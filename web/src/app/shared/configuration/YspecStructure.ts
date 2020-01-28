@@ -52,8 +52,8 @@ export class YspecStructure {
     if (rule.match === 'dict') {
       return {
         ...source,
-        type: 'group',
-        options: this.getFields(source, item),
+        type: 'map',
+        controlType: 'map',
         limits: {
           yspec: scheme
         }

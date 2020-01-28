@@ -185,7 +185,8 @@ export class FieldService {
       },
       json: (value: string) => (value === null ? '' : JSON.stringify(value, undefined, 4)),
       map: (value: object, de: object) => (!value ? (!de ? {} : de) : value),
-      list: (value: string[], de: string[]) => (!value ? (!de ? [] : de) : value)
+      list: (value: string[], de: string[]) => (!value ? (!de ? [] : de) : value),
+      structure: (value: any) => value 
     };
 
     return data[name] ? data[name] : def;
