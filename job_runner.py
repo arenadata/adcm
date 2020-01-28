@@ -40,6 +40,9 @@ def set_job_status(job_id, ret, pid):
     if ret == 0:
         cm.job.set_job_status(job_id, config.Job.SUCCESS, pid)
         return 0
+    elif ret == -15:
+        cm.job.set_job_status(job_id, config.Job.ABORTED, pid)
+        return 15
     else:
         cm.job.set_job_status(job_id, config.Job.FAILED, pid)
         return ret
@@ -79,13 +82,14 @@ def run_ansible(job_id):
     cm.job.set_job_status(job_id, config.Job.RUNNING, proc.pid)
     log.info("run ansible job #%s, pid %s, playbook %s", job_id, proc.pid, playbook)
     ret = proc.wait()
-    res = set_job_status(job_id, ret, proc.pid)
+    cm.job.finish_check(job_id)
+    ret = set_job_status(job_id, ret, proc.pid)
 
     out_file.close()
     err_file.close()
 
-    log.info("finish ansible job #%s, pid %s, ret %s", job_id, proc.pid, res)
-    sys.exit(res)
+    log.info("finish ansible job #%s, pid %s, ret %s", job_id, proc.pid, ret)
+    sys.exit(ret)
 
 
 def do():

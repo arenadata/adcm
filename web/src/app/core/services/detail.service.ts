@@ -12,19 +12,7 @@
 import { Injectable } from '@angular/core';
 import { ParamMap } from '@angular/router';
 import { ApiService } from '@app/core/api';
-import {
-  IAction,
-  Bundle,
-  Cluster,
-  Entities,
-  Host,
-  IImport,
-  Job,
-  Log,
-  Provider,
-  Service,
-  TypeName,
-} from '@app/core/types';
+import { IAction, Bundle, Cluster, Entities, Host, IImport, Job, Log, Provider, Service, TypeName } from '@app/core/types';
 import { environment } from '@env/environment';
 import { BehaviorSubject, forkJoin, Observable, of, EMPTY } from 'rxjs';
 import { filter, map, switchMap, tap } from 'rxjs/operators';
@@ -35,14 +23,17 @@ export interface WorkerInstance {
   current: Entities;
   cluster: Cluster | null;
 }
+type pagesType = 'cluster' | 'host' | 'provider' | 'service' | 'job' | 'bundle';
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: 'root'
 })
 export class ClusterService {
   private worker: WorkerInstance | null;
   private workerSubject = new BehaviorSubject<WorkerInstance>(null);
   public worker$ = this.workerSubject.asObservable();
+
+  private _currentParamMap: { [key in pagesType]: number };
 
   get Cluster() {
     return this.worker ? this.worker.cluster : null;
@@ -63,35 +54,35 @@ export class ClusterService {
     this.worker = null;
   }
 
-  one_cluster(id: number) {
+  one_cluster(id: number): Observable<Cluster> {
     return this.Cluster ? of(this.Cluster) : this.api.getOne<Cluster>('cluster', id);
   }
 
-  one_service(id: number) {
+  one_service(id: number): Observable<Service> {
     return this.api.get<Service>(`${this.worker.cluster.service}${id}/`);
   }
 
-  one_host(id: number) {
+  one_host(id: number): Observable<Host> {
     return this.api.getOne<Host>('host', id);
   }
 
-  one_provider(id: number) {
+  one_provider(id: number): Observable<Provider> {
     return this.api.getOne<Provider>('provider', id);
   }
 
-  one_job(id: number) {
+  one_job(id: number): Observable<Job> {
     return this.api.getOne<Job>('job', id).pipe(
       map((j: Job) => ({
         ...j,
         prototype_name: j.action ? j.action.prototype_name : '',
         prototype_version: j.action ? j.action.prototype_version : '',
         bundle_id: j.action ? j.action.bundle_id : '',
-        display_name: j.action ? `${j.action.display_name}` : 'Object has been deleted',
-      })),
+        // display_name: j.action ? `${j.action.display_name}` : 'Object has been deleted'
+      }))
     );
   }
 
-  one_bundle(id: number) {
+  one_bundle(id: number): Observable<Bundle> {
     return this.api.get<Bundle>(`${environment.apiRoot}stack/bundle/${id}/`);
   }
 
@@ -103,7 +94,7 @@ export class ClusterService {
     return cluster$
       .pipe(
         tap(cluster => (this.Cluster = cluster)),
-        switchMap(cluster => (cluster && typeName !== 'cluster' ? this.api.get(`${cluster[typeName]}${id}/`) : this[`one_${typeName}`](id))),
+        switchMap(cluster => (cluster && typeName !== 'cluster' ? this.api.get(`${cluster[typeName]}${id}/`) : this[`one_${typeName}`](id)))
       )
       .pipe(
         map((a: Entities) => {
@@ -111,7 +102,7 @@ export class ClusterService {
           this.worker.current = a;
           this.workerSubject.next(this.worker);
           return this.worker;
-        }),
+        })
       );
   }
 
@@ -134,7 +125,7 @@ export class ClusterService {
       map(r => {
         r.results = r.results.map(a => ({ ...a, cluster: this.Cluster }));
         return r;
-      }),
+      })
     );
   }
 
@@ -150,13 +141,14 @@ export class ClusterService {
     return this.api.post(this.Cluster.host, { host_id: host.id });
   }
 
-  reset() {
+  reset(): Observable<WorkerInstance> {
     const typeName = this.Current.typeName;
     return this.api.get<Entities>(this.Current.url).pipe(
-      tap(a => {
+      map(a => {
         if (typeName === 'cluster') this.worker.cluster = { ...(a as Cluster), typeName };
         this.worker.current = { ...a, typeName };
-      }),
+        return this.worker;
+      })
     );
   }
 
@@ -164,7 +156,7 @@ export class ClusterService {
     return this.api.get<any>(`${this.Current.config}current/`).pipe(
       map((a: any) => a.config.find((b: { name: string }) => b.name === '__main_info')),
       filter(a => a),
-      map(a => a.value),
+      map(a => a.value)
     );
   }
 
@@ -191,14 +183,12 @@ export class ClusterService {
 
       const sec = Math.floor(ttm / 1000);
       const min = Math.floor(sec / 60);
-      const time = status !== 'running' ? `${min}m. ${sec - min * 60}s.` : ' - ';
+      const time = status !== 'running' ? `${min}m. ${sec - min * 60}s.` : '';
 
       const a = new Date(sdn);
       const b = new Date(fdn);
 
-    
-
-      return { start: a.toLocaleTimeString(), end: status !== 'running' ? b.toLocaleTimeString() : ' - ', time };
+      return { start: a.toLocaleTimeString(), end: status !== 'running' ? b.toLocaleTimeString() : '', time };
     }
   }
 }

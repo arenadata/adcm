@@ -13,20 +13,19 @@ import { Component, Input, OnInit, QueryList, ViewChild, ViewChildren } from '@a
 import { AbstractControl, FormGroup } from '@angular/forms';
 import { MatExpansionPanel } from '@angular/material/expansion';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
-import { IConfig, FieldOptions } from '@app/core/types';
 
-import { FieldService, PanelInfo } from '../field.service';
+import { FieldService } from '../field.service';
 import { FieldComponent } from '../field/field.component';
+import { FieldOptions, PanelOptions } from '../types';
 
 @Component({
   selector: 'app-group-fields',
   templateUrl: './group-fields.component.html',
-  styleUrls: ['./group-fields.component.scss'],
+  styleUrls: ['./group-fields.component.scss']
 })
 export class GroupFieldsComponent implements OnInit {
-  @Input() panel: PanelInfo;
+  @Input() panel: PanelOptions;
   @Input() form: FormGroup;
-  @Input() globalConfig: IConfig;
   @ViewChild('ep', { static: false }) expanel: MatExpansionPanel;
   checked = true;
 
@@ -36,11 +35,14 @@ export class GroupFieldsComponent implements OnInit {
   constructor(private service: FieldService) {}
 
   ngOnInit(): void {
-    if (this.globalConfig.attr && this.globalConfig.attr[this.panel.name]) {
-      this.checked = this.globalConfig.attr[this.panel.name].active;
-      // this.globalConfig.config.filter(a => a.name === this.panel.name).forEach(a => (a.read_only = !this.checked));
+    if (this.service.globalConfig.attr && this.service.globalConfig.attr[this.panel.name]) {
+      this.checked = this.service.globalConfig.attr[this.panel.name].active;
       this.checkFields(this.checked);
     }
+  }
+
+  panelsOnly(item: FieldOptions | PanelOptions) {
+    return 'options' in item && !item.hidden;
   }
 
   isAdvanced() {
@@ -48,20 +50,28 @@ export class GroupFieldsComponent implements OnInit {
   }
 
   activeToggle(e: MatSlideToggleChange) {
-    this.globalConfig.attr[this.panel.name].active = e.checked;
+    this.service.globalConfig.attr[this.panel.name].active = e.checked;
     this.checked = e.checked;
     this.checkFields(e.checked);
   }
 
   checkFields(flag: boolean) {
-    this.panel.options.forEach(a => {
-      const name = `${a.subname ? a.subname + '/' : ''}${this.panel.name}`;
-      const formControl = this.form.controls[name];
-      this.updateValidator(formControl, a, flag);
-      if (a.type === 'password') {
-        this.updateValidator(this.form.controls['confirm_' + name], a, flag);
-      }
-    });
+    this.panel.options
+      .filter(a => !('options' in a))
+      .forEach((a: FieldOptions) => {
+        const split = a.key.split('/');
+        let formControl = (this.form.controls[split[1]] as FormGroup).controls[split[0]];
+        if (split.length > 2) {
+          const [name, ...other] = split;
+          const currentFormGroup = other.reverse().reduce((p, c) => p.get(c), this.form) as FormGroup;
+          formControl = currentFormGroup.controls[name];
+        }
+
+        this.updateValidator(formControl, a, flag);
+        if (a.type === 'password') {
+          this.updateValidator(this.form.controls['confirm_' + name], a, flag);
+        }
+      });
   }
 
   updateValidator(formControl: AbstractControl, a: FieldOptions, flag: boolean) {
@@ -74,5 +84,9 @@ export class GroupFieldsComponent implements OnInit {
       formControl.updateValueAndValidity();
       this.form.updateValueAndValidity();
     }
+  }
+
+  trackBy(index: number, item: FieldOptions): string {
+    return item.key;
   }
 }

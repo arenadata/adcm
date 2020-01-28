@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import json
 import os
 
@@ -19,19 +20,19 @@ BASE_DIR = os.environ.get('ADCM_BASE_DIR', BASE_DIR)
 STACK_DIR = BASE_DIR
 STACK_DIR = os.environ.get('ADCM_STACK_DIR', STACK_DIR)
 
-LOG_DIR = '{}/data/log'.format(BASE_DIR)
-RUN_DIR = '{}/data/run'.format(BASE_DIR)
+LOG_DIR = os.path.join(BASE_DIR, 'data', 'log')
+RUN_DIR = os.path.join(BASE_DIR, 'data', 'run')
 
-BUNDLE_DIR = '{}/data/bundle'.format(STACK_DIR)
-DOWNLOAD_DIR = '{}/data/download'.format(STACK_DIR)
+BUNDLE_DIR = os.path.join(STACK_DIR, 'data', 'bundle')
+DOWNLOAD_DIR = os.path.join(STACK_DIR, 'data', 'download')
 
-FILE_DIR = '{}/data/file'.format(STACK_DIR)
+FILE_DIR = os.path.join(STACK_DIR, 'data', 'file')
 
-LOG_FILE = '{}/adcm.log'.format(LOG_DIR)
+LOG_FILE = os.path.join(LOG_DIR, 'adcm.log')
 
-SECRETS_FILE = '{}/data/var/secrets.json'.format(BASE_DIR)
+SECRETS_FILE = os.path.join(BASE_DIR, 'data', 'var', 'secrets.json')
 
-STATUS_SECRET_KEY = None
+STATUS_SECRET_KEY = ''
 
 if os.path.exists(SECRETS_FILE):
     with open(SECRETS_FILE) as f:

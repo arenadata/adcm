@@ -9,136 +9,128 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import {
-  Component,
-  ElementRef,
-  EventEmitter,
-  HostListener,
-  Injector,
-  OnDestroy,
-  OnInit,
-  Renderer2,
-  Type,
-} from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, Injector, Input, OnDestroy, OnInit, Renderer2, Type } from '@angular/core';
 import { Router } from '@angular/router';
-import { Subscription } from 'rxjs';
-import { delay } from 'rxjs/operators';
+import { BaseDirective } from '@app/shared/directives';
+import { delay, take } from 'rxjs/operators';
 
 import { IssueInfoComponent } from '../issue-info.component';
 import { StatusInfoComponent } from '../status-info.component';
 import { ComponentData, TooltipOptions, TooltipService } from './tooltip.service';
 
+const POSITION_MARGIN = 20;
+
+@Component({
+  selector: 'app-simple-text',
+  template: '{{ current }}'
+})
+export class SimpleTextComponent implements OnInit {
+  @Input() current: any;
+  constructor(private componentData: ComponentData) {}
+  ngOnInit(): void {
+    this.current = this.current || this.componentData.current;
+    this.componentData.emitter.emit('Done');
+  }
+}
+
 @Component({
   selector: 'app-tooltip',
-  template: `
-    {{ contentAsString }}
-    <ng-container *ngComponentOutlet="CurrentComponent; injector: componentInjector"></ng-container>
-  `,
-  styleUrls: ['./tooltip.component.scss'],
+  template: '<ng-container *ngComponentOutlet="CurrentComponent; injector: componentInjector"></ng-container>',
+  styleUrls: ['./tooltip.component.scss']
 })
-export class TooltipComponent implements OnInit, OnDestroy {
+export class TooltipComponent extends BaseDirective implements OnInit, OnDestroy {
   private options: TooltipOptions;
-  contentAsString: string;
-  to: any;
-  ss: Subscription;
-  es: Subscription;
+  source: HTMLElement;
 
-  CurrentComponent: Type<IssueInfoComponent | StatusInfoComponent>;
+  CurrentComponent: Type<SimpleTextComponent | IssueInfoComponent | StatusInfoComponent>;
   componentInjector: Injector;
 
-  constructor(
-    private el: ElementRef,
-    private service: TooltipService,
-    private renderer: Renderer2,
-    private router: Router,
-    private parentInjector: Injector
-  ) {}
-
-  @HostListener('mouseenter', ['$event']) menter() {
-    clearTimeout(this.to);
+  constructor(private el: ElementRef, private service: TooltipService, private renderer: Renderer2, private router: Router, private parentInjector: Injector) {
+    super();
   }
 
-  @HostListener('mousedown') mdown() {}
+  @HostListener('mouseenter', ['$event']) menter() {
+    this.service.mouseEnterTooltip();
+  }
 
   @HostListener('mouseleave') mleave() {
-    this.render().position();
+    this.service.mouseLeaveTooltip();
   }
 
   ngOnInit(): void {
-    this.ss = this.service.position$.subscribe(o => {
-      clearTimeout(this.to);
-      if (!o) this.to = setTimeout(() => this.render().position(), 500);
-      else this.render(o);
+    this.service.position$.pipe(this.takeUntil()).subscribe(o => {
+      if (o) {
+        this.clear();
+        this.buildComponent(o);
+      } else this.hide();
     });
   }
 
-  ngOnDestroy() {
-    this.ss.unsubscribe();
-    this.es.unsubscribe();
-  }
-
-  render(o?: TooltipOptions) {
-    this.options = o;
-    this.clear().content();
-    if (o)
-      this.options.source.onclick = () => {
-        this.clear();
-        this.renderer.setAttribute(this.el.nativeElement, 'style', `opacity: 0`);
-      };
-    return this;
+  hide() {
+    this.renderer.setAttribute(this.el.nativeElement, 'style', `opacity: 0; height: auto;`);
+    this.clear();
   }
 
   clear() {
-    this.contentAsString = '';
-    this.CurrentComponent = null;
-    return this;
-  }
-
-  content() {
-    if (!this.options) return;
-    if (typeof this.options.content === 'string') {
-      this.contentAsString = this.options.content;
-      this.position();
-    }
-
-    if (typeof this.options.content === 'object') {
-      this.buildComponent();
+    if (this.source) {
+      this.source = null;
+      this.CurrentComponent = null;
     }
   }
 
   position() {
     const o = this.options;
     const el = this.el.nativeElement;
-    if (o) {
-      const bodyWidth = document.querySelector('body').offsetWidth,
-        bodyHeight = (document.getElementsByTagName('app-root')[0] as HTMLElement).offsetHeight,
-        extRight = o.event.x + el.offsetWidth + o.source.offsetWidth / 2,
-        extBottom = o.event.y + el.offsetHeight;
+    const bodyWidth = document.querySelector('body').offsetWidth,
+      bodyHeight = (document.getElementsByTagName('app-root')[0] as HTMLElement).offsetHeight,
+      eLeft = o.event.x - el.offsetWidth,
+      eRight = o.event.x + el.offsetWidth,
+      eTop = o.event.y - el.offsetHeight,
+      eBottom = o.event.y + el.offsetHeight;
+    const position: any = { left: '', top: '', bottom: '', right: '', height: '' };
 
-      const dx = bodyWidth < extRight ? o.event.x - (extRight - bodyWidth) : o.event.x + o.source.offsetWidth / 2,
-        dy = o.event.y,
-        b = bodyHeight < extBottom ? 'bottom: 20px;' : '';
-      this.renderer.setAttribute(el, 'style', `left:${dx}px; top:${dy}px; ${b} opacity: .9`);
-    } else {
-      this.renderer.setAttribute(el, 'style', `opacity: 0`);
+    this.renderer.setAttribute(this.el.nativeElement, 'style', `opacity: 0; height: auto;`);
+
+    switch (o.options.position) {
+      case 'bottom':
+        position.top = o.event.y + o.source.offsetHeight / 2;
+
+        if (eRight > bodyWidth) {
+          position.right = POSITION_MARGIN * 2;
+        } else {
+          position.left = o.event.x;
+        }
+
+        if (eBottom > bodyHeight) {
+          position.height = bodyHeight - position.top - POSITION_MARGIN;
+        }
+
+        break;
     }
+
+    this.renderer.setAttribute(el, 'style', `opacity: .9; ${this.getPositionString(position)}`);
   }
 
-  buildComponent() {
-    const component = { issue: IssueInfoComponent, status: StatusInfoComponent }[this.options.componentName];
-    this.CurrentComponent = component;
+  getPositionString(po: any) {
+    return Object.keys(po).reduce((p, c) => p + (po[c] ? `${c}: ${po[c]}px;` : ''), '');
+  }
+
+  buildComponent(o: TooltipOptions) {
+    this.options = o;
+    this.source = this.options.source;
+    this.CurrentComponent = { issue: IssueInfoComponent, status: StatusInfoComponent }[this.options.options.componentName] || SimpleTextComponent;
 
     const emitter = new EventEmitter();
-    this.es = emitter.pipe(delay(100)).subscribe(() => this.position());
+    emitter.pipe(take(1), delay(100), this.takeUntil()).subscribe(() => this.position());
 
     this.componentInjector = Injector.create({
       providers: [
         {
           provide: ComponentData,
-          useValue: { typeName: this.router.url, current: this.options.content, emitter: emitter },
-        },
+          useValue: { typeName: this.router.url, current: this.options.options.content, emitter: emitter }
+        }
       ],
-      parent: this.parentInjector,
+      parent: this.parentInjector
     });
   }
 }

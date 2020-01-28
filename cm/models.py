@@ -69,6 +69,7 @@ MONITORING_TYPE = (
 class Prototype(models.Model):
     bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE)
     type = models.CharField(max_length=16, choices=PROTO_TYPE)
+    path = models.CharField(max_length=160, default='')
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     version = models.CharField(max_length=80)
@@ -136,7 +137,7 @@ class HostProvider(models.Model):
 
 class Host(models.Model):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
-    fqdn = models.CharField(max_length=160, unique=True)
+    fqdn = models.CharField(max_length=160)
     description = models.TextField(blank=True)
     provider = models.ForeignKey(HostProvider, on_delete=models.CASCADE, null=True, default=None)
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
@@ -199,6 +200,7 @@ class Action(models.Model):
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
+    ui_options = models.TextField(blank=True, null=True, default=None)   # JSON
 
     type = models.CharField(max_length=16, choices=ACTION_TYPE)
     button = models.CharField(max_length=64, default=None, null=True)
@@ -214,6 +216,7 @@ class Action(models.Model):
     log_files = models.TextField(blank=True)          # JSON
 
     hostcomponentmap = models.TextField(blank=True)   # JSON
+    allow_to_terminate = models.BooleanField(default=False)
 
     def __str__(self):
         return "{} {}".format(self.prototype, self.name)
@@ -242,9 +245,6 @@ class HostComponent(models.Model):
     class Meta:
         unique_together = (('host', 'service', 'component'),)
 
-    def __str__(self):
-        return "{}: {}/{}".format(self.host.fqdn, self.service.prototype.name, self.component)
-
 
 CONFIG_FIELD_TYPE = (
     ('string', 'string'),
@@ -258,6 +258,7 @@ CONFIG_FIELD_TYPE = (
     ('file', 'file'),
     ('list', 'list'),
     ('map', 'map'),
+    ('structure', 'structure'),
     ('group', 'group'),
 )
 
@@ -292,6 +293,8 @@ class PrototypeImport(models.Model):
     name = models.CharField(max_length=160)
     min_version = models.CharField(max_length=80)
     max_version = models.CharField(max_length=80)
+    min_strict = models.BooleanField(default=False)
+    max_strict = models.BooleanField(default=False)
     default = models.TextField(null=True, default=None)   # JSON
     required = models.BooleanField(default=False)
     multibind = models.BooleanField(default=False)
@@ -355,11 +358,19 @@ class TaskLog(models.Model):
     finish_date = models.DateTimeField()
 
 
+class CheckLog(models.Model):
+    job_id = models.PositiveIntegerField(default=0)
+    title = models.TextField()
+    message = models.TextField()
+    result = models.BooleanField()
+
+
 # Stage: Temporary tables to load bundle
 
 class StagePrototype(models.Model):
     type = models.CharField(max_length=16, choices=PROTO_TYPE)
     name = models.CharField(max_length=160)
+    path = models.CharField(max_length=160, default='')
     display_name = models.CharField(max_length=160, blank=True)
     version = models.CharField(max_length=80)
     edition = models.CharField(max_length=80, default='community')
@@ -408,6 +419,7 @@ class StageAction(models.Model):
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
+    ui_options = models.TextField(blank=True, null=True, default=None)   # JSON
 
     type = models.CharField(max_length=16, choices=ACTION_TYPE)
     button = models.CharField(max_length=64, default=None, null=True)
@@ -423,6 +435,7 @@ class StageAction(models.Model):
     log_files = models.TextField(blank=True)          # JSON
 
     hostcomponentmap = models.TextField(blank=True)   # JSON
+    allow_to_terminate = models.BooleanField(default=False)
 
     def __str__(self):
         return "{}:{}".format(self.prototype, self.name)
@@ -471,9 +484,15 @@ class StagePrototypeImport(models.Model):
     name = models.CharField(max_length=160)
     min_version = models.CharField(max_length=80)
     max_version = models.CharField(max_length=80)
+    min_strict = models.BooleanField(default=False)
+    max_strict = models.BooleanField(default=False)
     default = models.TextField(null=True, default=None)   # JSON
     required = models.BooleanField(default=False)
     multibind = models.BooleanField(default=False)
 
     class Meta:
         unique_together = (('prototype', 'name'),)
+
+
+class DummyData(models.Model):
+    date = models.DateTimeField(auto_now=True)

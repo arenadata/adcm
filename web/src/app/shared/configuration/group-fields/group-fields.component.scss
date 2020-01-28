@@ -1,3 +1,7 @@
+:host.asfield>.mat-expansion-panel {
+  margin: 10px -20px;
+}
+
 .pad {
   padding: 0 24px
 }
@@ -15,5 +19,5 @@ mat-panel-description {
 }
 
 .advanced {
-  border: solid 1px #ffe0b23d;
+  border: dotted 1px #00e676;
 }

@@ -11,8 +11,10 @@
 # limitations under the License.
 
 import os
+import copy
 import json
 import collections
+import yspec.checker
 from django.conf import settings
 from django.db.utils import OperationalError
 
@@ -88,24 +90,29 @@ def get_default(c, proto=None):   # pylint: disable=too-many-branches
         if proto:
             if c.default:
                 value = read_file_type(
-                    c.default, proto_ref(proto), proto.bundle.hash, c.name, c.subname
+                    proto, c.default, proto.bundle.hash, c.name, c.subname
                 )
     return value
 
 
 def type_is_complex(conf_type):
-    if conf_type in ('json', 'list', 'map'):
+    if conf_type in ('json', 'structure', 'list', 'map'):
         return True
     return False
 
 
-def read_file_type(default, ref, bundle_hash, name, subname):
+def read_file_type(proto, default, bundle_hash, name, subname):
     msg = 'config key "{}/{}" default file'.format(name, subname)
-    return read_bundle_file(default, bundle_hash, msg, ref)
+    return read_bundle_file(proto, default, bundle_hash, msg)
 
 
-def read_bundle_file(fname, bundle_hash, pattern, ref):
-    path = '{}/{}/{}'.format(config.BUNDLE_DIR, bundle_hash, fname)
+def read_bundle_file(proto, fname, bundle_hash, pattern, ref=None):
+    if not ref:
+        ref = proto_ref(proto)
+    if fname[0:2] == './':
+        path = os.path.join(config.BUNDLE_DIR, bundle_hash, proto.path, fname)
+    else:
+        path = os.path.join(config.BUNDLE_DIR, bundle_hash, fname)
     try:
         fd = open(path, 'r')
     except FileNotFoundError:
@@ -119,17 +126,16 @@ def read_bundle_file(fname, bundle_hash, pattern, ref):
     return body
 
 
-def init_object_config(proto):
-    spec, _, conf, attr = get_prototype_config(proto)
+def init_object_config(spec, conf, attr):
     if not conf:
-        return (None, spec, conf)
+        return None
     obj_conf = ObjectConfig(
         current=0,
         previous=0
     )
     obj_conf.save()
     save_obj_config(obj_conf, conf, 'init', attr)
-    return (obj_conf, spec, conf)
+    return obj_conf
 
 
 def prepare_social_auth(conf):
@@ -187,16 +193,17 @@ def get_prototype_config(proto, action=None):
     return (spec, flat_spec, conf, attr)
 
 
-def switch_config(obj, new_proto):
+def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-locals
     if not obj.config:
-        obj_conf, _, _ = init_object_config(new_proto)
+        spec, _, conf, attr = get_prototype_config(new_proto)
+        obj_conf = init_object_config(spec, conf, attr)
         if obj_conf:
             obj.config = obj_conf
             obj.save()
         return
 
     cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-    _, old_spec, _, _ = get_prototype_config(obj.prototype)
+    _, old_spec, _, _ = get_prototype_config(old_proto)
     new_unflat_spec, new_spec, _, _ = get_prototype_config(new_proto)
     old_conf = to_flat_dict(json.loads(cl.config), old_spec)
 
@@ -205,7 +212,7 @@ def switch_config(obj, new_proto):
             return False
         if old_spec[key].default:
             if key in old_conf:
-                return bool(get_default(old_spec[key], obj.prototype) == old_conf[key])
+                return bool(get_default(old_spec[key], old_proto) == old_conf[key])
             else:
                 return True
         return False
@@ -268,7 +275,10 @@ def save_obj_config(obj_conf, conf, desc='', attr=None):
 
 
 def cook_file_type_name(obj, key, subkey):
-    return '{}/{}.{}.{}.{}'.format(config.FILE_DIR, obj.prototype.type, obj.id, key, subkey)
+    obj_type = 'task'
+    if hasattr(obj, 'prototype'):
+        obj_type = obj.prototype.type
+    return os.path.join(config.FILE_DIR, '{}.{}.{}.{}'.format(obj_type, obj.id, key, subkey))
 
 
 def save_file_type(obj, key, subkey, value):
@@ -304,6 +314,21 @@ def process_file_type(obj, spec, conf):
             for subkey in conf[key]:
                 if spec[key][subkey]['type'] == 'file':
                     save_file_type(obj, key, subkey, conf[key][subkey])
+    return conf
+
+
+def process_config(obj, spec, old_conf):
+    if not old_conf:
+        return old_conf
+    conf = copy.deepcopy(old_conf)
+    for key in conf:
+        if 'type' in spec[key]:
+            if spec[key]['type'] == 'file' and conf[key] is not None:
+                conf[key] = cook_file_type_name(obj, key, '')
+        else:
+            for subkey in conf[key]:
+                if spec[key][subkey]['type'] == 'file' and conf[key][subkey] is not None:
+                    conf[key][subkey] = cook_file_type_name(obj, key, subkey)
     return conf
 
 
@@ -458,7 +483,8 @@ def check_config_spec(proto, obj, spec, flat_spec, conf, old_conf=None, attr=Non
         for subkey in spec[key]:
             if subkey in conf[key]:
                 check_config_type(
-                    ref, key, subkey, spec[key][subkey], conf[key][subkey], False, is_inactive(key)
+                    proto, key, subkey, spec[key][subkey],
+                    conf[key][subkey], False, is_inactive(key)
                 )
             elif key_is_required(key, subkey, spec[key][subkey]):
                 msg = 'There is no required subkey "{}" for key "{}" ({})'
@@ -484,7 +510,7 @@ def check_config_spec(proto, obj, spec, flat_spec, conf, old_conf=None, attr=Non
     for key in spec:
         if 'type' in spec[key] and spec[key]['type'] != 'group':
             if key in conf:
-                check_config_type(ref, key, '', spec[key], conf[key])
+                check_config_type(proto, key, '', spec[key], conf[key])
             elif key_is_required(key, '', spec[key]):
                 msg = 'There is no required key "{}" in input config ({})'
                 err('CONFIG_KEY_ERROR', msg.format(key, ref))
@@ -503,7 +529,8 @@ def check_config_spec(proto, obj, spec, flat_spec, conf, old_conf=None, attr=Non
     return conf
 
 
-def check_config_type(ref, key, subkey, spec, value, default=False, inactive=False):   # pylint: disable=too-many-branches,too-many-statements,too-many-locals
+def check_config_type(proto, key, subkey, spec, value, default=False, inactive=False):   # pylint: disable=too-many-branches,too-many-statements,too-many-locals
+    ref = proto_ref(proto)
     if default:
         label = 'Default value'
     else:
@@ -518,6 +545,12 @@ def check_config_type(ref, key, subkey, spec, value, default=False, inactive=Fal
                 f' should be string ({ref})'
             )
             err('CONFIG_VALUE_ERROR', msg)
+
+    def get_limits():
+        if default:
+            return spec['limits']
+        else:
+            return json.loads(spec['limits'])
 
     if value is None:
         if inactive:
@@ -557,7 +590,15 @@ def check_config_type(ref, key, subkey, spec, value, default=False, inactive=Fal
         if default:
             if len(value) > 2048:
                 err('CONFIG_VALUE_ERROR', tmpl1.format("is too long"))
-            read_file_type(value, ref, default, key, subkey)
+            read_file_type(proto, value, default, key, subkey)
+
+    if spec['type'] == 'structure':
+        schema = get_limits()['yspec']
+        try:
+            yspec.checker.process_rule(value, schema, 'root')
+        except yspec.checker.FormatError as e:
+            msg = tmpl1.format("yspec error: {} at block {}".format(str(e), e.data))
+            err('CONFIG_VALUE_ERROR', msg)
 
     if spec['type'] == 'boolean':
         if not isinstance(value, bool):
@@ -573,10 +614,7 @@ def check_config_type(ref, key, subkey, spec, value, default=False, inactive=Fal
 
     if spec['type'] == 'integer' or spec['type'] == 'float':
         if 'limits' in spec:
-            if default:
-                limits = spec['limits']
-            else:
-                limits = json.loads(spec['limits'])
+            limits = get_limits()
             if 'min' in limits:
                 if value < limits['min']:
                     msg = 'should be more than {}'.format(limits['min'])
@@ -587,11 +625,7 @@ def check_config_type(ref, key, subkey, spec, value, default=False, inactive=Fal
                     err('CONFIG_VALUE_ERROR', tmpl2.format(msg))
 
     if spec['type'] == 'option':
-        if default:
-            option = spec['option']
-        else:
-            limits = json.loads(spec['limits'])
-            option = limits['option']
+        option = get_limits()['option']
         check = False
         for _, v in option.items():
             if v == value:
@@ -685,8 +719,7 @@ def set_object_config(obj, keys, value):
         msg = '{} does not has config key "{}/{}"'
         err('CONFIG_NOT_FOUND', msg.format(proto_ref(proto), key, subkey))
 
-    ref = proto_ref(obj.prototype)
-    check_config_type(ref, key, subkey, obj_to_dict(pconf, ('type', 'limits', 'option')), value)
+    check_config_type(proto, key, subkey, obj_to_dict(pconf, ('type', 'limits', 'option')), value)
     # if config_is_ro(obj, keys, pconf.limits):
     #    msg = 'config key {} of {} is read only'
     #    err('CONFIG_VALUE_ERROR', msg.format(key, ref))

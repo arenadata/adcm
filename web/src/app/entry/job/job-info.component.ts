@@ -18,29 +18,30 @@ import { Store } from '@ngrx/store';
 @Component({
   selector: 'app-job-info',
   template: `
-    <table>
-      <tr>
-        <th>Status</th>
-        <th>Start date</th>
-        <th>Finish date</th>
-        <th>Time taken</th>
-      </tr>
-      <tr>
-        <td>
-          <span [class]="status">{{ status }}</span>
-        </td>
-        <td>{{ dataTime.start }}</td>
-        <td>{{ dataTime.end }}</td>
-        <td>{{ dataTime.time }}</td>
-      </tr>
-    </table>
+    <div class="time-info">
+      <div>
+        <mat-icon color="primary" style="transform:rotate(30deg);font-size: 20px;margin-top: 8px;">outlined_flag</mat-icon>
+        <span>{{ dataTime.start }}</span>
+      </div>
+      <div>
+        <mat-icon class="icon-locked running" *ngIf="status === 'running'; else done">autorenew</mat-icon>
+        <ng-template #done>
+          <i [class]="status"><mat-icon>{{ getIcon(status) }}</mat-icon></i>
+        </ng-template>
+        <span>{{ dataTime.time }}</span>
+      </div>
+      <div *ngIf="dataTime.end">
+        <mat-icon color="primary" style="transform:rotate(150deg);font-size: 20px;">outlined_flag</mat-icon>
+        <span>{{ dataTime.end }}</span>
+      </div>
+    </div>
   `,
   styles: [
-    'table {width: 380px; margin-top: 10px;}',
-    'td {padding: 6px 14px;text-align: center; white-space: nowrap;}',
-    // tslint:disable-next-line: no-unused-css
-    'th:first-child, td:first-child {text-align:left;padding-left: 0;}',
-  ],
+    ':host {position: fixed; right: 40px;top: 120px;}',
+    '.time-info, .time-info div {display: flex;align-items: center;}',
+    '.time-info div mat-icon {margin-right: 6px;}',
+    '.time-info div span {margin-right: 30px;}'
+  ]
 })
 export class JobInfoComponent extends SocketListener implements OnInit {
   dataTime: { start: string; end: string; time: string };
@@ -52,6 +53,15 @@ export class JobInfoComponent extends SocketListener implements OnInit {
     this.status = (this.service.Current as Job).status;
     this.dataTime = this.service.getOperationTimeData();
     this.startListenSocket();
+  }
+
+  getIcon(status: string) {
+    switch (status) {
+      case 'aborted':
+        return 'block';
+      default:
+        return 'done_all';
+    }
   }
 
   socketListener(m: EventMessage) {

@@ -9,7 +9,7 @@
 </div>
 
 <div class="value">
-  <label [ngClass]="{ advanced: field.ui_options && field.ui_options.advanced }">{{ field.label }}:</label>
+  <label [appTooltip]="field.display_name" [appTooltipShowByCondition]="true" [ngClass]="{ advanced: field.ui_options && field.ui_options.advanced }">{{ field.display_name }}:</label>
 
   <div class="fields">
     <ng-container *ngIf="field.value">
@@ -27,7 +27,7 @@
         </mat-form-field>
       </div>
     </ng-container>
-    <mat-error *ngIf="hasError('required')" class="error">Field [{{ field.label }}] is required!</mat-error>
+    <mat-error *ngIf="hasError('required')" class="error">Field [{{ field.display_name }}] is required!</mat-error>
   </div>
   <mat-icon *ngIf="field.description" [appTooltip]="field.description" class="description">
     info_outline

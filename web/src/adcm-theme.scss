@@ -31,6 +31,15 @@ a {
   }
 }
 
+.primary {
+  color: mat-color($app-primary);
+  border-color: mat-color($app-primary);
+}
+
+.secondary {
+  color: mat-color($app-secondary);
+  border-color: mat-color($app-secondary);
+}
 
 .accent {
   color: mat-color($mat-green, A400);
@@ -54,6 +63,10 @@ a {
 
 .created {
   color: mat-color($mat-blue-grey, 200);
+}
+
+.aborted {
+  color: mat-color($mat-deep-orange, 200);
 }
 
 .mat-list-item.primary {

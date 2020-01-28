@@ -32,7 +32,7 @@ import { ComponentData } from './tooltip/tooltip.service';
       </ng-template>
     </div>
   `,
-  styles: ['a, .item-step { display: block; margin: 6px 0 8px 12px;}'],
+  styles: ['a, .item-step { display: block; margin: 6px 0 8px 12px; white-space: nowrap;}'],
 })
 export class IssueInfoComponent implements OnInit {
   issues: Issue;

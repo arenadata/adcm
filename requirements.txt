@@ -1,11 +1,11 @@
 # ansible==2.8.3
-git+https://github.com/arenadata/ansible.git@v2.8.6-p1
+git+https://github.com/arenadata/ansible.git@v2.8.7-p1
 coreapi
-django
+django < 3.0
 django-cors-headers
 django-filter
 django-rest-swagger
-djangorestframework < 3.10
+djangorestframework
 social-auth-app-django
 git+git://github.com/arenadata/django-generate-secret-key.git
 jinja2
@@ -14,9 +14,9 @@ pyyaml
 toml
 uwsgi
 version_utils
+yspec
 # Custom bundle libs
 apache-libcloud
 jmespath
 lxml
 pycrypto
-pyvcloud

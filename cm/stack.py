@@ -17,8 +17,8 @@ import json
 import yaml
 import toml
 import hashlib
+import yspec.checker
 
-from django.db import transaction
 from rest_framework import status
 
 from cm.logger import log
@@ -33,19 +33,19 @@ NAME_REGEX = r'[0-9a-zA-Z_\.-]+'
 MAX_NAME_LENGTH = 256
 
 
-def save_definition(fname, conf, obj_list, bundle_hash, adcm=False):
+def save_definition(path, fname, conf, obj_list, bundle_hash, adcm=False):
     if isinstance(conf, dict):
-        save_object_definition(fname, conf, obj_list, bundle_hash, adcm)
+        save_object_definition(path, fname, conf, obj_list, bundle_hash, adcm)
     else:
         for obj_def in conf:
-            save_object_definition(fname, obj_def, obj_list, bundle_hash, adcm)
+            save_object_definition(path, fname, obj_def, obj_list, bundle_hash, adcm)
 
 
 def cook_obj_id(conf):
     return '{}.{}.{}'.format(conf['type'], conf['name'], conf['version'])
 
 
-def save_object_definition(fname, conf, obj_list, bundle_hash, adcm=False):
+def save_object_definition(path, fname, conf, obj_list, bundle_hash, adcm=False):
     if not isinstance(conf, dict):
         msg = 'Object definition should be a map ({})'
         return err('INVALID_OBJECT_DEFINITION', msg.format(fname))
@@ -64,7 +64,7 @@ def save_object_definition(fname, conf, obj_list, bundle_hash, adcm=False):
         return err('INVALID_OBJECT_DEFINITION', msg.format(def_type, fname))
 
     check_object_definition(fname, conf, def_type, obj_list)
-    obj = save_prototype(conf, def_type, bundle_hash)
+    obj = save_prototype(path, conf, def_type, bundle_hash)
     log.info('Save definition of %s "%s" %s to stage', def_type, conf['name'], conf['version'])
     obj_list[cook_obj_id(conf)] = fname
     return obj
@@ -98,7 +98,7 @@ def check_extra_keys(conf, acceptable, ref):
             err('INVALID_OBJECT_DEFINITION', msg.format(key, ref))
 
 
-def get_config_files(path):
+def get_config_files(path, bundle_hash):
     conf_list = []
     conf_types = [
         ('config.yaml', 'yaml'),
@@ -115,7 +115,9 @@ def get_config_files(path):
     for root, _, files in os.walk(path):
         for conf_file, conf_type in conf_types:
             if conf_file in files:
-                conf_list.append((root + '/' + conf_file, conf_type))
+                dirs = root.split('/')
+                path = os.path.join('', *dirs[dirs.index(bundle_hash) + 1:])
+                conf_list.append((path, root + '/' + conf_file, conf_type))
                 break
     if not conf_list:
         msg = 'no config files in stack directory "{}"'
@@ -156,16 +158,15 @@ def get_license_hash(proto, conf, bundle_hash):
     if not isinstance(conf['license'], str):
         err('INVALID_OBJECT_DEFINITION', 'license should be a string ({})'.format(proto_ref(proto)))
     msg = 'license file'
-    body = read_bundle_file(conf['license'], bundle_hash, msg, proto_ref(proto))
+    body = read_bundle_file(proto, conf['license'], bundle_hash, msg)
     sha1 = hashlib.sha256()
     sha1.update(body.encode('utf-8'))
     return sha1.hexdigest()
 
 
-@transaction.atomic
-def save_prototype(conf, def_type, bundle_hash):
+def save_prototype(path, conf, def_type, bundle_hash):
     # validate_name(type_name, '{} type name "{}"'.format(def_type, conf['name']))
-    proto = StagePrototype(name=conf['name'], type=def_type, version=conf['version'])
+    proto = StagePrototype(name=conf['name'], type=def_type, path=path, version=conf['version'])
     dict_to_obj(conf, 'required', proto)
     dict_to_obj(conf, 'shared', proto)
     dict_to_obj(conf, 'monitoring', proto)
@@ -201,8 +202,10 @@ def check_component_constraint_definition(proto, name, conf):
             return
         elif item == '+':
             return
+        elif item == 'odd':
+            return
         else:
-            msg = 'constraint item of component "{}" in {} should be only digit or "+"'
+            msg = 'constraint item of component "{}" in {} should be only digit or "+" or "odd"'
             err('INVALID_COMPONENT_DEFINITION', msg.format(name, ref))
 
     if not isinstance(const, list):
@@ -245,20 +248,52 @@ def save_components(proto, conf):
 
 
 def check_upgrade(proto, conf):
-    ref = proto_ref(proto)
     check_key(proto.type, proto.name, '', 'upgrade', 'name', conf)
-    check_key(proto.type, proto.name, '', 'upgrade', 'versions', conf)
+    check_versions(proto, conf, f"upgrade \"{conf['name']}\"")
+
+
+def check_versions(proto, conf, label):
+    ref = proto_ref(proto)
+    msg = '{} has no mandatory \"versions\" key ({})'
+    if not conf:
+        err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
+    if 'versions' not in conf:
+        err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
+    if not isinstance(conf['versions'], dict):
+        err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
     check_extra_keys(
         conf['versions'],
         ('min', 'max', 'min_strict', 'max_strict'),
-        'upgrade versions of {}'.format(proto_ref(proto))
+        '{} versions of {}'.format(label, proto_ref(proto))
     )
     if 'min' in conf['versions'] and 'min_strict' in conf['versions']:
-        msg = 'min and min_strict can not be used simultaneously ({})'
-        err('INVALID_UPGRADE_DEFINITION', msg.format(ref))
+        msg = 'min and min_strict can not be used simultaneously in versions of {} ({})'
+        err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
+    if 'min' not in conf['versions'] and 'min_strict' not in conf['versions']:
+        msg = 'min or min_strict should be present in versions of {} ({})'
+        err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
     if 'max' in conf['versions'] and 'max_strict' in conf['versions']:
-        msg = 'max and max_strict can not be used simultaneously ({})'
-        err('INVALID_UPGRADE_DEFINITION', msg.format(ref))
+        msg = 'max and max_strict can not be used simultaneously in versions of {} ({})'
+        err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
+    if 'max' not in conf['versions'] and 'max_strict' not in conf['versions']:
+        msg = 'max and max_strict should be present in versions of {} ({})'
+        err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
+
+
+def set_version(obj, conf):
+    if 'min' in conf['versions']:
+        obj.min_version = conf['versions']['min']
+        obj.min_strict = False
+    elif 'min_strict' in conf['versions']:
+        obj.min_version = conf['versions']['min_strict']
+        obj.min_strict = True
+
+    if 'max' in conf['versions']:
+        obj.max_version = conf['versions']['max']
+        obj.max_strict = False
+    elif 'max_strict' in conf['versions']:
+        obj.max_version = conf['versions']['max_strict']
+        obj.max_strict = True
 
 
 def check_upgrade_edition(proto, conf):
@@ -283,24 +318,7 @@ def save_upgrade(proto, conf):
         check_extra_keys(item, allow, 'upgrade of {}'.format(ref))
         check_upgrade(proto, item)
         upg = StageUpgrade(name=item['name'])
-        if 'min' in item['versions']:
-            upg.min_version = item['versions']['min']
-            upg.min_strict = False
-        elif 'min_strict' in item['versions']:
-            upg.min_version = item['versions']['min_strict']
-            upg.min_strict = True
-        else:
-            msg = 'No min version in upgrade of {}'
-            err('INVALID_UPGRADE_DEFINITION', msg.format(ref))
-        if 'max' in item['versions']:
-            upg.max_version = item['versions']['max']
-            upg.max_strict = False
-        elif 'max_strict' in item['versions']:
-            upg.max_version = item['versions']['max_strict']
-            upg.max_strict = True
-        else:
-            msg = 'No max version in upgrade of {}'
-            err('INVALID_UPGRADE_DEFINITION', msg.format(ref))
+        set_version(upg, item)
         dict_to_obj(item, 'description', upg)
         if 'states' in item:
             check_upgrade_states(proto, item)
@@ -373,16 +391,13 @@ def save_import(proto, conf):
     allowed_keys = ('versions', 'default', 'required', 'multibind')
     for key in conf['import']:
         check_extra_keys(conf['import'][key], allowed_keys, ref + ' import')
-        check_key(proto.type, proto.name, 'Import', key, 'versions', conf['import'][key])
-        check_key(proto.type, proto.name, 'Import', key, 'min', conf['import'][key]['versions'])
-        check_key(proto.type, proto.name, 'Import', key, 'max', conf['import'][key]['versions'])
+        check_versions(proto, conf['import'][key], f'import "{key}"')
         if 'default' in conf['import'][key] and 'required' in conf['import'][key]:
             msg = 'Import can\'t have default and be required in the same time ({})'
             err('INVALID_OBJECT_DEFINITION', msg.format(ref))
         check_default_import(proto, conf['import'][key])
         si = StagePrototypeImport(prototype=proto, name=key)
-        si.min_version = conf['import'][key]['versions']['min']
-        si.max_version = conf['import'][key]['versions']['max']
+        set_version(si, conf['import'][key])
         dict_to_obj(conf['import'][key], 'required', si)
         dict_to_obj(conf['import'][key], 'multibind', si)
         dict_json_to_obj(conf['import'][key], 'default', si)
@@ -463,6 +478,8 @@ def save_actions(proto, conf, bundle_hash):
         dict_to_obj(ac, 'button', action)
         dict_to_obj(ac, 'display_name', action)
         dict_to_obj(ac, 'description', action)
+        dict_to_obj(ac, 'allow_to_terminate', action)
+        dict_json_to_obj(ac, 'ui_options', action)
         dict_json_to_obj(ac, 'params', action)
         dict_json_to_obj(ac, 'log_files', action)
         fix_display_name(ac, action)
@@ -554,7 +571,8 @@ def check_action(proto, action, act_config):
             err('WRONG_ACTION_TYPE', '{} has unknown script_type "{}"'.format(ref, script_type))
     allow = (
         'type', 'script', 'script_type', 'scripts', 'states', 'params', 'config',
-        'log_files', 'hc_acl', 'button', 'display_name', 'description',
+        'log_files', 'hc_acl', 'button', 'display_name', 'description', 'ui_options',
+        'allow_to_terminate'
     )
     check_extra_keys(act_config, allow, ref)
 
@@ -563,6 +581,27 @@ def is_group(conf):
     if conf['type'] == 'group':
         return True
     return False
+
+
+def get_yspec(proto, ref, bundle_hash, conf, name, subname):
+    if 'yspec' not in conf:
+        msg = 'Config key "{}/{}" of {} has no mandatory yspec key'
+        err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
+    if not isinstance(conf['yspec'], str):
+        msg = 'Config key "{}/{}" of {} yspec field should be string'
+        err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
+    msg = 'yspec file of config key "{}/{}":'.format(name, subname)
+    yspec_body = read_bundle_file(proto, conf['yspec'], bundle_hash, msg)
+    try:
+        schema = yaml.safe_load(yspec_body)
+    except yaml.parser.ParserError as e:
+        msg = 'yspec file of config key "{}/{}" yaml decode error: {}'
+        err('CONFIG_TYPE_ERROR', msg.format(name, subname, e))
+    ok, error = yspec.checker.check_rule(schema)
+    if not ok:
+        msg = 'yspec file of config key "{}/{}" error: {}'
+        err('CONFIG_TYPE_ERROR', msg.format(name, subname, error))
+    return schema
 
 
 def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pylint: disable=too-many-locals,too-many-statements,too-many-branches
@@ -634,6 +673,8 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
             if 'max' in conf:
                 check_limit(conf['type'], conf['max'], name, subname, 'max')
                 opt['max'] = conf['max']
+        elif conf['type'] == 'structure':
+            opt['yspec'] = get_yspec(proto, ref, bundle_hash, conf, name, subname)
         elif is_group(conf):
             if 'activatable' in conf:
                 valudate_bool(conf['activatable'], 'activatable', name)
@@ -682,7 +723,7 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
             )
         else:
             allow = (
-                'type', 'description', 'display_name', 'default', 'required', 'name',
+                'type', 'description', 'display_name', 'default', 'required', 'name', 'yspec',
                 'option', 'limits', 'max', 'min', 'read_only', 'writable', 'ui_options'
             )
         check_extra_keys(conf, allow, 'config key "{}/{}" of {}'.format(name, subname, ref))
@@ -707,7 +748,7 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
                 err('INVALID_CONFIG_DEFINITION', msg.format(name, subname, ref))
         dict_json_to_obj(conf, 'ui_options', sc)
         if 'default' in conf:
-            check_config_type(ref, name, subname, conf, conf['default'], bundle_hash)
+            check_config_type(proto, name, subname, conf, conf['default'], bundle_hash)
         if type_is_complex(conf['type']):
             dict_json_to_obj(conf, 'default', sc)
         else:
@@ -802,10 +843,9 @@ def validate_name(value, name):
 
 
 def fix_display_name(conf, obj):
-    if not conf:
+    if isinstance(conf, dict) and 'display_name' in conf:
         return
-    if 'display_name' not in conf:
-        obj.display_name = obj.name
+    obj.display_name = obj.name
 
 
 def in_dict(dictionary, key):

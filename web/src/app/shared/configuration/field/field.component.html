@@ -1,49 +1,47 @@
-<div class="field-group" [formGroup]="form" [ngSwitch]="options.controlType" [ngClass]="{
+<div class="field-group" [ngSwitch]="options.controlType" [ngClass]="{
     'read-only': options.disabled,
     hidden: options.hidden,
-    advanced: isAdvanced(),
-    required: options.required
+    advanced: isAdvanced()
   }">
 
   <ng-container *ngSwitchCase="'map'">
-    <app-fields-map [appForTest]="options.key" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="form"></app-fields-map>
+    <app-fields-map [appForTest]="getTestName()" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="currentFormGroup"></app-fields-map>
   </ng-container>
 
   <ng-container *ngSwitchCase="'list'">
-    <app-fields-list [appForTest]="options.key" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="form"></app-fields-list>
+    <app-fields-list [appForTest]="getTestName()" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="currentFormGroup"></app-fields-list>
   </ng-container>
 
   <ng-container *ngSwitchCase="'password'">
-    <app-fields-password [appForTest]="options.key" [field]="options" [form]="form" [appForTest]="getTestName()"></app-fields-password>
+    <app-fields-password [appForTest]="getTestName()" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="currentFormGroup"></app-fields-password>
   </ng-container>
 
   <ng-container *ngSwitchCase="'boolean'">
-    <app-fields-boolean [appForTest]="options.key" [field]="options" [form]="form" [appForTest]="getTestName()"></app-fields-boolean>
+    <app-fields-boolean [appForTest]="getTestName()" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="currentFormGroup"></app-fields-boolean>
   </ng-container>
 
   <ng-container *ngSwitchCase="'textbox'">
-    <app-fields-textbox [appForTest]="options.key" [field]="options" [form]="form" [appForTest]="getTestName()"></app-fields-textbox>
+    <app-fields-textbox [appForTest]="getTestName()" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="currentFormGroup"></app-fields-textbox>
   </ng-container>
 
   <ng-container *ngSwitchCase="'textarea'">
-    <app-fields-textarea [appForTest]="options.key" [field]="options" [form]="form" [appForTest]="getTestName()"></app-fields-textarea>
+    <app-fields-textarea [appForTest]="getTestName()" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="currentFormGroup"></app-fields-textarea>
   </ng-container>
 
   <ng-container *ngSwitchCase="'json'">
-    <app-fields-json [appForTest]="options.key" [field]="options" [form]="form" [appForTest]="getTestName()"></app-fields-json>
+    <app-fields-json [appForTest]="getTestName()" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="currentFormGroup"></app-fields-json>
   </ng-container>
 
   <ng-container *ngSwitchCase="'option'">
-    <app-fields-dropdown [appForTest]="options.key" [field]="options" [form]="form" [appForTest]="getTestName()"></app-fields-dropdown>
+    <app-fields-dropdown [appForTest]="getTestName()" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="currentFormGroup"></app-fields-dropdown>
   </ng-container>
 
 </div>
-
-<mat-list class="compare-list-container" dense *ngIf="!options.hidden && compare.length">
-  <mat-list-item *ngFor="let item of compare" class="compare-list">
-    <mat-icon matListIcon [style.backgroundColor]="item.config.color">more_vert</mat-icon>
+<mat-list class="compare-list-container" dense *ngIf="!options.hidden && options.compare.length">
+  <mat-list-item *ngFor="let item of options.compare" class="compare-list">
+    <mat-icon matListIcon [style.backgroundColor]="item.color">more_vert</mat-icon>
     <span class="label">
-      {{ item.config.date | date: 'short' }}
-    </span>&nbsp;----&nbsp;&nbsp;<span [appTooltip]="outputTooltip(item.stack.value)" class="accent">{{ outputValue(item.stack.value) }}</span>
+      {{ item.date | date: 'short' }}
+    </span>&nbsp;----&nbsp;&nbsp;<span [appTooltip]="outputTooltip(item.value)" class="accent">{{ outputValue(item.value) }}</span>
   </mat-list-item>
 </mat-list>

@@ -11,16 +11,42 @@
 // limitations under the License.
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
+import { RouterModule } from '@angular/router';
 
-import { ForTestDirective } from './directives/for-test.directive';
-import { TooltipDirective } from './components/tooltip/tooltip.directive';
+import { ActionsComponent, CrumbsComponent, UpgradeComponent } from './components';
+import { ActionsDirective } from './components/actions/actions.directive';
 import { TooltipComponent } from './components/tooltip/tooltip.component';
-import { MTextareaDirective } from './directives/m-textarea.directive';
-import { BaseDirective, SocketListener } from './directives/base.directive';
+import { TooltipDirective } from './components/tooltip/tooltip.directive';
+import { BaseDirective, ForTestDirective, MTextareaDirective, ScrollDirective, SocketListener } from './directives';
+import { MaterialModule } from './material.module';
 
 @NgModule({
-  declarations: [ForTestDirective, TooltipDirective, TooltipComponent, MTextareaDirective, BaseDirective, SocketListener],
-  imports: [CommonModule],
-  exports: [ForTestDirective, TooltipDirective, TooltipComponent, MTextareaDirective, BaseDirective, SocketListener],
+  declarations: [
+    ForTestDirective,
+    TooltipDirective,
+    TooltipComponent,
+    MTextareaDirective,
+    BaseDirective,
+    SocketListener,
+    CrumbsComponent,
+    UpgradeComponent,
+    ActionsComponent,
+    ActionsDirective,
+    ScrollDirective
+  ],
+  imports: [CommonModule, MaterialModule, RouterModule],
+  exports: [
+    ForTestDirective,
+    TooltipDirective,
+    TooltipComponent,
+    MTextareaDirective,
+    BaseDirective,
+    SocketListener,
+    CrumbsComponent,
+    UpgradeComponent,
+    ActionsComponent,
+    ActionsDirective,
+    ScrollDirective
+  ]
 })
 export class StuffModule {}

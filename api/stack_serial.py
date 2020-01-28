@@ -78,6 +78,7 @@ class LicenseSerializer(serializers.Serializer):
 class PrototypeSerializer(serializers.Serializer):
     bundle_id = serializers.IntegerField(read_only=True)
     id = serializers.IntegerField(read_only=True)
+    path = serializers.CharField(read_only=True)
     name = serializers.CharField(read_only=True)
     display_name = serializers.CharField(required=False)
     version = serializers.CharField(read_only=True)
@@ -116,6 +117,8 @@ class ImportSerializer(serializers.Serializer):
     name = serializers.CharField(read_only=True)
     min_version = serializers.CharField(read_only=True)
     max_version = serializers.CharField(read_only=True)
+    min_strict = serializers.BooleanField(required=False)
+    max_strict = serializers.BooleanField(required=False)
     default = JSONField(read_only=True)
     required = serializers.BooleanField(read_only=True)
     multibind = serializers.BooleanField(read_only=True)

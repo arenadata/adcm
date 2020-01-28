@@ -70,6 +70,7 @@ ERRORS = {
     'INVALID_COMPONENT_DEFINITION': ("invalid component definition", rfs.HTTP_409_CONFLICT, ERR),
     'INVALID_ACTION_DEFINITION': ("invalid action definition", rfs.HTTP_409_CONFLICT, ERR),
     'INVALID_UPGRADE_DEFINITION': ("invalid upgrade definition", rfs.HTTP_409_CONFLICT, ERR),
+    'INVALID_VERSION_DEFINITION': ("invalid version definition", rfs.HTTP_409_CONFLICT, ERR),
 
     'INVALID_OBJECT_UPDATE': ("invalid update of object definition", rfs.HTTP_409_CONFLICT, ERR),
     'INVALID_CONFIG_UPDATE': ("invalid update of config definition", rfs.HTTP_409_CONFLICT, ERR),
@@ -91,6 +92,10 @@ ERRORS = {
     'UPGRADE_ERROR': ("upgrade error", rfs.HTTP_409_CONFLICT, ERR),
 
     'TASK_ERROR': ("task error", rfs.HTTP_409_CONFLICT, ERR),
+    'TASK_IS_FAILED': ("task is failed", rfs.HTTP_409_CONFLICT, ERR),
+    'TASK_IS_ABORTED': ("task is aborted", rfs.HTTP_409_CONFLICT, ERR),
+    'TASK_IS_SUCCESS': ("task is success", rfs.HTTP_409_CONFLICT, ERR),
+    'NOT_ALLOWED_TERMINATION': ("not allowed termination the task", rfs.HTTP_409_CONFLICT, ERR),
     'WRONG_SELECTOR': ("selector error", rfs.HTTP_409_CONFLICT, ERR),
 
     'WRONG_JOB_TYPE': ("unknown job type", rfs.HTTP_409_CONFLICT, ERR),
@@ -110,6 +115,7 @@ ERRORS = {
 
     'TOO_LONG': ("response is too long", rfs.HTTP_400_BAD_REQUEST, WARN),
     'NOT_IMPLEMENTED': ("not implemented yet", rfs.HTTP_501_NOT_IMPLEMENTED, ERR),
+    'NO_JOBS_RUNNING': ("no jobs running", rfs.HTTP_409_CONFLICT, ERR),
 }
 
 

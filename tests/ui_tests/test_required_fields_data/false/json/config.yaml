@@ -1,0 +1,8 @@
+
+- type: cluster
+  name: json_required_false
+  version: 1
+  config:
+    - name: json_required_false
+      type: json
+      required: false

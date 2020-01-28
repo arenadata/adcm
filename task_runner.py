@@ -11,19 +11,63 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=unused-import
+# pylint: disable=useless-return
+# pylint: disable=protected-access
+# pylint: disable=bare-except
+# pylint: disable=global-statement
+
+
 import os
-import sys
+import signal
 import subprocess
+import sys
+import time
 
-import adcm.init_django		# pylint: disable=unused-import
-
-from django.utils import timezone
+import adcm.init_django
 from django.core.exceptions import ObjectDoesNotExist
-from cm.models import TaskLog, JobLog
+from django.utils import timezone
 
-from cm.logger import log
 import cm.config as config
 import cm.job
+from cm.logger import log
+from cm.models import TaskLog, JobLog
+
+
+TASK_ID = 0
+
+
+def terminate_job(task, jobs):
+    running_job = jobs.get(status=config.Job.RUNNING)
+
+    if running_job.pid:
+        os.kill(running_job.pid, signal.SIGTERM)
+        cm.job.finish_task(task, running_job, config.Job.ABORTED)
+    else:
+        cm.job.finish_task(task, None, config.Job.ABORTED)
+
+
+def terminate_task(signum, frame):
+    log.info("cancel task #%s, signal: #%s", TASK_ID, signum)
+    task = TaskLog.objects.get(id=TASK_ID)
+    jobs = JobLog.objects.filter(task_id=TASK_ID)
+
+    i = 0
+    while i < 10:
+        if jobs.filter(status=config.Job.RUNNING):
+            terminate_job(task, jobs)
+            break
+        i += 1
+        time.sleep(0.5)
+
+    if i == 10:
+        log.warning("no jobs running for task #%s", TASK_ID)
+        cm.job.finish_task(task, None, config.Job.ABORTED)
+
+    os._exit(signum)
+
+
+signal.signal(signal.SIGTERM, terminate_task)
 
 
 def open_file(root, tag, task_id):
@@ -33,17 +77,17 @@ def open_file(root, tag, task_id):
 
 
 def run_job(task_id, job_id, out_file, err_file):
-    log.debug("run job #%s of task #%s", job_id, task_id,)
+    log.debug("run job #%s of task #%s", job_id, task_id)
     try:
         proc = subprocess.Popen([
             '{}/job_runner.py'.format(config.BASE_DIR),
             str(job_id)
         ], stdout=out_file, stderr=err_file)
-    except:		# pylint: disable=bare-except
+        res = proc.wait()
+        return res
+    except:
         log.error("exception runnung job %s", job_id)
-
-    res = proc.wait()
-    return res
+        return 1
 
 
 def run_task(task_id, args=None):
@@ -64,10 +108,10 @@ def run_task(task_id, args=None):
     err_file = open_file(config.LOG_DIR, 'task-err', task_id)
 
     log.info("run task #%s", task_id)
-    cm.job.set_task_status(task, config.Job.RUNNING)
 
     job = None
     count = 0
+    res = 0
     for job in jobs:
         if args == 'restart' and job.status == config.Job.SUCCESS:
             log.info('skip job #%s status "%s" of task #%s', job.id, job.status, task_id)
@@ -93,12 +137,15 @@ def run_task(task_id, args=None):
 
 
 def do():
+    global TASK_ID
     if len(sys.argv) < 2:
         print("\nUsage:\n{} task_id [restart]\n".format(os.path.basename(sys.argv[0])))
         sys.exit(4)
     elif len(sys.argv) > 2:
+        TASK_ID = sys.argv[1]
         run_task(sys.argv[1], sys.argv[2])
     else:
+        TASK_ID = sys.argv[1]
         run_task(sys.argv[1])
 
 

@@ -16,12 +16,10 @@ from django.conf.urls import include
 from rest_framework_swagger.views import get_swagger_view
 from rest_framework.schemas import get_schema_view
 
-import api.views
-import api.stack_views
-import api.cluster_views
-import api.docs
+from api import views, stack_views, cluster_views, docs
 
-register_converter(api.views.NameConverter, 'name')
+
+register_converter(views.NameConverter, 'name')
 swagger_view = get_swagger_view(title='ArenaData Chapel API')
 schema_view = get_schema_view(title='ArenaData Chapel API')
 
@@ -38,428 +36,429 @@ SERVICE_CONFIG = CLUSTER + SERVICE + 'config/'
 
 
 urlpatterns = [
-    path('info/', api.views.ADCMInfo.as_view(), name='adcm-info'),
-    path('token/', api.views.GetAuthToken.as_view(), name='token'),
+    path('info/', views.ADCMInfo.as_view(), name='adcm-info'),
+    path('token/', views.GetAuthToken.as_view(), name='token'),
 
-    path('user/', api.views.UserList.as_view(), name='user-list'),
-    path('user/<name:username>/', api.views.UserDetail.as_view(), name='user-details'),
-    path('user/<name:username>/password/', api.views.UserPasswd.as_view(), name='user-passwd'),
+    path('user/', views.UserList.as_view(), name='user-list'),
+    path('user/<name:username>/', views.UserDetail.as_view(), name='user-details'),
+    path('user/<name:username>/password/', views.UserPasswd.as_view(), name='user-passwd'),
 
-    path('profile/', api.views.ProfileList.as_view(), name='profile-list'),
-    path('profile/<name:username>/', api.views.ProfileDetail.as_view(), name='profile-details'),
+    path('profile/', views.ProfileList.as_view(), name='profile-list'),
+    path('profile/<name:username>/', views.ProfileDetail.as_view(), name='profile-details'),
     path(
-        'profile/<name:username>/password/', api.views.UserPasswd.as_view(), name='profile-passwd'
+        'profile/<name:username>/password/', views.UserPasswd.as_view(), name='profile-passwd'
     ),
 
-    path('stats/', api.views.Stats.as_view(), name='stats'),
-    path('stats/task/<int:task_id>/', api.views.TaskStats.as_view(), name='task-stats'),
-    path('stats/job/<int:job_id>/', api.views.JobStats.as_view(), name='job-stats'),
+    path('stats/', views.Stats.as_view(), name='stats'),
+    path('stats/task/<int:task_id>/', views.TaskStats.as_view(), name='task-stats'),
+    path('stats/job/<int:job_id>/', views.JobStats.as_view(), name='job-stats'),
 
-    path('stack/', api.stack_views.Stack.as_view(), name='stack'),
-    path('stack/upload/', api.stack_views.UploadBundle.as_view(), name='upload-bundle'),
-    path('stack/load/', api.stack_views.LoadBundle.as_view(), name='load-bundle'),
+    path('stack/', stack_views.Stack.as_view(), name='stack'),
+    path('stack/upload/', stack_views.UploadBundle.as_view(), name='upload-bundle'),
+    path('stack/load/', stack_views.LoadBundle.as_view(), name='load-bundle'),
     path(
         'stack/load/servicemap/',
-        api.stack_views.LoadServiceMap.as_view(),
+        stack_views.LoadServiceMap.as_view(),
         name='load-servicemap'
     ),
-    path('stack/bundle/', api.stack_views.BundleList.as_view(), name='bundle'),
+    path('stack/bundle/', stack_views.BundleList.as_view(), name='bundle'),
     path(
         'stack/bundle/<int:bundle_id>/',
-        api.stack_views.BundleDetail.as_view(),
+        stack_views.BundleDetail.as_view(),
         name='bundle-details'
     ),
     path(
         'stack/bundle/<int:bundle_id>/update/',
-        api.stack_views.BundleUpdate.as_view(),
+        stack_views.BundleUpdate.as_view(),
         name='bundle-update'
     ),
     path(
         'stack/bundle/<int:bundle_id>/license/',
-        api.stack_views.BundleLicense.as_view(),
+        stack_views.BundleLicense.as_view(),
         name='bundle-license'
     ),
     path(
         'stack/bundle/<int:bundle_id>/license/accept/',
-        api.stack_views.AcceptLicense.as_view(),
+        stack_views.AcceptLicense.as_view(),
         name='accept-license'
     ),
     path(
         'stack/action/<int:action_id>/',
-        api.stack_views.ProtoActionDetail.as_view(),
+        stack_views.ProtoActionDetail.as_view(),
         name='action-details'
     ),
-    path('stack/prototype/', api.stack_views.PrototypeList.as_view(), name='prototype'),
-    path('stack/service/', api.stack_views.ServiceList.as_view(), name='service-type'),
+    path('stack/prototype/', stack_views.PrototypeList.as_view(), name='prototype'),
+    path('stack/service/', stack_views.ServiceList.as_view(), name='service-type'),
     path(
         'stack/service/<int:prototype_id>/',
-        api.stack_views.ServiceDetail.as_view(),
+        stack_views.ServiceDetail.as_view(),
         name='service-type-details'
     ),
     path(
         'stack/' + SERVICE + 'action/',
-        api.stack_views.ServiceProtoActionList.as_view(),
+        stack_views.ServiceProtoActionList.as_view(),
         name='service-actions'
     ),
-    path('stack/provider/', api.stack_views.ProviderTypeList.as_view(), name='provider-type'),
+    path('stack/provider/', stack_views.ProviderTypeList.as_view(), name='provider-type'),
     path(
         'stack/provider/<int:prototype_id>/',
-        api.stack_views.ProviderTypeDetail.as_view(),
+        stack_views.ProviderTypeDetail.as_view(),
         name='provider-type-details'
     ),
-    path('stack/host/', api.stack_views.HostTypeList.as_view(), name='host-type'),
+    path('stack/host/', stack_views.HostTypeList.as_view(), name='host-type'),
     path(
         'stack/host/<int:prototype_id>/',
-        api.stack_views.HostTypeDetail.as_view(),
+        stack_views.HostTypeDetail.as_view(),
         name='host-type-details'
     ),
-    path('stack/cluster/', api.stack_views.ClusterTypeList.as_view(), name='cluster-type'),
+    path('stack/cluster/', stack_views.ClusterTypeList.as_view(), name='cluster-type'),
     path(
         'stack/cluster/<int:prototype_id>/',
-        api.stack_views.ClusterTypeDetail.as_view(),
+        stack_views.ClusterTypeDetail.as_view(),
         name='cluster-type-details'
     ),
-    path('stack/adcm/', api.stack_views.AdcmTypeList.as_view(), name='adcm-type'),
+    path('stack/adcm/', stack_views.AdcmTypeList.as_view(), name='adcm-type'),
     path(
         'stack/adcm/<int:prototype_id>/',
-        api.stack_views.AdcmTypeDetail.as_view(),
+        stack_views.AdcmTypeDetail.as_view(),
         name='adcm-type-details'
     ),
     path(
         'stack/prototype/<int:prototype_id>/',
-        api.stack_views.PrototypeDetail.as_view(),
+        stack_views.PrototypeDetail.as_view(),
         name='prototype-details'
     ),
 
-    path('cluster/', api.cluster_views.ClusterList.as_view(), name='cluster'),
-    path(CLUSTER, api.cluster_views.ClusterDetail.as_view(), name='cluster-details'),
-    path(CLUSTER + 'action/', api.cluster_views.ClusterActionList.as_view(), name='cluster-action'),
-    path(CLUSTER + 'host/', api.cluster_views.ClusterHostList.as_view(), name='cluster-host'),
-    path(CLUSTER + 'import/', api.cluster_views.ClusterImport.as_view(), name='cluster-import'),
-    path(CLUSTER + 'upgrade/', api.cluster_views.ClusterUpgrade.as_view(), name='cluster-upgrade'),
-    path(CLUSTER + 'bind/', api.cluster_views.ClusterBindList.as_view(), name='cluster-bind'),
+    path('cluster/', cluster_views.ClusterList.as_view(), name='cluster'),
+    path(CLUSTER, cluster_views.ClusterDetail.as_view(), name='cluster-details'),
+    path(CLUSTER + 'action/', cluster_views.ClusterActionList.as_view(), name='cluster-action'),
+    path(CLUSTER + 'host/', cluster_views.ClusterHostList.as_view(), name='cluster-host'),
+    path(CLUSTER + 'import/', cluster_views.ClusterImport.as_view(), name='cluster-import'),
+    path(CLUSTER + 'upgrade/', cluster_views.ClusterUpgrade.as_view(), name='cluster-upgrade'),
+    path(CLUSTER + 'bind/', cluster_views.ClusterBindList.as_view(), name='cluster-bind'),
     path(
         CLUSTER + 'bind/<int:bind_id>/',
-        api.cluster_views.ClusterServiceBindDetail.as_view(),
+        cluster_views.ClusterServiceBindDetail.as_view(),
         name='cluster-bind-details'
     ),
     path(
         CLUSTER + 'serviceprototype/',
-        api.cluster_views.ClusterBundle.as_view(),
+        cluster_views.ClusterBundle.as_view(),
         name='cluster-service-prototype'
     ),
     path(
         CLUSTER + 'upgrade/<int:upgrade_id>/',
-        api.cluster_views.ClusterUpgradeDetail.as_view(),
+        cluster_views.ClusterUpgradeDetail.as_view(),
         name='cluster-upgrade-details'
     ),
     path(
         CLUSTER + 'upgrade/<int:upgrade_id>/do/',
-        api.cluster_views.DoClusterUpgrade.as_view(),
+        cluster_views.DoClusterUpgrade.as_view(),
         name='do-cluster-upgrade'
     ),
     path(
-        CLUSTER + HOST, api.cluster_views.ClusterHostDetail.as_view(), name='cluster-host-details'
+        CLUSTER + HOST, cluster_views.ClusterHostDetail.as_view(), name='cluster-host-details'
     ),
     path(
-        CLUSTER + 'service/', api.cluster_views.ClusterServiceList.as_view(), name='cluster-service'
+        CLUSTER + 'service/', cluster_views.ClusterServiceList.as_view(), name='cluster-service'
     ),
     path(
         CLUSTER + HOST + 'action/',
-        api.cluster_views.ClusterHostActionList.as_view(),
+        cluster_views.ClusterHostActionList.as_view(),
         name='cluster-host-action'
     ),
     path(
         CLUSTER + HOST + 'action/<int:action_id>/',
-        api.cluster_views.ClusterHostAction.as_view(),
+        cluster_views.ClusterHostAction.as_view(),
         name='cluster-host-action-details'
     ),
     path(
         CLUSTER + HOST + 'action/<int:action_id>/run/',
-        api.cluster_views.ClusterHostTask.as_view(),
+        cluster_views.ClusterHostTask.as_view(),
         name='cluster-host-action-run'
     ),
     path(
         CLUSTER + 'action/<int:action_id>/',
-        api.cluster_views.ClusterAction.as_view(),
+        cluster_views.ClusterAction.as_view(),
         name='cluster-action-details'
     ),
     path(
         CLUSTER + 'action/<int:action_id>/run/',
-        api.cluster_views.ClusterTask.as_view(),
+        cluster_views.ClusterTask.as_view(),
         name='cluster-action-run'
     ),
     path(
         CLUSTER + 'status/',
-        api.cluster_views.StatusList.as_view(),
+        cluster_views.StatusList.as_view(),
         name='cluster-status'
     ),
     path(
         CLUSTER + 'hostcomponent/',
-        api.cluster_views.HostComponentList.as_view(),
+        cluster_views.HostComponentList.as_view(),
         name='host-component'
     ),
     path(
         CLUSTER + 'hostcomponent/<int:hs_id>/',
-        api.cluster_views.HostComponentDetail.as_view(),
+        cluster_views.HostComponentDetail.as_view(),
         name='host-component-details'
     ),
     path(
         CLUSTER + SERVICE,
-        api.cluster_views.ClusterServiceDetail.as_view(),
+        cluster_views.ClusterServiceDetail.as_view(),
         name='cluster-service-details'
     ),
     path(
         CLUSTER + SERVICE + 'action/',
-        api.cluster_views.ClusterServiceActionList.as_view(),
+        cluster_views.ClusterServiceActionList.as_view(),
         name='cluster-service-action'
     ),
     path(
         CLUSTER + SERVICE + 'action/<int:action_id>/',
-        api.cluster_views.ClusterServiceAction.as_view(),
+        cluster_views.ClusterServiceAction.as_view(),
         name='cluster-service-action-details'
     ),
     path(
         CLUSTER + SERVICE + 'action/<int:action_id>/run/',
-        api.cluster_views.ClusterServiceTask.as_view(),
+        cluster_views.ClusterServiceTask.as_view(),
         name='cluster-service-action-run'
     ),
     path(
         CLUSTER + SERVICE + 'component/',
-        api.cluster_views.ServiceComponentList.as_view(),
+        cluster_views.ServiceComponentList.as_view(),
         name='service-component'
     ),
     path(
         CLUSTER + SERVICE + 'component/<int:component_id>/',
-        api.cluster_views.ServiceComponentDetail.as_view(),
+        cluster_views.ServiceComponentDetail.as_view(),
         name='service-component-details'
     ),
     path(
         CLUSTER + SERVICE + 'import/',
-        api.cluster_views.ClusterServiceImport.as_view(),
+        cluster_views.ClusterServiceImport.as_view(),
         name='cluster-service-import'
     ),
     path(
         CLUSTER + SERVICE + 'bind/',
-        api.cluster_views.ClusterServiceBind.as_view(),
+        cluster_views.ClusterServiceBind.as_view(),
         name='cluster-service-bind'
     ),
     path(
         CLUSTER + SERVICE + 'bind/<int:bind_id>/',
-        api.cluster_views.ClusterServiceBindDetail.as_view(),
+        cluster_views.ClusterServiceBindDetail.as_view(),
         name='cluster-service-bind-details'
     ),
     path(
         CLUSTER_CONFIG,
-        api.cluster_views.ClusterConfig.as_view(),
+        cluster_views.ClusterConfig.as_view(),
         {'service_id': 0},
         name='cluster-config'
     ),
     path(
         CLUSTER_CONFIG + 'history/',
-        api.cluster_views.ClusterConfigHistory.as_view(),
+        cluster_views.ClusterConfigHistory.as_view(),
         {'service_id': 0},
         name='cluster-config-history'
     ),
     path(
         CLUSTER_CONFIG + 'history/<int:version>/',
-        api.cluster_views.ClusterConfigVersion.as_view(),
+        cluster_views.ClusterConfigVersion.as_view(),
         {'service_id': 0},
         name='cluster-config-id'
     ),
     path(
         CLUSTER_CONFIG + 'previous/',
-        api.cluster_views.ClusterConfigVersion.as_view(),
+        cluster_views.ClusterConfigVersion.as_view(),
         {'service_id': 0, 'version': 'previous'},
         name='cluster-config-prev'
     ),
     path(
         CLUSTER_CONFIG + 'current/',
-        api.cluster_views.ClusterConfigVersion.as_view(),
+        cluster_views.ClusterConfigVersion.as_view(),
         {'service_id': 0, 'version': 'current'},
         name='cluster-config-curr'
     ),
     path(
         CLUSTER_CONFIG + 'history/<int:version>/restore/',
-        api.cluster_views.ClusterConfigRestore.as_view(),
+        cluster_views.ClusterConfigRestore.as_view(),
         {'service_id': 0},
         name='cluster-config-restore'
     ),
     path(
         SERVICE_CONFIG,
-        api.cluster_views.ClusterServiceConfig.as_view(),
+        cluster_views.ClusterServiceConfig.as_view(),
         name='cluster-service-config'
     ),
     path(
         SERVICE_CONFIG + 'previous/',
-        api.cluster_views.ClusterServiceConfigVersion.as_view(),
+        cluster_views.ClusterServiceConfigVersion.as_view(),
         {'version': 'previous'},
         name='cluster-service-config-prev'
     ),
     path(
         SERVICE_CONFIG + 'current/',
-        api.cluster_views.ClusterServiceConfigVersion.as_view(),
+        cluster_views.ClusterServiceConfigVersion.as_view(),
         {'version': 'current'},
         name='cluster-service-config-curr'
     ),
     path(
         SERVICE_CONFIG + 'history/<int:version>/',
-        api.cluster_views.ClusterServiceConfigVersion.as_view(),
+        cluster_views.ClusterServiceConfigVersion.as_view(),
         name='cluster-service-config-id'
     ),
     path(
         SERVICE_CONFIG + 'history/<int:version>/restore/',
-        api.cluster_views.ClusterConfigRestore.as_view(),
+        cluster_views.ClusterConfigRestore.as_view(),
         name='cluster-service-config-restore'
     ),
     path(
         SERVICE_CONFIG + 'history/',
-        api.cluster_views.ClusterServiceConfigHistory.as_view(),
+        cluster_views.ClusterServiceConfigHistory.as_view(),
         name='cluster-service-config-history'
     ),
 
-    path('adcm/', api.views.AdcmList.as_view(), name='adcm'),
-    path('adcm/<int:adcm_id>/', api.views.AdcmDetail.as_view(), name='adcm-details'),
-    path(ADCM_CONFIG, api.views.AdcmConfig.as_view(), name='adcm-config'),
+    path('adcm/', views.AdcmList.as_view(), name='adcm'),
+    path('adcm/<int:adcm_id>/', views.AdcmDetail.as_view(), name='adcm-details'),
+    path(ADCM_CONFIG, views.AdcmConfig.as_view(), name='adcm-config'),
     path(
         ADCM_CONFIG + 'history/',
-        api.views.AdcmConfigHistory.as_view(),
+        views.AdcmConfigHistory.as_view(),
         name='adcm-config-history'
     ),
     path(
         ADCM_CONFIG + 'history/<int:version>/',
-        api.views.AdcmConfigVersion.as_view(),
+        views.AdcmConfigVersion.as_view(),
         name='adcm-config-id'
     ),
     path(
         ADCM_CONFIG + 'previous/',
-        api.views.AdcmConfigVersion.as_view(),
+        views.AdcmConfigVersion.as_view(),
         {'version': 'previous'},
         name='adcm-config-prev'
     ),
     path(
         ADCM_CONFIG + 'current/',
-        api.views.AdcmConfigVersion.as_view(),
+        views.AdcmConfigVersion.as_view(),
         {'version': 'current'},
         name='adcm-config-curr'
     ),
-    path('adcm/<int:adcm_id>/action/', api.views.ADCMActionList.as_view(), name='adcm-action'),
+    path('adcm/<int:adcm_id>/action/', views.ADCMActionList.as_view(), name='adcm-action'),
     path(
         'adcm/<int:adcm_id>/action/<int:action_id>/',
-        api.views.ADCMAction.as_view(),
+        views.ADCMAction.as_view(),
         name='adcm-action-details'
     ),
     path(
         'adcm/<int:adcm_id>/action/<int:action_id>/run/',
-        api.views.ADCMTask.as_view(),
+        views.ADCMTask.as_view(),
         name='adcm-action-run'
     ),
-    path('provider/', api.views.ProviderList.as_view(), name='provider'),
-    path(PROVIDER, api.views.ProviderDetail.as_view(), name='provider-details'),
-    path(PROVIDER + 'host/', api.views.ProviderHostList.as_view(), name='provider-host'),
+    path('provider/', views.ProviderList.as_view(), name='provider'),
+    path(PROVIDER, views.ProviderDetail.as_view(), name='provider-details'),
+    path(PROVIDER + 'host/', views.ProviderHostList.as_view(), name='provider-host'),
 
-    path(PROVIDER + 'action/', api.views.ProviderActionList.as_view(), name='provider-action'),
+    path(PROVIDER + 'action/', views.ProviderActionList.as_view(), name='provider-action'),
     path(
         PROVIDER + 'action/<int:action_id>/',
-        api.views.ProviderAction.as_view(),
+        views.ProviderAction.as_view(),
         name='provider-action-details'
     ),
     path(
         PROVIDER + 'action/<int:action_id>/run/',
-        api.views.ProviderTask.as_view(),
+        views.ProviderTask.as_view(),
         name='provider-action-run'
     ),
-    path(PROVIDER + 'upgrade/', api.views.ProviderUpgrade.as_view(), name='provider-upgrade'),
+    path(PROVIDER + 'upgrade/', views.ProviderUpgrade.as_view(), name='provider-upgrade'),
     path(
         PROVIDER + 'upgrade/<int:upgrade_id>/',
-        api.views.ProviderUpgradeDetail.as_view(),
+        views.ProviderUpgradeDetail.as_view(),
         name='provider-upgrade-details'
     ),
     path(
         PROVIDER + 'upgrade/<int:upgrade_id>/do/',
-        api.views.DoProviderUpgrade.as_view(),
+        views.DoProviderUpgrade.as_view(),
         name='do-provider-upgrade'
     ),
 
-    path(PROVIDER_CONFIG, api.views.ProviderConfig.as_view(), name='provider-config'),
+    path(PROVIDER_CONFIG, views.ProviderConfig.as_view(), name='provider-config'),
     path(
         PROVIDER_CONFIG + 'history/',
-        api.views.ProviderConfigHistory.as_view(),
+        views.ProviderConfigHistory.as_view(),
         name='provider-config-history'
     ),
     path(
         PROVIDER_CONFIG + 'history/<int:version>/',
-        api.views.ProviderConfigVersion.as_view(),
+        views.ProviderConfigVersion.as_view(),
         name='provider-config-id'
     ),
     path(
         PROVIDER_CONFIG + 'previous/',
-        api.views.ProviderConfigVersion.as_view(),
+        views.ProviderConfigVersion.as_view(),
         {'version': 'previous'},
         name='provider-config-prev'
     ),
     path(
         PROVIDER_CONFIG + 'current/',
-        api.views.ProviderConfigVersion.as_view(),
+        views.ProviderConfigVersion.as_view(),
         {'version': 'current'},
         name='provider-config-curr'
     ),
     path(
         PROVIDER_CONFIG + 'history/<int:version>/restore/',
-        api.views.ProviderConfigRestore.as_view(),
+        views.ProviderConfigRestore.as_view(),
         name='provider-config-restore'
     ),
 
-    path('host/', api.views.HostList.as_view(), name='host'),
-    path(HOST, api.views.HostDetail.as_view(), name='host-details'),
+    path('host/', views.HostList.as_view(), name='host'),
+    path(HOST, views.HostDetail.as_view(), name='host-details'),
 
-    path(HOST + 'action/', api.views.HostActionList.as_view(), name='host-action'),
+    path(HOST + 'action/', views.HostActionList.as_view(), name='host-action'),
     path(
         HOST + 'action/<int:action_id>/',
-        api.views.HostAction.as_view(),
+        views.HostAction.as_view(),
         name='host-action-details'
     ),
     path(
         HOST + 'action/<int:action_id>/run/',
-        api.views.HostTask.as_view(),
+        views.HostTask.as_view(),
         name='host-action-run'
     ),
-    path(HOST_CONFIG, api.views.HostConfig.as_view(), name='host-config'),
+    path(HOST_CONFIG, views.HostConfig.as_view(), name='host-config'),
     path(
-        HOST_CONFIG + 'history/', api.views.HostConfigHistory.as_view(), name='host-config-history'
+        HOST_CONFIG + 'history/', views.HostConfigHistory.as_view(), name='host-config-history'
     ),
     path(
         HOST_CONFIG + 'history/<int:version>/',
-        api.views.HostConfigVersion.as_view(),
+        views.HostConfigVersion.as_view(),
         name='host-config-id'
     ),
     path(
         HOST_CONFIG + 'previous/',
-        api.views.HostConfigVersion.as_view(),
+        views.HostConfigVersion.as_view(),
         {'version': 'previous'},
         name='host-config-prev'
     ),
     path(
         HOST_CONFIG + 'current/',
-        api.views.HostConfigVersion.as_view(),
+        views.HostConfigVersion.as_view(),
         {'version': 'current'},
         name='host-config-curr'
     ),
     path(
         HOST_CONFIG + 'history/<int:version>/restore/',
-        api.views.HostConfigRestore.as_view(),
+        views.HostConfigRestore.as_view(),
         name='host-config-restore'
     ),
 
-    path('task/', api.views.Task.as_view(), name='task'),
-    path('task/<int:task_id>/', api.views.TaskDetail.as_view(), name='task-details'),
-    path('task/<int:task_id>/restart/', api.views.TaskReStart.as_view(), name='task-restart'),
+    path('task/', views.Task.as_view(), name='task'),
+    path('task/<int:task_id>/', views.TaskDetail.as_view(), name='task-details'),
+    path('task/<int:task_id>/restart/', views.TaskReStart.as_view(), name='task-restart'),
+    path('task/<int:task_id>/cancel/', views.TaskCancel.as_view(), name='task-cancel'),
 
-    path('job/', api.views.JobList.as_view(), name='job'),
-    path('job/<int:job_id>/', api.views.JobDetail.as_view(), name='job-details'),
+    path('job/', views.JobList.as_view(), name='job'),
+    path('job/<int:job_id>/', views.JobDetail.as_view(), name='job-details'),
     path(
         'job/<int:job_id>/log/<name:tag>/<name:level>/<name:log_type>/',
-        api.views.LogFile.as_view(),
+        views.LogFile.as_view(),
         name='log-file'
     ),
     # path('docs/', include_docs_urls(title='ArenaData Chapel API')),
@@ -467,8 +466,8 @@ urlpatterns = [
     path('schema/', schema_view),
     path('auth/', include('rest_framework.urls', namespace='rest_framework')),
 
-    path('docs/md/', api.docs.docs_md),
-    path('docs/', api.docs.docs_html),
+    path('docs/md/', docs.docs_md),
+    path('docs/', docs.docs_html),
 
-    path('', api.views.APIRoot.as_view()),
+    path('', views.APIRoot.as_view()),
 ]

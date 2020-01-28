@@ -14,17 +14,16 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit, V
 import { ClusterService } from '@app/core';
 import { ApiService } from '@app/core/api';
 import { EventMessage, SocketState } from '@app/core/store';
-import { IConfig, parseValueConfig } from '@app/core/types';
 import { SocketListener } from '@app/shared/directives';
 import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 
-import { IToolsEvent } from '../field.service';
-import { FieldComponent } from '../field/field.component';
+import { FieldService, IToolsEvent } from '../field.service';
 import { ConfigFieldsComponent } from '../fields/fields.component';
 import { HistoryComponent } from '../tools/history.component';
 import { ToolsComponent } from '../tools/tools.component';
+import { IConfig } from '../types';
 
 @Component({
   selector: 'app-config-form',
@@ -38,8 +37,8 @@ import { ToolsComponent } from '../tools/tools.component';
       state('showTools', style({ opacity: 0.8 })),
       transition('hideTools => showTools', animate('.5s .3s ease-in')),
       transition('showTools => hideTools', animate('.2s ease-out')),
-      transition('hide <=> show', animate('.3s')),
-    ]),
+      transition('hide <=> show', animate('.3s'))
+    ])
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -55,7 +54,7 @@ export class ConfigComponent extends SocketListener implements OnInit {
 
   @ViewChild('fields', { static: false }) fields: ConfigFieldsComponent;
   @ViewChild('history', { static: false }) historyComponent: HistoryComponent;
-  @ViewChild('tools', {static: false}) tools: ToolsComponent;
+  @ViewChild('tools', { static: false }) tools: ToolsComponent;
 
   @Input()
   set configUrl(url: string) {
@@ -67,7 +66,13 @@ export class ConfigComponent extends SocketListener implements OnInit {
     return `${this._url}history/`;
   }
 
-  constructor(private api: ApiService, private current: ClusterService, socket: Store<SocketState>, private cdRef: ChangeDetectorRef) {
+  constructor(
+    private api: ApiService,
+    private current: ClusterService,
+    private cdRef: ChangeDetectorRef,
+    private service: FieldService,
+    socket: Store<SocketState>
+  ) {
     super(socket);
   }
 
@@ -75,8 +80,12 @@ export class ConfigComponent extends SocketListener implements OnInit {
     if (!this._url && this.current.Current) {
       this.configUrl = this.current.Current.config;
     }
-   
+
     super.startListenSocket();
+  }
+
+  isAdvanced(data: IConfig) {
+    return data.config.some(a => a.ui_options && a.ui_options.advanced);
   }
 
   toolsEvent(toolsEvent: IToolsEvent) {
@@ -84,62 +93,24 @@ export class ConfigComponent extends SocketListener implements OnInit {
   }
 
   get formValid() {
-    return this.fields ? this.fields.form.valid : false;
+    return this.service.form.valid;
   }
 
   history(flag: boolean) {
     this.historyShow = flag;
   }
 
-  filter(c: {advanced: boolean, search: string}) {
-    const fields = this.fields.fields.filter(a => a.options.name !== '__main_info').filter(a => a.options.type !== 'group');
-
-    this.applyFields(fields, c);
-
-    this.fields.panels
-      .filter(p => p.ui_options && p.ui_options.advanced && !p.ui_options.invisible)
-      .map(p => {
-        p.hidden = !c.advanced;
-        /**
-         * TODO:
-         * this.fields.fields
-         * this.fields.panels.fields
-         * this.fields.groups.fields
-         */
-        if (p.options.length === 1 && p.options[0].ui_options && !p.options[0].ui_options.invisible) {
-          p.options[0].hidden = !c.advanced;
-        }
-        return p;
-      });
-
-    this.fields.groups.forEach(g => this.applyFields(g.fields.toArray(), c));
-  }
-
-  applyFields(fields: FieldComponent[], co: {advanced: boolean, search: string}) {
-    fields
-      .filter(a => !a.options.ui_options || !a.options.ui_options.invisible)
-      .map(c => {
-        c.options.hidden = !(c.options.label.includes(co.search) || JSON.stringify(c.options.value).includes(co.search));
-        c.cdetector.markForCheck();
-        return c;
-      })
-      .filter(a => !a.options.hidden && a.options.ui_options && a.options.ui_options.advanced)
-      .map(a => {
-        a.options.hidden = !co.advanced;
-        a.cdetector.markForCheck();
-        return a;
-      });
+  filter(c: { advanced: boolean; search: string }) {
+    this.fields.dataOptions = this.service.filterApply(c);
   }
 
   socketListener(m: EventMessage) {
-    if (
-      this.current.Current &&
-      m.event === 'change_config' &&
-      m.object.type === this.current.Current.typeName &&
-      m.object.id === this.current.Current.id &&
-      !this.saveFlag
-    )
-      this.config$ = this.getConfig();
+    if (this.current.Current && m.object.type === this.current.Current.typeName && m.object.id === this.current.Current.id && !this.saveFlag) {
+      if (m.event === 'change_config' || m.event === 'change_state') {
+        this.config$ = this.getConfig();
+        this.cdRef.detectChanges();
+      }
+    }
   }
 
   getConfig() {
@@ -156,10 +127,11 @@ export class ConfigComponent extends SocketListener implements OnInit {
   }
 
   save() {
-    const form = this.fields.form;
+    const form = this.service.form;
     if (form.valid) {
       this.saveFlag = true;
-      const config = parseValueConfig(this.rawConfig.config.filter(a => !a.read_only && a.type !== 'group'), form.value),
+
+      const config = this.service.parseValue(),
         attr = this.rawConfig.attr,
         description = this.tools.descriptionFormControl.value;
 
@@ -172,6 +144,10 @@ export class ConfigComponent extends SocketListener implements OnInit {
         .pipe(this.takeUntil())
         .subscribe(c => {
           this.saveFlag = false;
+          /**
+           * TODO: history does not update!
+           *  => her need the new this.field.dataOptions
+           */
           this.historyComponent.versionID = c.id;
           this.historyComponent.getData();
           this.cdRef.detectChanges();
@@ -184,5 +160,4 @@ export class ConfigComponent extends SocketListener implements OnInit {
   changeVersion(a: { id: number }) {
     this.config$ = this.api.get<IConfig>(`${this.historyUrl}${a.id}/`);
   }
-
 }

@@ -27,7 +27,7 @@ from cm.logger import log
 import cm.config as config
 import cm.stack
 import cm.status_api
-from cm.adcm_config import proto_ref, init_object_config, switch_config
+from cm.adcm_config import proto_ref, get_prototype_config, init_object_config, switch_config
 from cm.errors import raise_AdcmEx as err
 from cm.models import Cluster, Host, Upgrade, StageUpgrade, ADCM
 from cm.models import Bundle, Prototype, Component, Action, SubAction, PrototypeConfig
@@ -70,7 +70,7 @@ def load_bundle(bundle_file):
 def update_bundle(bundle):
     try:
         check_stage()
-        process_bundle('{}/{}'.format(config.BUNDLE_DIR, bundle.hash), bundle.hash)
+        process_bundle(os.path.join(config.BUNDLE_DIR, bundle.hash), bundle.hash)
         get_stage_bundle(bundle.name)
         second_pass()
         update_bundle_from_stage(bundle)
@@ -105,7 +105,7 @@ def order_versions():
 
 
 def process_file(bundle_file):
-    path = "{}/{}".format(config.DOWNLOAD_DIR, bundle_file)
+    path = os.path.join(config.DOWNLOAD_DIR, bundle_file)
     bundle_hash = get_hash_safe(path)
     dir_path = untar_safe(bundle_hash, path)
     return (bundle_hash, dir_path)
@@ -120,7 +120,7 @@ def untar_safe(bundle_hash, path):
 
 
 def untar(bundle_hash, bundle):
-    path = '{}/{}'.format(config.BUNDLE_DIR, bundle_hash)
+    path = os.path.join(config.BUNDLE_DIR, bundle_hash)
     if os.path.isdir(path):
         err('BUNDLE_ERROR', 'bundle directory "{}" already exists'.format(path))
     tar = tarfile.open(bundle)
@@ -149,13 +149,13 @@ def get_hash(bundle_file):
 
 def load_adcm():
     check_stage()
-    adcm_file = '{}/conf/adcm/config.yaml'.format(config.BASE_DIR)
+    adcm_file = os.path.join(config.BASE_DIR, 'conf', 'adcm', 'config.yaml')
     conf = cm.stack.read_definition(adcm_file, 'yaml')
     if not conf:
         log.warning('Empty adcm config (%s)', adcm_file)
         return
     try:
-        cm.stack.save_definition(adcm_file, conf, {}, 'adcm', True)
+        cm.stack.save_definition('', adcm_file, conf, {}, 'adcm', True)
         process_adcm()
     except:
         clear_stage()
@@ -182,36 +182,37 @@ def process_adcm():
         init_adcm(bundle)
 
 
-@transaction.atomic
 def init_adcm(bundle):
     proto = Prototype.objects.get(type='adcm', bundle=bundle)
-    obj_conf, _, _ = init_object_config(proto)
-    adcm = ADCM(prototype=proto, name='ADCM', config=obj_conf)
-    adcm.save()
+    spec, _, conf, attr = get_prototype_config(proto)
+    with transaction.atomic():
+        obj_conf = init_object_config(spec, conf, attr)
+        adcm = ADCM(prototype=proto, name='ADCM', config=obj_conf)
+        adcm.save()
     log.info('init adcm object version %s OK', proto.version)
     return adcm
 
 
-@transaction.atomic
 def upgrade_adcm(adcm, bundle):
     old_proto = adcm.prototype
     new_proto = Prototype.objects.get(type='adcm', bundle=bundle)
     if rpm.compare_versions(old_proto.version, new_proto.version) >= 0:
         msg = 'Current adcm version {} is more than or equal to upgrade version {}'
         err('UPGRADE_ERROR', msg.format(old_proto.version, new_proto.version))
-    switch_config(adcm, new_proto)
-    adcm.prototype = new_proto
-    adcm.save()
+    with transaction.atomic():
+        adcm.prototype = new_proto
+        adcm.save()
+        switch_config(adcm, new_proto, old_proto)
     log.info('upgrade adcm OK from version %s to %s', old_proto.version, adcm.prototype.version)
     return adcm
 
 
 def process_bundle(path, bundle_hash):
     obj_list = {}
-    for conf_file, conf_type in cm.stack.get_config_files(path):
+    for conf_path, conf_file, conf_type in cm.stack.get_config_files(path, bundle_hash):
         conf = cm.stack.read_definition(conf_file, conf_type)
         if conf:
-            cm.stack.save_definition(conf_file, conf, obj_list, bundle_hash)
+            cm.stack.save_definition(conf_path, conf_file, conf, obj_list, bundle_hash)
 
 
 def check_stage():
@@ -258,7 +259,7 @@ def copy_stage_prototype(stage_prototypes, bundle):
     prototypes = []  # Map for stage prototype id: new prototype
     for sp in stage_prototypes:
         p = copy_obj(sp, Prototype, (
-            'type', 'name', 'version', 'required', 'shared', 'monitoring',
+            'type', 'path', 'name', 'version', 'required', 'shared', 'monitoring',
             'display_name', 'description', 'adcm_min_version'
         ))
         p.bundle = bundle
@@ -294,7 +295,8 @@ def copy_stage_actons(stage_actions, prototype):
         prototype,
         ('name', 'type', 'script', 'script_type', 'state_on_success',
          'state_on_fail', 'state_available', 'params', 'log_files',
-         'hostcomponentmap', 'button', 'display_name', 'description',)
+         'hostcomponentmap', 'button', 'display_name', 'description', 'ui_options',
+         'allow_to_terminate')
     )
     Action.objects.bulk_create(actions)
 
@@ -329,10 +331,10 @@ def copy_stage_component(stage_components, prototype):
 
 def copy_stage_import(stage_imports, prototype):
     imports = prepare_bulk(
-        stage_imports,
-        PrototypeImport,
-        prototype,
-        ('name', 'min_version', 'max_version', 'default', 'required', 'multibind')
+        stage_imports, PrototypeImport, prototype, (
+            'name', 'min_version', 'max_version', 'min_strict', 'max_strict',
+            'default', 'required', 'multibind'
+        )
     )
     PrototypeImport.objects.bulk_create(imports)
 
@@ -352,14 +354,10 @@ def copy_stage_config(stage_config, prototype):
 
 
 def check_license(bundle):
-    b = Bundle.objects.filter(name=bundle.name).order_by('version_order').last()
+    b = Bundle.objects.filter(license_hash=bundle.license_hash, license='accepted')
     if not b:
         return False
-    if b.license != 'accepted':
-        return False
-    if b.license_hash == bundle.license_hash:
-        return True
-    return False
+    return True
 
 
 def copy_stage(bundle_hash, bundle_proto):
@@ -400,6 +398,7 @@ def update_bundle_from_stage(bundle):   # pylint: disable=too-many-locals,too-ma
     for sp in StagePrototype.objects.all():
         try:
             p = Prototype.objects.get(bundle=bundle, type=sp.type, name=sp.name, version=sp.version)
+            p.path = sp.path
             p.description = sp.description
             p.display_name = sp.display_name
             p.required = sp.required
@@ -408,7 +407,7 @@ def update_bundle_from_stage(bundle):   # pylint: disable=too-many-locals,too-ma
             p.adcm_min_version = sp.adcm_min_version
         except Prototype.DoesNotExist:
             p = copy_obj(sp, Prototype, (
-                'type', 'name', 'version', 'required', 'shared', 'monitoring',
+                'type', 'path', 'name', 'version', 'required', 'shared', 'monitoring',
                 'display_name', 'description', 'adcm_min_version'
             ))
             p.bundle = bundle
@@ -431,13 +430,13 @@ def update_bundle_from_stage(bundle):   # pylint: disable=too-many-locals,too-ma
                 update_obj(action, saction, (
                     'type', 'script', 'script_type', 'state_on_success',
                     'state_on_fail', 'state_available', 'params', 'log_files',
-                    'hostcomponentmap', 'button', 'display_name', 'description',
+                    'hostcomponentmap', 'button', 'display_name', 'description', 'ui_options',
                 ))
             except Action.DoesNotExist:
                 action = copy_obj(saction, Action, (
                     'name', 'type', 'script', 'script_type', 'state_on_success',
                     'state_on_fail', 'state_available', 'params', 'log_files',
-                    'hostcomponentmap', 'button', 'display_name', 'description',
+                    'hostcomponentmap', 'button', 'display_name', 'description', 'ui_options',
                 ))
                 action.prototype = p
             action.save()
@@ -473,7 +472,8 @@ def update_bundle_from_stage(bundle):   # pylint: disable=too-many-locals,too-ma
         PrototypeImport.objects.filter(prototype=p).delete()
         for si in StagePrototypeImport.objects.filter(prototype=sp):
             pi = copy_obj(si, PrototypeImport, (
-                'name', 'min_version', 'max_version', 'default', 'required', 'multibind'
+                'name', 'min_version', 'max_version', 'min_strict', 'max_strict',
+                'default', 'required', 'multibind'
             ))
             pi.prototype = p
             pi.save()
@@ -493,7 +493,6 @@ def clear_stage():
         model.objects.all().delete()
 
 
-@transaction.atomic
 def delete_bundle(bundle):
     hosts = Host.objects.filter(prototype__bundle=bundle)
     if hosts:
@@ -509,9 +508,8 @@ def delete_bundle(bundle):
     if adcm:
         msg = 'There is adcm object of bundle #{} "{}" {}'
         err('BUNDLE_CONFLICT', msg.format(bundle.id, bundle.name, bundle.version))
-    Prototype.objects.filter(bundle=bundle).delete()
     if bundle.hash != 'adcm':
-        shutil.rmtree('{}/{}'.format(config.BUNDLE_DIR, bundle.hash))
+        shutil.rmtree(os.path.join(config.BUNDLE_DIR, bundle.hash))
     cm.status_api.post_event('delete', 'bundle', bundle.id)
     bundle.delete()
 

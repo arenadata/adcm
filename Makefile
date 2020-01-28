@@ -1,7 +1,8 @@
 # Set number of threads
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 ADCMBASE_IMAGE ?= arenadata/adcmbase
-ADCMBASE_TAG ?= 20191024143221
+ADCMBASE_TAG ?= 20200121195750
+
 
 # Default target
 .PHONY: help
@@ -29,7 +30,7 @@ buildbase: ## Build base image for ADCM's container. That is alpine with all pac
 	@docker build --pull=true -f Dockerfile_base --no-cache=true -t $(ADCMBASE_IMAGE):$$(date '+%Y%m%d%H%M%S') -t $(ADCMBASE_IMAGE):latest .
 
 build: describe buildss buildjs ## Build final docker image and all depended targets except baseimage.
-	@docker build --no-cache=true --pull=true -t ci.arenadata.io/adcm:$(BRANCH_NAME) .
+	@docker build --no-cache=true --pull=true -t ci.arenadata.io/adcm:$(subst /,_,$(BRANCH_NAME)) .
 
 
 ##################################################
@@ -41,12 +42,12 @@ testpyreqs: ## Install test prereqs into user's pip target dir
 
 unittests: ## Run unittests
 	docker pull $(ADCMBASE_IMAGE):$(ADCMBASE_TAG)
-	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/tests $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /bin/sh -e ./run_test.sh
+	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/tests/base $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /bin/sh -e ./run_test.sh
 
 pytest: ## Run functional tests
 	docker pull ci.arenadata.io/functest:u18-x64
 	docker run -i --rm -v /var/run/docker.sock:/var/run/docker.sock --network=host -v $(CURDIR)/:/adcm -w /adcm/ \
-	-e ADCM_TAG=${BRANCH_NAME} -e ADCMPATH=/adcm/ ci.arenadata.io/functest:u18-x64 /bin/sh -e ./pytest.sh
+	-e BUILD_TAG=${BUILD_TAG} -e ADCM_TAG=$(subst /,_,$(BRANCH_NAME)) -e ADCMPATH=/adcm/ ci.arenadata.io/functest:u18-x64 /bin/sh -e ./pytest.sh
 
 ng_tests: ## Run Angular tests
 	docker pull ci.arenadata.io/functest:u18-x64
@@ -55,3 +56,12 @@ ng_tests: ## Run Angular tests
 linters : ## Run linters
 	docker pull ci.arenadata.io/pr-builder:3-x64
 	docker run -i --rm -v $(CURDIR)/:/source -w /source ci.arenadata.io/pr-builder:3-x64 /linters.sh shellcheck pylint pep8
+
+npm_check: ## Run npm-check
+	docker pull ci.arenadata.io/functest:u18-x64
+	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web/src ci.arenadata.io/functest:u18-x64 \
+	/bin/bash -c 'npm i --production && { ignore=`cat ../../.npmcheckignore | grep -v "#"`\; npm-check --production --skip-unused --ignore $$ignore || true; } && npm audit'
+
+django_tests : ## Run django tests.
+	docker pull $(ADCMBASE_IMAGE):$(ADCMBASE_TAG)
+	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) python manage.py test cm

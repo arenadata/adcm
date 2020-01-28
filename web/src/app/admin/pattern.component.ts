@@ -13,10 +13,10 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { ApiService } from '@app/core/api';
 import { getProfileSelector, settingsSave, State } from '@app/core/store';
-import { IConfig } from '@app/core/types';
 import { BaseDirective } from '@app/shared';
+import { IConfig } from '@app/shared/configuration/types';
 import { select, Store } from '@ngrx/store';
-import { exhaustMap, filter, switchMap, map } from 'rxjs/operators';
+import { exhaustMap, filter, map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-pattern',
@@ -27,7 +27,7 @@ import { exhaustMap, filter, switchMap, map } from 'rxjs/operators';
         <div class="example-spacer"></div>
       </mat-toolbar>
       <div class="row main">
-        <mat-nav-list class="col s12 m3 l2">
+        <mat-nav-list class="col-4">
           <a
             mat-list-item
             [appForTest]="'tab_' + item.url"
@@ -37,7 +37,7 @@ import { exhaustMap, filter, switchMap, map } from 'rxjs/operators';
             >{{ item.title }}
           </a>
         </mat-nav-list>
-        <mat-card class="col s12 m9 l10">
+        <mat-card class="col-8">
           <mat-card-header [style.minHeight.px]="40">
             <mat-card-title>{{ title }}</mat-card-title>
           </mat-card-header>
