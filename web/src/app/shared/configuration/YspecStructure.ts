@@ -40,6 +40,27 @@ export class YspecStructure {
     this.output = this[this.yspec.root.match](options);
   }
 
+  list(source: FieldOptions) {
+    let scheme = { ...source.limits.yspec };
+
+    const root = scheme['root'],
+      value = typeof source.value === 'object' ? source.value : typeof source.default === 'object' ? source.default : null;
+
+    const item = root.item;
+    const rule = scheme[item];
+
+    if (rule.match === 'dict') {
+      return {
+        ...source,
+        type: 'group',
+        options: this.getFields(source, item),
+        limits: {
+          yspec: scheme
+        }
+      };
+    }
+  }
+
   dict(source: FieldOptions) {
     return {
       ...source,
@@ -94,11 +115,13 @@ export class YspecStructure {
             options: this.getFields(source, items[k]),
             limits: {
               yspec: scheme
-            },
+            }
           };
         }
       });
+    } else {
+      console.warn('Yspec :: Items not found');
+      return [];
     }
   }
-
 }
