@@ -206,7 +206,7 @@ export class FieldService {
   }
 
   runParse(value: { [key: string]: any }, parentName?: string): { [key: string]: ConfigResultTypes } {
-    const excluteTypes = ['json', 'map', 'list', 'file'];
+    const excluteTypes = ['json', 'map', 'list'];
     return Object.keys(value).reduce((p, c) => {
       const data = value[c];
       const field = this.findField(c, parentName);
