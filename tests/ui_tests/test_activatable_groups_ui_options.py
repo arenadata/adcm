@@ -29,6 +29,7 @@ def login_on_adcm(app):
     :param app:
     :return:
     """
+    app.driver.implicitly_wait(0)
     app.driver.get(app.adcm.url)
     login = LoginPage(app.driver)
     login.login("admin", "admin")
