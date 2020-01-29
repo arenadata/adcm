@@ -57,9 +57,6 @@ export class FieldService {
   }
 
   checkYspec(a: FieldOptions): FieldOptions | PanelOptions {
-    /**
-     * Very important for build tree
-     */
     a.name = a.subname || a.name;
 
     if (a.limits && a.limits.yspec) {
@@ -185,8 +182,7 @@ export class FieldService {
       },
       json: (value: string) => (value === null ? '' : JSON.stringify(value, undefined, 4)),
       map: (value: object, de: object) => (!value ? (!de ? {} : de) : value),
-      list: (value: string[], de: string[]) => (!value ? (!de ? [] : de) : value),
-      structure: (value: any) => value 
+      list: (value: string[], de: string[]) => (!value ? (!de ? [] : de) : value)
     };
 
     return data[name] ? data[name] : def;
@@ -221,7 +217,7 @@ export class FieldService {
   }
 
   findField(name: string, parentName?: string): FieldStack {
-    return this.globalConfig.config.find(a => a.name === name || (a.name === parentName && a.subname === name));
+    return this.globalConfig.config.find(a => (parentName ? a.name === parentName && a.subname === name : a.name === name));
   }
 
   runYspecParse(value: any, field: FieldStack) {
