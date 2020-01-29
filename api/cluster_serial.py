@@ -423,12 +423,16 @@ class ServiceComponentSerializer(serializers.Serializer):
 
     id = serializers.IntegerField(read_only=True)
     name = serializers.SerializerMethodField()
+    component_prototype_id = serializers.SerializerMethodField()
     display_name = serializers.SerializerMethodField()
     description = serializers.SerializerMethodField()
     url = MyUrlField(read_only=True, view_name='service-component-details')
 
     def get_name(self, obj):
         return obj.component.name
+
+    def get_component_prototype_id(self, obj):
+        return obj.component.id
 
     def get_display_name(self, obj):
         return obj.component.display_name
