@@ -10,7 +10,7 @@ DATA = [(g_i, g_a, f_g, f_i, act) for g_i in [
 TYPES = ("string", "password", "integer", "text", 'boolean', 'float', 'option', 'list', 'map', 'json', 'file')
 TEMPLATE_STRING = """
 - type: cluster
-  name: group_advanced_{0}_invisible_{1}_field_advanced_{2}_invisible_{3}_activatable_{5}
+  name: group_advanced_{0}_invisible_{1}_field_advanced_{2}_invisible_{3}_activatable_{5}_{4}
   version: 1
   config:
     - description: {4}
@@ -35,7 +35,7 @@ TEMPLATE_STRING = """
 
 TEMPLATE_NUMBERS = """
 - type: cluster
-  name: group_advanced_{0}_invisible_{1}_field_advanced_{2}_invisible_{3}_activatable_{5}
+  name: group_advanced_{0}_invisible_{1}_field_advanced_{2}_invisible_{3}_activatable_{5}_{4}
   version: 1
   config:
     - description: {4}
@@ -60,7 +60,7 @@ TEMPLATE_NUMBERS = """
 
 TEMPLATE_BOOLEAN = """
 - type: cluster
-  name: group_advanced_{0}_invisible_{1}_field_advanced_{2}_invisible_{3}_activatable_{5}
+  name: group_advanced_{0}_invisible_{1}_field_advanced_{2}_invisible_{3}_activatable_{5}_{4}
   version: 1
   config:
     - description: {4}
@@ -85,7 +85,7 @@ TEMPLATE_BOOLEAN = """
 
 TEMPLATE_FILE = """
 - type: cluster
-  name: group_advanced_{0}_invisible_{1}_field_advanced_{2}_invisible_{3}_activatable_{5}
+  name: group_advanced_{0}_invisible_{1}_field_advanced_{2}_invisible_{3}_activatable_{5}_{4}
   version: 1
   config:
     - description: {4}
@@ -109,7 +109,7 @@ TEMPLATE_FILE = """
 
 TEMPLATE_JSON = """
 - type: cluster
-  name: group_advanced_{0}_invisible_{1}_field_advanced_{2}_invisible_{3}_activatable_{5}
+  name: group_advanced_{0}_invisible_{1}_field_advanced_{2}_invisible_{3}_activatable_{5}_{4}
   version: 1
   config:
     - description: {4}
@@ -134,7 +134,7 @@ TEMPLATE_JSON = """
 
 TEMPLATE_LIST = """
 - type: cluster
-  name: group_advanced_{0}_invisible_{1}_field_advanced_{2}_invisible_{3}_activatable_{5}
+  name: group_advanced_{0}_invisible_{1}_field_advanced_{2}_invisible_{3}_activatable_{5}_{4}
   version: 1
   config:
     - description: {4}
@@ -162,7 +162,7 @@ TEMPLATE_LIST = """
 
 TEMPLATE_MAP = """
 - type: cluster
-  name: group_advanced_{0}_invisible_{1}_field_advanced_{2}_invisible_{3}_activatable_{5}
+  name: group_advanced_{0}_invisible_{1}_field_advanced_{2}_invisible_{3}_activatable_{5}_{4}
   version: 1
   config:
     - description: {4}
@@ -190,7 +190,7 @@ TEMPLATE_MAP = """
 
 TEMPLATE_OPTION = """
 - type: cluster
-  name: group_advanced_{0}_invisible_{1}_field_advanced_{2}_invisible_{3}_activatable_{5}
+  name: group_advanced_{0}_invisible_{1}_field_advanced_{2}_invisible_{3}_activatable_{5}_{4}
   version: 1
   config:
     - description: {4}
@@ -216,7 +216,7 @@ TEMPLATE_OPTION = """
 
 TEMPLATE_PASSWORD = """
 - type: cluster
-  name: group_advanced_{0}_invisible_{1}_field_advanced_{2}_invisible_{3}_activatable_{5}
+  name: group_advanced_{0}_invisible_{1}_field_advanced_{2}_invisible_{3}_activatable_{5}_{4}
   version: 1
   config:
     - description: {4}
@@ -241,7 +241,7 @@ TEMPLATE_PASSWORD = """
 
 TEMPLATE_TEXT = """
 - type: cluster
-  name: group_advanced_{0}_invisible_{1}_field_advanced_{2}_invisible_{3}_activatable_{5}
+  name: group_advanced_{0}_invisible_{1}_field_advanced_{2}_invisible_{3}_activatable_{5}_{4}
   version: 1
   config:
     - description: {4}
