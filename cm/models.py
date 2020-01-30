@@ -137,7 +137,7 @@ class HostProvider(models.Model):
 
 class Host(models.Model):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
-    fqdn = models.CharField(max_length=160)
+    fqdn = models.CharField(max_length=160, unique=True)
     description = models.TextField(blank=True)
     provider = models.ForeignKey(HostProvider, on_delete=models.CASCADE, null=True, default=None)
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
