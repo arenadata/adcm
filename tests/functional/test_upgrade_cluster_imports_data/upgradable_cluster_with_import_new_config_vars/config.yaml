@@ -30,15 +30,33 @@
         states:
           available: [created, installed, upgradable]
           on_success: upgradated
+    config:
+      required:
+        type: integer
+        required: true
+        default: 15
+      str-key:
+        default: value
+        type: string
+        required: false
+
+      int_key:
+        type: integer
+        required: false
+        default: 150
+      str-key2:
+        default: value
+        type: string
+        required: false
     import:
        hadoop:
           versions:
-             min: 2.3
+             min: 1.8
              max: 2.5
        ADH:
           versions:
-             min: 2.0
-             max: 4.0
+             min: 1.0
+             max: 2.0
 
 - type: service
   name: hadoop
@@ -55,3 +73,7 @@
      quorum:
         type: integer
         default: 3
+     serv_int_key:
+       type: integer
+       required: false
+       default: 150

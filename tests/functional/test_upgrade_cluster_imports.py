@@ -15,6 +15,7 @@ import pytest
 
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import get_data_dir
+from tests.library import errorcodes as err
 
 
 def test_upgrade_cluster_with_import(sdk_client_fs: ADCMClient):
@@ -37,9 +38,11 @@ def test_upgrade_cluster_with_import(sdk_client_fs: ADCMClient):
     upgr = cluster.upgrade(name='upgrade to 1.6')
     upgr.do()
     cluster.reread()
+    service.reread()
     cluster_config_after = cluster.config()
     service_config_after = service.config()
     assert cluster.prototype().version == '1.6'
+    assert service.prototype().version == '2.2'
     for variable in cluster_config_before:
         assert cluster_config_before[variable] == cluster_config_after[variable]
     for variable in service_config_before:
@@ -86,4 +89,52 @@ def test_incorrect_import_version(sdk_client_fs: ADCMClient):
     cluster_import.bind(service)
     cluster_import.bind(cluster)
     upgr = cluster.upgrade(name='upgrade to 1.6')
+    with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
+        upgr.do()
+    err.UPGRADE_ERROR.equal(e)
+
+
+@pytest.mark.xfail(reason="ADCM-1113")
+def test_upgrade_cluster_without_service_config_in_import(sdk_client_fs: ADCMClient):
+    """Upgrade cluster with service when in new cluster we haven't some service configuration variables
+    """
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgrade_cluster_with_export'))
+    bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster_without_service'))
+    cluster = bundle.cluster_create("test")
+    service = cluster.service_add(name="hadoop")
+    cluster_import = bundle_import.cluster_create("cluster_import")
+    cluster_import.bind(service)
+    cluster_import.bind(cluster)
+    upgr = cluster.upgrade(name='upgrade to 1.6')
+    with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
+        upgr.do()
+    err.UPGRADE_ERROR.equal(e)
+
+
+def test_upgrade_cluster_with_new_configuration_variables(sdk_client_fs: ADCMClient):
+    """Upgrade to cluster with new configuration variables
+    """
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgrade_cluster_with_export'))
+    bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(
+        __file__, 'upgradable_cluster_with_import_new_config_vars'))
+    cluster = bundle.cluster_create("test")
+    service = cluster.service_add(name="hadoop")
+    cluster_config_before = cluster.config()
+    service_config_before = service.config()
+    cluster_import = bundle_import.cluster_create("cluster_import")
+    cluster_import.bind(service)
+    cluster_import.bind(cluster)
+    upgr = cluster.upgrade(name='upgrade to 1.6')
     upgr.do()
+    cluster.reread()
+    service.reread()
+    cluster_config_after = cluster.config()
+    service_config_after = service.config()
+    assert cluster.prototype().version == '1.6'
+    assert service.prototype().version == '2.2'
+    assert len(cluster_config_after) == 4, cluster_config_after
+    assert len(service_config_after) == 3, service_config_after
+    for variable in cluster_config_before:
+        assert cluster_config_before[variable] == cluster_config_after[variable]
+    for variable in service_config_before:
+        assert service_config_before[variable] == service_config_after[variable]
