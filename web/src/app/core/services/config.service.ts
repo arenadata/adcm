@@ -14,6 +14,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
+
 const CONFIG_URL = '/assets/config.json';
 export interface IConfig {
   version: string;

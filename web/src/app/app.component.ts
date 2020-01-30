@@ -25,10 +25,10 @@ import {
   loadStack,
   rootError,
   socketInit,
-  State,
+  State
 } from '@app/core/store';
 import { select, Store } from '@ngrx/store';
-import { combineLatest, Observable } from 'rxjs';
+import { combineLatest, Observable, of } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
 
 @Component({
