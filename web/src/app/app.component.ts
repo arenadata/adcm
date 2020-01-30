@@ -55,7 +55,6 @@ import { filter, tap } from 'rxjs/operators';
 })
 export class AppComponent implements OnInit {
   currentYear = new Date().getFullYear();
-  version: string;
   config$: Observable<IConfig>;
 
   constructor(
@@ -72,15 +71,26 @@ export class AppComponent implements OnInit {
     const b$ = this.store.pipe(select(getRoot));
     const a$ = this.store.pipe(select(isAuthenticated));
     combineLatest([a$, b$])
-      .pipe(filter(a => a[0] && !!a[1]))
-      .subscribe(() => {
-        this.message.ignoreMessage = false;
-        this.message.errorMessage({ title: 'Connection established.' });
-        this.store.dispatch(socketInit());
-        this.store.dispatch(loadStack());
-        this.store.dispatch(loadProfile());
-        this.config$ = this.config.config.pipe(tap(c => this.checkVersion(c.version)));
-      });
+      .pipe(
+        filter(a => a[0] && !!a[1]),
+        tap(_ => {
+          this.message.ignoreMessage = false;
+          this.message.errorMessage({ title: 'Connection established.' });
+          this.config$ = this.config.config.pipe(
+            tap(c => {
+              if (!c) {
+                this.message.errorMessage({ title: 'New version available. Page has been refreshed.' });
+                setTimeout(() => location.reload(), 3000);
+              } else {
+                this.store.dispatch(socketInit());
+                this.store.dispatch(loadStack());
+                this.store.dispatch(loadProfile());
+              }
+            })
+          );
+        })
+      )
+      .subscribe();
 
     // check ws connect status
     this.store.pipe(select(getConnectStatus)).subscribe(status => {
@@ -116,12 +126,5 @@ export class AppComponent implements OnInit {
       .select(getMessage)
       .pipe(filter(e => !!e))
       .subscribe(e => console.log('EVENT:', e.event, { ...e.object, details: JSON.stringify(e.object.details) }));
-  }
-
-  checkVersion(version: string) {
-    if (this.version && this.version !== version) {
-      this.message.errorMessage({ title: 'New version available. Page has been refreshed.' });
-      setInterval(() => location.reload(), 3000);
-    } else this.version = version;
   }
 }
