@@ -26,8 +26,10 @@ def test_upgrade_cluster_with_import(sdk_client_fs: ADCMClient):
     4. Upgrade cluster
     5. Check that cluster was upgraded
     """
-    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgrade_cluster_with_export'))
-    bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster_with_import'))
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(
+        __file__, 'upgrade_cluster_with_export'))
+    bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(
+        __file__, 'upgradable_cluster_with_import'))
     cluster = bundle.cluster_create("test")
     service = cluster.service_add(name="hadoop")
     cluster_config_before = cluster.config()
@@ -59,7 +61,8 @@ def test_upgrade_cluster_with_export(sdk_client_fs: ADCMClient):
     6. Check that cluster was upgraded
     """
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_with_export'))
-    bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgrade_cluster_with_import'))
+    bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(
+        __file__, 'upgrade_cluster_with_import'))
     sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster_with_import'))
     cluster = bundle.cluster_create("test")
     service = cluster.service_add(name="hadoop")
@@ -96,10 +99,12 @@ def test_incorrect_import_version(sdk_client_fs: ADCMClient):
 
 @pytest.mark.xfail(reason="ADCM-1113")
 def test_upgrade_cluster_without_service_config_in_import(sdk_client_fs: ADCMClient):
-    """Upgrade cluster with service when in new cluster we haven't some service configuration variables
+    """Upgrade cluster with service when in new cluster
+     we haven't some service configuration variables
     """
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgrade_cluster_with_export'))
-    bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster_without_service'))
+    bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(
+        __file__, 'upgradable_cluster_without_service'))
     cluster = bundle.cluster_create("test")
     service = cluster.service_add(name="hadoop")
     cluster_import = bundle_import.cluster_create("cluster_import")

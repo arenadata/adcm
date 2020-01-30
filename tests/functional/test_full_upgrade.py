@@ -15,7 +15,8 @@ from adcm_pytest_plugin.utils import get_data_dir
 
 
 def test_full_upgrade_hostprovider_first(sdk_client_fs: ADCMClient):
-    """Create cluster and hostprovider with host and components and upgrade cluster and host with provider after that
+    """Create cluster and hostprovider with host and components
+     and upgrade cluster and host with provider after that
     and check that all was upgraded.
     """
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
@@ -44,7 +45,8 @@ def test_full_upgrade_hostprovider_first(sdk_client_fs: ADCMClient):
 
 
 def test_full_upgrade_cluster_first(sdk_client_fs: ADCMClient):
-    """Create cluster and hostprovider with host and components and upgrade cluster and host with provider after that
+    """Create cluster and hostprovider with host and components
+     and upgrade cluster and host with provider after that
     and check that all was upgraded.
     """
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
