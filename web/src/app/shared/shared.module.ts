@@ -17,51 +17,57 @@ import { RouterModule } from '@angular/router';
 import { AddingModule } from './add-component/adding.module';
 import {
   ActionMasterComponent,
-  ActionsComponent,
   BaseListDirective,
   ButtonSpinnerComponent,
-  CrumbsComponent,
-  DetailComponent,
   DialogComponent,
   ExportComponent,
   ImportComponent,
   IssueInfoComponent,
   ListComponent,
   MainInfoComponent,
-  Much2ManyComponent,
-  ServiceHostComponent,
   StatusComponent,
   StatusInfoComponent,
   UpgradeComponent,
 } from './components';
 import { ActionsDirective } from './components/actions/actions.directive';
-import { HolderDirective } from './components/hostmap/holder.directive';
 import { SimpleTextComponent } from './components/tooltip';
 import { ConfigurationModule } from './configuration/configuration.module';
-import { DynamicDirective, HoverDirective, ScrollDirective } from './directives';
-import { InfinityScrollDirective } from './directives/infinity-scroll.directive';
-import { MultiSortDirective } from './directives/multi-sort.directive';
+import {
+  DynamicDirective,
+  HoverDirective,
+  InfinityScrollDirective,
+  MultiSortDirective,
+} from './directives';
 import { FormElementsModule } from './form-elements/form-elements.module';
+import { HostComponentsMapModule } from './host-components-map/host-components-map.module';
 import { MaterialModule } from './material.module';
 import { BreakRowPipe, TagEscPipe } from './pipes';
 import { StuffModule } from './stuff.module';
+import { DetailsModule } from './details/details.module';
+
 
 @NgModule({
-  imports: [CommonModule, MaterialModule, FormsModule, ReactiveFormsModule, RouterModule, StuffModule, FormElementsModule, ConfigurationModule, AddingModule],
+  imports: [
+    CommonModule,
+    MaterialModule,
+    FormsModule,
+    ReactiveFormsModule,
+    RouterModule,
+    StuffModule,
+    FormElementsModule,
+    ConfigurationModule,
+    AddingModule,
+    HostComponentsMapModule,
+    DetailsModule
+  ],
   declarations: [
-    DetailComponent,
     DialogComponent,
     ListComponent,
-    Much2ManyComponent,
-    CrumbsComponent,
     BreakRowPipe,
     HoverDirective,
     DynamicDirective,
     ButtonSpinnerComponent,
-    UpgradeComponent,
-    ActionsDirective,
     ActionMasterComponent,
-    ServiceHostComponent,
     TagEscPipe,
     IssueInfoComponent,
     SimpleTextComponent,
@@ -69,9 +75,6 @@ import { StuffModule } from './stuff.module';
     StatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
-    ActionsComponent,
-    ScrollDirective,
-    HolderDirective,
     MultiSortDirective,
     ImportComponent,
     ExportComponent,
@@ -86,25 +89,21 @@ import { StuffModule } from './stuff.module';
     FormElementsModule,
     ConfigurationModule,
     AddingModule,
-    DetailComponent,
+    HostComponentsMapModule,
+    DetailsModule,
     DialogComponent,
     ListComponent,
-    Much2ManyComponent,
-    CrumbsComponent,
     BreakRowPipe,
     HoverDirective,
     DynamicDirective,
     ButtonSpinnerComponent,
     UpgradeComponent,
     ActionsDirective,
-    ServiceHostComponent,
     TagEscPipe,
     BaseListDirective,
     StatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
-    ActionsComponent,
-    ScrollDirective,
     ImportComponent,
     ExportComponent,
     InfinityScrollDirective

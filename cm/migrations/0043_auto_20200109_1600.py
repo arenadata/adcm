@@ -28,7 +28,7 @@ def fix_display_name(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cm', '0042_auto_20191225_1148'),
+        ('cm', '0041_auto_20191220_1338'),
     ]
 
     operations = [

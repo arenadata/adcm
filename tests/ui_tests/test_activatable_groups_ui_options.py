@@ -1,4 +1,6 @@
 import pytest
+import random
+import string
 # pylint: disable=W0611, W0621, C0302
 
 from adcm_client.objects import ADCMClient
@@ -9,13 +11,25 @@ from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.pages import Configuration, LoginPage
 
 
-@pytest.fixture()
-def app(adcm_fs):
-    return ADCMTest(adcm_fs)
+def random_string(lenght=8):
+    """Generate a random string of fixed length """
+    letters = string.ascii_lowercase
+    return ''.join(random.sample(letters, lenght))
 
 
-@pytest.fixture()
-def login(app):
+@pytest.fixture(scope="module")
+def app(adcm_ms):
+    app = ADCMTest(adcm_ms)
+    return app
+
+
+@pytest.fixture(scope="module")
+def login_on_adcm(app):
+    """Login on page ADCM
+    :param app:
+    :return:
+    """
+    app.driver.implicitly_wait(0)
     app.driver.get(app.adcm.url)
     login = LoginPage(app.driver)
     login.login("admin", "admin")
@@ -25,18 +39,16 @@ def login(app):
     __file__,
     "group_advanced_false_invisible_false_field_advanced_false_invisible_false_activiatable_false")
 def test_group_advanced_false_invisible_false_field_advanced_false_invisible_false_active_false(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """Check that group not active and field is invisible until group is not active.
-
-    :param sdk_client_fs:
+    :param sdk_client_ms:
     :param path:
     :param app:
-    :param login:
     :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
+    bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -70,18 +82,12 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_fal
     __file__,
     "group_advanced_false_invisible_false_field_advanced_false_invisible_false_activiatable_true")
 def test_group_advanced_false_invisible_false_field_advanced_false_invisible_false_active_true(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """Check that group active and all fields always visible
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
+    bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -115,18 +121,12 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_fal
     __file__,
     "group_advanced_false_invisible_false_field_advanced_false_invisible_true_activiatable_false")
 def test_group_advanced_false_invisible_false_field_advanced_false_invisible_true_active_false(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """Check that field is invisible if group is active or not
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
+    bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -160,18 +160,12 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_tru
     __file__,
     "group_advanced_false_invisible_false_field_advanced_false_invisible_true_activiatable_true")
 def test_group_advanced_false_invisible_false_field_advanced_false_invisible_true_active_true(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """Check that field invisible if activatable group active and not
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
+    bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -205,18 +199,12 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_tru
     __file__,
     "group_advanced_false_invisible_false_field_advanced_true_invisible_false_activiatable_false")
 def test_group_advanced_false_invisible_false_field_advanced_true_invisible_false_active_false(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+    """Check that field visible if advanced group is enabled.
     """
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
-    """
-    bundle = sdk_client_fs.upload_from_fs(path)
+    bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -250,18 +238,12 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_fals
     __file__,
     "group_advanced_false_invisible_false_field_advanced_true_invisible_false_activiatable_true")
 def test_group_advanced_false_invisible_false_field_advanced_true_invisible_false_active_true(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """Check that field is visible if group active and advanced enabled
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
+    bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -295,18 +277,12 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_fals
     __file__,
     "group_advanced_false_invisible_false_field_advanced_true_invisible_true_activiatable_false")
 def test_group_advanced_false_invisible_false_field_advanced_true_invisible_true_active_false(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """Check that field is invisible if activatable group is active and not
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
+    bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -340,18 +316,12 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_true
     __file__,
     "group_advanced_false_invisible_false_field_advanced_true_invisible_true_activiatable_true")
 def test_group_advanced_false_invisible_false_field_advanced_true_invisible_true_active_true(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """Check that field invisible
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
+    bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -385,17 +355,11 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_true
     __file__,
     "group_advanced_false_invisible_true_field_advanced_false_invisible_false_activiatable_false")
 def test_group_advanced_false_invisible_true_field_advanced_false_invisible_false_active_false(
-        sdk_client_fs: ADCMClient, path, app, login):
-    """Check thats all invisible
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+    """Check thats all fields and groups invisible.
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    bundle = sdk_client_ms.upload_from_fs(path)
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -419,17 +383,11 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_fals
     __file__,
     "group_advanced_false_invisible_true_field_advanced_false_invisible_false_activiatable_true")
 def test_group_advanced_false_invisible_true_field_advanced_false_invisible_false_active_true(
-        sdk_client_fs: ADCMClient, path, app, login):
-    """Check thats all invisible
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+    """Check thats all fields and groups invisible
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    bundle = sdk_client_ms.upload_from_fs(path)
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -453,17 +411,11 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_fals
     __file__,
     "group_advanced_false_invisible_true_field_advanced_false_invisible_true_activiatable_false")
 def test_group_advanced_false_invisible_true_field_advanced_false_invisible_true_active_false(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+    """Check that fields and groups invisible.
     """
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
-    """
-    bundle = sdk_client_fs.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    bundle = sdk_client_ms.upload_from_fs(path)
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -487,17 +439,11 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_true
     __file__,
     "group_advanced_false_invisible_true_field_advanced_false_invisible_true_activiatable_true")
 def test_group_advanced_false_invisible_true_field_advanced_false_invisible_true_active_true(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """All invisible
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    bundle = sdk_client_ms.upload_from_fs(path)
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -521,17 +467,11 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_true
     __file__,
     "group_advanced_false_invisible_true_field_advanced_true_invisible_false_activiatable_false")
 def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false_active_false(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """All invisible
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    bundle = sdk_client_ms.upload_from_fs(path)
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -555,17 +495,12 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false
     __file__,
     "group_advanced_false_invisible_true_field_advanced_true_invisible_false_activiatable_true")
 def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false_active_true(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """All invisible
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
     :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    bundle = sdk_client_ms.upload_from_fs(path)
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -589,17 +524,11 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false
     __file__,
     "group_advanced_false_invisible_true_field_advanced_true_invisible_true_activiatable_false")
 def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true_active_false(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """All invisible
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    bundle = sdk_client_ms.upload_from_fs(path)
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -623,17 +552,11 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true_
     __file__,
     "group_advanced_false_invisible_true_field_advanced_true_invisible_true_activiatable_true")
 def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true_active_true(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """All invisible
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    bundle = sdk_client_ms.upload_from_fs(path)
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -657,18 +580,12 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true_
     __file__,
     "group_advanced_true_invisible_false_field_advanced_false_invisible_false_activiatable_false")
 def test_group_advanced_true_invisible_false_field_advanced_false_invisible_false_active_false(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """Fields visible only if advanced enabled
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
+    bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -698,18 +615,12 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_fals
     __file__,
     "group_advanced_true_invisible_false_field_advanced_false_invisible_false_activiatable_true")
 def test_group_advanced_true_invisible_false_field_advanced_false_invisible_false_active_true(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """Field visible if advanced and activatable true
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
+    bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -739,18 +650,12 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_fals
     __file__,
     "group_advanced_true_invisible_false_field_advanced_false_invisible_true_activiatable_false")
 def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true_active_false(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """Field invisible, group visible if advanced
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
+    bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -782,18 +687,12 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true
     __file__,
     "group_advanced_true_invisible_false_field_advanced_false_invisible_true_activiatable_true")
 def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true_active_true(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+    """Check that field invisible
     """
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
-    """
-    bundle = sdk_client_fs.upload_from_fs(path)
+    bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -821,18 +720,12 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true
     __file__,
     "group_advanced_true_invisible_false_field_advanced_true_invisible_false_activiatable_false")
 def test_group_advanced_true_invisible_false_field_advanced_true_invisible_false_active_false(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+    """Check that field and group visible if advanced button clicked
     """
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
-    """
-    bundle = sdk_client_fs.upload_from_fs(path)
+    bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -864,18 +757,13 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_false
     __file__,
     "group_advanced_true_invisible_false_field_advanced_true_invisible_false_activiatable_true")
 def test_group_advanced_true_invisible_false_field_advanced_true_invisible_false_active_true(
-        sdk_client_fs: ADCMClient, path, app, login):
-    """
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+    """Check that field visible if advanced clicked.
     :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
+    bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -903,18 +791,12 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_false
     __file__,
     "group_advanced_true_invisible_false_field_advanced_true_invisible_true_activiatable_false")
 def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true_active_false(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """Field always invisible
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
+    bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -943,18 +825,12 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true_
     __file__,
     "group_advanced_true_invisible_false_field_advanced_true_invisible_true_activiatable_true")
 def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true_active_true(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """Field invisible
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
+    bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
-    cluster_name = "_".join(path.split("/")[-2:])
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -982,17 +858,11 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true_
     __file__,
     "group_advanced_true_invisible_true_field_advanced_false_invisible_false_activiatable_false")
 def test_group_advanced_true_invisible_true_field_advanced_false_invisible_false_active_false(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """All invisible
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    bundle = sdk_client_ms.upload_from_fs(path)
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -1016,17 +886,11 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_false
     __file__,
     "group_advanced_true_invisible_true_field_advanced_false_invisible_false_activiatable_true")
 def test_group_advanced_true_invisible_true_field_advanced_false_invisible_false_active_true(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """All invisible
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    bundle = sdk_client_ms.upload_from_fs(path)
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -1050,17 +914,11 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_false
     __file__,
     "group_advanced_true_invisible_true_field_advanced_false_invisible_true_activiatable_false")
 def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true_active_false(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """All invisible
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    bundle = sdk_client_ms.upload_from_fs(path)
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -1084,17 +942,11 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true_
     __file__,
     "group_advanced_true_invisible_true_field_advanced_true_invisible_false_activiatable_false")
 def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false_active_false(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """All invisible
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    bundle = sdk_client_ms.upload_from_fs(path)
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -1118,17 +970,12 @@ def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false_
     __file__,
     "group_advanced_true_invisible_true_field_advanced_false_invisible_true_activiatable_true")
 def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true_active_true(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """All invisible
 
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    bundle = sdk_client_ms.upload_from_fs(path)
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -1152,17 +999,11 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true_
     __file__,
     "group_advanced_true_invisible_true_field_advanced_true_invisible_false_activiatable_true")
 def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false_active_true(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """All invisible
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    bundle = sdk_client_ms.upload_from_fs(path)
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -1186,17 +1027,11 @@ def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false_
     __file__,
     "group_advanced_true_invisible_true_field_advanced_true_invisible_true_activiatable_false")
 def test_group_advanced_true_invisible_true_field_advanced_true_invisible_true_active_false(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """All invisible
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    bundle = sdk_client_ms.upload_from_fs(path)
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -1220,17 +1055,11 @@ def test_group_advanced_true_invisible_true_field_advanced_true_invisible_true_a
     __file__,
     "group_advanced_true_invisible_true_field_advanced_true_invisible_true_activiatable_true")
 def test_group_advanced_true_invisible_true_field_advanced_true_invisible_true_active_true(
-        sdk_client_fs: ADCMClient, path, app, login):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
     """All invisible
-
-    :param sdk_client_fs:
-    :param path:
-    :param app:
-    :param login:
-    :return:
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
+    bundle = sdk_client_ms.upload_from_fs(path)
+    cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))

@@ -23,6 +23,7 @@ export interface WorkerInstance {
   current: Entities;
   cluster: Cluster | null;
 }
+type pagesType = 'cluster' | 'host' | 'provider' | 'service' | 'job' | 'bundle';
 
 @Injectable({
   providedIn: 'root'
@@ -31,6 +32,8 @@ export class ClusterService {
   private worker: WorkerInstance | null;
   private workerSubject = new BehaviorSubject<WorkerInstance>(null);
   public worker$ = this.workerSubject.asObservable();
+
+  private _currentParamMap: { [key in pagesType]: number };
 
   get Cluster() {
     return this.worker ? this.worker.cluster : null;
@@ -74,7 +77,7 @@ export class ClusterService {
         prototype_name: j.action ? j.action.prototype_name : '',
         prototype_version: j.action ? j.action.prototype_version : '',
         bundle_id: j.action ? j.action.bundle_id : '',
-        display_name: j.action ? `${j.action.display_name}` : 'Object has been deleted'
+        // display_name: j.action ? `${j.action.display_name}` : 'Object has been deleted'
       }))
     );
   }
@@ -138,12 +141,13 @@ export class ClusterService {
     return this.api.post(this.Cluster.host, { host_id: host.id });
   }
 
-  reset() {
+  reset(): Observable<WorkerInstance> {
     const typeName = this.Current.typeName;
     return this.api.get<Entities>(this.Current.url).pipe(
-      tap(a => {
+      map(a => {
         if (typeName === 'cluster') this.worker.cluster = { ...(a as Cluster), typeName };
         this.worker.current = { ...a, typeName };
+        return this.worker;
       })
     );
   }

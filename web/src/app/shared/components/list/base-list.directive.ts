@@ -151,7 +151,7 @@ export class BaseListDirective extends SocketListener implements OnInit, OnDestr
           data: {
             title: `Accept license agreement`,
             text: info.text,
-            controls: ['Yes', 'No'],
+            controls: { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] },
           },
         })
         .beforeClosed()

@@ -465,14 +465,14 @@ class ActionSerializer(serializers.Serializer):
     type = serializers.CharField()
     display_name = serializers.CharField(required=False)
     description = serializers.CharField(required=False)
-    disclaimer = serializers.CharField(required=False)
+    ui_options = JSONField(required=False)
     button = serializers.CharField(required=False)
     script = serializers.CharField()
     script_type = serializers.CharField()
     state_on_success = serializers.CharField()
     state_on_fail = serializers.CharField()
     hostcomponentmap = JSONField(required=False)
-    allow_to_termination = serializers.BooleanField(read_only=True)
+    allow_to_terminate = serializers.BooleanField(read_only=True)
 
 
 class SubActionSerializer(serializers.Serializer):
@@ -814,9 +814,13 @@ class TaskSerializer(TaskListSerializer):
     cancel = hlink('task-cancel', 'id', 'task_id')
 
     def get_terminatable(self, obj):
-        action = Action.objects.get(id=obj.action_id)
+        try:
+            action = Action.objects.get(id=obj.action_id)
+            allow_to_terminate = action.allow_to_terminate
+        except Action.DoesNotExist:
+            allow_to_terminate = False
         # pylint: disable=simplifiable-if-statement
-        if action.allow_to_termination and obj.status in [config.Job.CREATED, config.Job.RUNNING]:
+        if allow_to_terminate and obj.status in [config.Job.CREATED, config.Job.RUNNING]:
             # pylint: enable=simplifiable-if-statement
             return True
         else:
