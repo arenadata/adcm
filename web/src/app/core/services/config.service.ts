@@ -9,9 +9,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+
 
 const CONFIG_URL = '/assets/config.json';
 export interface IConfig {
@@ -20,15 +22,30 @@ export interface IConfig {
 }
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: 'root'
 })
 export class ConfigService {
   appConfig$: Observable<IConfig>;
 
   constructor(private http: HttpClient) {}
 
+  get version() {
+    return localStorage.getItem('adcm:version');
+  }
+
+  set version(version: string) {
+    localStorage.setItem('adcm:version', version);
+  }
+
   get config() {
-    return this.appConfig$;
+    return this.appConfig$.pipe(map(c => this.checkVersion(c)));
+  }
+
+  checkVersion(c: IConfig): IConfig | null {
+    if (this.version !== c.version) {
+      this.version = c.version;
+      return null;
+    } else return c;
   }
 
   load() {
