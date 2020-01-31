@@ -24,7 +24,31 @@ from tests.ui_tests.app.locators import Menu, Common, Cluster, Provider, Host,\
     ConfigurationLocators, Service
 from tests.ui_tests.app.helpers import bys
 from cm.errors import ERRORS
-from time import sleep
+from time import sleep, time
+
+
+def repeat_dec(timeout=10, interval=0.1):
+    """That is timeout decorator for find_* functions of webdriver
+
+    First of all sometimes it take a time for wedriver to find element.
+    So it nice to have some timeout, but it is too expensive to have implicit timeout.
+
+    That function creates decorator to wrap function that has to be repeated.
+    """
+    def dec(f):
+        def newf(*args, **kwargs):
+            t = time()
+            while t + timeout > time():
+                result = f(*args, **kwargs)
+                # For some reason wedriver returns False or [] when it found nothing.
+                if result:
+                    return result
+                sleep(interval)
+        return newf
+    return dec
+
+
+REPEAT = repeat_dec(timeout=10, interval=0.1)
 
 
 class BasePage:
@@ -520,7 +544,7 @@ class Configuration(BasePage):
         return self.driver.find_elements(*ConfigurationLocators.app_field)
 
     def _get_group_element_by_name(self, name):
-        config_groups = self.driver.find_elements(*Common.mat_expansion_panel)
+        config_groups = REPEAT(self.driver.find_elements)(*Common.mat_expansion_panel)
         for group in config_groups:
             if name in group.text:
                 return group

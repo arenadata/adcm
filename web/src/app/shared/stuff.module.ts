@@ -14,13 +14,11 @@ import { NgModule } from '@angular/core';
 import { RouterModule } from '@angular/router';
 
 import { ActionsComponent, CrumbsComponent, UpgradeComponent } from './components';
+import { ActionsDirective } from './components/actions/actions.directive';
 import { TooltipComponent } from './components/tooltip/tooltip.component';
 import { TooltipDirective } from './components/tooltip/tooltip.directive';
-import { BaseDirective, SocketListener } from './directives/base.directive';
-import { ForTestDirective } from './directives/for-test.directive';
-import { MTextareaDirective } from './directives/m-textarea.directive';
+import { BaseDirective, ForTestDirective, MTextareaDirective, ScrollDirective, SocketListener } from './directives';
 import { MaterialModule } from './material.module';
-import { ActionsDirective } from './components/actions/actions.directive';
 
 @NgModule({
   declarations: [
@@ -34,6 +32,7 @@ import { ActionsDirective } from './components/actions/actions.directive';
     UpgradeComponent,
     ActionsComponent,
     ActionsDirective,
+    ScrollDirective
   ],
   imports: [CommonModule, MaterialModule, RouterModule],
   exports: [
@@ -46,7 +45,8 @@ import { ActionsDirective } from './components/actions/actions.directive';
     CrumbsComponent,
     UpgradeComponent,
     ActionsComponent,
-    ActionsDirective
+    ActionsDirective,
+    ScrollDirective
   ]
 })
 export class StuffModule {}

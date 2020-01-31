@@ -18,11 +18,8 @@ import { FieldDirective } from './field.directive';
   selector: '[appBaseMapList]'
 })
 export class BaseMapListDirective extends FieldDirective implements OnInit {
-  @Input() form: FormGroup;
-  @Input() field: FieldOptions;
   asList: boolean;
   items = new FormArray([]);
-  entry: AbstractControl[];
 
   constructor(private fb: FormBuilder) {
     super();
@@ -36,16 +33,14 @@ export class BaseMapListDirective extends FieldDirective implements OnInit {
 
   prepare(a: { key: string; value: string }[]) {
     let value = this.asList ? a.map(b => b.value).filter(c => c) : a.length ? a.reduce((p, c) => ({ ...p, [c.key]: c.value }), {}) : null;
-
     if (value && this.asList) value = (value as Array<string>).length ? value : null;
-
     this.find().setValue(value);
   }
 
   reload() {
     this.items.controls = [];
-    const fieldValue = this.field.value as Object;
-    Object.keys(fieldValue).forEach(a => this.items.push(this.fb.group({ key: [a, Validators.required], value: fieldValue[a] })));
+      const fieldValue = {...this.field.value as Object};
+      Object.keys(fieldValue).forEach(a => this.items.push(this.fb.group({ key: [a, Validators.required], value: fieldValue[a] })));
   }
 
   add() {
