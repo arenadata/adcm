@@ -57,9 +57,6 @@ export class FieldService {
   }
 
   checkYspec(a: FieldOptions): FieldOptions | PanelOptions {
-    /**
-     * Very important for build tree
-     */
     a.name = a.subname || a.name;
 
     if (a.limits && a.limits.yspec) {
