@@ -25,6 +25,7 @@ import { ColorOptionDirective } from './tools/color-option.directive';
 import { HistoryComponent } from './tools/history.component';
 import { SearchComponent } from './tools/search.component';
 import { ToolsComponent } from './tools/tools.component';
+import { YspecService } from './yspec/yspec.service';
 
 @NgModule({
   declarations: [
@@ -39,6 +40,6 @@ import { ToolsComponent } from './tools/tools.component';
   ],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, MaterialModule, StuffModule, FormElementsModule],
   exports: [ConfigComponent, ConfigFieldsComponent],
-  providers: [FieldService]
+  providers: [FieldService, YspecService]
 })
 export class ConfigurationModule {}

@@ -11,15 +11,18 @@
 // limitations under the License.
 import { Injectable } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
-import { controlType, getPattern, isObject } from '@app/core/types';
+import { getControlType, getPattern, isObject } from '@app/core/types';
 
 import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, PanelOptions } from './types';
-import { YspecStructure } from './YspecStructure';
+import { YspecStructure, matchType } from './YspecStructure';
+import { YspecService } from './yspec/yspec.service';
 
 export interface IToolsEvent {
   name: string;
   conditions?: { advanced: boolean; search: string } | boolean;
 }
+
+export type controlType = 'boolean' | 'textbox' | 'textarea' | 'json' | 'password' | 'list' | 'map' | 'dropdown';
 
 @Injectable()
 export class FieldService {
@@ -28,7 +31,7 @@ export class FieldService {
   formOptions: FieldOptions[];
   form = new FormGroup({});
 
-  constructor(private fb: FormBuilder) {}
+  constructor(private fb: FormBuilder, private spec: YspecService) {}
 
   isVisibleField = (a: ConfigOptions) => !a.ui_options || !a.ui_options.invisible;
   isInvisibleField = (a: ConfigOptions) => a.ui_options && a.ui_options.invisible;
@@ -60,6 +63,10 @@ export class FieldService {
     a.name = a.subname || a.name;
 
     if (a.limits && a.limits.yspec) {
+
+      this.spec.Root = a.limits.yspec;
+      const output = this.spec.build();
+
       const yspec = new YspecStructure(a);
       return yspec.output;
     }
@@ -78,7 +85,7 @@ export class FieldService {
         max: item.limits ? item.limits.max : null,
         pattern: getPattern(item.type)
       },
-      controlType: controlType(item.type),
+      controlType: getControlType(item.type as matchType),
       hidden: item.name === '__main_info' || this.isHidden(item),
       compare: []
     };
@@ -182,7 +189,8 @@ export class FieldService {
       },
       json: (value: string) => (value === null ? '' : JSON.stringify(value, undefined, 4)),
       map: (value: object, de: object) => (!value ? (!de ? {} : de) : value),
-      list: (value: string[], de: string[]) => (!value ? (!de ? [] : de) : value)
+      list: (value: string[], de: string[]) => (!value ? (!de ? [] : de) : value),
+      structure: (value: any) => value
     };
 
     return data[name] ? data[name] : def;

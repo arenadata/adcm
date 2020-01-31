@@ -9,8 +9,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+import { controlType } from '@app/shared/configuration/field.service';
+import { ConfigResultTypes, ConfigValueTypes, FieldStack } from '@app/shared/configuration/types';
+import { matchType } from '@app/shared/configuration/YspecStructure';
+
 import { InnerIssue, Issue } from './issue';
-import { FieldStack, ConfigValueTypes, ConfigResultTypes } from '@app/shared/configuration/types';
 
 export function getPattern(name: string): RegExp {
   const fn = {
@@ -21,8 +24,8 @@ export function getPattern(name: string): RegExp {
   return fn[name] ? fn[name]() : null;
 }
 
-export function controlType(name: string): string {
-  const ControlsTypes = {
+export function getControlType(name: matchType): controlType {
+  const a: Partial<{[key in matchType]: controlType}> = {
     bool: 'boolean',
     int: 'textbox',
     integer: 'textbox',
@@ -31,7 +34,7 @@ export function controlType(name: string): string {
     file: 'textarea',
     text: 'textarea'
   };
-  return ControlsTypes[name] || name;
+  return a[name];
 }
 
 export function getTypeName(name: string) {

@@ -13,13 +13,14 @@ import { TestBed } from '@angular/core/testing';
 
 import { FieldService } from './field.service';
 import { FormBuilder } from '@angular/forms';
+import { YspecService } from './yspec/yspec.service';
 
 describe('Configuration fields service', () => {
   let service: FieldService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [FormBuilder, FieldService]
+      providers: [FormBuilder, FieldService, YspecService]
     });
 
     service = TestBed.get(FieldService);
