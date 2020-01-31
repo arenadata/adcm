@@ -25,11 +25,11 @@ export function controlType(name: string): string {
   const ControlsTypes = {
     bool: 'boolean',
     int: 'textbox',
-    file: 'textarea',
-    text: 'textarea',
     integer: 'textbox',
     float: 'textbox',
-    string: 'textbox'
+    string: 'textbox',
+    file: 'textarea',
+    text: 'textarea'
   };
   return ControlsTypes[name] || name;
 }
