@@ -11,15 +11,17 @@
 // limitations under the License.
 import { controlType, getPattern } from '@app/core/types';
 
-import { FieldOptions, PanelOptions } from './types';
+import { FieldOptions, PanelOptions, ConfigValueTypes } from './types';
 
-type matchType = 'string' | 'int' | 'float' | 'bool' | 'list' | 'dict';
+type simpleType = 'string' | 'integer' | 'float' | 'bool';
+type reqursionType = 'list' | 'dict';
+type matchType = simpleType | reqursionType;
 
 interface Iroot {
   match: matchType;
   selector?: string;
   variants?: { [key: string]: string };
-  item?: string | matchType;
+  item?: string;
   items?: { [key: string]: string };
   required_items?: string[];
   default_item?: string;
@@ -27,6 +29,54 @@ interface Iroot {
 
 export interface IYspec {
   [key: string]: Iroot;
+}
+
+class Field {
+  private _options: Partial<FieldOptions>;
+  constructor(public key: string, private value: simpleType) {
+    this._options = {
+      display_name: this.key,
+      name: this.key,
+      key: this.key,
+      subname: null,
+      controlType: controlType(this.value),
+      type: this.value as ConfigValueTypes,
+      validator: {
+        required: true,
+        pattern: getPattern(this.value)
+      },
+      hidden: false,
+      read_only: false,
+      compare: []
+    };
+  }
+  get options() {
+    return this._options;
+  }
+  setKey(key: string) {
+    this._options.key = `${this.key}/${key}`;
+    return this;
+  }
+  setValue(value: simpleType) {
+    this._options.default = value;
+    this._options.value = value;
+    return this;
+  }
+}
+
+class Group {
+  constructor(public key: string, private value: reqursionType) {}
+  options(value: simpleType) {
+    return {};
+  }
+  setValue(value: simpleType) {
+    // this.options.default = value;
+    // this.options.value = value;
+    return this;
+  }
+  setKey(key: string) {
+    return this;
+  }
 }
 
 export class YspecStructure {
@@ -38,6 +88,51 @@ export class YspecStructure {
     this.source = options;
     this.yspec = options.limits.yspec;
     this.output = this[this.yspec.root.match](options);
+  }
+
+  getModel(rules: { [key: string]: string }) {
+    return Object.keys(rules).map(key => {
+      const value = rules[key];
+      if (value as simpleType) return new Field(key, <simpleType>value);
+      else return new Group(key, <reqursionType>value);
+    });
+  }
+
+  list(source: FieldOptions) {
+    const scheme = { ...source.limits.yspec };
+
+    const value = Array.isArray(source.value) ? source.value : Array.isArray(source.default) ? source.default : null;
+
+    const item = scheme.root.item;
+    const rule = scheme[item];
+
+    if (rule.match === 'dict') {
+      const model = this.getModel(rule.items);
+      /**
+       * fill the model to data (value or default)
+       */
+      return {
+        ...source,
+        type: 'group',
+        options: value.map((v, i) => {
+          if (typeof v === 'object') {
+            return {
+              display_name: `--- ${i} ---`,
+              name: i,
+              key: `${i}/${source.key}`,
+              type: 'group',
+              options: Object.keys(v).map(
+                k =>
+                  model
+                    .find(m => m.key === k)
+                    .setKey(`${i}/${source.key}`)
+                    .setValue(v[k]).options
+              )
+            };
+          }
+        })
+      };
+    }
   }
 
   dict(source: FieldOptions) {
@@ -94,11 +189,13 @@ export class YspecStructure {
             options: this.getFields(source, items[k]),
             limits: {
               yspec: scheme
-            },
+            }
           };
         }
       });
+    } else {
+      console.warn('Yspec :: Items not found');
+      return [];
     }
   }
-
 }
