@@ -9,15 +9,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { getControlType, IRoot, getPattern } from '@app/core/types';
+import { getControlType, getPattern, IRoot } from '@app/core/types';
 
 import { controlType } from '../field.service';
 import { IYspec, simpleType } from '../YspecStructure';
-import { pathToFileURL } from 'url';
 
 export interface IField {
   name: string;
   type: simpleType;
+  path: string[];
   controlType: controlType;
   validator: {
     required: boolean;
@@ -69,6 +69,7 @@ export class YspecService {
     return {
       name,
       type: field.type,
+      path: field.path,
       controlType: getControlType(field.type),
       validator: {
         required: this.findRule(field.path, 'required_items'),
