@@ -97,7 +97,6 @@ def test_incorrect_import_version(sdk_client_fs: ADCMClient):
     err.UPGRADE_ERROR.equal(e)
 
 
-@pytest.mark.xfail(reason="ADCM-1113")
 def test_upgrade_cluster_without_service_config_in_import(sdk_client_fs: ADCMClient):
     """Upgrade cluster with service when in new cluster
      we haven't some service configuration variables
