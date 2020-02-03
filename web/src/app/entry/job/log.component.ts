@@ -23,21 +23,21 @@ import { JobInfoComponent } from './job-info.component';
 @Component({
   selector: 'app-job-log',
   template: `
-    <div class="tools">
-      <ng-container *ngIf="isScroll">
-        <button color="accent" mat-icon-button (click)="down()" matTooltip="To the bottom" [disabled]="(isRun && isWatch) || !isScroll">
-          <mat-icon>arrow_downward</mat-icon>
-        </button>
-        <button color="accent" mat-icon-button (click)="top()" matTooltip="To the top" [disabled]="!isScroll">
-          <mat-icon>arrow_upward</mat-icon>
-        </button>
-      </ng-container>
-    </div>
-
     <app-job-info #info></app-job-info>
-
     <div class="wrap">
-      <textarea class="log" *ngIf="!asJson; else asjson" appScroll #tea (read)="read($event)" [readonly]="true">{{ content }}</textarea>
+      <ng-container *ngIf="!asJson; else asjson">
+        <div class="tools">
+          <ng-container *ngIf="isScroll">
+            <button color="accent" mat-icon-button (click)="down()" matTooltip="To the bottom" [disabled]="(isRun && isWatch) || !isScroll">
+              <mat-icon>arrow_downward</mat-icon>
+            </button>
+            <button color="accent" mat-icon-button (click)="top()" matTooltip="To the top" [disabled]="!isScroll">
+              <mat-icon>arrow_upward</mat-icon>
+            </button>
+          </ng-container>
+        </div>
+        <textarea class="log" appScroll #tea (read)="read($event)" [readonly]="true">{{ content }}</textarea>
+      </ng-container>
       <ng-template #asjson>
         <mat-accordion class="accordion">
           <mat-expansion-panel *ngFor="let item of content" class="panel">
@@ -57,7 +57,7 @@ import { JobInfoComponent } from './job-info.component';
   `,
   styles: [
     ':host {display: flex; flex: 1; flex-direction: column;}',
-    '.tools { position: fixed; right: 80px; }',
+    '.tools { position: fixed; right: 60px; top: 150px; }',
     'div.wrap {display: flex; flex: 1; flex-direction: column;padding: 10px;}',
     'textarea.log, textarea.check {background-color: #424242; border: 0; color: #fff;flex: 1;}',
     'textarea.check {height: 300px;width: 100%;}',
