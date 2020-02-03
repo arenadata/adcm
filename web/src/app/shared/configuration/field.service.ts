@@ -22,7 +22,7 @@ export interface IToolsEvent {
   conditions?: { advanced: boolean; search: string } | boolean;
 }
 
-export type controlType = 'boolean' | 'textbox' | 'textarea' | 'json' | 'password' | 'list' | 'map' | 'dropdown';
+export type controlType = 'boolean' | 'textbox' | 'textarea' | 'json' | 'password' | 'list' | 'map' | 'dropdown' | 'file' | 'text';
 
 @Injectable()
 export class FieldService {

@@ -13,7 +13,7 @@ import { getControlType, getPattern } from '@app/core/types';
 
 import { FieldOptions, PanelOptions, ConfigValueTypes } from './types';
 
-export type simpleType = 'string' | 'integer' | 'float' | 'bool' | 'int' | 'file' | 'text' | 'one_of' | 'dict_key_selection';
+export type simpleType = 'string' | 'integer' | 'float' | 'bool' | 'int' | 'one_of' | 'dict_key_selection';
 export type reqursionType = 'list' | 'dict';
 export type matchType = simpleType | reqursionType;
 

@@ -24,8 +24,8 @@ export function getPattern(name: string): RegExp {
   return fn[name] ? fn[name]() : null;
 }
 
-export function getControlType(name: matchType): controlType {
-  const a: Partial<{[key in matchType]: controlType}> = {
+export function getControlType(name: string): controlType {
+  const a: Partial<{[key in matchType | controlType]: controlType}> = {
     bool: 'boolean',
     int: 'textbox',
     integer: 'textbox',
@@ -34,7 +34,7 @@ export function getControlType(name: matchType): controlType {
     file: 'textarea',
     text: 'textarea'
   };
-  return a[name];
+  return a[name] || name;
 }
 
 export function getTypeName(name: string) {
