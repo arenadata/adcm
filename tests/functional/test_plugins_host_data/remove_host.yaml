@@ -1,0 +1,8 @@
+---
+
+- name: "Remove user"
+  hosts: all
+  connection: local
+  gather_facts: false
+  tasks:
+    - adcm_delete_host:
