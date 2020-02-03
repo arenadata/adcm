@@ -45,14 +45,19 @@ export class YspecService {
     switch (match) {
       case 'list': {
         if (this.Root[item]) {
-          return this.build(item, [...path, item]);
+          const name = path.reverse()[0] || 'root';
+          return { type: 'list', [name]: this.build(item, [...path, item]) };
         }
         break;
       }
       case 'dict': {
-        return Object.keys(items).map((item_name: string) => {
-          return this.build(items[item_name], [...path, item_name]);
-        });
+        const name = path.reverse()[0] || 'root';
+        return {
+          type: 'dict',
+          [name]: Object.keys(items).map((item_name: string) => {
+            return this.build(items[item_name], [...path, item_name]);
+          })
+        };
         break;
       }
       // case 'one_of':
