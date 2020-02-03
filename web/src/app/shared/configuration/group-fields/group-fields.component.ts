@@ -60,17 +60,13 @@ export class GroupFieldsComponent implements OnInit {
       .filter(a => !('options' in a))
       .forEach((a: FieldOptions) => {
         const split = a.key.split('/');
-        let formControl = (this.form.controls[split[1]] as FormGroup).controls[split[0]];
-        if (split.length > 2) {
-          const [name, ...other] = split;
-          const currentFormGroup = other.reverse().reduce((p, c) => p.get(c), this.form) as FormGroup;
-          formControl = currentFormGroup.controls[name];
-        }
+
+        const [name, ...other] = split;
+        const currentFormGroup = other.reverse().reduce((p, c) => p.get(c), this.form) as FormGroup;
+        const formControl = currentFormGroup.controls[name];
 
         this.updateValidator(formControl, a, flag);
-        if (a.type === 'password') {
-          this.updateValidator(this.form.controls['confirm_' + name], a, flag);
-        }
+        if (a.type === 'password') this.updateValidator(currentFormGroup.controls['confirm_' + name], a, flag);
       });
   }
 
