@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Directive, Host, Input, OnDestroy, OnInit } from '@angular/core';
-import { ParamMap } from '@angular/router';
+import { ParamMap, convertToParamMap } from '@angular/router';
 import { EventMessage, SocketState } from '@app/core/store';
 import { EmmitRow, Entities, getTypeName, Host as AdcmHost, TypeName, Bundle } from '@app/core/types';
 import { Store } from '@ngrx/store';
@@ -20,10 +20,11 @@ import { ListComponent } from '../list/list.component';
 import { ListService } from './list.service';
 import { filter } from 'rxjs/internal/operators/filter';
 import { DialogComponent } from '../dialog.component';
-import { switchMap } from 'rxjs/operators';
+import { switchMap, takeWhile } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
 
 @Directive({
-  selector: '[appBaseList]',
+  selector: '[appBaseList]'
 })
 export class BaseListDirective extends SocketListener implements OnInit, OnDestroy {
   row: Entities;
@@ -38,26 +39,31 @@ export class BaseListDirective extends SocketListener implements OnInit, OnDestr
     this.parent.type = this.typeName;
     this.parent.columns = this.service.initInstance(this.typeName).columns;
 
-    const limit = +localStorage.getItem('limit');
-    if (!limit) localStorage.setItem('limit', '10');
-    this.parent.paginator.pageSize = +localStorage.getItem('limit');
+    const limit = +localStorage.getItem('list:limit');
+    if (!limit) localStorage.setItem('list:limit', '10');
+    this.parent.paginator.pageSize = +localStorage.getItem('list:limit');
 
     this.parent.listItemEvt.pipe(this.takeUntil()).subscribe({ next: (event: EmmitRow) => this.listEvents(event) });
 
-    this.parent.route.paramMap.pipe(this.takeUntil()).subscribe(p => {
-      if (+p.get('page') === 0) {
-        this.parent.paginator.firstPage();
-      }
-      const ordering = p.get('ordering');
-      if (ordering && !this.parent.sort.active) {
-        this.parent.sort.direction = ordering[0] === '-' ? 'desc' : 'asc';
-        this.parent.sort.active = ordering[0] === '-' ? ordering.substr(1) : ordering;
-        this.parent.sortParam = ordering;
-      }
+    this.parent.route.paramMap
+      .pipe(
+        filter(p => this.checkParam(p)),
+        this.takeUntil()
+      )
+      .subscribe(p => {
+        if (+p.get('page') === 0) {
+          this.parent.paginator.firstPage();
+        }
+        const ordering = p.get('ordering');
+        if (ordering && !this.parent.sort.active) {
+          this.parent.sort.direction = ordering[0] === '-' ? 'desc' : 'asc';
+          this.parent.sort.active = ordering[0] === '-' ? ordering.substr(1) : ordering;
+          this.parent.sortParam = ordering;
+        }
 
-      this.listParams = p;
-      this.refresh();
-    });
+        this.listParams = p;
+        this.refresh();
+      });
 
     super.startListenSocket();
   }
@@ -65,6 +71,18 @@ export class BaseListDirective extends SocketListener implements OnInit, OnDestr
   ngOnDestroy() {
     super.ngOnDestroy();
     this.parent.listItemEvt.complete();
+  }
+
+  checkParam(p: ParamMap): boolean {
+    const listParamStr = localStorage.getItem('list:param');
+    if (!p.keys.length && listParamStr) {
+      const json = JSON.parse(listParamStr);
+      if (json[this.typeName]) {
+        this.parent.router.navigate(['./', json[this.typeName]], { relativeTo: this.parent.route });
+        return false;
+      }
+    }
+    return true;
   }
 
   socketListener(m: EventMessage): void {
@@ -151,15 +169,15 @@ export class BaseListDirective extends SocketListener implements OnInit, OnDestr
           data: {
             title: `Accept license agreement`,
             text: info.text,
-            controls: { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] },
-          },
+            controls: { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] }
+          }
         })
         .beforeClosed()
         .pipe(
           filter(yes => yes),
-          switchMap(() => this.service.acceptLicense(`${row.license_url}accept/`)),
+          switchMap(() => this.service.acceptLicense(`${row.license_url}accept/`))
         )
-        .subscribe(() => row.license = 'accepted'),
+        .subscribe(() => (row.license = 'accepted'))
     );
   }
 
