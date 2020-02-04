@@ -10,10 +10,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Injectable } from '@angular/core';
-import { ParamMap, convertToParamMap } from '@angular/router';
+import { ParamMap } from '@angular/router';
 import { ApiService } from '@app/core/api';
 import { ClusterService } from '@app/core/services';
-import { IAction, Bundle, Cluster, Entities, Host, TypeName } from '@app/core/types';
+import { Bundle, Cluster, Entities, Host, IAction, TypeName } from '@app/core/types';
 import { environment } from '@env/environment';
 import { switchMap, tap } from 'rxjs/operators';
 

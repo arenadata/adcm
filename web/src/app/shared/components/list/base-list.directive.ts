@@ -10,18 +10,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Directive, Host, Input, OnDestroy, OnInit } from '@angular/core';
-import { ParamMap, convertToParamMap } from '@angular/router';
+import { ParamMap } from '@angular/router';
 import { EventMessage, SocketState } from '@app/core/store';
-import { EmmitRow, Entities, getTypeName, Host as AdcmHost, TypeName, Bundle } from '@app/core/types';
+import { Bundle, EmmitRow, Entities, getTypeName, Host as AdcmHost, TypeName } from '@app/core/types';
 import { Store } from '@ngrx/store';
+import { filter } from 'rxjs/internal/operators/filter';
+import { switchMap } from 'rxjs/operators';
 
 import { SocketListener } from '../../directives/base.directive';
+import { DialogComponent } from '../dialog.component';
 import { ListComponent } from '../list/list.component';
 import { ListService } from './list.service';
-import { filter } from 'rxjs/internal/operators/filter';
-import { DialogComponent } from '../dialog.component';
-import { switchMap, takeWhile } from 'rxjs/operators';
-import { Observable, of } from 'rxjs';
 
 @Directive({
   selector: '[appBaseList]'
