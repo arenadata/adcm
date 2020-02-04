@@ -146,7 +146,7 @@ export class ConfigComponent extends SocketListener implements OnInit {
           this.saveFlag = false;
           /**
            * TODO: history does not update!
-           *  => her need the new this.field.dataOptions
+           *  => need the new this.field.dataOptions
            */
           this.historyComponent.versionID = c.id;
           this.historyComponent.getData();
