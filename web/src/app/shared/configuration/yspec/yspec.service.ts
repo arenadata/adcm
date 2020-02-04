@@ -43,33 +43,20 @@ export class YspecService {
     const { match, item, items } = { ...this.Root[rule] };
 
     switch (match) {
-      case 'list': {
-        if (this.Root[item]) {
-          const name = path.reverse()[0] || 'root';
-          return { type: 'list', [name]: this.build(item, [...path, item]) };
-        }
-        break;
-      }
-      case 'dict': {
-        const name = path.reverse()[0] || 'root';
-        return {
-          type: 'dict',
-          [name]: Object.keys(items).map((item_name: string) => {
-            return this.build(items[item_name], [...path, item_name]);
-          })
-        };
-        break;
-      }
+      case 'list':
+        return this.list(item, path);
+      case 'dict':
+        return this.dict(items, path);
       // case 'one_of':
       //   return this.one_of();
       // case 'dict_key_selection':
       //   return this.dict_key_selection();
       default:
-        return this.createField({ type: match, path });
+        return this.field({ type: match, path });
     }
   }
 
-  createField(field: { path: string[]; type: simpleType }): IField {
+  field(field: { path: string[]; type: simpleType }): IField {
     const [name, ...o] = [...field.path].reverse();
     return {
       name,
@@ -89,11 +76,21 @@ export class YspecService {
     return !!(rule && rule[name] && rule[name][field]);
   }
 
-  list(item: string) {}
+  list(item: string, path: string[]): { [x: string]: any; type: string } {
+    if (!this.Root[item]) throw new Error('Not itmem for list');
+    const name = path.reverse()[0] || 'root';
+    return { type: 'list', [name]: this.build(item, [...path, item]) };
+  }
 
-  dict(items: IRoot) {}
-
-  simple(match: simpleType) {}
+  dict(items: IRoot, path: string[]): { [x: string]: any; type: string } {
+    const name = path.reverse()[0] || 'root';
+    return {
+      type: 'dict',
+      [name]: Object.keys(items).map((item_name: string) => {
+        return this.build(items[item_name], [...path, item_name]);
+      })
+    };
+  }
 
   one_of() {}
 

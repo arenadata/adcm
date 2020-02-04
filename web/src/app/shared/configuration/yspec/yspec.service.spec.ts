@@ -8,7 +8,7 @@
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
-// limitations under the License.s
+// limitations under the License.
 import { YspecService, IField } from './yspec.service';
 import { IYspec } from '../YspecStructure';
 import { getPattern } from '@app/core/types';
@@ -50,7 +50,7 @@ describe('YspecService', () => {
 
   it('create Field instance', () => {
     service.Root = simpleStr;
-    expect(service.createField({ path: ['root'], type: 'string' })).toEqual(simpleField);
+    expect(service.field({ path: ['root'], type: 'string' })).toEqual(simpleField);
   });
 
   xit('create List', () => {
@@ -71,32 +71,35 @@ describe('YspecService', () => {
       }
     };
 
-    const output = [
-      {
-        country: {
-          name: 'country',
-          type: 'string',
-          controlType: 'textbox',
-          path: ['country_code', 'country'],
-          validator: {
-            required: false,
-            pattern: null
+    const output = {
+      type: 'dict',
+      country_code: [
+        {
+          country: {
+            name: 'country',
+            type: 'string',
+            controlType: 'textbox',
+            path: ['country_code', 'country'],
+            validator: {
+              required: false,
+              pattern: null
+            }
+          }
+        },
+        {
+          code: {
+            name: 'code',
+            type: 'integer',
+            controlType: 'textbox',
+            path: ['country_code', 'code'],
+            validator: {
+              required: false,
+              pattern: getPattern('integer')
+            }
           }
         }
-      },
-      {
-        code: {
-          name: 'code',
-          type: 'integer',
-          controlType: 'textbox',
-          path: ['country_code', 'code'],
-          validator: {
-            required: false,
-            pattern: getPattern('integer')
-          }
-        }
-      }
-    ];
+      ]
+    };
 
     expect(service.build()).toEqual(output);
   });

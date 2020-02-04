@@ -13,7 +13,7 @@ import { Injectable } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { getControlType, getPattern, isObject } from '@app/core/types';
 
-import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, PanelOptions } from './types';
+import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, PanelOptions, IStructure } from './types';
 import { YspecStructure, matchType } from './YspecStructure';
 import { YspecService } from './yspec/yspec.service';
 
@@ -61,14 +61,11 @@ export class FieldService {
 
   checkYspec(a: FieldOptions): FieldOptions | PanelOptions {
     a.name = a.subname || a.name;
-
     if (a.limits && a.limits.yspec) {
-
       this.spec.Root = a.limits.yspec;
-      const output = this.spec.build();
-
-      const yspec = new YspecStructure(a);
-      return yspec.output;
+      (a as IStructure).rules = this.spec.build();
+      // const yspec = new YspecStructure(a);
+      // return yspec.output;
     }
     return a;
   }
