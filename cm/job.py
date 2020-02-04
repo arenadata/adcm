@@ -31,7 +31,7 @@ from cm.inventory import get_obj_config
 from cm.logger import log
 from cm.models import (
     Cluster, Action, SubAction, TaskLog, JobLog, CheckLog, Host, ADCM,
-    ClusterObject, HostComponent, ServiceComponent, HostProvider,
+    ClusterObject, HostComponent, ServiceComponent, HostProvider, DummyData,
 )
 
 
@@ -112,7 +112,7 @@ def cancel_task(task):
 
     }
     action = Action.objects.get(id=task.action_id)
-    if not action.allow_to_termination:
+    if not action.allow_to_terminate:
         err('NOT_ALLOWED_TERMINATION',
             f'not allowed termination task #{task.id} for action #{action.id}')
     if task.status in [config.Job.FAILED, config.Job.ABORTED, config.Job.SUCCESS]:
@@ -715,6 +715,7 @@ def finish_task(task, job, status):
     obj = get_task_obj(action.prototype.type, task.object_id)
     state = get_state(action, job, status)
     with transaction.atomic():
+        DummyData.objects.filter(id=1).update(date=timezone.now())
         if state is not None:
             set_action_state(action, task, obj, state)
         unlock_objects(obj)

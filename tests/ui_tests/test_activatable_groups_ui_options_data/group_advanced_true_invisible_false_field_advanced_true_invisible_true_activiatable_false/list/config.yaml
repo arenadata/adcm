@@ -1,6 +1,6 @@
 
 - type: cluster
-  name: group_advanced_true_invisible_false_field_advanced_true_invisible_true_activatable_false
+  name: group_advanced_true_invisible_false_field_advanced_true_invisible_true_activatable_false_list
   version: 1
   config:
     - description: list

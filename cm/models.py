@@ -137,7 +137,7 @@ class HostProvider(models.Model):
 
 class Host(models.Model):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
-    fqdn = models.CharField(max_length=160)
+    fqdn = models.CharField(max_length=160, unique=True)
     description = models.TextField(blank=True)
     provider = models.ForeignKey(HostProvider, on_delete=models.CASCADE, null=True, default=None)
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
@@ -216,7 +216,7 @@ class Action(models.Model):
     log_files = models.TextField(blank=True)          # JSON
 
     hostcomponentmap = models.TextField(blank=True)   # JSON
-    allow_to_termination = models.BooleanField(default=True)
+    allow_to_terminate = models.BooleanField(default=False)
 
     def __str__(self):
         return "{} {}".format(self.prototype, self.name)
@@ -293,6 +293,8 @@ class PrototypeImport(models.Model):
     name = models.CharField(max_length=160)
     min_version = models.CharField(max_length=80)
     max_version = models.CharField(max_length=80)
+    min_strict = models.BooleanField(default=False)
+    max_strict = models.BooleanField(default=False)
     default = models.TextField(null=True, default=None)   # JSON
     required = models.BooleanField(default=False)
     multibind = models.BooleanField(default=False)
@@ -433,7 +435,7 @@ class StageAction(models.Model):
     log_files = models.TextField(blank=True)          # JSON
 
     hostcomponentmap = models.TextField(blank=True)   # JSON
-    allow_to_termination = models.BooleanField(default=True)
+    allow_to_terminate = models.BooleanField(default=False)
 
     def __str__(self):
         return "{}:{}".format(self.prototype, self.name)
@@ -482,6 +484,8 @@ class StagePrototypeImport(models.Model):
     name = models.CharField(max_length=160)
     min_version = models.CharField(max_length=80)
     max_version = models.CharField(max_length=80)
+    min_strict = models.BooleanField(default=False)
+    max_strict = models.BooleanField(default=False)
     default = models.TextField(null=True, default=None)   # JSON
     required = models.BooleanField(default=False)
     multibind = models.BooleanField(default=False)
