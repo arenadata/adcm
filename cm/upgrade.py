@@ -10,17 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import functools
+import json
 
-from version_utils import rpm
 from django.db import transaction
+from version_utils import rpm
 
-import cm.status_api
+import cm.issue
 import cm.config as config
-from cm.logger import log   # pylint: disable=unused-import
+import cm.status_api
 from cm.adcm_config import proto_ref, obj_ref, switch_config
 from cm.errors import raise_AdcmEx as err
+from cm.logger import log  # pylint: disable=unused-import
 from cm.models import Prototype, Component, Host, HostComponent, ServiceComponent
 from cm.models import PrototypeImport, ClusterBind, ClusterObject, Upgrade
 
@@ -78,46 +79,46 @@ def check_upgrade_version(obj, upgrade):
     if upgrade.min_strict:
         if rpm.compare_versions(proto.version, upgrade.min_version) <= 0:
             msg = '{} version {} is less than or equal to upgrade min version {}'
-            return (False, msg.format(proto.type, proto.version, upgrade.min_version))
+            return False, msg.format(proto.type, proto.version, upgrade.min_version)
     else:
         if rpm.compare_versions(proto.version, upgrade.min_version) < 0:
             msg = '{} version {} is less than upgrade min version {}'
-            return (False, msg.format(proto.type, proto.version, upgrade.min_version))
+            return False, msg.format(proto.type, proto.version, upgrade.min_version)
     if upgrade.max_strict:
         if rpm.compare_versions(proto.version, upgrade.max_version) >= 0:
             msg = '{} version {} is more than or equal to upgrade max version {}'
-            return (False, msg.format(proto.type, proto.version, upgrade.max_version))
+            return False, msg.format(proto.type, proto.version, upgrade.max_version)
     else:
         if rpm.compare_versions(proto.version, upgrade.max_version) > 0:
             msg = '{} version {} is more than upgrade max version {}'
-            return (False, msg.format(proto.type, proto.version, upgrade.max_version))
-    return (True, '')
+            return False, msg.format(proto.type, proto.version, upgrade.max_version)
+    return True, ''
 
 
 def check_upgrade_edition(obj, upgrade):
     if not upgrade.from_edition:
-        return (True, '')
+        return True, ''
     from_edition = json.loads(upgrade.from_edition)
     if obj.prototype.bundle.edition not in from_edition:
         msg = 'bundle edition "{}" is not in upgrade list: {}'
-        return (False, msg.format(obj.prototype.bundle.edition, from_edition))
-    return (True, '')
+        return False, msg.format(obj.prototype.bundle.edition, from_edition)
+    return True, ''
 
 
 def check_upgrade_state(obj, upgrade):
     if obj.state == config.Job.LOCKED:
-        return (False, 'object is locked')
+        return False, 'object is locked'
     if upgrade.state_available:
         available = json.loads(upgrade.state_available)
         if obj.state in available:
-            return (True, '')
+            return True, ''
         elif available == 'any':
-            return (True, '')
+            return True, ''
         else:
             msg = '{} state "{}" is not in available states list: {}'
-            return (False, msg.format(obj.prototype.type, obj.state, available))
+            return False, msg.format(obj.prototype.type, obj.state, available)
     else:
-        return (False, 'no available states')
+        return False, 'no available states'
 
 
 def check_upgrade_import(obj, upgrade):   # pylint: disable=too-many-branches
@@ -134,7 +135,7 @@ def check_upgrade_import(obj, upgrade):   # pylint: disable=too-many-branches
             return cbind.cluster
 
     if obj.prototype.type != 'cluster':
-        return (True, '')
+        return True, ''
 
     for cbind in ClusterBind.objects.filter(cluster=obj):
         export = get_export(cbind)
@@ -145,12 +146,12 @@ def check_upgrade_import(obj, upgrade):   # pylint: disable=too-many-branches
             )
         except Prototype.DoesNotExist:
             msg = 'Upgrade does not have new version of {} required for import'
-            return (False, msg.format(proto_ref(impr_obj.prototype)))
+            return False, msg.format(proto_ref(impr_obj.prototype))
         try:
             pi = PrototypeImport.objects.get(prototype=proto, name=export.prototype.name)
         except PrototypeImport.DoesNotExist:
             msg = 'New version of {} does not have import "{}"'
-            return (False, msg.format(proto_ref(proto), export.prototype.name))
+            return False, msg.format(proto_ref(proto), export.prototype.name)
         if not version_in(export.prototype.version, pi):
             msg = 'Import "{}" of {} versions ({}, {}) does not match export version: {} ({})'
             return (False, msg.format(
@@ -166,7 +167,7 @@ def check_upgrade_import(obj, upgrade):   # pylint: disable=too-many-branches
             )
         except Prototype.DoesNotExist:
             msg = 'Upgrade does not have new version of {} required for export'
-            return (False, msg.format(proto_ref(export)))
+            return False, msg.format(proto_ref(export.prototype))
         import_obj = get_import(cbind)
         pi = PrototypeImport.objects.get(prototype=import_obj.prototype, name=export.prototype.name)
         if not version_in(proto.version, pi):
@@ -175,13 +176,13 @@ def check_upgrade_import(obj, upgrade):   # pylint: disable=too-many-branches
                 proto_ref(proto), pi.min_version, pi.max_version, obj_ref(import_obj)
             ))
 
-    return (True, '')
+    return True, ''
 
 
 def check_upgrade(obj, upgrade):
     issue = cm.issue.get_issue(obj)
     if not cm.issue.issue_to_bool(issue):
-        return (False, '{} has issue: {}'.format(obj_ref(obj), issue))
+        return False, '{} has issue: {}'.format(obj_ref(obj), issue)
 
     check_list = [
         check_upgrade_version, check_upgrade_edition, check_upgrade_state, check_upgrade_import
@@ -189,8 +190,8 @@ def check_upgrade(obj, upgrade):
     for func in check_list:
         ok, msg = func(obj, upgrade)
         if not ok:
-            return (False, msg)
-    return (True, '')
+            return False, msg
+    return True, ''
 
 
 def switch_hc(obj, upgrade):
