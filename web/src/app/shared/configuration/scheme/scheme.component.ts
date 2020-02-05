@@ -9,24 +9,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { TestBed } from '@angular/core/testing';
+import { Component, Input, OnInit } from '@angular/core';
+import { FormGroup } from '@angular/forms';
 
-import { FieldService } from './field.service';
-import { FormBuilder } from '@angular/forms';
-import { YspecService } from './yspec/yspec.service';
+import { FieldOptions } from '../types';
 
-describe('Configuration fields service', () => {
-  let service: FieldService;
+@Component({
+  selector: 'app-scheme',
+  templateUrl: './scheme.component.html',
+  styleUrls: ['./scheme.component.scss']
+})
+export class SchemeComponent implements OnInit {
+  @Input() form: FormGroup;
+  @Input() options: FieldOptions;
 
-  beforeEach(() => {
-    TestBed.configureTestingModule({
-      providers: [FormBuilder, FieldService, YspecService]
-    });
+  constructor() {}
 
-    service = TestBed.get(FieldService);
-  });
-
-  it('should be created', () => {
-    expect(service).toBeTruthy();
-  });
-});
+  ngOnInit() {
+    
+  }
+}
