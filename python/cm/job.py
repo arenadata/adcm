@@ -802,7 +802,7 @@ def check_all_status():
 def run_task(task, args=''):
     err_file = open(os.path.join(config.LOG_DIR, 'task_runner.err'), 'a+')
     proc = subprocess.Popen([
-        os.path.join(config.BASE_DIR, 'task_runner.py'),
+        os.path.join(config.CODE_DIR, 'task_runner.py'),
         str(task.id),
         args
     ], stderr=err_file)

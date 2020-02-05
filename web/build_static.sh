@@ -21,7 +21,7 @@ cd "${workdir}/../"
 # So we temporary make that dir to remove after operation.
 mkdir -p data/log
 
-python manage.py collectstatic --noinput
+python python/manage.py collectstatic --noinput
 
 cp ./wwwroot/static/rest_framework/css/* ./wwwroot/static/rest_framework/docs/css/
 

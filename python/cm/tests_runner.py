@@ -86,7 +86,7 @@ class TestTaskRunner(TestCase):
         mock_subprocess_popen.return_value = process_mock
         code = task_runner.run_job(1, 1, '', '')
         cmd = [
-            '{}/job_runner.py'.format(config.BASE_DIR),
+            '{}/job_runner.py'.format(config.CODE_DIR),
             str(1)
         ]
         mock_subprocess_popen.assert_called_once_with(cmd, stdout='', stderr='')

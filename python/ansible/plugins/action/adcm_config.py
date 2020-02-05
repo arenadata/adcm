@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import sys
-sys.path.append('/adcm')
+sys.path.append('/adcm/python')
 
 import adcm.init_django
 from cm.ansible_plugin import ContextActionModule
