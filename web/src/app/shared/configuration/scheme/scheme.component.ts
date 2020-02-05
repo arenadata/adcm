@@ -9,34 +9,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Directive, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 
-import { FieldOptions } from '../configuration/types';
-import { BaseDirective } from '../directives';
+import { FieldOptions } from '../types';
 
-@Directive({
-  selector: '[appField]'
+@Component({
+  selector: 'app-scheme',
+  templateUrl: './scheme.component.html',
+  styleUrls: ['./scheme.component.scss']
 })
-export class FieldDirective extends BaseDirective implements OnInit {
+export class SchemeComponent implements OnInit {
   @Input() form: FormGroup;
-  @Input() field: FieldOptions;
+  @Input() options: FieldOptions;
+
+  constructor() {}
 
   ngOnInit() {
-    const field = this.find();
-    field.markAsTouched();    
-  }
-
-  find() {
-    return this.form.controls[this.field.name];
-  }
-
-  get isValid() {
-    const field = this.find();
-    return this.field.read_only || field.valid && (field.dirty || field.touched);
-  }
-
-  hasError(name: string) {
-    return this.find().hasError(name);
+    
   }
 }

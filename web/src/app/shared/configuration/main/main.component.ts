@@ -24,6 +24,7 @@ import { ConfigFieldsComponent } from '../fields/fields.component';
 import { HistoryComponent } from '../tools/history.component';
 import { ToolsComponent } from '../tools/tools.component';
 import { IConfig } from '../types';
+import { FormGroup } from '@angular/forms';
 
 @Component({
   selector: 'app-config-form',
@@ -92,6 +93,12 @@ export class ConfigComponent extends SocketListener implements OnInit {
     this[toolsEvent.name](toolsEvent.conditions);
   }
 
+  fieldsEvents(e: { name: 'load'; data: { form: FormGroup } }) {
+    if (e.name === 'load') {
+      this.stub();
+    }
+  }
+
   get formValid() {
     return this.service.form.valid;
   }
@@ -102,6 +109,17 @@ export class ConfigComponent extends SocketListener implements OnInit {
 
   filter(c: { advanced: boolean; search: string }) {
     this.fields.dataOptions = this.service.filterApply(c);
+    this.stub();
+  }
+
+  /** 
+   * change detection on manual
+  */
+  stub() {
+    setTimeout(_ => {
+      this.fields.checkForm();
+      this.cdRef.detectChanges();
+    }, 0);
   }
 
   socketListener(m: EventMessage) {
@@ -146,7 +164,7 @@ export class ConfigComponent extends SocketListener implements OnInit {
           this.saveFlag = false;
           /**
            * TODO: history does not update!
-           *  => her need the new this.field.dataOptions
+           *  => need the new this.field.dataOptions
            */
           this.historyComponent.versionID = c.id;
           this.historyComponent.getData();
