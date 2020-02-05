@@ -64,6 +64,6 @@ export class SchemeComponent implements OnInit {
   }
 
   findRule(key: string) {
-    return this.rules.find(a => a.name === key);
+    return this.rules.find(a => a.name === key) || this.rules.find(a => Object.keys(a).find(k => k === key));
   }
 }
