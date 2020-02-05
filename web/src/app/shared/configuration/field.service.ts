@@ -128,7 +128,7 @@ export class FieldService {
   }
 
   toFormGroup(options: (FieldOptions | PanelOptions)[]): FormGroup {
-    this.form = this.fb.group(options.reduce((p, c) => this.runByTree(c, p), {}));
+    this.form = this.fb.group(options.reduce((p, c) => this.runByTree(c, p), {}));    
     return this.form;
   }
 
@@ -149,10 +149,10 @@ export class FieldService {
 
   fillForm(field: FieldOptions, controls: {}) {
     const name = field.subname || field.name;
-    controls[name] = this.fb.control({ value: field.value, disabled: field.disabled }, this.setValidator(field));
+    controls[name] = this.fb.control(field.value, this.setValidator(field));
     if (field.controlType === 'password') {
       if (!field.ui_options || (field.ui_options && !field.ui_options.no_confirm)) {
-        controls[`confirm_${name}`] = this.fb.control({ value: field.value, disabled: field.disabled }, this.setValidator(field));
+        controls[`confirm_${name}`] = this.fb.control(field.value, this.setValidator(field));
       }
     }
     return controls;
