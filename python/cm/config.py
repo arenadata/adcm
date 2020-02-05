@@ -12,13 +12,15 @@
 
 import json
 import os
+from os.path import dirname
 
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = dirname(dirname(dirname(os.path.abspath(__file__))))
 BASE_DIR = os.environ.get('ADCM_BASE_DIR', BASE_DIR)
 
 STACK_DIR = BASE_DIR
 STACK_DIR = os.environ.get('ADCM_STACK_DIR', STACK_DIR)
+
+CODE_DIR = os.path.join(BASE_DIR, 'python')
 
 LOG_DIR = os.path.join(BASE_DIR, 'data', 'log')
 RUN_DIR = os.path.join(BASE_DIR, 'data', 'run')

@@ -71,7 +71,7 @@ signal.signal(signal.SIGTERM, terminate_task)
 
 
 def open_file(root, tag, task_id):
-    fname = "{}/{}-{}.txt".format(root, task_id, tag)
+    fname = os.path.join(root, f'{task_id}-{tag}.txt')
     f = open(fname, 'w')
     return f
 
@@ -80,7 +80,7 @@ def run_job(task_id, job_id, out_file, err_file):
     log.debug("run job #%s of task #%s", job_id, task_id)
     try:
         proc = subprocess.Popen([
-            '{}/job_runner.py'.format(config.BASE_DIR),
+            os.path.join(config.CODE_DIR, 'job_runner.py'),
             str(job_id)
         ], stdout=out_file, stderr=err_file)
         res = proc.wait()
