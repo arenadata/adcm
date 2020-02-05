@@ -10,6 +10,6 @@
       (version)="changeVersion($event)"></app-history>
   </div>
   <div class="fields" [@history]="historyShow ? 'show' : 'hide'">
-    <app-config-fields #fields [model]="data"></app-config-fields>
+    <app-config-fields #fields [model]="data" (event)="fieldsEvents($event)"></app-config-fields>
   </div>
 </ng-container>

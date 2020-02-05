@@ -33,7 +33,7 @@ export class FieldDirective extends BaseDirective implements OnInit {
 
   get isValid() {
     const field = this.find();
-    return field.valid && (field.dirty || field.touched);
+    return this.field.read_only || field.valid && (field.dirty || field.touched);
   }
 
   hasError(name: string) {

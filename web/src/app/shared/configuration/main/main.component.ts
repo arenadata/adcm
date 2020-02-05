@@ -24,6 +24,7 @@ import { ConfigFieldsComponent } from '../fields/fields.component';
 import { HistoryComponent } from '../tools/history.component';
 import { ToolsComponent } from '../tools/tools.component';
 import { IConfig } from '../types';
+import { FormGroup } from '@angular/forms';
 
 @Component({
   selector: 'app-config-form',
@@ -92,6 +93,15 @@ export class ConfigComponent extends SocketListener implements OnInit {
     this[toolsEvent.name](toolsEvent.conditions);
   }
 
+  fieldsEvents(e: { name: 'load'; data: { form: FormGroup } }) {
+    if (e.name === 'load') {
+      setTimeout(_ => {
+        this.fields.checkForm();
+        this.cdRef.detectChanges();
+      }, 0);
+    }
+  }
+
   get formValid() {
     return this.service.form.valid;
   }
@@ -102,6 +112,7 @@ export class ConfigComponent extends SocketListener implements OnInit {
 
   filter(c: { advanced: boolean; search: string }) {
     this.fields.dataOptions = this.service.filterApply(c);
+    this.fields.checkForm();
   }
 
   socketListener(m: EventMessage) {

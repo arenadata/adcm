@@ -47,11 +47,16 @@ export class ConfigFieldsComponent {
   set model(data: IConfig) {
     this.dataOptions = this.service.getPanels(data);
     this.form = this.service.toFormGroup(this.dataOptions);
+    this.checkForm();
     this.shapshot = { ...this.form.value };
     this.event.emit({ name: 'load', data: { form: this.form } });
   }
 
   constructor(private service: FieldService) {}
+
+  checkForm() {
+    if (!this.dataOptions.filter(a => !a.read_only).length) this.form.setErrors({ error: 'Ther are not visible fields in this form' });
+  }
 
   panelsOnly(item: FieldOptions | PanelOptions) {
     return 'options' in item && !item.hidden;

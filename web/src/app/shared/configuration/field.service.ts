@@ -124,8 +124,7 @@ export class FieldService {
   }
 
   toFormGroup(options: (FieldOptions | PanelOptions)[]): FormGroup {
-    this.form = this.fb.group(options.reduce((p, c) => this.runByTree(c, p), {}));
-    if (!this.dataOptions.filter(a => !a.read_only).length) this.form.setErrors({ error: 'Ther are not visible fields in this form' });
+    this.form = this.fb.group(options.reduce((p, c) => this.runByTree(c, p), {}));    
     return this.form;
   }
 
