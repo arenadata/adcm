@@ -77,11 +77,41 @@ def test_upgrade_cluster_with_export(sdk_client_fs: ADCMClient):
     assert cluster_import.prototype_id != id_before
 
 
+def test_incorrect_import_strcit_version(sdk_client_fs: ADCMClient):
+    """Upgrade cluster with service incorrect strict version
+    Scenario:
+    1. Create cluster for upgrade with exports
+    2. Create upgradable cluster with import and incorrect strict version
+    3. Create service
+    4. Import service from cluster with export to cluster from step 2 (with import)
+    4. Upgrade cluster from step 1
+    5. Check that cluster was not upgraded because incorrect version for service
+    in cluster with import
+    """
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgrade_cluster_with_export'))
+    bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(
+        __file__, 'upgradable_cluster_with_strict_incorrect_version'))
+    cluster = bundle.cluster_create("test")
+    service = cluster.service_add(name="hadoop")
+    cluster_import = bundle_import.cluster_create("cluster_import")
+    cluster_import.bind(service)
+    cluster_import.bind(cluster)
+    upgr = cluster.upgrade(name='upgrade to 1.6')
+    with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
+        upgr.do()
+    err.UPGRADE_ERROR.equal(e)
+
+
 def test_incorrect_import_version(sdk_client_fs: ADCMClient):
     """Upgrade cluster with service incorrect version
-
-    :param sdk_client_fs:
-    :return:
+    Scenario:
+    1. Create cluster for upgrade with exports
+    2. Create upgradable cluster with import and incorrect version
+    3. Create service
+    4. Import service from cluster with export to cluster from step 2 (with import)
+    4. Upgrade cluster from step 1
+    5. Check that cluster was not upgraded because incorrect version for service
+    in cluster with import
     """
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgrade_cluster_with_export'))
     bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(
@@ -98,8 +128,14 @@ def test_incorrect_import_version(sdk_client_fs: ADCMClient):
 
 
 def test_upgrade_cluster_without_service_config_in_import(sdk_client_fs: ADCMClient):
-    """Upgrade cluster with service when in new cluster
+    """Upgrade cluster with service when in new cluster when
      we haven't some service configuration variables
+     Scenario:
+     1. Create cluster for upgrade with export
+     2. Create upgradable cluster with import and without config in import
+     3. Bind service from cluster with export to cluster with import
+     4. Upgrade cluster with export
+     5. Check upgrade error
     """
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgrade_cluster_with_export'))
     bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(

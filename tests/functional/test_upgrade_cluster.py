@@ -19,6 +19,29 @@ from adcm_pytest_plugin.utils import get_data_dir
 from tests.library.errorcodes import UPGRADE_ERROR
 
 
+def test_upgrade_with_two_clusters(sdk_client_fs: ADCMClient):
+    """Upgrade cluster when we have two created clusters from one bundle
+    Scenario:
+    1. Create two clusters from one bundle
+    2. Upload upgradable bundle
+    3. Upgrade first cluster
+    4. Check that only first cluster was upgraded
+    """
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
+    sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster'))
+    cluster_first = bundle.cluster_create("test")
+    cluster_second = bundle.cluster_create("test2")
+    service = cluster_first.service_add(name="zookeeper")
+    upgr_cl = cluster_first.upgrade(name='upgrade to 1.6')
+    upgr_cl.do()
+    cluster_first.reread()
+    service.reread()
+    cluster_second.reread()
+    assert cluster_first.prototype().version == '1.6'
+    assert service.prototype().version == '3.4.11'
+    assert cluster_second.prototype().version == '1.5'
+
+
 def test_check_prototype(sdk_client_fs: ADCMClient):
     """Check prototype for service and cluster after upgrade
     :param sdk_client_fs:
