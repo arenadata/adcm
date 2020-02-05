@@ -21,9 +21,14 @@ import { IConfig, PanelOptions, FieldOptions } from '../types';
   selector: 'app-config-fields',
   template: `
     <ng-container *ngFor="let item of dataOptions; trackBy: trackBy">
-      <app-group-fields *ngIf="panelsOnly(item); else more" [panel]="item" [form]="form"></app-group-fields>
-      <ng-template #more>
-        <app-field *ngIf="!item.hidden" class="alone" [form]="form" [options]="item" [ngClass]="{ 'read-only': item.disabled }"></app-field>
+      <ng-container *ngIf="item.type === 'structure'; else conf">
+        <app-scheme [form]="form" [options]="item"></app-scheme>
+      </ng-container>
+      <ng-template #conf>
+        <app-group-fields *ngIf="panelsOnly(item); else more" [panel]="item" [form]="form"></app-group-fields>
+        <ng-template #more>
+          <app-field *ngIf="!item.hidden" class="alone" [form]="form" [options]="item" [ngClass]="{ 'read-only': item.disabled }"></app-field>
+        </ng-template>
       </ng-template>
     </ng-container>
   `
@@ -47,11 +52,16 @@ export class ConfigFieldsComponent {
   set model(data: IConfig) {
     this.dataOptions = this.service.getPanels(data);
     this.form = this.service.toFormGroup(this.dataOptions);
+    this.checkForm();
     this.shapshot = { ...this.form.value };
     this.event.emit({ name: 'load', data: { form: this.form } });
   }
 
   constructor(private service: FieldService) {}
+
+  checkForm() {
+    if (!this.dataOptions.filter(a => !a.read_only).length) this.form.setErrors({ error: 'Ther are not visible fields in this form' });
+  }
 
   panelsOnly(item: FieldOptions | PanelOptions) {
     return 'options' in item && !item.hidden;
