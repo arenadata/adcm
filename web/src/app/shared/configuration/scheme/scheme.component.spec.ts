@@ -9,24 +9,28 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { TestBed } from '@angular/core/testing';
+import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { FieldService } from './field.service';
-import { FormBuilder } from '@angular/forms';
-import { YspecService } from './yspec/yspec.service';
+import { SchemeComponent } from './scheme.component';
 
-describe('Configuration fields service', () => {
-  let service: FieldService;
+describe('SchemeComponent', () => {
+  let component: SchemeComponent;
+  let fixture: ComponentFixture<SchemeComponent>;
+
+  beforeEach(async(() => {
+    TestBed.configureTestingModule({
+      declarations: [ SchemeComponent ]
+    })
+    .compileComponents();
+  }));
 
   beforeEach(() => {
-    TestBed.configureTestingModule({
-      providers: [FormBuilder, FieldService, YspecService]
-    });
-
-    service = TestBed.get(FieldService);
+    fixture = TestBed.createComponent(SchemeComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
   });
 
-  it('should be created', () => {
-    expect(service).toBeTruthy();
+  it('should create', () => {
+    expect(component).toBeTruthy();
   });
 });
