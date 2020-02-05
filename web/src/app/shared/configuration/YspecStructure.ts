@@ -9,13 +9,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { controlType, getPattern } from '@app/core/types';
+import { getControlType, getPattern } from '@app/core/types';
 
 import { FieldOptions, PanelOptions, ConfigValueTypes } from './types';
 
-type simpleType = 'string' | 'integer' | 'float' | 'bool';
-type reqursionType = 'list' | 'dict';
-type matchType = simpleType | reqursionType;
+export type simpleType = 'string' | 'integer' | 'float' | 'bool' | 'int' | 'one_of' | 'dict_key_selection';
+export type reqursionType = 'list' | 'dict';
+export type matchType = simpleType | reqursionType;
 
 interface Iroot {
   match: matchType;
@@ -39,7 +39,7 @@ class Field {
       name: this.key,
       key: this.key,
       subname: null,
-      controlType: controlType(this.value),
+      controlType: getControlType(this.value),
       type: this.value as ConfigValueTypes,
       validator: {
         required: true,
@@ -52,6 +52,10 @@ class Field {
   }
   get options() {
     return this._options;
+  }
+  setSubname(name: string) {
+    this._options.subname = name;
+    return this;
   }
   setKey(key: string) {
     this._options.key = `${this.key}/${key}`;
@@ -68,6 +72,10 @@ class Group {
   constructor(public key: string, private value: reqursionType) {}
   options(value: simpleType) {
     return {};
+  }
+  setSubname(name: string) {
+    //this._options.subname = name;
+    return this;
   }
   setValue(value: simpleType) {
     // this.options.default = value;
@@ -118,7 +126,7 @@ export class YspecStructure {
           if (typeof v === 'object') {
             return {
               display_name: `--- ${i} ---`,
-              name: i,
+              name: i.toString(),
               key: `${i}/${source.key}`,
               type: 'group',
               options: Object.keys(v).map(
@@ -163,7 +171,7 @@ export class YspecStructure {
             value: value[k],
             hidden: false,
             read_only: false,
-            controlType: controlType(rule.match),
+            controlType: getControlType(rule.match),
             type: rule.match,
             validator: {
               required: !!(root.required_items && root.required_items.includes[k]),
