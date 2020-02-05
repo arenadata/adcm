@@ -13,8 +13,7 @@
 
 port=8040
 
-PWD="`pwd`"
-export PYTHONPATH="$(dirname ${PWD})"
+export PYTHONPATH="$(dirname ${0})"
 export DJANGO_SETTINGS_MODULE=base.settings
 export ADCM_STACK_DIR="../tests/base"
 
