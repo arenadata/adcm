@@ -14,7 +14,7 @@
 port=8040
 
 # shellcheck disable=SC2086,SC2155
-export PYTHONPATH="$(dirname ${0})/../" # One level above directory with run_test.sh
+export PYTHONPATH="$(dirname `pwd`)"
 export DJANGO_SETTINGS_MODULE=base.settings
 export ADCM_STACK_DIR="../tests/base"
 
