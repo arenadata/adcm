@@ -11,15 +11,18 @@
 // limitations under the License.
 import { Injectable } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
-import { controlType, getPattern, isObject } from '@app/core/types';
+import { getControlType, getPattern, isObject } from '@app/core/types';
 
-import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, PanelOptions } from './types';
-import { YspecStructure } from './YspecStructure';
+import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, PanelOptions, IStructure } from './types';
+import { YspecStructure, matchType } from './YspecStructure';
+import { YspecService } from './yspec/yspec.service';
 
 export interface IToolsEvent {
   name: string;
   conditions?: { advanced: boolean; search: string } | boolean;
 }
+
+export type controlType = 'boolean' | 'textbox' | 'textarea' | 'json' | 'password' | 'list' | 'map' | 'dropdown' | 'file' | 'text';
 
 @Injectable()
 export class FieldService {
@@ -28,7 +31,7 @@ export class FieldService {
   formOptions: FieldOptions[];
   form = new FormGroup({});
 
-  constructor(private fb: FormBuilder) {}
+  constructor(private fb: FormBuilder, private spec: YspecService) {}
 
   isVisibleField = (a: ConfigOptions) => !a.ui_options || !a.ui_options.invisible;
   isInvisibleField = (a: ConfigOptions) => a.ui_options && a.ui_options.invisible;
@@ -58,10 +61,11 @@ export class FieldService {
 
   checkYspec(a: FieldOptions): FieldOptions | PanelOptions {
     a.name = a.subname || a.name;
-
     if (a.limits && a.limits.yspec) {
-      const yspec = new YspecStructure(a);
-      return yspec.output;
+      this.spec.Root = a.limits.yspec;
+      (a as IStructure).rules = this.spec.build();
+      // const yspec = new YspecStructure(a);
+      // return yspec.output;
     }
     return a;
   }
@@ -78,7 +82,7 @@ export class FieldService {
         max: item.limits ? item.limits.max : null,
         pattern: getPattern(item.type)
       },
-      controlType: controlType(item.type),
+      controlType: getControlType(item.type as matchType),
       hidden: item.name === '__main_info' || this.isHidden(item),
       compare: []
     };
@@ -124,7 +128,7 @@ export class FieldService {
   }
 
   toFormGroup(options: (FieldOptions | PanelOptions)[]): FormGroup {
-    this.form = this.fb.group(options.reduce((p, c) => this.runByTree(c, p), {}));
+    this.form = this.fb.group(options.reduce((p, c) => this.runByTree(c, p), {}));    
     return this.form;
   }
 
@@ -145,10 +149,10 @@ export class FieldService {
 
   fillForm(field: FieldOptions, controls: {}) {
     const name = field.subname || field.name;
-    controls[name] = this.fb.control({ value: field.value, disabled: field.disabled }, this.setValidator(field));
+    controls[name] = this.fb.control(field.value, this.setValidator(field));
     if (field.controlType === 'password') {
       if (!field.ui_options || (field.ui_options && !field.ui_options.no_confirm)) {
-        controls[`confirm_${name}`] = this.fb.control({ value: field.value, disabled: field.disabled }, this.setValidator(field));
+        controls[`confirm_${name}`] = this.fb.control(field.value, this.setValidator(field));
       }
     }
     return controls;
@@ -182,7 +186,8 @@ export class FieldService {
       },
       json: (value: string) => (value === null ? '' : JSON.stringify(value, undefined, 4)),
       map: (value: object, de: object) => (!value ? (!de ? {} : de) : value),
-      list: (value: string[], de: string[]) => (!value ? (!de ? [] : de) : value)
+      list: (value: string[], de: string[]) => (!value ? (!de ? [] : de) : value),
+      structure: (value: any) => value
     };
 
     return data[name] ? data[name] : def;
