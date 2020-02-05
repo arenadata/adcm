@@ -95,10 +95,7 @@ export class ConfigComponent extends SocketListener implements OnInit {
 
   fieldsEvents(e: { name: 'load'; data: { form: FormGroup } }) {
     if (e.name === 'load') {
-      setTimeout(_ => {
-        this.fields.checkForm();
-        this.cdRef.detectChanges();
-      }, 0);
+      this.stub();
     }
   }
 
@@ -112,7 +109,17 @@ export class ConfigComponent extends SocketListener implements OnInit {
 
   filter(c: { advanced: boolean; search: string }) {
     this.fields.dataOptions = this.service.filterApply(c);
-    this.fields.checkForm();
+    this.stub();
+  }
+
+  /** 
+   * change detection on manual
+  */
+  stub() {
+    setTimeout(_ => {
+      this.fields.checkForm();
+      this.cdRef.detectChanges();
+    }, 0);
   }
 
   socketListener(m: EventMessage) {
