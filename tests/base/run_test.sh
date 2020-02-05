@@ -13,7 +13,7 @@
 
 port=8040
 
-# shellcheck disable=SC2086,SC2155
+# shellcheck disable=SC2086,SC2155,SC2046
 export PYTHONPATH="$(dirname `pwd`)"
 export DJANGO_SETTINGS_MODULE=base.settings
 export ADCM_STACK_DIR="../tests/base"

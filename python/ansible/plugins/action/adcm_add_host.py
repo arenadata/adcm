@@ -52,7 +52,7 @@ import sys
 from ansible.errors import AnsibleError
 from ansible.plugins.action import ActionBase
 
-sys.path.append('/adcm')
+sys.path.append('/adcm/python')
 import adcm.init_django
 import cm.api
 from cm.ansible_plugin import get_context_id
