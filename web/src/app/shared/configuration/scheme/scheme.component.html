@@ -10,7 +10,9 @@
       <app-scheme [options]="item" [form]="form"></app-scheme>
     </ng-container>
     <ng-template #simple>
-      {{ items | json}}
+      <!-- <app-field [options]="item" [form]="form"></app-field> -->
+      <pre>{{ item | json }}</pre>
+      <hr>
     </ng-template>
   </ng-container>
 </div>

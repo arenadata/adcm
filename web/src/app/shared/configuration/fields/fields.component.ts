@@ -27,7 +27,7 @@ import { IConfig, PanelOptions, FieldOptions } from '../types';
       <ng-template #conf>
         <app-group-fields *ngIf="panelsOnly(item); else more" [panel]="item" [form]="form"></app-group-fields>
         <ng-template #more>
-          <app-field *ngIf="!item.hidden" class="alone" [form]="form" [options]="item" [ngClass]="{ 'read-only': item.readonly }"></app-field>
+          <app-field *ngIf="!item.hidden" class="alone" [form]="form" [options]="item" [ngClass]="{ 'read-only': item.disabled }"></app-field>
         </ng-template>
       </ng-template>
     </ng-container>
