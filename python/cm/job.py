@@ -634,13 +634,16 @@ def set_task_status(task, status):
 
 
 def get_task_obj(context, obj_id):
-    if context == 'service':
-        obj = ClusterObject.objects.get(id=obj_id)
-    elif context == 'host':
+    def get_obj_safe(model, obj_id):
         try:
-            obj = Host.objects.get(id=obj_id)
-        except Host.DoesNotExist:
+            return model.objects.get(id=obj_id)
+        except model.DoesNotExist:
             return None
+
+    if context == 'service':
+        obj = get_obj_safe(ClusterObject, obj_id)
+    elif context == 'host':
+        obj = get_obj_safe(Host, obj_id)
     elif context == 'cluster':
         obj = Cluster.objects.get(id=obj_id)
     elif context == 'provider':
