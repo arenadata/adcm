@@ -420,11 +420,11 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_fals
                    (app.adcm.url, cluster.cluster_id))
     config = Configuration(app.driver)
     fields = config.get_field_groups()
-    assert config.save_button_status()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
     assert not group_names, group_names
+    assert config.save_button_status()
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
@@ -480,11 +480,11 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_true
                    (app.adcm.url, cluster.cluster_id))
     config = Configuration(app.driver)
     fields = config.get_field_groups()
-    assert config.save_button_status()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
     assert not group_names, group_names
+    assert config.save_button_status()
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
@@ -571,11 +571,11 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true_
                    (app.adcm.url, cluster.cluster_id))
     config = Configuration(app.driver)
     fields = config.get_field_groups()
-    assert config.save_button_status()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
     assert not group_names, group_names
+    assert config.save_button_status()
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
