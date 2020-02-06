@@ -55,6 +55,7 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_fal
     config = Configuration(app.driver)
     group_active = config.group_is_active_by_name(group_name)
     assert not group_active
+    assert config.save_button_status()
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -65,10 +66,12 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_fal
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     config.activate_group_by_name(
         group_name)
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert group_names, group_names
     assert len(group_names) == 1
@@ -94,6 +97,7 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_fal
     config = Configuration(app.driver)
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
+    assert config.save_button_status()
     fields = config.get_field_groups()
     for field in fields:
         assert field.is_displayed(), field.get_attribute("class")
@@ -104,10 +108,12 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_fal
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     config.activate_group_by_name(
         group_name)
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert group_names, group_names
     assert len(group_names) == 1
@@ -133,6 +139,7 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_tru
     config = Configuration(app.driver)
     group_active = config.group_is_active_by_name(group_name)
     assert not group_active
+    assert config.save_button_status()
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -143,10 +150,12 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_tru
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     config.activate_group_by_name(
         group_name)
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert group_names, group_names
     assert len(group_names) == 1
@@ -172,6 +181,7 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_tru
     config = Configuration(app.driver)
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
+    assert config.save_button_status()
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -182,10 +192,12 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_tru
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     config.activate_group_by_name(
         group_name)
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert group_names, group_names
     assert len(group_names) == 1
@@ -211,6 +223,7 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_fals
     config = Configuration(app.driver)
     group_active = config.group_is_active_by_name(group_name)
     assert not group_active
+    assert config.save_button_status()
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -218,13 +231,16 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_fals
     assert len(group_names) == 1
     assert group_names[0].text == group_name
     assert group_names, group_names
+    assert config.save_button_status()
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     config.activate_group_by_name(
         group_name)
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert group_names, group_names
     assert len(group_names) == 1
@@ -250,6 +266,7 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_fals
     config = Configuration(app.driver)
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
+    assert config.save_button_status()
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -260,10 +277,12 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_fals
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     config.activate_group_by_name(
         group_name)
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert group_names, group_names
     assert len(group_names) == 1
@@ -289,6 +308,7 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_true
     config = Configuration(app.driver)
     group_active = config.group_is_active_by_name(group_name)
     assert not group_active
+    assert config.save_button_status()
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -303,6 +323,8 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_true
         group_name)
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
+    assert config.save_button_status()
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert group_names, group_names
     assert len(group_names) == 1
@@ -328,6 +350,7 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_true
     config = Configuration(app.driver)
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
+    assert config.save_button_status()
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -338,10 +361,12 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_true
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     config.activate_group_by_name(
         group_name)
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert group_names, group_names
     assert len(group_names) == 1
@@ -369,9 +394,11 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_fals
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
     assert not group_names, group_names
+    assert config.save_button_status()
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names
@@ -393,6 +420,7 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_fals
                    (app.adcm.url, cluster.cluster_id))
     config = Configuration(app.driver)
     fields = config.get_field_groups()
+    assert config.save_button_status()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
@@ -400,6 +428,7 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_fals
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names
@@ -424,10 +453,12 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_true
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
+    assert config.save_button_status()
     assert not group_names, group_names
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names
@@ -449,6 +480,7 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_true
                    (app.adcm.url, cluster.cluster_id))
     config = Configuration(app.driver)
     fields = config.get_field_groups()
+    assert config.save_button_status()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
@@ -456,6 +488,7 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_true
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names
@@ -479,11 +512,13 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert not group_names, group_names
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names
@@ -508,11 +543,13 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert not group_names, group_names
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names
@@ -534,6 +571,7 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true_
                    (app.adcm.url, cluster.cluster_id))
     config = Configuration(app.driver)
     fields = config.get_field_groups()
+    assert config.save_button_status()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
@@ -541,6 +579,7 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true_
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names
@@ -566,9 +605,11 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true_
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
     assert not group_names, group_names
+    assert config.save_button_status()
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names
@@ -593,15 +634,18 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_fals
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert not group_names, group_names
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     config.activate_group_by_name(
         group_name)
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert group_names, group_names
     assert len(group_names) == 1
@@ -628,15 +672,18 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_fals
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert not group_names, group_names
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     config.activate_group_by_name(
         group_name)
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert group_names, group_names
     assert len(group_names) == 1
@@ -663,17 +710,20 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert not group_names, group_names
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     group_active = config.group_is_active_by_name(group_name)
     assert not group_active
     config.activate_group_by_name(
         group_name)
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert group_names, group_names
     assert len(group_names) == 1
@@ -700,13 +750,16 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert not group_names, group_names
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert group_names, group_names
     assert len(group_names) == 1
@@ -733,17 +786,21 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_false
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert not group_names, group_names
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     group_active = config.group_is_active_by_name(group_name)
     assert not group_active
+    assert config.save_button_status()
     config.activate_group_by_name(
         group_name)
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert group_names, group_names
     assert len(group_names) == 1
@@ -771,13 +828,16 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_false
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert not group_names, group_names
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert group_names, group_names
     assert len(group_names) == 1
@@ -804,14 +864,17 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true_
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert not group_names, group_names
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     config.activate_group_by_name(group_name)
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert group_names, group_names
     assert len(group_names) == 1
@@ -838,13 +901,16 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true_
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert not group_names, group_names
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert group_names, group_names
     assert len(group_names) == 1
@@ -870,11 +936,13 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_false
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert not group_names, group_names
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names
@@ -900,9 +968,11 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_false
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
     assert not group_names, group_names
+    assert config.save_button_status()
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names
@@ -926,11 +996,13 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true_
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert not group_names, group_names
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names
@@ -954,11 +1026,13 @@ def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false_
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert not group_names, group_names
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names
@@ -983,11 +1057,13 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true_
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert not group_names, group_names
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names
@@ -1011,11 +1087,13 @@ def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false_
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert not group_names, group_names
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names
@@ -1039,11 +1117,13 @@ def test_group_advanced_true_invisible_true_field_advanced_true_invisible_true_a
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert not group_names, group_names
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names
@@ -1067,11 +1147,13 @@ def test_group_advanced_true_invisible_true_field_advanced_true_invisible_true_a
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
+    assert config.save_button_status()
     group_names = config.get_group_elements()
     assert not group_names, group_names
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
+    assert config.save_button_status()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names

@@ -102,6 +102,7 @@ TEMPLATE_FILE = """
         name: {4}
         display_name: {4}
         type: {4}
+        default: /etc/profile
         ui_options:
          advanced: {2}
          invisible: {3}

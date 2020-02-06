@@ -17,6 +17,7 @@
         name: file
         display_name: file
         type: file
+        default: /etc/profile
         ui_options:
          advanced: false
          invisible: true
