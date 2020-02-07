@@ -1,1 +1,18 @@
-<pre>{{ options | json }}</pre>
+<div>
+  <label>{{ name }} :: {{ type }}</label>
+  <button mat-icon-button>
+    <mat-icon>folder</mat-icon>
+  </button>
+</div>
+<div class="content">
+  <ng-container *ngFor="let item of items">
+    <ng-container *ngIf="(item.rules.type === 'list' || item.rules.type === 'dict'); else simple">
+      <app-scheme [options]="item" [form]="form"></app-scheme>
+    </ng-container>
+    <ng-template #simple>
+      <!-- <app-field [options]="item" [form]="form"></app-field> -->
+      <pre>{{ item | json }}</pre>
+      <hr>
+    </ng-template>
+  </ng-container>
+</div>
