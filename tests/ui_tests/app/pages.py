@@ -532,7 +532,7 @@ class Configuration(BasePage):
     def save_button_status(self):
         try:
             button = self.driver.find_element(*ConfigurationLocators.config_save_button)
-        except StaleElementReferenceException:
+        except (StaleElementReferenceException, NoSuchElementException):
             sleep(10)
             button = self.driver.find_element(*ConfigurationLocators.config_save_button)
         # button = self._getelement(ConfigurationLocators.config_save_button)
