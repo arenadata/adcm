@@ -479,6 +479,7 @@ def save_actions(proto, conf, bundle_hash):
         dict_to_obj(ac, 'display_name', action)
         dict_to_obj(ac, 'description', action)
         dict_to_obj(ac, 'allow_to_terminate', action)
+        dict_to_obj(ac, 'partial_execution', action)
         dict_json_to_obj(ac, 'ui_options', action)
         dict_json_to_obj(ac, 'params', action)
         dict_json_to_obj(ac, 'log_files', action)
@@ -572,7 +573,7 @@ def check_action(proto, action, act_config):
     allow = (
         'type', 'script', 'script_type', 'scripts', 'states', 'params', 'config',
         'log_files', 'hc_acl', 'button', 'display_name', 'description', 'ui_options',
-        'allow_to_terminate'
+        'allow_to_terminate', 'partial_execution'
     )
     check_extra_keys(act_config, allow, ref)
 

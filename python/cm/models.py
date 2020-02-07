@@ -217,6 +217,7 @@ class Action(models.Model):
 
     hostcomponentmap = models.TextField(blank=True)   # JSON
     allow_to_terminate = models.BooleanField(default=False)
+    partial_execution = models.BooleanField(default=False)
 
     def __str__(self):
         return "{} {}".format(self.prototype, self.name)
@@ -436,6 +437,7 @@ class StageAction(models.Model):
 
     hostcomponentmap = models.TextField(blank=True)   # JSON
     allow_to_terminate = models.BooleanField(default=False)
+    partial_execution = models.BooleanField(default=False)
 
     def __str__(self):
         return "{}:{}".format(self.prototype, self.name)

@@ -473,6 +473,7 @@ class ActionSerializer(serializers.Serializer):
     state_on_fail = serializers.CharField()
     hostcomponentmap = JSONField(required=False)
     allow_to_terminate = serializers.BooleanField(read_only=True)
+    partial_execution = serializers.BooleanField(read_only=True)
 
 
 class SubActionSerializer(serializers.Serializer):
