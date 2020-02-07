@@ -11,25 +11,8 @@
 // limitations under the License.
 import { getControlType, getPattern } from '@app/core/types';
 
-import { FieldOptions, PanelOptions, ConfigValueTypes } from './types';
-
-export type simpleType = 'string' | 'integer' | 'float' | 'bool' | 'int' | 'one_of' | 'dict_key_selection';
-export type reqursionType = 'list' | 'dict';
-export type matchType = simpleType | reqursionType;
-
-interface Iroot {
-  match: matchType;
-  selector?: string;
-  variants?: { [key: string]: string };
-  item?: string;
-  items?: { [key: string]: string };
-  required_items?: string[];
-  default_item?: string;
-}
-
-export interface IYspec {
-  [key: string]: Iroot;
-}
+import { ConfigValueTypes, FieldOptions, PanelOptions } from './types';
+import { simpleType, reqursionType, IYspec } from './yspec/yspec.service';
 
 class Field {
   private _options: Partial<FieldOptions>;

@@ -9,9 +9,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { YspecService, IField } from './yspec.service';
-import { IYspec } from '../YspecStructure';
 import { getPattern } from '@app/core/types';
+
+import { IField, IYspec, YspecService } from './yspec.service';
 
 const simpleField: IField = {
   name: 'root',
@@ -53,7 +53,7 @@ describe('YspecService', () => {
     expect(service.field({ path: ['root'], type: 'string' })).toEqual(simpleField);
   });
 
-  xit('create List', () => {
+  it('simple List with Dict', () => {
     service.Root = {
       root: { match: 'list', item: 'country_code' },
       country_code: {
@@ -72,10 +72,11 @@ describe('YspecService', () => {
     };
 
     const output = {
-      type: 'dict',
-      country_code: [
-        {
-          country: {
+      type: 'list',
+      root: {
+        type: 'dict',
+        country_code: [
+          {
             name: 'country',
             type: 'string',
             controlType: 'textbox',
@@ -84,10 +85,8 @@ describe('YspecService', () => {
               required: false,
               pattern: null
             }
-          }
-        },
-        {
-          code: {
+          },
+          {
             name: 'code',
             type: 'integer',
             controlType: 'textbox',
@@ -97,6 +96,137 @@ describe('YspecService', () => {
               pattern: getPattern('integer')
             }
           }
+        ]
+      }
+    };
+
+    const _out = service.build();
+    //console.log(_out);
+    expect(_out).toEqual(output);
+  });
+
+  it('test build function :: dictionary with inner elements', () => {
+    service.Root = {
+      boolean: { match: 'bool' },
+      string: { match: 'string' },
+      integer: { match: 'int' },
+      float: { match: 'float' },
+      list: { match: 'list', item: 'string' },
+      onemoredict: { match: 'dict', items: { key1: 'list', key2: 'the_dict' } },
+      the_dict: { match: 'dict', items: { key1: 'boolean', key2: 'string', key3: 'integer', key4: 'float', key5: 'list' } },
+      root: {
+        match: 'dict',
+        items: { key1: 'boolean', key2: 'string', key3: 'integer', key4: 'float', key5: 'list', key6: 'onemoredict' }
+      }
+    };
+
+    const output = {
+      type: 'dict',
+      root: [
+        {
+          name: 'key1',
+          type: 'bool',
+          path: ['key1'],
+          controlType: 'boolean',
+          validator: { required: false, pattern: getPattern('boolean') }
+        },
+        {
+          name: 'key2',
+          type: 'string',
+          path: ['key2'],
+          controlType: 'textbox',
+          validator: { required: false, pattern: getPattern('string') }
+        },
+        {
+          name: 'key3',
+          type: 'int',
+          path: ['key3'],
+          controlType: 'textbox',
+          validator: { required: false, pattern: getPattern('int') }
+        },
+        {
+          name: 'key4',
+          type: 'float',
+          path: ['key4'],
+          controlType: 'textbox',
+          validator: { required: false, pattern: getPattern('float') }
+        },
+        {
+          type: 'list',
+          key5: {
+            name: 'string',
+            type: 'string',
+            path: ['key5', 'string'],
+            controlType: 'textbox',
+            validator: {
+              required: false,
+              pattern: getPattern('string')
+            }
+          }
+        },
+        {
+          type: 'dict',
+          key6: [
+            {
+              type: 'list',
+              key1: {
+                name: 'string',
+                type: 'string',
+                path: ['key6', 'key1', 'string'],
+                controlType: 'textbox',
+                validator: {
+                  required: false,
+                  pattern: getPattern('string')
+                }
+              }
+            },
+            {
+              type: 'dict',
+              key2: [
+                {
+                  name: 'key1',
+                  type: 'bool',
+                  path: ['key6', 'key2', 'key1'],
+                  controlType: 'boolean',
+                  validator: { required: false, pattern: getPattern('boolean') }
+                },
+                {
+                  name: 'key2',
+                  type: 'string',
+                  path: ['key6', 'key2', 'key2'],
+                  controlType: 'textbox',
+                  validator: { required: false, pattern: getPattern('string') }
+                },
+                {
+                  name: 'key3',
+                  type: 'int',
+                  path: ['key6', 'key2', 'key3'],
+                  controlType: 'textbox',
+                  validator: { required: false, pattern: getPattern('int') }
+                },
+                {
+                  name: 'key4',
+                  type: 'float',
+                  path: ['key6', 'key2', 'key4'],
+                  controlType: 'textbox',
+                  validator: { required: false, pattern: getPattern('float') }
+                },
+                {
+                  type: 'list',
+                  key5: {
+                    name: 'string',
+                    type: 'string',
+                    path: ['key6', 'key2', 'key5', 'string'],
+                    controlType: 'textbox',
+                    validator: {
+                      required: false,
+                      pattern: getPattern('string')
+                    }
+                  }
+                }
+              ]
+            }
+          ]
         }
       ]
     };
