@@ -85,10 +85,12 @@ export class BaseListDirective extends SocketListener implements OnInit, OnDestr
   }
 
   socketListener(m: EventMessage): void {
-    // if (this.typeName === 'job' && m.object.type === 'job' && m.event === 'change_job_status' && m.object.details.type === 'status') {
-    //   if (m.object.details.value === 'created' || m.object.details.value === 'success') this.refresh();
-    //   return;
-    // }
+
+    /** check upgradable */
+    if (m.event === 'create' && m.object.type === 'bundle' && this.typeName === 'cluster') {
+      this.refresh(m.object.id);
+      return;
+    }
 
     if (m.event === 'clear_issue' || m.event === 'raise_issue') return;
 
