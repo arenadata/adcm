@@ -13,8 +13,9 @@
 import coreapi
 import pytest
 
+
 from adcm_client.objects import ADCMClient
-from adcm_pytest_plugin.utils import get_data_dir
+from adcm_pytest_plugin.utils import get_data_dir, parametrize_by_data_subdirs
 from tests.library import errorcodes as err
 
 
@@ -77,7 +78,8 @@ def test_upgrade_cluster_with_export(sdk_client_fs: ADCMClient):
     assert cluster_import.prototype_id != id_before
 
 
-def test_incorrect_import_strcit_version(sdk_client_fs: ADCMClient):
+@parametrize_by_data_subdirs(__file__, "upgradable_cluster_with_strict_incorrect_version")
+def test_incorrect_import_striсt_version(sdk_client_fs: ADCMClient, path):
     """Upgrade cluster with service incorrect strict version
     Scenario:
     1. Create cluster for upgrade with exports
@@ -89,8 +91,7 @@ def test_incorrect_import_strcit_version(sdk_client_fs: ADCMClient):
     in cluster with import
     """
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgrade_cluster_with_export'))
-    bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(
-        __file__, 'upgradable_cluster_with_strict_incorrect_version'))
+    bundle_import = sdk_client_fs.upload_from_fs(path)
     cluster = bundle.cluster_create("test")
     service = cluster.service_add(name="hadoop")
     cluster_import = bundle_import.cluster_create("cluster_import")
@@ -102,7 +103,8 @@ def test_incorrect_import_strcit_version(sdk_client_fs: ADCMClient):
     err.UPGRADE_ERROR.equal(e)
 
 
-def test_incorrect_import_version(sdk_client_fs: ADCMClient):
+@parametrize_by_data_subdirs(__file__, "upgradable_cluster_with_incorrect_version")
+def test_incorrect_import_version(sdk_client_fs: ADCMClient, path):
     """Upgrade cluster with service incorrect version
     Scenario:
     1. Create cluster for upgrade with exports
@@ -114,8 +116,7 @@ def test_incorrect_import_version(sdk_client_fs: ADCMClient):
     in cluster with import
     """
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgrade_cluster_with_export'))
-    bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(
-        __file__, 'upgradable_cluster_with_incorrect_version'))
+    bundle_import = sdk_client_fs.upload_from_fs(path)
     cluster = bundle.cluster_create("test")
     service = cluster.service_add(name="hadoop")
     cluster_import = bundle_import.cluster_create("cluster_import")
