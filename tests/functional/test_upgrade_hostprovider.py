@@ -19,6 +19,7 @@ from adcm_pytest_plugin.utils import get_data_dir
 from tests.library.errorcodes import UPGRADE_ERROR
 
 
+# pylint: disable=too-many-locals
 def test_upgrade_with_two_hostproviders(sdk_client_fs: ADCMClient):
     """Upgrade hostprovider when we have two created hostproviders with hosts from one bundle
     Scenario:
