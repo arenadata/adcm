@@ -58,7 +58,7 @@ result:
 import sys
 from ansible.plugins.action import ActionBase
 
-sys.path.append('/adcm')
+sys.path.append('/adcm/python')
 import adcm.init_django
 import cm.job
 from cm.errors import AdcmEx

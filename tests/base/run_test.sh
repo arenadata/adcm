@@ -13,14 +13,17 @@
 
 port=8040
 
-export DJANGO_SETTINGS_MODULE=tests.base.settings
-export ADCM_STACK_DIR="tests/base"
+# shellcheck disable=SC2086,SC2155,SC2046
+export PYTHONPATH="$(dirname `pwd`)"
+export DJANGO_SETTINGS_MODULE=base.settings
+export ADCM_STACK_DIR="../tests/base"
 
+BASE_DIR="../../python"
 
 init_db() {
     rm -f db_test.db
-    ../../manage.py migrate
-    ../../init_db.py 
+    ${BASE_DIR}/manage.py migrate
+    ${BASE_DIR}/init_db.py 
     cp db_test.db fixture.db
 }
 
@@ -28,14 +31,14 @@ init_db() {
 run_debug() {
     rm -f db_test.db
     cp fixture.db db_test.db
-    ../../manage.py runserver 8040
+    ${BASE_DIR}/manage.py runserver 8040
 }
 
 
 run_test() {
     rm -f db_test.db
     cp fixture.db db_test.db
-    cd ../.. || exit 1
+    cd ${BASE_DIR} || exit 1
     ./server.sh start "${port}"
     echo "tests/base/test_api.py ${1} ${2}"
     TEST_CASE=""
@@ -48,9 +51,9 @@ run_test() {
        fi;
     done
     if [[ "$TEST_CASE" != '' ]]; then
-    	./tests/base/test_api.py "$TEST_CASE"
+    	../tests/base/test_api.py "$TEST_CASE"
     else
-    	./tests/base/test_api.py
+    	../tests/base/test_api.py
     fi;
     ./server.sh stop
 }

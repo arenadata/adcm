@@ -23,12 +23,13 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 
 import json
 import os
+from os.path import dirname
 
 from django.core.management.utils import get_random_secret_key
 
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = dirname(dirname(dirname(os.path.abspath(__file__))))
 CONF_DIR = BASE_DIR + '/data/conf/'
 SECRET_KEY_FILE = CONF_DIR + '/secret_key.txt'
 CONFIG_FILE = BASE_DIR + '/config.json'
