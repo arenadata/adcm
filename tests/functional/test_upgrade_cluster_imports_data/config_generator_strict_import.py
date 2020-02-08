@@ -120,4 +120,3 @@ for t in CLUSTER_VERSIONS:
     os.makedirs(d_name)
     with open("{}/config.yaml".format(d_name), "w+") as f:
         f.write(TEMPLATE_CLUSTER.format(t[1], t[2]))
-
