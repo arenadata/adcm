@@ -69,8 +69,9 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
   }
 
   socketListener(m: EventMessage) {
-    if (m.event === 'create' && this.current.Current && m.object.type === 'cluster' && this.current.Current.typeName === 'cluster') {
-      // check the upgradable prop
+
+
+    if (m.event === 'create' && m.object.type === 'bundle') {
       this.model$ = this.current.reset();
     }
 

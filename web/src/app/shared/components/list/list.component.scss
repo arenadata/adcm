@@ -15,3 +15,7 @@
 mat-header-cell.control, mat-cell.control {
     flex-basis: 60px;
 }
+
+.overflow {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;
+}

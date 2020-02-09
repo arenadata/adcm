@@ -219,7 +219,7 @@
   <ng-container matColumnDef="fqdn">
     <mat-header-cell *matHeaderCellDef mat-sort-header>FQDN</mat-header-cell>
     <mat-cell *matCellDef="let row">
-      <span>{{ row.fqdn }}</span>
+      <span class="overflow" [appTooltip]="row.fqdn" [appTooltipShowByCondition]="true">{{ row.fqdn }}</span>
     </mat-cell>
   </ng-container>
 
