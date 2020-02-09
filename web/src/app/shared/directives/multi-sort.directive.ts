@@ -25,7 +25,7 @@ export class MultiSortDirective {
       param.split(',').forEach(cell => {
         const direction = cell[0] === '-' ? 'descending' : 'ascending',
           active = cell[0] === '-' ? cell.substr(1) : cell;
-        const c = el.querySelector(`mat-header-cell.mat-column-${active}`);
+        const c = el.querySelector(`mat-header-cell.mat-column-${active}`) || el.querySelector(`mat-header-cell[mat-sort-header="${active}"]`);
         if (c) {
           this.renderer.setAttribute(c, 'aria-sort', direction);
           const cont = c.querySelector('div.mat-sort-header-container');
@@ -45,7 +45,7 @@ export class MultiSortDirective {
           }
         }
       });
-    }, 500);
+    }, 100);
   }
 
   constructor(private el: ElementRef, private renderer: Renderer2) {}

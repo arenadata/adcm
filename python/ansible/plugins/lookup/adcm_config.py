@@ -23,7 +23,7 @@ except ImportError:
     from ansible.utils.display import Display   # pylint: disable=ungrouped-imports
     display = Display()
 
-sys.path.append('/adcm')
+sys.path.append('/adcm/python')
 import adcm.init_django
 import cm.adcm_config
 from cm.logger import log
