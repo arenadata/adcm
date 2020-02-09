@@ -19,5 +19,5 @@ echo "Run main wsgi application ..."
 exec 1>"${adcmlog}/service_wsgi.out"
 exec 2>"${adcmlog}/service_wsgi.err"
 
-cd "${adcmroot}"
+cd "${adcmroot}/python"
 uwsgi --socket "${wsgisocketfile}" --pidfile "/run/uwsgi.pid" --module adcm.wsgi --chmod-socket=777 --logger file:logfile="${adcmlog}/wsgi.log",maxsize=2000000

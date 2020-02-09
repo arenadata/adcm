@@ -64,4 +64,4 @@ npm_check: ## Run npm-check
 
 django_tests : ## Run django tests.
 	docker pull $(ADCMBASE_IMAGE):$(ADCMBASE_TAG)
-	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) python manage.py test cm
+	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) python python/manage.py test cm

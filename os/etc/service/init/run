@@ -38,13 +38,13 @@ key=/root/.ssh/id_rsa
 
 if [ ! -f "${adcmroot}"/var/cluster.db ]; then
     echo "Assume first run"
-    "${adcmroot}"/manage.py generate_secret_key "${adcmsecretfile}"
-    "${adcmroot}"/manage.py migrate
+    "${adcmroot}"/python/manage.py generate_secret_key "${adcmsecretfile}"
+    "${adcmroot}"/python/manage.py migrate
 else
-    "${adcmroot}"/manage.py migrate
+    "${adcmroot}"/python/manage.py migrate
 fi
 
-"${adcmroot}"/init_db.py
+"${adcmroot}"/python/init_db.py
 touch "${initreadyfile}"
 
 # That is sleep forever case because I have no idea how to force
