@@ -14,7 +14,7 @@
 
     type: provider
     name: sample hostprovider
-    version: '1.0'
+    version: 1.0
     config:
         required:
             type: integer

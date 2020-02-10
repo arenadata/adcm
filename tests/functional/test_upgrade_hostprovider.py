@@ -19,6 +19,89 @@ from adcm_pytest_plugin.utils import get_data_dir
 from tests.library.errorcodes import UPGRADE_ERROR
 
 
+# pylint: disable=too-many-locals
+def test_upgrade_with_two_hostproviders(sdk_client_fs: ADCMClient):
+    """Upgrade hostprovider when we have two created hostproviders with hosts from one bundle
+    Scenario:
+    1. Create two hostproviders from one bundle
+    2. Upload upgradable bundle
+    3. Create host for each hostprovider
+    4. Upgrade first hostprovider
+    5. Check that only first hostprovider and hosts was upgraded
+    """
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
+    sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_hostprovider'))
+    hostprovider_first = bundle.provider_create("hp_first")
+    hostprovider_first_proto_before = hostprovider_first.prototype()
+    hostprovider_first_id_before = hostprovider_first.id
+
+    hostprovider_second = bundle.provider_create("hp_second")
+    hostprovider_second_proto_before = hostprovider_second.prototype()
+    hostprovider_second_id_before = hostprovider_second.id
+    hp1_host1 = hostprovider_first.host_create(fqdn="localhost")
+    hp1_host1_id_before = hp1_host1.id
+    hp1_host1_proto_before = hp1_host1.prototype()
+    hp1_host2 = hostprovider_first.host_create(fqdn="localhost2")
+    hp1_host3 = hostprovider_first.host_create(fqdn="localhost3")
+    hp2_host1 = hostprovider_second.host_create(fqdn="hp2-localhost")
+    hp2_host1_proto_before = hp2_host1.prototype()
+    hp2_host1_id_before = hp2_host1.id
+    hp2_host2 = hostprovider_second.host_create(fqdn="hp2-localhost2")
+    hp2_host3 = hostprovider_second.host_create(fqdn="hp2-localhost3")
+    upgr = hostprovider_first.upgrade(name='upgrade to 2.0')
+    upgr.do()
+    hostprovider_first.reread()
+    hostprovider_second.reread()
+    hp1_host1.reread()
+    hp1_host2.reread()
+    hp1_host3.reread()
+    hp2_host1.reread()
+    hp2_host2.reread()
+    hp2_host3.reread()
+    hp_first_proto_after = hostprovider_first.prototype()
+    hp1_host_proto_after = hp1_host1.prototype()
+    hp_second_proto_after = hostprovider_second.prototype()
+    hp2_host1_proto_after = hp2_host1.prototype()
+    assert hostprovider_first.prototype().version == '2.0'
+    assert hp1_host1.prototype().version == '00.10'
+    assert hostprovider_second.prototype().version == '1.0'
+    assert hp2_host1.prototype().version == '00.09'
+    assert hostprovider_first_id_before == hostprovider_first.id
+    assert hp1_host1_id_before == hp1_host1.id
+    assert hostprovider_first_proto_before.id != hp_first_proto_after.id
+    assert hp1_host1_proto_before.id != hp1_host_proto_after.id
+
+    assert hostprovider_second_id_before == hostprovider_second.id
+    assert hp2_host1_id_before == hp2_host1.id
+    assert hostprovider_second_proto_before.id == hp_second_proto_after.id
+    assert hp2_host1_proto_before.id == hp2_host1_proto_after.id
+
+
+def test_check_prototype(sdk_client_fs: ADCMClient):
+    """Check prototype for provider and host after upgrade
+    :param sdk_client_fs:
+    :return:
+    """
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
+    sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_hostprovider'))
+    hostprovider = bundle.provider_create("test")
+    host = hostprovider.host_create(fqdn="localhost")
+    hostprovider_proto_before = hostprovider.prototype()
+    hp_id_before = hostprovider.id
+    host_proto_before = host.prototype()
+    ht_id_before = host.id
+    upgr = hostprovider.upgrade(name='upgrade to 2.0')
+    upgr.do()
+    hostprovider.reread()
+    host.reread()
+    hostprovider_proto_after = hostprovider.prototype()
+    host_proto_after = host.prototype()
+    assert hp_id_before == hostprovider.id
+    assert ht_id_before == host.id
+    assert hostprovider_proto_before.id != hostprovider_proto_after.id
+    assert host_proto_before.id != host_proto_after.id
+
+
 def test_check_config(sdk_client_fs: ADCMClient):
     """Check default host and hostprovider config fields after upgrade
     :return:
@@ -36,6 +119,7 @@ def test_check_config(sdk_client_fs: ADCMClient):
     hostprovider_config_after = hostprovider.config()
     host_config_after = host.config()
     assert hostprovider.prototype().version == '2.0'
+    assert host.prototype().version == '00.10'
     for variable in hostprovider_config_before:
         assert hostprovider_config_before[variable] == hostprovider_config_after[variable]
     for variable in host_config_before:
