@@ -132,6 +132,6 @@ def test_activatable_group_status(config_name, activatable, ui_config):
 
 
 def test_activatable_with_not_filled_required_fields(activatable_with_not_filled_required_fields):
-    """Check that can save config if we have disabed activatable group with empty required fields
+    """Check that can save config if we have disabled activatable group with empty required fields
     """
     assert activatable_with_not_filled_required_fields

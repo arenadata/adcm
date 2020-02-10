@@ -1,0 +1,21 @@
+
+- type: cluster
+  name: save_button_status_for_required_field_with_not_active_group
+  version: 1
+  config:
+    - description: string
+      display_name: string
+      name: group
+      type: group
+      activatable: true
+      active: false
+      ui_options:
+        advanced: true
+      subs: &id001
+      - &id002
+        name: string
+        display_name: string
+        type: string
+        read_only: any
+        ui_options:
+         advanced: true
