@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Directive, HostListener, ContentChild, Renderer2 } from '@angular/core';
-import { MatIcon } from '@angular/material';
+import { MatIcon } from '@angular/material/icon';
 
 @Directive({
   selector: '[appHoverStatusTask]'

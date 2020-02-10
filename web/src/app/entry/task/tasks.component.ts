@@ -11,7 +11,10 @@
 // limitations under the License.
 import { animate, state, style, transition, trigger, useAnimation, animation } from '@angular/animations';
 import { Component, ElementRef, OnInit, QueryList, ViewChild, ViewChildren, HostBinding } from '@angular/core';
-import { MatPaginator, MatSort, MatSortHeader, PageEvent, MatTableDataSource, MatDialog } from '@angular/material';
+import { MatDialog } from '@angular/material/dialog';
+import { MatPaginator, PageEvent } from '@angular/material/paginator';
+import { MatSort, MatSortHeader } from '@angular/material/sort';
+import { MatTableDataSource } from '@angular/material/table';
 import { ApiService } from '@app/core/api';
 import { EventMessage, SocketState } from '@app/core/store';
 import { Task, JobStatus } from '@app/core/types';

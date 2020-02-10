@@ -20,7 +20,7 @@ import {
   ViewChild,
   ViewChildren,
 } from '@angular/core';
-import { MatMenuTrigger } from '@angular/material';
+import { MatMenuTrigger } from '@angular/material/menu';
 import { IAction } from '@app/core/types';
 import { fromEvent, Observable } from 'rxjs';
 import { debounceTime, tap } from 'rxjs/operators';

@@ -11,7 +11,7 @@
 // limitations under the License.
 import { Component, Input, OnInit } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ValidatorFn } from '@angular/forms';
-import { MatCheckboxChange } from '@angular/material';
+import { MatCheckboxChange } from '@angular/material/checkbox';
 import { ClusterService } from '@app/core';
 import { IExport, IImport } from '@app/core/types';
 import { Observable } from 'rxjs';
