@@ -14,7 +14,7 @@
 
     type: provider
     name: sample hostprovider
-    version: 2.0
+    version: '2.0'
     upgrade:
         -
             versions:
