@@ -23,7 +23,7 @@ except ImportError:
     display = Display()
 
 import sys
-sys.path.append('/adcm')
+sys.path.append('/adcm/python')
 import adcm.init_django
 import cm.api
 import cm.status_api

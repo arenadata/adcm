@@ -13,9 +13,17 @@ import { Injectable } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { getControlType, getPattern, isObject } from '@app/core/types';
 
-import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, PanelOptions, IStructure } from './types';
-import { YspecStructure, matchType } from './YspecStructure';
-import { YspecService } from './yspec/yspec.service';
+import {
+  ConfigOptions,
+  ConfigResultTypes,
+  ConfigValueTypes,
+  FieldOptions,
+  FieldStack,
+  IConfig,
+  IStructure,
+  PanelOptions,
+} from './types';
+import { YspecService, matchType } from './yspec/yspec.service';
 
 export interface IToolsEvent {
   name: string;

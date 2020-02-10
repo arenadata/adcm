@@ -174,9 +174,6 @@ class TestInventory(TestCase):
         groups = cm.inventory.get_host(host.id)
         test_groups = {
             'HOST': {
-                'hosts': []
-            },
-            'PROVIDER': {
                 'hosts': [],
                 'vars': {
                     'provider': {
@@ -190,7 +187,6 @@ class TestInventory(TestCase):
         }
         self.assertDictEqual(groups, test_groups)
         mock_get_hosts.assert_called_once_with([host])
-        mock_get_provider_hosts.assert_called_once_with(host.provider.id)
 
     @patch('json.dump')
     @patch('cm.inventory.open')
@@ -233,13 +229,6 @@ class TestInventory(TestCase):
             'all': {
                 'children': {
                     'HOST': {
-                        'hosts': {
-                            '': {
-                                'adcm_hostid': 1
-                            }
-                        }
-                    },
-                    'PROVIDER': {
                         'hosts': {
                             '': {
                                 'adcm_hostid': 1
