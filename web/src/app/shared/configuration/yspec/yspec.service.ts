@@ -12,7 +12,24 @@
 import { getControlType, getPattern, IRoot } from '@app/core/types';
 
 import { controlType } from '../field.service';
-import { IYspec, simpleType } from '../YspecStructure';
+
+export type simpleType = 'string' | 'integer' | 'float' | 'bool' | 'int' | 'one_of' | 'dict_key_selection';
+export type reqursionType = 'list' | 'dict';
+export type matchType = simpleType | reqursionType;
+
+interface Iroot {
+  match: matchType;
+  selector?: string;
+  variants?: { [key: string]: string };
+  item?: string;
+  items?: { [key: string]: string };
+  required_items?: string[];
+  default_item?: string;
+}
+
+export interface IYspec {
+  [key: string]: Iroot;
+}
 
 export interface IField {
   name: string;
@@ -78,12 +95,12 @@ export class YspecService {
 
   list(item: string, path: string[]): { [x: string]: any; type: string } {
     if (!this.Root[item]) throw new Error('Not itmem for list');
-    const name = path.reverse()[0] || 'root';
+    const name = [...path].reverse()[0] || 'root';
     return { type: 'list', [name]: this.build(item, [...path, item]) };
   }
 
   dict(items: IRoot, path: string[]): { [x: string]: any; type: string } {
-    const name = path.reverse()[0] || 'root';
+    const name = [...path].reverse()[0] || 'root';
     return {
       type: 'dict',
       [name]: Object.keys(items).map((item_name: string) => {

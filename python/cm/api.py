@@ -139,11 +139,31 @@ def delete_host(host):
 
 
 def delete_host_by_id(host_id):
+    """
+    Host deleting
+
+    This is intended for use in adcm_delete_host ansible plugin
+    """
     try:
         host = Host.objects.get(id=host_id)
     except Host.DoesNotExist:
         err('HOST_NOT_FOUND', 'Host with id #{} is not found'.format(host_id))
     delete_host(host)
+
+
+def delete_service_by_id(service_id):
+    """
+    Unconditional removal of service from cluster
+
+    This is intended for use in adcm_delete_service ansible plugin
+    """
+    try:
+        service = ClusterObject.objects.get(id=service_id)
+    except ClusterObject.DoesNotExist:
+        err('SERVICE_NOT_FOUND', 'Service with id #{} is not found'.format(service_id))
+    cm.status_api.post_event('delete', 'service', service.id)
+    service.delete()
+    cm.status_api.load_service_map()
 
 
 def delete_service(service):
