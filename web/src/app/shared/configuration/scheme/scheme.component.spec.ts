@@ -12,6 +12,7 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { SchemeComponent } from './scheme.component';
+import { MaterialModule } from '@app/shared/material.module';
 
 describe('SchemeComponent', () => {
   let component: SchemeComponent;
@@ -19,6 +20,7 @@ describe('SchemeComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
+      imports: [MaterialModule],
       declarations: [ SchemeComponent ]
     })
     .compileComponents();
@@ -27,7 +29,7 @@ describe('SchemeComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(SchemeComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    //fixture.detectChanges();
   });
 
   it('should create', () => {
