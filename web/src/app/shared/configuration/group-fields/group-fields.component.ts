@@ -26,7 +26,7 @@ import { FieldOptions, PanelOptions } from '../types';
 export class GroupFieldsComponent implements OnInit {
   @Input() panel: PanelOptions;
   @Input() form: FormGroup;
-  @ViewChild('ep', { static: false }) expanel: MatExpansionPanel;
+  @ViewChild('ep') expanel: MatExpansionPanel;
   checked = true;
 
   @ViewChildren(FieldComponent)

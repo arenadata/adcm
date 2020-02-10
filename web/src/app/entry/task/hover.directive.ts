@@ -16,7 +16,7 @@ import { MatIcon } from '@angular/material';
   selector: '[appHoverStatusTask]'
 })
 export class HoverDirective {
-  @ContentChild('taskIcon', { static: false }) icon: MatIcon;
+  @ContentChild('taskIcon') icon: MatIcon;
   @HostListener('mouseover') onHover() {
     const icon = this.icon._elementRef.nativeElement;
     this.re.removeClass(icon, 'icon-locked');

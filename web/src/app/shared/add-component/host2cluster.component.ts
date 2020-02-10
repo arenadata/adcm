@@ -56,7 +56,7 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
   list = [];
   showForm = false;
 
-  @ViewChild('form', {static: false}) hostForm: HostComponent;
+  @ViewChild('form') hostForm: HostComponent;
 
   ngOnInit() {
     this.freeHost$ = this.service.getFreeHosts().pipe(tap(list => (this.list = list)));

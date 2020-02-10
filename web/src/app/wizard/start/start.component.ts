@@ -31,7 +31,7 @@ export class StartComponent implements OnInit {
     actions: false,
   };
 
-  @ViewChild('stepper', {static: false}) stepper: MatStepper;
+  @ViewChild('stepper') stepper: MatStepper;
 
   constructor(private service: ClusterService, private route: ActivatedRoute, private router: Router) {}
 
