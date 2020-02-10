@@ -79,7 +79,7 @@ def test_upgrade_cluster_with_export(sdk_client_fs: ADCMClient):
 
 
 @parametrize_by_data_subdirs(__file__, "upgradable_cluster_with_strict_incorrect_version")
-def test_incorrect_import_striсt_version(sdk_client_fs: ADCMClient, path):
+def test_incorrect_import_strict_version(sdk_client_fs: ADCMClient, path):
     """Upgrade cluster with service incorrect strict version
     Scenario:
     1. Create cluster for upgrade with exports
