@@ -9,17 +9,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 -
-
-    type: provider
-    name: sample hostprovider
-    version: '1.0'
+    type: cluster
+    name: ADH
+    version: 1.5
     config:
         required:
             type: integer
-            required: yes
-            default: 400
+            required: true
+            default: 15
         str-key:
             default: value
             type: string
@@ -27,31 +25,26 @@
 
         int_key:
             type: integer
-            required: NO
-            default: 60
-
-        fkey:
-            type: float
             required: false
-            default: 1.5
+            default: 150
 
-        bool:
-            type: boolean
-            required : no
-            default: false
 
-- type: host
-  name: vHost
-  version: '00.09'
-
+- type: service
+  name: zookeeper
+  version: '3.4.10'
   config:
-      str_param:
-        type: string
-        required: false
-        default: '123'
-        description: must be changed to bar()
-      int:
-        type: integer
-        required: false
-        default: 2
-        description: must be changed to 5
+    required_service:
+      type: integer
+      required: true
+      default: 10
+
+    int_key_service:
+      type: integer
+      required: false
+      default: 150
+
+  components:
+    master:
+      display_name: "Master Node"
+      description: "This node control all data nodes (see below)"
+      constraint: [1,2]
