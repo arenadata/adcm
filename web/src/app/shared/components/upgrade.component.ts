@@ -17,6 +17,7 @@ import { Observable, of, concat } from 'rxjs';
 import { filter, switchMap, switchAll, concatAll } from 'rxjs/operators';
 
 import { DialogComponent } from './dialog.component';
+import { BaseDirective } from '../directives';
 
 interface UpgradeRow {
   upgradable: boolean;
@@ -32,6 +33,7 @@ interface Upgrade {
   upgradable: boolean;
   from_edition: string[];
   license: 'unaccepted' | 'absent';
+  license_url: string;
 }
 
 @Component({
@@ -61,7 +63,7 @@ interface Upgrade {
     </ng-template>
   `
 })
-export class UpgradeComponent {
+export class UpgradeComponent extends BaseDirective {
   list$: Observable<Upgrade[]>;
   row: UpgradeRow;
 
@@ -76,10 +78,12 @@ export class UpgradeComponent {
   @Output()
   refresh: EventEmitter<EmmitRow> = new EventEmitter<EmmitRow>();
 
-  constructor(private api: ApiService, private dialog: MatDialog) {}
+  constructor(private api: ApiService, private dialog: MatDialog) {
+    super();
+  }
 
   runUpgrade(item: Upgrade) {
-    const license$ = item.license === 'unaccepted' ? this.api.put(`bundle.license_url`, {}) : of();
+    const license$ = item.license === 'unaccepted' ? this.api.put(`${item.license_url}accept/`, {}) : of();
     const do$ = this.api.post<{ id: number }>(item.do, {});
     this.dialog
       .open(DialogComponent, {
@@ -92,6 +96,7 @@ export class UpgradeComponent {
       })
       .beforeClosed()
       .pipe(
+        this.takeUntil(),
         filter(yes => yes),
         switchMap(() => concat(license$, do$))
       )
