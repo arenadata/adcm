@@ -13,8 +13,8 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '@app/core/api';
 import { EmmitRow } from '@app/core/types';
-import { Observable } from 'rxjs';
-import { filter } from 'rxjs/operators';
+import { Observable, of, concat } from 'rxjs';
+import { filter, switchMap, switchAll, concatAll } from 'rxjs/operators';
 
 import { DialogComponent } from './dialog.component';
 
@@ -31,6 +31,7 @@ interface Upgrade {
   do: string;
   upgradable: boolean;
   from_edition: string[];
+  license: 'unaccepted' | 'absent';
 }
 
 @Component({
@@ -78,18 +79,23 @@ export class UpgradeComponent {
   constructor(private api: ApiService, private dialog: MatDialog) {}
 
   runUpgrade(item: Upgrade) {
+    const license$ = item.license === 'unaccepted' ? this.api.put(`bundle.license_url`, {}) : of();
+    const do$ = this.api.post<{ id: number }>(item.do, {});
     this.dialog
       .open(DialogComponent, {
         data: {
           title: 'Are you sure you want to upgrade?',
           text: item.description,
           disabled: !item.upgradable,
-          controls: ['Yes', 'No']
+          controls: item.license === 'unaccepted' ? { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] } : ['Yes', 'No']
         }
       })
       .beforeClosed()
-      .pipe(filter(yes => yes))
-      .subscribe(() => this.api.post(item.do, {}).subscribe((result: { id: number }) => this.refresh.emit({ cmd: 'refresh', row: result })));
+      .pipe(
+        filter(yes => yes),
+        switchMap(() => concat(license$, do$))
+      )
+      .subscribe(row => this.refresh.emit({ cmd: 'refresh', row }));
   }
 
   checkIssue(issue: any): boolean {
