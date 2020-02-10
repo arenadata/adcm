@@ -801,6 +801,7 @@ class TaskSerializer(TaskListSerializer):
     selector = JSONField(read_only=True)
     config = JSONField(required=False)
     hc = JSONField(required=False)
+    hosts = JSONField(required=False)
     action_url = serializers.HyperlinkedIdentityField(
         read_only=True,
         view_name='action-details',
@@ -863,7 +864,8 @@ class TaskRunSerializer(TaskSerializer):
                 validated_data.get('action_id'),
                 validated_data.get('selector'),
                 validated_data.get('config', None),
-                validated_data.get('hc', None)
+                validated_data.get('hc', None),
+                validated_data.get('hosts', None)
             )
             obj.jobs = JobLog.objects.filter(task_id=obj.id)
             return obj
