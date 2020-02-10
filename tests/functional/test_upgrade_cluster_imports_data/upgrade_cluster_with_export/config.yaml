@@ -9,36 +9,48 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
--
-    type: cluster
-    name: ADH
-    version: 1.5
-    config:
-        required:
-            type: integer
-            required: true
-            default: 15
-        str-key:
-            default: value
-            type: string
-            required: false
-
-        int_key:
-            type: integer
-            required: false
-            default: 150
-
-
+---
 - type: service
-  name: zookeeper
-  version: '3.4.10'
+  name: hadoop
+  version: 2.1
+
   config:
-    required_service:
+     core-site:
+        param1:
+           type: string
+           required: false
+        param2:
+           type: integer
+           required: false
+     quorum:
+        type: integer
+        default: 3
+
+  export:
+      - core-site
+      - quorum
+
+- type: cluster
+  name: ADH
+  description: Arenadata Nothing
+  version: 1.0
+
+  config:
+    required:
       type: integer
       required: true
-      default: 10
+      default: 15
+    str-key:
+      default: value
+      type: string
+      required: false
 
-    int_key_service:
+    int_key:
       type: integer
       required: false
       default: 150
+
+  export:
+    - required
+    - str-key
+    - int_key

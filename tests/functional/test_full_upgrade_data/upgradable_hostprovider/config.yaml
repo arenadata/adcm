@@ -14,12 +14,33 @@
 
     type: provider
     name: sample hostprovider
-    version: '1.0'
+    version: 2.0
+    upgrade:
+        -
+            versions:
+                min: 0.4
+                max: 1.9
+            description: New cool upgrade
+            name: upgrade to 2.0
+            states:
+                available: any
+                on_success: started
+        -
+            versions:
+                min: 1.0
+                max: 2.9
+            description: Super new upgrade
+            name: upgrade 2
+            states:
+                available: [started]
+                on_success: ver2.4
     config:
         required:
             type: integer
             required: yes
             default: 400
+            max: 500
+            min: 200
         str-key:
             default: value
             type: string
@@ -42,7 +63,7 @@
 
 - type: host
   name: vHost
-  version: '00.09'
+  version: '00.10'
 
   config:
       str_param:

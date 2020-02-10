@@ -12,33 +12,43 @@
 -
     type: cluster
     name: ADH
-    version: 1.5
+    version: 1.0
     config:
-        required:
-            type: integer
-            required: true
-            default: 15
-        str-key:
-            default: value
-            type: string
-            required: false
+      required:
+        type: integer
+        required: true
+        default: 15
+      str-key:
+        default: value
+        type: string
+        required: false
 
-        int_key:
-            type: integer
-            required: false
-            default: 150
+      int_key:
+        type: integer
+        required: false
+        default: 150
 
+    export:
+      - required
+      - str-key
+      - int_key
 
 - type: service
-  name: zookeeper
-  version: '3.4.10'
-  config:
-    required_service:
-      type: integer
-      required: true
-      default: 10
+  name: hadoop
+  version: 2.1
 
-    int_key_service:
-      type: integer
-      required: false
-      default: 150
+  config:
+     core-site:
+        param1:
+           type: string
+           required: false
+        param2:
+           type: integer
+           required: false
+     quorum:
+        type: integer
+        default: 3
+
+  export:
+      - core-site
+      - quorum
