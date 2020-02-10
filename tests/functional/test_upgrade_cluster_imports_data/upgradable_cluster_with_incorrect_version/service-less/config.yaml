@@ -23,7 +23,7 @@
     import:
        hadoop:
           versions:
-             min: 2.2
+             min: 2.3
              max: 2.4
        ADH:
           versions:

@@ -24,7 +24,7 @@
        hadoop:
           versions:
              min_strict: 1.5
-             max_strict: 2.1
+             max_strict: 2.2
        ADH:
           versions:
              min_strict: 0.1

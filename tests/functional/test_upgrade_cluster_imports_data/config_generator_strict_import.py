@@ -1,15 +1,15 @@
 import os
 
-SERVICE_VERSIONS = (("service-less-equal", "2.1", "3.0"),
-                    ("service-greater-equal", "1.5", "2.1"),
-                    ("service-equal", "2.1", '2.1'),
-                    ('service-less', '2.2', '2.4'),
+SERVICE_VERSIONS = (("service-less-equal", "2.2", "3.0"),
+                    ("service-greater-equal", "1.5", "2.2"),
+                    ("service-equal", "2.2", '2.2'),
+                    ('service-less', '2.3', '2.4'),
                     ("service-greater", '1', '2'))
 
-CLUSTER_VERSIONS = (("cluster-less-equal", "1.0", "2.0"),
-                    ("cluster-greater-equal", "0.9", "1.0"),
-                    ("cluster-equal", "1.0", '1.0'),
-                    ('cluster-less', '1.1', '2.4'),
+CLUSTER_VERSIONS = (("cluster-less-equal", "1.6", "2.0"),
+                    ("cluster-greater-equal", "0.9", "1.6"),
+                    ("cluster-equal", "1.6", '1.6'),
+                    ('cluster-less', '1.7', '2.4'),
                     ("cluster-greater", '0.5', '0.9'))
 TEMPLATE_SERVICE = """
 -

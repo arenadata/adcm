@@ -27,7 +27,7 @@
              max: 2.5
        ADH:
           versions:
-             min: 1.1
+             min: 1.7
              max: 2.4
 
 - type: service

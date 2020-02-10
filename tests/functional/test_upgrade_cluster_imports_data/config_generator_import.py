@@ -1,8 +1,8 @@
 import os
 
-SERVICE_VERSIONS = (('service-less', '2.2', '2.4'), ("service-greater", '1', '2'))
+SERVICE_VERSIONS = (('service-less', '2.3', '2.4'), ("service-greater", '1', '2'))
 
-CLUSTER_VERSIONS = (('cluster-less', '1.1', '2.4'), ("cluster-greater", '0.5', '0.9'))
+CLUSTER_VERSIONS = (('cluster-less', '1.7', '2.4'), ("cluster-greater", '0.5', '0.9'))
 TEMPLATE_SERVICE = """
 -
     type: cluster

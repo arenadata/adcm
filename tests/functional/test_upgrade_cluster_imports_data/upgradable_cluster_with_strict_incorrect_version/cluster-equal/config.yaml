@@ -27,8 +27,8 @@
              max_strict: 2.5
        ADH:
           versions:
-             min_strict: 1.0
-             max_strict: 1.0
+             min_strict: 1.6
+             max_strict: 1.6
 
 - type: service
   name: hadoop
