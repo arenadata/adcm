@@ -23,12 +23,12 @@
     import:
        hadoop:
           versions:
-             min_strict: 1.5
-             max_strict: 2.5
+             min: 1.5
+             max: 2.5
        ADH:
           versions:
-             min_strict: 0.5
-             max_strict: 0.9
+             min: 0.5
+             max: 0.9
 
 - type: service
   name: hadoop

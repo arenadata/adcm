@@ -32,8 +32,8 @@ TEMPLATE_SERVICE = """
              max: {1}
        ADH:
           versions:
-             min_strict: 0.1
-             max_strict: 4.0
+             min: 0.1
+             max: 4.0
 
 - type: service
   name: hadoop
@@ -77,12 +77,12 @@ TEMPLATE_CLUSTER = """
     import:
        hadoop:
           versions:
-             min_strict: 1.5
-             max_strict: 2.5
+             min: 1.5
+             max: 2.5
        ADH:
           versions:
-             min_strict: {0}
-             max_strict: {1}
+             min: {0}
+             max: {1}
 
 - type: service
   name: hadoop
