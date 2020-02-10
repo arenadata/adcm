@@ -12,7 +12,7 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 
-import { FieldOptions } from '../types';
+import { IStructure } from '../types';
 
 @Component({
   selector: 'app-scheme',
@@ -21,11 +21,49 @@ import { FieldOptions } from '../types';
 })
 export class SchemeComponent implements OnInit {
   @Input() form: FormGroup;
-  @Input() options: FieldOptions;
+  @Input() options: IStructure;
+
+  value: any;
+  rules: Array<any>;
+
+  name: string;
+  type: string;
+  items: any[];
+
+  currentType: string;
 
   constructor() {}
 
   ngOnInit() {
-    
+    this.value = this.options.value;
+
+    const current = this.options.rules;
+    this.currentType = this.options.rules.type;
+
+    Object.keys(current).map(key => {
+      if (key === 'type') this.type = this.options.rules[key];
+      else {
+        this.name = key;
+        this.rules = current[key];
+      }
+    });
+
+    if (this.currentType === 'list') {
+      this.items = (this.options.value as Array<any>).map(a => {
+        return { value: a, rules: this.rules };       
+      });
+    } else if (this.currentType === 'dict') {
+
+       this.items = Object.keys(this.value).map(b => {
+          const c = this.findRule(b);
+          return {value: this.value[b], rules: c};
+        });
+    } else {
+      
+    }
+  }
+
+  findRule(key: string) {
+    return this.rules.find(a => a.name === key) || this.rules.find(a => Object.keys(a).find(k => k === key));
   }
 }
