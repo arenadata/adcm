@@ -14,7 +14,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '@app/core/api';
 import { EmmitRow } from '@app/core/types';
 import { Observable, of, concat } from 'rxjs';
-import { filter, switchMap, switchAll, concatAll } from 'rxjs/operators';
+import { filter, switchMap, switchAll, concatAll, map } from 'rxjs/operators';
 
 import { DialogComponent } from './dialog.component';
 import { BaseDirective } from '../directives';
@@ -85,22 +85,32 @@ export class UpgradeComponent extends BaseDirective {
   runUpgrade(item: Upgrade) {
     const license$ = item.license === 'unaccepted' ? this.api.put(`${item.license_url}accept/`, {}) : of();
     const do$ = this.api.post<{ id: number }>(item.do, {});
-    this.dialog
-      .open(DialogComponent, {
-        data: {
-          title: 'Are you sure you want to upgrade?',
-          text: item.description,
-          disabled: !item.upgradable,
-          controls: item.license === 'unaccepted' ? { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] } : ['Yes', 'No']
-        }
-      })
-      .beforeClosed()
+    this.fork(item)
       .pipe(
-        this.takeUntil(),
-        filter(yes => yes),
-        switchMap(() => concat(license$, do$))
+        switchMap(text =>
+          this.dialog
+            .open(DialogComponent, {
+              data: {
+                title: 'Are you sure you want to upgrade?',
+                text,
+                disabled: !item.upgradable,
+                controls: item.license === 'unaccepted' ? { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] } : ['Yes', 'No']
+              }
+            })
+            .beforeClosed()
+            .pipe(
+              this.takeUntil(),
+              filter(yes => yes),
+              switchMap(() => concat(license$, do$))
+            )
+        )
       )
       .subscribe(row => this.refresh.emit({ cmd: 'refresh', row }));
+  }
+
+  fork(item: Upgrade) {
+    const flag = item.license === 'unaccepted';
+    return flag ? this.api.get<{ text: string }>(item.license_url).pipe(map(a => a.text)) : of(item.description);
   }
 
   checkIssue(issue: any): boolean {
