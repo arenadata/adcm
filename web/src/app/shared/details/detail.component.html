@@ -1,42 +1,25 @@
-<div *ngIf="(model$ | async) as model">
-  <mat-toolbar class="toolbar">
-    <app-crumbs [navigation]="crumbs"></app-crumbs>
-    <div class="example-spacer"></div>
-    <app-upgrade *ngIf="isUpgradable(model.current) && !isIssue" [dataRow]="model.current"></app-upgrade>
-    <app-actions [source]="actions$" [isIssue]="isIssue" [cluster]="model.cluster"></app-actions>
-  </mat-toolbar>
+<mat-toolbar class="toolbar">
+  <app-crumbs [navigation]="crumbs"></app-crumbs>
+  <div class="example-spacer"></div>
+  <app-upgrade *ngIf="isUpgradable() && !isIssue" [dataRow]="current"></app-upgrade>
+  <app-actions [source]="actions$" [isIssue]="isIssue" [cluster]="cluster"></app-actions>
+</mat-toolbar>
 
-  <div class="row main">
-    
-    <mat-nav-list class="col s12 m3 l2">
-      <a mat-list-item [appForTest]="'tab_' + item.url" *ngFor="let item of leftMenu" [routerLink]="[item.url]" routerLinkActive="active">
-        <span>{{ item.title }}</span>
-        &nbsp;
-        <mat-icon *ngIf="item.issue" color="warn">priority_hight</mat-icon>
-        <ng-container *ngIf="item.url==='status'">
-          <ng-container *ngTemplateOutlet="status; context: { status: item.status }"></ng-container>
-        </ng-container>
-      </a>
-    </mat-nav-list>
+<div class="row main">
+  <app-details-left [current]="current" class="col s12 m3 l2"></app-details-left>
 
-    <mat-card class="col s12 m9 l10">
-      <mat-card-header [style.minHeight.px]="40">
-        <mat-card-title>
-          {{ getDisplayName(model.current) }}
-        </mat-card-title>
-        <mat-card-subtitle>
-          <app-details-subtitle [current]="model.current"></app-details-subtitle>
-        </mat-card-subtitle>
-      </mat-card-header>
-      <mat-card-content class="content" appScroll (read)="scroll($event)">
-        <router-outlet></router-outlet>
-      </mat-card-content>
-    </mat-card>
-    
-  </div>
+  <mat-card class="col s12 m9 l10">
+    <mat-card-header [style.minHeight.px]="40">
+      <mat-card-title>
+        {{ getDisplayName() }}
+      </mat-card-title>
+      <mat-card-subtitle>
+        <!-- <app-details-subtitle [current]="current"></app-details-subtitle> -->
+      </mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content class="content" appScroll (read)="scroll($event)">
+      <router-outlet></router-outlet>
+    </mat-card-content>
+  </mat-card>
+
 </div>
-
-<ng-template #status let-status="status">
-  <mat-icon *ngIf="status === 0" color="accent">check_circle_outline</mat-icon>
-  <mat-icon *ngIf="status !== 0" color="warn">error_outline</mat-icon>
-</ng-template>

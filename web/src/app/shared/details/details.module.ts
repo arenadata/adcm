@@ -17,10 +17,11 @@ import { MaterialModule } from '../material.module';
 import { StuffModule } from '../stuff.module';
 import { DetailComponent } from './detail.component';
 import { SubtitleComponent } from './subtitle.component';
+import { LeftComponent } from './left/left.component';
 
 @NgModule({
     imports: [CommonModule, RouterModule, MaterialModule, StuffModule ],
     exports: [DetailComponent],
-    declarations: [DetailComponent, SubtitleComponent]
+    declarations: [DetailComponent, SubtitleComponent, LeftComponent]
 })
 export class DetailsModule {}

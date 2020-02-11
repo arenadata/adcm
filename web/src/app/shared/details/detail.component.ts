@@ -28,96 +28,109 @@ import { CrumbsItem, NavigationService } from './navigation.service';
   providers: [NavigationService]
 })
 export class DetailComponent extends SocketListener implements OnInit, OnDestroy {
-  actions$: Observable<IAction[]>;
+  actions$: Observable<IAction[]> = of([]);
   issue: Issue;
   crumbs: CrumbsItem[];
-  leftMenu: any[];
-  model$ = this.route.paramMap.pipe(switchMap(param => this.current.getContext(param).pipe(tap(w => this.initValue(w.current)))));
+
+  current: Entities;
+  cluster: Cluster;
 
   constructor(
     socket: Store<SocketState>,
     private route: ActivatedRoute,
-    private current: ClusterService,
+    private service: ClusterService,
     private nav: NavigationService,
     private channel: ChannelService
   ) {
     super(socket);
   }
 
+  ngOnInit(): void {
+    this.route.paramMap
+      .pipe(
+        this.takeUntil(),
+        switchMap(param => this.service.getContext(param))
+      )
+      .subscribe(w => {
+        this.current = w.current;
+        this.cluster = w.cluster;
+        this.initValue(w.current);
+      });
+
+    super.startListenSocket();
+  }
+
+  ngOnDestroy(): void {
+    this.service.clearWorker();
+  }
+
   get isIssue() {
-    return this.current.Current.issue && !!Object.keys(this.current.Current.issue).length;
+    return this.service.Current && this.service.Current.issue && !!Object.keys(this.service.Current.issue).length;
   }
 
-  isUpgradable(current: Entities) {
-    return (current as Cluster).upgradable;
+  isUpgradable() {
+    return this.service.Cluster && this.service.Cluster.upgradable;
   }
 
-  getDisplayName(current: Entities) {
-    return 'display_name' in current ? current.display_name || current.name : (current as Host).fqdn;
+  getDisplayName() {
+    return this.service.Current
+      ? 'display_name' in this.service.Current
+        ? this.service.Current.display_name || this.service.Current.name
+        : (this.service.Current as Host).fqdn
+      : '';
   }
 
   scroll(stop: { direct: -1 | 1 | 0; screenTop: number }) {
     this.channel.next('scroll', stop);
   }
 
-  ngOnInit(): void {
-    super.startListenSocket();
-  }
-
-  ngOnDestroy(): void {
-    this.current.clearWorker();
-  }
-
   socketListener(m: EventMessage) {
-
-
     if (m.event === 'create' && m.object.type === 'bundle') {
-      this.model$ = this.current.reset();
+      this.service.reset().subscribe(a => this.initValue(a.current, m));
     }
 
-    if (this.current.Current && this.current.Current.typeName === m.object.type && this.current.Current.id === m.object.id) {
-      if (m.event === 'change_job_status' && this.current.Current.typeName === 'job') {
-        this.current.reset().subscribe(a => this.initValue(a.current, m));
+    if (this.service.Current && this.service.Current.typeName === m.object.type && this.service.Current.id === m.object.id) {
+      if (m.event === 'change_job_status' && this.service.Current.typeName === 'job') {
+        this.service.reset().subscribe(a => this.initValue(a.current, m));
       }
 
       if (m.event === 'change_state' || m.event === 'upgrade' || m.event === 'raise_issue') {
-        this.current.reset().subscribe(a => this.initValue(a.current, m));
+        this.service.reset().subscribe(a => this.initValue(a.current, m));
       }
 
       if (m.event === 'clear_issue') {
-        if (m.object.type === 'cluster') this.current.Cluster.issue = {} as Issue;
-        this.current.Current.issue = {} as Issue;
+        if (m.object.type === 'cluster') this.service.Cluster.issue = {} as Issue;
+        this.service.Current.issue = {} as Issue;
         this.updateView();
       }
 
       if (m.event === 'change_status') {
-        this.current.Current.status = +m.object.details.value;
+        this.service.Current.status = +m.object.details.value;
         this.updateView();
       }
     }
     if (
-      this.current.Cluster &&
+      this.service.Cluster &&
       m.event === 'clear_issue' &&
       m.object.type === 'cluster' &&
-      this.current.Current.typeName !== 'cluster' &&
-      this.current.Cluster.id === m.object.id
+      this.service.Current.typeName !== 'cluster' &&
+      this.service.Cluster.id === m.object.id
     ) {
-      this.current.Cluster.issue = {} as Issue;
+      this.service.Cluster.issue = {} as Issue;
       this.updateView();
     }
   }
 
   initValue(a: Entities, m?: EventMessage) {
-    this.actions$ = !a.actions || !a.actions.length ? this.current.getActions() : of(a.actions);
+    this.actions$ = !a.actions || !a.actions.length ? this.service.getActions() : of(a.actions);
     this.updateView();
-    console.log(`GET: ${this.current.Current.typeName}`, a, m);
+    //console.log(`GET: ${this.service.Current.typeName}`, a, m);
   }
 
   updateView() {
-    this.leftMenu = this.nav.getMenu(this.current.Current);
     this.crumbs = this.nav.getCrumbs({
-      cluster: this.current.Cluster,
-      current: this.current.Current
+      cluster: this.service.Cluster,
+      current: this.service.Current
     });
   }
 }

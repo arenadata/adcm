@@ -10,6 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input } from '@angular/core';
+import { Entities } from '@app/core/types';
 
 @Component({
   selector: 'app-details-subtitle',
@@ -30,7 +31,7 @@ import { Component, Input } from '@angular/core';
   styles: []
 })
 export class SubtitleComponent {
-  @Input() current: any;
+  @Input() current: any = {};
   getParentLink(objects: { id: number; type: string }[], ind: number) {
     return objects.filter((a, i) => i <= ind).reduce((a, c) => [...a, c.type, c.id], ['/']);
   }

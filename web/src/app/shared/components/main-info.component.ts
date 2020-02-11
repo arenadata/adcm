@@ -21,6 +21,7 @@ export class MainInfoComponent implements OnInit {
   value: SafeHtml;
   constructor(private service: ClusterService, private sanitizer: DomSanitizer) {}
   ngOnInit() {
-    this.service.getMainInfo().subscribe(value => (this.value = this.sanitizer.bypassSecurityTrustHtml(value)));
+    console.error('add main ingo');
+    // this.service.getMainInfo().subscribe(value => (this.value = this.sanitizer.bypassSecurityTrustHtml(value)));
   }
 }

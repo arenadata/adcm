@@ -31,7 +31,7 @@ const IssueSet: { [key: string]: string[] } = {
   import: ['required_import'],
 };
 
-interface LeftMenuItem {
+export interface ILeftMenuItem {
   id?: IssueProp;
   title: string;
   url: string;
@@ -65,7 +65,8 @@ const Config = {
 };
 
 export class NavigationService {
-  getMenu(current: ApiBase): LeftMenuItem[] {
+
+  getLeft(current: ApiBase): ILeftMenuItem[] {
     const typeName = current.typeName;
     if (typeName === 'job') {
       const job = current as Job;
@@ -73,7 +74,7 @@ export class NavigationService {
     }
 
     const issue = current.issue || {};
-    return Config.menu[typeName].map((i: LeftMenuItem) => ({
+    return Config.menu[typeName].map((i: ILeftMenuItem) => ({
       ...i,
       issue: Object.keys(issue).some(p => p === i.url || (IssueSet[i.url] && IssueSet[i.url].some(a => a === p))),
       status: current.status,
