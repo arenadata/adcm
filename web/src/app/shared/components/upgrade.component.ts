@@ -13,10 +13,11 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '@app/core/api';
 import { EmmitRow } from '@app/core/types';
-import { Observable } from 'rxjs';
-import { filter } from 'rxjs/operators';
+import { Observable, of, concat } from 'rxjs';
+import { filter, switchMap, switchAll, concatAll, map } from 'rxjs/operators';
 
 import { DialogComponent } from './dialog.component';
+import { BaseDirective } from '../directives';
 
 interface UpgradeRow {
   upgradable: boolean;
@@ -31,6 +32,8 @@ interface Upgrade {
   do: string;
   upgradable: boolean;
   from_edition: string[];
+  license: 'unaccepted' | 'absent';
+  license_url: string;
 }
 
 @Component({
@@ -60,7 +63,7 @@ interface Upgrade {
     </ng-template>
   `
 })
-export class UpgradeComponent {
+export class UpgradeComponent extends BaseDirective {
   list$: Observable<Upgrade[]>;
   row: UpgradeRow;
 
@@ -75,21 +78,39 @@ export class UpgradeComponent {
   @Output()
   refresh: EventEmitter<EmmitRow> = new EventEmitter<EmmitRow>();
 
-  constructor(private api: ApiService, private dialog: MatDialog) {}
+  constructor(private api: ApiService, private dialog: MatDialog) {
+    super();
+  }
 
   runUpgrade(item: Upgrade) {
-    this.dialog
-      .open(DialogComponent, {
-        data: {
-          title: 'Are you sure you want to upgrade?',
-          text: item.description,
-          disabled: !item.upgradable,
-          controls: ['Yes', 'No']
-        }
-      })
-      .beforeClosed()
-      .pipe(filter(yes => yes))
-      .subscribe(() => this.api.post(item.do, {}).subscribe((result: { id: number }) => this.refresh.emit({ cmd: 'refresh', row: result })));
+    const license$ = item.license === 'unaccepted' ? this.api.put(`${item.license_url}accept/`, {}) : of();
+    const do$ = this.api.post<{ id: number }>(item.do, {});
+    this.fork(item)
+      .pipe(
+        switchMap(text =>
+          this.dialog
+            .open(DialogComponent, {
+              data: {
+                title: 'Are you sure you want to upgrade?',
+                text,
+                disabled: !item.upgradable,
+                controls: item.license === 'unaccepted' ? { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] } : ['Yes', 'No']
+              }
+            })
+            .beforeClosed()
+            .pipe(
+              this.takeUntil(),
+              filter(yes => yes),
+              switchMap(() => concat(license$, do$))
+            )
+        )
+      )
+      .subscribe(row => this.refresh.emit({ cmd: 'refresh', row }));
+  }
+
+  fork(item: Upgrade) {
+    const flag = item.license === 'unaccepted';
+    return flag ? this.api.get<{ text: string }>(item.license_url).pipe(map(a => a.text)) : of(item.description);
   }
 
   checkIssue(issue: any): boolean {

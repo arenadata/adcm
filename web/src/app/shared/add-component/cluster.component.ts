@@ -11,7 +11,7 @@
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
 import { clearEmptyField, Cluster } from '@app/core/types';
-import { filter, tap } from 'rxjs/operators';
+import { filter } from 'rxjs/operators';
 
 import { BaseFormDirective } from './base-form.directive';
 import { GenName } from './naming';
