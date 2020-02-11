@@ -30,21 +30,16 @@ import {
   UpgradeComponent,
 } from './components';
 import { ActionsDirective } from './components/actions/actions.directive';
+import { MultiSortDirective } from './components/list/multi-sort.directive';
 import { SimpleTextComponent } from './components/tooltip';
 import { ConfigurationModule } from './configuration/configuration.module';
-import {
-  DynamicDirective,
-  HoverDirective,
-  InfinityScrollDirective,
-  MultiSortDirective,
-} from './directives';
+import { DetailsModule } from './details/details.module';
+import { DynamicDirective, HoverDirective, InfinityScrollDirective } from './directives';
 import { FormElementsModule } from './form-elements/form-elements.module';
 import { HostComponentsMapModule } from './host-components-map/host-components-map.module';
 import { MaterialModule } from './material.module';
 import { BreakRowPipe, TagEscPipe } from './pipes';
 import { StuffModule } from './stuff.module';
-import { DetailsModule } from './details/details.module';
-
 
 @NgModule({
   imports: [
