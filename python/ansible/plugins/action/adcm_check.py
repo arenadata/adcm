@@ -68,7 +68,7 @@ from cm.logger import log
 class ActionModule(ActionBase):
 
     TRANSFERS_FILES = False
-    _VALID_ARGS = frozenset(('title', 'result', 'msg'))
+    _VALID_ARGS = frozenset(('title', 'result', 'msg', 'fail_msg', 'success_msg'))
 
     def run(self, tmp=None, task_vars=None):
         job_id = None
@@ -77,16 +77,30 @@ class ActionModule(ActionBase):
 
         result = super(ActionModule, self).run(tmp, task_vars)
 
-        if ('title' not in self._task.args or
-                'result' not in self._task.args or
-                'msg' not in self._task.args):
-            return {"failed": True, "msg": "title, result and msg are mandatory args of adcm_check"}
+        old_optional_condition = 'msg' in self._task.args
+        new_optional_condition = 'fail_msg' in self._task.args and 'success_msg' in self._task.args
+        optional_condition = old_optional_condition or new_optional_condition
+        required_condition = (
+                'title' in self._task.args and
+                'result' in self._task.args and
+                optional_condition
+        )
+        if required_condition:
+            return {
+                "failed": True,
+                "msg": ("title, result and msg, fail_msg or success"
+                        "_msg are mandatory args of adcm_check")
+            }
+
         result = super(ActionModule, self).run(tmp, task_vars)
         title = self._task.args['title']
         result = self._task.args['result']
-        msg = self._task.args['msg']
+        msg = self._task.get('msg', '')
+        fail_msg = self._task.args.get('fail_msg', '')
+        success_msg = self._task.args.get('success_msg', '')
 
-        log.debug('ansible adcm_check: %s, %s, %s, %s', job_id, title, result, msg)
+        log.debug('ansible adcm_check: %s, %s, %s, %s, %s, %s',
+                  job_id, title, result, msg, fail_msg, success_msg)
 
         try:
             cm.job.log_check(job_id, title, result, msg)
