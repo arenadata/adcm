@@ -7,7 +7,8 @@
     <mat-card class="col s12 m9 l10">
       <mat-card-header [style.minHeight.px]="40">
         <mat-card-title>
-          {{ getDisplayName() }}
+          {{ current.name }}
+          {{ current.actions | json }}
         </mat-card-title>
         <mat-card-subtitle>
           <app-details-subtitle [current]="current"></app-details-subtitle>

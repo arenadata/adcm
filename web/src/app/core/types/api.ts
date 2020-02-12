@@ -37,7 +37,8 @@ export interface IRoot {
 export interface ApiBase {
   typeName: TypeName;
   id: number;
-  name?: string;
+  name: string;
+  display_name?: string;
   description?: string;
   url: string;
   state: string;
@@ -48,6 +49,7 @@ export interface ApiBase {
   prototype_id: number;
   prototype_name: string;
   prototype_version: string;
+  bundle_id: number;
   status: number | string;
 }
 

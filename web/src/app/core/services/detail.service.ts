@@ -63,7 +63,7 @@ export class ClusterService {
   }
 
   one_host(id: number): Observable<Host> {
-    return this.api.getOne<Host>('host', id);
+    return this.api.getOne<Host>('host', id).pipe(map((host: Host) => ({ ...host, name: host.fqdn })));
   }
 
   one_provider(id: number): Observable<Provider> {
@@ -76,7 +76,7 @@ export class ClusterService {
         ...j,
         prototype_name: j.action ? j.action.prototype_name : '',
         prototype_version: j.action ? j.action.prototype_version : '',
-        bundle_id: j.action ? j.action.bundle_id : '',
+        bundle_id: j.action ? j.action.bundle_id : null,
         name: j.action ? `${j.action.display_name}` : 'Object has been deleted'
       }))
     );
@@ -99,7 +99,7 @@ export class ClusterService {
       .pipe(
         map((a: Entities) => {
           a.typeName = typeName;
-          this.worker.current = a;
+          this.worker.current = { ...a, name: a.display_name || a.name };
           this.workerSubject.next(this.worker);
           return this.worker;
         })

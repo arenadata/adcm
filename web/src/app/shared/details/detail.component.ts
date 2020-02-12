@@ -48,17 +48,27 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
   }
 
   run(w: WorkerInstance): IDetails {
-    const { id, name, typeName, actions, issue, upgradable, status, log_files, objects } = { ...w.current };
+    const { id, name, typeName, actions, issue, upgradable, status, log_files, objects, prototype_name, prototype_version, provider_id, bundle_id } = {
+      ...w.current
+    };
     const parent = w.current.typeName === 'cluster' ? null : w.cluster;
-    return { parent, id, name, typeName, actions, issue, upgradable, status, log_files, objects };
-  }
-
-  getDisplayName() {
-    return this.service.Current
-      ? 'display_name' in this.service.Current
-        ? this.service.Current.display_name || this.service.Current.name
-        : (this.service.Current as Host).fqdn
-      : '';
+    this.current = {
+      parent,
+      id,
+      name,
+      typeName,
+      actions,
+      issue,
+      upgradable,
+      status,
+      log_files,
+      objects,
+      prototype_name,
+      prototype_version,
+      provider_id,
+      bundle_id
+    };
+    return this.current;
   }
 
   scroll(stop: { direct: -1 | 1 | 0; screenTop: number }) {
@@ -67,28 +77,27 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
 
   socketListener(m: EventMessage) {
     if (m.event === 'create' && m.object.type === 'bundle') {
-      this.service.reset().subscribe(a => this.initValue(a.current, m));
+      this.request$ = this.service.reset().pipe(map(a => this.run(a)));
     }
 
     if (this.service.Current && this.service.Current.typeName === m.object.type && this.service.Current.id === m.object.id) {
       if (m.event === 'change_job_status' && this.service.Current.typeName === 'job') {
-        this.service.reset().subscribe(a => this.initValue(a.current, m));
+        this.request$ = this.service.reset().pipe(map(a => this.run(a)));
       }
 
       if (m.event === 'change_state' || m.event === 'upgrade' || m.event === 'raise_issue') {
-        this.service.reset().subscribe(a => this.initValue(a.current, m));
+        this.service
+          .reset()
+          .pipe(map(a => this.run(a)))
+          .subscribe(c => (this.current = { ...c }));
       }
 
       if (m.event === 'clear_issue') {
         if (m.object.type === 'cluster') this.service.Cluster.issue = {} as Issue;
-        this.service.Current.issue = {} as Issue;
-        this.updateView();
+        this.current = { ...this.current, issue: null };
       }
 
-      if (m.event === 'change_status') {
-        this.service.Current.status = +m.object.details.value;
-        this.updateView();
-      }
+      if (m.event === 'change_status') this.current = { ...this.current, status: +m.object.details.value };
     }
     if (
       this.service.Cluster &&
@@ -96,22 +105,7 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
       m.object.type === 'cluster' &&
       this.service.Current.typeName !== 'cluster' &&
       this.service.Cluster.id === m.object.id
-    ) {
-      this.service.Cluster.issue = {} as Issue;
-      this.updateView();
-    }
-  }
-
-  initValue(a: Entities, m?: EventMessage) {
-    // this.actions$ = !a.actions || !a.actions.length ? this.service.getActions() : of(a.actions);
-    //this.updateView();
-    //console.log(`GET: ${this.service.Current.typeName}`, a, m);
-  }
-
-  updateView() {
-    // this.crumbs = this.nav.getCrumbs({
-    //   cluster: this.service.Cluster,
-    //   current: this.service.Current
-    // });
+    )
+      this.current = { ...this.current, issue: null };
   }
 }

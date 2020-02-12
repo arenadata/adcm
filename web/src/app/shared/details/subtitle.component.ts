@@ -23,20 +23,23 @@ import { TypeName } from '@app/core/types';
       </ng-container>
     </ng-container>
     <ng-template #link>
-      <a *ngIf="current" [routerLink]="['/', current.provider_id ? 'provider' : 'bundle', current.provider_id || current.bundle_id || {}]">
-        {{ current.prototype_display_name || current.prototype_name }}
-        {{ current.prototype_version }}
-      </a>
+      <a *ngIf="flag" [routerLink]="link"> {{ prototype_name }} </a>
     </ng-template>
   `
 })
 export class SubtitleComponent {
   typeName: TypeName;
   objects: any[];
+  link: string | number | {}[];
+  prototype_name: string;
+  flag: boolean;
   @Input() set current(c: IDetails) {
     if (c) {
       this.typeName = c.typeName;
       this.objects = c.objects;
+      this.flag = !!c.prototype_name;
+      this.link = ['/', c.provider_id ? 'provider' : 'bundle', c.provider_id || c.bundle_id || {}];
+      this.prototype_name = `${c.prototype_name} ${c.prototype_version}`;
     }
   }
   getParentLink(objects: { id: number; type: string }[], ind: number) {

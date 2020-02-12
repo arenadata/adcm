@@ -32,7 +32,7 @@ interface TaskBase {
 export interface JobAction {
   prototype_name?: string;
   prototype_version?: string;
-  bundle_id?: string;
+  bundle_id?: number;
   display_name: string;
 }
 interface JobRaw extends TaskBase {
