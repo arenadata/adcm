@@ -75,8 +75,6 @@ class ActionModule(ActionBase):
         if task_vars is not None and 'job' in task_vars or 'id' in task_vars['job']:
             job_id = task_vars['job']['id']
 
-        result = super(ActionModule, self).run(tmp, task_vars)
-
         old_optional_condition = 'msg' in self._task.args
         new_optional_condition = 'fail_msg' in self._task.args and 'success_msg' in self._task.args
         optional_condition = old_optional_condition or new_optional_condition
