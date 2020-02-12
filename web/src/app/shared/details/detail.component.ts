@@ -11,51 +11,34 @@
 // limitations under the License.
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ChannelService, ClusterService } from '@app/core';
+import { ChannelService, ClusterService, WorkerInstance } from '@app/core';
 import { EventMessage, SocketState } from '@app/core/store';
-import { Cluster, Entities, Host, IAction, Issue } from '@app/core/types';
+import { Entities, Host, Issue } from '@app/core/types';
 import { Store } from '@ngrx/store';
-import { Observable, of } from 'rxjs';
-import { switchMap, tap } from 'rxjs/operators';
+import { Observable } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
 
 import { SocketListener } from '../directives/base.directive';
-import { CrumbsItem, NavigationService } from './navigation.service';
+import { IDetails } from './details.service';
 
 @Component({
   selector: 'app-detail',
   templateUrl: './detail.component.html',
-  styleUrls: ['./detail.component.scss'],
-  providers: [NavigationService]
+  styleUrls: ['./detail.component.scss']
 })
 export class DetailComponent extends SocketListener implements OnInit, OnDestroy {
-  actions$: Observable<IAction[]> = of([]);
-  issue: Issue;
-  crumbs: CrumbsItem[];
+  current: IDetails;
+  request$: Observable<IDetails>;
 
-  current: Entities;
-  cluster: Cluster;
-
-  constructor(
-    socket: Store<SocketState>,
-    private route: ActivatedRoute,
-    private service: ClusterService,
-    private nav: NavigationService,
-    private channel: ChannelService
-  ) {
+  constructor(socket: Store<SocketState>, private route: ActivatedRoute, private service: ClusterService, private channel: ChannelService) {
     super(socket);
   }
 
   ngOnInit(): void {
-    this.route.paramMap
-      .pipe(
-        this.takeUntil(),
-        switchMap(param => this.service.getContext(param))
-      )
-      .subscribe(w => {
-        this.current = w.current;
-        this.cluster = w.cluster;
-        this.initValue(w.current);
-      });
+    this.request$ = this.route.paramMap.pipe(
+      switchMap(param => this.service.getContext(param)),
+      map(w => this.run(w))
+    );
 
     super.startListenSocket();
   }
@@ -64,12 +47,10 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
     this.service.clearWorker();
   }
 
-  get isIssue() {
-    return this.service.Current && this.service.Current.issue && !!Object.keys(this.service.Current.issue).length;
-  }
-
-  isUpgradable() {
-    return this.service.Cluster && this.service.Cluster.upgradable;
+  run(w: WorkerInstance): IDetails {
+    const { id, name, typeName, actions, issue, upgradable, status, log_files, objects } = { ...w.current };
+    const parent = w.current.typeName === 'cluster' ? null : w.cluster;
+    return { parent, id, name, typeName, actions, issue, upgradable, status, log_files, objects };
   }
 
   getDisplayName() {
@@ -122,15 +103,15 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
   }
 
   initValue(a: Entities, m?: EventMessage) {
-    this.actions$ = !a.actions || !a.actions.length ? this.service.getActions() : of(a.actions);
-    this.updateView();
+    // this.actions$ = !a.actions || !a.actions.length ? this.service.getActions() : of(a.actions);
+    //this.updateView();
     //console.log(`GET: ${this.service.Current.typeName}`, a, m);
   }
 
   updateView() {
-    this.crumbs = this.nav.getCrumbs({
-      cluster: this.service.Cluster,
-      current: this.service.Current
-    });
+    // this.crumbs = this.nav.getCrumbs({
+    //   cluster: this.service.Cluster,
+    //   current: this.service.Current
+    // });
   }
 }

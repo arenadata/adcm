@@ -10,25 +10,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input } from '@angular/core';
+import { INavItem } from '@app/shared/details/details.service';
 
 @Component({
   selector: 'app-crumbs',
   template: `
-    <mat-nav-list class="bread-crumbs">
-      <a [routerLink]="['/admin']"><mat-icon>{{ icon ? icon : 'apps' }}</mat-icon></a><span>&nbsp;/&nbsp;</span>
-      <span *ngFor="let item of navigation; last as isLast; trackBy: _trackBy">
-        <a [routerLink]="[item.path]">{{ item.name | uppercase }}</a>
+    <mat-nav-list>
+      <a [routerLink]="['/admin']"><mat-icon>apps</mat-icon></a>
+      <span>&nbsp;/&nbsp;</span>
+      <span *ngFor="let item of navigation; last as isLast; trackBy: trackBy">
+        <a [routerLink]="[item.url]">{{ item.title | uppercase }}</a>
         <mat-icon *ngIf="item.issue" [matTooltip]="item.issue" color="warn">priority_hight</mat-icon>
         <span *ngIf="!isLast">&nbsp;/&nbsp;</span>
       </span>
     </mat-nav-list>
   `,
-  styleUrls: ['./crumbs.component.scss'],
+  styleUrls: ['./crumbs.component.scss']
 })
 export class CrumbsComponent {
-  @Input() navigation: { path: string; name: string };
-  @Input() icon: string;
-  _trackBy(item: { path: string; name: string }) {
-    return item.path;
+  @Input() navigation: INavItem[];
+  trackBy(index: number, item: INavItem) {
+    return item.url;
   }
 }

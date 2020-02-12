@@ -10,9 +10,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input, OnInit } from '@angular/core';
-import { ApiBase } from '@app/core/types';
 
-import { ILeftMenuItem, NavigationService } from '../navigation.service';
+import { INavItem } from '../details.service';
+import { NavigationService } from '../navigation.service';
 
 @Component({
   selector: 'app-details-left',
@@ -35,7 +35,7 @@ import { ILeftMenuItem, NavigationService } from '../navigation.service';
   styles: ['mat-nav-list {padding-top: 20px;}']
 })
 export class LeftComponent implements OnInit {
-  items: ILeftMenuItem[];
+  items: INavItem[] = [];
   @Input() set current(c) {
     if (c) this.items = this.navigation.getLeft(c);
   }

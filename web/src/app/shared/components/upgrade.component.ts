@@ -13,11 +13,11 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '@app/core/api';
 import { EmmitRow } from '@app/core/types';
-import { Observable, of, concat } from 'rxjs';
-import { filter, switchMap, switchAll, concatAll, map } from 'rxjs/operators';
+import { concat, Observable, of } from 'rxjs';
+import { filter, map, switchMap } from 'rxjs/operators';
 
-import { DialogComponent } from './dialog.component';
 import { BaseDirective } from '../directives';
+import { DialogComponent } from './dialog.component';
 
 interface UpgradeRow {
   upgradable: boolean;

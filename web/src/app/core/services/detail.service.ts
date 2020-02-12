@@ -77,7 +77,7 @@ export class ClusterService {
         prototype_name: j.action ? j.action.prototype_name : '',
         prototype_version: j.action ? j.action.prototype_version : '',
         bundle_id: j.action ? j.action.bundle_id : '',
-        // display_name: j.action ? `${j.action.display_name}` : 'Object has been deleted'
+        name: j.action ? `${j.action.display_name}` : 'Object has been deleted'
       }))
     );
   }

@@ -18,10 +18,13 @@ import { StuffModule } from '../stuff.module';
 import { DetailComponent } from './detail.component';
 import { SubtitleComponent } from './subtitle.component';
 import { LeftComponent } from './left/left.component';
+import { TopComponent } from './top/top.component';
+import { NavigationService } from './navigation.service';
 
 @NgModule({
-    imports: [CommonModule, RouterModule, MaterialModule, StuffModule ],
-    exports: [DetailComponent],
-    declarations: [DetailComponent, SubtitleComponent, LeftComponent]
+  imports: [CommonModule, RouterModule, MaterialModule, StuffModule],
+  exports: [DetailComponent],
+  declarations: [DetailComponent, SubtitleComponent, LeftComponent, TopComponent],
+  providers: [NavigationService]
 })
 export class DetailsModule {}

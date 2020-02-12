@@ -13,10 +13,16 @@ import { ApiBase } from './api';
 
 export type JobStatus = 'created' | 'running' | 'failed' | 'success';
 
+export interface JobObject {
+  id: number;
+  name: string;
+  type: string;
+}
+
 interface TaskBase {
-  start_date: string;  
+  start_date: string;
   finish_date: string;
-  objects: { id: number; name: string; type: string }[];  
+  objects: JobObject[];
   status: JobStatus;
   action: JobAction;
   terminatable: boolean;
@@ -29,7 +35,7 @@ export interface JobAction {
   bundle_id?: string;
   display_name: string;
 }
-interface JobRaw extends TaskBase {  
+interface JobRaw extends TaskBase {
   log_files: LogFile[];
 }
 

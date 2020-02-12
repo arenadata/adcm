@@ -10,28 +10,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input } from '@angular/core';
-import { Entities } from '@app/core/types';
+import { IDetails } from './details.service';
+import { TypeName } from '@app/core/types';
 
 @Component({
   selector: 'app-details-subtitle',
   template: `
-    <ng-container *ngIf="current.typeName === 'job'; else link">
-      <ng-container *ngFor="let o of current.objects; index as i; last as lastElement">
-        <a [routerLink]="getParentLink(current.objects, i)">{{ o.name }}</a>
+    <ng-container *ngIf="typeName === 'job'; else link">
+      <ng-container *ngFor="let o of objects; index as i; last as lastElement">
+        <a [routerLink]="getParentLink(objects, i)">{{ o.name }}</a>
         <span *ngIf="!lastElement"> / </span>
       </ng-container>
     </ng-container>
     <ng-template #link>
-      <a [routerLink]="['/', current.provider_id ? 'provider' : 'bundle', current.provider_id || current.bundle_id || {}]">
+      <a *ngIf="current" [routerLink]="['/', current.provider_id ? 'provider' : 'bundle', current.provider_id || current.bundle_id || {}]">
         {{ current.prototype_display_name || current.prototype_name }}
         {{ current.prototype_version }}
       </a>
     </ng-template>
-  `,
-  styles: []
+  `
 })
 export class SubtitleComponent {
-  @Input() current: any = {};
+  typeName: TypeName;
+  objects: any[];
+  @Input() set current(c: IDetails) {
+    if (c) {
+      this.typeName = c.typeName;
+      this.objects = c.objects;
+    }
+  }
   getParentLink(objects: { id: number; type: string }[], ind: number) {
     return objects.filter((a, i) => i <= ind).reduce((a, c) => [...a, c.type, c.id], ['/']);
   }
