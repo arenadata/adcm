@@ -110,6 +110,7 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
 
       if (m.event === 'change_status') this.status = +m.object.details.value;
     }
+    
     if (
       this.service.Cluster &&
       m.event === 'clear_issue' &&
