@@ -4,7 +4,7 @@
   </mat-form-field>
 </div> -->
 <mat-table [dataSource]="data" [trackBy]="trackBy" matSort>
-  <mat-header-row *matHeaderRowDef="columns" [appMultiSort]="sortParam"></mat-header-row>
+  <mat-header-row *matHeaderRowDef="columns" [appMultiSort]="sortParam" (mousedownevent)="addToSorting=$event"></mat-header-row>
   <mat-row appHover *matRowDef="let row; columns: columns" (click)="clickCell($event, 'title', row)"
     [ngClass]="{ 'select-table-item': current ? row.id === current.id : false }"></mat-row>
 
@@ -219,7 +219,7 @@
   <ng-container matColumnDef="fqdn">
     <mat-header-cell *matHeaderCellDef mat-sort-header>FQDN</mat-header-cell>
     <mat-cell *matCellDef="let row">
-      <span>{{ row.fqdn }}</span>
+      <span class="overflow" [appTooltip]="row.fqdn" [appTooltipShowByCondition]="true">{{ row.fqdn }}</span>
     </mat-cell>
   </ng-container>
 

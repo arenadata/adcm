@@ -630,6 +630,7 @@ class ProviderActionShort(ActionShort):
 class UpgradeSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(required=False)
+    bundle_id = serializers.IntegerField(read_only=True)
     description = serializers.CharField(required=False)
     min_version = serializers.CharField(required=False)
     max_version = serializers.CharField(required=False)
@@ -637,6 +638,7 @@ class UpgradeSerializer(serializers.Serializer):
     max_strict = serializers.BooleanField(required=False)
     upgradable = serializers.BooleanField(required=False)
     license = serializers.CharField(required=False)
+    license_url = hlink('bundle-license', 'bundle_id', 'bundle_id')
     from_edition = JSONField(required=False)
     state_available = JSONField(required=False)
     state_on_success = serializers.CharField(required=False)
