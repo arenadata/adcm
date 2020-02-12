@@ -21,24 +21,30 @@ import { NavigationService } from '../navigation.service';
   template: `
     <app-crumbs [navigation]="items"></app-crumbs>
     <div class="example-spacer"></div>
-    <app-upgrade *ngIf="upgradable && !isIssue" [dataRow]="current"></app-upgrade>
-    <app-actions [source]="actions$" [isIssue]="isIssue" [cluster]="cluster"></app-actions>
+    <app-upgrade *ngIf="upgradable && eIssue" [dataRow]="current"></app-upgrade>
+    <app-actions [source]="actions" [isIssue]="eIssue" [cluster]="cluster"></app-actions>
   `,
   styles: [':host {display: flex;width: 100%;}']
 })
 export class TopComponent {
-  actions$: Observable<IAction[]> = of([]);
   items: INavItem[];
   cluster: { id: number; hostcomponent: string };
-  isIssue: boolean;
-  upgradable: boolean;
+  eIssue: boolean;
+
+  @Input() set isIssue(v: boolean) {
+    this.eIssue = v;
+    if (this.items) {
+      const a = this.items.find(b => b.id);
+      if (a) a.issue = this.navigation.getIssueMessage(v);
+    }
+  }
+
+  @Input() upgradable: boolean;
+  @Input() actions: Observable<IAction[]> = of([]);
 
   @Input() set current(c: IDetails) {
     if (c) {
-      this.items = this.navigation.getCrumbs(c);     
-      this.actions$ = !c.actions || !c.actions.length ? of([]) : of(c.actions);
-      this.isIssue = c.issue && !!Object.keys(c.issue).length;
-      this.upgradable = c.upgradable;
+      this.items = this.navigation.getCrumbs(c);
       const { id, hostcomponent } = { ...(c.parent || c) };
       this.cluster = { id, hostcomponent };
     }

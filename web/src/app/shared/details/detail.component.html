@@ -1,14 +1,13 @@
 <ng-container *ngIf="request$ | async as current">
   <mat-toolbar class="toolbar">
-    <app-details-top [current]="current"></app-details-top>
+    <app-details-top [current]="current" [actions]="actions" [isIssue]="isIssue" [upgradable]="upgradable"></app-details-top>
   </mat-toolbar>
   <div class="row main">
-    <app-details-left [current]="current" class="col s12 m3 l2"></app-details-left>
+    <app-details-left [current]="current" [issues]="issues" [status]="status" class="col s12 m3 l2"></app-details-left>
     <mat-card class="col s12 m9 l10">
       <mat-card-header [style.minHeight.px]="40">
         <mat-card-title>
           {{ current.name }}
-          {{ current.actions | json }}
         </mat-card-title>
         <mat-card-subtitle>
           <app-details-subtitle [current]="current"></app-details-subtitle>

@@ -11,8 +11,9 @@
 // limitations under the License.
 import { Component, Input, OnInit } from '@angular/core';
 
-import { INavItem } from '../details.service';
-import { NavigationService } from '../navigation.service';
+import { INavItem, IDetails } from '../details.service';
+import { NavigationService, Config, IssueSet } from '../navigation.service';
+import { ApiBase, Job, Issue } from '@app/core/types';
 
 @Component({
   selector: 'app-details-left',
@@ -34,13 +35,21 @@ import { NavigationService } from '../navigation.service';
   `,
   styles: ['mat-nav-list {padding-top: 20px;}']
 })
-export class LeftComponent implements OnInit {
+export class LeftComponent {
   items: INavItem[] = [];
-  @Input() set current(c) {
+  @Input() set current(c: ApiBase) {
     if (c) this.items = this.navigation.getLeft(c);
   }
 
-  constructor(private navigation: NavigationService) {}
+  @Input() set issues(i: Issue) {
+    if (!i) i = {} as Issue;
+    this.items = this.items.map(a => ({ ...a, issue: this.navigation.setIssue(a.url, i) ? 'issue' : '' }));
+  }
 
-  ngOnInit() {}
+  @Input() set status(v: number) {
+    const b = this.items.find(a => a.url === 'status');
+    if (b) b.status = v;
+  }
+
+  constructor(private navigation: NavigationService) {}
 }

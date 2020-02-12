@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { ApiBase, Job } from '@app/core/types';
+import { ApiBase, Job, Issue } from '@app/core/types';
 
 import { IDetails, INavItem } from './details.service';
 
@@ -56,10 +56,10 @@ export class NavigationService {
       return [{ id: 0, title: 'Main', url: 'main' }, ...job.log_files.map(a => ({ title: a.file, url: `${a.tag}_${a.level}` }))];
     }
 
-    const issue = current.issue || {};
+    const issue = current.issue || {} as Issue;
     return Config.menu[typeName].map((i: INavItem) => ({
       ...i,
-      issue: Object.keys(issue).some(p => p === i.url || (IssueSet[i.url] && IssueSet[i.url].some(a => a === p))),
+      issue: this.setIssue(i.url, issue),
       status: current.status
     }));
   }
@@ -76,9 +76,10 @@ export class NavigationService {
       output = [
         { url: '/cluster', title: 'clusters' },
         {
+          id: cluster.id,
           url: pref,
           title: cluster.name,
-          issue: cluster.issue && !!Object.keys(cluster.issue).length ? `Something is wrong with your cluster configuration, please review it.` : ''
+          issue: this.getIssueMessage(cluster.issue && !!Object.keys(cluster.issue).length)
         }
       ];
     }
@@ -96,5 +97,13 @@ export class NavigationService {
       ];
 
     return output;
+  }
+
+  getIssueMessage(flag: boolean) {
+    return flag ? `Something is wrong with your cluster configuration, please review it.` : '';
+  }
+
+  setIssue(url: string, issue: Issue) {
+    return Object.keys(issue).some(p => p === url || (IssueSet[url] && IssueSet[url].some(a => a === p)));
   }
 }
