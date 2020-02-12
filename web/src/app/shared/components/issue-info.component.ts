@@ -64,8 +64,8 @@ export class IssueInfoComponent implements OnInit {
 
   getParent() {
     if (this.parent && this.parent.cluster_id !== this.current.id) {
-      return `${this.parent.typeName}/${this.parent.id}/${this.typeName}`;
-    } else return this.typeName;
+      return `${this.parent.typeName.split(';')[0]}/${this.parent.id}/${this.typeName}`;
+    } else return this.typeName.split(';')[0];
   }
 
   isArray(issue: [] | false): boolean {

@@ -13,9 +13,8 @@ import { Injectable } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { getControlType, getPattern, isObject } from '@app/core/types';
 
-import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, PanelOptions, IStructure } from './types';
-import { YspecStructure, matchType } from './YspecStructure';
-import { YspecService } from './yspec/yspec.service';
+import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, IStructure, PanelOptions } from './types';
+import { YspecService, matchType } from './yspec/yspec.service';
 
 export interface IToolsEvent {
   name: string;
@@ -128,7 +127,7 @@ export class FieldService {
   }
 
   toFormGroup(options: (FieldOptions | PanelOptions)[]): FormGroup {
-    this.form = this.fb.group(options.reduce((p, c) => this.runByTree(c, p), {}));    
+    this.form = this.fb.group(options.reduce((p, c) => this.runByTree(c, p), {}));
     return this.form;
   }
 
@@ -212,10 +211,13 @@ export class FieldService {
     return Object.keys(value).reduce((p, c) => {
       const data = value[c];
       const field = this.findField(c, parentName);
-      if (field) {
+
+      if (field && !field.read_only) {
         if (field.type === 'structure') p[c] = this.runYspecParse(data, field);
-        else if (isObject(data) && !excluteTypes.includes(field.type)) p[c] = this.runParse(data, field.name);
-        else if (field) p[c] = this.checkValue(data, field.type);
+        else if (isObject(data) && !excluteTypes.includes(field.type)) {
+          const br = this.runParse(data, field.name);
+          if (Object.keys(br).length) p[c] = br;
+        } else if (field) p[c] = this.checkValue(data, field.type);
       }
       return p;
     }, {});

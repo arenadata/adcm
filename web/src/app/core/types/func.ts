@@ -11,9 +11,9 @@
 // limitations under the License.
 import { controlType } from '@app/shared/configuration/field.service';
 import { ConfigResultTypes, ConfigValueTypes, FieldStack } from '@app/shared/configuration/types';
-import { matchType } from '@app/shared/configuration/YspecStructure';
 
 import { InnerIssue, Issue } from './issue';
+import { matchType } from '@app/shared/configuration/yspec/yspec.service';
 
 export function getPattern(name: string): RegExp {
   const fn = {

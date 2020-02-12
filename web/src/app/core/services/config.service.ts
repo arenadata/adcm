@@ -14,7 +14,6 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-
 const CONFIG_URL = '/assets/config.json';
 export interface IConfig {
   version: string;
@@ -42,10 +41,13 @@ export class ConfigService {
   }
 
   checkVersion(c: IConfig): IConfig | null {
-    if (this.version !== c.version) {
-      this.version = c.version;
+    const version = `${c.version}-${c.commit_id}`;
+    if (this.version && this.version !== version) {
+      this.version = version;
       return null;
-    } else return c;
+    }
+    this.version = version;
+    return c;
   }
 
   load() {
