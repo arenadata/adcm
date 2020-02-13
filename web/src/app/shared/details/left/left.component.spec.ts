@@ -39,4 +39,15 @@ describe('LeftComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  /** 
+   * 
+  */
+
+  it('should initialize menu on depends input typeName', () => {
+
+    //component.current = { typeName: 'cluster'};
+
+  });
+
 });

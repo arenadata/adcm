@@ -43,7 +43,7 @@ export class LeftComponent {
 
   @Input() set issues(i: Issue) {
     if (!i) i = {} as Issue;
-    this.items = this.items.map(a => ({ ...a, issue: this.navigation.setIssue(a.url, i) ? 'issue' : '' }));
+    this.items = this.items.map(a => ({ ...a, issue: this.navigation.findIssue(a.url, i) ? 'issue' : '' }));
   }
 
   @Input() set status(v: number) {
