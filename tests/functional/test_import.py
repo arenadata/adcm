@@ -23,14 +23,11 @@ from tests.library import errorcodes as err
 def test_service_import_negative(sdk_client_fs: ADCMClient, path):
     """Create service with incorrect version in import cluster
     Scenario:
-    1. Create cluster for upgrade with exports
-    2. Create upgradable cluster with import and incorrect strict version
-    3. Create service
-    4. Import service from cluster with export to cluster from step 2 (with import)
-    4. Upgrade cluster from step 1
-    5. Check that cluster was not upgraded because incorrect version for service
-    in cluster with import
-        """
+    1. Create cluster with import
+    2. Create cluster with export
+    3. Bind service from cluster with export to cluster with import
+    4. Expect backend error because incorrect version for import
+    """
     bundle = sdk_client_fs.upload_from_fs(path + '/export')
     bundle_import = sdk_client_fs.upload_from_fs(path + '/import')
     cluster = bundle.cluster_create("test")
@@ -45,6 +42,13 @@ def test_service_import_negative(sdk_client_fs: ADCMClient, path):
 
 @parametrize_by_data_subdirs(__file__, "cluster_import_check_negative")
 def test_cluster_import_negative(sdk_client_fs: ADCMClient, path):
+    """Create cluster with incorrect version in import cluster
+    Scenario:
+    1. Create cluster with import
+    2. Create cluster with export
+    3. Bind cluster from cluster with export to cluster with import
+    4. Expect backend error because incorrect version for import
+    """
     bundle = sdk_client_fs.upload_from_fs(path + '/export')
     bundle_import = sdk_client_fs.upload_from_fs(path + '/import')
     cluster = bundle.cluster_create("test")
@@ -56,6 +60,8 @@ def test_cluster_import_negative(sdk_client_fs: ADCMClient, path):
 
 @parametrize_by_data_subdirs(__file__, "service_import")
 def test_service_import(sdk_client_fs: ADCMClient, path):
+    """Import service test
+    """
     bundle = sdk_client_fs.upload_from_fs(path + '/export')
     bundle_import = sdk_client_fs.upload_from_fs(path + '/import')
     cluster = bundle.cluster_create("test")
@@ -66,6 +72,8 @@ def test_service_import(sdk_client_fs: ADCMClient, path):
 
 @parametrize_by_data_subdirs(__file__, "cluster_import")
 def test_cluster_import(sdk_client_fs: ADCMClient, path):
+    """Import cluster test
+    """
     bundle = sdk_client_fs.upload_from_fs(path + '/export')
     bundle_import = sdk_client_fs.upload_from_fs(path + '/import')
     cluster = bundle.cluster_create("test")
