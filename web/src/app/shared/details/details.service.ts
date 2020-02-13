@@ -17,7 +17,8 @@ export interface INavItem {
   title: string;
   url: string;
   issue?: string;
-  status?: string | number;
+  status?: number;
+  statusMessage?: string;
 }
 
 export interface IDetails {
@@ -27,6 +28,7 @@ export interface IDetails {
   name: string;
   navigation?: { top: INavItem[]; left: INavItem[] };
   upgradable: boolean;
+  upgrade: string;
   status: string | number;
   actions: IAction[];
   issue: Issue;

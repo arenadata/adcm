@@ -20,3 +20,10 @@ export interface Issue<K = 'host' | 'service' | 'cluster' | 'provider'> {
   [K: string]: false | InnerIssue;
   K: InnerIssue;
 }
+
+/**
+ * Check Issue
+ * @returns true if there's not issues
+ * @param issue 
+ */
+export const notIssue = (issue: Issue): boolean => !(issue && Object.keys(issue).length);

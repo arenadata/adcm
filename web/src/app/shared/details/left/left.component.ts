@@ -9,11 +9,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input } from '@angular/core';
+import { ApiBase, Issue } from '@app/core/types';
 
-import { INavItem, IDetails } from '../details.service';
-import { NavigationService, Config, IssueSet } from '../navigation.service';
-import { ApiBase, Job, Issue } from '@app/core/types';
+import { INavItem } from '../details.service';
+import { NavigationService } from '../navigation.service';
 
 @Component({
   selector: 'app-details-left',

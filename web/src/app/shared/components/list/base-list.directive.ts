@@ -86,7 +86,7 @@ export class BaseListDirective extends SocketListener implements OnInit, OnDestr
 
   socketListener(m: EventMessage): void {
     /** check upgradable */
-    if (m.event === 'create' && m.object.type === 'bundle' && this.typeName === 'cluster') {
+    if ((m.event === 'create' || m.event === 'delete') && m.object.type === 'bundle' && this.typeName === 'cluster') {
       this.refresh(m.object.id);
       return;
     }
@@ -107,24 +107,32 @@ export class BaseListDirective extends SocketListener implements OnInit, OnDestr
     }
 
     // events for the row of list
-    const row = this.parent.data.data.find(a => a.id === m.object.id);
-    if (m.event === 'add' && stype === 'host2cluster' && row) {
-      this.service.checkItem<AdcmHost>(row).subscribe(a => {
-        const { cluster_id, cluster_name } = { ...a };
-        row.cluster_id = cluster_id;
-        row.cluster_name = cluster_name;
-      });
-    }
+    if (this.parent.data.data.length) {
+      const row = this.parent.data.data.find(a => a.id === m.object.id);
+      if (m.event === 'add' && stype === 'host2cluster' && row) {
+        this.service.checkItem<AdcmHost>(row).subscribe(a => {
+          const { cluster_id, cluster_name } = { ...a };
+          row.cluster_id = cluster_id;
+          row.cluster_name = cluster_name;
+        });
+      }
 
-    if (getTypeName(this.typeName) === m.object.type) {
-      if (row) {
-        if (m.event === 'change_state') row.state = m.object.details.value;
-        if (m.event === 'change_status') row.status = +m.object.details.value;
-        if (m.event === 'change_job_status') row.status = m.object.details.value;
-        if (m.event === 'upgrade') {
-          this.service.checkItem(row).subscribe(item => Object.keys(row).map(a => (row[a] = item[a])));
-        }
-      } else console.warn('List :: object not found', m, this.parent.data.data, this.typeName);
+      if (getTypeName(this.typeName) === m.object.type) {
+        if (row) {
+          if (m.event === 'change_state') {
+            row.state = m.object.details.value;
+            row.issue = m.object.details.value === 'locked' ? { issue: '' } : {};
+          }
+          if (m.event === 'change_status') row.status = +m.object.details.value;
+
+          if (m.event === 'change_job_status') {
+            row.status = m.object.details.value;
+          }
+          if (m.event === 'upgrade') {
+            this.service.checkItem(row).subscribe(item => Object.keys(row).map(a => (row[a] = item[a])));
+          }
+        } else console.warn('List :: object not found', m, this.parent.data.data, this.typeName);
+      }
     }
   }
 

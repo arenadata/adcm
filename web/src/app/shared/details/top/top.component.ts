@@ -10,7 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input } from '@angular/core';
-import { IAction } from '@app/core/types';
+import { Cluster, IAction, Issue, notIssue } from '@app/core/types';
+import { UpgradeItem } from '@app/shared/components';
 import { Observable, of } from 'rxjs';
 
 import { IDetails, INavItem } from '../details.service';
@@ -21,7 +22,7 @@ import { NavigationService } from '../navigation.service';
   template: `
     <app-crumbs [navigation]="items"></app-crumbs>
     <div class="example-spacer"></div>
-    <app-upgrade *ngIf="upgradable && eIssue" [dataRow]="current"></app-upgrade>
+    <app-upgrade *ngIf="upgradable" [dataRow]="upgrade"></app-upgrade>
     <app-actions [source]="actions" [isIssue]="eIssue" [cluster]="cluster"></app-actions>
   `,
   styles: [':host {display: flex;width: 100%;}']
@@ -30,9 +31,11 @@ export class TopComponent {
   items: INavItem[];
   cluster: { id: number; hostcomponent: string };
   eIssue: boolean;
+  upgrade: UpgradeItem;
 
   @Input() set isIssue(v: boolean) {
     this.eIssue = v;
+    if (this.upgrade) this.upgrade.issue = (v ? { issue: '' } : {}) as Issue;
     if (this.items) {
       const a = this.items.find(b => b.id);
       if (a) a.issue = this.navigation.getIssueMessage(v);
@@ -45,8 +48,11 @@ export class TopComponent {
   @Input() set current(c: IDetails) {
     if (c) {
       this.items = this.navigation.getCrumbs(c);
-      const { id, hostcomponent } = { ...(c.parent || c) };
+      const { id, hostcomponent, issue, upgradable, upgrade } = c.parent || (c as Partial<Cluster>);
       this.cluster = { id, hostcomponent };
+      this.upgradable = upgradable;
+      this.eIssue = !notIssue(issue);
+      this.upgrade = { issue, upgradable, upgrade };
     }
   }
   constructor(private navigation: NavigationService) {}

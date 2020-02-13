@@ -37,6 +37,10 @@ export class Much2ManyComponent {
     if ('service_id' in this.model) {
       const sc = this.model as CompTile;
       const control = form.controls[`${sc.service_id}/${sc.id}`];
+      if (!control) {
+        console.warn(this.model, form);
+        return undefined;
+      }
       return control.invalid;
     } else return false;
   }

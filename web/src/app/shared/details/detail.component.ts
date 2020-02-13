@@ -13,7 +13,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ChannelService, ClusterService, WorkerInstance } from '@app/core';
 import { EventMessage, SocketState } from '@app/core/store';
-import { Entities, Host, Issue, IAction } from '@app/core/types';
+import { Cluster, Host, IAction, Issue, Job, notIssue } from '@app/core/types';
 import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
@@ -51,14 +51,16 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
     this.service.clearWorker();
   }
 
-  checkIssue(issue: Issue) {
-    return !!issue && !!Object.keys(issue).length;
+  notIssue(issue: Issue) {
+    return !notIssue(issue);
   }
 
   run(w: WorkerInstance): IDetails {
-    const { id, name, typeName, actions, issue, upgradable, status, log_files, objects, prototype_name, prototype_version, provider_id, bundle_id } = {
-      ...w.current
-    };
+    const { id, name, typeName, actions, issue, status, prototype_name, prototype_version, bundle_id } = w.current;
+    const { upgradable, upgrade } = w.current as Cluster;
+    const { log_files, objects } = w.current as Job;
+    const { provider_id } = w.current as Host;
+
     const parent = w.current.typeName === 'cluster' ? null : w.cluster;
 
     this.actions = !actions || !actions.length ? this.service.getActions() : of(actions);
@@ -66,7 +68,7 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
     this.issues = issue;
     this.status = status;
 
-    this.isIssue = this.checkIssue(parent ? parent.issue : issue);
+    this.isIssue = this.notIssue(parent ? parent.issue : issue);
 
     return {
       parent,
@@ -76,6 +78,7 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
       actions,
       issue,
       upgradable,
+      upgrade,
       status,
       log_files,
       objects,
@@ -91,11 +94,12 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
   }
 
   socketListener(m: EventMessage) {
-    if (m.event === 'create' && m.object.type === 'bundle') {
+    if ((m.event === 'create' || m.event === 'delete') && m.object.type === 'bundle') {
       this.service.reset().subscribe(a => this.run(a));
     }
 
     if (this.service.Current && this.service.Current.typeName === m.object.type && this.service.Current.id === m.object.id) {
+      
       if (m.event === 'change_job_status' && this.service.Current.typeName === 'job') {
         this.service.reset().subscribe(a => this.run(a));
       }
@@ -104,13 +108,11 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
         this.service.reset().subscribe(a => this.run(a));
       }
 
-      if (m.event === 'clear_issue') {
-        if (m.object.type === 'cluster') this.issues = {} as Issue;
-      }
+      if (m.event === 'clear_issue' && m.object.type === 'cluster') this.issues = {} as Issue;
 
       if (m.event === 'change_status') this.status = +m.object.details.value;
     }
-    
+
     if (
       this.service.Cluster &&
       m.event === 'clear_issue' &&
@@ -120,6 +122,6 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
     )
       this.issues = {} as Issue;
 
-    this.isIssue = this.checkIssue(this.issues);
+    this.isIssue = this.notIssue(this.issues);
   }
 }

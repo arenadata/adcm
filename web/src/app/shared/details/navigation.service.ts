@@ -60,7 +60,7 @@ export class NavigationService {
     return Config.menu[typeName].map((i: INavItem) => ({
       ...i,
       issue: this.setIssue(i.url, issue),
-      status: current.status
+      status: +current.status
     }));
   }
 
