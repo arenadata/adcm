@@ -34,13 +34,10 @@ export class Much2ManyComponent {
 
   isError() {
     const form = this.service.formGroup;
-    if ('service_id' in this.model) {
+    if ('service_id' in this.model && Object.keys(form.controls).length) {
       const sc = this.model as CompTile;
       const control = form.controls[`${sc.service_id}/${sc.id}`];
-      if (!control) {
-        console.warn(this.model, form);
-        return undefined;
-      }
+      if (!control) return false;
       return control.invalid;
     } else return false;
   }
