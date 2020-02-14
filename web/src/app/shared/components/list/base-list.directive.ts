@@ -121,7 +121,8 @@ export class BaseListDirective extends SocketListener implements OnInit, OnDestr
         if (row) {
           if (m.event === 'change_state') {
             row.state = m.object.details.value;
-            row.issue = m.object.details.value === 'locked' ? { issue: '' } : {};
+            // actions is running
+            // row.issue = m.object.details.value === 'locked' ? { issue: '' } : {};
           }
           if (m.event === 'change_status') row.status = +m.object.details.value;
 
