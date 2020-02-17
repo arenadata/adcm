@@ -22,7 +22,9 @@ import { FieldDirective } from './field.directive';
       <div class="full-width">
         <div>
           <mat-checkbox [labelPosition]="'before'" [formControlName]="field.name" [indeterminate]="field.value === null" (click)="cbChange()"></mat-checkbox>
-          <mat-icon class="icon-info" *ngIf="field.description" matSuffix [appTooltip]="field.description">info_outline</mat-icon>
+          <span class="info">
+            <mat-icon *ngIf="field.description" matSuffix [appTooltip]="field.description">info_outline</mat-icon>     
+          </span>
         </div>
         <mat-error *ngIf="!isValid">Field [{{ field.display_name }}] is required!</mat-error>
       </div>
@@ -32,7 +34,6 @@ import { FieldDirective } from './field.directive';
   providers: [{ provide: MAT_CHECKBOX_CLICK_ACTION, useValue: 'noop' }]
 })
 export class BooleanComponent extends FieldDirective {
-
   cbChange() {
     if (this.field.disabled) return;
     const tape = this.field.validator.required ? [true, false] : [null, true, false];
