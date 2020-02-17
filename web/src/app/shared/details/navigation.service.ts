@@ -12,7 +12,7 @@
 import { ThemePalette } from '@angular/material';
 import { ApiBase, Issue, Job } from '@app/core/types';
 
-import { IDetails, INavItem } from './details.service';
+import { IDetails } from './details.service';
 
 const ISSUE_MESSAGE = 'Something is wrong with your cluster configuration, please review it.';
 
@@ -28,6 +28,15 @@ interface Icon {
   isShow: boolean;
   color: ThemePalette;
   name: string;
+}
+
+export interface INavItem {
+  id?: number;
+  title: string;
+  url: string;
+  issue?: string;
+  status?: number;
+  statusMessage?: string;
 }
 
 export const Config = {
@@ -62,7 +71,7 @@ export const Config = {
 };
 
 export class NavigationService {
-  getLeft(current: ApiBase): INavItem[] {
+  getLeft(current: Partial<ApiBase>): INavItem[] {
     const typeName = current.typeName;
     if (typeName === 'job') {
       const job = current as Job;

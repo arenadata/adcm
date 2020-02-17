@@ -16,6 +16,7 @@ import { StuffModule } from '@app/shared/stuff.module';
 
 import { NavigationService } from '../navigation.service';
 import { LeftComponent } from './left.component';
+import { Issue } from '@app/core/types';
 
 describe('LeftComponent', () => {
   let component: LeftComponent;
@@ -24,15 +25,17 @@ describe('LeftComponent', () => {
   beforeEach(async(() => {
     TestBed.configureTestingModule({
       imports: [MaterialModule, StuffModule, RouterTestingModule],
-      declarations: [ LeftComponent ],
+      declarations: [LeftComponent],
       providers: [NavigationService]
-    })
-    .compileComponents();
+    }).compileComponents();
   }));
 
   beforeEach(() => {
     fixture = TestBed.createComponent(LeftComponent);
     component = fixture.componentInstance;
+
+    component.current = { typeName: 'cluster' };
+
     fixture.detectChanges();
   });
 
@@ -40,13 +43,11 @@ describe('LeftComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  /** 
-   * 
-  */
-  xit('should initialize menu on depends input typeName', () => {
+  it('should initialize menu', () => {
+    const el: HTMLElement = fixture.debugElement.nativeElement;
+    const list = el.querySelectorAll('a');
+    expect(list.length).toBeGreaterThan(0);
 
-    //component.current = { typeName: 'cluster'};
-
+    //component.issues = { 'service': { }  } as Issue<'service'>;
   });
-
 });
