@@ -64,4 +64,16 @@ export class SchemeComponent implements OnInit {
   findRule(key: string) {
     return this.rules.find(a => a.name === key) || this.rules.find(a => Object.keys(a).find(k => k === key));
   }
+
+  add() {
+    this.items.push({ value: `new ${this.items.length + 1}`, rules: this.rules });
+  }
+
+  remove(i: number) {
+    this.items = this.items.filter((v, ind) => ind !== i);
+  }
+
+  trackByFn(index, item) {
+    return index; // or item.id
+  }
 }

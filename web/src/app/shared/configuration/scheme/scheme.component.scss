@@ -1,4 +1,8 @@
 :host {
     display: block;
     margin-bottom: 10px;
+
+    .content {
+        padding-left: 20px;
+    }
 }
