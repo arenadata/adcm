@@ -25,8 +25,6 @@ export type controlType = 'boolean' | 'textbox' | 'textarea' | 'json' | 'passwor
 
 @Injectable()
 export class FieldService {
-  // globalConfig: IConfig;
-
   constructor(private fb: FormBuilder, private spec: YspecService) {}
 
   isVisibleField = (a: ConfigOptions) => !a.ui_options || !a.ui_options.invisible;
@@ -35,17 +33,13 @@ export class FieldService {
   isHidden = (a: FieldStack) => a.ui_options && (a.ui_options.invisible || a.ui_options.advanced);
 
   getPanels(data: IConfig): (FieldOptions | PanelOptions)[] {
-    // this.globalConfig = data;
-
     if (data && data.config) {
-      const fo = data.config.filter(a => a.type !== 'group' && a.subname); //.map((a: FieldStack) => this.getFieldBy(a));
-      //return data.config.filter(a => a.name !== '__main_info' && a.type === 'group').map(a => this.fillDataOptions(a, fo));
-      // if (!a.subname) return this.checkYspec(this.getFieldBy(a));
+      const fo = data.config.filter(a => a.type !== 'group' && a.subname);
       return data.config
         .filter(a => a.name !== '__main_info')
         .reduce((p, c) => {
           if (c.subname) return p;
-          if (c.type !== 'group') return [...p, this.getFieldBy(c)];
+          if (c.type !== 'group') return [...p, this.checkYspec(this.getFieldBy(c))];
           else return [...p, this.fillDataOptions(c, fo)];
         }, []);
     }
@@ -63,17 +57,17 @@ export class FieldService {
           c.name = c.subname;
           return c;
         })
+        .map(b => this.checkYspec(b))
     };
   }
 
-  //checkYspec(a: FieldStack): FieldOptions | PanelOptions {
-  // a.name = a.subname || a.name;
-  // if (a.limits && a.limits.yspec) {
-  //   this.spec.Root = a.limits.yspec;
-  //   (a as IStructure).rules = this.spec.build();
-  // }
-  // return a;
-  //}
+  checkYspec(a: FieldOptions): FieldOptions | PanelOptions {
+    if (a.limits && a.limits.yspec) {
+      this.spec.Root = a.limits.yspec;
+      (a as IStructure).rules = this.spec.build();
+    }
+    return a;
+  }
 
   getFieldBy(item: FieldStack): FieldOptions {
     const params: FieldOptions = {

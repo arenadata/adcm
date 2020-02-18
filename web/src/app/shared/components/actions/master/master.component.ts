@@ -11,13 +11,13 @@
 // limitations under the License.
 import { Component, EventEmitter, OnInit } from '@angular/core';
 import { ApiService } from '@app/core/api';
-import { parseValueConfig, IAction } from '@app/core/types';
+import { IAction } from '@app/core/types';
 import { DynamicComponent, DynamicEvent, ServiceHostComponent } from '@app/shared';
+import { FieldService } from '@app/shared/configuration/field.service';
+import { ConfigFieldsComponent } from '@app/shared/configuration/fields/fields.component';
 
 import { BaseDirective } from '../../../directives/base.directive';
-import { ConfigFieldsComponent } from '@app/shared/configuration/fields/fields.component';
 import { ActionParameters } from '../actions.directive';
-import { FieldService } from '@app/shared/configuration/field.service';
 
 @Component({
   selector: 'app-master',

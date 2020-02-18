@@ -10,7 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { animate, state, style, transition, trigger } from '@angular/animations';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit, ViewChild, AfterViewInit } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit, ViewChild, AfterViewChecked } from '@angular/core';
+import { FormGroup } from '@angular/forms';
 import { ClusterService } from '@app/core';
 import { ApiService } from '@app/core/api';
 import { EventMessage, SocketState } from '@app/core/store';
@@ -24,7 +25,6 @@ import { ConfigFieldsComponent } from '../fields/fields.component';
 import { HistoryComponent } from '../tools/history.component';
 import { ToolsComponent } from '../tools/tools.component';
 import { IConfig } from '../types';
-import { FormGroup } from '@angular/forms';
 
 @Component({
   selector: 'app-config-form',
@@ -43,7 +43,7 @@ import { FormGroup } from '@angular/forms';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ConfigComponent extends SocketListener implements OnInit, AfterViewInit {
+export class ConfigComponent extends SocketListener implements OnInit, AfterViewChecked {
   loadingStatus = 'Loading...';
   config$: Observable<IConfig>;
   rawConfig: IConfig;
@@ -85,9 +85,7 @@ export class ConfigComponent extends SocketListener implements OnInit, AfterView
     super.startListenSocket();
   }
 
-  ngAfterViewInit(): void {
-    //Called after ngAfterContentInit when the component's view has been initialized. Applies to components only.
-    //Add 'implements AfterViewInit' to the class.
+  ngAfterViewChecked(): void {
     this.stub();
   }
 
@@ -101,7 +99,7 @@ export class ConfigComponent extends SocketListener implements OnInit, AfterView
 
   fieldsEvents(e: { name: 'load'; data: { form: FormGroup } }) {
     if (e.name === 'load') {
-      //this.stub();
+      this.stub();
     }
   }
 
@@ -122,13 +120,10 @@ export class ConfigComponent extends SocketListener implements OnInit, AfterView
    * change detection on manual
    */
   stub() {
-    //setTimeout(_ => {
-
     if (this.fields) {
       this.fields.checkForm();
       this.cdRef.detectChanges();
     }
-    //}, 0);
   }
 
   socketListener(m: EventMessage) {
