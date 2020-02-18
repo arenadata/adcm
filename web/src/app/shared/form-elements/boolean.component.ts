@@ -23,7 +23,7 @@ import { FieldDirective } from './field.directive';
         <div>
           <mat-checkbox [labelPosition]="'before'" [formControlName]="field.name" [indeterminate]="field.value === null" (click)="cbChange()"></mat-checkbox>
           <span class="info">
-            <mat-icon *ngIf="field.description" matSuffix [appTooltip]="field.description">info_outline</mat-icon>     
+            <mat-icon [ngClass]="'info-icon'" *ngIf="field.description" matSuffix [appTooltip]="field.description">info_outline</mat-icon>     
           </span>
         </div>
         <mat-error *ngIf="!isValid">Field [{{ field.display_name }}] is required!</mat-error>
