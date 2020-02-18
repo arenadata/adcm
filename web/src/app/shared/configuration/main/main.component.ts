@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { animate, state, style, transition, trigger } from '@angular/animations';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { ClusterService } from '@app/core';
 import { ApiService } from '@app/core/api';
 import { EventMessage, SocketState } from '@app/core/store';
@@ -43,7 +43,7 @@ import { FormGroup } from '@angular/forms';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ConfigComponent extends SocketListener implements OnInit {
+export class ConfigComponent extends SocketListener implements OnInit, AfterViewInit {
   loadingStatus = 'Loading...';
   config$: Observable<IConfig>;
   rawConfig: IConfig;
@@ -85,6 +85,12 @@ export class ConfigComponent extends SocketListener implements OnInit {
     super.startListenSocket();
   }
 
+  ngAfterViewInit(): void {
+    //Called after ngAfterContentInit when the component's view has been initialized. Applies to components only.
+    //Add 'implements AfterViewInit' to the class.
+    this.stub();
+  }
+
   isAdvanced(data: IConfig) {
     return data.config.some(a => a.ui_options && a.ui_options.advanced);
   }
@@ -95,12 +101,12 @@ export class ConfigComponent extends SocketListener implements OnInit {
 
   fieldsEvents(e: { name: 'load'; data: { form: FormGroup } }) {
     if (e.name === 'load') {
-      this.stub();
+      //this.stub();
     }
   }
 
   get formValid() {
-    return this.service.form.valid;
+    return this.fields.form.valid;
   }
 
   history(flag: boolean) {
@@ -108,18 +114,21 @@ export class ConfigComponent extends SocketListener implements OnInit {
   }
 
   filter(c: { advanced: boolean; search: string }) {
-    this.fields.dataOptions = this.service.filterApply(c);
+    this.service.filterApply(this.fields.dataOptions, c);
     this.stub();
   }
 
-  /** 
+  /**
    * change detection on manual
-  */
+   */
   stub() {
-    setTimeout(_ => {
+    //setTimeout(_ => {
+
+    if (this.fields) {
       this.fields.checkForm();
       this.cdRef.detectChanges();
-    }, 0);
+    }
+    //}, 0);
   }
 
   socketListener(m: EventMessage) {
@@ -145,11 +154,11 @@ export class ConfigComponent extends SocketListener implements OnInit {
   }
 
   save() {
-    const form = this.service.form;
+    const form = this.fields.form;
     if (form.valid) {
       this.saveFlag = true;
 
-      const config = this.service.parseValue(),
+      const config = this.service.parseValue(this.fields.form, this.rawConfig.config),
         attr = this.rawConfig.attr,
         description = this.tools.descriptionFormControl.value;
 

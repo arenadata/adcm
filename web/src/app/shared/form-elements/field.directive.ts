@@ -28,7 +28,7 @@ export class FieldDirective extends BaseDirective implements OnInit {
   }
 
   find() {
-    return this.form.controls[this.field.name];
+    return this.form.controls[this.field.name] || this.form.controls[this.field.subname];
   }
 
   get isValid() {

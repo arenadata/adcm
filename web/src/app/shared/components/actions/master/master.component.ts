@@ -17,6 +17,7 @@ import { DynamicComponent, DynamicEvent, ServiceHostComponent } from '@app/share
 import { BaseDirective } from '../../../directives/base.directive';
 import { ConfigFieldsComponent } from '@app/shared/configuration/fields/fields.component';
 import { ActionParameters } from '../actions.directive';
+import { FieldService } from '@app/shared/configuration/field.service';
 
 @Component({
   selector: 'app-master',
@@ -33,7 +34,7 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
 
   arh: { parent: HTMLElement; holder: HTMLElement };
 
-  constructor(private api: ApiService) {
+  constructor(private api: ApiService, private config: FieldService) {
     super();
   }
 
@@ -51,14 +52,14 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
 
   run(config: ConfigFieldsComponent, hostmap: ServiceHostComponent) {
     const data: any = {};
-    if (config) data.value = config.form.value;
+    if (config) data.value = config.form;
     if (hostmap) data.hostmap = hostmap.service.statePost.data;
 
     const request$ =
       !this.isConfig && !this.isHmcRequired
         ? this.api.post(this.action.run, {})
         : this.api.post(this.action.run, {
-            config: parseValueConfig(this.action.config.config, data.value),
+            config: this.config.parseValue(data.value, this.action.config.config),
             hc: data.hostmap,
           });
 

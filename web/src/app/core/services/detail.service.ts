@@ -142,7 +142,7 @@ export class ClusterService {
   }
 
   reset(): Observable<WorkerInstance> {
-    if (!this.Current) return EMPTY;
+    if (!this.Current || !this.worker) return EMPTY;
     const typeName = this.Current.typeName;
     return this.api.get<Entities>(this.Current.url).pipe(
       map(a => {
