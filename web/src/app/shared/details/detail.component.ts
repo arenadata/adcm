@@ -13,7 +13,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ChannelService, ClusterService, WorkerInstance } from '@app/core';
 import { EventMessage, SocketState } from '@app/core/store';
-import { Entities, Host, Issue, IAction } from '@app/core/types';
+import { IAction, Issue } from '@app/core/types';
 import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
@@ -29,7 +29,7 @@ import { IDetails } from './details.service';
 export class DetailComponent extends SocketListener implements OnInit, OnDestroy {
   request$: Observable<IDetails>;
   isIssue: boolean;
-  upgradable: boolean;
+  upgradable = false;
   actions: Observable<IAction[]> = of([]);
   issues: Issue;
   status: number | string;
