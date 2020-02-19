@@ -14,7 +14,8 @@ import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from
 import { getControlType, getPattern, isObject } from '@app/core/types';
 
 import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, PanelOptions } from './types';
-import { matchType, YspecService } from './yspec/yspec.service';
+import { matchType, YspecService, IStructure } from './yspec/yspec.service';
+import { YspecStructure } from './yspec/YspecStructure';
 
 export interface IToolsEvent {
   name: string;
@@ -62,7 +63,13 @@ export class FieldService {
   }
 
   checkYspec(a: FieldOptions): FieldOptions | PanelOptions {
-    if (a.limits && a.limits.yspec) this.spec.parse(a);
+    if (a.limits && a.limits.yspec) {
+      //this.spec.parse(a);
+      // this.spec.Root = a.limits.yspec;
+      // (a as IStructure).rules = this.spec.build();
+      const o = new YspecStructure(a);
+      return o.output;
+    } 
     return a;
   }
 

@@ -13,7 +13,6 @@ import { Component, Input, OnInit } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { IStructure } from '../yspec/yspec.service';
 
-
 @Component({
   selector: 'app-scheme',
   templateUrl: './scheme.component.html',
@@ -61,7 +60,7 @@ export class SchemeComponent implements OnInit {
     } else if (this.currentType === 'dict') {
       this.items = Object.keys(this.value).map(b => {
         const c = this.findRule(b);
-        
+
         // if (c.type !== 'list' && c.type !== 'dict') currentFormGroup.addControl(b, new FormControl(this.value[b]));
 
         return { value: this.value[b], rules: c };
@@ -97,4 +96,10 @@ export class SchemeComponent implements OnInit {
   trackByFn(index, item) {
     return index; // or item.id
   }
+
+  get isValid() {
+    return true;
+  }
+
+  hasError(title: string) {}
 }

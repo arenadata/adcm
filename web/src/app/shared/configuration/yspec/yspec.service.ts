@@ -12,7 +12,8 @@
 import { getControlType, getPattern, IRoot } from '@app/core/types';
 
 import { controlType } from '../field.service';
-import { FieldOptions } from '../types';
+import { FieldOptions, PanelOptions } from '../types';
+import { YspecStructure } from './YspecStructure';
 
 export type simpleType = 'string' | 'integer' | 'float' | 'bool' | 'int' | 'one_of' | 'dict_key_selection';
 export type reqursionType = 'list' | 'dict';
@@ -48,32 +49,31 @@ export interface IStructure extends FieldOptions {
 }
 
 export class YspecService {
-  // private root: IYspec;
+  private root: IYspec;
   // private output: any;
 
   // constructor() {}
 
-  // set Root(yspec: IYspec) {
-  //   this.root = yspec;
-  // }
+  set Root(yspec: IYspec) {
+    this.root = yspec;
+  }
 
-  // get Root() {
-  //   return this.root;
-  // }
+  get Root() {
+    return this.root;
+  }
 
   parse(a: FieldOptions) {
     if (a.limits && a.limits.yspec) {
-      const rules = this.build(a.limits.yspec['root']);
-
+      const yspec = new YspecStructure(a);
     }
   }
 
-  build(rule: Iroot, path: string[] = []) {
-    const { match, item, items } = rule;
+  build(rule = 'root', path: string[] = []) {
+    const { match, item, items } = this.Root[rule];
 
     switch (match) {
       case 'list':
-        return this.list(rule[item], path);
+        return this.list(item, path);
       case 'dict':
         return this.dict(items, path);
       // case 'one_of':
@@ -105,19 +105,19 @@ export class YspecService {
     return !!(rule && rule[name] && rule[name][field]);
   }
 
-  list(item: Iroot, path: string[]): { [x: string]: any; type: string } {    
+  list(item: string, path: string[]): { [x: string]: any; type: string } {
     const name = [...path].reverse()[0] || 'root';
     return { type: 'list', name, options: [this.build(item, [...path, item])] };
   }
 
-  dict(item: IRoot, path: string[]): { [x: string]: any; type: string } {
+  dict(items: IRoot, path: string[]): { [x: string]: any; type: string } {
     const name = [...path].reverse()[0] || 'root';
     return {
       type: 'dict',
       name,
       options: [
-        Object.keys(item).map((item_name: string) => {
-          return this.build(item[item_name], [...path, item_name]);
+        Object.keys(items).map((item_name: string) => {
+          return this.build(items[item_name], [...path, item_name]);
         })
       ]
     };

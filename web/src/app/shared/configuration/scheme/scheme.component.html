@@ -4,7 +4,8 @@
     <mat-icon>add_circle_outline</mat-icon>
   </button>
 </div>
-<div class="content">
+<div class="content" [formGroup]="form">
+  
   <ng-container *ngFor="let item of items; index as i; trackBy: trackByFn">
     <ng-container *ngIf="(item.rules.type === 'list' || item.rules.type === 'dict'); else simple">
       <div style="display: flex;">
@@ -22,16 +23,22 @@
     <ng-template #simple>
 
       <div style="margin:6px 0;">
-        <mat-checkbox *ngIf="item.rules.type === 'bool'; else textbox" [checked]="item.value">{{ item.rules.name }}</mat-checkbox>
+        <mat-checkbox *ngIf="item.rules.type === 'bool'; else textbox" [formControlName]="item.name" [checked]="item.value">{{ item.rules.name }}</mat-checkbox>
       </div>
 
       <ng-template #textbox>
         <mat-form-field style="margin: 6px 0 0; width: 100%;">
           <mat-label>{{ item.rules.name }}</mat-label>
-          <input matInput placeholder="" [value]="item.value">
+          <input matInput placeholder="" [formControlName]="item.name" [value]="item.value">
           <button mat-icon-button color="primary" matSuffix (click)="remove(i)">
             <mat-icon>highlight_off</mat-icon>
           </button>
+          <mat-error *ngIf="!isValid">
+            <mat-error *ngIf="hasError('required')">Field [{{ item.display_name }}] is required!</mat-error>
+            <mat-error *ngIf="hasError('pattern')">Field [{{ item.display_name }}] is invalid!</mat-error>
+            <mat-error *ngIf="hasError('min')">Field [{{ item.display_name }}] value cannot be less than {{ item.validator.min }}!</mat-error>
+            <mat-error *ngIf="hasError('max')">Field [{{ item.display_name }}] value cannot be greater than {{ item.validator.max }}!</mat-error>
+          </mat-error>
         </mat-form-field>
       </ng-template>
     </ng-template>

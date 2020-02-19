@@ -90,38 +90,36 @@ export class YspecStructure {
   }
 
   list(source: FieldOptions) {
-    const scheme = { ...source.limits.yspec };
 
-    const value = Array.isArray(source.value) ? source.value : Array.isArray(source.default) ? source.default : null;
-
-    const item = scheme.root.item;
-    const rule = scheme[item];
+    const value = source.value || source.default;
+    const item = this.yspec.root.item;
+    const rule = this.yspec[item];
 
     if (rule.match === 'dict') {
-      const model = this.getModel(rule.items);
-      /**
-       * fill the model to data (value or default)
-       */
+      const rules = this.getModel(rule.items);
+
       return {
         ...source,
-        type: 'group',
-        options: value.map((v, i) => {
-          if (typeof v === 'object') {
-            return {
-              display_name: `--- ${i} ---`,
-              name: i.toString(),
-              key: `${i}/${source.key}`,
-              type: 'group',
-              options: Object.keys(v).map(
-                k =>
-                  model
-                    .find(m => m.key === k)
-                    .setKey(`${i}/${source.key}`)
-                    .setValue(v[k]).options
-              )
-            };
-          }
-        })
+        type: 'structure',
+        options: []
+        
+        // value.map((v, i) => {
+        //   if (typeof v === 'object') {
+        //     return {
+        //       display_name: `--- ${i} ---`,
+        //       name: i.toString(),
+        //       key: `${i}/${source.key}`,
+        //       type: 'group',
+        //       options: Object.keys(v).map(
+        //         k =>
+        //           model
+        //             .find(m => m.key === k)
+        //             .setKey(`${i}/${source.key}`)
+        //             .setValue(v[k]).options
+        //       )
+        //     };
+        //   }
+        // })
       };
     }
   }
@@ -129,7 +127,7 @@ export class YspecStructure {
   dict(source: FieldOptions) {
     return {
       ...source,
-      type: 'group',
+      type: 'structure',
       options: this.getFields(source)
     };
   }
