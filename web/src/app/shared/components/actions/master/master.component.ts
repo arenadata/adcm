@@ -59,7 +59,7 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
       !this.isConfig && !this.isHmcRequired
         ? this.api.post(this.action.run, {})
         : this.api.post(this.action.run, {
-            config: this.config.parseValue(data.value, this.action.config.config),
+            config: data.value ? this.config.parseValue(data.value, this.action.config.config) : {},
             hc: data.hostmap,
           });
 
