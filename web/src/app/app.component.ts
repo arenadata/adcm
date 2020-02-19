@@ -13,7 +13,7 @@ import { Component, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { NavigationStart, Router } from '@angular/router';
-import { ConfigService, IConfig, Message, MessageService } from '@app/core';
+import { ConfigService, Message, MessageService } from '@app/core';
 import {
   getConnectStatus,
   getFirstAdminLogin,
@@ -25,7 +25,7 @@ import {
   loadStack,
   rootError,
   socketInit,
-  State
+  State,
 } from '@app/core/store';
 import { select, Store } from '@ngrx/store';
 import { combineLatest } from 'rxjs';

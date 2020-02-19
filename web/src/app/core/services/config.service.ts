@@ -47,12 +47,6 @@ export class ConfigService {
 
   load() {
     const ts = Date.now();
-    return this.http.get<IConfig>(`${CONFIG_URL}?p=${ts}`).pipe(
-      map(v => {
-        //v.commit_id = ts.toString();
-        return v;
-      }),
-      map(c => this.checkVersion(c))
-    );
+    return this.http.get<IConfig>(`${CONFIG_URL}?p=${ts}`).pipe(map(c => this.checkVersion(c)));
   }
 }
