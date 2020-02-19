@@ -9,7 +9,7 @@
     <ng-container *ngIf="(item.rules.type === 'list' || item.rules.type === 'dict'); else simple">
       <div style="display: flex;">
 
-        <app-scheme [options]="item" [form]="form" style="flex: 1"></app-scheme>
+        <app-scheme [options]="item" [form]="item.form" style="flex: 1"></app-scheme>
 
         <ng-container *ngIf="item.rules.type === 'dict'">
           <button mat-icon-button color="primary">
@@ -22,7 +22,7 @@
     <ng-template #simple>
 
       <div style="margin:6px 0;">
-        <mat-checkbox *ngIf="item.rules.type === 'bool'; else textbox">{{ item.rules.name }}</mat-checkbox>
+        <mat-checkbox *ngIf="item.rules.type === 'bool'; else textbox" [checked]="item.value">{{ item.rules.name }}</mat-checkbox>
       </div>
 
       <ng-template #textbox>

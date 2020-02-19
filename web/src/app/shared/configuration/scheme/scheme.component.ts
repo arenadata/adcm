@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input, OnInit } from '@angular/core';
-import { FormGroup } from '@angular/forms';
+import { FormGroup, FormArray, FormControl } from '@angular/forms';
 
 import { IStructure } from '../types';
 
@@ -24,7 +24,7 @@ export class SchemeComponent implements OnInit {
   @Input() options: IStructure;
 
   value: any;
-  rules: Array<any>;
+  rules: any;
 
   name: string;
   type: string;
@@ -36,6 +36,11 @@ export class SchemeComponent implements OnInit {
 
   ngOnInit() {
     this.value = this.options.value;
+
+    // const currentFormGroup = this.options.key
+    //   .split('/')
+    //   .reverse()
+    //   .reduce((p, c) => p.get(c), this.form) as FormGroup;
 
     const current = this.options.rules;
     this.currentType = this.options.rules.type;
@@ -49,12 +54,16 @@ export class SchemeComponent implements OnInit {
     });
 
     if (this.currentType === 'list') {
+      // currentFormGroup.addControl('array', new FormArray([]));
       this.items = (this.options.value as Array<any>).map(a => {
         return { value: a, rules: this.rules };
       });
     } else if (this.currentType === 'dict') {
       this.items = Object.keys(this.value).map(b => {
         const c = this.findRule(b);
+        
+        // if (c.type !== 'list' && c.type !== 'dict') currentFormGroup.addControl(b, new FormControl(this.value[b]));
+
         return { value: this.value[b], rules: c };
       });
     } else {
@@ -66,7 +75,19 @@ export class SchemeComponent implements OnInit {
   }
 
   add() {
-    this.items.push({ value: `new ${this.items.length + 1}`, rules: this.rules });
+    if (this.type === 'list') {
+      if (this.rules.type === 'dict') {
+        const [type, rule] = Object.keys(this.rules);
+        const value = this.rules[rule].reduce((p, c) => {
+          p[c.name] = '';
+          return p;
+        }, {});
+        this.items.push({ value, rules: this.rules });
+      }
+      if (this.rules.type !== 'dict' && this.rules.type !== 'list') this.items.push({ value: `new ${this.items.length + 1}`, rules: this.rules });
+    }
+    if (this.type === 'dict') {
+    }
   }
 
   remove(i: number) {
