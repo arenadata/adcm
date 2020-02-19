@@ -10,9 +10,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input, OnInit } from '@angular/core';
-import { FormGroup, FormArray, FormControl } from '@angular/forms';
+import { FormGroup } from '@angular/forms';
+import { IStructure } from '../yspec/yspec.service';
 
-import { IStructure } from '../types';
 
 @Component({
   selector: 'app-scheme',

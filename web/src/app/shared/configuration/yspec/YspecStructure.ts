@@ -11,8 +11,8 @@
 // limitations under the License.
 import { getControlType, getPattern } from '@app/core/types';
 
-import { ConfigValueTypes, FieldOptions, PanelOptions } from './types';
-import { simpleType, reqursionType, IYspec } from './yspec/yspec.service';
+import { ConfigValueTypes, FieldOptions, PanelOptions } from '../types';
+import { simpleType, reqursionType, IYspec } from './yspec.service';
 
 class Field {
   private _options: Partial<FieldOptions>;

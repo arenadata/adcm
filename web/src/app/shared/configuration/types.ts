@@ -123,7 +123,3 @@ export interface FieldOptions extends ConfigOptions {
   limits?: ILimits;
   compare: Compare[];
 }
-
-export interface IStructure extends FieldOptions {
-  rules: { [x: string]: any; type: string };
-}
