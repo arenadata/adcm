@@ -36,22 +36,23 @@ export class ConfigService {
     localStorage.setItem('adcm:version', version);
   }
 
-  get config() {
-    return this.appConfig$.pipe(map(c => this.checkVersion(c)));
-  }
-
   checkVersion(c: IConfig): IConfig | null {
     const version = `${c.version}-${c.commit_id}`;
     if (this.version && this.version !== version) {
       this.version = version;
       return null;
-    }
-    this.version = version;
+    } else if (!this.version) this.version = version;
     return c;
   }
 
   load() {
     const ts = Date.now();
-    this.appConfig$ = this.http.get<IConfig>(`${CONFIG_URL}?p=${ts}`);
+    return this.http.get<IConfig>(`${CONFIG_URL}?p=${ts}`).pipe(
+      map(v => {
+        //v.commit_id = ts.toString();
+        return v;
+      }),
+      map(c => this.checkVersion(c))
+    );
   }
 }
