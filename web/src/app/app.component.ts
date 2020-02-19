@@ -14,22 +14,10 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { NavigationStart, Router } from '@angular/router';
 import { ConfigService, Message, MessageService } from '@app/core';
-import {
-  getConnectStatus,
-  getFirstAdminLogin,
-  getMessage,
-  getRoot,
-  isAuthenticated,
-  loadProfile,
-  loadRoot,
-  loadStack,
-  rootError,
-  socketInit,
-  State,
-} from '@app/core/store';
+import { getConnectStatus, getFirstAdminLogin, getMessage, getRoot, isAuthenticated, loadProfile, loadRoot, loadStack, rootError, socketInit, State } from '@app/core/store';
 import { select, Store } from '@ngrx/store';
 import { combineLatest } from 'rxjs';
-import { filter, tap } from 'rxjs/operators';
+import { filter, tap, switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-root',
@@ -77,23 +65,22 @@ export class AppComponent implements OnInit {
         tap(_ => {
           this.message.ignoreMessage = false;
           this.message.errorMessage({ title: 'Connection established.' });
-          this.config
-            .load()
-            .pipe(
-              tap(c => {
-                if (!c) {
-                  this.message.errorMessage({ title: 'New version available. Page has been refreshed.' });
-                  setTimeout(() => location.reload(), 2000);
-                } else {
-                  this.store.dispatch(socketInit());
-                  this.store.dispatch(loadStack());
-                  this.store.dispatch(loadProfile());
-                }
+        }),
+        switchMap(_ =>
+          this.config.load().pipe(
+            tap(c => {
+              if (!c) {
+                this.message.errorMessage({ title: 'New version available. Page has been refreshed.' });
+                setTimeout(() => location.reload(), 2000);
+              } else {
+                this.store.dispatch(socketInit());
+                this.store.dispatch(loadStack());
+                this.store.dispatch(loadProfile());
                 this.vData = [c.version, c.commit_id];
-              })
-            )
-            .subscribe();
-        })
+              }              
+            })
+          )
+        )
       )
       .subscribe();
 
