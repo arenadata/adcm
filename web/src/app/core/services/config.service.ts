@@ -46,6 +46,7 @@ export class ConfigService {
   }
 
   load() {
-    return this.http.get<IConfig>(`${CONFIG_URL}?nocache=1`).pipe(map(c => this.checkVersion(c)));
+    const ts = Date.now();
+    return this.http.get<IConfig>(`${CONFIG_URL}?nocache=${ts}`).pipe(map(c => this.checkVersion(c)));
   }
 }
