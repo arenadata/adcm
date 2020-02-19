@@ -9,16 +9,28 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { ApiBase, Job, Issue } from '@app/core/types';
+import { ThemePalette } from '@angular/material';
+import { ApiBase, Issue, Job } from '@app/core/types';
 
 import { IDetails, INavItem } from './details.service';
+
+const ISSUE_MESSAGE = 'Something is wrong with your cluster configuration, please review it.';
 
 const IssueSet: { [key: string]: string[] } = {
   service: ['required_service'],
   import: ['required_import']
 };
 
-const Config = {
+type IconMenu = 'issue' | 'status';
+
+interface Icon {
+  id: IconMenu;
+  isShow: boolean;
+  color: ThemePalette;
+  name: string;
+}
+
+export const Config = {
   menu: {
     cluster: [
       { id: 0, title: 'Main', url: 'main' },
@@ -44,7 +56,8 @@ const Config = {
       { id: 0, title: 'Main', url: 'main' },
       { id: 4, title: 'Configuration', url: 'config' }
     ],
-    bundle: [{ id: 0, title: 'Main', url: 'main' }]
+    bundle: [{ id: 0, title: 'Main', url: 'main' }],
+    job: [{ id: 0, title: 'Main', url: 'main' }]
   }
 };
 
@@ -56,11 +69,11 @@ export class NavigationService {
       return [{ id: 0, title: 'Main', url: 'main' }, ...job.log_files.map(a => ({ title: a.file, url: `${a.tag}_${a.level}` }))];
     }
 
-    const issue = current.issue || {} as Issue;
+    const issue = current.issue || {} as Issue;    
     return Config.menu[typeName].map((i: INavItem) => ({
       ...i,
-      issue: this.setIssue(i.url, issue),
-      status: current.status
+      issue: this.findIssue(i.url, issue),
+      status: +current.status
     }));
   }
 
@@ -100,10 +113,10 @@ export class NavigationService {
   }
 
   getIssueMessage(flag: boolean) {
-    return flag ? `Something is wrong with your cluster configuration, please review it.` : '';
+    return flag ? ISSUE_MESSAGE : '';
   }
 
-  setIssue(url: string, issue: Issue) {
+  findIssue(url: string, issue: Issue) {
     return Object.keys(issue).some(p => p === url || (IssueSet[url] && IssueSet[url].some(a => a === p)));
   }
 }

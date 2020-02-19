@@ -12,17 +12,17 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '@app/core/api';
-import { EmmitRow } from '@app/core/types';
+import { EmmitRow, Issue, notIssue } from '@app/core/types';
 import { concat, Observable, of } from 'rxjs';
 import { filter, map, switchMap } from 'rxjs/operators';
 
 import { BaseDirective } from '../directives';
 import { DialogComponent } from './dialog.component';
 
-interface UpgradeRow {
+export interface UpgradeItem {
   upgradable: boolean;
   upgrade: string;
-  issue: any;
+  issue: Issue;
 }
 
 interface Upgrade {
@@ -39,36 +39,32 @@ interface Upgrade {
 @Component({
   selector: 'app-upgrade',
   template: `
-    <ng-container *ngIf="row.upgradable && !checkIssue(row.issue); else dumb">
-      <button
-        [appForTest]="'upgrade_btn'"
-        matTooltip="There are a pending upgrades of object here"
-        mat-icon-button
-        color="warn"
-        [matMenuTriggerFor]="menu"
-        (click)="$event.stopPropagation()"
-      >
-        <mat-icon>sync_problem</mat-icon>
-      </button>
-      <mat-menu #menu="matMenu" [overlapTrigger]="false" xPosition="before">
-        <ng-template matMenuContent>
-          <button *ngFor="let item of list$ | async" mat-menu-item (click)="runUpgrade(item)">
-            <span>{{ item.name || 'No name' }}</span>
-          </button>
-        </ng-template>
-      </mat-menu>
-    </ng-container>
-    <ng-template #dumb>
-      <button mat-icon-button color="primary" [disabled]="true"><mat-icon>sync_disabled</mat-icon></button>
-    </ng-template>
+    <button
+      mat-icon-button
+      matTooltip="There are a pending upgrades of object here"
+      [appForTest]="'upgrade_btn'"
+      color="warn"
+      [disabled]="!checkIssue()"
+      [matMenuTriggerFor]="menu"
+      (click)="$event.stopPropagation()"
+    >
+      <mat-icon>sync_problem</mat-icon>
+    </button>
+    <mat-menu #menu="matMenu" [overlapTrigger]="false" xPosition="before">
+      <ng-template matMenuContent>
+        <button *ngFor="let item of list$ | async" mat-menu-item (click)="runUpgrade(item)">
+          <span>{{ item.name || 'No name' }}</span>
+        </button>
+      </ng-template>
+    </mat-menu>
   `
 })
 export class UpgradeComponent extends BaseDirective {
   list$: Observable<Upgrade[]>;
-  row: UpgradeRow;
+  row: UpgradeItem = { upgradable: false, upgrade: '', issue: null };
 
   @Input()
-  set dataRow(row: UpgradeRow) {
+  set dataRow(row: UpgradeItem) {
     this.row = row;
     if (row.upgrade) {
       this.list$ = this.api.get(`${row.upgrade}?ordering=-name`).pipe(filter((list: Upgrade[]) => !!list.length));
@@ -80,6 +76,10 @@ export class UpgradeComponent extends BaseDirective {
 
   constructor(private api: ApiService, private dialog: MatDialog) {
     super();
+  }
+
+  checkIssue() {
+    return this.row.upgradable && notIssue(this.row.issue);
   }
 
   runUpgrade(item: Upgrade) {
@@ -111,9 +111,5 @@ export class UpgradeComponent extends BaseDirective {
   fork(item: Upgrade) {
     const flag = item.license === 'unaccepted';
     return flag ? this.api.get<{ text: string }>(item.license_url).pipe(map(a => a.text)) : of(item.description);
-  }
-
-  checkIssue(issue: any): boolean {
-    return issue && !!Object.keys(issue).length;
   }
 }
