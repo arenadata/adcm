@@ -13,23 +13,11 @@ import { Component, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { NavigationStart, Router } from '@angular/router';
-import { ConfigService, IConfig, Message, MessageService } from '@app/core';
-import {
-  getConnectStatus,
-  getFirstAdminLogin,
-  getMessage,
-  getRoot,
-  isAuthenticated,
-  loadProfile,
-  loadRoot,
-  loadStack,
-  rootError,
-  socketInit,
-  State
-} from '@app/core/store';
+import { ConfigService, Message, MessageService } from '@app/core';
+import { getConnectStatus, getFirstAdminLogin, getMessage, getRoot, isAuthenticated, loadProfile, loadRoot, loadStack, rootError, socketInit, State } from '@app/core/store';
 import { select, Store } from '@ngrx/store';
-import { combineLatest, Observable, of } from 'rxjs';
-import { filter, tap } from 'rxjs/operators';
+import { combineLatest } from 'rxjs';
+import { filter, tap, switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-root',
@@ -44,9 +32,9 @@ import { filter, tap } from 'rxjs/operators';
     </main>
     <footer>
       <div>
-        <span class="left" *ngIf="config$ | async as conf">
+        <span class="left" *ngIf="vData">
           VERSION:
-          <a target="_blank" href="https://docs.arenadata.io/adcm/notes.html#{{ conf.version }}">{{ conf.version }}-{{ conf.commit_id }}</a></span
+          <a target="_blank" href="https://docs.arenadata.io/adcm/notes.html#{{ vData[0] }}">{{ vData[0] }}-{{ vData[1] }}</a></span
         >
         <span>ARENADATA &copy; {{ currentYear }}</span>
       </div>
@@ -55,7 +43,7 @@ import { filter, tap } from 'rxjs/operators';
 })
 export class AppComponent implements OnInit {
   currentYear = new Date().getFullYear();
-  config$: Observable<IConfig>;
+  vData: string[];
 
   constructor(
     public snackBar: MatSnackBar,
@@ -67,6 +55,7 @@ export class AppComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    this.vData = this.config.version ? this.config.version.split('-') : null;
     this.store.dispatch(loadRoot());
     const b$ = this.store.pipe(select(getRoot));
     const a$ = this.store.pipe(select(isAuthenticated));
@@ -76,19 +65,22 @@ export class AppComponent implements OnInit {
         tap(_ => {
           this.message.ignoreMessage = false;
           this.message.errorMessage({ title: 'Connection established.' });
-          this.config$ = this.config.config.pipe(
+        }),
+        switchMap(_ =>
+          this.config.load().pipe(
             tap(c => {
               if (!c) {
                 this.message.errorMessage({ title: 'New version available. Page has been refreshed.' });
-                setTimeout(() => location.reload(), 3000);
+                setTimeout(() => location.reload(), 2000);
               } else {
                 this.store.dispatch(socketInit());
                 this.store.dispatch(loadStack());
                 this.store.dispatch(loadProfile());
-              }
+                this.vData = [c.version, c.commit_id];
+              }              
             })
-          );
-        })
+          )
+        )
       )
       .subscribe();
 

@@ -12,18 +12,18 @@
 import { Directive, Host, Input, OnDestroy, OnInit } from '@angular/core';
 import { ParamMap } from '@angular/router';
 import { EventMessage, SocketState } from '@app/core/store';
-import { EmmitRow, Entities, getTypeName, Host as AdcmHost, TypeName, Bundle } from '@app/core/types';
+import { Bundle, EmmitRow, Entities, getTypeName, Host as AdcmHost, TypeName } from '@app/core/types';
 import { Store } from '@ngrx/store';
-
-import { SocketListener } from '../../directives/base.directive';
-import { ListComponent } from '../list/list.component';
-import { ListService } from './list.service';
 import { filter } from 'rxjs/internal/operators/filter';
-import { DialogComponent } from '../dialog.component';
 import { switchMap } from 'rxjs/operators';
 
+import { SocketListener } from '../../directives/base.directive';
+import { DialogComponent } from '../dialog.component';
+import { ListComponent } from '../list/list.component';
+import { ListService } from './list.service';
+
 @Directive({
-  selector: '[appBaseList]',
+  selector: '[appBaseList]'
 })
 export class BaseListDirective extends SocketListener implements OnInit, OnDestroy {
   row: Entities;
@@ -38,26 +38,31 @@ export class BaseListDirective extends SocketListener implements OnInit, OnDestr
     this.parent.type = this.typeName;
     this.parent.columns = this.service.initInstance(this.typeName).columns;
 
-    const limit = +localStorage.getItem('limit');
-    if (!limit) localStorage.setItem('limit', '10');
-    this.parent.paginator.pageSize = +localStorage.getItem('limit');
+    const limit = +localStorage.getItem('list:limit');
+    if (!limit) localStorage.setItem('list:limit', '10');
+    this.parent.paginator.pageSize = +localStorage.getItem('list:limit');
 
     this.parent.listItemEvt.pipe(this.takeUntil()).subscribe({ next: (event: EmmitRow) => this.listEvents(event) });
 
-    this.parent.route.paramMap.pipe(this.takeUntil()).subscribe(p => {
-      if (+p.get('page') === 0) {
-        this.parent.paginator.firstPage();
-      }
-      const ordering = p.get('ordering');
-      if (ordering && !this.parent.sort.active) {
-        this.parent.sort.direction = ordering[0] === '-' ? 'desc' : 'asc';
-        this.parent.sort.active = ordering[0] === '-' ? ordering.substr(1) : ordering;
-        this.parent.sortParam = ordering;
-      }
+    this.parent.route.paramMap
+      .pipe(
+        this.takeUntil(),
+        filter(p => this.checkParam(p))
+      )
+      .subscribe(p => {
+        if (+p.get('page') === 0) {
+          this.parent.paginator.firstPage();
+        }
+        const ordering = p.get('ordering');
+        if (ordering && !this.parent.sort.active) {
+          this.parent.sort.direction = ordering[0] === '-' ? 'desc' : 'asc';
+          this.parent.sort.active = ordering[0] === '-' ? ordering.substr(1) : ordering;
+          this.parent.sortParam = ordering;
+        }
 
-      this.listParams = p;
-      this.refresh();
-    });
+        this.listParams = p;
+        this.refresh();
+      });
 
     super.startListenSocket();
   }
@@ -67,11 +72,24 @@ export class BaseListDirective extends SocketListener implements OnInit, OnDestr
     this.parent.listItemEvt.complete();
   }
 
+  checkParam(p: ParamMap): boolean {
+    const listParamStr = localStorage.getItem('list:param');
+    if (!p.keys.length && listParamStr) {
+      const json = JSON.parse(listParamStr);
+      if (json[this.typeName]) {
+        this.parent.router.navigate(['./', json[this.typeName]], { relativeTo: this.parent.route });
+        return false;
+      }
+    }
+    return true;
+  }
+
   socketListener(m: EventMessage): void {
-    // if (this.typeName === 'job' && m.object.type === 'job' && m.event === 'change_job_status' && m.object.details.type === 'status') {
-    //   if (m.object.details.value === 'created' || m.object.details.value === 'success') this.refresh();
-    //   return;
-    // }
+    /** check upgradable */
+    if (m.event === 'create' && m.object.type === 'bundle' && this.typeName === 'cluster') {
+      this.refresh(m.object.id);
+      return;
+    }
 
     if (m.event === 'clear_issue' || m.event === 'raise_issue') return;
 
@@ -151,15 +169,15 @@ export class BaseListDirective extends SocketListener implements OnInit, OnDestr
           data: {
             title: `Accept license agreement`,
             text: info.text,
-            controls: { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] },
-          },
+            controls: { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] }
+          }
         })
         .beforeClosed()
         .pipe(
           filter(yes => yes),
-          switchMap(() => this.service.acceptLicense(`${row.license_url}accept/`)),
+          switchMap(() => this.service.acceptLicense(`${row.license_url}accept/`))
         )
-        .subscribe(() => row.license = 'accepted'),
+        .subscribe(() => (row.license = 'accepted'))
     );
   }
 

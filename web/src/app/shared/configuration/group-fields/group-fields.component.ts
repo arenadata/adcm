@@ -16,7 +16,7 @@ import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 
 import { FieldService } from '../field.service';
 import { FieldComponent } from '../field/field.component';
-import { FieldOptions, PanelOptions } from '../types';
+import { FieldOptions, PanelOptions, IConfig } from '../types';
 
 @Component({
   selector: 'app-group-fields',
@@ -26,6 +26,7 @@ import { FieldOptions, PanelOptions } from '../types';
 export class GroupFieldsComponent implements OnInit {
   @Input() panel: PanelOptions;
   @Input() form: FormGroup;
+  @Input() rawConfig: IConfig;
   @ViewChild('ep', { static: false }) expanel: MatExpansionPanel;
   checked = true;
 
@@ -35,8 +36,8 @@ export class GroupFieldsComponent implements OnInit {
   constructor(private service: FieldService) {}
 
   ngOnInit(): void {
-    if (this.service.globalConfig.attr && this.service.globalConfig.attr[this.panel.name]) {
-      this.checked = this.service.globalConfig.attr[this.panel.name].active;
+    if (this.rawConfig.attr && this.rawConfig.attr[this.panel.name]) {
+      this.checked = this.rawConfig.attr[this.panel.name].active;
       this.checkFields(this.checked);
     }
   }
@@ -45,12 +46,16 @@ export class GroupFieldsComponent implements OnInit {
     return 'options' in item && !item.hidden;
   }
 
+  getForm() {
+    return this.form.controls[this.panel.name];
+  }
+
   isAdvanced() {
     return this.panel.ui_options && this.panel.ui_options.advanced;
   }
 
   activeToggle(e: MatSlideToggleChange) {
-    this.service.globalConfig.attr[this.panel.name].active = e.checked;
+    this.rawConfig.attr[this.panel.name].active = e.checked;
     this.checked = e.checked;
     this.checkFields(e.checked);
   }
@@ -60,17 +65,13 @@ export class GroupFieldsComponent implements OnInit {
       .filter(a => !('options' in a))
       .forEach((a: FieldOptions) => {
         const split = a.key.split('/');
-        let formControl = (this.form.controls[split[1]] as FormGroup).controls[split[0]];
-        if (split.length > 2) {
-          const [name, ...other] = split;
-          const currentFormGroup = other.reverse().reduce((p, c) => p.get(c), this.form) as FormGroup;
-          formControl = currentFormGroup.controls[name];
-        }
+
+        const [name, ...other] = split;
+        const currentFormGroup = other.reverse().reduce((p, c) => p.get(c), this.form) as FormGroup;
+        const formControl = currentFormGroup.controls[name];
 
         this.updateValidator(formControl, a, flag);
-        if (a.type === 'password') {
-          this.updateValidator(this.form.controls['confirm_' + name], a, flag);
-        }
+        if (a.type === 'password') this.updateValidator(currentFormGroup.controls['confirm_' + name], a, flag);
       });
   }
 

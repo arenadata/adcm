@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { IYspec } from './YspecStructure';
+import { IYspec } from './yspec/yspec.service';
 
 export type stateType = 'created' | 'locked';
 
@@ -122,4 +122,8 @@ export interface FieldOptions extends ConfigOptions {
   disabled?: boolean;
   limits?: ILimits;
   compare: Compare[];
+}
+
+export interface IStructure extends FieldOptions {
+  rules: { [x: string]: any; type: string };
 }

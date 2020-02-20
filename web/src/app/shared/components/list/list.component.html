@@ -4,7 +4,7 @@
   </mat-form-field>
 </div> -->
 <mat-table [dataSource]="data" [trackBy]="trackBy" matSort>
-  <mat-header-row *matHeaderRowDef="columns" [appMultiSort]="sortParam"></mat-header-row>
+  <mat-header-row *matHeaderRowDef="columns" [appMultiSort]="sortParam" (mousedownevent)="addToSorting=$event"></mat-header-row>
   <mat-row appHover *matRowDef="let row; columns: columns" (click)="clickCell($event, 'title', row)"
     [ngClass]="{ 'select-table-item': current ? row.id === current.id : false }"></mat-row>
 
@@ -119,8 +119,8 @@
   </ng-container>
 
   <ng-container matColumnDef="state">
-    <mat-header-cell *matHeaderCellDef mat-sort-header>State</mat-header-cell>
-    <mat-cell *matCellDef="let row">
+    <mat-header-cell *matHeaderCellDef mat-sort-header class="width100">State</mat-header-cell>
+    <mat-cell *matCellDef="let row" class="width100">
       <mat-icon class="icon-locked running" *ngIf="row.state === 'locked'; else title">autorenew</mat-icon>
       <ng-template #title>{{ row.state }}</ng-template>
     </mat-cell>
@@ -217,9 +217,9 @@
 
   <!-- hosts -->
   <ng-container matColumnDef="fqdn">
-    <mat-header-cell *matHeaderCellDef mat-sort-header>FQDN</mat-header-cell>
-    <mat-cell *matCellDef="let row">
-      <span>{{ row.fqdn }}</span>
+    <mat-header-cell *matHeaderCellDef mat-sort-header class="width30pr">FQDN</mat-header-cell>
+    <mat-cell *matCellDef="let row" class="width30pr">
+      <span class="overflow" [appTooltip]="row.fqdn" [appTooltipShowByCondition]="true">{{ row.fqdn }}</span>
     </mat-cell>
   </ng-container>
 

@@ -10,7 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { animate, state, style, transition, trigger } from '@angular/animations';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit, ViewChild, AfterViewChecked } from '@angular/core';
+import { FormGroup } from '@angular/forms';
 import { ClusterService } from '@app/core';
 import { ApiService } from '@app/core/api';
 import { EventMessage, SocketState } from '@app/core/store';
@@ -42,7 +43,7 @@ import { IConfig } from '../types';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ConfigComponent extends SocketListener implements OnInit {
+export class ConfigComponent extends SocketListener implements OnInit, AfterViewChecked {
   loadingStatus = 'Loading...';
   config$: Observable<IConfig>;
   rawConfig: IConfig;
@@ -84,6 +85,10 @@ export class ConfigComponent extends SocketListener implements OnInit {
     super.startListenSocket();
   }
 
+  ngAfterViewChecked(): void {
+    this.stub();
+  }
+
   isAdvanced(data: IConfig) {
     return data.config.some(a => a.ui_options && a.ui_options.advanced);
   }
@@ -92,8 +97,14 @@ export class ConfigComponent extends SocketListener implements OnInit {
     this[toolsEvent.name](toolsEvent.conditions);
   }
 
+  fieldsEvents(e: { name: 'load'; data: { form: FormGroup } }) {
+    if (e.name === 'load') {
+      this.stub();
+    }
+  }
+
   get formValid() {
-    return this.service.form.valid;
+    return this.fields.form.valid;
   }
 
   history(flag: boolean) {
@@ -101,7 +112,18 @@ export class ConfigComponent extends SocketListener implements OnInit {
   }
 
   filter(c: { advanced: boolean; search: string }) {
-    this.fields.dataOptions = this.service.filterApply(c);
+    this.service.filterApply(this.fields.dataOptions, c);
+    this.stub();
+  }
+
+  /**
+   * change detection on manual
+   */
+  stub() {
+    if (this.fields) {
+      this.fields.checkForm();
+      this.cdRef.detectChanges();
+    }
   }
 
   socketListener(m: EventMessage) {
@@ -127,11 +149,11 @@ export class ConfigComponent extends SocketListener implements OnInit {
   }
 
   save() {
-    const form = this.service.form;
+    const form = this.fields.form;
     if (form.valid) {
       this.saveFlag = true;
 
-      const config = this.service.parseValue(),
+      const config = this.service.parseValue(this.fields.form, this.rawConfig.config),
         attr = this.rawConfig.attr,
         description = this.tools.descriptionFormControl.value;
 
@@ -146,7 +168,7 @@ export class ConfigComponent extends SocketListener implements OnInit {
           this.saveFlag = false;
           /**
            * TODO: history does not update!
-           *  => her need the new this.field.dataOptions
+           *  => need the new this.field.dataOptions
            */
           this.historyComponent.versionID = c.id;
           this.historyComponent.getData();

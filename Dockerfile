@@ -1,8 +1,8 @@
-FROM arenadata/adcmbase:20200121195750
+FROM arenadata/adcmbase:20200203174702
 
 COPY . /adcm/
 
-RUN cp -r /adcm/os/* / && rm -rf /adcm/os; cp -r /adcm/ansible/* /usr/local/lib/python3.8/site-packages/ansible/ && rm -rf /adcm/ansible && rmdir /var/log/nginx;
+RUN cp -r /adcm/os/* / && rm -rf /adcm/os; cp -r /adcm/python/ansible/* /usr/local/lib/python3.8/site-packages/ansible/ && rm -rf /adcm/python/ansible && rmdir /var/log/nginx;
 
 # Secret_key is mandatory for build_static procedure,
 # but should not be hardcoded in the image.
