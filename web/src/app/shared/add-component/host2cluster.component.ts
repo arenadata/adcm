@@ -28,7 +28,7 @@ import { HostComponent } from './host.component';
       </div>
       <div class="add-host2cluster">
         <div *ngFor="let host of list" class="full">
-          <label>{{ host.name }}</label>
+          <label class="overflow" [appTooltip]="host.name" [appTooltipShowByCondition]="true">{{ host.name }}</label>
           <button mat-icon-button (click)="addHost2Cluster(host)" matTooltip="Host will be added to the cluster">
             <mat-icon color="primary">link</mat-icon>
           </button>
@@ -46,7 +46,7 @@ import { HostComponent } from './host.component';
   `,
   styles: [
     '.tools {position: relative; height: 40px;} .tools>button { position: absolute; right: 0;}',
-    '.full { display: flex;padding-left: 6px; margin: 3px 0; } .full>label { flex: 1 0 auto; vertical-align: middle; line-height: 40px; }',
+    '.full { display: flex;padding-left: 6px; margin: 3px 0; justify-content: space-between; } .full>label { vertical-align: middle; line-height: 40px; }',
     '.full:nth-child(odd) {background-color: #4e4e4e;}',
     '.full:hover {background-color: #5e5e5e; }'
   ]

@@ -50,16 +50,14 @@ export class SchemeComponent implements OnInit {
 
     if (this.currentType === 'list') {
       this.items = (this.options.value as Array<any>).map(a => {
-        return { value: a, rules: this.rules };       
+        return { value: a, rules: this.rules };
       });
     } else if (this.currentType === 'dict') {
-
-       this.items = Object.keys(this.value).map(b => {
-          const c = this.findRule(b);
-          return {value: this.value[b], rules: c};
-        });
+      this.items = Object.keys(this.value).map(b => {
+        const c = this.findRule(b);
+        return { value: this.value[b], rules: c };
+      });
     } else {
-      
     }
   }
 

@@ -16,7 +16,7 @@ import { EventMessage, SocketState } from '@app/core/store';
 import { Cluster, Entities, Host, IAction, Issue } from '@app/core/types';
 import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
-import { switchMap, tap } from 'rxjs/operators';
+import { switchMap, tap, filter } from 'rxjs/operators';
 
 import { SocketListener } from '../directives/base.directive';
 import { CrumbsItem, NavigationService } from './navigation.service';
@@ -69,19 +69,17 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
   }
 
   socketListener(m: EventMessage) {
-
-
     if (m.event === 'create' && m.object.type === 'bundle') {
-      this.model$ = this.current.reset();
+      this.updateAll(m);
     }
 
     if (this.current.Current && this.current.Current.typeName === m.object.type && this.current.Current.id === m.object.id) {
       if (m.event === 'change_job_status' && this.current.Current.typeName === 'job') {
-        this.current.reset().subscribe(a => this.initValue(a.current, m));
+        this.updateAll(m);
       }
 
       if (m.event === 'change_state' || m.event === 'upgrade' || m.event === 'raise_issue') {
-        this.current.reset().subscribe(a => this.initValue(a.current, m));
+        this.updateAll(m);
       }
 
       if (m.event === 'clear_issue') {
@@ -95,6 +93,7 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
         this.updateView();
       }
     }
+    
     if (
       this.current.Cluster &&
       m.event === 'clear_issue' &&
@@ -105,6 +104,10 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
       this.current.Cluster.issue = {} as Issue;
       this.updateView();
     }
+  }
+
+  updateAll(m?: EventMessage) {
+    this.current.reset().pipe(filter(a => !!a)).subscribe(a => this.initValue(a.current, m));
   }
 
   initValue(a: Entities, m?: EventMessage) {

@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Injectable } from '@angular/core';
+import { Injectable, ɵEMPTY_MAP } from '@angular/core';
 import { ParamMap } from '@angular/router';
 import { ApiService } from '@app/core/api';
 import { IAction, Bundle, Cluster, Entities, Host, IImport, Job, Log, Provider, Service, TypeName } from '@app/core/types';
@@ -142,8 +142,10 @@ export class ClusterService {
   }
 
   reset(): Observable<WorkerInstance> {
+    if (!this.Current) return EMPTY;
     const typeName = this.Current.typeName;
     return this.api.get<Entities>(this.Current.url).pipe(
+      filter(_ => !!this.worker),
       map(a => {
         if (typeName === 'cluster') this.worker.cluster = { ...(a as Cluster), typeName };
         this.worker.current = { ...a, typeName };

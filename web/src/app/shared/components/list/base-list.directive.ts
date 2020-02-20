@@ -46,8 +46,8 @@ export class BaseListDirective extends SocketListener implements OnInit, OnDestr
 
     this.parent.route.paramMap
       .pipe(
-        filter(p => this.checkParam(p)),
-        this.takeUntil()
+        this.takeUntil(),
+        filter(p => this.checkParam(p))
       )
       .subscribe(p => {
         if (+p.get('page') === 0) {
@@ -85,7 +85,6 @@ export class BaseListDirective extends SocketListener implements OnInit, OnDestr
   }
 
   socketListener(m: EventMessage): void {
-
     /** check upgradable */
     if (m.event === 'create' && m.object.type === 'bundle' && this.typeName === 'cluster') {
       this.refresh(m.object.id);
