@@ -10,7 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnDestroy, OnInit, QueryList, ViewChildren } from '@angular/core';
-import { MatExpansionPanel, MatSelectChange } from '@angular/material';
+import { MatExpansionPanel } from '@angular/material/expansion';
+import { MatSelectChange } from '@angular/material/select';
 import { EventMessage, SocketState } from '@app/core/store';
 import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';

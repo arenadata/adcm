@@ -48,7 +48,7 @@ export class ListService {
 
   getList(p: ParamMap, typeName: string) {    
     const listParamStr = localStorage.getItem('list:param');
-    if (p && p.keys.length) {
+    if (p?.keys.length) {
       const param = p.keys.reduce((a, c) => {
         a[c] = p.get(c);
         return a;

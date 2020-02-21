@@ -5,9 +5,8 @@
     "baseUrl": "./",
     "types": []
   },
-  "exclude": [
-    "test.ts",
-    "**/*.spec.ts",
-    "app/dashboard/**/*"
+  "files": [
+    "main.ts",
+    "polyfills.ts"
   ]
 }

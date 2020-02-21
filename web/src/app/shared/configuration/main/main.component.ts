@@ -53,9 +53,9 @@ export class ConfigComponent extends SocketListener implements OnInit, AfterView
 
   private _url = '';
 
-  @ViewChild('fields', { static: false }) fields: ConfigFieldsComponent;
-  @ViewChild('history', { static: false }) historyComponent: HistoryComponent;
-  @ViewChild('tools', { static: false }) tools: ToolsComponent;
+  @ViewChild('fields') fields: ConfigFieldsComponent;
+  @ViewChild('history') historyComponent: HistoryComponent;
+  @ViewChild('tools') tools: ToolsComponent;
 
   @Input()
   set configUrl(url: string) {

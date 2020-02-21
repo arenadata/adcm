@@ -9,8 +9,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 import { ThemePalette } from '@angular/material';
 import { ApiBase, Issue, Job } from '@app/core/types';
+import { WorkerInstance } from '@app/core';
+import { Injectable } from "@angular/core";
 
 import { IDetails } from './details.service';
 
@@ -70,6 +73,7 @@ export const Config = {
   }
 };
 
+@Injectable()
 export class NavigationService {
   getLeft(current: Partial<ApiBase>): INavItem[] {
     const typeName = current.typeName;

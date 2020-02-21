@@ -41,7 +41,7 @@ import { BaseFormDirective } from './base-form.directive';
 })
 export class ServiceComponent extends BaseFormDirective implements OnInit {
   options$: Observable<SelectOption[]>;
-  @ViewChild('listServices', { static: false })
+  @ViewChild('listServices')
   private listServices: MatSelectionList;
 
   ngOnInit() {
