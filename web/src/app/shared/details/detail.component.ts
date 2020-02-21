@@ -95,17 +95,17 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
 
   socketListener(m: EventMessage) {
     if ((m.event === 'create' || m.event === 'delete') && m.object.type === 'bundle') {
-      this.service.reset().subscribe(a => this.run(a));
+      this.service.reset().pipe(this.takeUntil()).subscribe(a => this.run(a));
     }
 
     if (this.service.Current && this.service.Current.typeName === m.object.type && this.service.Current.id === m.object.id) {
       
       if (m.event === 'change_job_status' && this.service.Current.typeName === 'job') {
-        this.service.reset().subscribe(a => this.run(a));
+        this.service.reset().pipe(this.takeUntil()).subscribe(a => this.run(a));
       }
 
       if (m.event === 'change_state' || m.event === 'upgrade' || m.event === 'raise_issue') {
-        this.service.reset().subscribe(a => this.run(a));
+        this.service.reset().pipe(this.takeUntil()).subscribe(a => this.run(a));
       }
 
       if (m.event === 'clear_issue' && m.object.type === 'cluster') this.issues = {} as Issue;
