@@ -10,7 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { animate, state, style, transition, trigger } from '@angular/animations';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit, ViewChild, AfterViewChecked } from '@angular/core';
+import { FormGroup } from '@angular/forms';
 import { ClusterService } from '@app/core';
 import { ApiService } from '@app/core/api';
 import { EventMessage, SocketState } from '@app/core/store';
@@ -24,7 +25,6 @@ import { ConfigFieldsComponent } from '../fields/fields.component';
 import { HistoryComponent } from '../tools/history.component';
 import { ToolsComponent } from '../tools/tools.component';
 import { IConfig } from '../types';
-import { FormGroup } from '@angular/forms';
 
 @Component({
   selector: 'app-config-form',
@@ -43,7 +43,7 @@ import { FormGroup } from '@angular/forms';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ConfigComponent extends SocketListener implements OnInit {
+export class ConfigComponent extends SocketListener implements OnInit, AfterViewChecked {
   loadingStatus = 'Loading...';
   config$: Observable<IConfig>;
   rawConfig: IConfig;
@@ -53,9 +53,9 @@ export class ConfigComponent extends SocketListener implements OnInit {
 
   private _url = '';
 
-  @ViewChild('fields', { static: false }) fields: ConfigFieldsComponent;
-  @ViewChild('history', { static: false }) historyComponent: HistoryComponent;
-  @ViewChild('tools', { static: false }) tools: ToolsComponent;
+  @ViewChild('fields') fields: ConfigFieldsComponent;
+  @ViewChild('history') historyComponent: HistoryComponent;
+  @ViewChild('tools') tools: ToolsComponent;
 
   @Input()
   set configUrl(url: string) {
@@ -85,6 +85,10 @@ export class ConfigComponent extends SocketListener implements OnInit {
     super.startListenSocket();
   }
 
+  ngAfterViewChecked(): void {
+    this.stub();
+  }
+
   isAdvanced(data: IConfig) {
     return data.config.some(a => a.ui_options && a.ui_options.advanced);
   }
@@ -100,7 +104,7 @@ export class ConfigComponent extends SocketListener implements OnInit {
   }
 
   get formValid() {
-    return this.service.form.valid;
+    return this.fields.form.valid;
   }
 
   history(flag: boolean) {
@@ -108,18 +112,18 @@ export class ConfigComponent extends SocketListener implements OnInit {
   }
 
   filter(c: { advanced: boolean; search: string }) {
-    this.fields.dataOptions = this.service.filterApply(c);
+    this.service.filterApply(this.fields.dataOptions, c);
     this.stub();
   }
 
-  /** 
+  /**
    * change detection on manual
-  */
+   */
   stub() {
-    setTimeout(_ => {
+    if (this.fields) {
       this.fields.checkForm();
       this.cdRef.detectChanges();
-    }, 0);
+    }
   }
 
   socketListener(m: EventMessage) {
@@ -145,11 +149,11 @@ export class ConfigComponent extends SocketListener implements OnInit {
   }
 
   save() {
-    const form = this.service.form;
+    const form = this.fields.form;
     if (form.valid) {
       this.saveFlag = true;
 
-      const config = this.service.parseValue(),
+      const config = this.service.parseValue(this.fields.form, this.rawConfig.config),
         attr = this.rawConfig.attr,
         description = this.tools.descriptionFormControl.value;
 
