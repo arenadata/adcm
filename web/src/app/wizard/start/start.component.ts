@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { MatStepper } from '@angular/material';
+import { MatStepper } from '@angular/material/stepper';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ClusterService } from '@app/core';
 import { Cluster } from '@app/core/types';
@@ -31,7 +31,7 @@ export class StartComponent implements OnInit {
     actions: false,
   };
 
-  @ViewChild('stepper', {static: false}) stepper: MatStepper;
+  @ViewChild('stepper') stepper: MatStepper;
 
   constructor(private service: ClusterService, private route: ActivatedRoute, private router: Router) {}
 

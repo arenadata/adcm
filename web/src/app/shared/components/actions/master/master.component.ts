@@ -12,12 +12,12 @@
 import { Component, EventEmitter, OnInit } from '@angular/core';
 import { ApiService } from '@app/core/api';
 import { IAction } from '@app/core/types';
-import { DynamicComponent, DynamicEvent, ServiceHostComponent } from '@app/shared';
 import { FieldService } from '@app/shared/configuration/field.service';
-import { ConfigFieldsComponent } from '@app/shared/configuration/fields/fields.component';
-
+import { ConfigFieldsComponent } from '../../../configuration/fields/fields.component';
 import { BaseDirective } from '../../../directives/base.directive';
 import { ActionParameters } from '../actions.directive';
+import { DynamicComponent, DynamicEvent } from '@app/shared/directives/dynamic.directive';
+import { ServiceHostComponent } from '@app/shared/host-components-map/services2hosts/service-host.component';
 
 @Component({
   selector: 'app-master',

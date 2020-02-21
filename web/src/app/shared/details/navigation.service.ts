@@ -11,6 +11,7 @@
 // limitations under the License.
 import { WorkerInstance } from '@app/core';
 import { ApiBase, Job } from '@app/core/types';
+import { Injectable } from "@angular/core";
 
 export interface CrumbsItem {
   path: string;
@@ -64,6 +65,7 @@ const Config = {
   },
 };
 
+@Injectable()
 export class NavigationService {
   getMenu(current: ApiBase): LeftMenuItem[] {
     const typeName = current.typeName;

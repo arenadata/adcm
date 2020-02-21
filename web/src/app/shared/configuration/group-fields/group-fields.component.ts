@@ -27,7 +27,8 @@ export class GroupFieldsComponent implements OnInit {
   @Input() panel: PanelOptions;
   @Input() form: FormGroup;
   @Input() rawConfig: IConfig;
-  @ViewChild('ep', { static: false }) expanel: MatExpansionPanel;
+  @ViewChild('ep') expanel: MatExpansionPanel;
+
   checked = true;
 
   @ViewChildren(FieldComponent)
