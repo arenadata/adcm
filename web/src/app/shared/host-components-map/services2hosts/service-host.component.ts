@@ -116,6 +116,7 @@ export class ServiceHostComponent extends SocketListener implements OnInit {
         this.serviceComponents = this.service.Components;
         this.hosts = this.service.Hosts;
         this.form = this.service.formGroup;
+        console.log('DEBUG HOST-COMPONETS >>', this.service);
       });
   }
 
