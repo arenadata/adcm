@@ -279,3 +279,15 @@ def test_host_config(provider_bundle: Bundle):
         host.action(name='host_' + key).run().try_wait()
         expected_state[pname]["hosts"][fqdn][key] = NEW_VALUES[key]
         assert_provider_config(provider_bundle, expected_state)
+
+
+def test_host_config_from_provider(provider_bundle: Bundle):
+    expected_state = copy.deepcopy(INITIAL_PROVIDERS_CONFIG)
+    assert_provider_config(provider_bundle, expected_state)
+
+    for key, pname, host_idx in sparse_matrix(KEYS, PROVIDERS, [0, 1]):
+        provider = provider_bundle.provider(name=pname)
+        fqdn = list(INITIAL_PROVIDERS_CONFIG[pname]['hosts'].keys())[host_idx]
+        provider.action(name='host_' + key).run(config={"fqdn": fqdn}).try_wait()
+        expected_state[pname]["hosts"][fqdn][key] = NEW_VALUES[key]
+        assert_provider_config(provider_bundle, expected_state)

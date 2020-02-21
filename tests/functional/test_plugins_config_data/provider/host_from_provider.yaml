@@ -1,5 +1,5 @@
 ---
-- hosts: localhost
+- hosts: all
 
   vars:
     new_int: &new_int 2
@@ -26,121 +26,137 @@
   connection: local
   tasks:
     - adcm_config:
+        host_id: "{{ adcm_hostid }}"
         type: "host"
         key: "int"
         value: *new_int
       register: out
       tags:
         - int
+      when: inventory_hostname == job.config.fqdn
 
     - name: "Check return value"
       fail:
         msg: "Expected value is {{ new_int }}, actual value is {{ out.value }}"
-      when: "{{ out.value != new_int}}"
+      when: inventory_hostname == job.config.fqdn and out.value != new_int
       tags:
         - int
 
     - adcm_config:
+        host_id: "{{ adcm_hostid }}"
         type: "host"
         key: "float"
         value: *new_float
       register: out
       tags:
         - float
+      when: inventory_hostname == job.config.fqdn
 
     - name: "Check return value"
       fail:
         msg: "Expected value is {{ new_float }}, actual value is {{ out.value }}"
-      when: "{{ out.value != new_float }}"
+      when: inventory_hostname == job.config.fqdn and out.value != new_float 
       tags:
         - float
 
     - adcm_config:
+        host_id: "{{ adcm_hostid }}"
         type: "host"
         key: "text"
         value: *new_text
       register: out
       tags:
         - text
+      when: inventory_hostname == job.config.fqdn
 
     - name: "Check return value"
       fail:
         msg: "Expected value is {{ new_text }}, actual value is {{ out.value }}"
-      when: "{{ out.value != new_text }}"
+      when: inventory_hostname == job.config.fqdn and out.value != new_text
       tags:
         - text
 
     - adcm_config:
+        host_id: "{{ adcm_hostid }}"
         type: "host"
         key: "file"
         value: *new_file
       register: out
       tags:
         - file
+      when: inventory_hostname == job.config.fqdn
 
     - name: "Check return value"
       fail:
         msg: "Expected value is {{ new_file }}, actual value is {{ out.value }}"
-      when: "{{ out.value != new_file }}"
+      when: inventory_hostname == job.config.fqdn and out.value != new_file
       tags:
         - file
 
     - adcm_config:
+        host_id: "{{ adcm_hostid }}"
         type: "host"
         key: "string"
         value: *new_string
       register: out
       tags:
         - string
+      when: inventory_hostname == job.config.fqdn
 
     - name: "Check return value"
       fail:
         msg: "Expected value is {{ new_string }}, actual value is {{ out.value }}"
-      when: "{{ out.value != new_string }}"
+      when: inventory_hostname == job.config.fqdn and out.value != new_string
       tags:
         - string
 
     - adcm_config:
+        host_id: "{{ adcm_hostid }}"
         type: "host"
         key: "json"
         value: *new_json
       register: out
       tags:
         - json
+      when: inventory_hostname == job.config.fqdn
 
     - name: "Check return value"
       fail:
         msg: "Expected value is {{ new_json }}, actual value is {{ out.value }}"
-      when: "{{ out.value != new_json }}"
+      when: inventory_hostname == job.config.fqdn and out.value != new_json
       tags:
         - json
 
     - adcm_config:
+        host_id: "{{ adcm_hostid }}"
         type: "host"
         key: "list"
         value: *new_list
       register: out
       tags:
         - list
+      when: inventory_hostname == job.config.fqdn
 
     - name: "Check return value"
       fail:
         msg: "Expected value is {{ new_list }}, actual value is {{ out.value }}"
-      when: "{{ out.value != new_list }}"
+      when: inventory_hostname == job.config.fqdn and out.value != new_list
       tags:
         - list
 
     - adcm_config:
+        host_id: "{{ adcm_hostid }}"
         type: "host"
         key: "map"
         value: *new_map
       register: out
       tags:
         - map
+      when: inventory_hostname == job.config.fqdn
 
     - name: "Check return value"
       fail:
         msg: "Expected value is {{ new_map }}, actual value is {{ out.value }}"
-      when: "{{ out.value != new_map }}"
+      when: inventory_hostname == job.config.fqdn and out.value != new_map
       tags:
         - map
