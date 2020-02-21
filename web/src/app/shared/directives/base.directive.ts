@@ -35,6 +35,9 @@ export interface ISocketListener {
   socketListener: (m: EventMessage) => void;
 }
 
+@Directive({
+    selector: '[appBase]',
+})
 @Injectable()
 export class SocketListener extends BaseDirective {
   socket$ = this.socket.pipe(
