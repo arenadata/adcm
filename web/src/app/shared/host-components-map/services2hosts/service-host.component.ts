@@ -18,7 +18,7 @@ import { IActionParameter } from '@app/core/types';
 import { Store } from '@ngrx/store';
 import { tap } from 'rxjs/operators';
 
-import { SocketListener } from '../../directives/base.directive';
+import { SocketListenerDirective } from '../../directives/base.directive';
 import { TakeService } from '../take.service';
 import { CompTile, HostTile, Post } from '../types';
 
@@ -35,7 +35,7 @@ import { CompTile, HostTile, Post } from '../types';
     ])
   ]
 })
-export class ServiceHostComponent extends SocketListener implements OnInit {
+export class ServiceHostComponent extends SocketListenerDirective implements OnInit {
   showSpinner = false;
   showPopup = false;
 

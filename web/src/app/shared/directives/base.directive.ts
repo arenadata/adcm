@@ -10,10 +10,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Directive, Injectable, OnDestroy } from '@angular/core';
-import { EventMessage, getMessage, SocketState } from '@app/core/store';
+import { EventMessage, getMessage, SocketState, clearMessages } from '@app/core/store';
 import { select, Store } from '@ngrx/store';
 import { Subject } from 'rxjs';
-import { filter, takeUntil } from 'rxjs/operators';
+import { filter, takeUntil, exhaust, share } from 'rxjs/operators';
 
 @Directive({
   selector: '[appBase]',
@@ -39,15 +39,20 @@ export interface ISocketListener {
     selector: '[appBase]',
 })
 @Injectable()
-export class SocketListener extends BaseDirective {
+export class SocketListenerDirective extends BaseDirective implements OnDestroy {
   socket$ = this.socket.pipe(
+    this.takeUntil(),
     select(getMessage),
-    filter(m => !!m && !!m.object),
-    this.takeUntil()
+    filter(m => !!m && !!m.object)    
   );
 
   constructor(private socket: Store<SocketState>) {
-    super();    
+    super();
+  }
+   
+  ngOnDestroy() {
+    super.ngOnDestroy();
+    this.socket.dispatch(clearMessages());
   }
 
   startListenSocket(): void {

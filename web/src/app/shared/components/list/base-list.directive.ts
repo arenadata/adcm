@@ -17,7 +17,7 @@ import { Store } from '@ngrx/store';
 import { filter } from 'rxjs/internal/operators/filter';
 import { switchMap } from 'rxjs/operators';
 
-import { SocketListener } from '../../directives/base.directive';
+import { SocketListenerDirective } from '../../directives/base.directive';
 import { DialogComponent } from '../dialog.component';
 import { ListComponent } from '../list/list.component';
 import { ListService } from './list.service';
@@ -25,7 +25,7 @@ import { ListService } from './list.service';
 @Directive({
   selector: '[appBaseList]'
 })
-export class BaseListDirective extends SocketListener implements OnInit, OnDestroy {
+export class BaseListDirective extends SocketListenerDirective implements OnInit, OnDestroy {
   row: Entities;
   listParams: ParamMap;
 

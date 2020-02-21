@@ -17,7 +17,7 @@ import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
 import { map, switchMap, tap } from 'rxjs/operators';
 
-import { SocketListener } from '../../directives/base.directive';
+import { SocketListenerDirective } from '../../directives/base.directive';
 import { StatusInfo, StatusService } from './status.service';
 import { ClusterService } from '@app/core';
 
@@ -27,7 +27,7 @@ import { ClusterService } from '@app/core';
   styleUrls: ['./status.component.scss'],
   // changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class StatusComponent extends SocketListener implements OnInit, OnDestroy {
+export class StatusComponent extends SocketListenerDirective implements OnInit, OnDestroy {
   statusInfo$: Observable<StatusInfo[]>;
   hcm: StatusInfo[] = [];
   view: 'host' | 'service' = 'service';
