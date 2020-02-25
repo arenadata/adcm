@@ -18,7 +18,7 @@ import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
 import { filter, switchMap, tap } from 'rxjs/operators';
 
-import { SocketListenerDirective, BaseDirective } from '../directives/base.directive';
+import { BaseDirective } from '../directives/base.directive';
 import { CrumbsItem, NavigationService } from './navigation.service';
 
 @Component({

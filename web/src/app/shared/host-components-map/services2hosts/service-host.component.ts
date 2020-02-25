@@ -18,9 +18,9 @@ import { IActionParameter } from '@app/core/types';
 import { Store } from '@ngrx/store';
 import { tap } from 'rxjs/operators';
 
-import { SocketListenerDirective } from '../../directives/base.directive';
 import { TakeService } from '../take.service';
 import { CompTile, HostTile, Post } from '../types';
+import { SocketListenerDirective } from '../../directives/socketListener.directive';
 
 @Component({
   selector: 'app-service-host',

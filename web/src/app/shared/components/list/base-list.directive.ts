@@ -17,7 +17,7 @@ import { Store } from '@ngrx/store';
 import { filter } from 'rxjs/internal/operators/filter';
 import { switchMap } from 'rxjs/operators';
 
-import { SocketListenerDirective } from '../../directives/base.directive';
+import { SocketListenerDirective } from '../../directives/socketListener.directive';
 import { DialogComponent } from '../dialog.component';
 import { ListComponent } from '../list/list.component';
 import { ListService } from './list.service';
