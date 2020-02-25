@@ -49,6 +49,53 @@
       params:
         ansible_tags: list
 
+    host_int: &host_from_provider_action
+      type: job
+      script_type: ansible
+      script: host_from_provider.yaml
+      states:
+        available: any
+      params:
+        ansible_tags: int
+      config:
+        - name: fqdn
+          type: string
+
+    host_float:
+      <<: *host_from_provider_action
+      params:
+        ansible_tags: float
+
+    host_text:
+      <<: *host_from_provider_action
+      params:
+        ansible_tags: text
+
+    host_file:
+      <<: *host_from_provider_action
+      params:
+        ansible_tags: file
+
+    host_string:
+      <<: *host_from_provider_action
+      params:
+        ansible_tags: string
+
+    host_json:
+      <<: *host_from_provider_action
+      params:
+        ansible_tags: json
+
+    host_map:
+      <<: *host_from_provider_action
+      params:
+        ansible_tags: map
+
+    host_list:
+      <<: *host_from_provider_action
+      params:
+        ansible_tags: list
+
   config: &config
     int:
       type: integer
