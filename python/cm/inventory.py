@@ -96,6 +96,7 @@ def get_cluster_config(cluster_id):
             'config': get_obj_config(cluster),
             'name': cluster.name,
             'id': cluster.id,
+            'version': cluster.prototype.version
         },
         'services': {},
     }
@@ -103,7 +104,11 @@ def get_cluster_config(cluster_id):
     if imports:
         res['cluster']['imports'] = imports
     for service in ClusterObject.objects.filter(cluster=cluster):
-        res['services'][service.prototype.name] = {'config': get_obj_config(service)}
+        res['services'][service.prototype.name] = {
+            'id': service.id,
+            'version': service.prototype.version,
+            'config': get_obj_config(service)
+        }
         for component in ServiceComponent.objects.filter(cluster=cluster, service=service):
             res['services'][service.prototype.name][component.component.name] = {
                 'component_id': component.id

@@ -13,16 +13,7 @@ import { Injectable } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { getControlType, getPattern, isObject } from '@app/core/types';
 
-import {
-  ConfigOptions,
-  ConfigResultTypes,
-  ConfigValueTypes,
-  FieldOptions,
-  FieldStack,
-  IConfig,
-  IStructure,
-  PanelOptions,
-} from './types';
+import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, IStructure, PanelOptions } from './types';
 import { YspecService, matchType } from './yspec/yspec.service';
 
 export interface IToolsEvent {
@@ -34,11 +25,6 @@ export type controlType = 'boolean' | 'textbox' | 'textarea' | 'json' | 'passwor
 
 @Injectable()
 export class FieldService {
-  globalConfig: IConfig;
-  dataOptions: (FieldOptions | PanelOptions)[];
-  formOptions: FieldOptions[];
-  form = new FormGroup({});
-
   constructor(private fb: FormBuilder, private spec: YspecService) {}
 
   isVisibleField = (a: ConfigOptions) => !a.ui_options || !a.ui_options.invisible;
@@ -47,33 +33,38 @@ export class FieldService {
   isHidden = (a: FieldStack) => a.ui_options && (a.ui_options.invisible || a.ui_options.advanced);
 
   getPanels(data: IConfig): (FieldOptions | PanelOptions)[] {
-    this.globalConfig = data;
-    this.dataOptions = [];
-
-    if (data && data.config.length) {
-      this.formOptions = data.config.filter(a => a.type !== 'group').map((a: FieldStack) => this.getFieldBy(a));
-      data.config.filter(a => a.name !== '__main_info').map(a => this.fillDataOptions(a));
+    if (data && data.config) {
+      const fo = data.config.filter(a => a.type !== 'group' && a.subname);
+      return data.config
+        .filter(a => a.name !== '__main_info')
+        .reduce((p, c) => {
+          if (c.subname) return p;
+          if (c.type !== 'group') return [...p, this.checkYspec(this.getFieldBy(c))];
+          else return [...p, this.fillDataOptions(c, fo)];
+        }, []);
     }
-    return this.dataOptions;
+    return [];
   }
 
-  fillDataOptions(a: FieldStack) {
-    if (a.type === 'group') {
-      this.dataOptions.push({
-        ...a,
-        hidden: this.isHidden(a),
-        options: this.formOptions.filter(b => b.name === a.name).map(b => this.checkYspec(b))
-      });
-    } else if (!a.subname) this.dataOptions.push(this.checkYspec(this.getFieldBy(a)));
+  fillDataOptions(a: FieldStack, fo: FieldStack[]) {
+    return {
+      ...a,
+      hidden: this.isHidden(a),
+      options: fo
+        .filter(b => b.name === a.name)
+        .map(b => this.getFieldBy(b))
+        .map(c => {
+          c.name = c.subname;
+          return c;
+        })
+        .map(b => this.checkYspec(b))
+    };
   }
 
   checkYspec(a: FieldOptions): FieldOptions | PanelOptions {
-    a.name = a.subname || a.name;
     if (a.limits && a.limits.yspec) {
       this.spec.Root = a.limits.yspec;
       (a as IStructure).rules = this.spec.build();
-      // const yspec = new YspecStructure(a);
-      // return yspec.output;
     }
     return a;
   }
@@ -136,8 +127,7 @@ export class FieldService {
   }
 
   toFormGroup(options: (FieldOptions | PanelOptions)[]): FormGroup {
-    this.form = this.fb.group(options.reduce((p, c) => this.runByTree(c, p), {}));    
-    return this.form;
+    return this.fb.group(options.reduce((p, c) => this.runByTree(c, p), {}));
   }
 
   runByTree(field: FieldOptions | PanelOptions, controls: { [key: string]: {} }): { [key: string]: {} } {
@@ -166,9 +156,8 @@ export class FieldService {
     return controls;
   }
 
-  filterApply(c: { advanced: boolean; search: string }): (FieldOptions | PanelOptions)[] {
-    this.dataOptions.filter(a => this.isVisibleField(a)).map(a => this.handleTree(a, c));
-    return [...this.dataOptions];
+  filterApply(dataOptions: (FieldOptions | PanelOptions)[], c: { advanced: boolean; search: string }): (FieldOptions | PanelOptions)[] {
+    return dataOptions.filter(a => this.isVisibleField(a)).map(a => this.handleTree(a, c));
   }
 
   handleTree(a: FieldOptions | PanelOptions, c: { advanced: boolean; search: string }) {
@@ -209,35 +198,39 @@ export class FieldService {
    * Check the data
    *
    */
-  parseValue(): { [key: string]: string | number | boolean | object | [] } {
-    const __main_info = this.findField('__main_info');
-    const value = __main_info && __main_info.required ? { ...this.form.value, __main_info: __main_info.value } : { ...this.form.value };
-    return this.runParse(value);
+  parseValue(form: FormGroup, raw: FieldStack[]): { [key: string]: string | number | boolean | object | [] } {
+    const __main_info = this.findField(raw, '__main_info');
+    const value = __main_info && __main_info.required ? { ...form.value, __main_info: __main_info.value } : { ...form.value };
+    return this.runParse(raw, value);
   }
 
-  runParse(value: { [key: string]: any }, parentName?: string): { [key: string]: ConfigResultTypes } {
+  runParse(raw: FieldStack[], value: { [key: string]: any }, parentName?: string): { [key: string]: ConfigResultTypes } {
     const excluteTypes = ['json', 'map', 'list'];
     return Object.keys(value).reduce((p, c) => {
       const data = value[c];
-      const field = this.findField(c, parentName);
-      if (field) {
+      const field = this.findField(raw, c, parentName);
+
+      if (field && !field.read_only) {
         if (field.type === 'structure') p[c] = this.runYspecParse(data, field);
-        else if (isObject(data) && !excluteTypes.includes(field.type)) p[c] = this.runParse(data, field.name);
-        else if (field) p[c] = this.checkValue(data, field.type);
+        else if (isObject(data) && !excluteTypes.includes(field.type)) {
+          const br = this.runParse(raw, data, field.name);
+          if (Object.keys(br).length) p[c] = br;
+        } else if (field) p[c] = this.checkValue(data, field.type);
       }
       return p;
     }, {});
   }
 
-  findField(name: string, parentName?: string): FieldStack {
-    return this.globalConfig.config.find(a => (parentName ? a.name === parentName && a.subname === name : a.name === name));
+  findField(raw: FieldStack[], name: string, parentName?: string): FieldStack {
+    return raw.find(a => (parentName ? a.name === parentName && a.subname === name : a.name === name));
   }
 
   runYspecParse(value: any, field: FieldStack) {
-    const name = field.subname || field.name;
-    const yo = this.dataOptions.find(a => a.name === field.name) as PanelOptions;
-    const po = yo.options.find(a => a.name === field.subname) as PanelOptions;
-    return this.runYspecByOptions(value, po);
+    console.warn('under development');
+    // const name = field.subname || field.name;
+    // const yo = this.dataOptions.find(a => a.name === field.name) as PanelOptions;
+    // const po = yo.options.find(a => a.name === field.subname) as PanelOptions;
+    // return this.runYspecByOptions(value, po);
   }
 
   runYspecByOptions(value: any, op: PanelOptions) {

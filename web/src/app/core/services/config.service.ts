@@ -14,7 +14,6 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-
 const CONFIG_URL = '/assets/config.json';
 export interface IConfig {
   version: string;
@@ -37,19 +36,17 @@ export class ConfigService {
     localStorage.setItem('adcm:version', version);
   }
 
-  get config() {
-    return this.appConfig$.pipe(map(c => this.checkVersion(c)));
-  }
-
   checkVersion(c: IConfig): IConfig | null {
-    if (this.version !== c.version) {
-      this.version = c.version;
+    const version = `${c.version}-${c.commit_id}`;
+    if (this.version && this.version !== version) {
+      this.version = version;
       return null;
-    } else return c;
+    } else if (!this.version) this.version = version;
+    return c;
   }
 
   load() {
     const ts = Date.now();
-    this.appConfig$ = this.http.get<IConfig>(`${CONFIG_URL}?p=${ts}`);
+    return this.http.get<IConfig>(`${CONFIG_URL}?nocache=${ts}`).pipe(map(c => this.checkVersion(c)));
   }
 }

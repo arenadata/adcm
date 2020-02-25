@@ -28,7 +28,7 @@ export interface DialogData {
 @Component({
   selector: 'app-dialog',
   template: `
-    <h3 mat-dialog-title>{{ data.title || 'Notification' }}</h3>
+    <h3 mat-dialog-title class='overflow'>{{ data.title || 'Notification' }}</h3>
     <mat-dialog-content class="content" appScroll (read)="scroll($event)">
       <pre *ngIf="data.text">{{ data.text }}</pre>
       <ng-template appDynamic></ng-template>
