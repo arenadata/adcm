@@ -75,7 +75,7 @@ export class LogComponent extends SocketListener implements OnInit, AfterViewIni
   isWatch = false;
   watch: Subscription;
 
-  @ViewChild('tea', { read: ElementRef, static: false }) textarea: ElementRef;
+  @ViewChild('tea', { read: ElementRef }) textarea: ElementRef;
   @ViewChild('info', { static: true }) info: JobInfoComponent;
 
   constructor(private service: ClusterService, private route: ActivatedRoute, protected store: Store<SocketState>) {

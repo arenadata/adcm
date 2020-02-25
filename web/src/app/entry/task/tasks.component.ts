@@ -9,16 +9,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { animate, state, style, transition, trigger, useAnimation, animation } from '@angular/animations';
-import { Component, ElementRef, OnInit, QueryList, ViewChild, ViewChildren, HostBinding } from '@angular/core';
-import { MatPaginator, MatSort, MatSortHeader, PageEvent, MatTableDataSource, MatDialog } from '@angular/material';
+import { animate, state, style, transition, trigger } from '@angular/animations';
+import { Component, ElementRef, OnInit, QueryList, ViewChild, ViewChildren } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
+import { MatPaginator, PageEvent } from '@angular/material/paginator';
+import { MatSort, MatSortHeader } from '@angular/material/sort';
+import { MatTableDataSource } from '@angular/material/table';
+import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { ApiService } from '@app/core/api';
 import { EventMessage, SocketState } from '@app/core/store';
-import { Task, JobStatus } from '@app/core/types';
-import { SocketListener, DialogComponent } from '@app/shared';
+import { JobStatus, Task } from '@app/core/types';
+import { DialogComponent, SocketListener } from '@app/shared';
 import { Store } from '@ngrx/store';
-import { switchMap, filter } from 'rxjs/operators';
-import { ActivatedRoute, Router, ParamMap } from '@angular/router';
+import { filter, switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-tasks',
@@ -38,14 +41,6 @@ export class TasksComponent extends SocketListener implements OnInit {
   dataSource = new MatTableDataSource<Task>([]);
   columnsToDisplay = ['id', 'name', 'objects', 'start_date', 'finish_date', 'status'];
   expandedTask: Task | null;
-
-  iconDisplay = {
-    created: 'watch_later',
-    running: 'autorenew',
-    success: 'done',
-    failed: 'error',
-    aborted: 'block'
-  };
 
   paramMap: ParamMap;
 
