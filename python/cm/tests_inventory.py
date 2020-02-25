@@ -58,7 +58,7 @@ class TestInventory(TestCase):
         mock_get_import.return_value = {}
 
         bundle = models.Bundle.objects.create()
-        prototype = models.Prototype.objects.create(bundle=bundle)
+        prototype = models.Prototype.objects.create(bundle=bundle, version="2.2")
         object_config = models.ObjectConfig.objects.create(current=1, previous=1)
         cluster = models.Cluster.objects.create(prototype=prototype, config=object_config)
 
@@ -67,7 +67,8 @@ class TestInventory(TestCase):
             'cluster': {
                 'config': {},
                 'name': '',
-                'id': 1
+                'id': 1,
+                'version': '2.2'
             },
             'services': {}
         }
@@ -192,7 +193,7 @@ class TestInventory(TestCase):
     @patch('cm.inventory.open')
     def test_prepare_job_inventory(self, mock_open, mock_dump):
         bundle = models.Bundle.objects.create()
-        prototype = models.Prototype.objects.create(bundle=bundle)
+        prototype = models.Prototype.objects.create(bundle=bundle, version="2.2")
         cluster = models.Cluster.objects.create(prototype=prototype)
         host_provider = models.HostProvider.objects.create(prototype=prototype)
         host = models.Host.objects.create(
@@ -217,7 +218,8 @@ class TestInventory(TestCase):
                             'cluster': {
                                 'config': {},
                                 'name': '',
-                                'id': 1
+                                'id': 1,
+                                'version': '2.2'
                             },
                             'services': {}
                         }
