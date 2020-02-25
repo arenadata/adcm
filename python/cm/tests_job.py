@@ -292,7 +292,7 @@ class TestJob(TestCase):
                 prototype.type = prototype_type
                 prototype.save()
 
-                obj, _cluster = job_module.get_action_context(action, selector)
+                obj, _cluster, _provider = job_module.get_action_context(action, selector)
 
                 self.assertEqual(obj, test_obj)
                 self.assertEqual(_cluster, test_cluster)
@@ -307,9 +307,9 @@ class TestJob(TestCase):
         job = models.JobLog.objects.create(
             action_id=action.id, start_date=timezone.now(), finish_date=timezone.now())
 
-        job_module.prepare_job(action, None, {'cluster': 1}, job.id, cluster, '', {})
+        job_module.prepare_job(action, None, {'cluster': 1}, job.id, cluster, '', {}, None)
 
-        mock_prepare_job_inventory.assert_called_once_with({'cluster': 1}, job.id, {})
+        mock_prepare_job_inventory.assert_called_once_with({'cluster': 1}, job.id, {}, None)
         mock_prepare_job_config.assert_called_once_with(action, None, {'cluster': 1},
                                                         job.id, cluster, '')
 
@@ -544,4 +544,4 @@ class TestJob(TestCase):
             cluster, new_hc, json.loads(action.hostcomponentmap), old_hc)
         mock_prepare_job.assert_called_once_with(
             action, sub_action, json.loads(selector), job.id, cluster,
-            json.loads(task.config), delta)
+            json.loads(task.config), delta, None)
