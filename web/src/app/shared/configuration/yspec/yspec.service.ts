@@ -9,10 +9,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+import { Injectable } from '@angular/core';
 import { getControlType, getPattern, IRoot } from '@app/core/types';
 
 import { controlType } from '../field.service';
-import { FieldOptions, PanelOptions } from '../types';
+import { FieldOptions } from '../types';
 import { YspecStructure } from './YspecStructure';
 
 export type simpleType = 'string' | 'integer' | 'float' | 'bool' | 'int' | 'one_of' | 'dict_key_selection';
@@ -48,6 +49,7 @@ export interface IStructure extends FieldOptions {
   rules: { options: any; type: string; name: string };
 }
 
+@Injectable()
 export class YspecService {
   private root: IYspec;
   // private output: any;

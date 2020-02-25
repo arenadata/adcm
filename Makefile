@@ -24,7 +24,7 @@ buildss: ## Build status server
 	@docker run -i --rm -v $(CURDIR)/go:/code -w /code  golang:alpine sh -c "apk --update add make git; make; rm -f /code/adcm/go.sum"
 
 buildjs: ## Build client side js/html/css in directory wwwroot
-	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:11-alpine ./build.sh
+	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:12-alpine ./build.sh
 
 buildbase: ## Build base image for ADCM's container. That is alpine with all packages.
 	@docker build --pull=true -f Dockerfile_base --no-cache=true -t $(ADCMBASE_IMAGE):$$(date '+%Y%m%d%H%M%S') -t $(ADCMBASE_IMAGE):latest .

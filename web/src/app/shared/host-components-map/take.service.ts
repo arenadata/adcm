@@ -45,6 +45,7 @@ export class TakeService {
     this.sourceMap.set('host', []);
     this.sourceMap.set('compo', []);
     this.statePost.clear();
+    this.loadPost.clear();
     this.formGroup = new FormGroup({});
 
     return this.api.get<IRawHosComponent>(url).pipe(
@@ -243,7 +244,6 @@ export class TakeService {
       str.target.isLink = true;
       this.statePost.add(post);
     }
-
     this.setFormValue((isComp ? this.stream.target : this.stream.link) as CompTile);
   }
 
@@ -265,6 +265,9 @@ export class TakeService {
   checkActions(host: HostTile, com: CompTile, action: 'add' | 'remove'): boolean {
     const flag = this.loadPost.data.some(a => a.component_id === com.id && a.service_id === com.service_id && a.host_id === host.id);
     if (com.actions && com.actions.length) {
+
+      console.log(`DEBUG HOST-COMPONENT >> exist in LoadData: ${flag}`, this.loadPost, com, host);
+      
       if (action === 'remove') {
         if (flag) return com.actions.some(a => a === 'remove');
         else return true;
