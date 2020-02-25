@@ -35,15 +35,17 @@ from cm.models import (
 )
 
 
-def start_task(action_id, selector, conf, hc):
+def start_task(action_id, selector, conf, hc, hosts):   # pylint: disable=too-many-locals
     try:
         action = Action.objects.get(id=action_id)
     except Action.DoesNotExist:
         err('ACTION_NOT_FOUND')
 
-    obj, act_conf, spec, old_hc, delta, host_map, cluster = get_data_for_task(
-        action, selector, conf, hc
-    )
+    obj, cluster, provider = check_task(action, selector, conf)
+    act_conf, spec = check_action_config(action, conf)
+    host_map, delta = check_hostcomponentmap(cluster, action, hc)
+    check_action_hosts(action, cluster, provider, hosts)
+    old_hc = get_hc(cluster)
 
     if action.type not in ['task', 'job']:
         msg = f'unknown type "{action.type}" for action: {action}, {action.context}: {obj.name}'
@@ -51,42 +53,59 @@ def start_task(action_id, selector, conf, hc):
 
     with transaction.atomic():
         task = lock_create_task(
-            action, obj, selector, act_conf, spec, old_hc, delta, host_map, cluster
+            action, obj, selector, act_conf, spec, old_hc, delta, host_map, cluster, hosts
         )
     run_task(task)
 
     return task
 
 
-def get_data_for_task(action, selector, conf, hc):
-    obj, cluster = get_action_context(action, selector)
+def check_task(action, selector, conf):
+    obj, cluster, provider = get_action_context(action, selector)
     check_action_state(action, obj)
     iss = issue.get_issue(obj)
     if not issue.issue_to_bool(iss):
         err('TASK_ERROR', 'action has issues', iss)
-    act_conf, spec = check_action_config(action, conf)
-    host_map, delta = check_hostcomponentmap(cluster, action, hc)
-    old_hc = get_hc(cluster)
-    return obj, act_conf, spec, old_hc, delta, host_map, cluster
+    return obj, cluster, provider
 
 
-def lock_create_task(action, obj, selector, act_conf, spec, old_hc, delta, host_map, cluster):
+def check_action_hosts(action, cluster, provider, hosts):
+    if not hosts:
+        return
+    if not action.partial_execution:
+        err('TASK_ERROR', 'Only action with partial_execution permission can receive host list')
+    if not isinstance(hosts, list):
+        err('TASK_ERROR', 'Hosts should be array')
+    for host_id in hosts:
+        if not isinstance(host_id, int):
+            err('TASK_ERROR', f'host id should be integer ({host_id})')
+        try:
+            host = Host.objects.get(id=host_id)
+        except Host.DoesNotExist:
+            err('TASK_ERROR', f'Can not find host with id #{host_id}')
+        if cluster and host.cluster != cluster:
+            err('TASK_ERROR', f'host #{host_id} does not belong to cluster #{cluster.id}')
+        if provider and host.provider != provider:
+            err('TASK_ERROR', f'host #{host_id} does not belong to host provider #{provider.id}')
+
+
+def lock_create_task(action, obj, selector, conf, spec, old_hc, delta, host_map, cluster, hosts):
     lock_objects(obj)
 
     if host_map:
         api.save_hc(cluster, host_map)
 
     if action.type == 'task':
-        task = create_task(action, selector, obj, act_conf, old_hc, delta)
-        new_conf = process_config(task, spec, act_conf)
+        task = create_task(action, selector, obj, conf, old_hc, delta, hosts)
+        new_conf = process_config(task, spec, conf)
     else:
-        task = create_one_job_task(action.id, selector, obj, act_conf, old_hc)
+        task = create_one_job_task(action.id, selector, obj, conf, old_hc, hosts)
         job = create_job(action, None, selector, task.id)
-        new_conf = process_config(task, spec, act_conf)
-        prepare_job(action, None, selector, job.id, obj, new_conf, delta)
+        new_conf = process_config(task, spec, conf)
+        prepare_job(action, None, selector, job.id, obj, new_conf, delta, hosts)
 
-    if act_conf:
-        process_file_type(task, spec, act_conf)
+    if conf:
+        process_file_type(task, spec, conf)
         task.config = json.dumps(new_conf)
         task.save()
 
@@ -127,6 +146,8 @@ def cancel_task(task):
 
 
 def get_action_context(action, selector):
+    cluster = None
+    provider = None
     if action.prototype.type == 'service':
         check_selector(selector, 'cluster')
         obj = check_service_task(selector['cluster'], action)
@@ -142,14 +163,13 @@ def get_action_context(action, selector):
     elif action.prototype.type == 'provider':
         check_selector(selector, 'provider')
         obj = check_provider(selector['provider'])
-        cluster = None
+        provider = obj
     elif action.prototype.type == 'adcm':
         check_selector(selector, 'adcm')
         obj = check_adcm(selector['adcm'])
-        cluster = None
     else:
         err('WRONG_ACTION_CONTEXT', f'unknown action context "{action.prototype.type}"')
-    return obj, cluster
+    return obj, cluster, provider
 
 
 def check_action_state(action, obj):
@@ -472,12 +492,15 @@ def get_old_hc(saved_hc):
 
 def re_prepare_job(task, job):
     conf = None
+    hosts = None
     delta = {}
     if task.config:
         conf = json.loads(task.config)
+    if task.hosts:
+        hosts = json.loads(task.hosts)
     selector = json.loads(task.selector)
     action = Action.objects.get(id=task.action_id)
-    obj, cluster = get_action_context(action, selector)
+    obj, cluster, _provider = get_action_context(action, selector)
     sub_action = None
     if job.sub_action_id:
         sub_action = SubAction.objects.get(id=job.sub_action_id)
@@ -485,12 +508,12 @@ def re_prepare_job(task, job):
         new_hc = get_new_hc(cluster)
         old_hc = get_old_hc(task.hostcomponentmap)
         delta = cook_delta(cluster, new_hc, json.loads(action.hostcomponentmap), old_hc)
-    prepare_job(action, sub_action, selector, job.id, obj, conf, delta)
+    prepare_job(action, sub_action, selector, job.id, obj, conf, delta, hosts)
 
 
-def prepare_job(action, sub_action, selector, job_id, obj, conf, delta):
+def prepare_job(action, sub_action, selector, job_id, obj, conf, delta, hosts):
     prepare_job_config(action, sub_action, selector, job_id, obj, conf)
-    inventory.prepare_job_inventory(selector, job_id, delta)
+    inventory.prepare_job_inventory(selector, job_id, delta, hosts)
 
 
 def prepare_context(selector):
@@ -573,13 +596,14 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
     fd.close()
 
 
-def create_task(action, selector, obj, conf, hc, delta):
+def create_task(action, selector, obj, conf, hc, delta, hosts):
     task = TaskLog(
         action_id=action.id,
         object_id=obj.id,
         selector=json.dumps(selector),
         config=json.dumps(conf),
         hostcomponentmap=json.dumps(hc),
+        hosts=json.dumps(hosts),
         start_date=timezone.now(),
         finish_date=timezone.now(),
         status=config.Job.CREATED,
@@ -588,17 +612,18 @@ def create_task(action, selector, obj, conf, hc, delta):
     set_task_status(task, config.Job.CREATED)
     for sub in SubAction.objects.filter(action=action):
         job = create_job(action, sub, selector, task.id)
-        prepare_job(action, sub, selector, job.id, obj, conf, delta)
+        prepare_job(action, sub, selector, job.id, obj, conf, delta, hosts)
     return task
 
 
-def create_one_job_task(action_id, selector, obj, conf, hc):
+def create_one_job_task(action_id, selector, obj, conf, hc, hosts):
     task = TaskLog(
         action_id=action_id,
         object_id=obj.id,
         selector=json.dumps(selector),
         config=json.dumps(conf),
         hostcomponentmap=json.dumps(hc),
+        hosts=json.dumps(hosts),
         start_date=timezone.now(),
         finish_date=timezone.now(),
         status=config.Job.CREATED,
