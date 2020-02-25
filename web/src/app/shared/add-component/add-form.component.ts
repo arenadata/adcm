@@ -13,7 +13,6 @@ import { Component } from '@angular/core';
 import { DynamicComponent } from '@app/shared/directives';
 
 import { FormModel } from './add.service';
-import { Entities } from '@app/core/types/api';
 
 @Component({
   selector: 'app-add-form',
@@ -21,19 +20,19 @@ import { Entities } from '@app/core/types/api';
     <div [style.minWidth.px]="450">
       <ng-container [ngSwitch]="model.name">
         <ng-container *ngSwitchCase="'provider'">
-          <app-add-provider (cancel)="hideForm()"></app-add-provider>
+          <app-add-provider></app-add-provider>
         </ng-container>
         <ng-container *ngSwitchCase="'host'">
-          <app-add-host (cancel)="hideForm()"></app-add-host>
+          <app-add-host></app-add-host>
         </ng-container>
         <ng-container *ngSwitchCase="'cluster'">
-          <app-add-cluster (cancel)="hideForm()"></app-add-cluster>
+          <app-add-cluster></app-add-cluster>
         </ng-container>
         <ng-container *ngSwitchCase="'service'">
-          <app-add-service (cancel)="hideForm()"></app-add-service>
+          <app-add-service></app-add-service>
         </ng-container>
         <ng-container *ngSwitchCase="'host2cluster'">
-          <app-add-host2cluster (cancel)="hideForm($event)"></app-add-host2cluster>
+          <app-add-host2cluster></app-add-host2cluster>
         </ng-container>
       </ng-container>
     </div>
@@ -41,7 +40,4 @@ import { Entities } from '@app/core/types/api';
 })
 export class AddFormComponent implements DynamicComponent {
   model: FormModel;
-  hideForm(result?: Entities) {
-    if (!result) this.model.success.emit();
-  }
 }

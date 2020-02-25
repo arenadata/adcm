@@ -12,13 +12,13 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ChannelService, ClusterService } from '@app/core';
-import { EventMessage, getMessage, SocketState } from '@app/core/store';
+import { EventMessage, SocketState } from '@app/core/store';
 import { Cluster, Entities, Host, IAction, Issue } from '@app/core/types';
 import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
 import { filter, switchMap, tap } from 'rxjs/operators';
 
-import { BaseDirective } from '../directives/base.directive';
+import { SocketListenerDirective } from '../directives/socketListener.directive';
 import { CrumbsItem, NavigationService } from './navigation.service';
 
 @Component({
@@ -27,7 +27,7 @@ import { CrumbsItem, NavigationService } from './navigation.service';
   styleUrls: ['./detail.component.scss'],
   providers: [NavigationService]
 })
-export class DetailComponent extends BaseDirective implements OnInit, OnDestroy {
+export class DetailComponent extends SocketListenerDirective implements OnInit, OnDestroy {
   actions$: Observable<IAction[]>;
   issue: Issue;
   crumbs: CrumbsItem[];
@@ -35,13 +35,13 @@ export class DetailComponent extends BaseDirective implements OnInit, OnDestroy 
   model$ = this.route.paramMap.pipe(switchMap(param => this.current.getContext(param).pipe(tap(w => this.initValue(w.current)))));
 
   constructor(
-    private socket: Store<SocketState>,
+    socket: Store<SocketState>,
     private route: ActivatedRoute,
     private current: ClusterService,
     private nav: NavigationService,
     private channel: ChannelService
   ) {
-    super();
+    super(socket);
   }
 
   get isIssue() {
@@ -61,12 +61,7 @@ export class DetailComponent extends BaseDirective implements OnInit, OnDestroy 
   }
 
   ngOnInit(): void {
-    //super.startListenSocket();
-
-    this.socket
-      .select(getMessage)
-      .pipe(filter(e => !!e))
-      .subscribe(m => this.socketListener(m));
+    super.startListenSocket();
   }
 
   ngOnDestroy(): void {
@@ -117,13 +112,10 @@ export class DetailComponent extends BaseDirective implements OnInit, OnDestroy 
   }
 
   updateAll(m?: EventMessage) {
-    this.current
-      .reset()
-      .pipe(
-        this.takeUntil(),
-        filter(a => !!a)
-      )
-      .subscribe(a => this.initValue(a.current, m));
+    this.model$ = this.current.reset().pipe(
+      filter(a => !!a),
+      tap(a => this.initValue(a.current, m))
+    );
   }
 
   initValue(a: Entities, m?: EventMessage) {

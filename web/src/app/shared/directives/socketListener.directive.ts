@@ -12,7 +12,7 @@
 import { Directive, Injectable, OnDestroy } from '@angular/core';
 import { EventMessage, getMessage, SocketState, clearMessages } from '@app/core/store';
 import { select, Store } from '@ngrx/store';
-import { filter } from 'rxjs/operators';
+import { filter, tap } from 'rxjs/operators';
 import { BaseDirective } from './base.directive';
 
 @Directive({
@@ -29,7 +29,7 @@ export class SocketListenerDirective extends BaseDirective implements OnDestroy 
     this.socket.dispatch(clearMessages());
   }
   startListenSocket(): void {
-    this.socket$.subscribe(m => this.socketListener(m));
+    this.socket$.pipe(tap(m => this.socketListener(m))).subscribe();
   }
   socketListener(m: EventMessage) {
     console.warn('No implemented socketListener method', m);
