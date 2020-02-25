@@ -63,12 +63,12 @@ export class FieldService {
   }
 
   checkYspec(a: FieldOptions): FieldOptions | PanelOptions {
-    if (a.limits && a.limits.yspec) {
-      //this.spec.parse(a);
-      // this.spec.Root = a.limits.yspec;
-      // (a as IStructure).rules = this.spec.build();
-      const o = new YspecStructure(a);
-      return o.output;
+    if (a.limits?.yspec) {  
+      const b = <unknown>a as PanelOptions;
+      b.options = [];   
+      //const o = new YspecStructure(a);
+      
+      return b;
     } 
     return a;
   }

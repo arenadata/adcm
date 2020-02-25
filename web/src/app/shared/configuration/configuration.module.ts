@@ -27,6 +27,7 @@ import { SearchComponent } from './tools/search.component';
 import { ToolsComponent } from './tools/tools.component';
 import { YspecService } from './yspec/yspec.service';
 import { SchemeComponent } from './scheme/scheme.component';
+import { RootComponent } from './scheme/root.component';
 
 @NgModule({
   declarations: [
@@ -38,7 +39,8 @@ import { SchemeComponent } from './scheme/scheme.component';
     SearchComponent,
     ColorOptionDirective,
     ToolsComponent,
-    SchemeComponent
+    SchemeComponent,
+    RootComponent
   ],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, MaterialModule, StuffModule, FormElementsModule],
   exports: [ConfigComponent, ConfigFieldsComponent],
