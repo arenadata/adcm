@@ -1,0 +1,16 @@
+---
+- hosts: all
+  gather_facts: false
+  connection: local
+  tasks:
+    - adcm_state:
+        host_id: "{{ adcm_hostid }}"
+        type: "host"
+        state: "stateq"
+      register: out
+      when: inventory_hostname == job.config.fqdn
+
+    - name: "Check return value"
+      fail:
+        msg: "Expected value is stateq, actual value is {{ out.state }}"
+      when: inventory_hostname == job.config.fqdn and out.state != "stateq"

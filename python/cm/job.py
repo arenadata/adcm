@@ -231,6 +231,8 @@ def lock_objects(obj):
                 lock_obj(service)
     elif isinstance(obj, HostProvider):
         lock_obj(obj)
+        for host in Host.objects.filter(provider=obj):
+            lock_obj(host)
     elif isinstance(obj, ADCM):
         lock_obj(obj)
     elif isinstance(obj, Cluster):
@@ -257,6 +259,8 @@ def unlock_objects(obj):
                 unlock_obj(service)
     elif isinstance(obj, HostProvider):
         unlock_obj(obj)
+        for host in Host.objects.filter(provider=obj):
+            unlock_obj(host)
     elif isinstance(obj, ADCM):
         unlock_obj(obj)
     elif isinstance(obj, Cluster):
