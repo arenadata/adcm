@@ -19,7 +19,7 @@ import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { ApiService } from '@app/core/api';
 import { EventMessage, SocketState } from '@app/core/store';
 import { JobStatus, Task } from '@app/core/types';
-import { DialogComponent, SocketListener } from '@app/shared';
+import { DialogComponent, SocketListenerDirective } from '@app/shared';
 import { Store } from '@ngrx/store';
 import { filter, switchMap } from 'rxjs/operators';
 
@@ -35,7 +35,7 @@ import { filter, switchMap } from 'rxjs/operators';
     ])
   ]
 })
-export class TasksComponent extends SocketListener implements OnInit {
+export class TasksComponent extends SocketListenerDirective implements OnInit {
   isDisabled = false;
 
   dataSource = new MatTableDataSource<Task>([]);
