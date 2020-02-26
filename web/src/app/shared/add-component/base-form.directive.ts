@@ -9,9 +9,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Directive, EventEmitter, OnDestroy, Output } from '@angular/core';
+import { Directive } from '@angular/core';
 import { FormGroup } from '@angular/forms';
-import { Entities } from '@app/core/types';
+import { MatDialog } from '@angular/material/dialog';
 
 import { BaseDirective } from '../directives/base.directive';
 import { AddService } from './add.service';
@@ -19,16 +19,15 @@ import { AddService } from './add.service';
 @Directive({
   selector: '[appBaseForm]',
 })
-export class BaseFormDirective extends BaseDirective implements OnDestroy {
-  @Output() cancel = new EventEmitter<Entities>();
-  form: FormGroup;
-
-  constructor(public service: AddService) {
+export class BaseFormDirective extends BaseDirective {
+  form  = new FormGroup({});
+  
+  constructor(public service: AddService, public dialog: MatDialog) {
     super();
   }
 
-  onCancel(result?: Entities, reset = true) {
-    if (this.form && reset) this.form.reset();
-    this.cancel.emit(result);
+  onCancel() {
+    this.form.reset();
+    this.dialog.closeAll();
   }
 }

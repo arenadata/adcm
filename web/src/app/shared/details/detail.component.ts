@@ -17,7 +17,6 @@ import { Cluster, Host, IAction, Issue, Job, notIssue } from '@app/core/types';
 import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
-
 import { SocketListener } from '../directives/base.directive';
 import { IDetails } from './details.service';
 
@@ -94,23 +93,35 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
   }
 
   socketListener(m: EventMessage) {
-    if ((m.event === 'create' || m.event === 'delete') && m.object.type === 'bundle') {
-      this.service.reset().subscribe(a => this.run(a));
+
+    if (m.event === 'create' && m.object.type === 'bundle') {
+      this.updateAll(m);
+      return;
     }
 
-    if (this.service.Current && this.service.Current.typeName === m.object.type && this.service.Current.id === m.object.id) {
-      
-      if (m.event === 'change_job_status' && this.service.Current.typeName === 'job') {
-        this.service.reset().subscribe(a => this.run(a));
+    if (this.current.Current && this.current.Current.typeName === m.object.type && this.current.Current.id === m.object.id) {
+      if (m.event === 'change_job_status' && this.current.Current.typeName === 'job') {
+        this.updateAll(m);
+        return;
       }
 
       if (m.event === 'change_state' || m.event === 'upgrade' || m.event === 'raise_issue') {
-        this.service.reset().subscribe(a => this.run(a));
+        this.updateAll(m);
+        return;
       }
 
-      if (m.event === 'clear_issue' && m.object.type === 'cluster') this.issues = {} as Issue;
+      if (m.event === 'clear_issue') {
+        if (m.object.type === 'cluster') this.current.Cluster.issue = {} as Issue;
+        this.current.Current.issue = {} as Issue;
+        this.updateView();
+        return;
+      }
 
-      if (m.event === 'change_status') this.status = +m.object.details.value;
+      if (m.event === 'change_status') {
+        this.current.Current.status = +m.object.details.value;
+        this.updateView();
+        return;
+      }
     }
 
     if (

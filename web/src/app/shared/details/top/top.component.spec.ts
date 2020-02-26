@@ -10,12 +10,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-
-import { TopComponent } from './top.component';
+import { RouterTestingModule } from '@angular/router/testing';
 import { MaterialModule } from '@app/shared';
 import { StuffModule } from '@app/shared/stuff.module';
+
 import { NavigationService } from '../navigation.service';
-import { RouterModule } from '@angular/router';
+import { TopComponent } from './top.component';
 
 describe('TopComponent', () => {
   let component: TopComponent;
@@ -23,7 +23,7 @@ describe('TopComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [MaterialModule, StuffModule, RouterModule,  RouterModule.forRoot([])],
+      imports: [MaterialModule, StuffModule, RouterTestingModule],
       declarations: [TopComponent],
       providers: [NavigationService]
     }).compileComponents();

@@ -10,12 +10,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-
-import { LeftComponent } from './left.component';
+import { RouterTestingModule } from '@angular/router/testing';
 import { MaterialModule } from '@app/shared/material.module';
 import { StuffModule } from '@app/shared/stuff.module';
-import { RouterModule } from '@angular/router';
+
 import { NavigationService } from '../navigation.service';
+import { LeftComponent } from './left.component';
+import { Issue } from '@app/core/types';
 
 describe('LeftComponent', () => {
   let component: LeftComponent;
@@ -23,16 +24,18 @@ describe('LeftComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [MaterialModule, StuffModule, RouterModule, RouterModule.forRoot([])],
-      declarations: [ LeftComponent ],
+      imports: [MaterialModule, StuffModule, RouterTestingModule],
+      declarations: [LeftComponent],
       providers: [NavigationService]
-    })
-    .compileComponents();
+    }).compileComponents();
   }));
 
   beforeEach(() => {
     fixture = TestBed.createComponent(LeftComponent);
     component = fixture.componentInstance;
+
+    component.current = { typeName: 'cluster' };
+
     fixture.detectChanges();
   });
 
@@ -40,14 +43,11 @@ describe('LeftComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  /** 
-   * 
-  */
+  it('should initialize menu', () => {
+    const el: HTMLElement = fixture.debugElement.nativeElement;
+    const list = el.querySelectorAll('a');
+    expect(list.length).toBeGreaterThan(0);
 
-  it('should initialize menu on depends input typeName', () => {
-
-    //component.current = { typeName: 'cluster'};
-
+    //component.issues = { 'service': { }  } as Issue<'service'>;
   });
-
 });

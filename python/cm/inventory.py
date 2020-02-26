@@ -96,6 +96,7 @@ def get_cluster_config(cluster_id):
             'config': get_obj_config(cluster),
             'name': cluster.name,
             'id': cluster.id,
+            'version': cluster.prototype.version
         },
         'services': {},
     }
@@ -103,7 +104,11 @@ def get_cluster_config(cluster_id):
     if imports:
         res['cluster']['imports'] = imports
     for service in ClusterObject.objects.filter(cluster=cluster):
-        res['services'][service.prototype.name] = {'config': get_obj_config(service)}
+        res['services'][service.prototype.name] = {
+            'id': service.id,
+            'version': service.prototype.version,
+            'config': get_obj_config(service)
+        }
         for component in ServiceComponent.objects.filter(cluster=cluster, service=service):
             res['services'][service.prototype.name][component.component.name] = {
                 'component_id': component.id
@@ -124,20 +129,21 @@ def get_provider_config(provider_id):
     }
 
 
-def get_host_groups(cluster_id, delta):
+def get_host_groups(cluster_id, delta, action_host=None):
     groups = {}
     cluster = Cluster.objects.get(id=cluster_id)
     all_hosts = HostComponent.objects.filter(cluster=cluster)
     for hc in all_hosts:
-        key = '{}.{}'.format(hc.service.prototype.name, hc.component.component.name)
-        if key not in groups:
-            groups[key] = {'hosts': {}}
-        groups[key]['hosts'][hc.host.fqdn] = get_obj_config(hc.host)
-    for hc in all_hosts:
-        key = '{}'.format(hc.service.prototype.name)
-        if key not in groups:
-            groups[key] = {'hosts': {}}
-        groups[key]['hosts'][hc.host.fqdn] = get_obj_config(hc.host)
+        if action_host and hc.host.id not in action_host:
+            continue
+        key1 = '{}.{}'.format(hc.service.prototype.name, hc.component.component.name)
+        if key1 not in groups:
+            groups[key1] = {'hosts': {}}
+        groups[key1]['hosts'][hc.host.fqdn] = get_obj_config(hc.host)
+        key2 = '{}'.format(hc.service.prototype.name)
+        if key2 not in groups:
+            groups[key2] = {'hosts': {}}
+        groups[key2]['hosts'][hc.host.fqdn] = get_obj_config(hc.host)
 
     for htype in delta:
         for key in delta[htype]:
@@ -151,24 +157,26 @@ def get_host_groups(cluster_id, delta):
     return groups
 
 
-def get_hosts(host_list):
+def get_hosts(host_list, action_host=None):
     group = {}
     for host in host_list:
+        if action_host and host.id not in action_host:
+            continue
         group[host.fqdn] = get_obj_config(host)
         group[host.fqdn]['adcm_hostid'] = host.id
     return group
 
 
-def get_cluster_hosts(cluster_id):
+def get_cluster_hosts(cluster_id, action_host=None):
     return {'CLUSTER': {
-        'hosts': get_hosts(Host.objects.filter(cluster__id=cluster_id)),
+        'hosts': get_hosts(Host.objects.filter(cluster__id=cluster_id), action_host),
         'vars': get_cluster_config(cluster_id)
     }}
 
 
-def get_provider_hosts(provider_id):
+def get_provider_hosts(provider_id, action_host=None):
     return {'PROVIDER': {
-        'hosts': get_hosts(Host.objects.filter(provider__id=provider_id)),
+        'hosts': get_hosts(Host.objects.filter(provider__id=provider_id), action_host),
     }}
 
 
@@ -181,17 +189,17 @@ def get_host(host_id):
     return groups
 
 
-def prepare_job_inventory(selector, job_id, delta):
+def prepare_job_inventory(selector, job_id, delta, action_host=None):
     log.info('prepare inventory for job #%s, selector: %s', job_id, selector)
     fd = open(os.path.join(config.RUN_DIR, f'{job_id}-inventory.json'), 'w')
     inv = {'all': {'children': {}}}
     if 'cluster' in selector:
-        inv['all']['children'].update(get_cluster_hosts(selector['cluster']))
-        inv['all']['children'].update(get_host_groups(selector['cluster'], delta))
+        inv['all']['children'].update(get_cluster_hosts(selector['cluster'], action_host))
+        inv['all']['children'].update(get_host_groups(selector['cluster'], delta, action_host))
     if 'host' in selector:
         inv['all']['children'].update(get_host(selector['host']))
     if 'provider' in selector:
-        inv['all']['children'].update(get_provider_hosts(selector['provider']))
+        inv['all']['children'].update(get_provider_hosts(selector['provider'], action_host))
         inv['all']['vars'] = get_provider_config(selector['provider'])
     json.dump(inv, fd, indent=3)
     fd.close()

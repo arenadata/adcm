@@ -10,13 +10,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnDestroy, OnInit, QueryList, ViewChildren } from '@angular/core';
-import { MatExpansionPanel, MatSelectChange } from '@angular/material';
+import { MatExpansionPanel } from '@angular/material/expansion';
+import { MatSelectChange } from '@angular/material/select';
 import { EventMessage, SocketState } from '@app/core/store';
 import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
 import { map, switchMap, tap } from 'rxjs/operators';
 
-import { SocketListener } from '../../directives/base.directive';
+import { SocketListenerDirective } from '../../directives/socketListener.directive';
 import { StatusInfo, StatusService } from './status.service';
 import { ClusterService } from '@app/core';
 
@@ -26,7 +27,7 @@ import { ClusterService } from '@app/core';
   styleUrls: ['./status.component.scss'],
   // changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class StatusComponent extends SocketListener implements OnInit, OnDestroy {
+export class StatusComponent extends SocketListenerDirective implements OnInit, OnDestroy {
   statusInfo$: Observable<StatusInfo[]>;
   hcm: StatusInfo[] = [];
   view: 'host' | 'service' = 'service';

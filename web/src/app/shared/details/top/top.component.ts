@@ -14,8 +14,8 @@ import { Cluster, IAction, Issue, notIssue } from '@app/core/types';
 import { UpgradeItem } from '@app/shared/components';
 import { Observable, of } from 'rxjs';
 
-import { IDetails, INavItem } from '../details.service';
-import { NavigationService } from '../navigation.service';
+import { IDetails } from '../details.service';
+import { NavigationService, INavItem } from '../navigation.service';
 
 @Component({
   selector: 'app-details-top',

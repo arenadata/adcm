@@ -12,8 +12,7 @@
 import { Component, Input } from '@angular/core';
 import { ApiBase, Issue } from '@app/core/types';
 
-import { INavItem } from '../details.service';
-import { NavigationService } from '../navigation.service';
+import { NavigationService, INavItem } from '../navigation.service';
 
 @Component({
   selector: 'app-details-left',
@@ -37,7 +36,7 @@ import { NavigationService } from '../navigation.service';
 })
 export class LeftComponent {
   items: INavItem[] = [];
-  @Input() set current(c: ApiBase) {
+  @Input() set current(c: Partial<ApiBase>) {
     if (c) this.items = this.navigation.getLeft(c);
   }
 

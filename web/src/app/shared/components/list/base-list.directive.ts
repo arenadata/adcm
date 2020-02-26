@@ -17,7 +17,7 @@ import { Store } from '@ngrx/store';
 import { filter } from 'rxjs/internal/operators/filter';
 import { switchMap } from 'rxjs/operators';
 
-import { SocketListener } from '../../directives/base.directive';
+import { SocketListenerDirective } from '../../directives/socketListener.directive';
 import { DialogComponent } from '../dialog.component';
 import { ListComponent } from '../list/list.component';
 import { ListService } from './list.service';
@@ -25,7 +25,7 @@ import { ListService } from './list.service';
 @Directive({
   selector: '[appBaseList]'
 })
-export class BaseListDirective extends SocketListener implements OnInit, OnDestroy {
+export class BaseListDirective extends SocketListenerDirective implements OnInit, OnDestroy {
   row: Entities;
   listParams: ParamMap;
 
@@ -121,7 +121,8 @@ export class BaseListDirective extends SocketListener implements OnInit, OnDestr
         if (row) {
           if (m.event === 'change_state') {
             row.state = m.object.details.value;
-            row.issue = m.object.details.value === 'locked' ? { issue: '' } : {};
+            // actions is running
+            // row.issue = m.object.details.value === 'locked' ? { issue: '' } : {};
           }
           if (m.event === 'change_status') row.status = +m.object.details.value;
 

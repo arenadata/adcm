@@ -9,10 +9,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 import { ThemePalette } from '@angular/material';
 import { ApiBase, Issue, Job } from '@app/core/types';
+import { WorkerInstance } from '@app/core';
+import { Injectable } from "@angular/core";
 
-import { IDetails, INavItem } from './details.service';
+import { IDetails } from './details.service';
 
 const ISSUE_MESSAGE = 'Something is wrong with your cluster configuration, please review it.';
 
@@ -28,6 +31,15 @@ interface Icon {
   isShow: boolean;
   color: ThemePalette;
   name: string;
+}
+
+export interface INavItem {
+  id?: number;
+  title: string;
+  url: string;
+  issue?: string;
+  status?: number;
+  statusMessage?: string;
 }
 
 export const Config = {
@@ -61,8 +73,9 @@ export const Config = {
   }
 };
 
+@Injectable()
 export class NavigationService {
-  getLeft(current: ApiBase): INavItem[] {
+  getLeft(current: Partial<ApiBase>): INavItem[] {
     const typeName = current.typeName;
     if (typeName === 'job') {
       const job = current as Job;

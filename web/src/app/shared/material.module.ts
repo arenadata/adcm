@@ -9,9 +9,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-import 'hammerjs';
-
 import { CdkTableModule } from '@angular/cdk/table';
 import { NgModule } from '@angular/core';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -72,6 +69,6 @@ import { MatSliderModule } from '@angular/material/slider';
     MatPaginatorModule,
     MatSortModule,
     MatSliderModule
-  ],
+  ]
 })
 export class MaterialModule {}

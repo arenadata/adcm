@@ -11,12 +11,13 @@
 // limitations under the License.
 import { Component, EventEmitter, OnInit } from '@angular/core';
 import { ApiService } from '@app/core/api';
-import { parseValueConfig, IAction } from '@app/core/types';
-import { DynamicComponent, DynamicEvent, ServiceHostComponent } from '@app/shared';
-
+import { IAction } from '@app/core/types';
+import { FieldService } from '@app/shared/configuration/field.service';
+import { ConfigFieldsComponent } from '../../../configuration/fields/fields.component';
 import { BaseDirective } from '../../../directives/base.directive';
-import { ConfigFieldsComponent } from '@app/shared/configuration/fields/fields.component';
 import { ActionParameters } from '../actions.directive';
+import { DynamicComponent, DynamicEvent } from '@app/shared/directives/dynamic.directive';
+import { ServiceHostComponent } from '@app/shared/host-components-map/services2hosts/service-host.component';
 
 @Component({
   selector: 'app-master',
@@ -33,7 +34,7 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
 
   arh: { parent: HTMLElement; holder: HTMLElement };
 
-  constructor(private api: ApiService) {
+  constructor(private api: ApiService, private config: FieldService) {
     super();
   }
 
@@ -49,16 +50,16 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
     this.isHmcRequired = !!this.action.hostcomponentmap;
   }
 
-  run(config: ConfigFieldsComponent, hostmap: ServiceHostComponent) {
+  run(value: { config: ConfigFieldsComponent, hostmap: ServiceHostComponent}) {
     const data: any = {};
-    if (config) data.value = config.form.value;
-    if (hostmap) data.hostmap = hostmap.service.statePost.data;
+    if (value.config) data.value = value.config.form;
+    if (value.hostmap) data.hostmap = value.hostmap.service.statePost.data;
 
     const request$ =
       !this.isConfig && !this.isHmcRequired
         ? this.api.post(this.action.run, {})
         : this.api.post(this.action.run, {
-            config: parseValueConfig(this.action.config.config, data.value),
+            config: data.value ? this.config.parseValue(data.value, this.action.config.config) : {},
             hc: data.hostmap,
           });
 

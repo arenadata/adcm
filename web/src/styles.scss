@@ -119,6 +119,10 @@ body {
   }
 }
 
+.overflow {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;
+}
+
 mat-checkbox.advanced>label>span {
   border-bottom: dotted 1px #00e676;
   line-height: 20px!important;

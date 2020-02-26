@@ -12,21 +12,11 @@
 import { Injectable } from '@angular/core';
 import { Cluster, IAction, Issue, TypeName, LogFile, JobObject } from '@app/core/types';
 
-export interface INavItem {
-  id?: number;
-  title: string;
-  url: string;
-  issue?: string;
-  status?: number;
-  statusMessage?: string;
-}
-
 export interface IDetails {
   parent?: Cluster;
   typeName: TypeName;
   id: number;
   name: string;
-  navigation?: { top: INavItem[]; left: INavItem[] };
   upgradable: boolean;
   upgrade: string;
   status: string | number;
