@@ -50,10 +50,10 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
     this.isHmcRequired = !!this.action.hostcomponentmap;
   }
 
-  run(config: ConfigFieldsComponent, hostmap: ServiceHostComponent) {
+  run(value: { config: ConfigFieldsComponent, hostmap: ServiceHostComponent}) {
     const data: any = {};
-    if (config) data.value = config.form;
-    if (hostmap) data.hostmap = hostmap.service.statePost.data;
+    if (value.config) data.value = value.config.form;
+    if (value.hostmap) data.hostmap = value.hostmap.service.statePost.data;
 
     const request$ =
       !this.isConfig && !this.isHmcRequired
