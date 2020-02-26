@@ -30,7 +30,7 @@ interface TaskBase {
 }
 
 export interface JobAction {
-  prototype_name?: string;
+  prototype_name?: string;  
   prototype_version?: string;
   bundle_id?: number;
   display_name: string;

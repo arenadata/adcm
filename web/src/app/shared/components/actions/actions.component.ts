@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { AfterViewChecked, Component, ElementRef, Input, OnInit, QueryList, Renderer2, ViewChild, ViewChildren } from '@angular/core';
-import { MatMenuTrigger } from '@angular/material';
+import { MatMenuTrigger } from '@angular/material/menu';
 import { IAction } from '@app/core/types';
 import { fromEvent, Observable } from 'rxjs';
 import { debounceTime, tap } from 'rxjs/operators';
@@ -21,7 +21,8 @@ import { BaseDirective } from '../../directives/base.directive';
   selector: 'app-actions',
   template: `
     <div #wrap>
-      <button #btn
+      <button
+        #btn
         mat-raised-button
         color="warn"
         *ngFor="let action of actions$ | async"

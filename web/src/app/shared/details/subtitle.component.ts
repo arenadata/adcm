@@ -10,38 +10,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input } from '@angular/core';
+
 import { IDetails } from './details.service';
-import { TypeName } from '@app/core/types';
 
 @Component({
   selector: 'app-details-subtitle',
   template: `
-    <ng-container *ngIf="typeName === 'job'; else link">
-      <ng-container *ngFor="let o of objects; index as i; last as lastElement">
-        <a [routerLink]="getParentLink(objects, i)">{{ o.name }}</a>
-        <span *ngIf="!lastElement"> / </span>
+    <ng-container *ngIf="cur">
+      <ng-container *ngIf="cur.typeName === 'job'; else link">
+        <ng-container *ngFor="let o of cur.objects; index as i; last as lastElement">
+          <a [routerLink]="getParentLink(cur.objects, i)">{{ o.name }}</a>
+          <span *ngIf="!lastElement"> / </span>
+        </ng-container>
       </ng-container>
+      <ng-template #link>
+        <a [routerLink]="['/', cur.provider_id ? 'provider' : 'bundle', cur.provider_id || cur.bundle_id || {}]">
+          {{ cur.prototype_display_name || cur.prototype_name }}
+          {{ cur.prototype_version }}
+        </a>
+      </ng-template>
     </ng-container>
-    <ng-template #link>
-      <a *ngIf="flag" [routerLink]="link"> {{ prototype_name }} </a>
-    </ng-template>
   `
 })
 export class SubtitleComponent {
-  typeName: TypeName;
-  objects: any[];
-  link: string | number | {}[];
-  prototype_name: string;
-  flag: boolean;
+  cur: IDetails;
+
   @Input() set current(c: IDetails) {
     if (c) {
-      this.typeName = c.typeName;
-      this.objects = c.objects;
-      this.flag = !!c.prototype_name;
-      this.link = ['/', c.provider_id ? 'provider' : 'bundle', c.provider_id || c.bundle_id || {}];
-      this.prototype_name = `${c.prototype_name} ${c.prototype_version}`;
+      this.cur = c;
     }
   }
+
   getParentLink(objects: { id: number; type: string }[], ind: number) {
     return objects.filter((a, i) => i <= ind).reduce((a, c) => [...a, c.type, c.id], ['/']);
   }

@@ -48,6 +48,7 @@ export interface ApiBase {
   issue: Issue;
   prototype_id: number;
   prototype_name: string;
+  prototype_display_name?: string;
   prototype_version: string;
   bundle_id: number;
   status: number | string;

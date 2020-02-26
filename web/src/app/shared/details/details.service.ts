@@ -25,6 +25,7 @@ export interface IDetails {
   log_files?: LogFile[];
   objects: JobObject[];
   prototype_name: string;
+  prototype_display_name: string;
   prototype_version: string;
   provider_id: number;
   bundle_id: number;

@@ -9,13 +9,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-import { ThemePalette } from '@angular/material';
+import { Injectable } from '@angular/core';
 import { ApiBase, Issue, Job } from '@app/core/types';
-import { WorkerInstance } from '@app/core';
-import { Injectable } from "@angular/core";
 
 import { IDetails } from './details.service';
+import { ThemePalette } from '@angular/material/core';
+
 
 const ISSUE_MESSAGE = 'Something is wrong with your cluster configuration, please review it.';
 
