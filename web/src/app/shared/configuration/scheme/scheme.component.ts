@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input, OnInit } from '@angular/core';
-import { FormGroup, FormControl } from '@angular/forms';
+import { FormGroup, FormControl, FormArray, AbstractControl } from '@angular/forms';
 import { IStructure, YspecService } from '../yspec/yspec.service';
 
 @Component({
@@ -19,7 +19,7 @@ import { IStructure, YspecService } from '../yspec/yspec.service';
   styleUrls: ['./scheme.component.scss']
 })
 export class SchemeComponent implements OnInit {
-  @Input() form = new FormGroup({});
+  @Input() form: FormGroup;
   @Input() options: any;
 
 
@@ -27,7 +27,7 @@ export class SchemeComponent implements OnInit {
   type: string;
   items = [];
 
-  itemFormGroup = new FormGroup({});
+  itemFormGroup: FormGroup | FormArray;
   rules: any;
   defaultValue: any;
 
@@ -37,14 +37,22 @@ export class SchemeComponent implements OnInit {
 
   ngOnInit() {
     this.yspec.Root = this.options.limits.yspec;
-    const rules = this.yspec.build();
-
-    this.rules = rules.options[0];
-
+    this.rules = this.yspec.build();
     this.itemFormGroup = this.options.key
-      .split('/')
-      .reverse()
-      .reduce((p: any, c: string) => p.get(c), this.form) as FormGroup;
+    .split('/')
+    .reverse()
+    .reduce((p: any, c: string) => p.get(c), this.form) as FormGroup;
+
+    if (this.rules.type === 'list') {
+      const parent = this.itemFormGroup.parent as FormGroup;
+      parent.removeControl(this.options.name);
+      this.itemFormGroup = new FormArray([]);
+      parent.addControl(this.options.name, this.itemFormGroup);
+    }
+
+    this.rules.name = this.options.name;
+   
+
 
     // this.match = root.match
     // this.item.name = root.item;
