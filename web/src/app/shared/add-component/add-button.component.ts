@@ -14,7 +14,7 @@ import { MatDialog } from '@angular/material/dialog';
 
 import { DialogComponent } from '../components/dialog.component';
 import { BaseDirective } from '../directives/base.directive';
-import { AddFormComponent as component } from './add-form.component';
+import { AddFormComponent } from './add-form.component';
 import { AddService } from './add.service';
 
 @Component({ 
@@ -36,19 +36,12 @@ export class AddButtonComponent extends BaseDirective implements OnDestroy {
 
   showForm() {
     const model = this.service.model(this.name);
-    model.success = new EventEmitter();
-    model.success.pipe(this.takeUntil()).subscribe(() => this.hideForm());
-
     this.dialog.open(DialogComponent, {
       data: {
         title: `Add ${model.title || model.name}`,
-        component,
+        component: AddFormComponent,
         model,
       },
     });
-  }
-
-  hideForm() {
-    this.dialog.closeAll();
   }
 }
