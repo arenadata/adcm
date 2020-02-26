@@ -11,6 +11,7 @@
   <mat-horizontal-stepper #stepper linear *ngIf="isConfig && isHmcRequired">
     <mat-step [stepControl]="fields_step.form">
       <ng-template matStepLabel>Configuration</ng-template>
+      <div class="config-tools"><mat-checkbox [(ngModel)]="advanced" *ngIf="isAdvanced">Advanced</mat-checkbox></div>
       <app-config-fields #fields_step [model]="action.config"></app-config-fields>
       <div class="controls">
         <button mat-raised-button (click)="cancel()" color="primary">Cancel</button>
@@ -34,6 +35,7 @@
     <mat-step label="Done"></mat-step>
   </mat-horizontal-stepper>
   <div *ngIf="isConfig && !isHmcRequired">
+    <div class="config-tools"><mat-checkbox [(ngModel)]="advanced" *ngIf="isAdvanced">Advanced</mat-checkbox></div>
     <app-config-fields #fields [model]="action.config" [ngStyle]="{ display: 'inherit' }"></app-config-fields>
     <ng-container *ngTemplateOutlet="controls; context: { value: { config: fields } }"></ng-container>
   </div>
