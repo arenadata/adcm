@@ -36,9 +36,9 @@ type eventMsg struct {
 		Type    string `json:"type"`
 		Id      int    `json:"id"`
 		Details struct {
-			Id    string `json:"id,omitempty"`
-			Type  string `json:"type"`
-			Value string `json:"value"`
+			Id    string      `json:"id,omitempty"`
+			Type  string      `json:"type"`
+			Value interface{} `json:"value"`
 		} `json:"details"`
 	} `json:"object"`
 }
