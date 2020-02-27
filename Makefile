@@ -1,7 +1,7 @@
 # Set number of threads
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 ADCMBASE_IMAGE ?= arenadata/adcmbase
-ADCMBASE_TAG ?= 20200203174702
+ADCMBASE_TAG ?= 20200227143357
 
 
 # Default target
