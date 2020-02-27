@@ -23,7 +23,7 @@ DATADIR = utils.get_data_dir(__file__)
 R_WWW_PREFIX = re.compile(r"https?://(www.\.)?")
 
 
-def repr_template(event_type, obj_type, obj_id, dtype='', value=''):
+def repr_template(event_type, obj_type, obj_id, dtype='', value=None):
     return {
         'event': event_type,
         'object': {
