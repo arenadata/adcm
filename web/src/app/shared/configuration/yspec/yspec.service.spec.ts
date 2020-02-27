@@ -53,7 +53,7 @@ describe('YspecService', () => {
     expect(service.field({ path: ['root'], type: 'string' })).toEqual(simpleField);
   });
 
-  it('simple List with Dict', () => {
+  xit('simple List with Dict', () => {
     service.Root = {
       root: { match: 'list', item: 'country_code' },
       country_code: {
@@ -105,7 +105,7 @@ describe('YspecService', () => {
     expect(_out).toEqual(output);
   });
 
-  it('test build function :: dictionary with inner elements', () => {
+  xit('test build function :: dictionary with inner elements', () => {
     service.Root = {
       boolean: { match: 'bool' },
       string: { match: 'string' },
