@@ -9,101 +9,108 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit, Input } from '@angular/core';
-import { FormGroup, FormControl, FormArray, AbstractControl } from '@angular/forms';
+import { Component, Input, OnInit } from '@angular/core';
+import { AbstractControl, FormArray, FormControl, FormGroup } from '@angular/forms';
+
 import { FieldService } from '../field.service';
 
 @Component({
   selector: 'app-root-scheme',
-  template: `
-    <div *ngIf="options.type === 'list'">
-      <label>{{ options.name }} :: {{ options.type }}</label>
-      <button mat-icon-button color="accent" (click)="add()">
-        <mat-icon>add_circle_outline</mat-icon>
-      </button>
-    </div>
-    <div class="content" [formGroup]="form">
-
-      <ng-container *ngIf="options.type === 'list'">
-        <ng-container *ngFor="let item of form.controls; let i = index">
-          <ng-container *ngIf="notSimple(item)">
-            <app-root-scheme [form]="item" [options]="rules">
-              <button mat-icon-button color="primary" (click)="remove(i)"><mat-icon>highlight_off</mat-icon></button>
-            </app-root-scheme>
-          </ng-container>
-        </ng-container>
-      </ng-container>
-
-      <div style="display: flex;" *ngIf="options.type === 'dict'">
-        <div style="flex: 1">
-          <ng-container *ngFor="let item of dict">
-            <ng-container *ngIf="notSimpleDict(item); else simpleo">
-              <app-root-scheme [form]="getForm(item)" [options]="rules"></app-root-scheme>
-            </ng-container>
-            <ng-container #simpleo *ngTemplateOutlet="simple; context: { item: item }"></ng-container>
-          </ng-container>          
-        </div>
-        <ng-content></ng-content>
-      </div>
-
-      <ng-template #simple let-item="item">
-        <mat-form-field style="margin: 6px 0 0; width: 100%">
-          <mat-label>{{ item }}</mat-label>
-          <input matInput placeholder="" [formControlName]="item" />
-        </mat-form-field>
-      </ng-template>
-
-      {{ form.value | json }}
-    </div>
-  `,
-  styleUrls: ['./scheme.component.scss']
+  templateUrl: './root.component.html',
+  styleUrls: ['./root.component.scss']
 })
 export class RootComponent implements OnInit {
   @Input() form: FormGroup | FormArray;
   @Input() options: any;
+  @Input() value: any;
+
+  controls: { name: string; type: string; rules: any; form: FormGroup | FormArray; value: any }[] = [];
 
   constructor(private service: FieldService) {}
 
-  container: FormArray | FormGroup;
-
-  dict: string[];
+  ngOnInit(): void {
+    if (this.value) {
+      if (this.options.type === 'list' && Array.isArray(this.value)) {
+        const value = this.value as any[];
+        value.map((x: { [key: string]: any }, i: number) => this.add([i.toString(), x]));
+      } else if (typeof this.value === 'object') {
+        Object.keys(this.value).map(x => this.add([x, this.value[x]]));
+      }
+    }
+  }
 
   notSimple(item: AbstractControl) {
     return 'controls' in item;
   }
 
-  notSimpleDict(name: string) {
-    return 'controls' in this.getForm(name);
+  notSimpleDict(item) {
+    return item.type === 'list' || item.type === 'dict';
   }
 
-  getForm(name: string) {
-    return (this.form as FormGroup).controls[name];
-  }
-
-  ngOnInit(): void {
-
-    if (this.options.type === 'dict') {
-      this.container = this.form as FormGroup;
-      this.dict = Object.keys(this.container.controls);
-    }
-
-    //if (!this.form.controls[this.options.name]) this.form.addControl(this.options.name, this.container);
+  getForm(item) {
+    return (this.form as FormGroup).controls[item.name];
   }
 
   remove(i: number) {
     (this.form as FormArray).removeAt(i);
+    this.controls = this.controls.filter((a, n) => n !== i);
   }
 
-  add() {
+  add(v: [string, string | boolean | number | { [key: string]: any }] = ['', null]) {
+    let [name, value] = v;
+
     if (this.rules.type === 'dict') {
-      const item = new FormGroup({});
-      this.itemRules.map(x => item.addControl(x.name, new FormControl('', this.service.setValidator(x))));
-      (this.form as FormArray).push(item);
+      if (!value) {
+        value = this.itemRules.reduce((p, c) => {
+          p[c.name] = '';
+          return p;
+        }, {});
+      }
+
+      if (this.checkValue(value, this.itemRules)) {
+        const form = new FormGroup({});
+        (this.form as FormArray).push(form);
+        this.controls.push({ name, value, type: this.rules.type, rules: this.itemRules, form });
+      }
+    } else if (this.checkValue(v, this.rules)) {
+      const rule = Array.isArray(this.rules) ? this.rules.find(a => a.name === name) : this.rules;
+      if (rule) {
+        let form: FormGroup | FormArray;
+        if (rule.type !== 'list' && rule.type !== 'dict') {
+          if (Array.isArray(this.form.controls)) (this.form as FormArray).push(new FormControl(value || '', this.service.setValidator(rule)));
+          else (this.form as FormGroup).addControl(rule.name, new FormControl(value || '', this.service.setValidator(rule)));
+          form = this.form;
+        } else {
+          if (rule.type === 'list') {
+            form = new FormArray([]);
+          }
+
+          if (rule.type === 'dict') {
+            form = new FormGroup({});
+          }
+          (this.form as FormGroup).addControl(rule.name, form);
+        }
+        const item = { name, value, type: rule.type, rules: rule, form };
+        this.controls.push(item);
+      }
     }
   }
 
+  checkValue(value, rules) {
+    if (!value) return true;
+    if (Array.isArray(rules)) {
+      if (Array.isArray(value)) {
+        return rules.some(a => a.name === value[0]);
+      } else if (typeof value === 'object') {
+        return Object.keys(value).every(x => rules.some(a => a.name === x));
+      }
+    }
+    // ????
+    return true;
+  }
+
   get rules() {
-    return this.options.options[0];
+    return this.options.options ? this.options.options[0] : this.options;
   }
 
   get itemRules() {
@@ -115,4 +122,9 @@ export class RootComponent implements OnInit {
   }
 
   hasError(title: string) {}
+
+  trackByFn(index, item) {
+    return index; // or item.id
+  }
+
 }

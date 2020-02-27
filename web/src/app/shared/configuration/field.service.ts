@@ -230,11 +230,7 @@ export class FieldService {
   }
 
   runYspecParse(value: any, field: FieldStack) {
-    console.warn('under development');
-    // const name = field.subname || field.name;
-    // const yo = this.dataOptions.find(a => a.name === field.name) as PanelOptions;
-    // const po = yo.options.find(a => a.name === field.subname) as PanelOptions;
-    // return this.runYspecByOptions(value, po);
+    return this.runYspecByOptions(value, field.limits.rules);
   }
 
   runYspecByOptions(value: any, op: PanelOptions) {

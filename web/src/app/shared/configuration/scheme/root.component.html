@@ -1,0 +1,43 @@
+<div *ngIf="options.type === 'list' || options.type === 'dict'">
+  <label>{{ options.name }} :: {{ options.type }}</label>
+  <button *ngIf="options.type === 'list'" mat-icon-button color="accent" (click)="add()">
+    <mat-icon>add_circle_outline</mat-icon>
+  </button>
+</div>
+<div class="content" [formGroup]="form">
+
+  <div style="display: flex;">
+    <div style="flex: 1">
+
+      <ng-container *ngFor="let item of controls; let i = index; trackBy: trackByFn">
+
+        <app-root-scheme [form]="item.form" [options]="item.rules" [value]="item.value"
+          *ngIf="item.type === 'list' || item.type === 'dict'; else simple">
+          <button *ngIf="item.type === 'dict'" mat-icon-button color="primary" (click)="remove(i)">
+            <mat-icon>highlight_off</mat-icon>
+          </button>
+        </app-root-scheme>
+
+        <ng-template #simple>
+          <div style="margin:6px 0;" *ngIf="item.rules.controlType === 'boolean'">
+            <mat-checkbox [formControlName]="item.name" [checked]="item.value">{{ item.name }}</mat-checkbox>
+          </div>
+          <mat-form-field style="margin: 6px 0 0; width: 100%" *ngIf="item.rules.controlType === 'textbox'">
+            <mat-label>{{ item.name }}</mat-label>
+            <input matInput placeholder="" [formControlName]="item.name" />
+
+            <mat-error *ngIf="!isValid">
+                <mat-error *ngIf="hasError('required')">Field [{{ item.name }}] is required!</mat-error>
+                <mat-error *ngIf="hasError('pattern')">Field [{{ item.name }}] is invalid!</mat-error>               
+              </mat-error>
+
+          </mat-form-field>
+        </ng-template>
+
+      </ng-container>
+    </div>
+    <ng-content></ng-content>
+  </div>
+
+  {{ form.value | json }}
+</div>

@@ -44,6 +44,7 @@ export interface ILimits {
   option?: any;
   read_only?: stateType[];
   yspec?: IYspec;
+  rules?: any;
 }
 
 interface ValidatorInfo {
