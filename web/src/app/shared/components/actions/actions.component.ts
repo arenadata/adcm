@@ -9,17 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import {
-  AfterViewChecked,
-  Component,
-  ElementRef,
-  Input,
-  OnInit,
-  QueryList,
-  Renderer2,
-  ViewChild,
-  ViewChildren,
-} from '@angular/core';
+import { AfterViewChecked, Component, ElementRef, Input, OnInit, QueryList, Renderer2, ViewChild, ViewChildren } from '@angular/core';
 import { MatMenuTrigger } from '@angular/material/menu';
 import { IAction } from '@app/core/types';
 import { fromEvent, Observable } from 'rxjs';
@@ -60,7 +50,7 @@ import { BaseDirective } from '../../directives/base.directive';
       </button>
     </mat-menu>
   `,
-  styleUrls: ['./actions.component.scss'],
+  styleUrls: ['./actions.component.scss']
 })
 export class ActionsComponent extends BaseDirective implements OnInit, AfterViewChecked {
   separ = 0;
