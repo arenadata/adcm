@@ -11,7 +11,7 @@
 // limitations under the License.
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatSelectionList } from '@angular/material/list';
-import { SelectOption } from '@app/core/types';
+import { SelectOption, Entities } from '@app/core/types';
 import { Observable } from 'rxjs';
 
 import { BaseFormDirective } from './base-form.directive';
@@ -53,6 +53,6 @@ export class ServiceComponent extends BaseFormDirective implements OnInit {
     this.service
       .addService(result)
       .pipe(this.takeUntil())
-      .subscribe(() => this.onCancel());
+      .subscribe(() => this.dialog.closeAll());
   }
 }

@@ -9,21 +9,31 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+import { Injectable } from '@angular/core';
+import { Cluster, IAction, Issue, TypeName, LogFile, JobObject } from '@app/core/types';
 
-export interface InnerIssue {
+export interface IDetails {
+  parent?: Cluster;
+  typeName: TypeName;
   id: number;
   name: string;
+  upgradable: boolean;
+  upgrade: string;
+  status: string | number;
+  actions: IAction[];
   issue: Issue;
+  log_files?: LogFile[];
+  objects: JobObject[];
+  prototype_name: string;
+  prototype_display_name: string;
+  prototype_version: string;
+  provider_id: number;
+  bundle_id: number;
 }
 
-export interface Issue<K = 'host' | 'service' | 'cluster' | 'provider'> {
-  [K: string]: false | InnerIssue;
-  K: InnerIssue;
+@Injectable({
+  providedIn: 'root'
+})
+export class DetailsService {
+  constructor() {}
 }
-
-/**
- * Check Issue
- * @returns true if there's not issues
- * @param issue 
- */
-export const notIssue = (issue: Issue): boolean => !(issue && Object.keys(issue).length);

@@ -10,12 +10,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { animate, state, style, transition, trigger } from '@angular/animations';
-import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit, ViewChild, AfterViewChecked } from '@angular/core';
+import { AfterViewChecked, ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit, ViewChild } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { ClusterService } from '@app/core';
 import { ApiService } from '@app/core/api';
 import { EventMessage, SocketState } from '@app/core/store';
-import { SocketListener } from '@app/shared/directives';
+import { SocketListenerDirective } from '@app/shared/directives';
 import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
@@ -43,7 +43,7 @@ import { IConfig } from '../types';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ConfigComponent extends SocketListener implements OnInit, AfterViewChecked {
+export class ConfigComponent extends SocketListenerDirective implements OnInit, AfterViewChecked {
   loadingStatus = 'Loading...';
   config$: Observable<IConfig>;
   rawConfig: IConfig;
