@@ -14,10 +14,11 @@ import { ActivatedRoute, ParamMap } from '@angular/router';
 import { ClusterService } from '@app/core';
 import { EventMessage, SocketState } from '@app/core/store';
 import { CheckLog, Log } from '@app/core/types';
-import { SocketListener } from '@app/shared';
+import { SocketListenerDirective } from '@app/shared';
 import { Store } from '@ngrx/store';
 import { interval, Subscription } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
+
 import { JobInfoComponent } from './job-info.component';
 
 @Component({
@@ -65,7 +66,7 @@ import { JobInfoComponent } from './job-info.component';
     '.status {white-space: nowrap;}'
   ]
 })
-export class LogComponent extends SocketListener implements OnInit, AfterViewInit, DoCheck {
+export class LogComponent extends SocketListenerDirective implements OnInit, AfterViewInit, DoCheck {
   content: string | CheckLog[] = '';
   current: string;
   asJson = false;

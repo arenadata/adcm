@@ -16,9 +16,9 @@ import { EventMessage, SocketState } from '@app/core/store';
 import { Cluster, Entities, Host, IAction, Issue } from '@app/core/types';
 import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
-import { switchMap, tap, filter } from 'rxjs/operators';
+import { filter, switchMap, tap } from 'rxjs/operators';
 
-import { SocketListener } from '../directives/base.directive';
+import { SocketListenerDirective } from '../directives/socketListener.directive';
 import { CrumbsItem, NavigationService } from './navigation.service';
 
 @Component({
@@ -27,7 +27,7 @@ import { CrumbsItem, NavigationService } from './navigation.service';
   styleUrls: ['./detail.component.scss'],
   providers: [NavigationService]
 })
-export class DetailComponent extends SocketListener implements OnInit, OnDestroy {
+export class DetailComponent extends SocketListenerDirective implements OnInit, OnDestroy {
   actions$: Observable<IAction[]>;
   issue: Issue;
   crumbs: CrumbsItem[];
@@ -71,29 +71,34 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
   socketListener(m: EventMessage) {
     if (m.event === 'create' && m.object.type === 'bundle') {
       this.updateAll(m);
+      return;
     }
 
     if (this.current.Current && this.current.Current.typeName === m.object.type && this.current.Current.id === m.object.id) {
       if (m.event === 'change_job_status' && this.current.Current.typeName === 'job') {
         this.updateAll(m);
+        return;
       }
 
       if (m.event === 'change_state' || m.event === 'upgrade' || m.event === 'raise_issue') {
         this.updateAll(m);
+        return;
       }
 
       if (m.event === 'clear_issue') {
         if (m.object.type === 'cluster') this.current.Cluster.issue = {} as Issue;
         this.current.Current.issue = {} as Issue;
         this.updateView();
+        return;
       }
 
       if (m.event === 'change_status') {
         this.current.Current.status = +m.object.details.value;
         this.updateView();
+        return;
       }
     }
-    
+
     if (
       this.current.Cluster &&
       m.event === 'clear_issue' &&
@@ -107,7 +112,10 @@ export class DetailComponent extends SocketListener implements OnInit, OnDestroy
   }
 
   updateAll(m?: EventMessage) {
-    this.current.reset().pipe(filter(a => !!a)).subscribe(a => this.initValue(a.current, m));
+    this.model$ = this.current.reset().pipe(
+      filter(a => !!a),
+      tap(a => this.initValue(a.current, m))
+    );
   }
 
   initValue(a: Entities, m?: EventMessage) {

@@ -83,7 +83,7 @@ state:
 class ActionModule(ContextActionModule):
 
     TRANSFERS_FILES = False
-    _VALID_ARGS = frozenset(('type', 'service_name', 'state'))
+    _VALID_ARGS = frozenset(('type', 'service_name', 'state', 'host_id'))
     _MANDATORY_ARGS = ('type', 'state')
 
     def _do_cluster(self, task_vars, context):
@@ -119,6 +119,15 @@ class ActionModule(ContextActionModule):
         res = self._wrap_call(
             set_host_state,
             context['host_id'],
+            self._task.args["state"],
+        )
+        res['state'] = self._task.args["state"]
+        return res
+
+    def _do_host_from_provider(self, task_vars, context):
+        res = self._wrap_call(
+            set_host_state,
+            self._task.args['host_id'],
             self._task.args["state"],
         )
         res['state'] = self._task.args["state"]

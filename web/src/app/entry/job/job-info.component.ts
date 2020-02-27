@@ -12,7 +12,7 @@ import { Component, OnInit } from '@angular/core';
 import { ClusterService } from '@app/core';
 import { EventMessage, SocketState } from '@app/core/store';
 import { Job, JobStatus } from '@app/core/types';
-import { SocketListener } from '@app/shared';
+import { SocketListenerDirective } from '@app/shared';
 import { Store } from '@ngrx/store';
 
 @Component({
@@ -43,7 +43,7 @@ import { Store } from '@ngrx/store';
     '.time-info div span {margin-right: 30px;}'
   ]
 })
-export class JobInfoComponent extends SocketListener implements OnInit {
+export class JobInfoComponent extends SocketListenerDirective implements OnInit {
   dataTime: { start: string; end: string; time: string };
   status: JobStatus;
   constructor(private service: ClusterService, protected store: Store<SocketState>) {
