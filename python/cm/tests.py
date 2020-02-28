@@ -118,8 +118,9 @@ class SetUp():
     def cook_provider(self, bundle, name):
         pp = Prototype.objects.get(type="provider", bundle=bundle)
         provider = cm.api.add_host_provider(pp, name)
-        cm.api.add_provider_host(provider.id, 'server02.inter.net')
-        cm.api.add_provider_host(provider.id, 'server01.inter.net')
+        host_proto = Prototype.objects.get(bundle=provider.prototype.bundle, type='host')
+        cm.api.add_host(host_proto, provider, 'server02.inter.net')
+        cm.api.add_host(host_proto, provider, 'server01.inter.net')
         return provider
 
     def cook_cluster(self, bundle, name):
