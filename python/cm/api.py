@@ -55,7 +55,7 @@ def add_cluster(proto, name, desc=''):
     return cluster
 
 
-def add_host(proto, provider, fqdn, desc=''):
+def add_host(proto, provider, fqdn, desc='', lock=False):
     check_proto_type(proto, 'host')
     check_license(proto.bundle)
     if proto.bundle != provider.prototype.bundle:
@@ -72,6 +72,9 @@ def add_host(proto, provider, fqdn, desc=''):
             description=desc
         )
         host.save()
+        if lock:
+            host.stack = json.dumps(['created'])
+            set_object_state(host, config.Job.LOCKED)
         process_file_type(host, spec, conf)
         cm.issue.save_issue(host)
     cm.status_api.post_event('create', 'host', host.id, 'provider', str(provider.id))
@@ -80,12 +83,17 @@ def add_host(proto, provider, fqdn, desc=''):
 
 
 def add_provider_host(provider_id, fqdn, desc=''):
+    """
+    add provider host
+
+    This is intended for use in adcm_add_host ansible plugin only
+    """
     try:
         provider = HostProvider.objects.get(id=provider_id)
     except HostProvider.DoesNotExist:
         err('PROVIDER_NOT_FOUND', 'Host Provider with id #{} is not found'.format(provider_id))
     proto = Prototype.objects.get(bundle=provider.prototype.bundle, type='host')
-    return add_host(proto, provider, fqdn, desc)
+    return add_host(proto, provider, fqdn, desc, lock=True)
 
 
 def add_host_provider(proto, name, desc=''):
@@ -142,7 +150,7 @@ def delete_host_by_id(host_id):
     """
     Host deleting
 
-    This is intended for use in adcm_delete_host ansible plugin
+    This is intended for use in adcm_delete_host ansible plugin only
     """
     try:
         host = Host.objects.get(id=host_id)
@@ -155,7 +163,7 @@ def delete_service_by_id(service_id):
     """
     Unconditional removal of service from cluster
 
-    This is intended for use in adcm_delete_service ansible plugin
+    This is intended for use in adcm_delete_service ansible plugin only
     """
     try:
         service = ClusterObject.objects.get(id=service_id)
