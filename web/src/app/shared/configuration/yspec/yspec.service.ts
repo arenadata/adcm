@@ -109,7 +109,7 @@ export class YspecService {
 
   list(item: string, path: string[]): { [x: string]: any; type: string } {
     const name = [...path].reverse()[0] || 'root';
-    return { type: 'list', name, options: [this.build(item, [...path, item])] };
+    return { type: 'list', name, options: this.build(item, [...path, item]) };
   }
 
   dict(items: IRoot, path: string[]): { [x: string]: any; type: string } {
@@ -117,11 +117,9 @@ export class YspecService {
     return {
       type: 'dict',
       name,
-      options: [
-        Object.keys(items).map((item_name: string) => {
-          return this.build(items[item_name], [...path, item_name]);
-        })
-      ]
+      options: Object.keys(items).map((item_name: string) => {
+        return this.build(items[item_name], [...path, item_name]);
+      })
     };
   }
 

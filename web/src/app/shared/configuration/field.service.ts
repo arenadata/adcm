@@ -15,6 +15,7 @@ import { getControlType, getPattern, isObject } from '@app/core/types';
 
 import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, PanelOptions } from './types';
 import { matchType, YspecService } from './yspec/yspec.service';
+import { compose } from '@ngrx/store';
 
 export interface IToolsEvent {
   name: string;
@@ -229,17 +230,23 @@ export class FieldService {
   }
 
   runYspecParse(value: any, field: FieldStack) {
-    return this.runYspecByOptions(value, field.limits.rules);
+    const a = this.runYspec(value, field.limits.rules);
+    return a;
   }
 
-  runYspecByOptions(value: any, op: PanelOptions) {
-    return Object.keys(value).reduce((p, c) => {
-      const data = value[c];
-      const key = op.options.find(a => a.name === c);
-      if (isObject(data) && !Array.isArray(data)) p[c] = this.runYspecByOptions(data, key as PanelOptions);
-      else if (key) p[c] = this.checkValue(data, key.type);
-      return p;
-    }, {});
+  runYspec(value: any, rules: any) {
+    switch (rules.type) {
+      case 'list': {
+        return value.filter(a => !!a).map(a => this.runYspec(a, rules.options));
+      }
+      case 'dict': {
+        // .filter(a => !!value[a]) without boolean
+        return Object.keys(value).reduce((p, c) => ({ ...p, [c]: this.runYspec(value[c], rules.options.find(b => b.name === c)) }), {});
+      }
+      default: {
+        return this.checkValue(value, rules.type);
+      }
+    }
   }
 
   checkValue(value: ConfigResultTypes, type: ConfigValueTypes) {

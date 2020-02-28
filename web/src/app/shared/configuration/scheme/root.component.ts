@@ -24,7 +24,7 @@ export class RootComponent implements OnInit {
   @Input() options: any;
   @Input() value: any;
 
-  controls: { name: string; type: string; rules: any; form: FormGroup | FormArray; value: any }[] = [];
+  controls: { name: string; type: string; rules: any; form: FormGroup | FormArray; value: any; parent: 'dict' | 'list' }[] = [];
 
   constructor(private service: FieldService) {}
 
@@ -39,46 +39,37 @@ export class RootComponent implements OnInit {
     }
   }
 
-  notSimple(item: AbstractControl) {
-    return 'controls' in item;
-  }
-
-  notSimpleDict(item) {
-    return item.type === 'list' || item.type === 'dict';
-  }
-
-  getForm(item) {
-    return (this.form as FormGroup).controls[item.name];
-  }
-
   remove(i: number) {
-    (this.form as FormArray).removeAt(i);
-    this.controls = this.controls.filter((a, n) => n !== i);
+    if (Array.isArray(this.form.controls)) {
+      (this.form as FormArray).removeAt(i);
+      this.controls = this.controls.filter((a, n) => n !== i);
+    }
   }
 
-  add(v: [string, string | boolean | number | { [key: string]: any }] = ['', null]) {
+  add(v: [string, string | boolean | number | { [key: string]: any }] = ['', '']) {
     let [name, value] = v;
 
     if (this.rules.type === 'dict') {
-      if (!value) {
-        value = this.itemRules.reduce((p, c) => {
-          p[c.name] = '';
-          return p;
-        }, {});
-      }
+      if (!value) value = this.itemRules.reduce((p, c) => ({ ...p, [c.name]: '' }), {});
 
       if (this.checkValue(value, this.itemRules)) {
         const form = new FormGroup({});
         (this.form as FormArray).push(form);
-        this.controls.push({ name, value, type: this.rules.type, rules: this.itemRules, form });
+        this.controls.push({ name, value, type: this.rules.type, rules: this.itemRules, form, parent: 'list' });
       }
     } else if (this.checkValue(v, this.rules)) {
       const rule = Array.isArray(this.rules) ? this.rules.find(a => a.name === name) : this.rules;
       if (rule) {
         let form: FormGroup | FormArray;
+
         if (rule.type !== 'list' && rule.type !== 'dict') {
-          if (Array.isArray(this.form.controls)) (this.form as FormArray).push(new FormControl(value || '', this.service.setValidator(rule)));
-          else (this.form as FormGroup).addControl(rule.name, new FormControl(value || '', this.service.setValidator(rule)));
+          if (Array.isArray(this.form.controls)) {
+            name = (this.form.controls.length).toString();
+
+            (this.form as FormArray).push(new FormControl(value || '', this.service.setValidator(rule)));
+            
+          } else (this.form as FormGroup).addControl(rule.name, new FormControl(value || '', this.service.setValidator(rule)));
+
           form = this.form;
         } else {
           if (rule.type === 'list') {
@@ -89,8 +80,9 @@ export class RootComponent implements OnInit {
             form = new FormGroup({});
           }
           (this.form as FormGroup).addControl(rule.name, form);
+
         }
-        const item = { name, value, type: rule.type, rules: rule, form };
+        const item = { name, value, type: rule.type, rules: rule, form, parent: this.options.type };
         this.controls.push(item);
       }
     }
@@ -110,11 +102,11 @@ export class RootComponent implements OnInit {
   }
 
   get rules() {
-    return this.options.options ? this.options.options[0] : this.options;
+    return this.options.options ? this.options.options : this.options;
   }
 
   get itemRules() {
-    return this.rules.options[0];
+    return this.rules.options;
   }
 
   get isValid() {
@@ -126,5 +118,4 @@ export class RootComponent implements OnInit {
   trackByFn(index, item) {
     return index; // or item.id
   }
-
 }
