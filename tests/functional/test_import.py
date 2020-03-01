@@ -15,7 +15,7 @@ import pytest
 
 
 from adcm_client.objects import ADCMClient
-from adcm_pytest_plugin.utils import  parametrize_by_data_subdirs
+from adcm_pytest_plugin.utils import parametrize_by_data_subdirs
 from tests.library import errorcodes as err
 
 
@@ -36,7 +36,7 @@ def test_service_import_negative(sdk_client_fs: ADCMClient, path):
     cluster_import.bind(cluster)
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         cluster_import.bind(service)
-    err.IMPORT_ERROR.equal(e)
+    err.BIND_ERROR.equal(e)
 
 
 @parametrize_by_data_subdirs(__file__, "cluster_import_check_negative")
@@ -56,7 +56,7 @@ def test_cluster_import_negative(sdk_client_fs: ADCMClient, path):
     cluster_import.bind(service)
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         cluster_import.bind(cluster)
-    err.IMPORT_ERROR.equal(e)
+    err.BIND_ERROR.equal(e)
 
 
 @parametrize_by_data_subdirs(__file__, "service_import")
