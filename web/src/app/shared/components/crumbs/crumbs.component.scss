@@ -1,23 +1,23 @@
 :host {
   font-size: .8em;
   margin-left: 8px;
-}
-
-.bread-crumbs {
-  display: flex;
-  align-items: center;
-
-  a {
-    line-height: normal;
-  }
-
-  span {
-    margin: 0 1px;
+  
+  & mat-nav-list {
     display: flex;
     align-items: center;
 
-    .mat-icon {
-      margin-bottom: 5px;
+    a {
+      line-height: normal;
+    }
+
+    span {
+      margin: 0 1px;
+      display: flex;
+      align-items: center;
+
+      .mat-icon {
+        margin-bottom: 5px;
+      }
     }
   }
 }

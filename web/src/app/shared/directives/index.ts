@@ -16,4 +16,4 @@ export * from './m-textarea.directive';
 export * from './base.directive';
 export * from './scroll.directive';
 export * from './infinity-scroll.directive';
-export * from './multi-sort.directive';
+export * from './socketListener.directive';

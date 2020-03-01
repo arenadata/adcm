@@ -12,16 +12,17 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '@app/core/api';
-import { EmmitRow } from '@app/core/types';
-import { Observable } from 'rxjs';
-import { filter } from 'rxjs/operators';
+import { EmmitRow, Issue, notIssue } from '@app/core/types';
+import { concat, Observable, of } from 'rxjs';
+import { filter, map, switchMap } from 'rxjs/operators';
 
+import { BaseDirective } from '../directives';
 import { DialogComponent } from './dialog.component';
 
-interface UpgradeRow {
+export interface UpgradeItem {
   upgradable: boolean;
   upgrade: string;
-  issue: any;
+  issue: Issue;
 }
 
 interface Upgrade {
@@ -31,41 +32,39 @@ interface Upgrade {
   do: string;
   upgradable: boolean;
   from_edition: string[];
+  license: 'unaccepted' | 'absent';
+  license_url: string;
 }
 
 @Component({
   selector: 'app-upgrade',
   template: `
-    <ng-container *ngIf="row.upgradable && !checkIssue(row.issue); else dumb">
-      <button
-        [appForTest]="'upgrade_btn'"
-        matTooltip="There are a pending upgrades of object here"
-        mat-icon-button
-        color="warn"
-        [matMenuTriggerFor]="menu"
-        (click)="$event.stopPropagation()"
-      >
-        <mat-icon>sync_problem</mat-icon>
-      </button>
-      <mat-menu #menu="matMenu" [overlapTrigger]="false" xPosition="before">
-        <ng-template matMenuContent>
-          <button *ngFor="let item of list$ | async" mat-menu-item (click)="runUpgrade(item)">
-            <span>{{ item.name || 'No name' }}</span>
-          </button>
-        </ng-template>
-      </mat-menu>
-    </ng-container>
-    <ng-template #dumb>
-      <button mat-icon-button color="primary" [disabled]="true"><mat-icon>sync_disabled</mat-icon></button>
-    </ng-template>
+    <button
+      mat-icon-button
+      matTooltip="There are a pending upgrades of object here"
+      [appForTest]="'upgrade_btn'"
+      color="warn"
+      [disabled]="!checkIssue()"
+      [matMenuTriggerFor]="menu"
+      (click)="$event.stopPropagation()"
+    >
+      <mat-icon>sync_problem</mat-icon>
+    </button>
+    <mat-menu #menu="matMenu" [overlapTrigger]="false" xPosition="before">
+      <ng-template matMenuContent>
+        <button *ngFor="let item of list$ | async" mat-menu-item (click)="runUpgrade(item)">
+          <span>{{ item.name || 'No name' }}</span>
+        </button>
+      </ng-template>
+    </mat-menu>
   `
 })
-export class UpgradeComponent {
+export class UpgradeComponent extends BaseDirective {
   list$: Observable<Upgrade[]>;
-  row: UpgradeRow;
+  row: UpgradeItem = { upgradable: false, upgrade: '', issue: null };
 
   @Input()
-  set dataRow(row: UpgradeRow) {
+  set dataRow(row: UpgradeItem) {
     this.row = row;
     if (row.upgrade) {
       this.list$ = this.api.get(`${row.upgrade}?ordering=-name`).pipe(filter((list: Upgrade[]) => !!list.length));
@@ -75,24 +74,42 @@ export class UpgradeComponent {
   @Output()
   refresh: EventEmitter<EmmitRow> = new EventEmitter<EmmitRow>();
 
-  constructor(private api: ApiService, private dialog: MatDialog) {}
-
-  runUpgrade(item: Upgrade) {
-    this.dialog
-      .open(DialogComponent, {
-        data: {
-          title: 'Are you sure you want to upgrade?',
-          text: item.description,
-          disabled: !item.upgradable,
-          controls: ['Yes', 'No']
-        }
-      })
-      .beforeClosed()
-      .pipe(filter(yes => yes))
-      .subscribe(() => this.api.post(item.do, {}).subscribe((result: { id: number }) => this.refresh.emit({ cmd: 'refresh', row: result })));
+  constructor(private api: ApiService, private dialog: MatDialog) {
+    super();
   }
 
-  checkIssue(issue: any): boolean {
-    return issue && !!Object.keys(issue).length;
+  checkIssue() {
+    return this.row.upgradable && notIssue(this.row.issue);
+  }
+
+  runUpgrade(item: Upgrade) {
+    const license$ = item.license === 'unaccepted' ? this.api.put(`${item.license_url}accept/`, {}) : of();
+    const do$ = this.api.post<{ id: number }>(item.do, {});
+    this.fork(item)
+      .pipe(
+        switchMap(text =>
+          this.dialog
+            .open(DialogComponent, {
+              data: {
+                title: 'Are you sure you want to upgrade?',
+                text,
+                disabled: !item.upgradable,
+                controls: item.license === 'unaccepted' ? { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] } : ['Yes', 'No']
+              }
+            })
+            .beforeClosed()
+            .pipe(
+              this.takeUntil(),
+              filter(yes => yes),
+              switchMap(() => concat(license$, do$))
+            )
+        )
+      )
+      .subscribe(row => this.refresh.emit({ cmd: 'refresh', row }));
+  }
+
+  fork(item: Upgrade) {
+    const flag = item.license === 'unaccepted';
+    return flag ? this.api.get<{ text: string }>(item.license_url).pipe(map(a => a.text)) : of(item.description);
   }
 }

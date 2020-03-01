@@ -18,9 +18,9 @@ import { IActionParameter } from '@app/core/types';
 import { Store } from '@ngrx/store';
 import { tap } from 'rxjs/operators';
 
-import { SocketListener } from '../../directives/base.directive';
 import { TakeService } from '../take.service';
 import { CompTile, HostTile, Post } from '../types';
+import { SocketListenerDirective } from '../../directives/socketListener.directive';
 
 @Component({
   selector: 'app-service-host',
@@ -35,7 +35,7 @@ import { CompTile, HostTile, Post } from '../types';
     ])
   ]
 })
-export class ServiceHostComponent extends SocketListener implements OnInit {
+export class ServiceHostComponent extends SocketListenerDirective implements OnInit {
   showSpinner = false;
   showPopup = false;
 
@@ -116,6 +116,7 @@ export class ServiceHostComponent extends SocketListener implements OnInit {
         this.serviceComponents = this.service.Components;
         this.hosts = this.service.Hosts;
         this.form = this.service.formGroup;
+        console.log('DEBUG HOST-COMPONETS >>', this.service);
       });
   }
 

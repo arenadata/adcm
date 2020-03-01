@@ -12,6 +12,7 @@
 import { getControlType, getPattern, IRoot } from '@app/core/types';
 
 import { controlType } from '../field.service';
+import { Injectable } from "@angular/core";
 
 export type simpleType = 'string' | 'integer' | 'float' | 'bool' | 'int' | 'one_of' | 'dict_key_selection';
 export type reqursionType = 'list' | 'dict';
@@ -42,6 +43,7 @@ export interface IField {
   };
 }
 
+@Injectable()
 export class YspecService {
   private root: IYspec;
   private output: any;

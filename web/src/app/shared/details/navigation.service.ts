@@ -9,39 +9,39 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { WorkerInstance } from '@app/core';
-import { ApiBase, Job } from '@app/core/types';
+import { Injectable } from '@angular/core';
+import { ApiBase, Issue, Job } from '@app/core/types';
 
-export interface CrumbsItem {
-  path: string;
-  name: string;
-  issue?: string;
-}
+import { IDetails } from './details.service';
+import { ThemePalette } from '@angular/material/core';
 
-enum IssueProp {
-  main,
-  service,
-  host,
-  host_component,
-  config,
-}
+
+const ISSUE_MESSAGE = 'Something is wrong with your cluster configuration, please review it.';
 
 const IssueSet: { [key: string]: string[] } = {
   service: ['required_service'],
-  import: ['required_import'],
+  import: ['required_import']
 };
 
-interface LeftMenuItem {
-  id?: IssueProp;
-  title: string;
-  url: string;
-  issue?: {
-    message?: string;
-    icon?: string;
-  };
+type IconMenu = 'issue' | 'status';
+
+interface Icon {
+  id: IconMenu;
+  isShow: boolean;
+  color: ThemePalette;
+  name: string;
 }
 
-const Config = {
+export interface INavItem {
+  id?: number;
+  title: string;
+  url: string;
+  issue?: string;
+  status?: number;
+  statusMessage?: string;
+}
+
+export const Config = {
   menu: {
     cluster: [
       { id: 0, title: 'Main', url: 'main' },
@@ -50,66 +50,85 @@ const Config = {
       { id: 3, title: 'Hosts - Components', url: 'host_component' },
       { id: 4, title: 'Configuration', url: 'config' },
       { id: 5, title: 'Status', url: 'status' },
-      { id: 6, title: 'Import', url: 'import' },
+      { id: 6, title: 'Import', url: 'import' }
     ],
     service: [
       { id: 0, title: 'Main', url: 'main' },
       { id: 4, title: 'Configuration', url: 'config' },
       { id: 5, title: 'Status', url: 'status' },
-      { id: 6, title: 'Import', url: 'import' },
+      { id: 6, title: 'Import', url: 'import' }
     ],
-    host: [{ id: 0, title: 'Main', url: 'main' }, { id: 4, title: 'Configuration', url: 'config' }, { id: 5, title: 'Status', url: 'status' }],
-    provider: [{ id: 0, title: 'Main', url: 'main' }, { id: 4, title: 'Configuration', url: 'config' }],
+    host: [
+      { id: 0, title: 'Main', url: 'main' },
+      { id: 4, title: 'Configuration', url: 'config' },
+      { id: 5, title: 'Status', url: 'status' }
+    ],
+    provider: [
+      { id: 0, title: 'Main', url: 'main' },
+      { id: 4, title: 'Configuration', url: 'config' }
+    ],
     bundle: [{ id: 0, title: 'Main', url: 'main' }],
-  },
+    job: [{ id: 0, title: 'Main', url: 'main' }]
+  }
 };
 
+@Injectable()
 export class NavigationService {
-  getMenu(current: ApiBase): LeftMenuItem[] {
+  getLeft(current: Partial<ApiBase>): INavItem[] {
     const typeName = current.typeName;
     if (typeName === 'job') {
       const job = current as Job;
       return [{ id: 0, title: 'Main', url: 'main' }, ...job.log_files.map(a => ({ title: a.file, url: `${a.tag}_${a.level}` }))];
     }
 
-    const issue = current.issue || {};
-    return Config.menu[typeName].map((i: LeftMenuItem) => ({
+    const issue = current.issue || {} as Issue;    
+    return Config.menu[typeName].map((i: INavItem) => ({
       ...i,
-      issue: Object.keys(issue).some(p => p === i.url || (IssueSet[i.url] && IssueSet[i.url].some(a => a === p))),
-      status: current.status,
+      issue: this.findIssue(i.url, issue),
+      status: +current.status
     }));
   }
 
-  getCrumbs(model: WorkerInstance): CrumbsItem[] {
-    let output: CrumbsItem[] = [],
+  getCrumbs(current: IDetails): INavItem[] {
+    //model: { cluster: { id: number; name: string; issue: Issue }; current: { id: number; typeName: string; name: string } }
+
+    let output: INavItem[] = [],
       pref = '';
 
-    if (model.cluster) {
-      pref = `/cluster/${model.cluster.id}`;
+    if (current.parent || current.typeName === 'cluster') {
+      const cluster = current.parent || current;
+      pref = `/cluster/${cluster.id}`;
       output = [
-        { path: '/cluster', name: 'clusters' },
+        { url: '/cluster', title: 'clusters' },
         {
-          path: pref,
-          name: model.cluster.name,
-          issue:
-            model.cluster.issue && !!Object.keys(model.cluster.issue).length ? `Something is wrong with your cluster configuration, please review it.` : '',
-        },
+          id: cluster.id,
+          url: pref,
+          title: cluster.name,
+          issue: this.getIssueMessage(cluster.issue && !!Object.keys(cluster.issue).length)
+        }
       ];
     }
 
-    const c = model.current as any;
-    const typeName = c.typeName === 'job' ? 'task' : c.typeName;
+    const typeName = current.typeName === 'job' ? 'task' : current.typeName;
 
-    if (model.current.typeName !== 'cluster')
+    if (current.typeName !== 'cluster')
       output = [
         ...output,
-        { path: `${pref}/${typeName}`, name: model.current.typeName + 's' },
+        { url: `${pref}/${typeName}`, title: `${current.typeName}s` },
         {
-          path: `${pref}/${model.current.typeName}/${model.current.id}`,
-          name: c.display_name || c.name || c.fqdn || c.action.name,
-        },
+          url: `${pref}/${current.typeName}/${current.id}`,
+          title: current.name
+        }
       ];
 
     return output;
+  }
+
+  getIssueMessage(flag: boolean) {
+    return flag ? ISSUE_MESSAGE : '';
+  }
+
+  findIssue(url: string, issue: Issue) {
+    return Object.keys(issue).some(p => p === url || (IssueSet[url] && IssueSet[url].some(a => a === p)));
   }
 }

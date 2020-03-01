@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, EventEmitter, Output } from '@angular/core';
 import { clearEmptyField, Provider } from '@app/core/types';
 
 import { BaseFormDirective } from './base-form.directive';
@@ -56,6 +56,7 @@ export enum DisplayMode {
 })
 export class ProviderComponent extends BaseFormDirective implements OnInit {
   @Input() displayMode: DisplayMode = DisplayMode.default;
+  @Output() cancel = new EventEmitter();
 
   ngOnInit() {
     this.form = this.service.model('provider').form;
@@ -66,6 +67,9 @@ export class ProviderComponent extends BaseFormDirective implements OnInit {
     this.service
       .add<Provider>(data, 'provider')
       .pipe(this.takeUntil())
-      .subscribe(a => this.onCancel(a));
+      .subscribe(x => {
+        this.form.reset();
+        this.cancel.emit(x.id);
+      });
   }
 }
