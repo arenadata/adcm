@@ -11,124 +11,127 @@
 // limitations under the License.
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ChannelService, ClusterService } from '@app/core';
+import { ChannelService, ClusterService, WorkerInstance } from '@app/core';
 import { EventMessage, SocketState } from '@app/core/store';
-import { Cluster, Entities, Host, IAction, Issue } from '@app/core/types';
+import { Cluster, Host, IAction, Issue, Job, notIssue } from '@app/core/types';
 import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
-import { filter, switchMap, tap } from 'rxjs/operators';
+import { map, switchMap, tap, exhaustMap } from 'rxjs/operators';
 
 import { SocketListenerDirective } from '../directives/socketListener.directive';
-import { CrumbsItem, NavigationService } from './navigation.service';
+import { IDetails } from './details.service';
 
 @Component({
   selector: 'app-detail',
   templateUrl: './detail.component.html',
-  styleUrls: ['./detail.component.scss'],
-  providers: [NavigationService]
+  styleUrls: ['./detail.component.scss']
 })
 export class DetailComponent extends SocketListenerDirective implements OnInit, OnDestroy {
-  actions$: Observable<IAction[]>;
-  issue: Issue;
-  crumbs: CrumbsItem[];
-  leftMenu: any[];
-  model$ = this.route.paramMap.pipe(switchMap(param => this.current.getContext(param).pipe(tap(w => this.initValue(w.current)))));
+  request$: Observable<WorkerInstance>;
+  isIssue: boolean;
+  upgradable = false;
+  actions: Observable<IAction[]> = of([]);
+  issues: Issue;
+  status: number | string;
 
-  constructor(
-    socket: Store<SocketState>,
-    private route: ActivatedRoute,
-    private current: ClusterService,
-    private nav: NavigationService,
-    private channel: ChannelService
-  ) {
+  current: IDetails;
+  currentName = '';
+
+  constructor(socket: Store<SocketState>, private route: ActivatedRoute, private service: ClusterService, private channel: ChannelService) {
     super(socket);
   }
 
-  get isIssue() {
-    return this.current.Current.issue && !!Object.keys(this.current.Current.issue).length;
+  ngOnInit(): void {
+    this.request$ = this.route.paramMap.pipe(
+      switchMap(param => this.service.getContext(param)),
+      tap(w => this.run(w))
+    );
+
+    super.startListenSocket();
   }
 
-  isUpgradable(current: Entities) {
-    return (current as Cluster).upgradable;
+  ngOnDestroy(): void {
+    this.service.clearWorker();
   }
 
-  getDisplayName(current: Entities) {
-    return 'display_name' in current ? current.display_name || current.name : (current as Host).fqdn;
+  notIssue(issue: Issue) {
+    return !notIssue(issue);
+  }
+
+  run(w: WorkerInstance) {
+    const { id, name, typeName, actions, issue, status, prototype_name, prototype_display_name, prototype_version, bundle_id } = w.current;
+    const { upgradable, upgrade } = w.current as Cluster;
+    const { log_files, objects } = w.current as Job;
+    const { provider_id } = w.current as Host;
+
+    this.currentName = name;
+
+    const parent = w.current.typeName === 'cluster' ? null : w.cluster;
+
+    this.actions = !actions || !actions.length ? this.service.getActions() : of(actions);
+    this.upgradable = upgradable;
+    this.issues = issue;
+    this.status = status;
+
+    this.isIssue = this.notIssue(parent ? parent.issue : issue);
+
+    this.current = {
+      parent,
+      id,
+      name,
+      typeName,
+      actions,
+      issue,
+      upgradable,
+      upgrade,
+      status,
+      log_files,
+      objects,
+      prototype_name,
+      prototype_display_name,
+      prototype_version,
+      provider_id,
+      bundle_id
+    };
   }
 
   scroll(stop: { direct: -1 | 1 | 0; screenTop: number }) {
     this.channel.next('scroll', stop);
   }
 
-  ngOnInit(): void {
-    super.startListenSocket();
-  }
-
-  ngOnDestroy(): void {
-    this.current.clearWorker();
+  reset() {
+    this.request$ = this.service.reset().pipe(
+      this.takeUntil(),
+      tap(a => this.run(a)),
+      tap(_ => console.log('GET ::', this.current))
+    );
   }
 
   socketListener(m: EventMessage) {
-    if (m.event === 'create' && m.object.type === 'bundle') {
-      this.updateAll(m);
+    if ((m.event === 'create' || m.event === 'delete') && m.object.type === 'bundle') {
+      this.reset();
       return;
     }
 
-    if (this.current.Current && this.current.Current.typeName === m.object.type && this.current.Current.id === m.object.id) {
-      if (m.event === 'change_job_status' && this.current.Current.typeName === 'job') {
-        this.updateAll(m);
+    if (this.service.Current && this.service.Current.typeName === m.object.type && this.service.Current.id === m.object.id) {
+      if (m.event === 'change_job_status' && this.service.Current.typeName === 'job') {
+        this.reset();
         return;
       }
 
       if (m.event === 'change_state' || m.event === 'upgrade' || m.event === 'raise_issue') {
-        this.updateAll(m);
+        this.reset();
         return;
       }
 
-      if (m.event === 'clear_issue') {
-        if (m.object.type === 'cluster') this.current.Cluster.issue = {} as Issue;
-        this.current.Current.issue = {} as Issue;
-        this.updateView();
-        return;
-      }
+      if (m.event === 'clear_issue' && m.object.type === 'cluster') this.issues = {} as Issue;
 
-      if (m.event === 'change_status') {
-        this.current.Current.status = +m.object.details.value;
-        this.updateView();
-        return;
-      }
+      if (m.event === 'change_status') this.status = +m.object.details.value;
     }
 
-    if (
-      this.current.Cluster &&
-      m.event === 'clear_issue' &&
-      m.object.type === 'cluster' &&
-      this.current.Current.typeName !== 'cluster' &&
-      this.current.Cluster.id === m.object.id
-    ) {
-      this.current.Cluster.issue = {} as Issue;
-      this.updateView();
-    }
-  }
+    if (this.service.Cluster && m.event === 'clear_issue' && m.object.type === 'cluster' && this.service.Current.typeName !== 'cluster' && this.service.Cluster.id === m.object.id)
+      this.issues = {} as Issue;
 
-  updateAll(m?: EventMessage) {
-    this.model$ = this.current.reset().pipe(
-      filter(a => !!a),
-      tap(a => this.initValue(a.current, m))
-    );
-  }
-
-  initValue(a: Entities, m?: EventMessage) {
-    this.actions$ = !a.actions || !a.actions.length ? this.current.getActions() : of(a.actions);
-    this.updateView();
-    console.log(`GET: ${this.current.Current.typeName}`, a, m);
-  }
-
-  updateView() {
-    this.leftMenu = this.nav.getMenu(this.current.Current);
-    this.crumbs = this.nav.getCrumbs({
-      cluster: this.current.Cluster,
-      current: this.current.Current
-    });
+    this.isIssue = this.notIssue(this.issues);
   }
 }
