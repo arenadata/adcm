@@ -26,7 +26,7 @@ import { map, switchMap } from 'rxjs/operators';
 export class SettingsComponent implements OnInit {
   set$: Observable<any>;
 
-  @ViewChild('config', { static: false }) config: ConfigComponent;
+  @ViewChild('config') config: ConfigComponent;
 
   constructor(private api: ApiService, private store: Store<State>) {}
 

@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Injectable } from '@angular/core';
+import { Injectable, ɵEMPTY_MAP } from '@angular/core';
 import { ParamMap } from '@angular/router';
 import { ApiService } from '@app/core/api';
 import { IAction, Bundle, Cluster, Entities, Host, IImport, Job, Log, Provider, Service, TypeName } from '@app/core/types';
@@ -63,7 +63,7 @@ export class ClusterService {
   }
 
   one_host(id: number): Observable<Host> {
-    return this.api.getOne<Host>('host', id);
+    return this.api.getOne<Host>('host', id).pipe(map((host: Host) => ({ ...host, name: host.fqdn })));
   }
 
   one_provider(id: number): Observable<Provider> {
@@ -76,8 +76,8 @@ export class ClusterService {
         ...j,
         prototype_name: j.action ? j.action.prototype_name : '',
         prototype_version: j.action ? j.action.prototype_version : '',
-        bundle_id: j.action ? j.action.bundle_id : '',
-        // display_name: j.action ? `${j.action.display_name}` : 'Object has been deleted'
+        bundle_id: j.action ? j.action.bundle_id : null,
+        name: j.action ? `${j.action.display_name}` : 'Object has been deleted'
       }))
     );
   }
@@ -99,7 +99,7 @@ export class ClusterService {
       .pipe(
         map((a: Entities) => {
           a.typeName = typeName;
-          this.worker.current = a;
+          this.worker.current = { ...a, name: a.display_name || a.name };
           this.workerSubject.next(this.worker);
           return this.worker;
         })
@@ -142,8 +142,10 @@ export class ClusterService {
   }
 
   reset(): Observable<WorkerInstance> {
+    if (!this.Current) return EMPTY;
     const typeName = this.Current.typeName;
     return this.api.get<Entities>(this.Current.url).pipe(
+      filter(_ => !!this.worker),
       map(a => {
         if (typeName === 'cluster') this.worker.cluster = { ...(a as Cluster), typeName };
         this.worker.current = { ...a, typeName };

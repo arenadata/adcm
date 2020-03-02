@@ -187,3 +187,14 @@ def test_change_provider_state(host_bundle: Bundle):
     second.action(name='set_state').run().try_wait()
     expected_state['second']['state'] = 'pstatex'
     assert_provider_host_states(host_bundle, expected_state)
+
+
+def test_change_host_from_provider_state(host_bundle: Bundle):
+    expected_state = copy.deepcopy(INITIAL_HOST_STATE)
+    assert_provider_host_states(host_bundle, expected_state)
+
+    second = host_bundle.provider(name='second')
+
+    second.action(name='set_host_state').run(config={"fqdn": "second_host2"}).try_wait()
+    expected_state['second']['hosts']['second_host2'] = 'stateq'
+    assert_provider_host_states(host_bundle, expected_state)

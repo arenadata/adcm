@@ -83,7 +83,7 @@ value:
 
 class ActionModule(ContextActionModule):
 
-    _VALID_ARGS = frozenset(('type', 'key', 'value', 'service_name'))
+    _VALID_ARGS = frozenset(('type', 'key', 'value', 'service_name', 'host_id'))
     _MANDATORY_ARGS = ('type', 'key', 'value')
 
     def _do_cluster(self, task_vars, context):
@@ -122,6 +122,17 @@ class ActionModule(ContextActionModule):
         res = self._wrap_call(
             cm.adcm_config.set_host_config,
             context['host_id'],
+            self._task.args["key"],
+            self._task.args["value"]
+        )
+        res['value'] = self._task.args["value"]
+        return res
+
+    def _do_host_from_provider(self, task_vars, context):
+        # TODO: Check that host is in provider
+        res = self._wrap_call(
+            cm.adcm_config.set_host_config,
+            self._task.args['host_id'],
             self._task.args["key"],
             self._task.args["value"]
         )

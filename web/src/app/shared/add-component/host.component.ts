@@ -17,6 +17,7 @@ import { filter, tap } from 'rxjs/operators';
 import { ActionsDirective } from '../components/actions/actions.directive';
 import { AddService } from './add.service';
 import { BaseFormDirective } from './base-form.directive';
+import { MatDialog } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-add-host',
@@ -78,8 +79,8 @@ export class HostComponent extends BaseFormDirective implements OnInit {
   page = 1;
   limit = 50;
 
-  constructor(private action: ActionsDirective, public service: AddService) {
-    super(service);
+  constructor(private action: ActionsDirective, service: AddService, dialog: MatDialog) {
+    super(service, dialog);
   }
 
   ngOnInit() {
@@ -128,7 +129,7 @@ export class HostComponent extends BaseFormDirective implements OnInit {
         this.takeUntil(),
         tap(() => this.form.controls['fqdn'].setValue(''))
       )
-      .subscribe(host => this.onCancel(host));
+      .subscribe();
   }
 
   createdProvider(id: number) {

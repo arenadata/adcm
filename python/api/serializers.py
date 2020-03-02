@@ -473,6 +473,7 @@ class ActionSerializer(serializers.Serializer):
     state_on_fail = serializers.CharField()
     hostcomponentmap = JSONField(required=False)
     allow_to_terminate = serializers.BooleanField(read_only=True)
+    partial_execution = serializers.BooleanField(read_only=True)
 
 
 class SubActionSerializer(serializers.Serializer):
@@ -629,6 +630,7 @@ class ProviderActionShort(ActionShort):
 class UpgradeSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(required=False)
+    bundle_id = serializers.IntegerField(read_only=True)
     description = serializers.CharField(required=False)
     min_version = serializers.CharField(required=False)
     max_version = serializers.CharField(required=False)
@@ -636,6 +638,7 @@ class UpgradeSerializer(serializers.Serializer):
     max_strict = serializers.BooleanField(required=False)
     upgradable = serializers.BooleanField(required=False)
     license = serializers.CharField(required=False)
+    license_url = hlink('bundle-license', 'bundle_id', 'bundle_id')
     from_edition = JSONField(required=False)
     state_available = JSONField(required=False)
     state_on_success = serializers.CharField(required=False)
@@ -800,6 +803,7 @@ class TaskSerializer(TaskListSerializer):
     selector = JSONField(read_only=True)
     config = JSONField(required=False)
     hc = JSONField(required=False)
+    hosts = JSONField(required=False)
     action_url = serializers.HyperlinkedIdentityField(
         read_only=True,
         view_name='action-details',
@@ -862,7 +866,8 @@ class TaskRunSerializer(TaskSerializer):
                 validated_data.get('action_id'),
                 validated_data.get('selector'),
                 validated_data.get('config', None),
-                validated_data.get('hc', None)
+                validated_data.get('hc', None),
+                validated_data.get('hosts', None)
             )
             obj.jobs = JobLog.objects.filter(task_id=obj.id)
             return obj

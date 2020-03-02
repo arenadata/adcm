@@ -14,7 +14,7 @@
 
     type: provider
     name: sample hostprovider
-    version: 2.0
+    version: '2.0'
     upgrade:
         -
             versions:
@@ -63,7 +63,7 @@
 
 - type: host
   name: vHost
-  version: 00.09
+  version: '00.10'
 
   config:
       str_param:

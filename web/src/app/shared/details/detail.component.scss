@@ -9,9 +9,7 @@
     display: flex;
     margin-bottom: 5px;
 
-    & .mat-nav-list {
-        padding-top: 20px;
-    }
+
 
     & .mat-card {
         display: flex;
@@ -31,6 +29,10 @@
         flex-grow: 1;
         overflow: auto;
     }
+}
+
+.toolbar {
+    min-height: 46px;
 }
 
 .issue-warning {

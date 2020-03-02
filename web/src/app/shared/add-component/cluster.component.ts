@@ -11,7 +11,7 @@
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
 import { clearEmptyField, Cluster } from '@app/core/types';
-import { filter, tap } from 'rxjs/operators';
+import { filter } from 'rxjs/operators';
 
 import { BaseFormDirective } from './base-form.directive';
 import { GenName } from './naming';
@@ -28,7 +28,7 @@ import { GenName } from './naming';
         <button mat-raised-button color="primary" (click)="onCancel()">Cancel</button>
       </p>
     </ng-container>
-  `,
+  `
 })
 export class ClusterComponent extends BaseFormDirective implements OnInit {
   ngOnInit() {
@@ -50,6 +50,6 @@ export class ClusterComponent extends BaseFormDirective implements OnInit {
     this.service
       .add<Cluster>(data, 'cluster')
       .pipe(this.takeUntil())
-      .subscribe(() => this.onCancel());
+      .subscribe(_ => this.onCancel());
   }
 }

@@ -217,6 +217,7 @@ class Action(models.Model):
 
     hostcomponentmap = models.TextField(blank=True)   # JSON
     allow_to_terminate = models.BooleanField(default=False)
+    partial_execution = models.BooleanField(default=False)
 
     def __str__(self):
         return "{} {}".format(self.prototype, self.name)
@@ -354,6 +355,7 @@ class TaskLog(models.Model):
     status = models.CharField(max_length=16, choices=JOB_STATUS)
     config = models.TextField(null=True)             # JSON
     hostcomponentmap = models.TextField(null=True)   # JSON
+    hosts = models.TextField(null=True)   # JSON
     start_date = models.DateTimeField()
     finish_date = models.DateTimeField()
 
@@ -436,6 +438,7 @@ class StageAction(models.Model):
 
     hostcomponentmap = models.TextField(blank=True)   # JSON
     allow_to_terminate = models.BooleanField(default=False)
+    partial_execution = models.BooleanField(default=False)
 
     def __str__(self):
         return "{}:{}".format(self.prototype, self.name)

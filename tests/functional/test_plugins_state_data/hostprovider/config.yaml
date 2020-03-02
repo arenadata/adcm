@@ -12,6 +12,16 @@
       states:
         available: any
 
+    set_host_state:
+      type: job
+      script_type: ansible
+      script: set_host_from_provider.yaml
+      states:
+        available: any
+      config:
+        - name: fqdn
+          type: string
+
 - type: host
   name: plugins
   version: 1
