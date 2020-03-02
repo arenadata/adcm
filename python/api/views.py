@@ -18,6 +18,7 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from django.utils import timezone
 from django_filters import rest_framework as drf_filters
+from django.http import HttpResponse
 from rest_framework import routers, status
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.generics import GenericAPIView
@@ -558,13 +559,22 @@ class JobDetail(GenericAPIView):
         job.log_dir = os.path.join(config.RUN_DIR, f'{job_id}')
         logs = cm.job.get_log(job)
         for lg in logs:
+            log_id = lg.pop('log_id')
             lg['url'] = reverse(
                 'log-storage',
                 kwargs={
                     'job_id': job.id,
-                    'log_id': lg.pop('log_id')
+                    'log_id': log_id
                 },
                 request=request)
+            lg['download_url'] = reverse(
+                'download-log',
+                kwargs={
+                    'job_id': job.id,
+                    'log_id': log_id
+                },
+                request=request
+            )
 
         job.log_files = logs
         serializer = self.serializer_class(job, data=request.data, context={'request': request})
@@ -602,6 +612,33 @@ class LogStorageView(GenericAPIView):
             log_storage = LogStorage.objects.get(id=log_id, job=job)
             serializer = self.serializer_class(log_storage, context={'request': request})
             return Response(serializer.data)
+        except AdcmEx as e:
+            raise AdcmApiEx(e.code, e.msg, e.http_code)
+
+
+class DownloadLogFileView(GenericAPIView):
+
+    def get(self, request, job_id, log_id):
+        try:
+            job = JobLog.objects.get(id=job_id)
+            log_storage = LogStorage.objects.get(id=log_id, job=job)
+
+            if log_storage.type in ['stdout', 'stderr']:
+                filename = f'{job.id}-{log_storage.name}-{log_storage.type}.{log_storage.format}'
+            else:
+                filename = f'{job.id}-{log_storage.name}.{log_storage.format}'
+
+            if log_storage.format == 'txt':
+                mime_type = 'text/plain'
+            else:
+                mime_type = 'application/json'
+
+            response = HttpResponse(log_storage.body)
+            response['Content-Type'] = mime_type
+            response['Content-Length'] = len(log_storage.body)
+            response['Content-Encoding'] = 'UTF-8'
+            response['Content-Disposition'] = f'attachment; filename={filename}'
+            return response
         except AdcmEx as e:
             raise AdcmApiEx(e.code, e.msg, e.http_code)
 
