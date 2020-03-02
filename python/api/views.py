@@ -16,9 +16,9 @@ import os
 import rest_framework
 from django.contrib.auth.models import User
 from django.db import transaction
+from django.http import HttpResponse
 from django.utils import timezone
 from django_filters import rest_framework as drf_filters
-from django.http import HttpResponse
 from rest_framework import routers, status
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.generics import GenericAPIView
