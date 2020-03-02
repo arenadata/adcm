@@ -32,6 +32,8 @@ export type ConfigValueTypes =
 export type simpleTypes = string | number | boolean;
 export type ConfigResultTypes = simpleTypes | simpleTypes[] | object | null;
 
+export type controlType = 'boolean' | 'textbox' | 'textarea' | 'json' | 'password' | 'list' | 'map' | 'dropdown' | 'file' | 'text';
+
 export interface UIoptions {
   invisible?: boolean;
   no_confirm?: boolean;
@@ -47,7 +49,7 @@ export interface ILimits {
   rules?: any;
 }
 
-interface ValidatorInfo {
+export interface ValidatorInfo {
   pattern?: string | RegExp;
   required?: boolean;
   max?: number;
@@ -118,7 +120,7 @@ interface Compare {
 export interface FieldOptions extends ConfigOptions {
   default: null | string | number | boolean | object | any[];
   value: string | number | boolean | object | string[] | null;
-  controlType: string;
+  controlType: controlType;
   validator: ValidatorInfo;
   disabled?: boolean;
   limits?: ILimits;

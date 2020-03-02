@@ -10,9 +10,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input, OnInit } from '@angular/core';
-import { AbstractControl, FormArray, FormControl, FormGroup } from '@angular/forms';
+import { FormArray, FormControl, FormGroup } from '@angular/forms';
 
 import { FieldService } from '../field.service';
+import { IYContainer, matchType, IYField, reqursionType } from '../yspec/yspec.service';
+
+type sValue = string | boolean | number;
+
+interface IValue {
+  [key: string]: sValue;
+}
+
+interface IControl {
+  name: string;
+  type: matchType;
+  rules: IYField | IYContainer | (IYField | IYContainer)[];
+  form: FormGroup | FormArray;
+  value: IValue | sValue;
+  parent: reqursionType;
+}
 
 @Component({
   selector: 'app-root-scheme',
@@ -21,18 +37,18 @@ import { FieldService } from '../field.service';
 })
 export class RootComponent implements OnInit {
   @Input() form: FormGroup | FormArray;
-  @Input() options: any;
-  @Input() value: any;
+  @Input() options: IYContainer | IYField = { type: 'string', name: 'root', options: null };
+  @Input() value: IValue | IValue[];
 
-  controls: { name: string; type: string; rules: any; form: FormGroup | FormArray; value: any; parent: 'dict' | 'list' }[] = [];
+  controls: IControl[] = [];
 
   constructor(private service: FieldService) {}
 
   ngOnInit(): void {
     if (this.value) {
       if (this.options.type === 'list' && Array.isArray(this.value)) {
-        const value = this.value as any[];
-        value.map((x: { [key: string]: any }, i: number) => this.add([i.toString(), x]));
+        const value = this.value as IValue[];
+        value.map((x, i) => this.add([i.toString(), x]));
       } else if (typeof this.value === 'object') {
         Object.keys(this.value).map(x => this.add([x, this.value[x]]));
       }
@@ -46,29 +62,29 @@ export class RootComponent implements OnInit {
     }
   }
 
-  add(v: [string, string | boolean | number | { [key: string]: any }] = ['', '']) {
+  add(v: [string, IValue | sValue] = ['', '']) {
     let [name, value] = v;
 
-    if (this.rules.type === 'dict') {
-      if (!value) value = this.itemRules.reduce((p, c) => ({ ...p, [c.name]: '' }), {});
+    if ((this.rules as IYContainer).type === 'dict') {
+      const irules = this.itemRules as (IYField | IYContainer)[];
+      if (!value) value = irules.reduce((p, c) => ({ ...p, [c.name]: '' }), {});
 
-      if (this.checkValue(value, this.itemRules)) {
+      if (this.checkValue(value, irules)) {
         const form = new FormGroup({});
         (this.form as FormArray).push(form);
-        this.controls.push({ name, value, type: this.rules.type, rules: this.itemRules, form, parent: 'list' });
+        this.controls.push({ name, value, type: (this.rules as IYContainer).type, rules: this.itemRules, form, parent: 'list' });
       }
-    } else if (this.checkValue(v, this.rules)) {
+    } else /*if (this.checkValue(v, this.rules))*/ {
       const rule = Array.isArray(this.rules) ? this.rules.find(a => a.name === name) : this.rules;
       if (rule) {
         let form: FormGroup | FormArray;
 
         if (rule.type !== 'list' && rule.type !== 'dict') {
+          const { validator, controlType } = rule as IYField;
           if (Array.isArray(this.form.controls)) {
-            name = (this.form.controls.length).toString();
-
-            (this.form as FormArray).push(new FormControl(value || '', this.service.setValidator(rule)));
-            
-          } else (this.form as FormGroup).addControl(rule.name, new FormControl(value || '', this.service.setValidator(rule)));
+            name = this.form.controls.length.toString();
+            (this.form as FormArray).push(new FormControl(value || '', this.service.setValidator({ validator, controlType })));
+          } else (this.form as FormGroup).addControl(rule.name, new FormControl(value || '', this.service.setValidator({ validator, controlType })));
 
           form = this.form;
         } else {
@@ -80,15 +96,14 @@ export class RootComponent implements OnInit {
             form = new FormGroup({});
           }
           (this.form as FormGroup).addControl(rule.name, form);
-
         }
-        const item = { name, value, type: rule.type, rules: rule, form, parent: this.options.type };
+        const item: IControl  = { name, value, type: rule.type, rules: rule, form, parent: this.options.type as reqursionType };
         this.controls.push(item);
       }
     }
   }
 
-  checkValue(value, rules) {
+  checkValue(value: IValue | sValue, rules: (IYField | IYContainer)[]) {
     if (!value) return true;
     if (Array.isArray(rules)) {
       if (Array.isArray(value)) {
@@ -101,12 +116,13 @@ export class RootComponent implements OnInit {
     return true;
   }
 
-  get rules() {
-    return this.options.options ? this.options.options : this.options;
+  get rules(): IYField | IYContainer | (IYField | IYContainer)[] {
+    if ('options' in this.options) return this.options.options;
+    else return this.options;
   }
 
-  get itemRules() {
-    return this.rules.options;
+  get itemRules(): IYField | IYContainer | (IYField | IYContainer)[] {
+    return (this.rules as IYContainer).options;
   }
 
   get isValid() {

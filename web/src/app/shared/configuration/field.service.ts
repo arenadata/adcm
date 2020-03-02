@@ -13,20 +13,17 @@ import { Injectable } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { getControlType, getPattern, isObject } from '@app/core/types';
 
-import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, PanelOptions } from './types';
-import { matchType, YspecService } from './yspec/yspec.service';
-import { compose } from '@ngrx/store';
+import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, PanelOptions, ValidatorInfo, controlType } from './types';
+import { matchType } from './yspec/yspec.service';
 
 export interface IToolsEvent {
   name: string;
   conditions?: { advanced: boolean; search: string } | boolean;
 }
 
-export type controlType = 'boolean' | 'textbox' | 'textarea' | 'json' | 'password' | 'list' | 'map' | 'dropdown' | 'file' | 'text';
-
 @Injectable()
 export class FieldService {
-  constructor(private fb: FormBuilder, private spec: YspecService) {}
+  constructor(private fb: FormBuilder) {}
 
   isVisibleField = (a: ConfigOptions) => !a.ui_options || !a.ui_options.invisible;
   isInvisibleField = (a: ConfigOptions) => a.ui_options && a.ui_options.invisible;
@@ -66,8 +63,6 @@ export class FieldService {
     if (a.limits?.yspec) {
       const b = (<unknown>a) as PanelOptions;
       b.options = [];
-      //const o = new YspecStructure(a);
-
       return b;
     }
     return a;
@@ -92,7 +87,7 @@ export class FieldService {
     return params;
   }
 
-  setValidator(field: FieldOptions) {
+  setValidator(field: {validator: ValidatorInfo, controlType: controlType}) {
     const v: ValidatorFn[] = [];
 
     if (field.validator.required) v.push(Validators.required);
@@ -241,7 +236,16 @@ export class FieldService {
       }
       case 'dict': {
         // .filter(a => !!value[a]) without boolean
-        return Object.keys(value).reduce((p, c) => ({ ...p, [c]: this.runYspec(value[c], rules.options.find(b => b.name === c)) }), {});
+        return Object.keys(value).reduce(
+          (p, c) => ({
+            ...p,
+            [c]: this.runYspec(
+              value[c],
+              rules.options.find(b => b.name === c)
+            )
+          }),
+          {}
+        );
       }
       default: {
         return this.checkValue(value, rules.type);
@@ -254,14 +258,14 @@ export class FieldService {
 
     switch (type) {
       case 'map':
-        return Object.keys(value)
-          .filter(a => a)
-          .reduce((p, c) => {
-            p[c] = value[c];
-            return p;
-          }, {});
+        return typeof value === 'object'
+          ? Object.keys(value)
+              .filter(a => !!a)
+              .reduce((p, c) => ({ ...p, [c]: value[c] }), {})
+          : new TypeError('FieldService::checkValue - value is not Object');
+
       case 'list':
-        return (value as Array<string>).filter(a => !!a);
+        return Array.isArray(value) ? (value as Array<string>).filter(a => !!a) : new TypeError('FieldService::checkValue - value is not Array');
     }
 
     if (typeof value === 'boolean') return value;

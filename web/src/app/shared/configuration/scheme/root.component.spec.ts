@@ -21,9 +21,8 @@ describe('RootComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [FormBuilder],
       declarations: [ RootComponent ],
-      providers: [FieldService]
+      providers: [FieldService, FormBuilder]
     })
     .compileComponents();
   }));
@@ -34,7 +33,7 @@ describe('RootComponent', () => {
     fixture.detectChanges();
   });
 
-  xit('should create', () => {
+  it('should create', () => {
     expect(component).toBeTruthy();
   });
 });
