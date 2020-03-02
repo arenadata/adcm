@@ -11,6 +11,7 @@
 # limitations under the License.
 
 # pylint: disable=duplicate-except,attribute-defined-outside-init,too-many-lines
+import os
 
 import rest_framework
 from django.contrib.auth.models import User
@@ -39,7 +40,7 @@ from api.serializers import check_obj, filter_actions, get_config_version
 from cm.errors import AdcmEx, AdcmApiEx
 from cm.models import (
     HostProvider, Host, ADCM, Action, JobLog, TaskLog, Upgrade, ObjectConfig,
-    ConfigLog, UserProfile, DummyData
+    ConfigLog, UserProfile, DummyData, LogStorage
 )
 
 
@@ -554,17 +555,17 @@ class JobDetail(GenericAPIView):
         Show job
         """
         job = check_obj(JobLog, job_id, 'JOB_NOT_FOUND')
-        job.log_dir = config.LOG_DIR
-        logs = cm.job.get_log_files(job)
+        job.log_dir = os.path.join(config.RUN_DIR, f'{job_id}')
+        logs = cm.job.get_log(job)
         for lg in logs:
             lg['url'] = reverse(
-                'log-file', kwargs={
+                'log-storage',
+                kwargs={
                     'job_id': job.id,
-                    'level': lg['level'],
-                    'tag': lg['tag'],
-                    'log_type': lg['type'],
-                }, request=request
-            )
+                    'log_id': lg.pop('log_id')
+                },
+                request=request)
+
         job.log_files = logs
         serializer = self.serializer_class(job, data=request.data, context={'request': request})
         serializer.is_valid()
@@ -586,6 +587,20 @@ class LogFile(GenericAPIView):
             lf.tag = tag
             lf.level = level
             serializer = self.serializer_class(lf, context={'request': request})
+            return Response(serializer.data)
+        except AdcmEx as e:
+            raise AdcmApiEx(e.code, e.msg, e.http_code)
+
+
+class LogStorageView(GenericAPIView):
+    queryset = LogStorage.objects.all()
+    serializer_class = api.serializers.LogStorageSerializer
+
+    def get(self, request, job_id, log_id):
+        try:
+            job = JobLog.objects.get(id=job_id)
+            log_storage = LogStorage.objects.get(id=log_id, job=job)
+            serializer = self.serializer_class(log_storage, context={'request': request})
             return Response(serializer.data)
         except AdcmEx as e:
             raise AdcmApiEx(e.code, e.msg, e.http_code)

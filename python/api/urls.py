@@ -461,6 +461,9 @@ urlpatterns = [
         views.LogFile.as_view(),
         name='log-file'
     ),
+    path('job/<int:job_id>/log/<int:log_id>/',
+         views.LogStorageView.as_view(),
+         name='log-storage'),
     # path('docs/', include_docs_urls(title='ArenaData Chapel API')),
     path('swagger/', swagger_view),
     path('schema/', schema_view),
