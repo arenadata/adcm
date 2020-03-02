@@ -24,7 +24,7 @@ export class FieldDirective extends BaseDirective implements OnInit {
 
   ngOnInit() {
     const field = this.find();
-    field.markAsTouched();    
+    field.markAsTouched();
   }
 
   find() {
@@ -33,10 +33,20 @@ export class FieldDirective extends BaseDirective implements OnInit {
 
   get isValid() {
     const field = this.find();
-    return this.field.read_only || field.valid && (field.dirty || field.touched);
+    return this.field.read_only || (field.valid && (field.dirty || field.touched));
   }
 
   hasError(name: string) {
     return this.find().hasError(name);
+  }
+
+  restore() {
+    const field = this.find();
+    const value = this.field.default;
+    if (field) {
+      if (this.field.type === 'json') {
+        field.setValue(value === null ? '' : JSON.stringify(value, undefined, 4));
+      } else field.setValue(value);
+    }
   }
 }
