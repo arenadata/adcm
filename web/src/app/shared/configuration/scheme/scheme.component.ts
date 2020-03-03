@@ -12,7 +12,7 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { FormArray, FormGroup } from '@angular/forms';
 
-import { YspecService } from '../yspec/yspec.service';
+import { YspecService, IYField, IYContainer } from '../yspec/yspec.service';
 
 @Component({
   selector: 'app-scheme',
@@ -23,7 +23,7 @@ export class SchemeComponent implements OnInit {
   @Input() options: any;
 
   itemFormGroup: FormGroup | FormArray;
-  rules: any;
+  rules: IYField | IYContainer;
   defaultValue: any;
 
   constructor(private yspec: YspecService) {}
