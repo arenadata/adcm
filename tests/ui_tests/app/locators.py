@@ -61,6 +61,7 @@ class Common:
     display_names = bys.by_class("title.mat-expansion-panel-header-title")
     mat_expansion_panel = bys.by_class("mat-expansion-panel")
     textarea = bys.by_tag("textarea")
+    info_icon = bys.by_class("info-icon")
     item = bys.by_class("item")
     group_field = bys.by_class("app-group-fields")
     tooltip = bys.by_tag("app-tooltip")
