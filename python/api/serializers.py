@@ -132,6 +132,7 @@ class UserSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
     url = MyUrlField(read_only=True, view_name='user-details')
     change_password = MyUrlField(read_only=True, view_name='user-passwd')
+    is_superuser = serializers.BooleanField(required=False)
 
     @transaction.atomic
     def create(self, validated_data):
@@ -139,7 +140,7 @@ class UserSerializer(serializers.Serializer):
             user = User.objects.create_user(
                 validated_data.get('username'),
                 password=validated_data.get('password'),
-                is_superuser=True
+                is_superuser=validated_data.get('is_superuser', True)
             )
             UserProfile.objects.create(login=validated_data.get('username'))
             return user
