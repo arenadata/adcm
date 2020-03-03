@@ -28,6 +28,7 @@ import { ToolsComponent } from './tools/tools.component';
 import { YspecService } from './yspec/yspec.service';
 import { SchemeComponent } from './scheme/scheme.component';
 import { RootComponent } from './scheme/root.component';
+import { ItemComponent } from './scheme/item.component';
 
 @NgModule({
   declarations: [
@@ -40,7 +41,8 @@ import { RootComponent } from './scheme/root.component';
     ColorOptionDirective,
     ToolsComponent,
     SchemeComponent,
-    RootComponent
+    RootComponent,
+    ItemComponent
   ],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, MaterialModule, StuffModule, FormElementsModule],
   exports: [ConfigComponent, ConfigFieldsComponent],

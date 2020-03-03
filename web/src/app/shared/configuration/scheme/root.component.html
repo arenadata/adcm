@@ -5,36 +5,15 @@
   </button>
 </div>
 <div class="content" [formGroup]="form">
-  <div style="display: flex;" *ngFor="let item of controls; let i = index; trackBy: trackByFn">
-
-    <div style="flex: 1;">
+  <div class="item-iteration" *ngFor="let item of controls; let i = index; trackBy: trackByFn">
+    <div>
       <app-root-scheme [form]="item.form" [options]="item.rules" [value]="item.value"
         *ngIf="item.type === 'list' || item.type === 'dict'; else simple">
       </app-root-scheme>
-
       <ng-template #simple>
-
-        <ng-container *ngIf="item.parent==='list'; else other">
-          <mat-form-field style="margin: 6px 0 0; width: 100%" *ngIf="item.rules.controlType === 'textbox'">
-            <input matInput [formControlName]="i" [value]="item.value" />
-            <button *ngIf="item.parent==='list'" mat-icon-button matSuffix color="primary" (click)="remove(i)">
-              <mat-icon>highlight_off</mat-icon>
-            </button>
-          </mat-form-field>
-        </ng-container>
-
-        <ng-template #other>
-          <div style="margin:6px 0;" *ngIf="item.rules.controlType === 'boolean'">
-            <mat-checkbox [formControlName]="item.name" [checked]="item.value">{{ item.name }}</mat-checkbox>
-          </div>
-          <mat-form-field style="margin: 6px 0 0; width: 100%" *ngIf="item.rules.controlType === 'textbox'">
-            <mat-label>{{ item.name }}</mat-label>
-            <input matInput [formControlName]="item.name" />
-          </mat-form-field>
-        </ng-template>
+        <app-item-scheme [form]="form" [item]="item" [index]="i" (remove)="remove($event)"></app-item-scheme>
       </ng-template>
     </div>
-
     <button *ngIf="item.parent === 'list' && item.type === 'dict'" mat-icon-button color="primary" (click)="remove(i)">
       <mat-icon>highlight_off</mat-icon>
     </button>

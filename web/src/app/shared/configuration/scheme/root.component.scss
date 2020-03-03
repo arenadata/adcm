@@ -1,9 +1,17 @@
 :host {
-    display: block;
-    flex: 1;
-    margin-bottom: 20px;
+  display: block;
+  flex: 1;
+  margin-bottom: 20px;
 
-    .content {
-        padding-left: 20px;
+  .content {
+    padding-left: 20px;
+
+    & .item-iteration {
+      display: flex;
+
+      &>div {
+        flex: 1;
+      }
     }
+  }
 }

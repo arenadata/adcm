@@ -17,7 +17,7 @@ import { IYContainer, matchType, IYField, reqursionType } from '../yspec/yspec.s
 
 type sValue = string | boolean | number;
 
-interface IValue {
+export interface IValue {
   [key: string]: sValue;
 }
 
