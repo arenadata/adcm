@@ -11,19 +11,16 @@
 # limitations under the License.
 
 # pylint: disable=duplicate-except,attribute-defined-outside-init,too-many-lines
-import os
 
 import rest_framework
 from django.contrib.auth.models import User
 from django.db import transaction
-from django.http import HttpResponse
 from django.utils import timezone
 from django_filters import rest_framework as drf_filters
 from rest_framework import routers, status
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from rest_framework.reverse import reverse
 
 import api.cluster_serial
 import api.serializers
@@ -41,7 +38,7 @@ from api.serializers import check_obj, filter_actions, get_config_version
 from cm.errors import AdcmEx, AdcmApiEx
 from cm.models import (
     HostProvider, Host, ADCM, Action, JobLog, TaskLog, Upgrade, ObjectConfig,
-    ConfigLog, UserProfile, DummyData, LogStorage
+    ConfigLog, UserProfile, DummyData
 )
 
 
@@ -533,178 +530,6 @@ class TaskStats(GenericAPIView):
             config.Job.RUNNING: tasks.filter(status=config.Job.RUNNING).count(),
         }
         return Response(data)
-
-
-class JobList(PageView):
-    """
-    get:
-    List all jobs
-    """
-    queryset = JobLog.objects.order_by('-id')
-    serializer_class = api.serializers.JobListSerializer
-    serializer_class_ui = api.serializers.JobSerializer
-    filterset_fields = ('action_id', 'task_id', 'pid', 'status', 'start_date', 'finish_date')
-    ordering_fields = ('status', 'start_date', 'finish_date')
-
-
-class JobDetail(GenericAPIView):
-    queryset = JobLog.objects.all()
-    serializer_class = api.serializers.JobSerializer
-
-    def get(self, request, job_id):
-        """
-        Show job
-        """
-        job = check_obj(JobLog, job_id, 'JOB_NOT_FOUND')
-        job.log_dir = os.path.join(config.RUN_DIR, f'{job_id}')
-        logs = cm.job.get_log(job)
-        for lg in logs:
-            log_id = lg.pop('log_id')
-            lg['url'] = reverse(
-                'log-storage',
-                kwargs={
-                    'job_id': job.id,
-                    'log_id': log_id
-                },
-                request=request)
-            lg['download_url'] = reverse(
-                'download-log',
-                kwargs={
-                    'job_id': job.id,
-                    'log_id': log_id
-                },
-                request=request
-            )
-
-        job.log_files = logs
-        serializer = self.serializer_class(job, data=request.data, context={'request': request})
-        serializer.is_valid()
-        return Response(serializer.data)
-
-
-class LogFile(GenericAPIView):
-    queryset = JobLog.objects.all()
-    serializer_class = api.serializers.LogSerializer
-
-    def get(self, request, job_id, tag, level, log_type):
-        """
-        Show log file
-        """
-        lf = JobLog()
-        try:
-            lf.content = cm.job.read_log(job_id, tag, level, log_type)
-            lf.type = log_type
-            lf.tag = tag
-            lf.level = level
-            serializer = self.serializer_class(lf, context={'request': request})
-            return Response(serializer.data)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
-
-
-class LogStorageView(GenericAPIView):
-    queryset = LogStorage.objects.all()
-    serializer_class = api.serializers.LogStorageSerializer
-
-    def get(self, request, job_id, log_id):
-        try:
-            job = JobLog.objects.get(id=job_id)
-            log_storage = LogStorage.objects.get(id=log_id, job=job)
-            serializer = self.serializer_class(log_storage, context={'request': request})
-            return Response(serializer.data)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
-
-
-class DownloadLogFileView(GenericAPIView):
-
-    def get(self, request, job_id, log_id):
-        try:
-            job = JobLog.objects.get(id=job_id)
-            log_storage = LogStorage.objects.get(id=log_id, job=job)
-
-            if log_storage.type in ['stdout', 'stderr']:
-                filename = f'{job.id}-{log_storage.name}-{log_storage.type}.{log_storage.format}'
-            else:
-                filename = f'{job.id}-{log_storage.name}.{log_storage.format}'
-
-            if log_storage.format == 'txt':
-                mime_type = 'text/plain'
-            else:
-                mime_type = 'application/json'
-
-            response = HttpResponse(log_storage.body)
-            response['Content-Type'] = mime_type
-            response['Content-Length'] = len(log_storage.body)
-            response['Content-Encoding'] = 'UTF-8'
-            response['Content-Disposition'] = f'attachment; filename={filename}'
-            return response
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
-
-
-class Task(PageView):
-    """
-    get:
-    List all tasks
-    """
-    queryset = TaskLog.objects.order_by('-id')
-    serializer_class = api.serializers.TaskListSerializer
-    serializer_class_ui = api.serializers.TaskSerializer
-    post_serializer = api.serializers.TaskPostSerializer
-    filterset_fields = ('action_id', 'pid', 'status', 'start_date', 'finish_date')
-    ordering_fields = ('status', 'start_date', 'finish_date')
-
-    def post(self, request):
-        """
-        Create and run new task
-        Return handler to new task
-        """
-        serializer = self.post_serializer(data=request.data, context={'request': request})
-        return create(serializer)
-
-
-class TaskDetail(DetailViewRO):
-    """
-    get:
-    Show task
-    """
-    queryset = TaskLog.objects.all()
-    serializer_class = api.serializers.TaskSerializer
-    lookup_field = 'id'
-    lookup_url_kwarg = 'task_id'
-    error_code = 'TASK_NOT_FOUND'
-
-    def get_object(self):
-        task = super().get_object()
-        task.jobs = JobLog.objects.filter(task_id=task.id)
-        return task
-
-
-class TaskReStart(GenericAPIView):
-    queryset = TaskLog.objects.all()
-    serializer_class = api.serializers.TaskSerializer
-
-    def put(self, request, task_id):
-        task = check_obj(TaskLog, task_id, 'TASK_NOT_FOUND')
-        try:
-            cm.job.restart_task(task)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
-        return Response(status=status.HTTP_200_OK)
-
-
-class TaskCancel(GenericAPIView):
-    queryset = TaskLog.objects.all()
-    serializer_class = api.serializers.TaskSerializer
-
-    def put(self, request, task_id):
-        task = check_obj(TaskLog, task_id, 'TASK_NOT_FOUND')
-        try:
-            cm.job.cancel_task(task)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
-        return Response(status=status.HTTP_200_OK)
 
 
 class ProviderConfig(ListView):

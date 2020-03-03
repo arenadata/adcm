@@ -31,7 +31,7 @@ import cm.config as config
 from cm.errors import AdcmApiEx, AdcmEx
 from cm.models import (
     Action, SubAction, Cluster, Host, Prototype, PrototypeConfig, JobLog, UserProfile,
-    Upgrade, HostProvider, ConfigLog, ClusterObject
+    Upgrade, HostProvider, ConfigLog, ClusterObject, CheckLog
 )
 
 
@@ -791,13 +791,20 @@ class LogStorageSerializer(serializers.Serializer):
     def get_body(self, obj):
         body = obj.body
 
-        if body is None and obj.name == 'ansible':
-            path_file = os.path.join(
-                config.RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}')
-            with open(path_file, 'r') as f:
-                body = f.read()
+        if body is None:
+            if obj.type in ['stdout', 'stderr']:
+                path_file = os.path.join(
+                    config.RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}')
+                with open(path_file, 'r') as f:
+                    body = f.read()
+            elif obj.type == 'check':
+                body = []
+                for cl in CheckLog.objects.filter(job_id=obj.job.id):
+                    body.append({'title': cl.title, 'message': cl.message, 'result': cl.result})
+            elif obj.type == 'custom':
+                pass
 
-        if obj.format == 'json':
+        if obj.format == 'json' and isinstance(body, str):
             body = json.loads(body)
 
         return body
