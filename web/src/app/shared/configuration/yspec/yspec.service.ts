@@ -9,46 +9,53 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+import { Injectable } from '@angular/core';
 import { getControlType, getPattern, IRoot } from '@app/core/types';
 
-import { controlType } from '../field.service';
-import { Injectable } from "@angular/core";
+import { FieldOptions, controlType, ValidatorInfo } from '../types';
 
 export type simpleType = 'string' | 'integer' | 'float' | 'bool' | 'int' | 'one_of' | 'dict_key_selection';
 export type reqursionType = 'list' | 'dict';
 export type matchType = simpleType | reqursionType;
 
-interface Iroot {
+interface IYRoot {
   match: matchType;
   selector?: string;
   variants?: { [key: string]: string };
   item?: string;
-  items?: { [key: string]: string };
+  items?: IRoot;
   required_items?: string[];
   default_item?: string;
 }
 
 export interface IYspec {
-  [key: string]: Iroot;
+  [key: string]: IYRoot;
 }
 
-export interface IField {
-  name: string;
-  type: simpleType;
+interface IBaseField {
   path: string[];
+  type: simpleType;
+}
+
+export interface IYField extends IBaseField {
+  name: string;
   controlType: controlType;
-  validator: {
-    required: boolean;
-    pattern: RegExp | null;
-  };
+  validator: ValidatorInfo;
+}
+
+export interface IYContainer {
+  name: string;
+  type: matchType;
+  options: IYContainer | IYField | (IYContainer | IYField)[];
+}
+
+export interface IStructure extends FieldOptions {
+  rules: { options: any; type: string; name: string };
 }
 
 @Injectable()
 export class YspecService {
   private root: IYspec;
-  private output: any;
-
-  constructor() {}
 
   set Root(yspec: IYspec) {
     this.root = yspec;
@@ -58,8 +65,8 @@ export class YspecService {
     return this.root;
   }
 
-  build(rule = 'root', path: string[] = []) {
-    const { match, item, items } = { ...this.Root[rule] };
+  build(rule = 'root', path: string[] = []): IYContainer | IYField {
+    const { match, item, items } = this.Root[rule];
 
     switch (match) {
       case 'list':
@@ -75,8 +82,8 @@ export class YspecService {
     }
   }
 
-  field(field: { path: string[]; type: simpleType }): IField {
-    const [name, ...o] = [...field.path].reverse();
+  field(field: IBaseField): IYField {
+    const name = field.path.reverse()[0];
     return {
       name,
       type: field.type,
@@ -95,19 +102,17 @@ export class YspecService {
     return !!(rule && rule[name] && rule[name][field]);
   }
 
-  list(item: string, path: string[]): { [x: string]: any; type: string } {
-    if (!this.Root[item]) throw new Error('Not itmem for list');
+  list(item: string, path: string[]): IYContainer {
     const name = [...path].reverse()[0] || 'root';
-    return { type: 'list', [name]: this.build(item, [...path, item]) };
+    return { type: 'list', name, options: this.build(item, [...path, item]) };
   }
 
-  dict(items: IRoot, path: string[]): { [x: string]: any; type: string } {
+  dict(items: IRoot, path: string[]): IYContainer {
     const name = [...path].reverse()[0] || 'root';
     return {
       type: 'dict',
-      [name]: Object.keys(items).map((item_name: string) => {
-        return this.build(items[item_name], [...path, item_name]);
-      })
+      name,
+      options: Object.keys(items).map((item_name: string) => this.build(items[item_name], [...path, item_name]))
     };
   }
 
