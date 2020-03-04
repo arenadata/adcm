@@ -21,6 +21,7 @@ from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 from rest_framework.generics import GenericAPIView
 from rest_framework.utils.urls import replace_query_param
+from rest_framework.permissions import DjangoModelPermissions
 
 from adcm.settings import REST_FRAMEWORK
 
@@ -49,6 +50,25 @@ def create(serializer, **kwargs):
 
 def update(serializer, **kwargs):
     return save(serializer, status.HTTP_200_OK, **kwargs)
+
+
+class DjangoModelPerm(DjangoModelPermissions):
+    """
+    Similar to `DjangoModelPermissions`, but adding 'view' permissions.
+    """
+    perms_map = {
+        'GET': ['%(app_label)s.view_%(model_name)s'],
+        'OPTIONS': ['%(app_label)s.view_%(model_name)s'],
+        'HEAD': ['%(app_label)s.view_%(model_name)s'],
+        'POST': ['%(app_label)s.add_%(model_name)s'],
+        'PUT': ['%(app_label)s.change_%(model_name)s'],
+        'PATCH': ['%(app_label)s.change_%(model_name)s'],
+        'DELETE': ['%(app_label)s.delete_%(model_name)s'],
+    }
+
+
+class GenericAPIPermView(GenericAPIView):
+    permission_classes = (DjangoModelPerm,)
 
 
 class InterfaceView():
@@ -128,6 +148,7 @@ class AdcmFilterBackend(drf_filters.DjangoFilterBackend):
 class PageView(GenericAPIView, InterfaceView):
     filter_backends = (AdcmFilterBackend, AdcmOrderingFilter)
     pagination_class = rest_framework.pagination.LimitOffsetPagination
+    permission_classes = (DjangoModelPerm,)
 
     def get_ordering(self, request, queryset, view):
         Order = AdcmOrderingFilter()
@@ -178,6 +199,7 @@ class PageViewAdd(PageView):
 
 class ListView(GenericAPIView, InterfaceView):
     filter_backends = (AdcmFilterBackend,)
+    permission_classes = (DjangoModelPerm,)
 
     def get(self, request):
         obj = self.filter_queryset(self.get_queryset())
@@ -194,6 +216,8 @@ class ListViewAdd(ListView):
 
 
 class DetailViewRO(GenericAPIView, InterfaceView):
+    permission_classes = (DjangoModelPerm,)
+
     def get_object(self):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
         kw_req = {self.lookup_field: self.kwargs[lookup_url_kwarg]}

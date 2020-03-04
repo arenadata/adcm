@@ -33,7 +33,7 @@ import cm.status_api
 from adcm.settings import ADCM_VERSION
 from api.api_views import (
     DetailViewRO, DetailViewDelete, ActionFilter, ListView,
-    PageView, PageViewAdd, create, update
+    PageView, PageViewAdd, GenericAPIPermView, create, update
 )
 from api.serializers import check_obj, filter_actions, get_config_version
 from cm.errors import AdcmEx, AdcmApiEx
@@ -132,7 +132,7 @@ class UserList(PageViewAdd):
     ordering_fields = ('username',)
 
 
-class UserDetail(GenericAPIView):
+class UserDetail(GenericAPIPermView):
     queryset = User.objects.all()
     serializer_class = api.serializers.UserSerializer
 
@@ -151,7 +151,7 @@ class UserDetail(GenericAPIView):
         return delete_user(username)
 
 
-class UserPasswd(GenericAPIView):
+class UserPasswd(GenericAPIPermView):
     queryset = User.objects.all()
     serializer_class = api.serializers.UserPasswdSerializer
 
@@ -322,7 +322,7 @@ class ADCMActionList(ListView):
         return Response(serializer.data)
 
 
-class ADCMAction(GenericAPIView):
+class ADCMAction(GenericAPIPermView):
     queryset = Action.objects.filter(prototype__type='adcm')
     serializer_class = api.serializers.ADCMActionDetail
 
@@ -343,7 +343,7 @@ class ADCMAction(GenericAPIView):
         return Response(serializer.data)
 
 
-class ADCMTask(GenericAPIView):
+class ADCMTask(GenericAPIPermView):
     queryset = TaskLog.objects.all()
     serializer_class = api.serializers.TaskRunSerializer
 
@@ -486,7 +486,7 @@ class HostDetail(DetailViewDelete):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class Stats(GenericAPIView):
+class Stats(GenericAPIPermView):
     queryset = JobLog.objects.all()
     serializer_class = api.serializers.StatsSerializer
 
@@ -499,7 +499,7 @@ class Stats(GenericAPIView):
         return Response(serializer.data)
 
 
-class JobStats(GenericAPIView):
+class JobStats(GenericAPIPermView):
     queryset = JobLog.objects.all()
     serializer_class = api.serializers.EmptySerializer
 
@@ -516,7 +516,7 @@ class JobStats(GenericAPIView):
         return Response(data)
 
 
-class TaskStats(GenericAPIView):
+class TaskStats(GenericAPIPermView):
     queryset = TaskLog.objects.all()
     serializer_class = api.serializers.EmptySerializer
 
@@ -545,7 +545,7 @@ class JobList(PageView):
     ordering_fields = ('status', 'start_date', 'finish_date')
 
 
-class JobDetail(GenericAPIView):
+class JobDetail(GenericAPIPermView):
     queryset = JobLog.objects.all()
     serializer_class = api.serializers.JobSerializer
 
@@ -571,7 +571,7 @@ class JobDetail(GenericAPIView):
         return Response(serializer.data)
 
 
-class LogFile(GenericAPIView):
+class LogFile(GenericAPIPermView):
     queryset = JobLog.objects.all()
     serializer_class = api.serializers.LogSerializer
 
@@ -629,7 +629,7 @@ class TaskDetail(DetailViewRO):
         return task
 
 
-class TaskReStart(GenericAPIView):
+class TaskReStart(GenericAPIPermView):
     queryset = TaskLog.objects.all()
     serializer_class = api.serializers.TaskSerializer
 
@@ -642,7 +642,7 @@ class TaskReStart(GenericAPIView):
         return Response(status=status.HTTP_200_OK)
 
 
-class TaskCancel(GenericAPIView):
+class TaskCancel(GenericAPIPermView):
     queryset = TaskLog.objects.all()
     serializer_class = api.serializers.TaskSerializer
 
@@ -717,7 +717,7 @@ class ProviderConfigVersion(ListView):
         return Response(serializer.data)
 
 
-class ProviderConfigRestore(GenericAPIView):
+class ProviderConfigRestore(GenericAPIPermView):
     queryset = ConfigLog.objects.all()
     serializer_class = api.cluster_serial.ObjectConfigRestore
 
@@ -757,7 +757,7 @@ class ProviderActionList(ListView):
         return Response(serializer.data)
 
 
-class ProviderAction(GenericAPIView):
+class ProviderAction(GenericAPIPermView):
     queryset = Action.objects.filter(prototype__type='provider')
     serializer_class = api.serializers.ProviderActionDetail
 
@@ -778,7 +778,7 @@ class ProviderAction(GenericAPIView):
         return Response(serializer.data)
 
 
-class ProviderTask(GenericAPIView):
+class ProviderTask(GenericAPIPermView):
     queryset = TaskLog.objects.all()
     serializer_class = api.serializers.TaskRunSerializer
 
@@ -828,7 +828,7 @@ class ProviderUpgradeDetail(ListView):
         return Response(serializer.data)
 
 
-class DoProviderUpgrade(GenericAPIView):
+class DoProviderUpgrade(GenericAPIPermView):
     queryset = Upgrade.objects.all()
     serializer_class = api.serializers.DoUpgradeSerializer
 
@@ -863,7 +863,7 @@ class HostActionList(ListView):
         return Response(serializer.data)
 
 
-class HostAction(GenericAPIView):
+class HostAction(GenericAPIPermView):
     queryset = Action.objects.filter(prototype__type='host')
     serializer_class = api.serializers.HostActionDetail
 
@@ -883,7 +883,7 @@ class HostAction(GenericAPIView):
         return Response(serializer.data)
 
 
-class HostTask(GenericAPIView):
+class HostTask(GenericAPIPermView):
     queryset = TaskLog.objects.all()
     serializer_class = api.serializers.TaskRunSerializer
 
@@ -962,7 +962,7 @@ class HostConfigVersion(ListView):
         return Response(serializer.data)
 
 
-class HostConfigRestore(GenericAPIView):
+class HostConfigRestore(GenericAPIPermView):
     queryset = ConfigLog.objects.all()
     serializer_class = api.cluster_serial.ObjectConfigRestore
 
