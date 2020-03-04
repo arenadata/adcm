@@ -34,20 +34,19 @@ def get_body(job, name, type_log, format_log):
 def add_logs(apps, schema_editor):
     LogStorage = apps.get_model('cm', 'LogStorage')
     JobLog = apps.get_model('cm', 'JobLog')
-    db_alias = schema_editor.connection.alias
 
-    jobs = JobLog.objects.using(db_alias).all()
+    jobs = JobLog.objects.all()
     for job in jobs:
-        LogStorage.objects.using(db_alias).create(
+        LogStorage.objects.create(
             job=job, name='ansible', type='stdout', format='txt',
             body=get_body(job, 'ansible', 'out', 'txt'))
-        LogStorage.objects.using(db_alias).create(
+        LogStorage.objects.create(
             job=job, name='ansible', type='stderr', format='txt',
             body=get_body(job, 'ansible', 'err', 'txt'))
         try:
             log_files = json.loads(job.log_files)
             if 'check' in log_files:
-                LogStorage.objects.using(db_alias).create(
+                LogStorage.objects.create(
                     job=job, name='check', type='check', format='json',
                     body=get_body(job, 'check', 'out', 'json'))
         except json.JSONDecodeError:
@@ -57,11 +56,10 @@ def add_logs(apps, schema_editor):
 def remove_logs(apps, schema_editor):
     LogStorage = apps.get_model('cm', 'LogStorage')
     JobLog = apps.get_model('cm', 'JobLog')
-    db_alias = schema_editor.connection.alias
 
-    jobs = JobLog.objects.using(db_alias).all()
+    jobs = JobLog.objects.all()
     for job in jobs:
-        LogStorage.objects.using(db_alias).filter(job=job).delete()
+        LogStorage.objects.filter(job=job).delete()
 
 
 class Migration(migrations.Migration):
