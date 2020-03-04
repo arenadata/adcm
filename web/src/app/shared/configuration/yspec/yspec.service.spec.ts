@@ -9,11 +9,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { getPattern } from '@app/core/types';
+import { IYContainer, IYField, IYspec, YspecService } from './yspec.service';
 
-import { IField, IYspec, YspecService } from './yspec.service';
-
-const simpleField: IField = {
+const simpleField: IYField = {
   name: 'root',
   type: 'string',
   controlType: 'textbox',
@@ -28,6 +26,46 @@ const simpleStr: IYspec = {
   root: { match: 'list', item: 'simpl_str' },
   simpl_str: {
     match: 'string'
+  }
+};
+
+const ex_policy: IYspec = {
+  volume: {
+    match: 'dict',
+    items: {
+      name: 'string',
+      disk: 'string',
+      max_data_part_size_bytes: 'int'
+    },
+    required_items: ['name']
+  },
+
+  volumes: {
+    match: 'list',
+    item: 'volume'
+  },
+
+  policy: {
+    match: 'dict',
+    items: { name: 'string', move_factor: 'float', volumes_list: 'volumes' },
+    required_items: ['move_factor']
+  },
+
+  root: {
+    match: 'list',
+    item: 'policy'
+  },
+  boolean: {
+    match: 'bool'
+  },
+  string: {
+    match: 'string'
+  },
+  int: {
+    match: 'int'
+  },
+  float: {
+    match: 'float'
   }
 };
 
@@ -53,7 +91,7 @@ describe('YspecService', () => {
     expect(service.field({ path: ['root'], type: 'string' })).toEqual(simpleField);
   });
 
-  it('simple List with Dict', () => {
+  it('Root as list of dict', () => {
     service.Root = {
       root: { match: 'list', item: 'country_code' },
       country_code: {
@@ -71,30 +109,26 @@ describe('YspecService', () => {
       }
     };
 
-    const output = {
+    const output: IYContainer = {
+      name: 'root',
       type: 'list',
-      root: {
+      options: {
         type: 'dict',
-        country_code: [
+        name: 'country_code',
+        options: [
           {
             name: 'country',
             type: 'string',
+            path: ['country', 'country_code'],
             controlType: 'textbox',
-            path: ['country_code', 'country'],
-            validator: {
-              required: false,
-              pattern: null
-            }
+            validator: { required: false, pattern: null }
           },
           {
             name: 'code',
             type: 'integer',
+            path: ['code', 'country_code'],
             controlType: 'textbox',
-            path: ['country_code', 'code'],
-            validator: {
-              required: false,
-              pattern: getPattern('integer')
-            }
+            validator: { required: false, pattern: /^[-]?\d+$/ }
           }
         ]
       }
@@ -105,7 +139,81 @@ describe('YspecService', () => {
     expect(_out).toEqual(output);
   });
 
-  it('test build function :: dictionary with inner elements', () => {
+  it('Funcion findRules check required_items param 2 level', () => {
+    service.Root = ex_policy;
+    const func1 = service.findRule(['move_factor', 'policy'], 'required_items');
+    expect(func1).toBeTrue();
+  });
+
+  it('Funcion findRules check required_items param 4 level', () => {
+    service.Root = ex_policy;
+    const func2 = service.findRule(['name', 'volume', 'volumes_list', 'policy'], 'required_items');
+    expect(func2).toBeTrue();
+  });
+
+  it('Test required items', () => {
+    service.Root = ex_policy;
+
+    const output: IYContainer = {
+      type: 'list',
+      name: 'root',
+      options: {
+        type: 'dict',
+        name: 'policy',
+        options: [
+          {
+            name: 'name',
+            type: 'string',
+            path: ['name', 'policy'],
+            controlType: 'textbox',
+            validator: { required: false, pattern: null }
+          },
+          {
+            name: 'move_factor',
+            type: 'float',
+            path: ['move_factor', 'policy'],
+            controlType: 'textbox',
+            validator: { required: true, pattern: /^[-]?[0-9]+(\.[0-9]+)?$/ }
+          },
+          {
+            type: 'list',
+            name: 'volumes_list',
+            options: {
+              type: 'dict',
+              name: 'volume',
+              options: [
+                {
+                  name: 'name',
+                  type: 'string',
+                  path: ['name', 'volume', 'volumes_list', 'policy'],
+                  controlType: 'textbox',
+                  validator: { required: true, pattern: null }
+                },
+                {
+                  name: 'disk',
+                  type: 'string',
+                  path: ['disk', 'volume', 'volumes_list', 'policy'],
+                  controlType: 'textbox',
+                  validator: { required: false, pattern: null }
+                },
+                {
+                  name: 'max_data_part_size_bytes',
+                  type: 'int',
+                  path: ['max_data_part_size_bytes', 'volume', 'volumes_list', 'policy'],
+                  controlType: 'textbox',
+                  validator: { required: false, pattern: /^[-]?\d+$/ }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    };
+
+    expect(service.build()).toEqual(output);
+  });
+
+  it('Scheme as tree :: dictionary with inner elements', () => {
     service.Root = {
       boolean: { match: 'bool' },
       string: { match: 'string' },
@@ -120,107 +228,113 @@ describe('YspecService', () => {
       }
     };
 
-    const output = {
+    const output: IYContainer = {
+      name: 'root',
       type: 'dict',
-      root: [
+      options: [
         {
           name: 'key1',
           type: 'bool',
           path: ['key1'],
           controlType: 'boolean',
-          validator: { required: false, pattern: getPattern('boolean') }
+          validator: { required: false, pattern: null }
         },
         {
           name: 'key2',
           type: 'string',
           path: ['key2'],
           controlType: 'textbox',
-          validator: { required: false, pattern: getPattern('string') }
+          validator: { required: false, pattern: null }
         },
         {
           name: 'key3',
           type: 'int',
           path: ['key3'],
           controlType: 'textbox',
-          validator: { required: false, pattern: getPattern('int') }
+          validator: { required: false, pattern: /^[-]?\d+$/ }
         },
         {
           name: 'key4',
           type: 'float',
           path: ['key4'],
           controlType: 'textbox',
-          validator: { required: false, pattern: getPattern('float') }
+          validator: { required: false, pattern: /^[-]?[0-9]+(\.[0-9]+)?$/ }
         },
         {
           type: 'list',
-          key5: {
+          name: 'key5',
+          options: {
             name: 'string',
             type: 'string',
-            path: ['key5', 'string'],
+            path: ['string', 'key5'],
             controlType: 'textbox',
             validator: {
               required: false,
-              pattern: getPattern('string')
+              pattern: null
             }
           }
         },
         {
           type: 'dict',
-          key6: [
+          name: 'key6',
+          options: [
             {
               type: 'list',
-              key1: {
+              name: 'key1',
+              options: {
                 name: 'string',
                 type: 'string',
-                path: ['key6', 'key1', 'string'],
+                path: ['string', 'key1', 'key6'],
                 controlType: 'textbox',
                 validator: {
                   required: false,
-                  pattern: getPattern('string')
+                  pattern: null
                 }
               }
             },
             {
               type: 'dict',
-              key2: [
+              name: 'key2',
+              options: [
                 {
                   name: 'key1',
                   type: 'bool',
-                  path: ['key6', 'key2', 'key1'],
+                  path: ['key1', 'key2', 'key6'],
                   controlType: 'boolean',
-                  validator: { required: false, pattern: getPattern('boolean') }
+                  validator: { required: false, pattern: null }
                 },
                 {
                   name: 'key2',
                   type: 'string',
-                  path: ['key6', 'key2', 'key2'],
+                  path: ['key2', 'key2', 'key6'],
                   controlType: 'textbox',
-                  validator: { required: false, pattern: getPattern('string') }
+                  validator: { required: false, pattern: null }
                 },
                 {
                   name: 'key3',
                   type: 'int',
-                  path: ['key6', 'key2', 'key3'],
+                  path: ['key3', 'key2', 'key6'],
                   controlType: 'textbox',
-                  validator: { required: false, pattern: getPattern('int') }
+                  validator: { required: false, pattern: /^[-]?\d+$/ }
                 },
                 {
                   name: 'key4',
                   type: 'float',
-                  path: ['key6', 'key2', 'key4'],
+                  path: ['key4', 'key2', 'key6'],
                   controlType: 'textbox',
-                  validator: { required: false, pattern: getPattern('float') }
+                  validator: { required: false, pattern: /^[-]?[0-9]+(\.[0-9]+)?$/ }
                 },
                 {
                   type: 'list',
-                  key5: {
+                  name: 'key5',
+                  options: {
                     name: 'string',
                     type: 'string',
-                    path: ['key6', 'key2', 'key5', 'string'],
+                    path: ['string', 'key5', 'key2', 'key6'],
                     controlType: 'textbox',
                     validator: {
                       required: false,
-                      pattern: getPattern('string')
+                      pattern: null
                     }
                   }
                 }
