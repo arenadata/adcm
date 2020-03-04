@@ -11,30 +11,36 @@
 // limitations under the License.
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { SchemeComponent } from './scheme.component';
+import { ItemComponent } from './item.component';
+import { FormGroup, FormControl } from '@angular/forms';
+import { IControl } from './root.component';
 import { MaterialModule } from '@app/shared/material.module';
-import { YspecService } from '../yspec/yspec.service';
-import { RootComponent } from './root.component';
-import { FieldService } from '../field.service';
-import { FormBuilder } from '@angular/forms';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
-describe('SchemeComponent', () => {
-  let component: SchemeComponent;
-  let fixture: ComponentFixture<SchemeComponent>;
+describe('ItemComponent', () => {
+  let component: ItemComponent;
+  let fixture: ComponentFixture<ItemComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [MaterialModule],
-      declarations: [ SchemeComponent, RootComponent ],
-      providers: [YspecService, FieldService, FormBuilder]
-    })
-    .compileComponents();
+      imports: [NoopAnimationsModule, MaterialModule],
+      declarations: [ItemComponent]
+    }).compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(SchemeComponent);
+    fixture = TestBed.createComponent(ItemComponent);
     component = fixture.componentInstance;
-    //fixture.detectChanges();
+    const item: IControl = {
+      name: 'test',
+      type: 'string',
+      rules: { name: 'test', type: 'string', path: ['test'], validator: {}, controlType: 'textbox' },
+      form: new FormGroup({ test: new FormControl() }),
+      parent: 'dict',
+      value: {}
+    };
+    component.item = item;
+    fixture.detectChanges();
   });
 
   it('should create', () => {

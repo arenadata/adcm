@@ -11,26 +11,43 @@
 // limitations under the License.
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ActionMasterComponent as MasterComponent } from './master.component';
+import { RootComponent } from './root.component';
+import { FieldService } from '../field.service';
+import { FormBuilder } from '@angular/forms';
+import { IYContainer } from '../yspec/yspec.service';
 
-describe('MasterComponent', () => {
-  let component: MasterComponent;
-  let fixture: ComponentFixture<MasterComponent>;
+describe('RootComponent', () => {
+  let component: RootComponent;
+  let fixture: ComponentFixture<RootComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ MasterComponent ]
-    })
-    .compileComponents();
+      declarations: [RootComponent],
+      providers: [FieldService, FormBuilder]
+    }).compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(MasterComponent);
+    fixture = TestBed.createComponent(RootComponent);
     component = fixture.componentInstance;
+  
+    const item: IYContainer = {
+      name: 'test',
+      type: 'dict',
+      options: {
+        name: 'test',
+        path: ['test'],
+        type: 'string',
+        controlType: 'textbox',
+        validator: {}
+      }
+    };
+    component.options = item;
+    
     fixture.detectChanges();
   });
 
-  xit('should create', () => {
+  it('should create', () => {
     expect(component).toBeTruthy();
   });
 });

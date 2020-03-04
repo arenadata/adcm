@@ -10,58 +10,41 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input, OnInit } from '@angular/core';
-import { FormGroup } from '@angular/forms';
+import { FormArray, FormGroup } from '@angular/forms';
 
-import { IStructure } from '../types';
+import { YspecService, IYField, IYContainer } from '../yspec/yspec.service';
 
 @Component({
   selector: 'app-scheme',
-  templateUrl: './scheme.component.html',
-  styleUrls: ['./scheme.component.scss']
+  template: '<app-root-scheme [form]="itemFormGroup" [options]="rules" [value]="defaultValue"></app-root-scheme>'
 })
 export class SchemeComponent implements OnInit {
   @Input() form: FormGroup;
-  @Input() options: IStructure;
+  @Input() options: any;
 
-  value: any;
-  rules: Array<any>;
+  itemFormGroup: FormGroup | FormArray;
+  rules: IYField | IYContainer;
+  defaultValue: any;
 
-  name: string;
-  type: string;
-  items: any[];
-
-  currentType: string;
-
-  constructor() {}
+  constructor(private yspec: YspecService) {}
 
   ngOnInit() {
-    this.value = this.options.value;
+    this.yspec.Root = this.options.limits.yspec;
+    this.rules = this.yspec.build();
+    this.options.limits.rules = this.rules;
+    this.itemFormGroup = this.options.key
+      .split('/')
+      .reverse()
+      .reduce((p: any, c: string) => p.get(c), this.form) as FormGroup;
 
-    const current = this.options.rules;
-    this.currentType = this.options.rules.type;
+    this.defaultValue = this.options.value || this.options.default;
 
-    Object.keys(current).map(key => {
-      if (key === 'type') this.type = this.options.rules[key];
-      else {
-        this.name = key;
-        this.rules = current[key];
-      }
-    });
-
-    if (this.currentType === 'list') {
-      this.items = (this.options.value as Array<any>).map(a => {
-        return { value: a, rules: this.rules };
-      });
-    } else if (this.currentType === 'dict') {
-      this.items = Object.keys(this.value).map(b => {
-        const c = this.findRule(b);
-        return { value: this.value[b], rules: c };
-      });
-    } else {
+    if (this.rules.type === 'list') {
+      const parent = this.itemFormGroup.parent as FormGroup;
+      parent.removeControl(this.options.name);
+      this.itemFormGroup = new FormArray([]);
+      parent.addControl(this.options.name, this.itemFormGroup);
     }
-  }
-
-  findRule(key: string) {
-    return this.rules.find(a => a.name === key) || this.rules.find(a => Object.keys(a).find(k => k === key));
+    this.rules.name = this.options.name;
   }
 }
