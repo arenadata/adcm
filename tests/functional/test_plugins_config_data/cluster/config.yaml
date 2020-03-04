@@ -273,6 +273,7 @@
       <<: *service_action
       params:
         ansible_tags: list
+    <<: *cluster_actions
 
 
 
@@ -282,6 +283,8 @@
   name: Second
   version: 1
 
-  actions: *service_actions
+  actions:
+    <<: *service_actions
+    <<: *cluster_actions
 
   config: *config
