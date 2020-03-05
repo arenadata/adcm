@@ -21,7 +21,7 @@ export interface IValue {
   [key: string]: sValue;
 }
 
-interface IControl {
+export interface IControl {
   name: string;
   type: matchType;
   rules: IYField | IYContainer | (IYField | IYContainer)[];
@@ -37,7 +37,7 @@ interface IControl {
 })
 export class RootComponent implements OnInit {
   @Input() form: FormGroup | FormArray;
-  @Input() options: IYContainer | IYField = { type: 'string', name: 'root', options: null };
+  @Input() options: IYContainer | IYField;
   @Input() value: IValue | IValue[];
 
   controls: IControl[] = [];
@@ -66,45 +66,37 @@ export class RootComponent implements OnInit {
     let [name, value] = v;
 
     if ((this.rules as IYContainer).type === 'dict') {
-      const irules = this.itemRules as (IYField | IYContainer)[];
-      if (!value) value = irules.reduce((p, c) => ({ ...p, [c.name]: '' }), {});
-
-      if (this.checkValue(value, irules)) {
+      const rules = this.itemRules;
+      if (!value) value = rules.reduce((p, c) => ({ ...p, [c.name]: '' }), {});
+      if (this.checkValue(value, rules)) {
         const form = new FormGroup({});
         (this.form as FormArray).push(form);
-        this.controls.push({ name, value, type: (this.rules as IYContainer).type, rules: this.itemRules, form, parent: 'list' });
+        this.controls.push({ name, value, type: (this.rules as IYContainer).type, rules, form, parent: 'list' });
       }
-    } else /*if (this.checkValue(v, this.rules))*/ {
-      const rule = Array.isArray(this.rules) ? this.rules.find(a => a.name === name) : this.rules;
-      if (rule) {
+    } else {
+      const rules = Array.isArray(this.rules) ? this.rules.find(a => a.name === name) : this.rules;
+      if (rules) {
         let form: FormGroup | FormArray;
-
-        if (rule.type !== 'list' && rule.type !== 'dict') {
-          const { validator, controlType } = rule as IYField;
+        if (rules.type !== 'list' && rules.type !== 'dict') {
+          const { validator, controlType } = rules as IYField;
           if (Array.isArray(this.form.controls)) {
             name = this.form.controls.length.toString();
             (this.form as FormArray).push(new FormControl(value || '', this.service.setValidator({ validator, controlType })));
-          } else (this.form as FormGroup).addControl(rule.name, new FormControl(value || '', this.service.setValidator({ validator, controlType })));
-
+          } else (this.form as FormGroup).addControl(rules.name, new FormControl(value || '', this.service.setValidator({ validator, controlType })));
           form = this.form;
         } else {
-          if (rule.type === 'list') {
-            form = new FormArray([]);
-          }
-
-          if (rule.type === 'dict') {
-            form = new FormGroup({});
-          }
-          (this.form as FormGroup).addControl(rule.name, form);
+          if (rules.type === 'list') form = new FormArray([]);
+          if (rules.type === 'dict') form = new FormGroup({});
+          (this.form as FormGroup).addControl(rules.name, form);
         }
-        const item: IControl  = { name, value, type: rule.type, rules: rule, form, parent: this.options.type as reqursionType };
+        const item: IControl = { name, value, type: rules.type, rules, form, parent: this.options.type as reqursionType };
         this.controls.push(item);
       }
     }
   }
 
   checkValue(value: IValue | sValue, rules: (IYField | IYContainer)[]) {
-    if (!value) return true;
+    if (!value) return false;
     if (Array.isArray(rules)) {
       if (Array.isArray(value)) {
         return rules.some(a => a.name === value[0]);
@@ -112,8 +104,6 @@ export class RootComponent implements OnInit {
         return Object.keys(value).every(x => rules.some(a => a.name === x));
       }
     }
-    // ????
-    return true;
   }
 
   get rules(): IYField | IYContainer | (IYField | IYContainer)[] {
@@ -121,17 +111,11 @@ export class RootComponent implements OnInit {
     else return this.options;
   }
 
-  get itemRules(): IYField | IYContainer | (IYField | IYContainer)[] {
-    return (this.rules as IYContainer).options;
+  get itemRules(): (IYField | IYContainer)[] {
+    return (this.rules as IYContainer).options as (IYField | IYContainer)[];
   }
 
-  get isValid() {
-    return true;
-  }
-
-  hasError(title: string) {}
-
-  trackByFn(index, item) {
-    return index; // or item.id
+  trackByFn(index: number) {
+    return index;
   }
 }

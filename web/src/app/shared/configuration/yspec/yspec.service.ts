@@ -32,20 +32,17 @@ export interface IYspec {
   [key: string]: IYRoot;
 }
 
-interface IBaseField {
+export interface IYField {
+  name: string;
   path: string[];
   type: simpleType;
-}
-
-export interface IYField extends IBaseField {
-  name: string;
   controlType: controlType;
   validator: ValidatorInfo;
 }
 
 export interface IYContainer {
   name: string;
-  type: matchType;
+  type: reqursionType;
   options: IYContainer | IYField | (IYContainer | IYField)[];
 }
 
@@ -82,7 +79,7 @@ export class YspecService {
     }
   }
 
-  field(field: IBaseField): IYField {
+  field(field: { type: simpleType; path: string[] }): IYField {
     const name = field.path.reverse()[0];
     return {
       name,
@@ -97,9 +94,9 @@ export class YspecService {
   }
 
   findRule(path: string[], name: string): boolean {
-    const [field, ...other] = [...path].reverse();
-    const rule = this.Root[other[0]];
-    return !!(rule && rule[name] && rule[name][field]);
+    const [field, parent] = path;
+    const rule = this.Root[parent];
+    return !!(rule && rule[name] && Array.isArray(rule[name]) && rule[name].includes(field));
   }
 
   list(item: string, path: string[]): IYContainer {
