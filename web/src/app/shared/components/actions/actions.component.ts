@@ -12,7 +12,7 @@
 import { AfterViewChecked, Component, ElementRef, Input, OnInit, QueryList, Renderer2, ViewChild, ViewChildren } from '@angular/core';
 import { MatMenuTrigger } from '@angular/material/menu';
 import { IAction } from '@app/core/types';
-import { fromEvent, Observable } from 'rxjs';
+import { fromEvent } from 'rxjs';
 import { debounceTime, tap } from 'rxjs/operators';
 
 import { BaseDirective } from '../../directives/base.directive';
@@ -22,10 +22,10 @@ import { BaseDirective } from '../../directives/base.directive';
   template: `
     <div #wrap>
       <button
-        #btn
+        *ngFor="let action of actions"
+        #button
         mat-raised-button
         color="warn"
-        *ngFor="let action of actions$ | async"
         [appForTest]="'action_btn'"
         [disabled]="isIssue"
         [appActions]="{ cluster: cluster, actions: [action] }"
@@ -40,9 +40,9 @@ import { BaseDirective } from '../../directives/base.directive';
       <button
         mat-raised-button
         color="warn"
+        class="menu-more-action"
         *ngFor="let a of forMenu"
         [appForTest]="'action_btn'"
-        class="menu-more-action"
         [disabled]="isIssue"
         [appActions]="{ cluster: cluster, actions: [a] }"
       >
@@ -54,18 +54,13 @@ import { BaseDirective } from '../../directives/base.directive';
 })
 export class ActionsComponent extends BaseDirective implements OnInit, AfterViewChecked {
   separ = 0;
+  actions: IAction[] = [];
+
   @Input() isIssue: boolean;
   @Input() cluster: { id: number; hostcomponent: string };
-  actions: IAction[];
-  actions$: Observable<IAction[]>;
-  @Input() set source(value$: Observable<IAction[]>) {
-    this.actions$ = value$.pipe(
-      tap(a => {
-        this.actions = a;
-        if (!a.length) this.render.setStyle(this.more.nativeElement, 'display', 'none');
-      }),
-      this.takeUntil()
-    );
+  @Input() set source(actions: IAction[]) {
+    this.actions = actions;
+    if (!actions.length) this.render.setStyle(this.more.nativeElement, 'display', 'none');
   }
 
   stateButtons = 0;
@@ -73,7 +68,7 @@ export class ActionsComponent extends BaseDirective implements OnInit, AfterView
 
   @ViewChild('wrap', { read: ElementRef, static: true }) el: ElementRef;
   @ViewChild('more', { read: ElementRef, static: true }) more: ElementRef;
-  @ViewChildren('btn', { read: ElementRef }) buttons: QueryList<ElementRef>;
+  @ViewChildren('button', { read: ElementRef }) buttons: QueryList<ElementRef>;
   @ViewChild(MatMenuTrigger, { static: true }) trigger: MatMenuTrigger;
 
   constructor(private render: Renderer2) {
@@ -83,9 +78,9 @@ export class ActionsComponent extends BaseDirective implements OnInit, AfterView
   ngOnInit() {
     fromEvent(window, 'resize')
       .pipe(
+        this.takeUntil(),
         tap(() => this.trigger.closeMenu()),
-        debounceTime(100),
-        this.takeUntil()
+        debounceTime(100)
       )
       .subscribe(() => this.onresize());
   }
@@ -101,26 +96,19 @@ export class ActionsComponent extends BaseDirective implements OnInit, AfterView
     const el = this.el.nativeElement;
     this.render.setStyle(el, 'width', 'auto');
 
-    const dw = this.calcWidth(+this.el.nativeElement.clientWidth);
-    this.render.setStyle(el, 'width', dw);
+    const bw = this.buttons.map<number>(b => b.nativeElement.offsetWidth + 10);
+    const dw = this.calcWidth(+this.el.nativeElement.clientWidth, bw);
+    this.render.setStyle(el, 'width', dw[0]);
 
     const w = el.clientWidth,
       sw = el.scrollWidth;
     this.render.setStyle(this.more.nativeElement, 'display', w === 0 || w >= sw ? 'none' : 'block');
 
-    this.forMenu = this.actions.slice(this.separ);
+    this.forMenu = this.actions.slice(dw[1]);
   }
 
-  calcWidth(w: number) {
-    let width = 0;
-    this.buttons.some((c, i) => {
-      const d = width + (c.nativeElement.offsetWidth + 10);
-      if (d > w) {
-        this.separ = i;
-        return true;
-      } else width = d;
-    });
-
-    return `${width}px`;
+  calcWidth(w: number, bw: number[]): [string, number] {
+    const r = bw.reduce((p, c, i) => (p[0] + c > w ? p : [p[0] + c, i]), [0, 0]);
+    return [`${r[0]}px`, r[1]];
   }
 }

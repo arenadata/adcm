@@ -11,37 +11,39 @@
 // limitations under the License.
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ActionMasterComponent as MasterComponent } from './master.component';
-import { ApiService } from '@app/core/api';
-import { FieldService } from '@app/shared/configuration/field.service';
+import { ActionsComponent } from './actions.component';
+import { MaterialModule } from '@app/shared/material.module';
 
-describe('MasterComponent', () => {
-  let component: MasterComponent;
-  let fixture: ComponentFixture<MasterComponent>;
-  let ApiServiceStub: Partial<ApiService>;
-  let FieldServiceStub: Partial<FieldService>;
+describe('ActionsComponent', () => {
+  let component: ActionsComponent;
+  let fixture: ComponentFixture<ActionsComponent>;
 
   beforeEach(async(() => {
-
-    ApiServiceStub = {};
-    FieldServiceStub = {};
-
     TestBed.configureTestingModule({
-      declarations: [MasterComponent],
-      providers: [
-        { provide: ApiService, useValue: ApiServiceStub },
-        { provide: FieldService, useValue: FieldServiceStub }
-      ]
+      imports: [MaterialModule],
+      declarations: [ActionsComponent]
     }).compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(MasterComponent);
+    fixture = TestBed.createComponent(ActionsComponent);
     component = fixture.componentInstance;
+    component.source = [];
     fixture.detectChanges();
   });
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('Func `calcWidth` when the width of the window is greater than the buttons width sum', () => {
+    const arr = [40, 30, 60];
+    const result = component.calcWidth(1200, arr);
+    expect(result).toEqual(['130px', arr.length - 1]);
+  });
+
+  it('Func `calcWidth` when the width of the window is less than the buttons width sum', () => {
+    const result = component.calcWidth(500, [140, 130, 160, 120, 80, 120]);
+    expect(result).toEqual(['430px', 2]);
   });
 });

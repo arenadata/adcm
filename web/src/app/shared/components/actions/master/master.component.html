@@ -1,7 +1,7 @@
 <ng-container *ngIf="!action; else simple">
   <i>Let's choose first</i>
   <mat-action-list>
-    <button class="action-button warn" color="primary" mat-list-item *ngFor="let action of model.actions"
+    <button class="action-button warn" color="primary" mat-list-item *ngFor="let action of model?.actions"
       (click)="choose(action)">{{ action.display_name }}</button>
   </mat-action-list>
   <p><button mat-raised-button (click)="cancel()" color="primary">Cancel</button></p>
@@ -12,7 +12,7 @@
     <mat-step [stepControl]="fields_step.form">
       <ng-template matStepLabel>Configuration</ng-template>
       <div class="config-tools"><mat-checkbox [(ngModel)]="advanced" *ngIf="isAdvanced">Advanced</mat-checkbox></div>
-      <app-config-fields #fields_step [model]="action.config"></app-config-fields>
+      <app-config-fields #fields_step [model]="action?.config"></app-config-fields>
       <div class="controls">
         <button mat-raised-button (click)="cancel()" color="primary">Cancel</button>
         <button mat-raised-button matStepperNext color="primary">Next</button>
@@ -21,7 +21,7 @@
     <mat-step>
       <ng-template matStepLabel>Host Components</ng-template>
       <app-service-host [tabIndex]="2" [cluster]="model.cluster" #hostmap_step [hideButton]="true"
-        [actionParameters]="action.hostcomponentmap" [fixedButton]="false"></app-service-host>
+        [actionParameters]="action?.hostcomponentmap" [fixedButton]="false"></app-service-host>
       <div class="controls">
         <button mat-raised-button matStepperPrevious color="primary">Back</button>
         <span [style.flex]="1"></span>
@@ -36,12 +36,12 @@
   </mat-horizontal-stepper>
   <div *ngIf="isConfig && !isHmcRequired">
     <div class="config-tools"><mat-checkbox [(ngModel)]="advanced" *ngIf="isAdvanced">Advanced</mat-checkbox></div>
-    <app-config-fields #fields [model]="action.config" [ngStyle]="{ display: 'inherit' }"></app-config-fields>
+    <app-config-fields #fields [model]="action?.config" [ngStyle]="{ display: 'inherit' }"></app-config-fields>
     <ng-container *ngTemplateOutlet="controls; context: { value: { config: fields } }"></ng-container>
   </div>
   <div *ngIf="isHmcRequired && !isConfig">
     <app-service-host [tabIndex]="2" [cluster]="model.cluster" [hideButton]="true" #hostmap
-      [actionParameters]="action.hostcomponentmap" [fixedButton]="false"></app-service-host>
+      [actionParameters]="action?.hostcomponentmap" [fixedButton]="false"></app-service-host>
     <ng-container *ngTemplateOutlet="controls; context: { value: { hostmap: hostmap } }"></ng-container>
   </div>
   <div *ngIf="!isHmcRequired && !isConfig">
