@@ -111,31 +111,29 @@ class LogStorageView(GenericAPIView):
             raise AdcmApiEx(e.code, e.msg, e.http_code)
 
 
-class DownloadLogFileView(GenericAPIView):
+def download_log_file(request, job_id, log_id):
+    try:
+        job = JobLog.objects.get(id=job_id)
+        log_storage = LogStorage.objects.get(id=log_id, job=job)
 
-    def get(self, request, job_id, log_id):
-        try:
-            job = JobLog.objects.get(id=job_id)
-            log_storage = LogStorage.objects.get(id=log_id, job=job)
+        if log_storage.type in ['stdout', 'stderr']:
+            filename = f'{job.id}-{log_storage.name}-{log_storage.type}.{log_storage.format}'
+        else:
+            filename = f'{job.id}-{log_storage.name}.{log_storage.format}'
 
-            if log_storage.type in ['stdout', 'stderr']:
-                filename = f'{job.id}-{log_storage.name}-{log_storage.type}.{log_storage.format}'
-            else:
-                filename = f'{job.id}-{log_storage.name}.{log_storage.format}'
+        if log_storage.format == 'txt':
+            mime_type = 'text/plain'
+        else:
+            mime_type = 'application/json'
 
-            if log_storage.format == 'txt':
-                mime_type = 'text/plain'
-            else:
-                mime_type = 'application/json'
-
-            response = HttpResponse(log_storage.body)
-            response['Content-Type'] = mime_type
-            response['Content-Length'] = len(log_storage.body)
-            response['Content-Encoding'] = 'UTF-8'
-            response['Content-Disposition'] = f'attachment; filename={filename}'
-            return response
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+        response = HttpResponse(log_storage.body)
+        response['Content-Type'] = mime_type
+        response['Content-Length'] = len(log_storage.body)
+        response['Content-Encoding'] = 'UTF-8'
+        response['Content-Disposition'] = f'attachment; filename={filename}'
+        return response
+    except AdcmEx as e:
+        raise AdcmApiEx(e.code, e.msg, e.http_code)
 
 
 class Task(PageView):
