@@ -30,7 +30,7 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
   request$: Observable<WorkerInstance>;
   isIssue: boolean;
   upgradable = false;
-  actions: Observable<IAction[]> = of([]);
+  actions: IAction[] = [];
   issues: Issue;
   status: number | string;
 
@@ -68,7 +68,7 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
 
     const parent = w.current.typeName === 'cluster' ? null : w.cluster;
 
-    this.actions = !actions || !actions.length ? this.service.getActions() : of(actions);
+    this.actions = actions;
     this.upgradable = upgradable;
     this.issues = issue;
     this.status = status;
