@@ -43,6 +43,7 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
   expandedTask: Task | null;
 
   paramMap: ParamMap;
+  dataCount = 0;
 
   @ViewChild(MatPaginator, { static: true })
   paginator: MatPaginator;
@@ -138,6 +139,7 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
     this.isDisabled = true;
     this.api.getOne<Task>('task', id).subscribe(task => {
       this.dataSource.data = [task, ...this.dataSource.data];
+      this.paginator.length = ++this.dataCount;
       this.dataSource._updateChangeSubscription();
       setTimeout(_ => (this.isDisabled = false), 500);
     });
@@ -147,6 +149,7 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
     this.api.root.pipe(switchMap(root => this.api.getList<Task>(root.task, this.paramMap))).subscribe(data => {
       this.dataSource.data = data.results;
       this.paginator.length = data.count;
+      this.dataCount = data.count;
       if (data.results.length) localStorage.setItem('lastJob', data.results[0].id.toString());
       this.dataSource._updateChangeSubscription();
     });
