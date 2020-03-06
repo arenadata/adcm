@@ -37,7 +37,7 @@ import { FieldDirective } from './field.directive';
       </mat-form-field>
       <span class="info">
         <mat-icon [ngClass]="'info-icon'" matSuffix *ngIf="field.description" [appTooltip]="field.description">info_outline</mat-icon>
-        <button mat-icon-button matSuffix (click)="restore()" color="primary"><mat-icon>refresh</mat-icon></button>
+        <button mat-icon-button matSuffix (click)="restore()" color="primary" [appTooltip]="'Reset to default'"><mat-icon>refresh</mat-icon></button>
       </span>
     </ng-container>
   `,
