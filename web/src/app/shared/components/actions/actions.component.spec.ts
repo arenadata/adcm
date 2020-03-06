@@ -39,17 +39,24 @@ describe('ActionsComponent', () => {
   it('Func `calcWidth` when the width of the window is greater than the buttons width sum', () => {
     const arr = [40, 30, 60];
     const result = component.calcWidth(1200, arr);
-    expect(result).toEqual([130, arr.length, false]);
+    expect(result).toEqual([arr.length, 130, false]);
   });
 
   it('Func `calcWidth` when the width of the window is less than the buttons width sum', () => {
     const result = component.calcWidth(1189, [132, 157, 292, 101, 169, 123, 133, 124, 76, 146, 74]);
-    expect(result).toEqual([1107, 7, true]);
+    expect(result).toEqual([7, 1107, true]);
 
     const result2 = component.calcWidth(1240, [132, 157, 292, 101, 169, 123, 133, 124, 76, 146, 74]);
-    expect(result2).toEqual([1231, 8, true]);
+    expect(result2).toEqual([8, 1231, true]);
 
-    const result3 = component.calcWidth(1300, [132, 157, 292, 101, 169, 123, 133, 124, 76, 146, 74]);
-    expect(result3).toEqual([1231, 8, true]);
+    const result3 = component.calcWidth(1305, [132, 157, 292, 101, 169, 123, 133, 124, 76, 146, 74]);
+    expect(result3).toEqual([8, 1231, true]);
+
+    const result4 = component.calcWidth(1310, [132, 157, 292, 101, 169, 123, 133, 124, 76, 146, 74]);
+    expect(result4).toEqual([9, 1307, true]);
+
+    //  1307 + 76
+    const result5 = component.calcWidth(1390, [132, 157, 292, 101, 169, 123, 133, 124, 76, 146, 74]);
+    expect(result5).toEqual([9, 1307, true]);
   });
 });

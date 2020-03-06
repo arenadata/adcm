@@ -95,12 +95,12 @@ export class ActionsComponent extends BaseDirective implements OnInit, AfterView
     const bw = this.buttons.map<number>(b => b.nativeElement.offsetWidth + 10);
     const elWidth = +this.el.nativeElement.clientWidth - 50;
     const dw = this.calcWidth(elWidth, bw);
-    this.render.setStyle(this.wrap.nativeElement, 'width', `${dw[0]}px`);
-    this.render.setStyle(this.more.nativeElement, 'display', !dw[2] ? 'none' : 'block');
-    this.forMenu = this.actions.slice(dw[1]);
+    this.forMenu = this.actions.slice(dw[0]);
+    this.render.setStyle(this.wrap.nativeElement, 'width', `${dw[1]}px`);
+    this.render.setStyle(this.more.nativeElement, 'display', dw[2] ? 'block' : 'none');
   }
 
   calcWidth(w: number, bw: number[]): [number, number, boolean] {
-    return bw.reduce((p, c, i) => ( p[2] || (p[0] + c > w) ? [p[0], p[1], true] : [p[0] + c, i + 1, false]), [0, 0, false]);
+    return bw.reduce((p, c, i) => (p[2] || p[1] + c > w ? [p[0], p[1], true] : [i + 1, p[1] + c, false]), [0, 0, false]);
   }
 }
