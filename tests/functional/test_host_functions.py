@@ -16,6 +16,9 @@ import random
 import allure
 import coreapi
 import pytest
+
+from adcm_client.objects import ADCMClient
+from adcm_pytest_plugin.utils import get_data_dir
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.docker import DockerWrapper
 from jsonschema import validate
@@ -26,6 +29,23 @@ from tests.library import steps
 
 BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
 SCHEMAS = os.path.join(os.path.dirname(__file__), "schemas/")
+
+host_bad_configs = (({"str-key": "{1bbb}", "required": "158", "option": "my.host",
+                      "sub": {"sub1": 3}, "credentials": {"sample_string": "test",
+                                                          "read_only_initiated": 1}},
+                     "should be integer"),
+                    ({"str-key": 61, "required": 158, "fkey": 18.3,
+                      "option": "my.host", "sub": {"sub1": 3},
+                      "credentials": {"sample_string": "txt",
+                                      "read_only_initiated": {}}},
+                     'should be string'),
+                    ({"str-key": "{1bbb}", "required": 158, "fkey": 18.3,
+                      "option": "my.host", "sub": {"sub1": 9}},
+                     'not in option list'),
+                    ({"str-key": "{1bbb}", "required": 158, "option": 8080,
+                      "sub": {"sub1": {"foo": "bar"}}},
+                     'should be flat')
+                    )
 
 
 @pytest.fixture(scope="module")
@@ -44,14 +64,22 @@ def adcm(image, request):
 
 @pytest.fixture(scope="module")
 def client(adcm):
-    steps.upload_bundle(adcm.api.objects, BUNDLES + "cluster_bundle")
-    steps.upload_bundle(adcm.api.objects, BUNDLES + "hostprovider_bundle")
+    steps.upload_bundle(adcm.api.objects, get_data_dir(__file__, 'hostprovider_bundle'))
+    steps.upload_bundle(adcm.api.objects, get_data_dir(__file__, 'cluster_bundle'))
     return adcm.api.objects
 
 
-class TestHost:
-    # *** Basic tests for hosts ***
+@pytest.fixture(scope="module")
+def host(sdk_client_ms: ADCMClient):
+    bundle = sdk_client_ms.upload_from_fs(get_data_dir(__file__, 'hostprovider_bundle'))
+    hp = bundle.provider_create(utils.random_string())
+    return hp.host_create(utils.random_string())
 
+
+class TestHost:
+    """
+    Basic tests for host
+    """
     def test_validate_host_prototype(self, client):
         host_prototype = json.loads(json.dumps(client.stack.host.list()[0]))
         schema = json.load(
@@ -61,25 +89,34 @@ class TestHost:
             assert validate(host_prototype, schema) is None
         steps.delete_all_data(client)
 
-    def test_create_host(self, client):
-        actual = steps.create_host_w_default_provider(client, utils.random_string())
-        expected = steps.read_host(client, actual['id'])
+    def test_create_host(self, sdk_client_fs: ADCMClient):
+        """Check that host have same fqdn and status after reread config
+        """
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider_bundle'))
+        hp = bundle.provider_create(utils.random_string())
+        host = hp.host_create(utils.random_string())
+        host_status_before = host.status
+        host_fqdn_before = host.fqdn
+        host.reread()
+        host_status_after = host.status
+        host_fqdn_after = host.fqdn
+        assert host_fqdn_before == host_fqdn_after
+        assert host_status_before == host_status_after
 
-        # status is a variable, so it is no good to compare it
-        assert 'status' in actual
-        assert 'status' in expected
-        del actual['status']
-        del expected['status']
-        with allure.step('Check created host with the data from the API'):
-            assert actual == expected
-        steps.delete_all_data(client)
-
-    def test_shouldnt_create_duplicate_host(self, client):
-        steps.create_host_w_default_provider(client, 'duplicate')
+    def test_shouldnt_create_duplicate_host(self, sdk_client_fs: ADCMClient):
+        """We have restriction for create duplicated hosts (wuth the same fqdn).
+        Scenario:
+        1. Create hostprovider
+        2. Create first host
+        3. Create second host with the same FQDN
+        4. Check that we've got 409 error for second host creation
+        """
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider_simple'))
+        hp = bundle.provider_create(utils.random_string())
+        hp.host_create("duplicate")
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-            steps.create_host_w_default_provider(client, 'duplicate')
+            hp.host_create('duplicate')
         err.HOST_CONFLICT.equal(e, 'duplicate host')
-        steps.delete_all_data(client)
 
     def test_shouldnt_create_host_with_unknown_prototype(self, client):
         provider_id = client.provider.create(prototype_id=client.stack.provider.list()[0]['id'],
@@ -89,7 +126,6 @@ class TestHost:
                                provider_id=provider_id,
                                fqdn=utils.random_string())
         err.PROTOTYPE_NOT_FOUND.equal(e, 'prototype doesn\'t exist')
-        steps.delete_all_data(client)
 
     def test_shouldnt_create_host_wo_prototype(self, client):
         provider = client.provider.create(prototype_id=client.stack.provider.list()[0]['id'],
@@ -98,39 +134,45 @@ class TestHost:
             with pytest.raises(coreapi.exceptions.ParameterError) as e:
                 client.host.create(provider_id=provider['id'], fqdn=utils.random_string())
             assert str(e.value) == "{'prototype_id': 'This parameter is required.'}"
-        steps.delete_all_data(client)
 
     def test_shouldnt_create_host_wo_provider(self, client):
         proto = utils.get_random_host_prototype(client)
         with pytest.raises(coreapi.exceptions.ParameterError) as e:
             client.host.create(prototype_id=proto['id'], fqdn=utils.random_string())
         assert str(e.value) == "{'provider_id': 'This parameter is required.'}"
-        steps.delete_all_data(client)
 
-    def test_create_host_with_max_length_plus_1(self, client):
+    def test_create_host_with_max_length_plus_1(self, sdk_client_fs: ADCMClient):
+        """We cannot create host with name more then max length
+        """
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider_simple'))
+        hp = bundle.provider_create(utils.random_string())
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-            steps.create_host_w_default_provider(client, utils.random_string(257))
+            hp.host_create(utils.random_string(257))
         err.LONG_NAME.equal(e, 'Host name is too long. Max length is 256')
-        steps.delete_all_data(client)
 
-    def test_shouldnt_create_host_with_wrong_name(self, client):
+    def test_shouldnt_create_host_with_wrong_name(self, sdk_client_fs: ADCMClient):
+        """Check  that host name cannot contain special characters
+        """
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider_simple'))
+        hp = bundle.provider_create(utils.random_string())
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-            steps.create_host_w_default_provider(
-                client, utils.random_string() + utils.random_special_chars())
+            hp.host_create(utils.random_string() + utils.random_special_chars())
         err.WRONG_NAME.equal(e, 'Host name is incorrect. Only latin characters, digits, dots (.)')
-        steps.delete_all_data(client)
 
-    def test_get_host_list(self, client):
-        expected_list = []
-        actual_list = []
+    def test_get_host_list(self, sdk_client_fs: ADCMClient):
+        """Create multiple hosts and check that all hosts was created
+        """
+        expected_list = set()
+        actual_list = set()
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider_simple'))
+        hp = bundle.provider_create(utils.random_string())
         for fqdn in utils.random_string_list():
-            steps.create_host_w_default_provider(client, fqdn)
-            expected_list.append(fqdn)
-        for host in client.host.list():
-            actual_list.append(host['fqdn'])
+            hp.host_create(fqdn)
+            expected_list.add(fqdn)
+        for host in sdk_client_fs.host_list():
+            actual_list.add(host.fqdn)
         with allure.step('Check created hosts with the data from the API'):
             assert actual_list == expected_list
-        steps.delete_all_data(client)
 
     def test_get_host_info(self, client):
         host = steps.create_host_w_default_provider(client, utils.random_string())
@@ -139,51 +181,53 @@ class TestHost:
             del actual['status']
             del host['status']
             assert actual == host
-        steps.delete_all_data(client)
 
-    def test_delete_host(self, client):
-        expected = None
-        host = steps.create_host_w_default_provider(client, utils.random_string())
-        with allure.step('Delete host'):
-            actual = client.host.delete(host_id=host['id'])
-        with allure.step('Check that answer is equals None'):
-            assert actual == expected
-        steps.delete_all_data(client)
+    def test_delete_host(self, sdk_client_fs: ADCMClient):
+        """Check that we can delete host"""
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider_simple'))
+        hp = bundle.provider_create(utils.random_string())
+        host = hp.host_create("deletion_host")
+        deletion_result = host.delete()
+        assert deletion_result is None
 
-    def test_should_return_correct_error_when_read_deleted(self, client):
-        host = steps.create_host_w_default_provider(client, utils.random_string())
-        steps.delete_all_hosts(client)
+    def test_should_return_correct_error_when_read_deleted(self, sdk_client_fs: ADCMClient):
+        """Check that we have 409 error if host not found"""
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider_simple'))
+        hp = bundle.provider_create(utils.random_string())
+        host = hp.host_create(utils.random_string())
+        host.delete()
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-            with allure.step('Try to get info about deleted host'):
-                steps.read_host(client, host['id'])
-            err.HOST_NOT_FOUND.equal(e)
-        steps.delete_all_data(client)
+            host.reread()
+        err.HOST_NOT_FOUND.equal(e)
 
-    def test_should_return_correct_error_when_delete_nonexist_host(self, client):
-        host = steps.create_host_w_default_provider(client, utils.random_string())
-        steps.delete_all_hosts(client)
+    def test_should_return_correct_error_when_delete_nonexist_host(
+            self, sdk_client_fs: ADCMClient):
+        """If we try to delete deleted host we've got 409 error.
+        """
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider_simple'))
+        hp = bundle.provider_create(utils.random_string())
+        host = hp.host_create(utils.random_string())
+        host.delete()
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-            client.host.delete(host_id=host['id'])
+            host.delete()
         err.HOST_NOT_FOUND.equal(e, 'host doesn\'t exist')
 
     # *** Basic tests for hostcomponent ***
-    def test_create_hostcomponent(self, client):
-        cluster = steps.create_cluster(client)
-        host = steps.create_host_w_default_provider(client, utils.random_string())
-        steps.add_host_to_cluster(client, host, cluster)
-        service_proto = steps.read_service(client, utils.get_random_service(client)['id'])
-        cluster_svc = client.cluster.service.create(cluster_id=cluster['id'],
-                                                    prototype_id=service_proto['id'])
-        component = client.cluster.service.component.list(cluster_id=cluster['id'],
-                                                          service_id=cluster_svc['id'])[0]
-        actual = client.cluster.hostcomponent.create(cluster_id=cluster['id'],
-                                                     hc=[{"host_id": host['id'],
-                                                          "service_id": cluster_svc['id'],
-                                                          "component_id": component['id']}])
-        expected = client.cluster.hostcomponent.read(cluster_id=cluster['id'],
-                                                     hs_id=actual[0]['id'])
-        assert actual[0] == expected
-        steps.delete_all_data(client)
+    def test_create_hostcomponent(self, sdk_client_fs: ADCMClient):
+        """Check that hostcomponent id the same in component list and for service
+        """
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(
+            __file__, 'cluster_service_hostcomponent'))
+        bundle_hp = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider_simple'))
+        cluster = bundle.cluster_create(utils.random_string())
+        hp = bundle_hp.provider_create(utils.random_string())
+        host = hp.host_create(utils.random_string())
+        cluster.host_add(host)
+        service = cluster.service_add(name="ZOOKEEPER")
+        component_list = service.component_list()
+        component = service.component(name='ZOOKEEPER_CLIENT')
+        assert component.component_id == component_list[0].component_id
+        assert component.name == component_list[0].name
 
     def test_get_hostcomponent_list(self, client):  # invalid case, random component takes in circle
         cluster = steps.create_cluster(client)
@@ -193,7 +237,6 @@ class TestHost:
         components = client.cluster.service.component.list(cluster_id=cluster['id'],
                                                            service_id=cluster_svc['id'])
         # create mapping between cluster and hosts, then create hostcomponent on host
-        expected_hostcomponent_list = []
         hostcomponent_list = []
         for fqdn in utils.random_string_list():
             host = steps.create_host_w_default_provider(client, fqdn)
@@ -206,10 +249,10 @@ class TestHost:
         actual_hs_list = client.cluster.hostcomponent.list(cluster_id=cluster['id'])
         with allure.step('Check created data with data from API'):
             assert actual_hs_list == expected_hostcomponent_list
-        steps.delete_all_data(client)
 
 
 class TestHostConfig:
+    """Class for test host configuration"""
 
     def test_config_history_url_must_point_to_the_host_config(self, client):
         host = steps.create_host_w_default_provider(client, utils.random_string())
@@ -229,6 +272,7 @@ class TestHostConfig:
     def test_get_default_host_config(self, client):
         # Get a default host config and validate it with json schema
         host = steps.create_host_w_default_provider(client, utils.random_string())
+        config_json = {}
         with allure.step('Get default configuration from host'):
             config = client.host.config.current.list(host_id=host['id'])
         if config:
@@ -237,16 +281,20 @@ class TestHostConfig:
         assert validate(config_json, schema) is None
         steps.delete_all_data(client)
 
-    def test_get_config_from_nonexistant_host(self, client):
-        # Get the configuration from a non existant host
+    def test_get_config_from_nonexistant_host(self, sdk_client_fs: ADCMClient):
+        """Get configuration for non exist host.
+        """
+        bundle_hp = sdk_client_fs.upload_from_fs(get_data_dir(
+            __file__, 'hostprovider_simple'))
+        hp = bundle_hp.provider_create(utils.random_string())
         with allure.step('Get host config from a non existant host'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-                client.host.config.list(host_id=random.randint(100, 500))
+                hp.host(host_id=random.randint(100, 500))
             err.HOST_NOT_FOUND.equal(e, 'host doesn\'t exist')
-        steps.delete_all_data(client)
 
     def test_shouldnt_create_host_config_when_config_not_json_string(self, client):
-        # Should not create host configuration when config string is not json
+        """Should not create host configuration when config string is not json
+        """
         host = steps.create_host_w_default_provider(client, utils.random_string())
         config = utils.random_string()
         with allure.step('Try to create the host config from non-json string'):
@@ -255,7 +303,8 @@ class TestHostConfig:
             err.JSON_ERROR.equal(e, 'config should not be just one string')
 
     def test_shouldnt_create_host_config_when_config_is_number(self, client):
-        # Should not create host configuration when config string is number
+        """Should not create host configuration when config string is number
+        """
         host = steps.create_host_w_default_provider(client, utils.random_string())
         config = random.randint(100, 999)
         with allure.step('Try to create the host configuration with a number'):
@@ -263,69 +312,26 @@ class TestHostConfig:
                 client.host.config.history.create(host_id=host['id'], config=config)
                 err.JSON_ERROR.equal(e, 'should not be just one int or float')
 
-    def test_shouldnt_create_host_config_when_parameter_is_not_integer(self, client):
-        host = steps.create_host_w_default_provider(client, utils.random_string())
-        config_w_illegal_param = {"str-key": "{1bbb}",
-                                  "required": "158",
-                                  "option": "my.host",
-                                  "sub": {"sub1": 3},
-                                  "credentials": {
-                                      "sample_string": "test",
-                                      "read_only_initiated": 1}}
+    @pytest.mark.parametrize("config, error", host_bad_configs)
+    def test_change_host_config_negative(self, host, config, error):
+        """Check that we have error if try to update host config with bad configuration
+        :param host: host object
+        :param config: dict with bad config
+        :param error: expected error
+        """
         with allure.step('Try to create config when parameter is not integer'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-                client.host.config.history.create(host_id=host['id'],
-                                                  description=utils.random_string(),
-                                                  config=config_w_illegal_param)
-            err.CONFIG_VALUE_ERROR.equal(e, 'should be integer')
+                host.config_set(config)
+                err.CONFIG_VALUE_ERROR.equal(e, error)
 
-    def test_should_create_host_config_when_parameter_is_integer_and_not_float(self, client):
-        host = steps.create_host_w_default_provider(client, utils.random_string())
-        config_w_illegal_param = {"str-key": "{1bbb}",
-                                  "required": 158,
-                                  "fkey": 18,
-                                  "option": "my.host",
-                                  "sub": {"sub1": 3},
-                                  "credentials": {"sample_string": "txt",
-                                                  "read_only_initiated": {}
-                                                  }
-                                  }
-
-        client.host.config.history.create(host_id=host['id'],
-                                          description=utils.random_string(),
-                                          config=config_w_illegal_param)
-
-    def test_shouldnt_create_host_config_when_parameter_is_not_string(self, client):
-        host = steps.create_host_w_default_provider(client, utils.random_string())
-        config_w_illegal_param = {"str-key": 61, "required": 158, "fkey": 18.3,
-                                  "option": "my.host", "sub": {"sub1": 3},
-                                  "credentials": {"sample_string": "txt",
-                                                  "read_only_initiated": {}}}
-        with allure.step('Try to create config when param is not float'):
-            with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-                client.host.config.history.create(host_id=host['id'],
-                                                  description=utils.random_string(),
-                                                  config=config_w_illegal_param)
-            err.CONFIG_VALUE_ERROR.equal(e, 'should be string')
-
-    def test_shouldnt_create_host_config_when_parameter_is_not_in_option_list(self, client):
-        host = steps.create_host_w_default_provider(client, utils.random_string())
-        config_w_illegal_param = {"str-key": "{1bbb}", "required": 158, "fkey": 18.3,
-                                  "option": "my.host", "sub": {"sub1": 9}}
-        with allure.step('Try to create config has not option in a list'):
-            with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-                client.host.config.history.create(host_id=host['id'],
-                                                  description=utils.random_string(),
-                                                  config=config_w_illegal_param)
-            err.CONFIG_VALUE_ERROR.equal(e, 'not in option list')
-
-    def test_shouldnt_create_host_config_when_subkey_has_dict_value(self, client):
-        host = steps.create_host_w_default_provider(client, utils.random_string())
-        broken_config = {"str-key": "{1bbb}", "required": 158, "option": 8080,
-                         "sub": {"sub1": {"foo": "bar"}}}
-        with allure.step('Try to create config that has a subkey with dict value'):
-            with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-                client.host.config.history.create(host_id=host['id'],
-                                                  description=utils.random_string(),
-                                                  config=broken_config)
-            err.CONFIG_VALUE_ERROR.equal(e, 'should be flat')
+    def test_should_create_host_config_when_parameter_is_integer_and_not_float(
+            self, sdk_client_fs: ADCMClient):
+        """Create host config for float parameter with integer
+        """
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider_bundle'))
+        hp = bundle.provider_create(utils.random_string())
+        host = hp.host_create(utils.random_string())
+        config = {"str-key": "{1bbb}", "required": 158, "fkey": 18, "option": "my.host",
+                  "sub": {"sub1": 3},
+                  "credentials": {"sample_string": "txt", "read_only_initiated": {}}}
+        host.config_set(config)

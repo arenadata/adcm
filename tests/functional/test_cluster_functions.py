@@ -16,6 +16,9 @@ import time
 import allure
 import coreapi
 import pytest
+
+from adcm_client.objects import ADCMClient
+from adcm_pytest_plugin.utils import get_data_dir
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.docker import DockerWrapper
 
@@ -42,8 +45,14 @@ def adcm(image, request):
 
 @pytest.fixture(scope="module")
 def client(adcm):
-    steps.upload_bundle(adcm.api.objects, BUNDLES + "cluster_bundle")
-    steps.upload_bundle(adcm.api.objects, BUNDLES + "hostprovider_bundle")
+    steps.upload_bundle(adcm.api.objects, get_data_dir(__file__, 'hostprovider_bundle'))
+    steps.upload_bundle(adcm.api.objects, get_data_dir(__file__, 'cluster_bundle'))
+    return adcm.api.objects
+
+
+@pytest.fixture(scope="module")
+def client_action_bundle(adcm):
+    steps.upload_bundle(adcm.api.objects, get_data_dir(__file__, 'cluster_action_bundle'))
     return adcm.api.objects
 
 
@@ -219,7 +228,8 @@ class TestCluster:
             err.PROTOTYPE_NOT_FOUND.equal(e, 'prototype doesn\'t exist')
         steps.delete_all_data(client)
 
-    def test_run_cluster_action(self, client):
+    def test_run_cluster_action(self, client_action_bundle):
+        client = client_action_bundle
         cluster = steps.create_cluster(client)
         client.cluster.config.history.create(cluster_id=cluster['id'], config={"required": 10})
         action = client.cluster.action.list(cluster_id=cluster['id'])
@@ -406,7 +416,8 @@ class TestClusterService:
                 e, 'task_generator() takes 1 positional argument but 2 were given')
         steps.delete_all_data(client)
 
-    def test_cluster_action_runs_task(self, client):
+    def test_cluster_action_runs_task(self, client_action_bundle):
+        client = client_action_bundle
         cluster = steps.create_cluster(client)
         client.cluster.config.history.create(cluster_id=cluster['id'], config={"required": 10})
         with allure.step('Create service in cluster'):
