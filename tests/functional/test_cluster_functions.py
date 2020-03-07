@@ -74,6 +74,9 @@ class TestCluster:
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_simple'))
         actual = bundle.cluster_create(utils.random_string(), "description")
         cluster_list = bundle.cluster_list()
+        cluster = None
+        cluster_id = None
+        proto_id = None
         if cluster_list:
             for cluster in cluster_list:
                 cluster_id = cluster.id
