@@ -1,6 +1,21 @@
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ItemComponent } from './item.component';
+import { FormGroup, FormControl } from '@angular/forms';
+import { IControl } from './root.component';
+import { MaterialModule } from '@app/shared/material.module';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
 describe('ItemComponent', () => {
   let component: ItemComponent;
@@ -8,6 +23,7 @@ describe('ItemComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
+      imports: [NoopAnimationsModule, MaterialModule],
       declarations: [ItemComponent]
     }).compileComponents();
   }));
@@ -15,11 +31,19 @@ describe('ItemComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(ItemComponent);
     component = fixture.componentInstance;
-    component.item = { name: 'test', rules: { name: '', type: 'string', validator: {}, controlType: 'textbox', path: [] }, parent: 'dict', value: {} };
+    const item: IControl = {
+      name: 'test',
+      type: 'string',
+      rules: { name: 'test', type: 'string', path: ['test'], validator: {}, controlType: 'textbox' },
+      form: new FormGroup({ test: new FormControl() }),
+      parent: 'dict',
+      value: {}
+    };
+    component.item = item;
     fixture.detectChanges();
   });
 
-  it('should create', () => {    
+  it('should create', () => {
     expect(component).toBeTruthy();
   });
 });

@@ -11,7 +11,7 @@
 // limitations under the License.
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ActionMasterComponent as  MasterComponent } from './master.component';
+import { ActionMasterComponent as MasterComponent } from './master.component';
 
 describe('MasterComponent', () => {
   let component: MasterComponent;
