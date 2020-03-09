@@ -41,6 +41,7 @@ urlpatterns = [
 
     path('user/', views.UserList.as_view(), name='user-list'),
     path('user/<name:username>/', views.UserDetail.as_view(), name='user-details'),
+    path('user/<name:username>/permission/', views.AddUserPerm.as_view(), name='add-user-perm'),
     path('user/<name:username>/password/', views.UserPasswd.as_view(), name='user-passwd'),
 
     path('profile/', views.ProfileList.as_view(), name='profile-list'),

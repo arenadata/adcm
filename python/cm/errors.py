@@ -47,6 +47,7 @@ ERRORS = {
     'LOG_NOT_FOUND': ("log file is not found", rfs.HTTP_404_NOT_FOUND, ERR),
     'UPGRADE_NOT_FOUND': ("upgrade is not found", rfs.HTTP_404_NOT_FOUND, ERR),
     'USER_NOT_FOUND': ("user profile is not found", rfs.HTTP_404_NOT_FOUND, ERR),
+    'PERMISSION_NOT_FOUND': ("permission is not found", rfs.HTTP_404_NOT_FOUND, ERR),
 
     'MODULE_NOT_FOUND': ("module doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),
     'FUNCTION_NOT_FOUND': ("function doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),

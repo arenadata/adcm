@@ -13,7 +13,7 @@
 # pylint: disable=duplicate-except,attribute-defined-outside-init,too-many-lines
 
 import rest_framework
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Permission
 from django.db import transaction
 from django.utils import timezone
 from django_filters import rest_framework as drf_filters
@@ -162,6 +162,32 @@ class UserPasswd(GenericAPIPermView):
         user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
         serializer = self.serializer_class(user, data=request.data, context={'request': request})
         return update(serializer)
+
+
+class AddUserPerm(GenericAPIPermView):
+    queryset = User.objects.all()
+    serializer_class = api.serializers.AddPermSerializer
+
+    def post(self, request, username):
+        """
+        Add user permission
+        """
+        user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
+        serializer = self.serializer_class(user, data=request.data, context={'request': request})
+        return update(serializer)
+
+    def delete(self, request, username):
+        """
+        Delete user permission
+        """
+        user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        perm = check_obj(
+            Permission, {'codename': serializer.data['codename']}, 'PERMISSION_NOT_FOUND'
+        )
+        user.user_permissions.remove(perm)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ProfileList(PageViewAdd):

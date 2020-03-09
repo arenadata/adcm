@@ -14,7 +14,7 @@ import json
 import django.contrib.auth
 from django.db import IntegrityError, transaction
 from django.core.exceptions import ObjectDoesNotExist
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Permission
 
 from rest_framework import serializers
 from rest_framework.reverse import reverse
@@ -123,6 +123,12 @@ class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):
         return attrs
 
 
+class PermSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    codename = serializers.CharField()
+    content_type = serializers.CharField()
+
+
 class UserSerializer(serializers.Serializer):
     class MyUrlField(UrlField):
         def get_kwargs(self, obj):
@@ -133,6 +139,7 @@ class UserSerializer(serializers.Serializer):
     url = MyUrlField(read_only=True, view_name='user-details')
     change_password = MyUrlField(read_only=True, view_name='user-passwd')
     is_superuser = serializers.BooleanField(required=False)
+    user_permissions = PermSerializer(many=True)
 
     @transaction.atomic
     def create(self, validated_data):
@@ -146,6 +153,17 @@ class UserSerializer(serializers.Serializer):
             return user
         except IntegrityError:
             raise AdcmApiEx("USER_CONFLICT", 'user already exists')
+
+
+class AddPermSerializer(serializers.Serializer):
+    codename = serializers.CharField()
+
+    def update(self, user, validated_data):   # pylint: disable=arguments-differ
+        perm = check_obj(
+            Permission, {'codename': validated_data.get('codename')}, 'PERMISSION_NOT_FOUND'
+        )
+        user.user_permissions.add(perm)
+        return perm
 
 
 class UserPasswdSerializer(serializers.Serializer):
