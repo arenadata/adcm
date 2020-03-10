@@ -14,6 +14,7 @@ import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { RootComponent } from './root.component';
 import { FieldService } from '../field.service';
 import { FormBuilder } from '@angular/forms';
+import { IYContainer } from '../yspec/yspec.service';
 
 describe('RootComponent', () => {
   let component: RootComponent;
@@ -21,15 +22,28 @@ describe('RootComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ RootComponent ],
+      declarations: [RootComponent],
       providers: [FieldService, FormBuilder]
-    })
-    .compileComponents();
+    }).compileComponents();
   }));
 
   beforeEach(() => {
     fixture = TestBed.createComponent(RootComponent);
     component = fixture.componentInstance;
+  
+    const item: IYContainer = {
+      name: 'test',
+      type: 'dict',
+      options: {
+        name: 'test',
+        path: ['test'],
+        type: 'string',
+        controlType: 'textbox',
+        validator: {}
+      }
+    };
+    component.options = item;
+    
     fixture.detectChanges();
   });
 

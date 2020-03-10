@@ -29,6 +29,46 @@ const simpleStr: IYspec = {
   }
 };
 
+const ex_policy: IYspec = {
+  volume: {
+    match: 'dict',
+    items: {
+      name: 'string',
+      disk: 'string',
+      max_data_part_size_bytes: 'int'
+    },
+    required_items: ['name']
+  },
+
+  volumes: {
+    match: 'list',
+    item: 'volume'
+  },
+
+  policy: {
+    match: 'dict',
+    items: { name: 'string', move_factor: 'float', volumes_list: 'volumes' },
+    required_items: ['move_factor']
+  },
+
+  root: {
+    match: 'list',
+    item: 'policy'
+  },
+  boolean: {
+    match: 'bool'
+  },
+  string: {
+    match: 'string'
+  },
+  int: {
+    match: 'int'
+  },
+  float: {
+    match: 'float'
+  }
+};
+
 describe('YspecService', () => {
   let service: YspecService;
 
@@ -97,6 +137,80 @@ describe('YspecService', () => {
     const _out = service.build();
     //console.log(_out);
     expect(_out).toEqual(output);
+  });
+
+  it('Funcion findRules check required_items param 2 level', () => {
+    service.Root = ex_policy;
+    const func1 = service.findRule(['move_factor', 'policy'], 'required_items');
+    expect(func1).toBeTrue();
+  });
+
+  it('Funcion findRules check required_items param 4 level', () => {
+    service.Root = ex_policy;
+    const func2 = service.findRule(['name', 'volume', 'volumes_list', 'policy'], 'required_items');
+    expect(func2).toBeTrue();
+  });
+
+  it('Test required items', () => {
+    service.Root = ex_policy;
+
+    const output: IYContainer = {
+      type: 'list',
+      name: 'root',
+      options: {
+        type: 'dict',
+        name: 'policy',
+        options: [
+          {
+            name: 'name',
+            type: 'string',
+            path: ['name', 'policy'],
+            controlType: 'textbox',
+            validator: { required: false, pattern: null }
+          },
+          {
+            name: 'move_factor',
+            type: 'float',
+            path: ['move_factor', 'policy'],
+            controlType: 'textbox',
+            validator: { required: true, pattern: /^[-]?[0-9]+(\.[0-9]+)?$/ }
+          },
+          {
+            type: 'list',
+            name: 'volumes_list',
+            options: {
+              type: 'dict',
+              name: 'volume',
+              options: [
+                {
+                  name: 'name',
+                  type: 'string',
+                  path: ['name', 'volume', 'volumes_list', 'policy'],
+                  controlType: 'textbox',
+                  validator: { required: true, pattern: null }
+                },
+                {
+                  name: 'disk',
+                  type: 'string',
+                  path: ['disk', 'volume', 'volumes_list', 'policy'],
+                  controlType: 'textbox',
+                  validator: { required: false, pattern: null }
+                },
+                {
+                  name: 'max_data_part_size_bytes',
+                  type: 'int',
+                  path: ['max_data_part_size_bytes', 'volume', 'volumes_list', 'policy'],
+                  controlType: 'textbox',
+                  validator: { required: false, pattern: /^[-]?\d+$/ }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    };
+
+    expect(service.build()).toEqual(output);
   });
 
   it('Scheme as tree :: dictionary with inner elements', () => {
