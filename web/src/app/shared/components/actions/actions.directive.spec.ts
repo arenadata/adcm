@@ -18,7 +18,7 @@ import { ActionParameters, ActionsDirective } from './actions.directive';
 
 const TestParams: ActionParameters = {
   cluster: { id: 1, hostcomponent: '' },
-  action: {
+  actions: [{
     name: 'test',
     display_name: 'display_name_test',
     run: 'url',
@@ -26,7 +26,7 @@ const TestParams: ActionParameters = {
     hostcomponentmap: null,
     button: null,
     ui_options: null
-  }
+  }]
 };
 
 @Component({
