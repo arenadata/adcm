@@ -13,6 +13,10 @@ import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ItemComponent } from './item.component';
+import { FormGroup, FormControl } from '@angular/forms';
+import { IControl } from './root.component';
+import { MaterialModule } from '@app/shared/material.module';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
 describe('ItemComponent', () => {
   let component: ItemComponent;
@@ -28,11 +32,19 @@ describe('ItemComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(ItemComponent);
     component = fixture.componentInstance;
-    component.item = { name: 'test', rules: { name: '', type: 'string', validator: {}, controlType: 'textbox', path: [] }, parent: 'dict', value: {} };
+    const item: IControl = {
+      name: 'test',
+      type: 'string',
+      rules: { name: 'test', type: 'string', path: ['test'], validator: {}, controlType: 'textbox' },
+      form: new FormGroup({ test: new FormControl() }),
+      parent: 'dict',
+      value: {}
+    };
+    component.item = item;
     fixture.detectChanges();
   });
 
-  it('should create', () => {    
+  it('should create', () => {
     expect(component).toBeTruthy();
   });
 });

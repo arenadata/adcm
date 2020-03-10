@@ -46,7 +46,11 @@ export class FieldDirective extends BaseDirective implements OnInit {
     if (field) {
       if (this.field.type === 'json') {
         field.setValue(value === null ? '' : JSON.stringify(value, undefined, 4));
+      } else if (this.field.type === 'boolean') {
+        const allow = String(value) === 'true' || String(value) === 'false' || String(value) === 'null';
+        field.setValue(allow ? value : null);
       } else field.setValue(value);
+      this.field.value = field.value;
     }
   }
 }
