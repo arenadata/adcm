@@ -126,7 +126,14 @@ class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):
 class PermSerializer(serializers.Serializer):
     name = serializers.CharField()
     codename = serializers.CharField()
-    content_type = serializers.CharField()
+    app_label = serializers.SerializerMethodField()
+    model = serializers.SerializerMethodField()
+
+    def get_app_label(self, obj):
+        return obj.content_type.app_label
+
+    def get_model(self, obj):
+        return obj.content_type.model
 
 
 class UserSerializer(serializers.Serializer):
@@ -138,6 +145,7 @@ class UserSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
     url = MyUrlField(read_only=True, view_name='user-details')
     change_password = MyUrlField(read_only=True, view_name='user-passwd')
+    change_permission = MyUrlField(read_only=True, view_name='add-user-perm')
     is_superuser = serializers.BooleanField(required=False)
     user_permissions = PermSerializer(many=True)
 
