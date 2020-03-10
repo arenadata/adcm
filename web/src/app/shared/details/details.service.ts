@@ -29,6 +29,7 @@ export interface IDetails {
   prototype_version: string;
   provider_id: number;
   bundle_id: number;
+  hostcomponent: string;
 }
 
 @Injectable({

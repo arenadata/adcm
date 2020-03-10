@@ -28,6 +28,7 @@ import { ActionParameters } from '../actions.directive';
 export class ActionMasterComponent extends BaseDirective implements DynamicComponent, OnInit, AfterViewInit {
   event: EventEmitter<DynamicEvent> = new EventEmitter();
   model: ActionParameters;
+  actions: IAction[];
   action: IAction;
 
   isHmcRequired = false;
@@ -54,7 +55,7 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
 
   ngAfterViewInit(): void {
     if (this.isConfig && this.fields) {
-      setTimeout(() => this.isAdvanced = this.fields.rawConfig.config.some(a => a.ui_options && a.ui_options.advanced));
+      setTimeout(() => (this.isAdvanced = this.fields.rawConfig.config.some(a => a.ui_options && a.ui_options.advanced)));
     }
   }
 

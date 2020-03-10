@@ -95,6 +95,7 @@ export class ActionsComponent extends BaseDirective implements OnInit, AfterView
     const bw = this.buttons.map<number>(b => b.nativeElement.offsetWidth + 10);
     const elWidth = +this.el.nativeElement.clientWidth - 50;
     const dw = this.calcWidth(elWidth, bw);
+    // 
     this.forMenu = this.actions.slice(dw[0]);
     this.render.setStyle(this.wrap.nativeElement, 'width', `${dw[1]}px`);
     this.render.setStyle(this.more.nativeElement, 'display', dw[2] ? 'block' : 'none');

@@ -14,6 +14,7 @@ import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActionMasterComponent as MasterComponent } from './master.component';
 import { ApiService } from '@app/core/api';
 import { FieldService } from '@app/shared/configuration/field.service';
+import { MatListModule } from '@angular/material/list';
 
 describe('MasterComponent', () => {
   let component: MasterComponent;
@@ -27,6 +28,7 @@ describe('MasterComponent', () => {
     FieldServiceStub = {};
 
     TestBed.configureTestingModule({
+      imports: [MatListModule],
       declarations: [MasterComponent],
       providers: [
         { provide: ApiService, useValue: ApiServiceStub },
