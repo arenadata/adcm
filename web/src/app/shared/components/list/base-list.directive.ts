@@ -140,6 +140,7 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
   refresh(id?: number) {
     this.service.getList(this.listParams, this.typeName).subscribe(list => {
       this.parent.dataSource = list;
+      this.parent.paginator.length = list.count;
       if (id) this.parent.current = { id };
     });
   }
