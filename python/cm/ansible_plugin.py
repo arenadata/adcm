@@ -26,6 +26,7 @@ MSG_NO_CLUSTER_CONTEXT2 = "You are trying to change service state outside of clu
 MSG_NO_SERVICE_CONTEXT = "You are trying to change unnamed service's state outside of service context. Service state can be changed in service's actions only or in cluster's actions but with using service_name arg. Bad Dobby!"
 MSG_MANDATORY_ARGS = "Type, key and value are mandatory. Bad Dobby!"
 MSG_NO_ROUTE = "Incorrect combination of args. Bad Dobby!"
+MSG_WRONG_SERVICE = "Do not try to change one service from another."
 
 
 def get_context(task_vars):
@@ -46,6 +47,7 @@ def check_context(task_vars, *context_type, err_msg=None):
                 ','.join(context_type), context['type']
             )
         raise AnsibleError(err_msg)
+    return context
 
 
 def get_context_id(task_vars, context_type, id_type, err_msg=None):
@@ -102,7 +104,16 @@ class ContextActionModule(ActionBase):
                 {'cluster_id': self._get_job_var(task_vars, 'cluster_id')}
             )
         elif obj_type == "service" and "service_name" in self._task.args:
-            check_context(task_vars, 'cluster')
+            context = check_context(task_vars, 'cluster', 'service')
+            if context['type'] == 'service':
+                service = cm.models.ClusterObject.objects.get(pk=context["service_id"])
+                service_name = service.prototype.name
+                if service_name != self._task.args["service_name"]:
+                    # It is forbiden to change one service from another one.
+                    # But due to usage pattern it is common case when developers
+                    # use service_name in service playbooks to make them general
+                    # use (for cluster context and for service context)
+                    raise AnsibleError(MSG_WRONG_SERVICE)
             res = self._do_service_by_name(
                 task_vars,
                 {'cluster_id': self._get_job_var(task_vars, 'cluster_id')}
