@@ -25,7 +25,7 @@ import { FieldDirective } from './field.directive';
         </mat-form-field>
         <span class="info">
           <mat-icon [ngClass]="'info-icon'" *ngIf="field.description" matSuffix [appTooltip]="field.description">info_outline</mat-icon>
-          <button mat-icon-button matSuffix (click)="restore()" color="primary"><mat-icon>refresh</mat-icon></button>
+          <button mat-icon-button matSuffix (click)="restore()" color="primary" matTooltip="Reset to default"><mat-icon>refresh</mat-icon></button>
         </span>
       </div>
       <div *ngIf="getConfirmPasswordField()">
