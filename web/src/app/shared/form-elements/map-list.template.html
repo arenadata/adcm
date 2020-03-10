@@ -1,5 +1,5 @@
 <div [ngClass]="{tools: true, rightmargin: field.description, hidden: field.read_only}">
-  <button color="primary" mat-icon-button (click)="reload()">
+  <button color="primary" mat-icon-button (click)="reload()" matTooltip="Reset to default">
     <mat-icon>refresh</mat-icon>
   </button>
   &nbsp;
