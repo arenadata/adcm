@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=wrong-import-position, unused-import, import-error
+
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
@@ -66,7 +68,7 @@ from binascii import Error
 
 from ansible.plugins.action import ActionBase
 
-sys.path.append('/home/aalferov/PycharmProjects/adcm/python')
+sys.path.append('/adcm/python')
 import adcm.init_django
 
 from cm.job import log_custom
