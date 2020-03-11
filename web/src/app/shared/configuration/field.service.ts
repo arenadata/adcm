@@ -87,7 +87,7 @@ export class FieldService {
     return params;
   }
 
-  setValidator(field: {validator: ValidatorInfo, controlType: controlType}) {
+  setValidator(field: { validator: ValidatorInfo; controlType: controlType }) {
     const v: ValidatorFn[] = [];
 
     if (field.validator.required) v.push(Validators.required);
@@ -146,7 +146,7 @@ export class FieldService {
 
   fillForm(field: FieldOptions, controls: {}) {
     const name = field.subname || field.name;
-    controls[name] = this.fb.control(field.value, this.setValidator(field));
+    controls[name] = this.fb.control(field.type === 'option' ? { value: field.value, disabled: field.disabled } : field.value, this.setValidator(field));
     if (field.controlType === 'password') {
       if (!field.ui_options || (field.ui_options && !field.ui_options.no_confirm)) {
         controls[`confirm_${name}`] = this.fb.control(field.value, this.setValidator(field));

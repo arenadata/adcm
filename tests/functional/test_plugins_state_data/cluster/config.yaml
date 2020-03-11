@@ -44,6 +44,20 @@
       states:
         available: any
 
+    set_first_service:
+      type: job
+      script_type: ansible
+      script: set_first_service.yaml
+      states:
+        available: any
+
+    set_second_service:
+      type: job
+      script_type: ansible
+      script: set_second_service.yaml
+      states:
+        available: any
+
 - type: service
   name: Second
   version: 1
