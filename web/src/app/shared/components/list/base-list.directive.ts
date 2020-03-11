@@ -135,7 +135,8 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
           if (m.event === 'upgrade') {
             this.service.checkItem(row).subscribe(item => Object.keys(row).map(a => (row[a] = item[a])));
           }
-        } else console.warn('List :: object not found', m, this.parent.data.data, this.typeName);
+        } 
+        // else console.warn('List :: object not found', m, this.parent.data.data, this.typeName);
       }
     }
   }
