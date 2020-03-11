@@ -107,8 +107,8 @@ export class HostComponent extends BaseFormDirective implements OnInit {
 
     if (provider && provider.actions) {
       const actions = provider.actions.filter(a => a.button === ACTION_NAME);
-      if (actions.length) {
-        this.action.data = { actions };
+      if (actions && actions.length) {
+        this.action.inputData = { actions };
         this.onCancel();
         this.action.onClick();
       }

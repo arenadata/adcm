@@ -43,10 +43,6 @@ describe('HoverStatusTaskDirective', () => {
 
   });
 
-  // afterEach(() => {
-  //   fixture.destroy();
-  // });
-
   it('can inject `HoverStatusTaskDirective` in 1st <button>', () => {
     expect(a.injector.get(HoverDirective)).toBeTruthy();
   });
