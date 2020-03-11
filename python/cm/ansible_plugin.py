@@ -26,19 +26,28 @@ MSG_NO_CLUSTER_CONTEXT2 = "You are trying to change service state outside of clu
 MSG_NO_SERVICE_CONTEXT = "You are trying to change unnamed service's state outside of service context. Service state can be changed in service's actions only or in cluster's actions but with using service_name arg. Bad Dobby!"
 MSG_MANDATORY_ARGS = "Type, key and value are mandatory. Bad Dobby!"
 MSG_NO_ROUTE = "Incorrect combination of args. Bad Dobby!"
+MSG_WRONG_SERVICE = "Do not try to change one service from another."
 
 
-def check_context(task_vars, context_type, err_msg=None):
+def get_context(task_vars):
     if not task_vars:
         raise AnsibleError(MSG_NO_CONFIG)
     if 'context' not in task_vars:
         raise AnsibleError(MSG_NO_CONTEXT)
     if not isinstance(task_vars['context'], dict):
         raise AnsibleError(MSG_NO_CONTEXT)
-    if task_vars['context']['type'] != context_type:
+    return task_vars['context']
+
+
+def check_context(task_vars, *context_type, err_msg=None):
+    context = get_context(task_vars)
+    if context['type'] not in context_type:
         if not err_msg:
-            err_msg = MSG_WRONG_CONTEXT.format(context_type, task_vars['context']['type'])
+            err_msg = MSG_WRONG_CONTEXT.format(
+                ','.join(context_type), context['type']
+            )
         raise AnsibleError(err_msg)
+    return context
 
 
 def get_context_id(task_vars, context_type, id_type, err_msg=None):
@@ -72,10 +81,6 @@ class ContextActionModule(ActionBase):
         except KeyError:
             raise AnsibleError(MSG_NO_CLUSTER_CONTEXT)
 
-    def _check_context(self, task_vars):
-        if task_vars is None or "job" not in task_vars:
-            raise AnsibleError(MSG_NO_CONFIG + str(task_vars))
-
     def _do_cluster(self, task_vars, context):
         raise NotImplementedError
 
@@ -90,21 +95,31 @@ class ContextActionModule(ActionBase):
 
     def run(self, tmp=None, task_vars=None):
         self._check_mandatory()
-        self._check_context(task_vars)
-
         obj_type = self._task.args["type"]
 
         if obj_type == 'cluster':
+            check_context(task_vars, 'cluster', 'service')
             res = self._do_cluster(
                 task_vars,
                 {'cluster_id': self._get_job_var(task_vars, 'cluster_id')}
             )
         elif obj_type == "service" and "service_name" in self._task.args:
+            context = check_context(task_vars, 'cluster', 'service')
+            if context['type'] == 'service':
+                service = cm.models.ClusterObject.objects.get(pk=context["service_id"])
+                service_name = service.prototype.name
+                if service_name != self._task.args["service_name"]:
+                    # It is forbiden to change one service from another one.
+                    # But due to usage pattern it is common case when developers
+                    # use service_name in service playbooks to make them general
+                    # use (for cluster context and for service context)
+                    raise AnsibleError(MSG_WRONG_SERVICE)
             res = self._do_service_by_name(
                 task_vars,
                 {'cluster_id': self._get_job_var(task_vars, 'cluster_id')}
             )
         elif obj_type == "service":
+            check_context(task_vars, 'service')
             res = self._do_service(
                 task_vars,
                 {
@@ -112,12 +127,20 @@ class ContextActionModule(ActionBase):
                     'service_id': self._get_job_var(task_vars, 'service_id')
                 }
             )
+        elif obj_type == "host" and "host_id" in self._task.args:
+            check_context(task_vars, 'provider')
+            res = self._do_host_from_provider(
+                task_vars,
+                {}
+            )
         elif obj_type == "host":
+            check_context(task_vars, 'host')
             res = self._do_host(
                 task_vars,
                 {'host_id': self._get_job_var(task_vars, 'host_id')}
             )
         elif obj_type == "provider":
+            check_context(task_vars, 'provider')
             res = self._do_provider(
                 task_vars,
                 {'provider_id': self._get_job_var(task_vars, 'provider_id')}

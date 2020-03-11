@@ -20,8 +20,12 @@ label {
 
 .info {
   margin-left: 10px;
-  width: 24px;
-  display: inline-block;
+  display: flex;
+  align-items: center;
+
+  &>mat-icon {
+    margin-top: 3px;
+  }
 
   .icon-info {
     vertical-align: middle;

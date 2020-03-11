@@ -47,14 +47,9 @@ export class ListService {
   }
 
   getList(p: ParamMap, typeName: string) {
-    
     const listParamStr = localStorage.getItem('list:param');
-    if (p.keys.length) {
-      const param = p.keys.reduce((a, c) => {
-        a[c] = p.get(c);
-        return a;
-      }, {});
-
+    if (p?.keys.length) {
+      const param = p.keys.reduce((a, c) => ({ ...a, [c]: p.get(c) }), {});
       if (listParamStr) {
         const json = JSON.parse(listParamStr);
         json[typeName] = param;

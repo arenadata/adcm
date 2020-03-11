@@ -71,6 +71,28 @@ def test_change_service_state_by_name(cluster_bundle: Bundle):
     assert_cluster_service_states(cluster_bundle, expected_state)
 
 
+def test_change_service_state_by_name_from_service(cluster_bundle: Bundle):
+    expected_state = copy.deepcopy(INITIAL_CLUSTERS_STATE)
+    assert_cluster_service_states(cluster_bundle, expected_state)
+
+    second = cluster_bundle.cluster(name='first').service(name='Second')
+
+    second.action(name='set_second_service').run().try_wait()
+    expected_state['first']['services']['Second'] = 'state2'
+    assert_cluster_service_states(cluster_bundle, expected_state)
+
+
+def test_change_service_state_by_name_from_another_service(cluster_bundle: Bundle):
+    expected_state = copy.deepcopy(INITIAL_CLUSTERS_STATE)
+    assert_cluster_service_states(cluster_bundle, expected_state)
+
+    second = cluster_bundle.cluster(name='first').service(name='Second')
+
+    result = second.action(name='set_first_service').run().wait()
+    assert result == "failed", "Job expected to be failed"
+    assert_cluster_service_states(cluster_bundle, expected_state)
+
+
 def test_change_service_state(cluster_bundle: Bundle):
     expected_state = copy.deepcopy(INITIAL_CLUSTERS_STATE)
     assert_cluster_service_states(cluster_bundle, expected_state)
@@ -186,4 +208,15 @@ def test_change_provider_state(host_bundle: Bundle):
 
     second.action(name='set_state').run().try_wait()
     expected_state['second']['state'] = 'pstatex'
+    assert_provider_host_states(host_bundle, expected_state)
+
+
+def test_change_host_from_provider_state(host_bundle: Bundle):
+    expected_state = copy.deepcopy(INITIAL_HOST_STATE)
+    assert_provider_host_states(host_bundle, expected_state)
+
+    second = host_bundle.provider(name='second')
+
+    second.action(name='set_host_state').run(config={"fqdn": "second_host2"}).try_wait()
+    expected_state['second']['hosts']['second_host2'] = 'stateq'
     assert_provider_host_states(host_bundle, expected_state)

@@ -27,14 +27,14 @@ import {
   MainInfoComponent,
   StatusComponent,
   StatusInfoComponent,
-  UpgradeComponent,
+  UpgradeComponent
 } from './components';
 import { ActionsDirective } from './components/actions/actions.directive';
 import { MultiSortDirective } from './components/list/multi-sort.directive';
 import { SimpleTextComponent } from './components/tooltip';
 import { ConfigurationModule } from './configuration/configuration.module';
 import { DetailsModule } from './details/details.module';
-import { DynamicDirective, HoverDirective, InfinityScrollDirective } from './directives';
+import { DynamicDirective, HoverDirective } from './directives';
 import { FormElementsModule } from './form-elements/form-elements.module';
 import { HostComponentsMapModule } from './host-components-map/host-components-map.module';
 import { MaterialModule } from './material.module';
@@ -72,8 +72,7 @@ import { StuffModule } from './stuff.module';
     MainInfoComponent,
     MultiSortDirective,
     ImportComponent,
-    ExportComponent,
-    InfinityScrollDirective
+    ExportComponent
   ],
   entryComponents: [DialogComponent, ActionMasterComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent],
   exports: [
@@ -100,8 +99,7 @@ import { StuffModule } from './stuff.module';
     StatusInfoComponent,
     MainInfoComponent,
     ImportComponent,
-    ExportComponent,
-    InfinityScrollDirective
+    ExportComponent
   ]
 })
 export class SharedModule {}

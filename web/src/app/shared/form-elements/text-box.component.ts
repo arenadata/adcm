@@ -27,7 +27,10 @@ import { FieldDirective } from './field.directive';
           <mat-error *ngIf="hasError('max')">Field [{{ field.display_name }}] value cannot be greater than {{ field.validator.max }}!</mat-error>
         </mat-error>
       </mat-form-field>
-      <span class="info"><mat-icon *ngIf="field.description" matSuffix [appTooltip]="field.description">info_outline</mat-icon></span>
+      <span class="info">
+        <mat-icon [ngClass]="'info-icon'" *ngIf="field.description" matSuffix [appTooltip]="field.description">info_outline</mat-icon>
+        <button mat-icon-button matSuffix (click)="restore()" color="primary" matTooltip="Reset to default"><mat-icon>refresh</mat-icon></button>
+      </span>
     </ng-container>
   `,
   styleUrls: ['./scss/fields.component.scss']

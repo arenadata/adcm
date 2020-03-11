@@ -27,15 +27,14 @@ def save_issue(obj):
     obj.issue = json.dumps(check_issue(obj))
     obj.save()
     report_issue(obj)
-    if hasattr(obj, 'cluster') and obj.cluster:
-        report_issue(obj.cluster)
 
 
 def report_issue(obj):
-    if issue_to_bool(get_issue(obj)):
+    issue = get_issue(obj)
+    if issue_to_bool(issue):
         cm.status_api.post_event('clear_issue', obj.prototype.type, obj.id)
     else:
-        cm.status_api.post_event('raise_issue', obj.prototype.type, obj.id)
+        cm.status_api.post_event('raise_issue', obj.prototype.type, obj.id, 'issue', issue)
 
 
 def check_issue(obj):

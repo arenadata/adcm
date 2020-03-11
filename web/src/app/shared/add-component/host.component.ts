@@ -17,6 +17,7 @@ import { filter, tap } from 'rxjs/operators';
 import { ActionsDirective } from '../components/actions/actions.directive';
 import { AddService } from './add.service';
 import { BaseFormDirective } from './base-form.directive';
+import { MatDialog } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-add-host',
@@ -24,18 +25,11 @@ import { BaseFormDirective } from './base-form.directive';
     <ng-container [formGroup]="form">
       <div class="row">
         <mat-form-field class="full-width">
-          <mat-select required placeholder="Hostprovider" formControlName="provider_id">
+          <mat-select appInfinityScroll (topScrollPoint)="getNextPageProvider()" required placeholder="Hostprovider" formControlName="provider_id">
             <mat-option value="">...</mat-option>
-            <mat-option *ngFor="let p of providers" [value]="p.id">{{ p.name }}</mat-option>
+            <mat-option *ngFor="let p of providers$ | async" [value]="p.id">{{ p.name }}</mat-option>
           </mat-select>
-          <button
-            [style.fontSize.px]="24"
-            matSuffix
-            mat-icon-button
-            color="accent"
-            (click)="showHostproviderForm($event)"
-            matTooltip="Create and add hostprovider"
-          >
+          <button [style.fontSize.px]="24" matSuffix mat-icon-button color="accent" (click)="showHostproviderForm($event)" matTooltip="Create and add hostprovider">
             <mat-icon>add_box</mat-icon>
           </button>
           <mat-error *ngIf="isError('provider_id')">
@@ -52,7 +46,7 @@ import { BaseFormDirective } from './base-form.directive';
       <ng-container *ngIf="!noCluster">
         <div class="row">
           <mat-form-field class="full-width">
-            <mat-select appInfinityScroll (topScrollPoint)="getNextPage()" placeholder="Cluster" formControlName="cluster_id">
+            <mat-select appInfinityScroll (topScrollPoint)="getNextPageClusters()" placeholder="Cluster" formControlName="cluster_id">
               <mat-option value="">...</mat-option>
               <mat-option *ngFor="let c of clusters$ | async" [value]="c.id">{{ c.name }}</mat-option>
             </mat-select>
@@ -70,16 +64,17 @@ import { BaseFormDirective } from './base-form.directive';
 })
 export class HostComponent extends BaseFormDirective implements OnInit {
   @Input() noCluster = false;
-  providers: Provider[];
+  providers$ = new BehaviorSubject<Partial<Provider[]>>([]);
   clusters$ = new BehaviorSubject<Partial<Cluster>[]>([]);
   expanded = false;
   createdProviderId: number;
 
-  page = 1;
+  pageCluster = 1;
+  pageProvider = 1;
   limit = 50;
 
-  constructor(private action: ActionsDirective, public service: AddService) {
-    super(service);
+  constructor(private action: ActionsDirective, service: AddService, dialog: MatDialog) {
+    super(service, dialog);
   }
 
   ngOnInit() {
@@ -108,12 +103,12 @@ export class HostComponent extends BaseFormDirective implements OnInit {
 
   checkAction(provider_id: number) {
     const ACTION_NAME = 'create_host';
-    const provider = this.providers.find(a => a.id === provider_id);
+    const provider = this.providers$.getValue().find(a => a.id === provider_id);
 
     if (provider && provider.actions) {
       const actions = provider.actions.filter(a => a.button === ACTION_NAME);
-      if (actions.length) {
-        this.action.data = { actions };
+      if (actions && actions.length) {
+        this.action.inputData = { actions };
         this.onCancel();
         this.action.onClick();
       }
@@ -128,7 +123,7 @@ export class HostComponent extends BaseFormDirective implements OnInit {
         this.takeUntil(),
         tap(() => this.form.controls['fqdn'].setValue(''))
       )
-      .subscribe(host => this.onCancel(host));
+      .subscribe();
   }
 
   createdProvider(id: number) {
@@ -137,23 +132,35 @@ export class HostComponent extends BaseFormDirective implements OnInit {
     this.getProviders();
   }
 
-  getProviders() {
-    this.service.getProviders().subscribe(a => {
-      this.providers = a;
-      this.form.get('provider_id').setValue(a.length === 1 ? a[0].id : this.createdProviderId);
-    });
-    if (this.form.get('provider_id').value) this.expanded = false;
-  }
-
-  getNextPage() {
+  getNextPageClusters() {
     const count = this.clusters$.getValue().length;
-    if (count === this.page * this.limit) {
-      this.page++;
+    if (count === this.pageCluster * this.limit) {
+      this.pageCluster++;
       this.getClusters();
     }
   }
 
+  getNextPageProvider() {
+    const count = this.providers$.getValue().length;
+    if (count === this.pageProvider * this.limit) {
+      this.pageProvider++;
+      this.getProviders();
+    }
+  }
+
+  getProviders() {
+    this.service
+      .getProviders({ limit: this.limit, page: this.pageProvider - 1 })
+      .pipe(
+        tap(list => {
+          this.form.get('provider_id').setValue(list.length === 1 ? list[0].id : this.createdProviderId);
+        })
+      )
+      .subscribe(list => this.providers$.next([...this.providers$.getValue(), ...list]));
+    if (this.form.get('provider_id').value) this.expanded = false;
+  }
+
   getClusters() {
-    this.service.getClusters({ limit: this.limit, page: this.page - 1 }).subscribe(list => this.clusters$.next([...this.clusters$.getValue(), ...list]));
+    this.service.getClusters({ limit: this.limit, page: this.pageCluster - 1 }).subscribe(list => this.clusters$.next([...this.clusters$.getValue(), ...list]));
   }
 }

@@ -10,10 +10,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Directive, Renderer2, Host, OnInit, Output, EventEmitter } from '@angular/core';
-import { MatSelect } from '@angular/material';
+import { MatSelect } from '@angular/material/select';
 
 @Directive({
-  selector: '[appInfinityScroll]',
+  selector: '[appInfinityScroll]'
 })
 export class InfinityScrollDirective implements OnInit {
   @Output() topScrollPoint = new EventEmitter();
@@ -34,8 +34,7 @@ export class InfinityScrollDirective implements OnInit {
   onScrollPanel(event: any) {
     const target = event.target;
 
-    const height =
-      Array.from<HTMLElement>(target.children).reduce((p, c) => p + c.clientHeight, 0) - target.clientHeight;
+    const height = Array.from<HTMLElement>(target.children).reduce((p, c) => p + c.clientHeight, 0) - target.clientHeight;
     if (target.scrollTop > height - 100) this.topScrollPoint.emit();
   }
 }
