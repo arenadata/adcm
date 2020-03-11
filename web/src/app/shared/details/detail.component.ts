@@ -16,7 +16,7 @@ import { EventMessage, SocketState } from '@app/core/store';
 import { Cluster, Host, IAction, Issue, Job, notIssue } from '@app/core/types';
 import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
-import { map, switchMap, tap, exhaustMap } from 'rxjs/operators';
+import { switchMap, tap } from 'rxjs/operators';
 
 import { SocketListenerDirective } from '../directives/socketListener.directive';
 import { IDetails } from './details.service';
@@ -120,16 +120,19 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
         return;
       }
 
-      if (m.event === 'change_state' || m.event === 'upgrade' || m.event === 'raise_issue') {
+      if (m.event === 'change_state' || m.event === 'upgrade') {
         this.reset();
         return;
       }
 
-      if (m.event === 'clear_issue' && m.object.type === 'cluster') this.issues = {} as Issue;
+      if (m.event === 'clear_issue') this.issues = {} as Issue;
+
+      if (m.event === 'raise_issue') this.issues = m.object.details.value as Issue;
 
       if (m.event === 'change_status') this.status = +m.object.details.value;
     }
 
+    // parent
     if (this.service.Cluster && m.event === 'clear_issue' && m.object.type === 'cluster' && this.service.Current.typeName !== 'cluster' && this.service.Cluster.id === m.object.id)
       this.issues = {} as Issue;
 

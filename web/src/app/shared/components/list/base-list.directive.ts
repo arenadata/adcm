@@ -50,8 +50,11 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
         filter(p => this.checkParam(p))
       )
       .subscribe(p => {
-        if (+p.get('page') === 0) {
+        const page = +p.get('page');
+        if (page === 0) {
           this.parent.paginator.firstPage();
+        } else {
+          this.parent.paginator.pageIndex = page;
         }
         const ordering = p.get('ordering');
         if (ordering && !this.parent.sort.active) {
