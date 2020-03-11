@@ -95,10 +95,12 @@ class ActionModule(ActionBase):
 
         try:
             if path is None:
-                log.debug(f'ansible adcm_custom_log: {job_id}, {name}, {log_format}, {content}')
+                log.debug('ansible adcm_custom_log: %s, %s, %s, %s',
+                          job_id, name, log_format, content)
                 log_custom(job_id, name, log_format, content)
             else:
-                log.debug(f'ansible adcm_custom_log: {job_id}, {name}, {log_format}, {path}')
+                log.debug('ansible adcm_custom_log: %s, %s, %s, %s',
+                          job_id, name, log_format, path)
                 slurp_return = self._execute_module(module_name='slurp', module_args={'src': path},
                                                     task_vars=task_vars, tmp=tmp)
                 try:
