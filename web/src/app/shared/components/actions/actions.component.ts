@@ -12,7 +12,7 @@
 import { AfterViewChecked, Component, ElementRef, Input, OnInit, QueryList, Renderer2, ViewChild, ViewChildren } from '@angular/core';
 import { MatMenuTrigger } from '@angular/material/menu';
 import { IAction } from '@app/core/types';
-import { fromEvent, Observable } from 'rxjs';
+import { fromEvent } from 'rxjs';
 import { debounceTime, tap } from 'rxjs/operators';
 
 import { BaseDirective } from '../../directives/base.directive';
@@ -22,10 +22,10 @@ import { BaseDirective } from '../../directives/base.directive';
   template: `
     <div #wrap>
       <button
-        #btn
+        *ngFor="let action of actions"
+        #button
         mat-raised-button
         color="warn"
-        *ngFor="let action of actions$ | async"
         [appForTest]="'action_btn'"
         [disabled]="isIssue"
         [appActions]="{ cluster: cluster, actions: [action] }"
@@ -40,9 +40,9 @@ import { BaseDirective } from '../../directives/base.directive';
       <button
         mat-raised-button
         color="warn"
+        class="menu-more-action"
         *ngFor="let a of forMenu"
         [appForTest]="'action_btn'"
-        class="menu-more-action"
         [disabled]="isIssue"
         [appActions]="{ cluster: cluster, actions: [a] }"
       >
@@ -53,39 +53,33 @@ import { BaseDirective } from '../../directives/base.directive';
   styleUrls: ['./actions.component.scss']
 })
 export class ActionsComponent extends BaseDirective implements OnInit, AfterViewChecked {
-  separ = 0;
+  actions: IAction[] = [];
+
   @Input() isIssue: boolean;
   @Input() cluster: { id: number; hostcomponent: string };
-  actions: IAction[];
-  actions$: Observable<IAction[]>;
-  @Input() set source(value$: Observable<IAction[]>) {
-    this.actions$ = value$.pipe(
-      tap(a => {
-        this.actions = a;
-        if (!a.length) this.render.setStyle(this.more.nativeElement, 'display', 'none');
-      }),
-      this.takeUntil()
-    );
+  @Input() set source(actions: IAction[]) {
+    this.actions = actions;
+    if (!actions.length) this.render.setStyle(this.more.nativeElement, 'display', 'none');
   }
 
   stateButtons = 0;
   forMenu: IAction[] = [];
 
-  @ViewChild('wrap', { read: ElementRef, static: true }) el: ElementRef;
+  @ViewChild('wrap', { read: ElementRef, static: true }) wrap: ElementRef;
   @ViewChild('more', { read: ElementRef, static: true }) more: ElementRef;
-  @ViewChildren('btn', { read: ElementRef }) buttons: QueryList<ElementRef>;
+  @ViewChildren('button', { read: ElementRef }) buttons: QueryList<ElementRef>;
   @ViewChild(MatMenuTrigger, { static: true }) trigger: MatMenuTrigger;
 
-  constructor(private render: Renderer2) {
+  constructor(private render: Renderer2, private el: ElementRef) {
     super();
   }
 
   ngOnInit() {
     fromEvent(window, 'resize')
       .pipe(
+        this.takeUntil(),
         tap(() => this.trigger.closeMenu()),
-        debounceTime(100),
-        this.takeUntil()
+        debounceTime(500)
       )
       .subscribe(() => this.onresize());
   }
@@ -93,34 +87,21 @@ export class ActionsComponent extends BaseDirective implements OnInit, AfterView
   ngAfterViewChecked(): void {
     if (this.stateButtons !== this.buttons.length) {
       this.stateButtons = this.buttons.length;
-      setTimeout(() => this.onresize(), 1);
+      setTimeout(() => this.onresize(), 0);
     }
   }
 
   onresize() {
-    const el = this.el.nativeElement;
-    this.render.setStyle(el, 'width', 'auto');
-
-    const dw = this.calcWidth(+this.el.nativeElement.clientWidth);
-    this.render.setStyle(el, 'width', dw);
-
-    const w = el.clientWidth,
-      sw = el.scrollWidth;
-    this.render.setStyle(this.more.nativeElement, 'display', w === 0 || w >= sw ? 'none' : 'block');
-
-    this.forMenu = this.actions.slice(this.separ);
+    const bw = this.buttons.map<number>(b => b.nativeElement.offsetWidth + 10);
+    const elWidth = +this.el.nativeElement.clientWidth - 50;
+    const dw = this.calcWidth(elWidth, bw);
+    // 
+    this.forMenu = this.actions.slice(dw[0]);
+    this.render.setStyle(this.wrap.nativeElement, 'width', `${dw[1]}px`);
+    this.render.setStyle(this.more.nativeElement, 'display', dw[2] ? 'block' : 'none');
   }
 
-  calcWidth(w: number) {
-    let width = 0;
-    this.buttons.some((c, i) => {
-      const d = width + (c.nativeElement.offsetWidth + 10);
-      if (d > w) {
-        this.separ = i;
-        return true;
-      } else width = d;
-    });
-
-    return `${width}px`;
+  calcWidth(w: number, bw: number[]): [number, number, boolean] {
+    return bw.reduce((p, c, i) => (p[2] || p[1] + c > w ? [p[0], p[1], true] : [i + 1, p[1] + c, false]), [0, 0, false]);
   }
 }
