@@ -9,15 +9,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, EventEmitter, OnInit, ViewChild, AfterViewInit } from '@angular/core';
+import { AfterViewInit, Component, EventEmitter, OnInit, ViewChild } from '@angular/core';
 import { ApiService } from '@app/core/api';
 import { IAction } from '@app/core/types';
 import { FieldService } from '@app/shared/configuration/field.service';
+import { DynamicComponent, DynamicEvent } from '@app/shared/directives/dynamic.directive';
+import { ServiceHostComponent } from '@app/shared/host-components-map/services2hosts/service-host.component';
+
 import { ConfigFieldsComponent } from '../../../configuration/fields/fields.component';
 import { BaseDirective } from '../../../directives/base.directive';
 import { ActionParameters } from '../actions.directive';
-import { DynamicComponent, DynamicEvent } from '@app/shared/directives/dynamic.directive';
-import { ServiceHostComponent } from '@app/shared/host-components-map/services2hosts/service-host.component';
 
 @Component({
   selector: 'app-master',
