@@ -60,12 +60,13 @@ EXAMPLES = r'''
 RETURN = r'''
 '''
 
-import os
 import sys
+import base64
+from binascii import Error
 
 from ansible.plugins.action import ActionBase
 
-sys.path.append('/adcm/python')
+sys.path.append('/home/aalferov/PycharmProjects/adcm/python')
 import adcm.init_django
 
 from cm.job import log_custom
@@ -96,12 +97,16 @@ class ActionModule(ActionBase):
                 log_custom(job_id, name, log_format, content)
             else:
                 log.debug(f'ansible adcm_custom_log: {job_id}, {name}, {log_format}, {path}')
-                if os.path.exists(path):
-                    with open(path, 'r') as f:
-                        body = f.read()
-                    log_custom(job_id, name, log_format, body)
-                else:
-                    raise AdcmEx('FILE_NOT_FOUND', msg=f'file {path} not found')
+                slurp_return = self._execute_module(module_name='slurp', module_args={'src': path},
+                                                    task_vars=task_vars, tmp=tmp)
+                try:
+                    body = base64.standard_b64decode(slurp_return['content']).decode()
+                except Error:
+                    raise AdcmEx('UNKNOWN_ERROR', msg='Error b64decode for slurp module')
+                except UnicodeDecodeError:
+                    raise AdcmEx('UNKNOWN_ERROR', msg='Error UnicodeDecodeError for slurp module')
+                log_custom(job_id, name, log_format, body)
+
         except AdcmEx as e:
             return {"failed": True, "msg": f"{e.code}: {e.msg}"}
 
