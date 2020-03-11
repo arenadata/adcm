@@ -138,8 +138,12 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
     this.isDisabled = true;
     this.api.getOne<Task>('task', id).subscribe(task => {
       this.paginator.length = ++this.dataCount;
-      const data = this.paginator.length > this.dataSource.data.length ? this.dataSource.data.slice(0, this.dataSource.data.length - 1) : this.dataSource.data;
-      this.dataSource.data = [task, ...data];
+      if (this.paginator.pageSize > this.dataSource.data.length)
+      this.dataSource.data = [task, ...this.dataSource.data];
+      else {
+        const [last, ...ost] = this.dataSource.data.reverse();
+        this.dataSource.data = [task, ...ost.reverse()];
+      }
       this.dataSource._updateChangeSubscription();
       setTimeout(_ => (this.isDisabled = false), 500);
     });
