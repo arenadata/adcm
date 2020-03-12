@@ -42,20 +42,6 @@
         on_success: installed
         on_fail: created
 
-    should_be_failed:
-      type: job
-      script_type: ansible
-      script: ansible/failed.yaml
-      params:
-        ansible_tags: should_be_failed
-      states:
-        available:
-          - created
-          - installed
-        on_success: failed
-        on_fail: created
-
-
 - type: cluster
   name: Nothing
   description: Arenadata Nothing

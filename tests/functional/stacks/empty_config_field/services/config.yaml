@@ -14,10 +14,4 @@
   type: cluster
   name: ArenaDATA
   version: 1.3
-
-  actions:
-     bluh-bluh:
-        type: job
-        script: stack/services/cluster/job.py
-        script_type: task_generator
   config:

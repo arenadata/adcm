@@ -20,11 +20,6 @@
     name: ssh common
     version: 1.000003
 
-    actions:
-        re-start-zookeper:
-            type: job
-            script: stack/job.py
-            script_type: task_generator
     config:
         str-key:
             default: value

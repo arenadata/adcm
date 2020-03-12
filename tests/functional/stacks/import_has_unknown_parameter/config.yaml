@@ -12,21 +12,7 @@
 ---
 - type: cluster
   name: wrong_export
-  version: &version 1.01
-  upgrade:
-    - name: *version
-      versions: { min: 1.0, max_strict: *version }
-      description: Google Compute Engine bundle upgrade
-      states: { available: any }
-  actions:
-    install:
-      type: job
-      script_type: ansible
-      script: main.yaml
-      states:
-        available: ["created", "removed", "failed"]
-        on_success: running
-        on_fail: failed
+  version: "1.01"
   config:
     group_one:
       param_one:

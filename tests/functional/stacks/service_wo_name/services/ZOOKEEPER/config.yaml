@@ -12,24 +12,3 @@
 type: service
 description: ZooKeeper
 version: '1.2'
-
-actions:
-    install:
-        commands:
-        - {command: INSTALL, component: ZOOKEEPER_CLIENT}
-        - {command: INSTALL, component: ZOOKEEPER_SERVER}
-        type: sequence
-    start:
-        type: job
-        script_type: ansible
-        script: ansible/init.yaml
-        config:
-            folder: stacks/ADH/1.0/services/ZOOKEEPER/package
-            packages: [zookeeper]
-            script: scripts/zookeeper_server.py
-        log_files: [remote]
-    stop:
-        type: job
-        script_type: ansible
-        script: ansible/init.yaml
-        log_files: [remote]

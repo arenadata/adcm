@@ -13,24 +13,3 @@ name: service_name
 type: unknown
 description: ZooKeeper
 version: '1.2'
-
-actions:
-    install:
-        commands:
-        - {command: INSTALL, component: ZOOKEEPER_CLIENT}
-        - {command: INSTALL, component: ZOOKEEPER_SERVER}
-        type: sequence
-    start:
-        type: job
-        script_type: ansible
-        config:
-            folder: stacks/ADH/1.0/services/ZOOKEEPER/package
-            packages: [zookeeper]
-            script: scripts/zookeeper_server.py
-        log_files: [remote]
-        script: services/zoo/start.yaml
-    stop:
-        type: job
-        script_type: ansible
-        log_files: [remote]
-        script: services/zoo/stop.yaml

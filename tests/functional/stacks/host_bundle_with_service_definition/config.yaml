@@ -15,61 +15,18 @@
     type: service
     description: AllKeeper
     version: '1.2'
-
-    actions:
-        install:
-            states:
-                available: [created]
-                on_success: all_installed
-                on_fail: cluster_install_fail
-            type: job
-            script: stack/extcode/cook.py
-            script_type: task_generator
-    components:
-        ZOOKEEPER_CLIENT:
-    config:
-        ssh-key: {default: TItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAA, type: string, required: no}
-        integer-key: {default: 24, max: 48, min: 2, type: integer, required: no}
-
 -
     name: ALLKEEPER
     type: service
     description: AllKeeper
     version: '5'
 
-    actions:
-        install:
-            type: job
-            script: cook.py
-            script_type: task_generator
-    components:
-        ZOOKEEPER_CLIENT:
-    config:
-        ssh-key: {default: TItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAA, type: string, required: false}
-
 -   type: provider
     name: sample_provider
     version: 0.1.0
     config:
-
 -
 
     type: host
     name: ssh common
     version: 1.5
-
-    actions:
-        re-start-zookeper:
-            type: job
-            script: stack/job.py
-            script_type: task_generator
-    config:
-        str-key:
-            default: value
-            type: string
-            required: false
-        subkeys:
-            key1:
-                default: 0
-                type: integer
-                required: No

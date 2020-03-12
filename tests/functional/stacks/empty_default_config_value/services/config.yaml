@@ -13,20 +13,7 @@
 -
   type: cluster
   name: ADH
-  version: 1.4  
-  actions:
-     do-something:
-         type: job
-         script: stack/service/cluster/job.py
-         script_type: task_generator
-         params:
-     create-something:
-         type: job
-         script: stack/services/cluster/job.py
-         script_type: ansible
-         log_files: [remote]
-         params:
-             foo: bar
+  version: 1.4
   config:
      key: {}
 - type: service

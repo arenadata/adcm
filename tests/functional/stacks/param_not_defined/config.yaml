@@ -14,16 +14,6 @@
     type: cluster
     name: zzzzzzzz
     version: 1.5
-
-    actions:
-        re-start-zookeper:
-            type: job
-            script: cluster_bundle/cluster/job.py
-            script_type: task_generator
-            states:
-                available: [created]
-                on_success: all_installed
-                on_fail: cluster_install_fail
     config:
         required:
             type: integer

@@ -12,17 +12,4 @@
 ---
 - type: host
   name: SSH Common
-  version: 1.0
-
-  actions:
-
-  config:
-    ansible_user:
-      type: string
-      default: "root"
-    ansible_ssh_pass:
-      type: string
-      default: "root"
-    ansible_ssh_port:
-      type: integer
-      default: 22
+  version: "1.0"
