@@ -26,34 +26,31 @@ from adcm_pytest_plugin.docker import DockerWrapper
 from tests.library import errorcodes as err
 from tests.library import steps
 
-BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
+
+@pytest.fixture(scope="module")
+def hostprovider(sdk_client_ms: ADCMClient):
+    bundle = sdk_client_ms.upload_from_fs(get_data_dir(__file__, 'hostprovider_bundle'))
+    return bundle.provider_create(utils.random_string())
 
 
 @pytest.fixture(scope="module")
-def adcm(image, request):
-    repo, tag = image
-    dw = DockerWrapper()
-    adcm = dw.run_adcm(image=repo, tag=tag, pull=False)
-    adcm.api.auth(username='admin', password='admin')
-
-    def fin():
-        adcm.stop()
-
-    request.addfinalizer(fin)
-    return adcm
+def host(sdk_client_ms: ADCMClient, hostprovider):
+    return hostprovider.host_create(utils.random_string())
 
 
 @pytest.fixture(scope="module")
-def client(adcm):
-    steps.upload_bundle(adcm.api.objects, get_data_dir(__file__, 'hostprovider_bundle'))
-    steps.upload_bundle(adcm.api.objects, get_data_dir(__file__, 'cluster_bundle'))
-    return adcm.api.objects
+def cluster(sdk_client_ms: ADCMClient):
+    return sdk_client_ms.upload_from_fs(get_data_dir(__file__, 'cluster_bundle'))
 
 
 @pytest.fixture(scope="module")
-def client_action_bundle(adcm):
-    steps.upload_bundle(adcm.api.objects, get_data_dir(__file__, 'cluster_action_bundle'))
-    return adcm.api.objects
+def client(sdk_client_ms: ADCMClient, cluster, hostprovider):
+    return sdk_client_ms.adcm()._api.objects
+
+@pytest.fixture(scope="module")
+def client_action_bundle(sdk_client_ms: ADCMClient):
+    sdk_client_ms.upload_from_fs(get_data_dir(__file__, 'cluster_action_bundle'))
+    return sdk_client_ms.adcm()._api.objects
 
 
 class TestCluster:
@@ -250,8 +247,7 @@ class TestClusterHost:
         cluster = bundle.cluster_create(utils.random_string())
         hp = bundle_hp.provider_create(utils.random_string())
         host = hp.host_create(utils.random_string())
-        with allure.step('Create mapping between cluster and host'):
-            actual = cluster.host_add(host)
+        actual = cluster.host_add(host)
         with allure.step('Get cluster host info'):
             expected = cluster.host_list()[0]
         with allure.step('Check mapping'):
@@ -331,19 +327,14 @@ class TestClusterHost:
     def test_add_host_in_two_diff_clusters(self, sdk_client_fs: ADCMClient):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_simple'))
         bundle_hp = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider_bundle'))
-        with allure.step('Create cluster1'):
-            cluster_one = bundle.cluster_create("cluster1")
-        with allure.step('Create cluster2'):
-            cluster_two = bundle.cluster_create("cluster2")
-        with allure.step('Create host'):
-            hp = bundle_hp.provider_create(utils.random_string())
-            host = hp.host_create("new.host.net")
-        with allure.step('Create mapping between cluster1 and host'):
-            cluster_one.host_add(host)
-        with allure.step('Try adding host to cluster2'):
-            with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-                cluster_two.host_add(host)
-            err.FOREIGN_HOST.equal(e, 'Host', 'belong to cluster ' + str(cluster_one.id))
+        cluster_one = bundle.cluster_create("cluster1")
+        cluster_two = bundle.cluster_create("cluster2")
+        hp = bundle_hp.provider_create(utils.random_string())
+        host = hp.host_create("new.host.net")
+        cluster_one.host_add(host)
+        with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
+            cluster_two.host_add(host)
+        err.FOREIGN_HOST.equal(e, 'Host', 'belong to cluster ' + str(cluster_one.id))
 
     def test_host_along_to_cluster_shouldnt_deleted(self, sdk_client_fs: ADCMClient):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_simple'))
@@ -361,10 +352,8 @@ class TestClusterService:
     def test_cluster_service_create(self, sdk_client_fs: ADCMClient):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_simple'))
         cluster = bundle.cluster_create(utils.random_string())
-        with allure.step('Create a new service in the cluster'):
-            actual = cluster.service_add(name="ZOOKEEPER")
-        with allure.step('Get service data'):
-            expected = cluster.service_list()[0]
+        actual = cluster.service_add(name="ZOOKEEPER")
+        expected = cluster.service_list()[0]
         with allure.step('Check expected and actual value'):
             assert actual.id == expected.id
             assert actual.name == expected.name
@@ -405,12 +394,10 @@ class TestClusterService:
     def test_shouldnt_add_two_identical_service_in_cluster(self, sdk_client_fs: ADCMClient):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_simple'))
         cluster = bundle.cluster_create(utils.random_string())
-        with allure.step('Create service in cluster'):
+        cluster.service_add(name="ZOOKEEPER")
+        with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             cluster.service_add(name="ZOOKEEPER")
-        with allure.step('Try to add identical service in cluster'):
-            with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-                cluster.service_add(name="ZOOKEEPER")
-            err.SERVICE_CONFLICT.equal(e, 'service already exists in specified cluster')
+        err.SERVICE_CONFLICT.equal(e, 'service already exists in specified cluster')
 
     @pytest.mark.skip(reason="Task is non production right now")
     def test_that_task_generator_function_with_the_only_one_reqiured_parameter(self, client):
@@ -433,7 +420,6 @@ class TestClusterService:
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_action_bundle'))
         cluster = bundle.cluster_create(utils.random_string())
         cluster.config_set({"required": 10})
-        with allure.step('Create service in cluster'):
-            cluster.service_add(name="ZOOKEEPER")
+        cluster.service_add(name="ZOOKEEPER")
         task = cluster.action_run(name='check-file-type')
         assert task.status == 'running'

@@ -27,7 +27,6 @@ from jsonschema import validate
 from tests.library import errorcodes as err
 from tests.library import steps
 
-BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
 SCHEMAS = os.path.join(os.path.dirname(__file__), "schemas/")
 
 host_bad_configs = (({"str-key": "{1bbb}", "required": "158", "option": "my.host",
@@ -47,33 +46,25 @@ host_bad_configs = (({"str-key": "{1bbb}", "required": "158", "option": "my.host
                      'should be flat')
                     )
 
-
 @pytest.fixture(scope="module")
-def adcm(image, request):
-    repo, tag = image
-    dw = DockerWrapper()
-    adcm = dw.run_adcm(image=repo, tag=tag, pull=False)
-    adcm.api.auth(username='admin', password='admin')
-
-    def fin():
-        adcm.stop()
-
-    request.addfinalizer(fin)
-    return adcm
-
-
-@pytest.fixture(scope="module")
-def client(adcm):
-    steps.upload_bundle(adcm.api.objects, get_data_dir(__file__, 'hostprovider_bundle'))
-    steps.upload_bundle(adcm.api.objects, get_data_dir(__file__, 'cluster_bundle'))
-    return adcm.api.objects
-
-
-@pytest.fixture(scope="module")
-def host(sdk_client_ms: ADCMClient):
+def hostprovider(sdk_client_ms: ADCMClient):
     bundle = sdk_client_ms.upload_from_fs(get_data_dir(__file__, 'hostprovider_bundle'))
-    hp = bundle.provider_create(utils.random_string())
-    return hp.host_create(utils.random_string())
+    return bundle.provider_create(utils.random_string())
+
+
+@pytest.fixture(scope="module")
+def host(sdk_client_ms: ADCMClient, hostprovider):
+    return hostprovider.host_create(utils.random_string())
+
+
+@pytest.fixture(scope="module")
+def cluster(sdk_client_ms: ADCMClient):
+    return sdk_client_ms.upload_from_fs(get_data_dir(__file__, 'cluster_bundle'))
+
+
+@pytest.fixture(scope="module")
+def client(sdk_client_ms: ADCMClient, cluster, hostprovider):
+    return sdk_client_ms.adcm()._api.objects
 
 
 class TestHost:
