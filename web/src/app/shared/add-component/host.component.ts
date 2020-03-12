@@ -29,8 +29,15 @@ import { MatDialog } from '@angular/material/dialog';
             <mat-option value="">...</mat-option>
             <mat-option *ngFor="let p of providers$ | async" [value]="p.id">{{ p.name }}</mat-option>
           </mat-select>
-          <button [style.fontSize.px]="24" matSuffix mat-icon-button color="accent" (click)="showHostproviderForm($event)" matTooltip="Create and add hostprovider">
-            <mat-icon>add_box</mat-icon>
+          <button
+            [style.fontSize.px]="24"
+            matSuffix
+            mat-icon-button
+            [color]="expanded ? 'primary' : 'accent'"
+            (click)="showHostproviderForm($event)"
+            [matTooltip]="expanded ? 'Hide hostprovider creation form' : 'Create and add hostprovider'"
+          >
+            <mat-icon>{{ expanded ? 'clear' : 'add' }}</mat-icon>
           </button>
           <mat-error *ngIf="isError('provider_id')">
             <mat-error *ngIf="form.get('provider_id').hasError('required')">Hostprovider is required. If no hostprovider is available, add it here.</mat-error>
@@ -71,7 +78,7 @@ export class HostComponent extends BaseFormDirective implements OnInit {
 
   pageCluster = 1;
   pageProvider = 1;
-  limit = 50;
+  limit = 10;
 
   constructor(private action: ActionsDirective, service: AddService, dialog: MatDialog) {
     super(service, dialog);
@@ -127,9 +134,11 @@ export class HostComponent extends BaseFormDirective implements OnInit {
   }
 
   createdProvider(id: number) {
-    this.createdProviderId = id;
     this.expanded = false;
-    this.getProviders();
+    this.service
+      .getList<Provider>('provider', { limit: this.limit, page: this.pageProvider - 1 })
+      .pipe(tap(_ => this.form.get('provider_id').setValue(id)))
+      .subscribe(list => this.providers$.next(list));
   }
 
   getNextPageClusters() {
@@ -150,17 +159,15 @@ export class HostComponent extends BaseFormDirective implements OnInit {
 
   getProviders() {
     this.service
-      .getProviders({ limit: this.limit, page: this.pageProvider - 1 })
-      .pipe(
-        tap(list => {
-          this.form.get('provider_id').setValue(list.length === 1 ? list[0].id : this.createdProviderId);
-        })
-      )
+      .getList<Provider>('provider', { limit: this.limit, page: this.pageProvider - 1 })
+      .pipe(tap(list => this.form.get('provider_id').setValue(list.length === 1 ? list[0].id : '')))
       .subscribe(list => this.providers$.next([...this.providers$.getValue(), ...list]));
     if (this.form.get('provider_id').value) this.expanded = false;
   }
 
   getClusters() {
-    this.service.getClusters({ limit: this.limit, page: this.pageCluster - 1 }).subscribe(list => this.clusters$.next([...this.clusters$.getValue(), ...list]));
+    this.service
+      .getList<Cluster>('cluster', { limit: this.limit, page: this.pageCluster - 1 })
+      .subscribe(list => this.clusters$.next([...this.clusters$.getValue(), ...list]));
   }
 }
