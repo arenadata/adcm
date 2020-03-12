@@ -141,8 +141,21 @@ export class AddService {
     );
   }
 
-  getProviders() {
-    return this.api.getPure<Provider>('provider', { ordering: 'name' });
+  getProviders(param: { [key: string]: string | number } = {}) {
+    // return this.api.getPure<Provider>('provider', { ordering: 'name' });
+    const limit = param.limit ? +param.limit : +localStorage.getItem('limit'),
+      offset = (param.page ? +param.page : 0) * limit;
+    return this.api.root.pipe(
+      switchMap(root =>
+        this.api
+          .get<ListResult<Provider>>(root.provider, {
+            limit: limit.toString(),
+            offset: offset.toString(),
+            ordering: 'name'
+          })
+          .pipe(map(list => list.results))
+      )
+    );
   }
 
   getPrototype(name: StackInfo, param: { [key: string]: string | number }): Observable<Prototype[]> {

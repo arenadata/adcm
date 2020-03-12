@@ -4,7 +4,8 @@
     <mat-icon>add_circle_outline</mat-icon>
   </button>
 </div>
-<div class="content" [formGroup]="form">
+<div class="content">
+  <ng-container [formGroup]="form">
   <div class="item-iteration" *ngFor="let item of controls; let i = index; trackBy: trackByFn">
     <div>
       <app-root-scheme [form]="item.form" [options]="item.rules" [value]="item.value"
@@ -18,5 +19,6 @@
       <mat-icon>highlight_off</mat-icon>
     </button>
   </div>
+</ng-container>
 </div>
 <!-- {{ form.value | json }} -->

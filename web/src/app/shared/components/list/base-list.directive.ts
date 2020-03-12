@@ -50,8 +50,11 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
         filter(p => this.checkParam(p))
       )
       .subscribe(p => {
-        if (+p.get('page') === 0) {
+        const page = +p.get('page');
+        if (page === 0) {
           this.parent.paginator.firstPage();
+        } else {
+          this.parent.paginator.pageIndex = page;
         }
         const ordering = p.get('ordering');
         if (ordering && !this.parent.sort.active) {
@@ -132,7 +135,8 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
           if (m.event === 'upgrade') {
             this.service.checkItem(row).subscribe(item => Object.keys(row).map(a => (row[a] = item[a])));
           }
-        } else console.warn('List :: object not found', m, this.parent.data.data, this.typeName);
+        } 
+        // else console.warn('List :: object not found', m, this.parent.data.data, this.typeName);
       }
     }
   }
@@ -140,6 +144,7 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
   refresh(id?: number) {
     this.service.getList(this.listParams, this.typeName).subscribe(list => {
       this.parent.dataSource = list;
+      this.parent.paginator.length = list.count;
       if (id) this.parent.current = { id };
     });
   }
