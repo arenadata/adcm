@@ -32,7 +32,7 @@ export interface EventMessage {
     details: {
       id?: string;
       type: string;
-      value: string;
+      value: any;
     };
   };
 }
