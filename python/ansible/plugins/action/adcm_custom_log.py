@@ -23,7 +23,7 @@ DOCUMENTATION = r'''
 short_description: add entry to log storage
 description:
     - The C(adcm_custom_log) module is intended to log result of some checks to structured JSON or
-      TXT in log storage. This log can be seen via ADCM user interface. Each invoke of 
+      TXT in log storage. This log can be seen via ADCM user interface. Each invoke of
       C(adcm_custom_log) add one entry to json or txt log linked with ADCM job. You can invoke
       C(adcm_custom_log) with one job id any number of time per playbook.
 options:
