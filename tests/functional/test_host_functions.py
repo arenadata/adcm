@@ -20,10 +20,9 @@ import pytest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import get_data_dir
 from adcm_pytest_plugin import utils
-from adcm_pytest_plugin.docker import DockerWrapper
 from jsonschema import validate
 
-# pylint: disable=E0401, W0601, W0611, W0621
+# pylint: disable=E0401, W0601, W0611, W0621, W0212
 from tests.library import errorcodes as err
 from tests.library import steps
 
@@ -45,6 +44,7 @@ host_bad_configs = (({"str-key": "{1bbb}", "required": "158", "option": "my.host
                       "sub": {"sub1": {"foo": "bar"}}},
                      'should be flat')
                     )
+
 
 @pytest.fixture(scope="module")
 def hostprovider(sdk_client_ms: ADCMClient):

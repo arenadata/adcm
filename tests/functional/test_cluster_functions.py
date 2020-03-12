@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
 import random
 import time
 
@@ -20,9 +19,8 @@ import pytest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import get_data_dir
 from adcm_pytest_plugin import utils
-from adcm_pytest_plugin.docker import DockerWrapper
 
-# pylint: disable=E0401, W0601, W0611, W0621
+# pylint: disable=E0401, W0601, W0611, W0621, W0212
 from tests.library import errorcodes as err
 from tests.library import steps
 
@@ -46,6 +44,7 @@ def cluster(sdk_client_ms: ADCMClient):
 @pytest.fixture(scope="module")
 def client(sdk_client_ms: ADCMClient, cluster, hostprovider):
     return sdk_client_ms.adcm()._api.objects
+
 
 @pytest.fixture(scope="module")
 def client_action_bundle(sdk_client_ms: ADCMClient):
