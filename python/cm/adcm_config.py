@@ -719,6 +719,10 @@ def set_object_config(obj, keys, value):
         msg = '{} does not has config key "{}/{}"'
         err('CONFIG_NOT_FOUND', msg.format(proto_ref(proto), key, subkey))
 
+    if pconf.type == 'group':
+        msg = 'You can not update config group "{}" for {}'
+        err('CONFIG_VALUE_ERROR', msg.format(key, obj_ref(obj)))
+
     check_config_type(proto, key, subkey, obj_to_dict(pconf, ('type', 'limits', 'option')), value)
     # if config_is_ro(obj, keys, pconf.limits):
     #    msg = 'config key {} of {} is read only'

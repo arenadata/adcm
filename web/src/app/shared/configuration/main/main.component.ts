@@ -51,6 +51,8 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit, 
   saveFlag = false;
   historyShow = false;
 
+  isLock = false;
+
   private _url = '';
 
   @ViewChild('fields') fields: ConfigFieldsComponent;
@@ -129,6 +131,8 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit, 
   socketListener(m: EventMessage) {
     if (this.current.Current && m.object.type === this.current.Current.typeName && m.object.id === this.current.Current.id && !this.saveFlag) {
       if (m.event === 'change_config' || m.event === 'change_state') {
+        // TODO: magic literal string, maybe need use stateType
+        this.isLock = m.object.details.value === 'locked';
         this.config$ = this.getConfig();
         this.cdRef.detectChanges();
       }

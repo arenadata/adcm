@@ -12,6 +12,7 @@
 import { Directive, HostListener, Input } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { IAction } from '@app/core/types';
+
 import { DialogComponent } from '../dialog.component';
 import { ActionMasterComponent } from './master/master.component';
 
@@ -24,26 +25,36 @@ export interface ActionParameters {
 }
 
 @Directive({
-  selector: '[appActions]',
+  selector: '[appActions]'
 })
 export class ActionsDirective {
-  @Input('appActions')
-  data: ActionParameters;
+  @Input('appActions') inputData: ActionParameters;
 
   constructor(private dialog: MatDialog) {}
 
   @HostListener('click')
   onClick() {
-    const raw = this.data.actions[0];
-    const flag = raw.config.config.length || raw.hostcomponentmap;
-    this.dialog.open(DialogComponent, {
-      width: flag ? '90%' : '400px',
-      maxWidth: '1400px',
+    const maxWidth = '1400px';
+    const model = this.inputData;
+    const act = model?.actions[0];
+    if (!act) {
+      console.warn('ActionsComponent :: no data for action', model);
+      return;
+    }
+
+    const width = act.config?.config.length || act.hostcomponentmap ? '90%' : '400px';
+    const title = act.ui_options?.disclaimer ? act.ui_options.disclaimer : 'Run an action?';
+
+    const dialogModel = {
+      width,
+      maxWidth,
       data: {
-        title: raw.ui_options && raw.ui_options.disclaimer ? raw.ui_options.disclaimer : 'Run an action?',
-        component: ActionMasterComponent,
-        model: this.data,
-      },
-    });
+        title,
+        model,
+        component: ActionMasterComponent
+      }
+    };
+
+    this.dialog.open(DialogComponent, dialogModel);
   }
 }
