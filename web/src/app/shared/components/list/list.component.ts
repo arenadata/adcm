@@ -16,7 +16,7 @@ import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort, MatSortHeader, Sort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Cluster, EmmitRow, Issue, TypeName, notIssue } from '@app/core/types';
+import { EmmitRow, Issue, notIssue, TypeName } from '@app/core/types';
 import { filter } from 'rxjs/operators';
 
 import { DialogComponent } from '../dialog.component';
