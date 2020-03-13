@@ -10,9 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-- type: service
+- type: cluster
   name: test2
-  version: ver2
+  version: "1"
   config:
     param3:
       default: string%r

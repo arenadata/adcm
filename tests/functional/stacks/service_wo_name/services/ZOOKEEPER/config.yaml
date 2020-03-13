@@ -9,6 +9,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-type: service
-description: ZooKeeper
-version: '1.2'
+- type: cluster
+  name: test2
+  version: "1"
+
+- type: service
+  description: ZooKeeper
+  version: '1.2'

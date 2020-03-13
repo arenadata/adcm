@@ -10,6 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
+- type: cluster
+  name: test2
+  version: "1"
 -
     name: ZOOKEEPER
     type: service

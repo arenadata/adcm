@@ -1,3 +1,7 @@
+type = "cluster"
+name = "cluster"
+description = "cluster"
+version = "1.0"
 
 type = "service"
 name = "simple_service"

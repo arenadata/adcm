@@ -32,11 +32,11 @@ def client(sdk_client_fs: ADCMClient):
     return sdk_client_fs.adcm()._api.objects
 
 
-def test_didnot_load_stack(sdk_client_fs: ADCMClient):
+def test_didnot_load_stack(client):
     stack_dir = BUNDLES + 'did_not_load'
 
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-        sdk_client_fs.upload_from_fs(stack_dir)
+        steps.upload_bundle(client, stack_dir)
     errorcodes.STACK_LOAD_ERROR.equal(e, 'no config files in stack directory')
 
 
@@ -99,19 +99,19 @@ def test_service_unknown_type(sdk_client_fs: ADCMClient):
     errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'Unknown type')
 
 
-def test_yaml_parser_error(sdk_client_fs: ADCMClient):
+def test_yaml_parser_error(client):
     stack_dir = BUNDLES + 'yaml_parser_error'
 
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-        sdk_client_fs.upload_from_fs(stack_dir)
+        steps.upload_bundle(client, stack_dir)
     errorcodes.STACK_LOAD_ERROR.equal(e, 'YAML decode')
 
 
-def test_toml_parser_error(sdk_client_fs: ADCMClient):
+def test_toml_parser_error(client):
     stack_dir = BUNDLES + 'toml_parser_error'
 
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-        sdk_client_fs.upload_from_fs(stack_dir)
+        steps.upload_bundle(client, stack_dir)
     errorcodes.STACK_LOAD_ERROR.equal(e, 'TOML decode')
 
 
@@ -157,19 +157,19 @@ def test_load_stack_w_empty_config_field(client):
     assert validate(cluster_proto, schema) is None
 
 
-def test_yaml_decode_duplicate_anchor(sdk_client_fs: ADCMClient):
+def test_yaml_decode_duplicate_anchor(client):
     stack_dir = BUNDLES + 'yaml_decode_duplicate_anchor'
 
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-        sdk_client_fs.upload_from_fs(stack_dir)
+        steps.upload_bundle(client, stack_dir)
     errorcodes.STACK_LOAD_ERROR.equal(e, 'found duplicate anchor')
 
 
-def test_raises_error_expected_colon(sdk_client_fs: ADCMClient):
+def test_raises_error_expected_colon(client):
     stack_dir = BUNDLES + 'expected_colon'
 
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-        sdk_client_fs.upload_from_fs(stack_dir)
+        steps.upload_bundle(client, stack_dir)
     errorcodes.STACK_LOAD_ERROR.equal(e, 'could not find expected \':\'')
 
 
@@ -182,21 +182,21 @@ def test_shouldn_load_config_with_wrong_name(sdk_client_fs: ADCMClient):
     errorcodes.WRONG_NAME.equal(e, 'Config key', ' is incorrect')
 
 
-def test_load_stack_with_lost_whitespace(sdk_client_fs: ADCMClient):
+def test_load_stack_with_lost_whitespace(client):
     stack_dir = BUNDLES + 'missed_whitespace'
 
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-        sdk_client_fs.upload_from_fs(stack_dir)
+        steps.upload_bundle(client, stack_dir)
 
     errorcodes.STACK_LOAD_ERROR.equal(e, 'mapping values are not allowed here')
 
 
-def test_load_stack_expected_block_end(sdk_client_fs: ADCMClient):
+def test_load_stack_expected_block_end(client):
 
     stack_dir = BUNDLES + 'expected_block_end'
 
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-        sdk_client_fs.upload_from_fs(stack_dir)
+        steps.upload_bundle(client, stack_dir)
     errorcodes.STACK_LOAD_ERROR.equal(e, 'expected <block end>, but found \'-\'')
 
 
@@ -210,12 +210,12 @@ def test_load_stack_wo_type_in_config_key(sdk_client_fs: ADCMClient):
     errorcodes.INVALID_CONFIG_DEFINITION.equal(e, 'No type in config key')
 
 
-def test_when_config_has_incorrect_option_definition(sdk_client_fs: ADCMClient):
+def test_when_config_has_incorrect_option_definition(client):
 
     stack_dir = BUNDLES + 'incorrect_option_definition'
 
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-        sdk_client_fs.upload_from_fs(stack_dir)
+        steps.upload_bundle(client, stack_dir)
 
     errorcodes.STACK_LOAD_ERROR.equal(e, 'found unhashable key')
 
