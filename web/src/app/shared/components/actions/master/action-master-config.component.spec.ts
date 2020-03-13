@@ -11,34 +11,26 @@
 // limitations under the License.
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ActionMasterComponent as MasterComponent } from './master.component';
-import { ApiService } from '@app/core/api';
+import { ActionMasterConfigComponent } from './action-master-config.component';
 import { FieldService } from '@app/shared/configuration/field.service';
-import { MatListModule } from '@angular/material/list';
 
-describe('MasterComponent', () => {
-  let component: MasterComponent;
-  let fixture: ComponentFixture<MasterComponent>;
-  let ApiServiceStub: Partial<ApiService>;
+describe('ActionMasterConfigComponent', () => {
+  let component: ActionMasterConfigComponent;
+  let fixture: ComponentFixture<ActionMasterConfigComponent>;
   let FieldServiceStub: Partial<FieldService>;
 
   beforeEach(async(() => {
-
-    ApiServiceStub = {};
-    FieldServiceStub = {};
-
     TestBed.configureTestingModule({
-      imports: [MatListModule],
-      declarations: [MasterComponent],
+      declarations: [ ActionMasterConfigComponent ],
       providers: [
-        { provide: ApiService, useValue: ApiServiceStub },
         { provide: FieldService, useValue: FieldServiceStub }
       ]
-    }).compileComponents();
+    })
+    .compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(MasterComponent);
+    fixture = TestBed.createComponent(ActionMasterConfigComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -46,16 +38,4 @@ describe('MasterComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
-
-  /**
-   * actions - must be Array
-   * if actions.length === 1 - load simple template
-   * else load list actions template
-   * 
-   * simple template - show: or config template or host-map template or master with step config -> host-map 
-   * 
-   * run button - get value from everything components, have to parse it and send post
-   * 
-   */
-
 });

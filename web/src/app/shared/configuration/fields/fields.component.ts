@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, EventEmitter, Input, Output, QueryList, ViewChildren } from '@angular/core';
+import { Component, EventEmitter, Input, Output, QueryList, ViewChildren, ChangeDetectionStrategy } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 
 import { FieldService } from '../field.service';
@@ -31,12 +31,14 @@ import { IConfig, PanelOptions, FieldOptions } from '../types';
         </ng-template>
       </ng-template>
     </ng-container>
-  `
+  `,
 })
 export class ConfigFieldsComponent {
   dataOptions: (FieldOptions | PanelOptions)[] = [];
   form = new FormGroup({});
   rawConfig: IConfig;
+
+  public isAdvanced = false;
 
   @Output()
   event = new EventEmitter<{ name: string; data?: any }>();
@@ -55,6 +57,7 @@ export class ConfigFieldsComponent {
     this.dataOptions = this.service.getPanels(data);
     this.form = this.service.toFormGroup(this.dataOptions);
     this.checkForm();
+    this.isAdvanced = data.config.some(a => a.ui_options && a.ui_options.advanced);
     this.shapshot = { ...this.form.value };
     this.event.emit({ name: 'load', data: { form: this.form } });
   }

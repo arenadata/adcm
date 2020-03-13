@@ -9,12 +9,9 @@
 
 <ng-template #simple>
   <mat-horizontal-stepper #stepper linear *ngIf="isConfig && isHmcRequired">
-    <mat-step [stepControl]="fields_step.form">
+    <mat-step [stepControl]="wcs.fields.form">
       <ng-template matStepLabel>Configuration</ng-template>
-      <div class="config-tools">
-        <mat-checkbox [(ngModel)]="advanced" *ngIf="isAdvanced">Advanced</mat-checkbox>
-      </div>
-      <app-config-fields #fields_step [model]="action?.config"></app-config-fields>
+      <app-action-master-config [action]="action" #wcs></app-action-master-config>
       <div class="controls">
         <button mat-raised-button (click)="cancel()" color="primary">Cancel</button>
         <button mat-raised-button matStepperNext color="primary">Next</button>
@@ -36,13 +33,12 @@
     </mat-step>
     <mat-step label="Done"></mat-step>
   </mat-horizontal-stepper>
+
   <div *ngIf="isConfig && !isHmcRequired">
-    <div class="config-tools">
-      <mat-checkbox [(ngModel)]="advanced" *ngIf="isAdvanced">Advanced</mat-checkbox>
-    </div>
-    <app-config-fields #fields [model]="action?.config" [ngStyle]="{ display: 'inherit' }"></app-config-fields>
-    <ng-container *ngTemplateOutlet="controls; context: { value: { config: fields } }"></ng-container>
+    <app-action-master-config [action]="action" #wc></app-action-master-config>
+    <ng-container *ngTemplateOutlet="controls; context: { value: { config: wc.fields } }"></ng-container>
   </div>
+
   <div *ngIf="isHmcRequired && !isConfig">
     <app-service-host [tabIndex]="2" [cluster]="model.cluster" [hideButton]="true" #hostmap
       [actionParameters]="action?.hostcomponentmap" [fixedButton]="false"></app-service-host>
@@ -52,6 +48,7 @@
     <ng-container *ngTemplateOutlet="controls; context: { value: {} }"></ng-container>
   </div>
 </ng-template>
+
 <ng-template #controls let-value="value">
   <div class="controls">
     <ng-container *ngIf="model.actions.length > 1">

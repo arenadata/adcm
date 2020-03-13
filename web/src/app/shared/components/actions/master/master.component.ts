@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { AfterViewInit, Component, EventEmitter, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, OnInit } from '@angular/core';
 import { ApiService } from '@app/core/api';
 import { IAction } from '@app/core/types';
 import { FieldService } from '@app/shared/configuration/field.service';
@@ -23,40 +23,35 @@ import { ActionParameters } from '../actions.directive';
 @Component({
   selector: 'app-master',
   templateUrl: './master.component.html',
-  styleUrls: ['./master.component.scss']
+  styles: [
+    `
+      .action-button {
+        background: none !important;
+        margin: 6px 0;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.04) !important;
+        }
+      }
+    `
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ActionMasterComponent extends BaseDirective implements DynamicComponent, OnInit, AfterViewInit {
+export class ActionMasterComponent extends BaseDirective implements DynamicComponent, OnInit {
   event: EventEmitter<DynamicEvent> = new EventEmitter();
-  model: ActionParameters;
+  model: ActionParameters = { actions: [] };
   actions: IAction[];
   action: IAction;
 
   isHmcRequired = false;
   isConfig = false;
 
-  @ViewChild('fields') fields: ConfigFieldsComponent;
-
-  isAdvanced = false;
-  set advanced(value: boolean) {
-    this.config.filterApply(this.fields.dataOptions, { advanced: value, search: '' });
-  }
-
-  arh: { parent: HTMLElement; holder: HTMLElement };
-
-  constructor(private api: ApiService, private config: FieldService) {
+  constructor(private api: ApiService, private configService: FieldService) {
     super();
   }
 
   ngOnInit(): void {
-    if (this.model && this.model.actions.length === 1) {
-      this.choose(this.model.actions[0]);
-    }
-  }
-
-  ngAfterViewInit(): void {
-    if (this.isConfig && this.fields) {
-      setTimeout(() => (this.isAdvanced = this.fields.rawConfig.config.some(a => a.ui_options && a.ui_options.advanced)));
-    }
+    if (this.model.actions.length === 1) this.choose(this.model.actions[0]);
   }
 
   choose(action: IAction) {
@@ -74,7 +69,8 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
       !this.isConfig && !this.isHmcRequired
         ? this.api.post(this.action.run, {})
         : this.api.post(this.action.run, {
-            config: data.value ? this.config.parseValue(data.value, this.action.config.config) : {},
+          // TODO: remove configService
+            config: data.value ? this.configService.parseValue(data.value, this.action.config.config) : {},
             hc: data.hostmap
           });
 
