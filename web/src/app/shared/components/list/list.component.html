@@ -1,8 +1,3 @@
-<!-- <div class="filter-header">
-  <mat-form-field>
-    <input matInput (keyup)="applyFilter($event.target.value)" placeholder="Filter">
-  </mat-form-field>
-</div> -->
 <mat-table [dataSource]="data" [trackBy]="trackBy" matSort>
   <mat-header-row *matHeaderRowDef="columns" [appMultiSort]="sortParam" (mousedownevent)="addToSorting=$event"></mat-header-row>
   <mat-row appHover *matRowDef="let row; columns: columns" (click)="clickCell($event, 'title', row)"

@@ -37,11 +37,6 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
   ngOnInit(): void {
     this.parent.type = this.typeName;
     this.parent.columns = this.service.initInstance(this.typeName).columns;
-
-    const limit = +localStorage.getItem('list:limit');
-    if (!limit) localStorage.setItem('list:limit', '10');
-    this.parent.paginator.pageSize = +localStorage.getItem('list:limit');
-
     this.parent.listItemEvt.pipe(this.takeUntil()).subscribe({ next: (event: EmmitRow) => this.listEvents(event) });
 
     this.parent.route.paramMap
@@ -50,6 +45,7 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
         filter(p => this.checkParam(p))
       )
       .subscribe(p => {
+        this.parent.paginator.pageSize = +p.get('limit') || 10;
         const page = +p.get('page');
         if (page === 0) {
           this.parent.paginator.firstPage();
@@ -135,18 +131,15 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
           if (m.event === 'upgrade') {
             this.service.checkItem(row).subscribe(item => Object.keys(row).map(a => (row[a] = item[a])));
           }
-        } 
+        }
         // else console.warn('List :: object not found', m, this.parent.data.data, this.typeName);
       }
     }
   }
 
   refresh(id?: number) {
-    this.service.getList(this.listParams, this.typeName).subscribe(list => {
-      this.parent.dataSource = list;
-      this.parent.paginator.length = list.count;
-      if (id) this.parent.current = { id };
-    });
+    if (id) this.parent.current = { id };
+    this.service.getList(this.listParams, this.typeName).subscribe(list => (this.parent.dataSource = list));
   }
 
   listEvents(event: EmmitRow) {
