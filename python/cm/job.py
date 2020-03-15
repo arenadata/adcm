@@ -32,6 +32,7 @@ from cm.logger import log
 from cm.models import (
     Cluster, Action, SubAction, TaskLog, JobLog, CheckLog, Host, ADCM,
     ClusterObject, HostComponent, ServiceComponent, HostProvider, DummyData,
+    LogStorage,
 )
 
 
@@ -591,7 +592,7 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
     if conf:
         job_conf['job']['config'] = conf
 
-    fd = open(os.path.join(config.RUN_DIR, f'{job_id}-config.json'), 'w')
+    fd = open(os.path.join(config.RUN_DIR, f'{job_id}/config.json'), 'w')
     json.dump(job_conf, fd, indent=3, sort_keys=True)
     fd.close()
 
@@ -646,7 +647,10 @@ def create_job(action, sub_action, selector, task_id=0):
     if sub_action:
         job.sub_action_id = sub_action.id
     job.save()
+    LogStorage.objects.create(job=job, name='ansible', type='stdout', format='txt')
+    LogStorage.objects.create(job=job, name='ansible', type='stderr', format='txt')
     set_job_status(job.id, config.Job.CREATED)
+    os.makedirs(os.path.join(config.RUN_DIR, f'{job.id}'), exist_ok=True)
     return job
 
 
@@ -755,12 +759,12 @@ def finish_task(task, job, status):
         set_task_status(task, status)
 
 
-def cook_log_name(job_id, tag, level, ext='txt'):
-    return f'{job_id}-{tag}-{level}.{ext}'
+def cook_log_name(tag, level, ext='txt'):
+    return f'{tag}-{level}.{ext}'
 
 
 def read_log(job_id, tag, level, log_type):
-    fname = os.path.join(config.LOG_DIR, f'{job_id}-{tag}-{level}.{log_type}')
+    fname = os.path.join(config.RUN_DIR, f'{job_id}/{tag}-{level}.{log_type}')
     try:
         f = open(fname, 'r')
         data = f.read()
@@ -778,6 +782,21 @@ def get_host_log_files(job_id, tag):
         if m:
             (level, ext) = m[0]
             logs.append((level, ext, item))
+    return logs
+
+
+def get_log(job):
+    log_storage = LogStorage.objects.filter(job=job)
+    logs = []
+
+    for ls in log_storage:
+        logs.append({
+            'name': ls.name,
+            'type': ls.type,
+            'format': ls.format,
+            'log_id': ls.id
+        })
+
     return logs
 
 
@@ -811,6 +830,10 @@ def log_check(job_id, title, res, msg):
     except JobLog.DoesNotExist:
         err('JOB_NOT_FOUND', f'no job with id #{job_id}')
     cl = CheckLog(job_id=job.id, title=title, message=msg, result=res)
+    try:
+        LogStorage.objects.get(job=job, name='check', type='check')
+    except LogStorage.DoesNotExist:
+        LogStorage.objects.create(job=job, name='check', type='check', format='json')
     cl.save()
     return cl
 
@@ -821,9 +844,10 @@ def finish_check(job_id):
         data.append({'title': cl.title, 'message': cl.message, 'result': cl.result})
     if not data:
         return
-    log_name = os.path.join(config.LOG_DIR, cook_log_name(job_id, 'check', 'out', 'json'))
-    with open(log_name, 'w+') as f:
-        f.write(json.dumps(data, indent=3))
+
+    job = JobLog.objects.get(id=job_id)
+    LogStorage.objects.filter(job=job, name='check', type='check', format='json').update(
+        body=json.dumps(data))
     CheckLog.objects.filter(job_id=job_id).delete()
 
 
