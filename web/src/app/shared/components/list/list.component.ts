@@ -20,6 +20,7 @@ import { EmmitRow, Issue, notIssue, TypeName } from '@app/core/types';
 import { filter } from 'rxjs/operators';
 
 import { DialogComponent } from '../dialog.component';
+import { BehaviorSubject } from 'rxjs';
 
 enum Direction {
   '' = '',
@@ -43,6 +44,9 @@ export class ListComponent implements OnInit {
   selection = new SelectionModel(true, []);
   current: any = {};
   type: TypeName;
+
+  clustersSubj = new BehaviorSubject<{ id: number; title: string }[]>([]);
+  clusters$ = this.clustersSubj.asObservable();
 
   @Input()
   currentItemId: string;
@@ -197,4 +201,5 @@ export class ListComponent implements OnInit {
       .pipe(filter(yes => yes))
       .subscribe(() => this.listItemEvt.emit({ cmd: 'delete', row }));
   }
+
 }

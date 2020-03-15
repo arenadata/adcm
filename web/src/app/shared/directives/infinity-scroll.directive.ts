@@ -12,6 +12,8 @@
 import { Directive, Renderer2, Host, OnInit, Output, EventEmitter } from '@angular/core';
 import { MatSelect } from '@angular/material/select';
 
+const POINT_WHEN_EMMIT = 100;
+
 @Directive({
   selector: '[appInfinityScroll]'
 })
@@ -35,6 +37,6 @@ export class InfinityScrollDirective implements OnInit {
     const target = event.target;
 
     const height = Array.from<HTMLElement>(target.children).reduce((p, c) => p + c.clientHeight, 0) - target.clientHeight;
-    if (target.scrollTop > height - 100) this.topScrollPoint.emit();
+    if (target.scrollTop > height - POINT_WHEN_EMMIT) this.topScrollPoint.emit();
   }
 }
