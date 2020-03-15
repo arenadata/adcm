@@ -544,6 +544,7 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
         'env': {
             'run_dir': config.RUN_DIR,
             'log_dir': config.LOG_DIR,
+            'tmp_dir': os.path.join(config.RUN_DIR, f'{job_id}', 'tmp'),
             'stack_dir': get_bundle_root(action) + '/' + action.prototype.bundle.hash,
             'status_api_token': config.STATUS_SECRET_KEY,
         },
@@ -650,7 +651,7 @@ def create_job(action, sub_action, selector, task_id=0):
     LogStorage.objects.create(job=job, name='ansible', type='stdout', format='txt')
     LogStorage.objects.create(job=job, name='ansible', type='stderr', format='txt')
     set_job_status(job.id, config.Job.CREATED)
-    os.makedirs(os.path.join(config.RUN_DIR, f'{job.id}'), exist_ok=True)
+    os.makedirs(os.path.join(config.RUN_DIR, f'{job.id}', 'tmp'), exist_ok=True)
     return job
 
 
@@ -849,6 +850,14 @@ def finish_check(job_id):
     LogStorage.objects.filter(job=job, name='check', type='check', format='json').update(
         body=json.dumps(data))
     CheckLog.objects.filter(job_id=job_id).delete()
+
+
+def log_custom(job_id, name, log_format, body):
+    try:
+        job = JobLog.objects.get(id=job_id)
+        LogStorage.objects.create(job=job, name=name, type='custom', format=log_format, body=body)
+    except JobLog.DoesNotExist:
+        err('JOB_NOT_FOUND', f'no job with id #{job_id}')
 
 
 def check_all_status():

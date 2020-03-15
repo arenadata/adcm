@@ -447,6 +447,7 @@ class TestJob(TestCase):
                     'env': {
                         'run_dir': mock_dump.call_args[0][0]['env']['run_dir'],
                         'log_dir': mock_dump.call_args[0][0]['env']['log_dir'],
+                        'tmp_dir': os.path.join(config.RUN_DIR, f'{job.id}', 'tmp'),
                         'stack_dir': mock_dump.call_args[0][0]['env']['stack_dir'],
                         'status_api_token': mock_dump.call_args[0][0]['env']['status_api_token']},
                     'job': {
