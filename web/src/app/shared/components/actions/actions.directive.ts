@@ -34,18 +34,19 @@ export class ActionsDirective {
 
   @HostListener('click')
   onClick() {
+    const dialogModel = this.prepare();
+    this.dialog.open(DialogComponent, dialogModel);
+  }
+
+  prepare() {
     const maxWidth = '1400px';
     const model = this.inputData;
-    const act = model?.actions[0];
-    if (!act) {
-      console.warn('ActionsComponent :: no data for action', model);
-      return;
-    }
+    const act = model.actions[0];
 
     const width = act.config?.config.length || act.hostcomponentmap ? '90%' : '400px';
     const title = act.ui_options?.disclaimer ? act.ui_options.disclaimer : 'Run an action?';
 
-    const dialogModel = {
+    return {
       width,
       maxWidth,
       data: {
@@ -54,7 +55,5 @@ export class ActionsDirective {
         component: ActionMasterComponent
       }
     };
-
-    this.dialog.open(DialogComponent, dialogModel);
   }
 }
