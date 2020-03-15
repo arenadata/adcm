@@ -16,10 +16,11 @@ import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort, MatSortHeader, Sort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Cluster, EmmitRow, Issue, TypeName, notIssue } from '@app/core/types';
+import { EmmitRow, Issue, notIssue, TypeName } from '@app/core/types';
 import { filter } from 'rxjs/operators';
 
 import { DialogComponent } from '../dialog.component';
+import { BehaviorSubject } from 'rxjs';
 
 enum Direction {
   '' = '',
@@ -43,6 +44,9 @@ export class ListComponent implements OnInit {
   selection = new SelectionModel(true, []);
   current: any = {};
   type: TypeName;
+
+  clustersSubj = new BehaviorSubject<{ id: number; title: string }[]>([]);
+  clusters$ = this.clustersSubj.asObservable();
 
   @Input()
   currentItemId: string;
@@ -197,4 +201,5 @@ export class ListComponent implements OnInit {
       .pipe(filter(yes => yes))
       .subscribe(() => this.listItemEvt.emit({ cmd: 'delete', row }));
   }
+
 }

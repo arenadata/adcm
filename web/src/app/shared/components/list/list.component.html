@@ -4,7 +4,8 @@
   </mat-form-field>
 </div> -->
 <mat-table [dataSource]="data" [trackBy]="trackBy" matSort>
-  <mat-header-row *matHeaderRowDef="columns" [appMultiSort]="sortParam" (mousedownevent)="addToSorting=$event"></mat-header-row>
+  <mat-header-row *matHeaderRowDef="columns" [appMultiSort]="sortParam" (mousedownevent)="addToSorting=$event">
+  </mat-header-row>
   <mat-row appHover *matRowDef="let row; columns: columns" (click)="clickCell($event, 'title', row)"
     [ngClass]="{ 'select-table-item': current ? row.id === current.id : false }"></mat-row>
 
@@ -163,7 +164,7 @@
             </ng-template>
           </ng-template>
         </mat-menu>
-        
+
       </ng-template>
     </mat-cell>
   </ng-container>
@@ -228,12 +229,13 @@
     <mat-cell *matCellDef="let row">
       <a *ngIf="row.cluster_id; else clusterlist" [routerLink]="['/cluster', row.cluster_id]">{{ row.cluster_name }}</a>
       <ng-template #clusterlist>
-        <mat-select placeholder="Assign to cluster" class="select-in-cell" (click)="stopPropagation($event)"
+        <mat-select appInfinityScroll (topScrollPoint)="clickCell($event, 'getNextPageCluster', row)" placeholder="Assign to cluster"
+          class="select-in-cell" (click)="stopPropagation($event)"
           (openedChange)="clickCell($event, 'getClusters', row)"
           (valueChange)="clickCell($event, 'addCluster', row, clusters.value)" #clusters>
           <mat-option>...</mat-option>
-          <mat-option *ngFor="let cluster of row.clusters" [value]="cluster.id">
-            {{ cluster.name }}
+          <mat-option *ngFor="let item of row.clusters" [value]="item.id">
+            {{ item.title }}
           </mat-option>
         </mat-select>
       </ng-template>
