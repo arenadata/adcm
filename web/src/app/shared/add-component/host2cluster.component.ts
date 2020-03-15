@@ -21,19 +21,29 @@ import { HostComponent } from './host.component';
   selector: 'app-add-host2cluster',
   template: `
     <ng-container *ngIf="freeHost$ | async; else load">
-      <div class="tools">
-        <button mat-icon-button [ngClass]="{ hidden: !list.length }" (click)="showForm = !showForm" color="accent" matTooltip="Create and add new host">
-          <mat-icon>add_box</mat-icon>
+      <div class="tools" [ngClass]="{ hidden: !list.length }">
+        <mat-select
+          class="add-host2cluster"
+          appInfinityScroll
+          (topScrollPoint)="nextPage()"
+          (valueChange)="addHost2Cluster(free.value)"
+          #free
+          placeholder="Select free host and assign to cluster"
+        >
+          <mat-option>...</mat-option>
+          <mat-option *ngFor="let host of list" [value]="host.id" [appTooltip]="host.fqdn" [appTooltipShowByCondition]="true">{{ host.fqdn }}</mat-option>
+        </mat-select>
+
+        <button
+          mat-icon-button
+          (click)="showForm = !showForm"
+          [color]="showForm ? 'primary' : 'accent'"
+          [matTooltip]="showForm ? 'Hide host creation form' : 'Create and add new host'"
+        >
+          <mat-icon>{{ showForm ? 'clear' : 'add' }}</mat-icon>
         </button>
       </div>
-      <div class="add-host2cluster">
-        <div *ngFor="let host of list" class="full">
-          <label class="overflow" [appTooltip]="host.name" [appTooltipShowByCondition]="true">{{ host.name }}</label>
-          <button mat-icon-button (click)="addHost2Cluster(host)" matTooltip="Host will be added to the cluster">
-            <mat-icon color="primary">link</mat-icon>
-          </button>
-        </div>
-      </div>
+
       <ng-container *ngIf="showForm || !list.length">
         <app-add-host #form (cancel)="onCancel($event)" [noCluster]="true"></app-add-host>
         <p class="controls">
@@ -45,10 +55,11 @@ import { HostComponent } from './host.component';
     <ng-template #load><mat-spinner [diameter]="24"></mat-spinner></ng-template>
   `,
   styles: [
-    '.tools {position: relative; height: 40px;} .tools>button { position: absolute; right: 0;}',
+    '.tools { display: flex; align-items: baseline; margin: 0 -2px 10px; }',
     '.full { display: flex;padding-left: 6px; margin: 3px 0; justify-content: space-between; } .full>label { vertical-align: middle; line-height: 40px; }',
     '.full:nth-child(odd) {background-color: #4e4e4e;}',
-    '.full:hover {background-color: #5e5e5e; }'
+    '.full:hover {background-color: #5e5e5e; }',
+    '.add-host2cluster { flex: 1; }'
   ]
 })
 export class Host2clusterComponent extends BaseFormDirective implements OnInit, OnDestroy {
@@ -56,10 +67,15 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
   list = [];
   showForm = false;
 
+  page = 0;
+  limit = 10;
+
   @ViewChild('form') hostForm: HostComponent;
 
   ngOnInit() {
-    this.freeHost$ = this.service.getFreeHosts().pipe(tap(list => (this.list = list)));
+    this.freeHost$ = this.service
+      .getList<Host>('host', { limit: this.limit, page: this.page, cluster_is_null: 'true' })
+      .pipe(tap(list => (this.list = list)));
   }
 
   save(host: Host) {
@@ -73,10 +89,22 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
       .subscribe();
   }
 
-  addHost2Cluster(host: Host) {
-    this.service
-      .addHostInCluster(host)
-      .pipe(this.takeUntil())
-      .subscribe(() => (this.list = this.list.filter(a => a.id !== host.id)));
+  addHost2Cluster(id: number) {
+    if (id)
+      this.service
+        .addHostInCluster(id)
+        .pipe(this.takeUntil())
+        .subscribe(() => (this.list = this.list.filter(a => a.id !== id)));
+  }
+
+  nextPage() {
+    const count = this.list.length;
+    if (count === (this.page + 1) * this.limit) {
+      this.page++;
+      this.service
+        .getList<Host>('host', { limit: this.limit, page: this.page, cluster_is_null: 'true' })
+        .pipe(this.takeUntil())
+        .subscribe(list => (this.list = [...this.list, ...list]));
+    }
   }
 }
