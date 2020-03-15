@@ -43,7 +43,7 @@ export class TopComponent {
   }
 
   @Input() upgradable: boolean;
-  @Input() actions: Observable<IAction[]> = of([]);
+  @Input() actions: IAction[] = [];
 
   @Input() set current(c: IDetails) {
     if (c) {
