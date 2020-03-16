@@ -12,7 +12,7 @@
 import { Injectable, ɵEMPTY_MAP } from '@angular/core';
 import { ParamMap } from '@angular/router';
 import { ApiService } from '@app/core/api';
-import { IAction, Bundle, Cluster, Entities, Host, IImport, Job, Log, Provider, Service, TypeName } from '@app/core/types';
+import { IAction, Bundle, Cluster, Entities, Host, IImport, Job, Log, Provider, Service, TypeName, LogFile } from '@app/core/types';
 import { environment } from '@env/environment';
 import { BehaviorSubject, forkJoin, Observable, of, EMPTY } from 'rxjs';
 import { filter, map, switchMap, tap } from 'rxjs/operators';
@@ -110,10 +110,9 @@ export class ClusterService {
    * Logging for Jobs
    * @param level property from LogFile interface
    */
-  getLog(tag: string, level: string): Observable<Log> {
-    const job = this.Current as Job;
-    const file = job.log_files.find(a => a.tag === tag && a.level === level);
-    return this.api.get<Log>(file.url);
+  getLog(name: string, type: string): Observable<LogFile> {
+    const log = (this.Current as Job).log_files.find(a => a.name === name && a.type === type);
+    return this.api.get<LogFile>(log.url);
   }
 
   getActions(): Observable<IAction[]> {

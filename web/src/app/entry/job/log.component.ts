@@ -13,7 +13,7 @@ import { AfterViewInit, Component, DoCheck, ElementRef, OnInit, ViewChild } from
 import { ActivatedRoute, ParamMap } from '@angular/router';
 import { ClusterService } from '@app/core';
 import { EventMessage, SocketState } from '@app/core/store';
-import { CheckLog, Log } from '@app/core/types';
+import { CheckLog, Log, LogFile } from '@app/core/types';
 import { SocketListenerDirective } from '@app/shared';
 import { Store } from '@ngrx/store';
 import { interval, Subscription } from 'rxjs';
@@ -149,14 +149,14 @@ export class LogComponent extends SocketListenerDirective implements OnInit, Aft
 
   refresh() {
     if (this.current) {
-      const [tag, level] = this.current.split('_');
+      const [name, type] = this.current.split('_');
       if (this.asJson) this.content = [];
       this.service
-        .getLog(tag, level)
-        .pipe(map((log: Log) => log.content))
-        .subscribe(c => {
-          this.content = c || 'Nothing to display...';
-          this.asJson = tag === 'check';
+        .getLog(name, type)
+        .pipe(this.takeUntil())
+        .subscribe(log => {
+          this.content = log.body || 'Nothing to display...';
+          this.asJson = log.format === 'json';
         });
     }
   }
