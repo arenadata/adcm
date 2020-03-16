@@ -15,7 +15,7 @@ import { ChannelService, ClusterService, WorkerInstance } from '@app/core';
 import { EventMessage, SocketState } from '@app/core/store';
 import { Cluster, Host, IAction, Issue, Job, notIssue } from '@app/core/types';
 import { Store } from '@ngrx/store';
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 import { switchMap, tap } from 'rxjs/operators';
 
 import { SocketListenerDirective } from '../directives/socketListener.directive';

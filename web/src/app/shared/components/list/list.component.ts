@@ -152,14 +152,6 @@ export class ListComponent implements OnInit {
     this.isAllSelected() ? this.selection.clear() : this.data.data.forEach(row => this.selection.select(row));
   }
 
-  applyFilter(filterValue: string) {
-    filterValue = filterValue.trim();
-    filterValue = filterValue.toLowerCase();
-    this.data.filter = filterValue;
-    this.data.paginator = this.paginator;
-    this.data.sort = this.sort;
-  }
-
   getClusterData(row: any) {
     if ('hostcomponent' in row && this.type === 'cluster') {
       const id = row.id,
