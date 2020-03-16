@@ -32,7 +32,9 @@ const TestParams: ActionParameters = {
 @Component({
   template: '<button [appActions]="TestParam">ActionsTestName</button>'
 })
-class TestComponent {}
+class TestComponent {
+  testParams: ActionParameters;
+}
 
 function MockDirective(options: Component): Directive {
     const metadata: Directive = {
@@ -46,6 +48,7 @@ function MockDirective(options: Component): Directive {
 describe('ActionsDirective', () => {
   let fixture: ComponentFixture<TestComponent>;
   let de: DebugElement;
+  let directive: ActionsDirective;
 
   beforeEach(() => {
     fixture = TestBed.configureTestingModule({
@@ -55,12 +58,13 @@ describe('ActionsDirective', () => {
 
     fixture.detectChanges();
     de = fixture.debugElement.query(By.directive(ActionsDirective));
+
+    //directive = new ActionsDirective({});
   });
 
-  it('should have data in [appActions] attribute', () => {
+  xit('should have data in [appActions] attribute', () => {
+    fixture.componentInstance.testParams = TestParams;
     de.triggerEventHandler('click', {});
     fixture.detectChanges();
-
-        
   });
 });

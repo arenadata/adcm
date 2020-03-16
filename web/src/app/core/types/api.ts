@@ -76,7 +76,6 @@ export interface Host extends ApiBase {
   cluster: string;
   cluster_id?: number;
   cluster_name?: string;
-  clusters: Cluster[];
 }
 
 export interface Service extends ApiBase {
