@@ -10,9 +10,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { FieldService } from '@app/shared/configuration/field.service';
 
 import { ActionMasterConfigComponent } from './action-master-config.component';
-import { FieldService } from '@app/shared/configuration/field.service';
 
 describe('ActionMasterConfigComponent', () => {
   let component: ActionMasterConfigComponent;
@@ -21,12 +21,9 @@ describe('ActionMasterConfigComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ ActionMasterConfigComponent ],
-      providers: [
-        { provide: FieldService, useValue: FieldServiceStub }
-      ]
-    })
-    .compileComponents();
+      declarations: [ActionMasterConfigComponent],
+      providers: [{ provide: FieldService, useValue: FieldServiceStub }]
+    }).compileComponents();
   }));
 
   beforeEach(() => {

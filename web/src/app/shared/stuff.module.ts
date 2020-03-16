@@ -18,6 +18,7 @@ import { TooltipComponent } from './components/tooltip/tooltip.component';
 import { TooltipDirective } from './components/tooltip/tooltip.directive';
 import { BaseDirective, ForTestDirective, InfinityScrollDirective, MTextareaDirective, ScrollDirective, SocketListenerDirective } from './directives';
 import { MaterialModule } from './material.module';
+import { ActionsDirective } from './components/actions/actions.directive';
 
 @NgModule({
   declarations: [
@@ -31,7 +32,8 @@ import { MaterialModule } from './material.module';
     UpgradeComponent,
     ScrollDirective,
     InfinityScrollDirective,
-    ActionsComponent
+    ActionsComponent,
+    ActionsDirective
   ],
   imports: [CommonModule, MaterialModule, RouterModule],
   exports: [
@@ -45,7 +47,8 @@ import { MaterialModule } from './material.module';
     UpgradeComponent,
     ScrollDirective,
     InfinityScrollDirective,
-    ActionsComponent
+    ActionsComponent,
+    ActionsDirective
   ]
 })
 export class StuffModule {}

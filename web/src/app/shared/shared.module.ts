@@ -16,6 +16,7 @@ import { RouterModule } from '@angular/router';
 
 import { AddingModule } from './add-component/adding.module';
 import {
+  ActionMasterComponent,
   BaseListDirective,
   ButtonSpinnerComponent,
   DialogComponent,
@@ -26,9 +27,9 @@ import {
   MainInfoComponent,
   StatusComponent,
   StatusInfoComponent,
-  UpgradeComponent,  
-  ActionMasterComponent
+  UpgradeComponent
 } from './components';
+import { ActionMasterConfigComponent } from './components/actions/master/action-master-config.component';
 import { MultiSortDirective } from './components/list/multi-sort.directive';
 import { SimpleTextComponent } from './components/tooltip';
 import { ConfigurationModule } from './configuration/configuration.module';
@@ -39,8 +40,6 @@ import { HostComponentsMapModule } from './host-components-map/host-components-m
 import { MaterialModule } from './material.module';
 import { BreakRowPipe, TagEscPipe } from './pipes';
 import { StuffModule } from './stuff.module';
-import { ActionsDirective } from './components/actions/actions.directive';
-import { ActionMasterConfigComponent } from './components/actions/master/action-master-config.component';
 
 @NgModule({
   imports: [
@@ -73,7 +72,6 @@ import { ActionMasterConfigComponent } from './components/actions/master/action-
     MultiSortDirective,
     ImportComponent,
     ExportComponent,
-    ActionsDirective,
     ActionMasterComponent,
     ActionMasterConfigComponent
   ],
@@ -101,8 +99,7 @@ import { ActionMasterConfigComponent } from './components/actions/master/action-
     StatusInfoComponent,
     MainInfoComponent,
     ImportComponent,
-    ExportComponent,
-    ActionsDirective,
+    ExportComponent
   ]
 })
 export class SharedModule {}

@@ -39,10 +39,8 @@ import { ActionParameters } from '../actions.directive';
 })
 export class ActionMasterComponent extends BaseDirective implements DynamicComponent, OnInit {
   event: EventEmitter<DynamicEvent> = new EventEmitter();
-  model: ActionParameters = { actions: [] };
-  actions: IAction[];
+  model: ActionParameters; // = { actions: [], cluster: null };
   action: IAction;
-
   isHmcRequired = false;
   isConfig = false;
 

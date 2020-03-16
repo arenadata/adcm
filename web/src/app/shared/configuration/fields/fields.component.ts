@@ -27,29 +27,22 @@ import { IConfig, PanelOptions, FieldOptions } from '../types';
       <ng-template #conf>
         <app-group-fields *ngIf="panelsOnly(item); else more" [rawConfig]="rawConfig" [panel]="item" [form]="form"></app-group-fields>
         <ng-template #more>
-          <app-field *ngIf="!item.hidden" class="alone" [form]="form" [options]="item" [ngClass]="{ 'read-only': item.disabled }"></app-field>
+          <app-field *ngIf="!item.hidden" class="alone" [form]="form" [options]="item" [ngClass]="{ 'read-only': item.read_only }"></app-field>
         </ng-template>
       </ng-template>
     </ng-container>
-  `,
+  `
 })
 export class ConfigFieldsComponent {
   dataOptions: (FieldOptions | PanelOptions)[] = [];
   form = new FormGroup({});
   rawConfig: IConfig;
+  shapshot: any;
 
   public isAdvanced = false;
 
   @Output()
   event = new EventEmitter<{ name: string; data?: any }>();
-
-  shapshot: any;
-
-  @ViewChildren(FieldComponent)
-  fields: QueryList<FieldComponent>;
-
-  @ViewChildren(GroupFieldsComponent)
-  groups: QueryList<GroupFieldsComponent>;
 
   @Input()
   set model(data: IConfig) {
@@ -61,6 +54,12 @@ export class ConfigFieldsComponent {
     this.shapshot = { ...this.form.value };
     this.event.emit({ name: 'load', data: { form: this.form } });
   }
+
+  @ViewChildren(FieldComponent)
+  fields: QueryList<FieldComponent>;
+
+  @ViewChildren(GroupFieldsComponent)
+  groups: QueryList<GroupFieldsComponent>;
 
   constructor(private service: FieldService) {}
 
