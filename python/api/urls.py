@@ -16,7 +16,7 @@ from django.conf.urls import include
 from rest_framework_swagger.views import get_swagger_view
 from rest_framework.schemas import get_schema_view
 
-from api import views, stack_views, cluster_views, docs
+from api import views, stack_views, cluster_views, docs, job_views
 
 
 register_converter(views.NameConverter, 'name')
@@ -450,18 +450,24 @@ urlpatterns = [
         name='host-config-restore'
     ),
 
-    path('task/', views.Task.as_view(), name='task'),
-    path('task/<int:task_id>/', views.TaskDetail.as_view(), name='task-details'),
-    path('task/<int:task_id>/restart/', views.TaskReStart.as_view(), name='task-restart'),
-    path('task/<int:task_id>/cancel/', views.TaskCancel.as_view(), name='task-cancel'),
+    path('task/', job_views.Task.as_view(), name='task'),
+    path('task/<int:task_id>/', job_views.TaskDetail.as_view(), name='task-details'),
+    path('task/<int:task_id>/restart/', job_views.TaskReStart.as_view(), name='task-restart'),
+    path('task/<int:task_id>/cancel/', job_views.TaskCancel.as_view(), name='task-cancel'),
 
-    path('job/', views.JobList.as_view(), name='job'),
-    path('job/<int:job_id>/', views.JobDetail.as_view(), name='job-details'),
+    path('job/', job_views.JobList.as_view(), name='job'),
+    path('job/<int:job_id>/', job_views.JobDetail.as_view(), name='job-details'),
     path(
         'job/<int:job_id>/log/<name:tag>/<name:level>/<name:log_type>/',
-        views.LogFile.as_view(),
+        job_views.LogFile.as_view(),
         name='log-file'
     ),
+    path('job/<int:job_id>/log/<int:log_id>/',
+         job_views.LogStorageView.as_view(),
+         name='log-storage'),
+    path('job/<int:job_id>/log/<int:log_id>/download/',
+         job_views.download_log_file,
+         name='download-log'),
     # path('docs/', include_docs_urls(title='ArenaData Chapel API')),
     path('swagger/', swagger_view),
     path('schema/', schema_view),

@@ -251,7 +251,7 @@ class ProviderTypeList(PageView):
     """
     queryset = Prototype.objects.filter(type='provider')
     serializer_class = api.stack_serial.ProviderTypeSerializer
-    filterset_fields = ('name', 'bundle_id')
+    filterset_fields = ('name', 'bundle_id', 'display_name')
     ordering_fields = ('display_name', 'version_order')
 
 
@@ -262,7 +262,7 @@ class ClusterTypeList(PageView):
     """
     queryset = Prototype.objects.filter(type='cluster')
     serializer_class = api.stack_serial.ClusterTypeSerializer
-    filterset_fields = ('name', 'bundle_id')
+    filterset_fields = ('name', 'bundle_id', 'display_name')
     ordering_fields = ('display_name', 'version_order')
 
 

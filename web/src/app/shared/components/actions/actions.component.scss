@@ -1,6 +1,8 @@
 :host {
     display: flex;
     overflow: hidden;
+    width: 100%;
+    justify-content: flex-end;
 
     & > div {
         overflow: hidden;
