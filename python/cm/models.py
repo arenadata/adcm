@@ -367,6 +367,27 @@ class CheckLog(models.Model):
     result = models.BooleanField()
 
 
+LOG_TYPE = (
+    ('stdout', 'stdout'),
+    ('stderr', 'stderr'),
+    ('check', 'check'),
+    ('custom', 'custom'),
+)
+
+FORMAT_TYPE = (
+    ('txt', 'txt'),
+    ('json', 'json'),
+)
+
+
+class LogStorage(models.Model):
+    job = models.ForeignKey(JobLog, on_delete=models.CASCADE)
+    name = models.TextField(default='')
+    body = models.TextField(blank=True, null=True)
+    type = models.CharField(max_length=16, choices=LOG_TYPE)
+    format = models.CharField(max_length=16, choices=FORMAT_TYPE)
+
+
 # Stage: Temporary tables to load bundle
 
 class StagePrototype(models.Model):
