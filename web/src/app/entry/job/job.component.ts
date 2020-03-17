@@ -23,15 +23,15 @@ import { filter } from 'rxjs/operators';
     <div class="container-entry">
       <app-list #list class="main" [appBaseList]="'job'"></app-list>
     </div>
-  `,
+  `
 })
 export class JobComponent extends BaseDirective implements OnInit, OnDestroy {
   @ViewChild('list', { static: true }) list: ListComponent;
   ngOnInit(): void {
     this.list.listItemEvt
       .pipe(
-        filter(data => data.cmd === 'onLoad' && data.row),
-        this.takeUntil()
+        this.takeUntil(),
+        filter(data => data.cmd === 'onLoad' && data.row)
       )
       .subscribe(data => localStorage.setItem('lastJob', data.row.id));
   }
@@ -39,14 +39,13 @@ export class JobComponent extends BaseDirective implements OnInit, OnDestroy {
 
 @Component({
   selector: 'app-main',
-  template: '<app-job-info></app-job-info>',
+  template: '<app-job-info></app-job-info>'
 })
 export class MainComponent implements OnInit {
-
   constructor(private details: ClusterService, private router: Router, private route: ActivatedRoute) {}
 
   ngOnInit() {
-    const log = (<Job>this.details.Current).log_files.find(a => a.file.includes('check'));
-    if (log) this.router.navigate([`../${log.tag}_${log.level}`], { relativeTo: this.route });
+    const log = (<Job>this.details.Current).log_files[0];
+    if (log) this.router.navigate([`../${log.name}_${log.type}`], { relativeTo: this.route });
   }
 }
