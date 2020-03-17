@@ -48,26 +48,24 @@ export class StackService {
     const limit = param.limit ? +param.limit : +localStorage.getItem('limit'),
       offset = (param.page ? +param.page : 0) * limit;
 
+    const params = Object.keys(param).reduce<any>((p, c) => ({ ...p, [c]: param[c] }), {});
+
+    params.limit = limit.toString();
+    params.offset = offset.toString();
+    params.ordering = 'display_name,-version';
+
     return this.store.pipe(
       select(getStack),
       filter(a => a && !!Object.keys(a).length),
-      switchMap(s =>
-        this.api
-          .get<ListResult<T>>(s[name], {
-            limit: limit.toString(),
-            offset: offset.toString(),
-            ordering: 'display_name,-version',
-          })
-          .pipe(map(a => a.results)),
-      ),
+      switchMap(s => this.api.get<ListResult<T>>(s[name], params).pipe(map(a => a.results)))
     );
   }
 
   upload(output: FormData[]) {
     const item = (form: FormData) => {
-      return this.api
-        .post(UPLOAD_URL, form)
-        .pipe(mergeMap(() => this.api.post<Bundle>(LOAD_URL, { bundle_file: (form.get('file') as File).name })));
+      return this.api.post(UPLOAD_URL, form).pipe(
+        mergeMap(() => this.api.post<Bundle>(LOAD_URL, { bundle_file: (form.get('file') as File).name }))
+      );
     };
 
     return combineLatest(output.map(o => item(o)));
