@@ -13,11 +13,10 @@ import { AfterViewInit, Component, DoCheck, ElementRef, OnInit, ViewChild } from
 import { ActivatedRoute, ParamMap } from '@angular/router';
 import { ClusterService } from '@app/core';
 import { EventMessage, SocketState } from '@app/core/store';
-import { CheckLog, Log, LogFile } from '@app/core/types';
+import { CheckLog, LogFile } from '@app/core/types';
 import { SocketListenerDirective } from '@app/shared';
 import { Store } from '@ngrx/store';
 import { interval, Subscription } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
 
 import { JobInfoComponent } from './job-info.component';
 
@@ -25,8 +24,8 @@ import { JobInfoComponent } from './job-info.component';
   selector: 'app-job-log',
   template: `
     <app-job-info #info></app-job-info>
-    <div class="wrap">
-      <ng-container *ngIf="!asJson; else asjson">
+    <div class="wrap" *ngIf="currentLog">
+      <ng-container *ngIf="currentLog.format !== 'json'; else json">
         <div class="tools">
           <ng-container *ngIf="isScroll">
             <button color="accent" mat-icon-button (click)="down()" matTooltip="To the bottom" [disabled]="(isRun && isWatch) || !isScroll">
@@ -37,16 +36,16 @@ import { JobInfoComponent } from './job-info.component';
             </button>
           </ng-container>
         </div>
-        <textarea class="log" appScroll #tea (read)="read($event)" [readonly]="true">{{ content }}</textarea>
+        <textarea class="log" appScroll #tea (read)="read($event)" [readonly]="true">{{ currentLog.body || 'Nothing to display...' }}</textarea>
       </ng-container>
-      <ng-template #asjson>
+      <ng-template #json>
         <mat-accordion class="accordion">
-          <mat-expansion-panel *ngFor="let item of content" class="panel">
+          <mat-expansion-panel *ngFor="let item of currentLog.body" class="panel">
             <mat-expansion-panel-header>
               <mat-panel-title>
                 {{ item.title }}
               </mat-panel-title>
-              <mat-panel-description style="align-items: center; justify-content: flex-end;">
+              <mat-panel-description class="item-info">
                 <span [ngClass]="{ status: true, accent: item.result, warn: !item.result }">[ {{ item.result ? 'Success' : 'Fails' }} ]</span>
               </mat-panel-description>
             </mat-expansion-panel-header>
@@ -63,13 +62,13 @@ import { JobInfoComponent } from './job-info.component';
     'textarea.log, textarea.check {background-color: #424242; border: 0; color: #fff;flex: 1;}',
     'textarea.check {height: 300px;width: 100%;}',
     '.accordion {flex: 1; display: flex; flex-direction: column;}',
-    '.status {white-space: nowrap;}'
+    '.status {white-space: nowrap;}',
+    '.item-info {align-items: center; justify-content: flex-end;}'
   ]
 })
 export class LogComponent extends SocketListenerDirective implements OnInit, AfterViewInit, DoCheck {
-  content: string | CheckLog[] = '';
-  current: string;
-  asJson = false;
+  // content: CheckLog[] = [];
+  currentLog: LogFile;
 
   isScroll = false;
   isRun = false;
@@ -101,12 +100,7 @@ export class LogComponent extends SocketListenerDirective implements OnInit, Aft
   }
 
   ngAfterViewInit(): void {
-    this.route.paramMap
-      .pipe(
-        tap((p: ParamMap) => (this.current = p.get('log'))),
-        this.takeUntil()
-      )
-      .subscribe(() => this.refresh());
+    this.route.paramMap.pipe(this.takeUntil()).subscribe((p: ParamMap) => this.refresh(+p.get('log')));
   }
 
   ngDoCheck(): void {
@@ -147,17 +141,10 @@ export class LogComponent extends SocketListenerDirective implements OnInit, Aft
     if (this.isRun && !this.isWatch && !stop.direct) this.startWatch();
   }
 
-  refresh() {
-    if (this.current) {
-      const [name, type] = this.current.split('_');
-      if (this.asJson) this.content = [];
-      this.service
-        .getLog(name, type)
-        .pipe(this.takeUntil())
-        .subscribe(log => {
-          this.content = log.body || 'Nothing to display...';
-          this.asJson = log.format === 'json';
-        });
-    }
+  refresh(id?: number) {
+    this.service
+      .getLog(id || this.currentLog.id)
+      .pipe(this.takeUntil())
+      .subscribe(log => (this.currentLog = log));
   }
 }
