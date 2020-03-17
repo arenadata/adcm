@@ -47,12 +47,12 @@ export type Job = JobRaw & ApiBase;
 export type Task = TaskRaw & ApiBase;
 
 export interface LogFile {
-  level: string;
-  host: string;
-  tag: string;
-  type: string;
-  file: string;
   url: string;
+  name: string;
+  type: string;
+  format: 'txt' | 'json';
+  download_url: string;
+  body: string;
 }
 
 export interface Log {

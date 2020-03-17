@@ -13,12 +13,14 @@
 # pylint: disable=duplicate-except,attribute-defined-outside-init,too-many-lines
 
 import rest_framework
-from django.contrib.auth.models import User
 from django.db import transaction
 from django.utils import timezone
+from django.contrib.auth.models import User
+from django.contrib.auth import login as django_login
 from django_filters import rest_framework as drf_filters
+
 from rest_framework import routers, status
-from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.authtoken.models import Token
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
@@ -86,12 +88,12 @@ class NameConverter:
         return value
 
 
-class GetAuthToken(ObtainAuthToken, GenericAPIView):
+class GetAuthToken(GenericAPIView):
     authentication_classes = (rest_framework.authentication.TokenAuthentication,)
     permission_classes = (rest_framework.permissions.AllowAny,)
     serializer_class = api.serializers.AuthSerializer
 
-    def post(self, *args, **kwargs):   # pylint: disable=arguments-differ,useless-super-delegation
+    def post(self, request, *args, **kwargs):
         """
         Provide authentication token
 
@@ -101,7 +103,12 @@ class GetAuthToken(ObtainAuthToken, GenericAPIView):
         Authorization: Token XXXXX
         ```
         """
-        return super(GetAuthToken, self).post(*args, **kwargs)
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        token, _created = Token.objects.get_or_create(user=user)
+        django_login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+        return Response({'token': token.key})
 
 
 class ADCMInfo(GenericAPIView):
