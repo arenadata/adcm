@@ -795,7 +795,7 @@ def get_log(job):
             'name': ls.name,
             'type': ls.type,
             'format': ls.format,
-            'log_id': ls.id
+            'id': ls.id
         })
 
     return logs
