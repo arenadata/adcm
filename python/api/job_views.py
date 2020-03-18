@@ -54,7 +54,7 @@ class JobDetail(GenericAPIView):
         job.log_dir = os.path.join(config.RUN_DIR, f'{job_id}')
         logs = get_log(job)
         for lg in logs:
-            log_id = lg.pop('log_id')
+            log_id = lg['id']
             lg['url'] = reverse(
                 'log-storage',
                 kwargs={
