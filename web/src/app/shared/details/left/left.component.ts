@@ -21,6 +21,7 @@ import { NavigationService, INavItem } from '../navigation.service';
       <a mat-list-item [appForTest]="'tab_' + item.url" *ngFor="let item of items" [routerLink]="[item.url]" routerLinkActive="active">
         <span>{{ item.title }}</span>
         &nbsp;
+        <button mat-icon-button color="primary" (click)="btnClick(item)"><mat-icon>open_in_new</mat-icon></button>
         <mat-icon *ngIf="item.issue" color="warn">priority_hight</mat-icon>
         <ng-container *ngIf="item.url === 'status'">
           <ng-container *ngTemplateOutlet="status; context: { status: item.status }"></ng-container>
@@ -51,4 +52,8 @@ export class LeftComponent {
   }
 
   constructor(private navigation: NavigationService) {}
+
+  btnClick(item: INavItem) {
+    
+  }
 }
