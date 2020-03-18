@@ -47,6 +47,7 @@ export type Job = JobRaw & ApiBase;
 export type Task = TaskRaw & ApiBase;
 
 export interface LogFile {
+  id: number;
   url: string;
   name: string;
   type: string;
@@ -55,10 +56,10 @@ export interface LogFile {
   body: string;
 }
 
-export interface Log {
-  content: string | CheckLog[];
-  fileName: string;
-}
+// export interface Log {
+//   content: string | CheckLog[];
+//   fileName: string;
+// }
 
 export interface CheckLog {
   title: string;

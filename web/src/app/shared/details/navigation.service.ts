@@ -78,7 +78,7 @@ export class NavigationService {
     const typeName = current.typeName;
     if (typeName === 'job') {
       const job = current as Job;
-      return [{ id: 0, title: 'Main', url: 'main' }, ...job.log_files.map(a => ({ title: `${a.name} [ ${a.type} ]`, url: `${a.name}_${a.type}` }))];
+      return [{ id: 0, title: 'Main', url: 'main' }, ...job.log_files.map(a => ({ title: `${a.name} [ ${a.type} ]`, url: `${a.id}` }))];
     }
 
     const issue = current.issue || {} as Issue;    

@@ -33,7 +33,7 @@ import { NavigationService, INavItem } from '../navigation.service';
       </ng-template>
     </mat-nav-list>
   `,
-  styles: ['mat-nav-list {padding-top: 20px;}']
+  styles: ['mat-nav-list {padding-top: 20px;}', 'a span { white-space: nowrap; }']
 })
 export class LeftComponent {
   items: INavItem[] = [];
