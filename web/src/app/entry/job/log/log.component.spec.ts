@@ -13,7 +13,6 @@ import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { LogComponent } from './log.component';
 
-
 describe('Job Module :: LogComponent', () => {
   let fixture: ComponentFixture<LogComponent>;
   let component: LogComponent;

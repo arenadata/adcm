@@ -1,0 +1,34 @@
+<app-job-info [TimeInfo]="timeInfo" [status]="status"></app-job-info>
+<div class="wrap" *ngIf="currentLog">
+  <ng-container *ngIf="currentLog.format !== 'json'; else json">
+    <div class="tools">
+      <ng-container *ngIf="isScroll">
+        <button color="accent" mat-icon-button (click)="down()" matTooltip="To the bottom"
+          [disabled]="(isRun && isWatch) || !isScroll">
+          <mat-icon>arrow_downward</mat-icon>
+        </button>
+        <button color="accent" mat-icon-button (click)="top()" matTooltip="To the top" [disabled]="!isScroll">
+          <mat-icon>arrow_upward</mat-icon>
+        </button>
+      </ng-container>
+    </div>
+    <textarea class="log" appScroll #tea (read)="read($event)"
+      [readonly]="true">{{ currentLog.body || 'Nothing to display...' }}</textarea>
+  </ng-container>
+  <ng-template #json>
+    <mat-accordion class="accordion">
+      <mat-expansion-panel *ngFor="let item of currentLog.body" class="panel">
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            {{ item.title }}
+          </mat-panel-title>
+          <mat-panel-description class="item-info">
+            <span [ngClass]="{ status: true, accent: item.result, warn: !item.result }">[
+              {{ item.result ? 'Success' : 'Fails' }} ]</span>
+          </mat-panel-description>
+        </mat-expansion-panel-header>
+        <textarea class="check" [readonly]="true">{{ item.message }}</textarea>
+      </mat-expansion-panel>
+    </mat-accordion>
+  </ng-template>
+</div>

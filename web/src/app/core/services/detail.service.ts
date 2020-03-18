@@ -106,13 +106,10 @@ export class ClusterService {
       );
   }
 
-  /**
-   * Logging for Jobs
-   * @param level property from LogFile interface
-   */
-  getLog(id: number): Observable<LogFile> {
-    const log = (this.Current as Job).log_files.find(a => a.id === id);
-    return this.api.get<LogFile>(log.url);
+
+  getLog(p: number | string): Observable<LogFile> {
+    const url = typeof p === 'number' ? (this.Current as Job).log_files.find(a => a.id === p).url : p;
+    return this.api.get<LogFile>(url);
   }
 
   getActions(): Observable<IAction[]> {
