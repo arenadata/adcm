@@ -17,8 +17,6 @@ import { Job, JobStatus, LogFile } from '@app/core/types';
 import { SocketListenerDirective } from '@app/shared';
 import { Store } from '@ngrx/store';
 import { interval, Subscription } from 'rxjs';
-import { tap } from 'rxjs/internal/operators/tap';
-import { map } from 'rxjs/internal/operators/map';
 
 export interface ITimeInfo {
   start: string;
@@ -33,7 +31,7 @@ export interface ITimeInfo {
 })
 export class LogComponent extends SocketListenerDirective implements OnInit, AfterViewInit, DoCheck {
   // content: CheckLog[] = [];
-  currentLog: LogFile = { id: undefined, name: '', type: '', url: '', download_url: '', format: undefined, body: '' };
+  currentLog: Partial<LogFile> = {};
 
   timeInfo: ITimeInfo;
   status: JobStatus;
@@ -45,22 +43,26 @@ export class LogComponent extends SocketListenerDirective implements OnInit, Aft
 
   @ViewChild('tea', { read: ElementRef }) textarea: ElementRef;
 
-  constructor(private service: ClusterService, private route: ActivatedRoute, protected store: Store<SocketState>) {
+  constructor(private service: ClusterService, private route: ActivatedRoute, public store: Store<SocketState>) {
     super(store);
   }
 
-  ngOnInit() {
-    this.status = (this.service.Current as Job).status;
-    this.timeInfo = this.service.getOperationTimeData();
+  get job(): Job {
+    return this.service.Current as Job;
+  }
 
-    this.isRun = this.service.Current.status.toString() === 'running';
+  ngOnInit() {
+    this.status = this.job.status;
+    this.timeInfo = this.service.getOperationTimeData(this.job);
+
+    this.isRun = this.status === 'running';
     if (this.isRun) this.startWatch();
 
     this.startListenSocket();
   }
 
   socketListener(m: EventMessage) {
-    if (m && m.object && m.object.type === 'job' && m.object.id === this.service.Current.id) {
+    if (m && m.object && m.object.type === 'job' && m.object.id === this.job.id) {
       this.isRun = m.object.details.value === 'running';
       if (!this.isRun && this.isWatch) {
         this.isWatch = false;
@@ -68,22 +70,20 @@ export class LogComponent extends SocketListenerDirective implements OnInit, Aft
       }
 
       this.status = m.object.details.value as JobStatus;
-      const job = this.service.Current as Job;
+      const job = this.job;
       job.status = this.status;
       job.finish_date = new Date().toISOString();
-      this.timeInfo = this.service.getOperationTimeData();
+      this.timeInfo = this.service.getOperationTimeData(job);
 
       this.refresh();
     }
   }
 
   ngAfterViewInit(): void {
-    this.route.paramMap
-      .pipe(
-        this.takeUntil(),
-        tap(p => (this.currentLog.id = +p.get('log')))
-      )
-      .subscribe(_ => this.refresh());
+    this.route.paramMap.pipe(this.takeUntil()).subscribe(p => {
+      this.currentLog.id = +p.get('log');
+      this.refresh();
+    });
   }
 
   ngDoCheck(): void {

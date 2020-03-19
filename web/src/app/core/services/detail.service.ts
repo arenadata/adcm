@@ -172,8 +172,8 @@ export class ClusterService {
   /**
    * For `Job` and `Task` operating time data
    */
-  getOperationTimeData() {
-    const { start_date, finish_date, status } = { ...(this.Current as Job) };
+  getOperationTimeData(job: Job) {
+    const { start_date, finish_date, status } = job;
     if (start_date && finish_date) {
       const sdn = Date.parse(start_date),
         fdn = Date.parse(finish_date),
