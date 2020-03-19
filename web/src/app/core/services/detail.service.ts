@@ -106,13 +106,10 @@ export class ClusterService {
       );
   }
 
-  /**
-   * Logging for Jobs
-   * @param level property from LogFile interface
-   */
-  getLog(id: number): Observable<LogFile> {
-    const log = (this.Current as Job).log_files.find(a => a.id === id);
-    return this.api.get<LogFile>(log.url);
+
+  getLog(p: number | string): Observable<LogFile> {
+    const url = typeof p === 'number' ? (this.Current as Job).log_files.find(a => a.id === p).url : p;
+    return this.api.get<LogFile>(url);
   }
 
   getActions(): Observable<IAction[]> {
@@ -175,8 +172,8 @@ export class ClusterService {
   /**
    * For `Job` and `Task` operating time data
    */
-  getOperationTimeData() {
-    const { start_date, finish_date, status } = { ...(this.Current as Job) };
+  getOperationTimeData(job: Job) {
+    const { start_date, finish_date, status } = job;
     if (start_date && finish_date) {
       const sdn = Date.parse(start_date),
         fdn = Date.parse(finish_date),

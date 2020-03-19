@@ -56,11 +56,6 @@ export interface LogFile {
   body: string;
 }
 
-// export interface Log {
-//   content: string | CheckLog[];
-//   fileName: string;
-// }
-
 export interface CheckLog {
   title: string;
   message: string;
