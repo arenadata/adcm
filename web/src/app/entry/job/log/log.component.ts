@@ -10,14 +10,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { AfterViewInit, Component, DoCheck, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { ActivatedRoute, ParamMap } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { ClusterService } from '@app/core';
 import { EventMessage, SocketState } from '@app/core/store';
-import { CheckLog, LogFile, JobStatus, Job } from '@app/core/types';
+import { Job, JobStatus, LogFile } from '@app/core/types';
 import { SocketListenerDirective } from '@app/shared';
 import { Store } from '@ngrx/store';
 import { interval, Subscription } from 'rxjs';
 import { tap } from 'rxjs/internal/operators/tap';
+import { map } from 'rxjs/internal/operators/map';
 
 export interface ITimeInfo {
   start: string;
