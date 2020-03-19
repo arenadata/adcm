@@ -17,6 +17,7 @@ import { CheckLog, LogFile, JobStatus, Job } from '@app/core/types';
 import { SocketListenerDirective } from '@app/shared';
 import { Store } from '@ngrx/store';
 import { interval, Subscription } from 'rxjs';
+import { tap } from 'rxjs/internal/operators/tap';
 
 export interface ITimeInfo {
   start: string;
@@ -31,7 +32,7 @@ export interface ITimeInfo {
 })
 export class LogComponent extends SocketListenerDirective implements OnInit, AfterViewInit, DoCheck {
   // content: CheckLog[] = [];
-  currentLog: LogFile;
+  currentLog: LogFile = { id: undefined, name: '', type: '', url: '', download_url: '', format: undefined, body: '' };
 
   timeInfo: ITimeInfo;
   status: JobStatus;
@@ -50,9 +51,10 @@ export class LogComponent extends SocketListenerDirective implements OnInit, Aft
   ngOnInit() {
     this.status = (this.service.Current as Job).status;
     this.timeInfo = this.service.getOperationTimeData();
-    
+
     this.isRun = this.service.Current.status.toString() === 'running';
     if (this.isRun) this.startWatch();
+
     this.startListenSocket();
   }
 
@@ -75,7 +77,12 @@ export class LogComponent extends SocketListenerDirective implements OnInit, Aft
   }
 
   ngAfterViewInit(): void {
-    this.route.paramMap.pipe(this.takeUntil()).subscribe((p: ParamMap) => this.refresh(+p.get('log')));
+    this.route.paramMap
+      .pipe(
+        this.takeUntil(),
+        tap(p => (this.currentLog.id = +p.get('log')))
+      )
+      .subscribe(_ => this.refresh());
   }
 
   ngDoCheck(): void {
@@ -116,9 +123,10 @@ export class LogComponent extends SocketListenerDirective implements OnInit, Aft
     if (this.isRun && !this.isWatch && !stop.direct) this.startWatch();
   }
 
-  refresh(id?: number) {
+  refresh() {
+    if (!this.currentLog.id) console.error('No `id` for current LogFile');
     this.service
-      .getLog(id || this.currentLog.id)
+      .getLog(this.currentLog.id)
       .pipe(this.takeUntil())
       .subscribe(log => (this.currentLog = log));
   }
