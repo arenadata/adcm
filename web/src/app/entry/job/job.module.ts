@@ -17,30 +17,34 @@ import { DetailComponent, SharedModule } from '@app/shared';
 
 import { JobInfoComponent } from './job-info.component';
 import { JobComponent, MainComponent } from './job.component';
-import { LogComponent } from './log.component';
+import { LogComponent } from './log/log.component';
 
 const routes: Routes = [
   {
     path: '',
     canActivate: [AuthGuard],
-    component: JobComponent,
+    component: JobComponent
   },
   {
     path: ':job',
     canActivate: [AuthGuard],
     component: DetailComponent,
-    children: [{ path: '', redirectTo: 'main', pathMatch: 'full' }, { path: 'main', component: MainComponent }, { path: ':log', component: LogComponent }],
-  },
+    children: [
+      { path: '', redirectTo: 'main', pathMatch: 'full' },
+      { path: 'main', component: MainComponent },
+      { path: ':log', component: LogComponent }
+    ]
+  }
 ];
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule],
+  exports: [RouterModule]
 })
 export class JobRoutingModule {}
 
 @NgModule({
   declarations: [JobComponent, MainComponent, LogComponent, JobInfoComponent],
-  imports: [CommonModule, SharedModule, RouterModule, JobRoutingModule],
+  imports: [CommonModule, SharedModule, RouterModule, JobRoutingModule]
 })
 export class JobModule {}

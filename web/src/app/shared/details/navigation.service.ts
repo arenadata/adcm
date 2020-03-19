@@ -15,7 +15,6 @@ import { ApiBase, Issue, Job } from '@app/core/types';
 import { IDetails } from './details.service';
 import { ThemePalette } from '@angular/material/core';
 
-
 const ISSUE_MESSAGE = 'Something is wrong with your cluster configuration, please review it.';
 
 const IssueSet: { [key: string]: string[] } = {
@@ -39,6 +38,7 @@ export interface INavItem {
   issue?: string;
   status?: number;
   statusMessage?: string;
+  action?: () => void;
 }
 
 export const Config = {
@@ -78,10 +78,13 @@ export class NavigationService {
     const typeName = current.typeName;
     if (typeName === 'job') {
       const job = current as Job;
-      return [{ id: 0, title: 'Main', url: 'main' }, ...job.log_files.map(a => ({ title: `${a.name} [ ${a.type} ]`, url: `${a.id}` }))];
+      return [
+        { id: 0, title: 'Main', url: 'main' },
+        ...job.log_files.map(a => ({ title: `${a.name} [ ${a.type} ]`, url: `${a.id}`, action: () => (location.href = a.download_url) }))
+      ];
     }
 
-    const issue = current.issue || {} as Issue;    
+    const issue = current.issue || ({} as Issue);
     return Config.menu[typeName].map((i: INavItem) => ({
       ...i,
       issue: this.findIssue(i.url, issue),
