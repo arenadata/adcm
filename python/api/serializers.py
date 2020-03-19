@@ -783,6 +783,7 @@ class LogSerializer(serializers.Serializer):
 
 
 class LogStorageSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
     type = serializers.CharField(read_only=True)
     format = serializers.CharField(read_only=True)
