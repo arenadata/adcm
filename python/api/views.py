@@ -15,7 +15,7 @@
 import rest_framework
 from django.db import transaction
 from django.utils import timezone
-from django.contrib.auth.models import User, Permission
+from django.contrib.auth.models import User, Group, Permission
 from django.contrib.auth import login as django_login
 from django_filters import rest_framework as drf_filters
 
@@ -74,6 +74,7 @@ class APIRoot(routers.APIRootView):
         'task': 'task',
         'token': 'token',
         'user': 'user-list',
+        'group': 'group-list',
         'info': 'adcm-info',
     }
 
@@ -140,7 +141,7 @@ class UserList(PageViewAdd):
 
 class UserDetail(GenericAPIPermView):
     queryset = User.objects.all()
-    serializer_class = api.serializers.UserSerializer
+    serializer_class = api.serializers.UserDetailSerializer
 
     def get(self, request, username):
         """
@@ -172,7 +173,7 @@ class UserPasswd(GenericAPIPermView):
 
 class AddUserPerm(GenericAPIPermView):
     queryset = User.objects.all()
-    serializer_class = api.serializers.AddPermSerializer
+    serializer_class = api.serializers.AddUserPermSerializer
 
     def post(self, request, username):
         """
@@ -193,6 +194,92 @@ class AddUserPerm(GenericAPIPermView):
             Permission, {'codename': serializer.data['codename']}, 'PERMISSION_NOT_FOUND'
         )
         user.user_permissions.remove(perm)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AddUser2Group(GenericAPIPermView):
+    queryset = User.objects.all()
+    serializer_class = api.serializers.AddUser2GroupSerializer
+
+    def post(self, request, username):
+        """
+        Add user to group
+        """
+        user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
+        serializer = self.serializer_class(user, data=request.data, context={'request': request})
+        return update(serializer)
+
+    def delete(self, request, username):
+        """
+        Remive user from group
+        """
+        user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        group = check_obj(
+            Group, {'name': serializer.data['name']}, 'GROUP_NOT_FOUND'
+        )
+        group.user_set.remove(user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class GroupList(PageViewAdd):
+    """
+    get:
+    List all existing user groups
+
+    post:
+    Create new user group
+    """
+    queryset = Group.objects.all()
+    serializer_class = api.serializers.GroupSerializer
+    ordering_fields = ('name',)
+
+
+class GroupDetail(GenericAPIPermView):
+    queryset = Group.objects.all()
+    serializer_class = api.serializers.GroupDetailSerializer
+
+    def get(self, request, name):
+        """
+        show user group
+        """
+        group = check_obj(Group, {'name': name}, 'GROUP_NOT_FOUND')
+        serializer = self.serializer_class(group, context={'request': request})
+        return Response(serializer.data)
+
+    def delete(self, request, name):
+        """
+        delete user group
+        """
+        group = check_obj(Group, {'name': name}, 'GROUP_NOT_FOUND')
+        group.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AddGroupPerm(GenericAPIPermView):
+    queryset = Group.objects.all()
+    serializer_class = api.serializers.AddGroupPermSerializer
+
+    def post(self, request, name):
+        """
+        Add group permission
+        """
+        group = check_obj(Group, {'name': name}, 'GROUP_NOT_FOUND')
+        serializer = self.serializer_class(group, data=request.data, context={'request': request})
+        return update(serializer)
+
+    def delete(self, request, name):
+        """
+        Delete group permission
+        """
+        group = check_obj(Group, {'name': name}, 'GROUP_NOT_FOUND')
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        perm = check_obj(
+            Permission, {'codename': serializer.data['codename']}, 'PERMISSION_NOT_FOUND'
+        )
+        group.permissions.remove(perm)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

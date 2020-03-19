@@ -47,6 +47,7 @@ ERRORS = {
     'LOG_NOT_FOUND': ("log file is not found", rfs.HTTP_404_NOT_FOUND, ERR),
     'UPGRADE_NOT_FOUND': ("upgrade is not found", rfs.HTTP_404_NOT_FOUND, ERR),
     'USER_NOT_FOUND': ("user profile is not found", rfs.HTTP_404_NOT_FOUND, ERR),
+    'GROUP_NOT_FOUND': ("group is not found", rfs.HTTP_404_NOT_FOUND, ERR),
     'PERMISSION_NOT_FOUND': ("permission is not found", rfs.HTTP_404_NOT_FOUND, ERR),
 
     'MODULE_NOT_FOUND': ("module doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),
@@ -60,6 +61,7 @@ ERRORS = {
     'PROVIDER_CONFLICT': ("duplicate host provider", rfs.HTTP_409_CONFLICT, ERR),
     'HOST_CONFLICT': ("duplicate host in cluster", rfs.HTTP_409_CONFLICT, ERR),
     'USER_CONFLICT': ("duplicate user profile", rfs.HTTP_409_CONFLICT, ERR),
+    'GROUP_CONFLICT': ("duplicate user group", rfs.HTTP_409_CONFLICT, ERR),
     'FOREIGN_HOST': ("host is not belong to the cluster", rfs.HTTP_409_CONFLICT, ERR),
     'COMPONENT_CONFLICT': ("duplicate component on host in cluster", rfs.HTTP_409_CONFLICT, ERR),
     'COMPONENT_CONSTRAINT_ERROR': ("component constraint error", rfs.HTTP_409_CONFLICT, ERR),

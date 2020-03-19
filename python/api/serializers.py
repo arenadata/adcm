@@ -16,7 +16,7 @@ import os
 import django.contrib.auth
 from django.db import IntegrityError, transaction
 from django.core.exceptions import ObjectDoesNotExist
-from django.contrib.auth.models import User, Permission
+from django.contrib.auth.models import User, Group, Permission
 
 from rest_framework import serializers
 from rest_framework.reverse import reverse
@@ -140,6 +140,27 @@ class PermSerializer(serializers.Serializer):
         return obj.content_type.model
 
 
+class GroupSerializer(serializers.Serializer):
+    class MyUrlField(UrlField):
+        def get_kwargs(self, obj):
+            return {'name': obj.name}
+
+    name = serializers.CharField()
+    url = MyUrlField(read_only=True, view_name='group-details')
+    change_permission = MyUrlField(read_only=True, view_name='add-group-perm')
+
+    @transaction.atomic
+    def create(self, validated_data):
+        try:
+            return Group.objects.create(name=validated_data.get('name'))
+        except IntegrityError:
+            raise AdcmApiEx("GROUP_CONFLICT", 'group already exists')
+
+
+class GroupDetailSerializer(GroupSerializer):
+    permissions = PermSerializer(many=True, read_only=True)
+
+
 class UserSerializer(serializers.Serializer):
     class MyUrlField(UrlField):
         def get_kwargs(self, obj):
@@ -148,10 +169,10 @@ class UserSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
     url = MyUrlField(read_only=True, view_name='user-details')
+    change_group = MyUrlField(read_only=True, view_name='add-user-group')
     change_password = MyUrlField(read_only=True, view_name='user-passwd')
     change_permission = MyUrlField(read_only=True, view_name='add-user-perm')
     is_superuser = serializers.BooleanField(required=False)
-    user_permissions = PermSerializer(many=True)
 
     @transaction.atomic
     def create(self, validated_data):
@@ -167,7 +188,23 @@ class UserSerializer(serializers.Serializer):
             raise AdcmApiEx("USER_CONFLICT", 'user already exists')
 
 
-class AddPermSerializer(serializers.Serializer):
+class UserDetailSerializer(UserSerializer):
+    user_permissions = PermSerializer(many=True)
+    groups = GroupSerializer(many=True)
+
+
+class AddUser2GroupSerializer(serializers.Serializer):
+    name = serializers.CharField()
+
+    def update(self, user, validated_data):   # pylint: disable=arguments-differ
+        group = check_obj(
+            Group, {'name': validated_data.get('name')}, 'GROUP_NOT_FOUND'
+        )
+        group.user_set.add(user)
+        return group
+
+
+class AddUserPermSerializer(serializers.Serializer):
     codename = serializers.CharField()
 
     def update(self, user, validated_data):   # pylint: disable=arguments-differ
@@ -175,6 +212,17 @@ class AddPermSerializer(serializers.Serializer):
             Permission, {'codename': validated_data.get('codename')}, 'PERMISSION_NOT_FOUND'
         )
         user.user_permissions.add(perm)
+        return perm
+
+
+class AddGroupPermSerializer(serializers.Serializer):
+    codename = serializers.CharField()
+
+    def update(self, group, validated_data):   # pylint: disable=arguments-differ
+        perm = check_obj(
+            Permission, {'codename': validated_data.get('codename')}, 'PERMISSION_NOT_FOUND'
+        )
+        group.permissions.add(perm)
         return perm
 
 

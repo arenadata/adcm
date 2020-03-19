@@ -42,7 +42,12 @@ urlpatterns = [
     path('user/', views.UserList.as_view(), name='user-list'),
     path('user/<name:username>/', views.UserDetail.as_view(), name='user-details'),
     path('user/<name:username>/permission/', views.AddUserPerm.as_view(), name='add-user-perm'),
+    path('user/<name:username>/group/', views.AddUser2Group.as_view(), name='add-user-group'),
     path('user/<name:username>/password/', views.UserPasswd.as_view(), name='user-passwd'),
+
+    path('group/', views.GroupList.as_view(), name='group-list'),
+    path('group/<name:name>/', views.GroupDetail.as_view(), name='group-details'),
+    path('group/<name:name>/permission/', views.AddGroupPerm.as_view(), name='add-group-perm'),
 
     path('profile/', views.ProfileList.as_view(), name='profile-list'),
     path('profile/<name:username>/', views.ProfileDetail.as_view(), name='profile-details'),
