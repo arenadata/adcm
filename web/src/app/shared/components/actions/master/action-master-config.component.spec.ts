@@ -29,7 +29,7 @@ describe('ActionMasterConfigComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(ActionMasterConfigComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    // fixture.detectChanges();
   });
 
   it('should create', () => {
