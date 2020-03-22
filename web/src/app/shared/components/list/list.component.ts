@@ -10,32 +10,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { SelectionModel } from '@angular/cdk/collections';
-import {
-  AfterViewInit,
-  Component,
-  ElementRef,
-  EventEmitter,
-  Input,
-  OnInit,
-  Output,
-  QueryList,
-  ViewChild,
-  ViewChildren,
-} from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, QueryList, ViewChild, ViewChildren } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort, MatSortHeader, Sort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { ActivatedRoute, Router } from '@angular/router';
-import { EmmitRow, Issue, TypeName } from '@app/core/types';
+import { EmmitRow, Issue, notIssue, TypeName } from '@app/core/types';
 import { filter } from 'rxjs/operators';
 
 import { DialogComponent } from '../dialog.component';
+import { BehaviorSubject } from 'rxjs';
 
 enum Direction {
   '' = '',
   'asc' = '',
-  'desc' = '-',
+  'desc' = '-'
 }
 
 export interface ListResult<T> {
@@ -48,12 +38,15 @@ export interface ListResult<T> {
 @Component({
   selector: 'app-list',
   templateUrl: './list.component.html',
-  styleUrls: ['./list.component.scss'],
+  styleUrls: ['./list.component.scss']
 })
-export class ListComponent implements OnInit, AfterViewInit {
+export class ListComponent implements OnInit {
   selection = new SelectionModel(true, []);
   current: any = {};
   type: TypeName;
+
+  clustersSubj = new BehaviorSubject<{ id: number; title: string }[]>([]);
+  clusters$ = this.clustersSubj.asObservable();
 
   @Input()
   currentItemId: string;
@@ -90,21 +83,9 @@ export class ListComponent implements OnInit, AfterViewInit {
 
   constructor(public dialog: MatDialog, public router: Router, public route: ActivatedRoute) {}
 
-  ngAfterViewInit(): void {
-    this.matSortHeader.map(a => {
-      a.nativeElement.addEventListener('mousedown', (e: MouseEvent) => (this.addToSorting = e.shiftKey));
-      a.nativeElement.addEventListener('mouseleave', (e: MouseEvent) => {
-        // ??? may be ChangeDetectorRef.detectChanges()
-        const sp = this.sortParam;
-        setTimeout(() => (this.sortParam = ''), 100);
-        setTimeout(() => (this.sortParam = sp), 200);
-      });
-    });
-  }
-
   getSortParam(a: Sort) {
     const penis: { [key: string]: string[] } = {
-      prototype_version: ['prototype_display_name', 'prototype_version'],
+      prototype_version: ['prototype_display_name', 'prototype_version']
     };
 
     const dumb = penis[a.active] ? penis[a.active] : [a.active],
@@ -135,8 +116,8 @@ export class ListComponent implements OnInit, AfterViewInit {
             page: pageIndex,
             limit: pageSize,
             filter: _filter,
-            ordering,
-          },
+            ordering
+          }
         ],
         { relativeTo: this.route }
       );
@@ -151,7 +132,7 @@ export class ListComponent implements OnInit, AfterViewInit {
     const f = this.route.snapshot.paramMap.get('filter') || '';
     const ordering = this.getSortParam(this.sort);
     this.router.navigate(['./', { page: pageEvent.pageIndex, limit: pageEvent.pageSize, filter: f, ordering }], {
-      relativeTo: this.route,
+      relativeTo: this.route
     });
   }
 
@@ -171,14 +152,6 @@ export class ListComponent implements OnInit, AfterViewInit {
     this.isAllSelected() ? this.selection.clear() : this.data.data.forEach(row => this.selection.select(row));
   }
 
-  applyFilter(filterValue: string) {
-    filterValue = filterValue.trim();
-    filterValue = filterValue.toLowerCase();
-    this.data.filter = filterValue;
-    this.data.paginator = this.paginator;
-    this.data.sort = this.sort;
-  }
-
   getClusterData(row: any) {
     if ('hostcomponent' in row && this.type === 'cluster') {
       const id = row.id,
@@ -196,8 +169,8 @@ export class ListComponent implements OnInit, AfterViewInit {
     return $e;
   }
 
-  checkIssue(issue: Issue): boolean {
-    return issue && !!Object.keys(issue).length;
+  notIssue(issue: Issue): boolean {
+    return notIssue(issue);
   }
 
   clickCell($e: MouseEvent, cmd: string, row: any, item?: any) {
@@ -213,8 +186,8 @@ export class ListComponent implements OnInit, AfterViewInit {
         data: {
           title: `Deleting  "${row.name || row.fqdn}"`,
           text: 'Are you sure?',
-          controls: ['Yes', 'No'],
-        },
+          controls: ['Yes', 'No']
+        }
       })
       .beforeClosed()
       .pipe(filter(yes => yes))

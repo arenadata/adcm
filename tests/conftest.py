@@ -9,4 +9,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
+import sys
+
+
 pytest_plugins = "adcm_pytest_plugin"
+
+# We have a number of calls from functional or ui_tests to cm module,
+# so we need a way to extend PYTHONPATH at test time.
+testdir = os.path.dirname(__file__)
+rootdir = os.path.dirname(testdir)
+pythondir = os.path.abspath(os.path.join(rootdir, 'python'))
+sys.path.append(pythondir)

@@ -639,16 +639,19 @@ class Configuration(BasePage):
             areas.append({ar.get_attribute("adcm_test"): el.get_attribute("value")})
         return areas
 
-    def _get_tooltip_el_for_field(self, field):
+    @staticmethod
+    def _get_tooltip_el_for_field(field):
         try:
-            return field.find_element(*Common.mat_icon)
+            return field.find_element(*Common.info_icon)
         except NoSuchElementException:
             return False
 
-    def check_tooltip_for_field(self, field):
-        if self._get_tooltip_el_for_field(field):
-            return True
-        return False
+    @staticmethod
+    def check_tooltip_for_field(field):
+        try:
+            return field.find_element(*Common.info_icon)
+        except NoSuchElementException:
+            return False
 
     def get_tooltip_text_for_element(self, element):
         tooltip_icon = self._get_tooltip_el_for_field(element)

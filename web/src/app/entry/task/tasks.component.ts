@@ -9,16 +9,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { animate, state, style, transition, trigger, useAnimation, animation } from '@angular/animations';
-import { Component, ElementRef, OnInit, QueryList, ViewChild, ViewChildren, HostBinding } from '@angular/core';
-import { MatPaginator, MatSort, MatSortHeader, PageEvent, MatTableDataSource, MatDialog } from '@angular/material';
+import { animate, state, style, transition, trigger } from '@angular/animations';
+import { Component, ElementRef, OnInit, QueryList, ViewChild, ViewChildren } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
+import { MatPaginator, PageEvent } from '@angular/material/paginator';
+import { MatSort, MatSortHeader } from '@angular/material/sort';
+import { MatTableDataSource } from '@angular/material/table';
+import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { ApiService } from '@app/core/api';
 import { EventMessage, SocketState } from '@app/core/store';
-import { Task, JobStatus } from '@app/core/types';
-import { SocketListener, DialogComponent } from '@app/shared';
+import { JobStatus, Task } from '@app/core/types';
+import { DialogComponent, SocketListenerDirective } from '@app/shared';
 import { Store } from '@ngrx/store';
-import { switchMap, filter } from 'rxjs/operators';
-import { ActivatedRoute, Router, ParamMap } from '@angular/router';
+import { filter, switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-tasks',
@@ -32,22 +35,15 @@ import { ActivatedRoute, Router, ParamMap } from '@angular/router';
     ])
   ]
 })
-export class TasksComponent extends SocketListener implements OnInit {
+export class TasksComponent extends SocketListenerDirective implements OnInit {
   isDisabled = false;
 
   dataSource = new MatTableDataSource<Task>([]);
   columnsToDisplay = ['id', 'name', 'objects', 'start_date', 'finish_date', 'status'];
   expandedTask: Task | null;
 
-  iconDisplay = {
-    created: 'watch_later',
-    running: 'autorenew',
-    success: 'done',
-    failed: 'error',
-    aborted: 'block'
-  };
-
   paramMap: ParamMap;
+  dataCount = 0;
 
   @ViewChild(MatPaginator, { static: true })
   paginator: MatPaginator;
@@ -131,8 +127,7 @@ export class TasksComponent extends SocketListener implements OnInit {
           if (job) {
             job.status = m.object.details.value as JobStatus;
             if (m.object.details.type === 'status' && m.object.details.value === 'running') job.start_date = new Date().toISOString();
-            if (m.object.details.type === 'status' && (m.object.details.value === 'success' || m.object.details.value === 'failed'))
-              job.finish_date = new Date().toISOString();
+            if (m.object.details.type === 'status' && (m.object.details.value === 'success' || m.object.details.value === 'failed')) job.finish_date = new Date().toISOString();
           }
         }
       }
@@ -142,7 +137,13 @@ export class TasksComponent extends SocketListener implements OnInit {
   addTask(id: number) {
     this.isDisabled = true;
     this.api.getOne<Task>('task', id).subscribe(task => {
+      this.paginator.length = ++this.dataCount;
+      if (this.paginator.pageSize > this.dataSource.data.length)
       this.dataSource.data = [task, ...this.dataSource.data];
+      else {
+        const [last, ...ost] = this.dataSource.data.reverse();
+        this.dataSource.data = [task, ...ost.reverse()];
+      }
       this.dataSource._updateChangeSubscription();
       setTimeout(_ => (this.isDisabled = false), 500);
     });
@@ -152,6 +153,7 @@ export class TasksComponent extends SocketListener implements OnInit {
     this.api.root.pipe(switchMap(root => this.api.getList<Task>(root.task, this.paramMap))).subscribe(data => {
       this.dataSource.data = data.results;
       this.paginator.length = data.count;
+      this.dataCount = data.count;
       if (data.results.length) localStorage.setItem('lastJob', data.results[0].id.toString());
       this.dataSource._updateChangeSubscription();
     });

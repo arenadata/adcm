@@ -14,7 +14,7 @@
 
     type: provider
     name: sample hostprovider
-    version: 1.0
+    version: '1.0'
     config:
         required:
             type: integer
@@ -42,7 +42,7 @@
 
 - type: host
   name: vHost
-  version: 00.09
+  version: '00.09'
 
   config:
       str_param:

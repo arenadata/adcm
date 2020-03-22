@@ -12,6 +12,11 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { SchemeComponent } from './scheme.component';
+import { MaterialModule } from '@app/shared/material.module';
+import { YspecService } from '../yspec/yspec.service';
+import { RootComponent } from './root.component';
+import { FieldService } from '../field.service';
+import { FormBuilder } from '@angular/forms';
 
 describe('SchemeComponent', () => {
   let component: SchemeComponent;
@@ -19,7 +24,9 @@ describe('SchemeComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ SchemeComponent ]
+      imports: [MaterialModule],
+      declarations: [ SchemeComponent, RootComponent ],
+      providers: [YspecService, FieldService, FormBuilder]
     })
     .compileComponents();
   }));
@@ -27,7 +34,7 @@ describe('SchemeComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(SchemeComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    //fixture.detectChanges();
   });
 
   it('should create', () => {

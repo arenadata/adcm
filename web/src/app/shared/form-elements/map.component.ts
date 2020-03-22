@@ -9,9 +9,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, Directive, Input, OnInit } from '@angular/core';
-import { AbstractControl, FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { FieldOptions } from '../configuration/types';
+import { Component, Directive, OnInit } from '@angular/core';
+import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+
 import { FieldDirective } from './field.directive';
 
 @Directive({
@@ -39,8 +39,8 @@ export class BaseMapListDirective extends FieldDirective implements OnInit {
 
   reload() {
     this.items.controls = [];
-      const fieldValue = {...this.field.value as Object};
-      Object.keys(fieldValue).forEach(a => this.items.push(this.fb.group({ key: [a, Validators.required], value: fieldValue[a] })));
+    const fieldValue = { ...(this.field.value as Object) };
+    Object.keys(fieldValue).forEach(a => this.items.push(this.fb.group({ key: [a, Validators.required], value: fieldValue[a] })));
   }
 
   add() {

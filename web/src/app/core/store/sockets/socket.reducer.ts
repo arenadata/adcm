@@ -32,7 +32,7 @@ export interface EventMessage {
     details: {
       id?: string;
       type: string;
-      value: string;
+      value: any;
     };
   };
 }
@@ -43,6 +43,7 @@ export const socketInit = createAction('[Socket] Init');
 export const socketOpen = createAction('[Socket] Open', props<{ status: StatusType }>());
 export const socketClose = createAction('[Socket] Close', props<{ status: StatusType }>());
 export const socketResponse = createAction('[Socket] Response', props<{ message: EventMessage }>());
+export const clearMessages = createAction('[Socket] Clear messages');
 
 export interface SocketState {
   status: StatusType;
@@ -51,7 +52,7 @@ export interface SocketState {
 
 const initialState: SocketState = {
   status: null,
-  message: null,
+  message: null
 };
 
 const reducer = createReducer(
@@ -59,16 +60,17 @@ const reducer = createReducer(
   on(socketInit, state => ({ ...state })),
   on(socketOpen, (state, { status }) => ({
     ...state,
-    status,
+    status
   })),
   on(socketClose, (state, { status }) => ({
     ...state,
-    status,
+    status
   })),
   on(socketResponse, (state, { message }) => ({
     ...state,
-    message,
-  }))
+    message
+  })),
+  on(clearMessages, state => ({ ...state, message: null }))
 );
 
 export function socketReducer(state: SocketState, action: Action) {
@@ -76,11 +78,5 @@ export function socketReducer(state: SocketState, action: Action) {
 }
 
 export const getSocketState = createFeatureSelector<SocketState>('socket');
-export const getConnectStatus = createSelector(
-  getSocketState,
-  (state: SocketState) => state.status
-);
-export const getMessage = createSelector(
-  getSocketState,
-  state => state.message
-);
+export const getConnectStatus = createSelector(getSocketState, (state: SocketState) => state.status);
+export const getMessage = createSelector(getSocketState, state => state.message);

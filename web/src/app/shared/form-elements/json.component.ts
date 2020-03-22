@@ -35,7 +35,10 @@ import { FieldDirective } from './field.directive';
           ></textarea>
         </div>
       </mat-form-field>
-      <span class="info"><mat-icon matSuffix *ngIf="field.description" [appTooltip]="field.description">info_outline</mat-icon></span>
+      <span class="info">
+        <mat-icon [ngClass]="'info-icon'" matSuffix *ngIf="field.description" [appTooltip]="field.description">info_outline</mat-icon>
+        <button mat-icon-button matSuffix (click)="restore()" color="primary" matTooltip="Reset to default"><mat-icon>refresh</mat-icon></button>
+      </span>
     </ng-container>
   `,
   styleUrls: ['./scss/fields.component.scss', './scss/json.scss']

@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { IYspec } from './YspecStructure';
+import { IYspec } from './yspec/yspec.service';
 
 export type stateType = 'created' | 'locked';
 
@@ -32,6 +32,8 @@ export type ConfigValueTypes =
 export type simpleTypes = string | number | boolean;
 export type ConfigResultTypes = simpleTypes | simpleTypes[] | object | null;
 
+export type controlType = 'boolean' | 'textbox' | 'textarea' | 'json' | 'password' | 'list' | 'map' | 'dropdown' | 'file' | 'text';
+
 export interface UIoptions {
   invisible?: boolean;
   no_confirm?: boolean;
@@ -44,9 +46,10 @@ export interface ILimits {
   option?: any;
   read_only?: stateType[];
   yspec?: IYspec;
+  rules?: any;
 }
 
-interface ValidatorInfo {
+export interface ValidatorInfo {
   pattern?: string | RegExp;
   required?: boolean;
   max?: number;
@@ -117,13 +120,9 @@ interface Compare {
 export interface FieldOptions extends ConfigOptions {
   default: null | string | number | boolean | object | any[];
   value: string | number | boolean | object | string[] | null;
-  controlType: string;
+  controlType: controlType;
   validator: ValidatorInfo;
   disabled?: boolean;
   limits?: ILimits;
   compare: Compare[];
-}
-
-export interface IStructure extends FieldOptions {
-  rules: { [x: string]: any; type: string };
 }

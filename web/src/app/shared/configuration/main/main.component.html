@@ -3,13 +3,13 @@
   <p>{{ loadingStatus }}</p>
 </ng-template>
 <ng-container *ngIf="config$ | async as data; else dumb">
-  <app-tools #tools [description]="data.description" [isAdvanced]="isAdvanced(data)" [disabledSave]="!fields.form.valid"
+  <app-tools #tools [description]="data.description" [isAdvanced]="isAdvanced(data)" [disabledSave]="isLock ||!fields.form.valid"
     [disabledHistory]="history.iconDisabled" (event)="toolsEvent($event)"></app-tools>
   <div [@history]="historyShow ? 'showTools' : 'hideTools'">
     <app-history #history [versionID]="data.id" [historyUrl]="historyUrl" [fields]="fields"
       (version)="changeVersion($event)"></app-history>
   </div>
   <div class="fields" [@history]="historyShow ? 'show' : 'hide'">
-    <app-config-fields #fields [model]="data"></app-config-fields>
+    <app-config-fields #fields [model]="data" (event)="fieldsEvents($event)"></app-config-fields>
   </div>
 </ng-container>

@@ -55,7 +55,7 @@ export class LogComponent implements OnInit {
 
   types = ['all', 'job', 'task', 'cluster', 'host', 'service'];
 
-  @ViewChild('slider', {static: false}) slider: MatSlider;
+  @ViewChild('slider') slider: MatSlider;
 
   constructor(private store: Store<State>, private api: ApiService) {
     // this.store.dispatch(socketInit());

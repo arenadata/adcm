@@ -37,7 +37,8 @@ export interface IRoot {
 export interface ApiBase {
   typeName: TypeName;
   id: number;
-  name?: string;
+  name: string;
+  display_name?: string;
   description?: string;
   url: string;
   state: string;
@@ -47,7 +48,9 @@ export interface ApiBase {
   issue: Issue;
   prototype_id: number;
   prototype_name: string;
+  prototype_display_name?: string;
   prototype_version: string;
+  bundle_id: number;
   status: number | string;
 }
 
@@ -60,6 +63,7 @@ export interface Cluster extends ApiBase {
   bind: string;
   serviceprototype: string;
   upgradable: boolean;
+  upgrade: string;
 }
 
 export interface Provider extends ApiBase {
@@ -72,7 +76,6 @@ export interface Host extends ApiBase {
   cluster: string;
   cluster_id?: number;
   cluster_name?: string;
-  clusters: Cluster[];
 }
 
 export interface Service extends ApiBase {

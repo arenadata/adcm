@@ -171,6 +171,30 @@ def test_service_config_from_cluster_by_name(cluster_bundle: Bundle, keys_cluste
         assert_cluster_config(cluster_bundle, expected_state)
 
 
+def test_service_config_from_service_by_name(cluster_bundle: Bundle, keys_clusters_services):
+    expected_state = copy.deepcopy(INITIAL_CLUSTERS_CONFIG)
+    assert_cluster_config(cluster_bundle, expected_state)
+
+    for key, cname, sname in keys_clusters_services:
+        service = cluster_bundle.cluster(name=cname).service(name=sname)
+        service.action(name='service_name_' + sname + '_' + key).run().try_wait()
+        expected_state[cname]["services"][sname][key] = NEW_VALUES[key]
+        assert_cluster_config(cluster_bundle, expected_state)
+
+
+def test_another_service_from_service_by_name(cluster_bundle: Bundle, keys_clusters_services):
+    expected_state = copy.deepcopy(INITIAL_CLUSTERS_CONFIG)
+    assert_cluster_config(cluster_bundle, expected_state)
+
+    for key, cname, sname in keys_clusters_services:
+        if sname == "Second":
+            continue
+        second = cluster_bundle.cluster(name=cname).service(name='Second')
+        result = second.action(name='service_name_' + sname + '_' + key).run().wait()
+        assert result == "failed", "Job expected to be failed"
+        assert_cluster_config(cluster_bundle, expected_state)
+
+
 def test_service_config(cluster_bundle: Bundle, keys_clusters_services):
     expected_state = copy.deepcopy(INITIAL_CLUSTERS_CONFIG)
     assert_cluster_config(cluster_bundle, expected_state)
@@ -277,5 +301,17 @@ def test_host_config(provider_bundle: Bundle):
         fqdn = list(INITIAL_PROVIDERS_CONFIG[pname]['hosts'].keys())[host_idx]
         host = provider.host(fqdn=fqdn)
         host.action(name='host_' + key).run().try_wait()
+        expected_state[pname]["hosts"][fqdn][key] = NEW_VALUES[key]
+        assert_provider_config(provider_bundle, expected_state)
+
+
+def test_host_config_from_provider(provider_bundle: Bundle):
+    expected_state = copy.deepcopy(INITIAL_PROVIDERS_CONFIG)
+    assert_provider_config(provider_bundle, expected_state)
+
+    for key, pname, host_idx in sparse_matrix(KEYS, PROVIDERS, [0, 1]):
+        provider = provider_bundle.provider(name=pname)
+        fqdn = list(INITIAL_PROVIDERS_CONFIG[pname]['hosts'].keys())[host_idx]
+        provider.action(name='host_' + key).run(config={"fqdn": fqdn}).try_wait()
         expected_state[pname]["hosts"][fqdn][key] = NEW_VALUES[key]
         assert_provider_config(provider_bundle, expected_state)

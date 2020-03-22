@@ -21,10 +21,13 @@
                      "read-only-when-runned": null
                   },
                   "name": "new_",
-                  "id": 1
+                  "id": 1,
+                  "version": "1.001"
                },
                "services": {
                   "zookeeper": {
+                     "id": 1,
+                     "version": "3.4.10",
                      "config": {
                         "client_port": "2181",
                         "dirs": {

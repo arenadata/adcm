@@ -1,10 +1,6 @@
-<!-- <div class="filter-header">
-  <mat-form-field>
-    <input matInput (keyup)="applyFilter($event.target.value)" placeholder="Filter">
-  </mat-form-field>
-</div> -->
 <mat-table [dataSource]="data" [trackBy]="trackBy" matSort>
-  <mat-header-row *matHeaderRowDef="columns" [appMultiSort]="sortParam"></mat-header-row>
+  <mat-header-row *matHeaderRowDef="columns" [appMultiSort]="sortParam" (mousedownevent)="addToSorting=$event">
+  </mat-header-row>
   <mat-row appHover *matRowDef="let row; columns: columns" (click)="clickCell($event, 'title', row)"
     [ngClass]="{ 'select-table-item': current ? row.id === current.id : false }"></mat-row>
 
@@ -119,8 +115,8 @@
   </ng-container>
 
   <ng-container matColumnDef="state">
-    <mat-header-cell *matHeaderCellDef mat-sort-header>State</mat-header-cell>
-    <mat-cell *matCellDef="let row">
+    <mat-header-cell *matHeaderCellDef mat-sort-header class="width100">State</mat-header-cell>
+    <mat-cell *matCellDef="let row" class="width100">
       <mat-icon class="icon-locked running" *ngIf="row.state === 'locked'; else title">autorenew</mat-icon>
       <ng-template #title>{{ row.state }}</ng-template>
     </mat-cell>
@@ -139,7 +135,7 @@
   <ng-container matColumnDef="actions">
     <mat-header-cell *matHeaderCellDef class="control">Actions</mat-header-cell>
     <mat-cell *matCellDef="let row" class="control">
-      <button [appForTest]="'row_actions'" mat-icon-button color="warn" *ngIf="checkIssue(row.issue); else actions"
+      <button [appForTest]="'row_actions'" mat-icon-button color="warn" *ngIf="!notIssue(row.issue); else actions"
         [appTooltip]="row" appTooltipComponent="issue">
         <mat-icon>priority_hight</mat-icon>
       </button>
@@ -163,7 +159,7 @@
             </ng-template>
           </ng-template>
         </mat-menu>
-        
+
       </ng-template>
     </mat-cell>
   </ng-container>
@@ -217,9 +213,9 @@
 
   <!-- hosts -->
   <ng-container matColumnDef="fqdn">
-    <mat-header-cell *matHeaderCellDef mat-sort-header>FQDN</mat-header-cell>
-    <mat-cell *matCellDef="let row">
-      <span>{{ row.fqdn }}</span>
+    <mat-header-cell *matHeaderCellDef mat-sort-header class="width30pr">FQDN</mat-header-cell>
+    <mat-cell *matCellDef="let row" class="width30pr">
+      <span class="overflow" [appTooltip]="row.fqdn" [appTooltipShowByCondition]="true">{{ row.fqdn }}</span>
     </mat-cell>
   </ng-container>
 
@@ -228,12 +224,13 @@
     <mat-cell *matCellDef="let row">
       <a *ngIf="row.cluster_id; else clusterlist" [routerLink]="['/cluster', row.cluster_id]">{{ row.cluster_name }}</a>
       <ng-template #clusterlist>
-        <mat-select placeholder="Assign to cluster" class="select-in-cell" (click)="stopPropagation($event)"
+        <mat-select appInfinityScroll (topScrollPoint)="clickCell($event, 'getNextPageCluster', row)" placeholder="Assign to cluster"
+          class="select-in-cell" (click)="stopPropagation($event)"
           (openedChange)="clickCell($event, 'getClusters', row)"
           (valueChange)="clickCell($event, 'addCluster', row, clusters.value)" #clusters>
           <mat-option>...</mat-option>
-          <mat-option *ngFor="let cluster of row.clusters" [value]="cluster.id">
-            {{ cluster.name }}
+          <mat-option *ngFor="let item of row.clusters" [value]="item.id">
+            {{ item.title }}
           </mat-option>
         </mat-select>
       </ng-template>

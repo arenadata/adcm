@@ -11,17 +11,30 @@
 // limitations under the License.
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ActionMasterComponent as  MasterComponent } from './master.component';
+import { ActionMasterComponent as MasterComponent } from './master.component';
+import { ApiService } from '@app/core/api';
+import { FieldService } from '@app/shared/configuration/field.service';
+import { MatListModule } from '@angular/material/list';
 
 describe('MasterComponent', () => {
   let component: MasterComponent;
   let fixture: ComponentFixture<MasterComponent>;
+  let ApiServiceStub: Partial<ApiService>;
+  let FieldServiceStub: Partial<FieldService>;
 
   beforeEach(async(() => {
+
+    ApiServiceStub = {};
+    FieldServiceStub = {};
+
     TestBed.configureTestingModule({
-      declarations: [ MasterComponent ]
-    })
-    .compileComponents();
+      imports: [MatListModule],
+      declarations: [MasterComponent],
+      providers: [
+        { provide: ApiService, useValue: ApiServiceStub },
+        { provide: FieldService, useValue: FieldServiceStub }
+      ]
+    }).compileComponents();
   }));
 
   beforeEach(() => {
@@ -30,7 +43,7 @@ describe('MasterComponent', () => {
     fixture.detectChanges();
   });
 
-  xit('should create', () => {
+  it('should create', () => {
     expect(component).toBeTruthy();
   });
 });

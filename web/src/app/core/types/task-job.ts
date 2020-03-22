@@ -13,10 +13,16 @@ import { ApiBase } from './api';
 
 export type JobStatus = 'created' | 'running' | 'failed' | 'success';
 
+export interface JobObject {
+  id: number;
+  name: string;
+  type: string;
+}
+
 interface TaskBase {
-  start_date: string;  
+  start_date: string;
   finish_date: string;
-  objects: { id: number; name: string; type: string }[];  
+  objects: JobObject[];
   status: JobStatus;
   action: JobAction;
   terminatable: boolean;
@@ -24,12 +30,12 @@ interface TaskBase {
 }
 
 export interface JobAction {
-  prototype_name?: string;
+  prototype_name?: string;  
   prototype_version?: string;
-  bundle_id?: string;
+  bundle_id?: number;
   display_name: string;
 }
-interface JobRaw extends TaskBase {  
+interface JobRaw extends TaskBase {
   log_files: LogFile[];
 }
 
@@ -41,17 +47,13 @@ export type Job = JobRaw & ApiBase;
 export type Task = TaskRaw & ApiBase;
 
 export interface LogFile {
-  level: string;
-  host: string;
-  tag: string;
-  type: string;
-  file: string;
+  id: number;
   url: string;
-}
-
-export interface Log {
-  content: string | CheckLog[];
-  fileName: string;
+  name: string;
+  type: string;
+  format: 'txt' | 'json';
+  download_url: string;
+  body: string;
 }
 
 export interface CheckLog {

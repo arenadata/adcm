@@ -12,9 +12,9 @@
 import { Injectable } from '@angular/core';
 import { ParamMap } from '@angular/router';
 import { ApiService } from '@app/core/api';
-import { IAction, Bundle, Cluster, Entities, Host, IImport, Job, Log, Provider, Service, TypeName } from '@app/core/types';
+import { Bundle, Cluster, Entities, Host, IAction, IImport, Job, LogFile, Provider, Service, TypeName } from '@app/core/types';
 import { environment } from '@env/environment';
-import { BehaviorSubject, forkJoin, Observable, of, EMPTY } from 'rxjs';
+import { BehaviorSubject, EMPTY, forkJoin, Observable, of } from 'rxjs';
 import { filter, map, switchMap, tap } from 'rxjs/operators';
 
 const EntitiNames: TypeName[] = ['host', 'service', 'cluster', 'provider', 'job', 'task', 'bundle'];
@@ -63,7 +63,7 @@ export class ClusterService {
   }
 
   one_host(id: number): Observable<Host> {
-    return this.api.getOne<Host>('host', id);
+    return this.api.getOne<Host>('host', id).pipe(map((host: Host) => ({ ...host, name: host.fqdn })));
   }
 
   one_provider(id: number): Observable<Provider> {
@@ -76,8 +76,8 @@ export class ClusterService {
         ...j,
         prototype_name: j.action ? j.action.prototype_name : '',
         prototype_version: j.action ? j.action.prototype_version : '',
-        bundle_id: j.action ? j.action.bundle_id : '',
-        // display_name: j.action ? `${j.action.display_name}` : 'Object has been deleted'
+        bundle_id: j.action ? j.action.bundle_id : null,
+        name: j.action ? `${j.action.display_name}` : 'Object has been deleted'
       }))
     );
   }
@@ -99,21 +99,17 @@ export class ClusterService {
       .pipe(
         map((a: Entities) => {
           a.typeName = typeName;
-          this.worker.current = a;
+          this.worker.current = { ...a, name: a.display_name || a.name };
           this.workerSubject.next(this.worker);
           return this.worker;
         })
       );
   }
 
-  /**
-   * Logging for Jobs
-   * @param level property from LogFile interface
-   */
-  getLog(tag: string, level: string): Observable<Log> {
-    const job = this.Current as Job;
-    const file = job.log_files.find(a => a.tag === tag && a.level === level);
-    return this.api.get<Log>(file.url);
+
+  getLog(p: number | string): Observable<LogFile> {
+    const url = typeof p === 'number' ? (this.Current as Job).log_files.find(a => a.id === p).url : p;
+    return this.api.get<LogFile>(url);
   }
 
   getActions(): Observable<IAction[]> {
@@ -137,13 +133,15 @@ export class ClusterService {
     return this.api.getList<Host>(this.Cluster.host, p);
   }
 
-  addHost(host: Host) {
-    return this.api.post(this.Cluster.host, { host_id: host.id });
+  addHost(host_id: number) {
+    return this.api.post(this.Cluster.host, { host_id });
   }
 
   reset(): Observable<WorkerInstance> {
+    if (!this.Current) return EMPTY;
     const typeName = this.Current.typeName;
     return this.api.get<Entities>(this.Current.url).pipe(
+      filter(_ => !!this.worker),
       map(a => {
         if (typeName === 'cluster') this.worker.cluster = { ...(a as Cluster), typeName };
         this.worker.current = { ...a, typeName };
@@ -174,8 +172,8 @@ export class ClusterService {
   /**
    * For `Job` and `Task` operating time data
    */
-  getOperationTimeData() {
-    const { start_date, finish_date, status } = { ...(this.Current as Job) };
+  getOperationTimeData(job: Job) {
+    const { start_date, finish_date, status } = job;
     if (start_date && finish_date) {
       const sdn = Date.parse(start_date),
         fdn = Date.parse(finish_date),
