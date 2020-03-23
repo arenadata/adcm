@@ -807,6 +807,7 @@ class LogStorageSerializer(serializers.Serializer):
 
         if obj.format == 'json' and isinstance(body, str):
             body = json.loads(body)
+            body = json.dumps(body, indent=4)
 
         return body
 
