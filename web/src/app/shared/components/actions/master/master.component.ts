@@ -9,76 +9,62 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { AfterViewInit, Component, EventEmitter, OnInit, ViewChild } from '@angular/core';
-import { ApiService } from '@app/core/api';
+import { Component, EventEmitter, OnInit } from '@angular/core';
 import { IAction } from '@app/core/types';
-import { FieldService } from '@app/shared/configuration/field.service';
 import { DynamicComponent, DynamicEvent } from '@app/shared/directives/dynamic.directive';
-import { ServiceHostComponent } from '@app/shared/host-components-map/services2hosts/service-host.component';
 
-import { ConfigFieldsComponent } from '../../../configuration/fields/fields.component';
 import { BaseDirective } from '../../../directives/base.directive';
 import { ActionParameters } from '../actions.directive';
+import { IValue, MasterService, whatShow } from './master.service';
+import { FormGroup } from '@angular/forms';
+import { Post } from '@app/shared/host-components-map/types';
 
 @Component({
   selector: 'app-master',
   templateUrl: './master.component.html',
-  styleUrls: ['./master.component.scss']
+  styles: [
+    `
+      .action-button {
+        background: none !important;
+        margin: 6px 0;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.04) !important;
+        }
+      }
+    `
+  ],
+  providers: [MasterService]
 })
-export class ActionMasterComponent extends BaseDirective implements DynamicComponent, OnInit, AfterViewInit {
+export class ActionMasterComponent extends BaseDirective implements DynamicComponent, OnInit {
   event: EventEmitter<DynamicEvent> = new EventEmitter();
   model: ActionParameters;
-  actions: IAction[];
   action: IAction;
+  show: whatShow;
 
-  isHmcRequired = false;
-  isConfig = false;
-
-  @ViewChild('fields') fields: ConfigFieldsComponent;
-
-  isAdvanced = false;
-  set advanced(value: boolean) {
-    this.config.filterApply(this.fields.dataOptions, { advanced: value, search: '' });
-  }
-
-  arh: { parent: HTMLElement; holder: HTMLElement };
-
-  constructor(private api: ApiService, private config: FieldService) {
+  constructor(private service: MasterService) {
     super();
   }
 
   ngOnInit(): void {
-    if (this.model && this.model.actions.length === 1) {
-      this.choose(this.model.actions[0]);
-    }
-  }
-
-  ngAfterViewInit(): void {
-    if (this.isConfig && this.fields) {
-      setTimeout(() => (this.isAdvanced = this.fields.rawConfig.config.some(a => a.ui_options && a.ui_options.advanced)));
-    }
+    if (this.model.actions.length === 1) this.choose(this.model.actions[0]);
   }
 
   choose(action: IAction) {
     this.action = action;
-    this.isConfig = !!(this.action.config && this.action.config.config.length);
-    this.isHmcRequired = !!this.action.hostcomponentmap;
+    this.show = this.service.spotShow(action);
   }
 
-  run(value: { config: ConfigFieldsComponent; hostmap: ServiceHostComponent }) {
-    const data: any = {};
-    if (value.config) data.value = value.config.form;
-    if (value.hostmap) data.hostmap = value.hostmap.service.statePost.data;
+  isDisabled(value: IValue) {
+    return value && ((value.hostmap && value.hostmap.noValid) || (value.config && !value.config.form?.valid));
+  }
 
-    const request$ =
-      !this.isConfig && !this.isHmcRequired
-        ? this.api.post(this.action.run, {})
-        : this.api.post(this.action.run, {
-            config: data.value ? this.config.parseValue(data.value, this.action.config.config) : {},
-            hc: data.hostmap
-          });
-
-    request$.pipe(this.takeUntil()).subscribe(() => this.cancel());
+  run(value: IValue) {
+    const data = this.service.parseData(value);
+    this.service
+      .send(this.action.run, data)
+      .pipe(this.takeUntil())
+      .subscribe(() => this.cancel());
   }
 
   cancel() {
