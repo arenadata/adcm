@@ -13,7 +13,7 @@
 
 <ng-template #simple>
   <div *ngIf="show === 'none'">
-    <ng-container *ngTemplateOutlet="controls; context: { value: {} }"></ng-container>
+    <ng-container *ngTemplateOutlet="controls; context: { value: undefined }"></ng-container>
   </div>
 
   <div *ngIf="show === 'config'">
@@ -56,8 +56,7 @@
     </ng-container>
 
     <button mat-raised-button (click)="cancel()" color="primary">Cancel</button>
-    <button mat-raised-button (click)="run(value)" color="accent"
-      [disabled]="(value.hostmap && value.hostmap.noValid) || (value.config && !value.config.form?.valid)">
+    <button mat-raised-button (click)="run(value)" color="accent" [disabled]="isDisabled(value)">
       Run
     </button>
   </div>

@@ -18,28 +18,25 @@ import { ActionMasterComponent as MasterComponent } from './master.component';
 import { MasterService } from './master.service';
 import { ApiService } from '@app/core/api/api.service';
 import { FieldService } from '@app/shared/configuration/field.service';
+import { FormGroup } from '@angular/forms';
+import { ServiceHostComponent } from '@app/shared/host-components-map/services2hosts/service-host.component';
+import { ConfigFieldsComponent } from '@app/shared/configuration/fields/fields.component';
 
 describe('MasterComponent', () => {
   let component: MasterComponent;
   let fixture: ComponentFixture<MasterComponent>;
-  let MasterServiceStub: Partial<MasterService>;
 
   let ApiServiceStub: Partial<ApiService>;
   let FieldServiceStub: Partial<FieldService>;
 
   beforeEach(async(() => {
-    MasterServiceStub = {};
     ApiServiceStub = {};
     FieldServiceStub = {};
 
     TestBed.configureTestingModule({
       imports: [MatListModule],
       declarations: [MasterComponent, ActionMasterConfigComponent],
-      providers: [
-        { provide: ApiService, useValue: ApiServiceStub },
-        { provide: MasterService, useValue: MasterServiceStub },
-        { provide: FieldService, useValue: FieldServiceStub }
-      ],
+      providers: [MasterService, { provide: ApiService, useValue: ApiServiceStub }, { provide: FieldService, useValue: FieldServiceStub }],
       schemas: [NO_ERRORS_SCHEMA]
     }).compileComponents();
   }));
@@ -191,18 +188,27 @@ describe('MasterComponent', () => {
     expect(hm).toBeTruthy();
   });
 
-  /**
-   *
-   * simple template - show
-   *   - config template
-   *   - host-map template
-   *   - master with step config -> host-map
-   *
-   * ui_options { confirm: string } - ActionsDirective by init dialog
-   *
-   * button parameter - name action
-   *
-   * run button - get value from everything components, have to parse it and send post
-   *
-   */
+  it('should be undefined value if ServiceHostComponent ConfigFieldComponent not exist', () => {
+    const service = fixture.debugElement.injector.get(MasterService);
+    const result = service.parseData(undefined);
+    expect(result).toBeUndefined();
+  });
+
+  xit('check value when ConfigFieldComponent exist', () => {
+    const service = fixture.debugElement.injector.get(MasterService);
+
+    const config = {} as ConfigFieldsComponent;
+
+    const result = service.parseData({ config, hostmap: undefined });
+    // expect(result).toEqual({});
+  });
+
+  xit('check value when ServiceHostComponent exist', () => {
+    const service = fixture.debugElement.injector.get(MasterService);
+
+    const hostmap = {} as ServiceHostComponent;
+
+    const result = service.parseData({ config: undefined, hostmap });
+    // expect(result).toEqual({});
+  });
 });

@@ -16,6 +16,8 @@ import { FieldService } from '@app/shared/configuration/field.service';
 import { ConfigFieldsComponent } from '@app/shared/configuration/fields/fields.component';
 import { FieldStack } from '@app/shared/configuration/types';
 import { ServiceHostComponent } from '@app/shared/host-components-map/services2hosts/service-host.component';
+import { Post } from '@app/shared/host-components-map/types';
+import { FormGroup } from '@angular/forms';
 
 export interface IValue {
   config: ConfigFieldsComponent;
@@ -36,20 +38,19 @@ export class MasterService {
   spotShow(action: IAction): whatShow {
     const config = !!(action.config && action.config.config.length);
     const hm = !!action.hostcomponentmap;
-    return config ? (!hm ? whatShow.config : whatShow.stepper) : hm ? (!config ? whatShow.hostMap : whatShow.stepper) : whatShow.none;
+    return config ? (hm ? whatShow.stepper : whatShow.config) : hm ? whatShow.hostMap : whatShow.none;
   }
 
-  send(value: IValue, url: string, flag: boolean, rawConfig: FieldStack[]) {
-    const data: any = {};
-    if (value.config) data.value = value.config.form;
-    if (value.hostmap) data.hostmap = value.hostmap.service.statePost.data;
+  parseData(v: IValue) {
+    const getData = (c: ConfigFieldsComponent, h: ServiceHostComponent) => {
+      const config = c ? this.configService.parseValue(c.form, c.rawConfig.config) : undefined;
+      const hc = h ? h.service.statePost.data : undefined;
+      return { config, hc };
+    };
+    return v ? getData(v.config, v.hostmap) : undefined;
+  }
 
-    return flag
-      ? this.api.post(url, {})
-      : this.api.post(url, {
-          // TODO: remove configService
-          config: data.value ? this.configService.parseValue(data.value, rawConfig) : {},
-          hc: data.hostmap
-        });
+  send(url: string, value: { config: any; hc: Post[] }) {
+    return this.api.post(url, value);
   }
 }

@@ -35,7 +35,7 @@ import { ConfigFieldsComponent } from '@app/shared/configuration/fields/fields.c
 export class ActionMasterConfigComponent {
   @Input() action: IAction;
 
-  @ViewChild('fields') fields: ConfigFieldsComponent;
+  @ViewChild('fields') fields: ConfigFieldsComponent = {} as ConfigFieldsComponent;
 
   set advanced(value: boolean) {
     this.config.filterApply(this.fields.dataOptions, { advanced: value, search: '' });

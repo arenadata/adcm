@@ -9,13 +9,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { ChangeDetectionStrategy, Component, EventEmitter, OnInit } from '@angular/core';
+import { Component, EventEmitter, OnInit } from '@angular/core';
 import { IAction } from '@app/core/types';
 import { DynamicComponent, DynamicEvent } from '@app/shared/directives/dynamic.directive';
 
 import { BaseDirective } from '../../../directives/base.directive';
 import { ActionParameters } from '../actions.directive';
 import { IValue, MasterService, whatShow } from './master.service';
+import { FormGroup } from '@angular/forms';
+import { Post } from '@app/shared/host-components-map/types';
 
 @Component({
   selector: 'app-master',
@@ -32,13 +34,11 @@ import { IValue, MasterService, whatShow } from './master.service';
       }
     `
   ],
-  providers: [MasterService],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  providers: [MasterService]
 })
 export class ActionMasterComponent extends BaseDirective implements DynamicComponent, OnInit {
   event: EventEmitter<DynamicEvent> = new EventEmitter();
-  model: ActionParameters; // = { actions: [], cluster: null };
-
+  model: ActionParameters;
   action: IAction;
   show: whatShow;
 
@@ -55,9 +55,14 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
     this.show = this.service.spotShow(action);
   }
 
+  isDisabled(value: IValue) {
+    return value && ((value.hostmap && value.hostmap.noValid) || (value.config && !value.config.form?.valid));
+  }
+
   run(value: IValue) {
+    const data = this.service.parseData(value);
     this.service
-      .send(value, this.action.run, this.show === 'none', this.action.config.config)
+      .send(this.action.run, data)
       .pipe(this.takeUntil())
       .subscribe(() => this.cancel());
   }
