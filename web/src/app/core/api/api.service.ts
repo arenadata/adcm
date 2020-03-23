@@ -42,12 +42,13 @@ export class ApiService {
   }
 
   getList<T>(url: string, p: ParamMap): Observable<ListResult<T>> {
-    let params = {};
+    const params = p.keys.reduce((pr, c) => ({...pr, [c]: p.get(c)}), {});
     if (p) {
       const limit = p.get('limit') ? +p.get('limit') : +localStorage.getItem('limit'),
-        offset = (p.get('page') ? +p.get('page') : 0) * limit,
-        status = p.get('filter') || '';
-      params = { limit: limit.toString(), offset: offset.toString(), ordering: p.get('ordering'), status };
+        offset = (p.get('page') ? +p.get('page') : 0) * limit;
+      params['limit'] = limit.toString(); 
+      params['offset'] = offset.toString();
+      params['status'] = p.get('filter') || '';
     }
     return this.get<ListResult<T>>(url, params);
   }

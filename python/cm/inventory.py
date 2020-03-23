@@ -191,7 +191,7 @@ def get_host(host_id):
 
 def prepare_job_inventory(selector, job_id, delta, action_host=None):
     log.info('prepare inventory for job #%s, selector: %s', job_id, selector)
-    fd = open(os.path.join(config.RUN_DIR, f'{job_id}-inventory.json'), 'w')
+    fd = open(os.path.join(config.RUN_DIR, f'{job_id}/inventory.json'), 'w')
     inv = {'all': {'children': {}}}
     if 'cluster' in selector:
         inv['all']['children'].update(get_cluster_hosts(selector['cluster'], action_host))

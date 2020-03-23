@@ -447,6 +447,7 @@ class TestJob(TestCase):
                     'env': {
                         'run_dir': mock_dump.call_args[0][0]['env']['run_dir'],
                         'log_dir': mock_dump.call_args[0][0]['env']['log_dir'],
+                        'tmp_dir': os.path.join(config.RUN_DIR, f'{job.id}', 'tmp'),
                         'stack_dir': mock_dump.call_args[0][0]['env']['stack_dir'],
                         'status_api_token': mock_dump.call_args[0][0]['env']['status_api_token']},
                     'job': {
@@ -492,7 +493,7 @@ class TestJob(TestCase):
                     job_config['job']['hostgroup'] = '127.0.0.1'
 
                 mock_open.assert_called_with(
-                    '{}/{}-config.json'.format(config.RUN_DIR, job.id), 'w')
+                    '{}/{}/config.json'.format(config.RUN_DIR, job.id), 'w')
                 mock_dump.assert_called_with(job_config, fd, indent=3, sort_keys=True)
                 mock_get_adcm_config.assert_called()
                 mock_prepare_context.assert_called_with({'cluster': 1})
