@@ -32,7 +32,7 @@ class Event:
             try:
                 event = self.events.pop(0)
                 func, args = event
-                func.call(*args)
+                func.__call__(*args)
             except IndexError:
                 pass
 
