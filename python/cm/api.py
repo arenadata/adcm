@@ -27,6 +27,7 @@ from cm.adcm_config import (
 )
 from cm.errors import AdcmApiEx
 from cm.errors import raise_AdcmEx as err
+from cm.status_api import Event
 from cm.models import (
     Cluster, Prototype, Component, Host, HostComponent, ADCM, ClusterObject,
     ServiceComponent, ConfigLog, HostProvider, PrototypeImport, PrototypeExport,
@@ -62,6 +63,7 @@ def add_host(proto, provider, fqdn, desc='', lock=False):
         msg = 'Host prototype bundle #{} does not match with host provider bundle #{}'
         err('FOREIGN_HOST', msg.format(proto.bundle.id, provider.prototype.bundle.id))
     spec, _, conf, attr = get_prototype_config(proto)
+    event = Event()
     with transaction.atomic():
         obj_conf = init_object_config(spec, conf, attr)
         host = Host(
@@ -74,9 +76,10 @@ def add_host(proto, provider, fqdn, desc='', lock=False):
         host.save()
         if lock:
             host.stack = json.dumps(['created'])
-            set_object_state(host, config.Job.LOCKED)
+            set_object_state(host, config.Job.LOCKED, event)
         process_file_type(host, spec, conf)
         cm.issue.save_issue(host)
+    event.send_state()
     cm.status_api.post_event('create', 'host', host.id, 'provider', str(provider.id))
     cm.status_api.load_service_map()
     return host
@@ -726,10 +729,11 @@ def push_obj(obj, state):
     return obj
 
 
-def set_object_state(obj, state):
+def set_object_state(obj, state, event):
     obj.state = state
     obj.save()
-    cm.status_api.set_obj_state(obj.prototype.type, obj.id, state)
+    event.events.append(
+        (cm.status_api.set_obj_state, (obj.prototype.type, obj.id, state)))
     log.info('set %s state to "%s"', obj_ref(obj), state)
     return obj
 
@@ -752,7 +756,7 @@ def set_host_state(host_id, state):
     return push_obj(host, state)
 
 
-def set_provider_state(provider_id, state):
+def set_provider_state(provider_id, state, event):
     try:
         provider = HostProvider.objects.get(id=provider_id)
     except HostProvider.DoesNotExist:
@@ -761,7 +765,7 @@ def set_provider_state(provider_id, state):
     if provider.state == config.Job.LOCKED:
         return push_obj(provider, state)
     else:
-        return set_object_state(provider, state)
+        return set_object_state(provider, state, event)
 
 
 def set_service_state(cluster_id, service_name, state):

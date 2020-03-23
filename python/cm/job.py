@@ -29,6 +29,7 @@ from cm.adcm_config import obj_ref, process_file_type, process_config
 from cm.errors import raise_AdcmEx as err
 from cm.inventory import get_obj_config
 from cm.logger import log
+from cm.status_api import Event
 from cm.models import (
     Cluster, Action, SubAction, TaskLog, JobLog, CheckLog, Host, ADCM,
     ClusterObject, HostComponent, ServiceComponent, HostProvider, DummyData,
@@ -51,11 +52,12 @@ def start_task(action_id, selector, conf, hc, hosts):   # pylint: disable=too-ma
     if action.type not in ['task', 'job']:
         msg = f'unknown type "{action.type}" for action: {action}, {action.context}: {obj.name}'
         err('WRONG_ACTION_TYPE', msg)
-
+    event = Event()
     with transaction.atomic():
         task = lock_create_task(
-            action, obj, selector, act_conf, spec, old_hc, delta, host_map, cluster, hosts
+            action, obj, selector, act_conf, spec, old_hc, delta, host_map, cluster, hosts, event
         )
+    event.send_state()
     run_task(task)
 
     return task
@@ -90,8 +92,9 @@ def check_action_hosts(action, cluster, provider, hosts):
             err('TASK_ERROR', f'host #{host_id} does not belong to host provider #{provider.id}')
 
 
-def lock_create_task(action, obj, selector, conf, spec, old_hc, delta, host_map, cluster, hosts):
-    lock_objects(obj)
+def lock_create_task(action, obj, selector, conf, spec, old_hc, delta, host_map, cluster, hosts,
+                     event):
+    lock_objects(obj, event)
 
     if host_map:
         api.save_hc(cluster, host_map)
@@ -186,7 +189,7 @@ def check_action_state(action, obj):
     err('TASK_ERROR', 'action is disabled')
 
 
-def lock_obj(obj):
+def lock_obj(obj, event):
     if obj.stack:
         stack = json.loads(obj.stack)
     else:
@@ -199,10 +202,10 @@ def lock_obj(obj):
 
     log.debug('lock %s, stack: %s', obj_ref(obj), stack)
     obj.stack = json.dumps(stack)
-    api.set_object_state(obj, config.Job.LOCKED)
+    api.set_object_state(obj, config.Job.LOCKED, event)
 
 
-def unlock_obj(obj):
+def unlock_obj(obj, event):
     if obj.stack:
         stack = json.loads(obj.stack)
     else:
@@ -215,74 +218,74 @@ def unlock_obj(obj):
         return
     log.debug('unlock %s, stack: %s', obj_ref(obj), stack)
     obj.stack = json.dumps(stack)
-    api.set_object_state(obj, state)
+    api.set_object_state(obj, state, event)
 
 
-def lock_objects(obj):
+def lock_objects(obj, event):
     if isinstance(obj, ClusterObject):
-        lock_obj(obj)
-        lock_obj(obj.cluster)
+        lock_obj(obj, event)
+        lock_obj(obj.cluster, event)
         for host in Host.objects.filter(cluster=obj.cluster):
-            lock_obj(host)
+            lock_obj(host, event)
     elif isinstance(obj, Host):
-        lock_obj(obj)
+        lock_obj(obj, event)
         if obj.cluster:
-            lock_obj(obj.cluster)
+            lock_obj(obj.cluster, event)
             for service in ClusterObject.objects.filter(cluster=obj.cluster):
-                lock_obj(service)
+                lock_obj(service, event)
     elif isinstance(obj, HostProvider):
-        lock_obj(obj)
+        lock_obj(obj, event)
         for host in Host.objects.filter(provider=obj):
-            lock_obj(host)
+            lock_obj(host, event)
     elif isinstance(obj, ADCM):
-        lock_obj(obj)
+        lock_obj(obj, event)
     elif isinstance(obj, Cluster):
-        lock_obj(obj)
+        lock_obj(obj, event)
         for service in ClusterObject.objects.filter(cluster=obj):
-            lock_obj(service)
+            lock_obj(service, event)
         for host in Host.objects.filter(cluster=obj):
-            lock_obj(host)
+            lock_obj(host, event)
     else:
         log.warning('lock_objects: unknown object type: %s', obj)
 
 
-def unlock_objects(obj):
+def unlock_objects(obj, event):
     if isinstance(obj, ClusterObject):
-        unlock_obj(obj)
-        unlock_obj(obj.cluster)
+        unlock_obj(obj, event)
+        unlock_obj(obj.cluster, event)
         for host in Host.objects.filter(cluster=obj.cluster):
-            unlock_obj(host)
+            unlock_obj(host, event)
     elif isinstance(obj, Host):
-        unlock_obj(obj)
+        unlock_obj(obj, event)
         if obj.cluster:
-            unlock_obj(obj.cluster)
+            unlock_obj(obj.cluster, event)
             for service in ClusterObject.objects.filter(cluster=obj.cluster):
-                unlock_obj(service)
+                unlock_obj(service, event)
     elif isinstance(obj, HostProvider):
-        unlock_obj(obj)
+        unlock_obj(obj, event)
         for host in Host.objects.filter(provider=obj):
-            unlock_obj(host)
+            unlock_obj(host, event)
     elif isinstance(obj, ADCM):
-        unlock_obj(obj)
+        unlock_obj(obj, event)
     elif isinstance(obj, Cluster):
-        unlock_obj(obj)
+        unlock_obj(obj, event)
         for service in ClusterObject.objects.filter(cluster=obj):
-            unlock_obj(service)
+            unlock_obj(service, event)
         for host in Host.objects.filter(cluster=obj):
-            unlock_obj(host)
+            unlock_obj(host, event)
     else:
         log.warning('unlock_objects: unknown object type: %s', obj)
 
 
-def unlock_all():
+def unlock_all(event):
     for obj in Cluster.objects.filter(state=config.Job.LOCKED):
-        unlock_objects(obj)
+        unlock_objects(obj, event)
     for obj in HostProvider.objects.filter(state=config.Job.LOCKED):
-        unlock_objects(obj)
+        unlock_objects(obj, event)
     for obj in ClusterObject.objects.filter(state=config.Job.LOCKED):
-        unlock_objects(obj)
+        unlock_objects(obj, event)
     for obj in Host.objects.filter(state=config.Job.LOCKED):
-        unlock_objects(obj)
+        unlock_objects(obj, event)
     for task in TaskLog.objects.filter(status=config.Job.RUNNING):
         set_task_status(task, config.Job.ABORTED)
     for job in JobLog.objects.filter(status=config.Job.RUNNING):
@@ -751,13 +754,15 @@ def finish_task(task, job, status):
     action = Action.objects.get(id=task.action_id)
     obj = get_task_obj(action.prototype.type, task.object_id)
     state = get_state(action, job, status)
+    event = Event()
     with transaction.atomic():
         DummyData.objects.filter(id=1).update(date=timezone.now())
         if state is not None:
             set_action_state(action, task, obj, state)
-        unlock_objects(obj)
+        unlock_objects(obj, event)
         restore_hc(task, action, status)
         set_task_status(task, status)
+    event.send_state()
 
 
 def cook_log_name(tag, level, ext='txt'):
