@@ -20,6 +20,8 @@ describe('ActionMasterConfigComponent', () => {
   let FieldServiceStub: Partial<FieldService>;
 
   beforeEach(async(() => {
+    FieldServiceStub = {};
+    
     TestBed.configureTestingModule({
       declarations: [ActionMasterConfigComponent],
       providers: [{ provide: FieldService, useValue: FieldServiceStub }]

@@ -10,15 +10,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { ChangeDetectionStrategy, Component, EventEmitter, OnInit } from '@angular/core';
-import { ApiService } from '@app/core/api';
 import { IAction } from '@app/core/types';
-import { FieldService } from '@app/shared/configuration/field.service';
 import { DynamicComponent, DynamicEvent } from '@app/shared/directives/dynamic.directive';
-import { ServiceHostComponent } from '@app/shared/host-components-map/services2hosts/service-host.component';
 
-import { ConfigFieldsComponent } from '../../../configuration/fields/fields.component';
 import { BaseDirective } from '../../../directives/base.directive';
 import { ActionParameters } from '../actions.directive';
+import { IValue, MasterService, whatShow } from './master.service';
 
 @Component({
   selector: 'app-master',
@@ -35,16 +32,17 @@ import { ActionParameters } from '../actions.directive';
       }
     `
   ],
+  providers: [MasterService],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ActionMasterComponent extends BaseDirective implements DynamicComponent, OnInit {
   event: EventEmitter<DynamicEvent> = new EventEmitter();
   model: ActionParameters; // = { actions: [], cluster: null };
-  action: IAction;
-  isHmcRequired = false;
-  isConfig = false;
 
-  constructor(private api: ApiService, private configService: FieldService) {
+  action: IAction;
+  show: whatShow;
+
+  constructor(private service: MasterService) {
     super();
   }
 
@@ -54,25 +52,14 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
 
   choose(action: IAction) {
     this.action = action;
-    this.isConfig = !!(this.action.config && this.action.config.config.length);
-    this.isHmcRequired = !!this.action.hostcomponentmap;
+    this.show = this.service.spotShow(action);
   }
 
-  run(value: { config: ConfigFieldsComponent; hostmap: ServiceHostComponent }) {
-    const data: any = {};
-    if (value.config) data.value = value.config.form;
-    if (value.hostmap) data.hostmap = value.hostmap.service.statePost.data;
-
-    const request$ =
-      !this.isConfig && !this.isHmcRequired
-        ? this.api.post(this.action.run, {})
-        : this.api.post(this.action.run, {
-          // TODO: remove configService
-            config: data.value ? this.configService.parseValue(data.value, this.action.config.config) : {},
-            hc: data.hostmap
-          });
-
-    request$.pipe(this.takeUntil()).subscribe(() => this.cancel());
+  run(value: IValue) {
+    this.service
+      .send(value, this.action.run, this.show === 'none', this.action.config.config)
+      .pipe(this.takeUntil())
+      .subscribe(() => this.cancel());
   }
 
   cancel() {

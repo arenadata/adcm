@@ -84,15 +84,16 @@ export class BundlesComponent extends InputComponent implements OnInit {
         switchMap(a => forVersion$(a))
       )
       .subscribe(a => {
-        this.versions = a;  
+        this.versions = a;
         this.selectOne(a, 'prototype_id', 'id');
         this.loadedBundleID = null;
       });
 
-    // this.form
-    //   .get('prototype_id')
-    //   .valueChanges.pipe(this.takeUntil())
-    //   .subscribe(a => this.service.setBundle(a, this.bundles$.getValue()));
+    // for check license agreement
+    this.form
+      .get('prototype_id')
+      .valueChanges.pipe(this.takeUntil())
+      .subscribe(a => this.service.setBundle(a, this.versions));
   }
 
   getNextPage() {
@@ -121,7 +122,7 @@ export class BundlesComponent extends InputComponent implements OnInit {
   selectOne(a: Partial<Prototype>[] = [], formName: string, propName: string) {
     const el = a.find(e => e.bundle_id === this.loadedBundleID);
     const id = el ? el[propName] : a.length === 1 ? a[0][propName] : '';
-    this.form.get(formName).setValue(id);    
+    this.form.get(formName).setValue(id);
   }
 
   upload(data: FormData[]) {

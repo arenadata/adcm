@@ -12,19 +12,23 @@
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatListModule } from '@angular/material/list';
-import { ApiService } from '@app/core/api';
-import { FieldService } from '@app/shared/configuration/field.service';
 
 import { ActionMasterConfigComponent } from './action-master-config.component';
 import { ActionMasterComponent as MasterComponent } from './master.component';
+import { MasterService } from './master.service';
+import { ApiService } from '@app/core/api/api.service';
+import { FieldService } from '@app/shared/configuration/field.service';
 
 describe('MasterComponent', () => {
   let component: MasterComponent;
   let fixture: ComponentFixture<MasterComponent>;
+  let MasterServiceStub: Partial<MasterService>;
+
   let ApiServiceStub: Partial<ApiService>;
   let FieldServiceStub: Partial<FieldService>;
 
   beforeEach(async(() => {
+    MasterServiceStub = {};
     ApiServiceStub = {};
     FieldServiceStub = {};
 
@@ -33,6 +37,7 @@ describe('MasterComponent', () => {
       declarations: [MasterComponent, ActionMasterConfigComponent],
       providers: [
         { provide: ApiService, useValue: ApiServiceStub },
+        { provide: MasterService, useValue: MasterServiceStub },
         { provide: FieldService, useValue: FieldServiceStub }
       ],
       schemas: [NO_ERRORS_SCHEMA]
