@@ -9,24 +9,30 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, DebugElement, Directive } from '@angular/core';
+import { Component, DebugElement, NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialogModule } from '@angular/material/dialog';
 import { By } from '@angular/platform-browser';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { ApiService } from '@app/core/api';
+import { FieldService } from '@app/shared/configuration/field.service';
 
 import { ActionParameters, ActionsDirective } from './actions.directive';
+import { ActionMasterComponent } from './master/master.component';
 
 const TestParams: ActionParameters = {
   cluster: { id: 1, hostcomponent: '' },
-  actions: [{
-    name: 'test',
-    display_name: 'display_name_test',
-    run: 'url',
-    config: null,
-    hostcomponentmap: null,
-    button: null,
-    ui_options: null
-  }]
+  actions: [
+    {
+      name: 'test',
+      display_name: 'display_name_test',
+      run: 'url',
+      config: null,
+      hostcomponentmap: null,
+      button: null,
+      ui_options: null
+    }
+  ]
 };
 
 @Component({
@@ -36,35 +42,52 @@ class TestComponent {
   testParams: ActionParameters;
 }
 
-function MockDirective(options: Component): Directive {
-    const metadata: Directive = {
-        selector: '[appActions]',
-        inputs: ['appActions'],
-        outputs: []
-    };
-    return new Directive(metadata);
-}
-
 describe('ActionsDirective', () => {
   let fixture: ComponentFixture<TestComponent>;
+  let component: TestComponent;
   let de: DebugElement;
   let directive: ActionsDirective;
 
   beforeEach(() => {
     fixture = TestBed.configureTestingModule({
-      imports: [MatDialogModule],
-      declarations: [TestComponent, ActionsDirective]
+      imports: [MatDialogModule, NoopAnimationsModule],
+      declarations: [TestComponent, ActionsDirective],
+      providers: [ActionsDirective, { provide: ApiService, useValue: {} }, { provide: FieldService, useValue: {} }],
+      schemas: [NO_ERRORS_SCHEMA]
     }).createComponent(TestComponent);
 
-    fixture.detectChanges();
+    component = fixture.componentInstance;
+    component.testParams = TestParams;
     de = fixture.debugElement.query(By.directive(ActionsDirective));
-
-    //directive = new ActionsDirective({});
+    directive = de.injector.get(ActionsDirective);
+    fixture.detectChanges();
   });
 
-  xit('should have data in [appActions] attribute', () => {
-    fixture.componentInstance.testParams = TestParams;
+  it('should show dialog with error message', () => {
+    directive.inputData = { actions: [] /* undefined */ };
     de.triggerEventHandler('click', {});
     fixture.detectChanges();
+    const result = directive.prepare();
+    expect(result).toEqual({
+      data: { title: 'No parameters for run the action', model: null, component: null }
+    });
   });
+
+  it('should show empty dialog with action parameters', () => {
+    directive.inputData = TestParams;
+    de.triggerEventHandler('click', {});
+    fixture.detectChanges();
+    const result = directive.prepare();
+    expect(result).toEqual({
+      width: '400px',
+      maxWidth: '1400px',
+      data: {
+        title: 'Run an action [ display_name_test ]?',
+        model: TestParams,
+        component: ActionMasterComponent
+      }
+    });
+  });
+
+
 });
