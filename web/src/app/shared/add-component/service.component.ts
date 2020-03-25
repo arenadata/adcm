@@ -25,10 +25,7 @@ import { BaseFormDirective } from './base-form.directive';
           {{ proto.name }}
         </mat-list-option>
       </mat-selection-list>
-      <p class="controls" *ngIf="protos.length; else not">
-        <button mat-raised-button color="accent" (click)="save()">Save</button>
-        <button mat-raised-button color="primary" (click)="onCancel()">Cancel</button>
-      </p>
+      <app-add-controls *ngIf="protos.length; else not" [disabled]="!form.valid" (cancel)="onCancel()" (save)="save()"></app-add-controls>
     </ng-container>
     <ng-template #not>
       <p>
