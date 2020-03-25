@@ -42,7 +42,7 @@ TASK_ID = 0
 
 def log_rotation():
     adcm_object = ADCM.objects.get(id=1)
-    config_log = ConfigLog.objects.get(obj_ref=adcm_object.config)
+    config_log = ConfigLog.objects.filter(obj_ref=adcm_object.config).latest('date')
     adcm_config = json.loads(config_log.config)
     log_rotation_on_db = adcm_config['job_log']['log_rotation_in_db']
     log_rotation_on_fs = adcm_config['job_log']['log_rotation_on_fs']

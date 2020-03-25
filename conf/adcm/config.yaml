@@ -42,11 +42,13 @@
       subs:
         - name: "log_rotation_on_fs"
           type: integer
+          required: false
           default: 365
           description: |
             You can set the time (number of days) after which the logs will be deleted from the file system.
         - name: "log_rotation_in_db"
           type: integer
+          required: false
           default: 365
           description: |
             You can set the time (number of days) after which the logs will be deleted from the database.
