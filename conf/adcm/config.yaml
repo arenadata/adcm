@@ -36,3 +36,17 @@
         - name: "whitelisted_domains"
           type: list
           required: false
+    - name: "job_log"
+      display_name: "Job Log"
+      type: "group"
+      subs:
+        - name: "log_rotation_on_fs"
+          type: integer
+          default: 365
+          description: |
+            You can set the time (number of days) after which the logs will be deleted from the file system.
+        - name: "log_rotation_in_db"
+          type: integer
+          default: 365
+          description: |
+            You can set the time (number of days) after which the logs will be deleted from the database.
