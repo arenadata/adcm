@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 from django.test import TestCase
 from django.utils import timezone
@@ -79,14 +79,15 @@ class TestApi(TestCase):
                 cluster = api_module.push_obj(self.cluster, state)
                 self.assertEqual(cluster.stack, json.dumps([state]))
 
-    @patch('cm.status_api.set_obj_state')
-    def test_set_object_state(self, mock_set_obj_state):
+    def test_set_object_state(self):
+        event = Mock()
+        event.set_obj_state = Mock()
         state = self.cluster.state
 
-        cluster = api_module.set_object_state(self.cluster, 'created')
+        cluster = api_module.set_object_state(self.cluster, 'created', event)
 
         self.assertTrue(cluster.state != state)
-        mock_set_obj_state.assert_called_once_with(
+        event.set_object_state.assert_called_once_with(
             self.cluster.prototype.type, self.cluster.id, 'created')
 
     @patch('cm.status_api.load_service_map')
