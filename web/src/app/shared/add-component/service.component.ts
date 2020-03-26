@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { MatSelectionList } from '@angular/material/list';
+import { MatSelectionList, MatSelectionListChange } from '@angular/material/list';
 import { SelectOption } from '@app/core/types';
 import { Observable } from 'rxjs';
 
