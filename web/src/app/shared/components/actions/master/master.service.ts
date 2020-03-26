@@ -14,14 +14,12 @@ import { ApiService } from '@app/core/api';
 import { IAction } from '@app/core/types';
 import { FieldService } from '@app/shared/configuration/field.service';
 import { ConfigFieldsComponent } from '@app/shared/configuration/fields/fields.component';
-import { FieldStack } from '@app/shared/configuration/types';
 import { ServiceHostComponent } from '@app/shared/host-components-map/services2hosts/service-host.component';
 import { Post } from '@app/shared/host-components-map/types';
-import { FormGroup } from '@angular/forms';
 
 export interface IValue {
-  config: ConfigFieldsComponent;
-  hostmap: ServiceHostComponent;
+  config?: ConfigFieldsComponent;
+  hostmap?: ServiceHostComponent;
 }
 
 export enum whatShow {

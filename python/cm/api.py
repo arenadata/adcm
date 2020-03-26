@@ -27,6 +27,7 @@ from cm.adcm_config import (
 )
 from cm.errors import AdcmApiEx
 from cm.errors import raise_AdcmEx as err
+from cm.status_api import Event
 from cm.models import (
     Cluster, Prototype, Component, Host, HostComponent, ADCM, ClusterObject,
     ServiceComponent, ConfigLog, HostProvider, PrototypeImport, PrototypeExport,
@@ -62,6 +63,7 @@ def add_host(proto, provider, fqdn, desc='', lock=False):
         msg = 'Host prototype bundle #{} does not match with host provider bundle #{}'
         err('FOREIGN_HOST', msg.format(proto.bundle.id, provider.prototype.bundle.id))
     spec, _, conf, attr = get_prototype_config(proto)
+    event = Event()
     with transaction.atomic():
         obj_conf = init_object_config(spec, conf, attr)
         host = Host(
@@ -74,9 +76,10 @@ def add_host(proto, provider, fqdn, desc='', lock=False):
         host.save()
         if lock:
             host.stack = json.dumps(['created'])
-            set_object_state(host, config.Job.LOCKED)
+            set_object_state(host, config.Job.LOCKED, event)
         process_file_type(host, spec, conf)
         cm.issue.save_issue(host)
+    event.send_state()
     cm.status_api.post_event('create', 'host', host.id, 'provider', str(provider.id))
     cm.status_api.load_service_map()
     return host
@@ -115,8 +118,9 @@ def delete_host_provider(provider):
     if hosts:
         msg = 'There is host #{} "{}" of host {}'
         err('PROVIDER_CONFLICT', msg.format(hosts[0].id, hosts[0].fqdn, obj_ref(provider)))
-    cm.status_api.post_event('delete', 'provider', provider.id)
+    provider_id = provider.id
     provider.delete()
+    cm.status_api.post_event('delete', 'provider', provider_id)
 
 
 def add_host_to_cluster(cluster, host):
@@ -141,8 +145,9 @@ def delete_host(host):
     if cluster:
         msg = 'Host #{} "{}" belong to {}'
         err('HOST_CONFLICT', msg.format(host.id, host.fqdn, obj_ref(cluster)))
-    cm.status_api.post_event('delete', 'host', host.id)
+    host_id = host.id
     host.delete()
+    cm.status_api.post_event('delete', 'host', host_id)
     cm.status_api.load_service_map()
 
 
@@ -169,8 +174,8 @@ def delete_service_by_id(service_id):
         service = ClusterObject.objects.get(id=service_id)
     except ClusterObject.DoesNotExist:
         err('SERVICE_NOT_FOUND', 'Service with id #{} is not found'.format(service_id))
-    cm.status_api.post_event('delete', 'service', service.id)
     service.delete()
+    cm.status_api.post_event('delete', 'service', service_id)
     cm.status_api.load_service_map()
 
 
@@ -179,14 +184,16 @@ def delete_service(service):
         err('SERVICE_CONFLICT', 'Service #{} has component(s) on host(s)'.format(service.id))
     if ClusterBind.objects.filter(source_service=service):
         err('SERVICE_CONFLICT', 'Service #{} has exports(s)'.format(service.id))
-    cm.status_api.post_event('delete', 'service', service.id)
+    service_id = service.id
     service.delete()
+    cm.status_api.post_event('delete', 'service', service_id)
     cm.status_api.load_service_map()
 
 
 def delete_cluster(cluster):
-    cm.status_api.post_event('delete', 'cluster', cluster.id)
+    cluster_id = cluster.id
     cluster.delete()
+    cm.status_api.post_event('delete', 'cluster', cluster_id)
     cm.status_api.load_service_map()
 
 
@@ -208,11 +215,13 @@ def unbind(cbind):
     import_obj = get_bind_obj(cbind.cluster, cbind.service)
     export_obj = get_bind_obj(cbind.source_cluster, cbind.source_service)
     check_import_default(import_obj, export_obj)
-    cm.status_api.post_event('delete', 'bind', cbind.id, 'cluster', str(cbind.cluster.id))
+    cbind_id = cbind.id
+    cbind_cluster_id = cbind.cluster.id
     with transaction.atomic():
         DummyData.objects.filter(id=1).update(date=timezone.now())
         cbind.delete()
         cm.issue.save_issue(cbind.cluster)
+    cm.status_api.post_event('delete', 'bind', cbind_id, 'cluster', str(cbind_cluster_id))
 
 
 def add_service_to_cluster(cluster, proto):
@@ -726,10 +735,10 @@ def push_obj(obj, state):
     return obj
 
 
-def set_object_state(obj, state):
+def set_object_state(obj, state, event):
     obj.state = state
     obj.save()
-    cm.status_api.set_obj_state(obj.prototype.type, obj.id, state)
+    event.set_object_state(obj.prototype.type, obj.id, state)
     log.info('set %s state to "%s"', obj_ref(obj), state)
     return obj
 
@@ -752,7 +761,7 @@ def set_host_state(host_id, state):
     return push_obj(host, state)
 
 
-def set_provider_state(provider_id, state):
+def set_provider_state(provider_id, state, event):
     try:
         provider = HostProvider.objects.get(id=provider_id)
     except HostProvider.DoesNotExist:
@@ -761,7 +770,7 @@ def set_provider_state(provider_id, state):
     if provider.state == config.Job.LOCKED:
         return push_obj(provider, state)
     else:
-        return set_object_state(provider, state)
+        return set_object_state(provider, state, event)
 
 
 def set_service_state(cluster_id, service_name, state):
