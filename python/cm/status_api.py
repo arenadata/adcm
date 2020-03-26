@@ -22,6 +22,30 @@ API_URL = "http://localhost:8020/api/v1"
 TIMEOUT = 0.01
 
 
+class Event:
+
+    def __init__(self):
+        self.events = []
+
+    def send_state(self):
+        for _ in range(len(self.events)):
+            try:
+                event = self.events.pop(0)
+                func, args = event
+                func.__call__(*args)
+            except IndexError:
+                pass
+
+    def set_object_state(self, obj_type, obj_id, state):
+        self.events.append((set_obj_state, (obj_type, obj_id, state)))
+
+    def set_job_status(self, job_id, status):
+        self.events.append((set_job_status, (job_id, status)))
+
+    def set_task_status(self, task_id, status):
+        self.events.append((set_task_status, (task_id, status)))
+
+
 def api_post(path, data):
     url = API_URL + path
     try:
