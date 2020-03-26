@@ -11,7 +11,7 @@
 // limitations under the License.
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatSelectionList, MatSelectionListChange } from '@angular/material/list';
-import { SelectOption, Entities } from '@app/core/types';
+import { SelectOption } from '@app/core/types';
 import { Observable } from 'rxjs';
 
 import { BaseFormDirective } from './base-form.directive';
