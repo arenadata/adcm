@@ -46,6 +46,6 @@ export class MainComponent implements OnInit {
 
   ngOnInit() {
     const log = (<Job>this.details.Current).log_files[0];
-    if (log) this.router.navigate([`../${log.name}_${log.type}`], { relativeTo: this.route });
+    if (log) this.router.navigate([`../${log.id}`], { relativeTo: this.route });
   }
 }

@@ -25,12 +25,9 @@ export enum DisplayMode {
     <ng-container [formGroup]="form">
       <app-bundles [form]="form" [typeName]="'provider'"></app-bundles>
       <ng-container *ngIf="displayMode === 0; else asHost">
-        <app-input [form]="form" [label]="'Hostprovider name'" [controlName]="'name'" [isRequired]="true"></app-input>
+        <app-input [form]="form" [label]="'Hostprovider name'" [controlName]="'name'" [isRequired]="true" (keyup.enter)="save()"></app-input>
         <app-input [form]="form" [label]="'Description'" [controlName]="'description'"></app-input>
-        <p class="controls">
-          <button mat-raised-button [disabled]="!form.valid" color="accent" (click)="save()">Save</button>
-          <button mat-raised-button color="primary" (click)="onCancel()">Cancel</button>
-        </p>
+        <app-add-controls [disabled]="!form.valid" (cancel)="onCancel()" (save)="save()"></app-add-controls>
       </ng-container>
       <ng-template #asHost>
         <div class="row">

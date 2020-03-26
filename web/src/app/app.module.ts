@@ -38,14 +38,7 @@ import { LogComponent } from './ws-logs/log.component';
     EntryModule,
     MainModule,
     RouterModule.forRoot([]),
-    StoreModule.forRoot(reducers, {
-      runtimeChecks: {
-        strictStateImmutability: true,
-        strictActionImmutability: true,
-        strictStateSerializability: true,
-        strictActionSerializability: true,
-      },
-    }),
+    StoreModule.forRoot(reducers),
     EffectsModule.forRoot(StoreEffects),
     // StoreRouterConnectingModule.forRoot(),
     !environment.production ? StoreDevtoolsModule.instrument() : [],

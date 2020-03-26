@@ -18,21 +18,19 @@ import { NavigationService, INavItem } from '../navigation.service';
   selector: 'app-details-left',
   template: `
     <mat-nav-list>
-      <a mat-list-item [appForTest]="'tab_' + item.url" *ngFor="let item of items" [routerLink]="[item.url]" routerLinkActive="active">
+      <a class="noflex" mat-list-item [appForTest]="'tab_' + item.url" *ngFor="let item of items" [routerLink]="[item.url]" routerLinkActive="active">
         <span>{{ item.title }}</span>
         &nbsp;
+        <button *ngIf="item.action" mat-icon-button color="primary" (click)="btnClick(item.action)"><mat-icon>cloud_download</mat-icon></button>
         <mat-icon *ngIf="item.issue" color="warn">priority_hight</mat-icon>
         <ng-container *ngIf="item.url === 'status'">
-          <ng-container *ngTemplateOutlet="status; context: { status: item.status }"></ng-container>
+          <mat-icon *ngIf="item.status === 0" color="accent">check_circle_outline</mat-icon>
+          <mat-icon *ngIf="item.status !== 0" color="warn">error_outline</mat-icon>
         </ng-container>
       </a>
-      <ng-template #status let-status="status">
-        <mat-icon *ngIf="status === 0" color="accent">check_circle_outline</mat-icon>
-        <mat-icon *ngIf="status !== 0" color="warn">error_outline</mat-icon>
-      </ng-template>
     </mat-nav-list>
   `,
-  styles: ['mat-nav-list {padding-top: 20px;}']
+  styles: ['mat-nav-list {padding-top: 20px;}', 'a span { white-space: nowrap; }']
 })
 export class LeftComponent {
   items: INavItem[] = [];
@@ -51,4 +49,8 @@ export class LeftComponent {
   }
 
   constructor(private navigation: NavigationService) {}
+
+  btnClick(action: () => void) {
+    action();
+  }
 }

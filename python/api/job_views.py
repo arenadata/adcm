@@ -54,7 +54,7 @@ class JobDetail(GenericAPIView):
         job.log_dir = os.path.join(config.RUN_DIR, f'{job_id}')
         logs = get_log(job)
         for lg in logs:
-            log_id = lg.pop('log_id')
+            log_id = lg['id']
             lg['url'] = reverse(
                 'log-storage',
                 kwargs={
@@ -126,9 +126,16 @@ def download_log_file(request, job_id, log_id):
         else:
             mime_type = 'application/json'
 
-        response = HttpResponse(log_storage.body)
+        if log_storage.body is None:
+            body = ''
+            length = 0
+        else:
+            body = log_storage.body
+            length = len(body)
+
+        response = HttpResponse(body)
         response['Content-Type'] = mime_type
-        response['Content-Length'] = len(log_storage.body)
+        response['Content-Length'] = length
         response['Content-Encoding'] = 'UTF-8'
         response['Content-Disposition'] = f'attachment; filename={filename}'
         return response

@@ -9,12 +9,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Injectable, ɵEMPTY_MAP } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { ParamMap } from '@angular/router';
 import { ApiService } from '@app/core/api';
-import { IAction, Bundle, Cluster, Entities, Host, IImport, Job, Log, Provider, Service, TypeName, LogFile } from '@app/core/types';
+import { Bundle, Cluster, Entities, Host, IAction, IImport, Job, LogFile, Provider, Service, TypeName } from '@app/core/types';
 import { environment } from '@env/environment';
-import { BehaviorSubject, forkJoin, Observable, of, EMPTY } from 'rxjs';
+import { BehaviorSubject, EMPTY, forkJoin, Observable, of } from 'rxjs';
 import { filter, map, switchMap, tap } from 'rxjs/operators';
 
 const EntitiNames: TypeName[] = ['host', 'service', 'cluster', 'provider', 'job', 'task', 'bundle'];
@@ -106,13 +106,10 @@ export class ClusterService {
       );
   }
 
-  /**
-   * Logging for Jobs
-   * @param level property from LogFile interface
-   */
-  getLog(name: string, type: string): Observable<LogFile> {
-    const log = (this.Current as Job).log_files.find(a => a.name === name && a.type === type);
-    return this.api.get<LogFile>(log.url);
+
+  getLog(p: number | string): Observable<LogFile> {
+    const url = typeof p === 'number' ? (this.Current as Job).log_files.find(a => a.id === p).url : p;
+    return this.api.get<LogFile>(url);
   }
 
   getActions(): Observable<IAction[]> {
@@ -175,8 +172,8 @@ export class ClusterService {
   /**
    * For `Job` and `Task` operating time data
    */
-  getOperationTimeData() {
-    const { start_date, finish_date, status } = { ...(this.Current as Job) };
+  getOperationTimeData(job: Job) {
+    const { start_date, finish_date, status } = job;
     if (start_date && finish_date) {
       const sdn = Date.parse(start_date),
         fdn = Date.parse(finish_date),
