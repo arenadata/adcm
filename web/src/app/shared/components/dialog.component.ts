@@ -28,7 +28,7 @@ export interface DialogData {
 @Component({
   selector: 'app-dialog',
   template: `
-    <h3 mat-dialog-title class='overflow'>{{ data.title || 'Notification' }}</h3>
+    <h3 mat-dialog-title class="overflow">{{ data.title || 'Notification' }}</h3>
     <mat-dialog-content class="content" appScroll (read)="scroll($event)">
       <pre *ngIf="data.text">{{ data.text }}</pre>
       <ng-template appDynamic></ng-template>
@@ -43,10 +43,10 @@ export interface DialogData {
       <ng-container *ngTemplateOutlet="isArray; context: { buttons: data.controls.buttons }"></ng-container>
     </ng-template>
     <ng-template #isArray let-buttons="buttons">
+      <button mat-raised-button color="primary" (click)="_noClick()" tabindex="-1">{{ buttons[1] }}</button>
       <button mat-raised-button color="accent" [mat-dialog-close]="true" [disabled]="data?.disabled" tabindex="2">
         {{ buttons[0] }}
       </button>
-      <button mat-raised-button color="primary" (click)="_noClick()" tabindex="-1">{{ buttons[1] }}</button>
     </ng-template>
   `,
   styles: ['pre {white-space: pre-wrap;}']
