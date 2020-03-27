@@ -18,7 +18,7 @@ import { ActionMasterComponent as MasterComponent } from './master.component';
 import { MasterService } from './master.service';
 import { ApiService } from '@app/core/api/api.service';
 import { FieldService } from '@app/shared/configuration/field.service';
-import { FormGroup } from '@angular/forms';
+import { FormGroup, FormControl, FormBuilder } from '@angular/forms';
 import { ServiceHostComponent } from '@app/shared/host-components-map/services2hosts/service-host.component';
 import { ConfigFieldsComponent } from '@app/shared/configuration/fields/fields.component';
 
@@ -31,7 +31,7 @@ describe('MasterComponent', () => {
 
   beforeEach(async(() => {
     ApiServiceStub = {};
-    FieldServiceStub = {};
+    FieldServiceStub = new FieldService({} as FormBuilder);
 
     TestBed.configureTestingModule({
       imports: [MatListModule],
@@ -150,7 +150,7 @@ describe('MasterComponent', () => {
     expect(hm).toBeTruthy();
   });
 
-  xit('should be show template for current action with config and host-map', () => {
+  it('should be show template for current action with config and host-map', () => {
     component.model = {
       actions: [
         {
@@ -194,21 +194,28 @@ describe('MasterComponent', () => {
     expect(result).toBeUndefined();
   });
 
-  xit('check value when ConfigFieldComponent exist', () => {
+  it('check value when ConfigFieldComponent exist', () => {
     const service = fixture.debugElement.injector.get(MasterService);
 
-    const config = {} as ConfigFieldsComponent;
+    const config = {
+      form: new FormGroup({ string_ctr: new FormControl('string_test'), bool_ctr: new FormControl(true) }),
+      rawConfig: {
+        config: [
+          { name: 'string_ctr', type: 'string', value: 'string_test' },
+          { name: 'bool_ctr', type: 'boolean', value: true }
+        ]
+      }
+    } as ConfigFieldsComponent;
 
-    const result = service.parseData({ config, hostmap: undefined });
-    // expect(result).toEqual({});
+    const result = service.parseData({ config });
+    expect(result).toEqual({ config: { string_ctr: 'string_test', bool_ctr: true }, hc: undefined });
   });
 
-  xit('check value when ServiceHostComponent exist', () => {
+  it('check value when ServiceHostComponent exist', () => {
     const service = fixture.debugElement.injector.get(MasterService);
-
-    const hostmap = {} as ServiceHostComponent;
-
-    const result = service.parseData({ config: undefined, hostmap });
-    // expect(result).toEqual({});
+    const hc = [{ host_id: 1, service_id: 4, component_id: 1, id: 9 }];
+    const hostmap = { service: { statePost: { data: hc } } } as ServiceHostComponent;
+    const result = service.parseData({ hostmap });
+    expect(result).toEqual({ config: undefined, hc });
   });
 });

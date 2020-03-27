@@ -9,19 +9,34 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
-import { RouterModule } from '@angular/router';
-import { SharedModule } from '@app/shared';
+import { RouterModule, Routes } from '@angular/router';
+import { AuthGuard } from '@app/core/auth/auth.guard';
+import { DetailComponent } from '@app/shared/details/detail.component';
 
-import { JobInfoComponent } from './job-info.component';
-import { JobRoutingModule } from './job-routing.module';
 import { JobComponent, MainComponent } from './job.component';
 import { LogComponent } from './log/log.component';
 
+const routes: Routes = [
+  {
+    path: '',
+    canActivate: [AuthGuard],
+    component: JobComponent
+  },
+  {
+    path: ':job',
+    canActivate: [AuthGuard],
+    component: DetailComponent,
+    children: [
+      { path: '', redirectTo: 'main', pathMatch: 'full' },
+      { path: 'main', component: MainComponent },
+      { path: ':log', component: LogComponent }
+    ]
+  }
+];
 
 @NgModule({
-  declarations: [JobComponent, MainComponent, LogComponent, JobInfoComponent],
-  imports: [CommonModule, SharedModule, RouterModule, JobRoutingModule]
+  imports: [RouterModule.forChild(routes)],
+  exports: [RouterModule]
 })
-export class JobModule {}
+export class JobRoutingModule {}

@@ -140,9 +140,9 @@ class TestJobRunner(TestCase):
     @patch('cm.job.set_job_status')
     def test_set_job_status(self, mock_set_job_status):
         mock_set_job_status.return_value = None
-        code = job_runner.set_job_status(1, 0, 1)
+        code = job_runner.set_job_status(1, 0, 1, None)
         self.assertEqual(code, 0)
-        mock_set_job_status.assert_called_once_with(1, config.Job.SUCCESS, 1)
+        mock_set_job_status.assert_called_once_with(1, config.Job.SUCCESS, None, 1)
 
     def test_set_pythonpath(self):
         cmd_env = os.environ.copy()
@@ -152,6 +152,9 @@ class TestJobRunner(TestCase):
         cmd_env['PYTHONPATH'] = ':'.join(python_paths)
         self.assertDictEqual(cmd_env, job_runner.set_pythonpath())
 
+    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-arguments
+    @patch('job_runner.Event')
     @patch('cm.job.set_job_status')
     @patch('sys.exit')
     @patch('job_runner.set_job_status')
@@ -160,9 +163,9 @@ class TestJobRunner(TestCase):
     @patch('os.chdir')
     @patch('job_runner.open_file')
     @patch('job_runner.read_config')
-    def test_run_ansible(  # pylint: disable=too-many-arguments
-            self, mock_read_config, mock_open_file, mock_chdir, mock_subprocess_popen,
-            mock_set_pythonpath, mock_set_job_status, mock_exit, mock_job_set_job_status):
+    def test_run_ansible(self, mock_read_config, mock_open_file, mock_chdir, mock_subprocess_popen,
+                         mock_set_pythonpath, mock_set_job_status, mock_exit,
+                         mock_job_set_job_status, mock_event):
         conf = {
             'job': {'playbook': 'test'},
             'env': {'stack_dir': 'test'}
@@ -177,6 +180,8 @@ class TestJobRunner(TestCase):
         mock_subprocess_popen.return_value = process_mock
         python_path = Mock()
         mock_set_pythonpath.return_value = python_path
+        event = Mock()
+        mock_event.return_value = event
 
         job_runner.run_ansible(1)
 
@@ -188,7 +193,7 @@ class TestJobRunner(TestCase):
         ])
         mock_chdir.assert_called_with(conf['env']['stack_dir'])
 
-        mock_set_job_status.assert_called_once_with(1, 0, 1)
+        mock_set_job_status.assert_called_once_with(1, 0, 1, event)
         mock_subprocess_popen.assert_called_once_with(
             [
                 'ansible-playbook',
@@ -200,7 +205,7 @@ class TestJobRunner(TestCase):
             ], env=python_path, stdout=_file, stderr=_file)
         mock_set_pythonpath.assert_called_once()
         mock_exit.assert_called_once()
-        mock_job_set_job_status.assert_called_with(1, config.Job.RUNNING, 1)
+        mock_job_set_job_status.assert_called_with(1, config.Job.RUNNING, event, 1)
 
     @patch('job_runner.run_ansible')
     @patch('sys.exit')

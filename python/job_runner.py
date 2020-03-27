@@ -21,6 +21,7 @@ import adcm.init_django		# pylint: disable=unused-import
 from cm.logger import log
 import cm.config as config
 import cm.job
+from cm.status_api import Event
 
 
 def open_file(root, tag, job_id):
@@ -36,15 +37,15 @@ def read_config(job_id):
     return conf
 
 
-def set_job_status(job_id, ret, pid):
+def set_job_status(job_id, ret, pid, event):
     if ret == 0:
-        cm.job.set_job_status(job_id, config.Job.SUCCESS, pid)
+        cm.job.set_job_status(job_id, config.Job.SUCCESS, event, pid)
         return 0
     elif ret == -15:
-        cm.job.set_job_status(job_id, config.Job.ABORTED, pid)
+        cm.job.set_job_status(job_id, config.Job.ABORTED, event, pid)
         return 15
     else:
-        cm.job.set_job_status(job_id, config.Job.FAILED, pid)
+        cm.job.set_job_status(job_id, config.Job.FAILED, event, pid)
         return ret
 
 
@@ -63,6 +64,7 @@ def run_ansible(job_id):
     playbook = conf['job']['playbook']
     out_file = open_file(config.RUN_DIR, 'ansible-stdout', job_id)
     err_file = open_file(config.RUN_DIR, 'ansible-stderr', job_id)
+    event = Event()
 
     os.chdir(conf['env']['stack_dir'])
     cmd = [
@@ -79,11 +81,12 @@ def run_ansible(job_id):
 
     proc = subprocess.Popen(cmd, env=set_pythonpath(), stdout=out_file, stderr=err_file)
     log.info("job #%s run cmd: %s", job_id, ' '.join(cmd))
-    cm.job.set_job_status(job_id, config.Job.RUNNING, proc.pid)
+    cm.job.set_job_status(job_id, config.Job.RUNNING, event, proc.pid)
     log.info("run ansible job #%s, pid %s, playbook %s", job_id, proc.pid, playbook)
     ret = proc.wait()
     cm.job.finish_check(job_id)
-    ret = set_job_status(job_id, ret, proc.pid)
+    ret = set_job_status(job_id, ret, proc.pid, event)
+    event.send_state()
 
     out_file.close()
     err_file.close()
