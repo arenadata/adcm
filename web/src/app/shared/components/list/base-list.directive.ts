@@ -9,18 +9,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Directive, Host, Input, OnDestroy, OnInit } from '@angular/core';
+import { Directive, Input, OnDestroy, OnInit, Host } from '@angular/core';
 import { ParamMap } from '@angular/router';
 import { EventMessage, SocketState } from '@app/core/store';
-import { Bundle, EmmitRow, Entities, getTypeName, Host as AdcmHost, TypeName } from '@app/core/types';
+import { Bundle, EmmitRow, Entities, getTypeName, Host as AdcmHost, TypeName, Cluster } from '@app/core/types';
 import { Store } from '@ngrx/store';
 import { filter } from 'rxjs/internal/operators/filter';
-import { switchMap } from 'rxjs/operators';
+import { switchMap, map } from 'rxjs/operators';
 
 import { SocketListenerDirective } from '../../directives/socketListener.directive';
 import { DialogComponent } from '../dialog.component';
 import { ListComponent } from '../list/list.component';
 import { ListService } from './list.service';
+
+interface IRowHost extends AdcmHost {
+  clusters: Partial<Cluster>[];
+  page: number;
+}
 
 @Directive({
   selector: '[appBaseList]'
@@ -28,6 +33,8 @@ import { ListService } from './list.service';
 export class BaseListDirective extends SocketListenerDirective implements OnInit, OnDestroy {
   row: Entities;
   listParams: ParamMap;
+
+  limit = 10;
 
   @Input('appBaseList') typeName: TypeName;
   constructor(@Host() private parent: ListComponent, private service: ListService, protected store: Store<SocketState>) {
@@ -37,11 +44,6 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
   ngOnInit(): void {
     this.parent.type = this.typeName;
     this.parent.columns = this.service.initInstance(this.typeName).columns;
-
-    const limit = +localStorage.getItem('list:limit');
-    if (!limit) localStorage.setItem('list:limit', '10');
-    this.parent.paginator.pageSize = +localStorage.getItem('list:limit');
-
     this.parent.listItemEvt.pipe(this.takeUntil()).subscribe({ next: (event: EmmitRow) => this.listEvents(event) });
 
     this.parent.route.paramMap
@@ -50,8 +52,12 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
         filter(p => this.checkParam(p))
       )
       .subscribe(p => {
-        if (+p.get('page') === 0) {
+        this.parent.paginator.pageSize = +p.get('limit') || 10;
+        const page = +p.get('page');
+        if (page === 0) {
           this.parent.paginator.firstPage();
+        } else {
+          this.parent.paginator.pageIndex = page;
         }
         const ordering = p.get('ordering');
         if (ordering && !this.parent.sort.active) {
@@ -132,16 +138,15 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
           if (m.event === 'upgrade') {
             this.service.checkItem(row).subscribe(item => Object.keys(row).map(a => (row[a] = item[a])));
           }
-        } else console.warn('List :: object not found', m, this.parent.data.data, this.typeName);
+        }
+        // else console.warn('List :: object not found', m, this.parent.data.data, this.typeName);
       }
     }
   }
 
   refresh(id?: number) {
-    this.service.getList(this.listParams, this.typeName).subscribe(list => {
-      this.parent.dataSource = list;
-      if (id) this.parent.current = { id };
-    });
+    if (id) this.parent.current = { id };
+    this.service.getList(this.listParams, this.typeName).subscribe(list => (this.parent.dataSource = list));
   }
 
   listEvents(event: EmmitRow) {
@@ -172,22 +177,26 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
 
   license() {
     const row = this.row as Bundle;
-    this.service.getLicenseInfo(row.license_url).subscribe(info =>
-      this.parent.dialog
-        .open(DialogComponent, {
-          data: {
-            title: `Accept license agreement`,
-            text: info.text,
-            controls: { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] }
-          }
-        })
-        .beforeClosed()
-        .pipe(
-          filter(yes => yes),
-          switchMap(() => this.service.acceptLicense(`${row.license_url}accept/`))
-        )
-        .subscribe(() => (row.license = 'accepted'))
-    );
+    this.service
+      .getLicenseInfo(row.license_url)
+      .pipe(this.takeUntil())
+      .subscribe(info =>
+        this.parent.dialog
+          .open(DialogComponent, {
+            data: {
+              title: `Accept license agreement`,
+              text: info.text,
+              controls: { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] }
+            }
+          })
+          .beforeClosed()
+          .pipe(
+            this.takeUntil(),
+            filter(yes => yes),
+            switchMap(() => this.service.acceptLicense(`${row.license_url}accept/`))
+          )
+          .subscribe(() => (row.license = 'accepted'))
+      );
   }
 
   getActions() {
@@ -195,15 +204,37 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
   }
 
   delete() {
-    this.service.delete(this.row).subscribe(() => (this.parent.current = null));
+    this.service
+      .delete(this.row)
+      .pipe(this.takeUntil())
+      .subscribe(() => (this.parent.current = null));
   }
 
   // host
-  getClusters(arg) {
-    if (!arg) this.service.getClustersForHost(this.row as any);
+  getClusters() {
+    const row = this.row as IRowHost;
+    if (!row.clusters) {
+      row.page = 0;
+      this.service
+        .getClustersForHost({ limit: this.limit, page: 0 })
+        .pipe(this.takeUntil())
+        .subscribe(list => (row.clusters = list));
+    }
+  }
+
+  getNextPageCluster() {
+    const row = this.row as IRowHost;
+    const count = row.clusters.length;
+    if (count === (row.page + 1) * this.limit) {
+      row.page++;
+      this.service
+        .getClustersForHost({ limit: this.limit, page: row.page })
+        .pipe(this.takeUntil())
+        .subscribe(list => (row.clusters = [...row.clusters, ...list]));
+    }
   }
 
   addCluster(id: number) {
-    if (id) this.service.addClusterToHost(id, this.row as any);
+    if (id) this.service.addClusterToHost(id, this.row as AdcmHost);
   }
 }

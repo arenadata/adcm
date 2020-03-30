@@ -43,6 +43,7 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
   expandedTask: Task | null;
 
   paramMap: ParamMap;
+  dataCount = 0;
 
   @ViewChild(MatPaginator, { static: true })
   paginator: MatPaginator;
@@ -126,8 +127,7 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
           if (job) {
             job.status = m.object.details.value as JobStatus;
             if (m.object.details.type === 'status' && m.object.details.value === 'running') job.start_date = new Date().toISOString();
-            if (m.object.details.type === 'status' && (m.object.details.value === 'success' || m.object.details.value === 'failed'))
-              job.finish_date = new Date().toISOString();
+            if (m.object.details.type === 'status' && (m.object.details.value === 'success' || m.object.details.value === 'failed')) job.finish_date = new Date().toISOString();
           }
         }
       }
@@ -137,7 +137,13 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
   addTask(id: number) {
     this.isDisabled = true;
     this.api.getOne<Task>('task', id).subscribe(task => {
+      this.paginator.length = ++this.dataCount;
+      if (this.paginator.pageSize > this.dataSource.data.length)
       this.dataSource.data = [task, ...this.dataSource.data];
+      else {
+        const [last, ...ost] = this.dataSource.data.reverse();
+        this.dataSource.data = [task, ...ost.reverse()];
+      }
       this.dataSource._updateChangeSubscription();
       setTimeout(_ => (this.isDisabled = false), 500);
     });
@@ -147,6 +153,7 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
     this.api.root.pipe(switchMap(root => this.api.getList<Task>(root.task, this.paramMap))).subscribe(data => {
       this.dataSource.data = data.results;
       this.paginator.length = data.count;
+      this.dataCount = data.count;
       if (data.results.length) localStorage.setItem('lastJob', data.results[0].id.toString());
       this.dataSource._updateChangeSubscription();
     });

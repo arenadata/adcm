@@ -24,14 +24,16 @@ from django.db import transaction
 from django.utils import timezone
 
 import cm.config as config
-from cm import api, status_api, issue, inventory, adcm_config
+from cm import api, issue, inventory, adcm_config
 from cm.adcm_config import obj_ref, process_file_type, process_config
 from cm.errors import raise_AdcmEx as err
 from cm.inventory import get_obj_config
 from cm.logger import log
+from cm.status_api import Event
 from cm.models import (
     Cluster, Action, SubAction, TaskLog, JobLog, CheckLog, Host, ADCM,
     ClusterObject, HostComponent, ServiceComponent, HostProvider, DummyData,
+    LogStorage,
 )
 
 
@@ -50,13 +52,14 @@ def start_task(action_id, selector, conf, hc, hosts):   # pylint: disable=too-ma
     if action.type not in ['task', 'job']:
         msg = f'unknown type "{action.type}" for action: {action}, {action.context}: {obj.name}'
         err('WRONG_ACTION_TYPE', msg)
-
+    event = Event()
     with transaction.atomic():
         task = lock_create_task(
-            action, obj, selector, act_conf, spec, old_hc, delta, host_map, cluster, hosts
+            action, obj, selector, act_conf, spec, old_hc, delta, host_map, cluster, hosts, event
         )
-    run_task(task)
-
+    event.send_state()
+    run_task(task, event)
+    event.send_state()
     return task
 
 
@@ -89,18 +92,19 @@ def check_action_hosts(action, cluster, provider, hosts):
             err('TASK_ERROR', f'host #{host_id} does not belong to host provider #{provider.id}')
 
 
-def lock_create_task(action, obj, selector, conf, spec, old_hc, delta, host_map, cluster, hosts):
-    lock_objects(obj)
+def lock_create_task(action, obj, selector, conf, spec, old_hc, delta, host_map, cluster, hosts,
+                     event):
+    lock_objects(obj, event)
 
     if host_map:
         api.save_hc(cluster, host_map)
 
     if action.type == 'task':
-        task = create_task(action, selector, obj, conf, old_hc, delta, hosts)
+        task = create_task(action, selector, obj, conf, old_hc, delta, hosts, event)
         new_conf = process_config(task, spec, conf)
     else:
-        task = create_one_job_task(action.id, selector, obj, conf, old_hc, hosts)
-        job = create_job(action, None, selector, task.id)
+        task = create_one_job_task(action.id, selector, obj, conf, old_hc, hosts, event)
+        job = create_job(action, None, selector, event, task.id)
         new_conf = process_config(task, spec, conf)
         prepare_job(action, None, selector, job.id, obj, new_conf, delta, hosts)
 
@@ -113,12 +117,15 @@ def lock_create_task(action, obj, selector, conf, spec, old_hc, delta, host_map,
 
 
 def restart_task(task):
+    event = Event()
     if task.status in (config.Job.CREATED, config.Job.RUNNING):
         err('TASK_ERROR', f'task #{task.id} is running')
     elif task.status == config.Job.SUCCESS:
-        run_task(task)
+        run_task(task, event)
+        event.send_state()
     elif task.status in (config.Job.FAILED, config.Job.ABORTED):
-        run_task(task, 'restart')
+        run_task(task, event, 'restart')
+        event.send_state()
     else:
         err('TASK_ERROR', f'task #{task.id} has unexpected status: {task.status}')
 
@@ -185,7 +192,7 @@ def check_action_state(action, obj):
     err('TASK_ERROR', 'action is disabled')
 
 
-def lock_obj(obj):
+def lock_obj(obj, event):
     if obj.stack:
         stack = json.loads(obj.stack)
     else:
@@ -198,10 +205,10 @@ def lock_obj(obj):
 
     log.debug('lock %s, stack: %s', obj_ref(obj), stack)
     obj.stack = json.dumps(stack)
-    api.set_object_state(obj, config.Job.LOCKED)
+    api.set_object_state(obj, config.Job.LOCKED, event)
 
 
-def unlock_obj(obj):
+def unlock_obj(obj, event):
     if obj.stack:
         stack = json.loads(obj.stack)
     else:
@@ -214,78 +221,78 @@ def unlock_obj(obj):
         return
     log.debug('unlock %s, stack: %s', obj_ref(obj), stack)
     obj.stack = json.dumps(stack)
-    api.set_object_state(obj, state)
+    api.set_object_state(obj, state, event)
 
 
-def lock_objects(obj):
+def lock_objects(obj, event):
     if isinstance(obj, ClusterObject):
-        lock_obj(obj)
-        lock_obj(obj.cluster)
+        lock_obj(obj, event)
+        lock_obj(obj.cluster, event)
         for host in Host.objects.filter(cluster=obj.cluster):
-            lock_obj(host)
+            lock_obj(host, event)
     elif isinstance(obj, Host):
-        lock_obj(obj)
+        lock_obj(obj, event)
         if obj.cluster:
-            lock_obj(obj.cluster)
+            lock_obj(obj.cluster, event)
             for service in ClusterObject.objects.filter(cluster=obj.cluster):
-                lock_obj(service)
+                lock_obj(service, event)
     elif isinstance(obj, HostProvider):
-        lock_obj(obj)
+        lock_obj(obj, event)
         for host in Host.objects.filter(provider=obj):
-            lock_obj(host)
+            lock_obj(host, event)
     elif isinstance(obj, ADCM):
-        lock_obj(obj)
+        lock_obj(obj, event)
     elif isinstance(obj, Cluster):
-        lock_obj(obj)
+        lock_obj(obj, event)
         for service in ClusterObject.objects.filter(cluster=obj):
-            lock_obj(service)
+            lock_obj(service, event)
         for host in Host.objects.filter(cluster=obj):
-            lock_obj(host)
+            lock_obj(host, event)
     else:
         log.warning('lock_objects: unknown object type: %s', obj)
 
 
-def unlock_objects(obj):
+def unlock_objects(obj, event):
     if isinstance(obj, ClusterObject):
-        unlock_obj(obj)
-        unlock_obj(obj.cluster)
+        unlock_obj(obj, event)
+        unlock_obj(obj.cluster, event)
         for host in Host.objects.filter(cluster=obj.cluster):
-            unlock_obj(host)
+            unlock_obj(host, event)
     elif isinstance(obj, Host):
-        unlock_obj(obj)
+        unlock_obj(obj, event)
         if obj.cluster:
-            unlock_obj(obj.cluster)
+            unlock_obj(obj.cluster, event)
             for service in ClusterObject.objects.filter(cluster=obj.cluster):
-                unlock_obj(service)
+                unlock_obj(service, event)
     elif isinstance(obj, HostProvider):
-        unlock_obj(obj)
+        unlock_obj(obj, event)
         for host in Host.objects.filter(provider=obj):
-            unlock_obj(host)
+            unlock_obj(host, event)
     elif isinstance(obj, ADCM):
-        unlock_obj(obj)
+        unlock_obj(obj, event)
     elif isinstance(obj, Cluster):
-        unlock_obj(obj)
+        unlock_obj(obj, event)
         for service in ClusterObject.objects.filter(cluster=obj):
-            unlock_obj(service)
+            unlock_obj(service, event)
         for host in Host.objects.filter(cluster=obj):
-            unlock_obj(host)
+            unlock_obj(host, event)
     else:
         log.warning('unlock_objects: unknown object type: %s', obj)
 
 
-def unlock_all():
+def unlock_all(event):
     for obj in Cluster.objects.filter(state=config.Job.LOCKED):
-        unlock_objects(obj)
+        unlock_objects(obj, event)
     for obj in HostProvider.objects.filter(state=config.Job.LOCKED):
-        unlock_objects(obj)
+        unlock_objects(obj, event)
     for obj in ClusterObject.objects.filter(state=config.Job.LOCKED):
-        unlock_objects(obj)
+        unlock_objects(obj, event)
     for obj in Host.objects.filter(state=config.Job.LOCKED):
-        unlock_objects(obj)
+        unlock_objects(obj, event)
     for task in TaskLog.objects.filter(status=config.Job.RUNNING):
-        set_task_status(task, config.Job.ABORTED)
+        set_task_status(task, config.Job.ABORTED, event)
     for job in JobLog.objects.filter(status=config.Job.RUNNING):
-        set_job_status(job.id, config.Job.ABORTED)
+        set_job_status(job.id, config.Job.ABORTED, event)
 
 
 def check_action_config(action, conf):
@@ -543,6 +550,7 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
         'env': {
             'run_dir': config.RUN_DIR,
             'log_dir': config.LOG_DIR,
+            'tmp_dir': os.path.join(config.RUN_DIR, f'{job_id}', 'tmp'),
             'stack_dir': get_bundle_root(action) + '/' + action.prototype.bundle.hash,
             'status_api_token': config.STATUS_SECRET_KEY,
         },
@@ -591,12 +599,12 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
     if conf:
         job_conf['job']['config'] = conf
 
-    fd = open(os.path.join(config.RUN_DIR, f'{job_id}-config.json'), 'w')
+    fd = open(os.path.join(config.RUN_DIR, f'{job_id}/config.json'), 'w')
     json.dump(job_conf, fd, indent=3, sort_keys=True)
     fd.close()
 
 
-def create_task(action, selector, obj, conf, hc, delta, hosts):
+def create_task(action, selector, obj, conf, hc, delta, hosts, event):
     task = TaskLog(
         action_id=action.id,
         object_id=obj.id,
@@ -609,14 +617,14 @@ def create_task(action, selector, obj, conf, hc, delta, hosts):
         status=config.Job.CREATED,
     )
     task.save()
-    set_task_status(task, config.Job.CREATED)
+    set_task_status(task, config.Job.CREATED, event)
     for sub in SubAction.objects.filter(action=action):
-        job = create_job(action, sub, selector, task.id)
+        job = create_job(action, sub, selector, event, task.id)
         prepare_job(action, sub, selector, job.id, obj, conf, delta, hosts)
     return task
 
 
-def create_one_job_task(action_id, selector, obj, conf, hc, hosts):
+def create_one_job_task(action_id, selector, obj, conf, hc, hosts, event):
     task = TaskLog(
         action_id=action_id,
         object_id=obj.id,
@@ -629,11 +637,11 @@ def create_one_job_task(action_id, selector, obj, conf, hc, hosts):
         status=config.Job.CREATED,
     )
     task.save()
-    set_task_status(task, config.Job.CREATED)
+    set_task_status(task, config.Job.CREATED, event)
     return task
 
 
-def create_job(action, sub_action, selector, task_id=0):
+def create_job(action, sub_action, selector, event, task_id=0):
     job = JobLog(
         task_id=task_id,
         action_id=action.id,
@@ -646,20 +654,23 @@ def create_job(action, sub_action, selector, task_id=0):
     if sub_action:
         job.sub_action_id = sub_action.id
     job.save()
-    set_job_status(job.id, config.Job.CREATED)
+    LogStorage.objects.create(job=job, name='ansible', type='stdout', format='txt')
+    LogStorage.objects.create(job=job, name='ansible', type='stderr', format='txt')
+    set_job_status(job.id, config.Job.CREATED, event)
+    os.makedirs(os.path.join(config.RUN_DIR, f'{job.id}', 'tmp'), exist_ok=True)
     return job
 
 
-def set_job_status(job_id, status, pid=0):
+def set_job_status(job_id, status, event, pid=0):
     JobLog.objects.filter(id=job_id).update(status=status, pid=pid, finish_date=timezone.now())
-    status_api.set_job_status(job_id, status)
+    event.set_job_status(job_id, status)
 
 
-def set_task_status(task, status):
+def set_task_status(task, status, event):
     task.status = status
     task.finish_date = timezone.now()
     task.save()
-    status_api.set_task_status(task.id, status)
+    event.set_task_status(task.id, status)
 
 
 def get_task_obj(context, obj_id):
@@ -746,21 +757,23 @@ def finish_task(task, job, status):
     action = Action.objects.get(id=task.action_id)
     obj = get_task_obj(action.prototype.type, task.object_id)
     state = get_state(action, job, status)
+    event = Event()
     with transaction.atomic():
         DummyData.objects.filter(id=1).update(date=timezone.now())
         if state is not None:
             set_action_state(action, task, obj, state)
-        unlock_objects(obj)
+        unlock_objects(obj, event)
         restore_hc(task, action, status)
-        set_task_status(task, status)
+        set_task_status(task, status, event)
+    event.send_state()
 
 
-def cook_log_name(job_id, tag, level, ext='txt'):
-    return f'{job_id}-{tag}-{level}.{ext}'
+def cook_log_name(tag, level, ext='txt'):
+    return f'{tag}-{level}.{ext}'
 
 
 def read_log(job_id, tag, level, log_type):
-    fname = os.path.join(config.LOG_DIR, f'{job_id}-{tag}-{level}.{log_type}')
+    fname = os.path.join(config.RUN_DIR, f'{job_id}/{tag}-{level}.{log_type}')
     try:
         f = open(fname, 'r')
         data = f.read()
@@ -778,6 +791,21 @@ def get_host_log_files(job_id, tag):
         if m:
             (level, ext) = m[0]
             logs.append((level, ext, item))
+    return logs
+
+
+def get_log(job):
+    log_storage = LogStorage.objects.filter(job=job)
+    logs = []
+
+    for ls in log_storage:
+        logs.append({
+            'name': ls.name,
+            'type': ls.type,
+            'format': ls.format,
+            'id': ls.id
+        })
+
     return logs
 
 
@@ -811,6 +839,10 @@ def log_check(job_id, title, res, msg):
     except JobLog.DoesNotExist:
         err('JOB_NOT_FOUND', f'no job with id #{job_id}')
     cl = CheckLog(job_id=job.id, title=title, message=msg, result=res)
+    try:
+        LogStorage.objects.get(job=job, name='check', type='check')
+    except LogStorage.DoesNotExist:
+        LogStorage.objects.create(job=job, name='check', type='check', format='json')
     cl.save()
     return cl
 
@@ -821,17 +853,26 @@ def finish_check(job_id):
         data.append({'title': cl.title, 'message': cl.message, 'result': cl.result})
     if not data:
         return
-    log_name = os.path.join(config.LOG_DIR, cook_log_name(job_id, 'check', 'out', 'json'))
-    with open(log_name, 'w+') as f:
-        f.write(json.dumps(data, indent=3))
+
+    job = JobLog.objects.get(id=job_id)
+    LogStorage.objects.filter(job=job, name='check', type='check', format='json').update(
+        body=json.dumps(data))
     CheckLog.objects.filter(job_id=job_id).delete()
+
+
+def log_custom(job_id, name, log_format, body):
+    try:
+        job = JobLog.objects.get(id=job_id)
+        LogStorage.objects.create(job=job, name=name, type='custom', format=log_format, body=body)
+    except JobLog.DoesNotExist:
+        err('JOB_NOT_FOUND', f'no job with id #{job_id}')
 
 
 def check_all_status():
     err('NOT_IMPLEMENTED')
 
 
-def run_task(task, args=''):
+def run_task(task, event, args=''):
     err_file = open(os.path.join(config.LOG_DIR, 'task_runner.err'), 'a+')
     proc = subprocess.Popen([
         os.path.join(config.CODE_DIR, 'task_runner.py'),
@@ -840,4 +881,4 @@ def run_task(task, args=''):
     ], stderr=err_file)
     log.info("run task #%s, python process %s", task.id, proc.pid)
     task.pid = proc.pid
-    set_task_status(task, config.Job.RUNNING)
+    set_task_status(task, config.Job.RUNNING, event)

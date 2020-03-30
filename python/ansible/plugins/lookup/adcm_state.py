@@ -28,6 +28,7 @@ import adcm.init_django
 import cm.api
 import cm.status_api
 from cm.logger import log
+from cm.status_api import Event
 
 
 DOCUMENTATION = """
@@ -68,7 +69,7 @@ class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs):   # pylint: disable=too-many-branches
         log.debug('run %s %s', terms, kwargs)
         ret = []
-
+        event = Event()
         if len(terms) < 2:
             msg = 'not enough arguments to set state ({} of 2)'
             raise AnsibleError(msg.format(len(terms)))
@@ -97,13 +98,13 @@ class LookupModule(LookupBase):
             if 'provider' not in variables:
                 raise AnsibleError('there is no provider in hostvars')
             provider = variables['provider']
-            res = cm.api.set_provider_state(provider['id'], terms[1])
+            res = cm.api.set_provider_state(provider['id'], terms[1], event)
         elif terms[0] == 'host':
             if 'adcm_hostid' not in variables:
                 raise AnsibleError('there is no adcm_hostid in hostvars')
             res = cm.api.set_host_state(variables['adcm_hostid'], terms[1])
         else:
             raise AnsibleError('unknown object type: %s' % terms[0])
-
+        event.send_state()
         ret.append(res)
         return ret

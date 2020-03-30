@@ -72,43 +72,36 @@ class TestTaskRunner(TestCase):
         log.error = Mock()
         log.info = Mock()
 
-    @patch('builtins.open')
-    def test_open_file(self, _mock_open):
-        file_path = "{}/{}-{}.txt".format('root', 'tag', 1)
-        task_runner.open_file('root', 1, 'tag')
-        _mock_open.assert_called_once_with(file_path, 'w')
-
     @patch('subprocess.Popen')
     def test_run_job(self, mock_subprocess_popen):
         process_mock = Mock()
         attrs = {'wait.return_value': 0}
         process_mock.configure_mock(**attrs)
         mock_subprocess_popen.return_value = process_mock
-        code = task_runner.run_job(1, 1, '', '')
+        code = task_runner.run_job(1, 1, '')
         cmd = [
             '{}/job_runner.py'.format(config.CODE_DIR),
             str(1)
         ]
-        mock_subprocess_popen.assert_called_once_with(cmd, stdout='', stderr='')
+        mock_subprocess_popen.assert_called_once_with(cmd, stderr='')
         process_mock.wait.assert_called_once()
         self.assertEqual(code, 0)
 
-    @patch('task_runner.open_file')
+    @patch('builtins.open')
     @patch('cm.job.re_prepare_job')
     @patch('task_runner.run_job')
     @patch('cm.job.finish_task')
-    def test_run_task(self, mock_finish_task, mock_run_job, mock_re_prepare_job, mock_open_file):
+    def test_run_task(self, mock_finish_task, mock_run_job, mock_re_prepare_job, _mock_open):
         mock_run_job.return_value = 0
         _file = Mock()
-        mock_open_file.return_value = _file
-
+        _mock_open.return_value = _file
         pd = PreparationData(1, 1)
         task_runner.run_task(1)
         task = pd.get_task(1)
         job = pd.get_job(1)
 
         mock_finish_task.assert_called_once_with(task, job, config.Job.SUCCESS)
-        mock_run_job.assert_called_once_with(task.id, job.id, _file, _file)
+        mock_run_job.assert_called_once_with(task.id, job.id, _file)
         mock_re_prepare_job.assert_not_called()
         self.assertTrue(JobLog.objects.get(id=1).start_date != job.start_date)
 
@@ -130,7 +123,7 @@ class TestJobRunner(TestCase):
 
     @patch('builtins.open')
     def test_open_file(self, _mock_open):
-        file_path = "{}/{}-{}.txt".format('root', 'tag', 1)
+        file_path = "{}/{}/{}.txt".format('root', 'tag', 1)
         job_runner.open_file('root', 1, 'tag')
         _mock_open.assert_called_once_with(file_path, 'w')
 
@@ -140,16 +133,16 @@ class TestJobRunner(TestCase):
         _mock_open.side_effect = mock_open(read_data='').return_value
         mock_json.return_value = {}
         conf = job_runner.read_config(1)
-        file_name = '{}/{}-config.json'.format(config.RUN_DIR, 1)
+        file_name = '{}/{}/config.json'.format(config.RUN_DIR, 1)
         _mock_open.assert_called_once_with(file_name)
         self.assertDictEqual(conf, {})
 
     @patch('cm.job.set_job_status')
     def test_set_job_status(self, mock_set_job_status):
         mock_set_job_status.return_value = None
-        code = job_runner.set_job_status(1, 0, 1)
+        code = job_runner.set_job_status(1, 0, 1, None)
         self.assertEqual(code, 0)
-        mock_set_job_status.assert_called_once_with(1, config.Job.SUCCESS, 1)
+        mock_set_job_status.assert_called_once_with(1, config.Job.SUCCESS, None, 1)
 
     def test_set_pythonpath(self):
         cmd_env = os.environ.copy()
@@ -159,6 +152,9 @@ class TestJobRunner(TestCase):
         cmd_env['PYTHONPATH'] = ':'.join(python_paths)
         self.assertDictEqual(cmd_env, job_runner.set_pythonpath())
 
+    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-arguments
+    @patch('job_runner.Event')
     @patch('cm.job.set_job_status')
     @patch('sys.exit')
     @patch('job_runner.set_job_status')
@@ -167,9 +163,9 @@ class TestJobRunner(TestCase):
     @patch('os.chdir')
     @patch('job_runner.open_file')
     @patch('job_runner.read_config')
-    def test_run_ansible(  # pylint: disable=too-many-arguments
-            self, mock_read_config, mock_open_file, mock_chdir, mock_subprocess_popen,
-            mock_set_pythonpath, mock_set_job_status, mock_exit, mock_job_set_job_status):
+    def test_run_ansible(self, mock_read_config, mock_open_file, mock_chdir, mock_subprocess_popen,
+                         mock_set_pythonpath, mock_set_job_status, mock_exit,
+                         mock_job_set_job_status, mock_event):
         conf = {
             'job': {'playbook': 'test'},
             'env': {'stack_dir': 'test'}
@@ -184,30 +180,32 @@ class TestJobRunner(TestCase):
         mock_subprocess_popen.return_value = process_mock
         python_path = Mock()
         mock_set_pythonpath.return_value = python_path
+        event = Mock()
+        mock_event.return_value = event
 
         job_runner.run_ansible(1)
 
         mock_read_config.assert_called_once_with(1)
 
         mock_open_file.assert_has_calls([
-            call(config.LOG_DIR, 'ansible-out', 1),
-            call(config.LOG_DIR, 'ansible-err', 1)
+            call(config.RUN_DIR, 'ansible-stdout', 1),
+            call(config.RUN_DIR, 'ansible-stderr', 1)
         ])
         mock_chdir.assert_called_with(conf['env']['stack_dir'])
 
-        mock_set_job_status.assert_called_once_with(1, 0, 1)
+        mock_set_job_status.assert_called_once_with(1, 0, 1, event)
         mock_subprocess_popen.assert_called_once_with(
             [
                 'ansible-playbook',
                 '-e',
-                '@{}/{}-config.json'.format(config.RUN_DIR, 1),
+                '@{}/{}/config.json'.format(config.RUN_DIR, 1),
                 '-i',
-                '{}/{}-inventory.json'.format(config.RUN_DIR, 1),
+                '{}/{}/inventory.json'.format(config.RUN_DIR, 1),
                 conf['job']['playbook']
             ], env=python_path, stdout=_file, stderr=_file)
         mock_set_pythonpath.assert_called_once()
         mock_exit.assert_called_once()
-        mock_job_set_job_status.assert_called_with(1, config.Job.RUNNING, 1)
+        mock_job_set_job_status.assert_called_with(1, config.Job.RUNNING, event, 1)
 
     @patch('job_runner.run_ansible')
     @patch('sys.exit')

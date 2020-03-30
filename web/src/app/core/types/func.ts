@@ -9,8 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { controlType } from '@app/shared/configuration/field.service';
-import { ConfigResultTypes, ConfigValueTypes } from '@app/shared/configuration/types';
+import { controlType } from '@app/shared/configuration/types';
 import { matchType } from '@app/shared/configuration/yspec/yspec.service';
 
 import { InnerIssue, Issue } from './issue';
@@ -136,56 +135,4 @@ export function uniqid(prefix: string = '', isFloat: boolean = false) {
 
 export function randomInteger(max: number, min: number = 0): number {
   return Math.floor(min + Math.random() * (max + 1 - min));
-}
-
-// export function parseValueConfig(input: FieldStack[], value: any) {
-//   return input.reduce((p, a) => nameCheck(value, a, p), {});
-// }
-
-// function nameCheck(value: any, a: FieldStack, p: {}) {
-//   if (a.subname) {
-//     if (!p.hasOwnProperty(a.name)) p[a.name] = {};
-//     p[a.name][a.subname] = checkValue(value[`${a.subname ? a.subname + '/' : ''}${a.name}`], a.type);
-//   } else p[a.name] = checkValue(value[a.name], a.type);
-//   return p;
-// }
-
-/**
- * Type casting after form editing
- * Option type may be string | number
- */
-export function checkValue(value: ConfigResultTypes, type: ConfigValueTypes) {
-  if (value === '' || value === null) return null;
-
-  switch (type) {
-    case 'map':
-      return Object.keys(value)
-        .filter(a => a)
-        .reduce((p, c) => {
-          p[c] = value[c];
-          return p;
-        }, {});
-    case 'list':
-      return (value as Array<string>).filter(a => a);
-    case 'structure':
-      return value;
-  }
-
-  if (typeof value === 'boolean') return value;
-
-  if (typeof value === 'string')
-    switch (type) {
-      case 'option':
-        if (!isNaN(+value)) return parseInt(value, 10);
-        else return value;
-      case 'integer':
-        return parseInt(value, 10);
-      case 'float':
-        return parseFloat(value);
-      case 'json':
-        return JSON.parse(value);
-      default:
-        return value;
-    }
-  return value;
 }

@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, EventEmitter, Input, Output, QueryList, ViewChildren } from '@angular/core';
+import { Component, EventEmitter, Input, Output, QueryList, ViewChildren, ChangeDetectionStrategy } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 
 import { FieldService } from '../field.service';
@@ -27,7 +27,7 @@ import { IConfig, PanelOptions, FieldOptions } from '../types';
       <ng-template #conf>
         <app-group-fields *ngIf="panelsOnly(item); else more" [rawConfig]="rawConfig" [panel]="item" [form]="form"></app-group-fields>
         <ng-template #more>
-          <app-field *ngIf="!item.hidden" class="alone" [form]="form" [options]="item" [ngClass]="{ 'read-only': item.disabled }"></app-field>
+          <app-field *ngIf="!item.hidden" class="alone" [form]="form" [options]="item" [ngClass]="{ 'read-only': item.read_only }"></app-field>
         </ng-template>
       </ng-template>
     </ng-container>
@@ -37,17 +37,12 @@ export class ConfigFieldsComponent {
   dataOptions: (FieldOptions | PanelOptions)[] = [];
   form = new FormGroup({});
   rawConfig: IConfig;
+  shapshot: any;
+
+  public isAdvanced = false;
 
   @Output()
   event = new EventEmitter<{ name: string; data?: any }>();
-
-  shapshot: any;
-
-  @ViewChildren(FieldComponent)
-  fields: QueryList<FieldComponent>;
-
-  @ViewChildren(GroupFieldsComponent)
-  groups: QueryList<GroupFieldsComponent>;
 
   @Input()
   set model(data: IConfig) {
@@ -55,14 +50,21 @@ export class ConfigFieldsComponent {
     this.dataOptions = this.service.getPanels(data);
     this.form = this.service.toFormGroup(this.dataOptions);
     this.checkForm();
+    this.isAdvanced = data.config.some(a => a.ui_options && a.ui_options.advanced);
     this.shapshot = { ...this.form.value };
     this.event.emit({ name: 'load', data: { form: this.form } });
   }
 
+  @ViewChildren(FieldComponent)
+  fields: QueryList<FieldComponent>;
+
+  @ViewChildren(GroupFieldsComponent)
+  groups: QueryList<GroupFieldsComponent>;
+
   constructor(private service: FieldService) {}
 
   checkForm() {
-    if (!this.dataOptions.filter(a => !a.read_only).length) this.form.setErrors({ error: 'Ther are not visible fields in this form' });
+    if (!this.dataOptions.filter(a => !a.read_only).length) this.form.setErrors({ error: 'There are not visible fields in this form' });
   }
 
   panelsOnly(item: FieldOptions | PanelOptions) {

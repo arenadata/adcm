@@ -17,29 +17,24 @@ import { FieldDirective } from './field.directive';
   selector: 'app-fields-password',
   template: `
     <ng-container [formGroup]="form">
+      <label [appTooltip]="field.display_name" [appTooltipShowByCondition]="true">{{ field.display_name }}:</label>
       <div>
-        <label [appTooltip]="field.display_name" [appTooltipShowByCondition]="true">{{ field.display_name }}:</label>
         <mat-form-field class="full-width" [floatLabel]="'never'">
           <input matInput (input)="confirmPasswordFieldUpdate()" [formControlName]="field.name" type="password" [readonly]="field.disabled" />
           <mat-error *ngIf="!isValid"> Field [{{ field.display_name }}] is required! </mat-error>
         </mat-form-field>
-        <span class="info"
-          ><mat-icon *ngIf="field.description" matSuffix [appTooltip]="field.description">
-            info_outline
-          </mat-icon></span
-        >
-      </div>
-      <div *ngIf="getConfirmPasswordField()">
-        <label [appTooltip]="'confirm [ ' + field.display_name + ' ]'" [appTooltipShowByCondition]="true">confirm [ {{ field.display_name }} ]:</label>
-        <mat-form-field class="full-width" [floatLabel]="'never'">
+        <mat-form-field [floatLabel]="'never'" *ngIf="getConfirmPasswordField()">
           <input matInput appConfirmEqualValidator="{{ field.name }}" [formControlName]="'confirm_' + field.name" type="password" [readonly]="field.disabled" />
           <mat-error *ngIf="getConfirmPasswordFieldErrors('required') && (form.touched || form.dirty)"> Confirm [{{ field.display_name }}] is required! </mat-error>
           <mat-error *ngIf="getConfirmPasswordFieldErrors('notEqual') && (form.touched || form.dirty)">
             Field [{{ field.display_name }}] and confirm [{{ field.display_name }}] does not match!
           </mat-error>
         </mat-form-field>
-        <span class="info"></span>
       </div>
+      <span class="info">
+        <mat-icon [ngClass]="'info-icon'" *ngIf="field.description" matSuffix [appTooltip]="field.description">info_outline</mat-icon>
+        <button mat-icon-button matSuffix (click)="restore()" color="primary" matTooltip="Reset to default"><mat-icon>refresh</mat-icon></button>
+      </span>
     </ng-container>
   `,
   styleUrls: ['./scss/fields.component.scss', './scss/password.scss']

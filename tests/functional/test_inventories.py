@@ -47,7 +47,7 @@ def test_check_inventories_file(adcm, client):
     client.cluster.action.run.create(
         cluster_id=cluster['id'],
         action_id=random.choice(client.cluster.action.list(cluster_id=cluster['id']))['id'])
-    text = utils.get_file_from_container(adcm, '/adcm/data/run/', '1-inventory.json')
+    text = utils.get_file_from_container(adcm, '/adcm/data/run/1/', 'inventory.json')
     inventory = json.loads(text.read().decode('utf8'))
     template = open(DATADIR + '/cluster-inventory.json', 'rb')
     expected = json.loads(template.read().decode('utf8'))

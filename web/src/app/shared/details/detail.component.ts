@@ -15,8 +15,8 @@ import { ChannelService, ClusterService, WorkerInstance } from '@app/core';
 import { EventMessage, SocketState } from '@app/core/store';
 import { Cluster, Host, IAction, Issue, Job, notIssue } from '@app/core/types';
 import { Store } from '@ngrx/store';
-import { Observable, of } from 'rxjs';
-import { map, switchMap, tap, exhaustMap } from 'rxjs/operators';
+import { Observable } from 'rxjs';
+import { switchMap, tap } from 'rxjs/operators';
 
 import { SocketListenerDirective } from '../directives/socketListener.directive';
 import { IDetails } from './details.service';
@@ -30,7 +30,7 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
   request$: Observable<WorkerInstance>;
   isIssue: boolean;
   upgradable = false;
-  actions: Observable<IAction[]> = of([]);
+  actions: IAction[] = [];
   issues: Issue;
   status: number | string;
 
@@ -60,7 +60,7 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
 
   run(w: WorkerInstance) {
     const { id, name, typeName, actions, issue, status, prototype_name, prototype_display_name, prototype_version, bundle_id } = w.current;
-    const { upgradable, upgrade } = w.current as Cluster;
+    const { upgradable, upgrade, hostcomponent } = w.current as Cluster;
     const { log_files, objects } = w.current as Job;
     const { provider_id } = w.current as Host;
 
@@ -68,7 +68,7 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
 
     const parent = w.current.typeName === 'cluster' ? null : w.cluster;
 
-    this.actions = !actions || !actions.length ? this.service.getActions() : of(actions);
+    this.actions = actions;
     this.upgradable = upgradable;
     this.issues = issue;
     this.status = status;
@@ -91,7 +91,8 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
       prototype_display_name,
       prototype_version,
       provider_id,
-      bundle_id
+      bundle_id,
+      hostcomponent
     };
   }
 
@@ -119,16 +120,19 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
         return;
       }
 
-      if (m.event === 'change_state' || m.event === 'upgrade' || m.event === 'raise_issue') {
+      if (m.event === 'change_state' || m.event === 'upgrade') {
         this.reset();
         return;
       }
 
-      if (m.event === 'clear_issue' && m.object.type === 'cluster') this.issues = {} as Issue;
+      if (m.event === 'clear_issue') this.issues = {} as Issue;
+
+      if (m.event === 'raise_issue') this.issues = m.object.details.value as Issue;
 
       if (m.event === 'change_status') this.status = +m.object.details.value;
     }
 
+    // parent
     if (this.service.Cluster && m.event === 'clear_issue' && m.object.type === 'cluster' && this.service.Current.typeName !== 'cluster' && this.service.Cluster.id === m.object.id)
       this.issues = {} as Issue;
 
