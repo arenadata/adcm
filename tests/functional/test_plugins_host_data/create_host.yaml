@@ -6,3 +6,6 @@
   tasks:
     - adcm_add_host:
         fqdn: "{{ job.config.fqdn }}"
+
+    - pause:
+        seconds: "{{ job.config.sleep }}"

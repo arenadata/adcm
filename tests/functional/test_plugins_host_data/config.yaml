@@ -13,6 +13,10 @@
         fqdn:
           type: string
           required: true
+        sleep:
+          type: integer
+          required: false
+          default: 0
       states:
         available: any
 
@@ -27,3 +31,8 @@
       script: ./remove_host.yaml
       states:
         available: any
+      config:
+        sleep:
+          type: integer
+          required: false
+          default: 0
