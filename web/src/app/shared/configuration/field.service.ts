@@ -240,7 +240,7 @@ export class FieldService {
               value[c],
               rules.options.find(b => b.name === c)
             );
-            return v ? { ...p, [c]: v } : { ...p };
+            return v !== null ? { ...p, [c]: v } : { ...p };
           }, {});
       }
       default: {
