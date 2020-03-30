@@ -99,6 +99,18 @@ class BasePage:
             element.clear()
             element.send_keys(value)
 
+    @staticmethod
+    def get_checkbox_element_status(element):
+        """Get checkbox element status, checked or not
+
+        :param element: WebElement
+        :return: boolean
+        """
+        el_class = element.get_attribute("class")
+        if "mat-checkbox-checked" in el_class:
+            return True
+        return True
+
     def _fill_field_element(self, data, field_element):
         field_element.clear()
         field_element.send_keys(data)
@@ -519,6 +531,13 @@ class Configuration(BasePage):
     def get_config_field(self):
         return self._getelement(ConfigurationLocators.app_conf_fields)
 
+    def get_app_root_scheme_fields(self):
+        return self.driver.find_elements(*ConfigurationLocators.app_root_scheme)
+
+    @staticmethod
+    def get_field_value(input_field):
+        return input_field.get_attribute("value")
+
     def get_config_elements(self):
         el = self.get_config_field()
         return el.find_elements(*Common.all_childs)
@@ -530,15 +549,18 @@ class Configuration(BasePage):
         return self.driver.find_elements(*ConfigurationLocators.group_title)
 
     def save_button_status(self):
+        buttons = self.driver.find_elements(*ConfigurationLocators.config_save_button)
         try:
             button = self.driver.find_element(*ConfigurationLocators.config_save_button)
         except (StaleElementReferenceException, NoSuchElementException):
             sleep(10)
             button = self.driver.find_element(*ConfigurationLocators.config_save_button)
-        # button = self._getelement(ConfigurationLocators.config_save_button)
-        if not button.get_attribute("disabled"):
-            return True
-        return False
+        class_el = button.get_attribute("disabled")
+        if class_el == 'true':
+            result = False
+        else:
+            result = True
+        return result
 
     def get_app_fields(self):
         return self.driver.find_elements(*ConfigurationLocators.app_field)
@@ -784,8 +806,14 @@ class Configuration(BasePage):
 
     @staticmethod
     def editable_element(element):
-        if "field-disabled" in element.get_attribute("class"):
+        el_class = element.get_attribute("class")
+        el_readonly_attr = element.get_attribute("readonly")
+        if "field-disabled" in el_class:
             return False
-        elif element.is_enabled():
+        elif 'read-only' in el_class:
             return False
+        elif el_readonly_attr == 'true':
+            return False
+        if element.is_enabled():
+            return True
         return True
