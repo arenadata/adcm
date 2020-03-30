@@ -49,6 +49,17 @@ export class FieldDirective extends BaseDirective implements OnInit {
       } else if (this.field.type === 'boolean') {
         const allow = String(value) === 'true' || String(value) === 'false' || String(value) === 'null';
         field.setValue(allow ? value : null);
+      } else if (this.field.type === 'password') {
+        
+        field.setValue(value);
+        field.updateValueAndValidity();
+        
+        const confirm = this.form.controls[`confirm_${this.field.name}`];
+        if (confirm) {
+          confirm.setValue(value);
+          confirm.updateValueAndValidity();
+        }
+       
       } else field.setValue(value);
       this.field.value = field.value;
     }

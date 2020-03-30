@@ -64,7 +64,7 @@ export class ConfigFieldsComponent {
   constructor(private service: FieldService) {}
 
   checkForm() {
-    if (!this.dataOptions.filter(a => !a.read_only).length) this.form.setErrors({ error: 'Ther are not visible fields in this form' });
+    if (!this.dataOptions.filter(a => !a.read_only).length) this.form.setErrors({ error: 'There are not visible fields in this form' });
   }
 
   panelsOnly(item: FieldOptions | PanelOptions) {
