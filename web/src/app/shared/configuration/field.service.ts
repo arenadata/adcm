@@ -234,14 +234,13 @@ export class FieldService {
         return value.filter(a => !!a).map(a => this.runYspec(a, rules.options));
       }
       case 'dict': {
-        return Object.keys(value)
-          .reduce((p, c) => {
-            const v = this.runYspec(
-              value[c],
-              rules.options.find(b => b.name === c)
-            );
-            return v !== null ? { ...p, [c]: v } : { ...p };
-          }, {});
+        return Object.keys(value).reduce((p, c) => {
+          const v = this.runYspec(
+            value[c],
+            rules.options.find(b => b.name === c)
+          );
+          return v !== null ? { ...p, [c]: v } : { ...p };
+        }, {});
       }
       default: {
         return this.checkValue(value, rules.type);

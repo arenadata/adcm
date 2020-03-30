@@ -30,7 +30,10 @@ import { IYField } from '../yspec/yspec.service';
 
       <ng-template #other>
         <div class="chbox-field" *ngIf="controlType === 'boolean'">
-          <mat-checkbox [formControlName]="item.name" [checked]="item.value">{{ item.name }}</mat-checkbox>
+          <mat-checkbox [formControlName]="item.name">{{ item.name }}</mat-checkbox>
+          <mat-error *ngIf="!isValid">
+            <mat-error *ngIf="hasError('required')">Field [{{ item.name }}] is required!</mat-error>
+          </mat-error>
         </div>
         <mat-form-field *ngIf="controlType === 'textbox'">
           <mat-label>{{ item.name }}</mat-label>
