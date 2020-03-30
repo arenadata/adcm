@@ -87,13 +87,11 @@ class TestTaskRunner(TestCase):
         process_mock.wait.assert_called_once()
         self.assertEqual(code, 0)
 
-    @patch('task_runner.log_rotation')
     @patch('builtins.open')
     @patch('cm.job.re_prepare_job')
     @patch('task_runner.run_job')
     @patch('cm.job.finish_task')
-    def test_run_task(self, mock_finish_task, mock_run_job, mock_re_prepare_job, _mock_open,
-                      mock_log_rotation):
+    def test_run_task(self, mock_finish_task, mock_run_job, mock_re_prepare_job, _mock_open):
         mock_run_job.return_value = 0
         _file = Mock()
         _mock_open.return_value = _file
@@ -105,7 +103,6 @@ class TestTaskRunner(TestCase):
         mock_finish_task.assert_called_once_with(task, job, config.Job.SUCCESS)
         mock_run_job.assert_called_once_with(task.id, job.id, _file)
         mock_re_prepare_job.assert_not_called()
-        mock_log_rotation.assert_called_once()
         self.assertTrue(JobLog.objects.get(id=1).start_date != job.start_date)
 
     @patch('task_runner.run_task')

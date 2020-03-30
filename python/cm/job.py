@@ -19,9 +19,12 @@ import re
 import signal
 import subprocess
 import time
+import shutil
+from datetime import timedelta
 
 from django.db import transaction
 from django.utils import timezone
+from background_task import background
 
 import cm.config as config
 from cm import api, status_api, issue, inventory, adcm_config
@@ -32,7 +35,7 @@ from cm.logger import log
 from cm.models import (
     Cluster, Action, SubAction, TaskLog, JobLog, CheckLog, Host, ADCM,
     ClusterObject, HostComponent, ServiceComponent, HostProvider, DummyData,
-    LogStorage,
+    LogStorage, ConfigLog
 )
 
 
@@ -57,6 +60,8 @@ def start_task(action_id, selector, conf, hc, hosts):   # pylint: disable=too-ma
             action, obj, selector, act_conf, spec, old_hc, delta, host_map, cluster, hosts
         )
     run_task(task)
+
+    log_rotation()
 
     return task
 
@@ -874,3 +879,35 @@ def run_task(task, args=''):
     log.info("run task #%s, python process %s", task.id, proc.pid)
     task.pid = proc.pid
     set_task_status(task, config.Job.RUNNING)
+
+
+@background(schedule=1)
+def log_rotation():
+    log.info('Run log rotation')
+    adcm_object = ADCM.objects.get(id=1)
+    config_logs = ConfigLog.objects.filter(obj_ref=adcm_object.config)
+    adcm_config = {}
+    for config_log in config_logs:
+        adcm_config.update(json.loads(config_log.config))
+    log_rotation_on_db = adcm_config['job_log']['log_rotation_in_db']
+    log_rotation_on_fs = adcm_config['job_log']['log_rotation_on_fs']
+
+    if log_rotation_on_db:
+        rotation_jobs_on_db = JobLog.objects.filter(
+            finish_date__lt=timezone.now() - timedelta(days=log_rotation_on_db))
+        if rotation_jobs_on_db:
+            task_ids = [job['task_id'] for job in rotation_jobs_on_db.values('task_id')]
+            rotation_jobs_on_db.delete()
+            TaskLog.objects.filter(id__in=task_ids).delete()
+
+            log.info('rotation log from db')
+
+    if log_rotation_on_fs:
+        rotation_jobs_on_fs = JobLog.objects.filter(
+            finish_date__lt=timezone.now() - timedelta(days=log_rotation_on_fs)).values('id')
+
+        if rotation_jobs_on_fs:
+
+            for job in rotation_jobs_on_fs:
+                shutil.rmtree(os.path.join(config.RUN_DIR, str(job['id'])))
+            log.info('rotation log from fs')

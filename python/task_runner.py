@@ -11,64 +11,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=unused-import
-# pylint: disable=useless-return
-# pylint: disable=protected-access
-# pylint: disable=bare-except
-# pylint: disable=global-statement
+# pylint: disable=unused-import, useless-return, protected-access, bare-except, global-statement
 
 
 import os
-import json
 import signal
 import subprocess
 import sys
 import time
-from datetime import timedelta
-import shutil
 
-import adcm.init_django
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 
+import adcm.init_django
 import cm.config as config
 import cm.job
 from cm.logger import log
-from cm.models import TaskLog, JobLog, LogStorage, ADCM, ConfigLog
-
+from cm.models import TaskLog, JobLog, LogStorage
 
 TASK_ID = 0
-
-
-def log_rotation():
-    adcm_object = ADCM.objects.get(id=1)
-    config_log = ConfigLog.objects.filter(obj_ref=adcm_object.config).latest('date')
-    adcm_config = json.loads(config_log.config)
-    log_rotation_on_db = adcm_config['job_log']['log_rotation_in_db']
-    log_rotation_on_fs = adcm_config['job_log']['log_rotation_on_fs']
-    rotation_jobs_on_db = []
-    rotation_jobs_on_fs = []
-
-    for job in JobLog.objects.all():
-        finish_date = job.finish_date
-
-        if log_rotation_on_db > 0:
-            if finish_date < timezone.now() - timedelta(days=log_rotation_on_db):
-                rotation_jobs_on_db.append(job.id)
-
-        if log_rotation_on_fs > 0:
-            if finish_date < timezone.now() - timedelta(days=log_rotation_on_fs):
-                rotation_jobs_on_fs.append(job.id)
-
-    LogStorage.objects.filter(job_id__in=rotation_jobs_on_db).delete()
-    log.info('rotation log from db, jobs: %s',
-             ', '.join([str(job_id) for job_id in rotation_jobs_on_db]))
-
-    for job_id in rotation_jobs_on_fs:
-        shutil.rmtree(os.path.join(config.RUN_DIR, str(job_id)))
-
-    log.info('rotation log from fs, jobs: %s',
-             ', '.join([str(job_id) for job_id in rotation_jobs_on_fs]))
 
 
 def terminate_job(task, jobs):
@@ -170,8 +131,6 @@ def run_task(task_id, args=None):
     err_file.close()
 
     log.info("finish task #%s, ret %s", task_id, res)
-
-    log_rotation()
 
 
 def do():
