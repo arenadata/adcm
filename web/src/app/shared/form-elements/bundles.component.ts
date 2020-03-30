@@ -24,7 +24,7 @@ import { InputComponent } from './input.component';
   selector: 'app-bundles',
   template: `
     <div class="row" [formGroup]="form">
-      <mat-form-field style="flex: 1">
+      <mat-form-field>
         <mat-select appInfinityScroll (topScrollPoint)="getNextPage()" required placeholder="Bundle" formControlName="prototype_name">
           <mat-option value="">...</mat-option>
           <mat-option *ngFor="let bundle of bundles$ | async" [value]="bundle.display_name"> {{ bundle.display_name }} [ {{ bundle.bundle_edition }} ] </mat-option>
@@ -33,7 +33,6 @@ import { InputComponent } from './input.component';
       &nbsp;&nbsp;
       <mat-form-field>
         <mat-select placeholder="Version" required formControlName="prototype_id">
-          <mat-option value="">...</mat-option>
           <mat-option *ngFor="let bundle of versions" [value]="bundle.id">
             {{ bundle.version }}
           </mat-option>
@@ -51,7 +50,7 @@ import { InputComponent } from './input.component';
       ></app-button-uploader>
     </div>
   `,
-  styles: ['.row { align-items: center; }']
+  styles: ['.row { align-items: center; }', 'mat-form-field {flex: 1}']
 })
 export class BundlesComponent extends InputComponent implements OnInit {
   loadedBundleID: number;
@@ -84,15 +83,16 @@ export class BundlesComponent extends InputComponent implements OnInit {
         switchMap(a => forVersion$(a))
       )
       .subscribe(a => {
-        this.versions = a;  
+        this.versions = a;
         this.selectOne(a, 'prototype_id', 'id');
         this.loadedBundleID = null;
       });
 
-    // this.form
-    //   .get('prototype_id')
-    //   .valueChanges.pipe(this.takeUntil())
-    //   .subscribe(a => this.service.setBundle(a, this.bundles$.getValue()));
+    // for check license agreement
+    this.form
+      .get('prototype_id')
+      .valueChanges.pipe(this.takeUntil())
+      .subscribe(a => this.service.setBundle(a, this.versions));
   }
 
   getNextPage() {
@@ -120,8 +120,8 @@ export class BundlesComponent extends InputComponent implements OnInit {
 
   selectOne(a: Partial<Prototype>[] = [], formName: string, propName: string) {
     const el = a.find(e => e.bundle_id === this.loadedBundleID);
-    const id = el ? el[propName] : a.length === 1 ? a[0][propName] : '';
-    this.form.get(formName).setValue(id);    
+    const id = el ? el[propName] : a.length ? (propName === 'id' || a.length === 1 ? a[0][propName] : '') : '';
+    this.form.get(formName).setValue(id);
   }
 
   upload(data: FormData[]) {

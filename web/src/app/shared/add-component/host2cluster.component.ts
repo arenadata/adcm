@@ -46,10 +46,7 @@ import { HostComponent } from './host.component';
 
       <ng-container *ngIf="showForm || !list.length">
         <app-add-host #form (cancel)="onCancel($event)" [noCluster]="true"></app-add-host>
-        <p class="controls">
-          <button mat-raised-button [disabled]="!form.form.valid" color="accent" (click)="save(form.form.value)">Save</button>
-          <button mat-raised-button color="primary" (click)="onCancel()">Cancel</button>
-        </p>
+        <app-add-controls [disabled]="!form.form.valid" (cancel)="onCancel()" (save)="save(form.form.value)"></app-add-controls>
       </ng-container>
     </ng-container>
     <ng-template #load><mat-spinner [diameter]="24"></mat-spinner></ng-template>

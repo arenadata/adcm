@@ -59,10 +59,7 @@ import { MatDialog } from '@angular/material/dialog';
             </mat-select>
           </mat-form-field>
         </div>
-        <p class="controls">
-          <button mat-raised-button [disabled]="!form.valid" color="accent" (click)="save()">Save</button>
-          <button mat-raised-button color="primary" (click)="onCancel()">Cancel</button>
-        </p>
+        <app-add-controls [disabled]="!form.valid" (cancel)="onCancel()" (save)="save()"></app-add-controls>
       </ng-container>
     </ng-container>
   `,
