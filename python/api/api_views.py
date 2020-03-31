@@ -151,15 +151,38 @@ class PageView(GenericAPIView, InterfaceView):
         context['request'] = request
         count = obj.count()
         serializer_class = self.select_serializer(request)
-        page = self.paginate_queryset(obj)
+        serializer = serializer_class(obj, many=True, context=context)
+        data = serializer.data
+        try:
+            if 'fields' in request.query_params:
+                fields = request.query_params['fields'].split(',')
+                fields = [field.strip() for field in fields]
+                _data = []
+                for instance in data:
+                    item = {}
+                    for field in fields:
+                        item[field] = instance[field]
+                    _data.append(item)
+                data = _data
+
+                if 'distinct' in request.query_params and int(request.query_params['distinct']):
+                    _data = [data[0]]
+                    for instance in data[1:]:
+                        if instance not in _data:
+                            _data.append(instance)
+                    data = _data
+        except (ValueError, KeyError):
+            qp = ','.join([f'{k}={v}' for k, v in request.query_params.items()
+                           if k in ['fields', 'distinct']])
+            msg = f'Bad query params: {qp}'
+            raise AdcmApiEx('BAD_QUERY_PARAMS', msg=msg, args=self.get_paged_link())
+
+        page = self.paginate_queryset(data)
 
         if self.is_paged(request):
-            serializer = serializer_class(page, many=True, context=context)
-            return self.get_paginated_response(serializer.data)
-
+            return self.get_paginated_response(page)
         if count <= REST_FRAMEWORK['PAGE_SIZE']:
-            serializer = serializer_class(obj, many=True, context=context)
-            return Response(serializer.data)
+            return Response(page)
 
         msg = 'Response is too long, use paginated request'
         raise AdcmApiEx('TOO_LONG', msg=msg, args=self.get_paged_link())
