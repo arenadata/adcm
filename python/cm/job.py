@@ -886,11 +886,11 @@ def log_rotation():
     log.info('Run log rotation')
     adcm_object = ADCM.objects.get(id=1)
     config_logs = ConfigLog.objects.filter(obj_ref=adcm_object.config)
-    adcm_config = {}
+    adcm_conf = {}
     for config_log in config_logs:
-        adcm_config.update(json.loads(config_log.config))
-    log_rotation_on_db = adcm_config['job_log']['log_rotation_in_db']
-    log_rotation_on_fs = adcm_config['job_log']['log_rotation_on_fs']
+        adcm_conf.update(json.loads(config_log.config))
+    log_rotation_on_db = adcm_conf['job_log']['log_rotation_in_db']
+    log_rotation_on_fs = adcm_conf['job_log']['log_rotation_on_fs']
 
     if log_rotation_on_db:
         rotation_jobs_on_db = JobLog.objects.filter(
