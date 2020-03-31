@@ -18,11 +18,11 @@ import { FieldDirective } from './field.directive';
   template: `
     <ng-container [formGroup]="form">
       <mat-form-field>
-        <input matInput (input)="confirmPasswordFieldUpdate()" [formControlName]="field.name" type="password" [readonly]="field.disabled" />
+        <input matInput (input)="confirmPasswordFieldUpdate()" [formControlName]="field.name" type="password" [readonly]="field.read_only" />
         <mat-error *ngIf="!isValid"> Field [{{ field.display_name }}] is required! </mat-error>
       </mat-form-field>
       <mat-form-field *ngIf="getConfirmPasswordField()">
-        <input matInput appConfirmEqualValidator="{{ field.name }}" [formControlName]="'confirm_' + field.name" type="password" [readonly]="field.disabled" />
+        <input matInput appConfirmEqualValidator="{{ field.name }}" [formControlName]="'confirm_' + field.name" type="password" [readonly]="field.read_only" />
         <mat-error *ngIf="getConfirmPasswordFieldErrors('required') && (form.touched || form.dirty)"> Confirm [{{ field.display_name }}] is required! </mat-error>
         <mat-error *ngIf="getConfirmPasswordFieldErrors('notEqual') && (form.touched || form.dirty)">
           Field [{{ field.display_name }}] and confirm [{{ field.display_name }}] does not match!

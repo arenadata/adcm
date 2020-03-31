@@ -18,13 +18,8 @@ import { FieldDirective } from './field.directive';
   template: `
     <ng-container [formGroup]="form">
       <mat-form-field>
-        <mat-error *ngIf="!isValid">
-          <mat-error *ngIf="hasError('required')">Field [{{ field.display_name }}] is required!</mat-error>
-          <mat-error *ngIf="hasError('pattern')">Field [{{ field.display_name }}] is invalid!</mat-error>
-          <mat-error *ngIf="hasError('min')">Field [{{ field.display_name }}] value cannot be less than {{ field.validator.min }}!</mat-error>
-          <mat-error *ngIf="hasError('max')">Field [{{ field.display_name }}] value cannot be greater than {{ field.validator.max }}!</mat-error>
-        </mat-error>
-        <textarea matInput [appMTextarea]="field.key" [formControlName]="field.name" [readonly]="field.disabled"></textarea>
+        <textarea matInput [appMTextarea]="field.key" [formControlName]="field.name" [readonly]="field.read_only"></textarea>
+        <mat-error *ngIf="!isValid"><app-error-info [field]="field" [control]="control"></app-error-info></mat-error>
       </mat-form-field>
     </ng-container>
   `,

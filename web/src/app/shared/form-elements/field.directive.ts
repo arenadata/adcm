@@ -31,6 +31,10 @@ export class FieldDirective extends BaseDirective implements OnInit {
     return this.form.controls[this.field.name];
   }
 
+  get control() {
+    return this.form.controls[this.field.name];
+  }
+
   get isValid() {
     const field = this.find();
     return this.field.read_only || (field.valid && (field.dirty || field.touched));
