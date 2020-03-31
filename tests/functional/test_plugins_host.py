@@ -37,6 +37,12 @@ def forth_p(bundle: Bundle):
 
 
 def test_create_one_host(second_p: Provider):
+    """Test scenario:
+
+    1. Create three providers
+    2. Create host on one of the providers
+    3. Ensure host exists
+    """
     HOSTNAME = "second_h"
 
     second_p.action(name="create_host").run(config_diff={'fqdn': HOSTNAME}).try_wait()
@@ -47,16 +53,26 @@ def test_create_one_host(second_p: Provider):
 
 
 def test_create_multi_host_and_delete_one(first_p: Provider, third_p: Provider):
-    first_p.action(name="create_host").run(config_diff={'fqdn': "one"}).try_wait()
-    first_p.action(name="create_host").run(config_diff={'fqdn': "one_two"}).try_wait()
-    third_p.action(name="create_host").run(config_diff={'fqdn': "three"}).try_wait()
+    """Test scenario:
 
+    1. Create three providers
+    2. Create two host from first providers
+    3. Create one host from third provider
+    4. Remove one of host binded to first provider
+    5. Check that host has been removed
+    6. Check that other hosts still there.
+    """
+    first_p.action(name="create_host").run(config_diff={'fqdn': "one_one"}).try_wait()
+    first_p.action(name="create_host").run(config_diff={'fqdn': "one_two"}).try_wait()
+    third_p.action(name="create_host").run(config_diff={'fqdn': "three_one"}).try_wait()
     one_two = first_p.host(fqdn="one_two")
+
     one_two.action(name="remove_host").run().try_wait()
-    one = first_p.host(fqdn="one")
-    assert one.fqdn == "one"
-    three = third_p.host(fqdn="three")
-    assert three.fqdn == "three"
+
+    assert first_p.host(fqdn="one_one").fqdn == "one_one"
+    assert third_p.host(fqdn="three_one").fqdn == "three_one"
+    with pytest.raises(adcm_client.base.ObjectNotFound):
+        first_p.host(fqdn="one_two")
 
 
 def _wait_for_object(f, timeout=10, **kwargs):
@@ -75,6 +91,20 @@ def _wait_for_object(f, timeout=10, **kwargs):
 
 
 def test_check_host_lock_during_operations(forth_p: Provider):
+    """Test scenario:
+
+    1. Create provider
+    2. Create host first host on provider
+    3. Run job that creates the second host on provider
+    4. Wait until second host will be created.
+    5. Check that both host has "locked" state
+    6. Wait for job to be finished without erros
+    7. Check that both hosts is in "created" state
+    8. Run remove action on one of hosts
+    9. Check that host under action is "locked", while other host is "created"
+    10. Wait for job to be finished without errors
+    11. Check that remaining host is in "created" state.
+    """
     forth_p.action(name="create_host").run(config_diff={'fqdn': "forth_one"}).try_wait()
     job = forth_p.action(name="create_host").run(config={'fqdn': "forth_two", 'sleep': 2})
 
