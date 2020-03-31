@@ -60,11 +60,11 @@ def start_task(action_id, selector, conf, hc, hosts):   # pylint: disable=too-ma
         task = lock_create_task(
             action, obj, selector, act_conf, spec, old_hc, delta, host_map, cluster, hosts, event
         )
-        
+
     event.send_state()
     run_task(task, event)
     event.send_state()
-    
+
     log_rotation()
 
     return task
