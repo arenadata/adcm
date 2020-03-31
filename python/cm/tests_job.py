@@ -32,8 +32,7 @@ class TestJob(TestCase):
         log.info = Mock()
         log.warning = Mock()
 
-    @patch('cm.status_api.set_job_status')
-    def test_set_job_status(self, mock_set_job_status):
+    def test_set_job_status(self):
         bundle = models.Bundle.objects.create()
         prototype = models.Prototype.objects.create(bundle=bundle)
         action = models.Action.objects.create(prototype=prototype)
@@ -41,25 +40,26 @@ class TestJob(TestCase):
             action_id=action.id, start_date=timezone.now(), finish_date=timezone.now())
         status = config.Job.RUNNING
         pid = 10
+        event = Mock()
 
-        job_module.set_job_status(job.id, status, pid)
+        job_module. set_job_status(job.id, status, event, pid)
 
         job = models.JobLog.objects.get(id=job.id)
         self.assertEqual(job.status, status)
         self.assertEqual(job.pid, pid)
 
-        mock_set_job_status.assert_called_once_with(job.id, status)
+        event.set_job_status.assert_called_once_with(job.id, status)
 
-    @patch('cm.job.status_api.set_task_status')
-    def test_set_task_status(self, mock_set_task_status):
+    def test_set_task_status(self):
+        event = Mock()
         task = models.TaskLog.objects.create(
             action_id=1, object_id=1,
             start_date=timezone.now(), finish_date=timezone.now())
 
-        job_module.set_task_status(task, config.Job.RUNNING)
+        job_module.set_task_status(task, config.Job.RUNNING, event)
 
         self.assertEqual(task.status, config.Job.RUNNING)
-        mock_set_task_status.assert_called_once_with(task.id, config.Job.RUNNING)
+        event.set_task_status.assert_called_once_with(task.id, config.Job.RUNNING)
 
     def test_get_task_obj(self):
         bundle = models.Bundle.objects.create()
@@ -156,6 +156,7 @@ class TestJob(TestCase):
 
     @patch('cm.job.api.set_object_state')
     def test_unlock_obj(self, mock_set_object_state):
+        event = Mock()
         data = [
             (Mock(stack='["running"]'), mock_set_object_state.assert_called_once),
             (Mock(stack='[]'), mock_set_object_state.assert_not_called),
@@ -165,7 +166,7 @@ class TestJob(TestCase):
         for obj, check_assert in data:
             with self.subTest(obj=obj):
 
-                job_module.unlock_obj(obj)
+                job_module.unlock_obj(obj, event)
 
                 check_assert()
                 mock_set_object_state.reset_mock()
@@ -181,37 +182,38 @@ class TestJob(TestCase):
         adcm = models.ADCM.objects.create(prototype=prototype)
 
         data = [cluster_object, host, host_provider, adcm, cluster]
+        event = Mock()
 
         for obj in data:
             with self.subTest(obj=obj):
 
-                job_module.unlock_objects(obj)
+                job_module.unlock_objects(obj, event)
 
                 if isinstance(obj, models.ClusterObject):
                     mock_unlock_obj.assert_has_calls([
-                        call(obj),
-                        call(cluster),
-                        call(host)
+                        call(obj, event),
+                        call(cluster, event),
+                        call(host, event)
                     ])
                 if isinstance(obj, models.Host):
                     mock_unlock_obj.assert_has_calls([
-                        call(obj),
-                        call(obj.cluster),
-                        call(cluster_object),
+                        call(obj, event),
+                        call(obj.cluster, event),
+                        call(cluster_object, event),
                     ])
                 if isinstance(obj, models.HostProvider):
                     mock_unlock_obj.assert_has_calls([
-                        call(obj)
+                        call(obj, event)
                     ])
                 if isinstance(obj, models.ADCM):
                     mock_unlock_obj.assert_has_calls([
-                        call(obj)
+                        call(obj, event)
                     ])
                 if isinstance(obj, models.Cluster):
                     mock_unlock_obj.assert_has_calls([
-                        call(obj),
-                        call(cluster_object),
-                        call(host),
+                        call(obj, event),
+                        call(cluster_object, event),
+                        call(host, event),
                     ])
                 mock_unlock_obj.reset_mock()
 

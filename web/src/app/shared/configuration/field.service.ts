@@ -225,8 +225,7 @@ export class FieldService {
   }
 
   runYspecParse(value: any, field: FieldStack) {
-    const a = this.runYspec(value, field.limits.rules);
-    return a;
+    return this.runYspec(value, field.limits.rules);
   }
 
   runYspec(value: any, rules: any) {
@@ -235,17 +234,13 @@ export class FieldService {
         return value.filter(a => !!a).map(a => this.runYspec(a, rules.options));
       }
       case 'dict': {
-        // .filter(a => !!value[a]) without boolean
-        return Object.keys(value).reduce(
-          (p, c) => ({
-            ...p,
-            [c]: this.runYspec(
-              value[c],
-              rules.options.find(b => b.name === c)
-            )
-          }),
-          {}
-        );
+        return Object.keys(value).reduce((p, c) => {
+          const v = this.runYspec(
+            value[c],
+            rules.options.find(b => b.name === c)
+          );
+          return v !== null ? { ...p, [c]: v } : { ...p };
+        }, {});
       }
       default: {
         return this.checkValue(value, rules.type);

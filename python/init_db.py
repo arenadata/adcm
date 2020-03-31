@@ -23,6 +23,7 @@ from cm.models import UserProfile, DummyData
 from cm.bundle import load_adcm
 from cm.config import SECRETS_FILE
 from cm.job import unlock_all
+from cm.status_api import Event
 
 
 def random_string(strlen=10):
@@ -64,7 +65,9 @@ def init():
     except UserProfile.DoesNotExist:
         UserProfile.objects.create(login='admin')
     create_status_user()
-    unlock_all()
+    event = Event()
+    unlock_all(event)
+    event.send_state()
     load_adcm()
     create_dummy_data()
     log.info("ADCM DB is initialized")
