@@ -82,7 +82,8 @@ export class RootComponent implements OnInit {
           if (Array.isArray(this.form.controls)) {
             name = this.form.controls.length.toString();
             (this.form as FormArray).push(new FormControl(value || '', this.service.setValidator({ validator, controlType })));
-          } else (this.form as FormGroup).addControl(rules.name, new FormControl(value || '', this.service.setValidator({ validator, controlType })));
+          } else
+            (this.form as FormGroup).addControl(rules.name, new FormControl(rules.type !== 'bool' ? value || '' : value, this.service.setValidator({ validator, controlType })));
           form = this.form;
         } else {
           if (rules.type === 'list') form = new FormArray([]);

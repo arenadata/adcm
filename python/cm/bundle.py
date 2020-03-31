@@ -512,8 +512,9 @@ def delete_bundle(bundle):
         err('BUNDLE_CONFLICT', msg.format(bundle.id, bundle.name, bundle.version))
     if bundle.hash != 'adcm':
         shutil.rmtree(os.path.join(config.BUNDLE_DIR, bundle.hash))
-    cm.status_api.post_event('delete', 'bundle', bundle.id)
+    bundle_id = bundle.id
     bundle.delete()
+    cm.status_api.post_event('delete', 'bundle', bundle_id)
 
 
 def check_services():

@@ -15,8 +15,8 @@ import { CanColor } from '@angular/material/core';
 @Component({
   selector: 'app-button-uploader',
   template: `
-    <button *ngIf="!asIcon" mat-raised-button [color]="color" (click)="show()"><mat-icon>save_alt</mat-icon> {{ label }}</button>
-    <button *ngIf="asIcon" mat-icon-button [color]="color" (click)="show()" [matTooltip]="label"><mat-icon>save_alt</mat-icon></button>
+    <button *ngIf="!asIcon" mat-raised-button [color]="color" (click)="show()"><mat-icon>cloud_upload</mat-icon> {{ label }}</button>
+    <button *ngIf="asIcon" mat-icon-button [color]="color" (click)="show()" [matTooltip]="label"><mat-icon>cloud_upload</mat-icon></button>
     <input
       type="file"
       #fileUploadInput

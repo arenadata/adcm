@@ -10,8 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { MatSelectionList } from '@angular/material/list';
-import { SelectOption, Entities } from '@app/core/types';
+import { MatSelectionList, MatSelectionListChange } from '@angular/material/list';
+import { SelectOption } from '@app/core/types';
 import { Observable } from 'rxjs';
 
 import { BaseFormDirective } from './base-form.directive';
@@ -20,24 +20,22 @@ import { BaseFormDirective } from './base-form.directive';
   selector: 'app-add-service',
   template: `
     <ng-container *ngIf="options$ | async as protos">
-      <mat-selection-list #listServices class="add-service">
+      <mat-selection-list #listServices class="add-service" (selectionChange)="selectAll($event)">
+        <mat-list-option *ngIf="protos.length"><i>Select all</i></mat-list-option>
         <mat-list-option *ngFor="let proto of protos" [value]="proto">
           {{ proto.name }}
         </mat-list-option>
       </mat-selection-list>
-      <p class="controls" *ngIf="protos.length; else not">
-        <button mat-raised-button color="accent" (click)="save()">Save</button>
-        <button mat-raised-button color="primary" (click)="onCancel()">Cancel</button>
-      </p>
+      <app-add-controls *ngIf="protos.length; else not" [disabled]="!form.valid" (cancel)="onCancel()" (save)="save()"></app-add-controls>
     </ng-container>
     <ng-template #not>
       <p>
         <i>
           There are no new services. You cluster already has all of them.
-          </i>
+        </i>
       </p>
     </ng-template>
-  `,
+  `
 })
 export class ServiceComponent extends BaseFormDirective implements OnInit {
   options$: Observable<SelectOption[]>;
@@ -48,8 +46,15 @@ export class ServiceComponent extends BaseFormDirective implements OnInit {
     this.options$ = this.service.getProtoServiceForCurrentCluster();
   }
 
+  selectAll(e: MatSelectionListChange) {
+    if (!e.option.value) {
+      if (e.option.selected) this.listServices.selectAll();
+      else this.listServices.deselectAll();
+    }
+  }
+
   save() {
-    const result = this.listServices.selectedOptions.selected.map(a => ({ prototype_id: +a.value.id }));
+    const result = this.listServices.selectedOptions.selected.filter(a => a.value).map(a => ({ prototype_id: +a.value.id }));
     this.service
       .addService(result)
       .pipe(this.takeUntil())

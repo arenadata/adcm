@@ -29,7 +29,7 @@ import {
   StatusInfoComponent,
   UpgradeComponent
 } from './components';
-import { ActionsDirective } from './components/actions/actions.directive';
+import { ActionMasterConfigComponent } from './components/actions/master/action-master-config.component';
 import { MultiSortDirective } from './components/list/multi-sort.directive';
 import { SimpleTextComponent } from './components/tooltip';
 import { ConfigurationModule } from './configuration/configuration.module';
@@ -62,7 +62,6 @@ import { StuffModule } from './stuff.module';
     HoverDirective,
     DynamicDirective,
     ButtonSpinnerComponent,
-    ActionMasterComponent,
     TagEscPipe,
     IssueInfoComponent,
     SimpleTextComponent,
@@ -72,9 +71,11 @@ import { StuffModule } from './stuff.module';
     MainInfoComponent,
     MultiSortDirective,
     ImportComponent,
-    ExportComponent
+    ExportComponent,
+    ActionMasterComponent,
+    ActionMasterConfigComponent
   ],
-  entryComponents: [DialogComponent, ActionMasterComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent],
+  entryComponents: [DialogComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent, ActionMasterComponent],
   exports: [
     FormsModule,
     ReactiveFormsModule,
@@ -92,7 +93,6 @@ import { StuffModule } from './stuff.module';
     DynamicDirective,
     ButtonSpinnerComponent,
     UpgradeComponent,
-    ActionsDirective,
     TagEscPipe,
     BaseListDirective,
     StatusComponent,
