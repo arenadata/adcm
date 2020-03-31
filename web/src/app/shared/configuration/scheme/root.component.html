@@ -1,5 +1,5 @@
-<div *ngIf="options.type === 'list' || options.type === 'dict'">
-  <label>{{ options.name }} :: {{ options.type }}</label>
+<div *ngIf="options.type === 'list' || options.type === 'dict'" style="text-align: right;">
+  <!-- <label>{{ options.name }} :: {{ options.type }}</label> -->
   <button *ngIf="options.type === 'list'" mat-icon-button color="accent" (click)="add()">
     <mat-icon>add_circle_outline</mat-icon>
   </button>

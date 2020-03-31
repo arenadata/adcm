@@ -1,17 +1,9 @@
-:host.asfield>.mat-expansion-panel {
-  margin: 10px -20px;
-}
-
-.pad {
-  padding: 0 24px
-}
-
 .title {
   font-size: 22px;
-}
 
-.title>mat-slide-toggle {
-  margin-left: 20px;
+  &>mat-slide-toggle {
+    margin-left: 20px;
+  }
 }
 
 mat-panel-description {

@@ -1,47 +1,50 @@
-<div class="field-group" [ngSwitch]="options.controlType" [ngClass]="{
-    'read-only': options.disabled,
-    hidden: options.hidden,
-    advanced: isAdvanced()
-  }">
+<div class="field" [appForTest]="getTestName()" [ngClass]="{'read-only': options.read_only, advanced: isAdvanced() }">
+  <label [appTooltip]="options.display_name" [appTooltipShowByCondition]="true">{{ options.display_name }}:</label>
 
-  <ng-container *ngSwitchCase="'map'">
-    <app-fields-map [appForTest]="getTestName()" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="currentFormGroup"></app-fields-map>
+  <ng-container [ngSwitch]="options.controlType">
+    <ng-container *ngSwitchCase="'structure'">
+      <app-scheme [form]="form" [options]="options"></app-scheme>
+    </ng-container>
+    <ng-container *ngSwitchCase="'map'">
+      <app-fields-map [field]="options" [form]="currentFormGroup"></app-fields-map>
+    </ng-container>
+    <ng-container *ngSwitchCase="'list'">
+      <app-fields-list [field]="options" [form]="currentFormGroup"></app-fields-list>
+    </ng-container>
+    <ng-container *ngSwitchCase="'password'">
+      <app-fields-password [field]="options" [form]="currentFormGroup"></app-fields-password>
+    </ng-container>
+    <ng-container *ngSwitchCase="'boolean'">
+      <app-fields-boolean [field]="options" [form]="currentFormGroup"></app-fields-boolean>
+    </ng-container>
+    <ng-container *ngSwitchCase="'textbox'">
+      <app-fields-textbox [field]="options" [form]="currentFormGroup"></app-fields-textbox>
+    </ng-container>
+    <ng-container *ngSwitchCase="'textarea'">
+      <app-fields-textarea [field]="options" [form]="currentFormGroup"></app-fields-textarea>
+    </ng-container>
+    <ng-container *ngSwitchCase="'json'">
+      <app-fields-json [field]="options" [form]="currentFormGroup"></app-fields-json>
+    </ng-container>
+    <ng-container *ngSwitchCase="'option'">
+      <app-fields-dropdown [field]="options" [form]="currentFormGroup"></app-fields-dropdown>
+    </ng-container>
+
+    <span class="info" style="align-self: baseline;">
+      <mat-icon style="vertical-align: middle;" [ngClass]="'info-icon'" *ngIf="options.description"
+        [appTooltip]="options.description">info_outline</mat-icon>
+      <button (click)="restore()" mat-icon-button matSuffix color="primary" matTooltip="Reset to default">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </span>
   </ng-container>
-
-  <ng-container *ngSwitchCase="'list'">
-    <app-fields-list [appForTest]="getTestName()" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="currentFormGroup"></app-fields-list>
-  </ng-container>
-
-  <ng-container *ngSwitchCase="'password'">
-    <app-fields-password [appForTest]="getTestName()" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="currentFormGroup"></app-fields-password>
-  </ng-container>
-
-  <ng-container *ngSwitchCase="'boolean'">
-    <app-fields-boolean [appForTest]="getTestName()" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="currentFormGroup"></app-fields-boolean>
-  </ng-container>
-
-  <ng-container *ngSwitchCase="'textbox'">
-    <app-fields-textbox [appForTest]="getTestName()" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="currentFormGroup"></app-fields-textbox>
-  </ng-container>
-
-  <ng-container *ngSwitchCase="'textarea'">
-    <app-fields-textarea [appForTest]="getTestName()" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="currentFormGroup"></app-fields-textarea>
-  </ng-container>
-
-  <ng-container *ngSwitchCase="'json'">
-    <app-fields-json [appForTest]="getTestName()" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="currentFormGroup"></app-fields-json>
-  </ng-container>
-
-  <ng-container *ngSwitchCase="'option'">
-    <app-fields-dropdown [appForTest]="getTestName()" [ngClass]="{ advanced: isAdvanced() }" [field]="options" [form]="currentFormGroup"></app-fields-dropdown>
-  </ng-container>
-
 </div>
 <mat-list class="compare-list-container" dense *ngIf="!options.hidden && options.compare.length">
   <mat-list-item *ngFor="let item of options.compare" class="compare-list">
     <mat-icon matListIcon [style.backgroundColor]="item.color">more_vert</mat-icon>
     <span class="label">
       {{ item.date | date: 'short' }}
-    </span>&nbsp;----&nbsp;&nbsp;<span [appTooltip]="outputTooltip(item.value)" class="accent">{{ outputValue(item.value) }}</span>
+    </span>&nbsp;----&nbsp;&nbsp;<span [appTooltip]="outputTooltip(item.value)"
+      class="accent">{{ outputValue(item.value) }}</span>
   </mat-list-item>
 </mat-list>

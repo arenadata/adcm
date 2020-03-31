@@ -39,7 +39,7 @@ export class BaseMapListDirective extends FieldDirective implements OnInit {
 
   reload() {
     this.items.controls = [];
-    const fieldValue = { ...(this.field.value as Object) };
+    const fieldValue = this.field.value ? { ...(this.field.value as Object) } : {};
     Object.keys(fieldValue).forEach(a => this.items.push(this.fb.group({ key: [a, Validators.required], value: fieldValue[a] })));
   }
 
@@ -61,7 +61,7 @@ export class BaseMapListDirective extends FieldDirective implements OnInit {
 @Component({
   selector: 'app-fields-list',
   templateUrl: './map-list.template.html',
-  styleUrls: ['./scss/map.component.scss']
+  styleUrls: ['./map.component.scss']
 })
 export class FieldListComponent extends BaseMapListDirective {
   asList = true;
@@ -70,7 +70,7 @@ export class FieldListComponent extends BaseMapListDirective {
 @Component({
   selector: 'app-fields-map',
   templateUrl: './map-list.template.html',
-  styleUrls: ['./scss/map.component.scss']
+  styleUrls: ['./map.component.scss']
 })
 export class FieldMapComponent extends BaseMapListDirective {
   asList = false;

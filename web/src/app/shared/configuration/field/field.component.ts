@@ -54,4 +54,28 @@ export class FieldComponent implements OnInit {
     return this.options.ui_options && this.options.ui_options.advanced;
   }
 
+  restore() {
+    const field = this.currentFormGroup.controls[this.options.name];
+    const value = this.options.default;
+    const type = this.options.type;
+    if (field) {
+      if (type === 'json') {
+        field.setValue(value === null ? '' : JSON.stringify(value, undefined, 4));
+      } else if (type === 'boolean') {
+        const allow = String(value) === 'true' || String(value) === 'false' || String(value) === 'null';
+        field.setValue(allow ? value : null);
+      } else if (type === 'password') {
+        field.setValue(value);
+        field.updateValueAndValidity();
+
+        const confirm = this.currentFormGroup.controls[`confirm_${this.options.name}`];
+        if (confirm) {
+          confirm.setValue(value);
+          confirm.updateValueAndValidity();
+        }
+      } else if (type === 'structure') {
+      } else field.setValue(value);
+      this.options.value = field.value;
+    }
+  }
 }

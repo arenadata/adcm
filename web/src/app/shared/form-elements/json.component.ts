@@ -18,30 +18,16 @@ import { FieldDirective } from './field.directive';
   selector: 'app-fields-json',
   template: `
     <ng-container [formGroup]="form">
-      <label [appTooltip]="field.display_name" [appTooltipShowByCondition]="true">{{ field.display_name }}:</label>
-      <mat-form-field class="full-width" [floatLabel]="'never'">
+      <mat-form-field>
         <mat-error *ngIf="!isValid">
           <mat-error *ngIf="hasError('required')">Field [{{ field.display_name }}] is required!</mat-error>
           <mat-error *ngIf="hasError('jsonParseError') && (form.touched || form.dirty)">Json parsing error!</mat-error>
         </mat-error>
-        <div class="textarea-wrapper">
-          <textarea
-            style="flex-basis: auto;"
-            [appMTextarea]="field.key"
-            matInput
-            class="full-width json_field"
-            [formControlName]="field.name"
-            [readonly]="field.disabled"
-          ></textarea>
-        </div>
+        <textarea matInput [appMTextarea]="field.key"  [formControlName]="field.name" [readonly]="field.disabled"></textarea>
       </mat-form-field>
-      <span class="info">
-        <mat-icon [ngClass]="'info-icon'" matSuffix *ngIf="field.description" [appTooltip]="field.description">info_outline</mat-icon>
-        <button mat-icon-button matSuffix (click)="restore()" color="primary" matTooltip="Reset to default"><mat-icon>refresh</mat-icon></button>
-      </span>
     </ng-container>
   `,
-  styleUrls: ['./scss/fields.component.scss', './scss/json.scss']
+  styles: ['textarea {background-color: #cccccc;color: #333;min-height: 100px;padding: 8px;}']
 })
 export class JsonComponent extends FieldDirective implements OnInit {
   ngOnInit() {

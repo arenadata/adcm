@@ -39,29 +39,4 @@ export class FieldDirective extends BaseDirective implements OnInit {
   hasError(name: string) {
     return this.find().hasError(name);
   }
-
-  restore() {
-    const field = this.find();
-    const value = this.field.default;
-    if (field) {
-      if (this.field.type === 'json') {
-        field.setValue(value === null ? '' : JSON.stringify(value, undefined, 4));
-      } else if (this.field.type === 'boolean') {
-        const allow = String(value) === 'true' || String(value) === 'false' || String(value) === 'null';
-        field.setValue(allow ? value : null);
-      } else if (this.field.type === 'password') {
-        
-        field.setValue(value);
-        field.updateValueAndValidity();
-        
-        const confirm = this.form.controls[`confirm_${this.field.name}`];
-        if (confirm) {
-          confirm.setValue(value);
-          confirm.updateValueAndValidity();
-        }
-       
-      } else field.setValue(value);
-      this.field.value = field.value;
-    }
-  }
 }
