@@ -9,7 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=not-callable
+
+# pylint: disable=not-callable, unused-import, too-many-locals
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.http.request import QueryDict
@@ -26,7 +27,7 @@ from adcm.settings import REST_FRAMEWORK
 
 from cm.models import Action
 from cm.errors import AdcmApiEx
-from cm.logger import log   # pylint: disable=unused-import
+from cm.logger import log
 
 
 def check_obj(model, kw_req, error):
