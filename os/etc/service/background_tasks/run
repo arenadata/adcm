@@ -16,4 +16,4 @@ source /etc/adcmenv
 waitforwsgi
 
 echo "Run process_tasks ..."
-python "${adcmroot}/python/manage.py process_tasks --log-std"
+python ${adcmroot}/python/manage.py process_tasks --log-std
