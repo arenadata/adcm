@@ -167,11 +167,12 @@ class PageView(GenericAPIView, InterfaceView):
                 data = _data
 
                 if 'distinct' in request.query_params and int(request.query_params['distinct']):
-                    _data = [data[0]]
-                    for instance in data[1:]:
-                        if instance not in _data:
-                            _data.append(instance)
-                    data = _data
+                    if data:
+                        _data = [data[0]]
+                        for instance in data[1:]:
+                            if instance not in _data:
+                                _data.append(instance)
+                        data = _data
         except (ValueError, KeyError):
             qp = ','.join([f'{k}={v}' for k, v in request.query_params.items()
                            if k in ['fields', 'distinct']])
