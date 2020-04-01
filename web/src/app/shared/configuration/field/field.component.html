@@ -3,7 +3,7 @@
 
   <ng-container [ngSwitch]="options.controlType">
     <ng-container *ngSwitchCase="'structure'">
-      <app-scheme [form]="form" [options]="options"></app-scheme>
+      <app-scheme [field]="options" [form]="form" #cc></app-scheme>
     </ng-container>
     <ng-container *ngSwitchCase="'map'">
       <app-fields-map [field]="options" [form]="currentFormGroup" #cc></app-fields-map>
@@ -44,7 +44,7 @@
     <mat-icon matListIcon [style.backgroundColor]="item.color">more_vert</mat-icon>
     <span class="label">
       {{ item.date | date: 'short' }}
-    </span>&nbsp;----&nbsp;&nbsp;<span [appTooltip]="outputTooltip(item.value)"
-      class="accent">{{ outputValue(item.value) }}</span>
+    </span>&nbsp;----&nbsp;&nbsp;<span [appTooltip]="outputValue(item.value)"
+      class="accent">{{ outputValue(item.value, true) }}</span>
   </mat-list-item>
 </mat-list>

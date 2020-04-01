@@ -16,6 +16,7 @@ import { isObject } from '@app/core/types';
 import { FieldOptions } from '../types';
 import { FieldDirective } from '@app/shared/form-elements/field.directive';
 import { BaseMapListDirective } from '@app/shared/form-elements/map.component';
+import { SchemeComponent } from '../scheme/scheme.component';
 // import { FieldDirective } from '@app/shared/form-elements/field.directive';
 // import { SchemeComponent } from '../scheme/scheme.component';
 
@@ -41,21 +42,14 @@ export class FieldComponent implements OnInit {
   ngOnInit() {
     const [name, ...other] = this.options.key.split('/');
     this.currentFormGroup = other.reverse().reduce((p, c) => p.get(c), this.form) as FormGroup;
-    return this.currentFormGroup;
   }
 
   getTestName() {
     return `${this.options.name}${this.options.subname ? '/' + this.options.subname : ''}`;
   }
 
-  outputValue(value: any) {
-    const v = isObject(value) ? JSON.stringify(value) : value + '';
-    return v.length > 80 ? v.substr(0, 80) + '...' : v;
-  }
-
-  outputTooltip(value: any) {
-    const v = isObject(value) ? JSON.stringify(value) : value + '';
-    return v.length > 80 ? v : '';
+  outputValue(v: string, isPart = false) {
+    return v.length > 80 ? (isPart ? v : `${v.substr(0, 80)}...`) : v;
   }
 
   isAdvanced() {
@@ -64,28 +58,30 @@ export class FieldComponent implements OnInit {
 
   restore() {
     const field = this.currentFormGroup.controls[this.options.name];
-    const value = this.options.default;
+    const defaultValue = this.options.default;
     const type = this.options.type;
     if (field) {
       if (type === 'json') {
-        field.setValue(value === null ? '' : JSON.stringify(value, undefined, 4));
+        field.setValue(defaultValue === null ? '' : JSON.stringify(defaultValue, undefined, 4));
       } else if (type === 'boolean') {
-        const allow = String(value) === 'true' || String(value) === 'false' || String(value) === 'null';
-        field.setValue(allow ? value : null);
+        const allow = String(defaultValue) === 'true' || String(defaultValue) === 'false' || String(defaultValue) === 'null';
+        field.setValue(allow ? defaultValue : null);
       } else if (type === 'password') {
-        field.setValue(value);
+        field.setValue(defaultValue);
         field.updateValueAndValidity();
 
         const confirm = this.currentFormGroup.controls[`confirm_${this.options.name}`];
         if (confirm) {
-          confirm.setValue(value);
+          confirm.setValue(defaultValue);
           confirm.updateValueAndValidity();
         }
       } else if (type === 'map' || type === 'list') {
-        this.options.value = value;
+        this.options.value = defaultValue;
         (this.inputControl as BaseMapListDirective).reload();
       } else if (type === 'structure') {
-      } else field.setValue(value);
+        this.options.value = defaultValue;
+        (this.inputControl as SchemeComponent).reload();
+      } else field.setValue(defaultValue);
 
       this.options.value = field.value;
     }

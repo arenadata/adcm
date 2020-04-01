@@ -23,8 +23,7 @@ export class FieldDirective extends BaseDirective implements OnInit {
   @Input() field: FieldOptions;
 
   ngOnInit() {
-    const field = this.find();
-    field.markAsTouched();
+    this.control.markAllAsTouched();
   }
 
   find() {
@@ -36,8 +35,8 @@ export class FieldDirective extends BaseDirective implements OnInit {
   }
 
   get isValid() {
-    const field = this.find();
-    return this.field.read_only || (field.valid && (field.dirty || field.touched));
+    const control = this.control;
+    return this.field.read_only || (control.valid && (control.dirty || control.touched));
   }
 
   hasError(name: string) {

@@ -39,6 +39,7 @@ export class RootComponent implements OnInit {
   @Input() form: FormGroup | FormArray;
   @Input() options: IYContainer | IYField;
   @Input() value: IValue | IValue[];
+  @Input() isReadOnly = false;
 
   controls: IControl[] = [];
 
@@ -55,6 +56,10 @@ export class RootComponent implements OnInit {
     }
   }
 
+  showControls() {
+    return !this.isReadOnly && (this.options.type === 'list' || this.options.type === 'dict');
+  }
+
   remove(i: number) {
     if (Array.isArray(this.form.controls)) {
       (this.form as FormArray).removeAt(i);
@@ -67,18 +72,23 @@ export class RootComponent implements OnInit {
 
     if ((this.rules as IYContainer).type === 'dict') {
       const rules = this.itemRules;
+
       if (!value) value = rules.reduce((p, c) => ({ ...p, [c.name]: '' }), {});
+
       if (this.checkValue(value, rules)) {
         const form = new FormGroup({});
         (this.form as FormArray).push(form);
-        this.controls.push({ name, value, type: (this.rules as IYContainer).type, rules, form, parent: 'list' });
+        const item: IControl = { name, value, type: (this.rules as IYContainer).type, rules, form, parent: 'list' };
+        this.controls = [...this.controls, item];
       }
     } else {
       const rules = Array.isArray(this.rules) ? this.rules.find(a => a.name === name) : this.rules;
+
       if (rules) {
         let form: FormGroup | FormArray;
         if (rules.type !== 'list' && rules.type !== 'dict') {
           const { validator, controlType } = rules as IYField;
+
           if (Array.isArray(this.form.controls)) {
             name = this.form.controls.length.toString();
             (this.form as FormArray).push(new FormControl(value || '', this.service.setValidator({ validator, controlType })));
@@ -91,7 +101,7 @@ export class RootComponent implements OnInit {
           (this.form as FormGroup).addControl(rules.name, form);
         }
         const item: IControl = { name, value, type: rules.type, rules, form, parent: this.options.type as reqursionType };
-        this.controls.push(item);
+        this.controls = [...this.controls, item];
       }
     }
   }

@@ -29,10 +29,9 @@ const options = { clickAction: 'noop', color: 'accent' };
 })
 export class BooleanComponent extends FieldDirective {
   cbChange() {
-    if (this.field.disabled) return;
+    if (this.field.read_only) return;
     const tape = this.field.validator.required ? [true, false] : [null, true, false];
     this.field.value = tape[(tape.indexOf(this.field.value as boolean) + 1) % tape.length];
-    const field = this.find();
-    field.setValue(this.field.value);
+    this.control.setValue(this.field.value);
   }
 }

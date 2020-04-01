@@ -6,6 +6,10 @@
   .content {
     padding-left: 20px;
 
+    & .item-iteration:nth-child(even) {
+      background-color: #545454;
+    }
+
     & .item-iteration {
       display: flex;
 
