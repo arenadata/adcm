@@ -19,7 +19,6 @@ import { IYField } from '../yspec/yspec.service';
   selector: 'app-item-scheme',
   template: `
     <ng-container [formGroup]="item.form">
-
       <ng-container *ngIf="item.parent === 'list'; else other">
         <mat-form-field *ngIf="controlType === 'textbox'">
           <input matInput [formControlName]="index" [value]="item.value" />
@@ -49,14 +48,13 @@ import { IYField } from '../yspec/yspec.service';
       </ng-template>
     </ng-container>
   `,
-  styles: ['mat-form-field {margin: 6px 0 0; width: 100%}', '.chbox-field {margin:6px 0;}']
+  styles: [':host {flex: 1}', 'mat-form-field {margin: 6px 0 0; width: 100%}', '.chbox-field {margin:6px 0;}']
 })
 export class ItemComponent implements OnInit {
   @Input() item: IControl;
   @Input() index: number;
   @Input() isReadOnly = false;
   @Output() remove = new EventEmitter<number>();
-
 
   controlType: controlType;
   validator: ValidatorInfo;

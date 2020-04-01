@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { FormArray, FormGroup, FormControl } from '@angular/forms';
+import { FormArray, FormGroup } from '@angular/forms';
 import { FieldDirective } from '@app/shared/form-elements/field.directive';
 
 import { IYContainer, IYField, YspecService } from '../yspec/yspec.service';
@@ -44,10 +44,8 @@ export class SchemeComponent extends FieldDirective implements OnInit {
       .reduce((p: any, c: string) => p.get(c), this.form) as FormGroup;
 
     this.defaultValue = this.field.value || this.field.default;
-
-    if (this.rules.type === 'list') this.itemFormGroup = this.resetFormGroup(this.itemFormGroup.parent as FormGroup, true);
-
-    this.rules.name = this.field.name;
+    this.itemFormGroup = this.resetFormGroup(this.itemFormGroup.parent as FormGroup, this.rules.type === 'list');
+    this.rules.name = '';
   }
 
   resetFormGroup(parent: FormGroup, isList: boolean) {
@@ -58,7 +56,9 @@ export class SchemeComponent extends FieldDirective implements OnInit {
   }
 
   reload() {
-    this.rootComponent.controls = this.rootComponent.controls.slice(0, 1);
-    this.rootComponent.form.reset(this.defaultValue); 
+    this.rootComponent.controls = [];
+    this.itemFormGroup = this.resetFormGroup(this.itemFormGroup.parent as FormGroup, this.rules.type === 'list');
+    this.rootComponent.form = this.itemFormGroup;
+    this.rootComponent.ngOnInit();
   }
 }
