@@ -15,7 +15,7 @@
 import rest_framework
 from django.db import transaction
 from django.utils import timezone
-from django.contrib.auth.models import User, Group, Permission
+from django.contrib.auth.models import User, Group
 from django.contrib.auth import login as django_login
 from django_filters import rest_framework as drf_filters
 
@@ -31,16 +31,17 @@ import cm.config as config
 import cm.job
 import cm.stack
 import cm.status_api
-from adcm.settings import ADCM_VERSION
-from api.api_views import (
-    DetailViewRO, DetailViewDelete, ActionFilter, ListView,
-    PageView, PageViewAdd, GenericAPIPermView, create, update
-)
-from api.serializers import check_obj, filter_actions, get_config_version
+from cm.api import safe_api
 from cm.errors import AdcmEx, AdcmApiEx
 from cm.models import (
     HostProvider, Host, ADCM, Action, JobLog, TaskLog, Upgrade, ObjectConfig,
-    ConfigLog, UserProfile, DummyData
+    ConfigLog, UserProfile, DummyData, Role,
+)
+from adcm.settings import ADCM_VERSION
+from api.serializers import check_obj, filter_actions, get_config_version
+from api.api_views import (
+    DetailViewRO, DetailViewDelete, ActionFilter, ListView,
+    PageView, PageViewAdd, GenericAPIPermView, create, update
 )
 
 
@@ -171,32 +172,6 @@ class UserPasswd(GenericAPIPermView):
         return update(serializer)
 
 
-class AddUserPerm(GenericAPIPermView):
-    queryset = User.objects.all()
-    serializer_class = api.serializers.AddUserPermSerializer
-
-    def post(self, request, username):
-        """
-        Add user permission
-        """
-        user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
-        serializer = self.serializer_class(user, data=request.data, context={'request': request})
-        return update(serializer)
-
-    def delete(self, request, username):
-        """
-        Delete user permission
-        """
-        user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
-        serializer = self.serializer_class(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        perm = check_obj(
-            Permission, {'codename': serializer.data['codename']}, 'PERMISSION_NOT_FOUND'
-        )
-        user.user_permissions.remove(perm)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
 class AddUser2Group(GenericAPIPermView):
     queryset = User.objects.all()
     serializer_class = api.serializers.AddUser2GroupSerializer
@@ -211,7 +186,7 @@ class AddUser2Group(GenericAPIPermView):
 
     def delete(self, request, username):
         """
-        Remive user from group
+        Remove user from group
         """
         user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
         serializer = self.serializer_class(data=request.data, context={'request': request})
@@ -220,6 +195,30 @@ class AddUser2Group(GenericAPIPermView):
             Group, {'name': serializer.data['name']}, 'GROUP_NOT_FOUND'
         )
         group.user_set.remove(user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ChangeUserRole(GenericAPIPermView):
+    queryset = User.objects.all()
+    serializer_class = api.serializers.AddUserRoleSerializer
+
+    def post(self, request, username):
+        """
+        Add user role
+        """
+        user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
+        serializer = self.serializer_class(user, data=request.data, context={'request': request})
+        return update(serializer)
+
+    def delete(self, request, username):
+        """
+        Remove user role
+        """
+        user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        role = check_obj(Role, {'id': serializer.data['role_id']}, 'ROLE_NOT_FOUND')
+        safe_api(cm.api.remove_user_role, (user, role))
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -257,13 +256,13 @@ class GroupDetail(GenericAPIPermView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class AddGroupPerm(GenericAPIPermView):
-    queryset = Group.objects.all()
-    serializer_class = api.serializers.AddGroupPermSerializer
+class ChangeGroupRole(GenericAPIPermView):
+    queryset = User.objects.all()
+    serializer_class = api.serializers.AddGroupRoleSerializer
 
     def post(self, request, name):
         """
-        Add group permission
+        Add group role
         """
         group = check_obj(Group, {'name': name}, 'GROUP_NOT_FOUND')
         serializer = self.serializer_class(group, data=request.data, context={'request': request})
@@ -271,16 +270,37 @@ class AddGroupPerm(GenericAPIPermView):
 
     def delete(self, request, name):
         """
-        Delete group permission
+        Remove group role
         """
         group = check_obj(Group, {'name': name}, 'GROUP_NOT_FOUND')
         serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
-        perm = check_obj(
-            Permission, {'codename': serializer.data['codename']}, 'PERMISSION_NOT_FOUND'
-        )
-        group.permissions.remove(perm)
+        role = check_obj(Role, {'id': serializer.data['role_id']}, 'ROLE_NOT_FOUND')
+        safe_api(cm.api.remove_group_role, (group, role))
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class RoleList(PageView):
+    """
+    get:
+    List all existing roles
+    """
+    queryset = Role.objects.all()
+    serializer_class = api.serializers.RoleSerializer
+    ordering_fields = ('name',)
+
+
+class RoleDetail(PageView):
+    queryset = Role.objects.all()
+    serializer_class = api.serializers.RoleDetailSerializer
+
+    def get(self, request, role_id):   # pylint: disable=arguments-differ
+        """
+        show role
+        """
+        role = check_obj(Role, {'id': role_id}, 'ROLE_NOT_FOUND')
+        serializer = self.serializer_class(role, context={'request': request})
+        return Response(serializer.data)
 
 
 class ProfileList(PageViewAdd):

@@ -13,6 +13,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django.contrib.auth.models import User, Group, Permission
 
 
 PROTO_TYPE = (
@@ -333,6 +334,14 @@ JOB_STATUS = (
 class UserProfile(models.Model):
     login = models.CharField(max_length=32, unique=True)
     profile = models.TextField()   # JSON
+
+
+class Role(models.Model):
+    name = models.CharField(max_length=32, unique=True)
+    description = models.TextField(blank=True)
+    permissions = models.ManyToManyField(Permission, blank=True)
+    user = models.ManyToManyField(User, blank=True)
+    group = models.ManyToManyField(Group, blank=True)
 
 
 class JobLog(models.Model):

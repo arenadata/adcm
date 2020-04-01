@@ -16,7 +16,7 @@ import os
 import django.contrib.auth
 from django.db import IntegrityError, transaction
 from django.core.exceptions import ObjectDoesNotExist
-from django.contrib.auth.models import User, Group, Permission
+from django.contrib.auth.models import User, Group
 
 from rest_framework import serializers
 from rest_framework.reverse import reverse
@@ -26,12 +26,13 @@ from rest_framework.authtoken.models import Token
 import cm.job
 import cm.stack
 import cm.status_api
+from cm.api import safe_api
 from cm.logger import log   # pylint: disable=unused-import
 import cm.config as config
 from cm.errors import AdcmApiEx, AdcmEx
 from cm.models import (
     Action, SubAction, Cluster, Host, Prototype, PrototypeConfig, JobLog, UserProfile,
-    Upgrade, HostProvider, ConfigLog, ClusterObject, CheckLog
+    Upgrade, HostProvider, ConfigLog, ClusterObject, CheckLog, Role,
 )
 
 
@@ -140,14 +141,21 @@ class PermSerializer(serializers.Serializer):
         return obj.content_type.model
 
 
-class GroupSerializer(serializers.Serializer):
-    class MyUrlField(UrlField):
-        def get_kwargs(self, obj):
-            return {'name': obj.name}
+class RoleSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    description = serializers.CharField(read_only=True)
+    url = hlink('role-details', 'id', 'role_id')
 
+
+class RoleDetailSerializer(RoleSerializer):
+    permissions = PermSerializer(many=True, read_only=True)
+
+
+class GroupSerializer(serializers.Serializer):
     name = serializers.CharField()
-    url = MyUrlField(read_only=True, view_name='group-details')
-    change_permission = MyUrlField(read_only=True, view_name='add-group-perm')
+    url = hlink('group-details', 'name', 'name')
+    change_role = hlink('change-group-role', 'name', 'name')
 
     @transaction.atomic
     def create(self, validated_data):
@@ -159,19 +167,16 @@ class GroupSerializer(serializers.Serializer):
 
 class GroupDetailSerializer(GroupSerializer):
     permissions = PermSerializer(many=True, read_only=True)
+    role = RoleSerializer(many=True, source='role_set')
 
 
 class UserSerializer(serializers.Serializer):
-    class MyUrlField(UrlField):
-        def get_kwargs(self, obj):
-            return {'username': obj.username}
-
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
-    url = MyUrlField(read_only=True, view_name='user-details')
-    change_group = MyUrlField(read_only=True, view_name='add-user-group')
-    change_password = MyUrlField(read_only=True, view_name='user-passwd')
-    change_permission = MyUrlField(read_only=True, view_name='add-user-perm')
+    url = hlink('user-details', 'username', 'username')
+    change_group = hlink('add-user-group', 'username', 'username')
+    change_password = hlink('user-passwd', 'username', 'username')
+    change_role = hlink('change-user-role', 'username', 'username')
     is_superuser = serializers.BooleanField(required=False)
 
     @transaction.atomic
@@ -191,39 +196,34 @@ class UserSerializer(serializers.Serializer):
 class UserDetailSerializer(UserSerializer):
     user_permissions = PermSerializer(many=True)
     groups = GroupSerializer(many=True)
+    role = RoleSerializer(many=True, source='role_set')
 
 
 class AddUser2GroupSerializer(serializers.Serializer):
     name = serializers.CharField()
 
     def update(self, user, validated_data):   # pylint: disable=arguments-differ
-        group = check_obj(
-            Group, {'name': validated_data.get('name')}, 'GROUP_NOT_FOUND'
-        )
+        group = check_obj(Group, {'name': validated_data.get('name')}, 'GROUP_NOT_FOUND')
         group.user_set.add(user)
         return group
 
 
-class AddUserPermSerializer(serializers.Serializer):
-    codename = serializers.CharField()
+class AddUserRoleSerializer(serializers.Serializer):
+    role_id = serializers.IntegerField()
+    name = serializers.CharField(read_only=True)
 
     def update(self, user, validated_data):   # pylint: disable=arguments-differ
-        perm = check_obj(
-            Permission, {'codename': validated_data.get('codename')}, 'PERMISSION_NOT_FOUND'
-        )
-        user.user_permissions.add(perm)
-        return perm
+        role = check_obj(Role, {'id': validated_data.get('role_id')}, 'ROLE_NOT_FOUND')
+        return safe_api(cm.api.add_user_role, (user, role))
 
 
-class AddGroupPermSerializer(serializers.Serializer):
-    codename = serializers.CharField()
+class AddGroupRoleSerializer(serializers.Serializer):
+    role_id = serializers.IntegerField()
+    name = serializers.CharField(read_only=True)
 
     def update(self, group, validated_data):   # pylint: disable=arguments-differ
-        perm = check_obj(
-            Permission, {'codename': validated_data.get('codename')}, 'PERMISSION_NOT_FOUND'
-        )
-        group.permissions.add(perm)
-        return perm
+        role = check_obj(Role, {'id': validated_data.get('role_id')}, 'ROLE_NOT_FOUND')
+        return safe_api(cm.api.add_group_role, (group, role))
 
 
 class UserPasswdSerializer(serializers.Serializer):

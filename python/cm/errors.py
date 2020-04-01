@@ -48,6 +48,7 @@ ERRORS = {
     'UPGRADE_NOT_FOUND': ("upgrade is not found", rfs.HTTP_404_NOT_FOUND, ERR),
     'USER_NOT_FOUND': ("user profile is not found", rfs.HTTP_404_NOT_FOUND, ERR),
     'GROUP_NOT_FOUND': ("group is not found", rfs.HTTP_404_NOT_FOUND, ERR),
+    'ROLE_NOT_FOUND': ("role is not found", rfs.HTTP_404_NOT_FOUND, ERR),
     'PERMISSION_NOT_FOUND': ("permission is not found", rfs.HTTP_404_NOT_FOUND, ERR),
 
     'MODULE_NOT_FOUND': ("module doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),
@@ -67,6 +68,7 @@ ERRORS = {
     'COMPONENT_CONSTRAINT_ERROR': ("component constraint error", rfs.HTTP_409_CONFLICT, ERR),
     'BUNDLE_CONFIG_ERROR': ("bundle config error", rfs.HTTP_409_CONFLICT, ERR),
     'BUNDLE_CONFLICT': ("bundle conflict error", rfs.HTTP_409_CONFLICT, ERR),
+    'ROLE_ERROR': ("role error", rfs.HTTP_409_CONFLICT, ERR),
 
     'INVALID_OBJECT_DEFINITION': ("invalid object definition", rfs.HTTP_409_CONFLICT, ERR),
     'INVALID_CONFIG_DEFINITION': ("invalid config definition", rfs.HTTP_409_CONFLICT, ERR),
