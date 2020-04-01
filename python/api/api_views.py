@@ -179,12 +179,11 @@ class PageView(GenericAPIView, InterfaceView):
             msg = f'Bad query params: {qp}'
             raise AdcmApiEx('BAD_QUERY_PARAMS', msg=msg, args=self.get_paged_link())
 
-        page = self.paginate_queryset(data)
-
         if self.is_paged(request):
+            page = self.paginate_queryset(data)
             return self.get_paginated_response(page)
         if count <= REST_FRAMEWORK['PAGE_SIZE']:
-            return Response(page)
+            return Response(data)
 
         msg = 'Response is too long, use paginated request'
         raise AdcmApiEx('TOO_LONG', msg=msg, args=self.get_paged_link())
