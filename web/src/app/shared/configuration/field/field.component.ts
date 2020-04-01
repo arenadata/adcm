@@ -9,11 +9,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { ChangeDetectorRef, Component, Input, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, Input, OnInit, ViewChild } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { isObject } from '@app/core/types';
 
 import { FieldOptions } from '../types';
+import { FieldDirective } from '@app/shared/form-elements/field.directive';
+import { BaseMapListDirective } from '@app/shared/form-elements/map.component';
+// import { FieldDirective } from '@app/shared/form-elements/field.directive';
+// import { SchemeComponent } from '../scheme/scheme.component';
 
 @Component({
   selector: 'app-field',
@@ -26,7 +30,11 @@ export class FieldComponent implements OnInit {
   @Input()
   form: FormGroup;
 
+  // components = { structure: SchemeComponent };
+  // currentComponent: FieldDirective;
   currentFormGroup: FormGroup;
+
+  @ViewChild('cc') inputControl: FieldDirective;
 
   constructor(public cdetector: ChangeDetectorRef) {}
 
@@ -73,8 +81,12 @@ export class FieldComponent implements OnInit {
           confirm.setValue(value);
           confirm.updateValueAndValidity();
         }
+      } else if (type === 'map' || type === 'list') {
+        this.options.value = value;
+        (this.inputControl as BaseMapListDirective).reload();
       } else if (type === 'structure') {
       } else field.setValue(value);
+
       this.options.value = field.value;
     }
   }

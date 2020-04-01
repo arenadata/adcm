@@ -1,79 +1,27 @@
 :host {
   margin-bottom: 10px;
+  flex-direction: column;
 
-  & .tools {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-right: 10px;
-    margin-top: 12px;
-    margin-left: 25%;
-    border: dotted 1px #5d5c5c;
-    border-radius: 6px;
-    padding: 0px 5px;
-
-    & button {
-      width: 30px;
-      height: 30px;
-      line-height: 30px;
-    }
-
-    & .mat-icon {
-      font-size: 1.5em;
-      width: auto;
-    }
+  .tools {
+    align-self: flex-end;
   }
 
-  .rightmargin {
-    margin-right: 30px;
-  }
-
-  & .value {
+  & div.item {
+    width: 100%;
     display: flex;
-    align-items: center;
+    align-items: baseline;
 
-
-    label {
-      flex-basis: 25%;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    & .key-field {
+      flex: 0 1 50%;
       margin-right: 10px;
-      font-size: 16px;
-      border-bottom: dotted 1px #606060;
     }
 
-
-    & .fields {
-      flex: 1;
-      margin-right: 20px;
-
-      & div.item {
-        display: flex;
-        align-items: baseline;
-
-        & .key-field {
-          flex: 0 1 50%;
-          margin-right: 10px;
-        }
-
-        & .value-field {
-          flex: 1 0 50%;
-        }
-      }
+    & .value-field {
+      flex: 1 0 50%;
     }
-
-    .description {
-      font-size: 1.5em;
-      width: auto;
-    }
-  }
-
-  &.advanced .value {    
-    label {border-bottom: dotted 1px #00e676 !important;}    
   }
 
   .error {
     font-size: 75%;
   }
-
 }

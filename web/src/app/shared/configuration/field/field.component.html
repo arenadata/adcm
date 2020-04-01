@@ -6,10 +6,10 @@
       <app-scheme [form]="form" [options]="options"></app-scheme>
     </ng-container>
     <ng-container *ngSwitchCase="'map'">
-      <app-fields-map [field]="options" [form]="currentFormGroup"></app-fields-map>
+      <app-fields-map [field]="options" [form]="currentFormGroup" #cc></app-fields-map>
     </ng-container>
     <ng-container *ngSwitchCase="'list'">
-      <app-fields-list [field]="options" [form]="currentFormGroup"></app-fields-list>
+      <app-fields-list [field]="options" [form]="currentFormGroup" #cc></app-fields-list>
     </ng-container>
     <ng-container *ngSwitchCase="'password'">
       <app-fields-password [field]="options" [form]="currentFormGroup"></app-fields-password>
