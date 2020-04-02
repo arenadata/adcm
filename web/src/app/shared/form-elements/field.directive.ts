@@ -26,10 +26,6 @@ export class FieldDirective extends BaseDirective implements OnInit {
     this.control.markAllAsTouched();
   }
 
-  find() {
-    return this.form.controls[this.field.name];
-  }
-
   get control() {
     return this.form.controls[this.field.name];
   }
@@ -40,6 +36,6 @@ export class FieldDirective extends BaseDirective implements OnInit {
   }
 
   hasError(name: string) {
-    return this.find().hasError(name);
+    return this.control.hasError(name);
   }
 }

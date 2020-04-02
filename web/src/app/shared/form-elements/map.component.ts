@@ -26,7 +26,7 @@ export class BaseMapListDirective extends FieldDirective implements OnInit {
   }
 
   ngOnInit() {
-    if (!Object.keys(this.field.value).length) this.find().setValue('');
+    if (!Object.keys(this.field.value).length) this.control.setValue('');
     this.reload();
     this.items.valueChanges.subscribe((a: { key: string; value: string }[]) => this.prepare(a));
   }
@@ -34,7 +34,7 @@ export class BaseMapListDirective extends FieldDirective implements OnInit {
   prepare(a: { key: string; value: string }[]) {
     let value = this.asList ? a.map(b => b.value).filter(c => c) : a.length ? a.reduce((p, c) => ({ ...p, [c.key]: c.value }), {}) : null;
     if (value && this.asList) value = (value as Array<string>).length ? value : null;
-    this.find().setValue(value);
+    this.control.setValue(value);
   }
 
   reload() {
