@@ -9,24 +9,22 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormArray, FormGroup } from '@angular/forms';
 import { FieldDirective } from '@app/shared/form-elements/field.directive';
 
 import { IYContainer, IYField, YspecService } from '../yspec/yspec.service';
-import { RootComponent } from './root.component';
 
 @Component({
   selector: 'app-scheme',
-  template: '<app-root-scheme #root [form]="itemFormGroup" [isReadOnly]="isReadOnly" [options]="rules" [value]="defaultValue"></app-root-scheme>'
+  template: '<app-root-scheme *ngIf="show" #root [form]="itemFormGroup" [isReadOnly]="isReadOnly" [options]="rules" [value]="defaultValue"></app-root-scheme>'
 })
 export class SchemeComponent extends FieldDirective implements OnInit {
   itemFormGroup: FormGroup | FormArray;
   rules: IYField | IYContainer;
   defaultValue: any;
   isReadOnly = false;
-
-  @ViewChild('root') rootComponent: RootComponent;
+  show = true;
 
   constructor(private yspec: YspecService) {
     super();
@@ -56,9 +54,9 @@ export class SchemeComponent extends FieldDirective implements OnInit {
   }
 
   reload() {
-    this.rootComponent.controls = [];
+    this.show = false;
+    this.defaultValue = this.field.default;
     this.itemFormGroup = this.resetFormGroup(this.itemFormGroup.parent as FormGroup, this.rules.type === 'list');
-    this.rootComponent.form = this.itemFormGroup;
-    setTimeout(_ => this.rootComponent.ngOnInit(), 1);
+    setTimeout(_ => this.show = true, 1);   
   }
 }
