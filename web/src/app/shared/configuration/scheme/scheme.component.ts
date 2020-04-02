@@ -59,6 +59,6 @@ export class SchemeComponent extends FieldDirective implements OnInit {
     this.rootComponent.controls = [];
     this.itemFormGroup = this.resetFormGroup(this.itemFormGroup.parent as FormGroup, this.rules.type === 'list');
     this.rootComponent.form = this.itemFormGroup;
-    this.rootComponent.ngOnInit();
+    setTimeout(_ => this.rootComponent.ngOnInit(), 1);
   }
 }

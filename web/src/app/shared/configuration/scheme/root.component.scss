@@ -4,8 +4,7 @@
   margin-bottom: 20px;
 
   & .content {
-    padding-left: 20px;
-    padding-right: 10px;
+    padding: 0 10px;
 
     & .item-iteration.dif:nth-child(even) {
       background-color: #545454;

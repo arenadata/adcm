@@ -13,7 +13,7 @@ import { Component, Input, OnInit } from '@angular/core';
 import { FormArray, FormControl, FormGroup } from '@angular/forms';
 
 import { FieldService } from '../field.service';
-import { IYContainer, matchType, IYField, reqursionType } from '../yspec/yspec.service';
+import { IYContainer, IYField, matchType, reqursionType } from '../yspec/yspec.service';
 
 type sValue = string | boolean | number;
 

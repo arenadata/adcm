@@ -18,7 +18,7 @@
         </app-item-scheme>
       </ng-template>
 
-      <button *ngIf="!isReadOnly && item.parent === 'list' && item.type === 'dict'" mat-icon-button color="primary"
+      <button style="align-self: center;" *ngIf="!isReadOnly && item.parent === 'list' && item.type === 'dict'" mat-icon-button color="primary"
         (click)="remove(i)">
         <mat-icon>highlight_off</mat-icon>
       </button>
