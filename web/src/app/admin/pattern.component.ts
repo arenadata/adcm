@@ -28,14 +28,7 @@ import { exhaustMap, filter, map } from 'rxjs/operators';
       </mat-toolbar>
       <div class="row main">
         <mat-nav-list class="col-4">
-          <a
-            mat-list-item
-            [appForTest]="'tab_' + item.url"
-            *ngFor="let item of leftMenu"
-            [routerLink]="[item.url]"
-            routerLinkActive="active"
-            >{{ item.title }}
-          </a>
+          <a mat-list-item [appForTest]="'tab_' + item.url" *ngFor="let item of leftMenu" [routerLink]="[item.url]" routerLinkActive="active">{{ item.title }} </a>
         </mat-nav-list>
         <mat-card class="col-8">
           <mat-card-header [style.minHeight.px]="40">
@@ -52,8 +45,8 @@ import { exhaustMap, filter, map } from 'rxjs/operators';
     '.main {position: absolute;top: 50px;bottom: 0;left: 5px;right: 5px;display: flex;margin-bottom: 5px;}',
     '.main mat-nav-list {padding-top: 20px;} ',
     '.main mat-card {display: flex;flex-direction: column;padding: 20px;}',
-    '.content {flex-grow: 1;overflow: auto;padding-right:20px;}',
-  ],
+    '.content {flex-grow: 1;overflow: auto;padding-right:20px;}'
+  ]
 })
 export class PatternComponent extends BaseDirective implements OnInit, OnDestroy {
   title = '';
@@ -61,12 +54,12 @@ export class PatternComponent extends BaseDirective implements OnInit, OnDestroy
   leftMenu = [
     { url: 'intro', title: 'Intro' },
     { url: 'settings', title: 'Settings' },
-    { url: 'users', title: 'Users' },
+    { url: 'users', title: 'Users' }
   ];
   data = {
     '/admin/intro': { title: 'Hi there!', crumbs: [{ path: '/admin/', name: 'intro' }] },
     '/admin/settings': { title: '', crumbs: [{ path: '/admin/settings', name: 'settings' }] },
-    '/admin/users': { title: '', crumbs: [{ path: '/admin/users', name: 'users' }] },
+    '/admin/users': { title: '', crumbs: [{ path: '/admin/users', name: 'users' }] }
   };
 
   constructor(private store: Store<State>, private api: ApiService, private router: Router) {
@@ -89,17 +82,14 @@ export class PatternComponent extends BaseDirective implements OnInit, OnDestroy
         select(getProfileSelector),
         filter(p => p.username === 'admin' && !p.profile.settingsSaved),
         exhaustMap(() =>
-          this.api.get<IConfig>('/api/v1/adcm/1/config/current/').pipe(
-            map(
-              config =>
-                config.config.find(f => f.name === 'global' && f.subname === 'adcm_url').value ||
-                `${location.protocol}//${location.host}`
-            ),
-            exhaustMap(adcm_url =>
-              this.api.post('/api/v1/adcm/1/config/history/', {
-                config: { global: { send_stats: true, adcm_url } },
-              })
-            )
+          this.api.get<IConfig>('/api/v1/adcm/1/config/current/?noview').pipe(
+            exhaustMap(c => {
+              const config = c.config;
+              const global = config['global'] || {};
+              global.adcm_url = global.adcm_url || `${location.protocol}//${location.host}`;
+              global.send_stats = true;
+              return this.api.post('/api/v1/adcm/1/config/history/', c);
+            })
           )
         ),
         this.takeUntil()
