@@ -527,6 +527,45 @@ class ServiceDetails(Details, ListPage):
 
 # pylint: disable=R0904
 class Configuration(BasePage):
+    """
+    Class for configuration page
+    """
+
+    def assert_field_editable(self, field, editable=True):
+        """Check that we can edit specific field or not
+        :param field:
+        :param editable:
+        :return:
+        """
+        field_editable = self.editable_element(field)
+        assert field_editable == editable
+
+    def assert_field_content_equal(self, field_type, field, expected_value):
+        """Check that field content equal expected value
+
+        :param field_type:
+        :param field:
+        :param expected_value:
+        :return:
+        """
+        current_value = self.get_field_value_by_type(field, field_type)
+        if field_type == 'file':
+            expected_value = 'test'
+        err_message = "Default value wrong. Current value {}".format(current_value)
+        assert current_value == expected_value, err_message
+
+    def assert_alerts_presented(self, field_type):
+        """Check that frontend errors presented on screen and error type in text
+
+        :param field_type:
+        :return:
+        """
+        errors = self.get_frontend_errors()
+        assert errors
+        if field_type == 'password':
+            assert len(errors) == 2
+            error_text = "Field [{}] is required!".format(field_type)
+            assert error_text in errors
 
     def get_config_field(self):
         return self._getelement(ConfigurationLocators.app_conf_fields)

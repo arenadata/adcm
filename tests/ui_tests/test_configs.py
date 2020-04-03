@@ -91,6 +91,8 @@ def generate_group_expected_result(group_config):
     else:
         expected_result['save'] = True
         expected_result['alerts'] = False
+    if group_config['read_only']:
+        expected_result['save'] = False
     if group_config['ui_options']['advanced'] and not group_config['ui_options']['invisible']:
         expected_result['group_visible_advanced'] = True
     else:
@@ -133,6 +135,8 @@ def generate_config_expected_result(config):
     else:
         expected_result['save'] = True
         expected_result['alerts'] = False
+    if config['read_only']:
+        expected_result['save'] = False
     if config['ui_options']['advanced'] and not config['ui_options']['invisible']:
         expected_result['visible_advanced'] = True
     else:
@@ -188,7 +192,7 @@ def generate_configs(config_data):
     :return:
     """
     configs = []
-    for _type in ['integer']:
+    for _type in ['string']:
     # for _type in TYPES:
         for data in config_data:
             config_dict = {"type": "cluster",
@@ -271,48 +275,6 @@ configs = generate_configs(config_data)
 # group_configs = generate_group_configs(group_configs_data)
 
 
-def assert_field_editable(ui_config: Configuration, field, editable=True):
-    """Check that we can edit specific field or not
-    :param ui_config:
-    :param field:
-    :param editable:
-    :return:
-    """
-    field_editable = ui_config.editable_element(field)
-    assert field_editable == editable
-
-
-def assert_field_content_equal(ui_config: Configuration, field_type, field, expected_value):
-    """Check that field content equal expected value
-
-    :param ui_config:
-    :param field_type:
-    :param field:
-    :param expected_value:
-    :return:
-    """
-    current_value = ui_config.get_field_value_by_type(field, field_type)
-    if field_type == 'file':
-        expected_value = 'test'
-    err_message = "Default value wrong. Current value {}".format(current_value)
-    assert current_value == expected_value, err_message
-
-
-def assert_alerts_presented(ui_config: Configuration, field_type):
-    """Check that frontend errors presented on screen and error type in text
-
-    :param ui_config:
-    :param field_type:
-    :return:
-    """
-    errors = ui_config.get_frontend_errors()
-    assert errors
-    if field_type == 'password':
-        assert len(errors) == 2
-        error_text = "Field [{}] is required!".format(field_type)
-        assert error_text in errors
-
-
 @pytest.fixture(scope='module')
 def app(adcm_ms):
     return ADCMTest(adcm_ms)
@@ -352,12 +314,12 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config, expected, path, login
         fields = ui_config.get_fields_by_type(field_type)
         assert len(fields) == 1, fields
         for field in fields:
-            assert_field_editable(ui_config, field, expected['editable'])
+            ui_config.assert_field_editable(field, expected['editable'])
         if expected['content']:
-            assert_field_content_equal(ui_config, field_type,
-                                       fields[0], config['config'][0]['default'])
+            ui_config.assert_field_content_equal(field_type, fields[0],
+                                                 config['config'][0]['default'])
         if expected['alerts']:
-            assert_alerts_presented(ui_config, field_type)
+            ui_config.assert_alerts_presented(field_type)
     else:
         assert not fields
     allure.attach("Cluster configuration", config, allure.attachment_type.TEXT)
@@ -409,13 +371,12 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config, expected, path, login
 #             fields = ui_config.get_fields_by_type(field_type)
 #             assert len(fields) == 1, fields
 #             for field in fields:
-#                 assert_field_editable(ui_config, field, expected['editable'])
+#                 ui_config.assert_field_editable(field, expected['editable'])
 #             if expected['content']:
 #                 default_value = config['config'][0]['subs'][0]['default']
-#                 assert_field_content_equal(ui_config, field_type,
-#                                            fields[0], default_value)
+#                 ui_config.assert_field_content_equal(field_type, fields[0], default_value)
 #             if expected['alerts']:
-#                 assert_alerts_presented(ui_config, field_type)
+#                 ui_config.assert_alerts_presented(field_type)
 #         if not expected['field_visible']:
 #             assert not fields, fields
 #     elif expected['group_visible'] and not expected['field_visible']:
