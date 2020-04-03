@@ -9,42 +9,54 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormArray, FormGroup } from '@angular/forms';
+import { FieldDirective } from '@app/shared/form-elements/field.directive';
 
-import { YspecService, IYField, IYContainer } from '../yspec/yspec.service';
+import { IYContainer, IYField, YspecService } from '../yspec/yspec.service';
 
 @Component({
   selector: 'app-scheme',
-  template: '<app-root-scheme [form]="itemFormGroup" [options]="rules" [value]="defaultValue"></app-root-scheme>'
+  template: '<app-root-scheme *ngIf="show" #root [form]="itemFormGroup" [isReadOnly]="isReadOnly" [options]="rules" [value]="defaultValue"></app-root-scheme>'
 })
-export class SchemeComponent implements OnInit {
-  @Input() form: FormGroup;
-  @Input() options: any;
-
+export class SchemeComponent extends FieldDirective implements OnInit {
   itemFormGroup: FormGroup | FormArray;
   rules: IYField | IYContainer;
   defaultValue: any;
+  isReadOnly = false;
+  show = true;
 
-  constructor(private yspec: YspecService) {}
+  constructor(private yspec: YspecService) {
+    super();
+  }
 
   ngOnInit() {
-    this.yspec.Root = this.options.limits.yspec;
+    this.isReadOnly = this.field.read_only;
+    this.yspec.Root = this.field.limits.yspec;
     this.rules = this.yspec.build();
-    this.options.limits.rules = this.rules;
-    this.itemFormGroup = this.options.key
+    this.field.limits.rules = this.rules;
+
+    this.itemFormGroup = this.field.key
       .split('/')
       .reverse()
       .reduce((p: any, c: string) => p.get(c), this.form) as FormGroup;
 
-    this.defaultValue = this.options.value || this.options.default;
+    this.defaultValue = this.field.value || this.field.default;
+    this.itemFormGroup = this.resetFormGroup(this.itemFormGroup.parent as FormGroup, this.rules.type === 'list');
+    this.rules.name = '';
+  }
 
-    if (this.rules.type === 'list') {
-      const parent = this.itemFormGroup.parent as FormGroup;
-      parent.removeControl(this.options.name);
-      this.itemFormGroup = new FormArray([]);
-      parent.addControl(this.options.name, this.itemFormGroup);
-    }
-    this.rules.name = this.options.name;
+  resetFormGroup(parent: FormGroup, isList: boolean) {
+    const form = isList ? new FormArray([]) : new FormGroup({});
+    parent.removeControl(this.field.name);
+    parent.addControl(this.field.name, form);
+    return form;
+  }
+
+  reload() {
+    this.show = false;
+    this.defaultValue = this.field.default;
+    this.itemFormGroup = this.resetFormGroup(this.itemFormGroup.parent as FormGroup, this.rules.type === 'list');
+    setTimeout(_ => this.show = true, 1);   
   }
 }

@@ -43,7 +43,7 @@ export class GroupFieldsComponent implements OnInit {
     }
   }
 
-  panelsOnly(item: FieldOptions | PanelOptions) {
+  isPanel(item: FieldOptions | PanelOptions) {
     return 'options' in item && !item.hidden;
   }
 

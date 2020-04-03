@@ -1,33 +1,22 @@
-<div [ngClass]="{tools: true, rightmargin: field.description, hidden: field.read_only}">
-  <button color="primary" mat-icon-button (click)="reload()" matTooltip="Reset to default">
-    <mat-icon>refresh</mat-icon>
-  </button>
-  &nbsp;
-  <button color="primary" mat-icon-button (click)="add()">
-    <mat-icon>add</mat-icon>
+<div class="tools" [ngClass]="{ hidden: field.read_only}">
+  <button mat-icon-button color="accent" (click)="add()">
+    <mat-icon>add_circle_outline</mat-icon>
   </button>
 </div>
 
-<div class="value">
-  <label [appTooltip]="field.display_name" [appTooltipShowByCondition]="true" [ngClass]="{ advanced: field.ui_options && field.ui_options.advanced }">{{ field.display_name }}:</label>
-
-  <div class="fields">
-    <ng-container *ngIf="field.value">
-      <div *ngFor="let item of items.controls; let i = index" class="item" [formGroup]="item">
-        <mat-form-field class="key-field" *ngIf="!asList">
-          <span matSuffix>:</span>
-          <input matInput formControlName="key" [readonly]="field.read_only" />
-          <mat-error *ngIf="check(item)">Map property name is required!</mat-error>
-        </mat-form-field>
-        <mat-form-field class="value-field">
-          <button mat-icon-button matSuffix (click)="clear(i)" *ngIf="!field.read_only">
-            <mat-icon>clear</mat-icon>
-          </button>
-          <input matInput formControlName="value" [readonly]="field.read_only" />
-        </mat-form-field>
-      </div>
-    </ng-container>
-    <mat-error *ngIf="hasError('required')" class="error">Field [{{ field.display_name }}] is required!</mat-error>
+<ng-container *ngIf="field.value">
+  <div *ngFor="let item of items.controls; let i = index" class="item" [formGroup]="item">
+    <mat-form-field class="key-field" *ngIf="!asList">
+      <span matSuffix>:</span>
+      <input matInput formControlName="key" [readonly]="field.read_only" />
+      <mat-error *ngIf="check(item)">Map property name is required!</mat-error>
+    </mat-form-field>
+    <mat-form-field class="value-field">
+      <button mat-icon-button matSuffix (click)="clear(i)" *ngIf="!field.read_only">
+        <mat-icon>clear</mat-icon>
+      </button>
+      <input matInput formControlName="value" [readonly]="field.read_only" />
+    </mat-form-field>
   </div>
-  <mat-icon *ngIf="field.description" [appTooltip]="field.description" class="description">info_outline</mat-icon>
-</div>
+  <mat-error *ngIf="hasError('required')" class="error">Field [{{ field.display_name }}] is required!</mat-error>
+</ng-container>
