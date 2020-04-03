@@ -17,27 +17,18 @@ import { FieldDirective } from './field.directive';
   selector: 'app-fields-password',
   template: `
     <ng-container [formGroup]="form">
-      <label [appTooltip]="field.display_name" [appTooltipShowByCondition]="true">{{ field.display_name }}:</label>
-      <div>
-        <mat-form-field class="full-width" [floatLabel]="'never'">
-          <input matInput (input)="confirmPasswordFieldUpdate()" [formControlName]="field.name" type="password" [readonly]="field.disabled" />
-          <mat-error *ngIf="!isValid"> Field [{{ field.display_name }}] is required! </mat-error>
-        </mat-form-field>
-        <mat-form-field [floatLabel]="'never'" *ngIf="getConfirmPasswordField()">
-          <input matInput appConfirmEqualValidator="{{ field.name }}" [formControlName]="'confirm_' + field.name" type="password" [readonly]="field.disabled" />
-          <mat-error *ngIf="getConfirmPasswordFieldErrors('required') && (form.touched || form.dirty)"> Confirm [{{ field.display_name }}] is required! </mat-error>
-          <mat-error *ngIf="getConfirmPasswordFieldErrors('notEqual') && (form.touched || form.dirty)">
-            Field [{{ field.display_name }}] and confirm [{{ field.display_name }}] does not match!
-          </mat-error>
-        </mat-form-field>
-      </div>
-      <span class="info">
-        <mat-icon [ngClass]="'info-icon'" *ngIf="field.description" matSuffix [appTooltip]="field.description">info_outline</mat-icon>
-        <button mat-icon-button matSuffix (click)="restore()" color="primary" matTooltip="Reset to default"><mat-icon>refresh</mat-icon></button>
-      </span>
+      <mat-form-field>
+        <input matInput (input)="confirmPasswordFieldUpdate()" [formControlName]="field.name" type="password" [readonly]="field.read_only" />
+        <mat-error *ngIf="hasError('required')"> Field [{{ field.display_name }}] is required! </mat-error>
+      </mat-form-field>
+      <mat-form-field *ngIf="getConfirmPasswordField()">
+        <input matInput appConfirmEqualValidator="{{ field.name }}" [formControlName]="'confirm_' + field.name" type="password" [readonly]="field.read_only" />
+        <mat-error *ngIf="hasErrorConfirm('required')"> Confirm [{{ field.display_name }}] is required! </mat-error>
+        <mat-error *ngIf="hasErrorConfirm('notEqual')"> Field [{{ field.display_name }}] and confirm [{{ field.display_name }}] does not match! </mat-error>
+      </mat-form-field>
     </ng-container>
   `,
-  styleUrls: ['./scss/fields.component.scss', './scss/password.scss']
+  styleUrls: ['./password.component.scss']
 })
 export class PasswordComponent extends FieldDirective implements OnInit {
   ngOnInit() {
@@ -48,6 +39,11 @@ export class PasswordComponent extends FieldDirective implements OnInit {
 
   getConfirmPasswordField() {
     return this.form.controls['confirm_' + this.field.name];
+  }
+
+  hasErrorConfirm(name: string) {
+    const c = this.getConfirmPasswordField();
+    return this.getConfirmPasswordFieldErrors(name) && (c.touched || c.dirty);
   }
 
   confirmPasswordFieldUpdate() {

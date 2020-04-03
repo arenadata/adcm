@@ -1,43 +1,62 @@
 :host {
   display: block;
-  margin: 0 -20px;
 
   &:nth-child(odd) {
     background-color: #4e4e4e;
   }
 
-  &.alone {
-    margin: 0 !important;
-  }
+  .field {
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
 
-  &.read-only {
-    background-color: #484848;
-    font-style: italic;
-    color: #a7a7a7;
+    &.advanced {    
+      label {border-bottom: dotted 1px #00e676 !important;}    
+    }
+
+    & label {
+      font-size: 16px;
+      flex-basis: 25%;
+      border-bottom: dotted 1px #606060;
+      margin-right: 10px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    & label+* {
+      width: 100%;
+      display: flex;
+      align-items: center;
+    }
   }
 
   &>.read-only {
     background-color: #484848;
     font-style: italic;
     color: #a7a7a7;
-    padding: 0 20px;
-    margin: 0 -20px;
   }
 
-  &:not(.alone) {
-    padding: 0 20px;
-  }
-}
-
-.field-group {
-  display: flex;
-  align-items: center;
-}
-
-.compare-list-container {
-  .compare-list {
-    .label {
-      margin: 0 10px;
+  .compare-list-container {
+    .compare-list {
+      .label {
+        margin: 0 10px;
+      }
     }
   }
+
+  .info {
+    margin-left: 10px;
+    display: flex;
+    align-items: center;
+  
+    &>mat-icon {
+      margin-top: 3px;
+    }
+  
+    .icon-info {
+      vertical-align: middle;
+    }
+  }
+
 }

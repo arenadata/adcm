@@ -102,7 +102,7 @@ class TestStringFields:
         """
         ui_config.set_search_field(pattern)
         time.sleep(2)
-        textboxes = ui_config.get_textboxes()
+        textboxes = ui_config.get_app_fields()
         visible_textboxes = [textbox.text for textbox in textboxes if textbox.is_displayed()]
         result = [textbox for textbox in visible_textboxes if textbox != '']
         assert len(result) == 5, result
