@@ -11,11 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=unused-import
-# pylint: disable=useless-return
-# pylint: disable=protected-access
-# pylint: disable=bare-except
-# pylint: disable=global-statement
+# pylint: disable=unused-import, useless-return, protected-access, bare-except, global-statement
 
 
 import os
@@ -24,15 +20,14 @@ import subprocess
 import sys
 import time
 
-import adcm.init_django
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 
+import adcm.init_django
 import cm.config as config
 import cm.job
 from cm.logger import log
 from cm.models import TaskLog, JobLog, LogStorage
-
 
 TASK_ID = 0
 

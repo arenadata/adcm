@@ -27,6 +27,7 @@ import { PasswordComponent } from './password.component';
 import { TextBoxComponent } from './text-box.component';
 import { TextareaComponent } from './textarea.component';
 import { FieldDirective } from './field.directive';
+import { ErrorInfoComponent } from './error-info.component';
 
 @NgModule({
   declarations: [
@@ -43,7 +44,8 @@ import { FieldDirective } from './field.directive';
     InputComponent,
     BaseMapListDirective,
     ConfirmEqualValidatorDirective,
-    FieldDirective
+    FieldDirective,
+    ErrorInfoComponent
   ],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, MaterialModule, StuffModule],
   exports: [
