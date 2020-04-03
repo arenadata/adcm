@@ -1,4 +1,4 @@
-# pylint: disable=W0611, W0621, R1702
+# pylint: disable=W0611, W0621, R1702, R0914, R0912, R0915
 
 import allure
 import os
