@@ -18,19 +18,13 @@ import { FieldDirective } from './field.directive';
   selector: 'app-fields-dropdown',
   template: `
     <ng-container [formGroup]="form">
-      <label [appTooltip]="field.display_name" [appTooltipShowByCondition]="true">{{ field.display_name }}:</label>
-      <mat-form-field class="full-width">
+      <mat-form-field>
         <mat-select [(value)]="field.value" [formControlName]="field.name">
           <mat-option *ngFor="let option of options$ | async" [value]="option.id">{{ option.name }}</mat-option>
         </mat-select>
       </mat-form-field>
-      <span class="info">
-        <mat-icon [ngClass]="'info-icon'" *ngIf="field.description" matSuffix [appTooltip]="field.description">info_outline</mat-icon>
-        <button mat-icon-button matSuffix (click)="restore()" color="primary" matTooltip="Reset to default"><mat-icon>refresh</mat-icon></button>
-      </span>
     </ng-container>
   `,
-  styleUrls: ['./scss/fields.component.scss']
 })
 export class DropdownComponent extends FieldDirective implements OnInit {
   options$: Observable<{ id: number | string; name: string }[]>;

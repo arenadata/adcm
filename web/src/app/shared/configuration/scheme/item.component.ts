@@ -22,7 +22,7 @@ import { IYField } from '../yspec/yspec.service';
       <ng-container *ngIf="item.parent === 'list'; else other">
         <mat-form-field *ngIf="controlType === 'textbox'">
           <input matInput [formControlName]="index" [value]="item.value" />
-          <button *ngIf="item.parent === 'list'" mat-icon-button matSuffix color="primary" (click)="emmit()">
+          <button *ngIf="!isReadOnly && item.parent === 'list'" mat-icon-button matSuffix color="primary" (click)="emmit()">
             <mat-icon>highlight_off</mat-icon>
           </button>
         </mat-form-field>
@@ -37,7 +37,7 @@ import { IYField } from '../yspec/yspec.service';
         </div>
         <mat-form-field *ngIf="controlType === 'textbox'">
           <mat-label>{{ item.name }}</mat-label>
-          <input matInput [formControlName]="item.name" />
+          <input matInput [formControlName]="item.name" [readonly]="isReadOnly" />
           <mat-error *ngIf="!isValid">
             <mat-error *ngIf="hasError('required')">Field [{{ item.name }}] is required!</mat-error>
             <mat-error *ngIf="hasError('pattern')">Field [{{ item.name }}] is invalid!</mat-error>
@@ -48,11 +48,12 @@ import { IYField } from '../yspec/yspec.service';
       </ng-template>
     </ng-container>
   `,
-  styles: ['mat-form-field {margin: 6px 0 0; width: 100%}', '.chbox-field {margin:6px 0;}']
+  styles: [':host {flex: 1}', 'mat-form-field {margin: 6px 0 0; width: 100%}', '.chbox-field {margin:6px 0;}']
 })
 export class ItemComponent implements OnInit {
   @Input() item: IControl;
   @Input() index: number;
+  @Input() isReadOnly = false;
   @Output() remove = new EventEmitter<number>();
 
   controlType: controlType;

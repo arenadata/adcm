@@ -32,7 +32,7 @@ import { IToolsEvent } from '../field.service';
       </button>
     </div>
   `,
-  styles: [':host {display: flex;justify-content: space-between;align-items: baseline;}', '.form_config_button_save { margin: 0 16px 0 30px;}']
+  styles: [':host {display: flex;justify-content: space-between;align-items: baseline;}', '.form_config_button_save { margin: 0 16px 0 30px;}', '.description {flex: 0}']
 })
 export class ToolsComponent extends BaseDirective implements OnInit {
   historyShow = false;
