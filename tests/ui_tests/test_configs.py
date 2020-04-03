@@ -1,8 +1,6 @@
-import pytest
-# pylint: disable=W0611, W0621
+# pylint: disable=W0611, W0621, R1702
 
 import allure
-import json
 import os
 import pytest
 import yaml
@@ -12,7 +10,6 @@ from adcm_client.objects import ADCMClient
 
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.pages import Configuration, LoginPage
-from tests.ui_tests.app.locators import Common
 
 from adcm_pytest_plugin import utils
 
@@ -32,7 +29,8 @@ DEFAULT_VALUE = {"string": "default_string",
                  "map": {"name": "Joe", "age": "24", "sex": "m"},
                  "option": 80,
                  "list": ['/dev/rdisk0s1', '/dev/rdisk0s2', '/dev/rdisk0s3'],
-                 "structure": [{"country": "Greece", "code": 38}, {"country": "France", "code": 33},
+                 "structure": [{"country": "Greece", "code": 38},
+                               {"country": "France", "code": 33},
                                {"country": "Spain", "code": 34}],
                  "file": "./file.txt"}
 
@@ -66,12 +64,14 @@ def generate_group_data():
                     for active in PAIR:
                         for ui_options in UI_OPTIONS_PAIRS:
                             for field_ui_options in UI_OPTIONS_PAIRS:
-                                group_data.append({'default': default, "required": required,
-                                                   "activatable": activatable, 'active': active, "read_only": ro,
-                                                   "ui_options": {"invisible": ui_options[0],
-                                                                  'advanced': ui_options[1]},
-                                                   "field_ui_options": {"invisible": field_ui_options[0],
-                                                                        'advanced': field_ui_options[1]}})
+                                group_data.append({
+                                    'default': default, "required": required,
+                                    "activatable": activatable, 'active': active,
+                                    "read_only": ro,
+                                    "ui_options": {"invisible": ui_options[0],
+                                                   'advanced': ui_options[1]},
+                                    "field_ui_options": {"invisible": field_ui_options[0],
+                                                         'advanced': field_ui_options[1]}})
     return group_data
 
 
@@ -97,7 +97,8 @@ def generate_group_expected_result(group_config):
         expected_result['group_visible_advanced'] = True
     else:
         expected_result['group_visible_advanced'] = False
-    if group_config['field_ui_options']['advanced'] and not group_config['field_ui_options']['invisible']:
+    field_advanced = group_config['field_ui_options']['advanced']
+    if field_advanced and not group_config['field_ui_options']['invisible']:
         expected_result['field_visible_advanced'] = True
     else:
         expected_result['field_visible_advanced'] = False
@@ -151,8 +152,7 @@ def generate_group_configs(group_config_data):
     :return:
     """
     group_configs = []
-    for _type in ['string']:
-    # for _type in TYPES:
+    for _type in TYPES:
         for data in group_config_data:
             config_dict = {"type": "cluster",
                            "version": "1",
@@ -192,8 +192,7 @@ def generate_configs(config_data):
     :return:
     """
     configs = []
-    for _type in ['string']:
-    # for _type in TYPES:
+    for _type in TYPES:
         for data in config_data:
             config_dict = {"type": "cluster",
                            "name": utils.random_string(),
@@ -269,10 +268,10 @@ def prepare_test_group_config_parameters(group_configs):
 
 config_data = generate_config_data()
 configs = generate_configs(config_data)
-# print(len(configs))
+print(len(configs))
 
-# group_configs_data = generate_group_data()
-# group_configs = generate_group_configs(group_configs_data)
+group_configs_data = generate_group_data()
+group_configs = generate_group_configs(group_configs_data)
 
 
 @pytest.fixture(scope='module')
@@ -288,7 +287,8 @@ def login(app):
 
 
 @prepare_test_config_parameters(configs)
-def test_configs_fields(sdk_client_ms: ADCMClient, config, expected, path, login, app):
+def test_configs_fields(sdk_client_ms: ADCMClient, config,
+                        expected, path, login, app):
     """Test UI configuration page without groups
     Scenario:
     1. """
@@ -322,69 +322,75 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config, expected, path, login
             ui_config.assert_alerts_presented(field_type)
     else:
         assert not fields
-    allure.attach("Cluster configuration", config, allure.attachment_type.TEXT)
-    allure.attach('Expected result', expected, allure.attachment_type.TEXT)
-    allure.attach.file("/".join([path, 'config.yaml']), attachment_type=allure.attachment_type.YAML)
+    allure.attach("Cluster configuration", config,
+                  allure.attachment_type.TEXT)
+    allure.attach('Expected result', expected,
+                  allure.attachment_type.TEXT)
+    allure.attach.file("/".join([path, 'config.yaml']),
+                       attachment_type=allure.attachment_type.YAML)
 
 
-# @prepare_test_group_config_parameters(group_configs)
-# def test_group_configs_field(sdk_client_ms: ADCMClient, config, expected, path, login, app):
-#     """Test for configuration fields with groups"""
-#     _ = login, app
-#     print(config)
-#     print(expected)
-#     bundle = sdk_client_ms.upload_from_fs(path)
-#     cluster_name = path.split("/")[-1]
-#     cluster = bundle.cluster_create(name=cluster_name)
-#     field_type = config['config'][0]['subs'][0]['type']
-#     app.driver.get("{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
-#     ui_config = Configuration(app.driver)
-#     groups = ui_config.get_group_elements()
-#     fields = ui_config.get_fields_by_type(field_type)
-#     save_err_mess = "Correct status for save button {}".format([expected['save']])
-#     assert expected['save'] == ui_config.save_button_status(), save_err_mess
-#     if expected['group_visible']:
-#         if expected['group_visible_advanced']:
-#             assert not groups
-#             assert not fields
-#             if not ui_config.advanced:
-#                 ui_config.click_advanced()
-#                 assert ui_config.advanced
-#             groups = ui_config.get_group_elements()
-#             assert groups, groups
-#             fields = ui_config.get_fields_by_type(field_type)
-#             if expected['field_visible_advanced']:
-#                 assert fields, fields
-#             else:
-#                 assert not fields, fields
-#         if expected['field_visible']:
-#             if expected['field_visible_advanced']:
-#                 if not ui_config.advanced:
-#                     assert not fields
-#                     ui_config.click_advanced()
-#                 else:
-#                     ui_config.click_advanced()
-#                     fields = ui_config.get_field_groups()
-#                     assert not fields
-#                     ui_config.click_advanced()
-#                 assert ui_config.advanced
-#             fields = ui_config.get_fields_by_type(field_type)
-#             assert len(fields) == 1, fields
-#             for field in fields:
-#                 ui_config.assert_field_editable(field, expected['editable'])
-#             if expected['content']:
-#                 default_value = config['config'][0]['subs'][0]['default']
-#                 ui_config.assert_field_content_equal(field_type, fields[0], default_value)
-#             if expected['alerts']:
-#                 ui_config.assert_alerts_presented(field_type)
-#         if not expected['field_visible']:
-#             assert not fields, fields
-#     elif expected['group_visible'] and not expected['field_visible']:
-#         assert groups
-#         assert not fields
-#     elif not expected['group_visible']:
-#         assert not groups
-#         assert not fields
-    # allure.attach("Cluster configuration", config, allure.attachment_type.TEXT)
-    # allure.attach('Expected result', expected, allure.attachment_type.TEXT)
-    # allure.attach.file("/".join([path, 'config.yaml']), attachment_type=allure.attachment_type.YAML)
+@prepare_test_group_config_parameters(group_configs)
+def test_group_configs_field(sdk_client_ms: ADCMClient, config, expected, path, login, app):
+    """Test for configuration fields with groups"""
+    _ = login, app
+    print(config)
+    print(expected)
+    bundle = sdk_client_ms.upload_from_fs(path)
+    cluster_name = path.split("/")[-1]
+    cluster = bundle.cluster_create(name=cluster_name)
+    field_type = config['config'][0]['subs'][0]['type']
+    app.driver.get("{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
+    ui_config = Configuration(app.driver)
+    groups = ui_config.get_group_elements()
+    fields = ui_config.get_fields_by_type(field_type)
+    save_err_mess = "Correct status for save button {}".format([expected['save']])
+    assert expected['save'] == ui_config.save_button_status(), save_err_mess
+    if expected['group_visible']:
+        if expected['group_visible_advanced']:
+            assert not groups
+            assert not fields
+            if not ui_config.advanced:
+                ui_config.click_advanced()
+                assert ui_config.advanced
+            groups = ui_config.get_group_elements()
+            assert groups, groups
+            fields = ui_config.get_fields_by_type(field_type)
+            if expected['field_visible_advanced']:
+                assert fields, fields
+            else:
+                assert not fields, fields
+        if expected['field_visible']:
+            if expected['field_visible_advanced']:
+                if not ui_config.advanced:
+                    assert not fields
+                    ui_config.click_advanced()
+                else:
+                    ui_config.click_advanced()
+                    fields = ui_config.get_field_groups()
+                    assert not fields
+                    ui_config.click_advanced()
+                assert ui_config.advanced
+            fields = ui_config.get_fields_by_type(field_type)
+            assert len(fields) == 1, fields
+            for field in fields:
+                ui_config.assert_field_editable(field, expected['editable'])
+            if expected['content']:
+                default_value = config['config'][0]['subs'][0]['default']
+                ui_config.assert_field_content_equal(field_type, fields[0], default_value)
+            if expected['alerts']:
+                ui_config.assert_alerts_presented(field_type)
+        if not expected['field_visible']:
+            assert not fields, fields
+    elif expected['group_visible'] and not expected['field_visible']:
+        assert groups
+        assert not fields
+    elif not expected['group_visible']:
+        assert not groups
+        assert not fields
+    allure.attach("Cluster configuration",
+                  config, allure.attachment_type.TEXT)
+    allure.attach('Expected result', expected,
+                  allure.attachment_type.TEXT)
+    allure.attach.file("/".join([path, 'config.yaml']),
+                       attachment_type=allure.attachment_type.YAML)

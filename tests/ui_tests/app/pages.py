@@ -565,7 +565,8 @@ class Configuration(BasePage):
         if field_type == 'password':
             assert len(errors) == 2
             error_text = "Field [{}] is required!".format(field_type)
-            assert error_text in errors
+            error_texts = [error.text for error in errors]
+            assert error_text in error_texts
 
     def get_config_field(self):
         return self._getelement(ConfigurationLocators.app_conf_fields)
@@ -581,7 +582,7 @@ class Configuration(BasePage):
         """
         if field_type == 'structure':
             return self.get_app_root_scheme_fields()
-        return self.get_field_groups()
+        return self.get_app_fields()
 
     def get_field_value_by_type(self, field_element, field_type):
         """Return field value from element by field type
