@@ -11,19 +11,6 @@
       </mat-icon>
     </mat-panel-description>
   </mat-expansion-panel-header>
-  <div class="pad">
-    <ng-container *ngFor="let item of panel.options; trackBy: trackBy">
-      <ng-container *ngIf="item.type === 'structure'; else conf">
-        <app-scheme [form]="form" [options]="item"></app-scheme>
-      </ng-container>
-      <ng-template #conf>
-        <ng-container *ngIf="panelsOnly(item); else simple">
-          <app-group-fields *ngIf="!item.hidden" [rawConfig]="rawConfig" [panel]="item" [form]="form" class="asfield"></app-group-fields>
-        </ng-container>
-        <ng-template #simple>
-          <app-field *ngIf="!item.hidden" [form]="form" [options]="item"></app-field>
-        </ng-template>
-      </ng-template>
-    </ng-container>
-  </div>
+  <app-config-fields class="in-group" [rawConfig]="rawConfig" [dataOptions]="panel.options" [form]="form">
+  </app-config-fields>
 </mat-expansion-panel>

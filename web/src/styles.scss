@@ -214,7 +214,7 @@ mat-checkbox.advanced>label>span {
   }
 }
 
-.full-width {
+.mat-form-field, .full-width {
   flex-grow: 1;
 }
 
@@ -277,7 +277,7 @@ mat-cell.control {
 }
 
 .mat-form-field {
-  // firefox not visible underscore
+  // there isn't visible underscore in the firefox
   line-height: normal;
 }
 
