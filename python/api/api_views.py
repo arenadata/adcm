@@ -174,8 +174,8 @@ class PageView(GenericAPIView, InterfaceView):
             msg = f'Bad query params: {qp}'
             raise AdcmApiEx('BAD_QUERY_PARAMS', msg=msg, args=self.get_paged_link())
 
+        page = self.paginate_queryset(obj)
         if self.is_paged(request):
-            page = self.paginate_queryset(obj)
             if serializer_class is not None:
                 serializer = serializer_class(page, many=True, context=context)
                 page = serializer.data
