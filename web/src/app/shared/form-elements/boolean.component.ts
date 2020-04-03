@@ -10,36 +10,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component } from '@angular/core';
-import { MAT_CHECKBOX_CLICK_ACTION, MatCheckbox } from '@angular/material/checkbox';
+import { MAT_CHECKBOX_DEFAULT_OPTIONS } from '@angular/material/checkbox';
 
 import { FieldDirective } from './field.directive';
+
+const options = { clickAction: 'noop', color: 'accent' };
 
 @Component({
   selector: 'app-fields-boolean',
   template: `
     <ng-container [formGroup]="form">
-      <label [appTooltip]="field.display_name" [appTooltipShowByCondition]="true">{{ field.display_name }}:</label>
-      <div class="full-width">
-        <div>
-          <mat-checkbox [labelPosition]="'before'" [formControlName]="field.name" [indeterminate]="field.value === null" (click)="cbChange()"></mat-checkbox>
-          <span class="info">
-            <mat-icon [ngClass]="'info-icon'" *ngIf="field.description" matSuffix [appTooltip]="field.description">info_outline</mat-icon>
-            <button mat-icon-button matSuffix (click)="restore()" color="primary" matTooltip="Reset to default"><mat-icon>refresh</mat-icon></button>
-          </span>
-        </div>
-        <mat-error *ngIf="!isValid">Field [ {{ field.display_name }} ] is required!</mat-error>
-      </div>
+      <mat-checkbox [labelPosition]="'before'" [formControlName]="field.name" [indeterminate]="field.value === null" (click)="cbChange()"></mat-checkbox>
+      <mat-error *ngIf="!isValid">Field [ {{ field.display_name }} ] is required!</mat-error>
     </ng-container>
   `,
-  styleUrls: ['./scss/fields.component.scss', './scss/boolean.scss'],
-  providers: [{ provide: MAT_CHECKBOX_CLICK_ACTION, useValue: 'noop' }]
+  styles: [':host {height: 58px;} mat-error { font-size: 0.75em; }'],
+  providers: [{ provide: MAT_CHECKBOX_DEFAULT_OPTIONS, useValue: options }]
 })
 export class BooleanComponent extends FieldDirective {
   cbChange() {
-    if (this.field.disabled) return;
+    if (this.field.read_only) return;
     const tape = this.field.validator.required ? [true, false] : [null, true, false];
     this.field.value = tape[(tape.indexOf(this.field.value as boolean) + 1) % tape.length];
-    const field = this.find();
-    field.setValue(this.field.value);
+    this.control.setValue(this.field.value);
   }
 }

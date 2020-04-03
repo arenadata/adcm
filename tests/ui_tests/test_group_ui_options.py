@@ -92,8 +92,8 @@ def test_save_groups(group_elements, ui_config, sdk_client_fs: ADCMClient):
     :return:
     """
     _ = group_elements
-    textboxes = ui_config.get_textboxes()
-    for textbox in textboxes:
+    app_fields = ui_config.get_app_fields()
+    for textbox in app_fields:
         if "field_for_group_without_options:" in textbox.text:
             input_element = textbox.find_element(*Common.mat_input_element)
             ui_config.clear_element(input_element)
