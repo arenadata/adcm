@@ -152,27 +152,27 @@ class PageView(GenericAPIView, InterfaceView):
         context['request'] = request
         count = obj.count()
         serializer_class = self.select_serializer(request)
-        try:
-            if 'fields' in request.query_params or 'distinct' in request.query_params:
-                serializer_class = None
-                fields = request.query_params.get('fields', None)
-                if fields is not None:
-                    fields = fields.split(',')
-                    fields = [field.strip() for field in fields]
 
+        if 'fields' in request.query_params or 'distinct' in request.query_params:
+            serializer_class = None
+            fields = request.query_params.get('fields', None)
+
+            if fields is not None:
+                fields = fields.split(',')
+                fields = [field.strip() for field in fields]
+            try:
                 distinct = int(request.query_params.get('distinct', 0))
 
                 if fields and distinct:
                     obj = obj.values(*fields).distinct()
-
                 elif fields:
                     obj = obj.values(*fields)
 
-        except (FieldError, ValueError):
-            qp = ','.join([f'{k}={v}' for k, v in request.query_params.items()
-                           if k in ['fields', 'distinct']])
-            msg = f'Bad query params: {qp}'
-            raise AdcmApiEx('BAD_QUERY_PARAMS', msg=msg, args=self.get_paged_link())
+            except (FieldError, ValueError):
+                qp = ','.join([f'{k}={v}' for k, v in request.query_params.items()
+                               if k in ['fields', 'distinct']])
+                msg = f'Bad query params: {qp}'
+                raise AdcmApiEx('BAD_QUERY_PARAMS', msg=msg)
 
         page = self.paginate_queryset(obj)
         if self.is_paged(request):
