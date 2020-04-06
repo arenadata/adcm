@@ -13,6 +13,7 @@
 import json
 
 from django.db import IntegrityError, transaction
+from django.core.exceptions import MultipleObjectsReturned
 from django.utils import timezone
 
 import cm.errors
@@ -599,13 +600,13 @@ def multi_bind(cluster, service, bind_list):   # pylint: disable=too-many-locals
     return get_import(cluster, service)
 
 
-def bind(cluster, export_cluster, export_service_id):   # pylint: disable=too-many-branches
-    if cluster.id == export_cluster.id:
-        err('BIND_ERROR', 'can not bind cluster to themself')
-    imports = PrototypeImport.objects.filter(prototype=cluster.prototype)
-    if not imports:
-        err('BIND_ERROR', '{} do not have imports'.format(proto_ref(cluster.prototype)))
-
+def bind(cluster, export_cluster, export_service_id):
+    '''
+    Adapter between old and new bind interface
+    /api/.../bind/ -> /api/.../import/
+    bind() -> multi_bind()
+    '''
+    export_service = None
     if export_service_id:
         try:
             export_service = ClusterObject.objects.get(cluster=export_cluster, id=export_service_id)
@@ -614,46 +615,25 @@ def bind(cluster, export_cluster, export_service_id):   # pylint: disable=too-ma
         except ClusterObject.DoesNotExist:
             msg = 'service #{} does not exists or does not belong to cluster # {}'
             err('SERVICE_NOT_FOUND', msg.format(export_service_id, export_cluster.id))
+        name = export_service.prototype.name
     else:
         if not PrototypeExport.objects.filter(prototype=export_cluster.prototype):
-            err('BIND_ERROR', '{} do not have exports'.format(obj_ref(cluster)))
-        if bool(get_bind(cluster, None, export_cluster, None)):
-            err('BIND_ERROR', 'cluster already binded')
-        export_service = None
-
-    actual_import = None
-    for imp in imports:
-        if export_service:
-            if export_service.prototype.name == imp.name:
-                actual_import = imp
-        else:
-            if export_cluster.prototype.name == imp.name:
-                actual_import = imp
-
-    if not actual_import:
-        msg = 'Export {} does not match import names'
-        if export_service:
-            proto = export_service.prototype
-        else:
-            proto = export_cluster.prototype
-        err('BIND_ERROR', msg.format(proto_ref(proto)))
-
-    check_multi_bind(actual_import, cluster, None, export_cluster, export_service)
-    # To do: check versions
+            err('BIND_ERROR', '{} does not have exports'.format(obj_ref(cluster)))
+        name = export_cluster.prototype.name
 
     try:
-        if bool(get_bind(cluster, None, export_cluster, export_service)):
-            err('BIND_ERROR', 'cluster already binded')
-        with transaction.atomic():
-            cbind = ClusterBind(
-                cluster=cluster, source_cluster=export_cluster, source_service=export_service
-            )
-            cbind.save()
-            cm.issue.save_issue(cbind.cluster)
-    except IntegrityError:
-        err('BIND_ERROR', 'cluster already binded')
+        pi = PrototypeImport.objects.get(prototype=cluster.prototype, name=name)
+    except PrototypeImport.DoesNotExist:
+        err('BIND_ERROR', '{} does not have appropriate import'.format(obj_ref(cluster)))
+    except MultipleObjectsReturned:
+        err('BIND_ERROR', 'Old api does not support multi bind. Go to /api/v1/.../import/')
+
+    bind_list = {'import_id': pi.id, 'export_id': {'cluster_id': export_cluster.id}}
+    if export_service:
+        bind_list['export_id']['service_id'] = export_service.id
+
+    multi_bind(cluster, None, [bind_list])
     return {
-        'id': cbind.id,
         'export_cluster_id': export_cluster.id,
         'export_cluster_name': export_cluster.name,
         'export_cluster_prototype_name': export_cluster.prototype.name,
