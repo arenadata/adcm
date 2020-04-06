@@ -105,7 +105,7 @@ export class BundlesComponent extends InputComponent implements OnInit {
 
   getBundles(isOpen: boolean) {
     const offset = (this.page - 1) * this.limit;
-    const params = { fields: 'display_name', distinct: 1, ordering: 'display_name,-version', limit: this.limit, offset };
+    const params = { fields: 'display_name', distinct: 1, ordering: 'display_name', limit: this.limit, offset };
 
     if (isOpen) {
       this.preloader.freeze();
