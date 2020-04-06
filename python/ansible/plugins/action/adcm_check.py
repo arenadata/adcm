@@ -54,7 +54,7 @@ options:
     description:
       - Description of check or results of check
     required:
-      - yes, if no 'success_msg' and 'fail_msg' fields  
+      - yes, if no 'success_msg' and 'fail_msg' fields
   success_msg:
     description:
       - Description of success check or success results of check
@@ -80,7 +80,7 @@ EXAMPLES = r'''
      success_msg: "This is success message"
      fail_msg: "This is fail message"
      result: yes
-     
+
 - name: memory check
    adcm_check:
      group_title: "Group 1"
