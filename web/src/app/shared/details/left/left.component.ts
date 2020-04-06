@@ -18,7 +18,7 @@ import { NavigationService, INavItem } from '../navigation.service';
   selector: 'app-details-left',
   template: `
     <mat-nav-list>
-      <a class="noflex" mat-list-item [appForTest]="'tab_' + item.url" *ngFor="let item of items" [routerLink]="[item.url]" routerLinkActive="active">
+      <a mat-list-item [appForTest]="'tab_' + item.url" *ngFor="let item of items" [routerLink]="[item.url]" routerLinkActive="active">
         <span>{{ item.title }}</span>
         &nbsp;
         <button *ngIf="item.action" mat-icon-button color="primary" (click)="btnClick(item.action)"><mat-icon>cloud_download</mat-icon></button>
