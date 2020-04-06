@@ -551,10 +551,7 @@ class Configuration(BasePage):
         current_value = self.get_field_value_by_type(field, field_type)
         if field_type == 'file':
             expected_value = 'test'
-        elif field_type == 'structure':
-            structure_values = self.get_structure_values(field)
-            assert structure_values
-        elif field_type == 'map':
+        if field_type == 'map':
             map_config = self.get_map_field_config(field)
             assert set(map_config.keys()) == set(map_config.keys())
             assert set(map_config.values()) == set(map_config.values())
@@ -673,9 +670,9 @@ class Configuration(BasePage):
         for scheme in schemes:
             fields_in_scheme = scheme.find_elements(*Common.mat_form_field)
             structure_element = {}
-            for field in fields_in_scheme:
-                input_element = field.find_element(*Common.mat_input_element)
-                name = field.text
+            for mat_field in fields_in_scheme:
+                input_element = mat_field.find_element(*Common.mat_input_element)
+                name = mat_field.text
                 structure_element[name] = input_element.get_attribute("value")
             config.append(structure_element)
         return config

@@ -27,29 +27,8 @@ DEFAULT_VALUE = {"string": "default_string",
                  "boolean": True,
                  "json": {},
                  "map": {"name": "Joe", "age": "24", "sex": "m"},
-                 "option": 80,
                  "list": ['/dev/rdisk0s1', '/dev/rdisk0s2', '/dev/rdisk0s3'],
-                 "structure": [{"country": "Greece", "code": 38},
-                               {"country": "France", "code": 33},
-                               {"country": "Spain", "code": 34}],
                  "file": "./file.txt"}
-
-schema_yaml = """---
-root:
-  match: list
-  item: country_code
-
-country_code:
-  match: dict
-  items:
-    country: string
-    code: integer
-
-string:
-  match: string
-
-integer:
-  match: int"""
 
 
 def generate_group_data():
@@ -170,8 +149,6 @@ def generate_group_configs(group_config_data):
                 sub_config['default'] = DEFAULT_VALUE[_type]
             if _type == 'option':
                 sub_config['option'] = {"http": 80, "https": 443}
-            elif _type == 'structure':
-                sub_config['yspec'] = "./schema.yaml"
             if data['read_only']:
                 sub_config['read_only'] = 'any'
             sub_config['ui_options'] = {'invisible': data['field_ui_options']['invisible'],
@@ -207,8 +184,6 @@ def generate_configs(config_data):
                 field_config['default'] = DEFAULT_VALUE[_type]
             if _type == 'option':
                 field_config['option'] = {"http": 80, "https": 443}
-            elif _type == 'structure':
-                field_config['yspec'] = "./schema.yaml"
             if data['read_only']:
                 field_config['read_only'] = 'any'
             field_config['ui_options'] = {'invisible': data['ui_options']['invisible'],
@@ -227,16 +202,22 @@ def prepare_test_config_parameters(configs):
     """
     parameters = []
     for config in configs:
-        config_folder_name = utils.random_string()
-        d_name = "{}/configs/{}".format(utils.get_data_dir(__file__), config_folder_name)
+        templ = "type_{}_required_{}_ro_{}_content_{}_invisible_{}_advanced_{}"
+        config_folder_name = templ.format(
+            config[0][0]['config'][0]['type'],
+            config[0][0]['config'][0]['required'],
+            config[1]['editable'],
+            config[1]['content'],
+            config[0][0]['config'][0]['ui_options']['invisible'],
+            config[0][0]['config'][0]['ui_options']['advanced'])
+        d_name = "{}/configs/without_groups/{}/{}".format(utils.get_data_dir(__file__),
+                                                          config[0][0]['config'][0]['type'],
+                                                          config_folder_name)
         os.makedirs(d_name)
         if config[0][0]['config'][0]['name'] == 'file':
-            with open("{}/file.txt".format(d_name), 'w') as f:
+            with open("{}/file.txt".format(d_name), 'w+') as f:
                 f.write("test")
-        if config[0][0]['config'][0]['name'] == 'structure':
-            with open("{}/schema.yaml".format(d_name), 'w') as f:
-                f.write(schema_yaml)
-        with open("{}/config.yaml".format(d_name), 'w') as yaml_file:
+        with open("{}/config.yaml".format(d_name), 'w+') as yaml_file:
             yaml.dump(config[0], yaml_file)
         parameters.append((config[0][0], config[1], d_name))
     return pytest.mark.parametrize("config, expected, path", parameters)
@@ -250,15 +231,26 @@ def prepare_test_group_config_parameters(group_configs):
     """
     parameters = []
     for config in group_configs:
-        config_folder_name = utils.random_string()
-        d_name = "{}/configs/{}".format(utils.get_data_dir(__file__), config_folder_name)
+        temp = "type_{}_required_{}_ro_{}_content_{}_group_invisible" \
+               "_{}_group_advanced_{}_field_invisible_{}_field_advanced_{}_{}"
+        config_folder_name = temp.format(
+            config[0][0]['config'][0]['subs'][0]['type'],
+            config[0][0]['config'][0]['subs'][0]['required'],
+            config[1]['editable'],
+            config[1]['content'],
+            config[0][0]['config'][0]['ui_options']['invisible'],
+            config[0][0]['config'][0]['ui_options']['advanced'],
+            config[0][0]['config'][0]['subs'][0]['ui_options']['invisible'],
+            config[0][0]['config'][0]['subs'][0]['ui_options']['advanced'],
+            group_configs.index(config)
+        )
+        d_name = "{}/configs/groups/{}/{}".format(utils.get_data_dir(__file__),
+                                                  config[0][0]['config'][0]['subs'][0]['type'],
+                                                  config_folder_name)
         os.makedirs(d_name)
         if config[0][0]['config'][0]['subs'][0]['name'] == 'file':
             with open("{}/file.txt".format(d_name), 'w') as f:
                 f.write("test")
-        if config[0][0]['config'][0]['subs'][0]['name'] == 'structure':
-            with open("{}/schema.yaml".format(d_name), 'w') as f:
-                f.write(schema_yaml)
         with open("{}/config.yaml".format(d_name), 'w') as yaml_file:
             yaml.dump(config[0], yaml_file)
         parameters.append((config[0][0], config[1], d_name))
@@ -268,8 +260,8 @@ def prepare_test_group_config_parameters(group_configs):
 config_data = generate_config_data()
 configs = generate_configs(config_data)
 
-# group_configs_data = generate_group_data()
-# group_configs = generate_group_configs(group_configs_data)
+group_configs_data = generate_group_data()
+group_configs = generate_group_configs(group_configs_data)
 
 
 @pytest.fixture(scope='module')
@@ -328,67 +320,67 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config,
                        attachment_type=allure.attachment_type.YAML)
 
 
-# @prepare_test_group_config_parameters(group_configs)
-# def test_group_configs_field(sdk_client_ms: ADCMClient, config, expected, path, login, app):
-#     """Test for configuration fields with groups"""
-#     _ = login, app
-#     print(config)
-#     print(expected)
-#     bundle = sdk_client_ms.upload_from_fs(path)
-#     cluster_name = path.split("/")[-1]
-#     cluster = bundle.cluster_create(name=cluster_name)
-#     field_type = config['config'][0]['subs'][0]['type']
-#     app.driver.get("{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
-#     ui_config = Configuration(app.driver)
-#     groups = ui_config.get_group_elements()
-#     fields = ui_config.get_app_fields()
-#     save_err_mess = "Correct status for save button {}".format([expected['save']])
-#     assert expected['save'] == ui_config.save_button_status(), save_err_mess
-#     if expected['group_visible']:
-#         if expected['group_visible_advanced']:
-#             assert not groups
-#             assert not fields
-#             if not ui_config.advanced:
-#                 ui_config.click_advanced()
-#                 assert ui_config.advanced
-#             groups = ui_config.get_group_elements()
-#             assert groups, groups
-#             fields = ui_config.get_app_fields()
-#             if expected['field_visible_advanced']:
-#                 assert fields, fields
-#             else:
-#                 assert not fields, fields
-#         if expected['field_visible']:
-#             if expected['field_visible_advanced']:
-#                 if not ui_config.advanced:
-#                     assert not fields
-#                     ui_config.click_advanced()
-#                 else:
-#                     ui_config.click_advanced()
-#                     fields = ui_config.get_field_groups()
-#                     assert not fields
-#                     ui_config.click_advanced()
-#                 assert ui_config.advanced
-#             fields = ui_config.get_app_fields()
-#             assert fields, fields
-#             for field in fields:
-#                 ui_config.assert_field_editable(field, expected['editable'])
-#             if expected['content']:
-#                 default_value = config['config'][0]['subs'][0]['default']
-#                 ui_config.assert_field_content_equal(field_type, fields[0], default_value)
-#             if expected['alerts']:
-#                 ui_config.assert_alerts_presented(field_type)
-#         if not expected['field_visible']:
-#             assert not fields, fields
-#     elif expected['group_visible'] and not expected['field_visible']:
-#         assert groups
-#         assert not fields
-#     elif not expected['group_visible']:
-#         assert not groups
-#         assert not fields
-#     allure.attach("Cluster configuration",
-#                   config, allure.attachment_type.TEXT)
-#     allure.attach('Expected result', expected,
-#                   allure.attachment_type.TEXT)
-#     allure.attach.file("/".join([path, 'config.yaml']),
-#                        attachment_type=allure.attachment_type.YAML)
+@prepare_test_group_config_parameters(group_configs)
+def test_group_configs_field(sdk_client_ms: ADCMClient, config, expected, path, login, app):
+    """Test for configuration fields with groups"""
+    _ = login, app
+    print(config)
+    print(expected)
+    bundle = sdk_client_ms.upload_from_fs(path)
+    cluster_name = path.split("/")[-1]
+    cluster = bundle.cluster_create(name=cluster_name)
+    field_type = config['config'][0]['subs'][0]['type']
+    app.driver.get("{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
+    ui_config = Configuration(app.driver)
+    groups = ui_config.get_group_elements()
+    fields = ui_config.get_app_fields()
+    save_err_mess = "Correct status for save button {}".format([expected['save']])
+    assert expected['save'] == ui_config.save_button_status(), save_err_mess
+    if expected['group_visible']:
+        if expected['group_visible_advanced']:
+            assert not groups
+            assert not fields
+            if not ui_config.advanced:
+                ui_config.click_advanced()
+                assert ui_config.advanced
+            groups = ui_config.get_group_elements()
+            assert groups, groups
+            fields = ui_config.get_app_fields()
+            if expected['field_visible_advanced']:
+                assert fields, fields
+            else:
+                assert not fields, fields
+        if expected['field_visible']:
+            if expected['field_visible_advanced']:
+                if not ui_config.advanced:
+                    assert not fields
+                    ui_config.click_advanced()
+                else:
+                    ui_config.click_advanced()
+                    fields = ui_config.get_field_groups()
+                    assert not fields
+                    ui_config.click_advanced()
+                assert ui_config.advanced
+            fields = ui_config.get_app_fields()
+            assert fields, fields
+            for field in fields:
+                ui_config.assert_field_editable(field, expected['editable'])
+            if expected['content']:
+                default_value = config['config'][0]['subs'][0]['default']
+                ui_config.assert_field_content_equal(field_type, fields[0], default_value)
+            if expected['alerts']:
+                ui_config.assert_alerts_presented(field_type)
+        if not expected['field_visible']:
+            assert not fields, fields
+    elif expected['group_visible'] and not expected['field_visible']:
+        assert groups
+        assert not fields
+    elif not expected['group_visible']:
+        assert not groups
+        assert not fields
+    allure.attach("Cluster configuration",
+                  config, allure.attachment_type.TEXT)
+    allure.attach('Expected result', expected,
+                  allure.attachment_type.TEXT)
+    allure.attach.file("/".join([path, 'config.yaml']),
+                       attachment_type=allure.attachment_type.YAML)
