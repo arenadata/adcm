@@ -873,7 +873,7 @@ def log_group_check(group, fail_msg, success_msg):
     group.save()
 
 
-def finish_check(job_id):
+def get_check_log(job_id):
     try:
         groups = GroupCheckLog.objects.filter(job_id=job_id)
     except GroupCheckLog.DoesNotExist:
@@ -888,12 +888,19 @@ def finish_check(job_id):
                 {'title': cl.title, 'type': 'check', 'message': cl.message, 'result': cl.result})
         data.append(data_group)
 
-    if not data:
-        return
-
     for cl in CheckLog.objects.filter(job_id=job_id, group=None):
         data.append(
             {'title': cl.title, 'type': 'check', 'message': cl.message, 'result': cl.result})
+
+    return data
+
+
+def finish_check(job_id):
+
+    data = get_check_log(job_id)
+
+    if not data:
+        return
 
     job = JobLog.objects.get(id=job_id)
     LogStorage.objects.filter(job=job, name='check', type='check', format='json').update(
