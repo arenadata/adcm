@@ -551,8 +551,16 @@ class Configuration(BasePage):
         current_value = self.get_field_value_by_type(field, field_type)
         if field_type == 'file':
             expected_value = 'test'
-        err_message = "Default value wrong. Current value {}".format(current_value)
-        assert current_value == expected_value, err_message
+        elif field_type == 'structure':
+            structure_values = self.get_structure_values(field)
+            assert structure_values
+        elif field_type == 'map':
+            map_config = self.get_map_field_config(field)
+            assert set(map_config.keys()) == set(map_config.keys())
+            assert set(map_config.values()) == set(map_config.values())
+        else:
+            err_message = "Default value wrong. Current value {}".format(current_value)
+            assert current_value == expected_value, err_message
 
     def assert_alerts_presented(self, field_type):
         """Check that frontend errors presented on screen and error type in text
@@ -571,8 +579,45 @@ class Configuration(BasePage):
     def get_config_field(self):
         return self._getelement(ConfigurationLocators.app_conf_fields)
 
-    def get_app_root_scheme_fields(self):
-        return self.driver.find_elements(*ConfigurationLocators.app_root_scheme)
+    def get_app_root_scheme_fields(self, field=None):
+        if not field:
+            return self.driver.find_elements(*ConfigurationLocators.app_root_scheme)
+        else:
+            return field.find_elements(*ConfigurationLocators.app_root_scheme)
+
+    def get_map_key(self, item_element):
+        """Get key value for map field
+
+        :param item_element:
+        :return:
+        """
+        form_field = item_element.find_element(*ConfigurationLocators.map_key_field)
+        inp = form_field.find_element(*Common.mat_input_element)
+        return inp.get_attribute("value")
+
+    def get_map_value(self, item_element):
+        """Get value for map field
+
+        :param item_element:
+        :return:
+        """
+        form_field = item_element.find_element(*ConfigurationLocators.map_value_field)
+        inp = form_field.find_element(*Common.mat_input_element)
+        return inp.get_attribute("value")
+
+    def get_map_field_config(self, map_field):
+        """Get map field values
+
+        :param map_field:
+        :return: dict
+        """
+        items = map_field.find_elements(*Common.item)
+        result = {}
+        for item in items:
+            _key = self.get_map_key(item)
+            _value = self.get_map_value(item)
+            result[_key] = _value
+        return result
 
     def get_fields_by_type(self, field_type):
         """Get fields by type
@@ -603,6 +648,8 @@ class Configuration(BasePage):
             current_value = [
                 self.get_field_value(element) for element in elements_with_value
             ]
+        elif field_type == 'structure':
+            return self.get_structure_values(field_element)
         else:
             element_with_value = field_element.find_element(*Common.mat_input_element)
             current_value = self.get_field_value(element_with_value)
@@ -613,6 +660,25 @@ class Configuration(BasePage):
         elif field_type == 'json':
             current_value = json.loads(current_value)
         return current_value
+
+    @staticmethod
+    def get_structure_values(field):
+        """Get structure values for field
+
+        :param field:
+        :return: list of dicts
+        """
+        schemes = field.find_elements(*ConfigurationLocators.app_root_scheme)[1:]
+        config = []
+        for scheme in schemes:
+            fields_in_scheme = scheme.find_elements(*Common.mat_form_field)
+            structure_element = {}
+            for field in fields_in_scheme:
+                input_element = field.find_element(*Common.mat_input_element)
+                name = field.text
+                structure_element[name] = input_element.get_attribute("value")
+            config.append(structure_element)
+        return config
 
     @staticmethod
     def get_field_value(input_field):

@@ -128,3 +128,5 @@ class ConfigurationLocators:
     app_conf_fields = bys.by_tag("app-config-fields")
     field_group = bys.by_class("field-group")
     group_title = bys.by_tag("mat-panel-title")
+    map_key_field = bys.by_class('key-field')
+    map_value_field = bys.by_class('value-field')

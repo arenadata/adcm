@@ -17,7 +17,7 @@ from adcm_pytest_plugin import utils
 PAIR = (True, False)
 UI_OPTIONS_PAIRS = ((True, True), (False, False), (False, True), (True, False))
 TYPES = ('string', 'password', 'integer', 'text', 'boolean',
-         'float', 'list', 'map', 'json', 'file', 'structure')
+         'float', 'list', 'map', 'json', 'file')
 
 DEFAULT_VALUE = {"string": "default_string",
                  "text": "text",
@@ -217,7 +217,6 @@ def generate_configs(config_data):
             config = [config_dict]
             expected_result = generate_config_expected_result(data)
             configs.append((config, expected_result))
-    print(len(configs))
     return configs
 
 
@@ -268,10 +267,9 @@ def prepare_test_group_config_parameters(group_configs):
 
 config_data = generate_config_data()
 configs = generate_configs(config_data)
-print(len(configs))
 
-group_configs_data = generate_group_data()
-group_configs = generate_group_configs(group_configs_data)
+# group_configs_data = generate_group_data()
+# group_configs = generate_group_configs(group_configs_data)
 
 
 @pytest.fixture(scope='module')
@@ -302,7 +300,7 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config,
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
     ui_config = Configuration(app.driver)
-    fields = ui_config.get_fields_by_type(field_type)
+    fields = ui_config.get_app_fields()
     save_err_mess = "Correct status for save button {}".format([expected['save']])
     assert expected['save'] == ui_config.save_button_status(), save_err_mess
     if expected['visible']:
@@ -311,8 +309,8 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config,
             if not ui_config.advanced:
                 ui_config.click_advanced()
             assert ui_config.advanced
-        fields = ui_config.get_fields_by_type(field_type)
-        assert len(fields) == 1, fields
+        fields = ui_config.get_app_fields()
+        assert fields, fields
         for field in fields:
             ui_config.assert_field_editable(field, expected['editable'])
         if expected['content']:
@@ -330,67 +328,67 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config,
                        attachment_type=allure.attachment_type.YAML)
 
 
-@prepare_test_group_config_parameters(group_configs)
-def test_group_configs_field(sdk_client_ms: ADCMClient, config, expected, path, login, app):
-    """Test for configuration fields with groups"""
-    _ = login, app
-    print(config)
-    print(expected)
-    bundle = sdk_client_ms.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
-    cluster = bundle.cluster_create(name=cluster_name)
-    field_type = config['config'][0]['subs'][0]['type']
-    app.driver.get("{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
-    ui_config = Configuration(app.driver)
-    groups = ui_config.get_group_elements()
-    fields = ui_config.get_fields_by_type(field_type)
-    save_err_mess = "Correct status for save button {}".format([expected['save']])
-    assert expected['save'] == ui_config.save_button_status(), save_err_mess
-    if expected['group_visible']:
-        if expected['group_visible_advanced']:
-            assert not groups
-            assert not fields
-            if not ui_config.advanced:
-                ui_config.click_advanced()
-                assert ui_config.advanced
-            groups = ui_config.get_group_elements()
-            assert groups, groups
-            fields = ui_config.get_fields_by_type(field_type)
-            if expected['field_visible_advanced']:
-                assert fields, fields
-            else:
-                assert not fields, fields
-        if expected['field_visible']:
-            if expected['field_visible_advanced']:
-                if not ui_config.advanced:
-                    assert not fields
-                    ui_config.click_advanced()
-                else:
-                    ui_config.click_advanced()
-                    fields = ui_config.get_field_groups()
-                    assert not fields
-                    ui_config.click_advanced()
-                assert ui_config.advanced
-            fields = ui_config.get_fields_by_type(field_type)
-            assert len(fields) == 1, fields
-            for field in fields:
-                ui_config.assert_field_editable(field, expected['editable'])
-            if expected['content']:
-                default_value = config['config'][0]['subs'][0]['default']
-                ui_config.assert_field_content_equal(field_type, fields[0], default_value)
-            if expected['alerts']:
-                ui_config.assert_alerts_presented(field_type)
-        if not expected['field_visible']:
-            assert not fields, fields
-    elif expected['group_visible'] and not expected['field_visible']:
-        assert groups
-        assert not fields
-    elif not expected['group_visible']:
-        assert not groups
-        assert not fields
-    allure.attach("Cluster configuration",
-                  config, allure.attachment_type.TEXT)
-    allure.attach('Expected result', expected,
-                  allure.attachment_type.TEXT)
-    allure.attach.file("/".join([path, 'config.yaml']),
-                       attachment_type=allure.attachment_type.YAML)
+# @prepare_test_group_config_parameters(group_configs)
+# def test_group_configs_field(sdk_client_ms: ADCMClient, config, expected, path, login, app):
+#     """Test for configuration fields with groups"""
+#     _ = login, app
+#     print(config)
+#     print(expected)
+#     bundle = sdk_client_ms.upload_from_fs(path)
+#     cluster_name = path.split("/")[-1]
+#     cluster = bundle.cluster_create(name=cluster_name)
+#     field_type = config['config'][0]['subs'][0]['type']
+#     app.driver.get("{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
+#     ui_config = Configuration(app.driver)
+#     groups = ui_config.get_group_elements()
+#     fields = ui_config.get_app_fields()
+#     save_err_mess = "Correct status for save button {}".format([expected['save']])
+#     assert expected['save'] == ui_config.save_button_status(), save_err_mess
+#     if expected['group_visible']:
+#         if expected['group_visible_advanced']:
+#             assert not groups
+#             assert not fields
+#             if not ui_config.advanced:
+#                 ui_config.click_advanced()
+#                 assert ui_config.advanced
+#             groups = ui_config.get_group_elements()
+#             assert groups, groups
+#             fields = ui_config.get_app_fields()
+#             if expected['field_visible_advanced']:
+#                 assert fields, fields
+#             else:
+#                 assert not fields, fields
+#         if expected['field_visible']:
+#             if expected['field_visible_advanced']:
+#                 if not ui_config.advanced:
+#                     assert not fields
+#                     ui_config.click_advanced()
+#                 else:
+#                     ui_config.click_advanced()
+#                     fields = ui_config.get_field_groups()
+#                     assert not fields
+#                     ui_config.click_advanced()
+#                 assert ui_config.advanced
+#             fields = ui_config.get_app_fields()
+#             assert fields, fields
+#             for field in fields:
+#                 ui_config.assert_field_editable(field, expected['editable'])
+#             if expected['content']:
+#                 default_value = config['config'][0]['subs'][0]['default']
+#                 ui_config.assert_field_content_equal(field_type, fields[0], default_value)
+#             if expected['alerts']:
+#                 ui_config.assert_alerts_presented(field_type)
+#         if not expected['field_visible']:
+#             assert not fields, fields
+#     elif expected['group_visible'] and not expected['field_visible']:
+#         assert groups
+#         assert not fields
+#     elif not expected['group_visible']:
+#         assert not groups
+#         assert not fields
+#     allure.attach("Cluster configuration",
+#                   config, allure.attachment_type.TEXT)
+#     allure.attach('Expected result', expected,
+#                   allure.attachment_type.TEXT)
+#     allure.attach.file("/".join([path, 'config.yaml']),
+#                        attachment_type=allure.attachment_type.YAML)
