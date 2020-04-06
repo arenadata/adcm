@@ -107,7 +107,7 @@ export class BundlesComponent extends InputComponent implements OnInit {
     if (isOpen) {
       this.preloader.freeze();
       this.service
-        .getPrototype(this.typeName, { page: this.page - 1, limit: this.limit })
+        .getPrototype(this.typeName, { page: this.page - 1, limit: this.limit, fields: 'display_name', distinct: 1 })
         .pipe(
           tap(a => {
             this.bundles$.next([...this.bundles$.getValue(), ...a]);
