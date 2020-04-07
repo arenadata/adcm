@@ -73,6 +73,15 @@ class InterfaceView():
         return self.serializer_class
 
 
+def getlist_from_querydict(query_params, field_name):
+    params = query_params.get(field_name, [])
+    if params:
+        fields = [param.strip() for param in params.split(',')]
+    else:
+        return params
+    return fields
+
+
 def fix_ordering(field, view):
     fix = field
     if fix != 'prototype_id':
@@ -103,9 +112,8 @@ class ActionFilter(drf_filters.FilterSet):
 class AdcmOrderingFilter(OrderingFilter):
     def get_ordering(self, request, queryset, view):
         ordering = None
-        params = request.query_params.get(self.ordering_param)
-        if params:
-            fields = [param.strip() for param in params.split(',')]
+        fields = getlist_from_querydict(request.query_params, self.ordering_param)
+        if fields:
             re_fields = [fix_ordering(field, view) for field in fields]
             ordering = self.remove_invalid_fields(queryset, re_fields, view, request)
         # log.debug('ordering: %s', ordering)
@@ -155,12 +163,8 @@ class PageView(GenericAPIView, InterfaceView):
 
         if 'fields' in request.query_params or 'distinct' in request.query_params:
             serializer_class = None
-            fields = request.query_params.get('fields', None)
-
-            if fields is not None:
-                fields = fields.split(',')
-                fields = [field.strip() for field in fields]
             try:
+                fields = getlist_from_querydict(request.query_params, 'fields')
                 distinct = int(request.query_params.get('distinct', 0))
 
                 if fields and distinct:
