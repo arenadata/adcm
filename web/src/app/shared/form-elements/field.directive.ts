@@ -23,34 +23,19 @@ export class FieldDirective extends BaseDirective implements OnInit {
   @Input() field: FieldOptions;
 
   ngOnInit() {
-    const field = this.find();
-    field.markAsTouched();
+    this.control.markAllAsTouched();
   }
 
-  find() {
+  get control() {
     return this.form.controls[this.field.name];
   }
 
   get isValid() {
-    const field = this.find();
-    return this.field.read_only || (field.valid && (field.dirty || field.touched));
+    const control = this.control;
+    return this.field.read_only || (control.valid && (control.dirty || control.touched));
   }
 
   hasError(name: string) {
-    return this.find().hasError(name);
-  }
-
-  restore() {
-    const field = this.find();
-    const value = this.field.default;
-    if (field) {
-      if (this.field.type === 'json') {
-        field.setValue(value === null ? '' : JSON.stringify(value, undefined, 4));
-      } else if (this.field.type === 'boolean') {
-        const allow = String(value) === 'true' || String(value) === 'false' || String(value) === 'null';
-        field.setValue(allow ? value : null);
-      } else field.setValue(value);
-      this.field.value = field.value;
-    }
+    return this.control.hasError(name);
   }
 }

@@ -858,6 +858,7 @@ class LogSerializer(serializers.Serializer):
 
 
 class LogStorageSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
     type = serializers.CharField(read_only=True)
     format = serializers.CharField(read_only=True)
@@ -866,21 +867,23 @@ class LogStorageSerializer(serializers.Serializer):
     def get_body(self, obj):
         body = obj.body
 
-        if body is None:
-            if obj.type in ['stdout', 'stderr']:
+        if obj.type in ['stdout', 'stderr']:
+            if body is None:
                 path_file = os.path.join(
                     config.RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}')
                 with open(path_file, 'r') as f:
                     body = f.read()
-            elif obj.type == 'check':
+        elif obj.type == 'check':
+            if body is None:
                 body = []
                 for cl in CheckLog.objects.filter(job_id=obj.job.id):
                     body.append({'title': cl.title, 'message': cl.message, 'result': cl.result})
-            elif obj.type == 'custom':
-                pass
-
-        if obj.format == 'json' and isinstance(body, str):
-            body = json.loads(body)
+            if isinstance(body, str):
+                body = json.loads(body)
+        elif obj.type == 'custom':
+            if obj.format == 'json' and isinstance(body, str):
+                body = json.loads(body)
+                body = json.dumps(body, indent=4)
 
         return body
 

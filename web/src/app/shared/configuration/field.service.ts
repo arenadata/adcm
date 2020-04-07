@@ -37,7 +37,7 @@ export class FieldService {
         .filter(a => a.name !== '__main_info')
         .reduce((p, c) => {
           if (c.subname) return p;
-          if (c.type !== 'group') return [...p, this.checkYspec(this.getFieldBy(c))];
+          if (c.type !== 'group') return [...p, this.getFieldBy(c)];
           else return [...p, this.fillDataOptions(c, fo)];
         }, []);
     }
@@ -51,22 +51,19 @@ export class FieldService {
       options: fo
         .filter(b => b.name === a.name)
         .map(b => this.getFieldBy(b))
-        .map(c => {
-          c.name = c.subname;
-          return c;
-        })
-        .map(b => this.checkYspec(b))
+        .map(c => ({ ...c, name: c.subname }))
+      // .map(b => this.checkYspec(b))
     };
   }
 
-  checkYspec(a: FieldOptions): FieldOptions | PanelOptions {
-    if (a.limits?.yspec) {
-      const b = (<unknown>a) as PanelOptions;
-      b.options = [];
-      return b;
-    }
-    return a;
-  }
+  // checkYspec(a: FieldOptions): FieldOptions | PanelOptions {
+  //   if (a.limits?.yspec) {
+  //     const b = (<unknown>a) as PanelOptions;
+  //     // b.options = [];
+  //     return b;
+  //   }
+  //   return a;
+  // }
 
   getFieldBy(item: FieldStack): FieldOptions {
     const params: FieldOptions = {
@@ -181,8 +178,8 @@ export class FieldService {
         return allow ? value : required ? d : null;
       },
       json: (value: string) => (value === null ? '' : JSON.stringify(value, undefined, 4)),
-      map: (value: object, de: object) => (!value ? (!de ? {} : de) : value),
-      list: (value: string[], de: string[]) => (!value ? (!de ? [] : de) : value),
+      map: (value: object, de: object) => (!value ? de : value),
+      list: (value: string[], de: string[]) => (!value ? de : value),
       structure: (value: any) => value
     };
 
@@ -225,8 +222,7 @@ export class FieldService {
   }
 
   runYspecParse(value: any, field: FieldStack) {
-    const a = this.runYspec(value, field.limits.rules);
-    return a;
+    return this.runYspec(value, field.limits.rules);
   }
 
   runYspec(value: any, rules: any) {
@@ -235,17 +231,13 @@ export class FieldService {
         return value.filter(a => !!a).map(a => this.runYspec(a, rules.options));
       }
       case 'dict': {
-        // .filter(a => !!value[a]) without boolean
-        return Object.keys(value).reduce(
-          (p, c) => ({
-            ...p,
-            [c]: this.runYspec(
-              value[c],
-              rules.options.find(b => b.name === c)
-            )
-          }),
-          {}
-        );
+        return Object.keys(value).reduce((p, c) => {
+          const v = this.runYspec(
+            value[c],
+            rules.options.find(b => b.name === c)
+          );
+          return v !== null ? { ...p, [c]: v } : { ...p };
+        }, {});
       }
       default: {
         return this.checkValue(value, rules.type);

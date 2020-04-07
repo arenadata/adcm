@@ -353,7 +353,7 @@ class JobLog(models.Model):
     log_files = models.TextField(blank=True)    # JSON
     status = models.CharField(max_length=16, choices=JOB_STATUS)
     start_date = models.DateTimeField()
-    finish_date = models.DateTimeField()
+    finish_date = models.DateTimeField(db_index=True)
 
 
 class TaskLog(models.Model):

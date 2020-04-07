@@ -9,9 +9,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=not-callable
 
-from django.core.exceptions import ObjectDoesNotExist
+# pylint: disable=not-callable, unused-import, too-many-locals
+
+from django.core.exceptions import ObjectDoesNotExist, FieldError
 from django.http.request import QueryDict
 from django_filters import rest_framework as drf_filters
 
@@ -27,7 +28,7 @@ from adcm.settings import REST_FRAMEWORK
 
 from cm.models import Action
 from cm.errors import AdcmApiEx
-from cm.logger import log   # pylint: disable=unused-import
+from cm.logger import log
 
 
 def check_obj(model, kw_req, error):
@@ -172,15 +173,40 @@ class PageView(GenericAPIView, InterfaceView):
         context['request'] = request
         count = obj.count()
         serializer_class = self.select_serializer(request)
-        page = self.paginate_queryset(obj)
+        try:
+            if 'fields' in request.query_params or 'distinct' in request.query_params:
+                serializer_class = None
+                fields = request.query_params.get('fields', None)
+                if fields is not None:
+                    fields = fields.split(',')
+                    fields = [field.strip() for field in fields]
 
+                distinct = int(request.query_params.get('distinct', 0))
+
+                if fields and distinct:
+                    obj = obj.values(*fields).distinct()
+
+                elif fields:
+                    obj = obj.values(*fields)
+
+        except (FieldError, ValueError):
+            qp = ','.join([f'{k}={v}' for k, v in request.query_params.items()
+                           if k in ['fields', 'distinct']])
+            msg = f'Bad query params: {qp}'
+            raise AdcmApiEx('BAD_QUERY_PARAMS', msg=msg, args=self.get_paged_link())
+
+        page = self.paginate_queryset(obj)
         if self.is_paged(request):
-            serializer = serializer_class(page, many=True, context=context)
-            return self.get_paginated_response(serializer.data)
+            if serializer_class is not None:
+                serializer = serializer_class(page, many=True, context=context)
+                page = serializer.data
+            return self.get_paginated_response(page)
 
         if count <= REST_FRAMEWORK['PAGE_SIZE']:
-            serializer = serializer_class(obj, many=True, context=context)
-            return Response(serializer.data)
+            if serializer_class is not None:
+                serializer = serializer_class(obj, many=True, context=context)
+                obj = serializer.data
+            return Response(obj)
 
         msg = 'Response is too long, use paginated request'
         raise AdcmApiEx('TOO_LONG', msg=msg, args=self.get_paged_link())
