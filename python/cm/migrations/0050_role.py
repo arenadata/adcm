@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ('auth', '0011_update_proxy_permissions'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('cm', '0048_auto_20200228_1032'),
+        ('cm', '0049_auto_20200330_1209'),
     ]
 
     operations = [
