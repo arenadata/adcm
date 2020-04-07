@@ -26,9 +26,7 @@ import { CompareConfig, FieldOptions, IConfig, PanelOptions } from '../types';
     <mat-toolbar>
       <mat-form-field>
         <mat-select placeholder="History" [value]="versionID" (valueChange)="changeVersion($event)">
-          <mat-option *ngFor="let item of history$ | async; trackBy: trackById" [value]="item.id">
-            {{ item.date | date: 'short' }} {{ item.description }}
-          </mat-option>
+          <mat-option *ngFor="let item of history$ | async; trackBy: trackById" [value]="item.id"> {{ item.date | date: 'short' }} {{ item.description }} </mat-option>
         </mat-select>
       </mat-form-field>
       <span>&nbsp;&nbsp;</span>
@@ -42,13 +40,13 @@ import { CompareConfig, FieldOptions, IConfig, PanelOptions } from '../types';
       </mat-form-field>
     </mat-toolbar>
   `,
-  styles: [':host {height: 64px;}', 'mat-form-field {flex: auto; margin: 0 10px; font-size: 14px; }']
+  styles: [':host {height: 64px;}', 'mat-form-field {flex: auto; margin: 0 10px; font-size: 14px; }'],
 })
 export class HistoryComponent extends BaseDirective implements OnInit {
   @Input() fields: FieldsComponent;
   @Input() versionID: number;
   @Input() historyUrl: string;
-  @Output() version = new EventEmitter<{ id: number }>();
+  @Output() version = new EventEmitter<number>();
 
   iconDisabled = true;
   history$: Observable<CompareConfig[]>;
@@ -70,15 +68,15 @@ export class HistoryComponent extends BaseDirective implements OnInit {
     /**  */
     this.comparator.valueChanges.pipe(this.takeUntil()).subscribe((configIDs: number[]) => {
       this.clearCompare(configIDs);
-      this.checkValue(configIDs.map(id => this.compare.find(a => a.id === id)));
+      this.checkValue(configIDs.map((id) => this.compare.find((a) => a.id === id)));
     });
   }
 
   getData() {
     this.history$ = this.api.get<IConfig[]>(this.historyUrl).pipe(
-      tap(history => (this.current = history.find(a => a.id === this.versionID))),
-      map(history => history.filter(a => a.id !== this.versionID).map(b => ({ ...b, color: getRandomColor() }))),
-      tap(a => {
+      tap((history) => (this.current = history.find((a) => a.id === this.versionID))),
+      map((history) => history.filter((a) => a.id !== this.versionID).map((b) => ({ ...b, color: getRandomColor() }))),
+      tap((a) => {
         this.compare = a;
         this.iconDisabled = a.length < 1;
       })
@@ -86,29 +84,29 @@ export class HistoryComponent extends BaseDirective implements OnInit {
   }
 
   clearCompare(configIDs: number[]) {
-    this.fields.dataOptions.map(a => this.runClear(a, configIDs));
+    this.fields.dataOptions.map((a) => this.runClear(a, configIDs));
   }
 
   runClear(a: FieldOptions | PanelOptions, configIDs: number[]) {
-    if ('options' in a) a.options.map(b => this.runClear(b, configIDs));
-    else if (a.compare.length) a.compare = a.compare.filter(b => configIDs.includes(b.id));
+    if ('options' in a) a.options.map((b) => this.runClear(b, configIDs));
+    else if (a.compare.length) a.compare = a.compare.filter((b) => configIDs.includes(b.id));
     return a;
   }
 
   checkValue(configs: CompareConfig[]) {
-    this.fields.dataOptions.map(a => this.runCheck(a, configs));
+    this.fields.dataOptions.map((a) => this.runCheck(a, configs));
   }
 
   runCheck(a: FieldOptions | PanelOptions, configs: CompareConfig[]) {
-    if ('options' in a) a.options.map(b => this.runCheck(b, configs));
+    if ('options' in a) a.options.map((b) => this.runCheck(b, configs));
     else this.checkField(a, configs);
     return a;
   }
 
   checkField(a: FieldOptions, configs: CompareConfig[]) {
     configs
-      .filter(b => a.compare.every(e => e.id !== b.id))
-      .map(c => {
+      .filter((b) => a.compare.every((e) => e.id !== b.id))
+      .map((c) => {
         const co = this.findOldField(a.key, c);
         if (co && (String(co.value) !== String(a.value) || (isObject(a.value) && JSON.stringify(a.value) !== JSON.stringify(co.value)))) a.compare.push(co);
       });
@@ -127,6 +125,6 @@ export class HistoryComponent extends BaseDirective implements OnInit {
   }
 
   changeVersion(id: number) {
-    this.version.emit({ id });
+    this.version.emit(id);
   }
 }

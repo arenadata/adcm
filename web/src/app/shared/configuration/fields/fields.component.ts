@@ -42,13 +42,14 @@ export class ConfigFieldsComponent {
 
   @Input()
   set model(data: IConfig) {
+    if (!data) return;
     this.rawConfig = data;
     this.dataOptions = this.service.getPanels(data);
     this.form = this.service.toFormGroup(this.dataOptions);
-    this.checkForm();
     this.isAdvanced = data.config.some(a => a.ui_options && a.ui_options.advanced);
+    this.checkForm();    
     this.shapshot = { ...this.form.value };
-    this.event.emit({ name: 'load', data: { form: this.form } });
+    setTimeout(() => this.event.emit({ name: 'load', data: { form: this.form } }));
   }
 
   @ViewChildren(FieldComponent)

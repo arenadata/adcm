@@ -37,7 +37,7 @@ describe('HostComponentsMap :: TakeService', () => {
   );
 
   it('should be created', () => {
-    const service: TakeService = TestBed.get(TakeService);
+    const service: TakeService = TestBed.inject(TakeService);
     expect(service).toBeTruthy();
   });
 
@@ -54,7 +54,7 @@ describe('HostComponentsMap :: TakeService', () => {
   });
 
   it('validateConstraints fn should be null if argument is null', () => {
-    const service: TakeService = TestBed.get(TakeService);
+    const service: TakeService = TestBed.inject(TakeService);
     expect(service.validateConstraints(mockCompTile)(null)).toBeNull();
   });
 });

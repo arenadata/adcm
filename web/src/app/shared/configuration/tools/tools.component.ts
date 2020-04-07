@@ -9,11 +9,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit, EventEmitter, Output, Input } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormControl } from '@angular/forms';
-import { Subject } from 'rxjs';
 import { BaseDirective } from '@app/shared/directives';
-import { IToolsEvent } from '../field.service';
+import { Subject } from 'rxjs';
+
+import { ISearchParam } from '../main/main.service';
 
 @Component({
   selector: 'app-tools',
@@ -27,46 +28,48 @@ import { IToolsEvent } from '../field.service';
       <button mat-raised-button color="accent" class="form_config_button_save" [disabled]="disabledSave" (click)="save()">
         Save
       </button>
-      <button mat-icon-button [disabled]="disabledHistory" (click)="history()" [matTooltip]="historyShow ? 'Hide history' : 'Show history'">
+      <button mat-icon-button [disabled]="disabledHistory" (click)="toggleHistory()" [matTooltip]="historyShow ? 'Hide history' : 'Show history'">
         <mat-icon>history</mat-icon>
       </button>
     </div>
   `,
-  styles: [':host {display: flex;justify-content: space-between;align-items: baseline;}', '.form_config_button_save { margin: 0 16px 0 30px;}', '.description {flex: 0}']
+  styles: [':host {display: flex;justify-content: space-between;align-items: baseline;}', '.form_config_button_save { margin: 0 16px 0 30px;}', '.description {flex: 0}'],
 })
 export class ToolsComponent extends BaseDirective implements OnInit {
   historyShow = false;
   descriptionFormControl = new FormControl();
   private _advanced = false;
   private _search = '';
-  private _filter = new Subject<{ a: boolean; s: string }>();
+  private _filter = new Subject<ISearchParam>();
 
   @Input() description = '';
   @Input() disabledSave = true;
   @Input() disabledHistory = true;
   @Input() isAdvanced = false;
-  @Output() event = new EventEmitter<IToolsEvent>();
+  @Output() onfilter = new EventEmitter<ISearchParam>();
+  @Output() onsave = new EventEmitter();
+  @Output() onhistory = new EventEmitter<boolean>();
 
   ngOnInit() {
-    this._filter.pipe(this.takeUntil()).subscribe(() => this.event.emit({ name: 'filter', conditions: { advanced: this._advanced, search: this._search } }));
+    this._filter.pipe(this.takeUntil()).subscribe(() => this.onfilter.emit({ advanced: this._advanced, search: this._search }));
   }
 
-  set advanced(value: boolean) {
-    this._advanced = value;
-    this._filter.next({ a: this._advanced, s: this._search });
+  set advanced(advanced: boolean) {
+    this._advanced = advanced;
+    this._filter.next({ advanced, search: this._search });
   }
 
-  filter(value: string) {
-    this._search = value;
-    this._filter.next({ a: this._advanced, s: this._search });
+  filter(search: string) {
+    this._search = search;
+    this._filter.next({ advanced: this._advanced, search });
   }
 
-  history() {
+  toggleHistory() {
     this.historyShow = !this.historyShow;
-    this.event.emit({ name: 'history', conditions: this.historyShow });
+    this.onhistory.emit(this.historyShow);
   }
 
   save() {
-    this.event.emit({ name: 'save' });
+    this.onsave.emit();
   }
 }
