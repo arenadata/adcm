@@ -26,7 +26,7 @@ export class BaseMapListDirective extends FieldDirective implements OnInit {
   }
 
   ngOnInit() {
-    if (!Object.keys(this.field.value).length) this.control.setValue('');
+    if (!Object.keys(this.field.value || {}).length) this.control.setValue('');
     this.reload();
     this.items.valueChanges.subscribe((a: { key: string; value: string }[]) => this.prepare(a));
   }
@@ -39,7 +39,7 @@ export class BaseMapListDirective extends FieldDirective implements OnInit {
 
   reload() {
     this.items.controls = [];
-    const fieldValue = this.field.value ? { ...(this.field.value as Object) } : {};
+    const fieldValue = this.field.value ? { ...(this.field.value as Object) } : { };
     Object.keys(fieldValue).forEach(a => this.items.push(this.fb.group({ key: [a, Validators.required], value: fieldValue[a] })));
   }
 
