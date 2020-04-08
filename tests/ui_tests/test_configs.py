@@ -357,6 +357,7 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config,
         assert not fields
 
 
+@pytest.mark.skip("Test skip")
 @prepare_test_group_config_parameters(group_configs)
 def test_group_configs_field(sdk_client_ms: ADCMClient, config, expected, path, login, app):
     """Test for configuration fields with groups"""
