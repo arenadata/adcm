@@ -200,7 +200,7 @@ def generate_configs(config_data):
 
 def prepare_test_config_parameters(configs):
     """Create directory for configs and dump config dict to yaml file
-
+    :param configs:
     :return:
     """
     parameters = []
@@ -296,11 +296,9 @@ def prepare_test_group_config_parameters(group_configs):
 
 config_data = generate_config_data()
 configs = generate_configs(config_data)
-configs_parameters = prepare_test_config_parameters(configs)
 
 group_configs_data = generate_group_data()
 group_configs = generate_group_configs(group_configs_data)
-group_configs_parameters = prepare_test_group_config_parameters(group_configs)
 
 
 @pytest.fixture(scope='module')
