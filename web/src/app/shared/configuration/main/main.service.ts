@@ -9,13 +9,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+import { animate, state, style, transition, trigger } from '@angular/animations';
 import { Injectable } from '@angular/core';
-import { trigger, state, style, transition, animate } from '@angular/animations';
-import { FieldService } from '../field.service';
-import { FieldOptions, PanelOptions, FieldStack, IConfig } from '../types';
 import { FormGroup } from '@angular/forms';
-import { Observable } from 'rxjs';
 import { ApiService } from '@app/core/api';
+import { ClusterService } from '@app/core/services';
+import { Observable } from 'rxjs';
+
+import { FieldService } from '../field.service';
+import { FieldOptions, FieldStack, IConfig, PanelOptions } from '../types';
 
 export interface ISearchParam {
   advanced: boolean;
@@ -36,7 +38,11 @@ export const historyAnime = [
 
 @Injectable()
 export class MainService {
-  constructor(private fields: FieldService, private api: ApiService) {}
+  constructor(private fields: FieldService, private api: ApiService, private current: ClusterService) {}
+
+  get Current() {
+    return this.current.Current;
+  }
 
   getConfig(url: string): Observable<IConfig> {
     return this.api.get<IConfig>(url);

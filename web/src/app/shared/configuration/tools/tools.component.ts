@@ -20,7 +20,7 @@ import { ISearchParam } from '../main/main.service';
   selector: 'app-tools',
   template: `
     <mat-form-field class="description">
-      <input matInput placeholder="Description configuration" [formControl]="descriptionFormControl" [value]="description" />
+      <input matInput placeholder="Description configuration" [formControl]="descriptionFormControl" />
     </mat-form-field>
     <app-search (pattern)="filter($event)"></app-search>
     <mat-checkbox [(ngModel)]="advanced" [ngClass]="{ advanced: isAdvanced }">Advanced</mat-checkbox>
@@ -36,12 +36,11 @@ import { ISearchParam } from '../main/main.service';
   styles: [':host {display: flex;justify-content: space-between;align-items: baseline;}', '.form_config_button_save { margin: 0 16px 0 30px;}', '.description {flex: 0}'],
 })
 export class ToolsComponent extends BaseDirective implements OnInit {
-  historyShow = false;
-  descriptionFormControl = new FormControl();
   private _advanced = false;
   private _search = '';
   private _filter = new Subject<ISearchParam>();
-
+  historyShow = false;
+  descriptionFormControl = new FormControl();
   @Input() description = '';
   @Input() disabledSave = true;
   @Input() disabledHistory = true;
@@ -51,6 +50,7 @@ export class ToolsComponent extends BaseDirective implements OnInit {
   @Output() onhistory = new EventEmitter<boolean>();
 
   ngOnInit() {
+    this.descriptionFormControl.setValue(this.description);
     this._filter.pipe(this.takeUntil()).subscribe(() => this.onfilter.emit({ advanced: this._advanced, search: this._search }));
   }
 

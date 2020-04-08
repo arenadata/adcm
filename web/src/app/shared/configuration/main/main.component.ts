@@ -9,16 +9,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { AfterViewChecked, ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit, ViewChild } from '@angular/core';
-import { FormGroup } from '@angular/forms';
-import { ClusterService } from '@app/core';
+import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { EventMessage, SocketState } from '@app/core/store';
 import { SocketListenerDirective } from '@app/shared/directives';
 import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 
-import { IToolsEvent } from '../field.service';
 import { ConfigFieldsComponent } from '../fields/fields.component';
 import { HistoryComponent } from '../tools/history.component';
 import { ToolsComponent } from '../tools/tools.component';
@@ -32,17 +29,14 @@ import { historyAnime, ISearchParam, MainService } from './main.service';
   animations: historyAnime,
   providers: [MainService],
 })
-export class ConfigComponent extends SocketListenerDirective implements OnInit, AfterViewChecked {
+export class ConfigComponent extends SocketListenerDirective implements OnInit {
   loadingStatus = 'Loading...';
   config$: Observable<IConfig>;
   rawConfig: IConfig;
   saveFlag = false;
   historyShow = false;
-
-  isLock = true;
-  isAdvanced = false;
-  currentVersionID: number;
-  description: string;
+  isLock = false;
+  isReady = false;
 
   @ViewChild('fields') fields: ConfigFieldsComponent;
   @ViewChild('history') historyComponent: HistoryComponent;
@@ -63,52 +57,39 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit, 
     return `${this.url}history/`;
   }
 
-  constructor(private service: MainService, private current: ClusterService, socket: Store<SocketState>) {
+  constructor(private service: MainService, socket: Store<SocketState>) {
     super(socket);
   }
 
   ngOnInit() {
-    if (!this.url && this.current.Current) {
-      this.configUrl = this.current.Current.config;
-    }
+    if (!this.url) this.configUrl = this.service.Current?.config;
     super.startListenSocket();
   }
-
-  ngAfterViewChecked(): void {}
 
   filter(c: ISearchParam) {
     this.service.filterApply(this.fields.dataOptions, c);
   }
 
   socketListener(m: EventMessage) {
-    if (this.current.Current && m.object.type === this.current.Current.typeName && m.object.id === this.current.Current.id && !this.saveFlag) {
-      if (m.event === 'change_config' || m.event === 'change_state') {
-        this.isLock = m.object.details.value === 'locked' || this.fields.form.invalid;
-        this.config$ = this.getConfig();       
-      }
+    if (
+      m.object.type === this.service.Current?.typeName &&
+      m.object.id === this.service.Current.id &&
+      !this.saveFlag &&
+      (m.event === 'change_config' || m.event === 'change_state')
+    ) {
+      this.isLock = m.object.details.value === 'locked';
+      this.config$ = this.getConfig();
     }
   }
 
   getConfig(url = this.cUrl): Observable<IConfig> {
     return this.service.getConfig(url).pipe(
-      tap((c) => this.initVars(c)),
+      tap((c) => (this.rawConfig = c)),
       catchError(() => {
         this.loadingStatus = 'Loading error.';
         return of(null);
       })
     );
-  }
-
-  initVars(c: IConfig) {
-    this.rawConfig = c;
-    this.currentVersionID = c.id;
-    this.description = c.description;
-    
-  }
-
-  loadFields() {
-    this.isAdvanced = this.fields.isAdvanced;
-    this.isLock = this.fields.form.invalid;
   }
 
   save() {
@@ -119,8 +100,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit, 
       const send = { config, attr: this.rawConfig.attr, description: this.tools.descriptionFormControl.value };
       this.service.send(this.saveUrl, send).subscribe((c) => {
         this.saveFlag = false;
-        this.historyComponent.versionID = c.id;
-        this.historyComponent.getData();
+        this.rawConfig = c;
       });
     } else {
       Object.keys(form.controls).forEach((controlName) => form.controls[controlName].markAsTouched());
