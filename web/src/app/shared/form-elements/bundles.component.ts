@@ -27,7 +27,7 @@ import { InputComponent } from './input.component';
       <mat-form-field>
         <mat-select appInfinityScroll (topScrollPoint)="getNextPage()" required placeholder="Bundle" formControlName="prototype_name">
           <mat-option value="">...</mat-option>
-          <mat-option *ngFor="let bundle of bundles$ | async" [value]="bundle.display_name"> {{ bundle.display_name }} [ {{ bundle.bundle_edition }} ] </mat-option>
+          <mat-option *ngFor="let bundle of bundles$ | async" [value]="bundle.display_name"> {{ bundle.display_name }} </mat-option>
         </mat-select>
       </mat-form-field>
       &nbsp;&nbsp;
@@ -104,10 +104,13 @@ export class BundlesComponent extends InputComponent implements OnInit {
   }
 
   getBundles(isOpen: boolean) {
+    const offset = (this.page - 1) * this.limit;
+    const params = { fields: 'display_name', distinct: 1, ordering: 'display_name', limit: this.limit, offset };
+
     if (isOpen) {
       this.preloader.freeze();
       this.service
-        .getPrototype(this.typeName, { page: this.page - 1, limit: this.limit })
+        .getPrototype(this.typeName, params)
         .pipe(
           tap(a => {
             this.bundles$.next([...this.bundles$.getValue(), ...a]);
