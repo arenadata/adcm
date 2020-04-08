@@ -68,27 +68,27 @@ options:
 '''
 
 EXAMPLES = r'''
- - name: ADCM Check
-   adcm_check:
-     title: "Check"
-     msg: "This is message"
-     result: yes
+- name: ADCM Check
+  adcm_check:
+    title: "Check"
+    msg: "This is message"
+    result: yes
 
 - name: ADCM Check
-   adcm_check:
-     title: "Check"
-     success_msg: "This is success message"
-     fail_msg: "This is fail message"
-     result: yes
+  adcm_check:
+    title: "Check"
+    success_msg: "This is success message"
+    fail_msg: "This is fail message"
+    result: yes
 
-- name: memory check
-   adcm_check:
-     group_title: "Group 1"
-     group_success_msg: "This is success message"
-     group_fail_msg: "This is fail message"
-     title: "Check"
-     msg: "This is message"
-     result: yes
+- name: ADCM Check
+  adcm_check:
+    group_title: "Group 1"
+    group_success_msg: "This is success message"
+    group_fail_msg: "This is fail message"
+    title: "Check"
+    msg: "This is message"
+    result: yes
 '''
 
 RETURN = r'''
@@ -140,36 +140,29 @@ class ActionModule(ActionBase):
         group_fail_msg = self._task.args.get('group_fail_msg', '')
         group_success_msg = self._task.args.get('group_success_msg', '')
 
-        log_data = {
-            'title': title,
-            'result': result,
-            'msg': msg,
-            'fail_msg': fail_msg,
-            'success_msg': success_msg,
-            'group_title': group_title,
-            'group_success_msg': group_success_msg,
-            'group_fail_msg': group_fail_msg
+        if result:
+            msg = success_msg if success_msg else msg
+        else:
+            msg = fail_msg if fail_msg else msg
+
+        group = {
+            'title': group_title,
+            'success_msg': group_success_msg,
+            'fail_msg': group_fail_msg
         }
 
-        log.debug('ansible adcm_check: %s',
-                  ', '.join([f'{k}: {v}' for k, v in log_data.items() if v]))
+        check = {
+            'title': title,
+            'result': result,
+            'message': msg,
+        }
+
+        log.debug('ansible adcm_check: %s, %s',
+                  ', '.join([f'{k}: {v}' for k, v in group.items() if v]),
+                  ', '.join([f'{k}: {v}' for k, v in check.items() if v]))
 
         try:
-            if result:
-                msg = success_msg if success_msg else msg
-            else:
-                msg = fail_msg if fail_msg else msg
-
-            if group_title:
-                group = cm.job.create_group_log(job_id, group_title)
-            else:
-                group = None
-
-            cm.job.log_check(job_id, title, result, msg, group)
-
-            if group is not None:
-                cm.job.log_group_check(group, group_fail_msg, group_success_msg)
-
+            cm.job.log_check(job_id, group, check)
         except AdcmEx as e:
             return {"failed": True, "msg": e.code + ":" + e.msg}
 

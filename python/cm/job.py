@@ -838,27 +838,6 @@ def get_log_files(job):
     return logs
 
 
-def log_check(job_id, title, res, msg, group):
-    try:
-        job = JobLog.objects.get(id=job_id)
-        if job.status != config.Job.RUNNING:
-            err('JOB_NOT_FOUND', f'job #{job.id} has status "{job.status}", not "running"')
-    except JobLog.DoesNotExist:
-        err('JOB_NOT_FOUND', f'no job with id #{job_id}')
-    cl = CheckLog(job_id=job.id, title=title, message=msg, result=res, group=group)
-    try:
-        LogStorage.objects.get(job=job, name='check', type='check')
-    except LogStorage.DoesNotExist:
-        LogStorage.objects.create(job=job, name='check', type='check', format='json')
-    cl.save()
-    return cl
-
-
-def create_group_log(job_id, title):
-    group, _ = GroupCheckLog.objects.get_or_create(job_id=job_id, title=title)
-    return group
-
-
 def log_group_check(group, fail_msg, success_msg):
     logs = CheckLog.objects.filter(group=group).values('result')
     result = all([log['result'] for log in logs])
@@ -871,6 +850,32 @@ def log_group_check(group, fail_msg, success_msg):
     group.message = msg
     group.result = result
     group.save()
+
+
+def log_check(job_id, group_data, check_data):
+    try:
+        job = JobLog.objects.get(id=job_id)
+        if job.status != config.Job.RUNNING:
+            err('JOB_NOT_FOUND', f'job #{job.id} has status "{job.status}", not "running"')
+    except JobLog.DoesNotExist:
+        err('JOB_NOT_FOUND', f'no job with id #{job_id}')
+
+    group_title = group_data.pop('title')
+
+    if group_title:
+        group, _ = GroupCheckLog.objects.get_or_create(job_id=job_id, title=group_title)
+    else:
+        group = None
+
+    check_data.update({'job_id': job_id, 'group': group})
+    cl = CheckLog.objects.create(**check_data)
+
+    if group is not None:
+        group_data.update({'group': group})
+        log_group_check(**group_data)
+
+    LogStorage.objects.get_or_create(job=job, name='check', type='check', format='json')
+    return cl
 
 
 def get_check_log(job_id):
