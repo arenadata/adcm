@@ -74,12 +74,10 @@ class InterfaceView():
 
 
 def getlist_from_querydict(query_params, field_name):
-    params = query_params.get(field_name, [])
-    if params:
-        fields = [param.strip() for param in params.split(',')]
-    else:
-        return params
-    return fields
+    params = query_params.get(field_name)
+    if params is None:
+        return []
+    return [param.strip() for param in params.split(',')]
 
 
 def fix_ordering(field, view):
