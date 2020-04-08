@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, Input, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnInit, ViewChild } from '@angular/core';
 import { EventMessage, SocketState } from '@app/core/store';
 import { SocketListenerDirective } from '@app/shared/directives';
 import { Store } from '@ngrx/store';
@@ -28,6 +28,7 @@ import { historyAnime, ISearchParam, MainService } from './main.service';
   styleUrls: ['./main.component.scss'],
   animations: historyAnime,
   providers: [MainService],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConfigComponent extends SocketListenerDirective implements OnInit {
   loadingStatus = 'Loading...';
@@ -38,7 +39,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
   isLock = false;
   isReady = false;
 
-  @ViewChild('fields') fields: ConfigFieldsComponent;
+  @ViewChild(ConfigFieldsComponent) fields: ConfigFieldsComponent;
   @ViewChild('history') historyComponent: HistoryComponent;
   @ViewChild('tools') tools: ToolsComponent;
 

@@ -5,7 +5,7 @@
 
 <ng-container *ngIf="isReady">
   <app-tools #tools [description]="rawConfig.description" [isAdvanced]="fields.isAdvanced"
-    [disabledSave]="isLock || fields.form.invalid" [disabledHistory]="history.iconDisabled" (onfilter)="filter($event)"
+    [disabledSave]="isLock || fls.form.invalid" [disabledHistory]="history.iconDisabled" (onfilter)="filter($event)"
     (onsave)="save()" (onhistory)="historyShow=$event"></app-tools>
   <div [@history]="historyShow ? 'showTools' : 'hideTools'">
     <app-history #history [versionID]="rawConfig.id" [historyUrl]="saveUrl" [fields]="fields"
@@ -14,5 +14,5 @@
   </div>
 </ng-container>
 <div class="fields" [@history]="historyShow ? 'show' : 'hide'">
-  <app-config-fields #fields [model]="rawConfig" (event)="isReady=true"></app-config-fields>
+  <app-config-fields #fls [model]="rawConfig" (event)="isReady=true"></app-config-fields>
 </div>

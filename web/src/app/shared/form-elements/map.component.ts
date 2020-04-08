@@ -38,6 +38,7 @@ export class BaseMapListDirective extends FieldDirective implements OnInit {
   }
 
   reload() {
+    this.items.reset([]);
     this.items.controls = [];
     const fieldValue = this.field.value ? { ...(this.field.value as Object) } : { };
     Object.keys(fieldValue).forEach(a => this.items.push(this.fb.group({ key: [a, Validators.required], value: fieldValue[a] })));

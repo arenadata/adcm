@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, EventEmitter, Input, Output, QueryList, ViewChildren } from '@angular/core';
+import { AfterViewChecked, Component, EventEmitter, Input, OnInit, Output, QueryList, ViewChildren } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 
 import { FieldService } from '../field.service';
@@ -26,16 +26,15 @@ import { FieldOptions, IConfig, PanelOptions } from '../types';
         <app-field *ngIf="!item.hidden" [form]="form" [options]="item" [ngClass]="{ 'read-only': item.read_only }"></app-field>
       </ng-template>
     </ng-container>
-  `
+  `,
 })
-export class ConfigFieldsComponent {
+export class ConfigFieldsComponent implements OnInit, AfterViewChecked {
   @Input() dataOptions: (FieldOptions | PanelOptions)[] = [];
   @Input() rawConfig: IConfig;
   @Input() form = new FormGroup({});
-  
-  shapshot: any;
 
-  public isAdvanced = false;
+  shapshot: any;
+  isAdvanced = false;
 
   @Output()
   event = new EventEmitter<{ name: string; data?: any }>();
@@ -46,10 +45,9 @@ export class ConfigFieldsComponent {
     this.rawConfig = data;
     this.dataOptions = this.service.getPanels(data);
     this.form = this.service.toFormGroup(this.dataOptions);
-    this.isAdvanced = data.config.some(a => a.ui_options && a.ui_options.advanced);
-    this.checkForm();    
+    this.isAdvanced = data.config.some((a) => a.ui_options && a.ui_options.advanced);
+    this.checkForm();
     this.shapshot = { ...this.form.value };
-    setTimeout(() => this.event.emit({ name: 'load', data: { form: this.form } }));
   }
 
   @ViewChildren(FieldComponent)
@@ -60,8 +58,18 @@ export class ConfigFieldsComponent {
 
   constructor(private service: FieldService) {}
 
+  ngOnInit(): void {}
+
+  ngAfterViewChecked(): void {
+    this.event.emit({ name: 'load', data: { form: this.form } });
+    if (this.fields.length || this.groups.length) {
+      this.checkForm();
+    }
+  }
+
   checkForm() {
-    if (this.dataOptions.filter(a => !a.read_only).length === 0) this.form.setErrors({ error: 'There are not visible fields in this form' });
+    if (this.rawConfig.config.filter((a) => a.type !== 'group').filter((a) => !a.read_only).length === 0)
+      this.form.setErrors({ error: 'There are not visible fields in this form' });
   }
 
   isPanel(item: FieldOptions | PanelOptions) {
