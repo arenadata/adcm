@@ -21,7 +21,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cm', '0049_auto_20200330_1209'),
+        ('cm', '0050_role'),
     ]
 
     operations = [
