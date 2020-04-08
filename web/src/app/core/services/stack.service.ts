@@ -12,7 +12,7 @@
 import { Injectable } from '@angular/core';
 import { ApiService } from '@app/core/api';
 import { ApiState, getStack } from '@app/core/store';
-import { Bundle, StackBase } from '@app/core/types';
+import { Bundle } from '@app/core/types';
 import { ListResult } from '@app/shared';
 import { environment } from '@env/environment';
 import { select, Store } from '@ngrx/store';
@@ -28,32 +28,24 @@ const UPLOAD_URL = `${environment.apiRoot}stack/upload/`,
 export class StackService {
   constructor(private api: ApiService, private store: Store<ApiState>) {}
 
-  get service(): Observable<StackBase[]> {
-    return this.fromStack<StackBase>('service');
-  }
+  // get service(): Observable<StackBase[]> {
+  //   return this.fromStack<StackBase>('service');
+  // }
 
-  get host(): Observable<StackBase[]> {
-    return this.fromStack<StackBase>('host');
-  }
+  // get host(): Observable<StackBase[]> {
+  //   return this.fromStack<StackBase>('host');
+  // }
 
-  get provider(): Observable<StackBase[]> {
-    return this.fromStack<StackBase>('provider');
-  }
+  // get provider(): Observable<StackBase[]> {
+  //   return this.fromStack<StackBase>('provider');
+  // }
 
-  get cluster(): Observable<StackBase[]> {
-    return this.fromStack<StackBase>('cluster');
-  }
+  // get cluster(): Observable<StackBase[]> {
+  //   return this.fromStack<StackBase>('cluster');
+  // }
 
   fromStack<T>(name: StackInfo, param?: { [key: string]: string | number }): Observable<T[]> {
-    const limit = param.limit ? +param.limit : +localStorage.getItem('limit'),
-      offset = (param.page ? +param.page : 0) * limit;
-
     const params = Object.keys(param).reduce<any>((p, c) => ({ ...p, [c]: param[c] }), {});
-
-    params.limit = limit.toString();
-    params.offset = offset.toString();
-    params.ordering = 'display_name,-version';
-
     return this.store.pipe(
       select(getStack),
       filter(a => a && !!Object.keys(a).length),

@@ -52,18 +52,8 @@ export class FieldService {
         .filter(b => b.name === a.name)
         .map(b => this.getFieldBy(b))
         .map(c => ({ ...c, name: c.subname }))
-      // .map(b => this.checkYspec(b))
     };
   }
-
-  // checkYspec(a: FieldOptions): FieldOptions | PanelOptions {
-  //   if (a.limits?.yspec) {
-  //     const b = (<unknown>a) as PanelOptions;
-  //     // b.options = [];
-  //     return b;
-  //   }
-  //   return a;
-  // }
 
   getFieldBy(item: FieldStack): FieldOptions {
     const params: FieldOptions = {
