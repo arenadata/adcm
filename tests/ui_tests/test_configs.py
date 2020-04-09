@@ -158,7 +158,7 @@ def generate_group_configs(group_config_data):
                                         'advanced': data['field_ui_options']['advanced']}
             cluster_config['subs'] = [sub_config]
             config_dict['config'] = [cluster_config]
-            config_dict['name'] = utils.random_string()
+            config_dict['name'] = utils.random_string(14)
             config = [config_dict]
             expected_result = generate_group_expected_result(data)
             group_configs.append((config, expected_result))
@@ -175,7 +175,7 @@ def generate_configs(config_data):
     for _type in TYPES:
         for data in config_data:
             config_dict = {"type": "cluster",
-                           "name": utils.random_string(),
+                           "name": utils.random_string(14),
                            "version": "1",
                            "config": []}
             unsupported_options = all([data['read_only'],
@@ -316,7 +316,7 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login, app):
                        attachment_type=allure.attachment_type.YAML)
     bundle = sdk_client_ms.upload_from_fs(path)
     # cluster_name = path.split("/")[-1]
-    cluster = bundle.cluster_create(name=utils.random_string())
+    cluster = bundle.cluster_create(name=utils.random_string(14))
     field_type = config['config'][0]['type']
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -362,7 +362,7 @@ def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app)
                        attachment_type=allure.attachment_type.YAML)
 
     bundle = sdk_client_ms.upload_from_fs(path)
-    cluster = bundle.cluster_create(name=utils.random_string())
+    cluster = bundle.cluster_create(name=utils.random_string(14))
     field_type = config['config'][0]['subs'][0]['type']
     app.driver.get("{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     ui_config = Configuration(app.driver)
