@@ -18,21 +18,18 @@ import { catchError, finalize } from 'rxjs/operators';
 import { AuthService } from '../auth/auth.service';
 import { MessageService, PreloaderService } from '../services';
 
-const EXCLUDE_URLS = [ '/api/v1/token/', '/assets/config.json'];
+const EXCLUDE_URLS = ['/api/v1/token/', '/assets/config.json'];
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
-  constructor(
-    private authService: AuthService,
-    private preloader: PreloaderService,
-    private router: Router,
-    private messanger: MessageService
-  ) {}
+  constructor(private authService: AuthService, private preloader: PreloaderService, private router: Router, private messanger: MessageService) {}
 
   addAuthHeader(request: HttpRequest<any>): HttpRequest<any> {
     const token = this.authService.token;
-    if (token && !EXCLUDE_URLS.includes(request.url))
-      request = request.clone({ setHeaders: { Authorization: `Token ${token}` }, setParams: { view: 'interface' } });
+    if (token && !EXCLUDE_URLS.includes(request.url)) {
+      const setParams = request.url.split('?').find((a, i) => i === 1 && a.includes('noview')) ? {} : { view: 'interface' };
+      request = request.clone({ setHeaders: { Authorization: `Token ${token}` }, setParams });
+    }
 
     return request;
   }
@@ -50,14 +47,10 @@ export class AuthInterceptor implements HttpInterceptor {
         if (res.status === 500) this.router.navigate(['/500']);
         // if (res.status === 504) this.router.navigate(['/504']);
 
-        if (
-          res.error.code !== 'USER_NOT_FOUND' &&
-          res.error.code !== 'AUTH_ERROR' &&
-          res.error.code !== 'CONFIG_NOT_FOUND'
-        )
+        if (res.error.code !== 'USER_NOT_FOUND' && res.error.code !== 'AUTH_ERROR' && res.error.code !== 'CONFIG_NOT_FOUND')
           this.messanger.errorMessage({
             subtitle: res.error.code || res.name,
-            title: res.error.desc || res.message,
+            title: res.error.desc || res.message
           });
         return throwError(res);
       }),

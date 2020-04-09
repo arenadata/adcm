@@ -147,22 +147,22 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         api = ['cluster', 'host', 'job', 'task', 'stack', 'user', 'profile']
         for path in api:
             r1 = requests.get(self.url + '/' + path + '/')
-            self.assertEqual(r1.status_code, 403)
+            self.assertEqual(r1.status_code, 401)
             self.assertEqual(r1.json()['detail'], 'Authentication credentials were not provided.')
 
         for path in api:
             r1 = requests.post(self.url + '/' + path + '/', {})
-            self.assertEqual(r1.status_code, 403)
+            self.assertEqual(r1.status_code, 401)
             self.assertEqual(r1.json()['detail'], 'Authentication credentials were not provided.')
 
         for path in api:
             r1 = requests.put(self.url + '/' + path + '/', {})
-            self.assertEqual(r1.status_code, 403)
+            self.assertEqual(r1.status_code, 401)
             self.assertEqual(r1.json()['detail'], 'Authentication credentials were not provided.')
 
         for path in api:
             r1 = requests.delete(self.url + '/' + path + '/')
-            self.assertEqual(r1.status_code, 403)
+            self.assertEqual(r1.status_code, 401)
             self.assertEqual(r1.json()['detail'], 'Authentication credentials were not provided.')
 
     def test_schema(self):

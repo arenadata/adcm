@@ -643,7 +643,7 @@ class ClusterConfigSerializer(serializers.Serializer):
 class ObjectConfig(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     date = serializers.DateTimeField(read_only=True)
-    description = serializers.CharField(required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
     config = JSONField(read_only=True)
     attr = JSONField(required=False)
 
