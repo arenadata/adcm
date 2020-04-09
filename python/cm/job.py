@@ -896,10 +896,9 @@ def run_task(task, event, args=''):
 def log_rotation():
     log.info('Run log rotation')
     adcm_object = ADCM.objects.get(id=1)
-    config_logs = ConfigLog.objects.filter(obj_ref=adcm_object.config)
-    adcm_conf = {}
-    for config_log in config_logs:
-        adcm_conf.update(json.loads(config_log.config))
+    cl = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
+    adcm_conf = json.loads(cl.config)
+
     log_rotation_on_db = adcm_conf['job_log']['log_rotation_in_db']
     log_rotation_on_fs = adcm_conf['job_log']['log_rotation_on_fs']
 
