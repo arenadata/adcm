@@ -198,102 +198,6 @@ def generate_configs(config_data):
     return configs
 
 
-def prepare_test_config_parameters(configs):
-    """Create directory for configs and dump config dict to yaml file
-    :param configs:
-    :return:
-    """
-    parameters = []
-    for config in configs:
-        read_only = bool('read_only' in config[0][0]['config'][0].keys())
-        default = bool('default' in config[0][0]['config'][0].keys())
-        templ = "type_{}_required_{}_ro_{}_content_{}_invisible_{}_advanced_{}"
-        config_folder_name = templ.format(
-            config[0][0]['config'][0]['type'],
-            config[0][0]['config'][0]['required'],
-            read_only,
-            default,
-            config[0][0]['config'][0]['ui_options']['invisible'],
-            config[0][0]['config'][0]['ui_options']['advanced'])
-        d_name = "{}/configs/fields/{}/{}".format(utils.get_data_dir(__file__),
-                                                  config[0][0]['config'][0]['type'],
-                                                  config_folder_name)
-        if not os.path.exists(d_name):
-            try:
-                os.makedirs(d_name)
-            except FileExistsError:
-                print("Don't create directory")
-            if config[0][0]['config'][0]['name'] == 'file':
-                with open("{}/file.txt".format(d_name), 'w') as f:
-                    f.write("test")
-            with open("{}/config.yaml".format(d_name), 'w') as yaml_file:
-                yaml.dump(config[0], yaml_file)
-        parameters.append((config[0][0], config[1], d_name))
-    return pytest.mark.parametrize("config, expected, path", parameters)
-
-
-def prepare_test_group_config_parameters(group_configs):
-    """Create directory for group configs and dump config dict to yaml file
-
-    :param group_configs:
-    :return: pytest parametrize object
-    """
-    parameters = []
-    for config in group_configs:
-        if "activatable" in config[0][0]['config'][0].keys():
-            activatable = True
-            active = config[0][0]['config'][0]['active']
-        else:
-            activatable = False
-            active = False
-        data_type = config[0][0]['config'][0]['subs'][0]['type']
-        read_only = bool('read_only' in config[0][0]['config'][0]['subs'][0].keys())
-        default = bool('default' in config[0][0]['config'][0]['subs'][0].keys())
-        if activatable:
-            temp = "activatable_{}_active_{}_required_{}_ro_{}_content_{}_group_invisible" \
-                   "_{}_group_advanced_{}_field_invisible_{}_field_advanced_{}"
-            config_folder_name = temp.format(
-                activatable,
-                active,
-                config[0][0]['config'][0]['subs'][0]['required'],
-                read_only,
-                default,
-                config[0][0]['config'][0]['ui_options']['invisible'],
-                config[0][0]['config'][0]['ui_options']['advanced'],
-                config[0][0]['config'][0]['subs'][0]['ui_options']['invisible'],
-                config[0][0]['config'][0]['subs'][0]['ui_options']['advanced'])
-            d_name = "{}/configs/activatable_groups/{}/{}".format(utils.get_data_dir(__file__),
-                                                                  data_type,
-                                                                  config_folder_name)
-        else:
-            temp = "required_{}_ro_{}_content_{}_group_invisible" \
-                   "_{}_group_advanced_{}_field_invisible_{}_field_advanced_{}"
-            config_folder_name = temp.format(
-                config[0][0]['config'][0]['subs'][0]['required'],
-                config[1]['editable'],
-                config[1]['content'],
-                config[0][0]['config'][0]['ui_options']['invisible'],
-                config[0][0]['config'][0]['ui_options']['advanced'],
-                config[0][0]['config'][0]['subs'][0]['ui_options']['invisible'],
-                config[0][0]['config'][0]['subs'][0]['ui_options']['advanced'])
-            d_name = "{}/configs/groups/{}/{}".format(utils.get_data_dir(__file__),
-                                                      data_type,
-                                                      config_folder_name)
-
-        if not os.path.exists(d_name):
-            try:
-                os.makedirs(d_name)
-            except FileExistsError:
-                print("Don't create directory")
-            if config[0][0]['config'][0]['subs'][0]['name'] == 'file':
-                with open("{}/file.txt".format(d_name), 'w') as f:
-                    f.write("test")
-            with open("{}/config.yaml".format(d_name), 'w') as yaml_file:
-                yaml.dump(config[0], yaml_file)
-        parameters.append((config[0][0], config[1], d_name))
-    return pytest.mark.parametrize("config, expected, path", parameters)
-
-
 config_data = generate_config_data()
 configs = generate_configs(config_data)
 
@@ -313,21 +217,107 @@ def login(app):
     login.login("admin", "admin")
 
 
-@prepare_test_config_parameters(configs)
-def test_configs_fields(sdk_client_ms: ADCMClient, config,
-                        expected, path, login, app):
+@pytest.fixture(scope='module', params=configs)
+def data(request):
+    config = request.param
+    read_only = bool('read_only' in config[0][0]['config'][0].keys())
+    default = bool('default' in config[0][0]['config'][0].keys())
+    templ = "type_{}_required_{}_ro_{}_content_{}_invisible_{}_advanced_{}"
+    config_folder_name = templ.format(
+        config[0][0]['config'][0]['type'],
+        config[0][0]['config'][0]['required'],
+        read_only,
+        default,
+        config[0][0]['config'][0]['ui_options']['invisible'],
+        config[0][0]['config'][0]['ui_options']['advanced'])
+    d_name = "{}/configs/fields/{}/{}".format(utils.get_data_dir(__file__),
+                                              config[0][0]['config'][0]['type'],
+                                              config_folder_name)
+    if not os.path.exists(d_name):
+        try:
+            os.makedirs(d_name)
+        except FileExistsError:
+            print("Don't create directory")
+        if config[0][0]['config'][0]['name'] == 'file':
+            with open("{}/file.txt".format(d_name), 'w') as f:
+                f.write("test")
+        with open("{}/config.yaml".format(d_name), 'w') as yaml_file:
+            yaml.dump(config[0], yaml_file)
+    return config[0][0], config[1], d_name
+
+
+@pytest.fixture(scope='module', params=group_configs)
+def data_groups(request):
+    config = request.param
+    if "activatable" in config[0][0]['config'][0].keys():
+        activatable = True
+        active = config[0][0]['config'][0]['active']
+    else:
+        activatable = False
+        active = False
+    data_type = config[0][0]['config'][0]['subs'][0]['type']
+    read_only = bool('read_only' in config[0][0]['config'][0]['subs'][0].keys())
+    default = bool('default' in config[0][0]['config'][0]['subs'][0].keys())
+    if activatable:
+        temp = "activatable_{}_active_{}_required_{}_ro_{}_content_{}_group_invisible" \
+               "_{}_group_advanced_{}_field_invisible_{}_field_advanced_{}"
+        config_folder_name = temp.format(
+            activatable,
+            active,
+            config[0][0]['config'][0]['subs'][0]['required'],
+            read_only,
+            default,
+            config[0][0]['config'][0]['ui_options']['invisible'],
+            config[0][0]['config'][0]['ui_options']['advanced'],
+            config[0][0]['config'][0]['subs'][0]['ui_options']['invisible'],
+            config[0][0]['config'][0]['subs'][0]['ui_options']['advanced'])
+        d_name = "{}/configs/activatable_groups/{}/{}".format(utils.get_data_dir(__file__),
+                                                              data_type,
+                                                              config_folder_name)
+    else:
+        temp = "required_{}_ro_{}_content_{}_group_invisible" \
+               "_{}_group_advanced_{}_field_invisible_{}_field_advanced_{}"
+        config_folder_name = temp.format(
+            config[0][0]['config'][0]['subs'][0]['required'],
+            config[1]['editable'],
+            config[1]['content'],
+            config[0][0]['config'][0]['ui_options']['invisible'],
+            config[0][0]['config'][0]['ui_options']['advanced'],
+            config[0][0]['config'][0]['subs'][0]['ui_options']['invisible'],
+            config[0][0]['config'][0]['subs'][0]['ui_options']['advanced'])
+        d_name = "{}/configs/groups/{}/{}".format(utils.get_data_dir(__file__),
+                                                  data_type,
+                                                  config_folder_name)
+
+    if not os.path.exists(d_name):
+        try:
+            os.makedirs(d_name)
+        except FileExistsError:
+            print("Don't create directory")
+        if config[0][0]['config'][0]['subs'][0]['name'] == 'file':
+            with open("{}/file.txt".format(d_name), 'w') as f:
+                f.write("test")
+        with open("{}/config.yaml".format(d_name), 'w') as yaml_file:
+            yaml.dump(config[0], yaml_file)
+    return config[0][0], config[1], d_name
+
+
+def test_configs_fields(sdk_client_ms: ADCMClient, data, login, app):
     """Test UI configuration page without groups
     Scenario:
     1. """
+    _ = login, app
+    config = data[0]
+    expected = data[1]
+    path = data[2]
+    print(config)
+    print(expected)
     allure.attach("Cluster configuration", config,
                   allure.attachment_type.TEXT)
     allure.attach('Expected result', expected,
                   allure.attachment_type.TEXT)
     allure.attach.file("/".join([path, 'config.yaml']),
                        attachment_type=allure.attachment_type.YAML)
-    print(config)
-    print(expected)
-    _ = login, app
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -357,19 +347,21 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config,
         assert not fields
 
 
-@pytest.mark.skip("Test skip")
-@prepare_test_group_config_parameters(group_configs)
-def test_group_configs_field(sdk_client_ms: ADCMClient, config, expected, path, login, app):
+def test_group_configs_field(sdk_client_ms: ADCMClient, data_groups, login, app):
     """Test for configuration fields with groups"""
     _ = login, app
+    config = data_groups[0]
+    expected = data_groups[1]
+    path = data_groups[2]
+    print(config)
+    print(expected)
     allure.attach("Cluster configuration",
                   config, allure.attachment_type.TEXT)
     allure.attach('Expected result', expected,
                   allure.attachment_type.TEXT)
     allure.attach.file("/".join([path, 'config.yaml']),
                        attachment_type=allure.attachment_type.YAML)
-    print(config)
-    print(expected)
+
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
