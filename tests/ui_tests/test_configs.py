@@ -315,8 +315,8 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login, app):
     allure.attach.file("/".join([path, 'config.yaml']),
                        attachment_type=allure.attachment_type.YAML)
     bundle = sdk_client_ms.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
-    cluster = bundle.cluster_create(name=cluster_name)
+    # cluster_name = path.split("/")[-1]
+    cluster = bundle.cluster_create(name=utils.random_string())
     field_type = config['config'][0]['type']
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
@@ -362,8 +362,7 @@ def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app)
                        attachment_type=allure.attachment_type.YAML)
 
     bundle = sdk_client_ms.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
-    cluster = bundle.cluster_create(name=cluster_name)
+    cluster = bundle.cluster_create(name=utils.random_string())
     field_type = config['config'][0]['subs'][0]['type']
     app.driver.get("{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     ui_config = Configuration(app.driver)
