@@ -17,7 +17,9 @@ import { ClusterService } from '@app/core/services';
 import { Observable } from 'rxjs';
 
 import { FieldService } from '../field.service';
-import { FieldOptions, FieldStack, IConfig, PanelOptions } from '../types';
+import { FieldOptions, FieldStack, IConfig, PanelOptions, CompareConfig } from '../types';
+import { getRandomColor, isObject } from '@app/core/types';
+import { tap, map } from 'rxjs/operators';
 
 export interface ISearchParam {
   advanced: boolean;
@@ -58,5 +60,48 @@ export class MainService {
 
   send(url: string, data: any) {
     return this.api.post<IConfig>(url, data);
+  }
+
+  getHistoryList(url: string, currentVersionId: number) {
+    return this.api.get<IConfig[]>(url).pipe(map((h) => h.filter((a) => a.id !== currentVersionId).map((b) => ({ ...b, color: getRandomColor() }))));
+  }
+
+  compareConfig(ids: number[], dataOptions: (FieldOptions | PanelOptions)[], compareConfig: CompareConfig[]) {
+    dataOptions.map((a) => this.runClear(a, ids));
+    const cc = ids.map((id) => compareConfig.find((a) => a.id === id));
+    dataOptions.map((a) => this.runCheck(a, cc));
+  }
+
+  runClear(a: FieldOptions | PanelOptions, ids: number[]) {
+    if ('options' in a) a.options.map((b) => this.runClear(b, ids));
+    else if (a.compare.length) a.compare = a.compare.filter((b) => ids.includes(b.id));
+    return a;
+  }
+
+  runCheck(a: FieldOptions | PanelOptions, configs: CompareConfig[]) {
+    if ('options' in a) a.options.map((b) => this.runCheck(b, configs));
+    else this.checkField(a, configs);
+    return a;
+  }
+
+  checkField(a: FieldOptions, configs: CompareConfig[]) {
+    configs
+      .filter((b) => a.compare.every((e) => e.id !== b.id))
+      .map((c) => {
+        const co = this.findOldField(a.key, c);
+        if (co && (String(co.value) !== String(a.value) || (isObject(a.value) && JSON.stringify(a.value) !== JSON.stringify(co.value)))) a.compare.push(co);
+      });
+    return a;
+  }
+
+  findOldField(key: string, cc: CompareConfig) {
+    const value = key
+      .split('/')
+      .reverse()
+      .reduce((p, c) => p[c], cc.config);
+    if (value !== null && value !== undefined && String(value)) {
+      const { id, date, color } = { ...cc };
+      return { id, date, color, value };
+    }
   }
 }

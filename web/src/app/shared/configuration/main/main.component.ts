@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { ChangeDetectionStrategy, Component, Input, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnInit, ViewChild, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { EventMessage, SocketState } from '@app/core/store';
 import { SocketListenerDirective } from '@app/shared/directives';
 import { Store } from '@ngrx/store';
@@ -32,14 +32,13 @@ import { historyAnime, ISearchParam, MainService } from './main.service';
 })
 export class ConfigComponent extends SocketListenerDirective implements OnInit {
   loadingStatus = 'Loading...';
-  config$: Observable<IConfig>;
   rawConfig: IConfig;
   saveFlag = false;
   historyShow = false;
   isLock = false;
-  isReady = false;
+  config$: Observable<IConfig>;
 
-  @ViewChild(ConfigFieldsComponent) fields: ConfigFieldsComponent;
+  @ViewChild('fls') fields: ConfigFieldsComponent;
   @ViewChild('history') historyComponent: HistoryComponent;
   @ViewChild('tools') tools: ToolsComponent;
 
@@ -58,13 +57,24 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
     return `${this.url}history/`;
   }
 
-  constructor(private service: MainService, socket: Store<SocketState>) {
+  constructor(private service: MainService, private cd: ChangeDetectorRef, socket: Store<SocketState>) {
     super(socket);
   }
 
   ngOnInit() {
     if (!this.url) this.configUrl = this.service.Current?.config;
     super.startListenSocket();
+  }
+
+  onReady() {
+    this.tools.isAdvanced = this.fields.isAdvanced;
+    this.tools.description.setValue(this.rawConfig.description);
+    this.filter(this.tools.filterParams);
+    this.service.getHistoryList(this.saveUrl, this.rawConfig.id).subscribe((h) => {
+      this.historyComponent.compareConfig = h;
+      this.tools.disabledHistory = !h.length;
+      this.cd.markForCheck(); //.detectChanges();
+    });
   }
 
   filter(c: ISearchParam) {
@@ -85,7 +95,10 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
 
   getConfig(url = this.cUrl): Observable<IConfig> {
     return this.service.getConfig(url).pipe(
-      tap((c) => (this.rawConfig = c)),
+      tap((c) => {
+        this.rawConfig = c;
+        
+      }),
       catchError(() => {
         this.loadingStatus = 'Loading error.';
         return of(null);
@@ -98,11 +111,14 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
     if (form.valid) {
       this.saveFlag = true;
       const config = this.service.parseValue(this.fields.form, this.rawConfig.config);
-      const send = { config, attr: this.rawConfig.attr, description: this.tools.descriptionFormControl.value };
-      this.service.send(this.saveUrl, send).subscribe((c) => {
-        this.saveFlag = false;
-        this.rawConfig = c;
-      });
+      const send = { config, attr: this.rawConfig.attr, description: this.tools.description.value };
+      this.config$ = this.service.send(this.saveUrl, send).pipe(
+        tap((c) => {
+          this.saveFlag = false;
+          this.rawConfig = c;
+          this.cd.detectChanges();
+        })
+      );
     } else {
       Object.keys(form.controls).forEach((controlName) => form.controls[controlName].markAsTouched());
     }
@@ -110,5 +126,9 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
 
   changeVersion(id: number) {
     this.config$ = this.getConfig(`${this.saveUrl}${id}/`);
+  }
+
+  compareVersion(ids: number[]) {
+    this.service.compareConfig(ids, this.fields.dataOptions, this.historyComponent.compareConfig);
   }
 }

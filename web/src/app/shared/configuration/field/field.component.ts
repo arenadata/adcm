@@ -31,7 +31,7 @@ export class FieldComponent implements OnInit {
 
   @ViewChild('cc') inputControl: FieldDirective;
 
-  constructor(public cdetector: ChangeDetectorRef) {}
+  constructor(public cd: ChangeDetectorRef) {}
 
   ngOnInit() {
     const [name, ...other] = this.options.key.split('/');

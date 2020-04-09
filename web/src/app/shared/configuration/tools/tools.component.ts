@@ -20,12 +20,12 @@ import { ISearchParam } from '../main/main.service';
   selector: 'app-tools',
   template: `
     <mat-form-field class="description">
-      <input matInput placeholder="Description configuration" [formControl]="descriptionFormControl" />
+      <input matInput placeholder="Description configuration" [formControl]="description" />
     </mat-form-field>
-    <app-search (pattern)="filter($event)"></app-search>
-    <mat-checkbox [(ngModel)]="advanced" [ngClass]="{ advanced: isAdvanced }">Advanced</mat-checkbox>
+    <app-search (pattern)="search($event)"></app-search>
+    <mat-checkbox [(ngModel)]="advanced" [disabled]="isAdvanced === null" [ngClass]="{ advanced: isAdvanced }">Advanced</mat-checkbox>
     <div class="control-buttons">
-      <button mat-raised-button color="accent" class="form_config_button_save" [disabled]="disabledSave" (click)="save()">
+      <button mat-raised-button color="accent" class="form_config_button_save" [disabled]="disabledSave" (click)="onSave()">
         Save
       </button>
       <button mat-icon-button [disabled]="disabledHistory" (click)="toggleHistory()" [matTooltip]="historyShow ? 'Hide history' : 'Show history'">
@@ -36,40 +36,38 @@ import { ISearchParam } from '../main/main.service';
   styles: [':host {display: flex;justify-content: space-between;align-items: baseline;}', '.form_config_button_save { margin: 0 16px 0 30px;}', '.description {flex: 0}'],
 })
 export class ToolsComponent extends BaseDirective implements OnInit {
-  private _advanced = false;
-  private _search = '';
-  private _filter = new Subject<ISearchParam>();
+  private filter$ = new Subject<ISearchParam>();
+  filterParams: ISearchParam = { advanced: false, search: '' };
   historyShow = false;
-  descriptionFormControl = new FormControl();
-  @Input() description = '';
+  isAdvanced = null;
+  description = new FormControl();
   @Input() disabledSave = true;
   @Input() disabledHistory = true;
-  @Input() isAdvanced = false;
-  @Output() onfilter = new EventEmitter<ISearchParam>();
-  @Output() onsave = new EventEmitter();
-  @Output() onhistory = new EventEmitter<boolean>();
+
+  @Output() applyFilter = new EventEmitter<ISearchParam>();
+  @Output() save = new EventEmitter();
+  @Output() showHistory = new EventEmitter<boolean>();
 
   ngOnInit() {
-    this.descriptionFormControl.setValue(this.description);
-    this._filter.pipe(this.takeUntil()).subscribe(() => this.onfilter.emit({ advanced: this._advanced, search: this._search }));
+    this.filter$.pipe(this.takeUntil()).subscribe(() => this.applyFilter.emit(this.filterParams));
   }
 
   set advanced(advanced: boolean) {
-    this._advanced = advanced;
-    this._filter.next({ advanced, search: this._search });
+    this.filterParams.advanced = advanced;
+    this.filter$.next();
   }
 
-  filter(search: string) {
-    this._search = search;
-    this._filter.next({ advanced: this._advanced, search });
+  search(search: string) {
+    this.filterParams.search = search;
+    this.filter$.next();
   }
 
   toggleHistory() {
     this.historyShow = !this.historyShow;
-    this.onhistory.emit(this.historyShow);
+    this.showHistory.emit(this.historyShow);
   }
 
-  save() {
-    this.onsave.emit();
+  onSave() {
+    this.save.emit();
   }
 }
