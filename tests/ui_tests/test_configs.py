@@ -255,9 +255,10 @@ def prepare_group_config(config):
     read_only = bool('read_only' in config[0][0]['config'][0]['subs'][0].keys())
     default = bool('default' in config[0][0]['config'][0]['subs'][0].keys())
     if activatable:
-        temp = "activatable_{}_active_{}_required_{}_ro_{}_content_{}_group_invisible" \
+        temp = "{}_activatable_{}_active_{}_required_{}_ro_{}_content_{}_group_invisible" \
                "_{}_group_advanced_{}_field_invisible_{}_field_advanced_{}"
         config_folder_name = temp.format(
+            data_type,
             activatable,
             active,
             config[0][0]['config'][0]['subs'][0]['required'],
