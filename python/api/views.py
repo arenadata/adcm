@@ -15,7 +15,7 @@
 import rest_framework
 from django.db import transaction
 from django.utils import timezone
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.contrib.auth import login as django_login
 from django_filters import rest_framework as drf_filters
 
@@ -31,16 +31,17 @@ import cm.config as config
 import cm.job
 import cm.stack
 import cm.status_api
-from adcm.settings import ADCM_VERSION
-from api.api_views import (
-    DetailViewRO, DetailViewDelete, ActionFilter, ListView,
-    PageView, PageViewAdd, create, update
-)
-from api.serializers import check_obj, filter_actions, get_config_version
+from cm.api import safe_api
 from cm.errors import AdcmEx, AdcmApiEx
 from cm.models import (
     HostProvider, Host, ADCM, Action, JobLog, TaskLog, Upgrade, ObjectConfig,
-    ConfigLog, UserProfile, DummyData
+    ConfigLog, UserProfile, DummyData, Role,
+)
+from adcm.settings import ADCM_VERSION
+from api.serializers import check_obj, filter_actions, get_config_version
+from api.api_views import (
+    DetailViewRO, DetailViewDelete, ActionFilter, ListView,
+    PageView, PageViewAdd, GenericAPIPermView, create, update
 )
 
 
@@ -74,6 +75,8 @@ class APIRoot(routers.APIRootView):
         'task': 'task',
         'token': 'token',
         'user': 'user-list',
+        'group': 'group-list',
+        'role': 'role-list',
         'info': 'adcm-info',
     }
 
@@ -138,9 +141,9 @@ class UserList(PageViewAdd):
     ordering_fields = ('username',)
 
 
-class UserDetail(GenericAPIView):
+class UserDetail(GenericAPIPermView):
     queryset = User.objects.all()
-    serializer_class = api.serializers.UserSerializer
+    serializer_class = api.serializers.UserDetailSerializer
 
     def get(self, request, username):
         """
@@ -157,7 +160,7 @@ class UserDetail(GenericAPIView):
         return delete_user(username)
 
 
-class UserPasswd(GenericAPIView):
+class UserPasswd(GenericAPIPermView):
     queryset = User.objects.all()
     serializer_class = api.serializers.UserPasswdSerializer
 
@@ -168,6 +171,137 @@ class UserPasswd(GenericAPIView):
         user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
         serializer = self.serializer_class(user, data=request.data, context={'request': request})
         return update(serializer)
+
+
+class AddUser2Group(GenericAPIPermView):
+    queryset = User.objects.all()
+    serializer_class = api.serializers.AddUser2GroupSerializer
+
+    def post(self, request, username):
+        """
+        Add user to group
+        """
+        user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
+        serializer = self.serializer_class(user, data=request.data, context={'request': request})
+        return update(serializer)
+
+    def delete(self, request, username):
+        """
+        Remove user from group
+        """
+        user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        group = check_obj(
+            Group, {'name': serializer.data['name']}, 'GROUP_NOT_FOUND'
+        )
+        group.user_set.remove(user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ChangeUserRole(GenericAPIPermView):
+    queryset = User.objects.all()
+    serializer_class = api.serializers.AddUserRoleSerializer
+
+    def post(self, request, username):
+        """
+        Add user role
+        """
+        user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
+        serializer = self.serializer_class(user, data=request.data, context={'request': request})
+        return update(serializer)
+
+    def delete(self, request, username):
+        """
+        Remove user role
+        """
+        user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        role = check_obj(Role, {'id': serializer.data['role_id']}, 'ROLE_NOT_FOUND')
+        safe_api(cm.api.remove_user_role, (user, role))
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class GroupList(PageViewAdd):
+    """
+    get:
+    List all existing user groups
+
+    post:
+    Create new user group
+    """
+    queryset = Group.objects.all()
+    serializer_class = api.serializers.GroupSerializer
+    ordering_fields = ('name',)
+
+
+class GroupDetail(GenericAPIPermView):
+    queryset = Group.objects.all()
+    serializer_class = api.serializers.GroupDetailSerializer
+
+    def get(self, request, name):
+        """
+        show user group
+        """
+        group = check_obj(Group, {'name': name}, 'GROUP_NOT_FOUND')
+        serializer = self.serializer_class(group, context={'request': request})
+        return Response(serializer.data)
+
+    def delete(self, request, name):
+        """
+        delete user group
+        """
+        group = check_obj(Group, {'name': name}, 'GROUP_NOT_FOUND')
+        group.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ChangeGroupRole(GenericAPIPermView):
+    queryset = User.objects.all()
+    serializer_class = api.serializers.AddGroupRoleSerializer
+
+    def post(self, request, name):
+        """
+        Add group role
+        """
+        group = check_obj(Group, {'name': name}, 'GROUP_NOT_FOUND')
+        serializer = self.serializer_class(group, data=request.data, context={'request': request})
+        return update(serializer)
+
+    def delete(self, request, name):
+        """
+        Remove group role
+        """
+        group = check_obj(Group, {'name': name}, 'GROUP_NOT_FOUND')
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        role = check_obj(Role, {'id': serializer.data['role_id']}, 'ROLE_NOT_FOUND')
+        safe_api(cm.api.remove_group_role, (group, role))
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class RoleList(PageView):
+    """
+    get:
+    List all existing roles
+    """
+    queryset = Role.objects.all()
+    serializer_class = api.serializers.RoleSerializer
+    ordering_fields = ('name',)
+
+
+class RoleDetail(PageView):
+    queryset = Role.objects.all()
+    serializer_class = api.serializers.RoleDetailSerializer
+
+    def get(self, request, role_id):   # pylint: disable=arguments-differ
+        """
+        show role
+        """
+        role = check_obj(Role, {'id': role_id}, 'ROLE_NOT_FOUND')
+        serializer = self.serializer_class(role, context={'request': request})
+        return Response(serializer.data)
 
 
 class ProfileList(PageViewAdd):
@@ -328,7 +462,7 @@ class ADCMActionList(ListView):
         return Response(serializer.data)
 
 
-class ADCMAction(GenericAPIView):
+class ADCMAction(GenericAPIPermView):
     queryset = Action.objects.filter(prototype__type='adcm')
     serializer_class = api.serializers.ADCMActionDetail
 
@@ -349,7 +483,7 @@ class ADCMAction(GenericAPIView):
         return Response(serializer.data)
 
 
-class ADCMTask(GenericAPIView):
+class ADCMTask(GenericAPIPermView):
     queryset = TaskLog.objects.all()
     serializer_class = api.serializers.TaskRunSerializer
 
@@ -492,7 +626,7 @@ class HostDetail(DetailViewDelete):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class Stats(GenericAPIView):
+class Stats(GenericAPIPermView):
     queryset = JobLog.objects.all()
     serializer_class = api.serializers.StatsSerializer
 
@@ -505,7 +639,7 @@ class Stats(GenericAPIView):
         return Response(serializer.data)
 
 
-class JobStats(GenericAPIView):
+class JobStats(GenericAPIPermView):
     queryset = JobLog.objects.all()
     serializer_class = api.serializers.EmptySerializer
 
@@ -522,7 +656,7 @@ class JobStats(GenericAPIView):
         return Response(data)
 
 
-class TaskStats(GenericAPIView):
+class TaskStats(GenericAPIPermView):
     queryset = TaskLog.objects.all()
     serializer_class = api.serializers.EmptySerializer
 
@@ -601,7 +735,7 @@ class ProviderConfigVersion(ListView):
         return Response(serializer.data)
 
 
-class ProviderConfigRestore(GenericAPIView):
+class ProviderConfigRestore(GenericAPIPermView):
     queryset = ConfigLog.objects.all()
     serializer_class = api.cluster_serial.ObjectConfigRestore
 
@@ -641,7 +775,7 @@ class ProviderActionList(ListView):
         return Response(serializer.data)
 
 
-class ProviderAction(GenericAPIView):
+class ProviderAction(GenericAPIPermView):
     queryset = Action.objects.filter(prototype__type='provider')
     serializer_class = api.serializers.ProviderActionDetail
 
@@ -662,7 +796,7 @@ class ProviderAction(GenericAPIView):
         return Response(serializer.data)
 
 
-class ProviderTask(GenericAPIView):
+class ProviderTask(GenericAPIPermView):
     queryset = TaskLog.objects.all()
     serializer_class = api.serializers.TaskRunSerializer
 
@@ -712,7 +846,7 @@ class ProviderUpgradeDetail(ListView):
         return Response(serializer.data)
 
 
-class DoProviderUpgrade(GenericAPIView):
+class DoProviderUpgrade(GenericAPIPermView):
     queryset = Upgrade.objects.all()
     serializer_class = api.serializers.DoUpgradeSerializer
 
@@ -747,7 +881,7 @@ class HostActionList(ListView):
         return Response(serializer.data)
 
 
-class HostAction(GenericAPIView):
+class HostAction(GenericAPIPermView):
     queryset = Action.objects.filter(prototype__type='host')
     serializer_class = api.serializers.HostActionDetail
 
@@ -767,7 +901,7 @@ class HostAction(GenericAPIView):
         return Response(serializer.data)
 
 
-class HostTask(GenericAPIView):
+class HostTask(GenericAPIPermView):
     queryset = TaskLog.objects.all()
     serializer_class = api.serializers.TaskRunSerializer
 
@@ -846,7 +980,7 @@ class HostConfigVersion(ListView):
         return Response(serializer.data)
 
 
-class HostConfigRestore(GenericAPIView):
+class HostConfigRestore(GenericAPIPermView):
     queryset = ConfigLog.objects.all()
     serializer_class = api.cluster_serial.ObjectConfigRestore
 
