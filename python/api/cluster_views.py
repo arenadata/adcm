@@ -14,7 +14,6 @@ from itertools import chain
 
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.generics import GenericAPIView
 
 import cm.job
 import cm.api
@@ -29,7 +28,7 @@ import api.serializers
 import api.cluster_serial
 import api.stack_serial
 from api.serializers import check_obj, filter_actions, get_config_version
-from api.api_views import create, update
+from api.api_views import create, update, GenericAPIPermView
 from api.api_views import ListView, PageView, PageViewAdd, InterfaceView
 from api.api_views import DetailViewRO, DetailViewDelete, ActionFilter
 
@@ -360,7 +359,7 @@ class ClusterUpgradeDetail(ListView):
         return Response(serializer.data)
 
 
-class DoClusterUpgrade(GenericAPIView):
+class DoClusterUpgrade(GenericAPIPermView):
     queryset = Upgrade.objects.all()
     serializer_class = api.serializers.DoUpgradeSerializer
 
@@ -420,7 +419,7 @@ class ClusterHostActionList(ListView):
         return Response(serializer.data)
 
 
-class ClusterHostAction(GenericAPIView):
+class ClusterHostAction(GenericAPIPermView):
     queryset = Action.objects.filter(prototype__type='host')
     serializer_class = api.serializers.ClusterHostActionDetail
 
@@ -468,7 +467,7 @@ class ClusterServiceActionList(ListView):
         return Response(serializer.data)
 
 
-class ClusterServiceAction(GenericAPIView):
+class ClusterServiceAction(GenericAPIPermView):
     queryset = Action.objects.filter(prototype__type='service')
     serializer_class = api.serializers.ClusterServiceActionDetail
 
@@ -492,7 +491,7 @@ class ClusterServiceAction(GenericAPIView):
         return Response(serializer.data)
 
 
-class ClusterAction(GenericAPIView):
+class ClusterAction(GenericAPIPermView):
     queryset = Action.objects.all()
     serializer_class = api.serializers.ClusterActionDetail
 
@@ -512,7 +511,7 @@ class ClusterAction(GenericAPIView):
         return Response(serializer.data)
 
 
-class ClusterTask(GenericAPIView):
+class ClusterTask(GenericAPIPermView):
     queryset = TaskLog.objects.all()
     serializer_class = api.serializers.TaskRunSerializer
 
@@ -530,7 +529,7 @@ class ClusterTask(GenericAPIView):
         return create(serializer, action_id=int(action_id), selector={'cluster': cluster.id})
 
 
-class ClusterHostTask(GenericAPIView):
+class ClusterHostTask(GenericAPIPermView):
     queryset = TaskLog.objects.all()
     serializer_class = api.serializers.TaskRunSerializer
 
@@ -550,7 +549,7 @@ class ClusterHostTask(GenericAPIView):
         return create(serializer, action_id=int(action_id), selector=selector)
 
 
-class ClusterServiceTask(GenericAPIView):
+class ClusterServiceTask(GenericAPIPermView):
     queryset = TaskLog.objects.all()
     serializer_class = api.serializers.TaskRunSerializer
 
@@ -645,7 +644,7 @@ class ServiceComponentList(PageView):
         return self.get_page(obj, request)
 
 
-class ServiceComponentDetail(GenericAPIView):
+class ServiceComponentDetail(GenericAPIPermView):
     queryset = ServiceComponent.objects.all()
     serializer_class = api.cluster_serial.ServiceComponentDetailSerializer
 
@@ -666,7 +665,7 @@ class ServiceComponentDetail(GenericAPIView):
         return Response(serializer.data)
 
 
-class StatusList(GenericAPIView):
+class StatusList(GenericAPIPermView):
     queryset = HostComponent.objects.all()
     serializer_class = api.cluster_serial.StatusSerializer
 
@@ -680,7 +679,7 @@ class StatusList(GenericAPIView):
         return Response(serializer.data)
 
 
-class HostComponentList(GenericAPIView, InterfaceView):
+class HostComponentList(GenericAPIPermView, InterfaceView):
     queryset = HostComponent.objects.all()
     serializer_class = api.cluster_serial.HostComponentSerializer
     serializer_class_ui = api.cluster_serial.HostComponentUISerializer
@@ -723,7 +722,7 @@ class HostComponentList(GenericAPIView, InterfaceView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class HostComponentDetail(GenericAPIView):
+class HostComponentDetail(GenericAPIPermView):
     queryset = HostComponent.objects.all()
     serializer_class = api.cluster_serial.HostComponentSerializer
 
@@ -797,7 +796,7 @@ class ClusterConfigVersion(ClusterServiceConfigVersion):
     """
 
 
-class ClusterConfigRestore(GenericAPIView):
+class ClusterConfigRestore(GenericAPIPermView):
     queryset = ConfigLog.objects.all()
     serializer_class = api.cluster_serial.ObjectConfigRestore
 
