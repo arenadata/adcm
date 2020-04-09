@@ -217,9 +217,7 @@ def login(app):
     login.login("admin", "admin")
 
 
-@pytest.fixture(scope='module', params=configs)
-def data(request):
-    config = request.param
+def prepare_config(config):
     read_only = bool('read_only' in config[0][0]['config'][0].keys())
     default = bool('default' in config[0][0]['config'][0].keys())
     templ = "type_{}_required_{}_ro_{}_content_{}_invisible_{}_advanced_{}"
@@ -246,9 +244,7 @@ def data(request):
     return config[0][0], config[1], d_name
 
 
-@pytest.fixture(scope='module', params=group_configs)
-def data_groups(request):
-    config = request.param
+def prepare_group_config(config):
     if "activatable" in config[0][0]['config'][0].keys():
         activatable = True
         active = config[0][0]['config'][0]['active']
@@ -302,16 +298,16 @@ def data_groups(request):
     return config[0][0], config[1], d_name
 
 
-def test_configs_fields(sdk_client_ms: ADCMClient, data, login, app):
+@pytest.mark.parametrize("config_dict", configs)
+def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login, app):
     """Test UI configuration page without groups
     Scenario:
     1. """
     _ = login, app
+    data = prepare_config(config_dict)
     config = data[0]
     expected = data[1]
     path = data[2]
-    print(config)
-    print(expected)
     allure.attach("Cluster configuration", config,
                   allure.attachment_type.TEXT)
     allure.attach('Expected result', expected,
@@ -347,14 +343,17 @@ def test_configs_fields(sdk_client_ms: ADCMClient, data, login, app):
         assert not fields
 
 
-def test_group_configs_field(sdk_client_ms: ADCMClient, data_groups, login, app):
+@pytest.mark.parametrize("config_dict", group_configs)
+def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app):
     """Test for configuration fields with groups"""
     _ = login, app
-    config = data_groups[0]
-    expected = data_groups[1]
-    path = data_groups[2]
+    data = prepare_group_config(config_dict)
+    config = data[0]
+    expected = data[1]
+    path = data[2]
     print(config)
     print(expected)
+    print(path)
     allure.attach("Cluster configuration",
                   config, allure.attachment_type.TEXT)
     allure.attach('Expected result', expected,
