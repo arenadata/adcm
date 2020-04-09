@@ -82,6 +82,7 @@ def run_ansible(job_id):
     proc = subprocess.Popen(cmd, env=set_pythonpath(), stdout=out_file, stderr=err_file)
     log.info("job #%s run cmd: %s", job_id, ' '.join(cmd))
     cm.job.set_job_status(job_id, config.Job.RUNNING, event, proc.pid)
+    event.send_state()
     log.info("run ansible job #%s, pid %s, playbook %s", job_id, proc.pid, playbook)
     ret = proc.wait()
     cm.job.finish_check(job_id)

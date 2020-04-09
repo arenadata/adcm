@@ -24,7 +24,7 @@ const options = { clickAction: 'noop', color: 'accent' };
       <mat-error *ngIf="!isValid">Field [ {{ field.display_name }} ] is required!</mat-error>
     </ng-container>
   `,
-  styles: [':host {height: 58px;} mat-error { font-size: 0.75em; }'],
+  styles: [':host {height: 58px;} mat-error { font-size: 0.75em; margin-left: 14px; }'],
   providers: [{ provide: MAT_CHECKBOX_DEFAULT_OPTIONS, useValue: options }]
 })
 export class BooleanComponent extends FieldDirective {
