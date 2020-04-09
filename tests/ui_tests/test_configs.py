@@ -272,9 +272,10 @@ def prepare_group_config(config):
                                                               data_type,
                                                               config_folder_name)
     else:
-        temp = "required_{}_ro_{}_content_{}_group_invisible" \
+        temp = "{}_required_{}_ro_{}_content_{}_group_invisible" \
                "_{}_group_advanced_{}_field_invisible_{}_field_advanced_{}"
         config_folder_name = temp.format(
+            data_type,
             config[0][0]['config'][0]['subs'][0]['required'],
             config[1]['editable'],
             config[1]['content'],
