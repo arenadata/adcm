@@ -671,7 +671,7 @@ def multi_bind(cluster, service, bind_list):   # pylint: disable=too-many-locals
     return get_import(cluster, service)
 
 
-def bind(cluster, service, export_cluster, export_service_id):
+def bind(cluster, service, export_cluster, export_service_id):   # pylint: disable=too-many-branches
     '''
     Adapter between old and new bind interface
     /api/.../bind/ -> /api/.../import/
@@ -703,11 +703,18 @@ def bind(cluster, service, export_cluster, export_service_id):
     except MultipleObjectsReturned:
         err('BIND_ERROR', 'Old api does not support multi bind. Go to /api/v1/.../import/')
 
-    bind_list = {'import_id': pi.id, 'export_id': {'cluster_id': export_cluster.id}}
-    if export_service:
-        bind_list['export_id']['service_id'] = export_service.id
+    bind_list = []
+    for imp in get_import(cluster, service):
+        for exp in imp['exports']:
+            if exp['binded']:
+                bind_list.append({'import_id': imp['id'], 'export_id': exp['id']})
 
-    multi_bind(cluster, service, [bind_list])
+    item = {'import_id': pi.id, 'export_id': {'cluster_id': export_cluster.id}}
+    if export_service:
+        item['export_id']['service_id'] = export_service.id
+    bind_list.append(item)
+
+    multi_bind(cluster, service, bind_list)
     res = {
         'export_cluster_id': export_cluster.id,
         'export_cluster_name': export_cluster.name,
