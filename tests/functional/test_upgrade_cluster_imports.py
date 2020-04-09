@@ -83,21 +83,25 @@ def test_incorrect_import_strict_version(sdk_client_fs: ADCMClient, path):
     """Upgrade cluster with service incorrect strict version
     Scenario:
     1. Create cluster for upgrade with exports
-    2. Create upgradable cluster with import and incorrect strict version
-    3. Create service
-    4. Import service from cluster with export to cluster from step 2 (with import)
-    4. Upgrade cluster from step 1
-    5. Check that cluster was not upgraded because incorrect version for service
+    2. Create upgradable cluster with import
+    3. Create upgradable cluster with import and incorrect strict version
+    4. Create service
+    5. Import service from cluster with export to cluster from step 2 (with import)
+    6. Upgrade cluster from step 1
+    7. Check that cluster was not upgraded because incorrect version for service
     in cluster with import
     """
-    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgrade_cluster_with_export'))
-    bundle_import = sdk_client_fs.upload_from_fs(path)
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(
+        __file__, 'upgrade_cluster_with_export_for_strict_test'))
+    sdk_client_fs.upload_from_fs(path)
+    bundle_import_correct = sdk_client_fs.upload_from_fs(
+        get_data_dir(__file__, 'cluster_with_correct_import'))
     cluster = bundle.cluster_create("test")
     service = cluster.service_add(name="hadoop")
-    cluster_import = bundle_import.cluster_create("cluster_import")
+    cluster_import = bundle_import_correct.cluster_create("cluster_import")
     cluster_import.bind(service)
     cluster_import.bind(cluster)
-    upgr = cluster.upgrade(name='upgrade to 1.6')
+    upgr = cluster_import.upgrade(name='upgrade to 1.6')
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         upgr.do()
     err.UPGRADE_ERROR.equal(e)
@@ -111,18 +115,20 @@ def test_incorrect_import_version(sdk_client_fs: ADCMClient, path):
     2. Create upgradable cluster with import and incorrect version
     3. Create service
     4. Import service from cluster with export to cluster from step 2 (with import)
-    4. Upgrade cluster from step 1
-    5. Check that cluster was not upgraded because incorrect version for service
+    5. Upgrade cluster from step 1
+    6. Check that cluster was not upgraded because incorrect version for service
     in cluster with import
     """
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgrade_cluster_with_export'))
-    bundle_import = sdk_client_fs.upload_from_fs(path)
+    sdk_client_fs.upload_from_fs(path)
+    bundle_import_correct = sdk_client_fs.upload_from_fs(
+        get_data_dir(__file__, 'cluster_with_correct_import'))
     cluster = bundle.cluster_create("test")
     service = cluster.service_add(name="hadoop")
-    cluster_import = bundle_import.cluster_create("cluster_import")
+    cluster_import = bundle_import_correct.cluster_create("cluster_import")
     cluster_import.bind(service)
     cluster_import.bind(cluster)
-    upgr = cluster.upgrade(name='upgrade to 1.6')
+    upgr = cluster_import.upgrade(name='upgrade to 1.6')
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         upgr.do()
     err.UPGRADE_ERROR.equal(e)
