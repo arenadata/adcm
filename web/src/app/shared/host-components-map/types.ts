@@ -44,6 +44,7 @@ export class Tile {
   limit?: Constraint;
   disabled: boolean;
   actions?: ActionParam[];
+  color: 'none' | 'gray';
 }
 
 export class HostTile extends Tile {
