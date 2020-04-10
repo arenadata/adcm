@@ -32,7 +32,7 @@ import cm.config as config
 from cm.errors import AdcmApiEx, AdcmEx
 from cm.models import (
     Action, SubAction, Cluster, Host, Prototype, PrototypeConfig, JobLog, UserProfile,
-    Upgrade, HostProvider, ConfigLog, ClusterObject, CheckLog, Role,
+    Upgrade, HostProvider, ConfigLog, ClusterObject, Role
 )
 
 
@@ -875,9 +875,7 @@ class LogStorageSerializer(serializers.Serializer):
                     body = f.read()
         elif obj.type == 'check':
             if body is None:
-                body = []
-                for cl in CheckLog.objects.filter(job_id=obj.job.id):
-                    body.append({'title': cl.title, 'message': cl.message, 'result': cl.result})
+                body = cm.job.get_check_log(obj.job_id)
             if isinstance(body, str):
                 body = json.loads(body)
         elif obj.type == 'custom':
