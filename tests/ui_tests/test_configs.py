@@ -81,6 +81,14 @@ def generate_group_expected_result(group_config):
         expected_result['field_visible_advanced'] = True
     else:
         expected_result['field_visible_advanced'] = False
+    if 'activatable' in group_config.keys():
+        if group_config['read_only']:
+            expected_result['editable'] = False
+        else:
+            if group_config['active']:
+                expected_result['editable'] = True
+            else:
+                expected_result['editable'] = False
     return expected_result
 
 
@@ -203,6 +211,7 @@ configs = generate_configs(config_data)
 
 group_configs_data = generate_group_data()
 group_configs = generate_group_configs(group_configs_data)
+print(len(group_configs))
 
 
 @pytest.fixture(scope='module')
@@ -254,39 +263,21 @@ def prepare_group_config(config):
     data_type = config[0][0]['config'][0]['subs'][0]['type']
     read_only = bool('read_only' in config[0][0]['config'][0]['subs'][0].keys())
     default = bool('default' in config[0][0]['config'][0]['subs'][0].keys())
-    if activatable:
-        temp = "{}_activatable_{}_active_{}_required_{}_ro_{}_content_{}_group_invisible" \
-               "_{}_group_advanced_{}_field_invisible_{}_field_advanced_{}"
-        config_folder_name = temp.format(
-            data_type,
-            activatable,
-            active,
-            config[0][0]['config'][0]['subs'][0]['required'],
-            read_only,
-            default,
-            config[0][0]['config'][0]['ui_options']['invisible'],
-            config[0][0]['config'][0]['ui_options']['advanced'],
-            config[0][0]['config'][0]['subs'][0]['ui_options']['invisible'],
-            config[0][0]['config'][0]['subs'][0]['ui_options']['advanced'])
-        d_name = "{}/configs/activatable_groups/{}/{}".format(utils.get_data_dir(__file__),
-                                                              data_type,
-                                                              config_folder_name)
-    else:
-        temp = "{}_required_{}_ro_{}_content_{}_group_invisible" \
-               "_{}_group_advanced_{}_field_invisible_{}_field_advanced_{}"
-        config_folder_name = temp.format(
-            data_type,
-            config[0][0]['config'][0]['subs'][0]['required'],
-            config[1]['editable'],
-            config[1]['content'],
-            config[0][0]['config'][0]['ui_options']['invisible'],
-            config[0][0]['config'][0]['ui_options']['advanced'],
-            config[0][0]['config'][0]['subs'][0]['ui_options']['invisible'],
-            config[0][0]['config'][0]['subs'][0]['ui_options']['advanced'])
-        d_name = "{}/configs/groups/{}/{}".format(utils.get_data_dir(__file__),
-                                                  data_type,
-                                                  config_folder_name)
-
+    temp = "{}_activatable_{}_active_{}_required_{}_ro_{}_content_{}_group_invisible" \
+           "_{}_group_advanced_{}_field_invisible_{}_field_advanced_{}"
+    config_folder_name = temp.format(
+        data_type,
+        activatable,
+        active,
+        config[0][0]['config'][0]['subs'][0]['required'],
+        read_only,
+        default,
+        config[0][0]['config'][0]['ui_options']['invisible'],
+        config[0][0]['config'][0]['ui_options']['advanced'],
+        config[0][0]['config'][0]['subs'][0]['ui_options']['invisible'],
+        config[0][0]['config'][0]['subs'][0]['ui_options']['advanced'])
+    d_name = "{}/configs/groups/{}/{}".format(utils.get_data_dir(__file__),
+                                              data_type, config_folder_name)
     if not os.path.exists(d_name):
         try:
             os.makedirs(d_name)
@@ -310,14 +301,13 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login, app):
     config = data[0]
     expected = data[1]
     path = data[2]
-    # allure.attach("Cluster configuration", config,
-    #               allure.attachment_type.TEXT)
-    # allure.attach('Expected result', expected,
-    #               allure.attachment_type.TEXT)
-    # allure.attach.file("/".join([path, 'config.yaml']),
-    #                    attachment_type=allure.attachment_type.YAML)
+    allure.attach("Cluster configuration", str(config),
+                  allure.attachment_type.TEXT)
+    allure.attach('Expected result', str(expected),
+                  allure.attachment_type.TEXT)
+    allure.attach.file("/".join([path, 'config.yaml']),
+                       attachment_type=allure.attachment_type.YAML)
     bundle = sdk_client_ms.upload_from_fs(path)
-    # cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=utils.random_string(14))
     field_type = config['config'][0]['type']
     app.driver.get("{}/cluster/{}/config".format
@@ -356,12 +346,12 @@ def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app)
     print(config)
     print(expected)
     print(path)
-    # allure.attach("Cluster configuration",
-    #               config, allure.attachment_type.TEXT)
-    # allure.attach('Expected result', expected,
-    #               allure.attachment_type.TEXT)
-    # allure.attach.file("/".join([path, 'config.yaml']),
-    #                    attachment_type=allure.attachment_type.YAML)
+    allure.attach("Cluster configuration",
+                  str(config), allure.attachment_type.TEXT)
+    allure.attach('Expected result', str(expected),
+                  allure.attachment_type.TEXT)
+    allure.attach.file("/".join([path, 'config.yaml']),
+                       attachment_type=allure.attachment_type.YAML)
 
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster = bundle.cluster_create(name=utils.random_string(14))
