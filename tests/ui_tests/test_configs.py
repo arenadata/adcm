@@ -404,7 +404,7 @@ def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app)
         assert groups, groups
         assert not fields, fields
     if expected['group_visible'] and expected['field_visible']:
-        if expected['field_visible_advanced']:
+        if expected['field_visible_advanced'] or expected['group_visible_advanced']:
             assert not fields
             if not ui_config.advanced:
                 ui_config.click_advanced()
