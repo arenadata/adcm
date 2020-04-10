@@ -311,20 +311,24 @@ def prepare_group_config(config):
 
 @pytest.mark.parametrize("config_dict", configs)
 def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login, app):
-    """Test UI configuration page without groups
+    """Test UI configuration page without groups. Before start test actions
+    we always create configuration and expected result. All logic for test
+    expected result in functions before this test function.
     Scenario:
-    1. """
+    1. Generate configuration and expected result for test
+    2. Upload bundle
+    3. Create cluster
+    4. Open configuration page
+    5. Check save button status
+    6. Check field configuration (depends on expected result dict and bundle configuration"""
     _ = login, app
     data = prepare_config(config_dict)
     config = data[0]
     expected = data[1]
     path = data[2]
-    allure.attach("Cluster configuration", str(config),
-                  allure.attachment_type.TEXT)
-    allure.attach('Expected result', str(expected),
-                  allure.attachment_type.TEXT)
     allure.attach.file("/".join([path, 'config.yaml']),
-                       attachment_type=allure.attachment_type.YAML)
+                       attachment_type=allure.attachment_type.YAML,
+                       name='config.yaml')
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster = bundle.cluster_create(name=utils.random_string(14))
     field_type = config['config'][0]['type']
@@ -355,19 +359,29 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login, app):
 
 @pytest.mark.parametrize("config_dict", group_configs)
 def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app):
-    """Test for configuration fields with groups"""
+    """Test for configuration fields with groups. Before start test actions
+    we always create configuration and expected result. All logic for test
+    expected result in functions before this test function. If we have
+    advanced fields inside configuration and group visible we check
+    field and group status after clicking advanced button. For activatable
+    groups we don't change group status. We have two types of tests for activatable
+    groups: the first one when group is active and the second when group not active.
+    Scenario:
+    1. Generate configuration and expected result for test
+    2. Upload bundle
+    3. Create cluster
+    4. Open configuration page
+    5. Check save button status
+    6. Check field configuration (depends on expected result dict and bundle configuration"""
     _ = login, app
     print(config_dict)
     data = prepare_group_config(config_dict)
     config = data[0]
     expected = data[1]
     path = data[2]
-    allure.attach("Cluster configuration",
-                  str(config), allure.attachment_type.TEXT)
-    allure.attach('Expected result', str(expected),
-                  allure.attachment_type.TEXT)
     allure.attach.file("/".join([path, 'config.yaml']),
-                       attachment_type=allure.attachment_type.YAML)
+                       attachment_type=allure.attachment_type.YAML,
+                       name='config.yaml')
 
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster = bundle.cluster_create(name=utils.random_string())
@@ -378,45 +392,36 @@ def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app)
     fields = ui_config.get_app_fields()
     save_err_mess = "Correct status for save button {}".format([expected['save']])
     assert expected['save'] == ui_config.save_button_status(), save_err_mess
-    if expected['group_visible']:
+    if expected['group_visible'] and not expected['field_visible']:
         if expected['group_visible_advanced']:
             assert not groups
             assert not fields
             if not ui_config.advanced:
                 ui_config.click_advanced()
-                assert ui_config.advanced
-            groups = ui_config.get_group_elements()
-            assert groups, groups
-            fields = ui_config.get_app_fields()
-            if expected['field_visible_advanced'] or expected['field_visible']:
-                assert fields, fields
-            else:
-                assert not fields, fields
-        if expected['field_visible']:
-            if expected['field_visible_advanced']:
-                if not ui_config.advanced:
-                    assert not fields
-                    ui_config.click_advanced()
-                else:
-                    ui_config.click_advanced()
-                    fields = ui_config.get_field_groups()
-                    assert not fields
-                    ui_config.click_advanced()
-                assert ui_config.advanced
-            fields = ui_config.get_app_fields()
-            assert fields, fields
-            for field in fields:
-                ui_config.assert_field_editable(field, expected['editable'])
-            if expected['content']:
-                default_value = config['config'][0]['subs'][0]['default']
-                ui_config.assert_field_content_equal(field_type, fields[0], default_value)
-            if expected['alerts']:
-                ui_config.assert_alerts_presented(field_type)
-        if not expected['field_visible']:
-            assert not fields, fields
-    elif expected['group_visible'] and not expected['field_visible']:
-        assert groups
-        assert not fields
-    elif not expected['group_visible']:
+            assert ui_config.advanced
+        groups = ui_config.get_group_elements()
+        fields = ui_config.get_app_fields()
+        assert groups, groups
+        assert not fields, fields
+    if expected['group_visible'] and expected['field_visible']:
+        if expected['field_visible_advanced']:
+            assert not fields
+            if not ui_config.advanced:
+                ui_config.click_advanced()
+            assert ui_config.advanced
+        fields = ui_config.get_app_fields()
+        assert fields, fields
+        for field in fields:
+            ui_config.assert_field_editable(field, expected['editable'])
+        if expected['content']:
+            default_value = config['config'][0]['subs'][0]['default']
+            ui_config.assert_field_content_equal(field_type, fields[0], default_value)
+        if expected['alerts']:
+            ui_config.assert_alerts_presented(field_type)
+    if not expected['group_visible']:
         assert not groups
-        assert not fields
+        if not ui_config.advanced:
+            ui_config.click_advanced()
+        assert ui_config.advanced
+        groups = ui_config.get_group_elements()
+        assert not groups
