@@ -21,14 +21,14 @@ import { CompareConfig } from '../types';
     <mat-toolbar>
       <mat-form-field>
         <mat-select #vs placeholder="History" (valueChange)="changeVersion($event); vs.value = ''">
-          <mat-option *ngFor="let item of compareConfig; trackBy: trackById" [value]="item.id">{{ item.id }} {{ item.date | date: 'short' }} {{ item.description }} </mat-option>
+          <mat-option *ngFor="let item of compareConfig; trackBy: trackById" [value]="item.id">(#{{ item.id }}) - {{ item.date | date: 'short' }} {{ item.description }} </mat-option>
         </mat-select>
       </mat-form-field>
       <span>&nbsp;&nbsp;</span>
       <mat-form-field>
         <mat-select placeholder="Compare to" [formControl]="comparator" multiple>
           <mat-option *ngFor="let item of compareConfig; trackBy: trackById" [value]="item.id" [appColorOption]="item.color">
-            {{ item.id }} {{ item.date | date: 'short' }} {{ item.description }}
+            (#{{ item.id }}) - {{ item.date | date: 'short' }} {{ item.description }}
           </mat-option>
         </mat-select>
       </mat-form-field>
@@ -53,5 +53,10 @@ export class HistoryComponent extends BaseDirective implements OnInit {
 
   trackById(item: CompareConfig): number {
     return item.id;
+  }
+
+  reset() {
+    this.compareConfig = [];
+    this.comparator.reset();
   }
 }

@@ -73,7 +73,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
     this.service.getHistoryList(this.saveUrl, this.rawConfig.id).subscribe((h) => {
       this.historyComponent.compareConfig = h;
       this.tools.disabledHistory = !h.length;
-      this.cd.markForCheck(); //.detectChanges();
+      this.cd.markForCheck();
     });
   }
 
@@ -97,7 +97,6 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
     return this.service.getConfig(url).pipe(
       tap((c) => {
         this.rawConfig = c;
-        
       }),
       catchError(() => {
         this.loadingStatus = 'Loading error.';
@@ -110,12 +109,13 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
     const form = this.fields.form;
     if (form.valid) {
       this.saveFlag = true;
+      this.historyComponent.reset();
       const config = this.service.parseValue(this.fields.form, this.rawConfig.config);
       const send = { config, attr: this.rawConfig.attr, description: this.tools.description.value };
       this.config$ = this.service.send(this.saveUrl, send).pipe(
         tap((c) => {
           this.saveFlag = false;
-          this.rawConfig = c;
+          this.rawConfig = c;          
           this.cd.detectChanges();
         })
       );
@@ -125,10 +125,13 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
   }
 
   changeVersion(id: number) {
+    this.fields.form.reset();
+    this.fields.dataOptions = [];
+    this.historyComponent.reset();
     this.config$ = this.getConfig(`${this.saveUrl}${id}/`);
   }
 
   compareVersion(ids: number[]) {
-    this.service.compareConfig(ids, this.fields.dataOptions, this.historyComponent.compareConfig);
+    if (ids) this.service.compareConfig(ids, this.fields.dataOptions, this.historyComponent.compareConfig);
   }
 }

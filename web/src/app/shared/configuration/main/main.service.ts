@@ -20,6 +20,7 @@ import { FieldService } from '../field.service';
 import { FieldOptions, FieldStack, IConfig, PanelOptions, CompareConfig } from '../types';
 import { getRandomColor, isObject } from '@app/core/types';
 import { tap, map } from 'rxjs/operators';
+import { type } from 'os';
 
 export interface ISearchParam {
   advanced: boolean;
@@ -88,13 +89,23 @@ export class MainService {
     configs
       .filter((b) => a.compare.every((e) => e.id !== b.id))
       .map((c) => {
-        const co = this.findOldField(a.key, c);
-        if (co && (String(co.value) !== String(a.value) || (isObject(a.value) && JSON.stringify(a.value) !== JSON.stringify(co.value)))) a.compare.push(co);
+        const co = this.findFieldiCompare(a.key, c);
+        if (!co) {
+          if (String(a.value) && String(a.value) !== 'null') a.compare.push({ id: c.id, date: c.date, color: c.color, value: 'null' });
+        } else {
+          if (isObject(co.value)) {
+            if (isObject(a.value)) {
+              if (JSON.stringify(a.value) !== JSON.stringify(co.value)) a.compare.push({ ...co, value: JSON.stringify(co.value) });
+            } else if (typeof a.value === 'string') {
+              if (JSON.stringify(JSON.parse(a.value)) !== JSON.stringify(co.value)) a.compare.push({ ...co, value: JSON.stringify(co.value) });
+            }
+          } else if (String(co.value) !== String(a.value)) a.compare.push(co);
+        }
       });
     return a;
   }
 
-  findOldField(key: string, cc: CompareConfig) {
+  findFieldiCompare(key: string, cc: CompareConfig) {
     const value = key
       .split('/')
       .reverse()
