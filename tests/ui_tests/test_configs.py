@@ -120,7 +120,7 @@ def generate_group_expected_result(group_config):
         field_invisible = group_config['field_ui_options']['invisible']
         expected_result['field_visible'] = (group_active and not field_invisible)
         expected_result['field_visible_advanced'] = (
-                field_advanced and group_active and not field_invisible)
+            field_advanced and group_active and not field_invisible)
     return expected_result
 
 
