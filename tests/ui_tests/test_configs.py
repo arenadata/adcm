@@ -36,7 +36,7 @@ UI_OPTIONS_PAIRS_GROUPS = [(True, True, True, True),
 TYPES = ('string', 'password', 'integer', 'text', 'boolean',
          'float', 'list', 'map', 'json', 'file')
 
-DEFAULT_VALUE = {"string": "default_string",
+DEFAULT_VALUE = {"string": "string",
                  "text": "text",
                  "password": "password",
                  "integer": 4,
@@ -47,28 +47,6 @@ DEFAULT_VALUE = {"string": "default_string",
                  "list": ['/dev/rdisk0s1', '/dev/rdisk0s2', '/dev/rdisk0s3'],
                  "file": "./file.txt"}
 
-
-# def generate_group_data():
-#     """Generate data set for groups
-#     :return: list with data
-#     """
-#     group_data = []
-#     for default in PAIR:
-#         for required in PAIR:
-#             for ro in PAIR:
-#                 for activatable in PAIR:
-#                     for active in PAIR:
-#                         for ui_options in UI_OPTIONS_PAIRS:
-#                             for field_ui_options in UI_OPTIONS_PAIRS:
-#                                 group_data.append({
-#                                     'default': default, "required": required,
-#                                     "activatable": activatable, 'active': active,
-#                                     "read_only": ro,
-#                                     "ui_options": {"invisible": ui_options[0],
-#                                                    'advanced': ui_options[1]},
-#                                     "field_ui_options": {"invisible": field_ui_options[0],
-#                                                          'advanced': field_ui_options[1]}})
-#     return group_data
 
 def generate_group_data():
     """Generate data set for groups
@@ -131,18 +109,18 @@ def generate_group_expected_result(group_config):
     else:
         expected_result['group_visible_advanced'] = False
     field_advanced = group_config['field_ui_options']['advanced']
-    if field_advanced and not group_config['field_ui_options']['invisible']:
-        expected_result['field_visible_advanced'] = True
-    else:
-        expected_result['field_visible_advanced'] = False
+    field_invisible = group_config['field_ui_options']['invisible']
+    expected_result['field_visible_advanced'] = (field_advanced and not field_invisible)
+    # if field_advanced and not group_config['field_ui_options']['invisible']:
+    #     expected_result['field_visible_advanced'] = True
+    # else:
+    #     expected_result['field_visible_advanced'] = False
     if 'activatable' in group_config.keys():
-        if group_config['read_only']:
-            expected_result['editable'] = False
-        else:
-            if group_config['active']:
-                expected_result['editable'] = True
-            else:
-                expected_result['editable'] = False
+        group_active = group_config['active']
+        field_invisible = group_config['field_ui_options']['invisible']
+        expected_result['field_visible'] = (group_active and not field_invisible)
+        expected_result['field_visible_advanced'] = (
+                field_advanced and group_active and not field_invisible)
     return expected_result
 
 
@@ -261,7 +239,6 @@ configs = generate_configs(config_data)
 
 group_configs_data = generate_group_data()
 group_configs = generate_group_configs(group_configs_data)
-print(len(group_configs))
 
 
 @pytest.fixture(scope='module')
