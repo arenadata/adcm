@@ -50,6 +50,11 @@ export class FieldComponent implements OnInit {
     return this.options.ui_options && this.options.ui_options.advanced;
   }
 
+  /**
+   * TODO: should be own restore() for each fieldComponent
+   *
+   * @memberof FieldComponent
+   */
   restore() {
     const field = this.currentFormGroup.controls[this.options.name];
     const defaultValue = this.options.default;

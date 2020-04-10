@@ -12,25 +12,27 @@
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ApiService } from '@app/core/api/api.service';
+import { provideMockStore } from '@ngrx/store/testing';
 
 import { FieldService } from '../field.service';
+import { ConfigFieldsComponent } from '../fields/fields.component';
+import { ToolsComponent } from '../tools/tools.component';
 import { ConfigComponent } from './main.component';
 import { MainService } from './main.service';
-import { MockStore, provideMockStore } from '@ngrx/store/testing';
 
 describe('Configuration : MainComponent >> ', () => {
   let component: ConfigComponent;
   let fixture: ComponentFixture<ConfigComponent>;
-//   let store: MockStore;
+  //   let store: MockStore;
 
   beforeEach(async () => {
     TestBed.configureTestingModule({
-      declarations: [ConfigComponent],
+      declarations: [ConfigComponent, ToolsComponent, ConfigFieldsComponent],
       providers: [
         { provide: MainService, useValue: {} },
         { provide: FieldService, useValue: {} },
         { provide: ApiService, useValue: {} },
-        provideMockStore()
+        provideMockStore(),
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -38,6 +40,7 @@ describe('Configuration : MainComponent >> ', () => {
 
   beforeEach(() => {
     fixture = TestBed.createComponent(ConfigComponent);
+    // TestBed.inject()
     component = fixture.componentInstance;
   });
 
@@ -45,14 +48,29 @@ describe('Configuration : MainComponent >> ', () => {
     expect(component).toBeTruthy();
   });
 
-  /** 
-   * Должны присутсвовать: ToolsComponent, HistoryComponent, FieldsComponent
-   * Если нет данных - ToolsComponent with buttons disabled, and notice - 'Loading error'
-   * When get data config 
-   * - wait FieldsComponent onload event  
+  it('should exist ToolsComponent, HistoryComponent, FieldsComponent', () => {
+    const de = fixture.debugElement.nativeElement;
+    const tools = de.querySelector('app-tools');
+    const history = de.querySelector('app-history');
+    const fields = de.querySelector('app-config-fields');
+    expect(tools).toBeTruthy();
+    expect(history).toBeTruthy();
+    expect(fields).toBeTruthy();
+  });
+
+  it('should be Save button and it must be disabled', () => {
+    // fixture.detectChanges();
+    const de = fixture.debugElement.nativeElement;
+    const saveBtn = de.querySelector('app-tools div.control-buttons button.form_config_button_save');
+    expect(saveBtn).toBeTruthy();
+    // expect(saveBtn.disabled).toBeTrue();
+  });
+
+  /**
+   * ToolsComponent with buttons disabled, and notice - 'Loading error'
+   * When get data config
+   * - wait FieldsComponent onload event
    * - check onReady method
    * - init vars for ToolsComponent and HistoryComponent
-   * 
-   * 
-  */
+   */
 });

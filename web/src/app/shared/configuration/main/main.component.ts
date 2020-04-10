@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { ChangeDetectionStrategy, Component, Input, OnInit, ViewChild, AfterViewInit, ChangeDetectorRef } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit, ViewChild } from '@angular/core';
 import { EventMessage, SocketState } from '@app/core/store';
 import { SocketListenerDirective } from '@app/shared/directives';
 import { Store } from '@ngrx/store';
@@ -73,7 +73,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
     this.service.getHistoryList(this.saveUrl, this.rawConfig.id).subscribe((h) => {
       this.historyComponent.compareConfig = h;
       this.tools.disabledHistory = !h.length;
-      this.cd.markForCheck();
+      this.cd.detectChanges();
     });
   }
 
@@ -89,6 +89,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
       (m.event === 'change_config' || m.event === 'change_state')
     ) {
       this.isLock = m.object.details.value === 'locked';
+      this.reset();
       this.config$ = this.getConfig();
     }
   }
@@ -125,13 +126,17 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
   }
 
   changeVersion(id: number) {
-    this.fields.form.reset();
-    this.fields.dataOptions = [];
-    this.historyComponent.reset();
+    this.reset();
     this.config$ = this.getConfig(`${this.saveUrl}${id}/`);
   }
 
   compareVersion(ids: number[]) {
     if (ids) this.service.compareConfig(ids, this.fields.dataOptions, this.historyComponent.compareConfig);
+  }
+
+  reset() {
+    this.fields.form.reset();
+    this.fields.dataOptions = [];
+    this.historyComponent.reset();
   }
 }

@@ -14,13 +14,12 @@ import { Injectable } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { ApiService } from '@app/core/api';
 import { ClusterService } from '@app/core/services';
+import { getRandomColor, isObject } from '@app/core/types';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 import { FieldService } from '../field.service';
-import { FieldOptions, FieldStack, IConfig, PanelOptions, CompareConfig } from '../types';
-import { getRandomColor, isObject } from '@app/core/types';
-import { tap, map } from 'rxjs/operators';
-import { type } from 'os';
+import { CompareConfig, FieldOptions, FieldStack, IConfig, PanelOptions } from '../types';
 
 export interface ISearchParam {
   advanced: boolean;
