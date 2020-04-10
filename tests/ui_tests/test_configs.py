@@ -16,6 +16,23 @@ from adcm_pytest_plugin import utils
 
 PAIR = (True, False)
 UI_OPTIONS_PAIRS = ((True, True), (False, False), (False, True), (True, False))
+UI_OPTIONS_PAIRS_GROUPS = [(True, True, True, True),
+                           (True, True, True, False),
+                           (True, True, False, True),
+                           (True, True, False, False),
+                           (True, False, True, True),
+                           (True, False, True, False),
+                           (True, False, False, True),
+                           (True, False, False, False),
+                           (False, True, True, True),
+                           (False, True, True, False),
+                           (False, True, False, True),
+                           (False, True, False, False),
+                           (False, False, True, True),
+                           (False, False, True, False),
+                           (False, False, False, True),
+                           (False, False, False, False)]
+
 TYPES = ('string', 'password', 'integer', 'text', 'boolean',
          'float', 'list', 'map', 'json', 'file')
 
@@ -31,6 +48,28 @@ DEFAULT_VALUE = {"string": "default_string",
                  "file": "./file.txt"}
 
 
+# def generate_group_data():
+#     """Generate data set for groups
+#     :return: list with data
+#     """
+#     group_data = []
+#     for default in PAIR:
+#         for required in PAIR:
+#             for ro in PAIR:
+#                 for activatable in PAIR:
+#                     for active in PAIR:
+#                         for ui_options in UI_OPTIONS_PAIRS:
+#                             for field_ui_options in UI_OPTIONS_PAIRS:
+#                                 group_data.append({
+#                                     'default': default, "required": required,
+#                                     "activatable": activatable, 'active': active,
+#                                     "read_only": ro,
+#                                     "ui_options": {"invisible": ui_options[0],
+#                                                    'advanced': ui_options[1]},
+#                                     "field_ui_options": {"invisible": field_ui_options[0],
+#                                                          'advanced': field_ui_options[1]}})
+#     return group_data
+
 def generate_group_data():
     """Generate data set for groups
     :return: list with data
@@ -41,16 +80,31 @@ def generate_group_data():
             for ro in PAIR:
                 for activatable in PAIR:
                     for active in PAIR:
-                        for ui_options in UI_OPTIONS_PAIRS:
-                            for field_ui_options in UI_OPTIONS_PAIRS:
-                                group_data.append({
-                                    'default': default, "required": required,
-                                    "activatable": activatable, 'active': active,
+                        for ui_options in UI_OPTIONS_PAIRS_GROUPS:
+                            if activatable:
+                                data = {
+                                    'default': default,
+                                    "required": required,
+                                    "activatable": activatable,
+                                    'active': active,
                                     "read_only": ro,
                                     "ui_options": {"invisible": ui_options[0],
                                                    'advanced': ui_options[1]},
-                                    "field_ui_options": {"invisible": field_ui_options[0],
-                                                         'advanced': field_ui_options[1]}})
+                                    "field_ui_options": {"invisible": ui_options[2],
+                                                         'advanced': ui_options[3]}}
+                            else:
+                                data = {
+                                    'default': default,
+                                    "required": required,
+                                    "activatable": False,
+                                    'active': False,
+                                    "read_only": ro,
+                                    "ui_options": {"invisible": ui_options[0],
+                                                   'advanced': ui_options[1]},
+                                    "field_ui_options": {"invisible": ui_options[2],
+                                                         'advanced': ui_options[3]}}
+                            if data not in group_data:
+                                group_data.append(data)
     return group_data
 
 
@@ -155,8 +209,6 @@ def generate_group_configs(group_config_data):
             sub_config = {'name': _type, 'type': _type, 'required': data['required']}
             if data['default']:
                 sub_config['default'] = DEFAULT_VALUE[_type]
-            if _type == 'option':
-                sub_config['option'] = {"http": 80, "https": 443}
             if data['read_only']:
                 sub_config['read_only'] = 'any'
             if data['activatable']:
@@ -166,7 +218,7 @@ def generate_group_configs(group_config_data):
                                         'advanced': data['field_ui_options']['advanced']}
             cluster_config['subs'] = [sub_config]
             config_dict['config'] = [cluster_config]
-            config_dict['name'] = utils.random_string(14)
+            config_dict['name'] = utils.random_string()
             config = [config_dict]
             expected_result = generate_group_expected_result(data)
             group_configs.append((config, expected_result))
@@ -183,7 +235,7 @@ def generate_configs(config_data):
     for _type in TYPES:
         for data in config_data:
             config_dict = {"type": "cluster",
-                           "name": utils.random_string(14),
+                           "name": utils.random_string(),
                            "version": "1",
                            "config": []}
             unsupported_options = all([data['read_only'],
@@ -193,8 +245,6 @@ def generate_configs(config_data):
             field_config = {'name': _type, 'type': _type, 'required': data['required']}
             if data['default']:
                 field_config['default'] = DEFAULT_VALUE[_type]
-            if _type == 'option':
-                field_config['option'] = {"http": 80, "https": 443}
             if data['read_only']:
                 field_config['read_only'] = 'any'
             field_config['ui_options'] = {'invisible': data['ui_options']['invisible'],
@@ -240,16 +290,13 @@ def prepare_config(config):
     d_name = "{}/configs/fields/{}/{}".format(utils.get_data_dir(__file__),
                                               config[0][0]['config'][0]['type'],
                                               config_folder_name)
-    if not os.path.exists(d_name):
-        try:
-            os.makedirs(d_name)
-        except FileExistsError:
-            print("Don't create directory")
-        if config[0][0]['config'][0]['name'] == 'file':
-            with open("{}/file.txt".format(d_name), 'w') as f:
-                f.write("test")
-        with open("{}/config.yaml".format(d_name), 'w') as yaml_file:
-            yaml.dump(config[0], yaml_file)
+
+    os.makedirs(d_name)
+    if config[0][0]['config'][0]['name'] == 'file':
+        with open("{}/file.txt".format(d_name), 'w') as f:
+            f.write("test")
+    with open("{}/config.yaml".format(d_name), 'w') as yaml_file:
+        yaml.dump(config[0], yaml_file)
     return config[0][0], config[1], d_name
 
 
@@ -263,8 +310,7 @@ def prepare_group_config(config):
     data_type = config[0][0]['config'][0]['subs'][0]['type']
     read_only = bool('read_only' in config[0][0]['config'][0]['subs'][0].keys())
     default = bool('default' in config[0][0]['config'][0]['subs'][0].keys())
-    temp = "{}_activatable_{}_active_{}_required_{}_ro_{}_content_{}_group_invisible" \
-           "_{}_group_advanced_{}_field_invisible_{}_field_advanced_{}"
+    temp = "{}_activatab_{}_act_{}_req_{}_ro_{}_cont_{}_grinvis_{}_gradv_{}_fiinvis_{}_fiadv_{}"
     config_folder_name = temp.format(
         data_type,
         activatable,
@@ -276,18 +322,13 @@ def prepare_group_config(config):
         config[0][0]['config'][0]['ui_options']['advanced'],
         config[0][0]['config'][0]['subs'][0]['ui_options']['invisible'],
         config[0][0]['config'][0]['subs'][0]['ui_options']['advanced'])
-    d_name = "{}/configs/groups/{}/{}".format(utils.get_data_dir(__file__),
-                                              data_type, config_folder_name)
-    if not os.path.exists(d_name):
-        try:
-            os.makedirs(d_name)
-        except FileExistsError:
-            print("Don't create directory")
-        if config[0][0]['config'][0]['subs'][0]['name'] == 'file':
-            with open("{}/file.txt".format(d_name), 'w') as f:
-                f.write("test")
-        with open("{}/config.yaml".format(d_name), 'w') as yaml_file:
-            yaml.dump(config[0], yaml_file)
+    d_name = "{}/configs/groups/{}".format(utils.get_data_dir(__file__), config_folder_name)
+    os.makedirs(d_name)
+    if config[0][0]['config'][0]['subs'][0]['name'] == 'file':
+        with open("{}/file.txt".format(d_name), 'w') as f:
+            f.write("test")
+    with open("{}/config.yaml".format(d_name), 'w') as yaml_file:
+        yaml.dump(config[0], yaml_file)
     return config[0][0], config[1], d_name
 
 
@@ -339,13 +380,11 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login, app):
 def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app):
     """Test for configuration fields with groups"""
     _ = login, app
+    print(config_dict)
     data = prepare_group_config(config_dict)
     config = data[0]
     expected = data[1]
     path = data[2]
-    print(config)
-    print(expected)
-    print(path)
     allure.attach("Cluster configuration",
                   str(config), allure.attachment_type.TEXT)
     allure.attach('Expected result', str(expected),
@@ -354,7 +393,7 @@ def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app)
                        attachment_type=allure.attachment_type.YAML)
 
     bundle = sdk_client_ms.upload_from_fs(path)
-    cluster = bundle.cluster_create(name=utils.random_string(14))
+    cluster = bundle.cluster_create(name=utils.random_string())
     field_type = config['config'][0]['subs'][0]['type']
     app.driver.get("{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     ui_config = Configuration(app.driver)
@@ -372,7 +411,7 @@ def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app)
             groups = ui_config.get_group_elements()
             assert groups, groups
             fields = ui_config.get_app_fields()
-            if expected['field_visible_advanced']:
+            if expected['field_visible_advanced'] or expected['field_visible']:
                 assert fields, fields
             else:
                 assert not fields, fields
