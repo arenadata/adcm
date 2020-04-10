@@ -299,9 +299,11 @@ class TestJob(TestCase):
                 self.assertEqual(obj, test_obj)
                 self.assertEqual(_cluster, test_cluster)
 
+    @patch('cm.job.prepare_ansible_config')
     @patch('cm.job.prepare_job_config')
     @patch('cm.job.inventory.prepare_job_inventory')
-    def test_prepare_job(self, mock_prepare_job_inventory, mock_prepare_job_config):
+    def test_prepare_job(self, mock_prepare_job_inventory, mock_prepare_job_config,
+                         mock_prepare_ansible_config):
         bundle = models.Bundle.objects.create()
         prototype = models.Prototype.objects.create(bundle=bundle)
         cluster = models.Cluster.objects.create(prototype=prototype)
@@ -314,6 +316,7 @@ class TestJob(TestCase):
         mock_prepare_job_inventory.assert_called_once_with({'cluster': 1}, job.id, {}, None)
         mock_prepare_job_config.assert_called_once_with(action, None, {'cluster': 1},
                                                         job.id, cluster, '')
+        mock_prepare_ansible_config.assert_called_once_with(job.id)
 
     @patch('cm.job.get_obj_config')
     def test_get_adcm_config(self, mock_get_obj_config):
