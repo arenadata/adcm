@@ -36,7 +36,7 @@ from cm.status_api import Event
 from cm.models import (
     Cluster, Action, SubAction, TaskLog, JobLog, CheckLog, Host, ADCM,
     ClusterObject, HostComponent, ServiceComponent, HostProvider, DummyData,
-    LogStorage, ConfigLog
+    LogStorage, ConfigLog, GroupCheckLog
 )
 
 
@@ -838,32 +838,80 @@ def get_log_files(job):
     return logs
 
 
-def log_check(job_id, title, res, msg):
+def log_group_check(group, fail_msg, success_msg):
+    logs = CheckLog.objects.filter(group=group).values('result')
+    result = all([log['result'] for log in logs])
+
+    if result:
+        msg = success_msg
+    else:
+        msg = fail_msg
+
+    group.message = msg
+    group.result = result
+    group.save()
+
+
+def log_check(job_id, group_data, check_data):
     try:
         job = JobLog.objects.get(id=job_id)
         if job.status != config.Job.RUNNING:
             err('JOB_NOT_FOUND', f'job #{job.id} has status "{job.status}", not "running"')
     except JobLog.DoesNotExist:
         err('JOB_NOT_FOUND', f'no job with id #{job_id}')
-    cl = CheckLog(job_id=job.id, title=title, message=msg, result=res)
-    try:
-        LogStorage.objects.get(job=job, name='check', type='check')
-    except LogStorage.DoesNotExist:
-        LogStorage.objects.create(job=job, name='check', type='check', format='json')
-    cl.save()
+
+    group_title = group_data.pop('title')
+
+    if group_title:
+        group, _ = GroupCheckLog.objects.get_or_create(job_id=job_id, title=group_title)
+    else:
+        group = None
+
+    check_data.update({'job_id': job_id, 'group': group})
+    cl = CheckLog.objects.create(**check_data)
+
+    if group is not None:
+        group_data.update({'group': group})
+        log_group_check(**group_data)
+
+    LogStorage.objects.get_or_create(job=job, name='check', type='check', format='json')
     return cl
 
 
-def finish_check(job_id):
+def get_check_log(job_id):
+    try:
+        groups = GroupCheckLog.objects.filter(job_id=job_id)
+    except GroupCheckLog.DoesNotExist:
+        groups = []
+
     data = []
-    for cl in CheckLog.objects.filter(job_id=int(job_id)):
-        data.append({'title': cl.title, 'message': cl.message, 'result': cl.result})
+    for group in groups:
+        data_group = {'title': group.title, 'type': 'group', 'result': group.result,
+                      'msg': group.message, 'subs': []}
+        for cl in CheckLog.objects.filter(job_id=int(job_id), group=group):
+            data_group['subs'].append(
+                {'title': cl.title, 'type': 'check', 'message': cl.message, 'result': cl.result})
+        data.append(data_group)
+
+    for cl in CheckLog.objects.filter(job_id=job_id, group=None):
+        data.append(
+            {'title': cl.title, 'type': 'check', 'message': cl.message, 'result': cl.result})
+
+    return data
+
+
+def finish_check(job_id):
+
+    data = get_check_log(job_id)
+
     if not data:
         return
 
     job = JobLog.objects.get(id=job_id)
     LogStorage.objects.filter(job=job, name='check', type='check', format='json').update(
         body=json.dumps(data))
+
+    GroupCheckLog.objects.filter(job_id=job_id).delete()
     CheckLog.objects.filter(job_id=job_id).delete()
 
 
