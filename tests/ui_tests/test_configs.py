@@ -310,12 +310,12 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login, app):
     config = data[0]
     expected = data[1]
     path = data[2]
-    allure.attach("Cluster configuration", config,
-                  allure.attachment_type.TEXT)
-    allure.attach('Expected result', expected,
-                  allure.attachment_type.TEXT)
-    allure.attach.file("/".join([path, 'config.yaml']),
-                       attachment_type=allure.attachment_type.YAML)
+    # allure.attach("Cluster configuration", config,
+    #               allure.attachment_type.TEXT)
+    # allure.attach('Expected result', expected,
+    #               allure.attachment_type.TEXT)
+    # allure.attach.file("/".join([path, 'config.yaml']),
+    #                    attachment_type=allure.attachment_type.YAML)
     bundle = sdk_client_ms.upload_from_fs(path)
     # cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=utils.random_string(14))
@@ -356,12 +356,12 @@ def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app)
     print(config)
     print(expected)
     print(path)
-    allure.attach("Cluster configuration",
-                  config, allure.attachment_type.TEXT)
-    allure.attach('Expected result', expected,
-                  allure.attachment_type.TEXT)
-    allure.attach.file("/".join([path, 'config.yaml']),
-                       attachment_type=allure.attachment_type.YAML)
+    # allure.attach("Cluster configuration",
+    #               config, allure.attachment_type.TEXT)
+    # allure.attach('Expected result', expected,
+    #               allure.attachment_type.TEXT)
+    # allure.attach.file("/".join([path, 'config.yaml']),
+    #                    attachment_type=allure.attachment_type.YAML)
 
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster = bundle.cluster_create(name=utils.random_string(14))
