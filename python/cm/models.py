@@ -369,7 +369,15 @@ class TaskLog(models.Model):
     finish_date = models.DateTimeField()
 
 
+class GroupCheckLog(models.Model):
+    job_id = models.PositiveIntegerField(default=0)
+    title = models.TextField()
+    message = models.TextField(blank=True, null=True)
+    result = models.BooleanField(blank=True, null=True)
+
+
 class CheckLog(models.Model):
+    group = models.ForeignKey(GroupCheckLog, blank=True, null=True, on_delete=models.CASCADE)
     job_id = models.PositiveIntegerField(default=0)
     title = models.TextField()
     message = models.TextField()
