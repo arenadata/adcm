@@ -67,7 +67,7 @@ export class TakeService {
   }
 
   checkEmptyHost() {
-    const isShrink = this.actionParameters.every((a) => a.action === 'remove');
+    const isShrink = this.actionParameters?.every((a) => a.action === 'remove');
     if (isShrink) this.Hosts = this.Hosts.map((a) => ({ ...a, color: !a.relations.length ? 'gray' : 'none' }));
   }
 
