@@ -315,8 +315,8 @@ class LoginPage(BasePage):
         self._password = None
 
     def login(self, login, password):
-        self._login = self._getelement(LoginPage.login_locator)
-        self._password = self._getelement(LoginPage.passwd_locator)
+        self._login = REPEAT(self.driver.find_element)(*LoginPage.login_locator)
+        self._password = REPEAT(self.driver.find_element)(*LoginPage.passwd_locator)
         self._login.send_keys(login)
         self._password.send_keys(password)
         self._password.send_keys(Keys.RETURN)
