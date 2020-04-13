@@ -111,10 +111,6 @@ def generate_group_expected_result(group_config):
     field_advanced = group_config['field_ui_options']['advanced']
     field_invisible = group_config['field_ui_options']['invisible']
     expected_result['field_visible_advanced'] = (field_advanced and not field_invisible)
-    # if field_advanced and not group_config['field_ui_options']['invisible']:
-    #     expected_result['field_visible_advanced'] = True
-    # else:
-    #     expected_result['field_visible_advanced'] = False
     if 'activatable' in group_config.keys():
         group_active = group_config['active']
         field_invisible = group_config['field_ui_options']['invisible']
@@ -374,7 +370,6 @@ def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app)
     5. Check save button status
     6. Check field configuration (depends on expected result dict and bundle configuration"""
     _ = login, app
-    print(config_dict)
     data = prepare_group_config(config_dict)
     config = data[0]
     expected = data[1]
