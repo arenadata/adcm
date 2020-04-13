@@ -152,7 +152,7 @@ def generate_config_expected_result(config):
         expected_result['alerts'] = False
     expected_result['save'] = not config['read_only']
     expected_result['visible_advanced'] = (
-            config['ui_options']['advanced'] and not config['ui_options']['invisible']
+        config['ui_options']['advanced'] and not config['ui_options']['invisible']
     )
     return expected_result
 
