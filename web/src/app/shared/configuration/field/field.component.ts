@@ -11,14 +11,11 @@
 // limitations under the License.
 import { ChangeDetectorRef, Component, Input, OnInit, ViewChild } from '@angular/core';
 import { FormGroup } from '@angular/forms';
-import { isObject } from '@app/core/types';
-
-import { FieldOptions } from '../types';
 import { FieldDirective } from '@app/shared/form-elements/field.directive';
 import { BaseMapListDirective } from '@app/shared/form-elements/map.component';
+
 import { SchemeComponent } from '../scheme/scheme.component';
-// import { FieldDirective } from '@app/shared/form-elements/field.directive';
-// import { SchemeComponent } from '../scheme/scheme.component';
+import { FieldOptions } from '../types';
 
 @Component({
   selector: 'app-field',
@@ -30,14 +27,11 @@ export class FieldComponent implements OnInit {
   options: FieldOptions;
   @Input()
   form: FormGroup;
-
-  // components = { structure: SchemeComponent };
-  // currentComponent: FieldDirective;
   currentFormGroup: FormGroup;
 
   @ViewChild('cc') inputControl: FieldDirective;
 
-  constructor(public cdetector: ChangeDetectorRef) {}
+  constructor(public cd: ChangeDetectorRef) {}
 
   ngOnInit() {
     const [name, ...other] = this.options.key.split('/');
@@ -56,6 +50,11 @@ export class FieldComponent implements OnInit {
     return this.options.ui_options && this.options.ui_options.advanced;
   }
 
+  /**
+   * TODO: should be own restore() for each fieldComponent
+   *
+   * @memberof FieldComponent
+   */
   restore() {
     const field = this.currentFormGroup.controls[this.options.name];
     const defaultValue = this.options.default;
@@ -78,12 +77,14 @@ export class FieldComponent implements OnInit {
       } else if (type === 'map' || type === 'list') {
         this.options.value = defaultValue;
         (this.inputControl as BaseMapListDirective).reload();
+        
       } else if (type === 'structure') {
         this.options.value = defaultValue;
         (this.inputControl as SchemeComponent).reload();
       } else field.setValue(defaultValue);
 
       this.options.value = field.value;
+      this.form.updateValueAndValidity();
     }
   }
 }

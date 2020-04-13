@@ -83,7 +83,11 @@ export interface IConfig {
   date?: string;
   description?: string;
   config: FieldStack[];
-  attr?: { [group: string]: { active: boolean } };
+  attr?: IConfigAttr;
+}
+
+export interface IConfigAttr {
+  [group: string]: { active: boolean };
 }
 
 export interface ConfigOptions {
