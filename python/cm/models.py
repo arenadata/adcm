@@ -363,6 +363,7 @@ class TaskLog(models.Model):
     selector = models.TextField()                    # JSON
     status = models.CharField(max_length=16, choices=JOB_STATUS)
     config = models.TextField(null=True)             # JSON
+    attr = models.TextField(null=True)               # JSON
     hostcomponentmap = models.TextField(null=True)   # JSON
     hosts = models.TextField(null=True)   # JSON
     start_date = models.DateTimeField()
