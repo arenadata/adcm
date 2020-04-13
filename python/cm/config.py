@@ -12,7 +12,13 @@
 
 import json
 import os
+import sys
 from os.path import dirname
+
+PYTHON_DIR = sys.exec_prefix
+PYTHON_EXECUTABLE = sys.executable
+PYTHON_VERSION = f'{sys.version_info.major}.{sys.version_info.minor}'
+PYTHON_SITE_PACKAGES = os.path.join(PYTHON_DIR, f'lib/python{PYTHON_VERSION}/site-packages')
 
 BASE_DIR = dirname(dirname(dirname(os.path.abspath(__file__))))
 BASE_DIR = os.environ.get('ADCM_BASE_DIR', BASE_DIR)

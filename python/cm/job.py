@@ -16,15 +16,16 @@
 import json
 import os
 import re
+import shutil
 import signal
 import subprocess
 import time
-import shutil
+from configparser import ConfigParser
 from datetime import timedelta
 
+from background_task import background
 from django.db import transaction
 from django.utils import timezone
-from background_task import background
 
 import cm.config as config
 from cm import api, issue, inventory, adcm_config
@@ -32,12 +33,12 @@ from cm.adcm_config import obj_ref, process_file_type, process_config
 from cm.errors import raise_AdcmEx as err
 from cm.inventory import get_obj_config
 from cm.logger import log
-from cm.status_api import Event
 from cm.models import (
     Cluster, Action, SubAction, TaskLog, JobLog, CheckLog, Host, ADCM,
     ClusterObject, HostComponent, ServiceComponent, HostProvider, DummyData,
     LogStorage, ConfigLog, GroupCheckLog
 )
+from cm.status_api import Event
 
 
 def start_task(action_id, selector, conf, attr, hc, hosts):   # pylint: disable=too-many-locals
@@ -529,6 +530,7 @@ def re_prepare_job(task, job):
 def prepare_job(action, sub_action, selector, job_id, obj, conf, delta, hosts):
     prepare_job_config(action, sub_action, selector, job_id, obj, conf)
     inventory.prepare_job_inventory(selector, job_id, delta, hosts)
+    prepare_ansible_config(job_id)
 
 
 def prepare_context(selector):
@@ -972,3 +974,22 @@ def log_rotation():
             for job in rotation_jobs_on_fs:
                 shutil.rmtree(os.path.join(config.RUN_DIR, str(job['id'])))
             log.info('rotation log from fs')
+
+
+def prepare_ansible_config(job_id):
+    config_parser = ConfigParser()
+    config_parser['defaults'] = {
+        'stdout_callback': 'yaml'
+    }
+    adcm_object = ADCM.objects.get(id=1)
+    cl = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
+    adcm_conf = json.loads(cl.config)
+    mitogen = adcm_conf['ansible_settings']['mitogen']
+    if mitogen:
+        config_parser['defaults']['strategy'] = 'mitogen_linear'
+        config_parser['defaults']['strategy_plugins'] = os.path.join(
+            config.PYTHON_SITE_PACKAGES, 'ansible_mitogen/plugins/strategy')
+        config_parser['defaults']['host_key_checking'] = 'False'
+
+    with open(os.path.join(config.RUN_DIR, f'{job_id}/ansible.cfg'), 'w') as config_file:
+        config_parser.write(config_file)

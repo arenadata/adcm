@@ -150,7 +150,7 @@ class TestJobRunner(TestCase):
             lambda x: x != '',
             ['./pmod'] + cmd_env.get('PYTHONPATH', '').split(':'))
         cmd_env['PYTHONPATH'] = ':'.join(python_paths)
-        self.assertDictEqual(cmd_env, job_runner.set_pythonpath())
+        self.assertDictEqual(cmd_env, job_runner.set_pythonpath(os.environ.copy()))
 
     # pylint: disable=too-many-locals
     # pylint: disable=too-many-arguments
@@ -158,16 +158,15 @@ class TestJobRunner(TestCase):
     @patch('cm.job.set_job_status')
     @patch('sys.exit')
     @patch('job_runner.set_job_status')
-    @patch('job_runner.set_pythonpath')
     @patch('subprocess.Popen')
     @patch('os.chdir')
     @patch('job_runner.open_file')
     @patch('job_runner.read_config')
     def test_run_ansible(self, mock_read_config, mock_open_file, mock_chdir, mock_subprocess_popen,
-                         mock_set_pythonpath, mock_set_job_status, mock_exit,
-                         mock_job_set_job_status, mock_event):
+                         mock_set_job_status, mock_exit, mock_job_set_job_status, mock_event):
         conf = {
-            'job': {'playbook': 'test'},
+            'job': {'playbook': 'test',
+                    'id': 1},
             'env': {'stack_dir': 'test'}
         }
         mock_read_config.return_value = conf
@@ -178,8 +177,7 @@ class TestJobRunner(TestCase):
         attrs = {'wait.return_value': 0}
         process_mock.configure_mock(**attrs)
         mock_subprocess_popen.return_value = process_mock
-        python_path = Mock()
-        mock_set_pythonpath.return_value = python_path
+        env = job_runner.env_configuration(conf)
         event = Mock()
         mock_event.return_value = event
 
@@ -202,8 +200,7 @@ class TestJobRunner(TestCase):
                 '-i',
                 '{}/{}/inventory.json'.format(config.RUN_DIR, 1),
                 conf['job']['playbook']
-            ], env=python_path, stdout=_file, stderr=_file)
-        mock_set_pythonpath.assert_called_once()
+            ], env=env, stdout=_file, stderr=_file)
         mock_exit.assert_called_once()
         mock_job_set_job_status.assert_called_with(1, config.Job.RUNNING, event, 1)
 
