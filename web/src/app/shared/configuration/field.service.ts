@@ -32,9 +32,9 @@ export class FieldService {
 
   getPanels(data: IConfig): (FieldOptions | PanelOptions)[] {
     if (data && data.config) {
-      const fo = data.config.filter(a => a.type !== 'group' && a.subname);
+      const fo = data.config.filter((a) => a.type !== 'group' && a.subname);
       return data.config
-        .filter(a => a.name !== '__main_info')
+        .filter((a) => a.name !== '__main_info')
         .reduce((p, c) => {
           if (c.subname) return p;
           if (c.type !== 'group') return [...p, this.getFieldBy(c)];
@@ -49,9 +49,9 @@ export class FieldService {
       ...a,
       hidden: this.isHidden(a),
       options: fo
-        .filter(b => b.name === a.name)
-        .map(b => this.getFieldBy(b))
-        .map(c => ({ ...c, name: c.subname }))
+        .filter((b) => b.name === a.name)
+        .map((b) => this.getFieldBy(b))
+        .map((c) => ({ ...c, name: c.subname })),
     };
   }
 
@@ -65,11 +65,11 @@ export class FieldService {
         required: item.required,
         min: item.limits ? item.limits.min : null,
         max: item.limits ? item.limits.max : null,
-        pattern: getPattern(item.type)
+        pattern: getPattern(item.type),
       },
       controlType: getControlType(item.type as matchType),
       hidden: item.name === '__main_info' || this.isHidden(item),
-      compare: []
+      compare: [],
     };
     return params;
   }
@@ -101,7 +101,7 @@ export class FieldService {
     if (field.controlType === 'map') {
       const parseKey = (): ValidatorFn => {
         return (control: AbstractControl): { [key: string]: any } | null => {
-          if (control.value && Object.keys(control.value).length && Object.keys(control.value).some(a => !a)) {
+          if (control.value && Object.keys(control.value).length && Object.keys(control.value).some((a) => !a)) {
             return { parseKey: true };
           } else return null;
         };
@@ -133,7 +133,7 @@ export class FieldService {
 
   fillForm(field: FieldOptions, controls: {}) {
     const name = field.subname || field.name;
-    controls[name] = this.fb.control(field.type === 'option' ? { value: field.value, disabled: field.disabled } : field.value, this.setValidator(field));
+    controls[name] = this.fb.control(field.value, this.setValidator(field));
     if (field.controlType === 'password') {
       if (!field.ui_options || (field.ui_options && !field.ui_options.no_confirm)) {
         controls[`confirm_${name}`] = this.fb.control(field.value, this.setValidator(field));
@@ -143,13 +143,13 @@ export class FieldService {
   }
 
   filterApply(dataOptions: (FieldOptions | PanelOptions)[], c: { advanced: boolean; search: string }): (FieldOptions | PanelOptions)[] {
-    return dataOptions.filter(a => this.isVisibleField(a)).map(a => this.handleTree(a, c));
+    return dataOptions.filter((a) => this.isVisibleField(a)).map((a) => this.handleTree(a, c));
   }
 
   handleTree(a: FieldOptions | PanelOptions, c: { advanced: boolean; search: string }) {
     if ('options' in a) {
-      const result = a.options.map(b => this.handleTree(b, c));
-      if (c.search) a.hidden = a.options.filter(b => !b.hidden).length === 0;
+      const result = a.options.map((b) => this.handleTree(b, c));
+      if (c.search) a.hidden = a.options.filter((b) => !b.hidden).length === 0;
       else a.hidden = this.isAdvancedField(a) ? !c.advanced : false;
       return result;
     } else if (this.isVisibleField(a)) {
@@ -170,14 +170,14 @@ export class FieldService {
       json: (value: string) => (value === null ? '' : JSON.stringify(value, undefined, 4)),
       map: (value: object, de: object) => (!value ? de : value),
       list: (value: string[], de: string[]) => (!value ? de : value),
-      structure: (value: any) => value
+      structure: (value: any) => value,
     };
 
     return data[name] ? data[name] : def;
   }
 
   getFieldsBy(items: Array<FieldStack>): FieldOptions[] {
-    return items.map(o => this.getFieldBy(o));
+    return items.map((o) => this.getFieldBy(o));
   }
 
   /**
@@ -208,7 +208,7 @@ export class FieldService {
   }
 
   findField(raw: FieldStack[], name: string, parentName?: string): FieldStack {
-    return raw.find(a => (parentName ? a.name === parentName && a.subname === name : a.name === name));
+    return raw.find((a) => (parentName ? a.name === parentName && a.subname === name : a.name === name));
   }
 
   runYspecParse(value: any, field: FieldStack) {
@@ -218,13 +218,13 @@ export class FieldService {
   runYspec(value: any, rules: any) {
     switch (rules.type) {
       case 'list': {
-        return value.filter(a => !!a).map(a => this.runYspec(a, rules.options));
+        return value.filter((a) => !!a).map((a) => this.runYspec(a, rules.options));
       }
       case 'dict': {
         return Object.keys(value).reduce((p, c) => {
           const v = this.runYspec(
             value[c],
-            rules.options.find(b => b.name === c)
+            rules.options.find((b) => b.name === c)
           );
           return v !== null ? { ...p, [c]: v } : { ...p };
         }, {});
@@ -242,12 +242,12 @@ export class FieldService {
       case 'map':
         return typeof value === 'object'
           ? Object.keys(value)
-              .filter(a => !!a)
+              .filter((a) => !!a)
               .reduce((p, c) => ({ ...p, [c]: value[c] }), {})
           : new TypeError('FieldService::checkValue - value is not Object');
 
       case 'list':
-        return Array.isArray(value) ? (value as Array<string>).filter(a => !!a) : new TypeError('FieldService::checkValue - value is not Array');
+        return Array.isArray(value) ? (value as Array<string>).filter((a) => !!a) : new TypeError('FieldService::checkValue - value is not Array');
     }
 
     if (typeof value === 'boolean') return value;
