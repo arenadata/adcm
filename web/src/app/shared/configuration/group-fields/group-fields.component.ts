@@ -16,12 +16,12 @@ import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 
 import { FieldService } from '../field.service';
 import { FieldComponent } from '../field/field.component';
-import { FieldOptions, PanelOptions, IConfig } from '../types';
+import { FieldOptions, PanelOptions, IConfig, IConfigAttr } from '../types';
 
 @Component({
   selector: 'app-group-fields',
   templateUrl: './group-fields.component.html',
-  styleUrls: ['./group-fields.component.scss']
+  styleUrls: ['./group-fields.component.scss'],
 })
 export class GroupFieldsComponent implements OnInit {
   @Input() panel: PanelOptions;
@@ -30,6 +30,7 @@ export class GroupFieldsComponent implements OnInit {
   @ViewChild('ep') expanel: MatExpansionPanel;
 
   checked = true;
+  attrConfig: IConfigAttr = {};
 
   @ViewChildren(FieldComponent)
   fields: QueryList<FieldComponent>;
@@ -37,8 +38,9 @@ export class GroupFieldsComponent implements OnInit {
   constructor(private service: FieldService) {}
 
   ngOnInit(): void {
-    if (this.rawConfig.attr && this.rawConfig.attr[this.panel.name]) {
-      this.checked = this.rawConfig.attr[this.panel.name].active;
+    this.attrConfig = this.rawConfig.attr || {};
+    if (this.attrConfig[this.panel.name]) {
+      this.checked = this.attrConfig[this.panel.name].active;
       this.checkFields(this.checked);
     }
   }
@@ -56,14 +58,14 @@ export class GroupFieldsComponent implements OnInit {
   }
 
   activeToggle(e: MatSlideToggleChange) {
-    this.rawConfig.attr[this.panel.name].active = e.checked;
+    this.attrConfig[this.panel.name].active = e.checked;
     this.checked = e.checked;
     this.checkFields(e.checked);
   }
 
   checkFields(flag: boolean) {
     this.panel.options
-      .filter(a => !('options' in a))
+      .filter((a) => !('options' in a))
       .forEach((a: FieldOptions) => {
         const split = a.key.split('/');
 
@@ -83,9 +85,17 @@ export class GroupFieldsComponent implements OnInit {
       } else if (a.validator) {
         formControl.setValidators(this.service.setValidator(a));
       }
-      formControl.updateValueAndValidity();
-      this.form.updateValueAndValidity();
+      if (this.checkForm()) {
+        this.form.setErrors({ error: 'There are not visible fields in this form' });
+      } else {
+        formControl.updateValueAndValidity();
+        this.form.updateValueAndValidity();
+      }
     }
+  }
+
+  checkForm() {
+    return this.rawConfig.config.filter((a) => a.type !== 'group').filter((a) => !a.read_only).length === 0;
   }
 
   trackBy(index: number, item: FieldOptions): string {
