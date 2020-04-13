@@ -12,23 +12,49 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatOptionModule } from '@angular/material/core';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatListModule } from '@angular/material/list';
+import { MatSelectModule } from '@angular/material/select';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { FormElementsModule } from '../form-elements/form-elements.module';
-import { MaterialModule } from '../material.module';
 import { StuffModule } from '../stuff.module';
 import { FieldService } from './field.service';
 import { FieldComponent } from './field/field.component';
 import { ConfigFieldsComponent } from './fields/fields.component';
 import { GroupFieldsComponent } from './group-fields/group-fields.component';
 import { ConfigComponent } from './main/main.component';
+import { ItemComponent } from './scheme/item.component';
+import { RootComponent } from './scheme/root.component';
+import { SchemeComponent } from './scheme/scheme.component';
 import { ColorOptionDirective } from './tools/color-option.directive';
 import { HistoryComponent } from './tools/history.component';
 import { SearchComponent } from './tools/search.component';
 import { ToolsComponent } from './tools/tools.component';
 import { YspecService } from './yspec/yspec.service';
-import { SchemeComponent } from './scheme/scheme.component';
-import { RootComponent } from './scheme/root.component';
-import { ItemComponent } from './scheme/item.component';
+
+const material = [
+  MatIconModule,
+  MatInputModule,
+  MatButtonModule,
+  MatSelectModule,
+  MatOptionModule,
+  MatCheckboxModule,
+  MatTooltipModule,
+  MatToolbarModule,
+  MatFormFieldModule,
+  MatExpansionModule,
+  MatSlideToggleModule,
+  MatListModule,
+];
 
 @NgModule({
   declarations: [
@@ -42,10 +68,10 @@ import { ItemComponent } from './scheme/item.component';
     ToolsComponent,
     SchemeComponent,
     RootComponent,
-    ItemComponent
+    ItemComponent,
   ],
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, MaterialModule, StuffModule, FormElementsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, StuffModule, FormElementsModule, ...material],
   exports: [ConfigComponent, ConfigFieldsComponent],
-  providers: [FieldService, YspecService]
+  providers: [FieldService, YspecService],
 })
 export class ConfigurationModule {}

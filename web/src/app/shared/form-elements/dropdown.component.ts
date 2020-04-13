@@ -19,9 +19,14 @@ import { FieldDirective } from './field.directive';
   template: `
     <ng-container [formGroup]="form">
       <mat-form-field>
-        <mat-select [(value)]="field.value" [formControlName]="field.name">
-          <mat-option *ngFor="let option of options$ | async" [value]="option.id">{{ option.name }}</mat-option>
-        </mat-select>
+        <ng-container *ngIf="field.read_only; else dd">
+          <input matInput [formControlName]="field.name" [readonly]="true" [value]="field.value" />
+        </ng-container>
+        <ng-template #dd>
+          <mat-select [(value)]="field.value" [formControlName]="field.name">
+            <mat-option *ngFor="let option of options$ | async" [value]="option.id">{{ option.name }}</mat-option>
+          </mat-select>
+        </ng-template>
       </mat-form-field>
     </ng-container>
   `,
@@ -32,9 +37,9 @@ export class DropdownComponent extends FieldDirective implements OnInit {
   ngOnInit() {
     super.ngOnInit();
     if (this.field.limits) {
-      const o = Object.entries<string | number>(this.field.limits.option).map(e => ({
+      const o = Object.entries<string | number>(this.field.limits.option).map((e) => ({
         id: String(e[1]),
-        name: e[0]
+        name: e[0],
       }));
       this.options$ = of(o);
     }
