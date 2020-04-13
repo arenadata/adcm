@@ -106,16 +106,11 @@ def generate_group_expected_result(group_config):
     group_advanced = group_config['ui_options']['advanced']
     group_invisible = group_config['ui_options']['invisible']
     expected_result['group_visible_advanced'] = (group_advanced and not group_invisible)
-
-    # if group_config['ui_options']['advanced'] and not group_config['ui_options']['invisible']:
-    #     expected_result['group_visible_advanced'] = True
-    # else:
-    #     expected_result['group_visible_advanced'] = False
     field_advanced = group_config['field_ui_options']['advanced']
     field_invisible = group_config['field_ui_options']['invisible']
     expected_result['field_visible_advanced'] = (field_advanced and not field_invisible)
     expected_result['field_visible'] = not field_invisible
-    if 'activatable' in group_config.keys():
+    if group_config['activatable']:
         group_active = group_config['active']
         field_invisible = group_config['field_ui_options']['invisible']
         expected_result['field_visible'] = (group_active and not field_invisible)
@@ -169,7 +164,8 @@ def generate_group_configs(group_config_data):
     :return:
     """
     group_configs = []
-    for _type in TYPES:
+    # for _type in TYPES:
+    for _type in ['string']:
         for data in group_config_data:
             config_dict = {"type": "cluster",
                            "version": "1",
