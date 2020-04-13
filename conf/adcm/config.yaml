@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 0.8
+  version: 0.9
 
   config:
     - name: "global"
