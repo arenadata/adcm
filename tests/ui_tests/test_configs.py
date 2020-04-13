@@ -397,7 +397,8 @@ def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app)
         groups = ui_config.get_group_elements()
         fields = ui_config.get_app_fields()
         assert groups, groups
-        assert not fields, fields
+        for field in fields:
+            assert not field.is_displayed()
     if expected['group_visible'] and expected['field_visible']:
         if expected['field_visible_advanced'] or expected['group_visible_advanced']:
             assert not fields
