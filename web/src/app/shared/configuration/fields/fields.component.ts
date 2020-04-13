@@ -26,13 +26,13 @@ import { FieldOptions, IConfig, PanelOptions } from '../types';
         <app-field *ngIf="!item.hidden" [form]="form" [options]="item" [ngClass]="{ 'read-only': item.read_only }"></app-field>
       </ng-template>
     </ng-container>
-  `
+  `,
 })
 export class ConfigFieldsComponent {
   @Input() dataOptions: (FieldOptions | PanelOptions)[] = [];
   @Input() rawConfig: IConfig;
   @Input() form = new FormGroup({});
-  
+
   shapshot: any;
 
   public isAdvanced = false;
@@ -46,7 +46,7 @@ export class ConfigFieldsComponent {
     this.dataOptions = this.service.getPanels(data);
     this.form = this.service.toFormGroup(this.dataOptions);
     this.checkForm();
-    this.isAdvanced = data.config.some(a => a.ui_options && a.ui_options.advanced);
+    this.isAdvanced = data.config.some((a) => a.ui_options && a.ui_options.advanced);
     this.shapshot = { ...this.form.value };
     this.event.emit({ name: 'load', data: { form: this.form } });
   }
@@ -60,7 +60,8 @@ export class ConfigFieldsComponent {
   constructor(private service: FieldService) {}
 
   checkForm() {
-    if (this.dataOptions.filter(a => !a.read_only).length === 0) this.form.setErrors({ error: 'There are not visible fields in this form' });
+    if (this.rawConfig.config.filter((a) => a.type !== 'group').filter((a) => !a.read_only).length === 0)
+      this.form.setErrors({ error: 'There are not visible fields in this form' });
   }
 
   isPanel(item: FieldOptions | PanelOptions) {

@@ -16,7 +16,7 @@ import os
 import django.contrib.auth
 from django.db import IntegrityError, transaction
 from django.core.exceptions import ObjectDoesNotExist
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 
 from rest_framework import serializers
 from rest_framework.reverse import reverse
@@ -26,12 +26,13 @@ from rest_framework.authtoken.models import Token
 import cm.job
 import cm.stack
 import cm.status_api
+from cm.api import safe_api
 from cm.logger import log   # pylint: disable=unused-import
 import cm.config as config
 from cm.errors import AdcmApiEx, AdcmEx
 from cm.models import (
     Action, SubAction, Cluster, Host, Prototype, PrototypeConfig, JobLog, UserProfile,
-    Upgrade, HostProvider, ConfigLog, ClusterObject, CheckLog
+    Upgrade, HostProvider, ConfigLog, ClusterObject, Role
 )
 
 
@@ -127,15 +128,56 @@ class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):
         return attrs
 
 
-class UserSerializer(serializers.Serializer):
-    class MyUrlField(UrlField):
-        def get_kwargs(self, obj):
-            return {'username': obj.username}
+class PermSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    codename = serializers.CharField()
+    app_label = serializers.SerializerMethodField()
+    model = serializers.SerializerMethodField()
 
+    def get_app_label(self, obj):
+        return obj.content_type.app_label
+
+    def get_model(self, obj):
+        return obj.content_type.model
+
+
+class RoleSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    description = serializers.CharField(read_only=True)
+    url = hlink('role-details', 'id', 'role_id')
+
+
+class RoleDetailSerializer(RoleSerializer):
+    permissions = PermSerializer(many=True, read_only=True)
+
+
+class GroupSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    url = hlink('group-details', 'name', 'name')
+    change_role = hlink('change-group-role', 'name', 'name')
+
+    @transaction.atomic
+    def create(self, validated_data):
+        try:
+            return Group.objects.create(name=validated_data.get('name'))
+        except IntegrityError:
+            raise AdcmApiEx("GROUP_CONFLICT", 'group already exists')
+
+
+class GroupDetailSerializer(GroupSerializer):
+    permissions = PermSerializer(many=True, read_only=True)
+    role = RoleSerializer(many=True, source='role_set')
+
+
+class UserSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
-    url = MyUrlField(read_only=True, view_name='user-details')
-    change_password = MyUrlField(read_only=True, view_name='user-passwd')
+    url = hlink('user-details', 'username', 'username')
+    change_group = hlink('add-user-group', 'username', 'username')
+    change_password = hlink('user-passwd', 'username', 'username')
+    change_role = hlink('change-user-role', 'username', 'username')
+    is_superuser = serializers.BooleanField(required=False)
 
     @transaction.atomic
     def create(self, validated_data):
@@ -143,12 +185,45 @@ class UserSerializer(serializers.Serializer):
             user = User.objects.create_user(
                 validated_data.get('username'),
                 password=validated_data.get('password'),
-                is_superuser=True
+                is_superuser=validated_data.get('is_superuser', True)
             )
             UserProfile.objects.create(login=validated_data.get('username'))
             return user
         except IntegrityError:
             raise AdcmApiEx("USER_CONFLICT", 'user already exists')
+
+
+class UserDetailSerializer(UserSerializer):
+    user_permissions = PermSerializer(many=True)
+    groups = GroupSerializer(many=True)
+    role = RoleSerializer(many=True, source='role_set')
+
+
+class AddUser2GroupSerializer(serializers.Serializer):
+    name = serializers.CharField()
+
+    def update(self, user, validated_data):   # pylint: disable=arguments-differ
+        group = check_obj(Group, {'name': validated_data.get('name')}, 'GROUP_NOT_FOUND')
+        group.user_set.add(user)
+        return group
+
+
+class AddUserRoleSerializer(serializers.Serializer):
+    role_id = serializers.IntegerField()
+    name = serializers.CharField(read_only=True)
+
+    def update(self, user, validated_data):   # pylint: disable=arguments-differ
+        role = check_obj(Role, {'id': validated_data.get('role_id')}, 'ROLE_NOT_FOUND')
+        return safe_api(cm.api.add_user_role, (user, role))
+
+
+class AddGroupRoleSerializer(serializers.Serializer):
+    role_id = serializers.IntegerField()
+    name = serializers.CharField(read_only=True)
+
+    def update(self, group, validated_data):   # pylint: disable=arguments-differ
+        role = check_obj(Role, {'id': validated_data.get('role_id')}, 'ROLE_NOT_FOUND')
+        return safe_api(cm.api.add_group_role, (group, role))
 
 
 class UserPasswdSerializer(serializers.Serializer):
@@ -800,9 +875,7 @@ class LogStorageSerializer(serializers.Serializer):
                     body = f.read()
         elif obj.type == 'check':
             if body is None:
-                body = []
-                for cl in CheckLog.objects.filter(job_id=obj.job.id):
-                    body.append({'title': cl.title, 'message': cl.message, 'result': cl.result})
+                body = cm.job.get_check_log(obj.job_id)
             if isinstance(body, str):
                 body = json.loads(body)
         elif obj.type == 'custom':

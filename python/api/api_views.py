@@ -22,6 +22,7 @@ from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 from rest_framework.generics import GenericAPIView
 from rest_framework.utils.urls import replace_query_param
+from rest_framework.permissions import DjangoModelPermissions
 
 from adcm.settings import REST_FRAMEWORK
 
@@ -52,6 +53,25 @@ def update(serializer, **kwargs):
     return save(serializer, status.HTTP_200_OK, **kwargs)
 
 
+class DjangoModelPerm(DjangoModelPermissions):
+    """
+    Similar to `DjangoModelPermissions`, but adding 'view' permissions.
+    """
+    perms_map = {
+        'GET': ['%(app_label)s.view_%(model_name)s'],
+        'OPTIONS': ['%(app_label)s.view_%(model_name)s'],
+        'HEAD': ['%(app_label)s.view_%(model_name)s'],
+        'POST': ['%(app_label)s.add_%(model_name)s'],
+        'PUT': ['%(app_label)s.change_%(model_name)s'],
+        'PATCH': ['%(app_label)s.change_%(model_name)s'],
+        'DELETE': ['%(app_label)s.delete_%(model_name)s'],
+    }
+
+
+class GenericAPIPermView(GenericAPIView):
+    permission_classes = (DjangoModelPerm,)
+
+
 class InterfaceView():
     def for_ui(self, request):
         view = self.request.query_params.get('view', None)
@@ -71,6 +91,13 @@ class InterfaceView():
             if hasattr(self, 'serializer_class_ui'):
                 return self.serializer_class_ui
         return self.serializer_class
+
+
+def getlist_from_querydict(query_params, field_name):
+    params = query_params.get(field_name)
+    if params is None:
+        return []
+    return [param.strip() for param in params.split(',')]
 
 
 def fix_ordering(field, view):
@@ -103,9 +130,8 @@ class ActionFilter(drf_filters.FilterSet):
 class AdcmOrderingFilter(OrderingFilter):
     def get_ordering(self, request, queryset, view):
         ordering = None
-        params = request.query_params.get(self.ordering_param)
-        if params:
-            fields = [param.strip() for param in params.split(',')]
+        fields = getlist_from_querydict(request.query_params, self.ordering_param)
+        if fields:
             re_fields = [fix_ordering(field, view) for field in fields]
             ordering = self.remove_invalid_fields(queryset, re_fields, view, request)
         # log.debug('ordering: %s', ordering)
@@ -129,6 +155,7 @@ class AdcmFilterBackend(drf_filters.DjangoFilterBackend):
 class PageView(GenericAPIView, InterfaceView):
     filter_backends = (AdcmFilterBackend, AdcmOrderingFilter)
     pagination_class = rest_framework.pagination.LimitOffsetPagination
+    permission_classes = (DjangoModelPerm,)
 
     def get_ordering(self, request, queryset, view):
         Order = AdcmOrderingFilter()
@@ -152,27 +179,23 @@ class PageView(GenericAPIView, InterfaceView):
         context['request'] = request
         count = obj.count()
         serializer_class = self.select_serializer(request)
-        try:
-            if 'fields' in request.query_params or 'distinct' in request.query_params:
-                serializer_class = None
-                fields = request.query_params.get('fields', None)
-                if fields is not None:
-                    fields = fields.split(',')
-                    fields = [field.strip() for field in fields]
 
+        if 'fields' in request.query_params or 'distinct' in request.query_params:
+            serializer_class = None
+            try:
+                fields = getlist_from_querydict(request.query_params, 'fields')
                 distinct = int(request.query_params.get('distinct', 0))
 
                 if fields and distinct:
                     obj = obj.values(*fields).distinct()
-
                 elif fields:
                     obj = obj.values(*fields)
 
-        except (FieldError, ValueError):
-            qp = ','.join([f'{k}={v}' for k, v in request.query_params.items()
-                           if k in ['fields', 'distinct']])
-            msg = f'Bad query params: {qp}'
-            raise AdcmApiEx('BAD_QUERY_PARAMS', msg=msg, args=self.get_paged_link())
+            except (FieldError, ValueError):
+                qp = ','.join([f'{k}={v}' for k, v in request.query_params.items()
+                               if k in ['fields', 'distinct']])
+                msg = f'Bad query params: {qp}'
+                raise AdcmApiEx('BAD_QUERY_PARAMS', msg=msg)
 
         page = self.paginate_queryset(obj)
         if self.is_paged(request):
@@ -204,6 +227,7 @@ class PageViewAdd(PageView):
 
 class ListView(GenericAPIView, InterfaceView):
     filter_backends = (AdcmFilterBackend,)
+    permission_classes = (DjangoModelPerm,)
 
     def get(self, request):
         obj = self.filter_queryset(self.get_queryset())
@@ -220,6 +244,8 @@ class ListViewAdd(ListView):
 
 
 class DetailViewRO(GenericAPIView, InterfaceView):
+    permission_classes = (DjangoModelPerm,)
+
     def get_object(self):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
         kw_req = {self.lookup_field: self.kwargs[lookup_url_kwarg]}

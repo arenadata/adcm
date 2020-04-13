@@ -28,22 +28,6 @@ const UPLOAD_URL = `${environment.apiRoot}stack/upload/`,
 export class StackService {
   constructor(private api: ApiService, private store: Store<ApiState>) {}
 
-  // get service(): Observable<StackBase[]> {
-  //   return this.fromStack<StackBase>('service');
-  // }
-
-  // get host(): Observable<StackBase[]> {
-  //   return this.fromStack<StackBase>('host');
-  // }
-
-  // get provider(): Observable<StackBase[]> {
-  //   return this.fromStack<StackBase>('provider');
-  // }
-
-  // get cluster(): Observable<StackBase[]> {
-  //   return this.fromStack<StackBase>('cluster');
-  // }
-
   fromStack<T>(name: StackInfo, param?: { [key: string]: string | number }): Observable<T[]> {
     const params = Object.keys(param).reduce<any>((p, c) => ({ ...p, [c]: param[c] }), {});
     return this.store.pipe(
@@ -59,7 +43,6 @@ export class StackService {
         mergeMap(() => this.api.post<Bundle>(LOAD_URL, { bundle_file: (form.get('file') as File).name }))
       );
     };
-
     return combineLatest(output.map(o => item(o)));
   }
 }

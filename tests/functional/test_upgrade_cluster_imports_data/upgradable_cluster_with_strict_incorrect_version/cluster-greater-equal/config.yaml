@@ -27,7 +27,7 @@
              max_strict: 2.5
        ADH:
           versions:
-             min_strict: 0.9
+             min_strict: 1.0
              max_strict: 1.6
 
 - type: service
