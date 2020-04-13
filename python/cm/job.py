@@ -40,14 +40,14 @@ from cm.models import (
 )
 
 
-def start_task(action_id, selector, conf, hc, hosts):   # pylint: disable=too-many-locals
+def start_task(action_id, selector, conf, attr, hc, hosts):   # pylint: disable=too-many-locals
     try:
         action = Action.objects.get(id=action_id)
     except Action.DoesNotExist:
         err('ACTION_NOT_FOUND')
 
     obj, cluster, provider = check_task(action, selector, conf)
-    act_conf, spec = check_action_config(action, conf)
+    act_conf, spec = check_action_config(action, conf, attr)
     host_map, delta = check_hostcomponentmap(cluster, action, hc)
     check_action_hosts(action, cluster, provider, hosts)
     old_hc = get_hc(cluster)
@@ -55,16 +55,14 @@ def start_task(action_id, selector, conf, hc, hosts):   # pylint: disable=too-ma
     if action.type not in ['task', 'job']:
         msg = f'unknown type "{action.type}" for action: {action}, {action.context}: {obj.name}'
         err('WRONG_ACTION_TYPE', msg)
-    event = Event()
-    with transaction.atomic():
-        task = lock_create_task(
-            action, obj, selector, act_conf, spec, old_hc, delta, host_map, cluster, hosts, event
-        )
 
+    event = Event()
+    task = prepare_task(
+        action, obj, selector, act_conf, attr, spec, old_hc, delta, host_map, cluster, hosts, event
+    )
     event.send_state()
     run_task(task, event)
     event.send_state()
-
     log_rotation()
 
     return task
@@ -99,18 +97,19 @@ def check_action_hosts(action, cluster, provider, hosts):
             err('TASK_ERROR', f'host #{host_id} does not belong to host provider #{provider.id}')
 
 
-def lock_create_task(action, obj, selector, conf, spec, old_hc, delta, host_map, cluster, hosts,
-                     event):
+@transaction.atomic
+def prepare_task(action, obj, selector, conf, attr, spec, old_hc, delta, host_map, cluster,
+                 hosts, event):
     lock_objects(obj, event)
 
     if host_map:
         api.save_hc(cluster, host_map)
 
     if action.type == 'task':
-        task = create_task(action, selector, obj, conf, old_hc, delta, hosts, event)
+        task = create_task(action, selector, obj, conf, attr, old_hc, delta, hosts, event)
         new_conf = process_config(task, spec, conf)
     else:
-        task = create_one_job_task(action.id, selector, obj, conf, old_hc, hosts, event)
+        task = create_one_job_task(action.id, selector, obj, conf, attr, old_hc, hosts, event)
         job = create_job(action, None, selector, event, task.id)
         new_conf = process_config(task, spec, conf)
         prepare_job(action, None, selector, job.id, obj, new_conf, delta, hosts)
@@ -302,14 +301,16 @@ def unlock_all(event):
         set_job_status(job.id, config.Job.ABORTED, event)
 
 
-def check_action_config(action, conf):
-    spec, flat_spec, _, _ = adcm_config.get_prototype_config(action.prototype, action)
-    if spec:
-        if not conf:
-            err('TASK_ERROR', 'action config is required')
-    else:
+def check_action_config(action, conf, attr):
+    proto = action.prototype
+    spec, flat_spec, _, _ = adcm_config.get_prototype_config(proto, action)
+    if not spec:
         return None, None
-    return adcm_config.check_config_spec(action.prototype, action, spec, flat_spec, conf), spec
+    if not conf:
+        err('TASK_ERROR', 'action config is required')
+    adcm_config.check_attr(proto, attr, flat_spec)
+    new_conf = adcm_config.check_config_spec(proto, action, spec, flat_spec, conf, None, attr)
+    return new_conf, spec
 
 
 def add_to_dict(my_dict, key, subkey, value):
@@ -611,12 +612,13 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
     fd.close()
 
 
-def create_task(action, selector, obj, conf, hc, delta, hosts, event):
+def create_task(action, selector, obj, conf, attr, hc, delta, hosts, event):
     task = TaskLog(
         action_id=action.id,
         object_id=obj.id,
         selector=json.dumps(selector),
         config=json.dumps(conf),
+        attr=json.dumps(attr),
         hostcomponentmap=json.dumps(hc),
         hosts=json.dumps(hosts),
         start_date=timezone.now(),
@@ -631,12 +633,13 @@ def create_task(action, selector, obj, conf, hc, delta, hosts, event):
     return task
 
 
-def create_one_job_task(action_id, selector, obj, conf, hc, hosts, event):
+def create_one_job_task(action_id, selector, obj, conf, attr, hc, hosts, event):
     task = TaskLog(
         action_id=action_id,
         object_id=obj.id,
         selector=json.dumps(selector),
         config=json.dumps(conf),
+        attr=json.dumps(attr),
         hostcomponentmap=json.dumps(hc),
         hosts=json.dumps(hosts),
         start_date=timezone.now(),
