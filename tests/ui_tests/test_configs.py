@@ -105,7 +105,7 @@ def generate_group_expected_result(group_config):
         expected_result['save'] = False
     group_advanced = group_config['ui_options']['advanced']
     group_invisible = group_config['ui_options']['invisible']
-    expected_result['group_visible_advanced'] = group_advanced and not group_invisible
+    expected_result['group_visible_advanced'] = (group_advanced and not group_invisible)
 
     # if group_config['ui_options']['advanced'] and not group_config['ui_options']['invisible']:
     #     expected_result['group_visible_advanced'] = True
@@ -155,12 +155,10 @@ def generate_config_expected_result(config):
     else:
         expected_result['save'] = True
         expected_result['alerts'] = False
-    if config['read_only']:
-        expected_result['save'] = False
-    if config['ui_options']['advanced'] and not config['ui_options']['invisible']:
-        expected_result['visible_advanced'] = True
-    else:
-        expected_result['visible_advanced'] = False
+    expected_result['save'] = not config['read_only']
+    expected_result['visible_advanced'] = (
+            config['ui_options']['advanced'] and not config['ui_options']['invisible']
+    )
     return expected_result
 
 
@@ -403,6 +401,9 @@ def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app)
         assert groups, groups
         for field in fields:
             assert not field.is_displayed()
+        if "activatable" in config['config'][0].keys():
+            ui_config.assert_group_status(groups[0], config['config'][0]['active'])
+
     if expected['group_visible'] and expected['field_visible']:
         if expected['field_visible_advanced'] or expected['group_visible_advanced']:
             assert not fields
@@ -418,6 +419,8 @@ def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app)
             ui_config.assert_field_content_equal(field_type, fields[0], default_value)
         if expected['alerts']:
             ui_config.assert_alerts_presented(field_type)
+        if "activatable" in config['config'][0].keys():
+            ui_config.assert_group_status(groups[0], config['config'][0]['active'])
     if not expected['group_visible']:
         assert not groups
         if not ui_config.advanced:

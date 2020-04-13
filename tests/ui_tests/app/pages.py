@@ -573,6 +573,17 @@ class Configuration(BasePage):
             error_texts = [error.text for error in errors]
             assert error_text in error_texts
 
+    def assert_group_status(self, group_element, status=True):
+        """Check that group active or not
+        :param group_element:
+        :param status:
+        :return:
+        """
+        if status:
+            assert self.group_is_active_by_element(group_element)
+        else:
+            assert not self.group_is_active_by_element(group_element)
+
     def get_config_field(self):
         return self._getelement(ConfigurationLocators.app_conf_fields)
 
