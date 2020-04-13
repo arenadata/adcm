@@ -93,7 +93,6 @@ def generate_group_expected_result(group_config):
     :return: dict with expected result
     """
     expected_result = {'group_visible': not group_config['ui_options']['invisible'],
-                       'field_visible': not group_config['field_ui_options']['invisible'],
                        'editable': not group_config['read_only'],
                        "content": group_config['default']}
     if group_config['required'] and not group_config['default']:
@@ -104,13 +103,18 @@ def generate_group_expected_result(group_config):
         expected_result['alerts'] = False
     if group_config['read_only']:
         expected_result['save'] = False
-    if group_config['ui_options']['advanced'] and not group_config['ui_options']['invisible']:
-        expected_result['group_visible_advanced'] = True
-    else:
-        expected_result['group_visible_advanced'] = False
+    group_advanced = group_config['ui_options']['advanced']
+    group_invisible = group_config['ui_options']['invisible']
+    expected_result['group_visible_advanced'] = group_advanced and not group_invisible
+
+    # if group_config['ui_options']['advanced'] and not group_config['ui_options']['invisible']:
+    #     expected_result['group_visible_advanced'] = True
+    # else:
+    #     expected_result['group_visible_advanced'] = False
     field_advanced = group_config['field_ui_options']['advanced']
     field_invisible = group_config['field_ui_options']['invisible']
     expected_result['field_visible_advanced'] = (field_advanced and not field_invisible)
+    expected_result['field_visible'] = not field_invisible
     if 'activatable' in group_config.keys():
         group_active = group_config['active']
         field_invisible = group_config['field_ui_options']['invisible']
