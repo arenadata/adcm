@@ -112,8 +112,21 @@ export class FieldService {
     return v;
   }
 
-  toFormGroup(options: (FieldOptions | PanelOptions)[]): FormGroup {
-    return this.fb.group(options.reduce((p, c) => this.runByTree(c, p), {}));
+  toFormGroup(options: (FieldOptions | PanelOptions)[] = []): FormGroup {
+    return this.fb.group(
+      options.reduce((p, c) => this.runByTree(c, p), {}),
+      {
+        validator: () => {
+          if (
+            options
+              .filter((a) => a.type !== 'group')
+              .filter((a) => !a.read_only)
+              .filter((a) => !(a.ui_options && a.ui_options.invisible)).length === 0
+          )
+            return { error: 'Form is empty' };
+        },
+      }
+    );
   }
 
   runByTree(field: FieldOptions | PanelOptions, controls: { [key: string]: {} }): { [key: string]: {} } {
