@@ -11,8 +11,11 @@
 // limitations under the License.
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { FormBuilder } from '@angular/forms';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ApiService } from '@app/core/api/api.service';
 import { provideMockStore } from '@ngrx/store/testing';
+import { EMPTY } from 'rxjs';
 
 import { FieldService } from '../field.service';
 import { ConfigFieldsComponent } from '../fields/fields.component';
@@ -23,32 +26,45 @@ import { MainService } from './main.service';
 describe('Configuration : MainComponent >> ', () => {
   let component: ConfigComponent;
   let fixture: ComponentFixture<ConfigComponent>;
-  //   let store: MockStore;
+  let FieldServiceStub: Partial<FieldService>;
+  let MainServiceStub: Partial<MainService>;
+  // let store: MockStore;
+
+  const initialState = { socket: {} };
 
   beforeEach(async () => {
+    FieldServiceStub = new FieldService(new FormBuilder());
+
+    MainServiceStub = {
+      getConfig: () => EMPTY,
+    };
+
     TestBed.configureTestingModule({
+      imports: [NoopAnimationsModule],
       declarations: [ConfigComponent, ToolsComponent, ConfigFieldsComponent],
-      providers: [
-        { provide: MainService, useValue: {} },
-        { provide: FieldService, useValue: {} },
-        { provide: ApiService, useValue: {} },
-        provideMockStore(),
-      ],
+      providers: [provideMockStore({ initialState }), { provide: FieldService, useValue: FieldServiceStub }, { provide: ApiService, useValue: {} }],
       schemas: [NO_ERRORS_SCHEMA],
-    }).compileComponents();
+    })
+      .overrideComponent(ConfigComponent, {
+        set: {
+          providers: [{ provide: MainService, useValue: MainServiceStub }],
+        },
+      })
+      .compileComponents()
+      .then(() => {
+        fixture = TestBed.createComponent(ConfigComponent);
+        component = fixture.componentInstance;
+      });
   });
 
-  beforeEach(() => {
-    fixture = TestBed.createComponent(ConfigComponent);
-    // TestBed.inject()
-    component = fixture.componentInstance;
-  });
+  beforeEach(() => {});
 
   it('should create', () => {
     expect(component).toBeTruthy();
   });
 
   it('should exist ToolsComponent, HistoryComponent, FieldsComponent', () => {
+    fixture.detectChanges();
     const de = fixture.debugElement.nativeElement;
     const tools = de.querySelector('app-tools');
     const history = de.querySelector('app-history');
@@ -59,18 +75,14 @@ describe('Configuration : MainComponent >> ', () => {
   });
 
   it('should be Save button and it must be disabled', () => {
-    // fixture.detectChanges();
+    fixture.detectChanges();
     const de = fixture.debugElement.nativeElement;
     const saveBtn = de.querySelector('app-tools div.control-buttons button.form_config_button_save');
     expect(saveBtn).toBeTruthy();
-    // expect(saveBtn.disabled).toBeTrue();
+    expect(saveBtn.disabled).toBeTrue();
   });
 
   /**
-   * ToolsComponent with buttons disabled, and notice - 'Loading error'
-   * When get data config
-   * - wait FieldsComponent onload event
-   * - check onReady method
    * - init vars for ToolsComponent and HistoryComponent
    */
 });

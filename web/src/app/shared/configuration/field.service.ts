@@ -59,7 +59,6 @@ export class FieldService {
     const params: FieldOptions = {
       ...item,
       key: `${item.subname ? item.subname + '/' : ''}${item.name}`,
-      disabled: item.read_only,
       value: this.getValue(item.type)(item.value, item.default, item.required),
       validator: {
         required: item.required,
@@ -113,22 +112,16 @@ export class FieldService {
   }
 
   toFormGroup(options: (FieldOptions | PanelOptions)[] = []): FormGroup {
+    const check = (a: FieldOptions | PanelOptions) => ('options' in a ? a.options.some((b) => check(b)) : !a.read_only && !(a.ui_options && a.ui_options.invisible));
     return this.fb.group(
       options.reduce((p, c) => this.runByTree(c, p), {}),
       {
-        validator: () => {
-          if (
-            options
-              .filter((a) => a.type !== 'group')
-              .filter((a) => !a.read_only)
-              .filter((a) => !(a.ui_options && a.ui_options.invisible)).length === 0
-          )
-            return { error: 'Form is empty' };
-        },
+        validator: () => (options.filter(check).length === 0 ? { error: 'Form is empty' } : null),
       }
     );
   }
 
+  // TODO: impure
   runByTree(field: FieldOptions | PanelOptions, controls: { [key: string]: {} }): { [key: string]: {} } {
     if ('options' in field) {
       controls[field.name] = this.fb.group(

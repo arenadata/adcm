@@ -31,7 +31,7 @@ import { FieldOptions, IConfig, PanelOptions } from '../types';
 export class ConfigFieldsComponent {
   @Input() dataOptions: (FieldOptions | PanelOptions)[] = [];
   @Input() rawConfig: IConfig;
-  @Input() form = new FormGroup({});
+  @Input() form = this.service.toFormGroup();
 
   shapshot: any;
   isAdvanced = false;
