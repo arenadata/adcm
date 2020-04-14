@@ -164,8 +164,7 @@ def generate_group_configs(group_config_data):
     :return:
     """
     group_configs = []
-    # for _type in TYPES:
-    for _type in ['string']:
+    for _type in TYPES:
         for data in group_config_data:
             config_dict = {"type": "cluster",
                            "version": "1",
