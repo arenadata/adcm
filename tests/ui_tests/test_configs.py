@@ -150,10 +150,12 @@ def generate_config_expected_result(config):
     else:
         expected_result['save'] = True
         expected_result['alerts'] = False
-    expected_result['save'] = not config['read_only']
-    expected_result['visible_advanced'] = (
-        config['ui_options']['advanced'] and not config['ui_options']['invisible']
-    )
+    if config['read_only']:
+        expected_result['save'] = False
+    if config['ui_options']['advanced'] and not config['ui_options']['invisible']:
+        expected_result['visible_advanced'] = True
+    else:
+        expected_result['visible_advanced'] = False
     return expected_result
 
 
@@ -405,7 +407,9 @@ def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app)
             if not ui_config.advanced:
                 ui_config.click_advanced()
             assert ui_config.advanced
+        groups = ui_config.get_group_elements()
         fields = ui_config.get_app_fields()
+        assert groups, groups
         assert fields, fields
         for field in fields:
             ui_config.assert_field_editable(field, expected['editable'])
