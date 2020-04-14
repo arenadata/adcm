@@ -80,22 +80,12 @@ export class GroupFieldsComponent implements OnInit {
 
   updateValidator(formControl: AbstractControl, a: FieldOptions, flag: boolean) {
     if (formControl) {
-      if (!flag) {
-        formControl.clearValidators();
-      } else if (a.validator) {
-        formControl.setValidators(this.service.setValidator(a));
-      }
-      if (this.checkForm()) {
-        this.form.setErrors({ error: 'There are not visible fields in this form' });
-      } else {
-        formControl.updateValueAndValidity();
-        this.form.updateValueAndValidity();
-      }
-    }
-  }
+      if (!flag) formControl.clearValidators();
+      else if (a.validator) formControl.setValidators(this.service.setValidator(a));
 
-  checkForm() {
-    return this.rawConfig.config.filter((a) => a.type !== 'group').filter((a) => !a.read_only).length === 0;
+      formControl.updateValueAndValidity();
+      this.form.updateValueAndValidity();
+    }
   }
 
   trackBy(index: number, item: FieldOptions): string {
