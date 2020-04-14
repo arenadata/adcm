@@ -95,7 +95,10 @@ export class GroupFieldsComponent implements OnInit {
   }
 
   checkForm() {
-    return this.rawConfig.config.filter((a) => a.type !== 'group').filter((a) => !a.read_only).length === 0;
+    return  this.rawConfig.config
+    .filter((a) => a.type !== 'group')
+    .filter((a) => !a.read_only)
+    .filter((a) => !(a.ui_options && a.ui_options.invisible)).length === 0;
   }
 
   trackBy(index: number, item: FieldOptions): string {
