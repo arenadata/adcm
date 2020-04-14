@@ -14,6 +14,7 @@ import { FormArray, FormControl, FormGroup } from '@angular/forms';
 
 import { FieldService } from '../field.service';
 import { IYContainer, IYField, matchType, reqursionType } from '../yspec/yspec.service';
+import { isArray } from 'util';
 
 type sValue = string | boolean | number;
 
@@ -33,7 +34,7 @@ export interface IControl {
 @Component({
   selector: 'app-root-scheme',
   templateUrl: './root.component.html',
-  styleUrls: ['./root.component.scss']
+  styleUrls: ['./root.component.scss'],
 })
 export class RootComponent implements OnInit {
   @Input() form: FormGroup | FormArray;
@@ -51,8 +52,10 @@ export class RootComponent implements OnInit {
         const value = this.value as IValue[];
         value.map((x, i) => this.add([i.toString(), x]));
       } else if (typeof this.value === 'object') {
-        Object.keys(this.value).map(x => this.add([x, this.value[x]]));
+        Object.keys(this.value).map((x) => this.add([x, this.value[x]]));
       }
+    } else if (this.options.type === 'dict' && Array.isArray(this.options.options)) {
+      this.options.options.map((x) => this.add([x.name, '']));
     }
   }
 
@@ -82,7 +85,7 @@ export class RootComponent implements OnInit {
         this.controls = [...this.controls, item];
       }
     } else {
-      const rules = Array.isArray(this.rules) ? this.rules.find(a => a.name === name) : this.rules;
+      const rules = Array.isArray(this.rules) ? this.rules.find((a) => a.name === name) : this.rules;
 
       if (rules) {
         let form: FormGroup | FormArray;
@@ -110,9 +113,9 @@ export class RootComponent implements OnInit {
     if (!value) return false;
     if (Array.isArray(rules)) {
       if (Array.isArray(value)) {
-        return rules.some(a => a.name === value[0]);
+        return rules.some((a) => a.name === value[0]);
       } else if (typeof value === 'object') {
-        return Object.keys(value).every(x => rules.some(a => a.name === x));
+        return Object.keys(value).every((x) => rules.some((a) => a.name === x));
       }
     }
   }
