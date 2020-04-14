@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=wrong-import-position,unused-import
+# pylint: disable=wrong-import-position, unused-import, import-error
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -66,6 +66,7 @@ class ActionModule(ActionBase):
     _VALID_ARGS = frozenset(('fqdn', 'description'))
 
     def run(self, tmp=None, task_vars=None):
+        super(ActionModule, self).run(tmp, task_vars)
         msg = 'You can add host only in host provider context'
         provider_id = get_context_id(task_vars, 'provider', 'provider_id', msg)
 
