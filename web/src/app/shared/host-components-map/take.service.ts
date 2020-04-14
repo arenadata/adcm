@@ -11,7 +11,7 @@
 // limitations under the License.
 import { AbstractControl, FormControl, FormGroup, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { ApiService } from '@app/core/api';
-import { IActionParameter } from '@app/core/types';
+import { IActionParameter, getRandomColor } from '@app/core/types';
 import { take, tap } from 'rxjs/operators';
 
 import { CompTile, Constraint, HostTile, IRawHosComponent, Post, StatePost, Stream, Tile } from './types';
@@ -67,8 +67,14 @@ export class TakeService {
   }
 
   checkEmptyHost() {
-    const isShrink = this.actionParameters?.every((a) => a.action === 'remove');
-    if (isShrink) this.Hosts = this.Hosts.map((a) => ({ ...a, color: !a.relations.length ? 'gray' : 'none' }));
+    const ap = this.actionParameters;
+    if (ap) {
+      const isShrink = ap.every((a) => a.action === 'remove');
+      const isExpand = ap.every((a) => a.action === 'add');
+      const condition = (b: CompTile) => (a: IActionParameter) => b.component === `${a.service}/${a.component}`;
+      const existCondition = (rel: CompTile[]) => (isShrink ? ap.some((a) => rel.some((b) => condition(b)(a))) : ap.every((a) => rel.some((b) => condition(b)(a))));
+      this.Hosts = this.Hosts.map((a) => ({ ...a, color: existCondition(a.relations as CompTile[]) ? (isExpand ? 'gray' : 'none') : isShrink ? 'gray' : 'none' }));
+    }
   }
 
   saveSource(cluster: { id: number; hostcomponent: string }) {
