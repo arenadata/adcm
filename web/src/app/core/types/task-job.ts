@@ -48,16 +48,17 @@ export type Task = TaskRaw & ApiBase;
 
 export interface LogFile {
   id: number;
-  url: string;
   name: string;
   type: string;
   format: 'txt' | 'json';
   download_url: string;
-  body: string;
+  body: string | CheckLog;
 }
 
 export interface CheckLog {
   title: string;
   message: string;
   result: boolean;
+  type: 'group' | 'check';
+  subs?: CheckLog[];
 }
