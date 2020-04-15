@@ -62,15 +62,14 @@ export interface ValidatorInfo {
 export interface FieldStack {
   type: ConfigValueTypes;
   name: string;
-  display_name: string;
   subname: string;
+  display_name: string;
   default: null | string | number | boolean | object | any[];
   value: null | string | number | boolean;
   required: boolean;
   description: string;
   limits?: ILimits;
   read_only: boolean;
-  hidden: boolean;
   ui_options?: UIoptions;
   activatable: boolean;
 }
@@ -107,6 +106,18 @@ export interface PanelOptions extends ConfigOptions {
   activatable?: boolean;
 }
 
+/**
+ * For Material form controls
+ */
+export interface FieldOptions extends ConfigOptions {
+  default: null | string | number | boolean | object | any[];
+  value: string | number | boolean | object | string[] | null;
+  controlType: controlType;
+  validator: ValidatorInfo;
+  limits?: ILimits;
+  compare: Compare[];
+}
+
 export interface CompareConfig extends IConfig {
   color: string;
 }
@@ -116,17 +127,4 @@ interface Compare {
   date: string;
   value: string;
   color: string;
-}
-
-/**
- * For Material form controls
- */
-export interface FieldOptions extends ConfigOptions {
-  default: null | string | number | boolean | object | any[];
-  value: string | number | boolean | object | string[] | null;
-  controlType: controlType;
-  validator: ValidatorInfo;
-  disabled?: boolean;
-  limits?: ILimits;
-  compare: Compare[];
 }
