@@ -19,7 +19,7 @@ import { FieldDirective } from './field.directive';
   template: `
     <ng-container [formGroup]="form">
       <mat-form-field>
-        <textarea matInput [appMTextarea]="field.key" [formControlName]="field.name" [readonly]="field.disabled"></textarea>
+        <textarea matInput [appMTextarea]="field.key" [formControlName]="field.name" [readonly]="field.read_only"></textarea>
         <mat-error *ngIf="!isValid"><app-error-info [field]="field" [control]="control"></app-error-info></mat-error>
       </mat-form-field>
     </ng-container>
