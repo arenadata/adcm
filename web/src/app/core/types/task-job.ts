@@ -48,6 +48,7 @@ export type Task = TaskRaw & ApiBase;
 
 export interface LogFile {
   id: number;
+  url: string;
   name: string;
   type: string;
   format: 'txt' | 'json';
