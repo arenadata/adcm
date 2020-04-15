@@ -59,12 +59,18 @@ export class ConfigFieldsComponent implements AfterViewChecked {
 
   constructor(private service: FieldService) {}
 
-  ngAfterViewChecked(): void {    
-      this.checkForm();
+  ngAfterViewChecked(): void {
+    this.checkForm();
   }
 
   checkForm() {
-    if (!this.rawConfig || this.rawConfig.config.filter((a) => a.type !== 'group').filter((a) => !a.read_only).length === 0)
+    if (
+      !this.rawConfig ||
+      this.rawConfig.config
+        .filter((a) => a.type !== 'group')
+        .filter((a) => !a.read_only)
+        .filter((a) => !(a.ui_options && a.ui_options.invisible)).length === 0
+    )
       this.form.setErrors({ error: 'There are not visible fields in this form' });
   }
 
