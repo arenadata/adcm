@@ -110,12 +110,16 @@ def generate_group_expected_result(group_config):
     field_invisible = group_config['field_ui_options']['invisible']
     expected_result['field_visible_advanced'] = (field_advanced and not field_invisible)
     expected_result['field_visible'] = not field_invisible
+    if group_invisible or field_invisible:
+        expected_result['save'] = False
     if group_config['activatable']:
         group_active = group_config['active']
         field_invisible = group_config['field_ui_options']['invisible']
         expected_result['field_visible'] = (group_active and not field_invisible)
         expected_result['field_visible_advanced'] = (
             field_advanced and group_active and not field_invisible)
+        if not group_config['active']:
+            expected_result['save'] = False
     return expected_result
 
 
@@ -151,6 +155,8 @@ def generate_config_expected_result(config):
         expected_result['save'] = True
         expected_result['alerts'] = False
     if config['read_only']:
+        expected_result['save'] = False
+    if config['ui_options']['invisible']:
         expected_result['save'] = False
     if config['ui_options']['advanced'] and not config['ui_options']['invisible']:
         expected_result['visible_advanced'] = True
