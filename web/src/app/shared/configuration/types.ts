@@ -32,6 +32,8 @@ export type ConfigValueTypes =
 export type simpleTypes = string | number | boolean;
 export type ConfigResultTypes = simpleTypes | simpleTypes[] | object | null;
 
+export type controlType = 'boolean' | 'textbox' | 'textarea' | 'json' | 'password' | 'list' | 'map' | 'dropdown' | 'file' | 'text';
+
 export interface UIoptions {
   invisible?: boolean;
   no_confirm?: boolean;
@@ -44,9 +46,10 @@ export interface ILimits {
   option?: any;
   read_only?: stateType[];
   yspec?: IYspec;
+  rules?: any;
 }
 
-interface ValidatorInfo {
+export interface ValidatorInfo {
   pattern?: string | RegExp;
   required?: boolean;
   max?: number;
@@ -59,15 +62,14 @@ interface ValidatorInfo {
 export interface FieldStack {
   type: ConfigValueTypes;
   name: string;
-  display_name: string;
   subname: string;
+  display_name: string;
   default: null | string | number | boolean | object | any[];
   value: null | string | number | boolean;
   required: boolean;
   description: string;
   limits?: ILimits;
   read_only: boolean;
-  hidden: boolean;
   ui_options?: UIoptions;
   activatable: boolean;
 }
@@ -80,7 +82,11 @@ export interface IConfig {
   date?: string;
   description?: string;
   config: FieldStack[];
-  attr?: { [group: string]: { active: boolean } };
+  attr?: IConfigAttr;
+}
+
+export interface IConfigAttr {
+  [group: string]: { active: boolean };
 }
 
 export interface ConfigOptions {
@@ -100,6 +106,18 @@ export interface PanelOptions extends ConfigOptions {
   activatable?: boolean;
 }
 
+/**
+ * For Material form controls
+ */
+export interface FieldOptions extends ConfigOptions {
+  default: null | string | number | boolean | object | any[];
+  value: string | number | boolean | object | string[] | null;
+  controlType: controlType;
+  validator: ValidatorInfo;
+  limits?: ILimits;
+  compare: Compare[];
+}
+
 export interface CompareConfig extends IConfig {
   color: string;
 }
@@ -109,21 +127,4 @@ interface Compare {
   date: string;
   value: string;
   color: string;
-}
-
-/**
- * For Material form controls
- */
-export interface FieldOptions extends ConfigOptions {
-  default: null | string | number | boolean | object | any[];
-  value: string | number | boolean | object | string[] | null;
-  controlType: string;
-  validator: ValidatorInfo;
-  disabled?: boolean;
-  limits?: ILimits;
-  compare: Compare[];
-}
-
-export interface IStructure extends FieldOptions {
-  rules: { [x: string]: any; type: string };
 }

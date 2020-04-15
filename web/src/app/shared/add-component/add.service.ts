@@ -12,16 +12,15 @@
 import { EventEmitter, Injectable } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
+import { convertToParamMap, Params } from '@angular/router';
 import { ClusterService, StackInfo, StackService } from '@app/core';
 import { ApiService } from '@app/core/api';
-import { Prototype, Provider, ServicePrototype, StackBase, TypeName } from '@app/core/types';
-import { Cluster, Host } from '@app/core/types/api';
+import { Host, Prototype, ServicePrototype, StackBase, TypeName } from '@app/core/types';
 import { environment } from '@env/environment';
 import { Observable, of } from 'rxjs';
 import { concatAll, filter, map, switchMap } from 'rxjs/operators';
 
 import { DialogComponent } from '../components/dialog.component';
-import { ListResult } from '../components/list/list.component';
 
 export interface FormModel {
   name: string;
@@ -97,9 +96,7 @@ export class AddService {
                 .pipe(
                   filter(yes => yes),
                   switchMap(() =>
-                    this.api
-                      .put(`${root.stack}bundle/${this.currentPrototype.bundle_id}/license/accept/`, {})
-                      .pipe(switchMap(() => this.api.post<T>(root[name], data)))
+                    this.api.put(`${root.stack}bundle/${this.currentPrototype.bundle_id}/license/accept/`, {}).pipe(switchMap(() => this.api.post<T>(root[name], data)))
                   )
                 )
             )
@@ -117,32 +114,17 @@ export class AddService {
     return b$.pipe(concatAll());
   }
 
-  addHostInCluster(host: Host) {
-    return this.cluster.addHost(host);
+  addHostInCluster(id: number) {
+    return this.cluster.addHost(id);
   }
 
   addService(data: { prototype_id: number }[]) {
     return this.cluster.addServices(data);
   }
 
-  getClusters(param: { [key: string]: string | number } = {}) {
-    const limit = param.limit ? +param.limit : +localStorage.getItem('limit'),
-      offset = (param.page ? +param.page : 0) * limit;
-    return this.api.root.pipe(
-      switchMap(root =>
-        this.api
-          .get<ListResult<Cluster>>(root.cluster, {
-            limit: limit.toString(),
-            offset: offset.toString(),
-            ordering: 'display_name'
-          })
-          .pipe(map(list => list.results))
-      )
-    );
-  }
-
-  getProviders() {
-    return this.api.getPure<Provider>('provider', { ordering: 'name' });
+  getList<T>(type: TypeName, param: Params = {}): Observable<T[]> {
+    const paramMap = convertToParamMap(param);
+    return this.api.root.pipe(switchMap(root => this.api.getList<T>(root[type], paramMap).pipe(map(list => list.results))));
   }
 
   getPrototype(name: StackInfo, param: { [key: string]: string | number }): Observable<Prototype[]> {
@@ -162,11 +144,12 @@ export class AddService {
     );
   }
 
-  getFreeHosts() {
-    return this.api
-      .getPure<Host>('host', { cluster_is_null: 'true' })
-      .pipe(map(a => a.map(b => ({ ...b, name: b.fqdn }))));
-  }
+  // getFreeHosts(p: Params) {
+  //   const param = convertToParamMap(p);
+  //   return this.api
+  //     .getList<Host>('host', param)
+  //     .pipe(map(a => a.map(b => ({ ...b, name: b.fqdn }))));
+  // }
 
   upload(data: FormData[]) {
     return this.stack.upload(data);

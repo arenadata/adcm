@@ -12,8 +12,9 @@
 import { Directive, HostListener, Input } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { IAction } from '@app/core/types';
+
 import { DialogComponent } from '../dialog.component';
-import { ActionMasterComponent } from './master/master.component';
+import { ActionMasterComponent as component } from './master/master.component';
 
 export interface ActionParameters {
   cluster?: {
@@ -24,26 +25,39 @@ export interface ActionParameters {
 }
 
 @Directive({
-  selector: '[appActions]',
+  selector: '[appActions]'
 })
 export class ActionsDirective {
-  @Input('appActions')
-  data: ActionParameters;
+  @Input('appActions') inputData: ActionParameters;
 
   constructor(private dialog: MatDialog) {}
 
   @HostListener('click')
   onClick() {
-    const raw = this.data.actions[0];
-    const flag = raw.config.config.length || raw.hostcomponentmap;
-    this.dialog.open(DialogComponent, {
-      width: flag ? '90%' : '400px',
-      maxWidth: '1400px',
+    const dialogModel = this.prepare();
+    this.dialog.open(DialogComponent, dialogModel);
+  }
+
+  prepare() {
+    const maxWidth = '1400px';
+    const model = this.inputData;
+
+    if (!model.actions?.length) return { data: { title: 'No parameters for run the action', model: null, component: null } };
+
+    const act = model.actions[0];
+    const isMulty = model.actions.length > 1;
+
+    const width = isMulty || act.config?.config.length || act.hostcomponentmap ? '90%' : '400px';
+    const title = act.ui_options?.disclaimer ? act.ui_options.disclaimer : isMulty ? 'Run an actions?' : `Run an action [ ${act.display_name} ]?`;
+
+    return {
+      width,
+      maxWidth,
       data: {
-        title: raw.ui_options && raw.ui_options.disclaimer ? raw.ui_options.disclaimer : 'Run an action?',
-        component: ActionMasterComponent,
-        model: this.data,
-      },
-    });
+        title,
+        model,
+        component
+      }
+    };
   }
 }

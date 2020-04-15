@@ -9,64 +9,65 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit, EventEmitter, Output, Input } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormControl } from '@angular/forms';
-import { Subject } from 'rxjs';
 import { BaseDirective } from '@app/shared/directives';
-import { IToolsEvent } from '../field.service';
+import { Subject } from 'rxjs';
+
+import { ISearchParam } from '../main/main.service';
 
 @Component({
   selector: 'app-tools',
   template: `
     <mat-form-field class="description">
-      <input matInput placeholder="Description configuration" [formControl]="descriptionFormControl" [value]="description" />
+      <input matInput placeholder="Description configuration" [formControl]="description" />
     </mat-form-field>
-    <app-search (pattern)="filter($event)"></app-search>
-    <mat-checkbox [(ngModel)]="advanced" [ngClass]="{ advanced: isAdvanced }">Advanced</mat-checkbox>
+    <app-search (pattern)="search($event)"></app-search>
+    <mat-checkbox [(ngModel)]="advanced" [disabled]="isAdvanced === null" [ngClass]="{ advanced: isAdvanced }">Advanced</mat-checkbox>
     <div class="control-buttons">
-      <button mat-raised-button color="accent" class="form_config_button_save" [disabled]="disabledSave" (click)="save()">
+      <button mat-raised-button color="accent" class="form_config_button_save" [disabled]="disabledSave" (click)="onSave()">
         Save
       </button>
-      <button mat-icon-button [disabled]="disabledHistory" (click)="history()" [matTooltip]="historyShow ? 'Hide history' : 'Show history'">
+      <button mat-icon-button [disabled]="disabledHistory" (click)="toggleHistory()" [matTooltip]="historyShow ? 'Hide history' : 'Show history'">
         <mat-icon>history</mat-icon>
       </button>
     </div>
   `,
-  styles: [':host {display: flex;justify-content: space-between;align-items: baseline;}', '.form_config_button_save { margin: 0 16px 0 30px;}']
+  styles: [':host {display: flex;justify-content: space-between;align-items: baseline;}', '.form_config_button_save { margin: 0 16px 0 30px;}', '.description {flex: 0}'],
 })
 export class ToolsComponent extends BaseDirective implements OnInit {
+  private filter$ = new Subject<ISearchParam>();
+  filterParams: ISearchParam = { advanced: false, search: '' };
   historyShow = false;
-  descriptionFormControl = new FormControl();
-  private _advanced = false;
-  private _search = '';
-  private _filter = new Subject<{ a: boolean; s: string }>();
-
-  @Input() description = '';
+  isAdvanced = null;
+  description = new FormControl();
   @Input() disabledSave = true;
   @Input() disabledHistory = true;
-  @Input() isAdvanced = false;
-  @Output() event = new EventEmitter<IToolsEvent>();
+
+  @Output() applyFilter = new EventEmitter<ISearchParam>();
+  @Output() save = new EventEmitter();
+  @Output() showHistory = new EventEmitter<boolean>();
 
   ngOnInit() {
-    this._filter.pipe(this.takeUntil()).subscribe(() => this.event.emit({ name: 'filter', conditions: { advanced: this._advanced, search: this._search } }));
+    this.filter$.pipe(this.takeUntil()).subscribe(() => this.applyFilter.emit(this.filterParams));
   }
 
-  set advanced(value: boolean) {
-    this._advanced = value;
-    this._filter.next({ a: this._advanced, s: this._search });
+  set advanced(advanced: boolean) {
+    this.filterParams.advanced = advanced;
+    this.filter$.next();
   }
 
-  filter(value: string) {
-    this._search = value;
-    this._filter.next({ a: this._advanced, s: this._search });
+  search(search: string) {
+    this.filterParams.search = search;
+    this.filter$.next();
   }
 
-  history() {
+  toggleHistory() {
     this.historyShow = !this.historyShow;
-    this.event.emit({ name: 'history', conditions: this.historyShow });
+    this.showHistory.emit(this.historyShow);
   }
 
-  save() {
-    this.event.emit({ name: 'save' });
+  onSave() {
+    this.save.emit();
   }
 }

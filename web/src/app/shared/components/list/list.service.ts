@@ -10,12 +10,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Injectable } from '@angular/core';
-import { ParamMap } from '@angular/router';
+import { ParamMap, Params, convertToParamMap } from '@angular/router';
 import { ApiService } from '@app/core/api';
 import { ClusterService } from '@app/core/services';
 import { Bundle, Cluster, Entities, Host, IAction, TypeName } from '@app/core/types';
 import { environment } from '@env/environment';
-import { switchMap, tap } from 'rxjs/operators';
+import { switchMap, tap, map } from 'rxjs/operators';
+import { Observable } from 'rxjs';
 
 const COLUMNS_SET = {
   cluster: ['name', 'prototype_version', 'description', 'state', 'status', 'actions', 'import', 'upgrade', 'config', 'controls'],
@@ -46,14 +47,10 @@ export class ListService {
     return this.current;
   }
 
-  getList(p: ParamMap, typeName: string) {    
+  getList(p: ParamMap, typeName: string) {
     const listParamStr = localStorage.getItem('list:param');
     if (p?.keys.length) {
-      const param = p.keys.reduce((a, c) => {
-        a[c] = p.get(c);
-        return a;
-      }, {});
-
+      const param = p.keys.reduce((a, c) => ({ ...a, [c]: p.get(c) }), {});
       if (listParamStr) {
         const json = JSON.parse(listParamStr);
         json[typeName] = param;
@@ -89,8 +86,10 @@ export class ListService {
   }
 
   // host
-  getClustersForHost(row: Host) {
-    this.api.root.pipe(switchMap(root => this.api.get<Cluster[]>(root.cluster).pipe(tap(clusters => (row.clusters = clusters))))).subscribe();
+  getClustersForHost(param: Params): Observable<{ id: number; title: string }[]> {
+    return this.api.root
+      .pipe(switchMap(root => this.api.getList<Cluster>(root.cluster, convertToParamMap(param))))
+      .pipe(map(res => res.results.map(a => ({ id: a.id, title: a.name }))));
   }
 
   addClusterToHost(cluster_id: number, row: Host) {

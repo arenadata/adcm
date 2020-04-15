@@ -27,14 +27,14 @@ import {
   MainInfoComponent,
   StatusComponent,
   StatusInfoComponent,
-  UpgradeComponent,
+  UpgradeComponent
 } from './components';
-import { ActionsDirective } from './components/actions/actions.directive';
+import { ActionMasterConfigComponent } from './components/actions/master/action-master-config.component';
 import { MultiSortDirective } from './components/list/multi-sort.directive';
 import { SimpleTextComponent } from './components/tooltip';
 import { ConfigurationModule } from './configuration/configuration.module';
 import { DetailsModule } from './details/details.module';
-import { DynamicDirective, HoverDirective, InfinityScrollDirective } from './directives';
+import { DynamicDirective, HoverDirective } from './directives';
 import { FormElementsModule } from './form-elements/form-elements.module';
 import { HostComponentsMapModule } from './host-components-map/host-components-map.module';
 import { MaterialModule } from './material.module';
@@ -62,7 +62,6 @@ import { StuffModule } from './stuff.module';
     HoverDirective,
     DynamicDirective,
     ButtonSpinnerComponent,
-    ActionMasterComponent,
     TagEscPipe,
     IssueInfoComponent,
     SimpleTextComponent,
@@ -73,9 +72,10 @@ import { StuffModule } from './stuff.module';
     MultiSortDirective,
     ImportComponent,
     ExportComponent,
-    InfinityScrollDirective
+    ActionMasterComponent,
+    ActionMasterConfigComponent
   ],
-  entryComponents: [DialogComponent, ActionMasterComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent],
+  entryComponents: [DialogComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent, ActionMasterComponent],
   exports: [
     FormsModule,
     ReactiveFormsModule,
@@ -93,15 +93,13 @@ import { StuffModule } from './stuff.module';
     DynamicDirective,
     ButtonSpinnerComponent,
     UpgradeComponent,
-    ActionsDirective,
     TagEscPipe,
     BaseListDirective,
     StatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
     ImportComponent,
-    ExportComponent,
-    InfinityScrollDirective
+    ExportComponent
   ]
 })
 export class SharedModule {}

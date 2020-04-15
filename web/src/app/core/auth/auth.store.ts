@@ -74,7 +74,7 @@ export class AuthEffects {
           )
         )
       ),
-    { resubscribeOnError: true }
+    { useEffectsErrorHandler: true }
   );
 
   logout$ = createEffect(

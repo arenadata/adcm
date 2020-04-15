@@ -23,20 +23,20 @@ export class FieldDirective extends BaseDirective implements OnInit {
   @Input() field: FieldOptions;
 
   ngOnInit() {
-    const field = this.find();
-    field.markAsTouched();    
+    this.control.markAllAsTouched();
   }
 
-  find() {
+  get control() {
     return this.form.controls[this.field.name];
   }
 
   get isValid() {
-    const field = this.find();
-    return this.field.read_only || field.valid && (field.dirty || field.touched);
+    if (this.field.read_only) return true;
+    const control = this.control;
+    return control.valid && (control.dirty || control.touched);
   }
 
   hasError(name: string) {
-    return this.find().hasError(name);
+    return this.control.hasError(name);
   }
 }

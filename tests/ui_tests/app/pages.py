@@ -315,8 +315,8 @@ class LoginPage(BasePage):
         self._password = None
 
     def login(self, login, password):
-        self._login = self._getelement(LoginPage.login_locator)
-        self._password = self._getelement(LoginPage.passwd_locator)
+        self._login = REPEAT(self.driver.find_element)(*LoginPage.login_locator)
+        self._password = REPEAT(self.driver.find_element)(*LoginPage.passwd_locator)
         self._login.send_keys(login)
         self._password.send_keys(password)
         self._password.send_keys(Keys.RETURN)
@@ -639,16 +639,19 @@ class Configuration(BasePage):
             areas.append({ar.get_attribute("adcm_test"): el.get_attribute("value")})
         return areas
 
-    def _get_tooltip_el_for_field(self, field):
+    @staticmethod
+    def _get_tooltip_el_for_field(field):
         try:
-            return field.find_element(*Common.mat_icon)
+            return field.find_element(*Common.info_icon)
         except NoSuchElementException:
             return False
 
-    def check_tooltip_for_field(self, field):
-        if self._get_tooltip_el_for_field(field):
-            return True
-        return False
+    @staticmethod
+    def check_tooltip_for_field(field):
+        try:
+            return field.find_element(*Common.info_icon)
+        except NoSuchElementException:
+            return False
 
     def get_tooltip_text_for_element(self, element):
         tooltip_icon = self._get_tooltip_el_for_field(element)

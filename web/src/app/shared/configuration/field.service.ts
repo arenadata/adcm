@@ -13,19 +13,17 @@ import { Injectable } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { getControlType, getPattern, isObject } from '@app/core/types';
 
-import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, IStructure, PanelOptions } from './types';
-import { YspecService, matchType } from './yspec/yspec.service';
+import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, PanelOptions, ValidatorInfo, controlType } from './types';
+import { matchType } from './yspec/yspec.service';
 
 export interface IToolsEvent {
   name: string;
   conditions?: { advanced: boolean; search: string } | boolean;
 }
 
-export type controlType = 'boolean' | 'textbox' | 'textarea' | 'json' | 'password' | 'list' | 'map' | 'dropdown' | 'file' | 'text';
-
 @Injectable()
 export class FieldService {
-  constructor(private fb: FormBuilder, private spec: YspecService) {}
+  constructor(private fb: FormBuilder) {}
 
   isVisibleField = (a: ConfigOptions) => !a.ui_options || !a.ui_options.invisible;
   isInvisibleField = (a: ConfigOptions) => a.ui_options && a.ui_options.invisible;
@@ -34,12 +32,12 @@ export class FieldService {
 
   getPanels(data: IConfig): (FieldOptions | PanelOptions)[] {
     if (data && data.config) {
-      const fo = data.config.filter(a => a.type !== 'group' && a.subname);
+      const fo = data.config.filter((a) => a.type !== 'group' && a.subname);
       return data.config
-        .filter(a => a.name !== '__main_info')
+        .filter((a) => a.name !== '__main_info')
         .reduce((p, c) => {
           if (c.subname) return p;
-          if (c.type !== 'group') return [...p, this.checkYspec(this.getFieldBy(c))];
+          if (c.type !== 'group') return [...p, this.getFieldBy(c)];
           else return [...p, this.fillDataOptions(c, fo)];
         }, []);
     }
@@ -51,44 +49,31 @@ export class FieldService {
       ...a,
       hidden: this.isHidden(a),
       options: fo
-        .filter(b => b.name === a.name)
-        .map(b => this.getFieldBy(b))
-        .map(c => {
-          c.name = c.subname;
-          return c;
-        })
-        .map(b => this.checkYspec(b))
+        .filter((b) => b.name === a.name)
+        .map((b) => this.getFieldBy(b))
+        .map((c) => ({ ...c, name: c.subname })),
     };
-  }
-
-  checkYspec(a: FieldOptions): FieldOptions | PanelOptions {
-    if (a.limits && a.limits.yspec) {
-      this.spec.Root = a.limits.yspec;
-      (a as IStructure).rules = this.spec.build();
-    }
-    return a;
   }
 
   getFieldBy(item: FieldStack): FieldOptions {
     const params: FieldOptions = {
       ...item,
       key: `${item.subname ? item.subname + '/' : ''}${item.name}`,
-      disabled: item.read_only,
       value: this.getValue(item.type)(item.value, item.default, item.required),
       validator: {
         required: item.required,
         min: item.limits ? item.limits.min : null,
         max: item.limits ? item.limits.max : null,
-        pattern: getPattern(item.type)
+        pattern: getPattern(item.type),
       },
       controlType: getControlType(item.type as matchType),
       hidden: item.name === '__main_info' || this.isHidden(item),
-      compare: []
+      compare: [],
     };
     return params;
   }
 
-  setValidator(field: FieldOptions) {
+  setValidator(field: { validator: ValidatorInfo; controlType: controlType }) {
     const v: ValidatorFn[] = [];
 
     if (field.validator.required) v.push(Validators.required);
@@ -115,7 +100,7 @@ export class FieldService {
     if (field.controlType === 'map') {
       const parseKey = (): ValidatorFn => {
         return (control: AbstractControl): { [key: string]: any } | null => {
-          if (control.value && Object.keys(control.value).length && Object.keys(control.value).some(a => !a)) {
+          if (control.value && Object.keys(control.value).length && Object.keys(control.value).some((a) => !a)) {
             return { parseKey: true };
           } else return null;
         };
@@ -126,10 +111,17 @@ export class FieldService {
     return v;
   }
 
-  toFormGroup(options: (FieldOptions | PanelOptions)[]): FormGroup {
-    return this.fb.group(options.reduce((p, c) => this.runByTree(c, p), {}));
+  toFormGroup(options: (FieldOptions | PanelOptions)[] = []): FormGroup {
+    const check = (a: FieldOptions | PanelOptions) => ('options' in a ? a.options.some((b) => check(b)) : !a.read_only && !(a.ui_options && a.ui_options.invisible));
+    return this.fb.group(
+      options.reduce((p, c) => this.runByTree(c, p), {}),
+      {
+        validator: () => (options.filter(check).length === 0 ? { error: 'Form is empty' } : null),
+      }
+    );
   }
 
+  // TODO: impure
   runByTree(field: FieldOptions | PanelOptions, controls: { [key: string]: {} }): { [key: string]: {} } {
     if ('options' in field) {
       controls[field.name] = this.fb.group(
@@ -157,13 +149,13 @@ export class FieldService {
   }
 
   filterApply(dataOptions: (FieldOptions | PanelOptions)[], c: { advanced: boolean; search: string }): (FieldOptions | PanelOptions)[] {
-    return dataOptions.filter(a => this.isVisibleField(a)).map(a => this.handleTree(a, c));
+    return dataOptions.filter((a) => this.isVisibleField(a)).map((a) => this.handleTree(a, c));
   }
 
   handleTree(a: FieldOptions | PanelOptions, c: { advanced: boolean; search: string }) {
     if ('options' in a) {
-      const result = a.options.map(b => this.handleTree(b, c));
-      if (c.search) a.hidden = a.options.filter(b => !b.hidden).length === 0;
+      const result = a.options.map((b) => this.handleTree(b, c));
+      if (c.search) a.hidden = a.options.filter((b) => !b.hidden).length === 0;
       else a.hidden = this.isAdvancedField(a) ? !c.advanced : false;
       return result;
     } else if (this.isVisibleField(a)) {
@@ -182,16 +174,16 @@ export class FieldService {
         return allow ? value : required ? d : null;
       },
       json: (value: string) => (value === null ? '' : JSON.stringify(value, undefined, 4)),
-      map: (value: object, de: object) => (!value ? (!de ? {} : de) : value),
-      list: (value: string[], de: string[]) => (!value ? (!de ? [] : de) : value),
-      structure: (value: any) => value
+      map: (value: object, de: object) => (!value ? de : value),
+      list: (value: string[], de: string[]) => (!value ? de : value),
+      structure: (value: any) => value,
     };
 
     return data[name] ? data[name] : def;
   }
 
   getFieldsBy(items: Array<FieldStack>): FieldOptions[] {
-    return items.map(o => this.getFieldBy(o));
+    return items.map((o) => this.getFieldBy(o));
   }
 
   /**
@@ -222,25 +214,31 @@ export class FieldService {
   }
 
   findField(raw: FieldStack[], name: string, parentName?: string): FieldStack {
-    return raw.find(a => (parentName ? a.name === parentName && a.subname === name : a.name === name));
+    return raw.find((a) => (parentName ? a.name === parentName && a.subname === name : a.name === name));
   }
 
   runYspecParse(value: any, field: FieldStack) {
-    console.warn('under development');
-    // const name = field.subname || field.name;
-    // const yo = this.dataOptions.find(a => a.name === field.name) as PanelOptions;
-    // const po = yo.options.find(a => a.name === field.subname) as PanelOptions;
-    // return this.runYspecByOptions(value, po);
+    return this.runYspec(value, field.limits.rules);
   }
 
-  runYspecByOptions(value: any, op: PanelOptions) {
-    return Object.keys(value).reduce((p, c) => {
-      const data = value[c];
-      const key = op.options.find(a => a.name === c);
-      if (isObject(data) && !Array.isArray(data)) p[c] = this.runYspecByOptions(data, key as PanelOptions);
-      else if (key) p[c] = this.checkValue(data, key.type);
-      return p;
-    }, {});
+  runYspec(value: any, rules: any) {
+    switch (rules.type) {
+      case 'list': {
+        return value.filter((a) => !!a).map((a) => this.runYspec(a, rules.options));
+      }
+      case 'dict': {
+        return Object.keys(value).reduce((p, c) => {
+          const v = this.runYspec(
+            value[c],
+            rules.options.find((b) => b.name === c)
+          );
+          return v !== null ? { ...p, [c]: v } : { ...p };
+        }, {});
+      }
+      default: {
+        return this.checkValue(value, rules.type);
+      }
+    }
   }
 
   checkValue(value: ConfigResultTypes, type: ConfigValueTypes) {
@@ -248,14 +246,14 @@ export class FieldService {
 
     switch (type) {
       case 'map':
-        return Object.keys(value)
-          .filter(a => a)
-          .reduce((p, c) => {
-            p[c] = value[c];
-            return p;
-          }, {});
+        return typeof value === 'object'
+          ? Object.keys(value)
+              .filter((a) => !!a)
+              .reduce((p, c) => ({ ...p, [c]: value[c] }), {})
+          : new TypeError('FieldService::checkValue - value is not Object');
+
       case 'list':
-        return (value as Array<string>).filter(a => !!a);
+        return Array.isArray(value) ? (value as Array<string>).filter((a) => !!a) : new TypeError('FieldService::checkValue - value is not Array');
     }
 
     if (typeof value === 'boolean') return value;

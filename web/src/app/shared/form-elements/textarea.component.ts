@@ -17,21 +17,12 @@ import { FieldDirective } from './field.directive';
   selector: 'app-fields-textarea',
   template: `
     <ng-container [formGroup]="form">
-      <label [appTooltip]="field.display_name" [appTooltipShowByCondition]="true">{{ field.display_name }}:</label>
-      <mat-form-field class="full-width" [floatLabel]="'never'">
-        <mat-error *ngIf="!isValid">
-          <mat-error *ngIf="hasError('required')">Field [{{ field.display_name }}] is required!</mat-error>
-          <mat-error *ngIf="hasError('pattern')">Field [{{ field.display_name }}] is invalid!</mat-error>
-          <mat-error *ngIf="hasError('min')">Field [{{ field.display_name }}] value cannot be less than {{ field.validator.min }}!</mat-error>
-          <mat-error *ngIf="hasError('max')">Field [{{ field.display_name }}] value cannot be greater than {{ field.validator.max }}!</mat-error>
-        </mat-error>
-        <div class="textarea-wrapper">
-          <textarea matInput class="full-width json_field" [appMTextarea]="field.key" [formControlName]="field.name" [readonly]="field.disabled"></textarea>
-        </div>
+      <mat-form-field>
+        <textarea matInput [appMTextarea]="field.key" [formControlName]="field.name" [readonly]="field.read_only"></textarea>
+        <mat-error *ngIf="!isValid"><app-error-info [field]="field" [control]="control"></app-error-info></mat-error>
       </mat-form-field>
-      <span class="info"><mat-icon matSuffix *ngIf="field.description" [appTooltip]="field.description"> info_outline</mat-icon></span>
     </ng-container>
   `,
-  styleUrls: ['./scss/fields.component.scss', './scss/json.scss']
+  styles: ['textarea {background-color: #cccccc;color: #333;min-height: 100px;padding: 8px;}']
 })
 export class TextareaComponent extends FieldDirective {}

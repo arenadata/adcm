@@ -499,6 +499,7 @@ def test_cluster_action_run_should_be_failed(client):
     assert job['status'] == 'failed'
 
 
+@pytest.mark.skip(reason="Should be fixed in https://jira.arenadata.io/browse/ADCM-1182 ")
 def test_should_return_job_log_files(client):
     stack_dir = BUNDLES + 'return_job_log_files'
 

@@ -1,0 +1,21 @@
+:host {
+  display: block;
+  width: 100%;
+  margin-bottom: 20px;
+
+  & .content {
+    margin-left: 10px;
+
+    & .item-iteration.dif:nth-child(even) {
+      background-color: #545454;
+    }
+
+    & .item-iteration {
+      display: flex;
+
+      &>div {
+        flex: 1;
+      }
+    }
+  }
+}

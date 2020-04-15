@@ -12,7 +12,7 @@
 import { Injectable } from '@angular/core';
 import { ApiService } from '@app/core/api';
 import { ApiState, getStack } from '@app/core/store';
-import { Bundle, StackBase } from '@app/core/types';
+import { Bundle } from '@app/core/types';
 import { ListResult } from '@app/shared';
 import { environment } from '@env/environment';
 import { select, Store } from '@ngrx/store';
@@ -28,48 +28,21 @@ const UPLOAD_URL = `${environment.apiRoot}stack/upload/`,
 export class StackService {
   constructor(private api: ApiService, private store: Store<ApiState>) {}
 
-  get service(): Observable<StackBase[]> {
-    return this.fromStack<StackBase>('service');
-  }
-
-  get host(): Observable<StackBase[]> {
-    return this.fromStack<StackBase>('host');
-  }
-
-  get provider(): Observable<StackBase[]> {
-    return this.fromStack<StackBase>('provider');
-  }
-
-  get cluster(): Observable<StackBase[]> {
-    return this.fromStack<StackBase>('cluster');
-  }
-
   fromStack<T>(name: StackInfo, param?: { [key: string]: string | number }): Observable<T[]> {
-    const limit = param.limit ? +param.limit : +localStorage.getItem('limit'),
-      offset = (param.page ? +param.page : 0) * limit;
-
+    const params = Object.keys(param).reduce<any>((p, c) => ({ ...p, [c]: param[c] }), {});
     return this.store.pipe(
       select(getStack),
       filter(a => a && !!Object.keys(a).length),
-      switchMap(s =>
-        this.api
-          .get<ListResult<T>>(s[name], {
-            limit: limit.toString(),
-            offset: offset.toString(),
-            ordering: 'display_name,-version',
-          })
-          .pipe(map(a => a.results)),
-      ),
+      switchMap(s => this.api.get<ListResult<T>>(s[name], params).pipe(map(a => a.results)))
     );
   }
 
   upload(output: FormData[]) {
     const item = (form: FormData) => {
-      return this.api
-        .post(UPLOAD_URL, form)
-        .pipe(mergeMap(() => this.api.post<Bundle>(LOAD_URL, { bundle_file: (form.get('file') as File).name })));
+      return this.api.post(UPLOAD_URL, form).pipe(
+        mergeMap(() => this.api.post<Bundle>(LOAD_URL, { bundle_file: (form.get('file') as File).name }))
+      );
     };
-
     return combineLatest(output.map(o => item(o)));
   }
 }
