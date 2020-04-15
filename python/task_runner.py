@@ -80,7 +80,7 @@ def run_job(task_id, job_id, err_file):
 
 
 def set_body_ansible(job):
-    log_storage = LogStorage.objects.filter(job=job, name='ansible')
+    log_storage = LogStorage.objects.filter(job=job, name='ansible', type__in=['stdout', 'stderr'])
     for ls in log_storage:
         file_path = os.path.join(config.RUN_DIR, f'{ls.job.id}', f'ansible-{ls.type}.{ls.format}')
         with open(file_path, 'r') as f:
