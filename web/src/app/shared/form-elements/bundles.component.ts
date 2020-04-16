@@ -34,7 +34,7 @@ import { InputComponent } from './input.component';
       <mat-form-field>
         <mat-select placeholder="Version" required formControlName="prototype_id">
           <mat-option *ngFor="let bundle of versions" [value]="bundle.id">
-            {{ bundle.version }} - {{ bundle.bundle_edition }}
+            {{ bundle.version }} {{ bundle.bundle_edition }}
           </mat-option>
         </mat-select>
       </mat-form-field>
