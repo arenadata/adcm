@@ -32,7 +32,7 @@ from cm.status_api import Event
 from cm.models import (
     Cluster, Prototype, Component, Host, HostComponent, ADCM, ClusterObject,
     ServiceComponent, ConfigLog, HostProvider, PrototypeImport, PrototypeExport,
-    ClusterBind, DummyData, Role,
+    ClusterBind, Action, JobLog, DummyData, Role,
 )
 
 
@@ -845,10 +845,15 @@ def set_service_state_by_id(cluster_id, service_id, state):
     return push_obj(obj, state)
 
 
-def change_hc(cluster_id, operations):
+def change_hc(job_id, cluster_id, operations):   # pylint: disable=too-many-branches
     '''
     For use in ansible plugin adcm_hc
     '''
+    job = JobLog.objects.get(id=job_id)
+    action = Action.objects.get(id=job.action_id)
+    if action.hostcomponentmap:
+        err('ACTION_ERROR', 'You can not change hc in plugin for action with hc_acl')
+
     try:
         cluster = Cluster.objects.get(id=cluster_id)
     except Cluster.DoesNotExist:

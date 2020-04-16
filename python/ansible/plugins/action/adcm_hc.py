@@ -23,13 +23,13 @@ DOCUMENTATION = r'''
 module: adcm_hc
 short_description: change host component map (hc) for cluster
 description:
-    - The C(adcm_delete_host) module is intended to change host component map.
+    - The C(adcm_hc) module is intended to change host component map.
       This module should be run in cluster or service context. Cluster Id is taken from context.
 options:
 '''
 
 EXAMPLES = r'''
- - name: delete current host
+ - name: add standby and node components to h1.company.com host
    adcm_hc:
      operations:
        -
@@ -41,7 +41,7 @@ EXAMPLES = r'''
          action: "remove"
          service: "hadoop"
          component: node
-         host: "h2.company.com"
+         host: "h1.company.com"
 
 '''
 
@@ -70,6 +70,7 @@ class ActionModule(ActionBase):
         super(ActionModule, self).run(tmp, task_vars)
         msg = 'You can modify hc only in cluster or service context'
         cluster_id = get_context_id(task_vars, 'cluster', 'cluster_id', msg)
+        job_id = task_vars['job']['id']
         ops = self._task.args['operations']
 
         log.info('ansible module adcm_hc: cluster #%s, ops: %s', cluster_id, ops)
@@ -85,7 +86,7 @@ class ActionModule(ActionBase):
                 raise AnsibleError('Invalid operation arguments: %s' % op)
 
         try:
-            cm.api.change_hc(cluster_id, ops)
+            cm.api.change_hc(job_id, cluster_id, ops)
         except AdcmEx as e:
             raise AnsibleError(e.code + ": " + e.msg)
 
