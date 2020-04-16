@@ -53,11 +53,13 @@ export interface LogFile {
   type: string;
   format: 'txt' | 'json';
   download_url: string;
-  body: string;
+  body: string | CheckLog;
 }
 
 export interface CheckLog {
   title: string;
   message: string;
   result: boolean;
+  type: 'group' | 'check';
+  subs?: CheckLog[];
 }

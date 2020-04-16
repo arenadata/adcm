@@ -68,11 +68,9 @@ export class GroupFieldsComponent implements OnInit {
       .filter((a) => !('options' in a))
       .forEach((a: FieldOptions) => {
         const split = a.key.split('/');
-
         const [name, ...other] = split;
         const currentFormGroup = other.reverse().reduce((p, c) => p.get(c), this.form) as FormGroup;
         const formControl = currentFormGroup.controls[name];
-
         this.updateValidator(formControl, a, flag);
         if (a.type === 'password') this.updateValidator(currentFormGroup.controls['confirm_' + name], a, flag);
       });
@@ -80,22 +78,11 @@ export class GroupFieldsComponent implements OnInit {
 
   updateValidator(formControl: AbstractControl, a: FieldOptions, flag: boolean) {
     if (formControl) {
-      if (!flag) {
-        formControl.clearValidators();
-      } else if (a.validator) {
-        formControl.setValidators(this.service.setValidator(a));
-      }
-      if (this.checkForm()) {
-        this.form.setErrors({ error: 'There are not visible fields in this form' });
-      } else {
-        formControl.updateValueAndValidity();
-        this.form.updateValueAndValidity();
-      }
+      if (!flag) formControl.clearValidators();
+      else if (a.validator) formControl.setValidators(this.service.setValidator(a));
+      formControl.updateValueAndValidity();
+      this.form.updateValueAndValidity();
     }
-  }
-
-  checkForm() {
-    return this.rawConfig.config.filter((a) => a.type !== 'group').filter((a) => !a.read_only).length === 0;
   }
 
   trackBy(index: number, item: FieldOptions): string {
