@@ -118,8 +118,6 @@ def generate_group_expected_result(group_config):
         expected_result['field_visible'] = (group_active and not field_invisible)
         expected_result['field_visible_advanced'] = (
             field_advanced and group_active and not field_invisible)
-        if not group_config['active']:
-            expected_result['save'] = False
     return expected_result
 
 
