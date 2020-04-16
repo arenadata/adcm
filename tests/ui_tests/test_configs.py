@@ -98,9 +98,11 @@ def generate_group_expected_result(group_config):
     if group_config['required'] and not group_config['default']:
         expected_result['save'] = False
         expected_result['alerts'] = True
+        config_valid = False
     else:
         expected_result['save'] = True
         expected_result['alerts'] = False
+        config_valid = True
     if group_config['read_only']:
         expected_result['save'] = False
     group_advanced = group_config['ui_options']['advanced']
@@ -118,7 +120,8 @@ def generate_group_expected_result(group_config):
         expected_result['field_visible'] = (group_active and not field_invisible)
         expected_result['field_visible_advanced'] = (
             field_advanced and group_active and not field_invisible)
-        if not group_config['active']:
+        invisible = field_invisible or group_invisible
+        if not invisible and config_valid and not group_config['read_only']:
             expected_result['save'] = True
     return expected_result
 
