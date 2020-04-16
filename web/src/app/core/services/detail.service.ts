@@ -106,7 +106,6 @@ export class ClusterService {
       );
   }
 
-
   getLog(p: number | string): Observable<LogFile> {
     const url = typeof p === 'number' ? (this.Current as Job).log_files.find(a => a.id === p).url : p;
     return this.api.get<LogFile>(url);
