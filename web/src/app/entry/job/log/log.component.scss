@@ -44,3 +44,15 @@ textarea.check {
   align-items: center;
   justify-content: flex-end;
 }
+
+.check-title {
+  display: flex;
+  background-color: #383838;
+  padding: 4px 10px;
+  margin: 0 -10px 6px;
+  border-radius: 4px;
+
+  &>span:first-child {
+    flex: 1;
+  }
+}
