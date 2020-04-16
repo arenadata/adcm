@@ -23,8 +23,8 @@ from jsonschema import validate
 # pylint: disable=W0611, W0621, W0212
 from tests.library import errorcodes, steps
 
-BUNDLES = os.path.join(os.path.dirname(__file__), "stacks/")
-SCHEMAS = os.path.join(os.path.dirname(__file__), "schemas/")
+BUNDLES = utils.get_data_dir(__file__, "stacks/")
+SCHEMAS = utils.get_data_dir(__file__, "schemas/")
 
 
 @pytest.fixture(scope="function")

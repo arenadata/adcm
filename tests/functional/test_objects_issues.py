@@ -11,9 +11,6 @@
 # limitations under the License.
 
 # Created by a1wen at 01.02.19
-
-import os
-
 import allure
 import coreapi
 import pytest
@@ -23,8 +20,6 @@ from adcm_pytest_plugin.docker import DockerWrapper
 # pylint: disable=W0611, W0621
 from tests.library import steps
 from tests.library.errorcodes import TASK_ERROR, UPGRADE_ERROR
-
-BUNDLES = os.path.join(os.path.dirname(__file__), "stacks/")
 
 
 @pytest.fixture(scope="function")
@@ -47,7 +42,7 @@ def client(adcm):
 
 
 def test_action_shouldnt_be_run_while_cluster_has_an_issue(client):
-    bundle = os.path.join(BUNDLES, "issue_has_in_the/cluster")
+    bundle = utils.get_data_dir(__file__, "cluster")
     steps.upload_bundle(client, bundle)
     cluster_id = steps.create_cluster(client)['id']
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
@@ -58,7 +53,7 @@ def test_action_shouldnt_be_run_while_cluster_has_an_issue(client):
 
 
 def test_action_shouldnt_be_run_while_host_has_an_issue(client):
-    bundle = os.path.join(BUNDLES, "issue_has_in_the/host")
+    bundle = utils.get_data_dir(__file__, "host")
     steps.upload_bundle(client, bundle)
     provider_id = steps.create_hostprovider(client)['id']
     host_id = client.host.create(prototype_id=client.stack.host.list()[0]['id'],
@@ -72,7 +67,7 @@ def test_action_shouldnt_be_run_while_host_has_an_issue(client):
 
 
 def test_action_shouldnt_be_run_while_hostprovider_has_an_issue(client):
-    bundle = os.path.join(BUNDLES, "issue_has_in_the/provider")
+    bundle = utils.get_data_dir(__file__, "provider")
     steps.upload_bundle(client, bundle)
     provider_id = steps.create_hostprovider(client)['id']
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
@@ -83,8 +78,8 @@ def test_action_shouldnt_be_run_while_hostprovider_has_an_issue(client):
 
 
 def test_when_cluster_has_issue_than_upgrade_locked(client):
-    bundledir = os.path.join(BUNDLES, "issue_has_in_the/cluster")
-    upgrade_bundle = os.path.join(BUNDLES, "issue_has_in_the/upgrade/cluster")
+    bundledir = utils.get_data_dir(__file__, "cluster")
+    upgrade_bundle = utils.get_data_dir(__file__, "upgrade", "cluster")
     steps.upload_bundle(client, bundledir)
     cluster = steps.create_cluster(client)
     steps.upload_bundle(client, upgrade_bundle)
@@ -97,8 +92,8 @@ def test_when_cluster_has_issue_than_upgrade_locked(client):
 
 
 def test_when_hostprovider_has_issue_than_upgrade_locked(client):
-    bundledir = os.path.join(BUNDLES, "issue_has_in_the/provider")
-    upgrade_bundle = os.path.join(BUNDLES, "issue_has_in_the/upgrade/provider")
+    bundledir = utils.get_data_dir(__file__, "provider")
+    upgrade_bundle = utils.get_data_dir(__file__, "upgrade", "provider")
     steps.upload_bundle(client, bundledir)
     provider_id = steps.create_hostprovider(client)['id']
     steps.upload_bundle(client, upgrade_bundle)
@@ -111,7 +106,7 @@ def test_when_hostprovider_has_issue_than_upgrade_locked(client):
 
 @allure.link('https://jira.arenadata.io/browse/ADCM-487')
 def test_when_component_hasnt_constraint_then_cluster_doesnt_have_issues(client):
-    bundledir = os.path.join(BUNDLES, "cluster_component_hasnt_constraint")
+    bundledir = utils.get_data_dir(__file__, "cluster_component_hasnt_constraint")
     steps.upload_bundle(client, bundledir)
     cluster = steps.create_cluster(client)
     steps.create_random_service(client, cluster['id'])
