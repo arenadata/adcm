@@ -51,7 +51,7 @@ def start_task(action_id, selector, conf, attr, hc, hosts):   # pylint: disable=
     act_conf, spec = check_action_config(action, conf, attr)
     host_map, delta = check_hostcomponentmap(cluster, action, hc)
     check_action_hosts(action, cluster, provider, hosts)
-    old_hc = get_hc(cluster)
+    old_hc = api.get_hc(cluster)
 
     if action.type not in ['task', 'job']:
         msg = f'unknown type "{action.type}" for action: {action}, {action.context}: {obj.name}'
@@ -318,19 +318,6 @@ def add_to_dict(my_dict, key, subkey, value):
     if key not in my_dict:
         my_dict[key] = {}
     my_dict[key][subkey] = value
-
-
-def get_hc(cluster):
-    if not cluster:
-        return None
-    hc_map = []
-    for hc in HostComponent.objects.filter(cluster=cluster):
-        hc_map.append({
-            'host_id': hc.host.id,
-            'service_id': hc.service.id,
-            'component_id': hc.component.id,
-        })
-    return hc_map
 
 
 def check_action_hc(action_hc, service, component, action):
