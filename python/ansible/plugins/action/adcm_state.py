@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=wrong-import-position,unused-import
+# pylint: disable=wrong-import-position, unused-import, import-error
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
@@ -26,6 +26,8 @@ from cm.api import (
     set_service_state_by_id,
     set_provider_state
 )
+from cm.status_api import Event
+
 
 ANSIBLE_METADATA = {'metadata_version': '1.1', 'supported_by': 'Arenadata'}
 
@@ -134,10 +136,13 @@ class ActionModule(ContextActionModule):
         return res
 
     def _do_provider(self, task_vars, context):
+        event = Event()
         res = self._wrap_call(
             set_provider_state,
             context['provider_id'],
             self._task.args["state"],
+            event
         )
+        event.send_state()
         res['state'] = self._task.args["state"]
         return res

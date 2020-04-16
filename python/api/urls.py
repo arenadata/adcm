@@ -41,13 +41,22 @@ urlpatterns = [
 
     path('user/', views.UserList.as_view(), name='user-list'),
     path('user/<name:username>/', views.UserDetail.as_view(), name='user-details'),
+    path('user/<name:username>/role/', views.ChangeUserRole.as_view(), name='change-user-role'),
+    path('user/<name:username>/group/', views.AddUser2Group.as_view(), name='add-user-group'),
     path('user/<name:username>/password/', views.UserPasswd.as_view(), name='user-passwd'),
+
+    path('group/', views.GroupList.as_view(), name='group-list'),
+    path('group/<name:name>/', views.GroupDetail.as_view(), name='group-details'),
+    path('group/<name:name>/role/', views.ChangeGroupRole.as_view(), name='change-group-role'),
 
     path('profile/', views.ProfileList.as_view(), name='profile-list'),
     path('profile/<name:username>/', views.ProfileDetail.as_view(), name='profile-details'),
     path(
         'profile/<name:username>/password/', views.UserPasswd.as_view(), name='profile-passwd'
     ),
+
+    path('role/', views.RoleList.as_view(), name='role-list'),
+    path('role/<int:role_id>/', views.RoleDetail.as_view(), name='role-details'),
 
     path('stats/', views.Stats.as_view(), name='stats'),
     path('stats/task/<int:task_id>/', views.TaskStats.as_view(), name='task-stats'),

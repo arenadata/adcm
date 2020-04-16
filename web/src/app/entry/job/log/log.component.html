@@ -27,7 +27,18 @@
               {{ item.result ? 'Success' : 'Fails' }} ]</span>
           </mat-panel-description>
         </mat-expansion-panel-header>
-        <textarea class="check" [readonly]="true">{{ item.message }}</textarea>
+        <ng-container *ngIf="item.subs; else one">
+          <div>{{ item.message }}</div>
+          <div *ngFor="let check of item.subs">
+            <div class="check-title"><span>{{ check.title }}</span> <span class="item-info"
+                [ngClass]="{ status: true, accent: check.result, warn: !check.result }">[
+                {{ check.result ? 'Success' : 'Fails' }} ]</span></div>
+            <textarea class="check" [readonly]="true">{{ check.message }}</textarea>
+          </div>
+        </ng-container>
+        <ng-template #one>
+          <textarea class="check" [readonly]="true">{{ item.message }}</textarea>
+        </ng-template>
       </mat-expansion-panel>
     </mat-accordion>
   </ng-template>

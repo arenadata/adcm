@@ -24,6 +24,7 @@ import { HostComponent } from './host.component';
 import { Host2clusterComponent } from './host2cluster.component';
 import { ProviderComponent } from './provider.component';
 import { ServiceComponent } from './service.component';
+import { ControlsComponent } from './controls.component';
 
 @NgModule({
   declarations: [
@@ -34,7 +35,8 @@ import { ServiceComponent } from './service.component';
     Host2clusterComponent,
     ProviderComponent,
     ServiceComponent,
-    BaseFormDirective
+    BaseFormDirective,
+    ControlsComponent
   ],
   imports: [CommonModule, MaterialModule, StuffModule, FormsModule, ReactiveFormsModule, FormElementsModule],
   exports: [AddButtonComponent, ProviderComponent, ClusterComponent, HostComponent, ServiceComponent, Host2clusterComponent, BaseFormDirective],

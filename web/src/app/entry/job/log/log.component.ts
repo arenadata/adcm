@@ -30,7 +30,7 @@ export interface ITimeInfo {
   styleUrls: ['./log.component.scss']
 })
 export class LogComponent extends SocketListenerDirective implements OnInit, AfterViewInit, DoCheck {
-  // content: CheckLog[] = [];
+
   currentLog: Partial<LogFile> = {};
 
   timeInfo: ITimeInfo;

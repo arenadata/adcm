@@ -399,6 +399,7 @@ def update_bundle_from_stage(bundle):   # pylint: disable=too-many-locals,too-ma
         try:
             p = Prototype.objects.get(bundle=bundle, type=sp.type, name=sp.name, version=sp.version)
             p.path = sp.path
+            p.version = sp.version
             p.description = sp.description
             p.display_name = sp.display_name
             p.required = sp.required
@@ -512,8 +513,9 @@ def delete_bundle(bundle):
         err('BUNDLE_CONFLICT', msg.format(bundle.id, bundle.name, bundle.version))
     if bundle.hash != 'adcm':
         shutil.rmtree(os.path.join(config.BUNDLE_DIR, bundle.hash))
-    cm.status_api.post_event('delete', 'bundle', bundle.id)
+    bundle_id = bundle.id
     bundle.delete()
+    cm.status_api.post_event('delete', 'bundle', bundle_id)
 
 
 def check_services():
