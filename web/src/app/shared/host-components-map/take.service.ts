@@ -73,7 +73,7 @@ export class TakeService {
       const isExpand = ap.every((a) => a.action === 'add');
       const condition = (b: CompTile) => (a: IActionParameter) => b.component === `${a.service}/${a.component}`;
       const existCondition = (rel: CompTile[]) => (isShrink ? ap.some((a) => rel.some((b) => condition(b)(a))) : ap.every((a) => rel.some((b) => condition(b)(a))));
-      this.Hosts = this.Hosts.map((a) => ({ ...a, color: existCondition(a.relations as CompTile[]) ? (isExpand ? 'gray' : 'none') : isShrink ? 'gray' : 'none' }));
+      this.Hosts = this.Hosts.map((a) => ({ ...a, disabled: existCondition(a.relations as CompTile[]) ? isExpand : isShrink }));
     }
   }
 
