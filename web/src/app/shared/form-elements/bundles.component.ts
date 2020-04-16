@@ -34,7 +34,7 @@ import { InputComponent } from './input.component';
       <mat-form-field>
         <mat-select placeholder="Version" required formControlName="prototype_id">
           <mat-option *ngFor="let bundle of versions" [value]="bundle.id">
-            {{ bundle.version }}
+            {{ bundle.version }} - {{ bundle.bundle_edition }}
           </mat-option>
         </mat-select>
       </mat-form-field>
@@ -73,7 +73,7 @@ export class BundlesComponent extends InputComponent implements OnInit {
     this.getBundles(true);
 
     const forVersion$ = (display_name: string) => {
-      return display_name ? this.service.getPrototype(this.typeName, { page: 0, limit: 500, display_name }) : of([]);
+      return display_name ? this.service.getPrototype(this.typeName, { page: 0, limit: 500, ordering: '-version', display_name }) : of([]);
     };
 
     this.form
