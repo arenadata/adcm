@@ -9,8 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
-
 import allure
 import coreapi
 import pytest
@@ -20,8 +18,6 @@ from adcm_pytest_plugin.docker import DockerWrapper
 # pylint: disable=E0401, E0611, W0611, W0621
 from tests.library import errorcodes as err
 from tests.library import steps
-
-BUNDLES = os.path.join(os.path.dirname(__file__), "stacks/")
 
 
 @pytest.fixture(scope="function")
@@ -44,14 +40,14 @@ def client(adcm):
 
 
 def test_bundle_should_have_any_cluster_definition(client):
-    bundle = os.path.join(BUNDLES, "bundle_wo_cluster_definition")
+    bundle = utils.get_data_dir(__file__, "bundle_wo_cluster_definition")
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         steps.upload_bundle(client, bundle)
     err.BUNDLE_ERROR.equal(e, "There isn't any cluster or host provider definition in bundle")
 
 
 def test_bundle_cant_removed_when_some_object_associated_with(client):
-    bundle = os.path.join(BUNDLES, "cluster_inventory_tests")
+    bundle = utils.get_data_dir(__file__, "cluster_inventory_tests")
     steps.upload_bundle(client, bundle)
     client.cluster.create(prototype_id=client.stack.cluster.list()[0]['id'], name=__file__)
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
@@ -60,7 +56,7 @@ def test_bundle_cant_removed_when_some_object_associated_with(client):
 
 
 def test_bundle_can_be_removed_when_no_object_associated_with(client):
-    bundle = os.path.join(BUNDLES, "cluster_inventory_tests")
+    bundle = utils.get_data_dir(__file__, "cluster_inventory_tests")
     steps.upload_bundle(client, bundle)
     client.stack.bundle.delete(bundle_id=client.stack.bundle.list()[0]['id'])
     assert not client.stack.bundle.list()
@@ -70,30 +66,29 @@ def test_bundle_can_be_removed_when_no_object_associated_with(client):
 #     bundle = os.path.join(BUNDLES, "")
 
 
-empty_bundles_fields = [
-    ('success_cluster'),
-    ('fail_cluster'),
-    ('success_host'),
-    ('fail_host'),
-]
+empty_bundles_fields = ['empty_success_cluster',
+                        'empty_fail_cluster',
+                        'empty_success_host',
+                        'empty_fail_host'
+                        ]
 
 
 @pytest.mark.parametrize("empty_fields", empty_bundles_fields)
 def test_that_check_empty_field_is(empty_fields, client):
-    bundle = os.path.join(BUNDLES, "empty_states/empty_" + empty_fields)
+    bundle = utils.get_data_dir(__file__, "empty_states", empty_fields)
     steps.upload_bundle(client, bundle)
     assert client.stack.bundle.list() is not None
 
 
 cluster_fields = [
-    ('success_cluster', 'failed'),
-    ('fail_cluster', 'installed'),
+    ('empty_success_cluster', 'failed'),
+    ('empty_fail_cluster', 'installed'),
 ]
 
 
 @pytest.mark.parametrize("cluster_bundle, state", cluster_fields)
 def test_check_cluster_state_after_run_action_when_empty(cluster_bundle, state, client):
-    bundle = os.path.join(BUNDLES, "empty_states/empty_" + cluster_bundle)
+    bundle = utils.get_data_dir(__file__, "empty_states", cluster_bundle)
     steps.upload_bundle(client, bundle)
     cluster = client.cluster.create(prototype_id=client.stack.cluster.list()[0]['id'],
                                     name=utils.random_string())
@@ -106,14 +101,14 @@ def test_check_cluster_state_after_run_action_when_empty(cluster_bundle, state, 
 
 
 host_fields = [
-    ('success_host', 'failed'),
-    ('fail_host', 'initiated'),
+    ('empty_success_host', 'failed'),
+    ('empty_fail_host', 'initiated'),
 ]
 
 
 @pytest.mark.parametrize("host_bundle, state", host_fields)
 def test_check_host_state_after_run_action_when_empty(host_bundle, state, client):
-    bundle = os.path.join(BUNDLES, "empty_states/empty_" + host_bundle)
+    bundle = utils.get_data_dir(__file__, "empty_states", host_bundle)
     steps.upload_bundle(client, bundle)
     provider = client.provider.create(prototype_id=client.stack.provider.list()[0]['id'],
                                       name=utils.random_string())
@@ -129,14 +124,14 @@ def test_check_host_state_after_run_action_when_empty(host_bundle, state, client
 
 
 def test_loading_provider_bundle_must_be_pass(client):
-    bundle = os.path.join(BUNDLES, "hostprovider_loading_pass")
+    bundle = utils.get_data_dir(__file__, "hostprovider_loading_pass")
     steps.upload_bundle(client, bundle)
     host_provider = client.stack.provider.list()
     assert host_provider is not None
 
 
 def test_run_parametrized_action_must_be_runned(client):
-    bundle = os.path.join(BUNDLES, "run_parametrized_action")
+    bundle = utils.get_data_dir(__file__, "run_parametrized_action")
     steps.upload_bundle(client, bundle)
     cluster = client.cluster.create(prototype_id=client.stack.cluster.list()[0]['id'],
                                     name=utils.random_string())
@@ -173,7 +168,7 @@ state_cases = [
 
 @pytest.mark.parametrize("entity, state, case", state_cases)
 def test_load_should_fail_when(client, entity, state, case):
-    bundle = os.path.join(BUNDLES, 'states_/' + entity + '/' + state + '/' + case)
+    bundle = utils.get_data_dir(__file__, 'states', entity, state, case)
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         steps.upload_bundle(client, bundle)
     err.INVALID_ACTION_DEFINITION.equal(e, state, entity, 'should be string')
@@ -181,7 +176,7 @@ def test_load_should_fail_when(client, entity, state, case):
 
 @allure.link('https://jira.arenadata.io/browse/ADCM-580')
 def test_provider_bundle_shouldnt_load_when_has_export_section(client):
-    bundle = os.path.join(BUNDLES, 'hostprovider_with_export')
+    bundle = utils.get_data_dir(__file__, 'hostprovider_with_export')
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         steps.upload_bundle(client, bundle)
     err.INVALID_OBJECT_DEFINITION.equal(e, 'Only cluster or service can have export section')
