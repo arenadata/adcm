@@ -192,5 +192,5 @@ WRONG_NAME = ADCMError(
 
 BIND_ERROR = ADCMError(
     '409 Conflict',
-    'IMPORT_CONFLICT',
+    'BIND_ERROR',
 )
