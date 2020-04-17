@@ -189,3 +189,8 @@ WRONG_NAME = ADCMError(
     '400 Bad Request',
     'WRONG_NAME',
 )
+
+BIND_ERROR = ADCMError(
+    '409 Conflict',
+    'BIND_ERROR',
+)
