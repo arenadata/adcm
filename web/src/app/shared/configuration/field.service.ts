@@ -16,6 +16,8 @@ import { getControlType, getPattern, isObject } from '@app/core/types';
 import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, PanelOptions, ValidatorInfo, controlType } from './types';
 import { matchType } from './yspec/yspec.service';
 
+export type itemOptions = FieldOptions | PanelOptions;
+
 export interface IToolsEvent {
   name: string;
   conditions?: { advanced: boolean; search: string } | boolean;
@@ -30,7 +32,7 @@ export class FieldService {
   isAdvancedField = (a: ConfigOptions) => a.ui_options && a.ui_options.advanced && !a.ui_options.invisible;
   isHidden = (a: FieldStack) => a.ui_options && (a.ui_options.invisible || a.ui_options.advanced);
 
-  getPanels(data: IConfig): (FieldOptions | PanelOptions)[] {
+  getPanels(data: IConfig): itemOptions[] {
     if (data && data.config) {
       const fo = data.config.filter((a) => a.type !== 'group' && a.subname);
       return data.config
@@ -59,7 +61,6 @@ export class FieldService {
     const params: FieldOptions = {
       ...item,
       key: `${item.subname ? item.subname + '/' : ''}${item.name}`,
-      disabled: item.read_only,
       value: this.getValue(item.type)(item.value, item.default, item.required),
       validator: {
         required: item.required,
@@ -112,11 +113,19 @@ export class FieldService {
     return v;
   }
 
-  toFormGroup(options: (FieldOptions | PanelOptions)[]): FormGroup {
-    return this.fb.group(options.reduce((p, c) => this.runByTree(c, p), {}));
+  toFormGroup(options: itemOptions[] = []): FormGroup {
+    const isVisible = (a: itemOptions) => !a.read_only && !(a.ui_options && a.ui_options.invisible);
+    const check = (a: itemOptions) => ('options' in a ? (isVisible(a) ? a.options.some((b) => check(b)) : false) : isVisible(a));
+    return this.fb.group(
+      options.reduce((p, c) => this.runByTree(c, p), {}),
+      {
+        validator: () => (options.filter(check).length === 0 ? { error: 'Form is empty' } : null),
+      }
+    );
   }
 
-  runByTree(field: FieldOptions | PanelOptions, controls: { [key: string]: {} }): { [key: string]: {} } {
+  // TODO: impure
+  runByTree(field: itemOptions, controls: { [key: string]: {} }): { [key: string]: {} } {
     if ('options' in field) {
       controls[field.name] = this.fb.group(
         field.options.reduce((p, a) => {
@@ -142,11 +151,11 @@ export class FieldService {
     return controls;
   }
 
-  filterApply(dataOptions: (FieldOptions | PanelOptions)[], c: { advanced: boolean; search: string }): (FieldOptions | PanelOptions)[] {
+  filterApply(dataOptions: itemOptions[], c: { advanced: boolean; search: string }): itemOptions[] {
     return dataOptions.filter((a) => this.isVisibleField(a)).map((a) => this.handleTree(a, c));
   }
 
-  handleTree(a: FieldOptions | PanelOptions, c: { advanced: boolean; search: string }) {
+  handleTree(a: itemOptions, c: { advanced: boolean; search: string }) {
     if ('options' in a) {
       const result = a.options.map((b) => this.handleTree(b, c));
       if (c.search) a.hidden = a.options.filter((b) => !b.hidden).length === 0;

@@ -879,7 +879,7 @@ def get_check_log(job_id):
     data = []
     for group in groups:
         data_group = {'title': group.title, 'type': 'group', 'result': group.result,
-                      'msg': group.message, 'subs': []}
+                      'message': group.message, 'subs': []}
         for cl in CheckLog.objects.filter(job_id=int(job_id), group=group):
             data_group['subs'].append(
                 {'title': cl.title, 'type': 'check', 'message': cl.message, 'result': cl.result})
