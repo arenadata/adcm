@@ -79,6 +79,8 @@ def run_ansible(job_id):
     playbook = conf['job']['playbook']
     out_file = open_file(config.RUN_DIR, 'ansible-stdout', job_id)
     err_file = open_file(config.RUN_DIR, 'ansible-stderr', job_id)
+    cm.status_api.post_event('add_job_log', 'job', job_id, 'stdout', 'ansible')
+    cm.status_api.post_event('add_job_log', 'job', job_id, 'stderr', 'ansible')
     event = Event()
 
     os.chdir(conf['env']['stack_dir'])

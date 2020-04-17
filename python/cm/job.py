@@ -38,7 +38,7 @@ from cm.models import (
     ClusterObject, HostComponent, ServiceComponent, HostProvider, DummyData,
     LogStorage, ConfigLog, GroupCheckLog
 )
-from cm.status_api import Event
+from cm.status_api import Event, post_event
 
 
 def start_task(action_id, selector, conf, attr, hc, hosts):   # pylint: disable=too-many-locals
@@ -874,6 +874,7 @@ def log_check(job_id, group_data, check_data):
 
     check_data.update({'job_id': job_id, 'group': group})
     cl = CheckLog.objects.create(**check_data)
+    post_event('add_job_log', 'job', job_id, 'check', 'check')
 
     if group is not None:
         group_data.update({'group': group})
@@ -924,6 +925,7 @@ def log_custom(job_id, name, log_format, body):
     try:
         job = JobLog.objects.get(id=job_id)
         LogStorage.objects.create(job=job, name=name, type='custom', format=log_format, body=body)
+        post_event('add_job_log', 'job', job_id, 'custom', name)
     except JobLog.DoesNotExist:
         err('JOB_NOT_FOUND', f'no job with id #{job_id}')
 
