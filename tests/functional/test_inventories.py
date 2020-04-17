@@ -10,17 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
-import os
 import random
 
 from adcm_pytest_plugin import utils
 
 # pylint: disable=W0611, W0621
 from tests.library import steps
-
-BUNDLES = os.path.join(os.path.dirname(__file__), "stacks/")
-DATADIR = os.path.join(os.path.dirname(__file__),
-                       os.path.splitext(os.path.basename(__file__))[0] + '_data')
 
 
 def random_proto(client, apiobject):
@@ -41,7 +36,7 @@ def prepare(client):
 
 
 def test_check_inventories_file(adcm, client):
-    bundledir = os.path.join(BUNDLES, 'cluster_inventory_tests')
+    bundledir = utils.get_data_dir(__file__, 'cluster_inventory_tests')
     steps.upload_bundle(client, bundledir)
     cluster = prepare(client)
     client.cluster.action.run.create(
@@ -49,6 +44,6 @@ def test_check_inventories_file(adcm, client):
         action_id=random.choice(client.cluster.action.list(cluster_id=cluster['id']))['id'])
     text = utils.get_file_from_container(adcm, '/adcm/data/run/1/', 'inventory.json')
     inventory = json.loads(text.read().decode('utf8'))
-    template = open(DATADIR + '/cluster-inventory.json', 'rb')
+    template = open(utils.get_data_dir(__file__, 'cluster-inventory.json'), 'rb')
     expected = json.loads(template.read().decode('utf8'))
     assert inventory == expected
