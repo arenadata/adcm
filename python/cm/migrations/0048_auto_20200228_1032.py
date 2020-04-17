@@ -47,7 +47,7 @@ def add_logs(apps, schema_editor):
             log_files = json.loads(job.log_files)
             if 'check' in log_files:
                 LogStorage.objects.create(
-                    job=job, name='check', type='check', format='json',
+                    job=job, name='ansible', type='check', format='json',
                     body=get_body(job, 'check', 'out', 'json'))
         except json.JSONDecodeError:
             pass
