@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
 from time import sleep
 
 import coreapi
@@ -20,8 +19,6 @@ from adcm_pytest_plugin.docker import DockerWrapper
 # pylint: disable=W0611, W0621
 from tests.library import steps
 from tests.library.errorcodes import TASK_ERROR
-
-BUNDLES = os.path.join(os.path.dirname(__file__), "stacks/")
 
 
 @pytest.fixture(scope="function")
@@ -45,7 +42,7 @@ def client(adcm):
 
 @pytest.fixture(scope="function")
 def prepared_cluster(client):
-    bundle = os.path.join(BUNDLES, 'locked_when_action_running')
+    bundle = utils.get_data_dir(__file__, 'locked_when_action_running')
     steps.upload_bundle(client, bundle)
     return client.cluster.create(prototype_id=client.stack.cluster.list()[0]['id'],
                                  name=utils.random_string())
@@ -53,13 +50,13 @@ def prepared_cluster(client):
 
 @pytest.fixture(scope='function')
 def hostprovider(client):
-    steps.upload_bundle(client, os.path.join(BUNDLES, 'host_bundle_on_any_level'))
+    steps.upload_bundle(client, utils.get_data_dir(__file__, 'host_bundle_on_any_level'))
     return steps.create_hostprovider(client)
 
 
 @pytest.fixture()
 def host(client):
-    host_bundle = os.path.join(BUNDLES, 'host_bundle_on_any_level')
+    host_bundle = utils.get_data_dir(__file__, 'host_bundle_on_any_level')
     steps.upload_bundle(client, host_bundle)
     return steps.create_host_w_default_provider(client, 'localhost')
 
