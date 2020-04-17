@@ -111,14 +111,6 @@ export class LogComponent extends SocketListenerDirective implements OnInit, Aft
     this.service
       .getLog(this.currentLog.id)
       .pipe(this.takeUntil())
-      .subscribe((log) => (this.currentLog = this.isCheck(log)));
-  }
-
-  // jopa
-  isCheck(log: any) {
-    if (log.type !== 'check') return log;
-    else {
-      return { ...log, body: log.body.map((a) => ({ ...a, body: a.subs })) };
-    }
+      .subscribe((log) => (this.currentLog = log));
   }
 }
