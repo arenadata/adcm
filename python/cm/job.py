@@ -20,6 +20,7 @@ import shutil
 import signal
 import subprocess
 import time
+from collections import defaultdict
 from configparser import ConfigParser
 from datetime import timedelta
 
@@ -874,24 +875,21 @@ def log_check(job_id, group_data, check_data):
 
 
 def get_check_log(job_id):
-    try:
-        groups = GroupCheckLog.objects.filter(job_id=job_id)
-    except GroupCheckLog.DoesNotExist:
-        groups = []
-
     data = []
-    for group in groups:
-        data_group = {'title': group.title, 'type': 'group', 'result': group.result,
-                      'message': group.message, 'subs': []}
-        for cl in CheckLog.objects.filter(job_id=int(job_id), group=group):
-            data_group['subs'].append(
+    group_subs = defaultdict(list)
+
+    for cl in CheckLog.objects.filter(job_id=job_id):
+        group = cl.group
+        if group is None:
+            data.append(
                 {'title': cl.title, 'type': 'check', 'message': cl.message, 'result': cl.result})
-        data.append(data_group)
-
-    for cl in CheckLog.objects.filter(job_id=job_id, group=None):
-        data.append(
-            {'title': cl.title, 'type': 'check', 'message': cl.message, 'result': cl.result})
-
+        else:
+            if group not in group_subs:
+                data.append(
+                    {'title': group.title, 'type': 'group', 'message': group.message,
+                     'result': group.result, 'body': group_subs[group]})
+            group_subs[group].append(
+                {'title': cl.title, 'type': 'check', 'message': cl.message, 'result': cl.result})
     return data
 
 
