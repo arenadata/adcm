@@ -405,6 +405,12 @@ class LogStorage(models.Model):
     type = models.CharField(max_length=16, choices=LOG_TYPE)
     format = models.CharField(max_length=16, choices=FORMAT_TYPE)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['job'], condition=models.Q(type='check'), name='unique_check_job')
+        ]
+
 
 # Stage: Temporary tables to load bundle
 
