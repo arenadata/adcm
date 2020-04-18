@@ -96,6 +96,7 @@ ERRORS = {
 
     'UPGRADE_ERROR': ("upgrade error", rfs.HTTP_409_CONFLICT, ERR),
 
+    'ACTION_ERROR': ("action error", rfs.HTTP_409_CONFLICT, ERR),
     'TASK_ERROR': ("task error", rfs.HTTP_409_CONFLICT, ERR),
     'TASK_IS_FAILED': ("task is failed", rfs.HTTP_409_CONFLICT, ERR),
     'TASK_IS_ABORTED': ("task is aborted", rfs.HTTP_409_CONFLICT, ERR),

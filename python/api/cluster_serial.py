@@ -17,6 +17,7 @@ from rest_framework import serializers
 import cm.api
 import cm.job
 import cm.status_api
+from cm.api import safe_api
 from cm.logger import log   # pylint: disable=unused-import
 from cm.errors import AdcmApiEx, AdcmEx
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
@@ -314,7 +315,7 @@ class HostComponentSaveSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         hc = validated_data.get('hc')
-        return cm.api.add_hc(self.context.get('cluster'), hc)
+        return safe_api(cm.api.add_hc, (self.context.get('cluster'), hc))
 
 
 class ClusterServiceUrlField(UrlField):
