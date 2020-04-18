@@ -14,7 +14,7 @@ import json
 
 from cm.logger import log   # pylint: disable=unused-import
 import cm.status_api
-from cm.errors import AdcmApiEx
+from cm.errors import AdcmEx
 from cm.errors import raise_AdcmEx as err
 from cm.adcm_config import proto_ref, obj_ref, get_prototype_config
 from cm.models import ConfigLog, Host, ClusterObject, Prototype, Component, HostComponent
@@ -232,7 +232,7 @@ def check_hc(cluster):
     for service in ClusterObject.objects.filter(cluster=cluster):
         try:
             check_component_constraint(service, [i for i in hc_list if i[0] == service])
-        except AdcmApiEx:
+        except AdcmEx:
             return False
     return True
 
@@ -252,7 +252,7 @@ def check_component_constraint(service, hc_in):
     all_host = Host.objects.filter(cluster=service.cluster)
 
     def cc_err(msg):
-        raise AdcmApiEx('COMPONENT_CONSTRAINT_ERROR', msg)
+        raise AdcmEx('COMPONENT_CONSTRAINT_ERROR', msg)
 
     def check_min(count, const, comp):
         if count < const:
