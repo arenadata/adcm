@@ -18,7 +18,7 @@ import cm.api
 import cm.job
 from cm.models import Cluster, Host, ClusterObject, ServiceComponent, HostComponent
 from cm.models import Bundle, Upgrade, Prototype, Component, Action
-from cm.errors import AdcmEx, AdcmApiEx
+from cm.errors import AdcmEx
 
 
 class TestUpgradeVersion(TestCase):
@@ -292,16 +292,16 @@ class TestHC(TestCase):
             hc = [{"service_id": co.id, "component_id": sc1.id, "host_id": 500}]
             (hc_list, _) = cm.job.check_hostcomponentmap(cluster, action, hc)
             self.assertNotEqual(hc_list, None)
-        except AdcmApiEx as e:
-            self.assertEqual(e.detail['code'], 'HOST_NOT_FOUND')
+        except AdcmEx as e:
+            self.assertEqual(e.code, 'HOST_NOT_FOUND')
 
         try:
             action = Action(name="run", hostcomponentmap=json.dumps("qwe"))
             hc = [{"service_id": co.id, "component_id": sc1.id, "host_id": h1.id}]
             (hc_list, _) = cm.job.check_hostcomponentmap(cluster, action, hc)
             self.assertNotEqual(hc_list, None)
-        except AdcmApiEx as e:
-            self.assertEqual(e.detail['code'], 'FOREIGN_HOST')
+        except AdcmEx as e:
+            self.assertEqual(e.code, 'FOREIGN_HOST')
 
         cm.api.add_host_to_cluster(cluster, h1)
         try:
@@ -309,16 +309,16 @@ class TestHC(TestCase):
             hc = [{"service_id": 500, "component_id": sc1.id, "host_id": h1.id}]
             (hc_list, _) = cm.job.check_hostcomponentmap(cluster, action, hc)
             self.assertNotEqual(hc_list, None)
-        except AdcmApiEx as e:
-            self.assertEqual(e.detail['code'], 'SERVICE_NOT_FOUND')
+        except AdcmEx as e:
+            self.assertEqual(e.code, 'SERVICE_NOT_FOUND')
 
         try:
             action = Action(name="run", hostcomponentmap=json.dumps("qwe"))
             hc = [{"service_id": co.id, "component_id": 500, "host_id": h1.id}]
             (hc_list, _) = cm.job.check_hostcomponentmap(cluster, action, hc)
             self.assertNotEqual(hc_list, None)
-        except AdcmApiEx as e:
-            self.assertEqual(e.detail['code'], 'COMPONENT_NOT_FOUND')
+        except AdcmEx as e:
+            self.assertEqual(e.code, 'COMPONENT_NOT_FOUND')
 
     def test_action_hc(self):   # pylint: disable=too-many-locals
         setup = SetUp()
