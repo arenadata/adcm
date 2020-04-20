@@ -16,51 +16,43 @@ import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 
 import { FieldService } from '../field.service';
 import { FieldComponent } from '../field/field.component';
-import { FieldOptions, PanelOptions, IConfig, IConfigAttr } from '../types';
+import { FieldOptions, PanelOptions } from '../types';
 
 @Component({
   selector: 'app-group-fields',
   templateUrl: './group-fields.component.html',
-  styleUrls: ['./group-fields.component.scss'],
+  styles: [
+    '.title {font-size: 22px;}',
+    '.title > mat-slide-toggle {margin-left: 20px;}',
+    '.advanced {border: dotted 1px #00e676;}',
+    'mat-panel-description {justify-content: flex-end;}',
+  ],
 })
 export class GroupFieldsComponent implements OnInit {
+  active = true;
   @Input() panel: PanelOptions;
   @Input() form: FormGroup;
-  @Input() rawConfig: IConfig;
   @ViewChild('ep') expanel: MatExpansionPanel;
-
-  checked = true;
-  attrConfig: IConfigAttr = {};
-
-  @ViewChildren(FieldComponent)
-  fields: QueryList<FieldComponent>;
+  @ViewChildren(FieldComponent) fields: QueryList<FieldComponent>;
 
   constructor(private service: FieldService) {}
 
   ngOnInit(): void {
-    this.attrConfig = this.rawConfig.attr || {};
-    if (this.attrConfig[this.panel.name]) {
-      this.checked = this.attrConfig[this.panel.name].active;
-      this.checkFields(this.checked);
-    }
+    if (this.panel.activatable) this.activatable(this.panel.active);
   }
 
-  isPanel(item: FieldOptions | PanelOptions) {
-    return 'options' in item && !item.hidden;
-  }
-
-  getForm() {
-    return this.form.controls[this.panel.name];
-  }
-
-  isAdvanced() {
+  get isAdvanced() {
     return this.panel.ui_options && this.panel.ui_options.advanced;
   }
 
   activeToggle(e: MatSlideToggleChange) {
-    this.attrConfig[this.panel.name].active = e.checked;
-    this.checked = e.checked;
-    this.checkFields(e.checked);
+    this.panel.active = e.checked;
+    this.activatable(e.checked);
+  }
+
+  activatable(flag: boolean) {
+    this.active = flag;
+    this.checkFields(this.active);
   }
 
   checkFields(flag: boolean) {
@@ -83,9 +75,5 @@ export class GroupFieldsComponent implements OnInit {
       formControl.updateValueAndValidity();
       this.form.updateValueAndValidity();
     }
-  }
-
-  trackBy(index: number, item: FieldOptions): string {
-    return item.key;
   }
 }

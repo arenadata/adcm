@@ -10,7 +10,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, EventEmitter, Input, Output, QueryList, ViewChildren } from '@angular/core';
-import { FormGroup } from '@angular/forms';
 
 import { FieldService } from '../field.service';
 import { FieldComponent } from '../field/field.component';
@@ -21,7 +20,7 @@ import { FieldOptions, IConfig, PanelOptions } from '../types';
   selector: 'app-config-fields',
   template: `
     <ng-container *ngFor="let item of dataOptions; trackBy: trackBy">
-      <app-group-fields *ngIf="isPanel(item); else one" [rawConfig]="rawConfig" [panel]="item" [form]="form"></app-group-fields>
+      <app-group-fields *ngIf="isPanel(item); else one" [panel]="item" [form]="form"></app-group-fields>
       <ng-template #one>
         <app-field *ngIf="!item.hidden" [form]="form" [options]="item" [ngClass]="{ 'read-only': item.read_only }"></app-field>
       </ng-template>
@@ -30,7 +29,6 @@ import { FieldOptions, IConfig, PanelOptions } from '../types';
 })
 export class ConfigFieldsComponent {
   @Input() dataOptions: (FieldOptions | PanelOptions)[] = [];
-  @Input() rawConfig: IConfig;
   @Input() form = this.service.toFormGroup();
 
   shapshot: any;
@@ -42,7 +40,6 @@ export class ConfigFieldsComponent {
   @Input()
   set model(data: IConfig) {
     if (!data) return;
-    this.rawConfig = data;
     this.dataOptions = this.service.getPanels(data);
     this.form = this.service.toFormGroup(this.dataOptions);
     this.isAdvanced = data.config.some((a) => a.ui_options && a.ui_options.advanced);
