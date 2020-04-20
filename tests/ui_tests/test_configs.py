@@ -60,6 +60,8 @@ def generate_group_data():
                 for activatable in PAIR:
                     for active in PAIR:
                         for ui_options in UI_OPTIONS_PAIRS_GROUPS:
+                            if ro and required and not default:
+                                continue
                             if activatable:
                                 data = {
                                     'default': default,
@@ -157,9 +159,12 @@ def generate_config_data():
         for required in PAIR:
             for ro in PAIR:
                 for ui_options in UI_OPTIONS_PAIRS:
-                    data.append({'default': default, "required": required,
-                                 "read_only": ro, "ui_options": {"invisible": ui_options[0],
-                                                                 'advanced': ui_options[1]}})
+                    if ro and required and not default:
+                        continue
+                    else:
+                        data.append({'default': default, "required": required,
+                                     "read_only": ro, "ui_options": {"invisible": ui_options[0],
+                                                                     'advanced': ui_options[1]}})
     return data
 
 
