@@ -40,8 +40,7 @@ for ro in True, False:
         for default in True, False:
             if ro and required and not default:
                 continue
-            else:
-                FIELDS.append((ro, required, default))
+            FIELDS.append((ro, required, default))
 
 TYPES = ('string', 'password', 'integer', 'text', 'boolean',
          'float', 'list', 'map', 'json', 'file')
