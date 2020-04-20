@@ -53,7 +53,7 @@ export interface LogFile {
   type: string;
   format: 'txt' | 'json';
   download_url: string;
-  body: string | CheckLog;
+  body: string | CheckLog[];
 }
 
 export interface CheckLog {
@@ -61,5 +61,5 @@ export interface CheckLog {
   message: string;
   result: boolean;
   type: 'group' | 'check';
-  subs?: CheckLog[];
+  body?: CheckLog[];
 }

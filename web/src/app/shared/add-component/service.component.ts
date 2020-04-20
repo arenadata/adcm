@@ -46,6 +46,7 @@ export class ServiceComponent extends BaseFormDirective implements OnInit {
     this.options$ = this.service.getProtoServiceForCurrentCluster();
   }
 
+
   selectAll(e: MatSelectionListChange) {
     if (!e.option.value) {
       if (e.option.selected) this.listServices.selectAll();

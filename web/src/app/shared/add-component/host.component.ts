@@ -48,7 +48,7 @@ import { MatDialog } from '@angular/material/dialog';
       <div *ngIf="expanded" class="inner">
         <app-add-provider [displayMode]="1" (cancel)="createdProvider($event)"></app-add-provider>
       </div>
-      <app-input [form]="form" [label]="'Fully qualified domain name'" [controlName]="'fqdn'" [isRequired]="true" (keydown.enter)="save()"></app-input>
+      <app-input [form]="form" [label]="'Fully qualified domain name'" [controlName]="'fqdn'" [isRequired]="true"></app-input>
 
       <ng-container *ngIf="!noCluster">
         <div class="row">

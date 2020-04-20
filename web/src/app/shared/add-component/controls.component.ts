@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ViewChild, ElementRef } from '@angular/core';
 
 @Component({
   selector: 'app-add-controls',
@@ -17,15 +17,17 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
     <p class="controls">
       <button mat-raised-button color="primary" (click)="oncancel()">Cancel</button>
       <span class="example-spacer"></span>
-      <button mat-raised-button [disabled]="disabled" color="accent" (click)="onsave()">Save</button>
+      <button #btn mat-raised-button [disabled]="disabled" color="accent" (click)="onsave()" (focus)="!disabled">Save</button>
     </p>
   `,
-  styles: []
 })
 export class ControlsComponent {
+
   @Input() disabled: boolean;
   @Output() cancel = new EventEmitter();
   @Output() save = new EventEmitter();
+
+  @ViewChild('btn', {static: true, read: ElementRef}) saveBtn: ElementRef; 
 
   oncancel() {
     this.cancel.emit();

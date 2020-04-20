@@ -55,8 +55,8 @@
       <span [style.flex]="1"></span>
     </ng-container>
 
-    <button mat-raised-button (click)="cancel()" color="primary">Cancel</button>
-    <button mat-raised-button (click)="run(value)" color="accent" [disabled]="isDisabled(value)">
+    <button mat-raised-button (click)="cancel()" color="primary" tabindex="-1">Cancel</button>
+    <button mat-raised-button (click)="run(value)" color="accent" [disabled]="isDisabled(value)" tabindex="1">
       Run
     </button>
   </div>

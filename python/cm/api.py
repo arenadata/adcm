@@ -32,7 +32,7 @@ from cm.status_api import Event
 from cm.models import (
     Cluster, Prototype, Component, Host, HostComponent, ADCM, ClusterObject,
     ServiceComponent, ConfigLog, HostProvider, PrototypeImport, PrototypeExport,
-    ClusterBind, DummyData, Role,
+    ClusterBind, Action, JobLog, DummyData, Role,
 )
 
 
@@ -393,18 +393,31 @@ def has_google_oauth():
     return True
 
 
+def get_hc(cluster):
+    if not cluster:
+        return None
+    hc_map = []
+    for hc in HostComponent.objects.filter(cluster=cluster):
+        hc_map.append({
+            'host_id': hc.host.id,
+            'service_id': hc.service.id,
+            'component_id': hc.component.id,
+        })
+    return hc_map
+
+
 def check_hc(cluster, hc_in):   # pylint: disable=too-many-branches
     def check_sub(sub_key, sub_type, item):
         if sub_key not in item:
             msg = '"{}" sub-field of hostcomponent is required'
-            raise AdcmApiEx('INVALID_INPUT', msg.format(sub_key))
+            raise AdcmEx('INVALID_INPUT', msg.format(sub_key))
         if not isinstance(item[sub_key], sub_type):
             msg = '"{}" sub-field of hostcomponent should be "{}"'
-            raise AdcmApiEx('INVALID_INPUT', msg.format(sub_key, sub_type))
+            raise AdcmEx('INVALID_INPUT', msg.format(sub_key, sub_type))
 
     seen = {}
     if not isinstance(hc_in, list):
-        raise AdcmApiEx('INVALID_INPUT', 'hostcomponent should be array')
+        raise AdcmEx('INVALID_INPUT', 'hostcomponent should be array')
     for item in hc_in:
         for sub_key, sub_type in (('service_id', int), ('host_id', int), ('component_id', int)):
             check_sub(sub_key, sub_type, item)
@@ -413,7 +426,7 @@ def check_hc(cluster, hc_in):   # pylint: disable=too-many-branches
             seen[key] = 1
         else:
             msg = 'duplicate ({}) in host service list'
-            raise AdcmApiEx('INVALID_INPUT', msg.format(item))
+            raise AdcmEx('INVALID_INPUT', msg.format(item))
 
     host_comp_list = []
     for item in hc_in:
@@ -421,25 +434,25 @@ def check_hc(cluster, hc_in):   # pylint: disable=too-many-branches
             host = Host.objects.get(id=item['host_id'])
         except Host.DoesNotExist:
             msg = 'No host #{}'.format(item['host_id'])
-            raise AdcmApiEx('HOST_NOT_FOUND', msg)
+            raise AdcmEx('HOST_NOT_FOUND', msg)
         try:
             service = ClusterObject.objects.get(id=item['service_id'], cluster=cluster)
         except ClusterObject.DoesNotExist:
             msg = 'No service #{} in {}'.format(item['service_id'], obj_ref(cluster))
-            raise AdcmApiEx('SERVICE_NOT_FOUND', msg)
+            raise AdcmEx('SERVICE_NOT_FOUND', msg)
         try:
             comp = ServiceComponent.objects.get(
                 id=item['component_id'], cluster=cluster, service=service
             )
         except ServiceComponent.DoesNotExist:
             msg = 'No component #{} in {} '.format(item['component_id'], obj_ref(service))
-            raise AdcmApiEx('COMPONENT_NOT_FOUND', msg)
+            raise AdcmEx('COMPONENT_NOT_FOUND', msg)
         if not host.cluster:
             msg = 'host #{} {} does not belong to any cluster'.format(host.id, host.fqdn)
-            raise AdcmApiEx("FOREIGN_HOST", msg)
+            raise AdcmEx("FOREIGN_HOST", msg)
         if host.cluster.id != cluster.id:
             msg = 'host {} (cluster #{}) does not belong to cluster #{}'
-            raise AdcmApiEx("FOREIGN_HOST", msg.format(host.fqdn, host.cluster.id, cluster.id))
+            raise AdcmEx("FOREIGN_HOST", msg.format(host.fqdn, host.cluster.id, cluster.id))
         host_comp_list.append((service, host, comp))
 
     for service in ClusterObject.objects.filter(cluster=cluster):
@@ -830,3 +843,60 @@ def set_service_state_by_id(cluster_id, service_id, state):
         msg = 'service # {} does not exist in cluster # {}'
         err('OBJECT_NOT_FOUND', msg.format(service_id, cluster_id))
     return push_obj(obj, state)
+
+
+def change_hc(job_id, cluster_id, operations):   # pylint: disable=too-many-branches
+    '''
+    For use in ansible plugin adcm_hc
+    '''
+    job = JobLog.objects.get(id=job_id)
+    action = Action.objects.get(id=job.action_id)
+    if action.hostcomponentmap:
+        err('ACTION_ERROR', 'You can not change hc in plugin for action with hc_acl')
+
+    try:
+        cluster = Cluster.objects.get(id=cluster_id)
+    except Cluster.DoesNotExist:
+        msg = 'Cluster # {} does not exist'
+        err('CLUSTER_NOT_FOUND', msg.format(cluster_id))
+
+    hc = get_hc(cluster)
+    for op in operations:
+        try:
+            service = ClusterObject.objects.get(cluster=cluster, prototype__name=op['service'])
+        except ClusterObject.DoesNotExist:
+            msg = 'service "{}" does not exist in cluster #{}'
+            err('SERVICE_NOT_FOUND', msg.format(op['service'], cluster.id))
+        try:
+            component = ServiceComponent.objects.get(
+                cluster=cluster, service=service, component__name=op['component']
+            )
+        except ServiceComponent.DoesNotExist:
+            msg = 'component "{}" does not exist in service "{}"'
+            err('SERVICE_NOT_FOUND', msg.format(op['component'], service.prototype.name))
+        try:
+            host = Host.objects.get(cluster=cluster, fqdn=op['host'])
+        except Host.DoesNotExist:
+            msg = 'host "{}" does not exist in cluster #{}'
+            err('HOST_NOT_FOUND', msg.format(op['host'], cluster.id))
+        item = {
+            'host_id': host.id,
+            'service_id': service.id,
+            'component_id': component.id,
+        }
+        if op['action'] == 'add':
+            if item not in hc:
+                hc.append(item)
+            else:
+                msg = 'There is already component "{}" on host "{}"'
+                err('COMPONENT_CONFLICT', msg.format(component.component.name, host.fqdn))
+        elif op['action'] == 'remove':
+            if item in hc:
+                hc.remove(item)
+            else:
+                msg = 'There is no component "{}" on host "{}"'
+                err('COMPONENT_CONFLICT', msg.format(component.component.name, host.fqdn))
+        else:
+            err('INVALID_INPUT', 'unknown hc action "{}"'.format(op['action']))
+
+    add_hc(cluster, hc)
