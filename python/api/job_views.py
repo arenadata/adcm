@@ -95,7 +95,10 @@ class LogStorageView(GenericAPIView):
     def get(self, request, job_id, log_id):
         try:
             job = JobLog.objects.get(id=job_id)
-            log_storage = LogStorage.objects.get(id=log_id, job=job)
+            try:
+                log_storage = LogStorage.objects.get(id=log_id, job=job)
+            except LogStorage.DoesNotExist:
+                raise AdcmApiEx('LOG_NOT_FOUND', f'log {log_id} not found for job {job_id}')
             serializer = self.serializer_class(log_storage, context={'request': request})
             return Response(serializer.data)
         except AdcmEx as e:
