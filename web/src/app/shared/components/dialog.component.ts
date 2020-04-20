@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, ComponentFactoryResolver, EventEmitter, Inject, OnInit, Type, ViewChild } from '@angular/core';
+import { Component, ComponentFactoryResolver, EventEmitter, Inject, OnInit, Type, ViewChild, HostListener } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 import { DynamicComponent, DynamicDirective, DynamicEvent } from '../directives/dynamic.directive';
@@ -17,7 +17,7 @@ import { ChannelService } from '@app/core';
 
 export interface DialogData {
   title: string;
-  component: Type<any>;
+  component: Type<DynamicComponent>;
   model?: any;
   event?: EventEmitter<any>;
   text?: string;
@@ -49,13 +49,23 @@ export interface DialogData {
       </button>
     </ng-template>
   `,
-  styles: ['pre {white-space: pre-wrap;}']
+  styles: ['pre {white-space: pre-wrap;}'],
 })
 export class DialogComponent implements OnInit {
   controls: string[];
   noClose: boolean | undefined;
 
+  instance: DynamicComponent;
+
   @ViewChild(DynamicDirective, { static: true }) dynamic: DynamicDirective;
+
+  @HostListener('window:keydown', ['$event'])
+  handleKeyDown(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      const c = this.instance;
+      if (c?.onEnterKey) c.onEnterKey();
+    }
+  }
 
   constructor(
     public dialogRef: MatDialogRef<DialogComponent>,
@@ -75,12 +85,12 @@ export class DialogComponent implements OnInit {
       viewContainerRef.clear();
 
       const componentRef = viewContainerRef.createComponent(componentFactory);
-      const instance = <DynamicComponent>componentRef.instance;
-      instance.model = this.data.model;
+      this.instance = <DynamicComponent>componentRef.instance;
+      this.instance.model = this.data.model;
       // event define in the component
-      if (instance.event) instance.event.subscribe((e: DynamicEvent) => this.dialogRef.close(e));
+      if (this.instance.event) this.instance.event.subscribe((e: DynamicEvent) => this.dialogRef.close(e));
 
-      if (this.data.event) instance.event = this.data.event;
+      if (this.data.event) this.instance.event = this.data.event;
     }
   }
 

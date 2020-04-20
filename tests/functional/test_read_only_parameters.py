@@ -9,17 +9,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
 
 import coreapi
 import pytest
 
 # pylint: disable=W0611, W0621
-from tests.library import steps
+from adcm_pytest_plugin import utils
 from tests.library.errorcodes import CONFIG_VALUE_ERROR
 
-BUNDLES = os.path.join(os.path.dirname(__file__), "stacks/")
-DATADIR = os.path.join(BUNDLES, "read_only_and_writable_parameters")
 
 TEST_DATA = [("read-only-when-runned", False, True, "run", False, True),
              ("writable-when-installed", "bluhbluh", "bluhbluh", "install", False, False),
@@ -34,7 +31,7 @@ TEST_IDS = ["ro_when_runned", "wr_when_installed", "wr", "group-ro-installed",
 
 @pytest.fixture()
 def cluster_sdk(sdk_client_fs):
-    bundle = sdk_client_fs.upload_from_fs(DATADIR)
+    bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__))
     cluster = bundle.cluster_create("test_cluster")
     return cluster
 

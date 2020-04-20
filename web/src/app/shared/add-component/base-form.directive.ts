@@ -30,4 +30,6 @@ export class BaseFormDirective extends BaseDirective {
     this.form.reset();
     this.dialog.closeAll();
   }
+
+  save() {}
 }

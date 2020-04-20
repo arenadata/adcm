@@ -128,7 +128,7 @@ body {
 
 .noflex,
 .noflex>.mat-list-item-content {
-  display: block!important;
+  display: block !important;
 }
 
 mat-checkbox.advanced>label>span {
@@ -214,7 +214,8 @@ mat-checkbox.advanced>label>span {
   }
 }
 
-.mat-form-field, .full-width {
+.mat-form-field,
+.full-width {
   flex-grow: 1;
 }
 
@@ -306,6 +307,10 @@ mat-cell.control {
 
   & button {
     margin: 0 4px;
+
+    &[color="accent"]:focus {
+      border: solid 1px #f99501;
+    }
   }
 }
 

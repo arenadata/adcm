@@ -9,8 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
-
 import coreapi
 import pytest
 from adcm_pytest_plugin import utils
@@ -22,20 +20,17 @@ from tests.library.errorcodes import (
 )
 
 
-BUNDLES = os.path.join(os.path.dirname(__file__), "stacks/")
-
-
 @pytest.fixture(scope="module")
 def cluster_bundles():
-    bundle = os.path.join(BUNDLES, "cluster_bundle_before_upgrade")
-    upgrade_bundle = os.path.join(BUNDLES, "upgradable_cluster_bundle")
+    bundle = utils.get_data_dir(__file__, "cluster_bundle_before_upgrade")
+    upgrade_bundle = utils.get_data_dir(__file__, "upgradable_cluster_bundle")
     return bundle, upgrade_bundle
 
 
 @pytest.fixture(scope="module")
 def host_bundles():
-    bundle = os.path.join(BUNDLES, "hostprovider_bundle_before_upgrade")
-    upgrade_bundle = os.path.join(BUNDLES, "upgradable_hostprovider_bundle")
+    bundle = utils.get_data_dir(__file__, "hostprovider_bundle_before_upgrade")
+    upgrade_bundle = utils.get_data_dir(__file__, "upgradable_hostprovider_bundle")
     return bundle, upgrade_bundle
 
 
@@ -114,10 +109,13 @@ def test_shouldnt_upgrade_upgrated_hostprovider(sdk_client_fs: ADCMClient, host_
 
 
 def test_upgrade_cluster_without_old_config(sdk_client_fs: ADCMClient):
-    bundledir = os.path.join(BUNDLES, 'cluster_without_old_config')
-    bundle = sdk_client_fs.upload_from_fs(os.path.join(bundledir, 'old'))
+    bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__,
+                                                             'cluster_without_old_config',
+                                                             'old'))
     cluster = bundle.cluster_create(utils.random_string())
-    sdk_client_fs.upload_from_fs(os.path.join(bundledir, 'upgrade'))
+    sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__,
+                                                    'cluster_without_old_config',
+                                                    'upgrade'))
     upgrade = cluster.upgrade()
     upgrade.do()
     cluster.reread()
@@ -132,7 +130,7 @@ def test_upgrade_cluster_without_old_config(sdk_client_fs: ADCMClient):
 ])
 def test_upgrade_contains_strict_and_nonstrict_value(sdk_client_fs: ADCMClient, boundary,
                                                      expected):
-    bundledir = os.path.join(BUNDLES, 'strict_and_non_strict_upgrade/' + boundary)
+    bundledir = utils.get_data_dir(__file__, 'strict_and_non_strict_upgrade', boundary)
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(bundledir)
     INVALID_VERSION_DEFINITION.equal(e, expected)
