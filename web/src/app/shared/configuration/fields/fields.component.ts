@@ -14,7 +14,7 @@ import { Component, EventEmitter, Input, Output, QueryList, ViewChildren } from 
 import { FieldService } from '../field.service';
 import { FieldComponent } from '../field/field.component';
 import { GroupFieldsComponent } from '../group-fields/group-fields.component';
-import { FieldOptions, IConfig, PanelOptions } from '../types';
+import { FieldOptions, IConfig, PanelOptions, IConfigAttr } from '../types';
 
 @Component({
   selector: 'app-config-fields',
@@ -30,7 +30,7 @@ import { FieldOptions, IConfig, PanelOptions } from '../types';
 export class ConfigFieldsComponent {
   @Input() dataOptions: (FieldOptions | PanelOptions)[] = [];
   @Input() form = this.service.toFormGroup();
-
+  rawConfig: IConfig;
   shapshot: any;
   isAdvanced = false;
 
@@ -40,6 +40,7 @@ export class ConfigFieldsComponent {
   @Input()
   set model(data: IConfig) {
     if (!data) return;
+    this.rawConfig = data;
     this.dataOptions = this.service.getPanels(data);
     this.form = this.service.toFormGroup(this.dataOptions);
     this.isAdvanced = data.config.some((a) => a.ui_options && a.ui_options.advanced);
