@@ -33,6 +33,16 @@ UI_OPTIONS_PAIRS_GROUPS = [(True, True, True, True),
                            (False, False, False, True),
                            (False, False, False, False)]
 
+FIELDS = []
+
+for ro in True, False:
+    for required in True, False:
+        for default in True, False:
+            if ro and required and not default:
+                continue
+            else:
+                FIELDS.append((ro, required, default))
+
 TYPES = ('string', 'password', 'integer', 'text', 'boolean',
          'float', 'list', 'map', 'json', 'file')
 
@@ -54,36 +64,34 @@ def generate_group_data():
     :return: list with data
     """
     group_data = []
-    for default in PAIR:
-        for required in PAIR:
-            for ro in PAIR:
-                for activatable in PAIR:
-                    for active in PAIR:
-                        for ui_options in UI_OPTIONS_PAIRS_GROUPS:
-                            if activatable:
-                                data = {
-                                    'default': default,
-                                    "required": required,
-                                    "activatable": activatable,
-                                    'active': active,
-                                    "read_only": ro,
-                                    "ui_options": {"invisible": ui_options[0],
-                                                   'advanced': ui_options[1]},
-                                    "field_ui_options": {"invisible": ui_options[2],
-                                                         'advanced': ui_options[3]}}
-                            else:
-                                data = {
-                                    'default': default,
-                                    "required": required,
-                                    "activatable": False,
-                                    'active': False,
-                                    "read_only": ro,
-                                    "ui_options": {"invisible": ui_options[0],
-                                                   'advanced': ui_options[1]},
-                                    "field_ui_options": {"invisible": ui_options[2],
-                                                         'advanced': ui_options[3]}}
-                            if data not in group_data:
-                                group_data.append(data)
+    for required, default, ro in FIELDS:
+        for activatable in PAIR:
+            for active in PAIR:
+                for ui_options in UI_OPTIONS_PAIRS_GROUPS:
+                    if activatable:
+                        data = {
+                            'default': default,
+                            "required": required,
+                            "activatable": activatable,
+                            'active': active,
+                            "read_only": ro,
+                            "ui_options": {"invisible": ui_options[0],
+                                           'advanced': ui_options[1]},
+                            "field_ui_options": {"invisible": ui_options[2],
+                                                 'advanced': ui_options[3]}}
+                    else:
+                        data = {
+                            'default': default,
+                            "required": required,
+                            "activatable": False,
+                            'active': False,
+                            "read_only": ro,
+                            "ui_options": {"invisible": ui_options[0],
+                                           'advanced': ui_options[1]},
+                            "field_ui_options": {"invisible": ui_options[2],
+                                                 'advanced': ui_options[3]}}
+                    if data not in group_data:
+                        group_data.append(data)
     return group_data
 
 
@@ -153,13 +161,11 @@ def generate_config_data():
     :return: list
     """
     data = []
-    for default in PAIR:
-        for required in PAIR:
-            for ro in PAIR:
-                for ui_options in UI_OPTIONS_PAIRS:
-                    data.append({'default': default, "required": required,
-                                 "read_only": ro, "ui_options": {"invisible": ui_options[0],
-                                                                 'advanced': ui_options[1]}})
+    for default, required, ro in FIELDS:
+        for ui_options in UI_OPTIONS_PAIRS:
+            data.append({'default': default, "required": required,
+                         "read_only": ro, "ui_options": {"invisible": ui_options[0],
+                                                         'advanced': ui_options[1]}})
     return data
 
 
