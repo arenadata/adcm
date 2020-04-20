@@ -36,6 +36,7 @@ UI_OPTIONS_PAIRS_GROUPS = [(True, True, True, True),
 TYPES = ('string', 'password', 'integer', 'text', 'boolean',
          'float', 'list', 'map', 'json', 'file')
 
+
 DEFAULT_VALUE = {"string": "string",
                  "text": "text",
                  "password": "password",
@@ -96,15 +97,9 @@ def generate_group_expected_result(group_config):
                        'editable': not group_config['read_only'],
                        "content": group_config['default']}
     if group_config['required'] and not group_config['default']:
-        expected_result['save'] = False
         expected_result['alerts'] = True
-        config_valid = False
     else:
-        expected_result['save'] = True
         expected_result['alerts'] = False
-        config_valid = True
-    if group_config['read_only']:
-        expected_result['save'] = False
     group_advanced = group_config['ui_options']['advanced']
     group_invisible = group_config['ui_options']['invisible']
     expected_result['group_visible_advanced'] = (group_advanced and not group_invisible)
@@ -112,20 +107,44 @@ def generate_group_expected_result(group_config):
     field_invisible = group_config['field_ui_options']['invisible']
     expected_result['field_visible_advanced'] = (field_advanced and not field_invisible)
     expected_result['field_visible'] = not field_invisible
-    if group_invisible or field_invisible:
-        expected_result['save'] = False
+    config_valid = validate_config(group_config['required'],
+                                   group_config['default'],
+                                   group_config['read_only'])
+    expected_result['config_valid'] = config_valid
+    invisible = group_invisible or field_invisible
     if group_config['activatable']:
         group_active = group_config['active']
-        field_invisible = group_config['field_ui_options']['invisible']
         expected_result['field_visible'] = (group_active and not field_invisible)
         expected_result['field_visible_advanced'] = (
             field_advanced and group_active and not field_invisible)
-        # invisible = field_invisible or group_invisible
-        # if not invisible and config_valid and not group_config['read_only']:
-        #     expected_result['save'] = True
-    if not config_valid:
+        if not group_active and not invisible:
+            expected_result['save'] = True
+            return expected_result
+        if (group_active and config_valid) and not invisible:
+            expected_result['save'] = True
+            return expected_result
+        if not config_valid or invisible:
+            expected_result['save'] = False
+            return expected_result
+        return expected_result
+    if invisible or not config_valid:
         expected_result['save'] = False
+    else:
+        expected_result['save'] = True
     return expected_result
+
+
+def validate_config(field_required, default_presented, field_ro):
+    """
+
+    :param field_required:
+    :param default_presented:
+    :param field_ro:
+    :return:
+    """
+    if (field_required and not default_presented) or field_ro:
+        return False
+    return True
 
 
 def generate_config_data():

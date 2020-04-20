@@ -706,7 +706,7 @@ class Configuration(BasePage):
         try:
             button = self.driver.find_element(*ConfigurationLocators.config_save_button)
         except (StaleElementReferenceException, NoSuchElementException):
-            sleep(10)
+            sleep(5)
             button = self.driver.find_element(*ConfigurationLocators.config_save_button)
         class_el = button.get_attribute("disabled")
         if class_el == 'true':
@@ -778,16 +778,18 @@ class Configuration(BasePage):
         self._getelement(ConfigurationLocators.config_save_button).click()
 
     def click_advanced(self):
-        buttons = self._getelements(Common.mat_checkbox)
+        # buttons = self._getelements(Common.mat_checkbox)
+        buttons = self.driver.find_elements(*Common.mat_checkbox)
         for button in buttons:
             if button.text == 'Advanced':
-                self._click_button_with_sleep(button, 10)
+                self._click_button_with_sleep(button, 5)
                 return True
         return False
 
     @property
     def advanced(self):
-        buttons = self._getelements(Common.mat_checkbox)
+        # buttons = self._getelements(Common.mat_checkbox)
+        buttons = self.driver.find_elements(*Common.mat_checkbox)
         for button in buttons:
             if button.text == 'Advanced':
                 return "checked" in button.get_attribute("class")
