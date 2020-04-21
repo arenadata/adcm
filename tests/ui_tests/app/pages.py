@@ -48,7 +48,7 @@ def repeat_dec(timeout=10, interval=0.1):
     return dec
 
 
-REPEAT = repeat_dec(timeout=10, interval=0.1)
+REPEAT = repeat_dec(timeout=5, interval=0.1)
 
 
 class BasePage:
