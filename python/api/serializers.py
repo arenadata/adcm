@@ -845,18 +845,6 @@ class JobSerializer(JobListSerializer):
         return get_job_objects(obj)
 
 
-class LogSerializer(serializers.Serializer):
-    tag = serializers.CharField(read_only=True)
-    level = serializers.CharField(read_only=True)
-    type = serializers.CharField(read_only=True)
-    content = serializers.SerializerMethodField()
-
-    def get_content(self, obj):
-        if obj.type == 'json':
-            return json.loads(obj.content)
-        return obj.content
-
-
 class LogStorageSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
@@ -884,6 +872,16 @@ class LogStorageSerializer(serializers.Serializer):
                 body = json.dumps(body, indent=4)
 
         return body
+
+
+class LogStorageListSerializer(LogStorageSerializer):
+    url = serializers.SerializerMethodField()
+
+    def get_url(self, obj):
+        return reverse(
+            'log-storage',
+            kwargs={'job_id': obj.job_id, 'log_id': obj.id},
+            request=self.context['request'])
 
 
 class TaskListSerializer(serializers.Serializer):
