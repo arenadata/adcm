@@ -465,11 +465,7 @@ urlpatterns = [
 
     path('job/', job_views.JobList.as_view(), name='job'),
     path('job/<int:job_id>/', job_views.JobDetail.as_view(), name='job-details'),
-    path(
-        'job/<int:job_id>/log/<name:tag>/<name:level>/<name:log_type>/',
-        job_views.LogFile.as_view(),
-        name='log-file'
-    ),
+    path('job/<int:job_id>/log/', job_views.LogStorageListView.as_view(), name='log-list'),
     path('job/<int:job_id>/log/<int:log_id>/',
          job_views.LogStorageView.as_view(),
          name='log-storage'),
