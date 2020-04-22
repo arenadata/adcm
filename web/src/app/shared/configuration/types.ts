@@ -47,6 +47,7 @@ export interface ILimits {
   read_only?: stateType[];
   yspec?: IYspec;
   rules?: any;
+  active?: boolean;
 }
 
 export interface ValidatorInfo {
@@ -104,6 +105,7 @@ export interface ConfigOptions {
 export interface PanelOptions extends ConfigOptions {
   options: (FieldOptions | PanelOptions)[];
   activatable?: boolean;
+  active: boolean;
 }
 
 /**

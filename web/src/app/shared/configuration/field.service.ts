@@ -13,7 +13,7 @@ import { Injectable } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { getControlType, getPattern, isObject } from '@app/core/types';
 
-import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, PanelOptions, ValidatorInfo, controlType } from './types';
+import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, PanelOptions, ValidatorInfo, controlType, IConfigAttr } from './types';
 import { matchType } from './yspec/yspec.service';
 
 export type itemOptions = FieldOptions | PanelOptions;
@@ -40,16 +40,17 @@ export class FieldService {
         .reduce((p, c) => {
           if (c.subname) return p;
           if (c.type !== 'group') return [...p, this.getFieldBy(c)];
-          else return [...p, this.fillDataOptions(c, fo)];
+          else return [...p, this.fillDataOptions(c, fo, data.attr)];
         }, []);
     }
     return [];
   }
 
-  fillDataOptions(a: FieldStack, fo: FieldStack[]) {
+  fillDataOptions(a: FieldStack, fo: FieldStack[], attr: IConfigAttr) {
     return {
       ...a,
       hidden: this.isHidden(a),
+      active: a.activatable ? attr[a.name]?.active : true,
       options: fo
         .filter((b) => b.name === a.name)
         .map((b) => this.getFieldBy(b))
@@ -115,7 +116,7 @@ export class FieldService {
 
   toFormGroup(options: itemOptions[] = []): FormGroup {
     const isVisible = (a: itemOptions) => !a.read_only && !(a.ui_options && a.ui_options.invisible);
-    const check = (a: itemOptions) => ('options' in a ? (isVisible(a) ? a.options.some((b) => check(b)) : false) : isVisible(a));
+    const check = (a: itemOptions) => ('options' in a ? (a.activatable ? true : isVisible(a) ? a.options.some((b) => check(b)) : false) : isVisible(a));
     return this.fb.group(
       options.reduce((p, c) => this.runByTree(c, p), {}),
       {
