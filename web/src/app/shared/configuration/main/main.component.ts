@@ -19,7 +19,7 @@ import { catchError, tap } from 'rxjs/operators';
 import { ConfigFieldsComponent } from '../fields/fields.component';
 import { HistoryComponent } from '../tools/history.component';
 import { ToolsComponent } from '../tools/tools.component';
-import { IConfig } from '../types';
+import { IConfig, PanelOptions } from '../types';
 import { historyAnime, ISearchParam, MainService } from './main.service';
 
 @Component({
@@ -106,17 +106,23 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
     );
   }
 
+  getActivatableGroup() {
+    return this.fields.dataOptions
+      .filter((a) => a.type === 'group' && (a as PanelOptions).activatable)
+      .reduce((p, c: PanelOptions) => ({ ...p, [c.name]: { active: c.active } }), {});
+  }
+
   save() {
     const form = this.fields.form;
     if (form.valid) {
       this.saveFlag = true;
       this.historyComponent.reset();
       const config = this.service.parseValue(this.fields.form, this.rawConfig.config);
-      const send = { config, attr: this.rawConfig.attr, description: this.tools.description.value };
+      const send = { config, attr: this.getActivatableGroup(), description: this.tools.description.value };
       this.config$ = this.service.send(this.saveUrl, send).pipe(
         tap((c) => {
           this.saveFlag = false;
-          this.rawConfig = c;          
+          this.rawConfig = c;
           this.cd.detectChanges();
         })
       );

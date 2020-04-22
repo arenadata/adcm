@@ -511,7 +511,7 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         r1 = self.api_delete('/job/' + str(job_id) + '/')
         self.assertEqual(r1.status_code, 405)
 
-        r1 = self.api_get('/job/' + str(job_id) + '/log/' + 'qwe' + '/out/txt/')
+        r1 = self.api_get('/job/' + str(job_id) + '/log/' + str(3))
         self.assertEqual(r1.status_code, 404)
         self.assertEqual(r1.json()['code'], 'LOG_NOT_FOUND')
 

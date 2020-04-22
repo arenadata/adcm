@@ -773,17 +773,6 @@ def cook_log_name(tag, level, ext='txt'):
     return f'{tag}-{level}.{ext}'
 
 
-def read_log(job_id, tag, level, log_type):
-    fname = os.path.join(config.RUN_DIR, f'{job_id}/{tag}-{level}.{log_type}')
-    try:
-        f = open(fname, 'r')
-        data = f.read()
-        f.close()
-        return data
-    except FileNotFoundError:
-        err('LOG_NOT_FOUND', 'no log file {}'.format(fname))
-
-
 def get_host_log_files(job_id, tag):
     logs = []
     p = re.compile('^' + str(job_id) + '-' + tag + r'-(out|err)\.(txt|json)$')

@@ -21,12 +21,12 @@ from rest_framework.reverse import reverse
 import cm.config as config
 from api.api_views import DetailViewRO, create, PageView
 from api.serializers import (
-    JobSerializer, JobListSerializer, LogSerializer, LogStorageSerializer, TaskSerializer,
-    TaskListSerializer, TaskPostSerializer
+    JobSerializer, JobListSerializer, LogStorageSerializer, LogStorageListSerializer,
+    TaskSerializer, TaskListSerializer, TaskPostSerializer
 )
 from api.serializers import check_obj
 from cm.errors import AdcmEx, AdcmApiEx
-from cm.job import get_log, read_log, restart_task, cancel_task
+from cm.job import get_log, restart_task, cancel_task
 from cm.models import JobLog, TaskLog, LogStorage
 
 
@@ -77,24 +77,15 @@ class JobDetail(GenericAPIView):
         return Response(serializer.data)
 
 
-class LogFile(GenericAPIView):
-    queryset = JobLog.objects.all()
-    serializer_class = LogSerializer
+class LogStorageListView(PageView):
+    queryset = LogStorage.objects.all()
+    serializer_class = LogStorageListSerializer
+    filterset_fields = ('name', 'type', 'format')
+    ordering_fields = ('id', 'name')
 
-    def get(self, request, job_id, tag, level, log_type):
-        """
-        Show log file
-        """
-        lf = JobLog()
-        try:
-            lf.content = read_log(job_id, tag, level, log_type)
-            lf.type = log_type
-            lf.tag = tag
-            lf.level = level
-            serializer = self.serializer_class(lf, context={'request': request})
-            return Response(serializer.data)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+    def get(self, request, job_id):  # pylint: disable=arguments-differ
+        obj = self.filter_queryset(LogStorage.objects.filter(job_id=job_id))
+        return self.get_page(obj, request)
 
 
 class LogStorageView(GenericAPIView):
@@ -104,7 +95,10 @@ class LogStorageView(GenericAPIView):
     def get(self, request, job_id, log_id):
         try:
             job = JobLog.objects.get(id=job_id)
-            log_storage = LogStorage.objects.get(id=log_id, job=job)
+            try:
+                log_storage = LogStorage.objects.get(id=log_id, job=job)
+            except LogStorage.DoesNotExist:
+                raise AdcmApiEx('LOG_NOT_FOUND', f'log {log_id} not found for job {job_id}')
             serializer = self.serializer_class(log_storage, context={'request': request})
             return Response(serializer.data)
         except AdcmEx as e:
