@@ -124,16 +124,21 @@ def generate_group_expected_result(group_config):
         expected_result['field_visible'] = (group_active and not field_invisible)
         expected_result['field_visible_advanced'] = (
             field_advanced and group_active and not field_invisible)
-        if not group_active and not invisible:
-            expected_result['save'] = True
-            return expected_result
-        if (group_active and config_valid) and not invisible:
-            expected_result['save'] = True
-            return expected_result
-        if not config_valid or invisible:
+        if group_active and not config_valid:
             expected_result['save'] = False
-            return expected_result
+        else:
+            expected_result['save'] = True
         return expected_result
+        # if not group_active and not invisible:
+        #     expected_result['save'] = True
+        #     return expected_result
+        # if (group_active and config_valid) and not invisible:
+        #     expected_result['save'] = True
+        #     return expected_result
+        # if not config_valid or invisible:
+        #     expected_result['save'] = False
+        #     return expected_result
+        # return expected_result
     if invisible or not config_valid:
         expected_result['save'] = False
     else:
