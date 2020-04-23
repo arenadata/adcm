@@ -857,12 +857,14 @@ def log_check(job_id, group_data, check_data):
         group_data.update({'group': group})
         log_group_check(**group_data)
     try:
-        l1 = LogStorage.objects.get_or_create(job=job, name='ansible', type='check', format='json')
+        l1, _ = LogStorage.objects.get_or_create(
+            job=job, name='ansible', type='check', format='json'
+        )
+        post_event('add_job_log', 'job', job_id, {
+            'id': l1.id, 'type': l1.type, 'name': l1.name, 'format': l1.format,
+        })
     except IntegrityError:
         pass
-    post_event('add_job_log', 'job', job_id, {
-        'id': l1.id, 'type': l1.type, 'name': l1.name, 'format': l1.format,
-    })
     return cl
 
 
