@@ -24,15 +24,17 @@ R_WWW_PREFIX = re.compile(r"https?://(www.\.)?")
 
 
 def repr_template(event_type, obj_type, obj_id, dtype='', value=None):
+    details = {}
+    if dtype:
+        details['type'] = dtype
+    if value:
+        details['value'] = value
     return {
         'event': event_type,
         'object': {
             'type': obj_type,
             'id': obj_id,
-            'details': {
-                'type': dtype,
-                'value': value
-            }
+            'details': details,
         }
     }
 
