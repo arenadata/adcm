@@ -852,15 +852,17 @@ def log_check(job_id, group_data, check_data):
 
     check_data.update({'job_id': job_id, 'group': group})
     cl = CheckLog.objects.create(**check_data)
-    post_event('add_job_log', 'job', job_id, 'check', 'check')
 
     if group is not None:
         group_data.update({'group': group})
         log_group_check(**group_data)
     try:
-        LogStorage.objects.get_or_create(job=job, name='ansible', type='check', format='json')
+        l1 = LogStorage.objects.get_or_create(job=job, name='ansible', type='check', format='json')
     except IntegrityError:
         pass
+    post_event('add_job_log', 'job', job_id, {
+        'id': l1.id, 'type': l1.type, 'name': l1.name, 'format': l1.format,
+    })
     return cl
 
 
@@ -901,8 +903,12 @@ def finish_check(job_id):
 def log_custom(job_id, name, log_format, body):
     try:
         job = JobLog.objects.get(id=job_id)
-        LogStorage.objects.create(job=job, name=name, type='custom', format=log_format, body=body)
-        post_event('add_job_log', 'job', job_id, 'custom', name)
+        l1 = LogStorage.objects.create(
+            job=job, name=name, type='custom', format=log_format, body=body
+        )
+        post_event('add_job_log', 'job', job_id, {
+            'id': l1.id, 'type': l1.type, 'name': l1.name, 'format': l1.format,
+        })
     except JobLog.DoesNotExist:
         err('JOB_NOT_FOUND', f'no job with id #{job_id}')
 

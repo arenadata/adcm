@@ -92,15 +92,16 @@ def api_get(path):
 
 
 def post_event(event, obj_type, obj_id, det_type=None, det_val=None):
+    if det_val:
+        details = {'type': det_type, 'value': det_val}
+    else:
+        details = det_type
     data = {
         'event': event,
         'object': {
             'type': obj_type,
             'id': int(obj_id),
-            'details': {
-                'type': det_type,
-                'value': det_val,
-            }
+            'details': details,
         }
     }
     return api_post('/event/', data)
