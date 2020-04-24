@@ -15,20 +15,13 @@ from adcm_pytest_plugin import utils
 
 
 PAIR = (True, False)
-UI_OPTIONS_PAIRS = ((True, True), (False, False), (False, True), (True, False))
-UI_OPTIONS_PAIRS_GROUPS = [(True, True, True, True),
-                           (True, True, True, False),
-                           (True, True, False, True),
-                           (True, True, False, False),
-                           (True, False, True, True),
-                           (True, False, True, False),
+UI_OPTIONS_PAIRS = ((False, False), (False, True), (True, False))
+UI_OPTIONS_PAIRS_GROUPS = [(True, False, True, False),
                            (True, False, False, True),
                            (True, False, False, False),
-                           (False, True, True, True),
                            (False, True, True, False),
                            (False, True, False, True),
                            (False, True, False, False),
-                           (False, False, True, True),
                            (False, False, True, False),
                            (False, False, False, True),
                            (False, False, False, False)]
@@ -67,7 +60,9 @@ def generate_group_data():
         for activatable in PAIR:
             for active in PAIR:
                 for ui_options in UI_OPTIONS_PAIRS_GROUPS:
-                    if activatable:
+                    if (ui_options[0] or ui_options[2]) and required and not default:
+                        continue
+                    if activatable and not ui_options[0]:
                         data = {
                             'default': default,
                             "required": required,
@@ -120,25 +115,17 @@ def generate_group_expected_result(group_config):
     expected_result['config_valid'] = config_valid
     invisible = group_invisible or field_invisible
     if group_config['activatable']:
+        required = group_config['required']
+        default = group_config['default']
         group_active = group_config['active']
         expected_result['field_visible'] = (group_active and not field_invisible)
         expected_result['field_visible_advanced'] = (
             field_advanced and group_active and not field_invisible)
-        if group_active and not config_valid:
+        if group_active and (required and not default):
             expected_result['save'] = False
         else:
             expected_result['save'] = True
         return expected_result
-        # if not group_active and not invisible:
-        #     expected_result['save'] = True
-        #     return expected_result
-        # if (group_active and config_valid) and not invisible:
-        #     expected_result['save'] = True
-        #     return expected_result
-        # if not config_valid or invisible:
-        #     expected_result['save'] = False
-        #     return expected_result
-        # return expected_result
     if invisible or not config_valid:
         expected_result['save'] = False
     else:

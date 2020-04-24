@@ -782,6 +782,7 @@ class Configuration(BasePage):
         for button in buttons:
             if button.text == 'Advanced':
                 self._click_button_with_sleep(button, 5)
+                sleep(0.5)
                 return True
         return False
 
