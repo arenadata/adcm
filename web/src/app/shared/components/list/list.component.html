@@ -46,13 +46,13 @@
     <mat-cell *matCellDef="let row">{{ row.prototype }}</mat-cell>
   </ng-container>
 
-  <ng-container matColumnDef="objects">
+  <!-- <ng-container matColumnDef="objects">
     <mat-header-cell *matHeaderCellDef>Objects</mat-header-cell>
     <mat-cell *matCellDef="let row">
-      <a *ngFor="let obj of row.objects; let odd = odd" [class.col-odd]="odd"
-        [routerLink]="['/', obj.type, obj.id]">{{ obj.name }}</a>
+      <a *ngFor="let obj of buildLink(row.objects); let odd = odd" [class.col-odd]="odd"
+        [routerLink]="['/', obj.url]">{{ obj.name }}</a>
     </mat-cell>
-  </ng-container>
+  </ng-container> -->
 
   <ng-container matColumnDef="logs">
     <mat-header-cell *matHeaderCellDef>Log files</mat-header-cell>
@@ -224,8 +224,8 @@
     <mat-cell *matCellDef="let row">
       <a *ngIf="row.cluster_id; else clusterlist" [routerLink]="['/cluster', row.cluster_id]">{{ row.cluster_name }}</a>
       <ng-template #clusterlist>
-        <mat-select appInfinityScroll (topScrollPoint)="clickCell($event, 'getNextPageCluster', row)" placeholder="Assign to cluster"
-          class="select-in-cell" (click)="stopPropagation($event)"
+        <mat-select appInfinityScroll (topScrollPoint)="clickCell($event, 'getNextPageCluster', row)"
+          placeholder="Assign to cluster" class="select-in-cell" (click)="stopPropagation($event)"
           (openedChange)="clickCell($event, 'getClusters', row)"
           (valueChange)="clickCell($event, 'addCluster', row, clusters.value)" #clusters>
           <mat-option>...</mat-option>

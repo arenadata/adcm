@@ -15,6 +15,7 @@ import { Action, createAction, createFeatureSelector, createReducer, createSelec
 export interface EventMessage {
   event:
     | 'add'
+    | 'add_job_log'
     | 'create'
     | 'delete'
     | 'remove'
