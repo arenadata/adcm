@@ -874,7 +874,11 @@ class LogStorageSerializer(serializers.Serializer):
         return body
 
 
-class LogStorageListSerializer(LogStorageSerializer):
+class LogStorageListSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    type = serializers.CharField(read_only=True)
+    format = serializers.CharField(read_only=True)
     url = serializers.SerializerMethodField()
 
     def get_url(self, obj):
