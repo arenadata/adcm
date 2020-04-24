@@ -119,7 +119,7 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
     }
 
     if (this.Current?.typeName === m.object.type && this.Current?.id === m.object.id) {
-      if (m.event === 'change_job_status' && this.Current.typeName === 'job') {
+      if (this.service.Current.typeName === 'job' && (m.event === 'change_job_status' || m.event === 'add_job_log')) {
         this.reset();
         return;
       }
