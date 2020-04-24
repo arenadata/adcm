@@ -24,7 +24,7 @@ import { IDetails } from './details.service';
 @Component({
   selector: 'app-detail',
   templateUrl: './detail.component.html',
-  styleUrls: ['./detail.component.scss']
+  styleUrls: ['./detail.component.scss'],
 })
 export class DetailComponent extends SocketListenerDirective implements OnInit, OnDestroy {
   request$: Observable<WorkerInstance>;
@@ -43,8 +43,8 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
 
   ngOnInit(): void {
     this.request$ = this.route.paramMap.pipe(
-      switchMap(param => this.service.getContext(param)),
-      tap(w => this.run(w))
+      switchMap((param) => this.service.getContext(param)),
+      tap((w) => this.run(w))
     );
 
     super.startListenSocket();
@@ -92,7 +92,7 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
       prototype_version,
       provider_id,
       bundle_id,
-      hostcomponent
+      hostcomponent,
     };
   }
 
@@ -103,8 +103,8 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
   reset() {
     this.request$ = this.service.reset().pipe(
       this.takeUntil(),
-      tap(a => this.run(a)),
-      tap(_ => console.log('GET ::', this.current))
+      tap((a) => this.run(a)),
+      tap((_) => console.log('GET ::', this.current))
     );
   }
 
@@ -115,7 +115,7 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
     }
 
     if (this.service.Current && this.service.Current.typeName === m.object.type && this.service.Current.id === m.object.id) {
-      if (m.event === 'change_job_status' && this.service.Current.typeName === 'job') {
+      if (this.service.Current.typeName === 'job' && (m.event === 'change_job_status' || m.event === 'add_job_log')) {
         this.reset();
         return;
       }
