@@ -444,6 +444,7 @@ class ServiceComponentSerializer(serializers.Serializer):
 
 class ServiceComponentDetailSerializer(ServiceComponentSerializer):
     constraint = serializers.SerializerMethodField()
+    requires = serializers.SerializerMethodField()
     params = serializers.SerializerMethodField()
     monitoring = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
@@ -455,6 +456,9 @@ class ServiceComponentDetailSerializer(ServiceComponentSerializer):
 
     def get_constraint(self, obj):
         return self.load_json(obj.component.constraint)
+
+    def get_requires(self, obj):
+        return self.load_json(obj.component.requires)
 
     def get_params(self, obj):
         return self.load_json(obj.component.params)

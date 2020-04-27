@@ -251,8 +251,33 @@ def re_check_actions():
                 err('INVALID_ACTION_DEFINITION', msg.format(item['component'], sp[0].name, ref))
 
 
+def re_check_components():
+    for comp in StageComponent.objects.all():
+        if not comp.requires:
+            continue
+        ref = 'in requires of component "{}" of {}'.format(comp.name, proto_ref(comp.prototype))
+        for item in json.loads(comp.requires):
+            if 'service' in item:
+                try:
+                    service = StagePrototype.objects.get(name=item['service'], type='service')
+                except StagePrototype.DoesNotExist:
+                    msg = 'Unknown service "{}" {}'
+                    err('COMPONENT_CONSTRAINT_ERROR', msg.format(item['service'], ref))
+            else:
+                service = comp.prototype
+            try:
+                req_comp = StageComponent.objects.get(name=item['component'], prototype=service)
+            except StageComponent.DoesNotExist:
+                msg = 'Unknown component "{}" {}'
+                err('COMPONENT_CONSTRAINT_ERROR', msg.format(item['component'], ref))
+            if comp == req_comp:
+                msg = 'Component can not require themself {}'
+                err('COMPONENT_CONSTRAINT_ERROR', msg.format(ref))
+
+
 def second_pass():
     re_check_actions()
+    re_check_components()
 
 
 def copy_stage_prototype(stage_prototypes, bundle):
@@ -324,7 +349,7 @@ def copy_stage_component(stage_components, prototype):
         stage_components,
         Component,
         prototype,
-        ('name', 'display_name', 'description', 'params', 'monitoring', 'constraint')
+        ('name', 'display_name', 'description', 'params', 'monitoring', 'requires', 'constraint')
     )
     Component.objects.bulk_create(components)
 
@@ -417,11 +442,11 @@ def update_bundle_from_stage(bundle):   # pylint: disable=too-many-locals,too-ma
             try:
                 comp = Component.objects.get(prototype=p, name=scomp.name)
                 update_obj(comp, scomp, (
-                    'display_name', 'description', 'params', 'monitoring', 'constraint'
+                    'display_name', 'description', 'params', 'monitoring', 'requires', 'constraint'
                 ))
             except Component.DoesNotExist:
                 comp = copy_obj(scomp, Component, (
-                    'name', 'display_name', 'description', 'params', 'constraint'
+                    'name', 'display_name', 'description', 'params', 'requires', 'constraint'
                 ))
                 comp.prototype = p
             comp.save()
