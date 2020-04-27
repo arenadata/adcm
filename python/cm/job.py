@@ -22,7 +22,7 @@ import subprocess
 import time
 from collections import defaultdict
 from configparser import ConfigParser
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from background_task import background
 from django.db import transaction
@@ -945,14 +945,14 @@ def log_rotation():
             log.info('rotation log from db')
 
     if log_rotation_on_fs:
-        rotation_jobs_on_fs = JobLog.objects.filter(
-            finish_date__lt=timezone.now() - timedelta(days=log_rotation_on_fs)).values('id')
+        for folder in os.listdir(config.RUN_DIR):
+            if not folder.startswith('.'):
+                run_folder = os.path.join(config.RUN_DIR, folder)
+                m_time = datetime.fromtimestamp(os.path.getmtime(run_folder), tz=timezone.utc)
+                if timezone.now() - m_time > timedelta(days=log_rotation_on_fs):
+                    shutil.rmtree(run_folder)
 
-        if rotation_jobs_on_fs:
-
-            for job in rotation_jobs_on_fs:
-                shutil.rmtree(os.path.join(config.RUN_DIR, str(job['id'])))
-            log.info('rotation log from fs')
+        log.info('rotation log from fs')
 
 
 def prepare_ansible_config(job_id):
