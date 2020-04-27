@@ -192,33 +192,34 @@ export class FieldService {
 
   /**
    * Check the data
-   *
    */
   parseValue(form: FormGroup, raw: FieldStack[]): { [key: string]: string | number | boolean | object | [] } {
-    const __main_info = this.findField(raw, '__main_info');
-    const value = __main_info && __main_info.required ? { ...form.value, __main_info: __main_info.value } : { ...form.value };
-    return this.runParse(raw, value);
-  }
+    
+    const findField = (s: FieldStack[], name: string, p?: string): FieldStack => s.find((a) => (p ? a.name === p && a.subname === name : a.name === name) && !a.read_only);
 
-  runParse(raw: FieldStack[], value: { [key: string]: any }, parentName?: string): { [key: string]: ConfigResultTypes } {
-    const excluteTypes = ['json', 'map', 'list'];
-    return Object.keys(value).reduce((p, c) => {
-      const data = value[c];
-      const field = this.findField(raw, c, parentName);
+    const runParse = (s: FieldStack[], value: { [key: string]: any }, parentName?: string): { [key: string]: ConfigResultTypes } => {
+      const parseValue = (data: any, field: FieldStack) => {
+        const { type, name } = field;
+        if (type === 'structure') return this.runYspecParse(data, field);
+        else if (isObject(data) && !['json', 'map', 'list'].includes(type)) {
+          const br = runParse(s, data, name);
+          if (Object.keys(br).length) return br;
+        } else return this.checkValue(data, type);
+      };
 
-      if (field && !field.read_only) {
-        if (field.type === 'structure') p[c] = this.runYspecParse(data, field);
-        else if (isObject(data) && !excluteTypes.includes(field.type)) {
-          const br = this.runParse(raw, data, field.name);
-          if (Object.keys(br).length) p[c] = br;
-        } else if (field) p[c] = this.checkValue(data, field.type);
-      }
-      return p;
-    }, {});
-  }
+      const runByValue = (p: any, c: string) => {
+        const f = findField(s, c, parentName);
+        const v = f ? parseValue(value[c], f) : null;
+        return v !== null ? { ...p, [c]: v } : p;
+      };
 
-  findField(raw: FieldStack[], name: string, parentName?: string): FieldStack {
-    return raw.find((a) => (parentName ? a.name === parentName && a.subname === name : a.name === name));
+      return Object.keys(value).reduce(runByValue, {});
+    };
+
+    const __main_info = findField(raw, '__main_info');
+    const fs = __main_info?.required ? { ...form.value, __main_info: __main_info.value } : { ...form.value };
+
+    return runParse(raw, fs);
   }
 
   runYspecParse(value: any, field: FieldStack) {
