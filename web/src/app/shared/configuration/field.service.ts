@@ -53,7 +53,7 @@ export class FieldService {
       options: fo
         .filter((b) => b.name === a.name)
         .map((b) => this.getFieldBy(b))
-        .map((c) => ({ ...c, name: c.subname })),
+        .map((c) => ({ ...c, name: c.subname, activatable: a.activatable })),
     };
   }
 
@@ -142,10 +142,11 @@ export class FieldService {
 
   fillForm(field: FieldOptions, controls: {}) {
     const name = field.subname || field.name;
-    controls[name] = this.fb.control(field.value, this.setValidator(field));
+    const validator = field.activatable ? [] : this.setValidator(field);    
+    controls[name] = this.fb.control(field.value, validator);
     if (field.controlType === 'password') {
       if (!field.ui_options || (field.ui_options && !field.ui_options.no_confirm)) {
-        controls[`confirm_${name}`] = this.fb.control(field.value, this.setValidator(field));
+        controls[`confirm_${name}`] = this.fb.control(field.value, validator);
       }
     }
     return controls;
