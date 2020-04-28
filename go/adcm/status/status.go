@@ -33,14 +33,16 @@ type serviceStatus struct {
 type eventMsg struct {
 	Event  string `json:"event"`
 	Object struct {
-		Type    string `json:"type"`
-		Id      int    `json:"id"`
-		Details struct {
-			Id    string      `json:"id,omitempty"`
-			Type  string      `json:"type"`
-			Value interface{} `json:"value"`
-		} `json:"details"`
+		Type    string      `json:"type"`
+		Id      int         `json:"id"`
+		Details interface{} `json:"details"`
 	} `json:"object"`
+}
+
+type eventDetail struct {
+	Id    string      `json:"id,omitempty"`
+	Type  string      `json:"type"`
+	Value interface{} `json:"value"`
 }
 
 func (e eventMsg) encode() ([]byte, error) {
@@ -52,9 +54,11 @@ func newEventMsg4(status int, objType string, objId int, id2 int) eventMsg {
 	em := eventMsg{Event: "change_status"}
 	em.Object.Type = objType
 	em.Object.Id = objId
-	em.Object.Details.Type = "status"
-	em.Object.Details.Value = strconv.Itoa(status)
-	em.Object.Details.Id = strconv.Itoa(id2)
+	em.Object.Details = eventDetail{
+		Type:  "status",
+		Value: strconv.Itoa(status),
+		Id:    strconv.Itoa(id2),
+	}
 	return em
 }
 
@@ -62,8 +66,10 @@ func newEventMsg(status int, objType string, objId int) eventMsg {
 	em := eventMsg{Event: "change_status"}
 	em.Object.Type = objType
 	em.Object.Id = objId
-	em.Object.Details.Type = "status"
-	em.Object.Details.Value = strconv.Itoa(status)
+	em.Object.Details = eventDetail{
+		Type:  "status",
+		Value: strconv.Itoa(status),
+	}
 	return em
 }
 
