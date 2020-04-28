@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=wrong-import-position,unused-import
+# pylint: disable=wrong-import-position, unused-import, import-error
 
 
 from ansible.errors import AnsibleError
