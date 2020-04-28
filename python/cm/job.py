@@ -881,7 +881,7 @@ def get_check_log(job_id):
             if group not in group_subs:
                 data.append(
                     {'title': group.title, 'type': 'group', 'message': group.message,
-                     'result': group.result, 'body': group_subs[group]})
+                     'result': group.result, 'content': group_subs[group]})
             group_subs[group].append(
                 {'title': cl.title, 'type': 'check', 'message': cl.message, 'result': cl.result})
     return data
