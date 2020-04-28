@@ -256,7 +256,8 @@ def re_check_components():
         if not comp.requires:
             continue
         ref = 'in requires of component "{}" of {}'.format(comp.name, proto_ref(comp.prototype))
-        for item in json.loads(comp.requires):
+        req_list = json.loads(comp.requires)
+        for i, item in enumerate(req_list):
             if 'service' in item:
                 try:
                     service = StagePrototype.objects.get(name=item['service'], type='service')
@@ -265,6 +266,7 @@ def re_check_components():
                     err('COMPONENT_CONSTRAINT_ERROR', msg.format(item['service'], ref))
             else:
                 service = comp.prototype
+                req_list[i]['service'] = comp.prototype.name
             try:
                 req_comp = StageComponent.objects.get(name=item['component'], prototype=service)
             except StageComponent.DoesNotExist:
@@ -273,6 +275,8 @@ def re_check_components():
             if comp == req_comp:
                 msg = 'Component can not require themself {}'
                 err('COMPONENT_CONSTRAINT_ERROR', msg.format(ref))
+        comp.requires = json.dumps(req_list)
+        comp.save()
 
 
 def second_pass():
