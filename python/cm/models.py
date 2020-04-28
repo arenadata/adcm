@@ -82,7 +82,7 @@ class Prototype(models.Model):
     description = models.TextField(blank=True)
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
     class Meta:
         unique_together = (('bundle', 'type', 'name', 'version'),)
@@ -120,7 +120,7 @@ class Cluster(models.Model):
     issue = models.TextField(blank=True)   # JSON
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
 
 class HostProvider(models.Model):
@@ -133,7 +133,7 @@ class HostProvider(models.Model):
     issue = models.TextField(blank=True)   # JSON
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
 
 class Host(models.Model):
@@ -431,7 +431,7 @@ class StagePrototype(models.Model):
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
     class Meta:
         unique_together = (('type', 'name', 'version'),)
