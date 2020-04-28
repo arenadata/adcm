@@ -576,7 +576,8 @@ class ActionDetailSerializer(ActionSerializer):
         context = self.context
         context['prototype'] = obj.prototype
         conf = ConfigSerializer(aconf, many=True, context=context, read_only=True)
-        return {'attr': None, 'config': conf.data}
+        _, _, _, attr = cm.adcm_config.get_prototype_config(obj.prototype, obj)
+        return {'attr': attr, 'config': conf.data}
 
     def get_subs(self, obj):
         sub_actions = SubAction.objects.filter(action=obj).order_by('id')
@@ -683,7 +684,8 @@ class ActionShort(serializers.Serializer):
         context = self.context
         context['prototype'] = obj.prototype
         conf = ConfigSerializer(obj.config, many=True, context=context, read_only=True)
-        return {'attr': None, 'config': conf.data}
+        _, _, _, attr = cm.adcm_config.get_prototype_config(obj.prototype, obj)
+        return {'attr': attr, 'config': conf.data}
 
 
 class ServiceActionShort(ActionShort):
@@ -874,7 +876,11 @@ class LogStorageSerializer(serializers.Serializer):
         return body
 
 
-class LogStorageListSerializer(LogStorageSerializer):
+class LogStorageListSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    type = serializers.CharField(read_only=True)
+    format = serializers.CharField(read_only=True)
     url = serializers.SerializerMethodField()
 
     def get_url(self, obj):
