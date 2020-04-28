@@ -11,14 +11,13 @@
 // limitations under the License.
 import { animate, state, style, transition, trigger } from '@angular/animations';
 import { Injectable } from '@angular/core';
-import { FormGroup } from '@angular/forms';
 import { ApiService } from '@app/core/api';
 import { ClusterService } from '@app/core/services';
 import { getRandomColor, isObject } from '@app/core/types';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { FieldService } from '../field.service';
+import { FieldService, IOutput } from '../field.service';
 import { CompareConfig, FieldOptions, FieldStack, IConfig, PanelOptions } from '../types';
 
 export interface ISearchParam {
@@ -54,8 +53,8 @@ export class MainService {
     this.fields.filterApply(options, search);
   }
 
-  parseValue(form: FormGroup, raw: FieldStack[]) {
-    return this.fields.parseValue(form, raw);
+  parseValue(output: IOutput, source: FieldStack[]) {
+    return this.fields.parseValue(output, source);
   }
 
   send(url: string, data: any) {

@@ -16,8 +16,6 @@ import { DynamicComponent, DynamicEvent } from '@app/shared/directives/dynamic.d
 import { BaseDirective } from '../../../directives/base.directive';
 import { ActionParameters } from '../actions.directive';
 import { IValue, MasterService, whatShow } from './master.service';
-import { FormGroup } from '@angular/forms';
-import { Post } from '@app/shared/host-components-map/types';
 
 @Component({
   selector: 'app-master',
@@ -32,9 +30,9 @@ import { Post } from '@app/shared/host-components-map/types';
           background: rgba(255, 255, 255, 0.04) !important;
         }
       }
-    `
+    `,
   ],
-  providers: [MasterService]
+  providers: [MasterService],
 })
 export class ActionMasterComponent extends BaseDirective implements DynamicComponent, OnInit {
   event: EventEmitter<DynamicEvent> = new EventEmitter();

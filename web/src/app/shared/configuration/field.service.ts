@@ -11,12 +11,16 @@
 // limitations under the License.
 import { Injectable } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
-import { getControlType, getPattern, isObject } from '@app/core/types';
+import { getControlType, getPattern, isEmptyObject } from '@app/core/types';
 
-import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, PanelOptions, ValidatorInfo, controlType, IConfigAttr } from './types';
-import { matchType } from './yspec/yspec.service';
+import { ConfigOptions, resultTypes, ConfigValueTypes, controlType, FieldOptions, FieldStack, IConfig, IConfigAttr, PanelOptions, ValidatorInfo, ILimits } from './types';
+import { matchType, simpleType } from './yspec/yspec.service';
 
 export type itemOptions = FieldOptions | PanelOptions;
+
+export interface IOutput {
+  [key: string]: resultTypes;
+}
 
 export interface IToolsEvent {
   name: string;
@@ -191,51 +195,44 @@ export class FieldService {
   }
 
   /**
-   * Check the data
+   * Cast to source type
    */
-  parseValue(form: FormGroup, raw: FieldStack[]): { [key: string]: string | number | boolean | object | [] } {
-    
-    const findField = (s: FieldStack[], name: string, p?: string): FieldStack => s.find((a) => (p ? a.name === p && a.subname === name : a.name === name) && !a.read_only);
+  parseValue(output: IOutput, source: { name: string; subname: string; type: ConfigValueTypes; read_only: boolean; limits?: ILimits; value: any }[]): IOutput {
+    const findField = (name: string, p?: string): Partial<FieldStack> => source.find((a) => (p ? a.name === p && a.subname === name : a.name === name) && !a.read_only);
 
-    const runParse = (s: FieldStack[], value: { [key: string]: any }, parentName?: string): { [key: string]: ConfigResultTypes } => {
-      const parseValue = (data: any, field: FieldStack) => {
-        const { type, name } = field;
-        if (type === 'structure') return this.runYspecParse(data, field);
-        else if (isObject(data) && !['json', 'map', 'list'].includes(type)) {
-          const br = runParse(s, data, name);
-          if (Object.keys(br).length) return br;
-        } else return this.checkValue(data, type);
+    const runYspecParse = (v: any, rules: any) => this.runYspec(v, rules);
+
+    const runParse = (v: IOutput, parentName?: string): IOutput => {
+      const checkType = (data: resultTypes | IOutput, field: Partial<FieldStack>): resultTypes => {
+        const { type } = field;
+        if (type === 'structure') return runYspecParse(data, field.limits.rules);
+        else if (type === 'group') return this.checkValue(runParse(data as IOutput, field.name), type);
+        else return this.checkValue(data, type);
       };
 
-      const runByValue = (p: any, c: string) => {
-        const f = findField(s, c, parentName);
-        const v = f ? parseValue(value[c], f) : null;
-        return v !== null ? { ...p, [c]: v } : p;
+      const runByValue = (p: IOutput, c: string) => {
+        const f = findField(c, parentName);
+        const r = f ? checkType(v[c], f) : null;
+        return r !== null ? { ...p, [c]: r } : p;
       };
 
-      return Object.keys(value).reduce(runByValue, {});
+      return Object.keys(v).reduce(runByValue, {});
     };
 
-    const __main_info = findField(raw, '__main_info');
-    const fs = __main_info?.required ? { ...form.value, __main_info: __main_info.value } : { ...form.value };
-
-    return runParse(raw, fs);
+    const __main_info = findField('__main_info');
+    return runParse(__main_info?.required ? { ...output, __main_info: __main_info.value } : { ...output });
   }
 
-  runYspecParse(value: any, field: FieldStack) {
-    return this.runYspec(value, field.limits.rules);
-  }
-
-  runYspec(value: any, rules: any) {
+  runYspec(value: resultTypes, rules: any) {
     switch (rules.type) {
       case 'list': {
-        return value.filter((a) => !!a).map((a) => this.runYspec(a, rules.options));
+        return (value as Array<simpleType>).filter((a) => !!a).map((a) => this.runYspec(a, rules.options));
       }
       case 'dict': {
         return Object.keys(value).reduce((p, c) => {
           const v = this.runYspec(
             value[c],
-            rules.options.find((b) => b.name === c)
+            rules.options.find((b: any) => b.name === c)
           );
           return v !== null ? { ...p, [c]: v } : { ...p };
         }, {});
@@ -246,28 +243,13 @@ export class FieldService {
     }
   }
 
-  checkValue(value: ConfigResultTypes, type: ConfigValueTypes) {
-    if (value === '' || value === null) return null;
-
-    switch (type) {
-      case 'map':
-        return typeof value === 'object'
-          ? Object.keys(value)
-              .filter((a) => !!a)
-              .reduce((p, c) => ({ ...p, [c]: value[c] }), {})
-          : new TypeError('FieldService::checkValue - value is not Object');
-
-      case 'list':
-        return Array.isArray(value) ? (value as Array<string>).filter((a) => !!a) : new TypeError('FieldService::checkValue - value is not Array');
-    }
-
+  checkValue(value: resultTypes, type: ConfigValueTypes): resultTypes {
+    if (value === '' || value === null || isEmptyObject(value)) return null;
     if (typeof value === 'boolean') return value;
-
-    if (typeof value === 'string')
+    else if (typeof value === 'string')
       switch (type) {
         case 'option':
-          if (!isNaN(+value)) return parseInt(value, 10);
-          else return value;
+          return !isNaN(+value) ? parseInt(value, 10) : value;
         case 'integer':
         case 'int':
           return parseInt(value, 10);
@@ -275,9 +257,18 @@ export class FieldService {
           return parseFloat(value);
         case 'json':
           return JSON.parse(value);
-        default:
-          return value;
       }
+    else
+      switch (type) {
+        case 'map':
+          return Object.keys(value)
+            .filter((a) => !!a)
+            .reduce((p, c) => ({ ...p, [c]: value[c] }), {});
+
+        case 'list':
+          return Array.isArray(value) ? (value as Array<string>).filter((a) => !!a) : null;
+      }
+
     return value;
   }
 }

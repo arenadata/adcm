@@ -30,8 +30,7 @@ export type ConfigValueTypes =
   | 'text'
   | 'password';
 export type simpleTypes = string | number | boolean;
-export type ConfigResultTypes = simpleTypes | simpleTypes[] | object | null;
-
+export type resultTypes = simpleTypes | simpleTypes[] | object;
 export type controlType = 'boolean' | 'textbox' | 'textarea' | 'json' | 'password' | 'list' | 'map' | 'dropdown' | 'file' | 'text';
 
 export interface UIoptions {
