@@ -40,7 +40,7 @@ from cm.models import (
     ClusterObject, HostComponent, ServiceComponent, HostProvider, DummyData,
     LogStorage, ConfigLog, GroupCheckLog
 )
-from cm.status_api import Event
+from cm.status_api import Event, post_event
 
 
 def start_task(action_id, selector, conf, attr, hc, hosts):   # pylint: disable=too-many-locals
@@ -773,17 +773,6 @@ def cook_log_name(tag, level, ext='txt'):
     return f'{tag}-{level}.{ext}'
 
 
-def read_log(job_id, tag, level, log_type):
-    fname = os.path.join(config.RUN_DIR, f'{job_id}/{tag}-{level}.{log_type}')
-    try:
-        f = open(fname, 'r')
-        data = f.read()
-        f.close()
-        return data
-    except FileNotFoundError:
-        err('LOG_NOT_FOUND', 'no log file {}'.format(fname))
-
-
 def get_host_log_files(job_id, tag):
     logs = []
     p = re.compile('^' + str(job_id) + '-' + tag + r'-(out|err)\.(txt|json)$')
@@ -868,7 +857,12 @@ def log_check(job_id, group_data, check_data):
         group_data.update({'group': group})
         log_group_check(**group_data)
     try:
-        LogStorage.objects.get_or_create(job=job, name='ansible', type='check', format='json')
+        l1, _ = LogStorage.objects.get_or_create(
+            job=job, name='ansible', type='check', format='json'
+        )
+        post_event('add_job_log', 'job', job_id, {
+            'id': l1.id, 'type': l1.type, 'name': l1.name, 'format': l1.format,
+        })
     except IntegrityError:
         pass
     return cl
@@ -911,7 +905,12 @@ def finish_check(job_id):
 def log_custom(job_id, name, log_format, body):
     try:
         job = JobLog.objects.get(id=job_id)
-        LogStorage.objects.create(job=job, name=name, type='custom', format=log_format, body=body)
+        l1 = LogStorage.objects.create(
+            job=job, name=name, type='custom', format=log_format, body=body
+        )
+        post_event('add_job_log', 'job', job_id, {
+            'id': l1.id, 'type': l1.type, 'name': l1.name, 'format': l1.format,
+        })
     except JobLog.DoesNotExist:
         err('JOB_NOT_FOUND', f'no job with id #{job_id}')
 

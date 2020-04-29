@@ -22,6 +22,7 @@ from cm.logger import log
 import cm.config as config
 import cm.job
 from cm.status_api import Event
+from cm.models import LogStorage
 
 
 def open_file(root, tag, job_id):
@@ -73,12 +74,22 @@ def env_configuration(job_config):
     return env
 
 
+def post_log(job_id, log_type, log_name):
+    l1 = LogStorage.objects.filter(job__id=job_id, type=log_type, name=log_name).first()
+    if l1:
+        cm.status_api.post_event('add_job_log', 'job', job_id, {
+            'id': l1.id, 'type': l1.type, 'name': l1.name, 'format': l1.format,
+        })
+
+
 def run_ansible(job_id):
     log.debug("job_runner.py called as: %s", sys.argv)
     conf = read_config(job_id)
     playbook = conf['job']['playbook']
     out_file = open_file(config.RUN_DIR, 'ansible-stdout', job_id)
     err_file = open_file(config.RUN_DIR, 'ansible-stderr', job_id)
+    post_log(job_id, 'stdout', 'ansible')
+    post_log(job_id, 'stderr', 'ansible')
     event = Event()
 
     os.chdir(conf['env']['stack_dir'])
