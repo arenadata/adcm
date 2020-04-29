@@ -12,8 +12,8 @@
 import { TestBed } from '@angular/core/testing';
 import { FormBuilder } from '@angular/forms';
 
-import { FieldService, IOutput } from './field.service';
-import { ConfigValueTypes, FieldStack, resultTypes, ILimits } from './types';
+import { FieldService, IOutput, itemOptions } from './field.service';
+import { ConfigValueTypes, FieldStack, resultTypes, ILimits, IConfig } from './types';
 
 describe('Configuration fields service', () => {
   let service: FieldService;
@@ -32,6 +32,103 @@ describe('Configuration fields service', () => {
 
   it('service should be created', () => {
     expect(service).toBeTruthy();
+  });
+
+  it('Prepare data for configuration: getPanels()', () => {
+    const data: IConfig = {
+      attr: {},
+      config: [
+        {
+          name: 'field_string',
+          display_name: 'display_name',
+          subname: '',
+          type: 'string',
+          activatable: false,
+          read_only: false,
+          default: null,
+          value: null,
+          description: '',
+          required: false,
+        },
+        {
+          name: 'group',
+          display_name: 'group_display_name',
+          subname: '',
+          type: 'group',
+          activatable: false,
+          read_only: false,
+          default: null,
+          value: null,
+          description: '',
+          required: false,
+        },
+        {
+          name: 'group',
+          display_name: 'field_in_group_display_name',
+          subname: 'field_in_group',
+          type: 'integer',
+          activatable: false,
+          read_only: false,
+          default: 10,
+          value: null,
+          description: '',
+          required: true,
+        },
+      ],
+    };
+    const output: any/* itemOptions */[] = [
+      {
+        required: false, // not in itemOptions
+        name: 'field_string',
+        display_name: 'display_name',
+        subname: '',
+        type: 'string',
+        activatable: false,
+        read_only: false,
+        default: null,
+        value: '',
+        description: '',
+        key: 'field_string',
+        validator: { required: false, min: null, max: null, pattern: null },
+        controlType: 'textbox',
+        hidden: false,
+        compare: [],
+      },
+      {
+        name: 'group',
+        display_name: 'group_display_name',
+        subname: '',
+        type: 'group',
+        activatable: false,
+        read_only: false,
+        default: null,
+        value: null,
+        description: '',
+        required: false,
+        hidden: false,
+        active: true,
+        options: [
+          {
+            name: 'field_in_group',
+            display_name: 'field_in_group_display_name',
+            subname: 'field_in_group',
+            type: 'integer',
+            activatable: false,
+            read_only: false,
+            default: 10,
+            value: '',
+            description: '',
+            required: true,
+            key: 'field_in_group/group',
+            validator: Object({ required: true, min: null, max: null, pattern: /^[-]?\d+$/ }),
+            controlType: 'textbox',
+            hidden: false,
+            compare: [],
+          },
+        ],
+      },
+    ];
+    expect(service.getPanels(data)).toEqual(output);
   });
 
   it('Check result : parseValue(empty, empty) should return {}', () => {
