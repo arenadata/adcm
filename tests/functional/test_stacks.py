@@ -66,7 +66,7 @@ def test_service_wo_actions(client):
 
 
 def test_cluster_proto_wo_actions(client):
-    stack_dir = utils.get_data_dir(__file__,  'cluster_proto_wo_actions')
+    stack_dir = utils.get_data_dir(__file__, 'cluster_proto_wo_actions')
 
     steps.upload_bundle(client, stack_dir)
     cluster_prototype = client.stack.cluster.list()[0]
@@ -208,7 +208,7 @@ def test_load_stack_wo_type_in_config_key(sdk_client_fs: ADCMClient):
 
 
 def test_when_config_has_incorrect_option_definition(client):
-    stack_dir = utils.get_data_dir(__file__,  'incorrect_option_definition')
+    stack_dir = utils.get_data_dir(__file__, 'incorrect_option_definition')
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         steps.upload_bundle(client, stack_dir)
 
@@ -236,7 +236,10 @@ def test_config_has_one_definition_and_two_diff_types(sdk_client_fs: ADCMClient,
 
 @pytest.mark.skip(reason="no way of currently testing this")
 def test_add_config_parameter_in_cluster_proto_and_update(client):
-    volumes = {utils.get_data_dir(__file__) + 'add_param_in_cluster_proto': {'bind': '/adcm/stack/', 'mode': 'rw'}}
+    volumes = {
+        utils.get_data_dir(__file__) + 'add_param_in_cluster_proto': {
+            'bind': '/adcm/stack/', 'mode': 'rw'}
+    }
 
     path = next(iter(volumes))
     config = path + '/config.yaml'
@@ -256,7 +259,10 @@ def test_add_config_parameter_in_cluster_proto_and_update(client):
 
 @pytest.mark.skip(reason="no way of currently testing this")
 def test_add_config_parameter_in_host_proto_and_update(client):
-    volumes = {utils.get_data_dir(__file__) + 'add_param_in_host_proto': {'bind': '/adcm/stack/', 'mode': 'rw'}}
+    volumes = {
+        utils.get_data_dir(__file__) + 'add_param_in_host_proto': {
+            'bind': '/adcm/stack/', 'mode': 'rw'}
+    }
 
     path = next(iter(volumes))
     config = path + '/config.yaml'
@@ -274,7 +280,10 @@ def test_add_config_parameter_in_host_proto_and_update(client):
 
 @pytest.mark.skip(reason="no way of currently testing this")
 def test_add_config_parameter_in_service_prototype_and_update(client):
-    volumes = {utils.get_data_dir(__file__) + 'add_param_in_service_proto': {'bind': '/adcm/stack/', 'mode': 'rw'}}
+    volumes = {
+        utils.get_data_dir(__file__) + 'add_param_in_service_proto': {
+            'bind': '/adcm/stack/', 'mode': 'rw'}
+    }
     path = next(iter(volumes))
     config = path + '/config.yaml'
     updated = path + '/updated_config.yaml'
