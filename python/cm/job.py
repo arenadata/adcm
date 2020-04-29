@@ -10,8 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-arguments
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-arguments, too-many-branches, too-many-nested-blocks
 
 import json
 import os
@@ -947,18 +946,25 @@ def log_rotation():
             finish_date__lt=timezone.now() - timedelta(days=log_rotation_on_db))
         if rotation_jobs_on_db:
             task_ids = [job['task_id'] for job in rotation_jobs_on_db.values('task_id')]
-            rotation_jobs_on_db.delete()
-            TaskLog.objects.filter(id__in=task_ids).delete()
+            with transaction.atomic():
+                rotation_jobs_on_db.delete()
+                TaskLog.objects.filter(id__in=task_ids).delete()
 
             log.info('rotation log from db')
 
     if log_rotation_on_fs:
-        for folder in os.listdir(config.RUN_DIR):
-            if not folder.startswith('.'):
-                run_folder = os.path.join(config.RUN_DIR, folder)
-                m_time = datetime.fromtimestamp(os.path.getmtime(run_folder), tz=timezone.utc)
-                if timezone.now() - m_time > timedelta(days=log_rotation_on_fs):
-                    shutil.rmtree(run_folder)
+        for name in os.listdir(config.RUN_DIR):
+            if not name.startswith('.'):  # a line of code is used for development
+                path = os.path.join(config.RUN_DIR, name)
+                try:
+                    m_time = datetime.fromtimestamp(os.path.getmtime(path), tz=timezone.utc)
+                    if timezone.now() - m_time > timedelta(days=log_rotation_on_fs):
+                        if os.path.isdir(path):
+                            shutil.rmtree(path)
+                        else:
+                            os.remove(path)
+                except FileNotFoundError:
+                    pass
 
         log.info('rotation log from fs')
 
