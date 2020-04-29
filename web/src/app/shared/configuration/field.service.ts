@@ -13,7 +13,7 @@ import { Injectable } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { getControlType, getPattern, isObject } from '@app/core/types';
 
-import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, PanelOptions, ValidatorInfo, controlType } from './types';
+import { ConfigResultTypes, ConfigValueTypes, controlType, FieldOptions, FieldStack, IConfig, IConfigAttr, PanelOptions, ValidatorInfo } from './types';
 import { matchType } from './yspec/yspec.service';
 
 export type itemOptions = FieldOptions | PanelOptions;
@@ -27,9 +27,8 @@ export interface IToolsEvent {
 export class FieldService {
   constructor(private fb: FormBuilder) {}
 
-  isVisibleField = (a: ConfigOptions) => !a.ui_options || !a.ui_options.invisible;
-  isInvisibleField = (a: ConfigOptions) => a.ui_options && a.ui_options.invisible;
-  isAdvancedField = (a: ConfigOptions) => a.ui_options && a.ui_options.advanced && !a.ui_options.invisible;
+  isVisibleField = (a: itemOptions) => !a.ui_options?.invisible;
+  isAdvancedField = (a: itemOptions) => this.isVisibleField(a) && a.ui_options?.advanced;
   isHidden = (a: FieldStack) => a.ui_options && (a.ui_options.invisible || a.ui_options.advanced);
 
   getPanels(data: IConfig): itemOptions[] {
@@ -40,20 +39,21 @@ export class FieldService {
         .reduce((p, c) => {
           if (c.subname) return p;
           if (c.type !== 'group') return [...p, this.getFieldBy(c)];
-          else return [...p, this.fillDataOptions(c, fo)];
+          else return [...p, this.fillDataOptions(c, fo, data.attr)];
         }, []);
     }
     return [];
   }
 
-  fillDataOptions(a: FieldStack, fo: FieldStack[]) {
+  fillDataOptions(a: FieldStack, fo: FieldStack[], attr: IConfigAttr) {
     return {
       ...a,
       hidden: this.isHidden(a),
+      active: a.activatable ? attr[a.name]?.active : true,
       options: fo
         .filter((b) => b.name === a.name)
         .map((b) => this.getFieldBy(b))
-        .map((c) => ({ ...c, name: c.subname })),
+        .map((c) => ({ ...c, name: c.subname, activatable: a.activatable })),
     };
   }
 
@@ -115,7 +115,7 @@ export class FieldService {
 
   toFormGroup(options: itemOptions[] = []): FormGroup {
     const isVisible = (a: itemOptions) => !a.read_only && !(a.ui_options && a.ui_options.invisible);
-    const check = (a: itemOptions) => ('options' in a ? (isVisible(a) ? a.options.some((b) => check(b)) : false) : isVisible(a));
+    const check = (a: itemOptions) => ('options' in a ? (a.activatable ? this.isVisibleField(a) : isVisible(a) ? a.options.some((b) => check(b)) : false) : isVisible(a));
     return this.fb.group(
       options.reduce((p, c) => this.runByTree(c, p), {}),
       {
@@ -142,10 +142,11 @@ export class FieldService {
 
   fillForm(field: FieldOptions, controls: {}) {
     const name = field.subname || field.name;
-    controls[name] = this.fb.control(field.value, this.setValidator(field));
+    const validator = field.activatable ? [] : this.setValidator(field);    
+    controls[name] = this.fb.control(field.value, validator);
     if (field.controlType === 'password') {
       if (!field.ui_options || (field.ui_options && !field.ui_options.no_confirm)) {
-        controls[`confirm_${name}`] = this.fb.control(field.value, this.setValidator(field));
+        controls[`confirm_${name}`] = this.fb.control(field.value, validator);
       }
     }
     return controls;
