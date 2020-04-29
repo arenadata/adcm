@@ -44,6 +44,7 @@ export class Tile {
   limit?: Constraint;
   disabled: boolean;
   actions?: ActionParam[];
+  color: 'none' | 'gray';
 }
 
 export class HostTile extends Tile {
@@ -56,10 +57,12 @@ export class HostTile extends Tile {
 
 export class CompTile extends Tile {
   service_id: number;
+  component: string;
   constructor(rawComponent: Component, public actions?: ActionParam[]) {
     super();
     this.id = rawComponent.id;
     this.service_id = rawComponent.service_id;
+    this.component = `${rawComponent.service_name}/${rawComponent.name}`;
     this.name = rawComponent.display_name;
     this.disabled = rawComponent.service_state !== 'created';
     this.limit = rawComponent.constraint;

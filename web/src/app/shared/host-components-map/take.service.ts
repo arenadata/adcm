@@ -11,7 +11,7 @@
 // limitations under the License.
 import { AbstractControl, FormControl, FormGroup, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { ApiService } from '@app/core/api';
-import { IActionParameter } from '@app/core/types';
+import { IActionParameter, getRandomColor } from '@app/core/types';
 import { take, tap } from 'rxjs/operators';
 
 import { CompTile, Constraint, HostTile, IRawHosComponent, Post, StatePost, Stream, Tile } from './types';
@@ -24,7 +24,7 @@ export class TakeService {
   loadPost = new StatePost();
   sourceMap = new Map<string, Tile[]>([
     ['host', []],
-    ['compo', []]
+    ['compo', []],
   ]);
 
   actionParameters: IActionParameter[];
@@ -36,36 +36,52 @@ export class TakeService {
     return this.sourceMap.get('host');
   }
 
+  set Hosts(v: HostTile[]) {
+    this.sourceMap.set('host', v);
+  }
+
   get Components(): CompTile[] {
     return this.sourceMap.get('compo') as CompTile[];
   }
 
   initSource(url: string, actions: IActionParameter[]) {
     this.actionParameters = actions;
-    this.sourceMap.set('host', []);
+    this.Hosts = [];
     this.sourceMap.set('compo', []);
     this.statePost.clear();
     this.loadPost.clear();
     this.formGroup = new FormGroup({});
 
     return this.api.get<IRawHosComponent>(url).pipe(
-      tap(a => {
+      tap((a) => {
         this.setSource(a);
         if (a.hc) {
           this.statePost.update(a.hc);
           this.loadPost.update(a.hc);
           this.setRelations(a.hc);
+          this.checkEmptyHost();
         }
         this.formFill();
       })
     );
   }
 
+  checkEmptyHost() {
+    const ap = this.actionParameters;
+    if (ap) {
+      const isShrink = ap.every((a) => a.action === 'remove');
+      const isExpand = ap.every((a) => a.action === 'add');
+      const condition = (b: CompTile) => (a: IActionParameter) => b.component === `${a.service}/${a.component}`;
+      const existCondition = (rel: CompTile[]) => (isShrink ? ap.some((a) => rel.some((b) => condition(b)(a))) : ap.every((a) => rel.some((b) => condition(b)(a))));
+      this.Hosts = this.Hosts.map((a) => ({ ...a, disabled: existCondition(a.relations as CompTile[]) ? isExpand : isShrink }));
+    }
+  }
+
   saveSource(cluster: { id: number; hostcomponent: string }) {
     const send = { cluster_id: cluster.id, hc: this.statePost.data };
     return this.api.post<Post[]>(cluster.hostcomponent, send).pipe(
       take(1),
-      tap(data => {
+      tap((data) => {
         this.loadPost.update(data);
         this.statePost.update(data);
       })
@@ -74,17 +90,13 @@ export class TakeService {
 
   setSource(raw: IRawHosComponent) {
     if (raw.host) {
-      const list = raw.host.map(h => new HostTile(h));
+      const list = raw.host.map((h) => new HostTile(h));
       this.sourceMap.set('host', [...list]);
     }
 
     if (raw.component) {
       const list = raw.component.map(
-        c =>
-          new CompTile(
-            c,
-            this.actionParameters ? this.actionParameters.filter(a => a.service === c.service_name && a.component === c.name).map(b => b.action) : null
-          )
+        (c) => new CompTile(c, this.actionParameters ? this.actionParameters.filter((a) => a.service === c.service_name && a.component === c.name).map((b) => b.action) : null)
       );
       this.sourceMap.set('compo', [...this.sourceMap.get('compo'), ...list]);
     }
@@ -120,11 +132,7 @@ export class TakeService {
         case '+':
           return a[0] !== 0 && ins < a[0] ? `Must be installed at least ${a[0]} components.` : null;
         case 'odd':
-          return ins % 2 === 0
-            ? a[0] !== 0
-              ? `Must be installed at least ${a[0]} components. Total amount should be odd.`
-              : 'Total amount should be odd'
-            : null;
+          return ins % 2 === 0 ? (a[0] !== 0 ? `Must be installed at least ${a[0]} components. Total amount should be odd.` : 'Total amount should be odd') : null;
         default:
           return a[0] !== 0 && ins < a[0] ? `Must be installed at least ${a[0]} components.` : null;
       }
@@ -150,18 +158,19 @@ export class TakeService {
   }
 
   formFill() {
-    this.Components.map(a => this.formGroup.addControl(`${a.service_id}/${a.id}`, new FormControl(a.relations.length, this.validateConstraints(a))));
+    this.Components.map((a) => this.formGroup.addControl(`${a.service_id}/${a.id}`, new FormControl(a.relations.length, this.validateConstraints(a))));
   }
 
   setRelations(a: Post[]) {
-    a.forEach(p => {
-      const host = this.sourceMap.get('host').find(h => h.id === p.host_id),
-        service = this.sourceMap.get('compo').find(s => s.id === p.component_id);
+    a.forEach((p) => {
+      const host = this.sourceMap.get('host').find((h) => h.id === p.host_id),
+        service = this.sourceMap.get('compo').find((s) => s.id === p.component_id);
       if (host && service) {
         if (this.actionParameters) {
           service.relations = [...service.relations, host];
           const clone = { ...service };
-          clone.disabled = service.actions.every(k => k !== 'remove');
+          clone.disabled = service.actions.every((k) => k !== 'remove');
+
           host.relations = [...host.relations, clone];
         } else {
           host.relations = [...host.relations, service];
@@ -172,8 +181,8 @@ export class TakeService {
   }
 
   clearAllRelations() {
-    this.sourceMap.get('host').map(h => (h.relations = []));
-    this.sourceMap.get('compo').map(s => (s.relations = []));
+    this.sourceMap.get('host').map((h) => (h.relations = []));
+    this.sourceMap.get('compo').map((s) => (s.relations = []));
     this.formFill();
   }
 
@@ -191,27 +200,23 @@ export class TakeService {
 
   takeHost(host: HostTile) {
     this.stream.target = host;
-    this.getLink('compo')
-      .getSelected('host')
-      .fork(this.handleLink, this.handleSelect);
+    this.getLink('compo').getSelected('host').fork(this.handleLink, this.handleSelect);
   }
 
   takeComponent(component: CompTile) {
     this.stream.target = component;
-    this.getLink('host')
-      .getSelected('compo')
-      .fork(this.handleLink, this.handleSelect);
+    this.getLink('host').getSelected('compo').fork(this.handleLink, this.handleSelect);
   }
 
   getLink(name: string) {
     this.stream.linkSource = this.sourceMap.get(name);
-    this.stream.link = this.stream.linkSource.find(s => s.isSelected);
-    this.stream.linkSource.forEach(s => (s.isLink = false));
+    this.stream.link = this.stream.linkSource.find((s) => s.isSelected);
+    this.stream.linkSource.forEach((s) => (s.isLink = false));
     return this;
   }
 
   getSelected(name: string) {
-    this.stream.selected = this.sourceMap.get(name).find(s => s.isSelected);
+    this.stream.selected = this.sourceMap.get(name).find((s) => s.isSelected);
     if (this.stream.selected) this.stream.selected.isSelected = false;
     return this;
   }
@@ -223,7 +228,7 @@ export class TakeService {
 
   handleSelect() {
     this.stream.target.isSelected = true;
-    this.stream.target.relations.forEach(e => (this.stream.linkSource.find(s => s.name === e.name && s.id === e.id).isLink = true));
+    this.stream.target.relations.forEach((e) => (this.stream.linkSource.find((s) => s.name === e.name && s.id === e.id).isLink = true));
   }
 
   handleLink() {
@@ -233,7 +238,7 @@ export class TakeService {
       CurrentHost = isComp ? this.stream.link : this.stream.target;
     const post = new Post(CurrentHost.id, CurrentServiceComponent.service_id, CurrentServiceComponent.id);
 
-    if (str.link.relations.find(e => e.id === str.target.id)) {
+    if (str.link.relations.find((e) => e.id === str.target.id)) {
       if (!this.checkActions(CurrentHost, CurrentServiceComponent, 'remove')) return;
       this.clear([str.target, str.link]);
       this.statePost.delete(post);
@@ -255,26 +260,25 @@ export class TakeService {
   clear(tiles: Tile[]) {
     for (let a of tiles) {
       const name = a instanceof HostTile ? 'host' : 'compo';
-      const link = this.sourceMap.get(name).find(h => h.id === a.id);
-      const rel = tiles.find(b => b !== a);
-      link.relations = link.relations.filter(r => r.id !== rel.id);
+      const link = this.sourceMap.get(name).find((h) => h.id === a.id);
+      const rel = tiles.find((b) => b !== a);
+      link.relations = link.relations.filter((r) => r.id !== rel.id);
       a.isLink = false;
     }
   }
 
   checkActions(host: HostTile, com: CompTile, action: 'add' | 'remove'): boolean {
-    const flag = this.loadPost.data.some(a => a.component_id === com.id && a.service_id === com.service_id && a.host_id === host.id);
+    const flag = this.loadPost.data.some((a) => a.component_id === com.id && a.service_id === com.service_id && a.host_id === host.id);
     if (com.actions && com.actions.length) {
-
       console.log(`DEBUG HOST-COMPONENT >> exist in LoadData: ${flag}`, this.loadPost, com, host);
-      
+
       if (action === 'remove') {
-        if (flag) return com.actions.some(a => a === 'remove');
+        if (flag) return com.actions.some((a) => a === 'remove');
         else return true;
       }
       if (action === 'add') {
         if (flag) return true;
-        else return com.actions.some(a => a === 'add');
+        else return com.actions.some((a) => a === 'add');
       }
     } else return true;
   }
@@ -286,11 +290,11 @@ export class TakeService {
     this.setRelations(this.loadPost.data);
     this.formFill();
 
-    this.sourceMap.get('host').map(a => {
+    this.sourceMap.get('host').map((a) => {
       a.isSelected = false;
       a.isLink = false;
     });
-    this.sourceMap.get('compo').map(a => {
+    this.sourceMap.get('compo').map((a) => {
       a.isSelected = false;
       a.isLink = false;
     });

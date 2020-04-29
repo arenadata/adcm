@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input, OnInit } from '@angular/core';
-import { clearEmptyField, Cluster, Provider } from '@app/core/types';
+import { clearEmptyField, Cluster, Provider, Host } from '@app/core/types';
 import { BehaviorSubject } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
 
@@ -120,7 +120,8 @@ export class HostComponent extends BaseFormDirective implements OnInit {
   }
 
   save() {
-    const data = clearEmptyField(this.form.value);
+    const data = clearEmptyField(this.form.value) as Host;
+    if (this.noCluster) data.cluster_id = this.service.Cluster.id;
     this.service
       .addHost(data)
       .pipe(

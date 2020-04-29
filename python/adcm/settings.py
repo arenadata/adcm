@@ -64,7 +64,6 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
-    'cm.apps.CmConfig',
     'django_generate_secret_key',
     'django_filters',
     'django.contrib.auth',
@@ -72,12 +71,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'background_task',
     'rest_framework',
     'rest_framework_swagger',
     'api.apps.APIConfig',
     'corsheaders',
     'rest_framework.authtoken',
     'social_django',
+    'cm.apps.CmConfig',
 ]
 
 MIDDLEWARE = [

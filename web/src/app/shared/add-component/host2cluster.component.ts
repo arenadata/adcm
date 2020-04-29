@@ -46,7 +46,7 @@ import { HostComponent } from './host.component';
 
       <ng-container *ngIf="showForm || !list.length">
         <app-add-host #form (cancel)="onCancel($event)" [noCluster]="true"></app-add-host>
-        <app-add-controls [disabled]="!form.form.valid" (cancel)="onCancel()" (save)="save(form.form.value)"></app-add-controls>
+        <app-add-controls [disabled]="!form.form.valid" (cancel)="onCancel()" (save)="save()"></app-add-controls>
       </ng-container>
     </ng-container>
     <ng-template #load><mat-spinner [diameter]="24"></mat-spinner></ng-template>
@@ -56,8 +56,8 @@ import { HostComponent } from './host.component';
     '.full { display: flex;padding-left: 6px; margin: 3px 0; justify-content: space-between; } .full>label { vertical-align: middle; line-height: 40px; }',
     '.full:nth-child(odd) {background-color: #4e4e4e;}',
     '.full:hover {background-color: #5e5e5e; }',
-    '.add-host2cluster { flex: 1; }'
-  ]
+    '.add-host2cluster { flex: 1; }',
+  ],
 })
 export class Host2clusterComponent extends BaseFormDirective implements OnInit, OnDestroy {
   freeHost$: Observable<Host[]>;
@@ -72,18 +72,21 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
   ngOnInit() {
     this.freeHost$ = this.service
       .getList<Host>('host', { limit: this.limit, page: this.page, cluster_is_null: 'true' })
-      .pipe(tap(list => (this.list = list)));
+      .pipe(tap((list) => (this.list = list)));
   }
 
-  save(host: Host) {
-    host.cluster_id = this.service.Cluster.id;
-    this.service
-      .addHost(host)
-      .pipe(
-        this.takeUntil(),
-        tap(() => this.hostForm.form.controls['fqdn'].setValue(''))
-      )
-      .subscribe();
+  save() {
+    if (this.hostForm.form.valid) {
+      const host = this.hostForm.form.value;
+      host.cluster_id = this.service.Cluster.id;
+      this.service
+        .addHost(host)
+        .pipe(
+          this.takeUntil(),
+          tap(() => this.hostForm.form.controls['fqdn'].setValue(''))
+        )
+        .subscribe();
+    }
   }
 
   addHost2Cluster(id: number) {
@@ -91,7 +94,7 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
       this.service
         .addHostInCluster(id)
         .pipe(this.takeUntil())
-        .subscribe(() => (this.list = this.list.filter(a => a.id !== id)));
+        .subscribe(() => (this.list = this.list.filter((a) => a.id !== id)));
   }
 
   nextPage() {
@@ -101,7 +104,7 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
       this.service
         .getList<Host>('host', { limit: this.limit, page: this.page, cluster_is_null: 'true' })
         .pipe(this.takeUntil())
-        .subscribe(list => (this.list = [...this.list, ...list]));
+        .subscribe((list) => (this.list = [...this.list, ...list]));
     }
   }
 }

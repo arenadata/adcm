@@ -23,6 +23,7 @@ export interface DynamicEvent {
 export interface DynamicComponent {
   event?: EventEmitter<any>;
   model?: any;
+  onEnterKey?: () => void;
 }
 
 @Directive({

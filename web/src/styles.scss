@@ -119,6 +119,10 @@ body {
   }
 }
 
+.logo {
+  height: 40px;
+}
+
 .overflow {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -128,7 +132,7 @@ body {
 
 .noflex,
 .noflex>.mat-list-item-content {
-  display: block!important;
+  display: block !important;
 }
 
 mat-checkbox.advanced>label>span {
@@ -214,6 +218,7 @@ mat-checkbox.advanced>label>span {
   }
 }
 
+.mat-form-field,
 .full-width {
   flex-grow: 1;
 }
@@ -277,7 +282,7 @@ mat-cell.control {
 }
 
 .mat-form-field {
-  // firefox not visible underscore
+  // there isn't visible underscore in the firefox
   line-height: normal;
 }
 
@@ -306,6 +311,10 @@ mat-cell.control {
 
   & button {
     margin: 0 4px;
+
+    &[color="accent"]:focus {
+      border: solid 1px #008444;
+    }
   }
 }
 

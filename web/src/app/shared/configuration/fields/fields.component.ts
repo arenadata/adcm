@@ -9,48 +9,41 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, EventEmitter, Input, Output, QueryList, ViewChildren, ChangeDetectionStrategy } from '@angular/core';
-import { FormGroup } from '@angular/forms';
+import { Component, EventEmitter, Input, Output, QueryList, ViewChildren } from '@angular/core';
 
 import { FieldService } from '../field.service';
 import { FieldComponent } from '../field/field.component';
 import { GroupFieldsComponent } from '../group-fields/group-fields.component';
-import { IConfig, PanelOptions, FieldOptions } from '../types';
+import { FieldOptions, IConfig, PanelOptions, IConfigAttr } from '../types';
 
 @Component({
   selector: 'app-config-fields',
   template: `
     <ng-container *ngFor="let item of dataOptions; trackBy: trackBy">
-      <ng-container *ngIf="item.type === 'structure'; else conf">
-        <app-scheme [form]="form" [options]="item"></app-scheme>
-      </ng-container>
-      <ng-template #conf>
-        <app-group-fields *ngIf="panelsOnly(item); else more" [rawConfig]="rawConfig" [panel]="item" [form]="form"></app-group-fields>
-        <ng-template #more>
-          <app-field *ngIf="!item.hidden" class="alone" [form]="form" [options]="item" [ngClass]="{ 'read-only': item.read_only }"></app-field>
-        </ng-template>
+      <app-group-fields *ngIf="isPanel(item); else one" [panel]="item" [form]="form"></app-group-fields>
+      <ng-template #one>
+        <app-field *ngIf="!item.hidden" [form]="form" [options]="item" [ngClass]="{ 'read-only': item.read_only }"></app-field>
       </ng-template>
     </ng-container>
-  `
+  `,
 })
 export class ConfigFieldsComponent {
-  dataOptions: (FieldOptions | PanelOptions)[] = [];
-  form = new FormGroup({});
+  @Input() dataOptions: (FieldOptions | PanelOptions)[] = [];
+  @Input() form = this.service.toFormGroup();
   rawConfig: IConfig;
   shapshot: any;
-
-  public isAdvanced = false;
+  isAdvanced = false;
 
   @Output()
   event = new EventEmitter<{ name: string; data?: any }>();
 
   @Input()
   set model(data: IConfig) {
+    if (!data) return;
     this.rawConfig = data;
     this.dataOptions = this.service.getPanels(data);
     this.form = this.service.toFormGroup(this.dataOptions);
-    this.checkForm();
-    this.isAdvanced = data.config.some(a => a.ui_options && a.ui_options.advanced);
+    this.isAdvanced = data.config.some((a) => a.ui_options && a.ui_options.advanced);
     this.shapshot = { ...this.form.value };
     this.event.emit({ name: 'load', data: { form: this.form } });
   }
@@ -63,11 +56,7 @@ export class ConfigFieldsComponent {
 
   constructor(private service: FieldService) {}
 
-  checkForm() {
-    if (!this.dataOptions.filter(a => !a.read_only).length) this.form.setErrors({ error: 'Ther are not visible fields in this form' });
-  }
-
-  panelsOnly(item: FieldOptions | PanelOptions) {
+  isPanel(item: FieldOptions | PanelOptions) {
     return 'options' in item && !item.hidden;
   }
 

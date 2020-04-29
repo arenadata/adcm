@@ -8,7 +8,8 @@
     "build": "ng build",
     "test": "ng test",
     "lint": "ng lint",
-    "e2e": "ng e2e"
+    "e2e": "ng e2e",
+    "bundle-report": "ng build --prod --stats-json && webpack-bundle-analyzer ./dist/stats-es2015.json"
   },
   "private": true,
   "dependencies": {
@@ -18,7 +19,7 @@
     "@angular/compiler": "9.1.0",
     "@angular/core": "^9.1.0",
     "@angular/forms": "9.1.0",
-    "@angular/material": "9.2.0",
+    "@angular/material": "9.2.1",
     "@angular/platform-browser": "9.1.0",
     "@angular/platform-browser-dynamic": "9.1.0",
     "@angular/router": "9.1.0",
@@ -35,16 +36,16 @@
     "@angular-devkit/build-angular": "~0.901.0",
     "@angular/cli": "^9.1.0",
     "@angular/compiler-cli": "9.1.0",
-    "@angular/language-service": "9.1.0",
+    "@angular/language-service": "9.1.3",
     "@ngrx/schematics": "^9.0.0",
     "@types/jasmine": "~3.5.10",
     "@types/jasminewd2": "~2.0.8",
-    "@types/node": "^12.12.31",
+    "@types/node": "^13.9.5",
     "codelyzer": "^5.2.1",
     "eslint": "^6.8.0",
     "jasmine-core": "~3.5.0",
     "jasmine-spec-reporter": "~5.0.1",
-    "karma": "~4.4.1",
+    "karma": "~5.0.1",
     "karma-chrome-launcher": "~3.1.0",
     "karma-cli": "~2.0.0",
     "karma-coverage-istanbul-reporter": "^2.1.1",
@@ -52,8 +53,9 @@
     "karma-jasmine-html-reporter": "^1.5.3",
     "node-sass": "^4.13.1",
     "protractor": "~5.4.3",
-    "ts-node": "~8.8.1",
+    "ts-node": "~8.9.0",
     "tslint": "~6.1.0",
-    "typescript": "~3.7.5"
+    "typescript": "~3.8.3",
+    "webpack-bundle-analyzer": "^3.6.1"
   }
 }

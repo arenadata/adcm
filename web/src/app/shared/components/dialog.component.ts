@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, ComponentFactoryResolver, EventEmitter, Inject, OnInit, Type, ViewChild } from '@angular/core';
+import { Component, ComponentFactoryResolver, EventEmitter, Inject, OnInit, Type, ViewChild, HostListener } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 import { DynamicComponent, DynamicDirective, DynamicEvent } from '../directives/dynamic.directive';
@@ -17,7 +17,7 @@ import { ChannelService } from '@app/core';
 
 export interface DialogData {
   title: string;
-  component: Type<any>;
+  component: Type<DynamicComponent>;
   model?: any;
   event?: EventEmitter<any>;
   text?: string;
@@ -28,7 +28,7 @@ export interface DialogData {
 @Component({
   selector: 'app-dialog',
   template: `
-    <h3 mat-dialog-title class='overflow'>{{ data.title || 'Notification' }}</h3>
+    <h3 mat-dialog-title class="overflow">{{ data.title || 'Notification' }}</h3>
     <mat-dialog-content class="content" appScroll (read)="scroll($event)">
       <pre *ngIf="data.text">{{ data.text }}</pre>
       <ng-template appDynamic></ng-template>
@@ -43,19 +43,29 @@ export interface DialogData {
       <ng-container *ngTemplateOutlet="isArray; context: { buttons: data.controls.buttons }"></ng-container>
     </ng-template>
     <ng-template #isArray let-buttons="buttons">
+      <button mat-raised-button color="primary" (click)="_noClick()" tabindex="-1">{{ buttons[1] }}</button>
       <button mat-raised-button color="accent" [mat-dialog-close]="true" [disabled]="data?.disabled" tabindex="2">
         {{ buttons[0] }}
       </button>
-      <button mat-raised-button color="primary" (click)="_noClick()" tabindex="-1">{{ buttons[1] }}</button>
     </ng-template>
   `,
-  styles: ['pre {white-space: pre-wrap;}']
+  styles: ['pre {white-space: pre-wrap;}'],
 })
 export class DialogComponent implements OnInit {
   controls: string[];
   noClose: boolean | undefined;
 
+  instance: DynamicComponent;
+
   @ViewChild(DynamicDirective, { static: true }) dynamic: DynamicDirective;
+
+  @HostListener('window:keydown', ['$event'])
+  handleKeyDown(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      const c = this.instance;
+      if (c?.onEnterKey) c.onEnterKey();
+    }
+  }
 
   constructor(
     public dialogRef: MatDialogRef<DialogComponent>,
@@ -75,12 +85,12 @@ export class DialogComponent implements OnInit {
       viewContainerRef.clear();
 
       const componentRef = viewContainerRef.createComponent(componentFactory);
-      const instance = <DynamicComponent>componentRef.instance;
-      instance.model = this.data.model;
+      this.instance = <DynamicComponent>componentRef.instance;
+      this.instance.model = this.data.model;
       // event define in the component
-      if (instance.event) instance.event.subscribe((e: DynamicEvent) => this.dialogRef.close(e));
+      if (this.instance.event) this.instance.event.subscribe((e: DynamicEvent) => this.dialogRef.close(e));
 
-      if (this.data.event) instance.event = this.data.event;
+      if (this.data.event) this.instance.event = this.data.event;
     }
   }
 

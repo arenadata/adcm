@@ -13,8 +13,10 @@ import { Injectable } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { getControlType, getPattern, isObject } from '@app/core/types';
 
-import { ConfigOptions, ConfigResultTypes, ConfigValueTypes, FieldOptions, FieldStack, IConfig, PanelOptions, ValidatorInfo, controlType } from './types';
+import { ConfigResultTypes, ConfigValueTypes, controlType, FieldOptions, FieldStack, IConfig, IConfigAttr, PanelOptions, ValidatorInfo } from './types';
 import { matchType } from './yspec/yspec.service';
+
+export type itemOptions = FieldOptions | PanelOptions;
 
 export interface IToolsEvent {
   name: string;
@@ -25,64 +27,50 @@ export interface IToolsEvent {
 export class FieldService {
   constructor(private fb: FormBuilder) {}
 
-  isVisibleField = (a: ConfigOptions) => !a.ui_options || !a.ui_options.invisible;
-  isInvisibleField = (a: ConfigOptions) => a.ui_options && a.ui_options.invisible;
-  isAdvancedField = (a: ConfigOptions) => a.ui_options && a.ui_options.advanced && !a.ui_options.invisible;
+  isVisibleField = (a: itemOptions) => !a.ui_options?.invisible;
+  isAdvancedField = (a: itemOptions) => this.isVisibleField(a) && a.ui_options?.advanced;
   isHidden = (a: FieldStack) => a.ui_options && (a.ui_options.invisible || a.ui_options.advanced);
 
-  getPanels(data: IConfig): (FieldOptions | PanelOptions)[] {
+  getPanels(data: IConfig): itemOptions[] {
     if (data && data.config) {
-      const fo = data.config.filter(a => a.type !== 'group' && a.subname);
+      const fo = data.config.filter((a) => a.type !== 'group' && a.subname);
       return data.config
-        .filter(a => a.name !== '__main_info')
+        .filter((a) => a.name !== '__main_info')
         .reduce((p, c) => {
           if (c.subname) return p;
-          if (c.type !== 'group') return [...p, this.checkYspec(this.getFieldBy(c))];
-          else return [...p, this.fillDataOptions(c, fo)];
+          if (c.type !== 'group') return [...p, this.getFieldBy(c)];
+          else return [...p, this.fillDataOptions(c, fo, data.attr)];
         }, []);
     }
     return [];
   }
 
-  fillDataOptions(a: FieldStack, fo: FieldStack[]) {
+  fillDataOptions(a: FieldStack, fo: FieldStack[], attr: IConfigAttr) {
     return {
       ...a,
       hidden: this.isHidden(a),
+      active: a.activatable ? attr[a.name]?.active : true,
       options: fo
-        .filter(b => b.name === a.name)
-        .map(b => this.getFieldBy(b))
-        .map(c => {
-          c.name = c.subname;
-          return c;
-        })
-        .map(b => this.checkYspec(b))
+        .filter((b) => b.name === a.name)
+        .map((b) => this.getFieldBy(b))
+        .map((c) => ({ ...c, name: c.subname, activatable: a.activatable })),
     };
-  }
-
-  checkYspec(a: FieldOptions): FieldOptions | PanelOptions {
-    if (a.limits?.yspec) {
-      const b = (<unknown>a) as PanelOptions;
-      b.options = [];
-      return b;
-    }
-    return a;
   }
 
   getFieldBy(item: FieldStack): FieldOptions {
     const params: FieldOptions = {
       ...item,
       key: `${item.subname ? item.subname + '/' : ''}${item.name}`,
-      disabled: item.read_only,
       value: this.getValue(item.type)(item.value, item.default, item.required),
       validator: {
         required: item.required,
         min: item.limits ? item.limits.min : null,
         max: item.limits ? item.limits.max : null,
-        pattern: getPattern(item.type)
+        pattern: getPattern(item.type),
       },
       controlType: getControlType(item.type as matchType),
       hidden: item.name === '__main_info' || this.isHidden(item),
-      compare: []
+      compare: [],
     };
     return params;
   }
@@ -114,7 +102,7 @@ export class FieldService {
     if (field.controlType === 'map') {
       const parseKey = (): ValidatorFn => {
         return (control: AbstractControl): { [key: string]: any } | null => {
-          if (control.value && Object.keys(control.value).length && Object.keys(control.value).some(a => !a)) {
+          if (control.value && Object.keys(control.value).length && Object.keys(control.value).some((a) => !a)) {
             return { parseKey: true };
           } else return null;
         };
@@ -125,11 +113,19 @@ export class FieldService {
     return v;
   }
 
-  toFormGroup(options: (FieldOptions | PanelOptions)[]): FormGroup {
-    return this.fb.group(options.reduce((p, c) => this.runByTree(c, p), {}));
+  toFormGroup(options: itemOptions[] = []): FormGroup {
+    const isVisible = (a: itemOptions) => !a.read_only && !(a.ui_options && a.ui_options.invisible);
+    const check = (a: itemOptions) => ('options' in a ? (a.activatable ? this.isVisibleField(a) : isVisible(a) ? a.options.some((b) => check(b)) : false) : isVisible(a));
+    return this.fb.group(
+      options.reduce((p, c) => this.runByTree(c, p), {}),
+      {
+        validator: () => (options.filter(check).length === 0 ? { error: 'Form is empty' } : null),
+      }
+    );
   }
 
-  runByTree(field: FieldOptions | PanelOptions, controls: { [key: string]: {} }): { [key: string]: {} } {
+  // TODO: impure
+  runByTree(field: itemOptions, controls: { [key: string]: {} }): { [key: string]: {} } {
     if ('options' in field) {
       controls[field.name] = this.fb.group(
         field.options.reduce((p, a) => {
@@ -146,23 +142,24 @@ export class FieldService {
 
   fillForm(field: FieldOptions, controls: {}) {
     const name = field.subname || field.name;
-    controls[name] = this.fb.control(field.type === 'option' ? { value: field.value, disabled: field.disabled } : field.value, this.setValidator(field));
+    const validator = field.activatable ? [] : this.setValidator(field);    
+    controls[name] = this.fb.control(field.value, validator);
     if (field.controlType === 'password') {
       if (!field.ui_options || (field.ui_options && !field.ui_options.no_confirm)) {
-        controls[`confirm_${name}`] = this.fb.control(field.value, this.setValidator(field));
+        controls[`confirm_${name}`] = this.fb.control(field.value, validator);
       }
     }
     return controls;
   }
 
-  filterApply(dataOptions: (FieldOptions | PanelOptions)[], c: { advanced: boolean; search: string }): (FieldOptions | PanelOptions)[] {
-    return dataOptions.filter(a => this.isVisibleField(a)).map(a => this.handleTree(a, c));
+  filterApply(dataOptions: itemOptions[], c: { advanced: boolean; search: string }): itemOptions[] {
+    return dataOptions.filter((a) => this.isVisibleField(a)).map((a) => this.handleTree(a, c));
   }
 
-  handleTree(a: FieldOptions | PanelOptions, c: { advanced: boolean; search: string }) {
+  handleTree(a: itemOptions, c: { advanced: boolean; search: string }) {
     if ('options' in a) {
-      const result = a.options.map(b => this.handleTree(b, c));
-      if (c.search) a.hidden = a.options.filter(b => !b.hidden).length === 0;
+      const result = a.options.map((b) => this.handleTree(b, c));
+      if (c.search) a.hidden = a.options.filter((b) => !b.hidden).length === 0;
       else a.hidden = this.isAdvancedField(a) ? !c.advanced : false;
       return result;
     } else if (this.isVisibleField(a)) {
@@ -181,16 +178,16 @@ export class FieldService {
         return allow ? value : required ? d : null;
       },
       json: (value: string) => (value === null ? '' : JSON.stringify(value, undefined, 4)),
-      map: (value: object, de: object) => (!value ? (!de ? {} : de) : value),
-      list: (value: string[], de: string[]) => (!value ? (!de ? [] : de) : value),
-      structure: (value: any) => value
+      map: (value: object, de: object) => (!value ? de : value),
+      list: (value: string[], de: string[]) => (!value ? de : value),
+      structure: (value: any) => value,
     };
 
     return data[name] ? data[name] : def;
   }
 
   getFieldsBy(items: Array<FieldStack>): FieldOptions[] {
-    return items.map(o => this.getFieldBy(o));
+    return items.map((o) => this.getFieldBy(o));
   }
 
   /**
@@ -221,31 +218,26 @@ export class FieldService {
   }
 
   findField(raw: FieldStack[], name: string, parentName?: string): FieldStack {
-    return raw.find(a => (parentName ? a.name === parentName && a.subname === name : a.name === name));
+    return raw.find((a) => (parentName ? a.name === parentName && a.subname === name : a.name === name));
   }
 
   runYspecParse(value: any, field: FieldStack) {
-    const a = this.runYspec(value, field.limits.rules);
-    return a;
+    return this.runYspec(value, field.limits.rules);
   }
 
   runYspec(value: any, rules: any) {
     switch (rules.type) {
       case 'list': {
-        return value.filter(a => !!a).map(a => this.runYspec(a, rules.options));
+        return value.filter((a) => !!a).map((a) => this.runYspec(a, rules.options));
       }
       case 'dict': {
-        // .filter(a => !!value[a]) without boolean
-        return Object.keys(value).reduce(
-          (p, c) => ({
-            ...p,
-            [c]: this.runYspec(
-              value[c],
-              rules.options.find(b => b.name === c)
-            )
-          }),
-          {}
-        );
+        return Object.keys(value).reduce((p, c) => {
+          const v = this.runYspec(
+            value[c],
+            rules.options.find((b) => b.name === c)
+          );
+          return v !== null ? { ...p, [c]: v } : { ...p };
+        }, {});
       }
       default: {
         return this.checkValue(value, rules.type);
@@ -260,12 +252,12 @@ export class FieldService {
       case 'map':
         return typeof value === 'object'
           ? Object.keys(value)
-              .filter(a => !!a)
+              .filter((a) => !!a)
               .reduce((p, c) => ({ ...p, [c]: value[c] }), {})
           : new TypeError('FieldService::checkValue - value is not Object');
 
       case 'list':
-        return Array.isArray(value) ? (value as Array<string>).filter(a => !!a) : new TypeError('FieldService::checkValue - value is not Array');
+        return Array.isArray(value) ? (value as Array<string>).filter((a) => !!a) : new TypeError('FieldService::checkValue - value is not Array');
     }
 
     if (typeof value === 'boolean') return value;

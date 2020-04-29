@@ -26,8 +26,9 @@ const COLUMNS_SET = {
   provider: ['name', 'prototype_version', 'state', 'actions', 'upgrade', 'config', 'controls'],
   job: ['action', 'objects', 'start_date', 'finish_date', 'status'],
   task: ['id', 'start_date', 'finish_date', 'status'],
-  bundle: ['name', 'version', 'edition', 'description', 'controls']
+  bundle: ['name', 'version', 'edition', 'description', 'controls'],
 };
+
 
 export interface ListInstance {
   typeName: TypeName;
@@ -35,7 +36,7 @@ export interface ListInstance {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ListService {
   current: ListInstance;
@@ -66,7 +67,7 @@ export class ListService {
       case 'bundle':
         return this.api.getList<Bundle>(`${environment.apiRoot}stack/bundle/`, p);
       default:
-        return this.api.root.pipe(switchMap(root => this.api.getList<Entities>(root[this.current.typeName], p)));
+        return this.api.root.pipe(switchMap((root) => this.api.getList<Entities>(root[this.current.typeName], p)));
     }
   }
 
@@ -77,7 +78,7 @@ export class ListService {
   getActions(row: Entities) {
     this.api
       .get<IAction[]>(row.action)
-      .pipe(tap(actions => (row.actions = actions)))
+      .pipe(tap((actions) => (row.actions = actions)))
       .subscribe();
   }
 
@@ -88,14 +89,14 @@ export class ListService {
   // host
   getClustersForHost(param: Params): Observable<{ id: number; title: string }[]> {
     return this.api.root
-      .pipe(switchMap(root => this.api.getList<Cluster>(root.cluster, convertToParamMap(param))))
-      .pipe(map(res => res.results.map(a => ({ id: a.id, title: a.name }))));
+      .pipe(switchMap((root) => this.api.getList<Cluster>(root.cluster, convertToParamMap(param))))
+      .pipe(map((res) => res.results.map((a) => ({ id: a.id, title: a.name }))));
   }
 
   addClusterToHost(cluster_id: number, row: Host) {
     this.api
       .post<Host>(`${environment.apiRoot}cluster/${cluster_id}/host/`, { host_id: row.id })
-      .subscribe(host => {
+      .subscribe((host) => {
         row.cluster_id = host.cluster_id;
         row.cluster_name = host.cluster;
       });

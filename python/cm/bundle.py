@@ -399,6 +399,7 @@ def update_bundle_from_stage(bundle):   # pylint: disable=too-many-locals,too-ma
         try:
             p = Prototype.objects.get(bundle=bundle, type=sp.type, name=sp.name, version=sp.version)
             p.path = sp.path
+            p.version = sp.version
             p.description = sp.description
             p.display_name = sp.display_name
             p.required = sp.required

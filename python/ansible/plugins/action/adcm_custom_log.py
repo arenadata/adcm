@@ -80,6 +80,7 @@ class ActionModule(ActionBase):
     _VALID_ARGS = frozenset(('name', 'format', 'path', 'content'))
 
     def run(self, tmp=None, task_vars=None):
+        super(ActionModule, self).run(tmp, task_vars)
         if task_vars is not None and 'job' in task_vars or 'id' in task_vars['job']:
             job_id = task_vars['job']['id']
 

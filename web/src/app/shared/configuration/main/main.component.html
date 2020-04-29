@@ -1,15 +1,11 @@
-<div class="na-hu"><input type="text" /><input type="password" /></div>
-<ng-template #dumb>
-  <p>{{ loadingStatus }}</p>
-</ng-template>
-<ng-container *ngIf="config$ | async as data; else dumb">
-  <app-tools #tools [description]="data.description" [isAdvanced]="isAdvanced(data)" [disabledSave]="isLock ||!fields.form.valid"
-    [disabledHistory]="history.iconDisabled" (event)="toolsEvent($event)"></app-tools>
-  <div [@history]="historyShow ? 'showTools' : 'hideTools'">
-    <app-history #history [versionID]="data.id" [historyUrl]="historyUrl" [fields]="fields"
-      (version)="changeVersion($event)"></app-history>
-  </div>
-  <div class="fields" [@history]="historyShow ? 'show' : 'hide'">
-    <app-config-fields #fields [model]="data" (event)="fieldsEvents($event)"></app-config-fields>
-  </div>
-</ng-container>
+<div class="na-hu"><input type="text" /><input type="password" /><input type="password" /></div>
+<app-tools #tools (applyFilter)="filter($event)" (save)="save()" (showHistory)="historyShow=$event"
+  [disabledSave]="isLock || fls.form.invalid"></app-tools>
+<ng-template #dumb>{{ loadingStatus }}</ng-template>
+<div [@history]="historyShow ? 'showTools' : 'hideTools'">
+  <app-history #history (compare)="compareVersion($event)" (version)="changeVersion($event)"></app-history>
+</div>
+<div class="fields" [@history]="historyShow ? 'show' : 'hide'">
+  <app-config-fields #fls [model]="rawConfig" (event)="onReady()"></app-config-fields>
+</div>
+<ng-container *ngIf="config$ | async; else dumb"></ng-container>

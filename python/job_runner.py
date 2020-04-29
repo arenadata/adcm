@@ -22,6 +22,7 @@ from cm.logger import log
 import cm.config as config
 import cm.job
 from cm.status_api import Event
+from cm.models import LogStorage
 
 
 def open_file(root, tag, job_id):
@@ -49,13 +50,36 @@ def set_job_status(job_id, ret, pid, event):
         return ret
 
 
-def set_pythonpath():
-    cmd_env = os.environ.copy()
-    if "PYTHONPATH" in cmd_env:
-        cmd_env["PYTHONPATH"] = "./pmod:" + cmd_env["PYTHONPATH"]
+def set_pythonpath(env):
+    if "PYTHONPATH" in env:
+        env["PYTHONPATH"] = "./pmod:" + env["PYTHONPATH"]
     else:
-        cmd_env["PYTHONPATH"] = "./pmod"
-    return cmd_env
+        env["PYTHONPATH"] = "./pmod"
+    return env
+
+
+def set_ansible_config(env, job_id):
+    env['ANSIBLE_CONFIG'] = os.path.join(config.RUN_DIR, f'{job_id}/ansible.cfg')
+    return env
+
+
+def env_configuration(job_config):
+    env = os.environ.copy()
+    env = set_pythonpath(env)
+    # This condition is intended to support compatibility.
+    # Since older bundle versions may contain their own ansible.cfg
+    if not os.path.exists(os.path.join(job_config['env']['stack_dir'], 'ansible.cfg')):
+        env = set_ansible_config(env, job_config['job']['id'])
+        log.info('set ansible config for job:%s', job_config['job']['id'])
+    return env
+
+
+def post_log(job_id, log_type, log_name):
+    l1 = LogStorage.objects.filter(job__id=job_id, type=log_type, name=log_name).first()
+    if l1:
+        cm.status_api.post_event('add_job_log', 'job', job_id, {
+            'id': l1.id, 'type': l1.type, 'name': l1.name, 'format': l1.format,
+        })
 
 
 def run_ansible(job_id):
@@ -64,6 +88,8 @@ def run_ansible(job_id):
     playbook = conf['job']['playbook']
     out_file = open_file(config.RUN_DIR, 'ansible-stdout', job_id)
     err_file = open_file(config.RUN_DIR, 'ansible-stderr', job_id)
+    post_log(job_id, 'stdout', 'ansible')
+    post_log(job_id, 'stderr', 'ansible')
     event = Event()
 
     os.chdir(conf['env']['stack_dir'])
@@ -79,9 +105,10 @@ def run_ansible(job_id):
         if 'ansible_tags' in conf['job']['params']:
             cmd.append('--tags=' + conf['job']['params']['ansible_tags'])
 
-    proc = subprocess.Popen(cmd, env=set_pythonpath(), stdout=out_file, stderr=err_file)
+    proc = subprocess.Popen(cmd, env=env_configuration(conf), stdout=out_file, stderr=err_file)
     log.info("job #%s run cmd: %s", job_id, ' '.join(cmd))
     cm.job.set_job_status(job_id, config.Job.RUNNING, event, proc.pid)
+    event.send_state()
     log.info("run ansible job #%s, pid %s, playbook %s", job_id, proc.pid, playbook)
     ret = proc.wait()
     cm.job.finish_check(job_id)

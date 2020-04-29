@@ -17,9 +17,10 @@ from rest_framework import serializers
 import cm.api
 import cm.job
 import cm.status_api
+from cm.api import safe_api
 from cm.logger import log   # pylint: disable=unused-import
 from cm.errors import AdcmApiEx, AdcmEx
-from cm.models import Action, Cluster, Host, Prototype, ServiceComponent, ClusterObject
+from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
 
 from api.serializers import check_obj, filter_actions, get_upgradable_func
 from api.serializers import hlink, JSONField, UrlField
@@ -314,7 +315,7 @@ class HostComponentSaveSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         hc = validated_data.get('hc')
-        return cm.api.add_hc(self.context.get('cluster'), hc)
+        return safe_api(cm.api.add_hc, (self.context.get('cluster'), hc))
 
 
 class ClusterServiceUrlField(UrlField):
@@ -552,6 +553,7 @@ class DoBindSerializer(serializers.Serializer):
         try:
             return cm.api.bind(
                 validated_data.get('cluster'),
+                None,
                 export_cluster,
                 validated_data.get('export_service_id', 0)
             )
@@ -571,17 +573,12 @@ class DoServiceBindSerializer(serializers.Serializer):
         export_cluster = check_obj(
             Cluster, validated_data.get('export_cluster_id'), "CLUSTER_NOT_FOUND"
         )
-        export_service = check_obj(
-            ClusterObject,
-            {'cluster': export_cluster, 'id': validated_data.get('export_service_id')},
-            'SERVICE_NOT_FOUND'
-        )
         try:
-            return cm.api.bind_service(
+            return cm.api.bind(
                 validated_data.get('cluster'),
                 validated_data.get('service'),
                 export_cluster,
-                export_service
+                validated_data.get('export_service_id')
             )
         except AdcmEx as e:
             raise AdcmApiEx(e.code, e.msg, e.http_code)
@@ -643,7 +640,7 @@ class ClusterConfigSerializer(serializers.Serializer):
 class ObjectConfig(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     date = serializers.DateTimeField(read_only=True)
-    description = serializers.CharField(required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
     config = JSONField(read_only=True)
     attr = JSONField(required=False)
 

@@ -13,6 +13,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django.contrib.auth.models import User, Group, Permission
 
 
 PROTO_TYPE = (
@@ -81,7 +82,7 @@ class Prototype(models.Model):
     description = models.TextField(blank=True)
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
     class Meta:
         unique_together = (('bundle', 'type', 'name', 'version'),)
@@ -119,7 +120,7 @@ class Cluster(models.Model):
     issue = models.TextField(blank=True)   # JSON
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
 
 class HostProvider(models.Model):
@@ -132,7 +133,7 @@ class HostProvider(models.Model):
     issue = models.TextField(blank=True)   # JSON
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
 
 class Host(models.Model):
@@ -335,6 +336,14 @@ class UserProfile(models.Model):
     profile = models.TextField()   # JSON
 
 
+class Role(models.Model):
+    name = models.CharField(max_length=32, unique=True)
+    description = models.TextField(blank=True)
+    permissions = models.ManyToManyField(Permission, blank=True)
+    user = models.ManyToManyField(User, blank=True)
+    group = models.ManyToManyField(Group, blank=True)
+
+
 class JobLog(models.Model):
     task_id = models.PositiveIntegerField(default=0)
     action_id = models.PositiveIntegerField()
@@ -344,7 +353,7 @@ class JobLog(models.Model):
     log_files = models.TextField(blank=True)    # JSON
     status = models.CharField(max_length=16, choices=JOB_STATUS)
     start_date = models.DateTimeField()
-    finish_date = models.DateTimeField()
+    finish_date = models.DateTimeField(db_index=True)
 
 
 class TaskLog(models.Model):
@@ -354,13 +363,22 @@ class TaskLog(models.Model):
     selector = models.TextField()                    # JSON
     status = models.CharField(max_length=16, choices=JOB_STATUS)
     config = models.TextField(null=True)             # JSON
+    attr = models.TextField(null=True)               # JSON
     hostcomponentmap = models.TextField(null=True)   # JSON
     hosts = models.TextField(null=True)   # JSON
     start_date = models.DateTimeField()
     finish_date = models.DateTimeField()
 
 
+class GroupCheckLog(models.Model):
+    job_id = models.PositiveIntegerField(default=0)
+    title = models.TextField()
+    message = models.TextField(blank=True, null=True)
+    result = models.BooleanField(blank=True, null=True)
+
+
 class CheckLog(models.Model):
+    group = models.ForeignKey(GroupCheckLog, blank=True, null=True, on_delete=models.CASCADE)
     job_id = models.PositiveIntegerField(default=0)
     title = models.TextField()
     message = models.TextField()
@@ -387,6 +405,12 @@ class LogStorage(models.Model):
     type = models.CharField(max_length=16, choices=LOG_TYPE)
     format = models.CharField(max_length=16, choices=FORMAT_TYPE)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['job'], condition=models.Q(type='check'), name='unique_check_job')
+        ]
+
 
 # Stage: Temporary tables to load bundle
 
@@ -406,7 +430,7 @@ class StagePrototype(models.Model):
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
     class Meta:
         unique_together = (('type', 'name', 'version'),)

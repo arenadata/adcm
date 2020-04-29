@@ -1,6 +1,6 @@
 <mat-toolbar color="primary" class="mat-elevation-z6">
   <a routerLink="/" class="logo">
-    <img src="/assets/logo_.png" alt="" class="logo" />
+    <img src="/assets/adcm-logo.png" alt="" class="logo" />
   </a>
 
   <div class="example-spacer on-center">
@@ -61,7 +61,7 @@
         <mat-icon>account_circle</mat-icon>
       </button>
       <mat-menu #accountMenu="matMenu" [overlapTrigger]="false">
-        <a [appForTest]="'settings'" mat-menu-item [routerLink]="['/admin']">
+        <a [appForTest]="'settings'" mat-menu-item [routerLink]="['/admin/settings/']">
           <mat-icon>settings_applications</mat-icon>
           <span>App settings</span>
         </a>
