@@ -53,7 +53,8 @@ export class FieldService {
       options: fo
         .filter((b) => b.name === a.name)
         .map((b) => this.getFieldBy(b))
-        .map((c) => ({ ...c, name: c.subname, activatable: a.activatable })),
+        // switch off validation for field if !(activatable: true && active: false) - line: 146
+        .map((c) => ({ ...c, name: c.subname, activatable: a.activatable && !attr[a.name]?.active })),
     };
   }
 
