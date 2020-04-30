@@ -778,7 +778,7 @@ class Configuration(BasePage):
         self._getelement(ConfigurationLocators.config_save_button).click()
 
     def click_advanced(self):
-        buttons = self.driver.find_elements(*Common.mat_checkbox)
+        buttons = self._getelements(Common.mat_checkbox)
         for button in buttons:
             if button.text == 'Advanced':
                 self._click_button_with_sleep(button, 5)
@@ -788,7 +788,7 @@ class Configuration(BasePage):
 
     @property
     def advanced(self):
-        buttons = self.driver.find_elements(*Common.mat_checkbox)
+        buttons = self._getelements(Common.mat_checkbox)
         for button in buttons:
             if button.text == 'Advanced':
                 return "checked" in button.get_attribute("class")
