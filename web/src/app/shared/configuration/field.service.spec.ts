@@ -10,15 +10,88 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { TestBed } from '@angular/core/testing';
-import { FormBuilder } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
 
-import { FieldService, IOutput, itemOptions } from './field.service';
-import { ConfigValueTypes, FieldStack, resultTypes, ILimits, IConfig } from './types';
+import { FieldService, IOutput } from './field.service';
+import { ConfigValueTypes, FieldStack, IConfig, ILimits, resultTypes } from './types';
+
+const itemOptionsMock = [
+  {
+    required: false, // not in itemOptions
+    name: 'field_string',
+    display_name: 'display_name',
+    subname: '',
+    type: 'string',
+    activatable: false,
+    read_only: false,
+    default: null,
+    value: '',
+    description: '',
+    key: 'field_string',
+    validator: { required: false, min: null, max: null, pattern: null },
+    controlType: 'textbox',
+    hidden: false,
+    compare: [],
+  },
+  {
+    name: 'group',
+    display_name: 'group_display_name',
+    subname: '',
+    type: 'group',
+    activatable: false,
+    read_only: false,
+    default: null,
+    value: null,
+    description: '',
+    required: false,
+    hidden: false,
+    active: true,
+    options: [
+      {
+        name: 'field_in_group',
+        display_name: 'field_in_group_display_name',
+        subname: 'field_in_group',
+        type: 'integer',
+        activatable: false,
+        read_only: false,
+        default: 10,
+        value: '',
+        description: '',
+        required: true,
+        key: 'field_in_group/group',
+        validator: { required: true, min: null, max: null, pattern: /^[-]?\d+$/ },
+        controlType: 'textbox',
+        hidden: false,
+        compare: [],
+      },
+    ],
+  },
+];
+
+const itemOptionsMock2 = [
+  {
+    required: false, // not in itemOptions
+    name: 'field_string',
+    display_name: 'display_name',
+    subname: '',
+    type: 'string',
+    activatable: false,
+    read_only: false,
+    default: null,
+    value: '',
+    description: '',
+    key: 'field_string',
+    validator: { required: false, min: null, max: null, pattern: null },
+    controlType: 'textbox',
+    hidden: false,
+    compare: [],
+  },
+];
 
 describe('Configuration fields service', () => {
   let service: FieldService;
   let checkValue: (value: resultTypes, type: ConfigValueTypes) => resultTypes;
-  let parseValue: (value: IOutput, source: Partial<FieldStack>[]) => IOutput;
+  // let parseValue: (value: IOutput, source: Partial<FieldStack>[]) => IOutput;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -27,11 +100,22 @@ describe('Configuration fields service', () => {
 
     service = TestBed.inject(FieldService);
     checkValue = service.checkValue;
-    parseValue = service.parseValue;
   });
 
   it('service should be created', () => {
     expect(service).toBeTruthy();
+  });
+
+  it('Prepare data for configuration: getPanels(undefined) should return undefined', () => {
+    expect(service.getPanels(undefined)).toEqual(undefined);
+  });
+
+  it('Prepare data for configuration: getPanels({}) should return undefined', () => {
+    expect(service.getPanels({} as any)).toEqual(undefined);
+  });
+
+  it('Prepare data for configuration: getPanels({config: []}) should return []', () => {
+    expect(service.getPanels({ config: [] })).toEqual([]);
   });
 
   it('Prepare data for configuration: getPanels()', () => {
@@ -76,65 +160,28 @@ describe('Configuration fields service', () => {
         },
       ],
     };
-    const output: any/* itemOptions */[] = [
-      {
-        required: false, // not in itemOptions
-        name: 'field_string',
-        display_name: 'display_name',
-        subname: '',
-        type: 'string',
-        activatable: false,
-        read_only: false,
-        default: null,
-        value: '',
-        description: '',
-        key: 'field_string',
-        validator: { required: false, min: null, max: null, pattern: null },
-        controlType: 'textbox',
-        hidden: false,
-        compare: [],
-      },
-      {
-        name: 'group',
-        display_name: 'group_display_name',
-        subname: '',
-        type: 'group',
-        activatable: false,
-        read_only: false,
-        default: null,
-        value: null,
-        description: '',
-        required: false,
-        hidden: false,
-        active: true,
-        options: [
-          {
-            name: 'field_in_group',
-            display_name: 'field_in_group_display_name',
-            subname: 'field_in_group',
-            type: 'integer',
-            activatable: false,
-            read_only: false,
-            default: 10,
-            value: '',
-            description: '',
-            required: true,
-            key: 'field_in_group/group',
-            validator: Object({ required: true, min: null, max: null, pattern: /^[-]?\d+$/ }),
-            controlType: 'textbox',
-            hidden: false,
-            compare: [],
-          },
-        ],
-      },
-    ];
+    const output: any /* itemOptions */[] = itemOptionsMock;
     expect(service.getPanels(data)).toEqual(output);
+  });
+
+  xit('Generate FormGroup : toFormGroup()', () => {
+    const fg = service.fb.group(
+      {
+        field_string: service.fb.control(''),
+        group: service.fb.group({
+          field_in_group: ['', [Validators.required, Validators.pattern(/^[-]?\d+$/)]],
+        }),
+      },
+      { validator: () => null }
+    );
+    const form = service.toFormGroup(itemOptionsMock2 as any);
+    expect(form).toEqual(fg);
   });
 
   it('Check result : parseValue(empty, empty) should return {}', () => {
     const source: FieldStack[] = [];
     const value: IOutput = {};
-    expect(parseValue(value, source)).toEqual({});
+    expect(service.parseValue(value, source)).toEqual({});
   });
 
   it('Check result : parseValue(form without grop)', () => {
