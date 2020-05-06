@@ -110,14 +110,12 @@ def prepare_task(action, obj, selector, conf, attr, spec, old_hc, delta, host_ma
 
     if action.type == 'task':
         task = create_task(action, selector, obj, conf, attr, old_hc, delta, hosts, event)
-        new_conf = process_config(task, spec, conf)
     else:
-        task = create_one_job_task(action.id, selector, obj, conf, attr, old_hc, hosts, event)
-        job = create_job(action, None, selector, event, task.id)
-        new_conf = process_config(task, spec, conf)
-        prepare_job(action, None, selector, job.id, obj, new_conf, delta, hosts)
+        task = create_one_job_task(action, selector, obj, conf, attr, old_hc, hosts, event)
+        _job = create_job(action, None, selector, event, task.id)
 
     if conf:
+        new_conf = process_config(task, spec, conf)
         process_file_type(task, spec, conf)
         task.config = json.dumps(new_conf)
         task.save()
@@ -604,29 +602,15 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
 
 
 def create_task(action, selector, obj, conf, attr, hc, delta, hosts, event):
-    task = TaskLog(
-        action_id=action.id,
-        object_id=obj.id,
-        selector=json.dumps(selector),
-        config=json.dumps(conf),
-        attr=json.dumps(attr),
-        hostcomponentmap=json.dumps(hc),
-        hosts=json.dumps(hosts),
-        start_date=timezone.now(),
-        finish_date=timezone.now(),
-        status=config.Job.CREATED,
-    )
-    task.save()
-    set_task_status(task, config.Job.CREATED, event)
+    task = create_one_job_task(action, selector, obj, conf, attr, hc, hosts, event)
     for sub in SubAction.objects.filter(action=action):
-        job = create_job(action, sub, selector, event, task.id)
-        prepare_job(action, sub, selector, job.id, obj, conf, delta, hosts)
+        _job = create_job(action, sub, selector, event, task.id)
     return task
 
 
-def create_one_job_task(action_id, selector, obj, conf, attr, hc, hosts, event):
+def create_one_job_task(action, selector, obj, conf, attr, hc, hosts, event):
     task = TaskLog(
-        action_id=action_id,
+        action_id=action.id,
         object_id=obj.id,
         selector=json.dumps(selector),
         config=json.dumps(conf),
