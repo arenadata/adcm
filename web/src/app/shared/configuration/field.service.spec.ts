@@ -164,7 +164,7 @@ describe('Configuration fields service', () => {
     expect(service.getPanels(data)).toEqual(output);
   });
 
-  xit('Generate FormGroup : toFormGroup()', () => {
+  it('Generate FormGroup : toFormGroup() check value', () => {
     const fg = service.fb.group(
       {
         field_string: service.fb.control(''),
@@ -174,8 +174,8 @@ describe('Configuration fields service', () => {
       },
       { validator: () => null }
     );
-    const form = service.toFormGroup(itemOptionsMock2 as any);
-    expect(form).toEqual(fg);
+    const form = service.toFormGroup(itemOptionsMock as any);
+    expect(form.value).toEqual(fg.value);
   });
 
   it('Check result : parseValue(empty, empty) should return {}', () => {
