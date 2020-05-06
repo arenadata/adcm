@@ -16,7 +16,7 @@ import { ClusterService, StackService } from '@app/core';
   selector: 'app-stack',
   template: `
     <mat-toolbar class="toolbar">
-      <app-crumbs [navigation]="[{ path: '/bundle', name: 'bundles' }]"></app-crumbs>
+      <app-crumbs [navigation]="[{ url: '/bundle', title: 'bundles' }]"></app-crumbs>
       <span class="example-spacer"></span>
       <div style="margin-right: 6px;">
         <app-button-uploader #uploadBtn [color]="'accent'" [label]="'Upload bundles'" (output)="upload($event)"></app-button-uploader>
