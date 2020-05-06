@@ -146,11 +146,12 @@ class TestJobRunner(TestCase):
 
     def test_set_pythonpath(self):
         cmd_env = os.environ.copy()
+        stack_dir = '/adcm/data/bundle/bundle_hash'
         python_paths = filter(
             lambda x: x != '',
-            ['./pmod'] + cmd_env.get('PYTHONPATH', '').split(':'))
+            [f'{stack_dir}/pmod'] + cmd_env.get('PYTHONPATH', '').split(':'))
         cmd_env['PYTHONPATH'] = ':'.join(python_paths)
-        self.assertDictEqual(cmd_env, job_runner.set_pythonpath(os.environ.copy()))
+        self.assertDictEqual(cmd_env, job_runner.set_pythonpath(os.environ.copy(), stack_dir))
 
     # pylint: disable=too-many-locals
     # pylint: disable=too-many-arguments
