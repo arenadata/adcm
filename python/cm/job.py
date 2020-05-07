@@ -10,8 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-arguments
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-arguments, too-many-branches, too-many-nested-blocks
 
 import json
 import os
@@ -22,7 +21,7 @@ import subprocess
 import time
 from collections import defaultdict
 from configparser import ConfigParser
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from background_task import background
 from django.db import transaction
@@ -865,7 +864,7 @@ def get_check_log(job_id):
             if group not in group_subs:
                 data.append(
                     {'title': group.title, 'type': 'group', 'message': group.message,
-                     'result': group.result, 'body': group_subs[group]})
+                     'result': group.result, 'content': group_subs[group]})
             group_subs[group].append(
                 {'title': cl.title, 'type': 'check', 'message': cl.message, 'result': cl.result})
     return data
@@ -931,20 +930,27 @@ def log_rotation():
             finish_date__lt=timezone.now() - timedelta(days=log_rotation_on_db))
         if rotation_jobs_on_db:
             task_ids = [job['task_id'] for job in rotation_jobs_on_db.values('task_id')]
-            rotation_jobs_on_db.delete()
-            TaskLog.objects.filter(id__in=task_ids).delete()
+            with transaction.atomic():
+                rotation_jobs_on_db.delete()
+                TaskLog.objects.filter(id__in=task_ids).delete()
 
             log.info('rotation log from db')
 
     if log_rotation_on_fs:
-        rotation_jobs_on_fs = JobLog.objects.filter(
-            finish_date__lt=timezone.now() - timedelta(days=log_rotation_on_fs)).values('id')
+        for name in os.listdir(config.RUN_DIR):
+            if not name.startswith('.'):  # a line of code is used for development
+                path = os.path.join(config.RUN_DIR, name)
+                try:
+                    m_time = datetime.fromtimestamp(os.path.getmtime(path), tz=timezone.utc)
+                    if timezone.now() - m_time > timedelta(days=log_rotation_on_fs):
+                        if os.path.isdir(path):
+                            shutil.rmtree(path)
+                        else:
+                            os.remove(path)
+                except FileNotFoundError:
+                    pass
 
-        if rotation_jobs_on_fs:
-
-            for job in rotation_jobs_on_fs:
-                shutil.rmtree(os.path.join(config.RUN_DIR, str(job['id'])))
-            log.info('rotation log from fs')
+        log.info('rotation log from fs')
 
 
 def prepare_ansible_config(job_id):

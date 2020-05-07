@@ -35,7 +35,7 @@ export class ServicesComponent {}
 @Component({
   template: `
     <mat-toolbar class="toolbar">
-      <app-crumbs [navigation]="[{ path: '/cluster', name: 'clusters' }]"></app-crumbs>
+      <app-crumbs [navigation]="[{ url: '/cluster', title: 'clusters' }]"></app-crumbs>
       <span class="example-spacer"></span>
       <app-add-button [name]="typeName" (added)="list.current = $event">Create {{ typeName }}</app-add-button>
     </mat-toolbar>

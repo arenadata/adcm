@@ -17,6 +17,7 @@ export interface JobObject {
   id: number;
   name: string;
   type: string;
+  url?: string[];
 }
 
 interface TaskBase {

@@ -472,6 +472,11 @@ urlpatterns = [
     path('job/<int:job_id>/log/<int:log_id>/download/',
          job_views.download_log_file,
          name='download-log'),
+    path(
+        'job/<int:job_id>/log/<name:tag>/<name:level>/<name:log_type>/',
+        job_views.LogFile.as_view(),
+        name='log-file'
+    ),
     # path('docs/', include_docs_urls(title='ArenaData Chapel API')),
     path('swagger/', swagger_view),
     path('schema/', schema_view),
