@@ -534,6 +534,13 @@ class ConfigSerializer(serializers.Serializer):
         return cm.adcm_config.get_default(obj, proto)
 
 
+class ConfigSerializerUI(ConfigSerializer):
+    activatable = serializers.SerializerMethodField()
+
+    def get_activatable(self, obj):
+        return bool(cm.adcm_config.group_is_activatable(obj))
+
+
 class ActionSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     prototype_id = serializers.IntegerField()
@@ -572,7 +579,7 @@ class ActionDetailSerializer(ActionSerializer):
         aconf = PrototypeConfig.objects.filter(prototype=obj.prototype, action=obj).order_by('id')
         context = self.context
         context['prototype'] = obj.prototype
-        conf = ConfigSerializer(aconf, many=True, context=context, read_only=True)
+        conf = ConfigSerializerUI(aconf, many=True, context=context, read_only=True)
         _, _, _, attr = cm.adcm_config.get_prototype_config(obj.prototype, obj)
         return {'attr': attr, 'config': conf.data}
 
@@ -680,7 +687,7 @@ class ActionShort(serializers.Serializer):
     def get_config(self, obj):
         context = self.context
         context['prototype'] = obj.prototype
-        conf = ConfigSerializer(obj.config, many=True, context=context, read_only=True)
+        conf = ConfigSerializerUI(obj.config, many=True, context=context, read_only=True)
         _, _, _, attr = cm.adcm_config.get_prototype_config(obj.prototype, obj)
         return {'attr': attr, 'config': conf.data}
 
