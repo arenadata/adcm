@@ -41,17 +41,17 @@ def test_all_fields(sdk_client_fs: ADCMClient, name, group_msg,
     logs = job.log_list()
     log = job.log(job_id=job.id, log_id=logs[2].id)
     assert job.status == 'success', "Current job status {}. Expected: success".format(job.status)
-    body = log.body[0]
-    assert body['message'] == group_msg,\
-        "Expected message {}. Current message {}".format(group_msg, body['message'])
-    assert body['result'] is group_result
-    assert body['title'] == 'Name of group check.',\
-        "Expected title 'Name of group check'. Current title {}".format(body['title'])
-    assert body['body'][0]['title'] == 'Check',\
-        'Current title {}. Expected title: Check'.format(body[0]['title'])
-    assert body['body'][0]['message'] == task_msg,\
-        "Expected message {}. Current message {}".format(task_msg, body[0]['message'])
-    assert body['body'][0]['result'] is task_result
+    content = log.content[0]
+    assert content['message'] == group_msg,\
+        "Expected message {}. Current message {}".format(group_msg, content['message'])
+    assert content['result'] is group_result
+    assert content['title'] == 'Name of group check.',\
+        "Expected title 'Name of group check'. Current title {}".format(content['title'])
+    assert content['body'][0]['title'] == 'Check',\
+        'Current title {}. Expected title: Check'.format(content[0]['title'])
+    assert content['body'][0]['message'] == task_msg,\
+        "Expected message {}. Current message {}".format(task_msg, content[0]['message'])
+    assert content['body'][0]['result'] is task_result
 
 
 @pytest.mark.parametrize("name", ['with_success', 'with_fail',
@@ -70,9 +70,9 @@ def test_message_with_other_field(sdk_client_fs: ADCMClient, name):
     logs = job.log_list()
     log = job.log(job_id=job.id, log_id=logs[2].id)
     assert job.status == 'success', "Current job status {}. Expected: success".format(job.status)
-    body = log.body[0]
-    assert body['message'] == name,\
-        "Expected body message {}. Current {}".format(name, body['message'])
+    content = log.content[0]
+    assert content['message'] == name,\
+        "Expected body message {}. Current {}".format(name, content['message'])
 
 
 def test_success_and_fail_msg_on_success(sdk_client_fs: ADCMClient):
@@ -87,11 +87,11 @@ def test_success_and_fail_msg_on_success(sdk_client_fs: ADCMClient):
     job = task.job()
     logs = job.log_list()
     log = job.log(job_id=job.id, log_id=logs[2].id)
-    body = log.body[0]
+    content = log.content[0]
     assert job.status == 'success', "Current job status {}. Expected: success".format(job.status)
-    assert body['result'], "Result is False expected True"
-    assert body['message'] == 'success_msg',\
-        "Expected message: 'success_msg. Current message {}".format(body['message'])
+    assert content['result'], "Result is False expected True"
+    assert content['message'] == 'success_msg',\
+        "Expected message: 'success_msg. Current message {}".format(content['message'])
 
 
 def test_success_and_fail_msg_on_fail(sdk_client_fs: ADCMClient):
@@ -106,11 +106,11 @@ def test_success_and_fail_msg_on_fail(sdk_client_fs: ADCMClient):
     job = task.job()
     logs = job.log_list()
     log = job.log(job_id=job.id, log_id=logs[2].id)
-    body = log.body[0]
+    content = log.content[0]
     assert job.status == 'success', "Current job status {}. Expected: success".format(job.status)
-    assert not body['result'], "Result is False expected True"
-    assert body['message'] == 'fail_msg',\
-        "Expected message: 'fail_msg. Current message {}".format(body['message'])
+    assert not content['result'], "Result is False expected True"
+    assert content['message'] == 'fail_msg',\
+        "Expected message: 'fail_msg. Current message {}".format(content['message'])
 
 
 def test_multiple_tasks(sdk_client_fs: ADCMClient):
@@ -131,9 +131,9 @@ def test_multiple_tasks(sdk_client_fs: ADCMClient):
     job = action.job()
     logs = job.log_list()
     log = job.log(job_id=job.id, log_id=logs[2].id)
-    assert len(log.body) == 3, log.body
+    assert len(log.content) == 3, log.content
     for result in expected_result:
-        log_entry = log.body[expected_result.index(result)]
+        log_entry = log.content[expected_result.index(result)]
         assert result[0] == log_entry['message'],\
             "Expected message {}. Actual message {}".format(result[0], log_entry['message'])
         assert result[1] == log_entry['title'], \
@@ -168,19 +168,19 @@ def test_multiple_group_tasks(sdk_client_fs: ADCMClient):
     job = action.job()
     logs = job.log_list()
     log = job.log(job_id=job.id, log_id=logs[2].id)
-    assert len(log.body) == 2, log.body
-    assert len(log.body[0]['body']) == 2, log.body[0].body
-    assert len(log.body[1]['body']) == 1, log.body[1].body
+    assert len(log.content) == 2, log.content
+    assert len(log.content[0]['body']) == 2, log.content[0].body
+    assert len(log.content[1]['body']) == 1, log.content[1].body
     for result in expected_result_groups:
-        log_entry = log.body[expected_result_groups.index(result)]
+        log_entry = log.content[expected_result_groups.index(result)]
         assert result[0] == log_entry['message'], \
             "Expected message {}. Actual message {}".format(result[0], log_entry['message'])
         assert result[1] == log_entry['title'], \
             "Expected title {}. Actual title {}".format(result[1], log_entry['title'])
         assert result[2] is log_entry['result'], \
             "Expected result {}. Actual result {}".format(result[2], log_entry['result'])
-    group1 = log.body[0]['body']
-    group2 = log.body[1]
+    group1 = log.content[0]['body']
+    group2 = log.content[1]
     for result in group1_expected:
         log_entry = group1[group1_expected.index(result)]
         assert result[0] == log_entry['title'],  \
@@ -210,8 +210,8 @@ def test_multiple_group_tasks_without_group_title(sdk_client_fs: ADCMClient):
     job = action.job()
     logs = job.log_list()
     log = job.log(job_id=job.id, log_id=logs[2].id)
-    assert len(log.body) == 2, log.body
-    for log_entry in log.body:
+    assert len(log.content) == 2, log.content
+    for log_entry in log.content:
         assert log_entry['title'] == 'Check log 1',\
             "Expected title 'Check log 1'. Current title".format(log_entry['title'])
         assert log_entry['result'], "Result is False, Expected True"
@@ -228,9 +228,9 @@ def test_multiple_tasks_action_with_log_files_check(sdk_client_fs: ADCMClient):
     job = task.job()
     logs = job.log_list()
     log = job.log(job_id=job.id, log_id=logs[2].id)
-    body = log.body[0]
+    content = log.content[0]
     assert job.status == 'success', "Current job status {}. Expected: success".format(job.status)
-    assert body['result'], "Result is False, Expected True"
+    assert content['result'], "Result is False, Expected True"
 
 
 def test_result_no(sdk_client_fs: ADCMClient):
@@ -245,5 +245,5 @@ def test_result_no(sdk_client_fs: ADCMClient):
     logs = job.log_list()
     log = job.log(job_id=job.id, log_id=logs[2].id)
     assert job.status == 'success', "Current job status {}. Expected: success".format(job.status)
-    body = log.body[0]
-    assert not body['result'], "Result is True, Expected False"
+    content = log.content[0]
+    assert not content['result'], "Result is True, Expected False"
