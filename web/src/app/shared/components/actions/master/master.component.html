@@ -56,7 +56,7 @@
     </ng-container>
 
     <button mat-raised-button (click)="cancel()" color="primary" tabindex="-1">Cancel</button>
-    <button mat-raised-button (click)="run(value)" color="accent" [disabled]="isDisabled(value)" tabindex="1">
+    <button mat-raised-button #runBtn (click)="run(value)" color="accent" [disabled]="isDisabled(value)" tabindex="1">
       Run
     </button>
   </div>
