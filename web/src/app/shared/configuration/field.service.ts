@@ -130,8 +130,8 @@ export class FieldService {
     const name = field.subname || field.name;
     const validator = field.activatable ? [] : this.setValidator(field);
     controls[name] = this.fb.control(field.value, validator);
-    if (field.controlType === 'password') {
-      controls[`confirm_${name}`] = this.fb.control(field.value, field.ui_options?.no_confirm ? null : validator);
+    if (field.controlType === 'password' && !field.ui_options?.no_confirm) {
+      controls[`confirm_${name}`] = this.fb.control(field.value, validator);
     }
     return controls;
   }
