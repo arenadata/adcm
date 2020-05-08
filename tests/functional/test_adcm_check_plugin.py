@@ -29,7 +29,8 @@ def test_field_validation(sdk_client_fs: ADCMClient, missed_field):
 @pytest.mark.parametrize("name, group_msg, task_msg, group_result, task_result", ALL_FIELDS_DATA)
 def test_all_fields(sdk_client_fs: ADCMClient, name, group_msg,
                     task_msg, group_result, task_result):
-    """Check that we can run jobs with all fields for adcm_check task and check all fields after action
+    """Check that we can run jobs with all fields for
+     adcm_check task and check all fields after action
     execution.
     """
     bundle_dir = utils.get_data_dir(__file__, name)
@@ -213,7 +214,7 @@ def test_multiple_group_tasks_without_group_title(sdk_client_fs: ADCMClient):
     assert len(log.content) == 2, log.content
     for log_entry in log.content:
         assert log_entry['title'] == 'Check log 1',\
-            "Expected title 'Check log 1'. Current title".format(log_entry['title'])
+            "Expected title 'Check log 1'. Current title {}".format(log_entry['title'])
         assert log_entry['result'], "Result is False, Expected True"
 
 
