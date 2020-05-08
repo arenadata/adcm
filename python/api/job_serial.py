@@ -90,8 +90,11 @@ class LogStorageSerializer(serializers.Serializer):
                 content = json.loads(content)
         elif obj.type == 'custom':
             if obj.format == 'json' and isinstance(content, str):
-                content = json.loads(content)
-                content = json.dumps(content, indent=4)
+                try:
+                    content = json.loads(content)
+                    content = json.dumps(content, indent=4)
+                except json.JSONDecodeError:
+                    pass
 
         return content
 
