@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, EventEmitter, OnInit } from '@angular/core';
+import { Component, EventEmitter, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { IAction } from '@app/core/types';
 import { DynamicComponent, DynamicEvent } from '@app/shared/directives/dynamic.directive';
 
@@ -40,6 +40,8 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
   action: IAction;
   show: whatShow;
 
+  @ViewChild('runBtn', { read: ElementRef }) runBtn: ElementRef;
+
   constructor(private service: MasterService) {
     super();
   }
@@ -63,6 +65,10 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
       .send(this.action.run, data)
       .pipe(this.takeUntil())
       .subscribe(() => this.cancel());
+  }
+
+  onEnterKey() {
+    this.runBtn.nativeElement.click();
   }
 
   cancel() {

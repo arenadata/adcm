@@ -11,6 +11,7 @@
 # limitations under the License.
 import json
 import random
+import time
 
 from adcm_pytest_plugin import utils
 
@@ -42,6 +43,7 @@ def test_check_inventories_file(adcm, client):
     client.cluster.action.run.create(
         cluster_id=cluster['id'],
         action_id=random.choice(client.cluster.action.list(cluster_id=cluster['id']))['id'])
+    time.sleep(5)
     text = utils.get_file_from_container(adcm, '/adcm/data/run/1/', 'inventory.json')
     inventory = json.loads(text.read().decode('utf8'))
     template = open(utils.get_data_dir(__file__, 'cluster-inventory.json'), 'rb')
