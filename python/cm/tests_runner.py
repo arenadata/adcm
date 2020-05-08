@@ -102,7 +102,7 @@ class TestTaskRunner(TestCase):
 
         mock_finish_task.assert_called_once_with(task, job, config.Job.SUCCESS)
         mock_run_job.assert_called_once_with(task.id, job.id, _file)
-        mock_re_prepare_job.assert_not_called()
+        mock_re_prepare_job.assert_called()
         self.assertTrue(JobLog.objects.get(id=1).start_date != job.start_date)
 
     @patch('task_runner.run_task')
