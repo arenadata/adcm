@@ -53,9 +53,8 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app, login):
     fields = config.get_app_fields()
     assert len(fields) == 1
     assert config.read_only_element(fields[0])
-    form_fields = fields[0].find_elements(*Common.mat_form_field)
-    for form_field in form_fields:
-        assert not config.editable_element(form_field)
+    for field in fields:
+        config.assert_field_editable(field, False)
     assert not config.save_button_status()
 
 @parametrize_by_data_subdirs(
@@ -116,9 +115,8 @@ def test_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app, log
     fields = config.get_app_fields()
     assert len(fields) == 1
     assert config.read_only_element(fields[0])
-    form_fields = fields[0].find_elements(*Common.mat_form_field)
-    for form_field in form_fields:
-        assert not config.editable_element(form_field)
+    for field in fields:
+        config.assert_field_editable(field, False)
 
 
 @parametrize_by_data_subdirs(
