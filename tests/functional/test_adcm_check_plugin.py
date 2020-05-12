@@ -48,11 +48,11 @@ def test_all_fields(sdk_client_fs: ADCMClient, name, group_msg,
     assert content['result'] is group_result
     assert content['title'] == 'Name of group check.',\
         "Expected title 'Name of group check'. Current title {}".format(content['title'])
-    assert content['body'][0]['title'] == 'Check',\
+    assert content['content'][0]['title'] == 'Check',\
         'Current title {}. Expected title: Check'.format(content[0]['title'])
-    assert content['body'][0]['message'] == task_msg,\
+    assert content['content'][0]['message'] == task_msg,\
         "Expected message {}. Current message {}".format(task_msg, content[0]['message'])
-    assert content['body'][0]['result'] is task_result
+    assert content['content'][0]['result'] is task_result
 
 
 @pytest.mark.parametrize("name", ['with_success', 'with_fail',
@@ -73,7 +73,7 @@ def test_message_with_other_field(sdk_client_fs: ADCMClient, name):
     assert job.status == 'success', "Current job status {}. Expected: success".format(job.status)
     content = log.content[0]
     assert content['message'] == name,\
-        "Expected body message {}. Current {}".format(name, content['message'])
+        "Expected content message {}. Current {}".format(name, content['message'])
 
 
 def test_success_and_fail_msg_on_success(sdk_client_fs: ADCMClient):
@@ -170,8 +170,8 @@ def test_multiple_group_tasks(sdk_client_fs: ADCMClient):
     logs = job.log_list()
     log = job.log(job_id=job.id, log_id=logs[2].id)
     assert len(log.content) == 2, log.content
-    assert len(log.content[0]['body']) == 2, log.content[0].body
-    assert len(log.content[1]['body']) == 1, log.content[1].body
+    assert len(log.content[0]['content']) == 2, log.content[0].content
+    assert len(log.content[1]['content']) == 1, log.content[1].content
     for result in expected_result_groups:
         log_entry = log.content[expected_result_groups.index(result)]
         assert result[0] == log_entry['message'], \
@@ -180,7 +180,7 @@ def test_multiple_group_tasks(sdk_client_fs: ADCMClient):
             "Expected title {}. Actual title {}".format(result[1], log_entry['title'])
         assert result[2] is log_entry['result'], \
             "Expected result {}. Actual result {}".format(result[2], log_entry['result'])
-    group1 = log.content[0]['body']
+    group1 = log.content[0]['content']
     group2 = log.content[1]
     for result in group1_expected:
         log_entry = group1[group1_expected.index(result)]
@@ -191,7 +191,7 @@ def test_multiple_group_tasks(sdk_client_fs: ADCMClient):
         assert result[2] is log_entry['result'],  \
             "Expected result {}. Actual result {}".format(result[2], log_entry['result'])
     for result in group2_expected:
-        log_entry = group2['body'][group2_expected.index(result)]
+        log_entry = group2['content'][group2_expected.index(result)]
         assert result[0] == log_entry['title'],  \
             "Expected title {}. Actual message {}".format(result[0], log_entry['title'])
         assert result[1] == log_entry['message'], \
