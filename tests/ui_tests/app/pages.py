@@ -13,6 +13,7 @@
 # Created by a1wen at 05.03.19
 import json
 
+from retrying import retry
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException, InvalidElementStateException,\
     ElementClickInterceptedException, NoSuchElementException, StaleElementReferenceException
@@ -25,6 +26,10 @@ from tests.ui_tests.app.locators import Menu, Common, Cluster, Provider, Host,\
 from tests.ui_tests.app.helpers import bys
 from cm.errors import ERRORS
 from time import sleep, time
+
+
+def retry_on_no_such_element_except(exc):
+    return isinstance(exc, NoSuchElementException)
 
 
 def repeat_dec(timeout=10, interval=0.1):
@@ -702,10 +707,12 @@ class Configuration(BasePage):
     def get_group_names(self):
         return self.driver.find_elements(*ConfigurationLocators.group_title)
 
+    @retry(retry_on_exception=retry_on_no_such_element_except, wait_fixed=10000)
     def save_button_status(self):
+        sleep(0.5)
         try:
             button = self.driver.find_element(*ConfigurationLocators.config_save_button)
-        except (StaleElementReferenceException, NoSuchElementException):
+        except StaleElementReferenceException:
             sleep(5)
             button = self.driver.find_element(*ConfigurationLocators.config_save_button)
         class_el = button.get_attribute("disabled")
