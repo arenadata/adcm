@@ -58,6 +58,7 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app, login):
     for group in groups:
         assert group.is_displayed(), group.get_attribute("class")
 
+
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_true_invisible_true_field_advanced_true_invisible_true")
 def test_all_true(sdk_client_fs: ADCMClient, path, app, login):
@@ -188,6 +189,7 @@ def test_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app, log
     assert group_names
     for field in fields:
         assert field.is_displayed(), field.get_attribute("class")
+
 
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_false_invisible_false_field_advanced_false_invisible_true")
