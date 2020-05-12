@@ -449,7 +449,7 @@ def test_should_return_job_log_files(sdk_client_fs: ADCMClient):
     assert log_files_list is not None, log_files_list
     for log in log_list:
         expected_file = job.log(id=log.id)
-        assert expected_file.body
+        assert expected_file.content
 
 
 def test_load_bundle_with_undefined_config_parameter(sdk_client_fs: ADCMClient):

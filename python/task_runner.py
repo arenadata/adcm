@@ -113,8 +113,7 @@ def run_task(task_id, args=None):
         if args == 'restart' and job.status == config.Job.SUCCESS:
             log.info('skip job #%s status "%s" of task #%s', job.id, job.status, task_id)
             continue
-        if count:
-            cm.job.re_prepare_job(task, job)
+        cm.job.re_prepare_job(task, job)
         job.start_date = timezone.now()
         job.save()
         res = run_job(task.id, job.id, err_file)
