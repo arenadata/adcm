@@ -45,12 +45,12 @@ def ui_config(app, login, service):
 def tooltips(ui_config, service):
     config = service.prototype().config
     descriptions = [field['description'] for field in config[1:] if field['description'] != ""]
-    textboxes = ui_config.get_textboxes()
+    app_fields = ui_config.get_app_fields()
     tooltips = []
-    for textbox in textboxes:
-        ttip = textbox.text.split(":")[0]
+    for app_field in app_fields:
+        ttip = app_field.text.split(":")[0]
         if ttip in descriptions and ttip != "":
-            tooltips.append(ui_config.get_tooltip_text_for_element(textbox))
+            tooltips.append(ui_config.get_tooltip_text_for_element(app_field))
     return tooltips, descriptions
 
 

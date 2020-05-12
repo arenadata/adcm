@@ -23,7 +23,7 @@ import { NavigationService, INavItem } from '../navigation.service';
     <app-crumbs [navigation]="items"></app-crumbs>
     <div class="example-spacer"></div>
     <app-upgrade *ngIf="upgradable" [dataRow]="upgrade"></app-upgrade>
-    <app-actions [source]="actions" [isIssue]="eIssue" [cluster]="cluster"></app-actions>
+    <app-actions [source]="actions || []" [isIssue]="eIssue" [cluster]="cluster"></app-actions>
   `,
   styles: [':host {display: flex;width: 100%;}']
 })
@@ -46,7 +46,7 @@ export class TopComponent {
   @Input() actions: IAction[] = [];
 
   @Input() set current(c: IDetails) {
-    if (c) {
+    if (c) {      
       this.items = this.navigation.getCrumbs(c);
       const { id, hostcomponent, issue, upgradable, upgrade } = c.parent || (c as Partial<Cluster>);
       this.cluster = { id, hostcomponent };

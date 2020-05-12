@@ -4,8 +4,8 @@
     <span style="line-height: 24px; vertical-align: text-bottom;">Settings saved.</span>
   </span>
   &nbsp;&nbsp;
-  <button [disabled]="noValid" mat-raised-button color="accent" (click)="save()" *ngIf="!hideButton">Save</button>
   <button mat-raised-button color="primary" (click)="cancel()">Restore</button>
+  <button [disabled]="noValid" mat-raised-button color="accent" (click)="save()" *ngIf="!hideButton">Save</button>  
 </div>
 
 <div class="holder" [appHolder]="scrollEventData">

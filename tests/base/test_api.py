@@ -147,22 +147,22 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         api = ['cluster', 'host', 'job', 'task', 'stack', 'user', 'profile']
         for path in api:
             r1 = requests.get(self.url + '/' + path + '/')
-            self.assertEqual(r1.status_code, 403)
+            self.assertEqual(r1.status_code, 401)
             self.assertEqual(r1.json()['detail'], 'Authentication credentials were not provided.')
 
         for path in api:
             r1 = requests.post(self.url + '/' + path + '/', {})
-            self.assertEqual(r1.status_code, 403)
+            self.assertEqual(r1.status_code, 401)
             self.assertEqual(r1.json()['detail'], 'Authentication credentials were not provided.')
 
         for path in api:
             r1 = requests.put(self.url + '/' + path + '/', {})
-            self.assertEqual(r1.status_code, 403)
+            self.assertEqual(r1.status_code, 401)
             self.assertEqual(r1.json()['detail'], 'Authentication credentials were not provided.')
 
         for path in api:
             r1 = requests.delete(self.url + '/' + path + '/')
-            self.assertEqual(r1.status_code, 403)
+            self.assertEqual(r1.status_code, 401)
             self.assertEqual(r1.json()['detail'], 'Authentication credentials were not provided.')
 
     def test_schema(self):
@@ -511,7 +511,7 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         r1 = self.api_delete('/job/' + str(job_id) + '/')
         self.assertEqual(r1.status_code, 405)
 
-        r1 = self.api_get('/job/' + str(job_id) + '/log/' + 'qwe' + '/out/txt/')
+        r1 = self.api_get('/job/' + str(job_id) + '/log/' + str(3))
         self.assertEqual(r1.status_code, 404)
         self.assertEqual(r1.json()['code'], 'LOG_NOT_FOUND')
 

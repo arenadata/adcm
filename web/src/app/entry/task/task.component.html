@@ -1,5 +1,5 @@
 <mat-toolbar class="toolbar">
-  <app-crumbs [navigation]="[{ path: '/task', name: 'jobs' }]"></app-crumbs>
+  <app-crumbs [navigation]="[{ url: '/task', title: 'jobs' }]"></app-crumbs>
 </mat-toolbar>
 <div class="container-entry">
   <div class="main">
@@ -33,21 +33,12 @@
         <td mat-cell *matCellDef="let row">
           <ng-container *ngIf="row.action">
             <ng-container *ngFor="let obj of row.objects; index as i; last as lastElement">
-              <a [routerLink]="getParentLink(row.objects, i)">{{ obj.name }}</a>
+              <a [routerLink]="obj.url">{{ obj.name }}</a>
               <span *ngIf="!lastElement"> / </span>
             </ng-container>
           </ng-container>
         </td>
       </ng-container>
-
-      <!-- <ng-container matColumnDef="cancel">
-        <th mat-header-cell *matHeaderCellDef class="control"></th>
-        <td mat-cell *matCellDef="let row">
-          <button [disabled]="!row.terminatable" mat-icon-button>
-            <mat-icon>cancel</mat-icon>
-          </button>
-        </td>
-      </ng-container> -->
 
       <ng-container matColumnDef="start_date">
         <th mat-header-cell *matHeaderCellDef class="action_date">Start date</th>
@@ -83,8 +74,9 @@
 
       <ng-container matColumnDef="expandedDetail">
         <td mat-cell *matCellDef="let element" [attr.colspan]="columnsToDisplay.length">
-          <div class="expand-jobs" [@.disabled]="isDisabled" [@jobsExpand]="element.id === expandedTask?.id ? 'expanded' : 'collapsed'">
-            
+          <div class="expand-jobs" [@.disabled]="isDisabled"
+            [@jobsExpand]="element.id === expandedTask?.id ? 'expanded' : 'collapsed'">
+
             <app-task-inner [dataSource]="element.jobs"></app-task-inner>
 
           </div>

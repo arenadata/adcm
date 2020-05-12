@@ -21,7 +21,7 @@ import { BaseDirective } from '../../directives/base.directive';
   selector: 'app-actions',
   template: `
     <div #wrap>
-      <button
+      <button tabindex="-1"
         *ngFor="let action of actions"
         #button
         mat-raised-button
@@ -37,7 +37,7 @@ import { BaseDirective } from '../../directives/base.directive';
       <mat-icon>more_vert</mat-icon>
     </button>
     <mat-menu #menu="matMenu" class="menu-more">
-      <button
+      <button tabindex="-1"
         mat-raised-button
         color="warn"
         class="menu-more-action"

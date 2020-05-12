@@ -13,7 +13,6 @@
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.response import Response
-from rest_framework.generics import GenericAPIView
 from rest_framework.parsers import MultiPartParser
 from rest_framework.authentication import TokenAuthentication, SessionAuthentication
 
@@ -28,7 +27,7 @@ from cm.logger import log   # pylint: disable=unused-import
 import api.serializers
 import api.stack_serial
 from api.serializers import check_obj
-from api.api_views import ListView, DetailViewRO, PageView
+from api.api_views import ListView, DetailViewRO, PageView, GenericAPIPermView
 
 
 class CsrfOffSessionAuthentication(SessionAuthentication):
@@ -36,7 +35,7 @@ class CsrfOffSessionAuthentication(SessionAuthentication):
         return  #
 
 
-class Stack(GenericAPIView):
+class Stack(GenericAPIPermView):
     queryset = Prototype.objects.all()
     serializer_class = api.stack_serial.Stack
 
@@ -49,7 +48,7 @@ class Stack(GenericAPIView):
         return Response(serializer.data)
 
 
-class UploadBundle(GenericAPIView):
+class UploadBundle(GenericAPIPermView):
     queryset = Bundle.objects.all()
     serializer_class = api.stack_serial.UploadBundle
     authentication_classes = (CsrfOffSessionAuthentication, TokenAuthentication)
@@ -63,7 +62,7 @@ class UploadBundle(GenericAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class LoadBundle(GenericAPIView):
+class LoadBundle(GenericAPIPermView):
     queryset = Prototype.objects.all()
     serializer_class = api.stack_serial.LoadBundle
 
@@ -118,7 +117,7 @@ class BundleDetail(DetailViewRO):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class BundleUpdate(GenericAPIView):
+class BundleUpdate(GenericAPIPermView):
     queryset = Bundle.objects.all()
     serializer_class = api.stack_serial.BundleSerializer
 
@@ -135,7 +134,7 @@ class BundleUpdate(GenericAPIView):
             raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds)
 
 
-class BundleLicense(GenericAPIView):
+class BundleLicense(GenericAPIPermView):
     action = 'retrieve'
     queryset = Bundle.objects.all()
     serializer_class = api.stack_serial.LicenseSerializer
@@ -150,7 +149,7 @@ class BundleLicense(GenericAPIView):
             raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds)
 
 
-class AcceptLicense(GenericAPIView):
+class AcceptLicense(GenericAPIPermView):
     queryset = Bundle.objects.all()
     serializer_class = api.stack_serial.LicenseSerializer
 
@@ -208,7 +207,7 @@ class ServiceDetail(DetailViewRO):
         return service
 
 
-class ProtoActionDetail(GenericAPIView):
+class ProtoActionDetail(GenericAPIPermView):
     queryset = Action.objects.all()
     serializer_class = api.serializers.ActionSerializer
 
@@ -221,7 +220,7 @@ class ProtoActionDetail(GenericAPIView):
         return Response(serializer.data)
 
 
-class ServiceProtoActionList(GenericAPIView):
+class ServiceProtoActionList(GenericAPIPermView):
     queryset = Action.objects.filter(prototype__type='service')
     serializer_class = api.serializers.ActionSerializer
 
@@ -252,7 +251,7 @@ class ProviderTypeList(PageView):
     """
     queryset = Prototype.objects.filter(type='provider')
     serializer_class = api.stack_serial.ProviderTypeSerializer
-    filterset_fields = ('name', 'bundle_id')
+    filterset_fields = ('name', 'bundle_id', 'display_name')
     ordering_fields = ('display_name', 'version_order')
 
 
@@ -263,7 +262,7 @@ class ClusterTypeList(PageView):
     """
     queryset = Prototype.objects.filter(type='cluster')
     serializer_class = api.stack_serial.ClusterTypeSerializer
-    filterset_fields = ('name', 'bundle_id')
+    filterset_fields = ('name', 'bundle_id', 'display_name')
     ordering_fields = ('display_name', 'version_order')
 
 
@@ -338,7 +337,7 @@ class ProviderTypeDetail(PrototypeDetail):
     serializer_class = api.stack_serial.ProviderTypeDetailSerializer
 
 
-class LoadServiceMap(GenericAPIView):
+class LoadServiceMap(GenericAPIPermView):
     queryset = Prototype.objects.all()
     serializer_class = api.stack_serial.Stack
 

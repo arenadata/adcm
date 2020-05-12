@@ -10,12 +10,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Injectable } from '@angular/core';
-import { ParamMap } from '@angular/router';
+import { ParamMap, Params, convertToParamMap } from '@angular/router';
 import { ApiService } from '@app/core/api';
 import { ClusterService } from '@app/core/services';
 import { Bundle, Cluster, Entities, Host, IAction, TypeName } from '@app/core/types';
 import { environment } from '@env/environment';
-import { switchMap, tap } from 'rxjs/operators';
+import { switchMap, tap, map } from 'rxjs/operators';
+import { Observable } from 'rxjs';
 
 const COLUMNS_SET = {
   cluster: ['name', 'prototype_version', 'description', 'state', 'status', 'actions', 'import', 'upgrade', 'config', 'controls'],
@@ -25,8 +26,9 @@ const COLUMNS_SET = {
   provider: ['name', 'prototype_version', 'state', 'actions', 'upgrade', 'config', 'controls'],
   job: ['action', 'objects', 'start_date', 'finish_date', 'status'],
   task: ['id', 'start_date', 'finish_date', 'status'],
-  bundle: ['name', 'version', 'edition', 'description', 'controls']
+  bundle: ['name', 'version', 'edition', 'description', 'controls'],
 };
+
 
 export interface ListInstance {
   typeName: TypeName;
@@ -34,7 +36,7 @@ export interface ListInstance {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ListService {
   current: ListInstance;
@@ -65,7 +67,7 @@ export class ListService {
       case 'bundle':
         return this.api.getList<Bundle>(`${environment.apiRoot}stack/bundle/`, p);
       default:
-        return this.api.root.pipe(switchMap(root => this.api.getList<Entities>(root[this.current.typeName], p)));
+        return this.api.root.pipe(switchMap((root) => this.api.getList<Entities>(root[this.current.typeName], p)));
     }
   }
 
@@ -76,7 +78,7 @@ export class ListService {
   getActions(row: Entities) {
     this.api
       .get<IAction[]>(row.action)
-      .pipe(tap(actions => (row.actions = actions)))
+      .pipe(tap((actions) => (row.actions = actions)))
       .subscribe();
   }
 
@@ -85,14 +87,16 @@ export class ListService {
   }
 
   // host
-  getClustersForHost(row: Host) {
-    this.api.root.pipe(switchMap(root => this.api.get<Cluster[]>(root.cluster).pipe(tap(clusters => (row.clusters = clusters))))).subscribe();
+  getClustersForHost(param: Params): Observable<{ id: number; title: string }[]> {
+    return this.api.root
+      .pipe(switchMap((root) => this.api.getList<Cluster>(root.cluster, convertToParamMap(param))))
+      .pipe(map((res) => res.results.map((a) => ({ id: a.id, title: a.name }))));
   }
 
   addClusterToHost(cluster_id: number, row: Host) {
     this.api
       .post<Host>(`${environment.apiRoot}cluster/${cluster_id}/host/`, { host_id: row.id })
-      .subscribe(host => {
+      .subscribe((host) => {
         row.cluster_id = host.cluster_id;
         row.cluster_name = host.cluster;
       });

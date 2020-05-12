@@ -17,6 +17,7 @@ export interface JobObject {
   id: number;
   name: string;
   type: string;
+  url?: string[];
 }
 
 interface TaskBase {
@@ -47,21 +48,19 @@ export type Job = JobRaw & ApiBase;
 export type Task = TaskRaw & ApiBase;
 
 export interface LogFile {
-  level: string;
-  host: string;
-  tag: string;
-  type: string;
-  file: string;
+  id: number;
   url: string;
-}
-
-export interface Log {
+  name: string;
+  type: string;
+  format: 'txt' | 'json';
+  download_url: string;
   content: string | CheckLog[];
-  fileName: string;
 }
 
 export interface CheckLog {
   title: string;
   message: string;
   result: boolean;
+  type: 'group' | 'check';
+  content?: CheckLog[];
 }

@@ -48,7 +48,7 @@ def repeat_dec(timeout=10, interval=0.1):
     return dec
 
 
-REPEAT = repeat_dec(timeout=10, interval=0.1)
+REPEAT = repeat_dec(timeout=2, interval=0.1)
 
 
 class BasePage:
@@ -98,6 +98,18 @@ class BasePage:
         if element.is_displayed():
             element.clear()
             element.send_keys(value)
+
+    @staticmethod
+    def get_checkbox_element_status(element):
+        """Get checkbox element status, checked or not
+
+        :param element: WebElement
+        :return: boolean
+        """
+        el_class = element.get_attribute("class")
+        if "mat-checkbox-checked" in el_class:
+            return True
+        return True
 
     def _fill_field_element(self, data, field_element):
         field_element.clear()
@@ -315,8 +327,8 @@ class LoginPage(BasePage):
         self._password = None
 
     def login(self, login, password):
-        self._login = self._getelement(LoginPage.login_locator)
-        self._password = self._getelement(LoginPage.passwd_locator)
+        self._login = REPEAT(self.driver.find_element)(*LoginPage.login_locator)
+        self._password = REPEAT(self.driver.find_element)(*LoginPage.passwd_locator)
         self._login.send_keys(login)
         self._password.send_keys(password)
         self._password.send_keys(Keys.RETURN)
@@ -515,9 +527,170 @@ class ServiceDetails(Details, ListPage):
 
 # pylint: disable=R0904
 class Configuration(BasePage):
+    """
+    Class for configuration page
+    """
+
+    def assert_field_editable(self, field, editable=True):
+        """Check that we can edit specific field or not
+        :param field:
+        :param editable:
+        :return:
+        """
+        field_editable = self.editable_element(field)
+        assert field_editable == editable
+
+    def assert_field_content_equal(self, field_type, field, expected_value):
+        """Check that field content equal expected value
+
+        :param field_type:
+        :param field:
+        :param expected_value:
+        :return:
+        """
+        current_value = self.get_field_value_by_type(field, field_type)
+        if field_type == 'file':
+            expected_value = 'test'
+        if field_type == 'map':
+            map_config = self.get_map_field_config(field)
+            assert set(map_config.keys()) == set(map_config.keys())
+            assert set(map_config.values()) == set(map_config.values())
+        else:
+            err_message = "Default value wrong. Current value {}".format(current_value)
+            assert current_value == expected_value, err_message
+
+    def assert_alerts_presented(self, field_type):
+        """Check that frontend errors presented on screen and error type in text
+
+        :param field_type:
+        :return:
+        """
+        errors = self.get_frontend_errors()
+        assert errors
+        if field_type == 'password':
+            assert len(errors) == 2
+            error_text = "Field [{}] is required!".format(field_type)
+            error_texts = [error.text for error in errors]
+            assert error_text in error_texts
+
+    def assert_group_status(self, group_element, status=True):
+        """Check that group active or not
+        :param group_element:
+        :param status:
+        :return:
+        """
+        if status:
+            assert self.group_is_active_by_element(group_element)
+        else:
+            assert not self.group_is_active_by_element(group_element)
 
     def get_config_field(self):
         return self._getelement(ConfigurationLocators.app_conf_fields)
+
+    def get_app_root_scheme_fields(self, field=None):
+        if not field:
+            return self.driver.find_elements(*ConfigurationLocators.app_root_scheme)
+        else:
+            return field.find_elements(*ConfigurationLocators.app_root_scheme)
+
+    def get_map_key(self, item_element):
+        """Get key value for map field
+
+        :param item_element:
+        :return:
+        """
+        form_field = item_element.find_element(*ConfigurationLocators.map_key_field)
+        inp = form_field.find_element(*Common.mat_input_element)
+        return inp.get_attribute("value")
+
+    def get_map_value(self, item_element):
+        """Get value for map field
+
+        :param item_element:
+        :return:
+        """
+        form_field = item_element.find_element(*ConfigurationLocators.map_value_field)
+        inp = form_field.find_element(*Common.mat_input_element)
+        return inp.get_attribute("value")
+
+    def get_map_field_config(self, map_field):
+        """Get map field values
+
+        :param map_field:
+        :return: dict
+        """
+        items = map_field.find_elements(*Common.item)
+        result = {}
+        for item in items:
+            _key = self.get_map_key(item)
+            _value = self.get_map_value(item)
+            result[_key] = _value
+        return result
+
+    def get_fields_by_type(self, field_type):
+        """Get fields by type
+
+        :param field_type: string with type
+        :return: list of fields
+        """
+        if field_type == 'structure':
+            return self.get_app_root_scheme_fields()
+        return self.get_app_fields()
+
+    def get_field_value_by_type(self, field_element, field_type):
+        """Return field value from element by field type
+
+        :param field_element: WebElement
+        :param field_type: string with type
+        :return: field value, for numeric fields string will be converted
+        to field type.
+        """
+        if field_type == 'boolean':
+            element_with_value = field_element.find_element(*Common.mat_checkbox_class)
+            current_value = self.get_checkbox_element_status(element_with_value)
+        elif field_type == 'option':
+            element_with_value = field_element.find_element(*Common.mat_select)
+            current_value = self.get_field_value(element_with_value)
+        elif field_type == 'list':
+            elements_with_value = field_element.find_elements(*Common.mat_input_element)
+            current_value = [
+                self.get_field_value(element) for element in elements_with_value
+            ]
+        elif field_type == 'structure':
+            return self.get_structure_values(field_element)
+        else:
+            element_with_value = field_element.find_element(*Common.mat_input_element)
+            current_value = self.get_field_value(element_with_value)
+        if field_type == 'integer':
+            current_value = int(current_value)
+        elif field_type == 'float':
+            current_value = float(current_value)
+        elif field_type == 'json':
+            current_value = json.loads(current_value)
+        return current_value
+
+    @staticmethod
+    def get_structure_values(field):
+        """Get structure values for field
+
+        :param field:
+        :return: list of dicts
+        """
+        schemes = field.find_elements(*ConfigurationLocators.app_root_scheme)[1:]
+        config = []
+        for scheme in schemes:
+            fields_in_scheme = scheme.find_elements(*Common.mat_form_field)
+            structure_element = {}
+            for mat_field in fields_in_scheme:
+                input_element = mat_field.find_element(*Common.mat_input_element)
+                name = mat_field.text
+                structure_element[name] = input_element.get_attribute("value")
+            config.append(structure_element)
+        return config
+
+    @staticmethod
+    def get_field_value(input_field):
+        return input_field.get_attribute("value")
 
     def get_config_elements(self):
         el = self.get_config_field()
@@ -532,13 +705,15 @@ class Configuration(BasePage):
     def save_button_status(self):
         try:
             button = self.driver.find_element(*ConfigurationLocators.config_save_button)
-        except StaleElementReferenceException:
-            sleep(10)
+        except (StaleElementReferenceException, NoSuchElementException):
+            sleep(5)
             button = self.driver.find_element(*ConfigurationLocators.config_save_button)
-        # button = self._getelement(ConfigurationLocators.config_save_button)
-        if not button.get_attribute("disabled"):
-            return True
-        return False
+        class_el = button.get_attribute("disabled")
+        if class_el == 'true':
+            result = False
+        else:
+            result = True
+        return result
 
     def get_app_fields(self):
         return self.driver.find_elements(*ConfigurationLocators.app_field)
@@ -606,7 +781,8 @@ class Configuration(BasePage):
         buttons = self._getelements(Common.mat_checkbox)
         for button in buttons:
             if button.text == 'Advanced':
-                self._click_button_with_sleep(button, 10)
+                self._click_button_with_sleep(button, 5)
+                sleep(0.5)
                 return True
         return False
 
@@ -784,8 +960,14 @@ class Configuration(BasePage):
 
     @staticmethod
     def editable_element(element):
-        if "field-disabled" in element.get_attribute("class"):
+        el_class = element.get_attribute("class")
+        el_readonly_attr = element.get_attribute("readonly")
+        if "field-disabled" in el_class:
             return False
-        elif element.is_enabled():
+        elif 'read-only' in el_class:
             return False
+        elif el_readonly_attr == 'true':
+            return False
+        if element.is_enabled():
+            return True
         return True

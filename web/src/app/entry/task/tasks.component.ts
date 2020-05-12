@@ -18,7 +18,7 @@ import { MatTableDataSource } from '@angular/material/table';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { ApiService } from '@app/core/api';
 import { EventMessage, SocketState } from '@app/core/store';
-import { JobStatus, Task } from '@app/core/types';
+import { JobStatus, Task, JobObject } from '@app/core/types';
 import { DialogComponent, SocketListenerDirective } from '@app/shared';
 import { Store } from '@ngrx/store';
 import { filter, switchMap } from 'rxjs/operators';
@@ -31,9 +31,9 @@ import { filter, switchMap } from 'rxjs/operators';
     trigger('jobsExpand', [
       state('collapsed', style({ height: '0px', minHeight: '0' })),
       state('expanded', style({ height: '*' })),
-      transition('expanded <=> collapsed', animate('225ms cubic-bezier(0.4, 0.0, 0.2, 1)'))
-    ])
-  ]
+      transition('expanded <=> collapsed', animate('225ms cubic-bezier(0.4, 0.0, 0.2, 1)')),
+    ]),
+  ],
 })
 export class TasksComponent extends SocketListenerDirective implements OnInit {
   isDisabled = false;
@@ -71,7 +71,7 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
     if (!limit) localStorage.setItem('limit', '10');
     this.paginator.pageSize = +localStorage.getItem('limit');
 
-    this.route.paramMap.pipe(this.takeUntil()).subscribe(p => {
+    this.route.paramMap.pipe(this.takeUntil()).subscribe((p) => {
       this.paramMap = p;
       if (+p.get('page') === 0) {
         this.paginator.firstPage();
@@ -93,19 +93,15 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
       .open(DialogComponent, {
         data: {
           text: 'Are you sure?',
-          controls: ['Yes', 'No']
-        }
+          controls: ['Yes', 'No'],
+        },
       })
       .beforeClosed()
       .pipe(
-        filter(yes => yes),
+        filter((yes) => yes),
         switchMap(() => this.api.put(url, {}))
       )
       .subscribe();
-  }
-
-  getParentLink(objects: { id: number; type: string }[], ind: number) {
-    return objects.filter((a, i) => i <= ind).reduce((a, c) => [...a, c.type, c.id], ['/']);
   }
 
   socketListener(m: EventMessage) {
@@ -114,16 +110,16 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
       return;
     }
 
-    const row = this.dataSource.data.find(a => a.id === m.object.id);
+    const row = this.dataSource.data.find((a) => a.id === m.object.id);
     if (m.event === 'change_job_status') {
       if (row && m.object.type === 'task') {
         row.finish_date = new Date().toISOString();
         row.status = m.object.details.value as JobStatus;
       }
       if (m.object.type === 'job') {
-        const task = this.dataSource.data.find(a => a.jobs.some(b => b.id === m.object.id));
+        const task = this.dataSource.data.find((a) => a.jobs.some((b) => b.id === m.object.id));
         if (task) {
-          const job = task.jobs.find(a => a.id === m.object.id);
+          const job = task.jobs.find((a) => a.id === m.object.id);
           if (job) {
             job.status = m.object.details.value as JobStatus;
             if (m.object.details.type === 'status' && m.object.details.value === 'running') job.start_date = new Date().toISOString();
@@ -136,22 +132,28 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
 
   addTask(id: number) {
     this.isDisabled = true;
-    this.api.getOne<Task>('task', id).subscribe(task => {
+    this.api.getOne<Task>('task', id).subscribe((task) => {
+      if (this.dataSource.data.some((a) => a.id === id)) return;
       this.paginator.length = ++this.dataCount;
-      if (this.paginator.pageSize > this.dataSource.data.length)
-      this.dataSource.data = [task, ...this.dataSource.data];
+      if (this.paginator.pageSize > this.dataSource.data.length) this.dataSource.data = [task, ...this.dataSource.data];
       else {
         const [last, ...ost] = this.dataSource.data.reverse();
         this.dataSource.data = [task, ...ost.reverse()];
       }
       this.dataSource._updateChangeSubscription();
-      setTimeout(_ => (this.isDisabled = false), 500);
+      setTimeout((_) => (this.isDisabled = false), 500);
     });
   }
 
+  buildLink(items: JobObject[]) {
+    const c = items.find((a) => a.type === 'cluster');
+    const url = (a: JobObject): string[] => (a.type === 'cluster' || !c ? ['/', a.type, `${a.id}`] : ['/', 'cluster', `${c.id}`, a.type, `${a.id}`]);
+    return items.map((a) => ({ ...a, url: url(a) }));
+  }
+
   refresh() {
-    this.api.root.pipe(switchMap(root => this.api.getList<Task>(root.task, this.paramMap))).subscribe(data => {
-      this.dataSource.data = data.results;
+    this.api.root.pipe(switchMap((root) => this.api.getList<Task>(root.task, this.paramMap))).subscribe((data) => {
+      this.dataSource.data = data.results.map((a) => ({ ...a, objects: this.buildLink(a.objects) }));
       this.paginator.length = data.count;
       this.dataCount = data.count;
       if (data.results.length) localStorage.setItem('lastJob', data.results[0].id.toString());
@@ -164,7 +166,7 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
     const f = this.route.snapshot.paramMap.get('filter') || '';
     const ordering = null; // this.getSortParam(this.sort);
     this.router.navigate(['./', { page: pageEvent.pageIndex, limit: pageEvent.pageSize, filter: f, ordering }], {
-      relativeTo: this.route
+      relativeTo: this.route,
     });
   }
 

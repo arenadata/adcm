@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=wrong-import-position, unused-import, import-error
+# pylint: disable=wrong-import-position, unused-import, import-error, too-many-locals
 
 from __future__ import absolute_import, division, print_function
 
@@ -22,13 +22,25 @@ ANSIBLE_METADATA = {'metadata_version': '1.1', 'supported_by': 'Arenadata'}
 DOCUMENTATION = r'''
 ---
 module: adcm_check
-short_description: add entry to json log file
+short_description: add entity to log storage in json format
 description:
-    - The C(adcm_check) module is intended to log result of some checks to structured JSON log file.
-      This log can be seen via ADCM user interface. Each invoke of C(adcm_check) add one entry to
-      json log file linked with ADCM job. You can invoke C(adcm_check) with one job id any number of
-      time per playbook.
+    - The C(adcm_check) module is intended to log result of some checks to structured JSON log
+      storage. This log can be seen via ADCM user interface. Each invoke of C(adcm_check) add one
+      entry to json log storage linked with ADCM job. You can invoke C(adcm_check) with one job id
+      any number of time per playbook.
 options:
+  group_title:
+    description:
+      - Name of group check
+    required: no
+  group_success_msg:
+    description:
+      - Description of success check or success results of check for group
+    required: no
+  group_fail_msg:
+    description:
+      - Description of fail check or fail results of check for group
+    required: no
   title:
     description:
       - Name of check
@@ -39,16 +51,44 @@ options:
     required: yes
     type: bool
   msg:
-   description:
+    description:
       - Description of check or results of check
+    required:
+      - yes, if no 'success_msg' and 'fail_msg' fields
+  success_msg:
+    description:
+      - Description of success check or success results of check
+    required:
+      - yes, if no 'msg' field
+  fail_msg:
+    description:
+      - Description of fail check or fail results of check
+    required:
+      - yes, if no 'msg' field
 '''
 
 EXAMPLES = r'''
- - name: memory check
-   adcm_check:
-     title: "Memory check"
-     msg: "640K is ok for everyone"
-     result: yes
+- name: ADCM Check
+  adcm_check:
+    title: "Check"
+    msg: "This is message"
+    result: yes
+
+- name: ADCM Check
+  adcm_check:
+    title: "Check"
+    success_msg: "This is success message"
+    fail_msg: "This is fail message"
+    result: yes
+
+- name: ADCM Check
+  adcm_check:
+    group_title: "Group 1"
+    group_success_msg: "This is success message"
+    group_fail_msg: "This is fail message"
+    title: "Check"
+    msg: "This is message"
+    result: yes
 '''
 
 RETURN = r'''
@@ -68,9 +108,11 @@ from cm.logger import log
 
 class ActionModule(ActionBase):
     TRANSFERS_FILES = False
-    _VALID_ARGS = frozenset(('title', 'result', 'msg', 'fail_msg', 'success_msg'))
+    _VALID_ARGS = frozenset(('title', 'result', 'msg', 'fail_msg', 'success_msg',
+                             'group_title', 'group_success_msg', 'group_fail_msg'))
 
     def run(self, tmp=None, task_vars=None):
+        super(ActionModule, self).run(tmp, task_vars)
         job_id = None
         if task_vars is not None and 'job' in task_vars or 'id' in task_vars['job']:
             job_id = task_vars['job']['id']
@@ -89,22 +131,39 @@ class ActionModule(ActionBase):
                         "_msg are mandatory args of adcm_check")
             }
 
-        result = super(ActionModule, self).run(tmp, task_vars)
         title = self._task.args['title']
         result = self._task.args['result']
         msg = self._task.args.get('msg', '')
         fail_msg = self._task.args.get('fail_msg', '')
         success_msg = self._task.args.get('success_msg', '')
 
-        log.debug('ansible adcm_check: %s, %s, %s, %s, %s, %s',
-                  job_id, title, result, msg, fail_msg, success_msg)
+        group_title = self._task.args.get('group_title', '')
+        group_fail_msg = self._task.args.get('group_fail_msg', '')
+        group_success_msg = self._task.args.get('group_success_msg', '')
+
+        if result:
+            msg = success_msg if success_msg else msg
+        else:
+            msg = fail_msg if fail_msg else msg
+
+        group = {
+            'title': group_title,
+            'success_msg': group_success_msg,
+            'fail_msg': group_fail_msg
+        }
+
+        check = {
+            'title': title,
+            'result': result,
+            'message': msg,
+        }
+
+        log.debug('ansible adcm_check: %s, %s',
+                  ', '.join([f'{k}: {v}' for k, v in group.items() if v]),
+                  ', '.join([f'{k}: {v}' for k, v in check.items() if v]))
 
         try:
-            if result:
-                msg = success_msg if success_msg else msg
-            else:
-                msg = fail_msg if fail_msg else msg
-            cm.job.log_check(job_id, title, result, msg)
+            cm.job.log_check(job_id, group, check)
         except AdcmEx as e:
             return {"failed": True, "msg": e.code + ":" + e.msg}
 

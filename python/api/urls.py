@@ -16,7 +16,7 @@ from django.conf.urls import include
 from rest_framework_swagger.views import get_swagger_view
 from rest_framework.schemas import get_schema_view
 
-from api import views, stack_views, cluster_views, docs
+from api import views, stack_views, cluster_views, docs, job_views
 
 
 register_converter(views.NameConverter, 'name')
@@ -41,13 +41,22 @@ urlpatterns = [
 
     path('user/', views.UserList.as_view(), name='user-list'),
     path('user/<name:username>/', views.UserDetail.as_view(), name='user-details'),
+    path('user/<name:username>/role/', views.ChangeUserRole.as_view(), name='change-user-role'),
+    path('user/<name:username>/group/', views.AddUser2Group.as_view(), name='add-user-group'),
     path('user/<name:username>/password/', views.UserPasswd.as_view(), name='user-passwd'),
+
+    path('group/', views.GroupList.as_view(), name='group-list'),
+    path('group/<name:name>/', views.GroupDetail.as_view(), name='group-details'),
+    path('group/<name:name>/role/', views.ChangeGroupRole.as_view(), name='change-group-role'),
 
     path('profile/', views.ProfileList.as_view(), name='profile-list'),
     path('profile/<name:username>/', views.ProfileDetail.as_view(), name='profile-details'),
     path(
         'profile/<name:username>/password/', views.UserPasswd.as_view(), name='profile-passwd'
     ),
+
+    path('role/', views.RoleList.as_view(), name='role-list'),
+    path('role/<int:role_id>/', views.RoleDetail.as_view(), name='role-details'),
 
     path('stats/', views.Stats.as_view(), name='stats'),
     path('stats/task/<int:task_id>/', views.TaskStats.as_view(), name='task-stats'),
@@ -449,16 +458,23 @@ urlpatterns = [
         name='host-config-restore'
     ),
 
-    path('task/', views.Task.as_view(), name='task'),
-    path('task/<int:task_id>/', views.TaskDetail.as_view(), name='task-details'),
-    path('task/<int:task_id>/restart/', views.TaskReStart.as_view(), name='task-restart'),
-    path('task/<int:task_id>/cancel/', views.TaskCancel.as_view(), name='task-cancel'),
+    path('task/', job_views.Task.as_view(), name='task'),
+    path('task/<int:task_id>/', job_views.TaskDetail.as_view(), name='task-details'),
+    path('task/<int:task_id>/restart/', job_views.TaskReStart.as_view(), name='task-restart'),
+    path('task/<int:task_id>/cancel/', job_views.TaskCancel.as_view(), name='task-cancel'),
 
-    path('job/', views.JobList.as_view(), name='job'),
-    path('job/<int:job_id>/', views.JobDetail.as_view(), name='job-details'),
+    path('job/', job_views.JobList.as_view(), name='job'),
+    path('job/<int:job_id>/', job_views.JobDetail.as_view(), name='job-details'),
+    path('job/<int:job_id>/log/', job_views.LogStorageListView.as_view(), name='log-list'),
+    path('job/<int:job_id>/log/<int:log_id>/',
+         job_views.LogStorageView.as_view(),
+         name='log-storage'),
+    path('job/<int:job_id>/log/<int:log_id>/download/',
+         job_views.download_log_file,
+         name='download-log'),
     path(
         'job/<int:job_id>/log/<name:tag>/<name:level>/<name:log_type>/',
-        views.LogFile.as_view(),
+        job_views.LogFile.as_view(),
         name='log-file'
     ),
     # path('docs/', include_docs_urls(title='ArenaData Chapel API')),

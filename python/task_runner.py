@@ -11,11 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=unused-import
-# pylint: disable=useless-return
-# pylint: disable=protected-access
-# pylint: disable=bare-except
-# pylint: disable=global-statement
+# pylint: disable=unused-import, useless-return, protected-access, bare-except, global-statement
 
 
 import os
@@ -24,15 +20,14 @@ import subprocess
 import sys
 import time
 
-import adcm.init_django
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 
+import adcm.init_django
 import cm.config as config
 import cm.job
 from cm.logger import log
-from cm.models import TaskLog, JobLog
-
+from cm.models import TaskLog, JobLog, LogStorage
 
 TASK_ID = 0
 
@@ -70,24 +65,27 @@ def terminate_task(signum, frame):
 signal.signal(signal.SIGTERM, terminate_task)
 
 
-def open_file(root, tag, task_id):
-    fname = os.path.join(root, f'{task_id}-{tag}.txt')
-    f = open(fname, 'w')
-    return f
-
-
-def run_job(task_id, job_id, out_file, err_file):
+def run_job(task_id, job_id, err_file):
     log.debug("run job #%s of task #%s", job_id, task_id)
     try:
         proc = subprocess.Popen([
             os.path.join(config.CODE_DIR, 'job_runner.py'),
             str(job_id)
-        ], stdout=out_file, stderr=err_file)
+        ], stderr=err_file)
         res = proc.wait()
         return res
     except:
         log.error("exception runnung job %s", job_id)
         return 1
+
+
+def set_body_ansible(job):
+    log_storage = LogStorage.objects.filter(job=job, name='ansible', type__in=['stdout', 'stderr'])
+    for ls in log_storage:
+        file_path = os.path.join(config.RUN_DIR, f'{ls.job.id}', f'ansible-{ls.type}.{ls.format}')
+        with open(file_path, 'r') as f:
+            body = f.read()
+        LogStorage.objects.filter(job=job, name=ls.name, type=ls.type).update(body=body)
 
 
 def run_task(task_id, args=None):
@@ -104,8 +102,7 @@ def run_task(task_id, args=None):
         cm.job.finish_task(task, None, config.Job.FAILED)
         return
 
-    out_file = open_file(config.LOG_DIR, 'task-out', task_id)
-    err_file = open_file(config.LOG_DIR, 'task-err', task_id)
+    err_file = open(os.path.join(config.LOG_DIR, 'job_runner.err'), 'a+')
 
     log.info("run task #%s", task_id)
 
@@ -116,11 +113,11 @@ def run_task(task_id, args=None):
         if args == 'restart' and job.status == config.Job.SUCCESS:
             log.info('skip job #%s status "%s" of task #%s', job.id, job.status, task_id)
             continue
-        if count:
-            cm.job.re_prepare_job(task, job)
+        cm.job.re_prepare_job(task, job)
         job.start_date = timezone.now()
         job.save()
-        res = run_job(task.id, job.id, out_file, err_file)
+        res = run_job(task.id, job.id, err_file)
+        set_body_ansible(job)
         count += 1
         if res != 0:
             break
@@ -130,7 +127,6 @@ def run_task(task_id, args=None):
     else:
         cm.job.finish_task(task, job, config.Job.FAILED)
 
-    out_file.close()
     err_file.close()
 
     log.info("finish task #%s, ret %s", task_id, res)

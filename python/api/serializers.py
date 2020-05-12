@@ -11,24 +11,26 @@
 # limitations under the License.
 
 import json
+
 import django.contrib.auth
-from django.db import IntegrityError, transaction
-from django.core.exceptions import ObjectDoesNotExist
-from django.contrib.auth.models import User
-
-from rest_framework import serializers
-from rest_framework.reverse import reverse
 import rest_framework.authtoken.serializers
+from django.contrib.auth.models import User, Group
+from django.core.exceptions import ObjectDoesNotExist
+from django.db import IntegrityError, transaction
+from rest_framework import serializers
 from rest_framework.authtoken.models import Token
+from rest_framework.reverse import reverse
 
+import cm.config as config
 import cm.job
 import cm.stack
 import cm.status_api
-from cm.logger import log   # pylint: disable=unused-import
-import cm.config as config
+from cm.api import safe_api
 from cm.errors import AdcmApiEx, AdcmEx
-from cm.models import Action, SubAction, Cluster, Host, Prototype, PrototypeConfig
-from cm.models import JobLog, UserProfile, Upgrade, HostProvider, ConfigLog, ClusterObject
+from cm.models import (
+    Action, SubAction, Prototype, PrototypeConfig, JobLog, UserProfile, Upgrade, HostProvider,
+    ConfigLog, Role, Host, Cluster, ClusterObject
+)
 
 
 def check_obj(model, req, error):
@@ -123,15 +125,56 @@ class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):
         return attrs
 
 
-class UserSerializer(serializers.Serializer):
-    class MyUrlField(UrlField):
-        def get_kwargs(self, obj):
-            return {'username': obj.username}
+class PermSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    codename = serializers.CharField()
+    app_label = serializers.SerializerMethodField()
+    model = serializers.SerializerMethodField()
 
+    def get_app_label(self, obj):
+        return obj.content_type.app_label
+
+    def get_model(self, obj):
+        return obj.content_type.model
+
+
+class RoleSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    description = serializers.CharField(read_only=True)
+    url = hlink('role-details', 'id', 'role_id')
+
+
+class RoleDetailSerializer(RoleSerializer):
+    permissions = PermSerializer(many=True, read_only=True)
+
+
+class GroupSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    url = hlink('group-details', 'name', 'name')
+    change_role = hlink('change-group-role', 'name', 'name')
+
+    @transaction.atomic
+    def create(self, validated_data):
+        try:
+            return Group.objects.create(name=validated_data.get('name'))
+        except IntegrityError:
+            raise AdcmApiEx("GROUP_CONFLICT", 'group already exists')
+
+
+class GroupDetailSerializer(GroupSerializer):
+    permissions = PermSerializer(many=True, read_only=True)
+    role = RoleSerializer(many=True, source='role_set')
+
+
+class UserSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
-    url = MyUrlField(read_only=True, view_name='user-details')
-    change_password = MyUrlField(read_only=True, view_name='user-passwd')
+    url = hlink('user-details', 'username', 'username')
+    change_group = hlink('add-user-group', 'username', 'username')
+    change_password = hlink('user-passwd', 'username', 'username')
+    change_role = hlink('change-user-role', 'username', 'username')
+    is_superuser = serializers.BooleanField(required=False)
 
     @transaction.atomic
     def create(self, validated_data):
@@ -139,12 +182,45 @@ class UserSerializer(serializers.Serializer):
             user = User.objects.create_user(
                 validated_data.get('username'),
                 password=validated_data.get('password'),
-                is_superuser=True
+                is_superuser=validated_data.get('is_superuser', True)
             )
             UserProfile.objects.create(login=validated_data.get('username'))
             return user
         except IntegrityError:
             raise AdcmApiEx("USER_CONFLICT", 'user already exists')
+
+
+class UserDetailSerializer(UserSerializer):
+    user_permissions = PermSerializer(many=True)
+    groups = GroupSerializer(many=True)
+    role = RoleSerializer(many=True, source='role_set')
+
+
+class AddUser2GroupSerializer(serializers.Serializer):
+    name = serializers.CharField()
+
+    def update(self, user, validated_data):   # pylint: disable=arguments-differ
+        group = check_obj(Group, {'name': validated_data.get('name')}, 'GROUP_NOT_FOUND')
+        group.user_set.add(user)
+        return group
+
+
+class AddUserRoleSerializer(serializers.Serializer):
+    role_id = serializers.IntegerField()
+    name = serializers.CharField(read_only=True)
+
+    def update(self, user, validated_data):   # pylint: disable=arguments-differ
+        role = check_obj(Role, {'id': validated_data.get('role_id')}, 'ROLE_NOT_FOUND')
+        return safe_api(cm.api.add_user_role, (user, role))
+
+
+class AddGroupRoleSerializer(serializers.Serializer):
+    role_id = serializers.IntegerField()
+    name = serializers.CharField(read_only=True)
+
+    def update(self, group, validated_data):   # pylint: disable=arguments-differ
+        role = check_obj(Role, {'id': validated_data.get('role_id')}, 'ROLE_NOT_FOUND')
+        return safe_api(cm.api.add_group_role, (group, role))
 
 
 class UserPasswdSerializer(serializers.Serializer):
@@ -458,6 +534,13 @@ class ConfigSerializer(serializers.Serializer):
         return cm.adcm_config.get_default(obj, proto)
 
 
+class ConfigSerializerUI(ConfigSerializer):
+    activatable = serializers.SerializerMethodField()
+
+    def get_activatable(self, obj):
+        return bool(cm.adcm_config.group_is_activatable(obj))
+
+
 class ActionSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     prototype_id = serializers.IntegerField()
@@ -496,8 +579,9 @@ class ActionDetailSerializer(ActionSerializer):
         aconf = PrototypeConfig.objects.filter(prototype=obj.prototype, action=obj).order_by('id')
         context = self.context
         context['prototype'] = obj.prototype
-        conf = ConfigSerializer(aconf, many=True, context=context, read_only=True)
-        return {'attr': None, 'config': conf.data}
+        conf = ConfigSerializerUI(aconf, many=True, context=context, read_only=True)
+        _, _, _, attr = cm.adcm_config.get_prototype_config(obj.prototype, obj)
+        return {'attr': attr, 'config': conf.data}
 
     def get_subs(self, obj):
         sub_actions = SubAction.objects.filter(action=obj).order_by('id')
@@ -603,8 +687,9 @@ class ActionShort(serializers.Serializer):
     def get_config(self, obj):
         context = self.context
         context['prototype'] = obj.prototype
-        conf = ConfigSerializer(obj.config, many=True, context=context, read_only=True)
-        return {'attr': None, 'config': conf.data}
+        conf = ConfigSerializerUI(obj.config, many=True, context=context, read_only=True)
+        _, _, _, attr = cm.adcm_config.get_prototype_config(obj.prototype, obj)
+        return {'attr': attr, 'config': conf.data}
 
 
 class ServiceActionShort(ActionShort):
@@ -679,18 +764,6 @@ class StatsSerializer(serializers.Serializer):
     job = hlink('job-stats', 'id', 'job_id')
 
 
-class JobListSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    pid = serializers.IntegerField(read_only=True)
-    task_id = serializers.IntegerField(read_only=True)
-    action_id = serializers.IntegerField(read_only=True)
-    sub_action_id = serializers.IntegerField(read_only=True)
-    status = serializers.CharField(read_only=True)
-    start_date = serializers.DateTimeField(read_only=True)
-    finish_date = serializers.DateTimeField(read_only=True)
-    url = hlink('job-details', 'id', 'job_id')
-
-
 def get_job_action(obj):
     try:
         act = Action.objects.get(id=obj.action_id)
@@ -735,49 +808,6 @@ def get_job_objects(obj):
     return resp
 
 
-class JobSerializer(JobListSerializer):
-    action = serializers.SerializerMethodField()
-    display_name = serializers.SerializerMethodField()
-    objects = serializers.SerializerMethodField()
-    selector = JSONField(required=False)
-    log_dir = serializers.CharField(read_only=True)
-    log_files = DataField(read_only=True)
-    action_url = hlink('action-details', 'action_id', 'action_id')
-    task_url = hlink('task-details', 'id', 'task_id')
-
-    def get_action(self, obj):
-        return get_job_action(obj)
-
-    def get_display_name(self, obj):
-        if obj.sub_action_id:
-            try:
-                sub = SubAction.objects.get(id=obj.sub_action_id)
-                return sub.display_name
-            except SubAction.DoesNotExist:
-                return None
-        else:
-            try:
-                action = Action.objects.get(id=obj.action_id)
-                return action.display_name
-            except Action.DoesNotExist:
-                return None
-
-    def get_objects(self, obj):
-        return get_job_objects(obj)
-
-
-class LogSerializer(serializers.Serializer):
-    tag = serializers.CharField(read_only=True)
-    level = serializers.CharField(read_only=True)
-    type = serializers.CharField(read_only=True)
-    content = serializers.SerializerMethodField()
-
-    def get_content(self, obj):
-        if obj.type == 'json':
-            return json.loads(obj.content)
-        return obj.content
-
-
 class TaskListSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     pid = serializers.IntegerField(read_only=True)
@@ -802,6 +832,7 @@ class JobShort(serializers.Serializer):
 class TaskSerializer(TaskListSerializer):
     selector = JSONField(read_only=True)
     config = JSONField(required=False)
+    attr = JSONField(required=False)
     hc = JSONField(required=False)
     hosts = JSONField(required=False)
     action_url = serializers.HyperlinkedIdentityField(
@@ -866,6 +897,7 @@ class TaskRunSerializer(TaskSerializer):
                 validated_data.get('action_id'),
                 validated_data.get('selector'),
                 validated_data.get('config', None),
+                validated_data.get('attr', None),
                 validated_data.get('hc', None),
                 validated_data.get('hosts', None)
             )

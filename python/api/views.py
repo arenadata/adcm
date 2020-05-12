@@ -13,15 +13,16 @@
 # pylint: disable=duplicate-except,attribute-defined-outside-init,too-many-lines
 
 import rest_framework
-from django.contrib.auth.models import User
 from django.db import transaction
 from django.utils import timezone
+from django.contrib.auth.models import User, Group
+from django.contrib.auth import login as django_login
 from django_filters import rest_framework as drf_filters
+
 from rest_framework import routers, status
-from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.authtoken.models import Token
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from rest_framework.reverse import reverse
 
 import api.cluster_serial
 import api.serializers
@@ -30,16 +31,17 @@ import cm.config as config
 import cm.job
 import cm.stack
 import cm.status_api
-from adcm.settings import ADCM_VERSION
-from api.api_views import (
-    DetailViewRO, DetailViewDelete, ActionFilter, ListView,
-    PageView, PageViewAdd, create, update
-)
-from api.serializers import check_obj, filter_actions, get_config_version
+from cm.api import safe_api
 from cm.errors import AdcmEx, AdcmApiEx
 from cm.models import (
     HostProvider, Host, ADCM, Action, JobLog, TaskLog, Upgrade, ObjectConfig,
-    ConfigLog, UserProfile, DummyData
+    ConfigLog, UserProfile, DummyData, Role,
+)
+from adcm.settings import ADCM_VERSION
+from api.serializers import check_obj, filter_actions, get_config_version
+from api.api_views import (
+    DetailViewRO, DetailViewDelete, ActionFilter, ListView,
+    PageView, PageViewAdd, GenericAPIPermView, create, update
 )
 
 
@@ -73,6 +75,8 @@ class APIRoot(routers.APIRootView):
         'task': 'task',
         'token': 'token',
         'user': 'user-list',
+        'group': 'group-list',
+        'role': 'role-list',
         'info': 'adcm-info',
     }
 
@@ -87,12 +91,12 @@ class NameConverter:
         return value
 
 
-class GetAuthToken(ObtainAuthToken, GenericAPIView):
+class GetAuthToken(GenericAPIView):
     authentication_classes = (rest_framework.authentication.TokenAuthentication,)
     permission_classes = (rest_framework.permissions.AllowAny,)
     serializer_class = api.serializers.AuthSerializer
 
-    def post(self, *args, **kwargs):   # pylint: disable=arguments-differ,useless-super-delegation
+    def post(self, request, *args, **kwargs):
         """
         Provide authentication token
 
@@ -102,7 +106,12 @@ class GetAuthToken(ObtainAuthToken, GenericAPIView):
         Authorization: Token XXXXX
         ```
         """
-        return super(GetAuthToken, self).post(*args, **kwargs)
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        token, _created = Token.objects.get_or_create(user=user)
+        django_login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+        return Response({'token': token.key})
 
 
 class ADCMInfo(GenericAPIView):
@@ -132,9 +141,9 @@ class UserList(PageViewAdd):
     ordering_fields = ('username',)
 
 
-class UserDetail(GenericAPIView):
+class UserDetail(GenericAPIPermView):
     queryset = User.objects.all()
-    serializer_class = api.serializers.UserSerializer
+    serializer_class = api.serializers.UserDetailSerializer
 
     def get(self, request, username):
         """
@@ -151,7 +160,7 @@ class UserDetail(GenericAPIView):
         return delete_user(username)
 
 
-class UserPasswd(GenericAPIView):
+class UserPasswd(GenericAPIPermView):
     queryset = User.objects.all()
     serializer_class = api.serializers.UserPasswdSerializer
 
@@ -162,6 +171,137 @@ class UserPasswd(GenericAPIView):
         user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
         serializer = self.serializer_class(user, data=request.data, context={'request': request})
         return update(serializer)
+
+
+class AddUser2Group(GenericAPIPermView):
+    queryset = User.objects.all()
+    serializer_class = api.serializers.AddUser2GroupSerializer
+
+    def post(self, request, username):
+        """
+        Add user to group
+        """
+        user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
+        serializer = self.serializer_class(user, data=request.data, context={'request': request})
+        return update(serializer)
+
+    def delete(self, request, username):
+        """
+        Remove user from group
+        """
+        user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        group = check_obj(
+            Group, {'name': serializer.data['name']}, 'GROUP_NOT_FOUND'
+        )
+        group.user_set.remove(user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ChangeUserRole(GenericAPIPermView):
+    queryset = User.objects.all()
+    serializer_class = api.serializers.AddUserRoleSerializer
+
+    def post(self, request, username):
+        """
+        Add user role
+        """
+        user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
+        serializer = self.serializer_class(user, data=request.data, context={'request': request})
+        return update(serializer)
+
+    def delete(self, request, username):
+        """
+        Remove user role
+        """
+        user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        role = check_obj(Role, {'id': serializer.data['role_id']}, 'ROLE_NOT_FOUND')
+        safe_api(cm.api.remove_user_role, (user, role))
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class GroupList(PageViewAdd):
+    """
+    get:
+    List all existing user groups
+
+    post:
+    Create new user group
+    """
+    queryset = Group.objects.all()
+    serializer_class = api.serializers.GroupSerializer
+    ordering_fields = ('name',)
+
+
+class GroupDetail(GenericAPIPermView):
+    queryset = Group.objects.all()
+    serializer_class = api.serializers.GroupDetailSerializer
+
+    def get(self, request, name):
+        """
+        show user group
+        """
+        group = check_obj(Group, {'name': name}, 'GROUP_NOT_FOUND')
+        serializer = self.serializer_class(group, context={'request': request})
+        return Response(serializer.data)
+
+    def delete(self, request, name):
+        """
+        delete user group
+        """
+        group = check_obj(Group, {'name': name}, 'GROUP_NOT_FOUND')
+        group.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ChangeGroupRole(GenericAPIPermView):
+    queryset = User.objects.all()
+    serializer_class = api.serializers.AddGroupRoleSerializer
+
+    def post(self, request, name):
+        """
+        Add group role
+        """
+        group = check_obj(Group, {'name': name}, 'GROUP_NOT_FOUND')
+        serializer = self.serializer_class(group, data=request.data, context={'request': request})
+        return update(serializer)
+
+    def delete(self, request, name):
+        """
+        Remove group role
+        """
+        group = check_obj(Group, {'name': name}, 'GROUP_NOT_FOUND')
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        role = check_obj(Role, {'id': serializer.data['role_id']}, 'ROLE_NOT_FOUND')
+        safe_api(cm.api.remove_group_role, (group, role))
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class RoleList(PageView):
+    """
+    get:
+    List all existing roles
+    """
+    queryset = Role.objects.all()
+    serializer_class = api.serializers.RoleSerializer
+    ordering_fields = ('name',)
+
+
+class RoleDetail(PageView):
+    queryset = Role.objects.all()
+    serializer_class = api.serializers.RoleDetailSerializer
+
+    def get(self, request, role_id):   # pylint: disable=arguments-differ
+        """
+        show role
+        """
+        role = check_obj(Role, {'id': role_id}, 'ROLE_NOT_FOUND')
+        serializer = self.serializer_class(role, context={'request': request})
+        return Response(serializer.data)
 
 
 class ProfileList(PageViewAdd):
@@ -322,7 +462,7 @@ class ADCMActionList(ListView):
         return Response(serializer.data)
 
 
-class ADCMAction(GenericAPIView):
+class ADCMAction(GenericAPIPermView):
     queryset = Action.objects.filter(prototype__type='adcm')
     serializer_class = api.serializers.ADCMActionDetail
 
@@ -343,7 +483,7 @@ class ADCMAction(GenericAPIView):
         return Response(serializer.data)
 
 
-class ADCMTask(GenericAPIView):
+class ADCMTask(GenericAPIPermView):
     queryset = TaskLog.objects.all()
     serializer_class = api.serializers.TaskRunSerializer
 
@@ -486,7 +626,7 @@ class HostDetail(DetailViewDelete):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class Stats(GenericAPIView):
+class Stats(GenericAPIPermView):
     queryset = JobLog.objects.all()
     serializer_class = api.serializers.StatsSerializer
 
@@ -499,7 +639,7 @@ class Stats(GenericAPIView):
         return Response(serializer.data)
 
 
-class JobStats(GenericAPIView):
+class JobStats(GenericAPIPermView):
     queryset = JobLog.objects.all()
     serializer_class = api.serializers.EmptySerializer
 
@@ -516,7 +656,7 @@ class JobStats(GenericAPIView):
         return Response(data)
 
 
-class TaskStats(GenericAPIView):
+class TaskStats(GenericAPIPermView):
     queryset = TaskLog.objects.all()
     serializer_class = api.serializers.EmptySerializer
 
@@ -531,128 +671,6 @@ class TaskStats(GenericAPIView):
             config.Job.RUNNING: tasks.filter(status=config.Job.RUNNING).count(),
         }
         return Response(data)
-
-
-class JobList(PageView):
-    """
-    get:
-    List all jobs
-    """
-    queryset = JobLog.objects.order_by('-id')
-    serializer_class = api.serializers.JobListSerializer
-    serializer_class_ui = api.serializers.JobSerializer
-    filterset_fields = ('action_id', 'task_id', 'pid', 'status', 'start_date', 'finish_date')
-    ordering_fields = ('status', 'start_date', 'finish_date')
-
-
-class JobDetail(GenericAPIView):
-    queryset = JobLog.objects.all()
-    serializer_class = api.serializers.JobSerializer
-
-    def get(self, request, job_id):
-        """
-        Show job
-        """
-        job = check_obj(JobLog, job_id, 'JOB_NOT_FOUND')
-        job.log_dir = config.LOG_DIR
-        logs = cm.job.get_log_files(job)
-        for lg in logs:
-            lg['url'] = reverse(
-                'log-file', kwargs={
-                    'job_id': job.id,
-                    'level': lg['level'],
-                    'tag': lg['tag'],
-                    'log_type': lg['type'],
-                }, request=request
-            )
-        job.log_files = logs
-        serializer = self.serializer_class(job, data=request.data, context={'request': request})
-        serializer.is_valid()
-        return Response(serializer.data)
-
-
-class LogFile(GenericAPIView):
-    queryset = JobLog.objects.all()
-    serializer_class = api.serializers.LogSerializer
-
-    def get(self, request, job_id, tag, level, log_type):
-        """
-        Show log file
-        """
-        lf = JobLog()
-        try:
-            lf.content = cm.job.read_log(job_id, tag, level, log_type)
-            lf.type = log_type
-            lf.tag = tag
-            lf.level = level
-            serializer = self.serializer_class(lf, context={'request': request})
-            return Response(serializer.data)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
-
-
-class Task(PageView):
-    """
-    get:
-    List all tasks
-    """
-    queryset = TaskLog.objects.order_by('-id')
-    serializer_class = api.serializers.TaskListSerializer
-    serializer_class_ui = api.serializers.TaskSerializer
-    post_serializer = api.serializers.TaskPostSerializer
-    filterset_fields = ('action_id', 'pid', 'status', 'start_date', 'finish_date')
-    ordering_fields = ('status', 'start_date', 'finish_date')
-
-    def post(self, request):
-        """
-        Create and run new task
-        Return handler to new task
-        """
-        serializer = self.post_serializer(data=request.data, context={'request': request})
-        return create(serializer)
-
-
-class TaskDetail(DetailViewRO):
-    """
-    get:
-    Show task
-    """
-    queryset = TaskLog.objects.all()
-    serializer_class = api.serializers.TaskSerializer
-    lookup_field = 'id'
-    lookup_url_kwarg = 'task_id'
-    error_code = 'TASK_NOT_FOUND'
-
-    def get_object(self):
-        task = super().get_object()
-        task.jobs = JobLog.objects.filter(task_id=task.id)
-        return task
-
-
-class TaskReStart(GenericAPIView):
-    queryset = TaskLog.objects.all()
-    serializer_class = api.serializers.TaskSerializer
-
-    def put(self, request, task_id):
-        task = check_obj(TaskLog, task_id, 'TASK_NOT_FOUND')
-        try:
-            cm.job.restart_task(task)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
-        return Response(status=status.HTTP_200_OK)
-
-
-class TaskCancel(GenericAPIView):
-    queryset = TaskLog.objects.all()
-    serializer_class = api.serializers.TaskSerializer
-
-    def put(self, request, task_id):
-        task = check_obj(TaskLog, task_id, 'TASK_NOT_FOUND')
-        try:
-            cm.job.cancel_task(task)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
-        return Response(status=status.HTTP_200_OK)
 
 
 class ProviderConfig(ListView):
@@ -717,7 +735,7 @@ class ProviderConfigVersion(ListView):
         return Response(serializer.data)
 
 
-class ProviderConfigRestore(GenericAPIView):
+class ProviderConfigRestore(GenericAPIPermView):
     queryset = ConfigLog.objects.all()
     serializer_class = api.cluster_serial.ObjectConfigRestore
 
@@ -757,7 +775,7 @@ class ProviderActionList(ListView):
         return Response(serializer.data)
 
 
-class ProviderAction(GenericAPIView):
+class ProviderAction(GenericAPIPermView):
     queryset = Action.objects.filter(prototype__type='provider')
     serializer_class = api.serializers.ProviderActionDetail
 
@@ -778,7 +796,7 @@ class ProviderAction(GenericAPIView):
         return Response(serializer.data)
 
 
-class ProviderTask(GenericAPIView):
+class ProviderTask(GenericAPIPermView):
     queryset = TaskLog.objects.all()
     serializer_class = api.serializers.TaskRunSerializer
 
@@ -828,7 +846,7 @@ class ProviderUpgradeDetail(ListView):
         return Response(serializer.data)
 
 
-class DoProviderUpgrade(GenericAPIView):
+class DoProviderUpgrade(GenericAPIPermView):
     queryset = Upgrade.objects.all()
     serializer_class = api.serializers.DoUpgradeSerializer
 
@@ -863,7 +881,7 @@ class HostActionList(ListView):
         return Response(serializer.data)
 
 
-class HostAction(GenericAPIView):
+class HostAction(GenericAPIPermView):
     queryset = Action.objects.filter(prototype__type='host')
     serializer_class = api.serializers.HostActionDetail
 
@@ -883,7 +901,7 @@ class HostAction(GenericAPIView):
         return Response(serializer.data)
 
 
-class HostTask(GenericAPIView):
+class HostTask(GenericAPIPermView):
     queryset = TaskLog.objects.all()
     serializer_class = api.serializers.TaskRunSerializer
 
@@ -962,7 +980,7 @@ class HostConfigVersion(ListView):
         return Response(serializer.data)
 
 
-class HostConfigRestore(GenericAPIView):
+class HostConfigRestore(GenericAPIPermView):
     queryset = ConfigLog.objects.all()
     serializer_class = api.cluster_serial.ObjectConfigRestore
 

@@ -17,6 +17,7 @@ import { MatSort, MatSortHeader, Sort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { ActivatedRoute, Router } from '@angular/router';
 import { EmmitRow, Issue, notIssue, TypeName } from '@app/core/types';
+import { BehaviorSubject } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
 import { DialogComponent } from '../dialog.component';
@@ -24,7 +25,7 @@ import { DialogComponent } from '../dialog.component';
 enum Direction {
   '' = '',
   'asc' = '',
-  'desc' = '-'
+  'desc' = '-',
 }
 
 export interface ListResult<T> {
@@ -37,12 +38,15 @@ export interface ListResult<T> {
 @Component({
   selector: 'app-list',
   templateUrl: './list.component.html',
-  styleUrls: ['./list.component.scss']
+  styleUrls: ['./list.component.scss'],
 })
 export class ListComponent implements OnInit {
   selection = new SelectionModel(true, []);
   current: any = {};
   type: TypeName;
+
+  clustersSubj = new BehaviorSubject<{ id: number; title: string }[]>([]);
+  clusters$ = this.clustersSubj.asObservable();
 
   @Input()
   currentItemId: string;
@@ -81,7 +85,7 @@ export class ListComponent implements OnInit {
 
   getSortParam(a: Sort) {
     const penis: { [key: string]: string[] } = {
-      prototype_version: ['prototype_display_name', 'prototype_version']
+      prototype_version: ['prototype_display_name', 'prototype_version'],
     };
 
     const dumb = penis[a.active] ? penis[a.active] : [a.active],
@@ -91,9 +95,9 @@ export class ListComponent implements OnInit {
     if (current && this.addToSorting) {
       const result = current
         .split(',')
-        .filter(b => dumb.every(d => d !== b.replace('-', '')))
+        .filter((b) => dumb.every((d) => d !== b.replace('-', '')))
         .join(',');
-      return [result, a.direction ? active : ''].filter(e => e).join(',');
+      return [result, a.direction ? active : ''].filter((e) => e).join(',');
     }
 
     return a.direction ? active : '';
@@ -112,8 +116,8 @@ export class ListComponent implements OnInit {
             page: pageIndex,
             limit: pageSize,
             filter: _filter,
-            ordering
-          }
+            ordering,
+          },
         ],
         { relativeTo: this.route }
       );
@@ -128,7 +132,7 @@ export class ListComponent implements OnInit {
     const f = this.route.snapshot.paramMap.get('filter') || '';
     const ordering = this.getSortParam(this.sort);
     this.router.navigate(['./', { page: pageEvent.pageIndex, limit: pageEvent.pageSize, filter: f, ordering }], {
-      relativeTo: this.route
+      relativeTo: this.route,
     });
   }
 
@@ -145,15 +149,7 @@ export class ListComponent implements OnInit {
 
   /** Selects all rows if they are not all selected; otherwise clear selection. */
   masterToggle() {
-    this.isAllSelected() ? this.selection.clear() : this.data.data.forEach(row => this.selection.select(row));
-  }
-
-  applyFilter(filterValue: string) {
-    filterValue = filterValue.trim();
-    filterValue = filterValue.toLowerCase();
-    this.data.filter = filterValue;
-    this.data.paginator = this.paginator;
-    this.data.sort = this.sort;
+    this.isAllSelected() ? this.selection.clear() : this.data.data.forEach((row) => this.selection.select(row));
   }
 
   getClusterData(row: any) {
@@ -190,11 +186,11 @@ export class ListComponent implements OnInit {
         data: {
           title: `Deleting  "${row.name || row.fqdn}"`,
           text: 'Are you sure?',
-          controls: ['Yes', 'No']
-        }
+          controls: ['Yes', 'No'],
+        },
       })
       .beforeClosed()
-      .pipe(filter(yes => yes))
+      .pipe(filter((yes) => yes))
       .subscribe(() => this.listItemEvt.emit({ cmd: 'delete', row }));
   }
 }

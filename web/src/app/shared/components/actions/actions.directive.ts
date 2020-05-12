@@ -14,7 +14,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { IAction } from '@app/core/types';
 
 import { DialogComponent } from '../dialog.component';
-import { ActionMasterComponent } from './master/master.component';
+import { ActionMasterComponent as component } from './master/master.component';
 
 export interface ActionParameters {
   cluster?: {
@@ -34,27 +34,30 @@ export class ActionsDirective {
 
   @HostListener('click')
   onClick() {
+    const dialogModel = this.prepare();
+    this.dialog.open(DialogComponent, dialogModel);
+  }
+
+  prepare() {
     const maxWidth = '1400px';
     const model = this.inputData;
-    const act = model?.actions[0];
-    if (!act) {
-      console.warn('ActionsComponent :: no data for action', model);
-      return;
-    }
 
-    const width = act.config?.config.length || act.hostcomponentmap ? '90%' : '400px';
-    const title = act.ui_options?.disclaimer ? act.ui_options.disclaimer : 'Run an action?';
+    if (!model.actions?.length) return { data: { title: 'No parameters for run the action', model: null, component: null } };
 
-    const dialogModel = {
+    const act = model.actions[0];
+    const isMulty = model.actions.length > 1;
+
+    const width = isMulty || act.config?.config.length || act.hostcomponentmap ? '90%' : '400px';
+    const title = act.ui_options?.disclaimer ? act.ui_options.disclaimer : isMulty ? 'Run an actions?' : `Run an action [ ${act.display_name} ]?`;
+
+    return {
       width,
       maxWidth,
       data: {
         title,
         model,
-        component: ActionMasterComponent
+        component
       }
     };
-
-    this.dialog.open(DialogComponent, dialogModel);
   }
 }
