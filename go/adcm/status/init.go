@@ -82,6 +82,8 @@ func startHTTP(httpPort string, hub Hub) {
 
 	router.POST("/api/v1/event/", authWrap(hub, postEvent))
 
+	router.GET("/api/v1/all/", authWrap(hub, showAll))
+
 	router.GET("/api/v1/host/", authWrap(hub, hostList))
 	router.GET("/api/v1/host/:hostid/", authWrap(hub, showHost))
 	router.POST("/api/v1/host/:hostid/", authWrap(hub, setHost))
