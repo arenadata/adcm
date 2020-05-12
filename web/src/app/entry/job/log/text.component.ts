@@ -27,7 +27,7 @@ import { BaseDirective } from '@app/shared';
         </button>
       </ng-container>
     </div>
-    <textarea appScroll #tea (read)="read($event)" [readonly]="true">{{ log.body || 'Nothing to display...' }}</textarea>
+    <textarea appScroll #tea (read)="read($event)" [readonly]="true">{{ log.content || 'Nothing to display...' }}</textarea>
   `,
   styles: [
     `
