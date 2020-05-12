@@ -133,6 +133,7 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
   addTask(id: number) {
     this.isDisabled = true;
     this.api.getOne<Task>('task', id).subscribe((task) => {
+      if (this.dataSource.data.some((a) => a.id === id)) return;
       this.paginator.length = ++this.dataCount;
       if (this.paginator.pageSize > this.dataSource.data.length) this.dataSource.data = [task, ...this.dataSource.data];
       else {
