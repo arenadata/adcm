@@ -58,6 +58,7 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app, login):
         assert not config.editable_element(form_field)
     assert not config.save_button_status()
 
+
 @parametrize_by_data_subdirs(
     __file__, "invisible_true_advanced_true")
 def test_all_true(sdk_client_fs: ADCMClient, path, app, login):
@@ -84,6 +85,7 @@ def test_all_true(sdk_client_fs: ADCMClient, path, app, login):
     groups = config.get_field_groups()
     for group in groups:
         assert not group.is_displayed(), group.get_attribute("class")
+
 
 @parametrize_by_data_subdirs(
     __file__, "invisible_false_advanced_true")
