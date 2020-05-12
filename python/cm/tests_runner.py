@@ -149,7 +149,7 @@ class TestJobRunner(TestCase):
         stack_dir = '/adcm/data/bundle/bundle_hash'
         python_paths = filter(
             lambda x: x != '',
-            [f'{stack_dir}/pmod'] + cmd_env.get('PYTHONPATH', '').split(':'))
+            [f'./pmod:{stack_dir}/pmod'] + cmd_env.get('PYTHONPATH', '').split(':'))
         cmd_env['PYTHONPATH'] = ':'.join(python_paths)
         self.assertDictEqual(cmd_env, job_runner.set_pythonpath(os.environ.copy(), stack_dir))
 

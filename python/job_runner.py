@@ -51,7 +51,7 @@ def set_job_status(job_id, ret, pid, event):
 
 
 def set_pythonpath(env, stack_dir):
-    pmod_path = f'{stack_dir}/pmod'
+    pmod_path = f'./pmod:{stack_dir}/pmod'
     if "PYTHONPATH" in env:
         env["PYTHONPATH"] = pmod_path + ':' + env["PYTHONPATH"]
     else:
