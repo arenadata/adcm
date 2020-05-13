@@ -36,10 +36,6 @@ export function getControlType(name: string): controlType {
   return a[name] || name;
 }
 
-export function getTypeName(name: string) {
-  return name ? name.split('2')[0] : name;
-}
-
 export function isBoolean(value) {
   return typeof value === 'boolean';
 }
