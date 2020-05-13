@@ -805,6 +805,7 @@ class Configuration(BasePage):
                 return True
         return False
 
+    @property
     @retry(retry_on_result=retry_if_result_false, wait_fixed=100)
     def advanced(self):
         buttons = self._getelements(Common.mat_checkbox)
