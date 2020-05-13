@@ -13,11 +13,11 @@ import { Injectable } from '@angular/core';
 import { ApiService } from '@app/core/api';
 import { ApiState, getStack } from '@app/core/store';
 import { Bundle } from '@app/core/types';
-import { ListResult } from '@app/shared';
 import { environment } from '@env/environment';
 import { select, Store } from '@ngrx/store';
 import { combineLatest, Observable } from 'rxjs';
 import { filter, map, mergeMap, switchMap } from 'rxjs/operators';
+import { ListResult } from '@app/shared/components/list/list.component';
 
 export type StackInfo = 'cluster' | 'host' | 'provider' | 'service' | 'bundle';
 
@@ -32,8 +32,8 @@ export class StackService {
     const params = Object.keys(param).reduce<any>((p, c) => ({ ...p, [c]: param[c] }), {});
     return this.store.pipe(
       select(getStack),
-      filter(a => a && !!Object.keys(a).length),
-      switchMap(s => this.api.get<ListResult<T>>(s[name], params).pipe(map(a => a.results)))
+      filter((a) => a && !!Object.keys(a).length),
+      switchMap((s) => this.api.get<ListResult<T>>(s[name], params).pipe(map((a) => a.results)))
     );
   }
 
@@ -43,6 +43,6 @@ export class StackService {
         mergeMap(() => this.api.post<Bundle>(LOAD_URL, { bundle_file: (form.get('file') as File).name }))
       );
     };
-    return combineLatest(output.map(o => item(o)));
+    return combineLatest(output.map((o) => item(o)));
   }
 }

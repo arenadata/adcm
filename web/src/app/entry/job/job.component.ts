@@ -13,7 +13,8 @@ import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ClusterService } from '@app/core';
 import { Job } from '@app/core/types';
-import { BaseDirective, ListComponent } from '@app/shared';
+import { BaseDirective } from '@app/shared';
+import { ListComponent } from '@app/shared/components/list/list.component';
 import { filter } from 'rxjs/operators';
 
 @Component({

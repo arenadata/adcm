@@ -34,7 +34,6 @@ interface IRowHost extends AdcmHost {
 export class BaseListDirective extends SocketListenerDirective implements OnInit, OnDestroy {
   row: Entities;
   listParams: ParamMap;
-
   limit = 10;
 
   @Input('appBaseList') typeName: TypeName;
@@ -128,30 +127,15 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
   }
 
   listEvents(event: EmmitRow) {
+    const lbs = ['title', 'status', 'config', 'import'];
+    const nav = (a: string[]) => this.parent.router.navigate(['./', this.row.id, ...a], { relativeTo: this.parent.route });
+
     this.row = event.row;
     const { cmd, item } = event;
-    this[cmd] && typeof this[cmd] === 'function' ? this[cmd](item) : console.warn(`No handler for ${cmd}`);
+    lbs.includes(cmd) ? nav(cmd === 'title' ? [] : [cmd]) : this[cmd](item);
   }
 
-  onLoad() {
-    // loaded data
-  }
-
-  title() {
-    this.parent.router.navigate(['./', this.row.id], { relativeTo: this.parent.route });
-  }
-
-  status() {
-    this.parent.router.navigate(['./', this.row.id, 'status'], { relativeTo: this.parent.route });
-  }
-
-  config() {
-    this.parent.router.navigate(['./', this.row.id, 'config'], { relativeTo: this.parent.route });
-  }
-
-  import() {
-    this.parent.router.navigate(['./', this.row.id, 'import'], { relativeTo: this.parent.route });
-  }
+  onLoad() {}
 
   getActions() {
     this.service.getActions(this.row);
