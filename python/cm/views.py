@@ -52,6 +52,8 @@ def get_token(strategy, user, response, *args, **kwargs):
         token.save()
         up = UserProfile.objects.create(login=user.username)
         up.save()
+        user.is_superuser = True
+        user.save()
     log.info("authorize social user %s", user)
     login(strategy.request, user, backend='django.contrib.auth.backends.ModelBackend')
     return render(strategy.request, 'token.html', {'login': user.username, 'token': token.key})
