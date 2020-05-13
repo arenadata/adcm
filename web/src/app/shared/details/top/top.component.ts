@@ -46,7 +46,7 @@ export class TopComponent {
   @Input() actions: IAction[] = [];
 
   @Input() set current(c: IDetails) {
-    if (c) {
+    if (c) {      
       this.items = this.navigation.getCrumbs(c);
       const { id, hostcomponent, issue, upgradable, upgrade } = c.parent || (c as Partial<Cluster>);
       this.cluster = { id, hostcomponent };

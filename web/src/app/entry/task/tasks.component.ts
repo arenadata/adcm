@@ -18,16 +18,10 @@ import { MatTableDataSource } from '@angular/material/table';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { ApiService } from '@app/core/api';
 import { EventMessage, SocketState } from '@app/core/store';
-import { JobStatus, Task } from '@app/core/types';
+import { JobStatus, Task, JobObject } from '@app/core/types';
 import { DialogComponent, SocketListenerDirective } from '@app/shared';
 import { Store } from '@ngrx/store';
 import { filter, switchMap } from 'rxjs/operators';
-
-export interface ICanDoActions {
-  type: 'cluster' | 'host' | 'service' | 'provider';
-  id: number;
-  name: string;
-}
 
 @Component({
   selector: 'app-tasks',
@@ -110,12 +104,6 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
       .subscribe();
   }
 
-  buildLink(items: ICanDoActions[]) {
-    const c = items.find((a) => a.type === 'cluster');
-    const url = (a: ICanDoActions) => (a.type === 'cluster' || !c ? ['/', a.type, a.id] : ['/cluster', c.id, a.type, a.id]);
-    return items.map((a) => ({ url: url(a), name: a.name }));
-  }
-
   socketListener(m: EventMessage) {
     if (m.object.type === 'task' && m.event === 'change_job_status' && m.object.details.type === 'status' && m.object.details.value === 'created') {
       this.addTask(m.object.id);
@@ -145,6 +133,7 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
   addTask(id: number) {
     this.isDisabled = true;
     this.api.getOne<Task>('task', id).subscribe((task) => {
+      if (this.dataSource.data.some((a) => a.id === id)) return;
       this.paginator.length = ++this.dataCount;
       if (this.paginator.pageSize > this.dataSource.data.length) this.dataSource.data = [task, ...this.dataSource.data];
       else {
@@ -156,9 +145,15 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
     });
   }
 
+  buildLink(items: JobObject[]) {
+    const c = items.find((a) => a.type === 'cluster');
+    const url = (a: JobObject): string[] => (a.type === 'cluster' || !c ? ['/', a.type, `${a.id}`] : ['/', 'cluster', `${c.id}`, a.type, `${a.id}`]);
+    return items.map((a) => ({ ...a, url: url(a) }));
+  }
+
   refresh() {
     this.api.root.pipe(switchMap((root) => this.api.getList<Task>(root.task, this.paramMap))).subscribe((data) => {
-      this.dataSource.data = data.results;
+      this.dataSource.data = data.results.map((a) => ({ ...a, objects: this.buildLink(a.objects) }));
       this.paginator.length = data.count;
       this.dataCount = data.count;
       if (data.results.length) localStorage.setItem('lastJob', data.results[0].id.toString());

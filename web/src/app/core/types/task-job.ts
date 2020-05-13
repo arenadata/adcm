@@ -17,6 +17,7 @@ export interface JobObject {
   id: number;
   name: string;
   type: string;
+  url?: string[];
 }
 
 interface TaskBase {
@@ -53,7 +54,7 @@ export interface LogFile {
   type: string;
   format: 'txt' | 'json';
   download_url: string;
-  body: string | CheckLog[];
+  content: string | CheckLog[];
 }
 
 export interface CheckLog {
@@ -61,5 +62,5 @@ export interface CheckLog {
   message: string;
   result: boolean;
   type: 'group' | 'check';
-  body?: CheckLog[];
+  content?: CheckLog[];
 }

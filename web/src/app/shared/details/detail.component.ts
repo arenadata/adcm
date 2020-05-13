@@ -41,6 +41,10 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
     super(socket);
   }
 
+  get Current() {
+    return this.service.Current;
+  }
+
   ngOnInit(): void {
     this.request$ = this.route.paramMap.pipe(
       switchMap((param) => this.service.getContext(param)),
@@ -114,7 +118,7 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
       return;
     }
 
-    if (this.service.Current && this.service.Current.typeName === m.object.type && this.service.Current.id === m.object.id) {
+    if (this.Current?.typeName === m.object.type && this.Current?.id === m.object.id) {
       if (this.service.Current.typeName === 'job' && (m.event === 'change_job_status' || m.event === 'add_job_log')) {
         this.reset();
         return;
@@ -126,14 +130,12 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
       }
 
       if (m.event === 'clear_issue') this.issues = {} as Issue;
-
       if (m.event === 'raise_issue') this.issues = m.object.details.value as Issue;
-
       if (m.event === 'change_status') this.status = +m.object.details.value;
     }
 
     // parent
-    if (this.service.Cluster && m.event === 'clear_issue' && m.object.type === 'cluster' && this.service.Current.typeName !== 'cluster' && this.service.Cluster.id === m.object.id)
+    if (this.service.Cluster?.id === m.object.id && this.Current?.typeName !== 'cluster' && m.object.type === 'cluster' && m.event === 'clear_issue')
       this.issues = {} as Issue;
 
     this.isIssue = this.notIssue(this.issues);

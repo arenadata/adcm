@@ -9,3 +9,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+- type: cluster
+  name: "With success"
+  description: Arenadata Nothing
+  version: '1.0'
+  actions:
+    adcm_check:
+      type: job
+      script_type: ansible
+      script: ./adcm_check.yaml
+      states:
+              available: any

@@ -20,10 +20,10 @@ from rest_framework.reverse import reverse
 
 import cm.config as config
 from api.api_views import DetailViewRO, create, PageView
-from api.serializers import (
-    JobSerializer, JobListSerializer, LogStorageSerializer, LogStorageListSerializer,
-    TaskSerializer, TaskListSerializer, TaskPostSerializer
+from api.job_serial import (
+    JobSerializer, JobListSerializer, LogStorageSerializer, LogStorageListSerializer, LogSerializer
 )
+from api.serializers import TaskSerializer, TaskListSerializer, TaskPostSerializer
 from api.serializers import check_obj
 from cm.errors import AdcmEx, AdcmApiEx
 from cm.job import get_log, restart_task, cancel_task
@@ -135,6 +135,28 @@ def download_log_file(request, job_id, log_id):
         return response
     except AdcmEx as e:
         raise AdcmApiEx(e.code, e.msg, e.http_code)
+
+
+class LogFile(GenericAPIView):
+    queryset = LogStorage.objects.all()
+    serializer_class = LogSerializer
+
+    def get(self, request, job_id, tag, level, log_type):
+        """
+        Show log file
+        """
+        if tag == 'ansible':
+            _type = f'std{level}'
+        else:
+            _type = 'check'
+            tag = 'ansible'
+
+        ls = LogStorage.objects.get(job_id=job_id, name=tag, type=_type, format=log_type)
+        try:
+            serializer = self.serializer_class(ls, context={'request': request})
+            return Response(serializer.data)
+        except AdcmEx as e:
+            raise AdcmApiEx(e.code, e.msg, e.http_code)
 
 
 class Task(PageView):

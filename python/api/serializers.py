@@ -11,28 +11,25 @@
 # limitations under the License.
 
 import json
-import os
 
 import django.contrib.auth
-from django.db import IntegrityError, transaction
-from django.core.exceptions import ObjectDoesNotExist
-from django.contrib.auth.models import User, Group
-
-from rest_framework import serializers
-from rest_framework.reverse import reverse
 import rest_framework.authtoken.serializers
+from django.contrib.auth.models import User, Group
+from django.core.exceptions import ObjectDoesNotExist
+from django.db import IntegrityError, transaction
+from rest_framework import serializers
 from rest_framework.authtoken.models import Token
+from rest_framework.reverse import reverse
 
+import cm.config as config
 import cm.job
 import cm.stack
 import cm.status_api
 from cm.api import safe_api
-from cm.logger import log   # pylint: disable=unused-import
-import cm.config as config
 from cm.errors import AdcmApiEx, AdcmEx
 from cm.models import (
-    Action, SubAction, Cluster, Host, Prototype, PrototypeConfig, JobLog, UserProfile,
-    Upgrade, HostProvider, ConfigLog, ClusterObject, Role
+    Action, SubAction, Prototype, PrototypeConfig, JobLog, UserProfile, Upgrade, HostProvider,
+    ConfigLog, Role, Host, Cluster, ClusterObject
 )
 
 
@@ -537,6 +534,13 @@ class ConfigSerializer(serializers.Serializer):
         return cm.adcm_config.get_default(obj, proto)
 
 
+class ConfigSerializerUI(ConfigSerializer):
+    activatable = serializers.SerializerMethodField()
+
+    def get_activatable(self, obj):
+        return bool(cm.adcm_config.group_is_activatable(obj))
+
+
 class ActionSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     prototype_id = serializers.IntegerField()
@@ -575,8 +579,9 @@ class ActionDetailSerializer(ActionSerializer):
         aconf = PrototypeConfig.objects.filter(prototype=obj.prototype, action=obj).order_by('id')
         context = self.context
         context['prototype'] = obj.prototype
-        conf = ConfigSerializer(aconf, many=True, context=context, read_only=True)
-        return {'attr': None, 'config': conf.data}
+        conf = ConfigSerializerUI(aconf, many=True, context=context, read_only=True)
+        _, _, _, attr = cm.adcm_config.get_prototype_config(obj.prototype, obj)
+        return {'attr': attr, 'config': conf.data}
 
     def get_subs(self, obj):
         sub_actions = SubAction.objects.filter(action=obj).order_by('id')
@@ -682,8 +687,9 @@ class ActionShort(serializers.Serializer):
     def get_config(self, obj):
         context = self.context
         context['prototype'] = obj.prototype
-        conf = ConfigSerializer(obj.config, many=True, context=context, read_only=True)
-        return {'attr': None, 'config': conf.data}
+        conf = ConfigSerializerUI(obj.config, many=True, context=context, read_only=True)
+        _, _, _, attr = cm.adcm_config.get_prototype_config(obj.prototype, obj)
+        return {'attr': attr, 'config': conf.data}
 
 
 class ServiceActionShort(ActionShort):
@@ -758,18 +764,6 @@ class StatsSerializer(serializers.Serializer):
     job = hlink('job-stats', 'id', 'job_id')
 
 
-class JobListSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    pid = serializers.IntegerField(read_only=True)
-    task_id = serializers.IntegerField(read_only=True)
-    action_id = serializers.IntegerField(read_only=True)
-    sub_action_id = serializers.IntegerField(read_only=True)
-    status = serializers.CharField(read_only=True)
-    start_date = serializers.DateTimeField(read_only=True)
-    finish_date = serializers.DateTimeField(read_only=True)
-    url = hlink('job-details', 'id', 'job_id')
-
-
 def get_job_action(obj):
     try:
         act = Action.objects.get(id=obj.action_id)
@@ -812,76 +806,6 @@ def get_job_objects(obj):
             'name': name,
         })
     return resp
-
-
-class JobSerializer(JobListSerializer):
-    action = serializers.SerializerMethodField()
-    display_name = serializers.SerializerMethodField()
-    objects = serializers.SerializerMethodField()
-    selector = JSONField(required=False)
-    log_dir = serializers.CharField(read_only=True)
-    log_files = DataField(read_only=True)
-    action_url = hlink('action-details', 'action_id', 'action_id')
-    task_url = hlink('task-details', 'id', 'task_id')
-
-    def get_action(self, obj):
-        return get_job_action(obj)
-
-    def get_display_name(self, obj):
-        if obj.sub_action_id:
-            try:
-                sub = SubAction.objects.get(id=obj.sub_action_id)
-                return sub.display_name
-            except SubAction.DoesNotExist:
-                return None
-        else:
-            try:
-                action = Action.objects.get(id=obj.action_id)
-                return action.display_name
-            except Action.DoesNotExist:
-                return None
-
-    def get_objects(self, obj):
-        return get_job_objects(obj)
-
-
-class LogStorageSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField(read_only=True)
-    type = serializers.CharField(read_only=True)
-    format = serializers.CharField(read_only=True)
-    body = serializers.SerializerMethodField()
-
-    def get_body(self, obj):
-        body = obj.body
-
-        if obj.type in ['stdout', 'stderr']:
-            if body is None:
-                path_file = os.path.join(
-                    config.RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}')
-                with open(path_file, 'r') as f:
-                    body = f.read()
-        elif obj.type == 'check':
-            if body is None:
-                body = cm.job.get_check_log(obj.job_id)
-            if isinstance(body, str):
-                body = json.loads(body)
-        elif obj.type == 'custom':
-            if obj.format == 'json' and isinstance(body, str):
-                body = json.loads(body)
-                body = json.dumps(body, indent=4)
-
-        return body
-
-
-class LogStorageListSerializer(LogStorageSerializer):
-    url = serializers.SerializerMethodField()
-
-    def get_url(self, obj):
-        return reverse(
-            'log-storage',
-            kwargs={'job_id': obj.job_id, 'log_id': obj.id},
-            request=self.context['request'])
 
 
 class TaskListSerializer(serializers.Serializer):
