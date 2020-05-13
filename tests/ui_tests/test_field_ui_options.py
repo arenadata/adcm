@@ -44,9 +44,9 @@ def test_ui_option_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path
     app.driver.get("{}/cluster/{}/config".format
                    (app.adcm.url, cluster.cluster_id))
     config = Configuration(app.driver)
-    if not config.advanced:
+    if not config.advanced():
         config.click_advanced()
-    assert config.advanced
+    assert config.advanced()
     groups = config.get_field_groups()
     for group in groups:
         assert not group.is_displayed(), group.get_attribute("class")
@@ -66,14 +66,14 @@ def test_ui_option_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path
                    (app.adcm.url, cluster.cluster_id))
     config = Configuration(app.driver)
     groups = config.get_field_groups()
-    if config.advanced:
+    if config.advanced():
         config.click_advanced()
-    assert not config.advanced
+    assert not config.advanced()
     for group in groups:
         assert not group.is_displayed(), group.get_attribute("class")
-    if not config.advanced:
+    if not config.advanced():
         config.click_advanced()
-    assert config.advanced
+    assert config.advanced()
     groups = config.get_field_groups()
     for group in groups:
         assert group.is_displayed(), group.get_attribute("class")
@@ -95,7 +95,7 @@ def test_ui_option_invisible_false_advanced_false(sdk_client_fs: ADCMClient, pat
     groups = config.get_field_groups()
     for group in groups:
         assert group.is_displayed(), group.get_attribute("class")
-    if not config.advanced:
+    if not config.advanced():
         config.click_advanced()
     groups = config.get_field_groups()
     for group in groups:

@@ -363,9 +363,9 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login, app):
     if expected['visible']:
         if expected['visible_advanced']:
             assert not fields, "Config fields presented, expected no"
-            if not ui_config.advanced:
+            if not ui_config.advanced():
                 ui_config.click_advanced()
-            assert ui_config.advanced, 'Advanced button not clicked'
+            assert ui_config.advanced(), 'Advanced button not clicked'
         fields = ui_config.get_app_fields()
         assert fields, 'No config fields, expected yes'
         for field in fields:
@@ -417,9 +417,9 @@ def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app)
         if expected['group_visible_advanced']:
             assert not groups, 'Groups presented, expected no'
             assert not fields, 'Fields presented, expected no'
-            if not ui_config.advanced:
+            if not ui_config.advanced():
                 ui_config.click_advanced()
-            assert ui_config.advanced, 'Advanced button not clicked'
+            assert ui_config.advanced(), 'Advanced button not clicked'
         groups = ui_config.get_group_elements()
         fields = ui_config.get_app_fields()
         assert groups, "Groups not presented, expected yes"
@@ -431,9 +431,9 @@ def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app)
     if expected['group_visible'] and expected['field_visible']:
         if expected['field_visible_advanced'] or expected['group_visible_advanced']:
             assert not fields, 'Fields presented, expected no'
-            if not ui_config.advanced:
+            if not ui_config.advanced():
                 ui_config.click_advanced()
-            assert ui_config.advanced, 'Advanced button not clicked'
+            assert ui_config.advanced(), 'Advanced button not clicked'
         groups = ui_config.get_group_elements()
         fields = ui_config.get_app_fields()
         assert groups, "Groups not presented, expected yes"
@@ -449,8 +449,8 @@ def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app)
             ui_config.assert_group_status(groups[0], config['config'][0]['active'])
     if not expected['group_visible']:
         assert not groups, 'Groups presented, expected no'
-        if not ui_config.advanced:
+        if not ui_config.advanced():
             ui_config.click_advanced()
-        assert ui_config.advanced, 'Advanced button not clicked'
+        assert ui_config.advanced(), 'Advanced button not clicked'
         groups = ui_config.get_group_elements()
         assert not groups, "Groups presented, expected no"

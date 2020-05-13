@@ -44,9 +44,9 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app, login):
     for group in groups:
         assert group.is_displayed(), group.get_attribute("class")
     assert not config.save_button_status()
-    if not config.advanced:
+    if not config.advanced():
         config.click_advanced()
-    assert config.advanced
+    assert config.advanced()
     groups = config.get_field_groups()
     for group in groups:
         assert group.is_displayed(), group.get_attribute("class")
@@ -78,9 +78,9 @@ def test_all_true(sdk_client_fs: ADCMClient, path, app, login):
     for group in groups:
         assert not group.is_displayed(), group.get_attribute("class")
     assert not config.save_button_status()
-    if not config.advanced:
+    if not config.advanced():
         config.click_advanced()
-    assert config.advanced
+    assert config.advanced()
     groups = config.get_field_groups()
     for group in groups:
         assert not group.is_displayed(), group.get_attribute("class")
@@ -107,9 +107,9 @@ def test_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app, log
     for group in groups:
         assert not group.is_displayed(), group.get_attribute("class")
     assert not config.save_button_status()
-    if not config.advanced:
+    if not config.advanced():
         config.click_advanced()
-    assert config.advanced
+    assert config.advanced()
     groups = config.get_field_groups()
     for group in groups:
         assert group.is_displayed(), group.get_attribute("class")
@@ -141,9 +141,9 @@ def test_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path, app, log
     for group in groups:
         assert not group.is_displayed(), group.get_attribute("class")
     assert not config.save_button_status()
-    if not config.advanced:
+    if not config.advanced():
         config.click_advanced()
-    assert config.advanced
+    assert config.advanced()
     groups = config.get_field_groups()
     for group in groups:
         assert not group.is_displayed(), group.get_attribute("class")

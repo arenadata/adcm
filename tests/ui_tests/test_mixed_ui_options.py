@@ -47,9 +47,9 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app, login):
     assert len(group_names) == 1
     assert group_names[0].text == cluster_name
     assert group_names, group_names
-    if not config.advanced:
+    if not config.advanced():
         config.click_advanced()
-    assert config.advanced
+    assert config.advanced()
     group_names = config.get_group_elements()
     assert group_names, group_names
     assert len(group_names) == 1
@@ -74,9 +74,9 @@ def test_all_true(sdk_client_fs: ADCMClient, path, app, login):
         assert not group.is_displayed(), group.get_attribute("class")
     group_names = config.get_group_elements()
     assert not group_names, group_names
-    if not config.advanced:
+    if not config.advanced():
         config.click_advanced()
-    assert config.advanced
+    assert config.advanced()
     groups = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names
@@ -101,9 +101,9 @@ def test_groups_false_fields_true(sdk_client_fs: ADCMClient, path, app, login):
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
     assert group_names, group_names
-    if not config.advanced:
+    if not config.advanced():
         config.click_advanced()
-    assert config.advanced
+    assert config.advanced()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert group_names
@@ -128,9 +128,9 @@ def test_groups_true_fields_false(sdk_client_fs: ADCMClient, path, app, login):
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
     assert not group_names, group_names
-    if not config.advanced:
+    if not config.advanced():
         config.click_advanced()
-    assert config.advanced
+    assert config.advanced()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names
@@ -154,9 +154,9 @@ def test_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path, app, log
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
     assert not group_names, group_names
-    if not config.advanced:
+    if not config.advanced():
         config.click_advanced()
-    assert config.advanced
+    assert config.advanced()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names
@@ -181,9 +181,9 @@ def test_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app, log
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
     assert not group_names, group_names
-    if not config.advanced:
+    if not config.advanced():
         config.click_advanced()
-    assert config.advanced
+    assert config.advanced()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert group_names
@@ -208,9 +208,9 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_tru
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
     assert group_names, group_names
-    if not config.advanced:
+    if not config.advanced():
         config.click_advanced()
-    assert config.advanced
+    assert config.advanced()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert group_names
@@ -235,9 +235,9 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_fals
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
     assert group_names, group_names
-    if not config.advanced:
+    if not config.advanced():
         config.click_advanced()
-    assert config.advanced
+    assert config.advanced()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert group_names
@@ -262,9 +262,9 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_fals
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
     assert not group_names, group_names
-    if not config.advanced:
+    if not config.advanced():
         config.click_advanced()
-    assert config.advanced
+    assert config.advanced()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names
@@ -289,9 +289,9 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
     assert not group_names, group_names
-    if not config.advanced:
+    if not config.advanced():
         config.click_advanced()
-    assert config.advanced
+    assert config.advanced()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names
@@ -316,9 +316,9 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true(
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
     assert not group_names, group_names
-    if not config.advanced:
+    if not config.advanced():
         config.click_advanced()
-    assert config.advanced
+    assert config.advanced()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names
@@ -343,9 +343,9 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_fals
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
     assert not group_names, group_names
-    if not config.advanced:
+    if not config.advanced():
         config.click_advanced()
-    assert config.advanced
+    assert config.advanced()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert group_names
@@ -372,9 +372,9 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
     assert not group_names, group_names
-    if not config.advanced:
+    if not config.advanced():
         config.click_advanced()
-    assert config.advanced
+    assert config.advanced()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert group_names
@@ -399,9 +399,9 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true(
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
     assert not group_names, group_names
-    if not config.advanced:
+    if not config.advanced():
         config.click_advanced()
-    assert config.advanced
+    assert config.advanced()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert group_names
@@ -426,9 +426,9 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true(
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
     assert not group_names, group_names
-    if not config.advanced:
+    if not config.advanced():
         config.click_advanced()
-    assert config.advanced
+    assert config.advanced()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names
@@ -453,9 +453,9 @@ def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false(
         assert not field.is_displayed(), field.get_attribute("class")
     group_names = config.get_group_elements()
     assert not group_names, group_names
-    if not config.advanced:
+    if not config.advanced():
         config.click_advanced()
-    assert config.advanced
+    assert config.advanced()
     fields = config.get_field_groups()
     group_names = config.get_group_elements()
     assert not group_names
