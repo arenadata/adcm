@@ -96,11 +96,9 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
 
   getConfig(url = this.cUrl): Observable<IConfig> {
     return this.service.getConfig(url).pipe(
-      tap((c) => {
-        this.rawConfig = c;
-      }),
+      tap((c) => (this.rawConfig = c)),
       catchError(() => {
-        this.loadingStatus = 'Loading error.';
+        this.loadingStatus = 'There is no config for this object.';
         return of(null);
       })
     );

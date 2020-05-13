@@ -20,6 +20,7 @@ def login(app):
     login = LoginPage(app.driver)
     login.login("admin", "admin")
 
+
 @parametrize_by_data_subdirs(
     __file__, "false")
 def test_required_field_false(sdk_client_fs: ADCMClient, path, app, login):
@@ -32,6 +33,7 @@ def test_required_field_false(sdk_client_fs: ADCMClient, path, app, login):
                    (app.adcm.url, cluster.cluster_id))
     config = Configuration(app.driver)
     assert config.save_button_status()
+
 
 @parametrize_by_data_subdirs(
     __file__, "true")
