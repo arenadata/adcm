@@ -62,7 +62,7 @@ def group_elements(ui_config, request):
 
 @pytest.fixture()
 def activatable_with_not_filled_required_fields(ui_config):
-    config_groups = ui_config.driver.find_elements(*Common.mat_expansion_panel)
+    config_groups = ui_config.get_config_groups()
     group_for_edition = ""
     for group in config_groups:
         if group.text.split("\n")[0] == "activatable_active_group":

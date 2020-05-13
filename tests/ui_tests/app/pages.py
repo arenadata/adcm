@@ -28,8 +28,21 @@ from cm.errors import ERRORS
 from time import sleep, time
 
 
-def retry_on_no_such_element_except(exc):
-    return isinstance(exc, NoSuchElementException)
+def retry_on_exception(exc):
+    return any((isinstance(exc, StaleElementReferenceException),
+                isinstance(exc, NoSuchElementException)))
+
+
+def retry_if_result_false(result):
+    """Return True if we should retry (in this case when result is False), False otherwise"""
+    return result is False
+
+
+def retry_if_result_empty_list(result):
+    """Return True if we should retry (in this case when result is None), False otherwise"""
+    if not result:
+        return True
+    return False
 
 
 def repeat_dec(timeout=10, interval=0.1):
@@ -337,7 +350,7 @@ class LoginPage(BasePage):
         self._login.send_keys(login)
         self._password.send_keys(password)
         self._password.send_keys(Keys.RETURN)
-        REPEAT(self._contains_url('admin'))
+        self._contains_url('admin')
         sleep(5)  # Wait untill we have all websockets alive.
 
     def logout(self):
@@ -707,14 +720,13 @@ class Configuration(BasePage):
     def get_group_names(self):
         return self.driver.find_elements(*ConfigurationLocators.group_title)
 
-    @retry(retry_on_exception=retry_on_no_such_element_except, wait_fixed=10000)
+    @retry(retry_on_exception=retry_on_exception, wait_fixed=500)
     def save_button_status(self):
+        """Sleep 0.5 seconds due get front-end validator check config and get button status
+        :return:
+        """
         sleep(0.5)
-        try:
-            button = self.driver.find_element(*ConfigurationLocators.config_save_button)
-        except StaleElementReferenceException:
-            sleep(5)
-            button = self.driver.find_element(*ConfigurationLocators.config_save_button)
+        button = self.driver.find_element(*ConfigurationLocators.config_save_button)
         class_el = button.get_attribute("disabled")
         if class_el == 'true':
             result = False
@@ -793,7 +805,7 @@ class Configuration(BasePage):
                 return True
         return False
 
-    @property
+    @retry(retry_on_result=retry_if_result_false, wait_fixed=100)
     def advanced(self):
         buttons = self._getelements(Common.mat_checkbox)
         for button in buttons:
@@ -914,21 +926,19 @@ class Configuration(BasePage):
             elements = self.driver.find_elements(*ConfigurationLocators.app_fields_text_boxes)
         return [textbox.text.split("\n")[0].strip(":") for textbox in elements]
 
+    @retry(retry_on_exception=retry_on_exception, wait_fixed=500)
     def set_search_field(self, search_pattern):
-        try:
-            element = self.driver.find_element(*ConfigurationLocators.search_field)
-        except NoSuchElementException:
-            sleep(10)
-            element = self.driver.find_element(*ConfigurationLocators.search_field)
+        element = self.driver.find_element(*ConfigurationLocators.search_field)
         self.clear_element(element)
         self._set_field_value(ConfigurationLocators.search_field, search_pattern)
 
+    @retry(retry_on_exception=retry_on_exception, wait_fixed=500)
     def get_group_elements(self):
-        try:
-            return self.driver.find_elements(*Common.display_names)
-        except StaleElementReferenceException:
-            sleep(5)
-            return self.driver.find_elements(*Common.display_names)
+        return self.driver.find_elements(*Common.display_names)
+
+    @retry(retry_on_result=retry_if_result_empty_list, wait_fixed=100)
+    def get_config_groups(self):
+        return self.driver.find_elements(*Common.mat_expansion_panel)
 
     def execute_action(self, action_name):
         """Click action
