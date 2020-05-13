@@ -18,4 +18,5 @@
       adcm_custom_log:
         name: "Custom log json"
         format: "json"
-        content: '{"hello": "world"}'
+        path: ./file.json
+        content: '{"content": "world"}'

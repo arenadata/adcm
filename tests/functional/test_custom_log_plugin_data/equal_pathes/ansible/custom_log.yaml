@@ -14,8 +14,14 @@
   gather_facts: false
   connection: local
   tasks:
-    - name: "Custom log"
+    - name: custom log
       adcm_custom_log:
-        name: "Custom log json"
-        format: "json"
-        content: '{"hello": "world"}'
+        name: "Custom log txt"
+        format: "txt"
+        path: ./file.txt
+
+    - name: custom log 2
+      adcm_custom_log:
+        name: "Custom log txt 2"
+        format: "txt"
+        path: ./file.txt

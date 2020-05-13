@@ -9,13 +9,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
----
-- hosts: localhost
-  gather_facts: false
-  connection: local
-  tasks:
-    - name: "Custom log"
-      adcm_custom_log:
-        name: "Custom log json"
-        format: "json"
-        content: '{"hello": "world"}'
+
+- type: cluster
+  name: Nothing
+  description: Arenadata Nothing
+  version: 1.0
+  actions:
+    custom_log:
+      type: job
+      script_type: ansible
+      script: ansible/custom_log.yaml
+      states:
+        available: any
