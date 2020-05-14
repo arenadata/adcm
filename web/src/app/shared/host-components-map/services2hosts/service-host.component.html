@@ -1,27 +1,29 @@
-<div class="controls" [ngStyle]="{'position': fixedButton ? 'fixed': 'initial'}">  
+<div class="controls" [ngStyle]="{'position': fixedButton ? 'fixed': 'initial'}">
   <span [@popup]="showPopup? 'show': 'hide'" style="opacity: 0;">
     <mat-icon color="accent">done</mat-icon>&nbsp;
     <span style="line-height: 24px; vertical-align: text-bottom;">Settings saved.</span>
   </span>
   &nbsp;&nbsp;
   <button mat-raised-button color="primary" (click)="cancel()">Restore</button>
-  <button [disabled]="noValid" mat-raised-button color="accent" (click)="save()" *ngIf="!hideButton">Save</button>  
+  <button [disabled]="noValid" mat-raised-button color="accent" (click)="save()" *ngIf="!hideButton">Save</button>
 </div>
 
 <div class="holder" [appHolder]="scrollEventData">
   <div>
-    <h3>Components</h3>
+    <h3><span>Components</span></h3>
     <div class="wrapper">
       <div *ngIf="!serviceComponents?.length">
         Add services on the <a [routerLink]="['/cluster', cluster.id, 'service']">services page.</a>
       </div>
-      <app-much-2-many *ngFor="let service of serviceComponents" [model]="service" (clickToTitleEvt)="selectService($event)"
-        (clearRelationEvt)="clearHostFromService($event)">
+      <app-much-2-many *ngFor="let service of serviceComponents" [model]="service"
+        (clickToTitleEvt)="selectService($event)" (clearRelationEvt)="clearHostFromService($event)">
       </app-much-2-many>
     </div>
   </div>
   <div>
-    <h3>Hosts</h3>
+    <h3><span>Hosts</span>
+      <app-add-button [name]="'host2cluster'" [asIcon]="true" [style.lineHeight.px]="16"></app-add-button>
+    </h3>
     <div class="wrapper">
       <div *ngIf="!hosts?.length">
         Add hosts on the <a [routerLink]="['/cluster', cluster.id, 'host']">hosts page.</a>

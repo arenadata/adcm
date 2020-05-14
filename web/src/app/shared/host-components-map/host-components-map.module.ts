@@ -19,10 +19,11 @@ import { HolderDirective } from './holder.directive';
 import { Much2ManyComponent } from './much-2-many/much-2-many.component';
 import { ServiceHostComponent } from './services2hosts/service-host.component';
 import { TakeService } from './take.service';
+import { AddingModule } from '../add-component/adding.module';
 
 @NgModule({
   declarations: [HolderDirective, ServiceHostComponent, Much2ManyComponent],
-  imports: [CommonModule, MaterialModule, RouterModule, StuffModule],
+  imports: [CommonModule, MaterialModule, RouterModule, StuffModule, AddingModule],
   exports: [ServiceHostComponent],
   providers: [TakeService]
 })
