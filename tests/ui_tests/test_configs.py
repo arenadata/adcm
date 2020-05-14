@@ -264,14 +264,14 @@ group_configs = generate_group_configs(group_configs_data)
 
 
 @pytest.fixture(scope='module')
-def app(adcm_ms):
+def adcm_app(adcm_ms):
     return ADCMTest(adcm_ms)
 
 
 @pytest.fixture(scope='module')
-def login(app):
-    app.driver.get(app.adcm.url)
-    login = LoginPage(app.driver)
+def login(adcm_app):
+    adcm_app.driver.get(adcm_app.adcm.url)
+    login = LoginPage(adcm_app.driver)
     login.login("admin", "admin")
 
 
@@ -332,7 +332,7 @@ def prepare_group_config(config):
 
 
 @pytest.mark.parametrize("config_dict", configs)
-def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login, app):
+def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login, adcm_app):
     """Test UI configuration page without groups. Before start test actions
     we always create configuration and expected result. All logic for test
     expected result in functions before this test function.
@@ -343,7 +343,7 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login, app):
     4. Open configuration page
     5. Check save button status
     6. Check field configuration (depends on expected result dict and bundle configuration"""
-    _ = login, app
+    _ = login, adcm_app
     data = prepare_config(config_dict)
     config = data[0]
     expected = data[1]
@@ -354,9 +354,9 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login, app):
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster = bundle.cluster_create(name=utils.random_string(14))
     field_type = config['config'][0]['type']
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    ui_config = Configuration(app.driver)
+    adcm_app.driver.get("{}/cluster/{}/config".format
+                   (adcm_app.adcm.url, cluster.cluster_id))
+    ui_config = Configuration(adcm_app.driver)
     fields = ui_config.get_app_fields()
     save_err_mess = "Correct status for save button {}".format([expected['save']])
     assert expected['save'] == ui_config.save_button_status(), save_err_mess
@@ -380,7 +380,7 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login, app):
 
 
 @pytest.mark.parametrize("config_dict", group_configs)
-def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app):
+def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, adcm_app):
     """Test for configuration fields with groups. Before start test actions
     we always create configuration and expected result. All logic for test
     expected result in functions before this test function. If we have
@@ -395,7 +395,7 @@ def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app)
     4. Open configuration page
     5. Check save button status
     6. Check field configuration (depends on expected result dict and bundle configuration"""
-    _ = login, app
+    _ = login, adcm_app
     data = prepare_group_config(config_dict)
     config = data[0]
     expected = data[1]
@@ -407,8 +407,8 @@ def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app)
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster = bundle.cluster_create(name=utils.random_string())
     field_type = config['config'][0]['subs'][0]['type']
-    app.driver.get("{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
-    ui_config = Configuration(app.driver)
+    adcm_app.driver.get("{}/cluster/{}/config".format(adcm_app.adcm.url, cluster.cluster_id))
+    ui_config = Configuration(adcm_app.driver)
     groups = ui_config.get_group_elements()
     fields = ui_config.get_app_fields()
     save_err_mess = "Correct status for save button {}".format([expected['save']])

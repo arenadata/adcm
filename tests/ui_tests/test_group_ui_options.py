@@ -54,9 +54,9 @@ def ui_config(app, login, service):
 @pytest.fixture(params=[(False, 3), (True, 6)], ids=['advanced_disabled', 'advanced'])
 def group_elements(ui_config, request):
     if request.param[0]:
-        if not ui_config.advanced:
+        if not ui_config.advanced():
             ui_config.click_advanced()
-        assert ui_config.advanced
+        assert ui_config.advanced()
     return ui_config.get_group_elements(), request.param[1]
 
 
