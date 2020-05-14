@@ -33,18 +33,6 @@ def retry_on_exception(exc):
                 isinstance(exc, NoSuchElementException)))
 
 
-def retry_if_result_false(result):
-    """Return True if we should retry (in this case when result is False), False otherwise"""
-    return result is False
-
-
-def retry_if_result_empty_list(result):
-    """Return True if we should retry (in this case when result is None), False otherwise"""
-    if not result:
-        return True
-    return False
-
-
 def repeat_dec(timeout=10, interval=0.1):
     """That is timeout decorator for find_* functions of webdriver
 
@@ -805,7 +793,6 @@ class Configuration(BasePage):
                 return True
         return False
 
-    @retry(retry_on_result=retry_if_result_false, wait_fixed=100)
     def advanced(self):
         buttons = self._getelements(Common.mat_checkbox)
         for button in buttons:
@@ -936,9 +923,8 @@ class Configuration(BasePage):
     def get_group_elements(self):
         return self.driver.find_elements(*Common.display_names)
 
-    @retry(retry_on_result=retry_if_result_empty_list, wait_fixed=100)
     def get_config_groups(self):
-        return self.driver.find_elements(*Common.mat_expansion_panel)
+        return REPEAT(self.driver.find_elements(*Common.mat_expansion_panel))
 
     def execute_action(self, action_name):
         """Click action
