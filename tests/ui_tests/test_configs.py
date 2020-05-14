@@ -354,8 +354,8 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login, adcm_app)
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster = bundle.cluster_create(name=utils.random_string(14))
     field_type = config['config'][0]['type']
-    adcm_app.driver.get("{}/cluster/{}/config".format
-                   (adcm_app.adcm.url, cluster.cluster_id))
+    adcm_app.driver.get("{}/cluster/{}/config".format(adcm_app.adcm.url,
+                                                      cluster.cluster_id))
     ui_config = Configuration(adcm_app.driver)
     fields = ui_config.get_app_fields()
     save_err_mess = "Correct status for save button {}".format([expected['save']])
