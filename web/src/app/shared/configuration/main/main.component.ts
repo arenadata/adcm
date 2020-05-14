@@ -96,11 +96,9 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
 
   getConfig(url = this.cUrl): Observable<IConfig> {
     return this.service.getConfig(url).pipe(
-      tap((c) => {
-        this.rawConfig = c;
-      }),
+      tap((c) => (this.rawConfig = c)),
       catchError(() => {
-        this.loadingStatus = 'Loading error.';
+        this.loadingStatus = 'There is no config for this object.';
         return of(null);
       })
     );
@@ -117,7 +115,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
     if (form.valid) {
       this.saveFlag = true;
       this.historyComponent.reset();
-      const config = this.service.parseValue(this.fields.form, this.rawConfig.config);
+      const config = this.service.parseValue(this.fields.form.value, this.rawConfig.config);
       const send = { config, attr: this.getActivatableGroup(), description: this.tools.description.value };
       this.config$ = this.service.send(this.saveUrl, send).pipe(
         tap((c) => {
