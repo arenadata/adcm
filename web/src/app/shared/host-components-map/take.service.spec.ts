@@ -9,52 +9,114 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { HttpClientModule } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { ApiService } from '../../core/api';
-import { reducers } from '../../core/store';
-import { StoreModule } from '@ngrx/store';
+import { Component } from '@app/core/types';
 
+import { ApiService } from '../../core/api';
 import { TakeService } from './take.service';
 import { CompTile } from './types';
 
+const ctData: Component = {
+  id: 1,
+  service_id: 2,
+  service_name: 'test_service',
+  service_state: 'created',
+  name: 'test',
+  display_name: 'test',
+  status: 16,
+  constraint: '',
+  monitoring: 'passive',
+};
+
 describe('HostComponentsMap :: TakeService', () => {
-  beforeEach(() =>
+  let service: TakeService;
+
+  beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [
-        HttpClientModule,
-        StoreModule.forRoot(reducers, {
-          runtimeChecks: {
-            strictStateImmutability: true,
-            strictActionImmutability: true,
-            strictStateSerializability: true,
-            strictActionSerializability: true
-          }
-        })
-      ],
-      providers: [ApiService, TakeService]
-    })
-  );
+      providers: [{ provide: ApiService, useValue: {} }, TakeService],
+    });
+    service = TestBed.inject(TakeService);
+  });
 
   it('should be created', () => {
-    const service: TakeService = TestBed.inject(TakeService);
     expect(service).toBeTruthy();
   });
 
-  const mockCompTile = new CompTile({
-    id: 1,
-    service_id: 2,
-    service_name: 'test_service',
-    service_state: 'created',
-    name: 'test',
-    display_name: 'test',
-    status: 16,
-    constraint: '',
-    monitoring: 'passive'
+  it('validateConstraints fn should be null if argument is null', () => {
+    const mCompTile = new CompTile(ctData);
+    expect(service.validateConstraints(mCompTile)()).toBeNull();
   });
 
-  it('validateConstraints fn should be null if argument is null', () => {
-    const service: TakeService = TestBed.inject(TakeService);
-    expect(service.validateConstraints(mockCompTile)(null)).toBeNull();
+  it('validateConstraints fn for Component.constrant = [0, 1] to be null', () => {
+    const d = { ...ctData, constraint: [0, 1] };
+    const mCompTile = new CompTile(d);
+    expect(service.validateConstraints(mCompTile)()).toBeNull();
+  });
+
+  it('validateConstraints fn for Component.constrant = [0, +] to be null', () => {
+    const d = { ...ctData, constraint: [0, '+'] };
+    const mCompTile = new CompTile(d);
+    expect(service.validateConstraints(mCompTile)()).toBeNull();
+  });
+
+  it('validateConstraints fn for Component.constrant = [1]', () => {
+    const d = { ...ctData, constraint: [1] };
+    const mCompTile = new CompTile(d);
+    expect(service.validateConstraints(mCompTile)()).toEqual({ error: 'Exactly 1 component should be installed' });
+  });
+
+  it('validateConstraints fn for Component.constrant = [1, 2]', () => {
+    const d = { ...ctData, constraint: [1, 2] };
+    const mCompTile = new CompTile(d);
+    expect(service.validateConstraints(mCompTile)()).toEqual({ error: 'Must be installed at least 1 components.' });
+  });
+
+  it('validateConstraints fn for Component.constrant = [1, +]', () => {
+    const d = { ...ctData, constraint: [1, '+'] };
+    const mCompTile = new CompTile(d);
+    expect(service.validateConstraints(mCompTile)()).toEqual({ error: 'Must be installed at least 1 components.' });
+  });
+
+  it('validateConstraints fn for Component.constrant = [odd]', () => {
+    const d = { ...ctData, constraint: ['odd'] };
+    const mCompTile = new CompTile(d);
+    expect(service.validateConstraints(mCompTile)()).toEqual({ error: 'One or more component should be installed. Total amount should be odd.' });
+  });
+
+  it('validateConstraints fn for Component.constrant = [1, odd]', () => {
+    const d = { ...ctData, constraint: [1, 'odd'] };
+    const mCompTile = new CompTile(d);
+    expect(service.validateConstraints(mCompTile)()).toEqual({ error: 'Must be installed at least 1 components. Total amount should be odd.' });
+  });
+
+  it('validateConstraints fn for Component { constrant: [3, odd], relations: [{}]} =>  Must be installed at least 3 components. Total amount should be odd.', () => {
+    const d = { ...ctData, constraint: [3, 'odd'] };
+    const mCompTile = new CompTile(d);
+    mCompTile.relations = [{ id: 0, name: 'test', relations: [], color: 'none', disabled: false }];
+    expect(service.validateConstraints(mCompTile)()).toEqual({ error: 'Must be installed at least 3 components. Total amount should be odd.' });
+  });
+
+  it('validateConstraints fn for Component { constrant: [0, odd], relations: [{}, {}]} =>  Total amount should be odd.', () => {
+    const d = { ...ctData, constraint: [0, 'odd'] };
+    const mCompTile = new CompTile(d);
+    (mCompTile.relations = [
+      { id: 0, name: 'test', relations: [], color: 'none', disabled: false },
+      { id: 1, name: 'test', relations: [], color: 'none', disabled: false },
+    ]),
+      expect(service.validateConstraints(mCompTile)()).toEqual({ error: 'Total amount should be odd.' });
+  });
+
+  it('validateConstraints fn for Component { constrant: [1, odd], relations: [{}]}] tobe null', () => {
+    const d = { ...ctData, constraint: [1, 'odd'] };
+    const mCompTile = new CompTile(d);
+    mCompTile.relations = [{ id: 0, name: 'test', relations: [], color: 'none', disabled: false }];
+    expect(service.validateConstraints(mCompTile)()).toBeNull();
+  });
+
+  it('validateConstraints fn for Component.constrant = [+]', () => {
+    const d = { ...ctData, constraint: ['+'] };
+    const mCompTile = new CompTile(d);
+    service.Hosts = [{ id: 0, name: 'test', relations: [], color: 'none', disabled: false }];
+    expect(service.validateConstraints(mCompTile)()).toEqual({ error: 'Component should be installed on all hosts of cluster.' });
   });
 });

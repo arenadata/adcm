@@ -114,7 +114,7 @@ export class TakeService {
   [1,+] – one or any more component shoud be installed;
   [+] – component shoud be installed on all hosts of cluster.
  */
-  validateConstraints(cti: CompTile): ValidatorFn {
+  validateConstraints(cti: CompTile) {
     const oneConstraint = (a: Constraint, ins: number) => {
       switch (a[0]) {
         case 0:
@@ -122,24 +122,22 @@ export class TakeService {
         case '+':
           return ins < this.Hosts.length ? 'Component should be installed on all hosts of cluster.' : null;
         case 'odd':
-          return ins % 2 === 0 ? 'One or more component should be installed. Total amount should be odd.' : null;
+          return ins % 2 ? null : 'One or more component should be installed. Total amount should be odd.';
         default:
           return ins !== a[0] ? `Exactly ${a[0]} component should be installed` : null;
       }
     };
     const twoConstraint = (a: Constraint, ins: number) => {
       switch (a[1]) {
-        case '+':
-          return a[0] !== 0 && ins < a[0] ? `Must be installed at least ${a[0]} components.` : null;
         case 'odd':
-          return ins % 2 === 0 ? (a[0] !== 0 ? `Must be installed at least ${a[0]} components. Total amount should be odd.` : 'Total amount should be odd') : null;
+          return ins % 2 && ins >= a[0] ? null : a[0] === 0 ? 'Total amount should be odd.' : `Must be installed at least ${a[0]} components. Total amount should be odd.`;
+        case '+':
         default:
-          return a[0] !== 0 && ins < a[0] ? `Must be installed at least ${a[0]} components.` : null;
+          return ins < a[0] ? `Must be installed at least ${a[0]} components.` : null;
       }
     };
     const limitLength = (length: number) => (length === 1 ? oneConstraint : twoConstraint);
-    return (control: AbstractControl): ValidationErrors => {
-      // console.log(cti.limit, cti.relations.length);
+    return (): ValidationErrors => {
       const limit = cti.limit;
       if (limit) {
         const error = limitLength(limit.length)(limit, cti.relations.length);
