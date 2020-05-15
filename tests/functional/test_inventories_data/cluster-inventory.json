@@ -29,6 +29,7 @@
                   "zookeeper": {
                      "id": 1,
                      "version": "3.4.10",
+                     "state": "created",
                      "config": {
                         "client_port": "2181",
                         "dirs": {

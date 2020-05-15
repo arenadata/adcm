@@ -89,6 +89,13 @@ def get_obj_config(obj):
     return process_config_and_attr(obj, js_conf, cl.attr)
 
 
+def get_obj_state(obj):
+    try:
+        return json.loads(obj.stack)[-1]
+    except (json.JSONDecodeError, IndexError):
+        return obj.state
+
+
 def get_cluster_config(cluster_id):
     cluster = Cluster.objects.get(id=cluster_id)
     res = {
@@ -108,6 +115,7 @@ def get_cluster_config(cluster_id):
         res['services'][service.prototype.name] = {
             'id': service.id,
             'version': service.prototype.version,
+            'state': get_obj_state(service),
             'config': get_obj_config(service)
         }
         for component in ServiceComponent.objects.filter(cluster=cluster, service=service):
