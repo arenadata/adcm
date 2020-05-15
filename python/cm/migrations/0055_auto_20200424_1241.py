@@ -18,7 +18,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cm', '0053_auto_20200415_1247'),
+        ('cm', '0054_social_superuser'),
     ]
 
     operations = [
