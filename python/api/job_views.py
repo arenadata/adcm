@@ -11,6 +11,7 @@
 # limitations under the License.
 
 import os
+import re
 
 from django.http import HttpResponse
 from rest_framework import status
@@ -114,7 +115,7 @@ def download_log_file(request, job_id, log_id):
             filename = f'{job.id}-{log_storage.name}-{log_storage.type}.{log_storage.format}'
         else:
             filename = f'{job.id}-{log_storage.name}.{log_storage.format}'
-
+        filename = re.sub(r'\s+', '_', filename)
         if log_storage.format == 'txt':
             mime_type = 'text/plain'
         else:
