@@ -265,7 +265,9 @@ group_configs = generate_group_configs(group_configs_data)
 
 @pytest.fixture(scope='module')
 def app(adcm_ms):
-    return ADCMTest(adcm_ms)
+    app = ADCMTest(adcm_ms)
+    yield adcm
+    app.destroy()
 
 
 @pytest.fixture(scope='module')

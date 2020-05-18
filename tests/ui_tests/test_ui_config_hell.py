@@ -22,7 +22,9 @@ def ui_hell_fs(sdk_client_fs):
 
 @pytest.fixture()
 def app(adcm_fs):
-    return ADCMTest(adcm_fs)
+    app = ADCMTest(adcm_fs)
+    yield app
+    app.destroy()
 
 
 @pytest.fixture()
