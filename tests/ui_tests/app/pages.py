@@ -28,6 +28,14 @@ from cm.errors import ERRORS
 from time import sleep, time
 
 
+def retry_if_result_empty_list(result):
+    """Return True if we should retry (in this case when result is empty list),
+     False otherwise"""
+    if not result:
+        return True
+    return False
+
+
 def retry_on_exception(exc):
     return any((isinstance(exc, StaleElementReferenceException),
                 isinstance(exc, NoSuchElementException)))
@@ -923,8 +931,9 @@ class Configuration(BasePage):
     def get_group_elements(self):
         return self.driver.find_elements(*Common.display_names)
 
+    @retry(retry_on_result=retry_if_result_empty_list)
     def get_config_groups(self):
-        return REPEAT(self.driver.find_elements(*Common.mat_expansion_panel))
+        return self.driver.find_elements(*Common.mat_expansion_panel)
 
     def execute_action(self, action_name):
         """Click action
