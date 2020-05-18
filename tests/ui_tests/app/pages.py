@@ -338,7 +338,7 @@ class LoginPage(BasePage):
         self._login.send_keys(login)
         self._password.send_keys(password)
         self._password.send_keys(Keys.RETURN)
-        REPEAT(self._contains_url)('admin')
+        self._contains_url('admin')
         sleep(5)  # Wait untill we have all websockets alive.
 
     def logout(self):
