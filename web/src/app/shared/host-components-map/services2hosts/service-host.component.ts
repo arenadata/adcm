@@ -31,13 +31,14 @@ import { SocketListenerDirective } from '../../directives/socketListener.directi
       state('show', style({ opacity: 1 })),
       state('hide', style({ opacity: 0 })),
       transition('hide => show', [animate('.2s')]),
-      transition('show => hide', [animate('2s')])
-    ])
-  ]
+      transition('show => hide', [animate('2s')]),
+    ]),
+  ],
 })
 export class ServiceHostComponent extends SocketListenerDirective implements OnInit {
   showSpinner = false;
   showPopup = false;
+  notify = '';
 
   serviceComponents: CompTile[];
   hosts: HostTile[];
@@ -83,15 +84,12 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
     this.channel
       .on('scroll')
       .pipe(this.takeUntil())
-      .subscribe(e => (this.scrollEventData = e.value));
+      .subscribe((e) => (this.scrollEventData = e.value));
   }
 
   socketListener(m: EventMessage) {
     if (
-      ((m.event === 'change_hostcomponentmap' || m.event === 'change_state') &&
-        m.object.type === 'cluster' &&
-        m.object.id === this.cluster.id &&
-        !this.saveFlag) ||
+      ((m.event === 'change_hostcomponentmap' || m.event === 'change_state') && m.object.type === 'cluster' && m.object.id === this.cluster.id && !this.saveFlag) ||
       ((m.event === 'add' || m.event === 'remove') && m.object.details.type === 'cluster' && +m.object.details.value === this.cluster.id)
     ) {
       this.clearRelations();
@@ -107,12 +105,12 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
     this.service
       .initSource(this.cluster.hostcomponent, this.actionParameters)
       .pipe(
-        tap(a => {
+        tap((a) => {
           if (a.hc) this.initFlag = false;
         }),
         this.takeUntil()
       )
-      .subscribe(_ => {
+      .subscribe((_) => {
         this.serviceComponents = this.service.Components;
         this.hosts = this.service.Hosts;
         this.form = this.service.formGroup;
@@ -142,8 +140,9 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
 
   save() {
     this.saveFlag = true;
-    this.service.saveSource(this.cluster).subscribe(data => {
+    this.service.saveSource(this.cluster).subscribe((data) => {
       this.saveResult.emit(data);
+      this.notify = 'Settings saved.';
       this.showPopup = true;
       setTimeout(() => (this.showPopup = false), 2000);
       this.saveFlag = false;

@@ -175,8 +175,8 @@ export class TakeService {
   }
 
   clearAllRelations() {
-    this.Hosts = this.Hosts.map((h) => ({ ...h, relations: [] }));
-    this.Components = this.Components.map((s) => ({ ...s, relations: [] }));
+    this.sourceMap.get('host').map((h) => (h.relations = []));
+    this.sourceMap.get('compo').map((s) => (s.relations = []));
     this.formFill();
   }
 
@@ -227,17 +227,36 @@ export class TakeService {
     const Host = isComp ? link : target;
     const post = new Post(Host.id, Component.service_id, Component.id);
 
+    const checkActions = (host_id: number, com: CompTile, action: 'add' | 'remove'): boolean => {
+      if (com.actions?.length) {
+        const flag = this.loadPost.data.some((a) => a.component_id === com.id && a.service_id === com.service_id && a.host_id === host_id);
+        if (action === 'remove') return flag ? com.actions.some((a) => a === 'remove') : true;
+        if (action === 'add') return flag ? true : com.actions.some((a) => a === 'add');
+      } else return true;
+    };
+
     const noLimit = (c: Constraint, r: number) => {
       const v = c[c.length - 1];
       return v === '+' || v === 'odd' || v > r;
     };
 
+    const checkRequires = (h: HostTile, c: CompTile): boolean => {
+      const r = c.requires;
+      if (r?.length) {
+        const ar = h.relations;
+        c.notification = r.map((a) => a.display_name);
+        return true;
+      }
+      return false;
+    };
+
     if (link.relations.find((e) => e.id === target.id)) {
-      if (!this.checkActions(Host, Component, 'remove')) return;
+      if (!checkActions(Host.id, Component, 'remove')) return;
       this.clear([target, link]);
       this.statePost.delete(post);
     } else if (Component.limit && noLimit(Component.limit, Component.relations.length)) {
-      if (!this.checkActions(Host, Component, 'add')) return;
+      if (!checkActions(Host.id, Component, 'add')) return;
+      if (checkRequires(Host, Component)) return;
       link.relations.push(target);
       target.relations.push(link);
       target.isLink = true;
@@ -260,29 +279,21 @@ export class TakeService {
     }
   }
 
-  checkActions(host: HostTile, com: CompTile, action: 'add' | 'remove'): boolean {
-    const flag = this.loadPost.data.some((a) => a.component_id === com.id && a.service_id === com.service_id && a.host_id === host.id);
-    if (com.actions && com.actions.length) {
-      console.log(`DEBUG HOST-COMPONENT >> exist in LoadData: ${flag}`, this.loadPost, com, host);
-
-      if (action === 'remove') {
-        if (flag) return com.actions.some((a) => a === 'remove');
-        else return true;
-      }
-      if (action === 'add') {
-        if (flag) return true;
-        else return com.actions.some((a) => a === 'add');
-      }
-    } else return true;
-  }
-
   cancel() {
     this.statePost.clear();
     this.statePost.update(this.loadPost.data);
     this.clearAllRelations();
     this.setRelations(this.loadPost.data);
     this.formFill();
-    this.Hosts = this.Hosts.map((a) => ({ ...a, isSelected: false, isLink: false }));
-    this.Components = this.Components.map((a) => ({ ...a, isSelected: false, isLink: false }));
+
+    this.sourceMap.get('host').forEach((a) => {
+      a.isSelected = false;
+      a.isLink = false;
+    });
+
+    this.sourceMap.get('compo').forEach((a) => {
+      a.isSelected = false;
+      a.isLink = false;
+    });
   }
 }
