@@ -220,6 +220,20 @@ def check_component_constraint_definition(proto, name, conf):
         check_item(const[1])
 
 
+def check_component_requires(proto, name, conf):
+    if not isinstance(conf, dict):
+        return
+    if 'requires' not in conf:
+        return
+    req = conf['requires']
+    ref = proto_ref(proto)
+    if not isinstance(req, list):
+        msg = 'requires of component "{}" in {} should be array'
+        err('INVALID_COMPONENT_DEFINITION', msg.format(name, ref))
+    for item in req:
+        check_extra_keys(item, ('service', 'component'), f'requires of component "{name}" of {ref}')
+
+
 def save_components(proto, conf):
     ref = proto_ref(proto)
     if not in_dict(conf, 'components'):
@@ -234,7 +248,7 @@ def save_components(proto, conf):
         cc = conf['components'][comp_name]
         err_msg = 'Component name "{}" of {}'.format(comp_name, ref)
         validate_name(comp_name, err_msg)
-        allow = ('display_name', 'description', 'params', 'constraint', 'monitoring')
+        allow = ('display_name', 'description', 'params', 'constraint', 'requires', 'monitoring')
         check_extra_keys(cc, allow, 'component "{}" of {}'.format(comp_name, ref))
         component = StageComponent(prototype=proto, name=comp_name)
         dict_to_obj(cc, 'description', component)
@@ -243,7 +257,9 @@ def save_components(proto, conf):
         dict_json_to_obj(cc, 'params', component)
         fix_display_name(cc, component)
         check_component_constraint_definition(proto, comp_name, cc)
+        check_component_requires(proto, comp_name, cc)
         dict_json_to_obj(cc, 'constraint', component)
+        dict_json_to_obj(cc, 'requires', component)
         component.save()
 
 
