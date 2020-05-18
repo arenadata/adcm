@@ -100,10 +100,8 @@ export class StatePost {
   }
 }
 
-export class Stream {
-  target: Tile;
+export interface IStream {
   link: Tile;
   linkSource: Tile[];
   selected: Tile;
-  constructor() {}
 }

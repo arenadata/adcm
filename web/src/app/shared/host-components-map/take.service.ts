@@ -10,16 +10,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Injectable } from '@angular/core';
-import { AbstractControl, FormControl, FormGroup, ValidationErrors, ValidatorFn } from '@angular/forms';
+import { FormControl, FormGroup, ValidationErrors } from '@angular/forms';
 import { ApiService } from '@app/core/api';
 import { IActionParameter } from '@app/core/types';
 import { take, tap } from 'rxjs/operators';
 
-import { CompTile, Constraint, HostTile, IRawHosComponent, Post, StatePost, Stream, Tile } from './types';
+import { CompTile, Constraint, HostTile, IRawHosComponent, Post, StatePost, IStream, Tile } from './types';
 
 @Injectable()
 export class TakeService {
-  stream = new Stream();
+  stream = {} as IStream;
   statePost = new StatePost();
   loadPost = new StatePost();
   sourceMap = new Map<string, Tile[]>([
@@ -44,10 +44,14 @@ export class TakeService {
     return this.sourceMap.get('compo') as CompTile[];
   }
 
+  set Components(v: CompTile[]) {
+    this.sourceMap.set('compo', v);
+  }
+
   initSource(url: string, actions: IActionParameter[]) {
     this.actionParameters = actions;
     this.Hosts = [];
-    this.sourceMap.set('compo', []);
+    this.Components = [];
     this.statePost.clear();
     this.loadPost.clear();
     this.formGroup = new FormGroup({});
@@ -91,14 +95,14 @@ export class TakeService {
   setSource(raw: IRawHosComponent) {
     if (raw.host) {
       const list = raw.host.map((h) => new HostTile(h));
-      this.sourceMap.set('host', [...list]);
+      this.Hosts = [...list];
     }
 
     if (raw.component) {
       const list = raw.component.map(
         (c) => new CompTile(c, this.actionParameters ? this.actionParameters.filter((a) => a.service === c.service_name && a.component === c.name).map((b) => b.action) : null)
       );
-      this.sourceMap.set('compo', [...this.sourceMap.get('compo'), ...list]);
+      this.Components = [...this.Components, ...list];
     }
   }
 
@@ -147,22 +151,14 @@ export class TakeService {
     };
   }
 
-  noLimit(comp: Tile) {
-    const a = comp.limit;
-    if (a) {
-      const last = a.length - 1;
-      return a[last] === '+' || a[last] === 'odd' || a[last] > comp.relations.length;
-    } else return true;
-  }
-
   formFill() {
     this.Components.map((a) => this.formGroup.addControl(`${a.service_id}/${a.id}`, new FormControl(a.relations.length, this.validateConstraints(a))));
   }
 
   setRelations(a: Post[]) {
     a.forEach((p) => {
-      const host = this.sourceMap.get('host').find((h) => h.id === p.host_id),
-        service = this.sourceMap.get('compo').find((s) => s.id === p.component_id);
+      const host = this.Hosts.find((h) => h.id === p.host_id),
+        service = this.Components.find((s) => s.id === p.component_id);
       if (host && service) {
         if (this.actionParameters) {
           service.relations = [...service.relations, host];
@@ -179,8 +175,8 @@ export class TakeService {
   }
 
   clearAllRelations() {
-    this.sourceMap.get('host').map((h) => (h.relations = []));
-    this.sourceMap.get('compo').map((s) => (s.relations = []));
+    this.Hosts = this.Hosts.map((h) => ({ ...h, relations: [] }));
+    this.Components = this.Components.map((s) => ({ ...s, relations: [] }));
     this.formFill();
   }
 
@@ -197,62 +193,61 @@ export class TakeService {
   }
 
   takeHost(host: HostTile) {
-    this.stream.target = host;
-    this.getLink('compo').getSelected('host').fork(this.handleLink, this.handleSelect);
+    this.getLink(this.Components).getSelected(this.Hosts).next(host);
   }
 
   takeComponent(component: CompTile) {
-    this.stream.target = component;
-    this.getLink('host').getSelected('compo').fork(this.handleLink, this.handleSelect);
+    this.getLink(this.Hosts).getSelected(this.Components).next(component);
   }
 
-  getLink(name: string) {
-    this.stream.linkSource = this.sourceMap.get(name);
+  getLink(source: Tile[]) {
+    this.stream.linkSource = source;
     this.stream.link = this.stream.linkSource.find((s) => s.isSelected);
     this.stream.linkSource.forEach((s) => (s.isLink = false));
     return this;
   }
 
-  getSelected(name: string) {
-    this.stream.selected = this.sourceMap.get(name).find((s) => s.isSelected);
+  getSelected(source: Tile[]) {
+    this.stream.selected = source.find((s) => s.isSelected);
     if (this.stream.selected) this.stream.selected.isSelected = false;
     return this;
   }
 
-  fork(one: { (): void; (): void; call?: any }, two: { (): void; (): void; call?: any }) {
-    if (this.stream.link) one.call(this);
-    else if (this.stream.selected !== this.stream.target) two.call(this);
+  next(target: Tile) {
+    if (this.stream.link) this.handleLink(this.stream.link, target);
+    else if (this.stream.selected !== target) {
+      target.isSelected = true;
+      target.relations.forEach((e) => (this.stream.linkSource.find((s) => s.name === e.name && s.id === e.id).isLink = true));
+    }
   }
 
-  handleSelect() {
-    this.stream.target.isSelected = true;
-    this.stream.target.relations.forEach((e) => (this.stream.linkSource.find((s) => s.name === e.name && s.id === e.id).isLink = true));
-  }
+  handleLink(link: Tile, target: Tile) {
+    const isComp = target instanceof CompTile;
+    const Component = (isComp ? target : link) as CompTile;
+    const Host = isComp ? link : target;
+    const post = new Post(Host.id, Component.service_id, Component.id);
 
-  handleLink() {
-    const str = this.stream;
-    const isComp = this.stream.target instanceof CompTile;
-    const CurrentServiceComponent = (isComp ? this.stream.target : this.stream.link) as CompTile,
-      CurrentHost = isComp ? this.stream.link : this.stream.target;
-    const post = new Post(CurrentHost.id, CurrentServiceComponent.service_id, CurrentServiceComponent.id);
+    const noLimit = (c: Constraint, r: number) => {
+      const v = c[c.length - 1];
+      return v === '+' || v === 'odd' || v > r;
+    };
 
-    if (str.link.relations.find((e) => e.id === str.target.id)) {
-      if (!this.checkActions(CurrentHost, CurrentServiceComponent, 'remove')) return;
-      this.clear([str.target, str.link]);
+    if (link.relations.find((e) => e.id === target.id)) {
+      if (!this.checkActions(Host, Component, 'remove')) return;
+      this.clear([target, link]);
       this.statePost.delete(post);
-    } else if (this.noLimit(CurrentServiceComponent)) {
-      if (!this.checkActions(CurrentHost, CurrentServiceComponent, 'add')) return;
-      str.link.relations.push(str.target);
-      str.target.relations.push(str.link);
-      str.target.isLink = true;
+    } else if (Component.limit && noLimit(Component.limit, Component.relations.length)) {
+      if (!this.checkActions(Host, Component, 'add')) return;
+      link.relations.push(target);
+      target.relations.push(link);
+      target.isLink = true;
       this.statePost.add(post);
     }
-    this.setFormValue((isComp ? this.stream.target : this.stream.link) as CompTile);
+    this.setFormValue((isComp ? target : link) as CompTile);
   }
 
   setFormValue(c: CompTile) {
-    const id = `${c.service_id}/${c.id}`;
-    this.formGroup.controls[id].setValue(c.relations);
+    this.formGroup.controls[`${c.service_id}/${c.id}`].setValue(c.relations);
   }
 
   clear(tiles: Tile[]) {
@@ -287,14 +282,7 @@ export class TakeService {
     this.clearAllRelations();
     this.setRelations(this.loadPost.data);
     this.formFill();
-
-    this.sourceMap.get('host').map((a) => {
-      a.isSelected = false;
-      a.isLink = false;
-    });
-    this.sourceMap.get('compo').map((a) => {
-      a.isSelected = false;
-      a.isLink = false;
-    });
+    this.Hosts = this.Hosts.map((a) => ({ ...a, isSelected: false, isLink: false }));
+    this.Components = this.Components.map((a) => ({ ...a, isSelected: false, isLink: false }));
   }
 }
