@@ -11,11 +11,15 @@
 // limitations under the License.
 import { Injectable } from '@angular/core';
 import { FormControl, FormGroup, ValidationErrors } from '@angular/forms';
+import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '@app/core/api';
-import { IActionParameter } from '@app/core/types';
-import { take, tap } from 'rxjs/operators';
+import { IActionParameter, IRequires } from '@app/core/types';
+import { filter, switchMap, take, tap, map } from 'rxjs/operators';
 
-import { CompTile, Constraint, HostTile, IRawHosComponent, Post, StatePost, IStream, Tile } from './types';
+import { AddService } from '../add-component/add.service';
+import { DialogComponent } from '../components';
+import { DependenciesComponent } from './dependencies.component';
+import { CompTile, Constraint, HostTile, IRawHosComponent, IStream, Post, StatePost, Tile } from './types';
 
 @Injectable()
 export class TakeService {
@@ -30,7 +34,7 @@ export class TakeService {
   actionParameters: IActionParameter[];
   formGroup = new FormGroup({});
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private dialog: MatDialog, private add: AddService) {}
 
   get Hosts(): HostTile[] {
     return this.sourceMap.get('host');
@@ -240,29 +244,45 @@ export class TakeService {
       return v === '+' || v === 'odd' || v > r;
     };
 
-    const checkRequires = (h: HostTile, c: CompTile): boolean => {
-      const r = c.requires;
-      if (r?.length) {
-        const ar = h.relations;
-        c.notification = r.map((a) => a.display_name);
-        return true;
-      }
-      return false;
-    };
-
     if (link.relations.find((e) => e.id === target.id)) {
       if (!checkActions(Host.id, Component, 'remove')) return;
       this.clear([target, link]);
       this.statePost.delete(post);
     } else if (Component.limit && noLimit(Component.limit, Component.relations.length)) {
       if (!checkActions(Host.id, Component, 'add')) return;
-      if (checkRequires(Host, Component)) return;
+      if (Component.requires?.length) {
+        this.dialog4Requires(Component.requires);
+        return;
+      }
       link.relations.push(target);
       target.relations.push(link);
       target.isLink = true;
       this.statePost.add(post);
     }
     this.setFormValue((isComp ? target : link) as CompTile);
+  }
+
+  dialog4Requires(model: IRequires[]) {
+    const req = (): { prototype_id: number }[] => {
+      // TODO: build list prototype_id components
+      return [];
+    };
+    this.dialog
+      .open(DialogComponent, {
+        data: {
+          title: 'This component cannot be installed without the following dependencies.',
+          component: DependenciesComponent,
+          model,
+          controls: ['Install All', 'It is clear'],
+        },
+      })
+      .beforeClosed()
+      .pipe(
+        filter((a) => a),
+        map(req),
+        switchMap((result) => this.add.addService(result))
+      )
+      .subscribe();
   }
 
   setFormValue(c: CompTile) {
