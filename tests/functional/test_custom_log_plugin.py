@@ -37,7 +37,7 @@ def test_different_storage_types_with_format(sdk_client_fs: ADCMClient, bundle):
     log = job.log(job_id=job.id, log_id=logs[2].id)
     assert len(logs) == 3, "Logs count {}. Expected 3".format(len(logs))
     assert job.status == 'success', "Current job status {}. Expected: success".format(job.status)
-    err_msg = "Expected log format {}. Actual log format".format(log_format, log.format)
+    err_msg = "Expected log format {}. Actual log format {}".format(log_format, log.format)
     assert log.format == log_format, err_msg
     assert log.type == 'custom'
 
