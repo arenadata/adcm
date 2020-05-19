@@ -12,4 +12,5 @@ pytest-lazy-fixture
 pytest-xdist  # pytest distributed testing plugin (for parallel tests)
 pyyaml
 requests
+retrying==1.3.3
 selenium
