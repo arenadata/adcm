@@ -3,14 +3,6 @@ import pytest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
 
-
-"""
-    name - Name of log. Required
-    format - Format of body, json/txt. Required
-    path - Path of file on node. Required, if field 'content' is none
-    content - Text. Required, if field 'path' is none
-    if both fields then we get path, if not storage format field then bundle error
-"""
 FORMAT_STORAGE = ["json_path", "json_content", 'txt_path', "txt_content"]
 FIELD = ['name', 'format', 'storage_type']
 
@@ -90,7 +82,7 @@ def test_check_text_file_content(sdk_client_fs: ADCMClient):
     job = task.job()
     logs = job.log_list()
     log = job.log(job_id=job.id, log_id=logs[2].id)
-    assert log.content == 'Hello World!'
+    assert log.content == 'Hello world!\n'
     assert log.format == 'txt'
 
 
@@ -133,5 +125,4 @@ def test_incorrect_syntax_for_fields(sdk_client_fs: ADCMClient):
     job = task.job()
     logs = job.log_list()
     log = job.log(job_id=job.id, log_id=logs[2].id)
-    assert task.status == 'failed', "Current job status {}. Expected: failed".format(task.status)
-    assert log.content == ''
+    assert log.content == '{1: "world"}'
