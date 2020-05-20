@@ -74,28 +74,6 @@ export class TakeService {
     );
   }
 
-  checkEmptyHost() {
-    const ap = this.actionParameters;
-    if (ap) {
-      const isShrink = ap.every((a) => a.action === 'remove');
-      const isExpand = ap.every((a) => a.action === 'add');
-      const condition = (b: CompTile) => (a: IActionParameter) => b.component === `${a.service}/${a.component}`;
-      const existCondition = (rel: CompTile[]) => (isShrink ? ap.some((a) => rel.some((b) => condition(b)(a))) : ap.every((a) => rel.some((b) => condition(b)(a))));
-      this.Hosts = this.Hosts.map((a) => ({ ...a, disabled: existCondition(a.relations as CompTile[]) ? isExpand : isShrink }));
-    }
-  }
-
-  saveSource(cluster: { id: number; hostcomponent: string }) {
-    const send = { cluster_id: cluster.id, hc: this.statePost.data };
-    return this.api.post<Post[]>(cluster.hostcomponent, send).pipe(
-      take(1),
-      tap((data) => {
-        this.loadPost.update(data);
-        this.statePost.update(data);
-      })
-    );
-  }
-
   setSource(raw: IRawHosComponent) {
     if (raw.host) {
       const list = raw.host.map((h) => new HostTile(h));
@@ -108,6 +86,35 @@ export class TakeService {
       );
       this.Components = [...this.Components, ...list];
     }
+  }
+
+  checkEmptyHost() {
+    const ap = this.actionParameters;
+    if (ap) {
+      const isShrink = ap.every((a) => a.action === 'remove');
+      const isExpand = ap.every((a) => a.action === 'add');
+      const condition = (b: CompTile) => (a: IActionParameter) => b.component === `${a.service}/${a.component}`;
+      const existCondition = (rel: CompTile[]) => (isShrink ? ap.some((a) => rel.some((b) => condition(b)(a))) : ap.every((a) => rel.some((b) => condition(b)(a))));
+      this.Hosts = this.Hosts.map((a) => ({ ...a, disabled: existCondition(a.relations as CompTile[]) ? isExpand : isShrink }));
+    }
+  }
+
+  setRelations(a: Post[]) {
+    a.forEach((p) => {
+      const host = this.Hosts.find((h) => h.id === p.host_id),
+        service = this.Components.find((s) => s.id === p.component_id);
+      if (host && service) {
+        if (this.actionParameters) {
+          service.relations = [...service.relations, host];
+          const clone = { ...service };
+          clone.disabled = service.actions.every((k) => k !== 'remove');
+          host.relations = [...host.relations, clone];
+        } else {
+          host.relations = [...host.relations, service];
+          service.relations = [...service.relations, host];
+        }
+      }
+    });
   }
 
   /**
@@ -157,31 +164,6 @@ export class TakeService {
 
   formFill() {
     this.Components.map((a) => this.formGroup.addControl(`${a.service_id}/${a.id}`, new FormControl(a.relations.length, this.validateConstraints(a))));
-  }
-
-  setRelations(a: Post[]) {
-    a.forEach((p) => {
-      const host = this.Hosts.find((h) => h.id === p.host_id),
-        service = this.Components.find((s) => s.id === p.component_id);
-      if (host && service) {
-        if (this.actionParameters) {
-          service.relations = [...service.relations, host];
-          const clone = { ...service };
-          clone.disabled = service.actions.every((k) => k !== 'remove');
-
-          host.relations = [...host.relations, clone];
-        } else {
-          host.relations = [...host.relations, service];
-          service.relations = [...service.relations, host];
-        }
-      }
-    });
-  }
-
-  clearAllRelations() {
-    this.sourceMap.get('host').map((h) => (h.relations = []));
-    this.sourceMap.get('compo').map((s) => (s.relations = []));
-    this.formFill();
   }
 
   clearServiceFromHost(data: { rel: CompTile; model: HostTile }) {
@@ -259,7 +241,7 @@ export class TakeService {
       target.isLink = true;
       this.statePost.add(post);
     }
-    this.setFormValue((isComp ? target : link) as CompTile);
+    this.setFormValue(Component);
   }
 
   dialog4Requires(model: IRequires[]) {
@@ -289,6 +271,17 @@ export class TakeService {
     this.formGroup.controls[`${c.service_id}/${c.id}`].setValue(c.relations);
   }
 
+  saveSource(cluster: { id: number; hostcomponent: string }) {
+    const send = { cluster_id: cluster.id, hc: this.statePost.data };
+    return this.api.post<Post[]>(cluster.hostcomponent, send).pipe(
+      take(1),
+      tap((data) => {
+        this.loadPost.update(data);
+        this.statePost.update(data);
+      })
+    );
+  }
+
   clear(tiles: Tile[]) {
     for (let a of tiles) {
       const name = a instanceof HostTile ? 'host' : 'compo';
@@ -299,21 +292,22 @@ export class TakeService {
     }
   }
 
-  cancel() {
+  restore() {
     this.statePost.clear();
     this.statePost.update(this.loadPost.data);
-    this.clearAllRelations();
+    
+    this.Hosts.forEach((a) => {
+      a.isSelected = false;
+      a.isLink = false;
+      a.relations = [];
+    });
+    this.Components.forEach((a) => {
+      a.isSelected = false;
+      a.isLink = false;
+      a.relations = [];
+    });
+
     this.setRelations(this.loadPost.data);
     this.formFill();
-
-    this.sourceMap.get('host').forEach((a) => {
-      a.isSelected = false;
-      a.isLink = false;
-    });
-
-    this.sourceMap.get('compo').forEach((a) => {
-      a.isSelected = false;
-      a.isLink = false;
-    });
   }
 }

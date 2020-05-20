@@ -9,8 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit, Input } from '@angular/core';
-import { CompTile } from './types';
+import { Component, Input, OnInit } from '@angular/core';
 import { IRequires } from '@app/core/types';
 
 @Component({
@@ -26,12 +25,10 @@ import { IRequires } from '@app/core/types';
   styles: ['li {padding: 6px 0;}'],
 })
 export class DependenciesComponent implements OnInit {
+  // by dialog window
   model: IRequires[];
-  items: IRequires[];
   @Input() components: IRequires[];
-
-  constructor() {}
-
+  protected items: IRequires[];
   ngOnInit(): void {
     this.items = this.model || this.components;
   }

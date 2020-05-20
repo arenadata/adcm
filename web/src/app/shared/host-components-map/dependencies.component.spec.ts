@@ -12,6 +12,7 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { DependenciesComponent } from './dependencies.component';
+import { By } from '@angular/platform-browser';
 
 describe('DependenciesComponent', () => {
   let component: DependenciesComponent;
@@ -19,9 +20,8 @@ describe('DependenciesComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ DependenciesComponent ]
-    })
-    .compileComponents();
+      declarations: [DependenciesComponent],
+    }).compileComponents();
   }));
 
   beforeEach(() => {
@@ -32,5 +32,36 @@ describe('DependenciesComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('data when creating a dialog', () => {
+    component.model = [{ id: 1, display_name: 'display_name_test_1', name: 'test_name_1' }];
+    component.ngOnInit();
+    fixture.detectChanges();
+    const li = fixture.nativeElement.querySelector('ul').getElementsByTagName('li');
+    expect(li.length).toBe(1);
+    expect(li[0].innerText).toBe('display_name_test_1');
+  });
+
+  it('data when input property [components]', () => {
+    component.components = [{ id: 1, display_name: 'display_name_test_1', name: 'test_name_1' }];
+    component.ngOnInit();
+    fixture.detectChanges();
+    const li = fixture.nativeElement.querySelector('ul').getElementsByTagName('li');
+    expect(li.length).toBe(1);
+    expect(li[0].innerText).toBe('display_name_test_1');
+  });
+
+  it('data as tree', () => {
+    component.components = [{ id: 1, display_name: 'display_name_test_1', name: 'test_name_1', components: [{ id: 2, display_name: 'display_name_test_2', name: 'test_name_2' }] }];
+    component.ngOnInit();
+    fixture.detectChanges();
+    const ul = fixture.nativeElement.querySelector('ul');
+    const li = ul.getElementsByTagName('li');
+    expect(ul.getElementsByTagName('app-dependencies').length).toBe(2);
+    expect(li.length).toBe(2);
+    expect(li[1].innerText).toBe('display_name_test_2');
+    expect(ul.innerText).toContain('display_name_test_1');
+    expect(ul.innerText).toContain('display_name_test_2');
   });
 });

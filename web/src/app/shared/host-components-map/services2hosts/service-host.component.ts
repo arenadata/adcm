@@ -16,7 +16,6 @@ import { ChannelService } from '@app/core';
 import { EventMessage, SocketState } from '@app/core/store';
 import { IActionParameter } from '@app/core/types';
 import { Store } from '@ngrx/store';
-import { tap } from 'rxjs/operators';
 
 import { SocketListenerDirective } from '../../directives/socketListener.directive';
 import { TakeService } from '../take.service';
@@ -91,12 +90,8 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
     if (
       ((m.event === 'change_hostcomponentmap' || m.event === 'change_state') && m.object.type === 'cluster' && m.object.id === this.cluster.id && !this.saveFlag) ||
       ((m.event === 'add' || m.event === 'remove') && m.object.details.type === 'cluster' && +m.object.details.value === this.cluster.id)
-    ) {
-      this.clearRelations();
-      // this.service.checkConstraints();
+    )
       this.init();
-      this.initFlag = true;
-    }
   }
 
   init() {
@@ -104,22 +99,13 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
     this.initFlag = true;
     this.service
       .initSource(this.cluster.hostcomponent, this.actionParameters)
-      .pipe(
-        tap((a) => {
-          if (a.hc) this.initFlag = false;
-        }),
-        this.takeUntil()
-      )
-      .subscribe((_) => {
+      .pipe(this.takeUntil())
+      .subscribe((a) => {
+        if (a.hc) this.initFlag = false;
         this.serviceComponents = this.service.Components;
         this.hosts = this.service.Hosts;
         this.form = this.service.formGroup;
-        console.log('DEBUG HOST-COMPONETS >>', this.service);
       });
-  }
-
-  clearRelations() {
-    this.service.clearAllRelations();
   }
 
   clearServiceFromHost(data: { rel: CompTile; model: HostTile }) {
@@ -149,7 +135,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
     });
   }
 
-  cancel() {
-    this.service.cancel();
+  restore() {
+    this.service.restore();
   }
 }
