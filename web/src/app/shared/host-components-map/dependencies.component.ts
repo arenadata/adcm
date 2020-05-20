@@ -28,7 +28,7 @@ export class DependenciesComponent implements OnInit {
   // by dialog window
   model: IRequires[];
   @Input() components: IRequires[];
-  protected items: IRequires[];
+  items: IRequires[];
   ngOnInit(): void {
     this.items = this.model || this.components;
   }
