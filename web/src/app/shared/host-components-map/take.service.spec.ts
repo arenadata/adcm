@@ -10,9 +10,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { TestBed } from '@angular/core/testing';
+import { MatDialog } from '@angular/material/dialog';
 import { Component } from '@app/core/types';
 
 import { ApiService } from '../../core/api';
+import { AddService } from '../add-component/add.service';
 import { TakeService } from './take.service';
 import { CompTile } from './types';
 
@@ -33,7 +35,7 @@ describe('HostComponentsMap :: TakeService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [{ provide: ApiService, useValue: {} }, TakeService],
+      providers: [{ provide: ApiService, useValue: {} }, { provide: AddService, useValue: {} }, { provide: MatDialog, useValue: {} }, TakeService],
     });
     service = TestBed.inject(TakeService);
   });
