@@ -3,6 +3,7 @@
 import allure
 import os
 import pytest
+import tarfile
 import tempfile
 import yaml
 
@@ -269,6 +270,19 @@ def app(adcm_ms):
     app = ADCMTest(adcm_ms)
     yield app
     app.destroy()
+    file_name = utils.random_string()
+    bits, _ = app.adcm.container.get_archive('/adcm/data/log/')
+    f = open("/tmp/{}.tar".format(file_name), "wb")
+    # write the bits
+    for chunk in bits:
+        f.write(chunk)
+    f.close()
+    # unpack
+    tar = tarfile.open("/tmp/{}.tar".format(file_name))
+    tar.extractall()
+    tar.close()
+    allure.attach.file("/tmp/{}.tar".format(file_name),
+                       name='{}.tar'.format(file_name))
 
 
 @pytest.fixture(scope='module')
