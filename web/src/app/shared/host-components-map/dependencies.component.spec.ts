@@ -12,7 +12,6 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { DependenciesComponent } from './dependencies.component';
-import { By } from '@angular/platform-browser';
 
 describe('DependenciesComponent', () => {
   let component: DependenciesComponent;

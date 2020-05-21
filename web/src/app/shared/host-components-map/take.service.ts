@@ -271,9 +271,9 @@ export class TakeService {
     this.formGroup.controls[`${c.service_id}/${c.id}`].setValue(c.relations);
   }
 
-  saveSource(cluster: { id: number; hostcomponent: string }) {
-    const send = { cluster_id: cluster.id, hc: this.statePost.data };
-    return this.api.post<Post[]>(cluster.hostcomponent, send).pipe(
+  saveSource(cluster_id: number, hostcomponent: string) {
+    const send = { cluster_id, hc: this.statePost.data };
+    return this.api.post<Post[]>(hostcomponent, send).pipe(
       take(1),
       tap((data) => {
         this.loadPost.update(data);

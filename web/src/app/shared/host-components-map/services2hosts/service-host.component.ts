@@ -66,7 +66,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
   saveFlag = false;
   initFlag = false;
 
-  scrollEventData: { direct: 1 | -1 | 0 };
+  scrollEventData: { direct: 1 | -1 | 0; scrollTop: number };
 
   constructor(public service: TakeService, private channel: ChannelService, socket: Store<SocketState>) {
     super(socket);
@@ -126,7 +126,8 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
 
   save() {
     this.saveFlag = true;
-    this.service.saveSource(this.cluster).subscribe((data) => {
+    const { id, hostcomponent } = this.cluster;
+    this.service.saveSource(id, hostcomponent).subscribe((data) => {
       this.saveResult.emit(data);
       this.notify = 'Settings saved.';
       this.showPopup = true;
