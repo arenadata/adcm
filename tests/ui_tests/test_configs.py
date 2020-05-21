@@ -3,6 +3,7 @@
 import allure
 import os
 import pytest
+import tempfile
 import yaml
 
 from adcm_client.objects import ADCMClient
@@ -288,7 +289,8 @@ def prepare_config(config):
         default,
         config[0][0]['config'][0]['ui_options']['invisible'],
         config[0][0]['config'][0]['ui_options']['advanced'])
-    d_name = "{}/configs/fields/{}/{}".format(utils.get_data_dir(__file__),
+    temdir = tempfile.mkdtemp()
+    d_name = "{}/configs/fields/{}/{}".format(temdir,
                                               config[0][0]['config'][0]['type'],
                                               config_folder_name)
 
@@ -323,7 +325,8 @@ def prepare_group_config(config):
         config[0][0]['config'][0]['ui_options']['advanced'],
         config[0][0]['config'][0]['subs'][0]['ui_options']['invisible'],
         config[0][0]['config'][0]['subs'][0]['ui_options']['advanced'])
-    d_name = "{}/configs/groups/{}".format(utils.get_data_dir(__file__), config_folder_name)
+    temdir = tempfile.mkdtemp()
+    d_name = "{}/configs/groups/{}".format(temdir, config_folder_name)
     os.makedirs(d_name)
     if config[0][0]['config'][0]['subs'][0]['name'] == 'file':
         with open("{}/file.txt".format(d_name), 'w') as f:
