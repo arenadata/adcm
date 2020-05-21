@@ -151,7 +151,8 @@ class BasePage:
                                             x_offset, y_offset).click().perform()
 
     def _contains_url(self, url: str, timer=5):
-        return WDW(self.driver, timer).until(EC.url_contains(url))
+        WDW(self.driver, timer).until(EC.url_contains(url))
+        return self.driver.current_url
 
     def _is_element_clickable(self, locator: tuple, timer=5) -> WebElement:
         return bool(WDW(self.driver, timer).until(EC.element_to_be_clickable(locator)))
@@ -338,7 +339,7 @@ class LoginPage(BasePage):
         self._login.send_keys(login)
         self._password.send_keys(password)
         self._password.send_keys(Keys.RETURN)
-        REPEAT(self._contains_url)('admin')
+        self._contains_url('admin', 10)
         sleep(5)  # Wait untill we have all websockets alive.
 
     def logout(self):
