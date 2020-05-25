@@ -76,3 +76,12 @@ class ADCMTest:
 
     def destroy(self):
         self.driver.quit()
+
+    def gather_logs(self, file_name):
+        bits, _ = self.adcm.container.get_archive('/adcm/data/log/')
+        f_name = ".".join([file_name, "tar"])
+        f_path = "/".join(["/adcm", f_name])
+        with open(f_path, 'wb') as f:
+            for chunk in bits:
+                f.write(chunk)
+        return f_path

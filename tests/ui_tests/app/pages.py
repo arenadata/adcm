@@ -173,7 +173,20 @@ class BasePage:
             self.driver.execute_script("arguments[0].click();", button)
             return True
 
+    def _click_button_element(self, button):
+        """Click element
+        :param button:
+        :return: bool
+        """
+        try:
+            button.click()
+            return True
+        except (NoSuchElementException, ElementClickInterceptedException):
+            self.driver.execute_script("arguments[0].click();", button)
+            return True
+
     def _click_button_by_name(self, button_name, by, locator):
+        self._wait_element_present(by, locator)
         buttons = self.driver.find_elements(by, locator)
         for button in buttons:
             if button.text == button_name:
@@ -339,7 +352,7 @@ class LoginPage(BasePage):
         self._login.send_keys(login)
         self._password.send_keys(password)
         self._password.send_keys(Keys.RETURN)
-        self._contains_url('admin', 10)
+        self._contains_url('admin', 15)
         sleep(5)  # Wait untill we have all websockets alive.
 
     def logout(self):
@@ -709,9 +722,9 @@ class Configuration(BasePage):
     def get_group_names(self):
         return self.driver.find_elements(*ConfigurationLocators.group_title)
 
-    @retry(retry_on_exception=retry_on_exception, wait_fixed=1000)
+    @retry(retry_on_exception=retry_on_exception, stop_max_delay=10 * 1000)
     def save_button_status(self):
-        sleep(0.5)
+        self._wait_element_present(ConfigurationLocators.config_save_button)
         button = self.driver.find_element(*ConfigurationLocators.config_save_button)
         class_el = button.get_attribute("disabled")
         if class_el == 'true':
@@ -724,7 +737,8 @@ class Configuration(BasePage):
         return self.driver.find_elements(*ConfigurationLocators.app_field)
 
     def _get_group_element_by_name(self, name):
-        config_groups = REPEAT(self.driver.find_elements)(*Common.mat_expansion_panel)
+        self._wait_element_present(Common.mat_expansion_panel)
+        config_groups = self.driver.find_elements(*Common.mat_expansion_panel)
         for group in config_groups:
             if name in group.text:
                 return group
@@ -783,19 +797,20 @@ class Configuration(BasePage):
         self._getelement(ConfigurationLocators.config_save_button).click()
 
     def click_advanced(self):
-        buttons = self._getelements(Common.mat_checkbox)
+        self._wait_element_present(Common.mat_checkbox)
+        buttons = self.driver.find_elements(*Common.mat_checkbox)
         for button in buttons:
-            if button.text == 'Advanced':
-                self._click_button_with_sleep(button, 5)
-                sleep(0.5)
+            if button.get_attribute("textContent").strip() == 'Advanced':
+                self._click_button_element(button)
                 return True
         return False
 
     @property
     def advanced(self):
-        buttons = self._getelements(Common.mat_checkbox)
+        self._wait_element_present(Common.mat_checkbox)
+        buttons = self.driver.find_elements(*Common.mat_checkbox)
         for button in buttons:
-            if button.text == 'Advanced':
+            if button.get_attribute("textContent").strip() == 'Advanced':
                 return "checked" in button.get_attribute("class")
         return None
 
