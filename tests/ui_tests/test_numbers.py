@@ -12,7 +12,9 @@ from tests.ui_tests.app.pages import Configuration, LoginPage
 
 @pytest.fixture()
 def app(adcm_fs):
-    return ADCMTest(adcm_fs)
+    app = ADCMTest(adcm_fs)
+    yield app
+    app.destroy()
 
 
 @pytest.fixture()
