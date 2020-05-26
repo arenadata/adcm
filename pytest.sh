@@ -14,7 +14,6 @@
 pip3 install -r requirements-test.txt
 find . -name "*.pyc" -type f -delete
 find . -name "__pycache__" -type d -delete
-rm -rf tests/ui_tests/test_configs_data/
 { # try
     pytest tests/functional tests/ui_tests -s -v -n auto --showlocals --alluredir ./allure-results/ --durations=20 &&
     chmod -R o+xw allure-results
