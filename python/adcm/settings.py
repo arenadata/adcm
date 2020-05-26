@@ -143,7 +143,7 @@ DATABASES = {
         # 'USER': 'adcm',
         # 'PASSWORD': 'adcm',
         'OPTIONS': {
-            'timeout': 10,
+            'timeout': 20,
         }
     }
 }
