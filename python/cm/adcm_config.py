@@ -342,20 +342,85 @@ def group_is_activatable(spec):
     return False
 
 
+def get_builtin_variant(obj, func_name):
+    def free_host(obj):
+        out = []
+        for host in Host.objects.filter(cluster=None):
+            out.append(host.fqdn)
+        return out
+
+    def cluster_host(obj):
+        out = []
+        if obj.prototype.type == 'service':
+            cluster = obj.cluster
+        elif obj.prototype.type == 'cluster':
+            cluster = obj
+        else:
+            return []
+        for host in Host.objects.filter(cluster=cluster):
+            out.append(host.fqdn)
+        return out
+
+    func_list = {
+        'free_hosts': free_host,
+        'cluster_hosts': cluster_host,
+    }
+    if func_name not in func_list:
+        log.warning('unknown variant builtin function: %s', func_name)
+        return None
+    return func_list[func_name](obj)
+
+
+def get_variant(obj, conf, spec, limits):
+    value = None
+    source = limits['source']
+    if source['type'] == 'list':
+        skey = source['name'].split('/')
+        if len(skey) == 1:
+            value = conf[skey[0]]
+        else:
+            value = conf[skey[0]][skey[1]]
+    elif source['type'] == 'builtin':
+        value = get_builtin_variant(obj, source['name'])
+    elif source['type'] == 'inline':
+        value = source['value']
+    return value
+
+
+def process_varinat(obj, spec, conf):
+    def set_variant(spec):
+        limits = json.loads(spec['limits'])
+        limits['source']['value'] = get_variant(obj, conf, spec, limits)
+        return json.dumps(limits)
+
+    for key in spec:
+        if 'type' in spec[key]:
+            if spec[key]['type'] == 'variant':
+                spec[key]['limits'] = set_variant(spec[key])
+        else:
+            for subkey in spec[key]:
+                if spec[key][subkey]['type'] == 'variant':
+                    spec[key][subkey]['limits'] = set_variant(spec[key][subkey])
+
+
 def ui_config(obj, cl):
     conf = []
     _, spec, _, _ = get_prototype_config(obj.prototype)
-    flat_conf = to_flat_dict(json.loads(cl.config), spec)
+    obj_conf = json.loads(cl.config)
+    flat_conf = to_flat_dict(obj_conf, spec)
     slist = ('name', 'subname', 'type', 'description', 'display_name', 'required')
     for key in spec:
         item = obj_to_dict(spec[key], slist)
-        item['limits'] = json.loads(spec[key].limits)
+        limits = json.loads(spec[key].limits)
+        item['limits'] = limits
         if spec[key].ui_options:
             item['ui_options'] = json.loads(spec[key].ui_options)
         else:
             item['ui_options'] = None
         item['read_only'] = bool(config_is_ro(obj, key, spec[key].limits))
         item['activatable'] = bool(group_is_activatable(spec[key]))
+        if item['type'] == 'variant':
+            item['limits']['source']['value'] = get_variant(obj, obj_conf, item, limits)
         item['default'] = get_default(spec[key])
         if key in flat_conf:
             item['value'] = flat_conf[key]
@@ -455,6 +520,8 @@ def check_config_spec(proto, obj, spec, flat_spec, conf, old_conf=None, attr=Non
 
     if isinstance(conf, str):
         err('JSON_ERROR', 'config should not be just one string')
+
+    process_varinat(obj, spec, conf)
 
     def key_is_required(key, subkey, spec):
         if config_is_ro(obj, '{}/{}'.format(key, subkey), spec.get('limits', '')):
@@ -641,6 +708,11 @@ def check_config_type(proto, key, subkey, spec, value, default=False, inactive=F
             if value not in source['value']:
                 msg = 'not in variant list: "{}"'.format(source['value'])
                 err('CONFIG_VALUE_ERROR', tmpl2.format(msg))
+        if not default:
+            if source['type'] in ('list', 'builtin'):
+                if value not in source['value']:
+                    msg = 'not in variant list: "{}"'.format(source['value'])
+                    err('CONFIG_VALUE_ERROR', tmpl2.format(msg))
 
 
 def replace_object_config(obj, key, subkey, value):
