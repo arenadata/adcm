@@ -10,7 +10,8 @@ from adcm_client.objects import ADCMClient
 
 
 from tests.ui_tests.app.app import ADCMTest
-from tests.ui_tests.app.pages import Configuration, LoginPage
+from tests.ui_tests.app.configuration import Configuration
+from tests.ui_tests.app.pages import LoginPage
 
 from adcm_pytest_plugin import utils
 
