@@ -96,7 +96,8 @@ def get_cluster_config(cluster_id):
             'config': get_obj_config(cluster),
             'name': cluster.name,
             'id': cluster.id,
-            'version': cluster.prototype.version
+            'version': cluster.prototype.version,
+            'edition': cluster.prototype.bundle.edition,
         },
         'services': {},
     }
