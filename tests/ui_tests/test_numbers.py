@@ -7,12 +7,19 @@ from adcm_pytest_plugin.utils import parametrize_by_data_subdirs, get_data_dir
 
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.locators import Common
-from tests.ui_tests.app.pages import Configuration, LoginPage
+from tests.ui_tests.app.pages import LoginPage
+from tests.ui_tests.app.configuration import Configuration
+
+
+RANGE_VALUES = [("float", 0.15), ("float", 0), ("float", -1.2),
+                ("integer", 4), ("integer", 0), ("integer", -3)]
 
 
 @pytest.fixture()
 def app(adcm_fs):
-    return ADCMTest(adcm_fs)
+    app = ADCMTest(adcm_fs)
+    yield app
+    app.destroy()
 
 
 @pytest.fixture()
@@ -22,12 +29,12 @@ def login(app):
     login.login("admin", "admin")
 
 
-@parametrize_by_data_subdirs(
-    __file__, "integer")
-def test_integer(sdk_client_fs: ADCMClient, path, app, login):
+@parametrize_by_data_subdirs(__file__, 'bundles')
+def test_number_validation(sdk_client_fs: ADCMClient, path, app, login):
     """Check that we have errors and save button is not active
-     for integer field with values out of range
+     for number field with values out of range
     """
+    _ = login
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -37,70 +44,27 @@ def test_integer(sdk_client_fs: ADCMClient, path, app, login):
     assert config.save_button_status()
     fields = config.get_app_fields()
     form_field = fields[0].find_elements(*Common.mat_form_field)[0]
-    input_element = form_field.find_element(*Common.mat_input_element)
-    config.clear_element(input_element)
+    config.clear_input_element(form_field)
     assert not config.save_button_status()
-    form_field = fields[0].find_elements(*Common.mat_form_field)[0]
-    assert form_field.text == "Field [numbers_test] is required!"
-    input_element = form_field.find_element(*Common.mat_input_element)
-    config.set_element_value(input_element, "asdsa")
-    form_field = fields[0].find_elements(*Common.mat_form_field)[0]
-    assert form_field.text == "Field [numbers_test] is invalid!"
+    config.assert_form_field_text_equal(fields[0], "Field [numbers_test] is required!")
+    config.set_element_value_in_input(form_field, "asdsa")
+    config.assert_form_field_text_equal(fields[0], "Field [numbers_test] is invalid!")
     assert not config.save_button_status()
-    input_element = form_field.find_element(*Common.mat_input_element)
-    config.set_element_value(input_element, "-111111")
-    form_field = fields[0].find_elements(*Common.mat_form_field)[0]
+    config.set_element_value_in_input(form_field, "-111111")
     assert not config.save_button_status()
-    assert "Field [numbers_test] value cannot be less than" in form_field.text, form_field.text
-    input_element = form_field.find_element(*Common.mat_input_element)
-    config.set_element_value(input_element, "111111")
-    form_field = fields[0].find_elements(*Common.mat_form_field)[0]
+    config.assert_form_field_text_in(fields[0], "Field [numbers_test] value cannot be less than")
+    config.set_element_value_in_input(form_field, "111111")
     assert not config.save_button_status()
-    assert "Field [numbers_test] value cannot be greater than" in form_field.text, form_field.text
+    config.assert_form_field_text_in(fields[0],
+                                     "Field [numbers_test] value cannot be greater than")
 
 
-@parametrize_by_data_subdirs(
-    __file__, "float")
-def test_float(sdk_client_fs: ADCMClient, path, app, login):
-    """Check that we have errors and save button is not active
-     for float field with values out of range
+@pytest.mark.parametrize("number_type, value", RANGE_VALUES)
+def test_number_in_range_values(sdk_client_fs: ADCMClient, value, app, number_type, login):
+    """Check that save button active for number fields in min-max range
     """
-    bundle = sdk_client_fs.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
-    cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
-    assert config.save_button_status()
-    fields = config.get_app_fields()
-    form_field = fields[0].find_elements(*Common.mat_form_field)[0]
-    input_element = form_field.find_element(*Common.mat_input_element)
-    config.clear_element(input_element)
-    assert not config.save_button_status()
-    form_field = fields[0].find_elements(*Common.mat_form_field)[0]
-    assert form_field.text == "Field [numbers_test] is required!"
-    input_element = form_field.find_element(*Common.mat_input_element)
-    config.set_element_value(input_element, "asdsa")
-    form_field = fields[0].find_elements(*Common.mat_form_field)[0]
-    assert form_field.text == "Field [numbers_test] is invalid!"
-    assert not config.save_button_status()
-    input_element = form_field.find_element(*Common.mat_input_element)
-    config.set_element_value(input_element, "-111111.0023")
-    form_field = fields[0].find_elements(*Common.mat_form_field)[0]
-    assert not config.save_button_status()
-    assert "Field [numbers_test] value cannot be less than" in form_field.text
-    input_element = form_field.find_element(*Common.mat_input_element)
-    config.set_element_value(input_element, "111111.23243")
-    form_field = fields[0].find_elements(*Common.mat_form_field)[0]
-    assert not config.save_button_status()
-    assert "Field [numbers_test] value cannot be greater than" in form_field.text, form_field.text
-
-
-@pytest.mark.parametrize("value", (0.15, 0, -1.2), ids=("positive", "null", "negative"))
-def test_float_in_range_values(sdk_client_fs: ADCMClient, value, app, login):
-    """Check that save button active for float fields in min-max range
-    """
-    path = get_data_dir(__file__) + "/float/positive_and_negative"
+    _ = login
+    path = get_data_dir(__file__) + "/bundles/{}-positive_and_negative".format(number_type)
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -109,33 +73,15 @@ def test_float_in_range_values(sdk_client_fs: ADCMClient, value, app, login):
     config = Configuration(app.driver)
     fields = config.get_app_fields()
     form_field = fields[0].find_elements(*Common.mat_form_field)[0]
-    input_element = form_field.find_element(*Common.mat_input_element)
-    config.set_element_value(input_element, str(value))
-    assert config.save_button_status()
-
-
-@pytest.mark.parametrize("value", (4, 0, -3), ids=("positive", "null", "negative"))
-def test_integer_in_range_values(sdk_client_fs: ADCMClient, value, app, login):
-    """Check that save button active for float fields in min-max range
-    """
-    path = get_data_dir(__file__) + "/integer/positive_and_negative"
-    bundle = sdk_client_fs.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
-    cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
-    fields = config.get_app_fields()
-    form_field = fields[0].find_elements(*Common.mat_form_field)[0]
-    input_element = form_field.find_element(*Common.mat_input_element)
-    config.set_element_value(input_element, str(value))
+    config.set_element_value_in_input(form_field, str(value))
     assert config.save_button_status()
 
 
 def test_float_in_integer_field(sdk_client_fs: ADCMClient, app, login):
     """Check that we cannot set float in integer field
     """
-    path = get_data_dir(__file__) + "/integer/positive_and_negative"
+    _ = login
+    path = get_data_dir(__file__) + "/bundles/integer-positive_and_negative"
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -144,9 +90,7 @@ def test_float_in_integer_field(sdk_client_fs: ADCMClient, app, login):
     config = Configuration(app.driver)
     fields = config.get_app_fields()
     form_field = fields[0].find_elements(*Common.mat_form_field)[0]
-    input_element = form_field.find_element(*Common.mat_input_element)
-    config.set_element_value(input_element, '1.2')
+    config.set_element_value_in_input(form_field, "1.2")
     assert not config.save_button_status()
     fields = config.get_app_fields()
-    form_field = fields[0].find_elements(*Common.mat_form_field)[0]
-    assert form_field.text == "Field [numbers_test] is invalid!", form_field.text
+    config.assert_form_field_text_equal(fields[0], "Field [numbers_test] is invalid!")

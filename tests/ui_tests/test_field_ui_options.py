@@ -6,12 +6,15 @@ from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import parametrize_by_data_subdirs
 
 from tests.ui_tests.app.app import ADCMTest
-from tests.ui_tests.app.pages import Configuration, LoginPage
+from tests.ui_tests.app.configuration import Configuration
+from tests.ui_tests.app.pages import LoginPage
 
 
 @pytest.fixture()
 def app(adcm_fs):
-    return ADCMTest(adcm_fs)
+    app = ADCMTest(adcm_fs)
+    yield app
+    app.destroy()
 
 
 @pytest.fixture()
