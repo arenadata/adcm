@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ElementRef } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { NavigationStart, Router } from '@angular/router';
@@ -51,7 +51,8 @@ export class AppComponent implements OnInit {
     private message: MessageService,
     private config: ConfigService,
     private router: Router,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private elRef: ElementRef
   ) {}
 
   ngOnInit() {
@@ -71,6 +72,7 @@ export class AppComponent implements OnInit {
             tap(c => {
               if (!c) {
                 this.message.errorMessage({ title: 'New version available. Page has been refreshed.' });
+                this.elRef.nativeElement.innerHTML = '';
                 setTimeout(() => location.reload(), 2000);
               } else {
                 this.store.dispatch(socketInit());
