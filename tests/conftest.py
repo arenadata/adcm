@@ -14,6 +14,7 @@ import os
 import pytest
 import sys
 
+from allure_commons.types import AttachmentType
 
 pytest_plugins = "adcm_pytest_plugin"
 
@@ -43,3 +44,11 @@ def gather_logs(app, request):
     if request.node.rep_call.failed:
         logs = app.gather_logs(request.node.name)
         allure.attach.file(logs, "{}.tar".format(request.node.name))
+
+
+@pytest.fixture()
+def screenshot(app, request):
+    yield
+    if request.node.rep_call.failed:
+        allure.attach(app.driver.get_screenshot_as_png(), name=request.node.name,
+                      attachment_type=AttachmentType.PNG)
