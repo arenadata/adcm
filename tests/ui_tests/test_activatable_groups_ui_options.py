@@ -8,7 +8,8 @@ from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import parametrize_by_data_subdirs
 
 from tests.ui_tests.app.app import ADCMTest
-from tests.ui_tests.app.pages import Configuration, LoginPage
+from tests.ui_tests.app.configuration import Configuration
+from tests.ui_tests.app.pages import LoginPage
 
 
 def random_string(lenght=8):
@@ -40,7 +41,7 @@ def login_on_adcm(app):
     __file__,
     "group_advanced_false_invisible_false_field_advanced_false_invisible_false_activiatable_false")
 def test_group_advanced_false_invisible_false_field_advanced_false_invisible_false_active_false(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """Check that group not active and field is invisible until group is not active.
     :param sdk_client_ms:
     :param path:
@@ -83,7 +84,7 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_fal
     __file__,
     "group_advanced_false_invisible_false_field_advanced_false_invisible_false_activiatable_true")
 def test_group_advanced_false_invisible_false_field_advanced_false_invisible_false_active_true(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """Check that group active and all fields always visible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -122,7 +123,7 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_fal
     __file__,
     "group_advanced_false_invisible_false_field_advanced_false_invisible_true_activiatable_false")
 def test_group_advanced_false_invisible_false_field_advanced_false_invisible_true_active_false(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """Check that field is invisible if group is active or not
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -161,7 +162,7 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_tru
     __file__,
     "group_advanced_false_invisible_false_field_advanced_false_invisible_true_activiatable_true")
 def test_group_advanced_false_invisible_false_field_advanced_false_invisible_true_active_true(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """Check that field invisible if activatable group active and not
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -200,7 +201,7 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_tru
     __file__,
     "group_advanced_false_invisible_false_field_advanced_true_invisible_false_activiatable_false")
 def test_group_advanced_false_invisible_false_field_advanced_true_invisible_false_active_false(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """Check that field visible if advanced group is enabled.
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -239,7 +240,7 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_fals
     __file__,
     "group_advanced_false_invisible_false_field_advanced_true_invisible_false_activiatable_true")
 def test_group_advanced_false_invisible_false_field_advanced_true_invisible_false_active_true(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """Check that field is visible if group active and advanced enabled
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -278,7 +279,7 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_fals
     __file__,
     "group_advanced_false_invisible_false_field_advanced_true_invisible_true_activiatable_false")
 def test_group_advanced_false_invisible_false_field_advanced_true_invisible_true_active_false(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """Check that field is invisible if activatable group is active and not
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -317,7 +318,7 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_true
     __file__,
     "group_advanced_false_invisible_false_field_advanced_true_invisible_true_activiatable_true")
 def test_group_advanced_false_invisible_false_field_advanced_true_invisible_true_active_true(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """Check that field invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -356,7 +357,7 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_true
     __file__,
     "group_advanced_false_invisible_true_field_advanced_false_invisible_false_activiatable_false")
 def test_group_advanced_false_invisible_true_field_advanced_false_invisible_false_active_false(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """Check thats all fields and groups invisible.
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -384,7 +385,7 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_fals
     __file__,
     "group_advanced_false_invisible_true_field_advanced_false_invisible_false_activiatable_true")
 def test_group_advanced_false_invisible_true_field_advanced_false_invisible_false_active_true(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """Check thats all fields and groups invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -412,7 +413,7 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_fals
     __file__,
     "group_advanced_false_invisible_true_field_advanced_false_invisible_true_activiatable_false")
 def test_group_advanced_false_invisible_true_field_advanced_false_invisible_true_active_false(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """Check that fields and groups invisible.
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -440,7 +441,7 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_true
     __file__,
     "group_advanced_false_invisible_true_field_advanced_false_invisible_true_activiatable_true")
 def test_group_advanced_false_invisible_true_field_advanced_false_invisible_true_active_true(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """All invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -468,7 +469,7 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_true
     __file__,
     "group_advanced_false_invisible_true_field_advanced_true_invisible_false_activiatable_false")
 def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false_active_false(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """All invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -496,7 +497,7 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false
     __file__,
     "group_advanced_false_invisible_true_field_advanced_true_invisible_false_activiatable_true")
 def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false_active_true(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """All invisible
     :return:
     """
@@ -525,9 +526,10 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false
     __file__,
     "group_advanced_false_invisible_true_field_advanced_true_invisible_true_activiatable_false")
 def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true_active_false(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """All invisible
     """
+    _ = login_on_adcm, gather_logs
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
@@ -553,7 +555,7 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true_
     __file__,
     "group_advanced_false_invisible_true_field_advanced_true_invisible_true_activiatable_true")
 def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true_active_true(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """All invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -581,7 +583,7 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true_
     __file__,
     "group_advanced_true_invisible_false_field_advanced_false_invisible_false_activiatable_false")
 def test_group_advanced_true_invisible_false_field_advanced_false_invisible_false_active_false(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """Fields visible only if advanced enabled
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -616,7 +618,7 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_fals
     __file__,
     "group_advanced_true_invisible_false_field_advanced_false_invisible_false_activiatable_true")
 def test_group_advanced_true_invisible_false_field_advanced_false_invisible_false_active_true(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """Field visible if advanced and activatable true
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -651,7 +653,7 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_fals
     __file__,
     "group_advanced_true_invisible_false_field_advanced_false_invisible_true_activiatable_false")
 def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true_active_false(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """Field invisible, group visible if advanced
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -688,7 +690,7 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true
     __file__,
     "group_advanced_true_invisible_false_field_advanced_false_invisible_true_activiatable_true")
 def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true_active_true(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """Check that field invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -721,7 +723,7 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true
     __file__,
     "group_advanced_true_invisible_false_field_advanced_true_invisible_false_activiatable_false")
 def test_group_advanced_true_invisible_false_field_advanced_true_invisible_false_active_false(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """Check that field and group visible if advanced button clicked
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -758,7 +760,7 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_false
     __file__,
     "group_advanced_true_invisible_false_field_advanced_true_invisible_false_activiatable_true")
 def test_group_advanced_true_invisible_false_field_advanced_true_invisible_false_active_true(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """Check that field visible if advanced clicked.
     :return:
     """
@@ -792,7 +794,7 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_false
     __file__,
     "group_advanced_true_invisible_false_field_advanced_true_invisible_true_activiatable_false")
 def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true_active_false(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """Field always invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -826,7 +828,7 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true_
     __file__,
     "group_advanced_true_invisible_false_field_advanced_true_invisible_true_activiatable_true")
 def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true_active_true(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """Field invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -859,7 +861,7 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true_
     __file__,
     "group_advanced_true_invisible_true_field_advanced_false_invisible_false_activiatable_false")
 def test_group_advanced_true_invisible_true_field_advanced_false_invisible_false_active_false(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """All invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -887,7 +889,7 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_false
     __file__,
     "group_advanced_true_invisible_true_field_advanced_false_invisible_false_activiatable_true")
 def test_group_advanced_true_invisible_true_field_advanced_false_invisible_false_active_true(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """All invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -915,7 +917,7 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_false
     __file__,
     "group_advanced_true_invisible_true_field_advanced_false_invisible_true_activiatable_false")
 def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true_active_false(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """All invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -943,7 +945,7 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true_
     __file__,
     "group_advanced_true_invisible_true_field_advanced_true_invisible_false_activiatable_false")
 def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false_active_false(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """All invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -971,7 +973,7 @@ def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false_
     __file__,
     "group_advanced_true_invisible_true_field_advanced_false_invisible_true_activiatable_true")
 def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true_active_true(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """All invisible
 
     """
@@ -1000,7 +1002,7 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true_
     __file__,
     "group_advanced_true_invisible_true_field_advanced_true_invisible_false_activiatable_true")
 def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false_active_true(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """All invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -1028,7 +1030,7 @@ def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false_
     __file__,
     "group_advanced_true_invisible_true_field_advanced_true_invisible_true_activiatable_false")
 def test_group_advanced_true_invisible_true_field_advanced_true_invisible_true_active_false(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """All invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
@@ -1056,7 +1058,7 @@ def test_group_advanced_true_invisible_true_field_advanced_true_invisible_true_a
     __file__,
     "group_advanced_true_invisible_true_field_advanced_true_invisible_true_activiatable_true")
 def test_group_advanced_true_invisible_true_field_advanced_true_invisible_true_active_true(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm):
+        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs):
     """All invisible
     """
     bundle = sdk_client_ms.upload_from_fs(path)
