@@ -9,7 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import allure
 import os
+import pytest
 import sys
 
 
@@ -21,3 +23,23 @@ testdir = os.path.dirname(__file__)
 rootdir = os.path.dirname(testdir)
 pythondir = os.path.abspath(os.path.join(rootdir, 'python'))
 sys.path.append(pythondir)
+
+
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    # execute all other hooks to obtain the report object
+    outcome = yield
+    rep = outcome.get_result()
+
+    # set a report attribute for each phase of a call, which can
+    # be "setup", "call", "teardown"
+
+    setattr(item, "rep_" + rep.when, rep)
+
+
+@pytest.fixture()
+def gather_logs(app, request):
+    yield
+    if request.node.rep_call.failed:
+        logs = app.gather_logs(request.node.name)
+        allure.attach.file(logs, "{}.tar".format(request.node.name))

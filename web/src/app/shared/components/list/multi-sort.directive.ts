@@ -9,20 +9,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Directive, ElementRef, Input, Renderer2, HostListener, Output, EventEmitter } from '@angular/core';
+import { Directive, ElementRef, EventEmitter, HostListener, Input, Output, Renderer2 } from '@angular/core';
 
 @Directive({
-  selector: '[appMultiSort]'
+  selector: '[appMultiSort]',
 })
 export class MultiSortDirective {
   shiftKey = false;
-  _params: string[] = [];
+  private params: string[] = [];
 
   @Input('appMultiSort') set sortParam(param: string) {
     const el = this.el.nativeElement;
-    this._params = param.split(',');
+    this.params = param.split(',');
     this.hideAllArrows(el);
-    setTimeout(() => this._params.map(p => this.preCell(p, el)), 0);
+    setTimeout(() => this.params.map((p) => this.preCell(p, el)), 0);
   }
 
   @Output() mousedownevent = new EventEmitter<boolean>();
@@ -34,18 +34,18 @@ export class MultiSortDirective {
 
   @HostListener('mouseover', ['$event.target']) onmouseover(h: HTMLElement) {
     const el = this.el.nativeElement;
-    this._params.map(p => this.preCell(p, el));
+    this.params.map((p) => this.preCell(p, el));
   }
 
   @HostListener('mouseout', ['$event.target']) mouseleave(row: HTMLElement) {
     const el = this.el.nativeElement;
-    setTimeout(() => this._params.map(p => this.preCell(p, el)), 300);
+    setTimeout(() => this.params.map((p) => this.preCell(p, el)), 300);
   }
 
   constructor(private el: ElementRef, private renderer: Renderer2) {}
 
-  hideAllArrows(el) {
-    Array.from<HTMLElement>(el.getElementsByTagName('mat-header-cell')).forEach(e => {
+  hideAllArrows(el: any) {
+    Array.from<HTMLElement>(el.getElementsByTagName('mat-header-cell')).forEach((e) => {
       const a = e.querySelector('div.mat-sort-header-container>div.mat-sort-header-arrow');
       if (a) this.renderer.setStyle(a, 'opacity', 0);
     });

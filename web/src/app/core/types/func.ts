@@ -42,10 +42,10 @@ export function getControlType(name: string): controlType {
   return a[name] || name;
 }
 
-// example host2cluster
-export function getTypeName(name: string) {
-  return name ? name.split('2')[0] : name;
-}
+const IssueName = {
+  config: 'configuration',
+  host_component: 'host - components'
+};
 
 export function issueMessage(e: { id: number; name: string; issue: Issue }, typeName: string) {
   const IssueName = {

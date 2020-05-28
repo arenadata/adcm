@@ -66,6 +66,7 @@ class TestInventory(TestCase):
         test_res = {
             'cluster': {
                 'config': {},
+                'edition': 'community',
                 'name': '',
                 'id': 1,
                 'version': '2.2'
@@ -217,6 +218,7 @@ class TestInventory(TestCase):
                         'vars': {
                             'cluster': {
                                 'config': {},
+                                'edition': 'community',
                                 'name': '',
                                 'id': 1,
                                 'version': '2.2'
