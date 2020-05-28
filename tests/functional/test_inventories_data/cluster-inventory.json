@@ -22,7 +22,8 @@
                   },
                   "name": "new_",
                   "id": 1,
-                  "version": "1.001"
+                  "version": "1.001",
+                  "edition": "community"
                },
                "services": {
                   "zookeeper": {

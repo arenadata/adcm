@@ -25,6 +25,12 @@ import (
 
 const MaxPostSize = 16 * 1024
 
+type clusterDetails struct {
+	Status   int                   `json:"status"`
+	Services map[int]serviceStatus `json:"services"`
+	Hosts    map[int]Status        `json:"hosts"`
+}
+
 // Handlers
 
 func index(w http.ResponseWriter, r *http.Request) {
@@ -46,13 +52,43 @@ func apiRoot(w http.ResponseWriter, r *http.Request) {
 	jsonOut(w, r, root)
 }
 
+func showAll(h Hub, w http.ResponseWriter, r *http.Request) {
+	allow(w, "GET")
+	clusterOut := map[int]clusterDetails{}
+	clusters := h.ServiceMap.getClusters()
+	for _, clusterId := range clusters {
+		servStatus, services := getClusterServiceStatus(h, clusterId)
+		hostStatus, hosts := getClusterHostStatus(h, clusterId)
+		clusterStatus := cookClusterStatus(servStatus, hostStatus)
+		clusterOut[clusterId] = clusterDetails{
+			Services: services,
+			Hosts:    hosts,
+			Status:   clusterStatus,
+		}
+	}
+	hostOut := map[int]Status{}
+	hosts := h.ServiceMap.getAllHosts()
+	for _, hostId := range hosts {
+		val, _ := h.HostStorage.get(ALL, hostId)
+		hostOut[hostId] = val
+	}
+	all := struct {
+		Clusters map[int]clusterDetails `json:"clusters"`
+		Hosts    map[int]Status         `json:"hosts"`
+	}{
+		Clusters: clusterOut,
+		Hosts:    hostOut,
+	}
+	jsonOut(w, r, all)
+}
+
 func clusterList(h Hub, w http.ResponseWriter, r *http.Request) {
 	allow(w, "GET")
 	clusterOut := []struct {
 		Url string `json:"url"`
 	}{}
 	url := "http://" + r.Host + r.URL.Path
-	clusters, _ := h.ServiceMap.getClusters()
+	clusters := h.ServiceMap.getClusters()
 	for _, clusterId := range clusters {
 		clusterOut = append(clusterOut, struct {
 			Url string `json:"url"`
@@ -69,7 +105,7 @@ func hostList(h Hub, w http.ResponseWriter, r *http.Request) {
 		Url string `json:"url"`
 	}{}
 	url := "http://" + r.Host + r.URL.Path
-	hosts, _ := h.ServiceMap.getAllHosts()
+	hosts := h.ServiceMap.getAllHosts()
 	for _, hostId := range hosts {
 		hostOut = append(hostOut, struct {
 			Url string `json:"url"`
@@ -113,12 +149,8 @@ func showHostComp(h Hub, w http.ResponseWriter, r *http.Request) {
 	if !ok1 || !ok2 {
 		return
 	}
-	val, ok := h.HostComponentStorage.get(hostId, compId)
-	if ok {
-		jsonOut(w, r, val)
-	} else {
-		jsonOut(w, r, Status{Status: 16})
-	}
+	val, _ := h.HostComponentStorage.get(hostId, compId)
+	jsonOut(w, r, val)
 }
 
 func showComp(h Hub, w http.ResponseWriter, r *http.Request) {
@@ -153,11 +185,7 @@ func showCluster(h Hub, w http.ResponseWriter, r *http.Request) {
 	hostStatus, hosts := getClusterHostStatus(h, clusterId)
 	clusterStatus := cookClusterStatus(servStatus, hostStatus)
 	if isUIview(r) {
-		out := struct {
-			Status   int                   `json:"status"`
-			Services map[int]serviceStatus `json:"services"`
-			Hosts    map[int]Status        `json:"hosts"`
-		}{
+		out := clusterDetails{
 			Services: services,
 			Hosts:    hosts,
 			Status:   clusterStatus,
@@ -271,12 +299,8 @@ func showHost(h Hub, w http.ResponseWriter, r *http.Request) {
 		ErrOut4(w, r, "HOST_NOT_FOUND", "unknown host")
 		return
 	}
-	val, ok := h.HostStorage.get(ALL, hostId)
-	if ok {
-		jsonOut(w, r, val)
-	} else {
-		jsonOut(w, r, Status{Status: 16})
-	}
+	val, _ := h.HostStorage.get(ALL, hostId)
+	jsonOut(w, r, val)
 }
 
 func setHostComp(h Hub, w http.ResponseWriter, r *http.Request) {
@@ -301,10 +325,7 @@ func setHostComp(h Hub, w http.ResponseWriter, r *http.Request) {
 	oldCompStatus, _ := getComponentStatus(h, compId)
 	oldServStatus, _ := getServiceStatus(h, hc.Cluster, hc.Service)
 	oldClusterStatus := getClusterStatus(h, hc.Cluster)
-	oldHCStatus, ok := h.HostComponentStorage.get(hostId, compId)
-	if !ok {
-		oldHCStatus = Status{Status: 16}
-	}
+	oldHCStatus, _ := h.HostComponentStorage.get(hostId, compId)
 
 	res := h.HostComponentStorage.set(hostId, compId, status)
 
