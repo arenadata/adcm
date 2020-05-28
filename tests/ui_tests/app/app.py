@@ -40,7 +40,6 @@ class ADCMTest:
         self.capabilities['acceptInsecureCerts'] = True
         self.driver = webdriver.Chrome(options=self.opts, desired_capabilities=self.capabilities)
         self.driver.set_window_size(1800, 1000)
-        self.driver.implicitly_wait(0.5)
         self.adcm = adcm
         self._client = adcm.api.objects
         self.ui = Ui(self.driver)
