@@ -30,9 +30,10 @@ def test_ui_option_invisible_true_advanced_true(sdk_client_fs: ADCMClient, path,
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format
+                           (app.adcm.url, cluster.cluster_id)
+                           )
     groups = config.get_field_groups()
     for group in groups:
         assert not group.is_displayed(), group.get_attribute("class")
@@ -44,9 +45,10 @@ def test_ui_option_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format
+                           (app.adcm.url, cluster.cluster_id)
+                           )
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
@@ -65,9 +67,10 @@ def test_ui_option_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format
+                           (app.adcm.url, cluster.cluster_id)
+                           )
     groups = config.get_field_groups()
     if config.advanced:
         config.click_advanced()
@@ -92,9 +95,10 @@ def test_ui_option_invisible_false_advanced_false(sdk_client_fs: ADCMClient, pat
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format
+                           (app.adcm.url, cluster.cluster_id)
+                           )
     groups = config.get_field_groups()
     for group in groups:
         assert group.is_displayed(), group.get_attribute("class")

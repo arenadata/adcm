@@ -360,9 +360,10 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login, app, gath
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster = bundle.cluster_create(name=utils.random_string(14))
     field_type = config['config'][0]['type']
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    ui_config = Configuration(app.driver)
+    ui_config = Configuration(app.driver,
+                              "{}/cluster/{}/config".format
+                              (app.adcm.url, cluster.cluster_id)
+                              )
     fields = ui_config.get_app_fields()
     save_err_mess = "Correct status for save button {}".format([expected['save']])
     assert expected['save'] == ui_config.save_button_status(), save_err_mess
@@ -413,8 +414,10 @@ def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app,
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster = bundle.cluster_create(name=utils.random_string())
     field_type = config['config'][0]['subs'][0]['type']
-    app.driver.get("{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
-    ui_config = Configuration(app.driver)
+    ui_config = Configuration(app.driver,
+                              "{}/cluster/{}/config".format
+                              (app.adcm.url, cluster.cluster_id)
+                              )
     groups = ui_config.get_group_elements()
     fields = ui_config.get_app_fields()
     save_err_mess = "Correct status for save button {}".format([expected['save']])

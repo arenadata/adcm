@@ -40,9 +40,8 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app, login):
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     groups = config.get_field_groups()
     for group in groups:
         assert group.is_displayed(), group.get_attribute("class")
@@ -69,9 +68,8 @@ def test_all_true(sdk_client_fs: ADCMClient, path, app, login):
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     groups = config.get_field_groups()
     for group in groups:
         assert not group.is_displayed(), group.get_attribute("class")
@@ -96,9 +94,8 @@ def test_groups_false_fields_true(sdk_client_fs: ADCMClient, path, app, login):
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -123,9 +120,8 @@ def test_groups_true_fields_false(sdk_client_fs: ADCMClient, path, app, login):
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -149,9 +145,8 @@ def test_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path, app, log
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -176,9 +171,8 @@ def test_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app, log
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -203,9 +197,8 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_tru
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -230,9 +223,8 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_fals
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -257,9 +249,8 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_fals
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -284,9 +275,8 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -311,9 +301,8 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true(
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -338,9 +327,8 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_fals
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -367,9 +355,8 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -394,9 +381,8 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true(
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -421,9 +407,8 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true(
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -448,9 +433,8 @@ def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false(
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")

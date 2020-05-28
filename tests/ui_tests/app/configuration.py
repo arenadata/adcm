@@ -18,8 +18,10 @@ class Configuration(BasePage):
     """
     Class for configuration page
     """
-    def __init(self, driver):
+    def __init__(self, driver, url=None):
         super().__init__(driver)
+        if url:
+            driver.get(url)
         self._wait_element(ConfigurationLocators.app_conf_fields)
 
     def assert_field_editable(self, field, editable=True):
