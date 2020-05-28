@@ -102,7 +102,7 @@ export class ListService {
       });
   }
 
-  checkItem<T>(item: any) {
+  checkItem<T>(item: Entities) {
     return this.api.get<T>(item.url);
   }
 
