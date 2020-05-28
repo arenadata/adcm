@@ -18,7 +18,7 @@ class Configuration(BasePage):
     """
     Class for configuration page
     """
-    def __init(self, driver):
+    def __init__(self, driver):
         super().__init__(driver)
         self._contains_url('config')
 
