@@ -283,16 +283,6 @@ class Configuration(BasePage):
             return True
         return False
 
-    def activate_group_by_element(self, group_element):
-        """Activate group by element
-
-        :param group_element:
-        :return:
-        """
-        toogle = group_element.find_element(*Common.mat_slide_toggle)
-        if 'mat-checked' not in toogle.get_attribute("class"):
-            toogle.click()
-
     def activate_group_by_name(self, group_name):
         """
 
@@ -328,27 +318,6 @@ class Configuration(BasePage):
                 return "checked" in button.get_attribute("class")
         return None
 
-    def show_history(self):
-        for icon in self._getelements(Common.mat_icon):
-            if icon.text == "history":
-                icon.clikc()
-                return True
-        return False
-
-    def _get_tex_boxes_elements(self):
-        textboxes = self.driver.find_elements(*ConfigurationLocators.app_fields_text_boxes)
-        return set((textbox.get_attribute("adcm_test"),
-                    textbox.find_element(
-                        *Common.mat_input_element).get_attribute("value")) for textbox in textboxes)
-
-    def _get_text_areas_elements(self):
-        textareas = self._getelements(ConfigurationLocators.app_fields_textarea)
-        areas = []
-        for ar in textareas:
-            el = ar.find_element(Common.textarea)
-            areas.append({ar.get_attribute("adcm_test"): el.get_attribute("value")})
-        return areas
-
     @staticmethod
     def _get_tooltip_el_for_field(field):
         try:
@@ -369,72 +338,19 @@ class Configuration(BasePage):
         action.move_to_element(tooltip_icon).perform()
         return self.driver.find_element(*Common.tooltip).text
 
-    def _get_map_elements(self):
-        return self._getelements(ConfigurationLocators.app_fields_map)
-
-    def _get_list_elements(self):
-        return self._getelements(ConfigurationLocators.app_fields_list)
-
     def get_textboxes(self):
         return self.driver.find_elements(*ConfigurationLocators.app_fields_text_boxes)
 
-    def get_labels(self):
-        return self.driver.find_elements(*ConfigurationLocators.app_fields_labels)
-
-    def _get_json_elements(self):
-        json_elements = self._getelements(ConfigurationLocators.app_fields_json)
-        jsons = []
-        for js in json_elements:
-            el = js.find_element(Common.textarea)
-            value = el.get_attribute("value")
-            if value:
-                value = json.loads(value)
-            jsons.append({js.get_attribute("adcm_test"): value})
-        return jsons
-
-    def _get_configuration_elements(self):
-        textboxes = self._getelements(ConfigurationLocators.app_fields_text_boxes)
-        maps = self._getelements(ConfigurationLocators.app_fields_map)
-        passwords = self._getelements(ConfigurationLocators.app_fields_password)
-        textareas = self._getelements(ConfigurationLocators.app_fields_textarea)
-        jsons = self._getelements(ConfigurationLocators.app_fields_json)
-        return textboxes + maps + passwords + textareas + jsons
-
     def get_password_elements(self):
         return self.driver.find_elements(*ConfigurationLocators.app_fields_password)
-
-    def _get_config_full_names(self):
-        textboxes = self.driver.find_elements(*ConfigurationLocators.app_fields_text_boxes)
-        maps = self.driver.find_elements(*ConfigurationLocators.app_fields_text_boxes)
-        passwords = self.driver.find_elements(*ConfigurationLocators.app_fields_password)
-        textareas = self.driver.find_elements(*ConfigurationLocators.app_fields_textarea)
-        jsons = self.driver.find_elements(*ConfigurationLocators.app_fields_json)
-        full_names = []
-        for text_box in textboxes:
-            full_names.append(text_box.get_attribute("adcm_test"))
-        for m in maps:
-            full_names.append(m.get_attribute("adcm_test"))
-        for passw in passwords:
-            full_names.append(passw.get_attribute("adcm_test"))
-        for textarea in textareas:
-            full_names.append(textarea.get_attribute("adcm_test"))
-        for js in jsons:
-            full_names.append(js.get_attribute("adcm_test"))
-        return full_names
 
     def get_display_names(self):
         self._wait_element_present(Common.display_names)
         return {name.text for name in self.driver.find_elements(*Common.display_names)}
 
-    def get_names(self):
-        try:
-            elements = self.driver.find_elements(*ConfigurationLocators.app_fields_text_boxes)
-        except StaleElementReferenceException:
-            elements = self.driver.find_elements(*ConfigurationLocators.app_fields_text_boxes)
-        return [textbox.text.split("\n")[0].strip(":") for textbox in elements]
-
     def set_search_field(self, search_pattern):
-        element = self._wait_element(ConfigurationLocators.search_field)
+        self._wait_element(ConfigurationLocators.search_field)
+        element = self.driver.find_element(*ConfigurationLocators.search_field)
         self.clear_element(element)
         self._set_field_value(ConfigurationLocators.search_field, search_pattern)
 
@@ -444,30 +360,6 @@ class Configuration(BasePage):
         except TimeoutException:
             return []
         return self.driver.find_elements(*Common.display_names)
-
-    def execute_action(self, action_name):
-        """Click action
-        :param action_name:
-        :return:
-        """
-        assert self._click_button_by_name(action_name, *Common.mat_raised_button)
-        return self._click_button_by_name("Run", *Common.mat_raised_button)
-
-    def element_presented_by_name_and_locator(self, name, by, value):
-        """
-
-        :param name:
-        :param by:
-        :param value:
-        :return:
-        """
-        elements = self.driver.find_elements(by, value)
-        if not elements:
-            return False
-        for el in elements:
-            if el.text == name:
-                return True
-        return False
 
     @staticmethod
     def read_only_element(element):
