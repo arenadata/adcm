@@ -11,6 +11,7 @@
 # limitations under the License.
 
 # Created by a1wen at 05.03.19
+from retrying import retry
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException, InvalidElementStateException,\
     ElementClickInterceptedException, NoSuchElementException, StaleElementReferenceException
@@ -48,12 +49,69 @@ def repeat_dec(timeout=10, interval=0.1):
 REPEAT = repeat_dec(timeout=2, interval=0.1)
 
 
+def ui_retry(func):
+    return retry(stop_max_delay=15 * 1000)(func)
+
+
+def element_text(e):
+    if not e:
+        raise NoSuchElementException("Asked for text of None element")
+    text = e.get_attribute("innerText")
+    if not text:
+        return ""
+    return text.strip()
+
+
 class BasePage:
     ignored_exceptions = (NoSuchElementException, StaleElementReferenceException)
 
     """That is base page object for all ADCM's pages"""
     def __init__(self, driver):
         self.driver = driver
+
+    @ui_retry
+    def _elements(self, locator: tuple, f, **kwargs):
+        """Find elements
+        :param locator: locator
+        :param f: function that takes in elements and does something
+                  n.b. DO NOT RETURN ELEMENTS FROM THIS FUNCTION, ONLY DERIVED DATA (e.g., strings)
+        :kwparam name: (optional) element text to look for
+        :kwparam parent: (optional) locator of parent in which we should find element.
+        :kwparam parent_name: (optional) name of parent in which we should find element.
+        :return: output of f() when run against elements found by locator/name in parent
+        """
+
+        def get_elements(locator, name, parent):
+            elements = [e for e in parent.find_elements(*locator) if e.is_displayed()]
+            if len(elements) == 0:
+                raise NoSuchElementException(f"Could not find element {locator}")
+            if name:
+                elements = [e for e in elements if name in element_text(e)]
+                if len(elements) == 0:
+                    raise NoSuchElementException(f"Could not find element {name}")
+            return elements
+
+        # get parent
+        parent_element = self.driver
+        parent_idx = kwargs["parent_idx"] if "parent_idx" in kwargs else 0
+
+        if "parent" in kwargs:
+            parent_name = kwargs["parent_name"] if "parent_name" in kwargs else ""
+            parent_element = get_elements(kwargs["parent"], parent_name, self.driver)[
+                parent_idx
+            ]
+
+        name = kwargs["name"] if "name" in kwargs else ""
+        return f(get_elements(locator, name, parent_element))
+
+    def _wait_element(self, locator: tuple, **kwargs):
+        """see _elements
+        """
+
+        def wait(elements):
+            _ = elements
+
+        self._elements(locator, wait, **kwargs)
 
     def _get_adcm_test_element(self, element_name):
         return self._getelement(bys.by_xpath("//*[@adcm_test='{}']".format(element_name)))
