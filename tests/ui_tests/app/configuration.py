@@ -235,7 +235,7 @@ class Configuration(BasePage):
 
     @retry(retry_on_exception=retry_on_exception, stop_max_delay=10 * 1000)
     def save_button_status(self):
-        self._wait_element_present(ConfigurationLocators.config_save_button)
+        self._wait_element(ConfigurationLocators.config_save_button)
         button = self.driver.find_element(*ConfigurationLocators.config_save_button)
         class_el = button.get_attribute("disabled")
         if class_el == 'true':
@@ -308,13 +308,7 @@ class Configuration(BasePage):
         self._getelement(ConfigurationLocators.config_save_button).click()
 
     def click_advanced(self):
-        self._wait_element_present(Common.mat_checkbox)
-        buttons = self.driver.find_elements(*Common.mat_checkbox)
-        for button in buttons:
-            if button.get_attribute("textContent").strip() == 'Advanced':
-                self._click_button_element(button)
-                return True
-        return False
+        return self._click_element(Common.mat_checkbox, name="Advanced")
 
     def get_form_field_text(self, form_field_element):
         self._wait_element_present_in_sublement(form_field_element, Common.mat_form_field)
@@ -327,7 +321,7 @@ class Configuration(BasePage):
 
     @property
     def advanced(self):
-        self._wait_element_present(Common.mat_checkbox)
+        self._wait_element(Common.mat_checkbox)
         buttons = self.driver.find_elements(*Common.mat_checkbox)
         for button in buttons:
             if button.get_attribute("textContent").strip() == 'Advanced':
@@ -440,7 +434,7 @@ class Configuration(BasePage):
         return [textbox.text.split("\n")[0].strip(":") for textbox in elements]
 
     def set_search_field(self, search_pattern):
-        element = self._wait_element_present(ConfigurationLocators.search_field)
+        element = self._wait_element(ConfigurationLocators.search_field)
         self.clear_element(element)
         self._set_field_value(ConfigurationLocators.search_field, search_pattern)
 

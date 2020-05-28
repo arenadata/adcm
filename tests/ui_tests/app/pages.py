@@ -122,6 +122,20 @@ class BasePage:
                    ignored_exceptions=self.ignored_exceptions
                    ).until(EC.presence_of_element_located(locator))
 
+    def _click_element(self, locator: tuple, **kwargs):
+        """see _elements
+        """
+
+        idx = kwargs["idx"] if "idx" in kwargs else 0
+
+        def click(elements):
+            if "background" in kwargs and kwargs["background"]:
+                self.driver.execute_script("arguments[0].click();", elements[idx])
+            else:
+                elements[idx].click()
+
+        self._elements(locator, click, **kwargs)
+
     def _getelements(self, locator: tuple, timer=20):
         return WDW(self.driver, timer).until(EC.presence_of_all_elements_located(locator))
 
@@ -134,9 +148,6 @@ class BasePage:
 
     def get_frontend_errors(self):
         return self._getelements(Common.mat_error)
-
-    def get_error_text_for_element(self, element):
-        return element.find_element(Common.mat_error).text
 
     def _wait_element_present(self, locator: tuple, timer=5):
         WDW(self.driver, timer).until(EC.presence_of_element_located(locator))
@@ -182,16 +193,6 @@ class BasePage:
             return True
         return True
 
-    def _fill_field_element(self, data, field_element):
-        field_element.clear()
-        field_element.send_keys(data)
-        return field_element
-
-    def _find_and_clear_element(self, by, value):
-        element = self.driver.find_element(by, value)
-        element.send_keys(Keys.CONTROL + "a")
-        element.send_keys(Keys.BACK_SPACE)
-
     def clear_element(self, element):
         element.send_keys(Keys.CONTROL + "a")
         element.send_keys(Keys.BACK_SPACE)
@@ -210,12 +211,6 @@ class BasePage:
 
     def check_error(self, error: ERRORS):
         return self._error_handler(error)
-
-    def get_error(self):
-        return self._getelement(Common.error).text
-
-    def get_errors(self):
-        return [error.text for error in self._getelements(Common.error)]
 
     def _click_with_offset(self, element: tuple, x_offset, y_offset):
         actions = ActionChains(self.driver)
@@ -242,18 +237,6 @@ class BasePage:
             return True
         except (NoSuchElementException, ElementClickInterceptedException):
             sleep(t)
-            self.driver.execute_script("arguments[0].click();", button)
-            return True
-
-    def _click_button_element(self, button):
-        """Click element
-        :param button:
-        :return: bool
-        """
-        try:
-            button.click()
-            return True
-        except (NoSuchElementException, ElementClickInterceptedException):
             self.driver.execute_script("arguments[0].click();", button)
             return True
 
