@@ -20,6 +20,7 @@ class Configuration(BasePage):
     """
     def __init(self, driver):
         super().__init__(driver)
+        self._wait_element_present(ConfigurationLocators.app_conf_fields)
         self._contains_url('config')
 
     def assert_field_editable(self, field, editable=True):
