@@ -90,10 +90,11 @@ def get_obj_config(obj):
 
 
 def get_obj_state(obj):
-    try:
-        return json.loads(obj.stack)[-1]
-    except (json.JSONDecodeError, IndexError):
-        return obj.state
+    if obj.stack:
+        state = json.loads(obj.stack)
+        if state:
+            return state[-1]
+    return obj.state
 
 
 def get_cluster_config(cluster_id):
