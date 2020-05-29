@@ -653,7 +653,7 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
                 err('CONFIG_TYPE_ERROR', msg.format(label, value, name, subname, ref))
         return True
 
-    def check_variant(conf, name, subname):
+    def check_variant(conf, name, subname):   # pylint: disable=too-many-branches
         if not in_dict(conf, 'source'):
             msg = 'Config key "{}/{}" of {} has no mandatory "source" key'
             err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
@@ -663,11 +663,20 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
         if not in_dict(conf['source'], 'type'):
             msg = 'Config key "{}/{}" of {} has no mandatory source: type statment'
             err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
+        allowed_keys = ('type', 'name', 'value', 'strict')
+        check_extra_keys(conf['source'], allowed_keys, f'{ref} config key "{name}/{subname}"')
         vtype = conf['source']['type']
         if vtype not in ('inline', 'list', 'builtin'):
             msg = 'Config key "{}/{}" of {} has unknown source type "{}"'
             err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref, vtype))
         source = {'type': vtype}
+        if 'strict' in conf['source']:
+            if not isinstance(conf['source']['strict'], bool):
+                msg = 'Config key "{}/{}" of {} "source: strict" field should be boolean'
+                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
+            source['strict'] = conf['source']['strict']
+        else:
+            source['strict'] = True
         if vtype == 'inline':
             if not in_dict(conf['source'], 'value'):
                 msg = 'Config key "{}/{}" of {} has no mandatory source: value statment'

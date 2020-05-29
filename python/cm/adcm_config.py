@@ -714,15 +714,16 @@ def check_config_type(proto, key, subkey, spec, value, default=False, inactive=F
 
     if spec['type'] == 'variant':
         source = get_limits()['source']
-        if source['type'] == 'inline':
-            if value not in source['value']:
-                msg = 'not in variant list: "{}"'.format(source['value'])
-                err('CONFIG_VALUE_ERROR', tmpl2.format(msg))
-        if not default:
-            if source['type'] in ('list', 'builtin'):
+        if source['strict']:
+            if source['type'] == 'inline':
                 if value not in source['value']:
                     msg = 'not in variant list: "{}"'.format(source['value'])
                     err('CONFIG_VALUE_ERROR', tmpl2.format(msg))
+            if not default:
+                if source['type'] in ('list', 'builtin'):
+                    if value not in source['value']:
+                        msg = 'not in variant list: "{}"'.format(source['value'])
+                        err('CONFIG_VALUE_ERROR', tmpl2.format(msg))
 
 
 def replace_object_config(obj, key, subkey, value):
