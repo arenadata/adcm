@@ -371,7 +371,7 @@ def get_builtin_variant(obj, func_name):
     return func_list[func_name](obj)
 
 
-def get_variant(obj, conf, spec, limits):
+def get_variant(obj, conf, limits):
     value = None
     source = limits['source']
     if source['type'] == 'list':
@@ -387,10 +387,10 @@ def get_variant(obj, conf, spec, limits):
     return value
 
 
-def process_varinat(obj, spec, conf):
+def process_variant(obj, spec, conf):
     def set_variant(spec):
         limits = json.loads(spec['limits'])
-        limits['source']['value'] = get_variant(obj, conf, spec, limits)
+        limits['source']['value'] = get_variant(obj, conf, limits)
         return json.dumps(limits)
 
     for key in spec:
@@ -420,7 +420,7 @@ def ui_config(obj, cl):
         item['read_only'] = bool(config_is_ro(obj, key, spec[key].limits))
         item['activatable'] = bool(group_is_activatable(spec[key]))
         if item['type'] == 'variant':
-            item['limits']['source']['value'] = get_variant(obj, obj_conf, item, limits)
+            item['limits']['source']['value'] = get_variant(obj, obj_conf, limits)
         item['default'] = get_default(spec[key])
         if key in flat_conf:
             item['value'] = flat_conf[key]
@@ -428,6 +428,17 @@ def ui_config(obj, cl):
             item['value'] = get_default(spec[key])
         conf.append(item)
     return conf
+
+
+def get_action_variant(obj, conf):
+    cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
+    obj_conf = json.loads(cl.config)
+    for c in conf:
+        if c.type != 'variant':
+            continue
+        limits = json.loads(c.limits)
+        limits['source']['value'] = get_variant(obj, obj_conf, limits)
+        c.limits = json.dumps(limits)
 
 
 def config_is_ro(obj, key, limits):
@@ -483,6 +494,7 @@ def restore_read_only(obj, spec, conf, old_conf):
 def check_json_config(proto, obj, new_conf, old_conf=None, attr=None):
     spec, flat_spec, _, _ = get_prototype_config(proto)
     check_attr(proto, attr, flat_spec)
+    process_variant(obj, spec, new_conf)
     return check_config_spec(proto, obj, spec, flat_spec, new_conf, old_conf, attr)
 
 
@@ -520,8 +532,6 @@ def check_config_spec(proto, obj, spec, flat_spec, conf, old_conf=None, attr=Non
 
     if isinstance(conf, str):
         err('JSON_ERROR', 'config should not be just one string')
-
-    process_varinat(obj, spec, conf)
 
     def key_is_required(key, subkey, spec):
         if config_is_ro(obj, '{}/{}'.format(key, subkey), spec.get('limits', '')):
