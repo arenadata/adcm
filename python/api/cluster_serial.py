@@ -20,7 +20,7 @@ import cm.status_api
 from cm.api import safe_api
 from cm.logger import log   # pylint: disable=unused-import
 from cm.errors import AdcmApiEx, AdcmEx
-from cm.models import Action, Cluster, Host, Prototype, ServiceComponent, Component
+from cm.models import Action, Cluster, Host, Prototype, ServiceComponent, HostComponent, Component
 
 from api.serializers import check_obj, filter_actions, get_upgradable_func
 from api.serializers import hlink, JSONField, UrlField
@@ -506,6 +506,9 @@ class HCComponentSerializer(ServiceComponentDetailSerializer):
                 if comp.requires:
                     process_requires(comp.requires)
 
+        def check_hc(comp):
+            return HostComponent.objects.filter(cluster=obj.cluster, component__component=comp)
+
         process_requires(obj.component.requires)
         out = []
         for service_name in comp_list:
@@ -513,13 +516,17 @@ class HCComponentSerializer(ServiceComponentDetailSerializer):
             service = comp_list[service_name]['service']
             for comp_name in comp_list[service_name]['components']:
                 comp = comp_list[service_name]['components'][comp_name]
+                if check_hc(comp):
+                    continue
                 comp_out.append({
-                    'id': comp.id,
+                    'prototype_id': comp.id,
                     'name': comp_name,
                     'display_name': comp.display_name,
                 })
+            if not comp_out:
+                continue
             out.append({
-                'id': service.id,
+                'prototype_id': service.id,
                 'name': service_name,
                 'display_name': service.display_name,
                 'components': comp_out

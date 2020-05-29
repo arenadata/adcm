@@ -5,7 +5,8 @@ from adcm_pytest_plugin.utils import get_data_dir
 
 # pylint: disable=W0611, W0621
 from tests.ui_tests.app.app import ADCMTest
-from tests.ui_tests.app.pages import Configuration, LoginPage
+from tests.ui_tests.app.configuration import Configuration
+from tests.ui_tests.app.pages import LoginPage
 
 DATADIR = get_data_dir(__file__)
 BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
@@ -38,9 +39,11 @@ def login(app):
 
 @pytest.fixture()
 def ui_config(app, login, service):
-    app.driver.get("{}/cluster/{}/service/{}/config".format
-                   (app.adcm.url, service.cluster_id, service.service_id))
-    return Configuration(app.driver)
+    return Configuration(app.driver,
+                         "{}/cluster/{}/service/{}/config".format(app.adcm.url,
+                                                                  service.cluster_id,
+                                                                  service.service_id)
+                         )
 
 
 @pytest.fixture()
