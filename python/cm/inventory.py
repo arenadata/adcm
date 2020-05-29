@@ -106,6 +106,7 @@ def get_cluster_config(cluster_id):
             'id': cluster.id,
             'version': cluster.prototype.version,
             'edition': cluster.prototype.bundle.edition,
+            'state': get_obj_state(cluster)
         },
         'services': {},
     }
@@ -135,6 +136,7 @@ def get_provider_config(provider_id):
             'name': provider.name,
             'id': provider.id,
             'host_prototype_id': host_proto.id,
+            'state': get_obj_state(provider)
         }
     }
 
@@ -174,6 +176,7 @@ def get_hosts(host_list, action_host=None):
             continue
         group[host.fqdn] = get_obj_config(host)
         group[host.fqdn]['adcm_hostid'] = host.id
+        group[host.fqdn]['state'] = get_obj_state(host)
     return group
 
 
