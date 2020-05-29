@@ -14,7 +14,7 @@
 from retrying import retry
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException, InvalidElementStateException,\
-    ElementClickInterceptedException, NoSuchElementException, StaleElementReferenceException
+    NoSuchElementException, StaleElementReferenceException
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
@@ -201,33 +201,10 @@ class BasePage:
         return bool(WDW(self.driver, timer).until(EC.element_to_be_clickable(locator)))
 
     def _menu_click(self, locator: tuple):
-        el = self._getelement(locator)
         if self._is_element_clickable(locator):
-            return self._click_button_with_sleep(el)
+            return self._click_element(locator)
         else:
             raise InvalidElementStateException
-
-    def _click_button_with_sleep(self, button, t=0.5):
-        try:
-            button.click()
-            return True
-        except (NoSuchElementException, ElementClickInterceptedException):
-            sleep(t)
-            self.driver.execute_script("arguments[0].click();", button)
-            return True
-
-    def _click_button_by_name(self, button_name, by, locator):
-        self._wait_element_present(by, locator)
-        buttons = self.driver.find_elements(by, locator)
-        for button in buttons:
-            if button.text == button_name:
-                try:
-                    button.click()
-                    return True
-                except (NoSuchElementException, ElementClickInterceptedException):
-                    self.driver.execute_script("arguments[0].click();", button)
-                    return True
-        return False
 
     # def _wait_for_menu_element_generator(self, classname):
     #     def func(args):
@@ -385,8 +362,9 @@ class LoginPage(BasePage):
         self._password = self._wait_element_present(LoginPage.passwd_locator)
         self._login.send_keys(login)
         self._password.send_keys(password)
-        self._password.send_keys(Keys.RETURN)
-        self._contains_url('admin', 15)
+        self._click_element(Common.mat_button_wrapper, name="Login")
+        # self._password.send_keys(Keys.RETURN)
+        self._contains_url('admin')
         sleep(5)  # Wait untill we have all websockets alive.
 
     def logout(self):
