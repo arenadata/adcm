@@ -69,7 +69,8 @@ class TestInventory(TestCase):
                 'edition': 'community',
                 'name': '',
                 'id': 1,
-                'version': '2.2'
+                'version': '2.2',
+                'state': 'created'
             },
             'services': {}
         }
@@ -94,7 +95,8 @@ class TestInventory(TestCase):
                 'config': {},
                 'name': '',
                 'id': 1,
-                'host_prototype_id': 1
+                'host_prototype_id': 1,
+                'state': 'created'
             }
         }
         self.assertDictEqual(config, test_config)
@@ -182,7 +184,8 @@ class TestInventory(TestCase):
                         'config': {},
                         'name': '',
                         'id': 1,
-                        'host_prototype_id': 1
+                        'host_prototype_id': 1,
+                        'state': 'created'
                     }
                 }
             }
@@ -212,7 +215,8 @@ class TestInventory(TestCase):
                     'CLUSTER': {
                         'hosts': {
                             '': {
-                                'adcm_hostid': 1
+                                'adcm_hostid': 1,
+                                'state': 'created'
                             }
                         },
                         'vars': {
@@ -221,7 +225,8 @@ class TestInventory(TestCase):
                                 'edition': 'community',
                                 'name': '',
                                 'id': 1,
-                                'version': '2.2'
+                                'version': '2.2',
+                                'state': 'created'
                             },
                             'services': {}
                         }
@@ -235,7 +240,8 @@ class TestInventory(TestCase):
                     'HOST': {
                         'hosts': {
                             '': {
-                                'adcm_hostid': 1
+                                'adcm_hostid': 1,
+                                'state': 'created'
                             }
                         },
                         'vars': {
@@ -243,7 +249,8 @@ class TestInventory(TestCase):
                                 'config': {},
                                 'name': '',
                                 'id': 1,
-                                'host_prototype_id': 1
+                                'host_prototype_id': 1,
+                                'state': 'created'
                             }
                         }
                     }
@@ -256,7 +263,8 @@ class TestInventory(TestCase):
                     'PROVIDER': {
                         'hosts': {
                             '': {
-                                'adcm_hostid': 1
+                                'adcm_hostid': 1,
+                                'state': 'created'
                             }
                         }
                     }
@@ -266,7 +274,8 @@ class TestInventory(TestCase):
                         'config': {},
                         'name': '',
                         'id': 1,
-                        'host_prototype_id': 1
+                        'host_prototype_id': 1,
+                        'state': 'created'
                     }
                 }
             }
