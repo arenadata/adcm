@@ -245,10 +245,6 @@ export class TakeService {
   }
 
   dialog4Requires(model: IRequires[]) {
-    const req = (): { prototype_id: number }[] => {
-      // TODO: build list prototype_id components
-      return [];
-    };
     this.dialog
       .open(DialogComponent, {
         data: {
@@ -261,7 +257,7 @@ export class TakeService {
       .beforeClosed()
       .pipe(
         filter((a) => a),
-        map(req),
+        map((_) => model.map(a => ({prototype_id: a.id}))), //.reduce((p, c) =>  p = [...c.components.map(b => ({ prototype_id: b.id }))], [])),
         switchMap((result) => this.add.addService(result))
       )
       .subscribe();
@@ -295,7 +291,7 @@ export class TakeService {
   restore() {
     this.statePost.clear();
     this.statePost.update(this.loadPost.data);
-    
+
     this.Hosts.forEach((a) => {
       a.isSelected = false;
       a.isLink = false;
