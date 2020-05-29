@@ -338,7 +338,8 @@ def prepare_group_config(config):
 
 
 @pytest.mark.parametrize("config_dict", configs)
-def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login, app, gather_logs):
+def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login,
+                        app, gather_logs, screenshot_on_failure):
     """Test UI configuration page without groups. Before start test actions
     we always create configuration and expected result. All logic for test
     expected result in functions before this test function.
@@ -349,7 +350,7 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login, app, gath
     4. Open configuration page
     5. Check save button status
     6. Check field configuration (depends on expected result dict and bundle configuration"""
-    _ = login, app, gather_logs
+    _ = login, app, gather_logs, screenshot_on_failure
     data = prepare_config(config_dict)
     config = data[0]
     expected = data[1]
@@ -387,7 +388,8 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login, app, gath
 
 
 @pytest.mark.parametrize("config_dict", group_configs)
-def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app, gather_logs):
+def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app,
+                             gather_logs, screenshot_on_failure):
     """Test for configuration fields with groups. Before start test actions
     we always create configuration and expected result. All logic for test
     expected result in functions before this test function. If we have
@@ -402,7 +404,7 @@ def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app,
     4. Open configuration page
     5. Check save button status
     6. Check field configuration (depends on expected result dict and bundle configuration"""
-    _ = login, app, gather_logs
+    _ = login, app, gather_logs, screenshot_on_failure
     data = prepare_group_config(config_dict)
     config = data[0]
     expected = data[1]

@@ -23,7 +23,7 @@ class Configuration(BasePage):
         if url:
             driver.get(url)
         self._contains_url("config")
-        self._wait_element(ConfigurationLocators.app_conf_form)
+        self._wait_element_present(ConfigurationLocators.app_conf_form, 10)
 
     def assert_field_editable(self, field, editable=True):
         """Check that we can edit specific field or not
@@ -115,15 +115,6 @@ class Configuration(BasePage):
         err_msg = "Expected text not presented: {}.".format(expected_text)
         assert result, err_msg
 
-    def get_config_field(self):
-        return self._getelement(ConfigurationLocators.app_conf_fields)
-
-    def get_app_root_scheme_fields(self, field=None):
-        if not field:
-            return self.driver.find_elements(*ConfigurationLocators.app_root_scheme)
-        else:
-            return field.find_elements(*ConfigurationLocators.app_root_scheme)
-
     def get_map_key(self, item_element):
         """Get key value for map field
 
@@ -157,16 +148,6 @@ class Configuration(BasePage):
             _value = self.get_map_value(item)
             result[_key] = _value
         return result
-
-    def get_fields_by_type(self, field_type):
-        """Get fields by type
-
-        :param field_type: string with type
-        :return: list of fields
-        """
-        if field_type == 'structure':
-            return self.get_app_root_scheme_fields()
-        return self.get_app_fields()
 
     def get_field_value_by_type(self, field_element, field_type):
         """Return field value from element by field type
@@ -223,15 +204,8 @@ class Configuration(BasePage):
     def get_field_value(input_field):
         return input_field.get_attribute("value")
 
-    def get_config_elements(self):
-        el = self.get_config_field()
-        return el.find_elements(*Common.all_childs)
-
     def get_field_groups(self):
         return self.driver.find_elements(*ConfigurationLocators.field_group)
-
-    def get_group_names(self):
-        return self.driver.find_elements(*ConfigurationLocators.group_title)
 
     @retry(retry_on_exception=retry_on_exception, stop_max_delay=10 * 1000)
     def save_button_status(self):
