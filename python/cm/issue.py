@@ -212,11 +212,11 @@ def check_required_import(cluster):
 
 
 def check_hc(cluster):
-    hc_list = []
+    shc_list = []
     for hc in HostComponent.objects.filter(cluster=cluster):
-        hc_list.append((hc.service, hc.host, hc.component))
+        shc_list.append((hc.service, hc.host, hc.component))
 
-    if not hc_list:
+    if not shc_list:
         for co in ClusterObject.objects.filter(cluster=cluster):
             for comp in Component.objects.filter(prototype=co.prototype):
                 if not comp.constraint:
@@ -231,10 +231,29 @@ def check_hc(cluster):
 
     for service in ClusterObject.objects.filter(cluster=cluster):
         try:
-            check_component_constraint(service, [i for i in hc_list if i[0] == service])
+            check_component_constraint(service, [i for i in shc_list if i[0] == service])
         except AdcmEx:
             return False
+    try:
+        check_component_requires(shc_list)
+    except AdcmEx:
+        return False
     return True
+
+
+def check_component_requires(shc_list):
+    def check_component_req(service, component):
+        for shc in shc_list:
+            if shc[0].prototype.name == service and shc[2].component.name == component:
+                return True
+        return False
+
+    for shc in [i for i in shc_list if i[2].component.requires]:
+        for r in json.loads(shc[2].component.requires):
+            if not check_component_req(r['service'], r['component']):
+                ref = f'component "{shc[2].component.name}" of service "{shc[0].prototype.name}"'
+                msg = 'no required component "{}" of service "{}" for {}'
+                err('COMPONENT_CONSTRAINT_ERROR', msg.format(r['component'], r['service'], ref))
 
 
 def get_obj_config(obj):

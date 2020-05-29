@@ -153,16 +153,16 @@ func (s *ServiceServer) getHostCluster(hostId int) (int, bool) {
 	return resp.value, resp.ok
 }
 
-func (s *ServiceServer) getClusters() ([]int, bool) {
+func (s *ServiceServer) getClusters() []int {
 	s.in <- ssReq{command: "getclusters"}
 	resp := <-s.out
-	return resp.rmap, resp.ok
+	return resp.rmap
 }
 
-func (s *ServiceServer) getAllHosts() ([]int, bool) {
+func (s *ServiceServer) getAllHosts() []int {
 	s.in <- ssReq{command: "getallhosts"}
 	resp := <-s.out
-	return resp.rmap, resp.ok
+	return resp.rmap
 }
 
 func (s *ServiceServer) getServices(clusterId int) ([]int, bool) {
