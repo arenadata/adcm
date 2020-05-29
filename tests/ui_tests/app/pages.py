@@ -260,13 +260,13 @@ class ListPage(BasePage):
         "//a[@class='mat-list-item ng-star-inserted']//div[@class='mat-list-item-content']")
 
     def _press_add(self):
-        self._getelement(Common.add_btn).click()
+        self._click_element(Common.add_btn)
 
     def _press_save(self):
-        self._getelement(Common.save_btn).click()
+        self._click_element(Common.save_btn)
 
     def _press_cancel(self):
-        self._getelement(Common.cancel_btn).click()
+        self._click_element(Common.cancel_btn)
 
     def _click_tab(self, tab_name):
         for tab in self._getelements(self._inactive_tabs):
@@ -364,7 +364,8 @@ class LoginPage(BasePage):
         self._password.send_keys(password)
         self._click_element(Common.mat_button_wrapper, name="Login")
         # self._password.send_keys(Keys.RETURN)
-        self._contains_url('admin')
+        self._contains_url('admin', 10)
+        self._wait_element(Common.toppanel_button_user)
         sleep(5)  # Wait untill we have all websockets alive.
 
     def logout(self):
@@ -440,8 +441,8 @@ class ClusterDetails(Details, ListPage):
         self.host_tab  # pylint: disable=W0104
         self._press_add()
         self._wait_add_form()
-        self._getelement(Host.prototype).click()
-        self._click_on_option_element(provider_name)
+        self._click_element(Host.prototype)
+        self._click_element(Common.options, name=provider_name)
         self._set_field_value(Host.name, fqdn)
         self._press_save()
         self.close_form()
