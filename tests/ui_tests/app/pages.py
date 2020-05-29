@@ -22,31 +22,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from tests.ui_tests.app.locators import Menu, Common, Cluster, Provider, Host, Service
 from tests.ui_tests.app.helpers import bys
 from cm.errors import ERRORS
-from time import sleep, time
-
-
-def repeat_dec(timeout=10, interval=0.1):
-    """That is timeout decorator for find_* functions of webdriver
-
-    First of all sometimes it take a time for wedriver to find element.
-    So it nice to have some timeout, but it is too expensive to have implicit timeout.
-
-    That function creates decorator to wrap function that has to be repeated.
-    """
-    def dec(f):
-        def newf(*args, **kwargs):
-            t = time()
-            while t + timeout > time():
-                result = f(*args, **kwargs)
-                # For some reason wedriver returns False or [] when it found nothing.
-                if result:
-                    return result
-                sleep(interval)
-        return newf
-    return dec
-
-
-REPEAT = repeat_dec(timeout=2, interval=0.1)
+from time import sleep
 
 
 def ui_retry(func):
@@ -393,17 +369,20 @@ class Details(BasePage):
 class LoginPage(BasePage):
     login_locator = bys.by_xpath("//input[@placeholder='Login']")
     passwd_locator = bys.by_xpath("//input[@placeholder='Password']")
+    login_form_locator = bys.by_xpath("//*[@formcontrolname='login']")
     _logout = ()
     _user = ()
 
     def __init__(self, driver):
         super().__init__(driver)
+        self._contains_url("login")
+        self._wait_element(LoginPage.login_form_locator)
         self._login = None
         self._password = None
 
     def login(self, login, password):
-        self._login = REPEAT(self.driver.find_element)(*LoginPage.login_locator)
-        self._password = REPEAT(self.driver.find_element)(*LoginPage.passwd_locator)
+        self._login = self._wait_element_present(LoginPage.login_locator)
+        self._password = self._wait_element_present(LoginPage.passwd_locator)
         self._login.send_keys(login)
         self._password.send_keys(password)
         self._password.send_keys(Keys.RETURN)
