@@ -9,18 +9,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Directive, Input, OnDestroy, OnInit, Host } from '@angular/core';
+import { Directive, Host, Input, OnDestroy, OnInit } from '@angular/core';
 import { ParamMap } from '@angular/router';
 import { EventMessage, SocketState } from '@app/core/store';
-import { Bundle, EmmitRow, Entities, getTypeName, Host as AdcmHost, TypeName, Cluster } from '@app/core/types';
+import { Bundle, Cluster, EmmitRow, Entities, Host as AdcmHost, TypeName } from '@app/core/types';
 import { Store } from '@ngrx/store';
 import { filter } from 'rxjs/internal/operators/filter';
-import { switchMap, map } from 'rxjs/operators';
+import { mergeMap, switchMap, tap } from 'rxjs/operators';
 
 import { SocketListenerDirective } from '../../directives/socketListener.directive';
 import { DialogComponent } from '../dialog.component';
 import { ListComponent } from '../list/list.component';
 import { ListService } from './list.service';
+import { MatDialog } from '@angular/material/dialog';
 
 interface IRowHost extends AdcmHost {
   clusters: Partial<Cluster>[];
@@ -28,12 +29,11 @@ interface IRowHost extends AdcmHost {
 }
 
 @Directive({
-  selector: '[appBaseList]'
+  selector: '[appBaseList]',
 })
 export class BaseListDirective extends SocketListenerDirective implements OnInit, OnDestroy {
   row: Entities;
   listParams: ParamMap;
-
   limit = 10;
 
   @Input('appBaseList') typeName: TypeName;
@@ -49,9 +49,9 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
     this.parent.route.paramMap
       .pipe(
         this.takeUntil(),
-        filter(p => this.checkParam(p))
+        filter((p) => this.checkParam(p))
       )
-      .subscribe(p => {
+      .subscribe((p) => {
         this.parent.paginator.pageSize = +p.get('limit') || 10;
         const page = +p.get('page');
         if (page === 0) {
@@ -91,116 +91,81 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
   }
 
   socketListener(m: EventMessage): void {
-    /** check upgradable */
-    if ((m.event === 'create' || m.event === 'delete') && m.object.type === 'bundle' && this.typeName === 'cluster') {
-      this.refresh(m.object.id);
-      return;
-    }
+    const stype = (x: string) => `${m.object.type}${m.object.details.type ? `2${m.object.details.type}` : ''}` === x;
+    const ctype = (name: string) => (name ? name.split('2')[0] : name) === m.object.type;
 
-    if (m.event === 'clear_issue' || m.event === 'raise_issue') return;
+    const checkUpgradable = () => (m.event === 'create' || m.event === 'delete') && m.object.type === 'bundle' && this.typeName === 'cluster';
+    const changeList = () => stype(this.typeName) && (m.event === 'create' || m.event === 'delete' || m.event === 'add' || m.event === 'remove');
+    const createHostPro = () => stype('host2provider') && m.event === 'create';
 
-    const stype = `${m.object.type}${m.object.details.type ? '2' + m.object.details.type : ''}`;
-    if (stype === this.typeName) {
-      if (m.event === 'create' || m.event === 'delete' || m.event === 'add' || m.event === 'remove') {
-        this.refresh(m.object.id);
-        return;
-      }
-    }
+    const rewriteRow = (row: Entities) => this.service.checkItem(row).subscribe((item) => Object.keys(row).map((a) => (row[a] = item[a])));
 
-    if (stype === 'host2provider' && m.event === 'create') {
+    if (checkUpgradable() || changeList() || createHostPro()) {
       this.refresh(m.object.id);
       return;
     }
 
     // events for the row of list
     if (this.parent.data.data.length) {
-      const row = this.parent.data.data.find(a => a.id === m.object.id);
-      if (m.event === 'add' && stype === 'host2cluster' && row) {
-        this.service.checkItem<AdcmHost>(row).subscribe(a => {
-          const { cluster_id, cluster_name } = { ...a };
-          row.cluster_id = cluster_id;
-          row.cluster_name = cluster_name;
-        });
-      }
+      const row = this.parent.data.data.find((a) => a.id === m.object.id);
+      if (!row) return;
 
-      if (getTypeName(this.typeName) === m.object.type) {
-        if (row) {
-          if (m.event === 'change_state') {
-            row.state = m.object.details.value;
-            // actions is running
-            // row.issue = m.object.details.value === 'locked' ? { issue: '' } : {};
-          }
-          if (m.event === 'change_status') row.status = +m.object.details.value;
+      if (m.event === 'add' && stype('host2cluster')) rewriteRow(row);
 
-          if (m.event === 'change_job_status') {
-            row.status = m.object.details.value;
-          }
-          if (m.event === 'upgrade') {
-            this.service.checkItem(row).subscribe(item => Object.keys(row).map(a => (row[a] = item[a])));
-          }
-        }
-        // else console.warn('List :: object not found', m, this.parent.data.data, this.typeName);
+      if (ctype(this.typeName)) {
+        if (m.event === 'change_state') row.state = m.object.details.value;
+        if (m.event === 'change_status') row.status = +m.object.details.value;
+        if (m.event === 'change_job_status') row.status = m.object.details.value;
+        if (m.event === 'upgrade') rewriteRow(row);
       }
     }
   }
 
   refresh(id?: number) {
     if (id) this.parent.current = { id };
-    this.service.getList(this.listParams, this.typeName).subscribe(list => (this.parent.dataSource = list));
+    this.service.getList(this.listParams, this.typeName).subscribe((list) => (this.parent.dataSource = list));
   }
 
   listEvents(event: EmmitRow) {
+    const lbs = ['title', 'status', 'config', 'import'];
+    const nav = (a: string[]) => this.parent.router.navigate(['./', this.row.id, ...a], { relativeTo: this.parent.route });
+
     this.row = event.row;
     const { cmd, item } = event;
-    this[cmd] && typeof this[cmd] === 'function' ? this[cmd](item) : console.warn(`No handler for ${cmd}`);
+    lbs.includes(cmd) ? nav(cmd === 'title' ? [] : [cmd]) : this[cmd](item);
   }
 
-  onLoad() {
-    // loaded data
+  onLoad() {}
+
+  getActions() {
+    this.service.getActions(this.row);
   }
 
-  title() {
-    this.parent.router.navigate(['./', this.row.id], { relativeTo: this.parent.route });
-  }
-
-  status() {
-    this.parent.router.navigate(['./', this.row.id, 'status'], { relativeTo: this.parent.route });
-  }
-
-  config() {
-    this.parent.router.navigate(['./', this.row.id, 'config'], { relativeTo: this.parent.route });
-  }
-
-  import() {
-    this.parent.router.navigate(['./', this.row.id, 'import'], { relativeTo: this.parent.route });
+  addCluster(id: number) {
+    if (id) this.service.addClusterToHost(id, this.row as AdcmHost);
   }
 
   license() {
     const row = this.row as Bundle;
-    this.service
-      .getLicenseInfo(row.license_url)
-      .pipe(this.takeUntil())
-      .subscribe(info =>
-        this.parent.dialog
-          .open(DialogComponent, {
-            data: {
-              title: `Accept license agreement`,
-              text: info.text,
-              controls: { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] }
-            }
-          })
-          .beforeClosed()
-          .pipe(
-            this.takeUntil(),
-            filter(yes => yes),
-            switchMap(() => this.service.acceptLicense(`${row.license_url}accept/`))
-          )
-          .subscribe(() => (row.license = 'accepted'))
-      );
-  }
 
-  getActions() {
-    this.service.getActions(this.row);
+    const closedDialog$ = (text: string, dialog: MatDialog) =>
+      dialog
+        .open(DialogComponent, {
+          data: {
+            title: `Accept license agreement`,
+            text,
+            controls: { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] },
+          },
+        })
+        .beforeClosed();
+
+    const showDialog = (info: { text: string }) =>
+      closedDialog$(info.text, this.parent.dialog).pipe(
+        filter((yes) => yes),
+        switchMap(() => this.service.acceptLicense(`${row.license_url}accept/`).pipe(tap((_) => (row.license = 'accepted'))))
+      );
+
+    this.service.getLicenseInfo(row.license_url).pipe(this.takeUntil(), mergeMap(showDialog)).subscribe();
   }
 
   delete() {
@@ -218,7 +183,7 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
       this.service
         .getClustersForHost({ limit: this.limit, page: 0 })
         .pipe(this.takeUntil())
-        .subscribe(list => (row.clusters = list));
+        .subscribe((list) => (row.clusters = list));
     }
   }
 
@@ -230,11 +195,7 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
       this.service
         .getClustersForHost({ limit: this.limit, page: row.page })
         .pipe(this.takeUntil())
-        .subscribe(list => (row.clusters = [...row.clusters, ...list]));
+        .subscribe((list) => (row.clusters = [...row.clusters, ...list]));
     }
-  }
-
-  addCluster(id: number) {
-    if (id) this.service.addClusterToHost(id, this.row as AdcmHost);
   }
 }

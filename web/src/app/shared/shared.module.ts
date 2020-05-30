@@ -17,19 +17,19 @@ import { RouterModule } from '@angular/router';
 import { AddingModule } from './add-component/adding.module';
 import {
   ActionMasterComponent,
-  BaseListDirective,
   ButtonSpinnerComponent,
   DialogComponent,
   ExportComponent,
   ImportComponent,
   IssueInfoComponent,
-  ListComponent,
   MainInfoComponent,
   StatusComponent,
   StatusInfoComponent,
-  UpgradeComponent
+  UpgradeComponent,
 } from './components';
 import { ActionMasterConfigComponent } from './components/actions/master/action-master-config.component';
+import { BaseListDirective } from './components/list/base-list.directive';
+import { ListComponent } from './components/list/list.component';
 import { MultiSortDirective } from './components/list/multi-sort.directive';
 import { SimpleTextComponent } from './components/tooltip';
 import { ConfigurationModule } from './configuration/configuration.module';
@@ -53,7 +53,7 @@ import { StuffModule } from './stuff.module';
     ConfigurationModule,
     AddingModule,
     HostComponentsMapModule,
-    DetailsModule
+    DetailsModule,
   ],
   declarations: [
     DialogComponent,
@@ -73,7 +73,7 @@ import { StuffModule } from './stuff.module';
     ImportComponent,
     ExportComponent,
     ActionMasterComponent,
-    ActionMasterConfigComponent
+    ActionMasterConfigComponent,
   ],
   entryComponents: [DialogComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent, ActionMasterComponent],
   exports: [
@@ -99,7 +99,7 @@ import { StuffModule } from './stuff.module';
     StatusInfoComponent,
     MainInfoComponent,
     ImportComponent,
-    ExportComponent
-  ]
+    ExportComponent,
+  ],
 })
 export class SharedModule {}

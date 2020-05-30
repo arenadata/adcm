@@ -6,7 +6,8 @@ from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import parametrize_by_data_subdirs
 
 from tests.ui_tests.app.app import ADCMTest
-from tests.ui_tests.app.pages import Configuration, LoginPage
+from tests.ui_tests.app.configuration import Configuration
+from tests.ui_tests.app.pages import LoginPage
 
 
 @pytest.fixture()
@@ -31,9 +32,8 @@ def test_required_field_false(sdk_client_fs: ADCMClient, path, app, login):
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     assert config.save_button_status()
 
 
@@ -45,7 +45,6 @@ def test_required_field_true(sdk_client_fs: ADCMClient, path, app, login):
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     assert not config.save_button_status()
