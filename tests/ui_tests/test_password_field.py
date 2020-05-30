@@ -32,9 +32,8 @@ def test_password_noconfirm_false_required_false(sdk_client_fs: ADCMClient, logi
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     assert config.save_button_status()
 
 
@@ -46,9 +45,8 @@ def test_password_noconfirm_false_required_true(sdk_client_fs: ADCMClient, login
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     assert not config.save_button_status()
     password_field = config.get_password_elements()[0]
     forms = [form.text for form in password_field.find_elements(*Common.mat_form_field)]
@@ -64,9 +62,8 @@ def test_password_noconfirm_true_required_false(sdk_client_fs: ADCMClient, login
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     assert config.save_button_status()
     password_field = config.get_password_elements()[0]
     forms = [form.text for form in password_field.find_elements(*Common.mat_form_field)]
@@ -80,9 +77,8 @@ def test_password_noconfirm_true_required_true(sdk_client_fs: ADCMClient, login,
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     assert not config.save_button_status()
     password_field = config.get_password_elements()[0]
     forms = [form.text for form in password_field.find_elements(*Common.mat_form_field)]

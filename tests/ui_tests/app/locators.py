@@ -34,6 +34,8 @@ class Common:
     description = bys.by_xpath("//*[@placeholder='Description']")
     save_btn = bys.by_xpath("//span[contains(., 'Save')]/parent::button")
     cancel_btn = bys.by_xpath("//span[contains(., 'Cancel')]/parent::button")
+    mat_button_wrapper = bys.by_class("mat-button-wrapper")
+    toppanel_button_user = bys.by_class("toppanel_button_user")
 
     # List elements common elements
     rows = bys.by_class('mat-row')
@@ -126,6 +128,7 @@ class ConfigurationLocators:
     map_key = bys.by_xpath("//*[@formcontrolname='key']")
     map_value = bys.by_xpath("//*[@formcontrolname='value']")
     app_conf_fields = bys.by_tag("app-config-fields")
+    app_conf_form = bys.by_tag("app-config-form")
     field_group = bys.by_class("field-group")
     group_title = bys.by_tag("mat-panel-title")
     map_key_field = bys.by_class('key-field')
