@@ -11,9 +11,10 @@
 # limitations under the License.
 
 # Created by a1wen at 05.03.19
+from retrying import retry
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException, InvalidElementStateException,\
-    ElementClickInterceptedException, NoSuchElementException, StaleElementReferenceException
+    NoSuchElementException, StaleElementReferenceException
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
@@ -21,31 +22,20 @@ from selenium.webdriver.common.action_chains import ActionChains
 from tests.ui_tests.app.locators import Menu, Common, Cluster, Provider, Host, Service
 from tests.ui_tests.app.helpers import bys
 from cm.errors import ERRORS
-from time import sleep, time
+from time import sleep
 
 
-def repeat_dec(timeout=10, interval=0.1):
-    """That is timeout decorator for find_* functions of webdriver
-
-    First of all sometimes it take a time for wedriver to find element.
-    So it nice to have some timeout, but it is too expensive to have implicit timeout.
-
-    That function creates decorator to wrap function that has to be repeated.
-    """
-    def dec(f):
-        def newf(*args, **kwargs):
-            t = time()
-            while t + timeout > time():
-                result = f(*args, **kwargs)
-                # For some reason wedriver returns False or [] when it found nothing.
-                if result:
-                    return result
-                sleep(interval)
-        return newf
-    return dec
+def ui_retry(func):
+    return retry(stop_max_delay=15 * 1000)(func)
 
 
-REPEAT = repeat_dec(timeout=2, interval=0.1)
+def element_text(e):
+    if not e:
+        raise NoSuchElementException("Asked for text of None element")
+    text = e.get_attribute("innerText")
+    if not text:
+        return ""
+    return text.strip()
 
 
 class BasePage:
@@ -55,6 +45,50 @@ class BasePage:
     def __init__(self, driver):
         self.driver = driver
 
+    @ui_retry
+    def _elements(self, locator: tuple, f, **kwargs):
+        """Find elements
+        :param locator: locator
+        :param f: function that takes in elements and does something
+                  n.b. DO NOT RETURN ELEMENTS FROM THIS FUNCTION, ONLY DERIVED DATA (e.g., strings)
+        :kwparam name: (optional) element text to look for
+        :kwparam parent: (optional) locator of parent in which we should find element.
+        :kwparam parent_name: (optional) name of parent in which we should find element.
+        :return: output of f() when run against elements found by locator/name in parent
+        """
+
+        def get_elements(locator, name, parent):
+            elements = [e for e in parent.find_elements(*locator) if e.is_displayed()]
+            if len(elements) == 0:
+                raise NoSuchElementException(f"Could not find element {locator}")
+            if name:
+                elements = [e for e in elements if name in element_text(e)]
+                if len(elements) == 0:
+                    raise NoSuchElementException(f"Could not find element {name}")
+            return elements
+
+        # get parent
+        parent_element = self.driver
+        parent_idx = kwargs["parent_idx"] if "parent_idx" in kwargs else 0
+
+        if "parent" in kwargs:
+            parent_name = kwargs["parent_name"] if "parent_name" in kwargs else ""
+            parent_element = get_elements(kwargs["parent"], parent_name, self.driver)[
+                parent_idx
+            ]
+
+        name = kwargs["name"] if "name" in kwargs else ""
+        return f(get_elements(locator, name, parent_element))
+
+    def _wait_element(self, locator: tuple, **kwargs):
+        """see _elements
+        """
+
+        def wait(elements):
+            _ = elements
+
+        self._elements(locator, wait, **kwargs)
+
     def _get_adcm_test_element(self, element_name):
         return self._getelement(bys.by_xpath("//*[@adcm_test='{}']".format(element_name)))
 
@@ -63,6 +97,20 @@ class BasePage:
                    timer,
                    ignored_exceptions=self.ignored_exceptions
                    ).until(EC.presence_of_element_located(locator))
+
+    def _click_element(self, locator: tuple, **kwargs):
+        """see _elements
+        """
+
+        idx = kwargs["idx"] if "idx" in kwargs else 0
+
+        def click(elements):
+            if "background" in kwargs and kwargs["background"]:
+                self.driver.execute_script("arguments[0].click();", elements[idx])
+            else:
+                elements[idx].click()
+
+        self._elements(locator, click, **kwargs)
 
     def _getelements(self, locator: tuple, timer=20):
         return WDW(self.driver, timer).until(EC.presence_of_all_elements_located(locator))
@@ -76,9 +124,6 @@ class BasePage:
 
     def get_frontend_errors(self):
         return self._getelements(Common.mat_error)
-
-    def get_error_text_for_element(self, element):
-        return element.find_element(Common.mat_error).text
 
     def _wait_element_present(self, locator: tuple, timer=5):
         WDW(self.driver, timer).until(EC.presence_of_element_located(locator))
@@ -124,16 +169,6 @@ class BasePage:
             return True
         return True
 
-    def _fill_field_element(self, data, field_element):
-        field_element.clear()
-        field_element.send_keys(data)
-        return field_element
-
-    def _find_and_clear_element(self, by, value):
-        element = self.driver.find_element(by, value)
-        element.send_keys(Keys.CONTROL + "a")
-        element.send_keys(Keys.BACK_SPACE)
-
     def clear_element(self, element):
         element.send_keys(Keys.CONTROL + "a")
         element.send_keys(Keys.BACK_SPACE)
@@ -153,12 +188,6 @@ class BasePage:
     def check_error(self, error: ERRORS):
         return self._error_handler(error)
 
-    def get_error(self):
-        return self._getelement(Common.error).text
-
-    def get_errors(self):
-        return [error.text for error in self._getelements(Common.error)]
-
     def _click_with_offset(self, element: tuple, x_offset, y_offset):
         actions = ActionChains(self.driver)
         actions.move_to_element_with_offset(self._getelement(element),
@@ -172,45 +201,10 @@ class BasePage:
         return bool(WDW(self.driver, timer).until(EC.element_to_be_clickable(locator)))
 
     def _menu_click(self, locator: tuple):
-        el = self._getelement(locator)
         if self._is_element_clickable(locator):
-            return self._click_button_with_sleep(el)
+            return self._click_element(locator)
         else:
             raise InvalidElementStateException
-
-    def _click_button_with_sleep(self, button, t=0.5):
-        try:
-            button.click()
-            return True
-        except (NoSuchElementException, ElementClickInterceptedException):
-            sleep(t)
-            self.driver.execute_script("arguments[0].click();", button)
-            return True
-
-    def _click_button_element(self, button):
-        """Click element
-        :param button:
-        :return: bool
-        """
-        try:
-            button.click()
-            return True
-        except (NoSuchElementException, ElementClickInterceptedException):
-            self.driver.execute_script("arguments[0].click();", button)
-            return True
-
-    def _click_button_by_name(self, button_name, by, locator):
-        self._wait_element_present(by, locator)
-        buttons = self.driver.find_elements(by, locator)
-        for button in buttons:
-            if button.text == button_name:
-                try:
-                    button.click()
-                    return True
-                except (NoSuchElementException, ElementClickInterceptedException):
-                    self.driver.execute_script("arguments[0].click();", button)
-                    return True
-        return False
 
     # def _wait_for_menu_element_generator(self, classname):
     #     def func(args):
@@ -266,13 +260,13 @@ class ListPage(BasePage):
         "//a[@class='mat-list-item ng-star-inserted']//div[@class='mat-list-item-content']")
 
     def _press_add(self):
-        self._getelement(Common.add_btn).click()
+        self._click_element(Common.add_btn)
 
     def _press_save(self):
-        self._getelement(Common.save_btn).click()
+        self._click_element(Common.save_btn)
 
     def _press_cancel(self):
-        self._getelement(Common.cancel_btn).click()
+        self._click_element(Common.cancel_btn)
 
     def _click_tab(self, tab_name):
         for tab in self._getelements(self._inactive_tabs):
@@ -352,21 +346,26 @@ class Details(BasePage):
 class LoginPage(BasePage):
     login_locator = bys.by_xpath("//input[@placeholder='Login']")
     passwd_locator = bys.by_xpath("//input[@placeholder='Password']")
+    login_form_locator = bys.by_xpath("//*[@formcontrolname='login']")
     _logout = ()
     _user = ()
 
     def __init__(self, driver):
         super().__init__(driver)
+        self._contains_url("login")
+        self._wait_element(LoginPage.login_form_locator)
         self._login = None
         self._password = None
 
     def login(self, login, password):
-        self._login = REPEAT(self.driver.find_element)(*LoginPage.login_locator)
-        self._password = REPEAT(self.driver.find_element)(*LoginPage.passwd_locator)
+        self._login = self._wait_element_present(LoginPage.login_locator)
+        self._password = self._wait_element_present(LoginPage.passwd_locator)
         self._login.send_keys(login)
         self._password.send_keys(password)
-        self._password.send_keys(Keys.RETURN)
-        self._contains_url('admin', 15)
+        self._click_element(Common.mat_button_wrapper, name="Login")
+        # self._password.send_keys(Keys.RETURN)
+        self._contains_url('admin', 10)
+        self._wait_element(Common.toppanel_button_user)
         sleep(5)  # Wait untill we have all websockets alive.
 
     def logout(self):
@@ -442,8 +441,8 @@ class ClusterDetails(Details, ListPage):
         self.host_tab  # pylint: disable=W0104
         self._press_add()
         self._wait_add_form()
-        self._getelement(Host.prototype).click()
-        self._click_on_option_element(provider_name)
+        self._click_element(Host.prototype)
+        self._click_element(Common.options, name=provider_name)
         self._set_field_value(Host.name, fqdn)
         self._press_save()
         self.close_form()
