@@ -9,14 +9,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, Host } from '@app/core/types';
+import { Component, Host, IRequires } from '@app/core/types';
 
 export type ActionParam = 'add' | 'remove';
-
 export type ConstraintValue = number | '+' | 'odd';
 export type Constraint = [ConstraintValue, ConstraintValue];
-
-
 
 export interface IRawHosComponent {
   component: Component[];
@@ -45,6 +42,7 @@ export class Tile {
   disabled: boolean;
   actions?: ActionParam[];
   color: 'none' | 'gray';
+  notification?: string[];
 }
 
 export class HostTile extends Tile {
@@ -58,6 +56,7 @@ export class HostTile extends Tile {
 export class CompTile extends Tile {
   service_id: number;
   component: string;
+  requires: IRequires[];
   constructor(rawComponent: Component, public actions?: ActionParam[]) {
     super();
     this.id = rawComponent.id;
@@ -66,6 +65,7 @@ export class CompTile extends Tile {
     this.name = rawComponent.display_name;
     this.disabled = rawComponent.service_state !== 'created';
     this.limit = rawComponent.constraint;
+    this.requires = rawComponent.requires;
   }
 }
 
@@ -85,13 +85,13 @@ export class StatePost {
   }
 
   add(post: Post) {
-    const f = this._data.find(p => this._compare(p, post));
+    const f = this._data.find((p) => this._compare(p, post));
     if (!f) this._data.push(post);
     else if (!f.id) f.id = post.id;
   }
 
   delete(post: Post) {
-    this._data = this._data.filter(p => !this._compare(p, post));
+    this._data = this._data.filter((p) => !this._compare(p, post));
   }
 
   clear() {
@@ -99,14 +99,12 @@ export class StatePost {
   }
 
   update(data: Post[]) {
-    data.forEach(a => this.add(new Post(a.host_id, a.service_id, a.component_id, a.id)));
+    data.forEach((a) => this.add(new Post(a.host_id, a.service_id, a.component_id, a.id)));
   }
 }
 
-export class Stream {
-  target: Tile;
+export interface IStream {
   link: Tile;
   linkSource: Tile[];
   selected: Tile;
-  constructor() {}
 }
