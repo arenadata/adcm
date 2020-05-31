@@ -44,9 +44,10 @@ def prototype_display_names(ui_hell_fs):
 
 @pytest.fixture()
 def ui_display_names(login, app, ui_hell_fs):
-    app.driver.get("{}/cluster/{}/service/{}/config".format
-                   (app.adcm.url, ui_hell_fs.cluster_id, ui_hell_fs.service_id))
-    ui_config = Configuration(app.driver)
+    ui_config = Configuration(app.driver,
+                              "{}/cluster/{}/service/{}/config".format(app.adcm.url,
+                                                                       ui_hell_fs.cluster_id,
+                                                                       ui_hell_fs.service_id))
     return ui_config.get_display_names()
 
 
