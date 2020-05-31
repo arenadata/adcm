@@ -52,9 +52,8 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_fal
     group_name = path.split("/")[-1]
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     group_active = config.group_is_active_by_name(group_name)
     assert not group_active
     fields = config.get_field_groups()
@@ -91,9 +90,8 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_fal
     group_name = path.split("/")[-1]
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
     fields = config.get_field_groups()
@@ -130,9 +128,8 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_tru
     group_name = path.split("/")[-1]
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     group_active = config.group_is_active_by_name(group_name)
     assert not group_active
     fields = config.get_field_groups()
@@ -169,9 +166,8 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_tru
     group_name = path.split("/")[-1]
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
     fields = config.get_field_groups()
@@ -208,9 +204,8 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_fals
     group_name = path.split("/")[-1]
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     group_active = config.group_is_active_by_name(group_name)
     assert not group_active
     fields = config.get_field_groups()
@@ -247,9 +242,8 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_fals
     group_name = path.split("/")[-1]
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
     fields = config.get_field_groups()
@@ -286,9 +280,8 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_true
     group_name = path.split("/")[-1]
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     group_active = config.group_is_active_by_name(group_name)
     assert not group_active
     fields = config.get_field_groups()
@@ -325,9 +318,8 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_true
     group_name = path.split("/")[-1]
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
     fields = config.get_field_groups()
@@ -363,9 +355,8 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_fals
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -391,9 +382,8 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_fals
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -419,9 +409,8 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_true
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -447,9 +436,8 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_true
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -475,9 +463,8 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -504,9 +491,8 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -533,9 +519,8 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true_
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -561,9 +546,8 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true_
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -590,9 +574,8 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_fals
     group_name = path.split("/")[-1]
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -625,9 +608,8 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_fals
     group_name = path.split("/")[-1]
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -660,9 +642,8 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true
     group_name = path.split("/")[-1]
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -697,9 +678,8 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true
     group_name = path.split("/")[-1]
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -730,9 +710,8 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_false
     group_name = path.split("/")[-1]
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -768,9 +747,8 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_false
     group_name = path.split("/")[-1]
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -801,9 +779,8 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true_
     group_name = path.split("/")[-1]
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -835,9 +812,8 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true_
     group_name = path.split("/")[-1]
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -867,9 +843,8 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_false
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -895,9 +870,8 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_false
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -923,9 +897,8 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true_
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -951,9 +924,8 @@ def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false_
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -980,9 +952,8 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true_
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -1008,9 +979,8 @@ def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false_
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -1036,9 +1006,8 @@ def test_group_advanced_true_invisible_true_field_advanced_true_invisible_true_a
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -1064,9 +1033,8 @@ def test_group_advanced_true_invisible_true_field_advanced_true_invisible_true_a
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")

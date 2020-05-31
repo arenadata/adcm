@@ -38,9 +38,8 @@ def test_number_validation(sdk_client_fs: ADCMClient, path, app, login):
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     assert config.save_button_status()
     fields = config.get_app_fields()
     form_field = fields[0].find_elements(*Common.mat_form_field)[0]
@@ -68,9 +67,8 @@ def test_number_in_range_values(sdk_client_fs: ADCMClient, value, app, number_ty
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_app_fields()
     form_field = fields[0].find_elements(*Common.mat_form_field)[0]
     config.set_element_value_in_input(form_field, str(value))
@@ -85,9 +83,8 @@ def test_float_in_integer_field(sdk_client_fs: ADCMClient, app, login):
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     fields = config.get_app_fields()
     form_field = fields[0].find_elements(*Common.mat_form_field)[0]
     config.set_element_value_in_input(form_field, "1.2")

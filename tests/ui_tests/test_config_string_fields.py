@@ -56,9 +56,10 @@ def login(app):
 
 @pytest.fixture()
 def ui_config(app, login, service):
-    app.driver.get("{}/cluster/{}/service/{}/config".format
-                   (app.adcm.url, service.cluster_id, service.service_id))
-    return Configuration(app.driver)
+    return Configuration(app.driver,
+                         "{}/cluster/{}/service/{}/config".format(app.adcm.url,
+                                                                  service.cluster_id,
+                                                                  service.service_id))
 
 
 @pytest.mark.usefixtures("ui_config")
