@@ -40,6 +40,7 @@ export interface HostComponent {
  */
 export interface Component {
   id: number;
+  prototype_id: number;
   service_id: number;
   service_name: string;
   service_state: string;

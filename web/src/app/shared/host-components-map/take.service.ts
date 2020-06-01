@@ -34,6 +34,8 @@ export class TakeService {
   actionParameters: IActionParameter[];
   formGroup = new FormGroup({});
 
+  raw: IRawHosComponent;
+
   constructor(private api: ApiService, private dialog: MatDialog, private add: AddService) {}
 
   get Hosts(): HostTile[] {
@@ -75,6 +77,7 @@ export class TakeService {
   }
 
   setSource(raw: IRawHosComponent) {
+    this.raw = raw;
     if (raw.host) {
       const list = raw.host.map((h) => new HostTile(h));
       this.Hosts = [...list];
@@ -169,13 +172,36 @@ export class TakeService {
   clearServiceFromHost(data: { rel: CompTile; model: HostTile }) {
     this.clear([data.model, data.rel]);
     this.statePost.delete(new Post(data.model.id, data.rel.service_id, data.rel.id));
+    this.clearDependencies(data.rel);
     this.setFormValue(data.rel);
   }
 
   clearHostFromService(data: { rel: HostTile; model: CompTile }) {
     this.clear([data.rel, data.model]);
     this.statePost.delete(new Post(data.rel.id, data.model.service_id, data.model.id));
+    this.clearDependencies(data.model);
     this.setFormValue(data.model);
+  }
+
+  clearDependencies(comp: CompTile) {
+    const getLimitsFromState = (a: CompTile) => {
+      const s = this.raw.component.find((b) => b.prototype_id === a.prototype_id);
+      return (a.limit = s.constraint);
+    };
+
+    if (comp.requires?.length) {
+      this.findDependencies(comp).map((a) => {
+        a.limit = getLimitsFromState(a);
+        return a;
+      });
+      this.formGroup.reset();
+      this.formFill();
+    }
+  }
+
+  findDependencies(component: CompTile) {
+    const r = component.requires.reduce((p, c) => [...p, ...c.components.map((a) => ({ prototype_id: a.prototype_id }))], []);
+    return this.Components.filter((a) => r.some((b) => b.prototype_id === a.prototype_id));
   }
 
   takeHost(host: HostTile) {
@@ -234,8 +260,18 @@ export class TakeService {
     } else if (noLimit(Component.limit, Component.relations.length)) {
       if (!checkActions(Host.id, Component, 'add')) return;
       if (Component.requires?.length) {
-        this.dialog4Requires(Component.requires);
-        //return;
+        const requires = Component.requires.reduce((p, c) => (c.components.some((a) => this.Components.some((b) => b.prototype_id === a.prototype_id)) ? p : [...p, c]), []);
+        if (requires.length) {
+          this.dialog4Requires(requires);
+          return;
+        } else {
+          this.findDependencies(Component).map((a) => {
+            a.limit = a.limit ? (a.limit[0] === 0 ? (a.limit[1] ? [1, a.limit[1]] : ((<unknown>[1]) as Constraint)) : a.limit) : ((<unknown>[1]) as Constraint);
+            return a;
+          });
+          this.formGroup.reset();
+          this.formFill();
+        }
       }
       link.relations.push(target);
       target.relations.push(link);
@@ -258,7 +294,7 @@ export class TakeService {
       .beforeClosed()
       .pipe(
         filter((a) => a),
-        map((_) => model.map(a => ({prototype_id: a.prototype_id}))),
+        map((_) => model.map((a) => ({ prototype_id: a.prototype_id }))),
         switchMap((result) => this.add.addService(result))
       )
       .subscribe();

@@ -54,6 +54,7 @@ export class HostTile extends Tile {
 }
 
 export class CompTile extends Tile {
+  prototype_id: number;
   service_id: number;
   component: string;
   requires: IRequires[];
@@ -66,6 +67,7 @@ export class CompTile extends Tile {
     this.disabled = rawComponent.service_state !== 'created';
     this.limit = rawComponent.constraint;
     this.requires = rawComponent.requires;
+    this.prototype_id = rawComponent.prototype_id;
   }
 }
 
