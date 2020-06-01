@@ -968,5 +968,16 @@ def prepare_ansible_config(job_id):
             config.PYTHON_SITE_PACKAGES, 'ansible_mitogen/plugins/strategy')
         config_parser['defaults']['host_key_checking'] = 'False'
 
+    job = JobLog.objects.get(id=job_id)
+    action = Action.objects.get(id=job.action_id)
+
+    try:
+        params = json.loads(action.params)
+    except json.JSONDecodeError:
+        params = {}
+
+    if 'jinja2_native' in params:
+        config_parser['defaults']['jinja2_native'] = str(params['jinja2_native'])
+
     with open(os.path.join(config.RUN_DIR, f'{job_id}/ansible.cfg'), 'w') as config_file:
         config_parser.write(config_file)

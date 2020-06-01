@@ -30,7 +30,7 @@ def login(app):
 
 @parametrize_by_data_subdirs(
     __file__, "invisible_false_advanced_false")
-def test_all_false(sdk_client_fs: ADCMClient, path, app, login):
+def test_all_false(sdk_client_fs: ADCMClient, path, app, login, screenshot_on_failure):
     """Check RO fields with UI options as false
     Scenario:
     1. Check that field visible
@@ -40,12 +40,12 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app, login):
     5. Check that field visible
     6. Check that we cannot edit field (read-only tag presented)
     """
+    _ = login, screenshot_on_failure
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     groups = config.get_field_groups()
     for group in groups:
         assert group.is_displayed(), group.get_attribute("class")
@@ -66,7 +66,7 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app, login):
 
 @parametrize_by_data_subdirs(
     __file__, "invisible_true_advanced_true")
-def test_all_true(sdk_client_fs: ADCMClient, path, app, login):
+def test_all_true(sdk_client_fs: ADCMClient, path, app, login, screenshot_on_failure):
     """Check RO fields with UI options in true
     Scenario:
     1. Check that field invisible
@@ -74,12 +74,12 @@ def test_all_true(sdk_client_fs: ADCMClient, path, app, login):
     3. Click advanced
     4. Check that field invisible
     """
+    _ = login, screenshot_on_failure
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     groups = config.get_field_groups()
     for group in groups:
         assert not group.is_displayed(), group.get_attribute("class")
@@ -94,7 +94,8 @@ def test_all_true(sdk_client_fs: ADCMClient, path, app, login):
 
 @parametrize_by_data_subdirs(
     __file__, "invisible_false_advanced_true")
-def test_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app, login):
+def test_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app,
+                                       login, screenshot_on_failure):
     """Check RO fields with advanced true and invisible false
     Scenario:
     1. Check that field invisible
@@ -103,12 +104,12 @@ def test_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app, log
     4. Check that field visible
     5. Check that we cannot edit field (read-only tag presented)
     """
+    _ = login, screenshot_on_failure
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     groups = config.get_field_groups()
     for group in groups:
         assert not group.is_displayed(), group.get_attribute("class")
@@ -129,7 +130,8 @@ def test_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app, log
 
 @parametrize_by_data_subdirs(
     __file__, "invisible_true_advanced_false")
-def test_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path, app, login):
+def test_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path, app,
+                                       login, screenshot_on_failure):
     """Check RO field with invisible true and advanced false
     Scenario:
     1. Check that field invisible
@@ -137,12 +139,12 @@ def test_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path, app, log
     3. Click advanced
     4. Check that field invisible
     """
+    _ = login, screenshot_on_failure
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    config = Configuration(app.driver)
+    config = Configuration(app.driver,
+                           "{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
     groups = config.get_field_groups()
     for group in groups:
         assert not group.is_displayed(), group.get_attribute("class")

@@ -55,10 +55,6 @@ div.m2m {
     padding: 4px 40px;
     display: none;
 
-    &.show {
-      display: block;
-    }
-
     & div {
       display: flex;
 
@@ -77,7 +73,17 @@ div.m2m {
       }
     }
   }
+
+  & .notification {
+    display: none;
+  }
+
+  & .show {
+    display: block;
+  }
 }
+
+
 
 .mat-mini-fab[disabled][disabled] {
   color: rgba(0, 0, 0, 0.4);
