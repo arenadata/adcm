@@ -25,8 +25,10 @@ def login(app):
 
 
 @parametrize_by_data_subdirs(__file__, "invisible_true", 'advanced_true')
-def test_ui_option_invisible_true_advanced_true(sdk_client_fs: ADCMClient, path, app, login):
+def test_ui_option_invisible_true_advanced_true(sdk_client_fs: ADCMClient, path, app, login,
+                                                screenshot_on_failure):
     """Check that we haven't invisible fields on UI"""
+    _ = login, screenshot_on_failure
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -40,8 +42,10 @@ def test_ui_option_invisible_true_advanced_true(sdk_client_fs: ADCMClient, path,
 
 
 @parametrize_by_data_subdirs(__file__, "invisible_true", 'advanced_false')
-def test_ui_option_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path, app, login):
+def test_ui_option_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path, app, login,
+                                                 screenshot_on_failure):
     """Check that we haven't invisible fields on UI if advanced field enabled"""
+    _ = login, screenshot_on_failure
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -58,12 +62,14 @@ def test_ui_option_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path
 
 
 @parametrize_by_data_subdirs(__file__, "invisible_false", 'advanced_true')
-def test_ui_option_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app, login):
+def test_ui_option_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app, login,
+                                                 screenshot_on_failure):
     """Check that field is not visible by default but with enabled advanced visible
      :param sdk_client_fs:
      :param path:
      :return:
      """
+    _ = login, screenshot_on_failure
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -86,12 +92,14 @@ def test_ui_option_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path
 
 
 @parametrize_by_data_subdirs(__file__, "invisible_false", 'advanced_false')
-def test_ui_option_invisible_false_advanced_false(sdk_client_fs: ADCMClient, path, app, login):
+def test_ui_option_invisible_false_advanced_false(sdk_client_fs: ADCMClient, path, app, login,
+                                                  screenshot_on_failure):
     """Check that we can see groups with advanced option and without.
     :param sdk_client_fs:
     :param path:
     :return:
     """
+    _ = login, screenshot_on_failure
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
