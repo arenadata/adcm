@@ -135,6 +135,7 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
     this.api.getOne<Task>('task', id).subscribe((task) => {
       if (this.dataSource.data.some((a) => a.id === id)) return;
       this.paginator.length = ++this.dataCount;
+      task.objects = this.buildLink(task.objects);
       if (this.paginator.pageSize > this.dataSource.data.length) this.dataSource.data = [task, ...this.dataSource.data];
       else {
         const [last, ...ost] = this.dataSource.data.reverse();

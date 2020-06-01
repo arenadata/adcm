@@ -48,4 +48,13 @@ export interface Component {
   status: number;
   constraint: any;
   monitoring: 'passive' | 'active';
+  requires?: IRequires[];
+}
+
+export interface IRequires {
+  id: number;
+  // prototype_id: number;
+  name: string;
+  display_name: string;
+  components?: IRequires[];
 }

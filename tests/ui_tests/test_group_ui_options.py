@@ -49,9 +49,9 @@ def login(app):
 
 @pytest.fixture()
 def ui_config(app, login, service):
-    app.driver.get("{}/cluster/{}/service/{}/config".format
-                   (app.adcm.url, service.cluster_id, service.service_id))
-    return Configuration(app.driver)
+    return Configuration(app.driver, "{}/cluster/{}/service/{}/config".format(app.adcm.url,
+                                                                              service.cluster_id,
+                                                                              service.service_id))
 
 
 @pytest.fixture(params=[(False, 3), (True, 6)], ids=['advanced_disabled', 'advanced'])
@@ -116,12 +116,13 @@ def test_save_groups(group_elements, ui_config, sdk_client_fs: ADCMClient):
 
 @pytest.mark.parametrize("config_name, activatable", ACTIVATABLE_GROUPS,
                          ids=["Active True", "Active False"])
-def test_activatable_group_status(config_name, activatable, ui_config):
+def test_activatable_group_status(config_name, activatable, ui_config, screenshot_on_failure):
     """Check activatable group status after config creation
     Scenario:
     1. Find group by name
     2. Check group status with config
     """
+    _ = screenshot_on_failure
     group_elements = ui_config.get_group_elements()
     toogle_status = 'No toogle status'
     status_text = ''
