@@ -51,13 +51,14 @@ def ui_display_names(login, app, ui_hell_fs):
     return ui_config.get_display_names()
 
 
-def test_display_names(prototype_display_names, ui_display_names):
+def test_display_names(prototype_display_names, ui_display_names, screenshot_on_failure):
     """Scenario:
     1. Get Service configuration
     2. Get display names from UI
     3. Check that config name in prototype is correct
     4. Check that in UI we have full list of display names from prototype
     """
+    _ = screenshot_on_failure
     assert prototype_display_names[0] == "UI Config Hell"
     for d_name in ui_display_names:
         assert d_name in prototype_display_names[1]

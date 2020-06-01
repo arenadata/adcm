@@ -116,12 +116,13 @@ def test_save_groups(group_elements, ui_config, sdk_client_fs: ADCMClient):
 
 @pytest.mark.parametrize("config_name, activatable", ACTIVATABLE_GROUPS,
                          ids=["Active True", "Active False"])
-def test_activatable_group_status(config_name, activatable, ui_config):
+def test_activatable_group_status(config_name, activatable, ui_config, screenshot_on_failure):
     """Check activatable group status after config creation
     Scenario:
     1. Find group by name
     2. Check group status with config
     """
+    _ = screenshot_on_failure
     group_elements = ui_config.get_group_elements()
     toogle_status = 'No toogle status'
     status_text = ''
