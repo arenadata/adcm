@@ -222,6 +222,7 @@ export class TakeService {
     };
 
     const noLimit = (c: Constraint, r: number) => {
+      if (!c) return true;
       const v = c[c.length - 1];
       return v === '+' || v === 'odd' || v > r;
     };
@@ -230,7 +231,7 @@ export class TakeService {
       if (!checkActions(Host.id, Component, 'remove')) return;
       this.clear([target, link]);
       this.statePost.delete(post);
-    } else if (Component.limit && noLimit(Component.limit, Component.relations.length)) {
+    } else if (noLimit(Component.limit, Component.relations.length)) {
       if (!checkActions(Host.id, Component, 'add')) return;
       if (Component.requires?.length) {
         this.dialog4Requires(Component.requires);
@@ -257,7 +258,7 @@ export class TakeService {
       .beforeClosed()
       .pipe(
         filter((a) => a),
-        map((_) => model.map(a => ({prototype_id: a.id}))), //.reduce((p, c) =>  p = [...c.components.map(b => ({ prototype_id: b.id }))], [])),
+        map((_) => model.map(a => ({prototype_id: a.prototype_id}))),
         switchMap((result) => this.add.addService(result))
       )
       .subscribe();

@@ -52,8 +52,8 @@ export interface Component {
 }
 
 export interface IRequires {
-  id: number;
-  // prototype_id: number;
+  // id: number;
+  prototype_id: number;
   name: string;
   display_name: string;
   components?: IRequires[];
