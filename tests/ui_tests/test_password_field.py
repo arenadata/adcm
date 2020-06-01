@@ -25,9 +25,11 @@ def login(app):
     login.login("admin", "admin")
 
 
-def test_password_noconfirm_false_required_false(sdk_client_fs: ADCMClient, login, app):
+def test_password_noconfirm_false_required_false(sdk_client_fs: ADCMClient, login, app,
+                                                 screenshot_on_failure):
     """Check save button status for no password confirmation is false and required is false
     """
+    _ = login, screenshot_on_failure
     path = get_data_dir(__file__) + "/password_confirm_false_required_false"
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
@@ -37,10 +39,12 @@ def test_password_noconfirm_false_required_false(sdk_client_fs: ADCMClient, logi
     assert config.save_button_status()
 
 
-def test_password_noconfirm_false_required_true(sdk_client_fs: ADCMClient, login, app):
+def test_password_noconfirm_false_required_true(sdk_client_fs: ADCMClient, login, app,
+                                                screenshot_on_failure):
     """Check save button status for no password confirmation is true and required is false.
     Check that we have two frontend errors for password and confirmation password field
     """
+    _ = login, screenshot_on_failure
     path = get_data_dir(__file__) + "/password_confirm_false_required_true"
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
@@ -55,9 +59,11 @@ def test_password_noconfirm_false_required_true(sdk_client_fs: ADCMClient, login
     assert 'Confirm [password] is required!' in forms, forms
 
 
-def test_password_noconfirm_true_required_false(sdk_client_fs: ADCMClient, login, app):
+def test_password_noconfirm_true_required_false(sdk_client_fs: ADCMClient, login, app,
+                                                screenshot_on_failure):
     """Check save button status for no password confirmation is false and required is false
     """
+    _ = login, screenshot_on_failure
     path = get_data_dir(__file__) + "/password_confirm_true_required_false"
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
@@ -70,9 +76,11 @@ def test_password_noconfirm_true_required_false(sdk_client_fs: ADCMClient, login
     assert len(forms) == 1, forms
 
 
-def test_password_noconfirm_true_required_true(sdk_client_fs: ADCMClient, login, app):
+def test_password_noconfirm_true_required_true(sdk_client_fs: ADCMClient, login, app,
+                                               screenshot_on_failure):
     """Check save button status for no password confirmation is false and required is false
     """
+    _ = login, screenshot_on_failure
     path = get_data_dir(__file__) + "/password_confirm_true_required_true"
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
