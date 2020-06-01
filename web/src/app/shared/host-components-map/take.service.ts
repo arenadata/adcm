@@ -235,7 +235,7 @@ export class TakeService {
       if (!checkActions(Host.id, Component, 'add')) return;
       if (Component.requires?.length) {
         this.dialog4Requires(Component.requires);
-        return;
+        //return;
       }
       link.relations.push(target);
       target.relations.push(link);
