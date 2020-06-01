@@ -74,9 +74,7 @@
         <td mat-cell *matCellDef="let element" [attr.colspan]="columnsToDisplay.length">
           <div class="expand-jobs" [@.disabled]="isDisabled"
             [@jobsExpand]="element.id === expandedTask?.id ? 'expanded' : 'collapsed'">
-
             <app-task-inner [dataSource]="element.jobs"></app-task-inner>
-
           </div>
         </td>
       </ng-container>
