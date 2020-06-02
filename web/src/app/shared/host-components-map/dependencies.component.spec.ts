@@ -34,7 +34,7 @@ describe('DependenciesComponent', () => {
   });
 
   it('data when creating a dialog', () => {
-    component.model = [{ id: 1, display_name: 'display_name_test_1', name: 'test_name_1' }];
+    component.model = [{ prototype_id: 1, display_name: 'display_name_test_1', name: 'test_name_1' }];
     component.ngOnInit();
     fixture.detectChanges();
     const li = fixture.nativeElement.querySelector('ul').getElementsByTagName('li');
@@ -43,7 +43,7 @@ describe('DependenciesComponent', () => {
   });
 
   it('data when input property [components]', () => {
-    component.components = [{ id: 1, display_name: 'display_name_test_1', name: 'test_name_1' }];
+    component.components = [{ prototype_id: 1, display_name: 'display_name_test_1', name: 'test_name_1' }];
     component.ngOnInit();
     fixture.detectChanges();
     const li = fixture.nativeElement.querySelector('ul').getElementsByTagName('li');
@@ -52,7 +52,7 @@ describe('DependenciesComponent', () => {
   });
 
   it('data as tree', () => {
-    component.model = [{ id: 1, display_name: 'display_name_test_1', name: 'test_name_1', components: [{ id: 2, display_name: 'display_name_test_2', name: 'test_name_2' }] }];
+    component.model = [{ prototype_id: 1, display_name: 'display_name_test_1', name: 'test_name_1', components: [{ prototype_id: 2, display_name: 'display_name_test_2', name: 'test_name_2' }] }];
     component.ngOnInit();
     fixture.detectChanges();
     const ul = fixture.nativeElement.querySelector('ul');

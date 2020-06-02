@@ -23,7 +23,7 @@ import (
 	"github.com/bouk/httprouter"
 )
 
-const MaxPostSize = 16 * 1024
+const MaxPostSize = 10 * 1024 * 1024
 
 type clusterDetails struct {
 	Status   int                   `json:"status"`
