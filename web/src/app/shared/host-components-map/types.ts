@@ -41,7 +41,7 @@ export class Tile {
   limit?: Constraint;
   disabled: boolean;
   actions?: ActionParam[];
-  color?: 'white' | 'gray' | 'yellow';
+  color?: 'none' | 'white' | 'gray' | 'yellow';
   notification?: string;
 }
 
