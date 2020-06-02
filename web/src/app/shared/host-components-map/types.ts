@@ -12,8 +12,8 @@
 import { Component, Host, IRequires } from '@app/core/types';
 
 export type ActionParam = 'add' | 'remove';
-export type ConstraintValue = number | '+' | 'odd';
-export type Constraint = [ConstraintValue, ConstraintValue];
+export type ConstraintValue = number | '+' | 'odd' | 'depend';
+export type Constraint = ConstraintValue[];
 
 export interface IRawHosComponent {
   component: Component[];
@@ -41,8 +41,8 @@ export class Tile {
   limit?: Constraint;
   disabled: boolean;
   actions?: ActionParam[];
-  color: 'none' | 'gray';
-  notification?: string[];
+  color?: 'white' | 'gray' | 'yellow';
+  notification?: string;
 }
 
 export class HostTile extends Tile {
