@@ -12,8 +12,8 @@
 import { Component, Host, IRequires } from '@app/core/types';
 
 export type ActionParam = 'add' | 'remove';
-export type ConstraintValue = number | '+' | 'odd';
-export type Constraint = [ConstraintValue, ConstraintValue];
+export type ConstraintValue = number | '+' | 'odd' | 'depend';
+export type Constraint = ConstraintValue[];
 
 export interface IRawHosComponent {
   component: Component[];
@@ -41,8 +41,8 @@ export class Tile {
   limit?: Constraint;
   disabled: boolean;
   actions?: ActionParam[];
-  color: 'none' | 'gray';
-  notification?: string[];
+  color?: 'none' | 'white' | 'gray' | 'yellow';
+  notification?: string;
 }
 
 export class HostTile extends Tile {
@@ -54,6 +54,7 @@ export class HostTile extends Tile {
 }
 
 export class CompTile extends Tile {
+  prototype_id: number;
   service_id: number;
   component: string;
   requires: IRequires[];
@@ -66,6 +67,7 @@ export class CompTile extends Tile {
     this.disabled = rawComponent.service_state !== 'created';
     this.limit = rawComponent.constraint;
     this.requires = rawComponent.requires;
+    this.prototype_id = rawComponent.prototype_id;
   }
 }
 
