@@ -34,6 +34,8 @@ class Common:
     description = bys.by_xpath("//*[@placeholder='Description']")
     save_btn = bys.by_xpath("//span[contains(., 'Save')]/parent::button")
     cancel_btn = bys.by_xpath("//span[contains(., 'Cancel')]/parent::button")
+    mat_button_wrapper = bys.by_class("mat-button-wrapper")
+    toppanel_button_user = bys.by_class("toppanel_button_user")
 
     # List elements common elements
     rows = bys.by_class('mat-row')
@@ -54,8 +56,11 @@ class Common:
     action = bys.by_xpath("//*[@adcm_test='action_btn']")
 
     # Configuration elements
+    input_el = bys.by_tag("input")
     mat_error = bys.by_class("mat-error")
     mat_checkbox = bys.by_tag("mat-checkbox")
+    mat_checkbox_class = bys.by_class("mat-checkbox")
+    mat_select = bys.by_class("mat-select")
     mat_icon = bys.by_class("mat-icon")
     mat_input_element = bys.by_class("mat-input-element")
     display_names = bys.by_class("title.mat-expansion-panel-header-title")
@@ -119,8 +124,12 @@ class ConfigurationLocators:
     app_fields_json = bys.by_tag("app-fields-json")
     app_fields_list = bys.by_tag("app-fields-list")
     app_field = bys.by_tag("app-field")
+    app_root_scheme = bys.by_tag("app-root-scheme")
     map_key = bys.by_xpath("//*[@formcontrolname='key']")
     map_value = bys.by_xpath("//*[@formcontrolname='value']")
     app_conf_fields = bys.by_tag("app-config-fields")
+    app_conf_form = bys.by_tag("app-config-form")
     field_group = bys.by_class("field-group")
     group_title = bys.by_tag("mat-panel-title")
+    map_key_field = bys.by_class('key-field')
+    map_value_field = bys.by_class('value-field')

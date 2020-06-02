@@ -13,7 +13,8 @@ import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ClusterService } from '@app/core';
 import { Job } from '@app/core/types';
-import { BaseDirective, ListComponent } from '@app/shared';
+import { BaseDirective } from '@app/shared';
+import { ListComponent } from '@app/shared/components/list/list.component';
 import { filter } from 'rxjs/operators';
 
 @Component({
@@ -23,7 +24,7 @@ import { filter } from 'rxjs/operators';
     <div class="container-entry">
       <app-list #list class="main" [appBaseList]="'job'"></app-list>
     </div>
-  `
+  `,
 })
 export class JobComponent extends BaseDirective implements OnInit, OnDestroy {
   @ViewChild('list', { static: true }) list: ListComponent;
@@ -31,21 +32,22 @@ export class JobComponent extends BaseDirective implements OnInit, OnDestroy {
     this.list.listItemEvt
       .pipe(
         this.takeUntil(),
-        filter(data => data.cmd === 'onLoad' && data.row)
+        filter((data) => data.cmd === 'onLoad' && data.row)
       )
-      .subscribe(data => localStorage.setItem('lastJob', data.row.id));
+      .subscribe((data) => localStorage.setItem('lastJob', data.row.id));
   }
 }
 
 @Component({
   selector: 'app-main',
-  template: '<app-job-info></app-job-info>'
+  template: '<app-job-info></app-job-info>',
 })
 export class MainComponent implements OnInit {
   constructor(private details: ClusterService, private router: Router, private route: ActivatedRoute) {}
 
   ngOnInit() {
-    const log = (<Job>this.details.Current).log_files[0];
+    const logs = (this.details.Current as Job).log_files;
+    const log = logs.find((a) => a.type === 'check') || logs[0];
     if (log) this.router.navigate([`../${log.id}`], { relativeTo: this.route });
   }
 }

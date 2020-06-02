@@ -9,15 +9,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, EventEmitter, OnInit } from '@angular/core';
+import { Component, EventEmitter, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { IAction } from '@app/core/types';
 import { DynamicComponent, DynamicEvent } from '@app/shared/directives/dynamic.directive';
 
 import { BaseDirective } from '../../../directives/base.directive';
 import { ActionParameters } from '../actions.directive';
 import { IValue, MasterService, whatShow } from './master.service';
-import { FormGroup } from '@angular/forms';
-import { Post } from '@app/shared/host-components-map/types';
 
 @Component({
   selector: 'app-master',
@@ -32,15 +30,17 @@ import { Post } from '@app/shared/host-components-map/types';
           background: rgba(255, 255, 255, 0.04) !important;
         }
       }
-    `
+    `,
   ],
-  providers: [MasterService]
+  providers: [MasterService],
 })
 export class ActionMasterComponent extends BaseDirective implements DynamicComponent, OnInit {
   event: EventEmitter<DynamicEvent> = new EventEmitter();
   model: ActionParameters;
   action: IAction;
   show: whatShow;
+
+  @ViewChild('runBtn', { read: ElementRef }) runBtn: ElementRef;
 
   constructor(private service: MasterService) {
     super();
@@ -65,6 +65,10 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
       .send(this.action.run, data)
       .pipe(this.takeUntil())
       .subscribe(() => this.cancel());
+  }
+
+  onEnterKey() {
+    this.runBtn.nativeElement.click();
   }
 
   cancel() {

@@ -37,6 +37,6 @@ export class ListEntryComponent implements OnInit {
   }
 
   navigation() {
-    return [{ path: `/${this.typeName}`, name: `${this.typeName}s` }];
+    return [{ url: `/${this.typeName}`, title: `${this.typeName}s` }];
   }
 }

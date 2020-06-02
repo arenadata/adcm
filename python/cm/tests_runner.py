@@ -102,7 +102,7 @@ class TestTaskRunner(TestCase):
 
         mock_finish_task.assert_called_once_with(task, job, config.Job.SUCCESS)
         mock_run_job.assert_called_once_with(task.id, job.id, _file)
-        mock_re_prepare_job.assert_not_called()
+        mock_re_prepare_job.assert_called()
         self.assertTrue(JobLog.objects.get(id=1).start_date != job.start_date)
 
     @patch('task_runner.run_task')
@@ -146,11 +146,12 @@ class TestJobRunner(TestCase):
 
     def test_set_pythonpath(self):
         cmd_env = os.environ.copy()
+        stack_dir = '/adcm/data/bundle/bundle_hash'
         python_paths = filter(
             lambda x: x != '',
-            ['./pmod'] + cmd_env.get('PYTHONPATH', '').split(':'))
+            [f'./pmod:{stack_dir}/pmod'] + cmd_env.get('PYTHONPATH', '').split(':'))
         cmd_env['PYTHONPATH'] = ':'.join(python_paths)
-        self.assertDictEqual(cmd_env, job_runner.set_pythonpath(os.environ.copy()))
+        self.assertDictEqual(cmd_env, job_runner.set_pythonpath(os.environ.copy(), stack_dir))
 
     # pylint: disable=too-many-locals
     # pylint: disable=too-many-arguments

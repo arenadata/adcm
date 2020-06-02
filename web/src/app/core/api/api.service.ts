@@ -13,7 +13,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ParamMap } from '@angular/router';
 import { IRoot, TypeName } from '@app/core/types/api';
-import { ListResult } from '@app/shared';
+import { ListResult } from '@app/shared/components/list/list.component';
 import { select, Store } from '@ngrx/store';
 import { EMPTY, Observable } from 'rxjs';
 import { catchError, filter, switchMap } from 'rxjs/operators';
@@ -26,15 +26,15 @@ export class ApiService {
   constructor(private http: HttpClient, private store: Store<State>) {}
 
   get root(): Observable<IRoot> {
-    return this.store.pipe(select(getRoot)).pipe(filter(root => !!root));
+    return this.store.pipe(select(getRoot)).pipe(filter((root) => !!root));
   }
 
   getPure<T>(typeName: TypeName, params: { [key: string]: string } = {}): Observable<T[]> {
-    return this.root.pipe(switchMap(root => this.get<T[]>(root[typeName], params))).pipe(catchError(() => EMPTY));
+    return this.root.pipe(switchMap((root) => this.get<T[]>(root[typeName], params))).pipe(catchError(() => EMPTY));
   }
 
   getOne<T>(typeName: TypeName, id: number, params: { [key: string]: string } = {}) {
-    return this.root.pipe(switchMap(root => this.get<T>(`${root[typeName]}${id}/`, params))).pipe(catchError(() => EMPTY));
+    return this.root.pipe(switchMap((root) => this.get<T>(`${root[typeName]}${id}/`, params))).pipe(catchError(() => EMPTY));
   }
 
   get<T>(url: string, params: { [key: string]: string } = {}): Observable<T> {
@@ -42,11 +42,11 @@ export class ApiService {
   }
 
   getList<T>(url: string, p: ParamMap): Observable<ListResult<T>> {
-    const params = p.keys.reduce((pr, c) => ({...pr, [c]: p.get(c)}), {});
+    const params = p.keys.reduce((pr, c) => ({ ...pr, [c]: p.get(c) }), {});
     if (p) {
       const limit = p.get('limit') ? +p.get('limit') : +localStorage.getItem('limit'),
         offset = (p.get('page') ? +p.get('page') : 0) * limit;
-      params['limit'] = limit.toString(); 
+      params['limit'] = limit.toString();
       params['offset'] = offset.toString();
       params['status'] = p.get('filter') || '';
     }

@@ -50,11 +50,12 @@ def set_job_status(job_id, ret, pid, event):
         return ret
 
 
-def set_pythonpath(env):
+def set_pythonpath(env, stack_dir):
+    pmod_path = f'./pmod:{stack_dir}/pmod'
     if "PYTHONPATH" in env:
-        env["PYTHONPATH"] = "./pmod:" + env["PYTHONPATH"]
+        env["PYTHONPATH"] = pmod_path + ':' + env["PYTHONPATH"]
     else:
-        env["PYTHONPATH"] = "./pmod"
+        env["PYTHONPATH"] = pmod_path
     return env
 
 
@@ -64,13 +65,15 @@ def set_ansible_config(env, job_id):
 
 
 def env_configuration(job_config):
+    job_id = job_config['job']['id']
+    stack_dir = job_config['env']['stack_dir']
     env = os.environ.copy()
-    env = set_pythonpath(env)
+    env = set_pythonpath(env, stack_dir)
     # This condition is intended to support compatibility.
     # Since older bundle versions may contain their own ansible.cfg
-    if not os.path.exists(os.path.join(job_config['env']['stack_dir'], 'ansible.cfg')):
-        env = set_ansible_config(env, job_config['job']['id'])
-        log.info('set ansible config for job:%s', job_config['job']['id'])
+    if not os.path.exists(os.path.join(stack_dir, 'ansible.cfg')):
+        env = set_ansible_config(env, job_id)
+        log.info('set ansible config for job:%s', job_id)
     return env
 
 
