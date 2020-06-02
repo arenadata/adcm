@@ -1,4 +1,3 @@
-import allure
 import pytest
 # pylint: disable=W0611, W0621
 

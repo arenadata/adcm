@@ -31,7 +31,7 @@ def login(app_fs):
 
 @pytest.fixture()
 def ui_config(app_fs, login, service):
-    return Configuration(app.driver,
+    return Configuration(app_fs.driver,
                          "{}/cluster/{}/service/{}/config".format(app_fs.adcm.url,
                                                                   service.cluster_id,
                                                                   service.service_id)
