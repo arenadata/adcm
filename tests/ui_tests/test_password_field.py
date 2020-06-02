@@ -19,7 +19,7 @@ def app(adcm_fs):
 
 
 @pytest.fixture()
-def login(app):
+def login(app_fs):
     app.driver.get(app.adcm.url)
     login = LoginPage(app.driver)
     login.login("admin", "admin")
