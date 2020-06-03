@@ -43,20 +43,20 @@ export class IssueInfoComponent implements OnInit {
 
   IssuePatch = {
     required_service: 'service',
-    required_import: 'import'
+    required_import: 'import',
   };
 
   IssueNames = {
     config: 'Configuration',
     host_component: 'Host - Components',
     required_service: 'Required a service',
-    required_import: 'Required a import'
+    required_import: 'Required a import',
   };
 
   constructor(private componentData: ComponentData) {}
 
   ngOnInit(): void {
-    this.current = this.current || this.componentData.current;    
+    this.current = this.current || this.componentData.current;
     this.typeName = this.typeName || this.componentData.typeName;
     this.current.typeName = this.typeName;
     this.componentData.emitter.emit('Done');
@@ -64,7 +64,7 @@ export class IssueInfoComponent implements OnInit {
 
   getParent() {
     if (this.parent && this.parent.cluster_id !== this.current.id) {
-      return `${this.parent.typeName.split(';')[0]}/${this.parent.id}/${this.typeName}`;
+      return this.typeName === 'provider' ? '/provider' : `${this.parent.typeName.split(';')[0]}/${this.parent.id}/${this.typeName}`;
     } else return this.typeName.split(';')[0];
   }
 

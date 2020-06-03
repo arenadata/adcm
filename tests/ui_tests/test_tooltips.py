@@ -4,8 +4,8 @@ import pytest
 from adcm_pytest_plugin.utils import get_data_dir
 
 # pylint: disable=W0611, W0621
-from tests.ui_tests.app.app import ADCMTest
-from tests.ui_tests.app.pages import Configuration, LoginPage
+from tests.ui_tests.app.configuration import Configuration
+from tests.ui_tests.app.pages import LoginPage
 
 DATADIR = get_data_dir(__file__)
 BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
@@ -23,24 +23,19 @@ def service(sdk_client_fs):
 
 
 @pytest.fixture()
-def app(adcm_fs):
-    app = ADCMTest(adcm_fs)
-    yield app
-    app.destroy()
-
-
-@pytest.fixture()
-def login(app):
-    app.driver.get(app.adcm.url)
-    login = LoginPage(app.driver)
+def login(app_fs):
+    app_fs.driver.get(app_fs.adcm.url)
+    login = LoginPage(app_fs.driver)
     login.login("admin", "admin")
 
 
 @pytest.fixture()
-def ui_config(app, login, service):
-    app.driver.get("{}/cluster/{}/service/{}/config".format
-                   (app.adcm.url, service.cluster_id, service.service_id))
-    return Configuration(app.driver)
+def ui_config(app_fs, login, service):
+    return Configuration(app_fs.driver,
+                         "{}/cluster/{}/service/{}/config".format(app_fs.adcm.url,
+                                                                  service.cluster_id,
+                                                                  service.service_id)
+                         )
 
 
 @pytest.fixture()
@@ -58,8 +53,6 @@ def tooltips(ui_config, service):
 
 def test_tooltip_presented(tooltips):
     """Check that field have description tooltip presented
-
-    :return:
     """
     assert len(tooltips[0]) == 8
 
@@ -74,7 +67,6 @@ def test_tooltip_text(tooltips):
 @pytest.mark.parametrize("field", NO_TOOLTIP_FIELDS)
 def test_tooltip_not_presented(field, ui_config):
     """Check that we haven't tooltip for fields without description
-    :return:
     """
     textboxes = ui_config.get_textboxes()
     for textbox in textboxes:
