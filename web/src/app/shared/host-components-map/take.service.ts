@@ -334,7 +334,7 @@ export class TakeService {
 
   clear(tiles: Tile[]) {
     for (let a of tiles) {
-      const name = a instanceof HostTile ? 'host' : 'compo';
+      const name = 'service_id' in a ? 'compo' : 'host';
       const link = this.sourceMap.get(name).find((h) => h.id === a.id);
       const rel = tiles.find((b) => b !== a);
       link.relations = link.relations.filter((r) => r.id !== rel.id);
