@@ -51,10 +51,9 @@ def tooltips(ui_config, service):
     return tooltips, descriptions
 
 
-def test_tooltip_presented(tooltips, screenshot_on_failure):
+def test_tooltip_presented(tooltips):
     """Check that field have description tooltip presented
     """
-    _ = screenshot_on_failure
     assert len(tooltips[0]) == 8
 
 
@@ -66,10 +65,9 @@ def test_tooltip_text(tooltips):
 
 
 @pytest.mark.parametrize("field", NO_TOOLTIP_FIELDS)
-def test_tooltip_not_presented(field, ui_config, screenshot_on_failure):
+def test_tooltip_not_presented(field, ui_config):
     """Check that we haven't tooltip for fields without description
     """
-    _ = screenshot_on_failure
     textboxes = ui_config.get_textboxes()
     for textbox in textboxes:
         if field == textbox.text.split(":")[0]:
