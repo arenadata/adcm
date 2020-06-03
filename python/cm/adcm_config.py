@@ -374,7 +374,7 @@ def get_builtin_variant(obj, func_name):
 def get_variant(obj, conf, limits):
     value = None
     source = limits['source']
-    if source['type'] == 'list':
+    if source['type'] == 'config':
         skey = source['name'].split('/')
         if len(skey) == 1:
             value = conf[skey[0]]
@@ -720,7 +720,7 @@ def check_config_type(proto, key, subkey, spec, value, default=False, inactive=F
                     msg = 'not in variant list: "{}"'.format(source['value'])
                     err('CONFIG_VALUE_ERROR', tmpl2.format(msg))
             if not default:
-                if source['type'] in ('list', 'builtin'):
+                if source['type'] in ('config', 'builtin'):
                     if value not in source['value']:
                         msg = 'not in variant list: "{}"'.format(source['value'])
                         err('CONFIG_VALUE_ERROR', tmpl2.format(msg))

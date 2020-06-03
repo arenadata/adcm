@@ -666,7 +666,7 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
         allowed_keys = ('type', 'name', 'value', 'strict')
         check_extra_keys(conf['source'], allowed_keys, f'{ref} config key "{name}/{subname}"')
         vtype = conf['source']['type']
-        if vtype not in ('inline', 'list', 'builtin'):
+        if vtype not in ('inline', 'config', 'builtin'):
             msg = 'Config key "{}/{}" of {} has unknown source type "{}"'
             err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref, vtype))
         source = {'type': vtype}
@@ -685,14 +685,14 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
             if not isinstance(source['value'], list):
                 msg = 'Config key "{}/{}" of {} source value should be an array'
                 err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
-        elif vtype in ('list', 'builtin'):
+        elif vtype in ('config', 'builtin'):
             if not in_dict(conf['source'], 'name'):
                 msg = 'Config key "{}/{}" of {} has no mandatory source: name statment'
                 err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref, vtype))
             source['name'] = conf['source']['name']
         if vtype == 'builtin':
             if conf['source']['name'] not in ('free_hosts', 'cluster_hosts'):
-                msg = 'Config key "{}/{}" of {} has unknown builtin name "{}"'
+                msg = 'Config key "{}/{}" of {} has unknown builtin function "{}"'
                 err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref, conf['source']['name']))
         return source
 
