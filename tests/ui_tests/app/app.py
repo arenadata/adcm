@@ -35,9 +35,12 @@ class ADCMTest:
         self.opts.add_argument('--ignore-certificate-errors')
         self.opts.add_argument('--disable-gpu')
         self.opts.add_argument("--start-maximized")
+        self.opts.add_argument("--enable-logging")
+        self.opts.add_argument("--enable-automation")
         self.capabilities = webdriver.DesiredCapabilities.CHROME.copy()
         self.capabilities['acceptSslCerts'] = True
         self.capabilities['acceptInsecureCerts'] = True
+        self.capabilities['goog:loggingPrefs'] = {'browser': 'ALL', 'performance': 'ALL'}
         self.driver = webdriver.Chrome(options=self.opts, desired_capabilities=self.capabilities)
         self.driver.set_window_size(1800, 1000)
         self.driver.implicitly_wait(0.5)
