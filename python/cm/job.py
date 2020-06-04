@@ -308,7 +308,7 @@ def check_action_config(action, obj, conf, attr):
         return None, None
     if not conf:
         err('TASK_ERROR', 'action config is required')
-    obj_conf =  None
+    obj_conf = None
     if obj.config:
         cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
         obj_conf = json.loads(cl.config)
