@@ -17,7 +17,6 @@ export * from './status-info.component';
 export * from './crumbs/crumbs.component';
 export * from './dialog.component';
 export * from './main-info.component';
-export * from './list/index';
 export * from './upgrade.component';
 export * from './actions/actions.component';
 export * from './actions/master/master.component';
