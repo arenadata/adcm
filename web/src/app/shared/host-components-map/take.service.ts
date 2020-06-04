@@ -34,6 +34,8 @@ export class TakeService {
   actionParameters: IActionParameter[];
   formGroup = new FormGroup({});
 
+  raw: IRawHosComponent;
+
   constructor(private api: ApiService, private dialog: MatDialog, private add: AddService) {}
 
   get Hosts(): HostTile[] {
@@ -75,6 +77,7 @@ export class TakeService {
   }
 
   setSource(raw: IRawHosComponent) {
+    this.raw = raw;
     if (raw.host) {
       const list = raw.host.map((h) => new HostTile(h));
       this.Hosts = [...list];
@@ -129,33 +132,44 @@ export class TakeService {
   [1,+] – one or any more component shoud be installed;
   [+] – component shoud be installed on all hosts of cluster.
  */
-  validateConstraints(cti: CompTile) {
-    const oneConstraint = (a: Constraint, ins: number) => {
-      switch (a[0]) {
-        case 0:
-          return null;
-        case '+':
-          return ins < this.Hosts.length ? 'Component should be installed on all hosts of cluster.' : null;
-        case 'odd':
-          return ins % 2 ? null : 'One or more component should be installed. Total amount should be odd.';
-        default:
-          return ins !== a[0] ? `Exactly ${a[0]} component should be installed` : null;
+  validateConstraints(component: CompTile) {
+    const getError = (constraint: Constraint, relations: HostTile[]) => {
+      const [a1, a2, a3] = constraint;
+      const countRelations = relations.length;
+      if (a3) {
+        switch (a3) {
+          case 'depend':
+            return relations.some(a => a.relations.some(b => b.id === component.id)) ? null : 'Must be installed because it is a dependency of another component';
+        }
+      } else if (a2) {
+        switch (a2) {
+          case 'depend':
+            return relations.some(a => a.relations.some(b => b.id === component.id)) ? null : 'Must be installed because it is a dependency of another component';
+          case 'odd':
+            return countRelations % 2 && countRelations >= a1 ? null : a1 === 0 ? 'Total amount should be odd.' : `Must be installed at least ${a1} components. Total amount should be odd.`;
+          case '+':
+          default:
+            return countRelations < a1 ? `Must be installed at least ${a1} components.` : null;
+        }
+      } else {
+        switch (a1) {
+          case 0:
+            return null;
+          case 'depend':
+            return relations.some(a => a.relations.some(b => b.id === component.id)) ? null : 'Must be installed because it is a dependency of another component';
+          case '+':
+            return countRelations < this.Hosts.length ? 'Component should be installed on all hosts of cluster.' : null;
+          case 'odd':
+            return countRelations % 2 ? null : 'One or more component should be installed. Total amount should be odd.';
+          default:
+            return countRelations !== a1 ? `Exactly ${a1} component should be installed` : null;
+        }
       }
     };
-    const twoConstraint = (a: Constraint, ins: number) => {
-      switch (a[1]) {
-        case 'odd':
-          return ins % 2 && ins >= a[0] ? null : a[0] === 0 ? 'Total amount should be odd.' : `Must be installed at least ${a[0]} components. Total amount should be odd.`;
-        case '+':
-        default:
-          return ins < a[0] ? `Must be installed at least ${a[0]} components.` : null;
-      }
-    };
-    const limitLength = (length: number) => (length === 1 ? oneConstraint : twoConstraint);
     return (): ValidationErrors => {
-      const limit = cti.limit;
+      const { limit, relations } = component;
       if (limit) {
-        const error = limitLength(limit.length)(limit, cti.relations.length);
+        const error = getError(limit, relations);
         return error ? { error } : null;
       }
       return null;
@@ -169,13 +183,44 @@ export class TakeService {
   clearServiceFromHost(data: { rel: CompTile; model: HostTile }) {
     this.clear([data.model, data.rel]);
     this.statePost.delete(new Post(data.model.id, data.rel.service_id, data.rel.id));
+    this.clearDependencies(data.rel);
     this.setFormValue(data.rel);
   }
 
   clearHostFromService(data: { rel: HostTile; model: CompTile }) {
     this.clear([data.rel, data.model]);
     this.statePost.delete(new Post(data.rel.id, data.model.service_id, data.model.id));
+    this.clearDependencies(data.model);
     this.setFormValue(data.model);
+  }
+
+  clearDependencies(comp: CompTile) {
+    const getLimitsFromState = (prototype_id: number) => this.raw.component.find((b) => b.prototype_id === prototype_id).constraint;
+
+    if (comp.requires?.length) {
+      this.findDependencies(comp).map((a) => {
+        a.limit = getLimitsFromState(a.prototype_id);
+        // a.color = 'white';
+        a.notification = '';
+        return a;
+      });
+      this.statePost.data.map(a => this.checkDependencies(this.Components.find(b => b.id === a.component_id)));
+      this.formGroup.reset();
+      this.formFill();
+    }
+  }
+
+  findDependencies(component: CompTile) {
+    const r = component.requires?.reduce((p, c) => [...p, ...c.components.map((a) => ({ prototype_id: a.prototype_id }))], []) || [];
+    return this.Components.filter((a) => r.some((b) => b.prototype_id === a.prototype_id));
+  }
+
+  checkDependencies(component: CompTile) {
+    this.findDependencies(component).map((a) => {
+      // a.color = 'yellow';            
+      a.limit = a.limit ? [...a.limit, 'depend'] : ['depend'];
+      return a;
+    });
   }
 
   takeHost(host: HostTile) {
@@ -222,19 +267,28 @@ export class TakeService {
     };
 
     const noLimit = (c: Constraint, r: number) => {
+      if (!c) return true;
       const v = c[c.length - 1];
-      return v === '+' || v === 'odd' || v > r;
+      return v === '+' || v === 'odd' || v > r || v === 'depend';
     };
 
     if (link.relations.find((e) => e.id === target.id)) {
       if (!checkActions(Host.id, Component, 'remove')) return;
       this.clear([target, link]);
       this.statePost.delete(post);
-    } else if (Component.limit && noLimit(Component.limit, Component.relations.length)) {
+      this.clearDependencies(Component);
+    } else if (noLimit(Component.limit, Component.relations.length)) {
       if (!checkActions(Host.id, Component, 'add')) return;
       if (Component.requires?.length) {
-        this.dialog4Requires(Component.requires);
-        return;
+        const requires = Component.requires.reduce((p, c) => (c.components.some((a) => this.Components.some((b) => b.prototype_id === a.prototype_id)) ? p : [...p, c]), []);
+        if (requires.length) {
+          this.dialog4Requires(requires);
+          return;
+        } else {
+          this.checkDependencies(Component);
+          this.formGroup.reset();
+          this.formFill();
+        }
       }
       link.relations.push(target);
       target.relations.push(link);
@@ -257,7 +311,7 @@ export class TakeService {
       .beforeClosed()
       .pipe(
         filter((a) => a),
-        map((_) => model.map(a => ({prototype_id: a.id}))), //.reduce((p, c) =>  p = [...c.components.map(b => ({ prototype_id: b.id }))], [])),
+        map((_) => model.map((a) => ({ prototype_id: a.prototype_id }))),
         switchMap((result) => this.add.addService(result))
       )
       .subscribe();

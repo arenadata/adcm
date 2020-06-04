@@ -5,7 +5,6 @@ import pytest
 from adcm_pytest_plugin.utils import get_data_dir
 
 # pylint: disable=W0611, W0621
-from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.configuration import Configuration
 from tests.ui_tests.app.locators import Common
 from tests.ui_tests.app.pages import LoginPage
@@ -41,36 +40,28 @@ def service(sdk_client_fs):
 
 
 @pytest.fixture()
-def app(adcm_fs):
-    app = ADCMTest(adcm_fs)
-    yield app
-    app.destroy()
-
-
-@pytest.fixture()
-def login(app):
-    app.driver.get(app.adcm.url)
-    login = LoginPage(app.driver)
+def login(app_fs):
+    app_fs.driver.get(app_fs.adcm.url)
+    login = LoginPage(app_fs.driver)
     login.login("admin", "admin")
 
 
 @pytest.fixture()
-def ui_config(app, login, service):
-    return Configuration(app.driver,
-                         "{}/cluster/{}/service/{}/config".format(app.adcm.url,
+def ui_config(app_fs, login, service):
+    return Configuration(app_fs.driver,
+                         "{}/cluster/{}/service/{}/config".format(app_fs.adcm.url,
                                                                   service.cluster_id,
                                                                   service.service_id))
 
 
 @pytest.mark.parametrize("required_field", REQUIRED_FIELDS)
-def test_required_string_frontend_error(ui_config, required_field, screenshot_on_failure):
+def test_required_string_frontend_error(ui_config, required_field):
     """Check that we have frontend error for required string if this string not filled
     Scenario:
     1. Clear required field
     2. Check that we have frontend error for required field
     3. Check that save button is not active
     """
-    _ = screenshot_on_failure
     textboxes = ui_config.get_textboxes()
     for textbox in textboxes:
         name = textbox.text.split(":")[0]
@@ -84,11 +75,10 @@ def test_required_string_frontend_error(ui_config, required_field, screenshot_on
 
 
 @pytest.mark.parametrize("field", NO_REQUIRED_FIELDS)
-def test_empty_no_required_string(field, ui_config, screenshot_on_failure):
+def test_empty_no_required_string(field, ui_config):
     """Check that save button is active in case when no required field is empty
     :return:
     """
-    _ = screenshot_on_failure
     textboxes = ui_config.get_textboxes()
     for textbox in textboxes:
         name = textbox.text.split(":")[0]
@@ -101,10 +91,9 @@ def test_empty_no_required_string(field, ui_config, screenshot_on_failure):
 
 @pytest.mark.parametrize("pattern", ["_group", "without_type"],
                          ids=["groups", 'without_groups'])
-def test_search_field(ui_config, pattern, screenshot_on_failure):
+def test_search_field(ui_config, pattern):
     """Insert search string and check that on page only searched fields
     """
-    _ = screenshot_on_failure
     ui_config.set_search_field(pattern)
     time.sleep(2)
     textboxes = ui_config.get_app_fields()
@@ -115,8 +104,7 @@ def test_search_field(ui_config, pattern, screenshot_on_failure):
         assert pattern in textbox
 
 
-def test_save_configuration(ui_config, screenshot_on_failure):
+def test_save_configuration(ui_config):
     """Check that we can click save configuration if no errors on page
     """
-    _ = screenshot_on_failure
     assert ui_config.save_button_status()
