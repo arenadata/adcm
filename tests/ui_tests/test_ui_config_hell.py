@@ -4,7 +4,6 @@ import pytest
 from adcm_pytest_plugin.utils import get_data_dir
 
 # pylint: disable=W0611, W0621
-from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.configuration import Configuration
 from tests.ui_tests.app.pages import LoginPage
 
@@ -22,16 +21,9 @@ def ui_hell_fs(sdk_client_fs):
 
 
 @pytest.fixture()
-def app(adcm_fs):
-    app = ADCMTest(adcm_fs)
-    yield app
-    app.destroy()
-
-
-@pytest.fixture()
-def login(app):
-    app.driver.get(app.adcm.url)
-    login = LoginPage(app.driver)
+def login(app_fs):
+    app_fs.driver.get(app_fs.adcm.url)
+    login = LoginPage(app_fs.driver)
     login.login("admin", "admin")
 
 
@@ -43,22 +35,21 @@ def prototype_display_names(ui_hell_fs):
 
 
 @pytest.fixture()
-def ui_display_names(login, app, ui_hell_fs):
-    ui_config = Configuration(app.driver,
-                              "{}/cluster/{}/service/{}/config".format(app.adcm.url,
+def ui_display_names(login, app_fs, ui_hell_fs):
+    ui_config = Configuration(app_fs.driver,
+                              "{}/cluster/{}/service/{}/config".format(app_fs.adcm.url,
                                                                        ui_hell_fs.cluster_id,
                                                                        ui_hell_fs.service_id))
     return ui_config.get_display_names()
 
 
-def test_display_names(prototype_display_names, ui_display_names, screenshot_on_failure):
+def test_display_names(prototype_display_names, ui_display_names):
     """Scenario:
     1. Get Service configuration
     2. Get display names from UI
     3. Check that config name in prototype is correct
     4. Check that in UI we have full list of display names from prototype
     """
-    _ = screenshot_on_failure
     assert prototype_display_names[0] == "UI Config Hell"
     for d_name in ui_display_names:
         assert d_name in prototype_display_names[1]

@@ -22,8 +22,8 @@ class Configuration(BasePage):
         super().__init__(driver)
         if url:
             driver.get(url)
-        self._contains_url("config")
-        self._wait_element_present(ConfigurationLocators.app_conf_form, 10)
+        self._contains_url("config", 15)
+        self._wait_element_present(ConfigurationLocators.app_conf_form, 15)
 
     def assert_field_editable(self, field, editable=True):
         """Check that we can edit specific field or not
