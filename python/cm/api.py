@@ -149,17 +149,11 @@ def add_host_to_cluster(cluster, host):
     return host
 
 
-def add_host_to_cluster_by_id(cluster_id, fqdn, host_id):
-    """
-    add host to cluster
-
-    This is intended for use in adcm_add_host_to_cluster ansible plugin only
-    """
+def get_cluster_and_host(cluster_id, fqdn, host_id):
     try:
         cluster = Cluster.objects.get(id=cluster_id)
     except Cluster.DoesNotExist:
         err('CLUSTER_NOT_FOUND', f'Cluster with id #{cluster_id} is not found')
-
     if fqdn:
         try:
             host = Host.objects.get(fqdn=fqdn)
@@ -173,9 +167,30 @@ def add_host_to_cluster_by_id(cluster_id, fqdn, host_id):
         except Host.DoesNotExist:
             err('HOST_NOT_FOUND', f'Host with id #{host_id} is not found')
     else:
-        err('HOST_NOT_FOUND', 'fqdn or host_id is mandatory args of adcm_add_host_to_cluser')
+        err('HOST_NOT_FOUND', 'fqdn or host_id is mandatory args')
+    return (cluster, host)
 
+
+def add_host_to_cluster_by_id(cluster_id, fqdn, host_id):
+    """
+    add host to cluster
+
+    This is intended for use in adcm_add_host_to_cluster ansible plugin only
+    """
+    cluster, host = get_cluster_and_host(cluster_id, fqdn, host_id)
     return add_host_to_cluster(cluster, host)
+
+
+def remove_host_from_cluster_by_id(cluster_id, fqdn, host_id):
+    """
+    remove host from cluster
+
+    This is intended for use in adcm_remove_host_from_cluster ansible plugin only
+    """
+    cluster, host = get_cluster_and_host(cluster_id, fqdn, host_id)
+    if host.cluster != cluster:
+        err('HOST_CONFLICT', 'you can remove host only from you own cluster')
+    remove_host_from_cluster(host)
 
 
 def delete_host(host):

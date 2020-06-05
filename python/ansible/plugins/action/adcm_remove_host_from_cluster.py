@@ -20,25 +20,25 @@ ANSIBLE_METADATA = {'metadata_version': '1.1', 'supported_by': 'Arenadata'}
 
 DOCUMENTATION = r'''
 ---
-module: adcm_add_host_to_cluster
-short_description: add host to cluster
+module: adcm_remove_host_from_cluster
+short_description: remove host from cluster
 description:
-    - The C(adcm_add_host_to_cluster) module is intended to add existing host to cluster
+    - The C(adcm_add_host_to_cluster) module is intended to remove host from cluster
       in ADCM DB. This module should be run in cluster or service context.
 options:
   fqdn:
     description:
       - Fully qualified domain name of added host
-    required: yes
+    required: yes/no
   host_id:
     description:
       - Host ID of added host
-    required: yes
+    required: yes/no
 '''
 
 EXAMPLES = r'''
- - name: add existing host to cluster
-   adcm_add_host_to_cluster:
+ - name: remove host from cluster
+   adcm_remove_host_from_cluster:
      fqdn: my.host.org
 '''
 
@@ -77,7 +77,7 @@ class ActionModule(ActionBase):
             'ansible module: cluster_id %s, fqdn %s, host_id: %s', cluster_id, fqdn, host_id
         )
         try:
-            cm.api.add_host_to_cluster_by_id(cluster_id, fqdn, host_id)
+            cm.api.remove_host_from_cluster_by_id(cluster_id, fqdn, host_id)
         except AdcmEx as e:
             raise AnsibleError(e.code + ": " + e.msg)
 
