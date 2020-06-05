@@ -27,21 +27,23 @@ def run_logrotate(path):
     cmd = ['logrotate', '-f', path]
     proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
     output, error = proc.communicate()
-    log.info('RUN: logrotate -f %s, output: %s, error: %s', path, output, error)
+    log.info('RUN: logrotate -f %s, output: %s, error: %s', path,
+             output.decode(errors='ignore'), error.decode(errors='ignore'))
 
 
 def create_task(path, name, period, turn):
-    if not turn:
-        period = Task.NEVER
     try:
         task = Task.objects.get(verbose_name=name)
+        if not turn:
+            task.delete()
+            return
         if not period == task.repeat:
             task.repeat = period
-            task.run_at = timezone.now() + timedelta(seconds=period)
+            task.run_at = timezone.now() + timedelta(seconds=60)
             task.save()
     except Task.DoesNotExist:
         if turn:
-            run_logrotate(path, schedule=period, verbose_name=name, repeat=period)
+            run_logrotate(path, verbose_name=name, repeat=period)
 
 
 def run():
