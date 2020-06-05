@@ -50,9 +50,10 @@ def run():
     adcm_object = ADCM.objects.get(id=1)
     cl = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
     adcm_conf = json.loads(cl.config)
-
-    period = int(adcm_conf['logrotate']['rotation_period'])
-
+    try:
+        period = int(adcm_conf['logrotate']['rotation_period'])
+    except TypeError:
+        return
     use_rotation_status_server = adcm_conf['logrotate']['status_server']
     create_task('/etc/logrotate.d/runstatus', 'runstatus', period, use_rotation_status_server)
 
