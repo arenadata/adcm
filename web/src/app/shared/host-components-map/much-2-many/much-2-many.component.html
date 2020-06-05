@@ -2,11 +2,11 @@
   <div class="title-container">
     <button mat-button [disabled]="isDisabled()" class="title" [appTooltip]="model.name"
       [appTooltipShowByCondition]="true" (click)="clickToTitle()">
-      <span *ngIf="isError()" class="warn" [matTooltip]="errorMessage()">*</span>&nbsp;<span
+      <span *ngIf="isError()" class="warn">*</span>&nbsp;<span [matTooltip]="model.notification"
         [style.color]="model.color">{{ model.name }}</span>
     </button>
     <button mat-raised-button color="primary"
-      (click)="toggleRelations()">{{ checkLimit() ? setNotify() : model.relations.length }}</button>
+      (click)="toggleRelations()">{{ model.limit?.length ? setNotify() : model.relations.length }}</button>
   </div>
   <div [ngClass]="{'relations-list':true, 'show': model.relations.length && isShow}">
     <div *ngFor="let rel of model.relations">

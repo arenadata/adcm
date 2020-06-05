@@ -20,6 +20,7 @@ import { CompTile } from './types';
 
 const ctData: Component = {
   id: 1,
+  prototype_id: 3,
   service_id: 2,
   service_name: 'test_service',
   service_state: 'created',
