@@ -14,6 +14,8 @@ import os
 import pytest
 import sys
 
+from tests.ui_tests.app.app import ADCMTest
+
 pytest_plugins = "adcm_pytest_plugin"
 
 # We have a number of calls from functional or ui_tests to cm module,
@@ -45,7 +47,21 @@ def gather_logs(app, request):
 
 
 @pytest.fixture()
-def screenshot_on_failure(app, request):
+def app_fs(adcm_fs, request):
+    adcm_app = ADCMTest(adcm_fs)
+    yield adcm_app
+    if request.node.rep_call.failed:
+        adcm_app.driver.execute_script("document.body.bgColor = 'white';")
+        allure.attach(adcm_app.driver.get_screenshot_as_png(),
+                      name=request.node.name,
+                      attachment_type=allure.attachment_type.PNG)
+        logs = adcm_app.gather_logs(request.node.name)
+        allure.attach.file(logs, "{}.tar".format(request.node.name))
+    adcm_app.destroy()
+
+
+@pytest.fixture()
+def screenshot_on_failure(request, app):
     yield
     if request.node.rep_call.failed:
         app.driver.execute_script("document.body.bgColor = 'white';")
