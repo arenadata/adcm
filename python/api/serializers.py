@@ -25,6 +25,7 @@ import cm.config as config
 import cm.job
 import cm.stack
 import cm.status_api
+import cm.adcm_config
 from cm.api import safe_api
 from cm.errors import AdcmApiEx, AdcmEx
 from cm.models import (
@@ -361,6 +362,7 @@ class ProviderUISerializer(ProviderDetailSerializer):
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
+        self.context['object'] = obj
         self.context['provider_id'] = obj.id
         actions = ProviderActionShort(filter_actions(obj, act_set), many=True, context=self.context)
         return actions.data
@@ -454,6 +456,7 @@ class HostUISerializer(HostDetailSerializer):
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
+        self.context['object'] = obj
         self.context['host_id'] = obj.id
         actions = HostActionShort(filter_actions(obj, act_set), many=True, context=self.context)
         return actions.data
@@ -687,8 +690,9 @@ class ActionShort(serializers.Serializer):
     def get_config(self, obj):
         context = self.context
         context['prototype'] = obj.prototype
-        conf = ConfigSerializerUI(obj.config, many=True, context=context, read_only=True)
         _, _, _, attr = cm.adcm_config.get_prototype_config(obj.prototype, obj)
+        cm.adcm_config.get_action_variant(context.get('object'), obj.config)
+        conf = ConfigSerializerUI(obj.config, many=True, context=context, read_only=True)
         return {'attr': attr, 'config': conf.data}
 
 

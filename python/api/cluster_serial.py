@@ -133,6 +133,7 @@ class ClusterUISerializer(ClusterDetailSerializer):
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
+        self.context['object'] = obj
         self.context['cluster_id'] = obj.id
         actions = ClusterActionShort(filter_actions(obj, act_set), many=True, context=self.context)
         return actions.data
@@ -210,6 +211,7 @@ class ClusterHostUISerializer(ClusterHostDetailSerializer):
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
+        self.context['object'] = obj
         self.context['host_id'] = obj.id
         actions = ClusterHostActionShort(
             filter_actions(obj, act_set), many=True, context=self.context
@@ -398,6 +400,7 @@ class ClusterServiceUISerializer(ClusterServiceDetailSerializer):
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
+        self.context['object'] = obj
         self.context['service_id'] = obj.id
         actions = filter_actions(obj, act_set)
         acts = ServiceActionShort(actions, many=True, context=self.context)
