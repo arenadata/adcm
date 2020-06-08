@@ -676,6 +676,8 @@ def check_config_type(proto, key, subkey, spec, value, default=False, inactive=F
         except yspec.checker.FormatError as e:
             msg = tmpl1.format("yspec error: {} at block {}".format(str(e), e.data))
             err('CONFIG_VALUE_ERROR', msg)
+        except yspec.checker.SchemaError as e:
+            err('CONFIG_VALUE_ERROR', 'yspec error: {}'.format(str(e)))
 
     if spec['type'] == 'boolean':
         if not isinstance(value, bool):
