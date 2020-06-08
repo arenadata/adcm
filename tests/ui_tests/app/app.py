@@ -30,7 +30,6 @@ class ADCMTest:
         self.opts = Options()
         self.opts.headless = True
         self.opts.add_argument('--no-sandbox')
-        self.opts.add_argument('--disable-dev-shm-usage')
         self.opts.add_argument('--disable-extensions')
         self.opts.add_argument('--ignore-certificate-errors')
         self.opts.add_argument('--disable-gpu')
