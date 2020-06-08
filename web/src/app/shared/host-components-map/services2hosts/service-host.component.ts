@@ -95,17 +95,19 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
   }
 
   init() {
-    if (this.initFlag) return;
-    this.initFlag = true;
-    this.service
-      .initSource(this.cluster.hostcomponent, this.actionParameters)
-      .pipe(this.takeUntil())
-      .subscribe((a) => {
-        if (a.hc) this.initFlag = false;
-        this.serviceComponents = this.service.Components;
-        this.hosts = this.service.Hosts;
-        this.form = this.service.formGroup;
-      });
+    if (this.cluster) {
+      if (this.initFlag) return;
+      this.initFlag = true;
+      this.service
+        .initSource(this.cluster.hostcomponent, this.actionParameters)
+        .pipe(this.takeUntil())
+        .subscribe((a) => {
+          if (a.hc) this.initFlag = false;
+          this.serviceComponents = this.service.Components;
+          this.hosts = this.service.Hosts;
+          this.form = this.service.formGroup;
+        });
+    }
   }
 
   clearServiceFromHost(data: { rel: CompTile; model: HostTile }) {
