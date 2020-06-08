@@ -46,7 +46,7 @@ unittests: ## Run unittests
 
 pytest: ## Run functional tests
 	docker pull ci.arenadata.io/functest:u18-x64
-	docker run -i --rm -v /var/run/docker.sock:/var/run/docker.sock --network=host -v $(CURDIR)/:/adcm -w /adcm/ \
+	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host -v $(CURDIR)/:/adcm -w /adcm/ \
 	-e BUILD_TAG=${BUILD_TAG} -e ADCM_TAG=$(subst /,_,$(BRANCH_NAME)) -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/  ci.arenadata.io/functest:u18-x64 /bin/sh -e ./pytest.sh
 
 ng_tests: ## Run Angular tests
