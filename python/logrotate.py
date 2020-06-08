@@ -21,6 +21,12 @@ from django.utils import timezone
 from cm.logger import log
 from cm.models import ADCM, ConfigLog
 
+PERIODS = {
+    'HOURLY': Task.HOURLY,
+    'DAILY': Task.DAILY,
+    'WEEKLY': Task.WEEKLY
+}
+
 
 @background(schedule=60)
 def run_logrotate(path):
@@ -50,10 +56,7 @@ def run():
     adcm_object = ADCM.objects.get(id=1)
     cl = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
     adcm_conf = json.loads(cl.config)
-    try:
-        period = int(adcm_conf['logrotate']['rotation_period'])
-    except TypeError:
-        return
+    period = PERIODS[adcm_conf['logrotate']['rotation_period']]
     use_rotation_status_server = adcm_conf['logrotate']['status_server']
     create_task('/etc/logrotate.d/runstatus', 'runstatus', period, use_rotation_status_server)
 

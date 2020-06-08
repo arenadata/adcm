@@ -77,9 +77,10 @@
             Rotation period
           type: option
           option:
-            HOURLY: 3600
-            DAILY: 86400
-            WEEKLY: 604800
+            HOURLY: "HOURLY"
+            DAILY: "DAILY"
+            WEEKLY: "WEEKLY"
+          default: "DAILY"
         - name: "status_server"
           display_name: "Status Server"
           description: |
