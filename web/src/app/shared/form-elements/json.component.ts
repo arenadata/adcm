@@ -24,13 +24,12 @@ import { FieldDirective } from './field.directive';
       </mat-form-field>
     </ng-container>
   `,
-  styles: ['textarea {background-color: #cccccc;color: #333;min-height: 100px;padding: 8px;}']
 })
 export class JsonComponent extends FieldDirective implements OnInit {
   ngOnInit() {
     super.ngOnInit();
     const control = this.form.controls[this.field.name];
-    control.valueChanges.pipe(debounceTime(500)).subscribe(value => {
+    control.valueChanges.pipe(debounceTime(500)).subscribe((value) => {
       try {
         const v = JSON.parse(value);
         control.setValue(JSON.stringify(v, undefined, 4));
