@@ -431,8 +431,10 @@ def ui_config(obj, cl):
 
 
 def get_action_variant(obj, conf):
-    cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-    obj_conf = json.loads(cl.config)
+    obj_conf = {}
+    if obj.config:
+        cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
+        obj_conf = json.loads(cl.config)
     for c in conf:
         if c.type != 'variant':
             continue
