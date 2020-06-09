@@ -22,7 +22,6 @@ class Configuration(BasePage):
         super().__init__(driver)
         if url:
             self.get(url, "config")
-        self._contains_url("config", 15)
         self._wait_element_present(ConfigurationLocators.app_conf_form, 15)
 
     def open_configuration_page(self, driver):
