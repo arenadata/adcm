@@ -35,7 +35,7 @@ def process_browser_log_entry(entry):
 
 def write_json_file(f_name, j_data):
     f_path = "/".join([tempfile.mkdtemp(), f_name])
-    with open(f_path, 'wb') as f:
+    with open(f_path, 'w') as f:
         json.dump(j_data, f)
     return f_path
 
