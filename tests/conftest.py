@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import allure
+import json
 import os
 import pytest
 import sys
@@ -24,6 +25,11 @@ testdir = os.path.dirname(__file__)
 rootdir = os.path.dirname(testdir)
 pythondir = os.path.abspath(os.path.join(rootdir, 'python'))
 sys.path.append(pythondir)
+
+
+def process_browser_log_entry(entry):
+    response = json.loads(entry['message'])['message']
+    return response
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
@@ -57,6 +63,16 @@ def app_fs(adcm_fs, request):
                       attachment_type=allure.attachment_type.PNG)
         logs = adcm_app.gather_logs(request.node.name)
         allure.attach.file(logs, "{}.tar".format(request.node.name))
+        console_logs = adcm_app.driver.get_log('browser')
+        perf_log = adcm_app.driver.get_log("performance")
+        events = [process_browser_log_entry(entry) for entry in perf_log]
+        events = [event for event in events if 'Network.response' in event['method']]
+        events_json = json.dumps(events)
+        console_logs = json.dumps(console_logs)
+        allure.attach.file(console_logs, name="console_log",
+                           attachment_type=allure.attachment_type.JSON)
+        allure.attach.file(events_json, name="network_log",
+                           attachment_type=allure.attachment_type.JSON)
     adcm_app.destroy()
 
 
