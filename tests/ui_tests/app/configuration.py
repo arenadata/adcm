@@ -24,9 +24,6 @@ class Configuration(BasePage):
             self.get(url, "config")
         self._wait_element_present(ConfigurationLocators.app_conf_form, 15)
 
-    def open_configuration_page(self, driver):
-        driver.get(self.url)
-
     def assert_field_editable(self, field, editable=True):
         """Check that we can edit specific field or not
         :param field:
