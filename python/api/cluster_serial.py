@@ -715,7 +715,8 @@ class ObjectConfigUpdate(ObjectConfig):
             cl = cm.api.update_obj_config(instance.obj_ref, conf, attr, desc)
             if validated_data.get('ui'):
                 cl.config = cm.adcm_config.ui_config(validated_data.get('obj'), cl)
-            logrotate.run()
+            if hasattr(instance.obj_ref, 'adcm'):
+                logrotate.run()
         except AdcmEx as e:
             raise AdcmApiEx(e.code, e.msg, e.http_code)
         return cl
