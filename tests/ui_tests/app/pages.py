@@ -370,7 +370,7 @@ class LoginPage(BasePage):
         self._password.send_keys(password)
         self._click_element(Common.mat_button_wrapper, name="Login")
         # self._password.send_keys(Keys.RETURN)
-        self._contains_url('admin', 10)
+        # self._contains_url('admin', 10)
         self._wait_element(Common.toppanel_button_user)
         sleep(5)  # Wait untill we have all websockets alive.
 
