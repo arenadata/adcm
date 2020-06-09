@@ -46,6 +46,12 @@ class BasePage:
         self.driver = driver
 
     @ui_retry
+    def get(self, url, url_path=None, timeout=5):
+        if self.driver.current_url != url:
+            self.driver.get(url)
+        self._contains_url(url_path, timer=timeout)
+
+    @ui_retry
     def _elements(self, locator: tuple, f, **kwargs):
         """Find elements
         :param locator: locator
