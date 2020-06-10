@@ -17,6 +17,7 @@ from rest_framework import serializers
 import cm.api
 import cm.job
 import cm.status_api
+import logrotate
 from cm.api import safe_api
 from cm.logger import log   # pylint: disable=unused-import
 from cm.errors import AdcmApiEx, AdcmEx
@@ -714,6 +715,8 @@ class ObjectConfigUpdate(ObjectConfig):
             cl = cm.api.update_obj_config(instance.obj_ref, conf, attr, desc)
             if validated_data.get('ui'):
                 cl.config = cm.adcm_config.ui_config(validated_data.get('obj'), cl)
+            if hasattr(instance.obj_ref, 'adcm'):
+                logrotate.run()
         except AdcmEx as e:
             raise AdcmApiEx(e.code, e.msg, e.http_code)
         return cl
