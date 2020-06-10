@@ -26,6 +26,7 @@ import { BaseDirective } from '../directives';
       </mat-form-field>
     </div>
   `,
+  styles: ['.row {display:flex;}'],
 })
 export class InputComponent extends BaseDirective {
   @Input() form: FormGroup;
