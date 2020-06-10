@@ -6,7 +6,6 @@ from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import get_data_dir
 
 # pylint: disable=W0611, W0621
-from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.configuration import Configuration
 from tests.ui_tests.app.locators import Common, ConfigurationLocators
 from tests.ui_tests.app.pages import LoginPage
@@ -34,24 +33,18 @@ def service(sdk_client_fs):
 
 
 @pytest.fixture()
-def app(adcm_fs):
-    app = ADCMTest(adcm_fs)
-    yield app
-    app.destroy()
-
-
-@pytest.fixture()
-def login(app):
-    app.driver.get(app.adcm.url)
-    login = LoginPage(app.driver)
+def login(app_fs):
+    app_fs.driver.get(app_fs.adcm.url)
+    login = LoginPage(app_fs.driver)
     login.login("admin", "admin")
 
 
 @pytest.fixture()
-def ui_config(app, login, service):
-    return Configuration(app.driver, "{}/cluster/{}/service/{}/config".format(app.adcm.url,
-                                                                              service.cluster_id,
-                                                                              service.service_id))
+def ui_config(app_fs, login, service):
+    return Configuration(app_fs.driver,
+                         "{}/cluster/{}/service/{}/config".format(app_fs.adcm.url,
+                                                                  service.cluster_id,
+                                                                  service.service_id))
 
 
 @pytest.fixture(params=[(False, 3), (True, 6)], ids=['advanced_disabled', 'advanced'])
@@ -116,13 +109,12 @@ def test_save_groups(group_elements, ui_config, sdk_client_fs: ADCMClient):
 
 @pytest.mark.parametrize("config_name, activatable", ACTIVATABLE_GROUPS,
                          ids=["Active True", "Active False"])
-def test_activatable_group_status(config_name, activatable, ui_config, screenshot_on_failure):
+def test_activatable_group_status(config_name, activatable, ui_config):
     """Check activatable group status after config creation
     Scenario:
     1. Find group by name
     2. Check group status with config
     """
-    _ = screenshot_on_failure
     group_elements = ui_config.get_group_elements()
     toogle_status = 'No toogle status'
     status_text = ''

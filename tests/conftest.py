@@ -10,9 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import allure
+import json
 import os
 import pytest
 import sys
+
+from tests.ui_tests.app.app import ADCMTest
 
 pytest_plugins = "adcm_pytest_plugin"
 
@@ -22,6 +25,11 @@ testdir = os.path.dirname(__file__)
 rootdir = os.path.dirname(testdir)
 pythondir = os.path.abspath(os.path.join(rootdir, 'python'))
 sys.path.append(pythondir)
+
+
+def process_browser_log_entry(entry):
+    response = json.loads(entry['message'])['message']
+    return response
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
@@ -45,7 +53,31 @@ def gather_logs(app, request):
 
 
 @pytest.fixture()
-def screenshot_on_failure(app, request):
+def app_fs(adcm_fs, request):
+    adcm_app = ADCMTest(adcm_fs)
+    yield adcm_app
+    if request.node.rep_call.failed:
+        adcm_app.driver.execute_script("document.body.bgColor = 'white';")
+        allure.attach(adcm_app.driver.get_screenshot_as_png(),
+                      name=request.node.name,
+                      attachment_type=allure.attachment_type.PNG)
+        logs = adcm_app.gather_logs(request.node.name)
+        allure.attach.file(logs, "{}.tar".format(request.node.name))
+        console_logs = adcm_app.driver.get_log('browser')
+        perf_log = adcm_app.driver.get_log("performance")
+        events = [process_browser_log_entry(entry) for entry in perf_log]
+        events = [event for event in events if 'Network.response' in event['method']]
+        events_json = json.dumps(events)
+        console_logs = json.dumps(console_logs)
+        allure.attach.file(console_logs, name="console_log",
+                           attachment_type=allure.attachment_type.JSON)
+        allure.attach.file(events_json, name="network_log",
+                           attachment_type=allure.attachment_type.JSON)
+    adcm_app.destroy()
+
+
+@pytest.fixture()
+def screenshot_on_failure(request, app):
     yield
     if request.node.rep_call.failed:
         app.driver.execute_script("document.body.bgColor = 'white';")

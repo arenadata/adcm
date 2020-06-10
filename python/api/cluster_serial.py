@@ -20,7 +20,7 @@ import cm.status_api
 from cm.api import safe_api
 from cm.logger import log   # pylint: disable=unused-import
 from cm.errors import AdcmApiEx, AdcmEx
-from cm.models import Action, Cluster, Host, Prototype, ServiceComponent, HostComponent, Component
+from cm.models import Action, Cluster, Host, Prototype, ServiceComponent, Component
 
 from api.serializers import check_obj, filter_actions, get_upgradable_func
 from api.serializers import hlink, JSONField, UrlField
@@ -132,6 +132,7 @@ class ClusterUISerializer(ClusterDetailSerializer):
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
+        self.context['object'] = obj
         self.context['cluster_id'] = obj.id
         actions = ClusterActionShort(filter_actions(obj, act_set), many=True, context=self.context)
         return actions.data
@@ -209,6 +210,7 @@ class ClusterHostUISerializer(ClusterHostDetailSerializer):
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
+        self.context['object'] = obj
         self.context['host_id'] = obj.id
         actions = ClusterHostActionShort(
             filter_actions(obj, act_set), many=True, context=self.context
@@ -397,6 +399,7 @@ class ClusterServiceUISerializer(ClusterServiceDetailSerializer):
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
+        self.context['object'] = obj
         self.context['service_id'] = obj.id
         actions = filter_actions(obj, act_set)
         acts = ServiceActionShort(actions, many=True, context=self.context)
@@ -506,8 +509,8 @@ class HCComponentSerializer(ServiceComponentDetailSerializer):
                 if comp.requires:
                     process_requires(comp.requires)
 
-        def check_hc(comp):
-            return HostComponent.objects.filter(cluster=obj.cluster, component__component=comp)
+        # def check_hc(comp):
+        #    return HostComponent.objects.filter(cluster=obj.cluster, component__component=comp)
 
         process_requires(obj.component.requires)
         out = []
@@ -516,8 +519,6 @@ class HCComponentSerializer(ServiceComponentDetailSerializer):
             service = comp_list[service_name]['service']
             for comp_name in comp_list[service_name]['components']:
                 comp = comp_list[service_name]['components'][comp_name]
-                if check_hc(comp):
-                    continue
                 comp_out.append({
                     'prototype_id': comp.id,
                     'name': comp_name,
