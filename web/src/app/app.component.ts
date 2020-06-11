@@ -13,11 +13,24 @@ import { Component, OnInit, ElementRef } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { NavigationStart, Router } from '@angular/router';
-import { ConfigService, Message, MessageService } from '@app/core';
-import { getConnectStatus, getFirstAdminLogin, getMessage, getRoot, isAuthenticated, loadProfile, loadRoot, loadStack, rootError, socketInit, State } from '@app/core/store';
+import { ConfigService, IMessage, MessageService } from '@app/core';
+import {
+  getConnectStatus,
+  getFirstAdminLogin,
+  getMessage,
+  getRoot,
+  isAuthenticated,
+  loadProfile,
+  loadRoot,
+  loadStack,
+  rootError,
+  socketInit,
+  State,
+  getProfile,
+} from '@app/core/store';
 import { select, Store } from '@ngrx/store';
 import { combineLatest } from 'rxjs';
-import { filter, tap, switchMap } from 'rxjs/operators';
+import { filter, tap, switchMap, take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-root',
@@ -39,7 +52,8 @@ import { filter, tap, switchMap } from 'rxjs/operators';
         <span>ARENADATA &copy; {{ currentYear }}</span>
       </div>
     </footer>
-  `
+    <div class="console hidden"></div>
+  `,
 })
 export class AppComponent implements OnInit {
   currentYear = new Date().getFullYear();
@@ -62,14 +76,14 @@ export class AppComponent implements OnInit {
     const a$ = this.store.pipe(select(isAuthenticated));
     combineLatest([a$, b$])
       .pipe(
-        filter(a => a[0] && !!a[1]),
-        tap(_ => {
+        filter((a) => a[0] && !!a[1]),
+        tap((_) => {
           this.message.ignoreMessage = false;
           this.message.errorMessage({ title: 'Connection established.' });
         }),
-        switchMap(_ =>
+        switchMap((_) =>
           this.config.load().pipe(
-            tap(c => {
+            tap((c) => {
               if (!c) {
                 this.message.errorMessage({ title: 'New version available. Page has been refreshed.' });
                 this.elRef.nativeElement.innerHTML = '';
@@ -79,7 +93,7 @@ export class AppComponent implements OnInit {
                 this.store.dispatch(loadStack());
                 this.store.dispatch(loadProfile());
                 this.vData = [c.version, c.commit_id];
-              }              
+              }
             })
           )
         )
@@ -87,38 +101,57 @@ export class AppComponent implements OnInit {
       .subscribe();
 
     // check ws connect status
-    this.store.pipe(select(getConnectStatus)).subscribe(status => {
-      console.log('Socket status :: ', status);
-      if (status === 'close') {
-        this.message.errorMessage({ title: 'Connection lost. Recovery attempt.' });
-        this.message.ignoreMessage = true;
-        this.store.dispatch(rootError());
-      }
-    });
+    this.store
+      .pipe(
+        select(getConnectStatus),
+        filter((a) => !!a)
+      )
+      .subscribe((status) => {
+        if (status === 'open') this.console('Socket status :: open');
+        if (status === 'close') {
+          this.message.errorMessage({ title: 'Connection lost. Recovery attempt.' });
+          this.message.ignoreMessage = true;
+          this.store.dispatch(rootError());
+        }
+      });
 
     // check user profile settings - this is the first entry
     this.store
       .pipe(
         select(getFirstAdminLogin),
-        filter(u => u)
+        filter((u) => u)
       )
       .subscribe(() => this.router.navigate(['admin']));
 
+    this.store.pipe(select(getProfile)).subscribe((p) => {
+      if (p.settingsSaved) this.console('User profile :: saved');
+      else this.console('');
+    });
+
     // close dialog
-    this.router.events.pipe(filter(e => e instanceof NavigationStart)).subscribe(() => this.dialog.closeAll());
+    this.router.events.pipe(filter((e) => e instanceof NavigationStart)).subscribe(() => this.dialog.closeAll());
 
     // error notification
-    this.message.message$.subscribe((error: Message) =>
+    this.message.message$.subscribe((error: IMessage) =>
       this.snackBar.open(`${error.title} ${error.subtitle || ''}`, 'Hide', {
         duration: 5000,
-        panelClass: 'snack-bar-error'
+        panelClass: 'snack-bar-error',
       })
     );
 
     // test only
     this.store
       .select(getMessage)
-      .pipe(filter(e => !!e))
-      .subscribe(e => console.log('EVENT:', e.event, { ...e.object, details: JSON.stringify(e.object.details) }));
+      .pipe(filter((e) => !!e))
+      .subscribe((e) => console.log('EVENT:', e.event, { ...e.object, details: JSON.stringify(e.object.details) }));
+  }
+
+  console(text: string) {
+    if (!text) this.elRef.nativeElement.querySelector('div.console').innerHTML = '';
+    else {
+      const p = document.createElement('p');
+      p.innerText = text;
+      this.elRef.nativeElement.querySelector('div.console').appendChild(p);
+    }
   }
 }
