@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit, ElementRef } from '@angular/core';
+import { Component, ElementRef, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { NavigationStart, Router } from '@angular/router';
@@ -18,6 +18,7 @@ import {
   getConnectStatus,
   getFirstAdminLogin,
   getMessage,
+  getProfile,
   getRoot,
   isAuthenticated,
   loadProfile,
@@ -26,11 +27,10 @@ import {
   rootError,
   socketInit,
   State,
-  getProfile,
 } from '@app/core/store';
 import { select, Store } from '@ngrx/store';
 import { combineLatest } from 'rxjs';
-import { filter, tap, switchMap, take } from 'rxjs/operators';
+import { filter, switchMap, tap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-root',
@@ -107,7 +107,7 @@ export class AppComponent implements OnInit {
         filter((a) => !!a)
       )
       .subscribe((status) => {
-        if (status === 'open') this.console('Socket status :: open');
+        if (status === 'open') this.console('Socket status :: open', 'socket');
         if (status === 'close') {
           this.message.errorMessage({ title: 'Connection lost. Recovery attempt.' });
           this.message.ignoreMessage = true;
@@ -124,7 +124,7 @@ export class AppComponent implements OnInit {
       .subscribe(() => this.router.navigate(['admin']));
 
     this.store.pipe(select(getProfile)).subscribe((p) => {
-      if (p.settingsSaved) this.console('User profile :: saved');
+      if (p.settingsSaved) this.console('User profile :: saved', 'profile');
       else this.console('');
     });
 
@@ -146,10 +146,11 @@ export class AppComponent implements OnInit {
       .subscribe((e) => console.log('EVENT:', e.event, { ...e.object, details: JSON.stringify(e.object.details) }));
   }
 
-  console(text: string) {
+  console(text: string, css?: string) {
     if (!text) this.elRef.nativeElement.querySelector('div.console').innerHTML = '';
     else {
       const p = document.createElement('p');
+      if (css) p.classList.add(css);
       p.innerText = text;
       this.elRef.nativeElement.querySelector('div.console').appendChild(p);
     }
