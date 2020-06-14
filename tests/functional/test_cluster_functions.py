@@ -333,7 +333,7 @@ class TestClusterHost:
         cluster_one.host_add(host)
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             cluster_two.host_add(host)
-        err.FOREIGN_HOST.equal(e, 'Host', 'belong to cluster ' + str(cluster_one.id))
+        err.FOREIGN_HOST.equal(e, 'Host', 'belong to cluster #' + str(cluster_one.id))
 
     def test_host_along_to_cluster_shouldnt_deleted(self, sdk_client_fs: ADCMClient):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_simple'))
