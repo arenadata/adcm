@@ -19,7 +19,6 @@ import { LoginComponent } from './login/login.component';
 import { ProfileComponent } from './profile/profile.component';
 import { SupportComponent } from './support/support.component';
 import { TopComponent } from './top/top.component';
-import { MessengerComponent } from './top/messenger/messenger.component';
 import { ProgressComponent } from './progress.component';
 import { PageNotFoundComponent, FatalErrorComponent, GatewayTimeoutComponent } from './server-status.component';
 
@@ -33,7 +32,6 @@ import { PageNotFoundComponent, FatalErrorComponent, GatewayTimeoutComponent } f
     GatewayTimeoutComponent,
     PageNotFoundComponent,
     TopComponent,
-    MessengerComponent,
     ProgressComponent,
   ],
   exports: [TopComponent, ProgressComponent],
