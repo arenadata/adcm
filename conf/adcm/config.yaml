@@ -67,3 +67,29 @@
             interpreters tunnelled over SSH. No changes are required to target hosts.
           type: boolean
           default: false
+    - name: "logrotate"
+      display_name: "Logrotate"
+      type: "group"
+      subs:
+        - name: "rotation_period"
+          display_name: "Rotation period"
+          description: |
+            Rotation period
+          type: option
+          option:
+            HOURLY: "HOURLY"
+            DAILY: "DAILY"
+            WEEKLY: "WEEKLY"
+          default: "DAILY"
+        - name: "status_server"
+          display_name: "Status Server"
+          description: |
+            Rotation logs for status server
+          type: boolean
+          default: false
+        - name: "nginx_server"
+          display_name: "Nginx Server"
+          description: |
+            Rotation logs for nginx server
+          type: boolean
+          default: false

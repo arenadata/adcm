@@ -142,15 +142,12 @@ export class TakeService {
     const getError = (constraint: Constraint, relations: HostTile[]) => {
       const [a1, a2, a3] = constraint;
       const countRelations = relations.length;
-      if (a3) {
-        switch (a3) {
-          case 'depend':
-            return relations.some((a) => a.relations.some((b) => b.id === component.id)) ? null : 'Must be installed because it is a dependency of another component';
-        }
-      } else if (a2) {
+      const depend = () => (relations.some((a) => a.relations.some((b) => b.id === component.id)) ? null : 'Must be installed because it is a dependency of another component');
+      if (a3 && a3 === 'depend') return depend();
+      else if (a2) {
         switch (a2) {
           case 'depend':
-            return relations.some((a) => a.relations.some((b) => b.id === component.id)) ? null : 'Must be installed because it is a dependency of another component';
+            return depend();
           case 'odd':
             return countRelations % 2 && countRelations >= a1
               ? null
@@ -166,7 +163,7 @@ export class TakeService {
           case 0:
             return null;
           case 'depend':
-            return relations.some((a) => a.relations.some((b) => b.id === component.id)) ? null : 'Must be installed because it is a dependency of another component';
+            return depend();
           case '+':
             return countRelations < this.Hosts.length ? 'Component should be installed on all hosts of cluster.' : null;
           case 'odd':
@@ -202,13 +199,10 @@ export class TakeService {
 
   clearDependencies(comp: CompTile) {
     const getLimitsFromState = (prototype_id: number) => this.raw.component.find((b) => b.prototype_id === prototype_id).constraint;
-
     if (comp.requires?.length) {
-      this.findDependencies(comp).map((a) => {
+      this.findDependencies(comp).forEach((a) => {
         a.limit = getLimitsFromState(a.prototype_id);
-        // a.color = 'white';
         a.notification = '';
-        return a;
       });
       this.statePost.data.map((a) => this.checkDependencies(this.Components.find((b) => b.id === a.component_id)));
       this.formGroup.reset();
@@ -222,11 +216,7 @@ export class TakeService {
   }
 
   checkDependencies(component: CompTile) {
-    this.findDependencies(component).map((a) => {
-      // a.color = 'yellow';
-      a.limit = a.limit ? [...a.limit, 'depend'] : ['depend'];
-      return a;
-    });
+    this.findDependencies(component).forEach((a) => (a.limit = a.limit ? [...a.limit, 'depend'] : ['depend']));
   }
 
   takeHost(host: HostTile) {

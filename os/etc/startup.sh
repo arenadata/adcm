@@ -17,7 +17,7 @@ source /etc/adcmenv
 cleanupwaitstatus
 
 sv_stop() {
-    for s in nginx wsgi status cron; do
+    for s in nginx wsgi status; do
         /sbin/sv stop $s
     done
 }
