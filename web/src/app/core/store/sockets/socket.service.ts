@@ -36,12 +36,8 @@ export class SocketService {
 
     this.socket.onopen = () => this.store.dispatch(socketOpen({ status: openStatus }));
     this.socket.onclose = () => this.store.dispatch(socketClose({ status: 'close' }));
-    this.socket.onmessage = (response: { data: string }) =>
-      this.store.dispatch(socketResponse({ message: JSON.parse(response.data) }));
-
-    console.log('Socket init');
+    this.socket.onmessage = (response: { data: string }) => this.store.dispatch(socketResponse({ message: JSON.parse(response.data) }));
 
     return of(this.socket);
   }
-
 }
