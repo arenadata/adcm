@@ -9,15 +9,28 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit, ElementRef } from '@angular/core';
+import { Component, ElementRef, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { NavigationStart, Router } from '@angular/router';
-import { ConfigService, Message, MessageService } from '@app/core';
-import { getConnectStatus, getFirstAdminLogin, getMessage, getRoot, isAuthenticated, loadProfile, loadRoot, loadStack, rootError, socketInit, State } from '@app/core/store';
+import { ConfigService, IMessage, MessageService } from '@app/core';
+import {
+  getConnectStatus,
+  getFirstAdminLogin,
+  getMessage,
+  getProfile,
+  getRoot,
+  isAuthenticated,
+  loadProfile,
+  loadRoot,
+  loadStack,
+  rootError,
+  socketInit,
+  State,
+} from '@app/core/store';
 import { select, Store } from '@ngrx/store';
 import { combineLatest } from 'rxjs';
-import { filter, tap, switchMap } from 'rxjs/operators';
+import { filter, switchMap, tap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-root',
@@ -37,6 +50,7 @@ import { filter, tap, switchMap } from 'rxjs/operators';
         <span>ARENADATA &copy; {{ currentYear }}</span>
       </div>
     </footer>
+    <div class="console hidden"></div>
   `,
 })
 export class AppComponent implements OnInit {
@@ -85,14 +99,19 @@ export class AppComponent implements OnInit {
       .subscribe();
 
     // check ws connect status
-    this.store.pipe(select(getConnectStatus)).subscribe((status) => {
-      console.log('Socket status :: ', status);
-      if (status === 'close') {
-        this.message.errorMessage({ title: 'Connection lost. Recovery attempt.' });
-        this.message.ignoreMessage = true;
-        this.store.dispatch(rootError());
-      }
-    });
+    this.store
+      .pipe(
+        select(getConnectStatus),
+        filter((a) => !!a)
+      )
+      .subscribe((status) => {
+        if (status === 'open') this.console('Socket status :: open', 'socket');
+        if (status === 'close') {
+          this.message.errorMessage({ title: 'Connection lost. Recovery attempt.' });
+          this.message.ignoreMessage = true;
+          this.store.dispatch(rootError());
+        }
+      });
 
     // check user profile settings - this is the first entry
     this.store
@@ -102,11 +121,16 @@ export class AppComponent implements OnInit {
       )
       .subscribe(() => this.router.navigate(['admin']));
 
+    this.store.pipe(select(getProfile)).subscribe((p) => {
+      if (p.settingsSaved) this.console('User profile :: saved', 'profile');
+      else this.console('');
+    });
+
     // close dialog
     this.router.events.pipe(filter((e) => e instanceof NavigationStart)).subscribe(() => this.dialog.closeAll());
 
     // error notification
-    this.message.message$.subscribe((error: Message) =>
+    this.message.message$.subscribe((error: IMessage) =>
       this.snackBar.open(`${error.title} ${error.subtitle || ''}`, 'Hide', {
         duration: 5000,
         panelClass: 'snack-bar-error',
@@ -118,5 +142,15 @@ export class AppComponent implements OnInit {
       .select(getMessage)
       .pipe(filter((e) => !!e))
       .subscribe((e) => console.log('EVENT:', e.event, { ...e.object, details: JSON.stringify(e.object.details) }));
+  }
+
+  console(text: string, css?: string) {
+    if (!text) this.elRef.nativeElement.querySelector('div.console').innerHTML = '';
+    else {
+      const p = document.createElement('p');
+      if (css) p.classList.add(css);
+      p.innerText = text;
+      this.elRef.nativeElement.querySelector('div.console').appendChild(p);
+    }
   }
 }
