@@ -23,6 +23,7 @@ import { Much2ManyComponent } from '../much-2-many/much-2-many.component';
 import { TakeService } from '../take.service';
 import { ServiceHostComponent } from './service-host.component';
 import { IRawHosComponent } from '../types';
+import { By } from '@angular/platform-browser';
 
 const hc = [
   {
@@ -69,7 +70,30 @@ const raw: IRawHosComponent = {
       prototype_id: 41,
       display_name: 'Taxi Node',
       constraint: null,
-      requires: [],
+      requires: [
+        {
+          prototype_id: 20,
+          name: 'UBER',
+          display_name: 'Uber Taxi Service',
+          components: [
+            {
+              prototype_id: 38,
+              name: 'UBER_SERVER',
+              display_name: 'UBER_SERVER',
+            },
+            {
+              prototype_id: 40,
+              name: 'SLAVE',
+              display_name: 'Just slave',
+            },
+            {
+              prototype_id: 39,
+              name: 'UBER_NODE',
+              display_name: 'Simple Uber node',
+            },
+          ],
+        },
+      ],
       monitoring: 'active',
       status: 16,
       service_id: 1,
@@ -82,7 +106,37 @@ const raw: IRawHosComponent = {
       prototype_id: 38,
       display_name: 'UBER_SERVER',
       constraint: [1, 2],
-      requires: [],
+      requires: [
+        {
+          prototype_id: 20,
+          name: 'UBER',
+          display_name: 'Uber Taxi Service',
+          components: [
+            {
+              prototype_id: 40,
+              name: 'SLAVE',
+              display_name: 'Just slave',
+            },
+            {
+              prototype_id: 39,
+              name: 'UBER_NODE',
+              display_name: 'Simple Uber node',
+            },
+          ],
+        },
+        {
+          prototype_id: 21,
+          name: 'GETTAXI',
+          display_name: 'GETTAXI',
+          components: [
+            {
+              prototype_id: 41,
+              name: 'NODE',
+              display_name: 'Taxi Node',
+            },
+          ],
+        },
+      ],
       monitoring: 'active',
       status: 16,
       service_id: 2,
@@ -108,7 +162,32 @@ const raw: IRawHosComponent = {
       prototype_id: 40,
       display_name: 'Just slave',
       constraint: [0, 1],
-      requires: [],
+      requires: [
+        {
+          prototype_id: 21,
+          name: 'GETTAXI',
+          display_name: 'GETTAXI',
+          components: [
+            {
+              prototype_id: 41,
+              name: 'NODE',
+              display_name: 'Taxi Node',
+            },
+          ],
+        },
+        {
+          prototype_id: 20,
+          name: 'UBER',
+          display_name: 'Uber Taxi Service',
+          components: [
+            {
+              prototype_id: 38,
+              name: 'UBER_SERVER',
+              display_name: 'UBER_SERVER',
+            },
+          ],
+        },
+      ],
       monitoring: 'active',
       status: 16,
       service_id: 2,
@@ -250,5 +329,52 @@ describe('Service Host Map Component', () => {
     expect(host_isSelect()).toBeFalse();
     // end
     //});
+  });
+
+  it('check dependencies and add validation rules for them', () => {
+    raw.hc = [];
+    initDefault(raw);
+    const cElement: HTMLElement = fixture.nativeElement;
+    const components = cElement.querySelectorAll('.wrapper').item(0).querySelectorAll('app-much-2-many');
+    const hosts = cElement.querySelectorAll('.wrapper').item(1).querySelectorAll('app-much-2-many');
+    const host = hosts.item(0);
+    const comp = components.item(0);
+    const host_btn = host.querySelector('.m2m .title-container button.title') as HTMLElement;
+    const comp_btn = comp.querySelector('.m2m .title-container button.title') as HTMLElement;
+
+    comp_btn.click();
+    fixture.detectChanges();
+
+    // check constraints
+    components.forEach((c, i) => {
+      const title = c.querySelector('.m2m .title-container button.title') as HTMLElement;
+      const star = title.querySelector('span.warn');
+      const last = title.querySelector('span:last-child');
+      const data = raw.component[i];
+      if (data.constraint?.length) {
+        expect(star).toBeDefined();
+        // mouseover
+        //expect(last.attributes.getNamedItem('ng-reflect-message').value).toBe('Must be installed at least 1 components.');
+      } else {
+        expect(star).toBeNull();
+      }
+    });
+
+    host_btn.click();
+    fixture.detectChanges();
+
+    // check dependencies
+    components.forEach((c, i) => {
+      const title = c.querySelector('.m2m .title-container button.title') as HTMLElement;
+      const star = title.querySelector('span.warn');
+      const last = title.querySelector('span:last-child');
+      const data = raw.component[i];
+      if (i !== 0) {
+        expect(star).toBeDefined();
+        //expect(last.attributes.getNamedItem('ng-reflect-message').value).toBe('Must be installed at least 1 components.');
+      } else {
+        expect(star).toBeNull();
+      }
+    });
   });
 });

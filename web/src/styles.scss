@@ -54,11 +54,11 @@ body {
   max-width: 340px;
 }
 
-textarea {
-  background-color: #cccccc !important;
-  color: #333 !important;
+mat-form-field textarea {
+  background-color: #cccccc!important;
+  color: #333!important;
   min-height: 100px;
-  padding: 8px;
+  padding: 8px!important;
   box-sizing: border-box;
 }
 

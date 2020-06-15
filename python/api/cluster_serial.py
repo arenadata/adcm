@@ -17,10 +17,11 @@ from rest_framework import serializers
 import cm.api
 import cm.job
 import cm.status_api
+import logrotate
 from cm.api import safe_api
 from cm.logger import log   # pylint: disable=unused-import
 from cm.errors import AdcmApiEx, AdcmEx
-from cm.models import Action, Cluster, Host, Prototype, ServiceComponent, HostComponent, Component
+from cm.models import Action, Cluster, Host, Prototype, ServiceComponent, Component
 
 from api.serializers import check_obj, filter_actions, get_upgradable_func
 from api.serializers import hlink, JSONField, UrlField
@@ -509,8 +510,8 @@ class HCComponentSerializer(ServiceComponentDetailSerializer):
                 if comp.requires:
                     process_requires(comp.requires)
 
-        def check_hc(comp):
-            return HostComponent.objects.filter(cluster=obj.cluster, component__component=comp)
+        # def check_hc(comp):
+        #    return HostComponent.objects.filter(cluster=obj.cluster, component__component=comp)
 
         process_requires(obj.component.requires)
         out = []
@@ -519,8 +520,6 @@ class HCComponentSerializer(ServiceComponentDetailSerializer):
             service = comp_list[service_name]['service']
             for comp_name in comp_list[service_name]['components']:
                 comp = comp_list[service_name]['components'][comp_name]
-                if check_hc(comp):
-                    continue
                 comp_out.append({
                     'prototype_id': comp.id,
                     'name': comp_name,
@@ -716,6 +715,8 @@ class ObjectConfigUpdate(ObjectConfig):
             cl = cm.api.update_obj_config(instance.obj_ref, conf, attr, desc)
             if validated_data.get('ui'):
                 cl.config = cm.adcm_config.ui_config(validated_data.get('obj'), cl)
+            if hasattr(instance.obj_ref, 'adcm'):
+                logrotate.run()
         except AdcmEx as e:
             raise AdcmApiEx(e.code, e.msg, e.http_code)
         return cl
