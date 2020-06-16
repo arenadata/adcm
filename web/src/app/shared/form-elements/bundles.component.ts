@@ -50,7 +50,7 @@ import { InputComponent } from './input.component';
       ></app-button-uploader>
     </div>
   `,
-  styles: ['.row { align-items: center; }', 'mat-form-field {flex: 1}']
+  styles: ['.row { align-items: center;display:flex; }', 'mat-form-field {flex: 1}']
 })
 export class BundlesComponent extends InputComponent implements OnInit {
   loadedBundleID: number;

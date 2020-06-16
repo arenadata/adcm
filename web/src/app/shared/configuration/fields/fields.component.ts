@@ -14,7 +14,7 @@ import { Component, EventEmitter, Input, Output, QueryList, ViewChildren } from 
 import { FieldService } from '../field.service';
 import { FieldComponent } from '../field/field.component';
 import { GroupFieldsComponent } from '../group-fields/group-fields.component';
-import { FieldOptions, IConfig, PanelOptions, IConfigAttr } from '../types';
+import { FieldOptions, IConfig, PanelOptions } from '../types';
 
 @Component({
   selector: 'app-config-fields',

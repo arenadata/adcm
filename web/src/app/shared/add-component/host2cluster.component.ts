@@ -52,6 +52,7 @@ import { HostComponent } from './host.component';
     <ng-template #load><mat-spinner [diameter]="24"></mat-spinner></ng-template>
   `,
   styles: [
+    '.row {display:flex;}',
     '.tools { display: flex; align-items: baseline; margin: 0 -2px 10px; }',
     '.full { display: flex;padding-left: 6px; margin: 3px 0; justify-content: space-between; } .full>label { vertical-align: middle; line-height: 40px; }',
     '.full:nth-child(odd) {background-color: #4e4e4e;}',

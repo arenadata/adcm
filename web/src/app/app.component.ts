@@ -39,9 +39,7 @@ import { filter, switchMap, tap } from 'rxjs/operators';
     <app-tooltip></app-tooltip>
     <main>
       <app-progress></app-progress>
-      <mat-sidenav-container class="drawer">
-        <router-outlet></router-outlet>
-      </mat-sidenav-container>
+      <router-outlet></router-outlet>
     </main>
     <footer>
       <div>

@@ -27,8 +27,8 @@ export interface ISearchParam {
 
 export const historyAnime = [
   trigger('history', [
-    state('hide', style({ top: '130px' })),
-    state('show', style({ top: '200px' })),
+    state('hide', style({ top: '70px' })),
+    state('show', style({ top: '134px' })),
     state('hideTools', style({ opacity: 0 })),
     state('showTools', style({ opacity: 0.8 })),
     transition('hideTools => showTools', animate('.5s .3s ease-in')),
