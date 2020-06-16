@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { ChangeDetectorRef, Component, Input, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, Input, OnInit, ViewChild, SimpleChanges, OnChanges } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { FieldDirective } from '@app/shared/form-elements/field.directive';
 import { BaseMapListDirective } from '@app/shared/form-elements/map.component';
@@ -20,9 +20,9 @@ import { FieldOptions } from '../types';
 @Component({
   selector: 'app-field',
   templateUrl: './field.component.html',
-  styleUrls: ['./field.component.scss']
+  styleUrls: ['./field.component.scss'],
 })
-export class FieldComponent implements OnInit {
+export class FieldComponent implements OnInit, OnChanges {
   @Input()
   options: FieldOptions;
   @Input()
@@ -34,8 +34,16 @@ export class FieldComponent implements OnInit {
   constructor(public cd: ChangeDetectorRef) {}
 
   ngOnInit() {
-    const [name, ...other] = this.options.key.split('/');
-    this.currentFormGroup = other.reverse().reduce((p, c) => p.get(c), this.form) as FormGroup;
+    this.initCurrentGroup();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes.form.firstChange) this.initCurrentGroup();
+  }
+
+  initCurrentGroup() {
+    const [subname, name] = this.options.key.split('/');
+    this.currentFormGroup = name ? (this.form.controls[name] as FormGroup) : this.form;
   }
 
   getTestName() {
@@ -51,8 +59,7 @@ export class FieldComponent implements OnInit {
   }
 
   /**
-   * TODO: should be own restore() for each fieldComponent
-   *
+   * TODO: should be own restore() for each fieldComponent   *
    * @memberof FieldComponent
    */
   restore() {
@@ -77,7 +84,6 @@ export class FieldComponent implements OnInit {
       } else if (type === 'map' || type === 'list') {
         this.options.value = defaultValue;
         (this.inputControl as BaseMapListDirective).reload();
-        
       } else if (type === 'structure') {
         this.options.value = defaultValue;
         (this.inputControl as SchemeComponent).reload();

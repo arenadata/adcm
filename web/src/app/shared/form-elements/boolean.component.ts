@@ -21,7 +21,7 @@ const options = { clickAction: 'noop', color: 'accent' };
   template: `
     <ng-container [formGroup]="form">
       <mat-checkbox [labelPosition]="'before'" [formControlName]="field.name" [indeterminate]="field.value === null" (click)="cbChange()"></mat-checkbox>
-      <mat-error *ngIf="!isValid">Field [ {{ field.display_name }} ] is required!</mat-error>
+      <mat-error *ngIf="!isValid"><app-error-info [field]="field" [control]="control"></app-error-info></mat-error>
     </ng-container>
   `,
   styles: [':host {height: 58px;} mat-error { font-size: 0.75em; margin-left: 14px; }'],
