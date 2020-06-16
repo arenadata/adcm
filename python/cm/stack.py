@@ -294,6 +294,10 @@ def check_versions(proto, conf, label):
     if 'max' not in conf['versions'] and 'max_strict' not in conf['versions']:
         msg = 'max and max_strict should be present in versions of {} ({})'
         err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
+    for name in ('min', 'min_strict', 'max', 'max_strict'):
+        if name in conf['versions'] and not conf['versions'][name]:
+            msg = '{} versions of {} should be not null ({})'
+            err('INVALID_VERSION_DEFINITION', msg.format(name, label, ref))
 
 
 def set_version(obj, conf):

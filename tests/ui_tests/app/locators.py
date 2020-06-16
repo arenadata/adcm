@@ -36,6 +36,8 @@ class Common:
     cancel_btn = bys.by_xpath("//span[contains(., 'Cancel')]/parent::button")
     mat_button_wrapper = bys.by_class("mat-button-wrapper")
     toppanel_button_user = bys.by_class("toppanel_button_user")
+    socket = bys.by_class("socket")
+    profile = bys.by_class("profile")
 
     # List elements common elements
     rows = bys.by_class('mat-row')

@@ -46,6 +46,12 @@ class BasePage:
         self.driver = driver
 
     @ui_retry
+    def get(self, url, url_path=None, timeout=5):
+        if self.driver.current_url != url:
+            self.driver.get(url)
+        self._contains_url(url_path, timer=timeout)
+
+    @ui_retry
     def _elements(self, locator: tuple, f, **kwargs):
         """Find elements
         :param locator: locator
@@ -364,13 +370,22 @@ class LoginPage(BasePage):
         self._password.send_keys(password)
         self._click_element(Common.mat_button_wrapper, name="Login")
         # self._password.send_keys(Keys.RETURN)
-        self._contains_url('admin', 10)
-        self._wait_element(Common.toppanel_button_user)
-        sleep(5)  # Wait untill we have all websockets alive.
+        self._wait_element_present(Common.profile, 5)
+        self._wait_websocket_element()
 
     def logout(self):
         self._getelement(self._user).click()
         self._getelement(self._logout).click()
+
+    def _wait_websocket_element(self):
+        for i in range(5):
+            _ = i
+            try:
+                self._wait_element_present(Common.socket, 1)
+                break
+            except TimeoutException:
+                sleep(0.1)
+                self.driver.refresh()
 
 
 class ClustersList(ListPage):
