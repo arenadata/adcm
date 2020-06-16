@@ -368,22 +368,21 @@ class LoginPage(BasePage):
         self._password = self._wait_element_present(LoginPage.passwd_locator)
         self._login.send_keys(login)
         self._password.send_keys(password)
-        self._click_element(Common.mat_button_wrapper, name="Login")
-        # self._password.send_keys(Keys.RETURN)
-        self._wait_login_elements()
+        self._password.send_keys(Keys.RETURN)
+        self._wait_login_element(Common.profile)
+        self._wait_login_element(Common.socket)
 
     def logout(self):
         self._getelement(self._user).click()
         self._getelement(self._logout).click()
 
-    def _wait_login_elements(self):
+    def _wait_login_element(self, locator: tuple):
         for i in range(10):
             _ = i
             try:
-                self._wait_element_present(Common.profile, 5)
-                self._wait_element_present(Common.socket, 1)
+                self._wait_element_present(locator, 1)
                 break
-            except (TimeoutException, NoSuchElementException):
+            except TimeoutException:
                 sleep(0.1)
                 self.driver.refresh()
 
