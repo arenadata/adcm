@@ -369,6 +369,8 @@ class LoginPage(BasePage):
         self._login.send_keys(login)
         self._password.send_keys(password)
         self._password.send_keys(Keys.RETURN)
+        self._contains_url("admin")
+        self._wait_element(Common.toppanel_button_user)
         self._wait_login_element(Common.profile)
         self._wait_login_element(Common.socket)
 
