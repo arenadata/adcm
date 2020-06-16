@@ -55,7 +55,7 @@ import { Observable } from 'rxjs';
     </div>
   `,
   styles: [
-    '.container { margin-top: 40px; }',
+    '.container { padding-top: 40px; }',
     'hr { margin: 40px 0; border: 0; border-top: dashed 1px rgb(140, 140, 140); }',
     'h3, h4, h5 { font-weight: normal; }',
   ],

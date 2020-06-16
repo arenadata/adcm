@@ -45,14 +45,12 @@ export interface ITimeInfo {
       :host {
         display: flex;
         flex: 1;
-        flex-direction: column;
+        padding: 10px 20px;
       }
 
       div.wrap {
         display: flex;
         flex: 1;
-        flex-direction: column;
-        padding: 10px;
       }
 
       .accordion {

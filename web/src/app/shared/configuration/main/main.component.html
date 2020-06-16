@@ -1,7 +1,7 @@
 <div class="na-hu"><input type="text" /><input type="password" /><input type="password" /></div>
 <app-tools #tools (applyFilter)="filter($event)" (save)="save()" (showHistory)="historyShow=$event"
   [disabledSave]="isLock || fls.form.invalid"></app-tools>
-<ng-template #dumb>{{ loadingStatus }}</ng-template>
+<ng-template #dumb><div [style.textAlign]="'center'">{{ loadingStatus }}</div></ng-template>
 <div [@history]="historyShow ? 'showTools' : 'hideTools'">
   <app-history #history (compare)="compareVersion($event)" (version)="changeVersion($event)"></app-history>
 </div>
