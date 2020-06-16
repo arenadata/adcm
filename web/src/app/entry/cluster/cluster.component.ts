@@ -18,7 +18,7 @@ import { ClusterService } from '@app/core';
     <app-add-button [name]="'host2cluster'" class="add-button">Add hosts</app-add-button>
     <app-list class="main" [appBaseList]="'host2cluster'"></app-list>
   `,
-  styles: [':host { flex: 1; }', '.add-button {position:absolute; right: 20px;top:10px;}'],
+  styles: [':host { flex: 1; }', '.add-button {position:fixed; right: 20px;top:120px;}'],
 })
 export class HostComponent {}
 
@@ -28,7 +28,7 @@ export class HostComponent {}
     <app-add-button [name]="'service'" class="add-button">Add service</app-add-button>
     <app-list class="main" [appBaseList]="'service2cluster'" appActionHandler></app-list>
   `,
-  styles: [':host { flex: 1; }', '.add-button {position:absolute; right: 20px;top:10px;}'],
+  styles: [':host { flex: 1; }', '.add-button {position:fixed; right: 20px;top:120px;}'],
 })
 export class ServicesComponent {}
 
