@@ -294,6 +294,10 @@ def check_versions(proto, conf, label):
     if 'max' not in conf['versions'] and 'max_strict' not in conf['versions']:
         msg = 'max and max_strict should be present in versions of {} ({})'
         err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
+    for name in ('min', 'min_strict', 'max', 'max_strict'):
+        if name in conf['versions'] and not conf['versions'][name]:
+            msg = '{} versions of {} should be not null ({})'
+            err('INVALID_VERSION_DEFINITION', msg.format(name, label, ref))
 
 
 def set_version(obj, conf):
@@ -611,7 +615,7 @@ def get_yspec(proto, ref, bundle_hash, conf, name, subname):
     yspec_body = read_bundle_file(proto, conf['yspec'], bundle_hash, msg)
     try:
         schema = yaml.safe_load(yspec_body)
-    except yaml.parser.ParserError as e:
+    except (yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
         msg = 'yspec file of config key "{}/{}" yaml decode error: {}'
         err('CONFIG_TYPE_ERROR', msg.format(name, subname, e))
     ok, error = yspec.checker.check_rule(schema)
