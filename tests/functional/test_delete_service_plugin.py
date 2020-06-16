@@ -49,3 +49,25 @@ def test_delete_service_with_export(sdk_client_fs: ADCMClient):
     task.wait()
     assert task.status == 'success', "Current job status {}. Expected: success".format(task.status)
     assert not cluster_import.service_list()
+
+
+def test_delete_service_with_host(sdk_client_fs: ADCMClient):
+    """Check that possible to delete service with host component binded to cluster
+    """
+    hostprovider_bundle = sdk_client_fs.upload_from_fs(
+        utils.get_data_dir(__file__, 'cluster_service_hostcomponent', 'hostprovider'))
+    provider = hostprovider_bundle.provider_create("test")
+    host = provider.host_create("test_host")
+    bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__,
+                                                             'cluster_service_hostcomponent',
+                                                             'cluster'))
+    cluster = bundle.cluster_create("test")
+    service = cluster.service_add(name="zookeeper")
+    cluster.host_add(host)
+    component = service.component(name="ZOOKEEPER_SERVER")
+    cluster.hostcomponent_set((host, component))
+    assert cluster.service_list()
+    task = service.action_run(name='remove_service')
+    task.wait()
+    assert task.status == 'success', "Current job status {}. Expected: success".format(task.status)
+    assert not cluster.service_list()
