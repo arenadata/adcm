@@ -89,6 +89,14 @@ def get_obj_config(obj):
     return process_config_and_attr(obj, js_conf, cl.attr)
 
 
+def get_obj_state(obj):
+    if obj.stack:
+        state = json.loads(obj.stack)
+        if state:
+            return state[-1]
+    return obj.state
+
+
 def get_cluster_config(cluster_id):
     cluster = Cluster.objects.get(id=cluster_id)
     res = {
@@ -98,6 +106,7 @@ def get_cluster_config(cluster_id):
             'id': cluster.id,
             'version': cluster.prototype.version,
             'edition': cluster.prototype.bundle.edition,
+            'state': get_obj_state(cluster)
         },
         'services': {},
     }
@@ -108,6 +117,7 @@ def get_cluster_config(cluster_id):
         res['services'][service.prototype.name] = {
             'id': service.id,
             'version': service.prototype.version,
+            'state': get_obj_state(service),
             'config': get_obj_config(service)
         }
         for component in ServiceComponent.objects.filter(cluster=cluster, service=service):
@@ -126,6 +136,7 @@ def get_provider_config(provider_id):
             'name': provider.name,
             'id': provider.id,
             'host_prototype_id': host_proto.id,
+            'state': get_obj_state(provider)
         }
     }
 
@@ -165,6 +176,7 @@ def get_hosts(host_list, action_host=None):
             continue
         group[host.fqdn] = get_obj_config(host)
         group[host.fqdn]['adcm_hostid'] = host.id
+        group[host.fqdn]['state'] = get_obj_state(host)
     return group
 
 

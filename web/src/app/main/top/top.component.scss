@@ -1,75 +1,70 @@
 :host {
-    width: 100%;
-    display: flex;
+  width: 100%;
+  display: flex;
 
-    & .mat-toolbar {
-        position: fixed;
-        z-index: 2;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: auto !important;
-        padding: 6px 16px !important;
-        background-color: #333c47 !important;
-    }
+  & .mat-toolbar {
+    height: auto !important;
+    padding: 6px 16px !important;
+    background-color: #333c47 !important;
+  }
 }
 
 .logo {
-    vertical-align: middle;
+  vertical-align: middle;
 }
 
 .on-center a {
-    line-height: 36px;
-    font-size: 14px;
-    color: #00e676;
+  line-height: 36px;
+  font-size: 14px;
+  color: #00e676;
 }
 
 .right-buttons {
-    flex-basis: 240px;
-    text-align: right;
+  flex-basis: 240px;
+  text-align: right;
 }
 
 .job-status {
-    display: inline-block;
-    margin: 0 4px;
+  display: inline-block;
+  margin: 0 4px;
 
-    & .mat-mini-fab {
-        margin: 0 4px;
-        width: 24px;
-        height: 24px;
-        line-height: 12px;
-    }   
+  & .mat-mini-fab {
+    margin: 0 4px;
+    width: 24px;
+    height: 24px;
+    line-height: 12px;
+  }
 }
 
 .bell {
-    position: relative;
+  position: relative;
 }
 
 .bum {
-    position: absolute;
-    display: none;
-    width: 10px;
-    height: 10px;
-    border-radius: 5px;
-    bottom: 10px;
-    right: 4px;
+  position: absolute;
+  display: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  bottom: 10px;
+  right: 4px;
 }
 
 .bum.created {
-    display: inline-block;
-    background-color: orange;
+  display: inline-block;
+  background-color: orange;
 }
 
 .bum.running {
-    display: inline-block;
-    background-color: #00e676;
+  display: inline-block;
+  background-color: #00e676;
 }
 
 .bum.success {
-    display: none;
+  display: none;
 }
 
 .bum.failed {
-    display: inline-block;
-    background-color: red;
+  display: inline-block;
+  background-color: red;
 }

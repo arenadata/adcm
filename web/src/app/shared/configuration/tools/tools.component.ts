@@ -33,7 +33,7 @@ import { ISearchParam } from '../main/main.service';
       </button>
     </div>
   `,
-  styles: [':host {display: flex;justify-content: space-between;align-items: baseline;}', '.form_config_button_save { margin: 0 16px 0 30px;}', '.description {flex: 0}'],
+  styles: [':host {display: flex;justify-content: space-between;align-items: baseline; margin: 10px 20px 0;}', '.form_config_button_save { margin: 0 16px 0 30px;}', '.description {flex: 0}'],
 })
 export class ToolsComponent extends BaseDirective implements OnInit {
   private filter$ = new Subject<ISearchParam>();
