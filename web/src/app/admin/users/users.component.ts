@@ -22,7 +22,7 @@ import { User, UsersService } from './users.service';
 @Component({
   selector: 'app-users',
   templateUrl: './users.component.html',
-  styles: ['.add-button {position: absolute; right: 40px;top: 10px;}'],
+  styles: ['.add-button {position: absolute; right: 40px;top: 10px;}', ':host {flex:1}'],
   providers: [UsersService],
 })
 export class UsersComponent implements OnInit {
@@ -57,32 +57,33 @@ export class UsersComponent implements OnInit {
 
   ngOnInit() {
     this.currentUserName = this.auth.auth.login;
-    this.us.getUsers().pipe(map(u => u.filter(a => a.username !== 'status'))).subscribe(users => (this.users = users));
+    this.us
+      .getUsers()
+      .pipe(map((u) => u.filter((a) => a.username !== 'status')))
+      .subscribe((users) => (this.users = users));
   }
 
   addUser() {
     if (this.addForm.valid)
-      this.us
-        .addUser(this.addForm.get('username').value, this.addForm.get('xxx').get('password').value)
-        .subscribe(user => {
-          this.users = this.users.concat(user);
-          this.addForm.reset();
-          this.hideLeft = true;
-        });
+      this.us.addUser(this.addForm.get('username').value, this.addForm.get('xxx').get('password').value).subscribe((user) => {
+        this.users = this.users.concat(user);
+        this.addForm.reset();
+        this.hideLeft = true;
+      });
   }
 
   clearUser(user: User) {
     const dialogRef = this.dialog.open(DialogComponent, {
       width: '250px',
       data: {
-        text: `Delete [ <b>${user.username}</b> ]?<br/> Are you sure?`,
+        text: `Delete [ ${user.username} ]? Are you sure?`,
         controls: ['Yes', 'No'],
       },
     });
 
-    dialogRef.beforeClosed().subscribe(yes => {
+    dialogRef.beforeClosed().subscribe((yes) => {
       if (yes) {
-        this.us.clearUser(user).subscribe(_ => (this.users = this.users.filter(u => u !== user)));
+        this.us.clearUser(user).subscribe((_) => (this.users = this.users.filter((u) => u !== user)));
       }
     });
   }
@@ -92,7 +93,7 @@ export class UsersComponent implements OnInit {
   }
 
   changePassword(user: User) {
-    this.us.changePassword(user.password, user.change_password).subscribe(_ => {
+    this.us.changePassword(user.password, user.change_password).subscribe((_) => {
       user.password = '';
       user.confirm = '';
       if (user.username === this.currentUserName) this.router.navigate(['/login']);
