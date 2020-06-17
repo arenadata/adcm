@@ -1,6 +1,7 @@
 import os
 
 import pytest
+from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import get_data_dir
 
 # pylint: disable=W0611, W0621
@@ -12,7 +13,8 @@ BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
 
 
 @pytest.fixture(scope='function')
-def ui_hell_fs(sdk_client_fs):
+def ui_hell_fs(app_fs):
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(DATADIR)
     cluster = bundle.cluster_create(name='my cluster')
     cluster.service_add(name='ui_config_hell')

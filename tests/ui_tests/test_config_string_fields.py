@@ -3,6 +3,7 @@ import time
 
 import pytest
 from adcm_pytest_plugin.utils import get_data_dir
+from adcm_client.objects import ADCMClient
 
 # pylint: disable=W0611, W0621
 from tests.ui_tests.app.configuration import Configuration
@@ -32,7 +33,8 @@ REQUIRED_FIELDS = ['string_required_by_default_group', 'string_required_by_optio
 
 
 @pytest.fixture(scope='function')
-def service(sdk_client_fs):
+def service(app_fs):
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(DATADIR)
     cluster = bundle.cluster_create(name='my cluster')
     cluster.service_add(name='string_fields_config_test')

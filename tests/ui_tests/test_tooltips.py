@@ -1,6 +1,7 @@
 import os
 
 import pytest
+from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import get_data_dir
 
 # pylint: disable=W0611, W0621
@@ -15,7 +16,8 @@ NO_TOOLTIP_FIELDS = ['string_required_by_default_without_type',
 
 
 @pytest.fixture(scope='function')
-def service(sdk_client_fs):
+def service(app_fs):
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(DATADIR)
     cluster = bundle.cluster_create(name='tooltips')
     cluster.service_add(name='tooltips_test')

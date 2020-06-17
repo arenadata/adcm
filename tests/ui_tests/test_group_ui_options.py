@@ -25,7 +25,8 @@ INVISIBLE_GROUPS = ["invisible_advanced_activatable_active_group",
 
 
 @pytest.fixture(scope='function')
-def service(sdk_client_fs):
+def service(app_fs):
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(DATADIR)
     cluster = bundle.cluster_create(name='group_ui_options_test')
     cluster.service_add(name='group_ui_options_test')

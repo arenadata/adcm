@@ -18,10 +18,11 @@ def login(app_fs):
 
 @parametrize_by_data_subdirs(
     __file__, "false")
-def test_required_field_false(sdk_client_fs: ADCMClient, path, app_fs, login):
+def test_required_field_false(path, app_fs, login):
     """Check that if required is false and field is empty save button active
     """
     _ = login
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -32,10 +33,11 @@ def test_required_field_false(sdk_client_fs: ADCMClient, path, app_fs, login):
 
 @parametrize_by_data_subdirs(
     __file__, "true")
-def test_required_field_true(sdk_client_fs: ADCMClient, path, app_fs, login):
+def test_required_field_true(path, app_fs, login):
     """Check that if required is true and field is empty save button not active
     """
     _ = login
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)

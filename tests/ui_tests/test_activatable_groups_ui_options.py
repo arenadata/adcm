@@ -41,10 +41,11 @@ def login_on_adcm(app):
     __file__,
     "group_advanced_false_invisible_false_field_advanced_false_invisible_false_activiatable_false")
 def test_group_advanced_false_invisible_false_field_advanced_false_invisible_false_active_false(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs, screenshot_on_failure):
+        path, app, login_on_adcm, gather_logs, screenshot_on_failure):
     """Check that group not active and field is invisible until group is not active.
     """
     _ = login_on_adcm, gather_logs, screenshot_on_failure
+    sdk_client_ms = ADCMClient(app.adcm.api)
     bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])
@@ -80,10 +81,11 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_fal
     __file__,
     "group_advanced_false_invisible_false_field_advanced_false_invisible_false_activiatable_true")
 def test_group_advanced_false_invisible_false_field_advanced_false_invisible_false_active_true(
-        sdk_client_ms: ADCMClient, path, app, login_on_adcm, gather_logs, screenshot_on_failure):
+        path, app, login_on_adcm, gather_logs, screenshot_on_failure):
     """Check that group active and all fields always visible
     """
     _ = login_on_adcm, gather_logs, screenshot_on_failure
+    sdk_client_ms = ADCMClient(app.adcm.api)
     bundle = sdk_client_ms.upload_from_fs(path)
     group_name = path.split("/")[-1]
     cluster_name = "_".join(path.split("/")[-2:] + [random_string()])

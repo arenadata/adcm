@@ -18,7 +18,7 @@ def login(app_fs):
 
 @parametrize_by_data_subdirs(
     __file__, "invisible_false_advanced_false")
-def test_all_false(sdk_client_fs: ADCMClient, path, app_fs, login):
+def test_all_false(path, app_fs, login):
     """Check RO fields with UI options as false
     Scenario:
     1. Check that field visible
@@ -29,6 +29,7 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app_fs, login):
     6. Check that we cannot edit field (read-only tag presented)
     """
     _ = login
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -54,7 +55,7 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app_fs, login):
 
 @parametrize_by_data_subdirs(
     __file__, "invisible_true_advanced_true")
-def test_all_true(sdk_client_fs: ADCMClient, path, app_fs, login):
+def test_all_true(path, app_fs, login):
     """Check RO fields with UI options in true
     Scenario:
     1. Check that field invisible
@@ -63,6 +64,7 @@ def test_all_true(sdk_client_fs: ADCMClient, path, app_fs, login):
     4. Check that field invisible
     """
     _ = login
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -82,7 +84,7 @@ def test_all_true(sdk_client_fs: ADCMClient, path, app_fs, login):
 
 @parametrize_by_data_subdirs(
     __file__, "invisible_false_advanced_true")
-def test_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app_fs,
+def test_invisible_false_advanced_true(path, app_fs,
                                        login):
     """Check RO fields with advanced true and invisible false
     Scenario:
@@ -93,6 +95,7 @@ def test_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app_fs,
     5. Check that we cannot edit field (read-only tag presented)
     """
     _ = login
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -118,8 +121,7 @@ def test_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app_fs,
 
 @parametrize_by_data_subdirs(
     __file__, "invisible_true_advanced_false")
-def test_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path, app_fs,
-                                       login):
+def test_invisible_true_advanced_false(path, app_fs, login):
     """Check RO field with invisible true and advanced false
     Scenario:
     1. Check that field invisible
@@ -128,6 +130,7 @@ def test_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path, app_fs,
     4. Check that field invisible
     """
     _ = login
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)

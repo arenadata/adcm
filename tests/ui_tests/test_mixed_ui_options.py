@@ -18,7 +18,7 @@ def login(app_fs):
 
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_false_invisible_false_field_advanced_false_invisible_false")
-def test_all_false(sdk_client_fs: ADCMClient, path, app_fs, login):
+def test_all_false(path, app_fs, login):
     """Check group and field ui options when advanced and invisible is false
     Scenario:
     1. Create cluster
@@ -30,6 +30,7 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app_fs, login):
     7. Check that 1 group is visible
     """
     _ = login
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -56,9 +57,10 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app_fs, login):
 
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_true_invisible_true_field_advanced_true_invisible_true")
-def test_all_true(sdk_client_fs: ADCMClient, path, app_fs, login):
+def test_all_true(path, app_fs, login):
     """Check group and field ui options when advanced and invisible is true"""
     _ = login
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -81,10 +83,11 @@ def test_all_true(sdk_client_fs: ADCMClient, path, app_fs, login):
 
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_false_invisible_false_field_advanced_true_invisible_true")
-def test_groups_false_fields_true(sdk_client_fs: ADCMClient, path, app_fs, login):
+def test_groups_false_fields_true(path, app_fs, login):
     """Invisible and advanced for groups false for fields true
     """
     _ = login
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -107,11 +110,12 @@ def test_groups_false_fields_true(sdk_client_fs: ADCMClient, path, app_fs, login
 
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_true_invisible_true_field_advanced_false_invisible_false")
-def test_groups_true_fields_false(sdk_client_fs: ADCMClient, path, app_fs, login):
+def test_groups_true_fields_false(path, app_fs, login):
     """Invisible and advanced for groups true for fields false.
      In this case no elements presented on page
     """
     _ = login
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -134,10 +138,11 @@ def test_groups_true_fields_false(sdk_client_fs: ADCMClient, path, app_fs, login
 
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_false_invisible_true_field_advanced_false_invisible_true")
-def test_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path, app_fs, login):
+def test_invisible_true_advanced_false(path, app_fs, login):
     """ Invisible true for groups and fields. In this case no elements presented on page
     """
     _ = login
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -160,11 +165,12 @@ def test_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path, app_fs, 
 
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_true_invisible_false_field_advanced_true_invisible_false")
-def test_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app_fs, login):
+def test_invisible_false_advanced_true(path, app_fs, login):
     """Advanced true for groups and fields.
      In this case we can see groups and fields if advanced option enabled
     """
     _ = login
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -188,10 +194,11 @@ def test_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app_fs, 
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_false_invisible_false_field_advanced_false_invisible_true")
 def test_group_advanced_false_invisible_false_field_advanced_false_invisible_true(
-        sdk_client_fs: ADCMClient, path, app_fs, login):
+        path, app_fs, login):
     """In this case group is visible field invisible.
     """
     _ = login
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -215,10 +222,11 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_tru
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_false_invisible_false_field_advanced_true_invisible_false")
 def test_group_advanced_false_invisible_false_field_advanced_true_invisible_false(
-        sdk_client_fs: ADCMClient, path, app_fs, login):
+        path, app_fs, login):
     """Groups is visible always, field only if advanced enabled.
     """
     _ = login
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -242,10 +250,11 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_fals
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_false_invisible_true_field_advanced_false_invisible_false")
 def test_group_advanced_false_invisible_true_field_advanced_false_invisible_false(
-        sdk_client_fs: ADCMClient, path, app_fs, login):
+        path, app_fs, login):
     """All fields and group invisible.
     """
     _ = login
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -269,10 +278,11 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_fals
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_false_invisible_true_field_advanced_true_invisible_false")
 def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false(
-        sdk_client_fs: ADCMClient, path, app_fs, login):
+        path, app_fs, login):
     """All fields and group invisible.
     """
     _ = login
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -296,10 +306,11 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_false_invisible_true_field_advanced_true_invisible_true")
 def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true(
-        sdk_client_fs: ADCMClient, path, app_fs, login):
+        path, app_fs, login):
     """All fields and group invisible.
     """
     _ = login
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -323,10 +334,11 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true(
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_true_invisible_false_field_advanced_false_invisible_false")
 def test_group_advanced_true_invisible_false_field_advanced_false_invisible_false(
-        sdk_client_fs: ADCMClient, path, app_fs, login):
+        path, app_fs, login):
     """Fields and groups visible only if advanced enabled.
     """
     _ = login
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -350,10 +362,11 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_fals
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_true_invisible_false_field_advanced_false_invisible_true")
 def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true(
-        sdk_client_fs: ADCMClient, path, app_fs, login):
+        path, app_fs, login):
     """Only group is visible if advanced enabled
     """
     _ = login
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -377,10 +390,11 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_true_invisible_false_field_advanced_true_invisible_true")
 def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true(
-        sdk_client_fs: ADCMClient, path, app_fs, login):
+        path, app_fs, login):
     """Group is visible with advanced option and field is invisible
     """
     _ = login
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -404,10 +418,11 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true(
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_true_invisible_true_field_advanced_false_invisible_true")
 def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true(
-        sdk_client_fs: ADCMClient, path, app_fs, login):
+        path, app_fs, login):
     """All fields invisible.
     """
     _ = login
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
@@ -431,10 +446,11 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true(
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_true_invisible_true_field_advanced_true_invisible_false")
 def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false(
-        sdk_client_fs: ADCMClient, path, app_fs, login):
+        path, app_fs, login):
     """All fields invisible.
     """
     _ = login
+    sdk_client_fs = ADCMClient(api=app_fs.adcm.api)
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
