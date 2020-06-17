@@ -23,6 +23,5 @@ import { FieldDirective } from './field.directive';
       </mat-form-field>
     </ng-container>
   `,
-  styles: ['textarea {background-color: #cccccc;color: #333;min-height: 100px;padding: 8px;}']
 })
 export class TextareaComponent extends FieldDirective {}

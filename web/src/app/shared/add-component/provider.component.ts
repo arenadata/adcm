@@ -33,15 +33,7 @@ export enum DisplayMode {
         <div class="row">
           <mat-form-field class="full-width">
             <input required matInput placeholder="Hostprovider name" formControlName="name" />
-            <button
-              [style.fontSize.px]="24"
-              [disabled]="!form.valid"
-              matTooltip="Create hostprovider"
-              matSuffix
-              mat-icon-button
-              [color]="'accent'"
-              (click)="save()"
-            >
+            <button [style.fontSize.px]="24" [disabled]="!form.valid" matTooltip="Create hostprovider" matSuffix mat-icon-button [color]="'accent'" (click)="save()">
               <mat-icon>add_box</mat-icon>
             </button>
             <mat-error *ngIf="form.get('name').hasError('required')">Hostprovider name is required </mat-error>
@@ -50,6 +42,7 @@ export enum DisplayMode {
       </ng-template>
     </ng-container>
   `,
+  styles: ['.row {display: flex;}'],
 })
 export class ProviderComponent extends BaseFormDirective implements OnInit {
   @Input() displayMode: DisplayMode = DisplayMode.default;
@@ -64,7 +57,7 @@ export class ProviderComponent extends BaseFormDirective implements OnInit {
     this.service
       .add<Provider>(data, 'provider')
       .pipe(this.takeUntil())
-      .subscribe(x => {
+      .subscribe((x) => {
         this.form.reset();
         this.cancel.emit(x.id);
       });

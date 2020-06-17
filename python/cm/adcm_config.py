@@ -431,8 +431,10 @@ def ui_config(obj, cl):
 
 
 def get_action_variant(obj, conf):
-    cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-    obj_conf = json.loads(cl.config)
+    obj_conf = {}
+    if obj.config:
+        cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
+        obj_conf = json.loads(cl.config)
     for c in conf:
         if c.type != 'variant':
             continue
@@ -676,6 +678,8 @@ def check_config_type(proto, key, subkey, spec, value, default=False, inactive=F
         except yspec.checker.FormatError as e:
             msg = tmpl1.format("yspec error: {} at block {}".format(str(e), e.data))
             err('CONFIG_VALUE_ERROR', msg)
+        except yspec.checker.SchemaError as e:
+            err('CONFIG_VALUE_ERROR', 'yspec error: {}'.format(str(e)))
 
     if spec['type'] == 'boolean':
         if not isinstance(value, bool):

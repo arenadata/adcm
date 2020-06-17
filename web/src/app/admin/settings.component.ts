@@ -20,8 +20,8 @@ import { map, switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-settings',
-  template:
-    '<app-config-form *ngIf="set$ | async as set" [configUrl]="set.config" (event)="onEvent($event)"></app-config-form>',
+  template: '<app-config-form *ngIf="set$ | async as set" [configUrl]="set.config" (event)="onEvent($event)"></app-config-form>',
+  styles: [':host {flex:1}'],
 })
 export class SettingsComponent implements OnInit {
   set$: Observable<any>;
@@ -30,13 +30,12 @@ export class SettingsComponent implements OnInit {
 
   ngOnInit() {
     this.set$ = this.api.root.pipe(
-      switchMap(root => this.api.get<ApiBase>(root.adcm)),
-      map(adcm => adcm[0])
+      switchMap((root) => this.api.get<ApiBase>(root.adcm)),
+      map((adcm) => adcm[0])
     );
   }
 
   onEvent(e: DynamicEvent) {
-    if (e.name === 'send')
-      this.store.dispatch(sendMetrics({ metrics: e.data.form.controls['send_stats/global'].value }));
+    if (e.name === 'send') this.store.dispatch(sendMetrics({ metrics: e.data.form.controls['send_stats/global'].value }));
   }
 }

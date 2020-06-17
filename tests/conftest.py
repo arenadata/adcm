@@ -10,9 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import allure
+import json
 import os
 import pytest
 import sys
+import tempfile
 
 from tests.ui_tests.app.app import ADCMTest
 
@@ -24,6 +26,18 @@ testdir = os.path.dirname(__file__)
 rootdir = os.path.dirname(testdir)
 pythondir = os.path.abspath(os.path.join(rootdir, 'python'))
 sys.path.append(pythondir)
+
+
+def process_browser_log_entry(entry):
+    response = json.loads(entry['message'])['message']
+    return response
+
+
+def write_json_file(f_name, j_data):
+    f_path = "/".join([tempfile.mkdtemp(), f_name])
+    with open(f_path, 'w') as f:
+        json.dump(j_data, f)
+    return f_path
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
@@ -53,10 +67,25 @@ def app_fs(adcm_fs, request):
     if request.node.rep_call.failed:
         adcm_app.driver.execute_script("document.body.bgColor = 'white';")
         allure.attach(adcm_app.driver.get_screenshot_as_png(),
-                      name=request.node.name,
+                      name="screenshot",
                       attachment_type=allure.attachment_type.PNG)
         logs = adcm_app.gather_logs(request.node.name)
-        allure.attach.file(logs, "{}.tar".format(request.node.name))
+        allure.attach.file(logs, "adcm_logs.tar")
+        console_logs = adcm_app.driver.get_log('browser')
+        perf_log = adcm_app.driver.get_log("performance")
+        events = [process_browser_log_entry(entry) for entry in perf_log]
+        network_logs = [event for event in events if 'Network.response' in event['method']]
+        events_json = write_json_file("all_logs", events)
+        network_console_logs = write_json_file("network_log", network_logs)
+        console_logs = write_json_file("console_logs", console_logs)
+        allure.attach(adcm_app.driver.current_url, name='Current URL',
+                      attachment_type=allure.attachment_type.TEXT)
+        allure.attach.file(console_logs, name="console_log",
+                           attachment_type=allure.attachment_type.JSON)
+        allure.attach.file(network_console_logs, name="network_log",
+                           attachment_type=allure.attachment_type.JSON)
+        allure.attach.file(events_json, name="all_events_log",
+                           attachment_type=allure.attachment_type.JSON)
     adcm_app.destroy()
 
 

@@ -56,31 +56,33 @@ export class TakeService {
 
   initSource(url: string, actions: IActionParameter[]) {
     this.actionParameters = actions;
+    this.reset();
+    return this.api.get<IRawHosComponent>(url).pipe(tap((a) => this.init(a)));
+  }
+
+  reset() {
     this.Hosts = [];
     this.Components = [];
     this.statePost.clear();
     this.loadPost.clear();
     this.formGroup = new FormGroup({});
+  }
 
-    return this.api.get<IRawHosComponent>(url).pipe(
-      tap((a) => {
-        this.setSource(a);
-        if (a.hc) {
-          this.statePost.update(a.hc);
-          this.loadPost.update(a.hc);
-          this.setRelations(a.hc);
-          this.checkEmptyHost();
-        }
-        this.formFill();
-      })
-    );
+  init(a: IRawHosComponent) {
+    this.setSource(a);
+    if (a.hc) {
+      this.statePost.update(a.hc);
+      this.loadPost.update(a.hc);
+      this.setRelations(a.hc);
+      this.checkEmptyHost();
+    }
+    this.formFill();
   }
 
   setSource(raw: IRawHosComponent) {
     this.raw = raw;
     if (raw.host) {
-      const list = raw.host.map((h) => new HostTile(h));
-      this.Hosts = [...list];
+      this.Hosts = raw.host.map((h) => new HostTile(h));
     }
 
     if (raw.component) {
@@ -120,6 +122,10 @@ export class TakeService {
     });
   }
 
+  formFill() {
+    this.Components.map((a) => this.formGroup.addControl(`${a.service_id}/${a.id}`, new FormControl(a.relations.length, this.validateConstraints(a))));
+  }
+
   /**
   https://docs.arenadata.io/adcm/sdk/config.html#components
   [1] – exactly once component shoud be installed;
@@ -136,17 +142,18 @@ export class TakeService {
     const getError = (constraint: Constraint, relations: HostTile[]) => {
       const [a1, a2, a3] = constraint;
       const countRelations = relations.length;
-      if (a3) {
-        switch (a3) {
-          case 'depend':
-            return relations.some(a => a.relations.some(b => b.id === component.id)) ? null : 'Must be installed because it is a dependency of another component';
-        }
-      } else if (a2) {
+      const depend = () => (relations.some((a) => a.relations.some((b) => b.id === component.id)) ? null : 'Must be installed because it is a dependency of another component');
+      if (a3 && a3 === 'depend') return depend();
+      else if (a2) {
         switch (a2) {
           case 'depend':
-            return relations.some(a => a.relations.some(b => b.id === component.id)) ? null : 'Must be installed because it is a dependency of another component';
+            return depend();
           case 'odd':
-            return countRelations % 2 && countRelations >= a1 ? null : a1 === 0 ? 'Total amount should be odd.' : `Must be installed at least ${a1} components. Total amount should be odd.`;
+            return countRelations % 2 && countRelations >= a1
+              ? null
+              : a1 === 0
+              ? 'Total amount should be odd.'
+              : `Must be installed at least ${a1} components. Total amount should be odd.`;
           case '+':
           default:
             return countRelations < a1 ? `Must be installed at least ${a1} components.` : null;
@@ -156,7 +163,7 @@ export class TakeService {
           case 0:
             return null;
           case 'depend':
-            return relations.some(a => a.relations.some(b => b.id === component.id)) ? null : 'Must be installed because it is a dependency of another component';
+            return depend();
           case '+':
             return countRelations < this.Hosts.length ? 'Component should be installed on all hosts of cluster.' : null;
           case 'odd':
@@ -176,10 +183,6 @@ export class TakeService {
     };
   }
 
-  formFill() {
-    this.Components.map((a) => this.formGroup.addControl(`${a.service_id}/${a.id}`, new FormControl(a.relations.length, this.validateConstraints(a))));
-  }
-
   clearServiceFromHost(data: { rel: CompTile; model: HostTile }) {
     this.clear([data.model, data.rel]);
     this.statePost.delete(new Post(data.model.id, data.rel.service_id, data.rel.id));
@@ -196,15 +199,12 @@ export class TakeService {
 
   clearDependencies(comp: CompTile) {
     const getLimitsFromState = (prototype_id: number) => this.raw.component.find((b) => b.prototype_id === prototype_id).constraint;
-
     if (comp.requires?.length) {
-      this.findDependencies(comp).map((a) => {
+      this.findDependencies(comp).forEach((a) => {
         a.limit = getLimitsFromState(a.prototype_id);
-        // a.color = 'white';
         a.notification = '';
-        return a;
       });
-      this.statePost.data.map(a => this.checkDependencies(this.Components.find(b => b.id === a.component_id)));
+      this.statePost.data.map((a) => this.checkDependencies(this.Components.find((b) => b.id === a.component_id)));
       this.formGroup.reset();
       this.formFill();
     }
@@ -216,11 +216,7 @@ export class TakeService {
   }
 
   checkDependencies(component: CompTile) {
-    this.findDependencies(component).map((a) => {
-      // a.color = 'yellow';            
-      a.limit = a.limit ? [...a.limit, 'depend'] : ['depend'];
-      return a;
-    });
+    this.findDependencies(component).forEach((a) => (a.limit = a.limit ? [...a.limit, 'depend'] : ['depend']));
   }
 
   takeHost(host: HostTile) {
@@ -334,7 +330,7 @@ export class TakeService {
 
   clear(tiles: Tile[]) {
     for (let a of tiles) {
-      const name = a instanceof HostTile ? 'host' : 'compo';
+      const name = 'service_id' in a ? 'compo' : 'host';
       const link = this.sourceMap.get(name).find((h) => h.id === a.id);
       const rel = tiles.find((b) => b !== a);
       link.relations = link.relations.filter((r) => r.id !== rel.id);

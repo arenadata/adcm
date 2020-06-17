@@ -17,7 +17,7 @@ export type Constraint = ConstraintValue[];
 
 export interface IRawHosComponent {
   component: Component[];
-  host: Host[];
+  host: Partial<Host>[];
   hc: Post[];
 }
 
@@ -46,7 +46,7 @@ export class Tile {
 }
 
 export class HostTile extends Tile {
-  constructor(rawHost: Host) {
+  constructor(rawHost: Partial<Host>) {
     super();
     this.id = rawHost.id;
     this.name = rawHost.fqdn;
