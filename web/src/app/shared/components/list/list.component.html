@@ -138,7 +138,7 @@
           <mat-icon>local_activity</mat-icon>
         </button>
 
-        <mat-menu #actionsMenu="matMenu" xPosition="before">
+        <mat-menu #actionsMenu="matMenu" xPosition="before" yPosition="below" overlapTrigger="false">
           <ng-template matMenuContent>
             <div mat-menu-item disabled *ngIf="row.actions && !row.actions.length; else listActions">
               <i>No actions</i>
