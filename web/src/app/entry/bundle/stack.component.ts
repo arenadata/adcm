@@ -17,15 +17,11 @@ import { ClusterService, StackService } from '@app/core';
   template: `
     <mat-toolbar class="toolbar">
       <app-crumbs [navigation]="[{ url: '/bundle', title: 'bundles' }]"></app-crumbs>
-      <span class="example-spacer"></span>
-      <div style="margin-right: 6px;">
-        <app-button-uploader #uploadBtn [color]="'accent'" [label]="'Upload bundles'" (output)="upload($event)"></app-button-uploader>
-      </div>
+      <app-button-uploader #uploadBtn [color]="'accent'" [label]="'Upload bundles'" (output)="upload($event)"></app-button-uploader>
     </mat-toolbar>
-    <div class="container-entry">
-      <app-list #list class="main" [appBaseList]="typeName"></app-list>
-    </div>
+    <app-list [appBaseList]="typeName"></app-list>
   `,
+  styles: [':host { flex: 1; }'],
 })
 export class StackComponent {
   typeName = 'bundle';

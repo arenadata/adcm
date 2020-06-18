@@ -1,30 +1,25 @@
-<mat-toolbar color="primary" class="mat-elevation-z6">
-  <a routerLink="/" class="logo">
-    <img src="/assets/adcm-logo.png" alt="" class="logo" />
+<mat-toolbar color="primary" class="mat-elevation-z6 row">
+  <a routerLink="/" class="col s12 l3">
+    <img src="/assets/adcm-logo.png" alt="Arenadata cluster manager" />
   </a>
 
-  <div class="example-spacer on-center">
+  <div class="col s12 l6 top-menu">
     <button class="topmenu_clusters" mat-button color="accent" routerLink="/cluster" routerLinkActive="mat-warn">
       CLUSTERS
     </button>
-    &nbsp;
     <button class="topmenu_hostproviders" mat-button color="accent" routerLink="/provider" routerLinkActive="mat-warn">
       HOSTPROVIDERS
     </button>
-    &nbsp;
     <button class="topmenu_hosts" mat-button color="accent" routerLink="/host" routerLinkActive="mat-warn">
       HOSTS
     </button>
-    &nbsp;
     <button class="topmenu_jobs" mat-button color="accent" routerLink="/task" routerLinkActive="mat-warn">JOBS</button>
-    &nbsp;
     <button class="topmenu_bundles" mat-button color="accent" routerLink="/bundle" routerLinkActive="mat-warn">
       BUNDLES
     </button>
   </div>
 
-  <span class="right-buttons">
-    &nbsp;
+  <span class="col s12 l3" [style.textAlign]="'right'">
     <span *ngIf="(isAuth$ | async)">
       <ng-container *ngIf="(jobStat$ | async)"></ng-container>
       <span class="job-status">
@@ -32,8 +27,8 @@
           [routerLink]="['/task', { page: 0, filter: 'running' }]" matTooltip="Show jobs in progress">
           {{ jobStatus.running }}
         </button>
-        <button [appForTest]="'jobs_green'" mat-mini-fab color="accent" [routerLink]="['/task', { page: 0, filter: 'success' }]"
-          matTooltip="Show success jobs">
+        <button [appForTest]="'jobs_green'" mat-mini-fab color="accent"
+          [routerLink]="['/task', { page: 0, filter: 'success' }]" matTooltip="Show success jobs">
           {{ jobStatus.success > 1000 ? (jobStatus.success/1000).toFixed(1) + 'K' : jobStatus.success }}
         </button>
         <button [appForTest]="'jobs_red'" mat-mini-fab [style.backgroundColor]="'#FF8A80'"
