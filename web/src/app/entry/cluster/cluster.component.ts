@@ -38,7 +38,7 @@ export class ServicesComponent {}
       <app-crumbs [navigation]="[{ url: '/cluster', title: 'clusters' }]"></app-crumbs>
       <app-add-button [name]="typeName" (added)="list.current = $event">Create {{ typeName }}</app-add-button>
     </mat-toolbar>
-    <app-list appActionHandler [appBaseList]="typeName"></app-list>
+    <app-list #list appActionHandler [appBaseList]="typeName"></app-list>
   `,
   styles: [':host { flex: 1; }'],
 })

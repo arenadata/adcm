@@ -74,7 +74,7 @@ import { Component } from '@angular/core';
     Now you are ready to start exploring ADCM by yourself - enjoy it!
     <p>&nbsp;</p>
   `,
-  styles: [':host {padding: 0 20px;}', '.admin-warn {border:solid 1px #ff9800;margin-right: 20px;}', '.admin-warn ul li {padding: 8px 0;}'],
+  styles: [':host {padding: 0 10px;}', '.admin-warn {border:solid 1px #ff9800;margin-right: 20px;}', '.admin-warn ul li {padding: 8px 0;}'],
 })
 export class IntroComponent {
   adcm_url = `${location.protocol}//${location.host}`;
