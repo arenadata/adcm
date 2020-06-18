@@ -13,7 +13,7 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import { MatSlider } from '@angular/material/slider';
 import { ApiService } from '@app/core/api';
-import { EventMessage, getMessage, socketInit, State } from '@app/core/store';
+import { EventMessage, getMessage, State } from '@app/core/store';
 import { select, Store } from '@ngrx/store';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { filter, takeUntil } from 'rxjs/operators';
@@ -81,7 +81,8 @@ export class LogComponent implements OnInit {
           this.slider.value
         );
       else this.api.getOne<any>(m.object.type, m.object.id).subscribe(value => this.list(m, value));
-    } else this.list(m, `Not request for ${eventName} event.`);
+    } 
+    // else this.list(m, `Not request for ${eventName} event.`);
   }
 
   list(m: EventMessage, value: any) {
