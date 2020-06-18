@@ -46,14 +46,6 @@
     <mat-cell *matCellDef="let row">{{ row.prototype }}</mat-cell>
   </ng-container>
 
-  <!-- <ng-container matColumnDef="objects">
-    <mat-header-cell *matHeaderCellDef>Objects</mat-header-cell>
-    <mat-cell *matCellDef="let row">
-      <a *ngFor="let obj of buildLink(row.objects); let odd = odd" [class.col-odd]="odd"
-        [routerLink]="['/', obj.url]">{{ obj.name }}</a>
-    </mat-cell>
-  </ng-container> -->
-
   <ng-container matColumnDef="logs">
     <mat-header-cell *matHeaderCellDef>Log files</mat-header-cell>
     <mat-cell *matCellDef="let row">
@@ -146,7 +138,7 @@
           <mat-icon>local_activity</mat-icon>
         </button>
 
-        <mat-menu #actionsMenu="matMenu" xPosition="before">
+        <mat-menu #actionsMenu="matMenu" xPosition="before" yPosition="below" overlapTrigger="false">
           <ng-template matMenuContent>
             <div mat-menu-item disabled *ngIf="row.actions && !row.actions.length; else listActions">
               <i>No actions</i>

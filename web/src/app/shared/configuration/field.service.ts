@@ -215,8 +215,7 @@ export class FieldService {
         };
 
         const f = findField(c, parentName);
-        const r = f ? checkType(v[c], f) : null;
-        return r !== null ? { ...p, [c]: r } : p;
+        return f ? { ...p, [c]: checkType(v[c], f) } : p;
       };
 
       return Object.keys(v).reduce(runByValue, {});

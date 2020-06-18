@@ -9,13 +9,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, Input, OnInit, QueryList, ViewChild, ViewChildren } from '@angular/core';
+import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { AbstractControl, FormGroup } from '@angular/forms';
 import { MatExpansionPanel } from '@angular/material/expansion';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 
 import { FieldService } from '../field.service';
-import { FieldComponent } from '../field/field.component';
 import { FieldOptions, PanelOptions } from '../types';
 
 @Component({
@@ -33,7 +32,6 @@ export class GroupFieldsComponent implements OnInit {
   @Input() panel: PanelOptions;
   @Input() form: FormGroup;
   @ViewChild('ep') expanel: MatExpansionPanel;
-  @ViewChildren(FieldComponent) fields: QueryList<FieldComponent>;
 
   constructor(private service: FieldService) {}
 
@@ -73,6 +71,7 @@ export class GroupFieldsComponent implements OnInit {
       if (!flag) formControl.clearValidators();
       else if (a.validator) formControl.setValidators(this.service.setValidator(a));
       formControl.updateValueAndValidity();
+      formControl.markAsTouched();
       this.form.updateValueAndValidity();
     }
   }

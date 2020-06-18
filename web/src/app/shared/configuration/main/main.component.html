@@ -1,11 +1,12 @@
 <div class="na-hu"><input type="text" /><input type="password" /><input type="password" /></div>
 <app-tools #tools (applyFilter)="filter($event)" (save)="save()" (showHistory)="historyShow=$event"
   [disabledSave]="isLock || fls.form.invalid"></app-tools>
-<ng-template #dumb>{{ loadingStatus }}</ng-template>
 <div [@history]="historyShow ? 'showTools' : 'hideTools'">
   <app-history #history (compare)="compareVersion($event)" (version)="changeVersion($event)"></app-history>
 </div>
+<ng-container *ngIf="config$ | async; else dumb"></ng-container>
+<ng-template #dumb><div class="pre-load"><span>{{ loadingStatus }}</span></div></ng-template>
 <div class="fields" [@history]="historyShow ? 'show' : 'hide'">
   <app-config-fields #fls [model]="rawConfig" (event)="onReady()"></app-config-fields>
 </div>
-<ng-container *ngIf="config$ | async; else dumb"></ng-container>
+

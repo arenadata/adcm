@@ -17,6 +17,7 @@ from rest_framework import serializers
 import cm.api
 import cm.job
 import cm.status_api
+import logrotate
 from cm.api import safe_api
 from cm.logger import log   # pylint: disable=unused-import
 from cm.errors import AdcmApiEx, AdcmEx
@@ -132,6 +133,7 @@ class ClusterUISerializer(ClusterDetailSerializer):
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
+        self.context['object'] = obj
         self.context['cluster_id'] = obj.id
         actions = ClusterActionShort(filter_actions(obj, act_set), many=True, context=self.context)
         return actions.data
@@ -209,6 +211,7 @@ class ClusterHostUISerializer(ClusterHostDetailSerializer):
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
+        self.context['object'] = obj
         self.context['host_id'] = obj.id
         actions = ClusterHostActionShort(
             filter_actions(obj, act_set), many=True, context=self.context
@@ -397,6 +400,7 @@ class ClusterServiceUISerializer(ClusterServiceDetailSerializer):
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
+        self.context['object'] = obj
         self.context['service_id'] = obj.id
         actions = filter_actions(obj, act_set)
         acts = ServiceActionShort(actions, many=True, context=self.context)
@@ -506,6 +510,9 @@ class HCComponentSerializer(ServiceComponentDetailSerializer):
                 if comp.requires:
                     process_requires(comp.requires)
 
+        # def check_hc(comp):
+        #    return HostComponent.objects.filter(cluster=obj.cluster, component__component=comp)
+
         process_requires(obj.component.requires)
         out = []
         for service_name in comp_list:
@@ -514,12 +521,14 @@ class HCComponentSerializer(ServiceComponentDetailSerializer):
             for comp_name in comp_list[service_name]['components']:
                 comp = comp_list[service_name]['components'][comp_name]
                 comp_out.append({
-                    'id': comp.id,
+                    'prototype_id': comp.id,
                     'name': comp_name,
                     'display_name': comp.display_name,
                 })
+            if not comp_out:
+                continue
             out.append({
-                'id': service.id,
+                'prototype_id': service.id,
                 'name': service_name,
                 'display_name': service.display_name,
                 'components': comp_out
@@ -706,6 +715,8 @@ class ObjectConfigUpdate(ObjectConfig):
             cl = cm.api.update_obj_config(instance.obj_ref, conf, attr, desc)
             if validated_data.get('ui'):
                 cl.config = cm.adcm_config.ui_config(validated_data.get('obj'), cl)
+            if hasattr(instance.obj_ref, 'adcm'):
+                logrotate.run()
         except AdcmEx as e:
             raise AdcmApiEx(e.code, e.msg, e.http_code)
         return cl

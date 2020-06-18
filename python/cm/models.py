@@ -257,6 +257,7 @@ CONFIG_FIELD_TYPE = (
     ('integer', 'integer'),
     ('float', 'float'),
     ('option', 'option'),
+    ('variant', 'variant'),
     ('boolean', 'boolean'),
     ('file', 'file'),
     ('list', 'list'),

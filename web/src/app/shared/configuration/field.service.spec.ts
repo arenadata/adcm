@@ -237,6 +237,7 @@ describe('Configuration fields service', () => {
       field_int_as_str: 123,
       field_bool: true,
       field_bool_undefined: undefined,
+      field_bool_null: null,
       field_float: 1.2,
       field_float_as_str: 1.23,
       field_map: { key: 'value' },
@@ -245,6 +246,10 @@ describe('Configuration fields service', () => {
       field_option_int: 0,
       field_map_not_object: 'string',
       field_list_not_array: 'string',
+      field_json: null,
+      field_null: null,
+      field_map_empty: null,
+      field_list_empty: null,
     });
   });
 
@@ -287,12 +292,12 @@ describe('Configuration fields service', () => {
       field_bool_undefined: undefined,
       field_bool_null: null,
       group_2: {
-        field_json: {},
+        field_json: null,
+        field_map_empty: null,
+        field_list_empty: null,
         field_map: { key: 'value' },
-        field_map_empty: {},
         field_map_not_object: 'string',
         field_list: ['a', 1],
-        field_list_empty: [],
         field_list_not_array: 'string',
         field_option_str: 'option string',
         field_option_int: 0,
@@ -311,13 +316,18 @@ describe('Configuration fields service', () => {
       },
       field_bool: true,
       field_bool_undefined: undefined,
+      field_bool_null: null,
       group_2: {
+        field_json: null,
+        field_map_empty: null,
+        field_list_empty: null,
         field_map: { key: 'value' },
         field_list: ['a', 1],
         field_option_str: 'option string',
         field_option_int: 0,
         field_map_not_object: 'string',
         field_list_not_array: 'string',
+        field_null: null,
       },
     });
   });

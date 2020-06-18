@@ -142,6 +142,9 @@ DATABASES = {
         # 'HOST': 'localhost',
         # 'USER': 'adcm',
         # 'PASSWORD': 'adcm',
+        'OPTIONS': {
+            'timeout': 20,
+        }
     }
 }
 

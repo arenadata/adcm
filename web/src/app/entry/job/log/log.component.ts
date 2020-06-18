@@ -45,14 +45,12 @@ export interface ITimeInfo {
       :host {
         display: flex;
         flex: 1;
-        flex-direction: column;
+        padding: 10px 20px;
       }
 
       div.wrap {
         display: flex;
         flex: 1;
-        flex-direction: column;
-        padding: 10px;
       }
 
       .accordion {
@@ -86,13 +84,15 @@ export class LogComponent extends SocketListenerDirective implements OnInit, Aft
 
   socketListener(m: EventMessage) {
     if (m && m.object && m.object.type === 'job' && m.object.id === this.job.id) {
-      this.status = m.object.details.value as JobStatus;
-      if (this.textComp) this.textComp.update(m.object.details.value);
+      if (m.event === 'change_job_status') {
+        this.status = m.object.details.value as JobStatus;
+        if (this.textComp) this.textComp.update(m.object.details.value);
 
-      const job = this.job;
-      job.status = this.status;
-      job.finish_date = new Date().toISOString();
-      this.timeInfo = this.service.getOperationTimeData(job);
+        const job = this.job;
+        job.status = this.status;
+        job.finish_date = new Date().toISOString();
+        this.timeInfo = this.service.getOperationTimeData(job);
+      }
 
       this.refresh();
     }
@@ -107,7 +107,7 @@ export class LogComponent extends SocketListenerDirective implements OnInit, Aft
   }
 
   refresh() {
-    if (!this.currentLog.id) console.error('No `id` for current LogFile');
+    if (!this.currentLog.id) return; // console.error('No `id` for current LogFile');
     this.service
       .getLog(this.currentLog.id)
       .pipe(this.takeUntil())

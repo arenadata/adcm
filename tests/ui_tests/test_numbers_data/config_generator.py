@@ -1,5 +1,4 @@
 import os
-import yaml
 
 
 integers = [(0, 0, 0, 'nulls'), (-10, 5, 0, 'positive_and_negative'),
@@ -32,13 +31,13 @@ integer_template = """
 """
 
 for fl in floats:
-    d_name = "{}/{}".format("float", fl[3])
+    d_name = "bundles/{}".format("float-{}".format(fl[3]))
     os.makedirs(d_name)
     with open("{}/config.yaml".format(d_name), "w+") as f:
         f.write(float_template.format(fl[0], fl[1], fl[2]))
 
 for i in integers:
-    d_name = "{}/{}".format("integer", i[3])
+    d_name = "bundles/{}".format("integer-{}".format(i[3]))
     os.makedirs(d_name)
     with open("{}/config.yaml".format(d_name), "w+") as f:
         f.write(integer_template.format(i[0], i[1], i[2]))

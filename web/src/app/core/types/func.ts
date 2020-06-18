@@ -42,11 +42,6 @@ export function getControlType(name: string): controlType {
   return a[name] || name;
 }
 
-// example host2cluster
-export function getTypeName(name: string) {
-  return name ? name.split('2')[0] : name;
-}
-
 export function issueMessage(e: { id: number; name: string; issue: Issue }, typeName: string) {
   const IssueName = {
     config: 'configuration',
@@ -63,14 +58,12 @@ export function issueMessage(e: { id: number; name: string; issue: Issue }, type
 
 /**
  * Remove empty, null, undefined properties
- * @deprecated
  */
 export function clearEmptyField(input: Object): Object {
   return Object.keys(input).reduce((output, key) => {
     const value = input[key];
 
     if (isObject(value) && !Array.isArray(value) && Object.keys(input[key]).length) {
-      // tslint:disable-next-line: deprecation
       const result = clearEmptyField(value);
       if (Object.keys(result).length) output[key] = result;
     } else if (isBoolean(value) || isNumber(value) || value) output[key] = value;

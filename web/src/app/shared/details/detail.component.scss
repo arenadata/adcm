@@ -1,71 +1,79 @@
 @import "~@angular/material/theming";
 
-app-details-left { min-width: 230px;}
-
-.main {
-    position: absolute;
-    top: 50px;
-    bottom: 0;
-    left: 5px;
-    right: 5px;
-    display: flex;
-    margin-bottom: 5px;
-
-
-
-    & .mat-card {
-        display: flex;
-        flex-direction: column;
-        padding: 20px;
-
-        & .mat-card-header {
-            min-height: 40px;
-            & .mat-card-title {
-                font-size: 26px;
-            }
-        }
-    }
-
-    & .content {
-        display: flex;
-        flex-grow: 1;
-        overflow: auto;
-    }
+:host {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.toolbar {
-    min-height: 46px;
+.row {
+  margin: 0;
+  flex: 1;
+}
+
+.mat-card {
+  padding: 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  & .mat-card-header {
+    min-height: 40px;
+
+    & .mat-card-title {
+      font-size: 26px;
+    }
+  }
+
+  .mat-card-content {
+    display: flex;
+    flex: 1;
+    overflow: auto;
+    position: absolute;
+    right: 0;
+    left: 0;
+    top: 80px;
+    bottom: 74px;
+  }
+}
+
+.mat-toolbar {
+  height: auto;
+  min-height: 50px;
 }
 
 .issue-warning {
+  width: 40px;
+  height: 40px;
+  position: relative;
+  cursor: pointer;
+
+  .mat-icon {
+    margin: 8px 0 0 8px;
+  }
+
+  div {
     width: 40px;
     height: 40px;
-    position: relative;
-    cursor: pointer;
-
-    .mat-icon {
-        margin: 8px 0 0 8px;
-    }
-
-    div {
-        width: 40px;
-        height: 40px;
-        position: absolute;
-        background: mat-color($mat-orange, 500);
-        border-radius: 20px;
-        top: 0;
-        opacity: 0;
-        animation: ripple 2s infinite ease-in-out;
-    }
+    position: absolute;
+    background: mat-color($mat-orange, 500);
+    border-radius: 20px;
+    top: 0;
+    opacity: 0;
+    animation: ripple 2s infinite ease-in-out;
+  }
 }
 
 
 @keyframes ripple {
-    0% {
-        opacity: .5;
-    }
+  0% {
+    opacity: .5;
+  }
 
-    100% {
-        opacity: 0;
-    }
+  100% {
+    opacity: 0;
+  }
 }
