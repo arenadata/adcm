@@ -182,8 +182,7 @@ def get_hosts(host_list, action_host=None):
 
 def get_cluster_hosts(cluster_id, action_host=None):
     return {'CLUSTER': {
-        'hosts': get_hosts(Host.objects.filter(cluster__id=cluster_id), action_host),
-        'vars': get_cluster_config(cluster_id)
+        'hosts': get_hosts(Host.objects.filter(cluster__id=cluster_id), action_host)
     }}
 
 
@@ -193,11 +192,9 @@ def get_provider_hosts(provider_id, action_host=None):
     }}
 
 
-def get_host(host_id):
-    host = Host.objects.get(id=host_id)
+def get_host(host):
     groups = {'HOST': {
-        'hosts': get_hosts([host]),
-        'vars': get_provider_config(host.provider.id)
+        'hosts': get_hosts([host])
     }}
     return groups
 
@@ -209,8 +206,11 @@ def prepare_job_inventory(selector, job_id, delta, action_host=None):
     if 'cluster' in selector:
         inv['all']['children'].update(get_cluster_hosts(selector['cluster'], action_host))
         inv['all']['children'].update(get_host_groups(selector['cluster'], delta, action_host))
+        inv['all']['vars'] = get_cluster_config(selector['cluster'])
     if 'host' in selector:
-        inv['all']['children'].update(get_host(selector['host']))
+        host = Host.objects.get(id=selector['host'])
+        inv['all']['children'].update(get_host(host))
+        inv['all']['vars'] = get_provider_config(host.provider.id)
     if 'provider' in selector:
         inv['all']['children'].update(get_provider_hosts(selector['provider'], action_host))
         inv['all']['vars'] = get_provider_config(selector['provider'])

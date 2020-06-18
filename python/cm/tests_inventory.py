@@ -117,9 +117,7 @@ class TestInventory(TestCase):
         mock_get_obj_config.assert_not_called()
 
     @patch('cm.inventory.get_hosts')
-    @patch('cm.inventory.get_cluster_config')
-    def test_get_cluster_hosts(self, mock_get_cluster_config, mock_get_hosts):
-        mock_get_cluster_config.return_value = []
+    def test_get_cluster_hosts(self, mock_get_hosts):
         mock_get_hosts.return_value = []
 
         bundle = models.Bundle.objects.create()
@@ -128,8 +126,7 @@ class TestInventory(TestCase):
 
         test_cluster_hosts = {
             'CLUSTER': {
-                'hosts': [],
-                'vars': []
+                'hosts': []
             }
         }
 
@@ -137,7 +134,6 @@ class TestInventory(TestCase):
 
         self.assertDictEqual(cluster_hosts, test_cluster_hosts)
         mock_get_hosts.assert_called_once()
-        mock_get_cluster_config.assert_called_once_with(cluster.id)
 
     @patch('cm.inventory.get_hosts')
     def test_get_provider_hosts(self, mock_get_hosts):
@@ -159,35 +155,19 @@ class TestInventory(TestCase):
         self.assertDictEqual(provider_hosts, test_provider_hosts)
         mock_get_hosts.assert_called_once()
 
-    @patch('cm.inventory.get_provider_hosts')
     @patch('cm.inventory.get_hosts')
-    def test_get_host(self, mock_get_hosts, mock_get_provider_hosts):
+    def test_get_host(self, mock_get_hosts):
         mock_get_hosts.return_value = []
-        mock_get_provider_hosts.return_value = {
-            'PROVIDER': {
-                'hosts': [],
-                'vars': []
-            }
-        }
 
         bundle = models.Bundle.objects.create()
         prototype = models.Prototype.objects.create(bundle=bundle, type='host')
         provider = models.HostProvider.objects.create(prototype=prototype)
         host = models.Host.objects.create(prototype=prototype, provider=provider)
 
-        groups = cm.inventory.get_host(host.id)
+        groups = cm.inventory.get_host(host)
         test_groups = {
             'HOST': {
-                'hosts': [],
-                'vars': {
-                    'provider': {
-                        'config': {},
-                        'name': '',
-                        'id': 1,
-                        'host_prototype_id': 1,
-                        'state': 'created'
-                    }
-                }
+                'hosts': []
             }
         }
         self.assertDictEqual(groups, test_groups)
@@ -218,19 +198,19 @@ class TestInventory(TestCase):
                                 'adcm_hostid': 1,
                                 'state': 'created'
                             }
-                        },
-                        'vars': {
-                            'cluster': {
-                                'config': {},
-                                'edition': 'community',
-                                'name': '',
-                                'id': 1,
-                                'version': '2.2',
-                                'state': 'created'
-                            },
-                            'services': {}
                         }
                     }
+                },
+                'vars': {
+                    'cluster': {
+                        'config': {},
+                        'edition': 'community',
+                        'name': '',
+                        'id': 1,
+                        'version': '2.2',
+                        'state': 'created'
+                    },
+                    'services': {}
                 }
             }
         }
@@ -243,16 +223,16 @@ class TestInventory(TestCase):
                                 'adcm_hostid': 1,
                                 'state': 'created'
                             }
-                        },
-                        'vars': {
-                            'provider': {
-                                'config': {},
-                                'name': '',
-                                'id': 1,
-                                'host_prototype_id': 1,
-                                'state': 'created'
-                            }
                         }
+                    }
+                },
+                'vars': {
+                    'provider': {
+                        'config': {},
+                        'name': '',
+                        'id': 1,
+                        'host_prototype_id': 1,
+                        'state': 'created'
                     }
                 }
             }
