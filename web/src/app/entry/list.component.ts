@@ -18,7 +18,7 @@ import { ActivatedRoute } from '@angular/router';
     <mat-toolbar class="toolbar">
       <app-crumbs [navigation]="navigation()"></app-crumbs>
       <span class="example-spacer"></span>
-      <app-add-button [name]="typeName" (added)="list.current = $event">Create {{ typeName }}</app-add-button>
+      <app-add-button [name]="typeName" (added)="list.current = $event">{{ typeName === 'host' ? 'Add' : 'Create' }} {{ typeName }}</app-add-button>
     </mat-toolbar>
     <div class="container-entry">
       <app-list #list class="main" appActionHandler [appBaseList]="typeName"></app-list>
