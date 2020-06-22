@@ -13,18 +13,15 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
 @Component({
-  selector: 'app-entry-llist',
+  selector: 'app-entry-list',
   template: `
     <mat-toolbar class="toolbar">
       <app-crumbs [navigation]="navigation()"></app-crumbs>
-      <span class="example-spacer"></span>
       <app-add-button [name]="typeName" (added)="list.current = $event">Create {{ typeName }}</app-add-button>
     </mat-toolbar>
-    <div class="container-entry">
-      <app-list #list class="main" appActionHandler [appBaseList]="typeName"></app-list>
-    </div>
+    <app-list #list appActionHandler [appBaseList]="typeName"></app-list>
   `,
-  styles: [],
+  styles: [':host { flex: 1; }'],
 })
 export class ListEntryComponent implements OnInit {
   typeName: string;
@@ -32,7 +29,7 @@ export class ListEntryComponent implements OnInit {
   constructor(private route: ActivatedRoute) {}
 
   ngOnInit() {
-    const segments = this.route.snapshot.url.map(s => s.path);
+    const segments = this.route.snapshot.url.map((s) => s.path);
     this.typeName = segments[0];
   }
 

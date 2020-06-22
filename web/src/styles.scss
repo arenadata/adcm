@@ -28,15 +28,26 @@ body {
   font-family: Roboto, "Helvetica Neue", sans-serif;
   color: #ffffff;
   background-color: #303030;
+}
+
+app-root {
   overflow: hidden;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+
+  & main {
+    flex: 1;
+    display: flex;
+    overflow: auto;
+  }
 
   & footer {
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-    z-index: 2;
     color: #ccc;
-    background-color: #303030;
 
     & div {
       text-align: right;
@@ -50,8 +61,11 @@ body {
   }
 }
 
-.main>mat-nav-list {
-  max-width: 340px;
+/** css for list only  - TODO: make the list as module and lazy loading  */
+mat-toolbar.toolbar {
+  height: auto;
+  min-height: 50px;
+  justify-content: space-between;
 }
 
 mat-form-field textarea {
@@ -60,10 +74,6 @@ mat-form-field textarea {
   min-height: 100px;
   padding: 8px!important;
   box-sizing: border-box;
-}
-
-.logo {
-  height: 40px;
 }
 
 .overflow {
@@ -166,11 +176,6 @@ mat-checkbox.advanced>label>span {
   font-size: 11px;
 }
 
-.drawer .toolbar {
-  height: auto;
-  padding: 3px 16px;
-}
-
 mat-sidenav {
   width: 200px;
   min-height: 100vh;
@@ -230,10 +235,6 @@ mat-cell.control {
   vertical-align: text-bottom;
 }
 
-.example-spacer {
-  flex: 1 1 auto;
-}
-
 .on-center {
   display: flex;
   justify-content: center;
@@ -261,8 +262,6 @@ mat-cell.control {
   margin-bottom: 8px;
   box-shadow: inset 2px 2px 5px rgba(90, 90, 90, 0.5), 1px 1px 5px #383838;
 }
-
-
 
 .component {
   border: solid 1px #696969;
