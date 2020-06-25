@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 0.9
+  version: 1.0
 
   config:
     - name: "global"
@@ -60,6 +60,7 @@
       subs:
         - name: "mitogen"
           display_name: "Use Mitogen"
+          required: false
           description: |
             Mitogen for Ansible is a completely redesigned UNIX connection layer and module runtime for Ansible.
             Requiring minimal configuration changes, it updates Ansible’s slow and wasteful shell-centic implementation
@@ -85,10 +86,12 @@
           display_name: "Status Server"
           description: |
             Rotation logs for status server
+          required: false
           type: boolean
           default: false
         - name: "nginx_server"
           display_name: "Nginx Server"
+          required: false
           description: |
             Rotation logs for nginx server
           type: boolean
