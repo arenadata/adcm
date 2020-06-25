@@ -36,7 +36,7 @@
     "@angular-devkit/build-angular": "~0.901.8",
     "@angular/cli": "^9.1.8",
     "@angular/compiler-cli": "9.1.11",
-    "@angular/language-service": "9.1.11",
+    "@angular/language-service": "10.0.0",
     "@ngrx/schematics": "^9.2.0",
     "@types/jasmine": "~3.5.10",
     "@types/jasminewd2": "~2.0.8",
