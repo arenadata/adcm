@@ -139,7 +139,7 @@ func (db dbMap2) get(key1 int, key2 int) (Status, bool) {
 	if ok {
 		return val, true
 	}
-	return val, false
+	return Status{Status: 16}, false
 }
 
 func (db dbMap2) get1(key1 int) (map[int]Status, bool) {

@@ -170,6 +170,7 @@ class Component(models.Model):
     description = models.TextField(blank=True)
     params = models.TextField(blank=True)       # JSON
     constraint = models.TextField(blank=True)   # JSON
+    requires = models.TextField(blank=True)     # JSON
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
 
     class Meta:
@@ -256,6 +257,7 @@ CONFIG_FIELD_TYPE = (
     ('integer', 'integer'),
     ('float', 'float'),
     ('option', 'option'),
+    ('variant', 'variant'),
     ('boolean', 'boolean'),
     ('file', 'file'),
     ('list', 'list'),
@@ -455,6 +457,7 @@ class StageComponent(models.Model):
     description = models.TextField(blank=True)
     params = models.TextField(blank=True)       # JSON
     constraint = models.TextField(blank=True)   # JSON
+    requires = models.TextField(blank=True)     # JSON
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
 
     class Meta:

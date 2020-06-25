@@ -17,10 +17,11 @@ from rest_framework import serializers
 import cm.api
 import cm.job
 import cm.status_api
+import logrotate
 from cm.api import safe_api
 from cm.logger import log   # pylint: disable=unused-import
 from cm.errors import AdcmApiEx, AdcmEx
-from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
+from cm.models import Action, Cluster, Host, Prototype, ServiceComponent, Component
 
 from api.serializers import check_obj, filter_actions, get_upgradable_func
 from api.serializers import hlink, JSONField, UrlField
@@ -132,6 +133,7 @@ class ClusterUISerializer(ClusterDetailSerializer):
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
+        self.context['object'] = obj
         self.context['cluster_id'] = obj.id
         actions = ClusterActionShort(filter_actions(obj, act_set), many=True, context=self.context)
         return actions.data
@@ -209,6 +211,7 @@ class ClusterHostUISerializer(ClusterHostDetailSerializer):
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
+        self.context['object'] = obj
         self.context['host_id'] = obj.id
         actions = ClusterHostActionShort(
             filter_actions(obj, act_set), many=True, context=self.context
@@ -397,6 +400,7 @@ class ClusterServiceUISerializer(ClusterServiceDetailSerializer):
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
+        self.context['object'] = obj
         self.context['service_id'] = obj.id
         actions = filter_actions(obj, act_set)
         acts = ServiceActionShort(actions, many=True, context=self.context)
@@ -444,6 +448,7 @@ class ServiceComponentSerializer(serializers.Serializer):
 
 class ServiceComponentDetailSerializer(ServiceComponentSerializer):
     constraint = serializers.SerializerMethodField()
+    requires = serializers.SerializerMethodField()
     params = serializers.SerializerMethodField()
     monitoring = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
@@ -455,6 +460,9 @@ class ServiceComponentDetailSerializer(ServiceComponentSerializer):
 
     def get_constraint(self, obj):
         return self.load_json(obj.component.constraint)
+
+    def get_requires(self, obj):
+        return self.load_json(obj.component.requires)
 
     def get_params(self, obj):
         return self.load_json(obj.component.params)
@@ -471,6 +479,7 @@ class HCComponentSerializer(ServiceComponentDetailSerializer):
     service_name = serializers.SerializerMethodField()
     service_display_name = serializers.SerializerMethodField()
     service_state = serializers.SerializerMethodField()
+    requires = serializers.SerializerMethodField()
 
     def get_service_state(self, obj):
         return obj.service.state
@@ -480,6 +489,51 @@ class HCComponentSerializer(ServiceComponentDetailSerializer):
 
     def get_service_display_name(self, obj):
         return obj.service.prototype.display_name
+
+    def get_requires(self, obj):
+        if not obj.component.requires:
+            return None
+        comp_list = {}
+
+        def process_requires(req_list):
+            for c in json.loads(req_list):
+                comp = Component.objects.get(name=c['component'], prototype__name=c['service'])
+                if comp == obj.component:
+                    return
+                if comp.prototype.name not in comp_list:
+                    comp_list[comp.prototype.name] = {
+                        'components': {}, 'service': comp.prototype
+                    }
+                if comp.name in comp_list[comp.prototype.name]['components']:
+                    return
+                comp_list[comp.prototype.name]['components'][comp.name] = comp
+                if comp.requires:
+                    process_requires(comp.requires)
+
+        # def check_hc(comp):
+        #    return HostComponent.objects.filter(cluster=obj.cluster, component__component=comp)
+
+        process_requires(obj.component.requires)
+        out = []
+        for service_name in comp_list:
+            comp_out = []
+            service = comp_list[service_name]['service']
+            for comp_name in comp_list[service_name]['components']:
+                comp = comp_list[service_name]['components'][comp_name]
+                comp_out.append({
+                    'prototype_id': comp.id,
+                    'name': comp_name,
+                    'display_name': comp.display_name,
+                })
+            if not comp_out:
+                continue
+            out.append({
+                'prototype_id': service.id,
+                'name': service_name,
+                'display_name': service.display_name,
+                'components': comp_out
+            })
+        return out
 
 
 class BindSerializer(serializers.Serializer):
@@ -661,6 +715,8 @@ class ObjectConfigUpdate(ObjectConfig):
             cl = cm.api.update_obj_config(instance.obj_ref, conf, attr, desc)
             if validated_data.get('ui'):
                 cl.config = cm.adcm_config.ui_config(validated_data.get('obj'), cl)
+            if hasattr(instance.obj_ref, 'adcm'):
+                logrotate.run()
         except AdcmEx as e:
             raise AdcmApiEx(e.code, e.msg, e.http_code)
         return cl

@@ -13,6 +13,8 @@
 # Created by a1wen at 27.02.19
 
 # pylint: disable=E0401, E0611, W0611, W0621
+import tempfile
+
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support import expected_conditions as EC
@@ -28,14 +30,16 @@ class ADCMTest:
         self.opts = Options()
         self.opts.headless = True
         self.opts.add_argument('--no-sandbox')
-        self.opts.add_argument('--disable-dev-shm-usage')
         self.opts.add_argument('--disable-extensions')
         self.opts.add_argument('--ignore-certificate-errors')
         self.opts.add_argument('--disable-gpu')
         self.opts.add_argument("--start-maximized")
+        self.opts.add_argument("--enable-logging")
+        self.opts.add_argument("--enable-automation")
         self.capabilities = webdriver.DesiredCapabilities.CHROME.copy()
         self.capabilities['acceptSslCerts'] = True
         self.capabilities['acceptInsecureCerts'] = True
+        self.capabilities['goog:loggingPrefs'] = {'browser': 'ALL', 'performance': 'ALL'}
         self.driver = webdriver.Chrome(options=self.opts, desired_capabilities=self.capabilities)
         self.driver.set_window_size(1800, 1000)
         self.driver.implicitly_wait(0.5)
@@ -76,3 +80,12 @@ class ADCMTest:
 
     def destroy(self):
         self.driver.quit()
+
+    def gather_logs(self, file_name):
+        bits, _ = self.adcm.container.get_archive('/adcm/data/log/')
+        f_name = ".".join([file_name, "tar"])
+        f_path = "/".join([tempfile.mkdtemp(), f_name])
+        with open(f_path, 'wb') as f:
+            for chunk in bits:
+                f.write(chunk)
+        return f_path

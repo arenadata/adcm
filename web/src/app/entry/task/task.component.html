@@ -16,11 +16,11 @@
         <th mat-header-cell *matHeaderCellDef>Action name</th>
         <td mat-cell *matCellDef="let element" class="title">
           <a *ngIf="element.jobs.length === 1; else multi" [routerLink]="['/job', element.jobs[0].id]">
-            {{ element.action?.display_name || 'Object has been deleted' }}
+            {{ element.action?.display_name || 'unknown' }}
           </a>
           <ng-template #multi>
             <div class="multi-title" (click)="expandedTask = expandedTask === element ? null : element">
-              <span>{{ element.action?.display_name || 'Object has been deleted' }}</span>
+              <span>{{ element.action?.display_name || 'unknown' }}</span>
               &nbsp;
               <mat-icon>{{ expandedTask?.id === element.id ? 'expand_less' : 'expand_more' }}</mat-icon>
             </div>
@@ -31,11 +31,9 @@
       <ng-container matColumnDef="objects">
         <th mat-header-cell *matHeaderCellDef>Objects</th>
         <td mat-cell *matCellDef="let row">
-          <ng-container *ngIf="row.action">
-            <ng-container *ngFor="let obj of row.objects; index as i; last as lastElement">
-              <a [routerLink]="obj.url">{{ obj.name }}</a>
-              <span *ngIf="!lastElement"> / </span>
-            </ng-container>
+          <ng-container *ngFor="let obj of row.objects; index as i; last as lastElement">
+            <a [routerLink]="obj.url">{{ obj.name }}</a>
+            <span *ngIf="!lastElement"> / </span>
           </ng-container>
         </td>
       </ng-container>
@@ -76,9 +74,7 @@
         <td mat-cell *matCellDef="let element" [attr.colspan]="columnsToDisplay.length">
           <div class="expand-jobs" [@.disabled]="isDisabled"
             [@jobsExpand]="element.id === expandedTask?.id ? 'expanded' : 'collapsed'">
-
             <app-task-inner [dataSource]="element.jobs"></app-task-inner>
-
           </div>
         </td>
       </ng-container>

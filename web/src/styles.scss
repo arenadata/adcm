@@ -26,101 +26,54 @@ body {
   margin: 0;
   padding: 0;
   font-family: Roboto, "Helvetica Neue", sans-serif;
+  color: #ffffff;
   background-color: #303030;
+}
 
-  & app-root {
-    position: absolute;
-    top: 0;
-    right: 0px;
-    bottom: 0px;
-    left: 0px;
+app-root {
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+
+  & main {
+    flex: 1;
     display: flex;
-    flex-direction: column;
+    overflow: auto;
+  }
 
-    & main {
-      overflow: auto;
-      position: absolute;
-      top: 52px;
-      bottom: 23px;
-      left: 0;
-      right: 0;
+  & footer {
+    color: #ccc;
 
-      & .drawer {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        right: 0;
-      }
+    & div {
+      text-align: right;
+      padding: 4px 10px;
+      font-size: .8em;
 
-      & .container-entry {
-        padding: 0 6px;
-        display: flex;
-        position: fixed;
-        top: 100px;
-        bottom: 20px;
-        left: 0;
-        right: 0;
-
-        app-list {
-          overflow: auto;
-        }
-
-        mat-tab-group {
-          width: 100%;
-        }
-
-        & .hide-left-panel {
-          min-width: 400px;
-          overflow: auto;
-          margin-right: 5px;
-        }
-
-        & .details {
-          margin-left: 5px;
-          width: 50%;
-
-          /* padding:4px 10px;*/
-
-          overflow-x: hidden;
-          overflow-y: auto;
-
-          & .mat-card-actions {
-            margin-left: auto;
-            margin-right: auto;
-          }
-        }
-
-        & .main {
-          flex: 1;
-          overflow: auto;
-        }
-      }
-    }
-
-    & footer {
-      position: absolute;
-      bottom: 0;
-      width: 100%;
-      z-index: 2;
-      color: #ccc;
-      background-color: #303030;
-
-      & div {
-        text-align: right;
-        padding: 4px 10px;
-        font-size: .8em;
-
-        & .left {
-          float: left;
-        }
+      & .left {
+        float: left;
       }
     }
   }
 }
 
-.logo {
-  height: 40px;
+/** css for list only  - TODO: make the list as module and lazy loading  */
+mat-toolbar.toolbar {
+  height: auto;
+  min-height: 50px;
+  justify-content: space-between;
+}
+
+mat-form-field textarea {
+  background-color: #cccccc!important;
+  color: #333!important;
+  min-height: 100px;
+  padding: 8px!important;
+  box-sizing: border-box;
 }
 
 .overflow {
@@ -197,15 +150,6 @@ mat-checkbox.advanced>label>span {
 }
 
 .row {
-  display: flex;
-
-  & .col-4 {
-    flex: 1 0 20%;
-  }
-
-  & .col-8 {
-    flex: 0 1 80%;
-  }
 
   & .star {
     flex-basis: 20px;
@@ -230,11 +174,6 @@ mat-checkbox.advanced>label>span {
 .job-status .mat-mini-fab .mat-button-wrapper {
   display: inline;
   font-size: 11px;
-}
-
-.drawer .toolbar {
-  height: auto;
-  padding: 3px 16px;
 }
 
 mat-sidenav {
@@ -296,10 +235,6 @@ mat-cell.control {
   vertical-align: text-bottom;
 }
 
-.example-spacer {
-  flex: 1 1 auto;
-}
-
 .on-center {
   display: flex;
   justify-content: center;
@@ -327,8 +262,6 @@ mat-cell.control {
   margin-bottom: 8px;
   box-shadow: inset 2px 2px 5px rgba(90, 90, 90, 0.5), 1px 1px 5px #383838;
 }
-
-
 
 .component {
   border: solid 1px #696969;

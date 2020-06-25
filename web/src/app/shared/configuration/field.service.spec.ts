@@ -10,18 +10,92 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { TestBed } from '@angular/core/testing';
-import { FormBuilder } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
 
-import { FieldService } from './field.service';
-import { ConfigResultTypes, ConfigValueTypes } from './types';
+import { FieldService, IOutput } from './field.service';
+import { ConfigValueTypes, FieldStack, IConfig, ILimits, resultTypes } from './types';
+
+const itemOptionsMock = [
+  {
+    required: false, // not in itemOptions
+    name: 'field_string',
+    display_name: 'display_name',
+    subname: '',
+    type: 'string',
+    activatable: false,
+    read_only: false,
+    default: null,
+    value: '',
+    description: '',
+    key: 'field_string',
+    validator: { required: false, min: null, max: null, pattern: null },
+    controlType: 'textbox',
+    hidden: false,
+    compare: [],
+  },
+  {
+    name: 'group',
+    display_name: 'group_display_name',
+    subname: '',
+    type: 'group',
+    activatable: false,
+    read_only: false,
+    default: null,
+    value: null,
+    description: '',
+    required: false,
+    hidden: false,
+    active: true,
+    options: [
+      {
+        name: 'field_in_group',
+        display_name: 'field_in_group_display_name',
+        subname: 'field_in_group',
+        type: 'integer',
+        activatable: false,
+        read_only: false,
+        default: 10,
+        value: '',
+        description: '',
+        required: true,
+        key: 'field_in_group/group',
+        validator: { required: true, min: null, max: null, pattern: /^[-]?\d+$/ },
+        controlType: 'textbox',
+        hidden: false,
+        compare: [],
+      },
+    ],
+  },
+];
+
+const itemOptionsMock2 = [
+  {
+    required: false, // not in itemOptions
+    name: 'field_string',
+    display_name: 'display_name',
+    subname: '',
+    type: 'string',
+    activatable: false,
+    read_only: false,
+    default: null,
+    value: '',
+    description: '',
+    key: 'field_string',
+    validator: { required: false, min: null, max: null, pattern: null },
+    controlType: 'textbox',
+    hidden: false,
+    compare: [],
+  },
+];
 
 describe('Configuration fields service', () => {
   let service: FieldService;
-  let checkValue: (value: ConfigResultTypes, type: ConfigValueTypes) => any;
+  let checkValue: (value: resultTypes, type: ConfigValueTypes) => resultTypes;
+  // let parseValue: (value: IOutput, source: Partial<FieldStack>[]) => IOutput;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [FormBuilder, FieldService]
+      providers: [FormBuilder, FieldService],
     });
 
     service = TestBed.inject(FieldService);
@@ -32,11 +106,231 @@ describe('Configuration fields service', () => {
     expect(service).toBeTruthy();
   });
 
-  /**
-   * 
-   * 
-   * 
-   */
+  it('Prepare data for configuration: getPanels(undefined) should return undefined', () => {
+    expect(service.getPanels(undefined)).toEqual(undefined);
+  });
+
+  it('Prepare data for configuration: getPanels({}) should return undefined', () => {
+    expect(service.getPanels({} as any)).toEqual(undefined);
+  });
+
+  it('Prepare data for configuration: getPanels({config: []}) should return []', () => {
+    expect(service.getPanels({ config: [] })).toEqual([]);
+  });
+
+  it('Prepare data for configuration: getPanels()', () => {
+    const data: IConfig = {
+      attr: {},
+      config: [
+        {
+          name: 'field_string',
+          display_name: 'display_name',
+          subname: '',
+          type: 'string',
+          activatable: false,
+          read_only: false,
+          default: null,
+          value: null,
+          description: '',
+          required: false,
+        },
+        {
+          name: 'group',
+          display_name: 'group_display_name',
+          subname: '',
+          type: 'group',
+          activatable: false,
+          read_only: false,
+          default: null,
+          value: null,
+          description: '',
+          required: false,
+        },
+        {
+          name: 'group',
+          display_name: 'field_in_group_display_name',
+          subname: 'field_in_group',
+          type: 'integer',
+          activatable: false,
+          read_only: false,
+          default: 10,
+          value: null,
+          description: '',
+          required: true,
+        },
+      ],
+    };
+    const output: any /* itemOptions */[] = itemOptionsMock;
+    expect(service.getPanels(data)).toEqual(output);
+  });
+
+  it('Generate FormGroup : toFormGroup() check value', () => {
+    const fg = service.fb.group(
+      {
+        field_string: service.fb.control(''),
+        group: service.fb.group({
+          field_in_group: ['', [Validators.required, Validators.pattern(/^[-]?\d+$/)]],
+        }),
+      },
+      { validator: () => null }
+    );
+    const form = service.toFormGroup(itemOptionsMock as any);
+    expect(form.value).toEqual(fg.value);
+  });
+
+  it('Check result : parseValue(empty, empty) should return {}', () => {
+    const source: FieldStack[] = [];
+    const value: IOutput = {};
+    expect(service.parseValue(value, source)).toEqual({});
+  });
+
+  it('Check result : parseValue(form without grop)', () => {
+    const source: { name: string; subname: string; type: ConfigValueTypes; read_only: boolean; limits?: ILimits; value: any }[] = [
+      { name: 'field_string', type: 'string', read_only: false, subname: '', value: '' },
+      { name: 'field_int', type: 'integer', read_only: false, subname: '', value: '' },
+      { name: 'field_int_as_str', type: 'integer', read_only: false, subname: '', value: '' },
+      { name: 'field_int_0', type: 'integer', read_only: false, subname: '', value: '' },
+      { name: 'field_float', type: 'float', read_only: false, subname: '', value: '' },
+      { name: 'field_float_as_str', type: 'float', read_only: false, subname: '', value: '' },
+      { name: 'field_bool', type: 'boolean', read_only: false, subname: '', value: '' },
+      { name: 'field_bool_undefined', type: 'boolean', read_only: false, subname: '', value: '' },
+      { name: 'field_bool_null', type: 'boolean', read_only: false, subname: '', value: '' },
+      { name: 'field_json', type: 'json', read_only: false, subname: '', value: '' },
+      { name: 'field_map', type: 'map', read_only: false, subname: '', value: '' },
+      { name: 'field_map_empty', type: 'map', read_only: false, subname: '', value: '' },
+      { name: 'field_map_not_object', type: 'map', read_only: false, subname: '', value: '' },
+      { name: 'field_list', type: 'list', read_only: false, subname: '', value: '' },
+      { name: 'field_list_empty', type: 'list', read_only: false, subname: '', value: '' },
+      { name: 'field_list_not_array', type: 'list', read_only: false, subname: '', value: '' },
+      { name: 'field_option_str', type: 'option', read_only: false, subname: '', value: '' },
+      { name: 'field_option_int', type: 'option', read_only: false, subname: '', value: '' },
+      // { name: 'field_option_float', type: 'option', read_only: false },
+      { name: 'field_null', type: 'string', read_only: false, subname: '', value: '' },
+      { name: 'field_readonly', type: 'float', read_only: true, subname: '', value: '' },
+    ];
+    const value: IOutput = {
+      field_string: 'a',
+      field_int: 1,
+      field_int_0: 0,
+      field_int_as_str: '123',
+      field_bool: true,
+      field_bool_undefined: undefined,
+      field_bool_null: null,
+      field_float: 1.2,
+      field_float_as_str: '1.23',
+      field_json: {},
+      field_map: { key: 'value' },
+      field_map_empty: {},
+      field_map_not_object: 'string',
+      field_list: ['a', 1],
+      field_list_empty: [],
+      field_list_not_array: 'string',
+      field_option_str: 'option string',
+      field_option_int: 0,
+      field_null: '',
+      field_readonly: 'readonly string',
+    };
+    expect(service.parseValue(value, source)).toEqual({
+      field_string: 'a',
+      field_int: 1,
+      field_int_0: 0,
+      field_int_as_str: 123,
+      field_bool: true,
+      field_bool_undefined: undefined,
+      field_bool_null: null,
+      field_float: 1.2,
+      field_float_as_str: 1.23,
+      field_map: { key: 'value' },
+      field_list: ['a', 1],
+      field_option_str: 'option string',
+      field_option_int: 0,
+      field_map_not_object: 'string',
+      field_list_not_array: 'string',
+      field_json: null,
+      field_null: null,
+      field_map_empty: null,
+      field_list_empty: null,
+    });
+  });
+
+  it('Check result : parseValue(form with grop)', () => {
+    const source: { name: string; subname: string; type: ConfigValueTypes; read_only: boolean; limits?: ILimits; value: any }[] = [
+      { name: 'field_string', type: 'string', read_only: false, subname: '', value: '' },
+      { name: 'group_1', subname: '', type: 'group', read_only: false, value: '' },
+      { name: 'group_1', subname: 'field_int', type: 'integer', read_only: false, value: '' },
+      { name: 'group_1', subname: 'field_int_as_str', type: 'integer', read_only: false, value: '' },
+      { name: 'group_1', subname: 'field_int_0', type: 'integer', read_only: false, value: '' },
+      { name: 'group_1', subname: 'field_float', type: 'float', read_only: false, value: '' },
+      { name: 'group_1', subname: 'field_float_as_str', type: 'float', read_only: false, value: '' },
+      { name: 'field_bool', type: 'boolean', read_only: false, subname: '', value: '' },
+      { name: 'field_bool_undefined', type: 'boolean', read_only: false, subname: '', value: '' },
+      { name: 'field_bool_null', type: 'boolean', read_only: false, subname: '', value: '' },
+      { name: 'group_2', type: 'group', read_only: false, subname: '', value: '' },
+      { subname: 'field_json', name: 'group_2', type: 'json', read_only: false, value: '' },
+      { subname: 'field_map', name: 'group_2', type: 'map', read_only: false, value: '' },
+      { subname: 'field_map_empty', name: 'group_2', type: 'map', read_only: false, value: '' },
+      { subname: 'field_map_not_object', name: 'group_2', type: 'map', read_only: false, value: '' },
+      { subname: 'field_list', name: 'group_2', type: 'list', read_only: false, value: '' },
+      { subname: 'field_list_empty', name: 'group_2', type: 'list', read_only: false, value: '' },
+      { subname: 'field_list_not_array', name: 'group_2', type: 'list', read_only: false, value: '' },
+      { subname: 'field_option_str', name: 'group_2', type: 'option', read_only: false, value: '' },
+      { subname: 'field_option_int', name: 'group_2', type: 'option', read_only: false, value: '' },
+      // { name: 'field_option_float', type: 'option', read_only: false },
+      { subname: 'field_null', name: 'group_2', type: 'string', read_only: false, value: '' },
+      { subname: 'field_readonly', name: 'group_2', type: 'float', read_only: true, value: '' },
+    ];
+    const value: IOutput = {
+      field_string: 'a',
+      group_1: {
+        field_int: 1,
+        field_int_0: 0,
+        field_float: 1.2,
+        field_int_as_str: '123',
+        field_float_as_str: '1.23',
+      },
+      field_bool: true,
+      field_bool_undefined: undefined,
+      field_bool_null: null,
+      group_2: {
+        field_json: null,
+        field_map_empty: null,
+        field_list_empty: null,
+        field_map: { key: 'value' },
+        field_map_not_object: 'string',
+        field_list: ['a', 1],
+        field_list_not_array: 'string',
+        field_option_str: 'option string',
+        field_option_int: 0,
+        field_null: '',
+        field_readonly: 'readonly string',
+      },
+    };
+    expect(service.parseValue(value, source)).toEqual({
+      field_string: 'a',
+      group_1: {
+        field_int: 1,
+        field_int_0: 0,
+        field_float: 1.2,
+        field_int_as_str: 123,
+        field_float_as_str: 1.23,
+      },
+      field_bool: true,
+      field_bool_undefined: undefined,
+      field_bool_null: null,
+      group_2: {
+        field_json: null,
+        field_map_empty: null,
+        field_list_empty: null,
+        field_map: { key: 'value' },
+        field_list: ['a', 1],
+        field_option_str: 'option string',
+        field_option_int: 0,
+        field_map_not_object: 'string',
+        field_list_not_array: 'string',
+        field_null: null,
+      },
+    });
+  });
 
   it('checkValue("", "string") should return null', () => {
     expect(checkValue('', 'string')).toBeNull();
@@ -122,8 +416,12 @@ describe('Configuration fields service', () => {
     expect(checkValue('{"a": 23 }', 'json')).toEqual({ a: 23 });
   });
 
-  it('List fieldType :: checkValue("string", "list") should return TypeError', () => {
-    expect(checkValue('string', 'list')).toEqual(new TypeError('FieldService::checkValue - value is not Array'));
+  it('List fieldType :: checkValue("some string", "list") should return "some string"', () => {
+    expect(checkValue('some string', 'list')).toEqual('some string');
+  });
+
+  it('List fieldType :: checkValue("[]", "list") should return null', () => {
+    expect(checkValue([], 'list')).toBeNull();
   });
 
   it('List fieldType :: checkValue(["string1", "", "string2"], "list") should return ["string1", "string2"]', () => {
@@ -146,7 +444,11 @@ describe('Configuration fields service', () => {
     expect(checkValue(['string1', 'string2'], 'map')).toEqual({ 0: 'string1', 1: 'string2' });
   });
 
-  it('Map fieldType :: checkValue("string1", "map") should TypeError', () => {
-    expect(checkValue('string1', 'map')).toEqual(new TypeError('FieldService::checkValue - value is not Object'));
+  it('Map fieldType :: checkValue("some string", "map") should return "some string"', () => {
+    expect(checkValue('some string', 'map')).toEqual('some string');
+  });
+
+  it('Map fieldType :: checkValue("{}", "map") should return null', () => {
+    expect(checkValue({}, 'map')).toBeNull();
   });
 });

@@ -9,12 +9,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { clearEmptyField, Cluster } from '@app/core/types';
-import { filter } from 'rxjs/operators';
 
 import { BaseFormDirective } from './base-form.directive';
-import { GenName } from './naming';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-add-cluster',
@@ -25,21 +24,17 @@ import { GenName } from './naming';
       <app-input [form]="form" [label]="'Description'" [controlName]="'description'"></app-input>
       <app-add-controls [disabled]="!form.valid" (cancel)="onCancel()" (save)="save()"></app-add-controls>
     </ng-container>
-  `
+  `,
 })
-export class ClusterComponent extends BaseFormDirective implements OnInit {
+export class ClusterComponent extends BaseFormDirective implements OnInit, OnDestroy {
+  sgn: Subscription;
   ngOnInit() {
     this.form = this.service.model('cluster').form;
-    this.form
-      .get('prototype_id')
-      .valueChanges.pipe(
-        filter(v => !!v),
-        this.takeUntil()
-      )
-      .subscribe(() => {
-        const field = this.form.get('name');
-        if (!field.value) field.setValue(GenName.do());
-      });
+    this.sgn = this.service.genName(this.form);
+  }
+
+  ngOnDestroy() {
+    this.sgn.unsubscribe();
   }
 
   save() {
@@ -47,6 +42,6 @@ export class ClusterComponent extends BaseFormDirective implements OnInit {
     this.service
       .add<Cluster>(data, 'cluster')
       .pipe(this.takeUntil())
-      .subscribe(_ => this.onCancel());
+      .subscribe((_) => this.onCancel());
   }
 }

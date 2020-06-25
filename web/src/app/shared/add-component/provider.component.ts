@@ -9,10 +9,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, Input, OnInit, EventEmitter, Output } from '@angular/core';
+import { Component, Input, OnInit, EventEmitter, Output, OnDestroy } from '@angular/core';
 import { clearEmptyField, Provider } from '@app/core/types';
 
 import { BaseFormDirective } from './base-form.directive';
+import { Subscription } from 'rxjs';
 
 export enum DisplayMode {
   default,
@@ -33,15 +34,7 @@ export enum DisplayMode {
         <div class="row">
           <mat-form-field class="full-width">
             <input required matInput placeholder="Hostprovider name" formControlName="name" />
-            <button
-              [style.fontSize.px]="24"
-              [disabled]="!form.valid"
-              matTooltip="Create hostprovider"
-              matSuffix
-              mat-icon-button
-              [color]="'accent'"
-              (click)="save()"
-            >
+            <button [style.fontSize.px]="24" [disabled]="!form.valid" matTooltip="Create hostprovider" matSuffix mat-icon-button [color]="'accent'" (click)="save()">
               <mat-icon>add_box</mat-icon>
             </button>
             <mat-error *ngIf="form.get('name').hasError('required')">Hostprovider name is required </mat-error>
@@ -50,13 +43,20 @@ export enum DisplayMode {
       </ng-template>
     </ng-container>
   `,
+  styles: ['.row {display: flex;}'],
 })
-export class ProviderComponent extends BaseFormDirective implements OnInit {
+export class ProviderComponent extends BaseFormDirective implements OnInit, OnDestroy {
+  sgn: Subscription;
   @Input() displayMode: DisplayMode = DisplayMode.default;
   @Output() cancel = new EventEmitter();
 
   ngOnInit() {
     this.form = this.service.model('provider').form;
+    this.sgn = this.service.genName(this.form);
+  }
+
+  ngOnDestroy() {
+    this.sgn.unsubscribe();
   }
 
   save() {
@@ -64,9 +64,12 @@ export class ProviderComponent extends BaseFormDirective implements OnInit {
     this.service
       .add<Provider>(data, 'provider')
       .pipe(this.takeUntil())
-      .subscribe(x => {
-        this.form.reset();
-        this.cancel.emit(x.id);
+      .subscribe((x) => {
+        if (this.displayMode === 0) this.onCancel();
+        else {
+          this.form.reset();
+          this.cancel.emit(x.id);
+        }
       });
   }
 }

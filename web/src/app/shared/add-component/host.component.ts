@@ -63,7 +63,7 @@ import { MatDialog } from '@angular/material/dialog';
       </ng-container>
     </ng-container>
   `,
-  styles: ['.inner {padding: 6px 8px;background-color: #4e4e4e;margin: 0 -6px;}'],
+  styles: ['.inner {padding: 6px 8px;background-color: #4e4e4e;margin: 0 -6px;}', '.row {display: flex;}'],
   providers: [ActionsDirective]
 })
 export class HostComponent extends BaseFormDirective implements OnInit {

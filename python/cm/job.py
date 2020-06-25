@@ -49,7 +49,7 @@ def start_task(action_id, selector, conf, attr, hc, hosts):   # pylint: disable=
         err('ACTION_NOT_FOUND')
 
     obj, cluster, provider = check_task(action, selector, conf)
-    act_conf, spec = check_action_config(action, conf, attr)
+    act_conf, spec = check_action_config(action, obj, conf, attr)
     host_map, delta = check_hostcomponentmap(cluster, action, hc)
     check_action_hosts(action, cluster, provider, hosts)
     old_hc = api.get_hc(cluster)
@@ -301,14 +301,19 @@ def unlock_all(event):
         set_job_status(job.id, config.Job.ABORTED, event)
 
 
-def check_action_config(action, conf, attr):
+def check_action_config(action, obj, conf, attr):
     proto = action.prototype
     spec, flat_spec, _, _ = adcm_config.get_prototype_config(proto, action)
     if not spec:
         return None, None
     if not conf:
         err('TASK_ERROR', 'action config is required')
+    obj_conf = None
+    if obj.config:
+        cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
+        obj_conf = json.loads(cl.config)
     adcm_config.check_attr(proto, attr, flat_spec)
+    adcm_config.process_variant(obj, spec, obj_conf)
     new_conf = adcm_config.check_config_spec(proto, action, spec, flat_spec, conf, None, attr)
     return new_conf, spec
 
@@ -967,6 +972,17 @@ def prepare_ansible_config(job_id):
         config_parser['defaults']['strategy_plugins'] = os.path.join(
             config.PYTHON_SITE_PACKAGES, 'ansible_mitogen/plugins/strategy')
         config_parser['defaults']['host_key_checking'] = 'False'
+
+    job = JobLog.objects.get(id=job_id)
+    action = Action.objects.get(id=job.action_id)
+
+    try:
+        params = json.loads(action.params)
+    except json.JSONDecodeError:
+        params = {}
+
+    if 'jinja2_native' in params:
+        config_parser['defaults']['jinja2_native'] = str(params['jinja2_native'])
 
     with open(os.path.join(config.RUN_DIR, f'{job_id}/ansible.cfg'), 'w') as config_file:
         config_parser.write(config_file)

@@ -134,7 +134,7 @@ def delete_host_provider(provider):
 def add_host_to_cluster(cluster, host):
     if host.cluster:
         if host.cluster.id != cluster.id:
-            msg = 'Host #{} belong to cluster {}'.format(host.id, host.cluster.id)
+            msg = 'Host #{} belong to cluster #{}'.format(host.id, host.cluster.id)
             err('FOREIGN_HOST', msg)
         else:
             err('HOST_CONFLICT')
@@ -145,7 +145,52 @@ def add_host_to_cluster(cluster, host):
         cm.issue.save_issue(cluster)
     cm.status_api.post_event('add', 'host', host.id, 'cluster', str(cluster.id))
     cm.status_api.load_service_map()
+    log.info('host #%s %s is added to cluster #%s %s', host.id, host.fqdn, cluster.id, cluster.name)
     return host
+
+
+def get_cluster_and_host(cluster_id, fqdn, host_id):
+    try:
+        cluster = Cluster.objects.get(id=cluster_id)
+    except Cluster.DoesNotExist:
+        err('CLUSTER_NOT_FOUND', f'Cluster with id #{cluster_id} is not found')
+    if fqdn:
+        try:
+            host = Host.objects.get(fqdn=fqdn)
+        except Host.DoesNotExist:
+            err('HOST_NOT_FOUND', f'Host "{fqdn}" is not found')
+    elif host_id:
+        if not isinstance(host_id, int):
+            err('HOST_NOT_FOUND', f'host_id must be integer (got "{host_id}")')
+        try:
+            host = Host.objects.get(id=host_id)
+        except Host.DoesNotExist:
+            err('HOST_NOT_FOUND', f'Host with id #{host_id} is not found')
+    else:
+        err('HOST_NOT_FOUND', 'fqdn or host_id is mandatory args')
+    return (cluster, host)
+
+
+def add_host_to_cluster_by_id(cluster_id, fqdn, host_id):
+    """
+    add host to cluster
+
+    This is intended for use in adcm_add_host_to_cluster ansible plugin only
+    """
+    cluster, host = get_cluster_and_host(cluster_id, fqdn, host_id)
+    return add_host_to_cluster(cluster, host)
+
+
+def remove_host_from_cluster_by_id(cluster_id, fqdn, host_id):
+    """
+    remove host from cluster
+
+    This is intended for use in adcm_remove_host_from_cluster ansible plugin only
+    """
+    cluster, host = get_cluster_and_host(cluster_id, fqdn, host_id)
+    if host.cluster != cluster:
+        err('HOST_CONFLICT', 'you can remove host only from you own cluster')
+    remove_host_from_cluster(host)
 
 
 def delete_host(host):
@@ -458,6 +503,7 @@ def check_hc(cluster, hc_in):   # pylint: disable=too-many-branches
     for service in ClusterObject.objects.filter(cluster=cluster):
         cm.issue.check_component_constraint(service, [i for i in host_comp_list if i[0] == service])
 
+    cm.issue.check_component_requires(host_comp_list)
     return host_comp_list
 
 

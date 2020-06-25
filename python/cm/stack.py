@@ -220,6 +220,20 @@ def check_component_constraint_definition(proto, name, conf):
         check_item(const[1])
 
 
+def check_component_requires(proto, name, conf):
+    if not isinstance(conf, dict):
+        return
+    if 'requires' not in conf:
+        return
+    req = conf['requires']
+    ref = proto_ref(proto)
+    if not isinstance(req, list):
+        msg = 'requires of component "{}" in {} should be array'
+        err('INVALID_COMPONENT_DEFINITION', msg.format(name, ref))
+    for item in req:
+        check_extra_keys(item, ('service', 'component'), f'requires of component "{name}" of {ref}')
+
+
 def save_components(proto, conf):
     ref = proto_ref(proto)
     if not in_dict(conf, 'components'):
@@ -234,7 +248,7 @@ def save_components(proto, conf):
         cc = conf['components'][comp_name]
         err_msg = 'Component name "{}" of {}'.format(comp_name, ref)
         validate_name(comp_name, err_msg)
-        allow = ('display_name', 'description', 'params', 'constraint', 'monitoring')
+        allow = ('display_name', 'description', 'params', 'constraint', 'requires', 'monitoring')
         check_extra_keys(cc, allow, 'component "{}" of {}'.format(comp_name, ref))
         component = StageComponent(prototype=proto, name=comp_name)
         dict_to_obj(cc, 'description', component)
@@ -243,7 +257,9 @@ def save_components(proto, conf):
         dict_json_to_obj(cc, 'params', component)
         fix_display_name(cc, component)
         check_component_constraint_definition(proto, comp_name, cc)
+        check_component_requires(proto, comp_name, cc)
         dict_json_to_obj(cc, 'constraint', component)
+        dict_json_to_obj(cc, 'requires', component)
         component.save()
 
 
@@ -278,6 +294,10 @@ def check_versions(proto, conf, label):
     if 'max' not in conf['versions'] and 'max_strict' not in conf['versions']:
         msg = 'max and max_strict should be present in versions of {} ({})'
         err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
+    for name in ('min', 'min_strict', 'max', 'max_strict'):
+        if name in conf['versions'] and not conf['versions'][name]:
+            msg = '{} versions of {} should be not null ({})'
+            err('INVALID_VERSION_DEFINITION', msg.format(name, label, ref))
 
 
 def set_version(obj, conf):
@@ -595,7 +615,7 @@ def get_yspec(proto, ref, bundle_hash, conf, name, subname):
     yspec_body = read_bundle_file(proto, conf['yspec'], bundle_hash, msg)
     try:
         schema = yaml.safe_load(yspec_body)
-    except yaml.parser.ParserError as e:
+    except (yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
         msg = 'yspec file of config key "{}/{}" yaml decode error: {}'
         err('CONFIG_TYPE_ERROR', msg.format(name, subname, e))
     ok, error = yspec.checker.check_rule(schema)
@@ -637,6 +657,49 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
                 err('CONFIG_TYPE_ERROR', msg.format(label, value, name, subname, ref))
         return True
 
+    def check_variant(conf, name, subname):   # pylint: disable=too-many-branches
+        if not in_dict(conf, 'source'):
+            msg = 'Config key "{}/{}" of {} has no mandatory "source" key'
+            err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
+        if not isinstance(conf['source'], dict):
+            msg = 'Config key "{}/{}" of {} "source" field should be map'
+            err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
+        if not in_dict(conf['source'], 'type'):
+            msg = 'Config key "{}/{}" of {} has no mandatory source: type statment'
+            err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
+        allowed_keys = ('type', 'name', 'value', 'strict')
+        check_extra_keys(conf['source'], allowed_keys, f'{ref} config key "{name}/{subname}"')
+        vtype = conf['source']['type']
+        if vtype not in ('inline', 'config', 'builtin'):
+            msg = 'Config key "{}/{}" of {} has unknown source type "{}"'
+            err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref, vtype))
+        source = {'type': vtype}
+        if 'strict' in conf['source']:
+            if not isinstance(conf['source']['strict'], bool):
+                msg = 'Config key "{}/{}" of {} "source: strict" field should be boolean'
+                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
+            source['strict'] = conf['source']['strict']
+        else:
+            source['strict'] = True
+        if vtype == 'inline':
+            if not in_dict(conf['source'], 'value'):
+                msg = 'Config key "{}/{}" of {} has no mandatory source: value statment'
+                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref, vtype))
+            source['value'] = conf['source']['value']
+            if not isinstance(source['value'], list):
+                msg = 'Config key "{}/{}" of {} source value should be an array'
+                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
+        elif vtype in ('config', 'builtin'):
+            if not in_dict(conf['source'], 'name'):
+                msg = 'Config key "{}/{}" of {} has no mandatory source: name statment'
+                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref, vtype))
+            source['name'] = conf['source']['name']
+        if vtype == 'builtin':
+            if conf['source']['name'] not in ('free_hosts', 'cluster_hosts'):
+                msg = 'Config key "{}/{}" of {} has unknown builtin function "{}"'
+                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref, conf['source']['name']))
+        return source
+
     def check_limit(conf_type, value, name, subname, label):
         if conf_type == 'integer':
             if not isinstance(value, int):
@@ -667,6 +730,8 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
         if conf['type'] == 'option':
             if check_options(conf, name, subname):
                 opt = {'option': conf['option']}
+        if conf['type'] == 'variant':
+            opt['source'] = check_variant(conf, name, subname)
         elif conf['type'] == 'integer' or conf['type'] == 'float':
             if 'min' in conf:
                 check_limit(conf['type'], conf['min'], name, subname, 'min')
@@ -725,7 +790,7 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
         else:
             allow = (
                 'type', 'description', 'display_name', 'default', 'required', 'name', 'yspec',
-                'option', 'limits', 'max', 'min', 'read_only', 'writable', 'ui_options'
+                'option', 'source', 'limits', 'max', 'min', 'read_only', 'writable', 'ui_options'
             )
         check_extra_keys(conf, allow, 'config key "{}/{}" of {}'.format(name, subname, ref))
         sc = StagePrototypeConfig(

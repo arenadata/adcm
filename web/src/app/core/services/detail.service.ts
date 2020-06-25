@@ -99,7 +99,7 @@ export class ClusterService {
       .pipe(
         map((a: Entities) => {
           a.typeName = typeName;
-          this.worker.current = { ...a, name: a.display_name || a.name };
+          this.worker.current = { ...a, name: a.display_name || a.name || (a as Host).fqdn };
           this.workerSubject.next(this.worker);
           return this.worker;
         })
@@ -143,7 +143,7 @@ export class ClusterService {
       filter(_ => !!this.worker),
       map(a => {
         if (typeName === 'cluster') this.worker.cluster = { ...(a as Cluster), typeName };
-        this.worker.current = { ...a, typeName };
+        this.worker.current = { ...a, typeName, name: a.display_name || a.name || (a as Host).fqdn };
         return this.worker;
       })
     );

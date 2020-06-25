@@ -18,7 +18,7 @@ import { ClusterService } from '@app/core';
     <app-add-button [name]="'host2cluster'" class="add-button">Add hosts</app-add-button>
     <app-list class="main" [appBaseList]="'host2cluster'"></app-list>
   `,
-  styles: [':host { flex: 1; }', '.add-button {position:absolute; right: 20px;top:10px;}'],
+  styles: [':host { flex: 1; }', '.add-button {position:fixed; right: 20px;top:120px;}'],
 })
 export class HostComponent {}
 
@@ -28,7 +28,7 @@ export class HostComponent {}
     <app-add-button [name]="'service'" class="add-button">Add service</app-add-button>
     <app-list class="main" [appBaseList]="'service2cluster'" appActionHandler></app-list>
   `,
-  styles: [':host { flex: 1; }', '.add-button {position:absolute; right: 20px;top:10px;}'],
+  styles: [':host { flex: 1; }', '.add-button {position:fixed; right: 20px;top:120px;}'],
 })
 export class ServicesComponent {}
 
@@ -36,22 +36,18 @@ export class ServicesComponent {}
   template: `
     <mat-toolbar class="toolbar">
       <app-crumbs [navigation]="[{ url: '/cluster', title: 'clusters' }]"></app-crumbs>
-      <span class="example-spacer"></span>
       <app-add-button [name]="typeName" (added)="list.current = $event">Create {{ typeName }}</app-add-button>
     </mat-toolbar>
-    <div class="container-entry">
-      <app-list #list class="main" appActionHandler [appBaseList]="typeName"></app-list>
-    </div>
+    <app-list #list appActionHandler [appBaseList]="typeName"></app-list>
   `,
+  styles: [':host { flex: 1; }'],
 })
 export class ClusterListComponent {
   typeName = 'cluster';
 }
 
 @Component({
-  template: `
-    <app-service-host [cluster]="cluster"></app-service-host>
-  `,
+  template: ` <app-service-host [cluster]="cluster"></app-service-host> `,
   styles: [':host { flex: 1; }'],
 })
 export class HcmapComponent implements OnInit {

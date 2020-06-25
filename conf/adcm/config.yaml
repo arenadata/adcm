@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 0.9
+  version: 1.1
 
   config:
     - name: "global"
@@ -65,5 +65,25 @@
             Requiring minimal configuration changes, it updates Ansible’s slow and wasteful shell-centic implementation
             with pure-Python equivalents, invoked via highly efficient remote procedure calls to persistent
             interpreters tunnelled over SSH. No changes are required to target hosts.
+          type: boolean
+          default: false
+    - name: "logrotate"
+      display_name: "Logrotate"
+      type: "group"
+      subs:
+        - name: "rotation_period"
+          display_name: "Rotation period"
+          description: |
+            Rotation period
+          type: option
+          option:
+            HOURLY: "HOURLY"
+            DAILY: "DAILY"
+            WEEKLY: "WEEKLY"
+          default: "DAILY"
+        - name: "nginx_server"
+          display_name: "Nginx Server"
+          description: |
+            Rotation logs for nginx server
           type: boolean
           default: false

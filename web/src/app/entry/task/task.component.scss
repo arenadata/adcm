@@ -1,6 +1,6 @@
-// .title {
-//   width: 50%;  
-// }
+:host {
+  flex: 1;
+}
 
 .multi-title {
   cursor: pointer;
@@ -36,7 +36,7 @@ table.main {
 
 .end {
   width: 40px;
-  padding-left: 30px!important;
+  padding-left: 30px !important;
 }
 
 .center {
@@ -52,7 +52,8 @@ table.inner {
   }
 }
 
-td.mat-cell, th.mat-header-cell {
+td.mat-cell,
+th.mat-header-cell {
   white-space: nowrap;
   padding: 0 10px;
 }

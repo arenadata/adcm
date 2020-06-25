@@ -17,16 +17,20 @@ import { BaseDirective } from '../directives/base.directive';
 import { AddFormComponent } from './add-form.component';
 import { AddService } from './add.service';
 
-@Component({ 
+@Component({
   selector: 'app-add-button',
   template: `
-    <button [appForTest]="'create-btn'" mat-raised-button color="accent" (click)="showForm()">
-      <mat-icon>library_add</mat-icon>&nbsp;<ng-content></ng-content>
-    </button>
+    <ng-container *ngIf="!asIcon; else icon">
+      <button [appForTest]="'create-btn'" mat-raised-button color="accent" (click)="showForm()"><mat-icon>library_add</mat-icon>&nbsp;<ng-content></ng-content></button>
+    </ng-container>
+    <ng-template #icon>
+      <button [appForTest]="'create-btn'" mat-icon-button color="primary" (click)="showForm()"><mat-icon>add</mat-icon></button>
+    </ng-template>
   `,
   styles: ['button {margin-right: 6px;}'],
 })
 export class AddButtonComponent extends BaseDirective implements OnDestroy {
+  @Input() asIcon = false;
   @Input() name: string;
   @Output() added = new EventEmitter();
 
@@ -36,11 +40,13 @@ export class AddButtonComponent extends BaseDirective implements OnDestroy {
 
   showForm() {
     const model = this.service.model(this.name);
+    const name = model.title || model.name;
+    const title = ['cluster', 'hostprovider'];
     this.dialog.open(DialogComponent, {
       width: '75%',
       maxWidth: '1400px',
       data: {
-        title: `Add ${model.title || model.name}`,
+        title: `${ title.includes(name) ? 'Create' : 'Add' } ${name}`,
         component: AddFormComponent,
         model,
       },

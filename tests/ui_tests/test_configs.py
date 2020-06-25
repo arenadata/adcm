@@ -3,13 +3,15 @@
 import allure
 import os
 import pytest
+import tempfile
 import yaml
 
 from adcm_client.objects import ADCMClient
 
 
 from tests.ui_tests.app.app import ADCMTest
-from tests.ui_tests.app.pages import Configuration, LoginPage
+from tests.ui_tests.app.configuration import Configuration
+from tests.ui_tests.app.pages import LoginPage
 
 from adcm_pytest_plugin import utils
 
@@ -265,7 +267,9 @@ group_configs = generate_group_configs(group_configs_data)
 
 @pytest.fixture(scope='module')
 def app(adcm_ms):
-    return ADCMTest(adcm_ms)
+    app = ADCMTest(adcm_ms)
+    yield app
+    app.destroy()
 
 
 @pytest.fixture(scope='module')
@@ -286,7 +290,8 @@ def prepare_config(config):
         default,
         config[0][0]['config'][0]['ui_options']['invisible'],
         config[0][0]['config'][0]['ui_options']['advanced'])
-    d_name = "{}/configs/fields/{}/{}".format(utils.get_data_dir(__file__),
+    temdir = tempfile.mkdtemp()
+    d_name = "{}/configs/fields/{}/{}".format(temdir,
                                               config[0][0]['config'][0]['type'],
                                               config_folder_name)
 
@@ -321,7 +326,8 @@ def prepare_group_config(config):
         config[0][0]['config'][0]['ui_options']['advanced'],
         config[0][0]['config'][0]['subs'][0]['ui_options']['invisible'],
         config[0][0]['config'][0]['subs'][0]['ui_options']['advanced'])
-    d_name = "{}/configs/groups/{}".format(utils.get_data_dir(__file__), config_folder_name)
+    temdir = tempfile.mkdtemp()
+    d_name = "{}/configs/groups/{}".format(temdir, config_folder_name)
     os.makedirs(d_name)
     if config[0][0]['config'][0]['subs'][0]['name'] == 'file':
         with open("{}/file.txt".format(d_name), 'w') as f:
@@ -332,7 +338,8 @@ def prepare_group_config(config):
 
 
 @pytest.mark.parametrize("config_dict", configs)
-def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login, app):
+def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login,
+                        app, gather_logs, screenshot_on_failure):
     """Test UI configuration page without groups. Before start test actions
     we always create configuration and expected result. All logic for test
     expected result in functions before this test function.
@@ -343,7 +350,7 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login, app):
     4. Open configuration page
     5. Check save button status
     6. Check field configuration (depends on expected result dict and bundle configuration"""
-    _ = login, app
+    _ = login, app, gather_logs, screenshot_on_failure
     data = prepare_config(config_dict)
     config = data[0]
     expected = data[1]
@@ -354,9 +361,10 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login, app):
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster = bundle.cluster_create(name=utils.random_string(14))
     field_type = config['config'][0]['type']
-    app.driver.get("{}/cluster/{}/config".format
-                   (app.adcm.url, cluster.cluster_id))
-    ui_config = Configuration(app.driver)
+    ui_config = Configuration(app.driver,
+                              "{}/cluster/{}/config".format
+                              (app.adcm.url, cluster.cluster_id)
+                              )
     fields = ui_config.get_app_fields()
     save_err_mess = "Correct status for save button {}".format([expected['save']])
     assert expected['save'] == ui_config.save_button_status(), save_err_mess
@@ -380,7 +388,8 @@ def test_configs_fields(sdk_client_ms: ADCMClient, config_dict, login, app):
 
 
 @pytest.mark.parametrize("config_dict", group_configs)
-def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app):
+def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app,
+                             gather_logs, screenshot_on_failure):
     """Test for configuration fields with groups. Before start test actions
     we always create configuration and expected result. All logic for test
     expected result in functions before this test function. If we have
@@ -395,7 +404,7 @@ def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app)
     4. Open configuration page
     5. Check save button status
     6. Check field configuration (depends on expected result dict and bundle configuration"""
-    _ = login, app
+    _ = login, app, gather_logs, screenshot_on_failure
     data = prepare_group_config(config_dict)
     config = data[0]
     expected = data[1]
@@ -407,8 +416,10 @@ def test_group_configs_field(sdk_client_ms: ADCMClient, config_dict, login, app)
     bundle = sdk_client_ms.upload_from_fs(path)
     cluster = bundle.cluster_create(name=utils.random_string())
     field_type = config['config'][0]['subs'][0]['type']
-    app.driver.get("{}/cluster/{}/config".format(app.adcm.url, cluster.cluster_id))
-    ui_config = Configuration(app.driver)
+    ui_config = Configuration(app.driver,
+                              "{}/cluster/{}/config".format
+                              (app.adcm.url, cluster.cluster_id)
+                              )
     groups = ui_config.get_group_elements()
     fields = ui_config.get_app_fields()
     save_err_mess = "Correct status for save button {}".format([expected['save']])

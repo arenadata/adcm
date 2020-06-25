@@ -41,7 +41,7 @@ export class MasterService {
 
   parseData(v: IValue) {
     const getData = (c: ConfigFieldsComponent, h: ServiceHostComponent) => {
-      const config = c ? this.configService.parseValue(c.form, c.rawConfig.config) : undefined;
+      const config = c ? this.configService.parseValue(c.form.value, c.rawConfig.config) : undefined;
       const hc = h ? h.service.statePost.data : undefined;
       return { config, hc };
     };

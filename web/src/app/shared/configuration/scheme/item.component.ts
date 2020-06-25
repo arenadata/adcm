@@ -14,6 +14,7 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { IControl } from './root.component';
 import { controlType, ValidatorInfo } from '../types';
 import { IYField } from '../yspec/yspec.service';
+import { AbstractControl } from '@angular/forms';
 
 @Component({
   selector: 'app-item-scheme',
@@ -30,7 +31,7 @@ import { IYField } from '../yspec/yspec.service';
 
       <ng-template #other>
         <div class="chbox-field" *ngIf="controlType === 'boolean'">
-          <mat-checkbox [formControlName]="item.name" [disabled]="isReadOnly">{{ item.name }}</mat-checkbox>
+          <mat-checkbox [formControlName]="item.name">{{ item.name }}</mat-checkbox>
           <mat-error *ngIf="!isValid">
             <mat-error *ngIf="hasError('required')">Field [{{ item.name }}] is required!</mat-error>
           </mat-error>
@@ -48,7 +49,7 @@ import { IYField } from '../yspec/yspec.service';
       </ng-template>
     </ng-container>
   `,
-  styles: [':host {flex: 1}', 'mat-form-field {margin: 6px 0 0; width: 100%}', '.chbox-field {margin:6px 0;}']
+  styles: [':host {flex: 1}', 'mat-form-field {margin: 6px 0 0; width: 100%}', '.chbox-field {margin:6px 0;}'],
 })
 export class ItemComponent implements OnInit {
   @Input() item: IControl;
@@ -63,17 +64,24 @@ export class ItemComponent implements OnInit {
     const rules = this.item.rules as IYField;
     this.controlType = rules.controlType;
     this.validator = rules.validator;
+    if (this.controlType === 'boolean' && this.isReadOnly) this.control.disable();
     this.item.form.markAllAsTouched();
   }
+
   emmit() {
     this.remove.emit(this.index);
   }
+
+  get control() {
+    return this.item.form.controls[this.item.name] as AbstractControl;
+  }
+
   get isValid() {
-    const field = this.item.form.controls[this.item.name];
-    return field.valid && (field.dirty || field.touched);
+    const f = this.control;
+    return f.valid && (f.dirty || f.touched);
   }
 
   hasError(title: string) {
-    return this.item.form.controls[this.item.name].hasError(title);
+    return this.control.hasError(title);
   }
 }

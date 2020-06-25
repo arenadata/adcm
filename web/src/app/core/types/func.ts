@@ -14,49 +14,39 @@ import { matchType } from '@app/shared/configuration/yspec/yspec.service';
 
 import { InnerIssue, Issue } from './issue';
 
+export const isBoolean = (x: any) => typeof x === 'boolean';
+export const isObject = (x: any) => x !== null && typeof x === 'object';
+export const isEmptyObject = (x: any) => isObject(x) && !Object.keys(x).length;
+export const isNumber = (x: any) => typeof x === 'number' && !isNaN(x);
+export const randomInteger = (max: number, min: number = 0): number => Math.floor(min + Math.random() * (max + 1 - min));
+
 export function getPattern(name: string): RegExp {
   const fn = {
     integer: () => new RegExp(/^[-]?\d+$/),
     int: () => new RegExp(/^[-]?\d+$/),
-    float: () => new RegExp(/^[-]?[0-9]+(\.[0-9]+)?$/)
+    float: () => new RegExp(/^[-]?[0-9]+(\.[0-9]+)?$/),
   };
   return fn[name] ? fn[name]() : null;
 }
 
 export function getControlType(name: string): controlType {
-  const a: Partial<{[key in matchType | controlType]: controlType}> = {
+  const a: Partial<{ [key in matchType | controlType]: controlType }> = {
     bool: 'boolean',
     int: 'textbox',
     integer: 'textbox',
     float: 'textbox',
     string: 'textbox',
     file: 'textarea',
-    text: 'textarea'
+    text: 'textarea',
   };
   return a[name] || name;
 }
 
-export function getTypeName(name: string) {
-  return name ? name.split('2')[0] : name;
-}
-
-export function isBoolean(value) {
-  return typeof value === 'boolean';
-}
-
-export function isObject(value) {
-  return value !== null && typeof value === 'object';
-}
-
-export function isNumber(value) {
-  return typeof value === 'number' && !isNaN(value);
-}
-
-const IssueName = {
-  config: 'configuration',
-  host_component: 'host - components'
-};
 export function issueMessage(e: { id: number; name: string; issue: Issue }, typeName: string) {
+  const IssueName = {
+    config: 'configuration',
+    host_component: 'host - components',
+  };
   if (e.issue)
     return Object.keys(e.issue).reduce((a, c) => {
       if (typeof e.issue[c] === 'object') {
@@ -85,11 +75,13 @@ export function clearEmptyField(input: Object): Object {
 /**
  * Support nullable value in object properties,
  * if value input field is empty return null.
+ * @deprecated
  */
 export function nullEmptyField(input: Object): Object {
   return Object.keys(input).reduce((output, key) => {
     const data = input[key];
     if (isObject(data) && !Array.isArray(data)) {
+      // tslint:disable-next-line: deprecation
       output[key] = nullEmptyField(data);
       if (!Object.keys(output[key]).length) delete output[key];
     } else if ((typeof data === 'number' && isNaN(data)) || (typeof data === 'string' && !data) || data === null) output[key] = null;
@@ -107,32 +99,20 @@ export function flatten<T>(a: T[]) {
   return a.reduce<T[]>((acc, val) => (Array.isArray(val) ? acc.concat(flatten<T>(val)) : acc.concat(val)), []);
 }
 
+export const newArray = (length: number) => Array.from(new Array(length), (_, i) => i);
+
 /**
- * return 16-bit hex string
- * @example '#cccccc'
+ * @returns 16-bit hex string
+ * @example '#110C2E'
  */
 export function getRandomColor(): string {
   const letters = '0123456789ABCDEF';
-  let color = '#';
-  for (let i = 0; i < 6; i++) {
-    color += letters[Math.floor(Math.random() * 16)];
-  }
-  return color;
+  return newArray(6).reduce((p) => (p += letters[Math.floor(Math.random() * 16)]), '#');
 }
 
 export function uniqid(prefix: string = '', isFloat: boolean = false) {
-  const seed = function(s: number, w: number): string {
-    const _s = s.toString(16);
-    return w < _s.length ? _s.slice(_s.length - w) : w > _s.length ? new Array(1 + (w - _s.length)).join('0') + _s : _s;
-  };
-
+  const seed = (s: number, w: number, z = s.toString(16)): string => (w < z.length ? z.slice(z.length - w) : w > z.length ? new Array(1 + (w - z.length)).join('0') + z : z);
   let result = prefix + seed(parseInt((new Date().getTime() / 1000).toString(), 10), 8) + seed(Math.floor(Math.random() * 0x75bcd15) + 1, 5);
-
   if (isFloat) result += (Math.random() * 10).toFixed(8).toString();
-
   return result;
-}
-
-export function randomInteger(max: number, min: number = 0): number {
-  return Math.floor(min + Math.random() * (max + 1 - min));
 }
