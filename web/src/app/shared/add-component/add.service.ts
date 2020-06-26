@@ -69,7 +69,14 @@ const MODELS: { [key: string]: FormModel } = {
   providedIn: 'root',
 })
 export class AddService {
-  currentPrototype: StackBase;
+  private _currentPrototype: StackBase;
+  set currentPrototype(a: StackBase) {
+    this._currentPrototype = a;
+  }
+  get currentPrototype(): StackBase {
+    return this._currentPrototype;
+  }
+  
   constructor(private api: ApiService, private stack: StackService, private cluster: ClusterService, public dialog: MatDialog) {}
 
   model(name: string) {
@@ -87,7 +94,6 @@ export class AddService {
       .subscribe(() => {
         const field = form.get('name');
         if (!field.value) field.setValue(GenName.do());
-        console.log('add service', this.model);
       });
   }
 
@@ -157,20 +163,7 @@ export class AddService {
     );
   }
 
-  // getFreeHosts(p: Params) {
-  //   const param = convertToParamMap(p);
-  //   return this.api
-  //     .getList<Host>('host', param)
-  //     .pipe(map(a => a.map(b => ({ ...b, name: b.fqdn }))));
-  // }
-
   upload(data: FormData[]) {
     return this.stack.upload(data);
-  }
-
-  setBundle(id: number, proto: StackBase[]) {
-    if (id && proto.length) {
-      this.currentPrototype = proto.find((a) => a.id === id);
-    }
   }
 }

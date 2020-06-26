@@ -14,7 +14,7 @@ import { FormControl } from '@angular/forms';
 import { PreloaderService } from '@app/core';
 import { Prototype, StackBase } from '@app/core/types';
 import { BehaviorSubject, of, throwError } from 'rxjs';
-import { catchError, map, switchMap, tap } from 'rxjs/operators';
+import { catchError, map, switchMap, tap, filter } from 'rxjs/operators';
 
 import { AddService } from '../add-component/add.service';
 import { ButtonUploaderComponent } from './button-uploader.component';
@@ -25,17 +25,15 @@ import { InputComponent } from './input.component';
   template: `
     <div class="row" [formGroup]="form">
       <mat-form-field>
-        <mat-select appInfinityScroll (topScrollPoint)="getNextPage()" required placeholder="Bundle" formControlName="prototype_name">
+        <mat-select appInfinityScroll (topScrollPoint)="getNextPage()" required placeholder="Bundle" formControlName="display_name">
           <mat-option value="">...</mat-option>
           <mat-option *ngFor="let bundle of bundles$ | async" [value]="bundle.display_name"> {{ bundle.display_name }} </mat-option>
         </mat-select>
       </mat-form-field>
       &nbsp;&nbsp;
       <mat-form-field>
-        <mat-select placeholder="Version" required formControlName="prototype_id">
-          <mat-option *ngFor="let bundle of versions" [value]="bundle.id">
-            {{ bundle.version }} {{ bundle.bundle_edition }}
-          </mat-option>
+        <mat-select placeholder="Version" required formControlName="bundle_id">
+          <mat-option *ngFor="let bundle of versions" [value]="bundle.bundle_id"> {{ bundle.version }} {{ bundle.bundle_edition }} </mat-option>
         </mat-select>
       </mat-form-field>
 
@@ -50,10 +48,10 @@ import { InputComponent } from './input.component';
       ></app-button-uploader>
     </div>
   `,
-  styles: ['.row { align-items: center;display:flex; }', 'mat-form-field {flex: 1}']
+  styles: ['.row { align-items: center;display:flex; }', 'mat-form-field {flex: 1}'],
 })
 export class BundlesComponent extends InputComponent implements OnInit {
-  loadedBundleID: number;
+  loadedBundle: { bundle_id: number; display_name: string };
   @Input() typeName: 'cluster' | 'provider';
   @ViewChild('uploadBtn', { static: true }) uploadBtn: ButtonUploaderComponent;
   bundles$ = new BehaviorSubject<StackBase[]>([]);
@@ -68,7 +66,8 @@ export class BundlesComponent extends InputComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.form.addControl('prototype_name', new FormControl());
+    this.form.addControl('display_name', new FormControl());
+    this.form.addControl('bundle_id', new FormControl());
 
     this.getBundles(true);
 
@@ -77,22 +76,28 @@ export class BundlesComponent extends InputComponent implements OnInit {
     };
 
     this.form
-      .get('prototype_name')
+      .get('display_name')
       .valueChanges.pipe(
         this.takeUntil(),
-        switchMap(a => forVersion$(a))
+        switchMap((a) => forVersion$(a))
       )
-      .subscribe(a => {
+      .subscribe((a) => {
         this.versions = a;
-        this.selectOne(a, 'prototype_id', 'id');
-        this.loadedBundleID = null;
+        this.selectOne(a, 'bundle_id');
+        this.loadedBundle = null;
       });
 
     // for check license agreement
     this.form
-      .get('prototype_id')
-      .valueChanges.pipe(this.takeUntil())
-      .subscribe(a => this.service.setBundle(a, this.versions));
+      .get('bundle_id')
+      .valueChanges.pipe(
+        this.takeUntil(),
+        filter((a) => a)
+      )
+      .subscribe((a) => {
+        this.service.currentPrototype = this.versions.find((b) => b.bundle_id === +a);
+        this.form.get('prototype_id').setValue(this.service.currentPrototype.id);
+      });
   }
 
   getNextPage() {
@@ -112,18 +117,18 @@ export class BundlesComponent extends InputComponent implements OnInit {
       this.service
         .getPrototype(this.typeName, params)
         .pipe(
-          tap(a => {
+          tap((a) => {
             this.bundles$.next([...this.bundles$.getValue(), ...a]);
-            this.selectOne(a, 'prototype_name', 'display_name');
+            this.selectOne(a, 'display_name');
           })
         )
         .subscribe();
     }
   }
 
-  selectOne(a: Partial<Prototype>[] = [], formName: string, propName: string) {
-    const el = a.find(e => e.bundle_id === this.loadedBundleID);
-    const id = el ? el[propName] : a.length ? (propName === 'id' || a.length === 1 ? a[0][propName] : '') : '';
+  selectOne(a: Partial<Prototype>[] = [], formName: string) {
+    const el = this.loadedBundle ? a.find((e) => e[formName] === this.loadedBundle[formName]) : null;
+    const id = el ? el[formName] : a.length ? (formName === 'bundle_id' || a.length === 1 ? a[0][formName] : '') : '';
     this.form.get(formName).setValue(id);
   }
 
@@ -131,11 +136,12 @@ export class BundlesComponent extends InputComponent implements OnInit {
     this.service
       .upload(data)
       .pipe(
-        catchError(e => throwError(e)),
-        map(a => a.map(e => ({ id: e.id, display_name: e.display_name, version: e.version })))
+        catchError((e) => throwError(e)),
+        map((a) => a.map((e) => ({ bundle_id: e.id, display_name: e.display_name, version: e.version })))
       )
-      .subscribe(a => {
-        this.loadedBundleID = (<any>a[0]).id;
+      .subscribe((a) => {
+        const [first, other] = a;
+        this.loadedBundle = first;
         this.uploadBtn.fileUploadInput.nativeElement.value = '';
         this.page = 0;
         this.bundles$.next([]);
