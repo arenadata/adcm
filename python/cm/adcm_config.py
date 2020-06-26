@@ -17,6 +17,7 @@ import collections
 import yspec.checker
 from django.conf import settings
 from django.db.utils import OperationalError
+from ansible.parsing.vault import VaultSecret, VaultAES256
 
 from cm.logger import log   # pylint: disable=unused-import
 import cm.config as config
@@ -317,18 +318,54 @@ def process_file_type(obj, spec, conf):
     return conf
 
 
-def process_config(obj, spec, old_conf):
+def ansible_encrypt(msg):
+    vault = VaultAES256()
+    secret = VaultSecret(bytes(config.ANSIBLE_SECRET, 'utf-8'))
+    return vault.encrypt(bytes(msg, 'utf-8'), secret)
+
+
+def ansible_encrypt_and_format(msg):
+    ciphertext = ansible_encrypt(msg)
+    return '{}\n{}'.format(config.ANSIBLE_VAULT_HEADER, str(ciphertext, 'utf-8'))
+
+
+def process_password(spec, conf):
+    def update_password(passwd):
+        if '$ANSIBLE_VAULT;' in passwd:
+            return passwd
+        return ansible_encrypt_and_format(passwd)
+
+    for key in conf:
+        if 'type' in spec[key]:
+            if spec[key]['type'] == 'password':
+                conf[key] = update_password(conf[key])
+        else:
+            for subkey in conf[key]:
+                if spec[key][subkey]['type'] == 'password':
+                    conf[key] = update_password(conf[key])
+    return conf
+
+
+def process_config(obj, spec, old_conf):   # pylint: disable=too-many-branches
     if not old_conf:
         return old_conf
     conf = copy.deepcopy(old_conf)
-    for key in conf:
+    for key in conf:   # pylint: disable=too-many-nested-blocks
         if 'type' in spec[key]:
-            if spec[key]['type'] == 'file' and conf[key] is not None:
-                conf[key] = cook_file_type_name(obj, key, '')
+            if conf[key] is not None:
+                if spec[key]['type'] == 'file':
+                    conf[key] = cook_file_type_name(obj, key, '')
+                elif spec[key]['type'] == 'password':
+                    if config.ANSIBLE_VAULT_HEADER in conf[key]:
+                        conf[key] = {'__ansible_vault': conf[key]}
         else:
             for subkey in conf[key]:
-                if spec[key][subkey]['type'] == 'file' and conf[key][subkey] is not None:
-                    conf[key][subkey] = cook_file_type_name(obj, key, subkey)
+                if conf[key][subkey] is not None:
+                    if spec[key][subkey]['type'] == 'file':
+                        conf[key][subkey] = cook_file_type_name(obj, key, subkey)
+                    elif spec[key][subkey]['type'] == 'password':
+                        if config.ANSIBLE_VAULT_HEADER in conf[key][subkey]:
+                            conf[key][subkey] = {'__ansible_vault': conf[key][subkey]}
     return conf
 
 
@@ -605,6 +642,7 @@ def check_config_spec(proto, obj, spec, flat_spec, conf, old_conf=None, attr=Non
         check_read_only(obj, flat_spec, conf, json.loads(old_conf))
         restore_read_only(obj, spec, conf, json.loads(old_conf))
         process_file_type(obj, spec, conf)
+    process_password(spec, conf)
     return conf
 
 
