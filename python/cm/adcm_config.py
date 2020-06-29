@@ -72,6 +72,9 @@ def get_default(c, proto=None):   # pylint: disable=too-many-branches
         value = c.default
     elif c.type == 'text':
         value = c.default
+    elif c.type == 'password':
+        if c.default:
+            value = ansible_encrypt_and_format(c.default)
     elif type_is_complex(c.type):
         value = json.loads(c.default)
     elif c.type == 'integer':
@@ -337,12 +340,12 @@ def process_password(spec, conf):
 
     for key in conf:
         if 'type' in spec[key]:
-            if spec[key]['type'] == 'password':
+            if spec[key]['type'] == 'password' and conf[key]:
                 conf[key] = update_password(conf[key])
         else:
             for subkey in conf[key]:
-                if spec[key][subkey]['type'] == 'password':
-                    conf[key] = update_password(conf[key])
+                if spec[key][subkey]['type'] == 'password' and conf[key][subkey]:
+                    conf[key][subkey] = update_password(conf[key][subkey])
     return conf
 
 
