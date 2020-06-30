@@ -16,13 +16,13 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 
 import { AuthService } from '../auth/auth.service';
-import { MessageService, PreloaderService } from '../services';
+import { ChannelService, PreloaderService } from '../services';
 
 const EXCLUDE_URLS = ['/api/v1/token/', '/assets/config.json'];
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
-  constructor(private authService: AuthService, private preloader: PreloaderService, private router: Router, private messanger: MessageService) {}
+  constructor(private authService: AuthService, private preloader: PreloaderService, private router: Router, private channel: ChannelService) {}
 
   addAuthHeader(request: HttpRequest<any>): HttpRequest<any> {
     const token = this.authService.token;
@@ -48,9 +48,9 @@ export class AuthInterceptor implements HttpInterceptor {
         // if (res.status === 504) this.router.navigate(['/504']);
 
         if (res.error.code !== 'USER_NOT_FOUND' && res.error.code !== 'AUTH_ERROR' && res.error.code !== 'CONFIG_NOT_FOUND')
-          this.messanger.errorMessage({
+          this.channel.next('errorMessage', {
             subtitle: res.error.code || res.name,
-            title: res.error.desc || res.message
+            title: res.error.desc || res.message,
           });
         return throwError(res);
       }),
