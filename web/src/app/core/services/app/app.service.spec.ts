@@ -9,23 +9,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Injectable } from '@angular/core';
-import { Subject } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
 
-export interface IMessage {
-  id: string;
-  title: string;
-  subtitle?: string;
-}
+import { AppService } from './app.service';
 
-@Injectable({
-  providedIn: 'root',
-})
-export class MessageService {
-  private messageSource = new Subject<IMessage>();
-  public message$ = this.messageSource.asObservable();
-  ignoreMessage = false;
-  errorMessage(error: { title: string; subtitle?: string }) {
-    if (!this.ignoreMessage) this.messageSource.next({ ...error, id: Date.now().toString() });
-  }
-}
+describe('AppService', () => {
+  let service: AppService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [{ provide: AppService, useValue: {} }],
+    });
+    service = TestBed.inject(AppService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+});

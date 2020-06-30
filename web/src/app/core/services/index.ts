@@ -10,8 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 export * from './preloader.service';
-export * from './message.service';
 export * from './config.service';
 export * from './detail.service';
 export * from './stack.service';
 export * from './channel.service';
+export * from './app/app.service';
