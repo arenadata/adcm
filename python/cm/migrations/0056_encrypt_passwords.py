@@ -44,7 +44,7 @@ def process_objects(obj, ConfigLog, PrototypeConfig):
 def encrypt_passwords(apps, schema_editor):
     ConfigLog = apps.get_model('cm', 'ConfigLog')
     PrototypeConfig = apps.get_model('cm', 'PrototypeConfig')
-    for model_name in 'Cluster', 'ClusterObject', 'HostProvider', 'Host':
+    for model_name in 'Cluster', 'ClusterObject', 'HostProvider', 'Host', 'ADCM':
         Model = apps.get_model('cm', model_name)
         for obj in Model.objects.filter(config__isnull=False):
             process_objects(obj, ConfigLog, PrototypeConfig)

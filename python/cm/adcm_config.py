@@ -151,7 +151,7 @@ def prepare_social_auth(conf):
     if 'secret' not in gconf or not gconf['secret']:
         return
     settings.SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = gconf['client_id']
-    settings.SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = gconf['secret']
+    settings.SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = ansible_decrypt(gconf['secret'])
     if 'whitelisted_domains' in gconf:
         settings.SOCIAL_AUTH_GOOGLE_OAUTH2_WHITELISTED_DOMAINS = gconf['whitelisted_domains']
 
@@ -330,6 +330,15 @@ def ansible_encrypt(msg):
 def ansible_encrypt_and_format(msg):
     ciphertext = ansible_encrypt(msg)
     return '{}\n{}'.format(config.ANSIBLE_VAULT_HEADER, str(ciphertext, 'utf-8'))
+
+
+def ansible_decrypt(msg):
+    if config.ANSIBLE_VAULT_HEADER not in msg:
+        return msg
+    _, ciphertext = msg.split("\n")
+    vault = VaultAES256()
+    secret = VaultSecret(bytes(config.ANSIBLE_SECRET, 'utf-8'))
+    return str(vault.decrypt(ciphertext, secret), 'utf-8')
 
 
 def process_password(spec, conf):
