@@ -9,10 +9,6 @@ $app-theme: mat-dark-theme($app-primary, $app-accent, $app-warn);
 
 @include angular-material-theme($app-theme);
 
-app-root {
-  background-color: mat-color($mat-grey, 800)
-}
-
 a {
   color: mat-color($mat-blue, 200);
   text-decoration: none;

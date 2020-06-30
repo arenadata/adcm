@@ -51,8 +51,8 @@ export class PatternComponent extends BaseDirective implements OnInit, OnDestroy
   ];
   data = {
     '/admin/intro': { title: 'Hi there!', crumbs: [{ path: '/admin/', name: 'intro' }] },
-    '/admin/settings': { title: '', crumbs: [{ path: '/admin/settings', name: 'settings' }] },
-    '/admin/users': { title: '', crumbs: [{ path: '/admin/users', name: 'users' }] },
+    '/admin/settings': { title: 'Global configuration', crumbs: [{ path: '/admin/settings', name: 'settings' }] },
+    '/admin/users': { title: 'User management', crumbs: [{ path: '/admin/users', name: 'users' }] },
   };
 
   constructor(private store: Store<State>, private api: ApiService, private router: Router) {
