@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 0.9
+  version: 1.1
 
   config:
     - name: "global"
@@ -81,12 +81,6 @@
             DAILY: "DAILY"
             WEEKLY: "WEEKLY"
           default: "DAILY"
-        - name: "status_server"
-          display_name: "Status Server"
-          description: |
-            Rotation logs for status server
-          type: boolean
-          default: false
         - name: "nginx_server"
           display_name: "Nginx Server"
           description: |
