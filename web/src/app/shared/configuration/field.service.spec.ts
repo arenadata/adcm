@@ -280,7 +280,7 @@ describe('Configuration fields service', () => {
       { subname: 'field_readonly', name: 'group_2', type: 'float', read_only: true, value: '' },
       { name: 'group_3', type: 'group', read_only: false, subname: '', value: '' },
       { subname: 'field_readonly', name: 'group_3', read_only: true, value: '###', type: 'string' },
-      { subname: 'field_empty', name: 'group_3', read_only: true, value: '', type: 'string' },
+      { subname: 'field_empty_readonly', name: 'group_3', read_only: true, value: '', type: 'string' },
     ];
     /** form value after user input */
 
@@ -334,8 +334,7 @@ describe('Configuration fields service', () => {
         field_map_not_object: 'string',
         field_list_not_array: 'string',
         field_null: null,
-      },
-      group_3: {},
+      }
     });
   });
 
