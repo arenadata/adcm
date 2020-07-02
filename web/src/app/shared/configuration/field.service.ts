@@ -210,7 +210,7 @@ export class FieldService {
         const checkType = (data: resultTypes | IOutput, field: Partial<FieldStack>): resultTypes => {
           const { type } = field;
           if (type === 'structure') return runYspecParse(data, field.limits.rules);
-          else if (type === 'group') return this.checkValue(runParse(data as IOutput, field.name), type);
+          else if (type === 'group') return this.checkValue(runParse(data as IOutput, field.name), type) || {};
           else return this.checkValue(data, type);
         };
 
