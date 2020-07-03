@@ -215,7 +215,11 @@ export class FieldService {
         };
 
         const f = findField(c, parentName);
-        return f ? { ...p, [c]: checkType(v[c], f) } : p;
+        if (f) {
+          const result = checkType(v[c], f);
+          return f.type !== 'group' || result ? { ...p, [c]: result } : p;
+        }
+        return p;
       };
 
       return Object.keys(v).reduce(runByValue, {});
