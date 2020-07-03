@@ -14,8 +14,7 @@ import { ParamMap } from '@angular/router';
 import { EventMessage, SocketState } from '@app/core/store';
 import { Bundle, Cluster, EmmitRow, Entities, Host as AdcmHost, TypeName } from '@app/core/types';
 import { Store } from '@ngrx/store';
-import { filter } from 'rxjs/internal/operators/filter';
-import { mergeMap, switchMap, tap } from 'rxjs/operators';
+import { mergeMap, switchMap, tap, filter } from 'rxjs/operators';
 
 import { SocketListenerDirective } from '../../directives/socketListener.directive';
 import { DialogComponent } from '../dialog.component';
