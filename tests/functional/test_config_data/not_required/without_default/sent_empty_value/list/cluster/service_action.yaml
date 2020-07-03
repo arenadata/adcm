@@ -3,8 +3,8 @@
   hosts: host_list_not_required_without_default_sent_empty_value
   gather_facts: false
   vars:
-    sent_config_value: &id001 []
-    test_config_value: *id001
+    sent_value: &id001 []
+    test_value: *id001
   tasks:
   - name: Ansible | List all known variables and facts
     debug:
@@ -13,4 +13,4 @@
     assert:
       that:
       - services.service_list_not_required_without_default_sent_empty_value.config.list
-        == test_config_value
+        == test_value

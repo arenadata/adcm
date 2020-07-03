@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=W0621, R0912
+# pylint: disable=W0621, R0912, W0612
 import os
 
 import coreapi
@@ -20,7 +20,7 @@ from adcm_client.objects import ADCMClient, Cluster, Service, Provider, Host
 from adcm_pytest_plugin.utils import fixture_parametrized_by_data_subdirs
 
 
-def get_sent_value(path, entity):
+def get_value(path, entity, value_type):
     if isinstance(entity, Cluster):
         file_name = os.path.join(path, 'cluster', 'cluster_action.yaml')
     if isinstance(entity, Service):
@@ -33,7 +33,7 @@ def get_sent_value(path, entity):
     with open(file_name, 'r') as f:
         data = yaml.full_load(f)
         playbook_vars = data[0]['vars']
-        return playbook_vars['sent_config_value']
+        return playbook_vars[value_type]
 
 
 def processing_data(sdk_client_ms, request, variant):
@@ -42,59 +42,224 @@ def processing_data(sdk_client_ms, request, variant):
     cluster_bundle = sdk_client_ms.upload_from_fs(os.path.join(path, 'cluster'))
     provider_bundle = sdk_client_ms.upload_from_fs(os.path.join(path, 'provider'))
 
-    cluster = cluster_bundle.cluster_create(f'cluster_{variant}')
+    cluster = cluster_bundle.cluster_create(f'cluster_{config_type}_{variant}')
     service = cluster.service_add(
         name=f'service_{config_type}_{variant}')
 
-    provider = provider_bundle.provider_create(f'provider_{variant}')
+    provider = provider_bundle.provider_create(f'provider_{config_type}_{variant}')
     host = provider.host_create(f'host_{config_type}_{variant}')
     cluster.host_add(host)
     return path, config_type, [cluster, provider, service, host]
 
 
-def assert_config_type(path, config_type, entities, is_required, is_default, sent_value_type):
-    for entity in entities:
-        if is_required and sent_value_type != 'correct_value':
-            sent_data = {config_type: get_sent_value(path, entity)}
+def assert_config_value_error(entity, sent_data):
+    with pytest.raises(coreapi.exceptions.ErrorMessage) as error:
+        entity.config_set(sent_data)
+    assert error.value.error['code'] == 'CONFIG_VALUE_ERROR'
 
-            if config_type == 'list' and sent_value_type == 'empty_value':
-                assert entity.config_set(sent_data) == sent_data
+
+def assert_action_has_issues(entity):
+    with pytest.raises(ActionHasIssues) as error:
+        entity.action_run(name='job').wait()
+
+
+def assert_list_type(*args):
+    path, config_type, entity, is_required, is_default, sent_value_type = args
+    sent_data = {config_type: get_value(path, entity, 'sent_value')}
+
+    if is_required:
+        if sent_value_type == 'null_value':
+            assert_config_value_error(entity, sent_data)
+        else:
+            assert entity.config_set(sent_data) == sent_data
+
+        if not is_default and isinstance(entity, Cluster):
+            assert_action_has_issues(entity)
+        else:
+            if sent_value_type == 'null_value' and not is_default:
+                assert_action_has_issues(entity)
             else:
-                with pytest.raises(coreapi.exceptions.ErrorMessage) as error:
-                    entity.config_set(sent_data)
-                assert error.value.error['code'] == 'CONFIG_VALUE_ERROR'
-
-            if is_default:
                 action_status = entity.action_run(name='job').wait()
                 assert action_status == 'success'
-            else:
-                if sent_value_type == 'empty_value':
-                    if isinstance(entity, Cluster):
-                        with pytest.raises(ActionHasIssues) as error:
-                            entity.action_run(name='job').wait()
-                    else:
-                        action_status = entity.action_run(name='job').wait()
-                        assert action_status == 'success'
-                else:
-                    with pytest.raises(ActionHasIssues) as error:
-                        entity.action_run(name='job').wait()
+    else:
+        assert entity.config_set(sent_data) == sent_data
+        action_status = entity.action_run(name='job').wait()
+        assert action_status == 'success'
+
+
+def assert_map_type(*args):
+    path, config_type, entity, is_required, is_default, sent_value_type = args
+    sent_data = {config_type: get_value(path, entity, 'sent_value')}
+
+    if is_required:
+        if sent_value_type == 'null_value':
+            assert_config_value_error(entity, sent_data)
         else:
-            sent_data = {config_type: get_sent_value(path, entity)}
             assert entity.config_set(sent_data) == sent_data
-            if is_required:
-                if is_default:
+        if not is_default and isinstance(entity, Cluster):
+            assert_action_has_issues(entity)
+        else:
+            if sent_value_type == 'null_value' and not is_default:
+                assert_action_has_issues(entity)
+            else:
+                action_status = entity.action_run(name='job').wait()
+                assert action_status == 'success'
+    else:
+        assert entity.config_set(sent_data) == sent_data
+        action_status = entity.action_run(name='job').wait()
+        assert action_status == 'success'
+
+
+def assert_string_type(*args):
+    path, config_type, entity, is_required, is_default, sent_value_type = args
+    sent_data = {config_type: get_value(path, entity, 'sent_value')}
+
+    if is_required:
+        if is_default:
+            if sent_value_type in ['empty_value', 'null_value']:
+                assert_config_value_error(entity, sent_data)
+            else:
+                assert entity.config_set(sent_data) == sent_data
+
+            action_status = entity.action_run(name='job').wait()
+            assert action_status == 'success'
+        else:
+            if sent_value_type in ['empty_value', 'null_value']:
+                assert_config_value_error(entity, sent_data)
+            else:
+                assert entity.config_set(sent_data) == sent_data
+
+            if isinstance(entity, Cluster):
+                assert_action_has_issues(entity)
+            else:
+                if sent_value_type in ['empty_value', 'null_value']:
+                    assert_action_has_issues(entity)
+                else:
                     action_status = entity.action_run(name='job').wait()
                     assert action_status == 'success'
+    else:
+        if sent_value_type == 'empty_value':
+            assert_config_value_error(entity, sent_data)
+        else:
+            assert entity.config_set(sent_data) == sent_data
+
+        action_status = entity.action_run(name='job').wait()
+        assert action_status == 'success'
+
+
+def assert_password_type(*args):
+    path, config_type, entity, is_required, is_default, sent_value_type = args
+    sent_data = {config_type: get_value(path, entity, 'sent_value')}
+
+    if is_required:
+        if is_default:
+            if sent_value_type in ['empty_value', 'null_value']:
+                assert_config_value_error(entity, sent_data)
+            else:
+                assert entity.config_set(sent_data) == sent_data
+
+            action_status = entity.action_run(name='job').wait()
+            assert action_status == 'success'
+        else:
+            if sent_value_type in ['empty_value', 'null_value']:
+                assert_config_value_error(entity, sent_data)
+            else:
+                assert entity.config_set(sent_data) == sent_data
+
+            if isinstance(entity, Cluster):
+                assert_action_has_issues(entity)
+            else:
+                if sent_value_type in ['empty_value', 'null_value']:
+                    assert_action_has_issues(entity)
                 else:
-                    if isinstance(entity, Cluster):
-                        with pytest.raises(ActionHasIssues) as error:
-                            entity.action_run(name='job').wait()
-                    else:
-                        action_status = entity.action_run(name='job').wait()
-                        assert action_status == 'success'
+                    action_status = entity.action_run(name='job').wait()
+                    assert action_status == 'success'
+    else:
+        if sent_value_type == 'empty_value':
+            assert_config_value_error(entity, sent_data)
+        else:
+            assert entity.config_set(sent_data) == sent_data
+
+        action_status = entity.action_run(name='job').wait()
+        assert action_status == 'success'
+
+
+def assert_text_type(*args):
+    path, config_type, entity, is_required, is_default, sent_value_type = args
+    sent_data = {config_type: get_value(path, entity, 'sent_value')}
+
+    if is_required:
+        if is_default:
+            if sent_value_type in ['empty_value', 'null_value']:
+                assert_config_value_error(entity, sent_data)
+            else:
+                assert entity.config_set(sent_data) == sent_data
+
+            action_status = entity.action_run(name='job').wait()
+            assert action_status == 'success'
+        else:
+            if sent_value_type in ['empty_value', 'null_value']:
+                assert_config_value_error(entity, sent_data)
+            else:
+                assert entity.config_set(sent_data) == sent_data
+
+            if isinstance(entity, Cluster):
+                assert_action_has_issues(entity)
+            else:
+                if sent_value_type in ['empty_value', 'null_value']:
+                    assert_action_has_issues(entity)
+                else:
+                    action_status = entity.action_run(name='job').wait()
+                    assert action_status == 'success'
+    else:
+        if sent_value_type == 'empty_value':
+            assert_config_value_error(entity, sent_data)
+        else:
+            assert entity.config_set(sent_data) == sent_data
+
+        action_status = entity.action_run(name='job').wait()
+        assert action_status == 'success'
+
+
+def assert_file_type(*args):
+    path, config_type, entity, is_required, is_default, sent_value_type = args
+    sent_data = {config_type: get_value(path, entity, 'sent_value')}
+
+    if is_required and sent_value_type == 'null_value':
+        assert_config_value_error(entity, sent_data)
+    elif sent_value_type == 'empty_value':
+        assert_config_value_error(entity, sent_data)
+    else:
+        assert entity.config_set(sent_data) == sent_data
+
+    if is_default:
+        action_status = entity.action_run(name='job').wait()
+        assert action_status == 'success'
+    else:
+        if is_required and isinstance(entity, Cluster):
+            assert_action_has_issues(entity)
+        else:
+            if is_required and sent_value_type in ['empty_value', 'null_value']:
+                assert_action_has_issues(entity)
             else:
                 action_status = entity.action_run(name='job').wait()
                 assert action_status == 'success'
+
+
+ASSERT_TYPE = {
+    'list': assert_list_type,
+    'map': assert_map_type,
+    'string': assert_string_type,
+    'password': assert_password_type,
+    'text': assert_text_type,
+    'file': assert_file_type,
+}
+
+
+def assert_config_type(path, config_type, entities, is_required, is_default, sent_value_type):
+    for entity in entities:
+        ASSERT_TYPE[config_type](
+            path, config_type, entity, is_required, is_default, sent_value_type)
 
 
 @fixture_parametrized_by_data_subdirs(

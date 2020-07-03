@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=R0912, R0914
+# pylint: disable=R0912, R0914, W0612
 import os
 from collections import OrderedDict
 from itertools import product
@@ -32,11 +32,11 @@ IS_REQUIRED = [
 
 TYPES = [
     'list',
-    # 'map',
-    # 'string',
-    # 'password',
-    # 'text',
-    # 'file',
+    'map',
+    'string',
+    'password',
+    'text',
+    'file',
     # 'structure',
     # 'boolean',
     # 'integer',
@@ -64,7 +64,7 @@ DEFAULTS = {
     'string': 'string',
     'password': 'password',
     'text': 'text',
-    'file': '/path/to/file.txt',
+    'file': '{}_file',
     'structure': [
         {
             'country': 'Greece',
@@ -101,6 +101,35 @@ VARS = {
         'correct_value': ['a', 'b', 'c'],
         'null_value': None,
         'empty_value': []
+    },
+    'map': {
+        'correct_value': {
+            'name': 'Joe',
+            'age': '24',
+            'sex': 'm'
+        },
+        'null_value': None,
+        'empty_value': {}
+    },
+    'string': {
+        'correct_value': 'string',
+        'null_value': None,
+        'empty_value': ''
+    },
+    'password': {
+        'correct_value': 'password',
+        'null_value': None,
+        'empty_value': ''
+    },
+    'text': {
+        'correct_value': 'text',
+        'null_value': None,
+        'empty_value': ''
+    },
+    'file': {
+        'correct_value': 'file content',
+        'null_value': None,
+        'empty_value': ''
     }
 }
 
@@ -145,7 +174,10 @@ def config_generate(name, entity, config_type, is_required, is_default):
             }
         })
     if is_default:
-        config_body.update({'default': DEFAULTS[config_type]})
+        if config_type == 'file':
+            config_body.update({'default': DEFAULTS[config_type].format(entity)})
+        else:
+            config_body.update({'default': DEFAULTS[config_type]})
     config.append(config_body)
 
     actions = OrderedDict({
@@ -172,14 +204,122 @@ def config_generate(name, entity, config_type, is_required, is_default):
     return body
 
 
+def get_list_sent_test_value(*args):
+    _, _, config_type, is_required, is_default, sent_value_type = args
+    sent_value = VARS[config_type][sent_value_type]
+    test_value = VARS[config_type][sent_value_type]
+
+    if sent_value_type == 'null_value':
+        if is_required and is_default:
+            test_value = DEFAULTS[config_type]
+
+    return sent_value, test_value
+
+
+def get_map_sent_test_value(*args):
+    _, _, config_type, is_required, is_default, sent_value_type = args
+    sent_value = VARS[config_type][sent_value_type]
+    test_value = VARS[config_type][sent_value_type]
+
+    if sent_value_type == 'null_value':
+        if is_required and is_default:
+            test_value = DEFAULTS[config_type]
+
+    return sent_value, test_value
+
+
+def get_string_sent_test_value(*args):
+    _, _, config_type, is_required, is_default, sent_value_type = args
+    sent_value = VARS[config_type][sent_value_type]
+    test_value = VARS[config_type][sent_value_type]
+
+    if sent_value_type == 'null_value':
+        if is_required and is_default:
+            test_value = DEFAULTS[config_type]
+
+    if sent_value_type == 'empty_value':
+        if is_default:
+            test_value = DEFAULTS[config_type]
+        else:
+            test_value = VARS[config_type]['null_value']
+
+    return sent_value, test_value
+
+
+def get_password_sent_test_value(*args):
+    _, _, config_type, is_required, is_default, sent_value_type = args
+    sent_value = VARS[config_type][sent_value_type]
+    test_value = VARS[config_type][sent_value_type]
+
+    if sent_value_type == 'null_value':
+        if is_required and is_default:
+            test_value = DEFAULTS[config_type]
+
+    if sent_value_type == 'empty_value':
+        if is_default:
+            test_value = DEFAULTS[config_type]
+        else:
+            test_value = VARS[config_type]['null_value']
+
+    return sent_value, test_value
+
+
+def get_text_sent_test_value(*args):
+    _, _, config_type, is_required, is_default, sent_value_type = args
+    sent_value = VARS[config_type][sent_value_type]
+    test_value = VARS[config_type][sent_value_type]
+
+    if sent_value_type == 'null_value':
+        if is_required and is_default:
+            test_value = DEFAULTS[config_type]
+
+    if sent_value_type == 'empty_value':
+        if is_default:
+            test_value = DEFAULTS[config_type]
+        else:
+            test_value = VARS[config_type]['null_value']
+
+    return sent_value, test_value
+
+
+def get_file_sent_test_value(*args):
+    name, entity, config_type, is_required, is_default, sent_value_type = args
+    sent_value = VARS[config_type][sent_value_type]
+
+    test_value = f'/adcm/data/file/{entity}.{{{{ context.{entity}_id }}}}.file.'
+
+    if sent_value_type == 'empty_value':
+        if not is_default:
+            test_value = VARS[config_type]['null_value']
+
+    if sent_value_type == 'null_value':
+        if is_required and not is_default:
+            test_value = VARS[config_type]['null_value']
+
+        if not is_required:
+            test_value = VARS[config_type]['null_value']
+
+    return sent_value, test_value
+
+
+SENT_TEST_VALUE = {
+    'list': get_list_sent_test_value,
+    'map': get_map_sent_test_value,
+    'string': get_string_sent_test_value,
+    'password': get_password_sent_test_value,
+    'text': get_text_sent_test_value,
+    'file': get_file_sent_test_value,
+}
+
+
 def action_generate(name, entity, config_type, is_required, is_default, sent_value_type):
 
     if entity == 'service':
-        that = [f'services.{entity}_{name}.config.{config_type} == test_config_value']
+        that = [f'services.{entity}_{name}.config.{config_type} == test_value']
     elif entity == 'host':
-        that = [f'{config_type} == test_config_value']
+        that = [f'{config_type} == test_value']
     else:
-        that = [f'{entity}.config.{config_type} == test_config_value']
+        that = [f'{entity}.config.{config_type} == test_value']
 
     tasks = [
         OrderedDict({
@@ -197,33 +337,12 @@ def action_generate(name, entity, config_type, is_required, is_default, sent_val
 
     ]
 
-    if sent_value_type == 'correct_value':
-        sent_value = VARS[config_type][sent_value_type]
-        test_value = VARS[config_type][sent_value_type]
-
-    if sent_value_type == 'null_value':
-        sent_value = VARS[config_type][sent_value_type]
-        if is_required and is_default:
-            test_value = DEFAULTS[config_type]
-        else:
-            test_value = VARS[config_type][sent_value_type]
-
-    if sent_value_type == 'empty_value':
-        sent_value = VARS[config_type][sent_value_type]
-        if is_required:
-            if config_type == 'list':
-                test_value = VARS[config_type][sent_value_type]
-            else:
-                if is_default:
-                    test_value = DEFAULTS[config_type]
-                else:
-                    test_value = VARS[config_type]['null_value']
-        else:
-            test_value = VARS[config_type][sent_value_type]
+    sent_value, test_value = SENT_TEST_VALUE[config_type](
+        name, entity, config_type, is_required, is_default, sent_value_type)
 
     playbook_vars = {
-        'sent_config_value': sent_value,
-        'test_config_value': test_value
+        'sent_value': sent_value,
+        'test_value': test_value
     }
 
     body = [
@@ -281,6 +400,11 @@ def run():
             additional_entity_action = action_generate(
                 name, additional_entity, config_type, is_required, is_default, sent_value_type)
             write_yaml(f'{path}{additional_entity}_action.yaml', additional_entity_action)
+
+            if config_type == 'file':
+                for file_name in [entity, additional_entity]:
+                    with open(f'{path}{file_name}_file', 'a') as f:
+                        f.write('file content')
 
 
 if __name__ == '__main__':
