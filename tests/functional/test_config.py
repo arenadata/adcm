@@ -246,6 +246,29 @@ def assert_file_type(*args):
                 assert action_status == 'success'
 
 
+def assert_structure_type(*args):
+    path, config_type, entity, is_required, is_default, sent_value_type = args
+    sent_data = {config_type: get_value(path, entity, 'sent_value')}
+
+    if sent_value_type == 'null_value':
+        if is_required:
+            if is_default:
+                assert_config_value_error(entity, sent_data)
+                action_status = entity.action_run(name='job').wait()
+                assert action_status == 'success'
+            else:
+                assert_config_value_error(entity, sent_data)
+                assert_action_has_issues(entity)
+
+    elif is_required and not is_default and isinstance(entity, Cluster):
+        assert entity.config_set(sent_data) == sent_data
+        assert_action_has_issues(entity)
+    else:
+        assert entity.config_set(sent_data) == sent_data
+        action_status = entity.action_run(name='job').wait()
+        assert action_status == 'success'
+
+
 ASSERT_TYPE = {
     'list': assert_list_type,
     'map': assert_map_type,
@@ -253,6 +276,7 @@ ASSERT_TYPE = {
     'password': assert_password_type,
     'text': assert_text_type,
     'file': assert_file_type,
+    'structure': assert_structure_type,
 }
 
 

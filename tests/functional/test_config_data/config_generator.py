@@ -37,7 +37,7 @@ TYPES = [
     'password',
     'text',
     'file',
-    # 'structure',
+    'structure',
     # 'boolean',
     # 'integer',
     # 'float',
@@ -68,15 +68,15 @@ DEFAULTS = {
     'structure': [
         {
             'country': 'Greece',
-            'code': '30'
+            'code': 30
         },
         {
             'country': 'France',
-            'code': '33'
+            'code': 33
         },
         {
             'country': 'Spain',
-            'code': '34'
+            'code': 34
         }
     ],
     'boolean': True,
@@ -130,6 +130,24 @@ VARS = {
         'correct_value': 'file content',
         'null_value': None,
         'empty_value': ''
+    },
+    'structure': {
+        'correct_value': [
+            {
+                'country': 'Greece',
+                'code': 30
+            },
+            {
+                'country': 'France',
+                'code': 33
+            },
+            {
+                'country': 'Spain',
+                'code': 34
+            }
+        ],
+        'null_value': None,
+        'empty_value': []
     }
 }
 
@@ -166,6 +184,10 @@ def config_generate(name, entity, config_type, is_required, is_default):
         'type': config_type,
         'required': is_required
     })
+
+    if config_type == 'structure':
+        config_body.update({'yspec': './schema.yaml'})
+
     if config_type == 'option':
         config_body.update({
             'option': {
@@ -173,6 +195,7 @@ def config_generate(name, entity, config_type, is_required, is_default):
                 'WEEKLY': 'WEEKLY'
             }
         })
+
     if is_default:
         if config_type == 'file':
             config_body.update({'default': DEFAULTS[config_type].format(entity)})
@@ -302,6 +325,18 @@ def get_file_sent_test_value(*args):
     return sent_value, test_value
 
 
+def get_structure_sent_test_value(*args):
+    name, entity, config_type, is_required, is_default, sent_value_type = args
+    sent_value = VARS[config_type][sent_value_type]
+    test_value = VARS[config_type][sent_value_type]
+
+    if sent_value_type == 'null_value':
+        if is_required and is_default:
+            test_value = DEFAULTS[config_type]
+
+    return sent_value, test_value
+
+
 SENT_TEST_VALUE = {
     'list': get_list_sent_test_value,
     'map': get_map_sent_test_value,
@@ -309,6 +344,7 @@ SENT_TEST_VALUE = {
     'password': get_password_sent_test_value,
     'text': get_text_sent_test_value,
     'file': get_file_sent_test_value,
+    'structure': get_structure_sent_test_value,
 }
 
 
@@ -403,8 +439,30 @@ def run():
 
             if config_type == 'file':
                 for file_name in [entity, additional_entity]:
-                    with open(f'{path}{file_name}_file', 'a') as f:
+                    with open(f'{path}{file_name}_file', 'w') as f:
                         f.write('file content')
+
+            if config_type == 'structure':
+                schema = OrderedDict({
+                    'root': OrderedDict({
+                        'match': 'list',
+                        'item': 'country_code'
+                    }),
+                    'country_code': OrderedDict({
+                        'match': 'dict',
+                        'items': OrderedDict({
+                            'country': 'string',
+                            'code': 'integer'
+                        })
+                    }),
+                    'string': OrderedDict({
+                        'match': 'string'
+                    }),
+                    'integer': OrderedDict({
+                        'match': 'int'
+                    })
+                })
+                write_yaml(f'{path}schema.yaml', schema)
 
 
 if __name__ == '__main__':
