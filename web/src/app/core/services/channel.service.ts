@@ -10,8 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Injectable } from '@angular/core';
-import { Subject } from 'rxjs';
-import { filter } from 'rxjs/operators';
+import { Subject, Observable } from 'rxjs';
+import { filter, map } from 'rxjs/operators';
 
 export interface IBroadcast {
   key: string;
@@ -24,11 +24,14 @@ export interface IBroadcast {
 export class ChannelService {
   private event = new Subject<IBroadcast>();
 
-  next(key: string, value: any) {
+  next<T>(key: string, value: T) {
     this.event.next({ key, value });
   }
 
-  on(key: string) {
-    return this.event.asObservable().pipe(filter(e => e.key === key));
+  on<T = any>(key: string): Observable<T> {
+    return this.event.asObservable().pipe(
+      filter((e) => e.key === key),
+      map<IBroadcast, T>((a) => a.value)
+    );
   }
 }
