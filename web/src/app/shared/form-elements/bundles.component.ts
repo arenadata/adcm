@@ -11,10 +11,9 @@
 // limitations under the License.
 import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { FormControl } from '@angular/forms';
-import { PreloaderService } from '@app/core';
 import { Prototype, StackBase } from '@app/core/types';
-import { BehaviorSubject, of, throwError } from 'rxjs';
-import { catchError, map, switchMap, tap, filter } from 'rxjs/operators';
+import { BehaviorSubject, of } from 'rxjs';
+import { filter, map, switchMap } from 'rxjs/operators';
 
 import { AddService } from '../add-component/add.service';
 import { ButtonUploaderComponent } from './button-uploader.component';
@@ -61,7 +60,7 @@ export class BundlesComponent extends InputComponent implements OnInit {
   disabledVersion = true;
   versions: StackBase[];
 
-  constructor(private preloader: PreloaderService, private service: AddService) {
+  constructor(private service: AddService) {
     super();
   }
 
@@ -69,17 +68,13 @@ export class BundlesComponent extends InputComponent implements OnInit {
     this.form.addControl('display_name', new FormControl());
     this.form.addControl('bundle_id', new FormControl());
 
-    this.getBundles(true);
-
-    const forVersion$ = (display_name: string) => {
-      return display_name ? this.service.getPrototype(this.typeName, { page: 0, limit: 500, ordering: '-version', display_name }) : of([]);
-    };
+    this.getBundles();
 
     this.form
       .get('display_name')
       .valueChanges.pipe(
         this.takeUntil(),
-        switchMap((a) => forVersion$(a))
+        switchMap((value) => (value ? this.service.getPrototype(this.typeName, { page: 0, limit: 500, ordering: '-version', display_name: value }) : of([])))
       )
       .subscribe((a) => {
         this.versions = a;
@@ -104,26 +99,17 @@ export class BundlesComponent extends InputComponent implements OnInit {
     const count = this.bundles$.getValue().length;
     if (count === this.page * this.limit) {
       this.page++;
-      this.getBundles(true);
+      this.getBundles();
     }
   }
 
-  getBundles(isOpen: boolean) {
+  getBundles() {
     const offset = (this.page - 1) * this.limit;
     const params = { fields: 'display_name', distinct: 1, ordering: 'display_name', limit: this.limit, offset };
-
-    if (isOpen) {
-      this.preloader.freeze();
-      this.service
-        .getPrototype(this.typeName, params)
-        .pipe(
-          tap((a) => {
-            this.bundles$.next([...this.bundles$.getValue(), ...a]);
-            this.selectOne(a, 'display_name');
-          })
-        )
-        .subscribe();
-    }
+    this.service.getPrototype(this.typeName, params).subscribe((a) => {
+      this.bundles$.next([...this.bundles$.getValue(), ...a]);
+      this.selectOne(a, 'display_name');
+    });
   }
 
   selectOne(a: Partial<Prototype>[] = [], formName: string) {
@@ -135,17 +121,13 @@ export class BundlesComponent extends InputComponent implements OnInit {
   upload(data: FormData[]) {
     this.service
       .upload(data)
-      .pipe(
-        catchError((e) => throwError(e)),
-        map((a) => a.map((e) => ({ bundle_id: e.id, display_name: e.display_name, version: e.version })))
-      )
+      .pipe(map((a) => a.map((e) => ({ bundle_id: e.id, display_name: e.display_name, version: e.version }))))
       .subscribe((a) => {
-        const [first, other] = a;
-        this.loadedBundle = first;
+        this.loadedBundle = a[0];
         this.uploadBtn.fileUploadInput.nativeElement.value = '';
         this.page = 0;
         this.bundles$.next([]);
-        this.getBundles(true);
+        this.getBundles();
       });
   }
 }

@@ -17,8 +17,8 @@ import { ClusterService, StackInfo, StackService } from '@app/core';
 import { ApiService } from '@app/core/api';
 import { Host, Prototype, ServicePrototype, StackBase, TypeName } from '@app/core/types';
 import { environment } from '@env/environment';
-import { Observable, of } from 'rxjs';
-import { concatAll, filter, map, switchMap } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { concatAll, filter, map, switchMap, catchError } from 'rxjs/operators';
 
 import { DialogComponent } from '../components/dialog.component';
 import { GenName } from './naming';
@@ -164,6 +164,6 @@ export class AddService {
   }
 
   upload(data: FormData[]) {
-    return this.stack.upload(data);
+    return this.stack.upload(data).pipe(catchError((e) => throwError(e)));
   }
 }
