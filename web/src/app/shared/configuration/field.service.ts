@@ -213,10 +213,13 @@ export class FieldService {
           else if (type === 'group') return this.checkValue(runParse(data as IOutput, field.name), type);
           else return this.checkValue(data, type);
         };
-        const exTypes = ['map', 'list', 'json'];
+
         const f = findField(c, parentName);
-        const r = f ? checkType(v[c], f) : null;
-        return exTypes.includes(f?.type) || r !== null ? { ...p, [c]: r } : p;
+        if (f) {
+          const result = checkType(v[c], f);
+          return f.type !== 'group' || result ? { ...p, [c]: result } : p;
+        }
+        return p;
       };
 
       return Object.keys(v).reduce(runByValue, {});

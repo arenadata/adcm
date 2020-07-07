@@ -15,38 +15,38 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 const CONFIG_URL = '/assets/config.json';
-export interface IConfig {
+export interface IVersionInfo {
   version: string;
   commit_id: string;
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ConfigService {
-  appConfig$: Observable<IConfig>;
+  appConfig$: Observable<IVersionInfo>;
 
   constructor(private http: HttpClient) {}
 
   get version() {
-    return localStorage.getItem('adcm:version');
+    return localStorage.getItem('adcm:version') || '';
   }
 
   set version(version: string) {
     localStorage.setItem('adcm:version', version);
   }
 
-  checkVersion(c: IConfig): IConfig | null {
+  checkVersion(c: IVersionInfo): IVersionInfo {
     const version = `${c.version}-${c.commit_id}`;
-    if (this.version && this.version !== version) {
+    if (!this.version) this.version = version;
+    else if (this.version !== version) {
       this.version = version;
       return null;
-    } else if (!this.version) this.version = version;
+    }
     return c;
   }
 
   load() {
-    const ts = Date.now();
-    return this.http.get<IConfig>(`${CONFIG_URL}?nocache=${ts}`).pipe(map(c => this.checkVersion(c)));
+    return this.http.get<IVersionInfo>(`${CONFIG_URL}?nocache=${Date.now()}`).pipe(map((c) => this.checkVersion(c)));
   }
 }

@@ -21,7 +21,7 @@ import { map, switchMap } from 'rxjs/operators';
 @Component({
   selector: 'app-settings',
   template: '<app-config-form *ngIf="set$ | async as set" [configUrl]="set.config" (event)="onEvent($event)"></app-config-form>',
-  styles: [':host {flex:1}'],
+  styles: [':host {flex:1; display: flex;}'],
 })
 export class SettingsComponent implements OnInit {
   set$: Observable<any>;

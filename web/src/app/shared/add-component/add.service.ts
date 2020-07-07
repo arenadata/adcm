@@ -17,10 +17,11 @@ import { ClusterService, StackInfo, StackService } from '@app/core';
 import { ApiService } from '@app/core/api';
 import { Host, Prototype, ServicePrototype, StackBase, TypeName } from '@app/core/types';
 import { environment } from '@env/environment';
-import { Observable, of } from 'rxjs';
-import { concatAll, filter, map, switchMap } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { concatAll, filter, map, switchMap, catchError } from 'rxjs/operators';
 
 import { DialogComponent } from '../components/dialog.component';
+import { GenName } from './naming';
 
 export interface FormModel {
   name: string;
@@ -29,45 +30,53 @@ export interface FormModel {
   success?: EventEmitter<{ flag: boolean; obj: any }>;
 }
 
-const fromBundle = new FormGroup({
-  prototype_id: new FormControl('', Validators.required),
-  name: new FormControl('', Validators.required),
-  description: new FormControl()
-});
+const fromBundle = () =>
+  new FormGroup({
+    prototype_id: new FormControl('', Validators.required),
+    name: new FormControl('', Validators.required),
+    description: new FormControl(),
+  });
 
 const MODELS: { [key: string]: FormModel } = {
   provider: {
     title: 'hostprovider',
     name: 'provider',
-    form: fromBundle
+    form: fromBundle(),
   },
   host: {
     name: 'host',
     form: new FormGroup({
       fqdn: new FormControl('', [Validators.required, Validators.pattern(new RegExp(/^[A-Za-z0-9_\.\-]+$/))]),
       cluster_id: new FormControl(),
-      provider_id: new FormControl('', Validators.required)
-    })
+      provider_id: new FormControl('', Validators.required),
+    }),
   },
   cluster: {
     name: 'cluster',
-    form: fromBundle
+    form: fromBundle(),
   },
   service: {
     name: 'service',
-    title: 'service'
+    title: 'service',
   },
   host2cluster: {
     name: 'host2cluster',
-    title: 'free host'
-  }
+    title: 'free host',
+  },
 };
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AddService {
-  currentPrototype: StackBase;
+  private _currentPrototype: StackBase;
+  set currentPrototype(a: StackBase) {
+    this._currentPrototype = a;
+  }
+  get currentPrototype(): StackBase {
+    return this._currentPrototype;
+  }
+  
   constructor(private api: ApiService, private stack: StackService, private cluster: ClusterService, public dialog: MatDialog) {}
 
   model(name: string) {
@@ -78,23 +87,33 @@ export class AddService {
     return this.cluster.Cluster;
   }
 
+  genName(form: FormGroup) {
+    return form
+      .get('prototype_id')
+      .valueChanges.pipe(filter((v) => !!v))
+      .subscribe(() => {
+        const field = form.get('name');
+        if (!field.value) field.setValue(GenName.do());
+      });
+  }
+
   add<T>(data: Partial<T>, name: TypeName) {
     if (this.currentPrototype && this.currentPrototype.license === 'unaccepted') {
       return this.api.root.pipe(
-        switchMap(root =>
+        switchMap((root) =>
           this.api.get<{ text: string }>(`${root.stack}bundle/${this.currentPrototype.bundle_id}/license/`).pipe(
-            switchMap(info =>
+            switchMap((info) =>
               this.dialog
                 .open(DialogComponent, {
                   data: {
                     title: `Accept license agreement`,
                     text: info.text,
-                    controls: { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] }
-                  }
+                    controls: { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] },
+                  },
                 })
                 .beforeClosed()
                 .pipe(
-                  filter(yes => yes),
+                  filter((yes) => yes),
                   switchMap(() =>
                     this.api.put(`${root.stack}bundle/${this.currentPrototype.bundle_id}/license/accept/`, {}).pipe(switchMap(() => this.api.post<T>(root[name], data)))
                   )
@@ -103,13 +122,13 @@ export class AddService {
           )
         )
       );
-    } else return this.api.root.pipe(switchMap(root => this.api.post<T>(root[name], data)));
+    } else return this.api.root.pipe(switchMap((root) => this.api.post<T>(root[name], data)));
   }
 
   addHost(host: Partial<Host>): Observable<Host> {
     const a$ = this.api.post<Host>(`${environment.apiRoot}provider/${host.provider_id}/host/`, { fqdn: host.fqdn });
     const b$ = a$.pipe(
-      map(h => (host.cluster_id ? this.api.post<Host>(`${environment.apiRoot}cluster/${host.cluster_id}/host/`, { host_id: h.id }) : of(h)))
+      map((h) => (host.cluster_id ? this.api.post<Host>(`${environment.apiRoot}cluster/${host.cluster_id}/host/`, { host_id: h.id }) : of(h)))
     );
     return b$.pipe(concatAll());
   }
@@ -124,7 +143,7 @@ export class AddService {
 
   getList<T>(type: TypeName, param: Params = {}): Observable<T[]> {
     const paramMap = convertToParamMap(param);
-    return this.api.root.pipe(switchMap(root => this.api.getList<T>(root[type], paramMap).pipe(map(list => list.results))));
+    return this.api.root.pipe(switchMap((root) => this.api.getList<T>(root[type], paramMap).pipe(map((list) => list.results))));
   }
 
   getPrototype(name: StackInfo, param: { [key: string]: string | number }): Observable<Prototype[]> {
@@ -135,29 +154,16 @@ export class AddService {
     return this.api.get<StackBase[]>(this.cluster.Cluster.serviceprototype).pipe(
       map((a: ServicePrototype[]) =>
         a
-          .filter(b => !b.selected)
-          .map(b => ({
+          .filter((b) => !b.selected)
+          .map((b) => ({
             ...b,
-            name: `${b.display_name} - ${b.version}`
+            name: `${b.display_name} - ${b.version}`,
           }))
       )
     );
   }
 
-  // getFreeHosts(p: Params) {
-  //   const param = convertToParamMap(p);
-  //   return this.api
-  //     .getList<Host>('host', param)
-  //     .pipe(map(a => a.map(b => ({ ...b, name: b.fqdn }))));
-  // }
-
   upload(data: FormData[]) {
-    return this.stack.upload(data);
-  }
-
-  setBundle(id: number, proto: StackBase[]) {
-    if (id && proto.length) {
-      this.currentPrototype = proto.find(a => a.id === id);
-    }
+    return this.stack.upload(data).pipe(catchError((e) => throwError(e)));
   }
 }

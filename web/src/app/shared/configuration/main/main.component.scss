@@ -1,4 +1,7 @@
-:host { flex: 1; }
+:host {
+  flex: 1;
+  position: relative;
+}
 
 .na-hu {
   position: absolute;
@@ -8,10 +11,17 @@
 .fields {
   position: absolute;
   top: 70px;
-  bottom: 10px;
-  left: 0px;
+  bottom: 0;
+  left: 0;
   right: 0;
   overflow: auto;
   z-index: 2;
-  padding: 10px 20px;
+  padding: 0 10px;
+}
+
+.pre-load {
+  position: absolute;
+  top: 60px;
+  width: 100%;
+  text-align: center;
 }

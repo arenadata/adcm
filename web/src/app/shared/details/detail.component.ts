@@ -135,8 +135,7 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
     }
 
     // parent
-    if (this.service.Cluster?.id === m.object.id && this.Current?.typeName !== 'cluster' && m.object.type === 'cluster' && m.event === 'clear_issue')
-      this.issues = {} as Issue;
+    if (this.service.Cluster?.id === m.object.id && this.Current?.typeName !== 'cluster' && m.object.type === 'cluster' && m.event === 'clear_issue') this.issues = {} as Issue;
 
     this.isIssue = this.notIssue(this.issues);
   }
