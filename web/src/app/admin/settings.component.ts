@@ -17,6 +17,7 @@ import { DynamicEvent } from '@app/shared';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
+import { FormGroup } from '@angular/forms';
 
 @Component({
   selector: 'app-settings',
@@ -36,6 +37,6 @@ export class SettingsComponent implements OnInit {
   }
 
   onEvent(e: DynamicEvent) {
-    if (e.name === 'send') this.store.dispatch(sendMetrics({ metrics: e.data.form.controls['send_stats/global'].value }));
+    if (e.name === 'send') this.store.dispatch(sendMetrics({ metrics: (e.data.form.controls['global'] as FormGroup).controls['send_stats'].value }));
   }
 }
