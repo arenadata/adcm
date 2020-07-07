@@ -50,7 +50,7 @@ interface Upgrade {
     >
       <mat-icon>sync_problem</mat-icon>
     </button>
-    <mat-menu #menu="matMenu" [overlapTrigger]="false" xPosition="before">
+    <mat-menu #menu="matMenu" [overlapTrigger]="false" [xPosition]="xPosition" yPosition="below">
       <ng-template matMenuContent>
         <button *ngFor="let item of list$ | async" mat-menu-item (click)="runUpgrade(item)">
           <span>{{ item.name || 'No name' }}</span>
@@ -62,6 +62,8 @@ interface Upgrade {
 export class UpgradeComponent extends BaseDirective {
   list$: Observable<Upgrade[]>;
   row: UpgradeItem = { upgradable: false, upgrade: '', issue: null };
+
+  @Input() xPosition = 'before';
 
   @Input()
   set dataRow(row: UpgradeItem) {
