@@ -23,14 +23,20 @@ import { BundlesComponent } from './bundles.component';
 describe('Form control :: bundle component', () => {
   let component: BundlesComponent;
   let fixture: ComponentFixture<BundlesComponent>;
-  let AddServiceStub = {
-    getPrototype: (page = 0) => of([{ bundle_id: 1, display_name: 'bundle_1', version: '0.1', bundle_edition: 'community' }]),
-  };
+  let aService = jasmine.createSpyObj('AddService', ['getPrototype']);
+  //   {
+  //     getPrototype: (n: string, param: { offset: number }) =>
+  //       of(
+  //         Array(param.offset)
+  //           .fill(0)
+  //           .map((_, i) => ({ bundle_id: i, display_name: `bundle_${i}`, version: `0.0${i}`, bundle_edition: 'community' }))
+  //       ),
+  //   };
 
   beforeEach(async () => {
     TestBed.configureTestingModule({
       imports: [MatSelectModule, NoopAnimationsModule, MatTooltipModule],
-      providers: [{ provide: AddService, useValue: AddServiceStub }, PreloaderService],
+      providers: [{ provide: AddService, useValue: aService }],
     }).compileComponents();
   });
 
@@ -47,11 +53,28 @@ describe('Form control :: bundle component', () => {
   });
 
   it('List bundle with one element', async () => {
+    // component.bundles = [
+    //   { id: 0, display_name: 'bundle_1', version: '0.01', bundle_edition: 'community', name: '', url: '', description: '', edition: '', bundle_id: 0, license: 'absent' },
+    // ];
+    // component.selectOne(component.bundles, 'display_name');
+    const bundles = aService.getPrototype.and.returnValue(of([
+      { id: 0, display_name: 'bundle_1', version: '0.01', bundle_edition: 'community', name: '', url: '', description: '', edition: '', bundle_id: 0, license: 'absent' },
+    ]));
+    
+    fixture.detectChanges();
     await fixture.whenStable().then((_) => {
       fixture.detectChanges();
       const displayNameSelect = fixture.debugElement.nativeElement.querySelector('mat-select[formcontrolname=display_name]');
-      const firstDisplyaName = component.bundles$.getValue()[0].display_name;
+      const firstDisplyaName = component.bundles[0].display_name;
       expect(displayNameSelect.querySelector('div>div>span>span').innerText).toBe(firstDisplyaName);
+    });
+  });
+
+  xit('check paging', async () => {
+    await fixture.whenStable().then((_) => {
+      component.getNextPage();
+      fixture.detectChanges();
+      expect(component.bundles.length).toBe(component.page * component.limit);
     });
   });
 });
