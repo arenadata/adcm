@@ -81,8 +81,9 @@ export class TooltipComponent extends BaseDirective implements OnInit, OnDestroy
   position() {
     const o = this.options;
     const el = this.el.nativeElement;
-    const bodyWidth = document.querySelector('body').offsetWidth,
-      bodyHeight = (document.getElementsByTagName('app-root')[0] as HTMLElement).offsetHeight,
+    const root = document.querySelector<HTMLElement>('app-root');
+    const bodyWidth = root.offsetWidth,
+      bodyHeight = root.offsetHeight,
       eLeft = o.event.x - el.offsetWidth,
       eRight = o.event.x + el.offsetWidth,
       eTop = o.event.y - el.offsetHeight,

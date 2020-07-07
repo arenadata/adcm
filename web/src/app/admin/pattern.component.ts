@@ -25,19 +25,23 @@ import { exhaustMap, filter, map } from 'rxjs/operators';
       <app-crumbs [navigation]="crumbs"></app-crumbs>
       <div class="example-spacer"></div>
     </mat-toolbar>
-    <div class="row">
-      <mat-nav-list class="col s12 m3 l2" [style.paddingTop.px]="20">
-        <a mat-list-item [appForTest]="'tab_' + item.url" *ngFor="let item of leftMenu" [routerLink]="[item.url]" routerLinkActive="active">{{ item.title }} </a>
-      </mat-nav-list>
-      <mat-card class="col s12 m9 l10">
-        <mat-card-header>
-          <mat-card-title>{{ title }}</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <router-outlet></router-outlet>
-        </mat-card-content>
-      </mat-card>
-    </div>
+    <mat-drawer-container [style.flex]="1" autosize>
+      <mat-drawer disableClose="true" mode="side" opened [style.backgroundColor]="'transparent'" [style.minWidth.px]="200">
+        <mat-nav-list [style.paddingTop.px]="20">
+          <a mat-list-item [appForTest]="'tab_' + item.url" *ngFor="let item of leftMenu" [routerLink]="[item.url]" routerLinkActive="active">{{ item.title }} </a>
+        </mat-nav-list>
+      </mat-drawer>
+      <mat-drawer-content [style.display]="'flex'">
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>{{ title }}</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <router-outlet></router-outlet>
+          </mat-card-content>
+        </mat-card>
+      </mat-drawer-content>
+    </mat-drawer-container>
   `,
   styleUrls: ['../shared/details/detail.component.scss'],
 })
@@ -50,6 +54,7 @@ export class PatternComponent extends BaseDirective implements OnInit, OnDestroy
     { url: 'users', title: 'Users' },
   ];
   data = {
+    '/admin': { title: 'Hi there!', crumbs: [{ path: '/admin/', name: 'intro' }] },
     '/admin/intro': { title: 'Hi there!', crumbs: [{ path: '/admin/', name: 'intro' }] },
     '/admin/settings': { title: 'Global configuration', crumbs: [{ path: '/admin/settings', name: 'settings' }] },
     '/admin/users': { title: 'User management', crumbs: [{ path: '/admin/users', name: 'users' }] },
@@ -91,7 +96,7 @@ export class PatternComponent extends BaseDirective implements OnInit, OnDestroy
   }
 
   getContext(url: string) {
-    const a = this.data[url] || { title: '', crumbs: [] };
+    const a = this.data[url];
     this.title = a.title;
     this.crumbs = a.crumbs;
   }
