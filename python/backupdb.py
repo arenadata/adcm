@@ -14,7 +14,7 @@
 import adcm.init_django   # pylint: disable=unused-import
 
 import datetime
-import shutil
+import sqlite3
 import os
 
 from django.core.exceptions import ImproperlyConfigured
@@ -40,7 +40,12 @@ def check_migrations():
 def backup_sqlite(dbfile):
     dt = datetime.datetime.now().strftime("%Y%m%d_%H%M")
     backupfile = os.path.join(config.BASE_DIR, 'data', 'var', f'{dt}.db')
-    shutil.copyfile(dbfile, backupfile)
+    old = sqlite3.connect(dbfile)
+    new = sqlite3.connect(backupfile)
+    with new:
+        old.backup(new)
+    new.close()
+    old.close()
     log.info('Backup sqlite db to %s', backupfile)
 
 
