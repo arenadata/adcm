@@ -83,7 +83,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
     this.channel
       .on('scroll')
       .pipe(this.takeUntil())
-      .subscribe((e) => (this.scrollEventData = e.value));
+      .subscribe((e) => (this.scrollEventData = e));
   }
 
   socketListener(m: EventMessage) {

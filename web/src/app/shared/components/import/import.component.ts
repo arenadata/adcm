@@ -15,7 +15,7 @@ import { MatCheckboxChange } from '@angular/material/checkbox';
 import { ClusterService } from '@app/core';
 import { IExport, IImport } from '@app/core/types';
 import { Observable } from 'rxjs';
-import { tap } from 'rxjs/internal/operators/tap';
+import { tap } from 'rxjs/operators';
 
 interface IComposite {
   [key: string]: number;
