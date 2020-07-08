@@ -12,7 +12,7 @@
 import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { Prototype, StackBase } from '@app/core/types';
-import { BehaviorSubject, of } from 'rxjs';
+import { of } from 'rxjs';
 import { filter, map, switchMap } from 'rxjs/operators';
 
 import { AddService } from '../add-component/add.service';
@@ -26,7 +26,7 @@ import { InputComponent } from './input.component';
       <mat-form-field>
         <mat-select appInfinityScroll (topScrollPoint)="getNextPage()" required placeholder="Bundle" formControlName="display_name">
           <mat-option value="">...</mat-option>
-          <mat-option *ngFor="let bundle of bundles$ | async" [value]="bundle.display_name"> {{ bundle.display_name }} </mat-option>
+          <mat-option *ngFor="let bundle of bundles" [value]="bundle.display_name"> {{ bundle.display_name }} </mat-option>
         </mat-select>
       </mat-form-field>
       &nbsp;&nbsp;
@@ -50,16 +50,15 @@ import { InputComponent } from './input.component';
   styles: ['.row { align-items: center;display:flex; }', 'mat-form-field {flex: 1}'],
 })
 export class BundlesComponent extends InputComponent implements OnInit {
-  loadedBundle: { bundle_id: number; display_name: string };
   @Input() typeName: 'cluster' | 'provider';
   @ViewChild('uploadBtn', { static: true }) uploadBtn: ButtonUploaderComponent;
-  bundles$ = new BehaviorSubject<StackBase[]>([]);
+  loadedBundle: { bundle_id: number; display_name: string };  
+  bundles: StackBase[] = [];
+  versions: StackBase[];
   page = 1;
   limit = 50;
-
   disabledVersion = true;
-  versions: StackBase[];
-
+  
   constructor(private service: AddService) {
     super();
   }
@@ -96,7 +95,7 @@ export class BundlesComponent extends InputComponent implements OnInit {
   }
 
   getNextPage() {
-    const count = this.bundles$.getValue().length;
+    const count = this.bundles.length;
     if (count === this.page * this.limit) {
       this.page++;
       this.getBundles();
@@ -107,7 +106,7 @@ export class BundlesComponent extends InputComponent implements OnInit {
     const offset = (this.page - 1) * this.limit;
     const params = { fields: 'display_name', distinct: 1, ordering: 'display_name', limit: this.limit, offset };
     this.service.getPrototype(this.typeName, params).subscribe((a) => {
-      this.bundles$.next([...this.bundles$.getValue(), ...a]);
+      this.bundles = [...this.bundles, ...a];
       this.selectOne(a, 'display_name');
     });
   }
@@ -126,7 +125,7 @@ export class BundlesComponent extends InputComponent implements OnInit {
         this.loadedBundle = a[0];
         this.uploadBtn.fileUploadInput.nativeElement.value = '';
         this.page = 0;
-        this.bundles$.next([]);
+        this.bundles = [];
         this.getBundles();
       });
   }
