@@ -38,10 +38,10 @@ TYPES = [
     'text',
     'file',
     'structure',
-    # 'boolean',
-    # 'integer',
-    # 'float',
-    # 'option',
+    'boolean',
+    'integer',
+    'float',
+    'option',
     # 'variant'
 ]
 
@@ -82,7 +82,7 @@ DEFAULTS = {
     'boolean': True,
     'integer': 16,
     'float': 1.0,
-    'option': '80',
+    'option': 'DAILY',
     'variant': [
         'a',
         'b',
@@ -148,7 +148,23 @@ VARS = {
         ],
         'null_value': None,
         'empty_value': []
-    }
+    },
+    'boolean': {
+        'correct_value': False,
+        'null_value': None
+    },
+    'integer': {
+        'correct_value': 16,
+        'null_value': None
+    },
+    'float': {
+        'correct_value': 1.0,
+        'null_value': None
+    },
+    'option': {
+        'correct_value': 'DAILY',
+        'null_value': None
+    },
 }
 
 
@@ -337,6 +353,54 @@ def get_structure_sent_test_value(*args):
     return sent_value, test_value
 
 
+def get_boolean_sent_test_value(*args):
+    name, entity, config_type, is_required, is_default, sent_value_type = args
+    sent_value = VARS[config_type][sent_value_type]
+    test_value = VARS[config_type][sent_value_type]
+
+    if is_required and sent_value_type == 'null_value':
+        if is_default:
+            test_value = DEFAULTS[config_type]
+
+    return sent_value, test_value
+
+
+def get_integer_sent_test_value(*args):
+    name, entity, config_type, is_required, is_default, sent_value_type = args
+    sent_value = VARS[config_type][sent_value_type]
+    test_value = VARS[config_type][sent_value_type]
+
+    if is_required and sent_value_type == 'null_value':
+        if is_default:
+            test_value = DEFAULTS[config_type]
+
+    return sent_value, test_value
+
+
+def get_float_sent_test_value(*args):
+    name, entity, config_type, is_required, is_default, sent_value_type = args
+    sent_value = VARS[config_type][sent_value_type]
+    test_value = VARS[config_type][sent_value_type]
+
+    if is_required and sent_value_type == 'null_value':
+        if is_default:
+            test_value = DEFAULTS[config_type]
+
+    return sent_value, test_value
+
+
+def get_option_sent_test_value(*args):
+    name, entity, config_type, is_required, is_default, sent_value_type = args
+    sent_value = VARS[config_type][sent_value_type]
+    test_value = VARS[config_type][sent_value_type]
+
+    if is_required and sent_value_type == 'null_value':
+        if is_default:
+            test_value = DEFAULTS[config_type]
+
+    return sent_value, test_value
+
+
 SENT_TEST_VALUE = {
     'list': get_list_sent_test_value,
     'map': get_map_sent_test_value,
@@ -345,6 +409,10 @@ SENT_TEST_VALUE = {
     'text': get_text_sent_test_value,
     'file': get_file_sent_test_value,
     'structure': get_structure_sent_test_value,
+    'boolean': get_boolean_sent_test_value,
+    'integer': get_integer_sent_test_value,
+    'float': get_float_sent_test_value,
+    'option': get_option_sent_test_value,
 }
 
 
@@ -397,7 +465,9 @@ def action_generate(name, entity, config_type, is_required, is_default, sent_val
 def run():
     products = (IS_REQUIRED, IS_DEFAULTS, TYPES, SENT_VALUES_TYPE)
     for is_required, is_default, config_type, sent_value_type in product(*products):
-
+        exclude_empty_value = ['boolean', 'integer', 'float', 'option']
+        if config_type in exclude_empty_value and sent_value_type == 'empty_value':
+            continue
         if is_required:
             required_name = 'required'
         else:
@@ -440,7 +510,7 @@ def run():
             if config_type == 'file':
                 for file_name in [entity, additional_entity]:
                     with open(f'{path}{file_name}_file', 'w') as f:
-                        f.write('file content')
+                        f.write('file content\n')
 
             if config_type == 'structure':
                 schema = OrderedDict({

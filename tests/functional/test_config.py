@@ -269,6 +269,82 @@ def assert_structure_type(*args):
         assert action_status == 'success'
 
 
+def assert_boolean_type(*args):
+    path, config_type, entity, is_required, is_default, sent_value_type = args
+    sent_data = {config_type: get_value(path, entity, 'sent_value')}
+
+    if is_required and sent_value_type == 'null_value':
+        assert_config_value_error(entity, sent_data)
+    else:
+        assert entity.config_set(sent_data) == sent_data
+
+    if is_required and not is_default:
+        if sent_value_type == 'correct_value' and isinstance(entity, Cluster):
+            assert_action_has_issues(entity)
+        if sent_value_type == 'null_value':
+            assert_action_has_issues(entity)
+    else:
+        action_status = entity.action_run(name='job').wait()
+        assert action_status == 'success'
+
+
+def assert_integer_type(*args):
+    path, config_type, entity, is_required, is_default, sent_value_type = args
+    sent_data = {config_type: get_value(path, entity, 'sent_value')}
+
+    if is_required and sent_value_type == 'null_value':
+        assert_config_value_error(entity, sent_data)
+    else:
+        assert entity.config_set(sent_data) == sent_data
+
+    if is_required and not is_default:
+        if sent_value_type == 'correct_value' and isinstance(entity, Cluster):
+            assert_action_has_issues(entity)
+        if sent_value_type == 'null_value':
+            assert_action_has_issues(entity)
+    else:
+        action_status = entity.action_run(name='job').wait()
+        assert action_status == 'success'
+
+
+def assert_float_type(*args):
+    path, config_type, entity, is_required, is_default, sent_value_type = args
+    sent_data = {config_type: get_value(path, entity, 'sent_value')}
+
+    if is_required and sent_value_type == 'null_value':
+        assert_config_value_error(entity, sent_data)
+    else:
+        assert entity.config_set(sent_data) == sent_data
+
+    if is_required and not is_default:
+        if sent_value_type == 'correct_value' and isinstance(entity, Cluster):
+            assert_action_has_issues(entity)
+        if sent_value_type == 'null_value':
+            assert_action_has_issues(entity)
+    else:
+        action_status = entity.action_run(name='job').wait()
+        assert action_status == 'success'
+
+
+def assert_option_type(*args):
+    path, config_type, entity, is_required, is_default, sent_value_type = args
+    sent_data = {config_type: get_value(path, entity, 'sent_value')}
+
+    if is_required and sent_value_type == 'null_value':
+        assert_config_value_error(entity, sent_data)
+    else:
+        assert entity.config_set(sent_data) == sent_data
+
+    if is_required and not is_default:
+        if sent_value_type == 'correct_value' and isinstance(entity, Cluster):
+            assert_action_has_issues(entity)
+        if sent_value_type == 'null_value':
+            assert_action_has_issues(entity)
+    else:
+        action_status = entity.action_run(name='job').wait()
+        assert action_status == 'success'
+
+
 ASSERT_TYPE = {
     'list': assert_list_type,
     'map': assert_map_type,
@@ -277,6 +353,10 @@ ASSERT_TYPE = {
     'text': assert_text_type,
     'file': assert_file_type,
     'structure': assert_structure_type,
+    'boolean': assert_boolean_type,
+    'integer': assert_integer_type,
+    'float': assert_float_type,
+    'option': assert_option_type,
 }
 
 
