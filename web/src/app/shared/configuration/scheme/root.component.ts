@@ -65,7 +65,7 @@ export class RootComponent implements OnInit {
   remove(i: number) {
     if (Array.isArray(this.form.controls)) {
       (this.form as FormArray).removeAt(i);
-      this.controls = this.controls.filter((a, n) => n !== i);
+      this.controls = this.controls.filter((a, n) => a.name ? a.name !== i.toString() : n !== i);
     }
   }
 
@@ -128,7 +128,7 @@ export class RootComponent implements OnInit {
     return (this.rules as IYContainer).options as (IYField | IYContainer)[];
   }
 
-  trackByFn(index: number) {
-    return index;
+  trackByFn(index: number, item: any) {
+    return item.name || index;
   }
 }
