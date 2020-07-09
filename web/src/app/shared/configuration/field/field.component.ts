@@ -31,8 +31,6 @@ export class FieldComponent implements OnInit, OnChanges {
 
   @ViewChild('cc') inputControl: FieldDirective;
 
-  constructor(public cd: ChangeDetectorRef) {}
-
   ngOnInit() {
     this.initCurrentGroup();
   }
@@ -42,7 +40,7 @@ export class FieldComponent implements OnInit, OnChanges {
   }
 
   initCurrentGroup() {
-    const [subname, name] = this.options.key.split('/');
+    const [_, name] = this.options.key.split('/');
     this.currentFormGroup = name ? (this.form.controls[name] as FormGroup) : this.form;
   }
 
