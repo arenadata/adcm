@@ -38,7 +38,7 @@ def check_migrations():
 
 
 def backup_sqlite(dbfile):
-    dt = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+    dt = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     backupfile = os.path.join(config.BASE_DIR, 'data', 'var', f'{dt}.db')
     old = sqlite3.connect(dbfile)
     new = sqlite3.connect(backupfile)
