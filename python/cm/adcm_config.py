@@ -658,7 +658,7 @@ def check_config_type(proto, key, subkey, spec, value, default=False, inactive=F
     if spec['type'] in ('string', 'password', 'text'):
         if not isinstance(value, str):
             err('CONFIG_VALUE_ERROR', tmpl2.format("should be string"))
-        if value == '':
+        if 'required' in spec and spec['required'] and value == '':
             err('CONFIG_VALUE_ERROR', tmpl1.format("should be not empty"))
 
     if spec['type'] == 'file':
