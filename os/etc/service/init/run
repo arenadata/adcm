@@ -45,6 +45,7 @@ else
 fi
 
 "${adcmroot}"/python/init_db.py
+"${adcmroot}"/python/backupdb.py
 touch "${initreadyfile}"
 
 # That is sleep forever case because I have no idea how to force
