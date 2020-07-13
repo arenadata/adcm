@@ -19,12 +19,11 @@ import { FieldDirective } from './field.directive';
     <ng-container [formGroup]="form">
       <mat-form-field>
         <mat-select [(value)]="field.value" [formControlName]="field.name">
-          <mat-option *ngFor="let option of field.value" [value]="option">{{ option }}</mat-option>
+          <mat-option *ngFor="let option of field.limits?.source?.value || []" [value]="option">{{ option }}</mat-option>
         </mat-select>
         <mat-error *ngIf="!isValid"><app-error-info [field]="field" [control]="control"></app-error-info></mat-error>
       </mat-form-field>
     </ng-container>
   `,
-  styles: [],
 })
 export class VariantComponent extends FieldDirective {}
