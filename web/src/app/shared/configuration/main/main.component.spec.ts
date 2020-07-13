@@ -10,54 +10,98 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { FormBuilder } from '@angular/forms';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { ApiService } from '@app/core/api/api.service';
+import { TextBoxComponent } from '@app/shared/form-elements/text-box.component';
 import { provideMockStore } from '@ngrx/store/testing';
-import { EMPTY } from 'rxjs';
+import { EMPTY, of } from 'rxjs';
 
 import { FieldService } from '../field.service';
+import { FieldComponent } from '../field/field.component';
 import { ConfigFieldsComponent } from '../fields/fields.component';
+import { GroupFieldsComponent } from '../group-fields/group-fields.component';
 import { ToolsComponent } from '../tools/tools.component';
+import { IConfig } from '../types';
 import { ConfigComponent } from './main.component';
 import { MainService } from './main.service';
+import { SharedModule } from '@app/shared/shared.module';
+
+const rawConfig: IConfig = {
+  attr: {},
+  config: [
+    {
+      name: 'field_string',
+      display_name: 'display_name',
+      subname: '',
+      type: 'string',
+      activatable: false,
+      read_only: false,
+      default: null,
+      value: 'some string',
+      description: '',
+      required: false,
+    },
+    {
+      name: 'group',
+      display_name: 'group_display_name',
+      subname: '',
+      type: 'group',
+      activatable: false,
+      read_only: false,
+      default: null,
+      value: null,
+      description: '',
+      required: false,
+    },
+    {
+      name: 'group',
+      display_name: 'field_in_group_display_name',
+      subname: 'field_in_group',
+      type: 'integer',
+      activatable: false,
+      read_only: false,
+      default: 10,
+      value: 10,
+      description: '',
+      required: true,
+    },
+  ],
+};
 
 describe('Configuration : MainComponent >> ', () => {
   let component: ConfigComponent;
   let fixture: ComponentFixture<ConfigComponent>;
   let FieldServiceStub: Partial<FieldService>;
-  let MainServiceStub: Partial<MainService>;
-  // let store: MockStore;
-
   const initialState = { socket: {} };
+  class MockMainService {
+    getConfig = () => EMPTY;
+    filterApply = () => {};
+    getHistoryList = () => EMPTY;
+    parseValue = () => {};
+    send = () => EMPTY;
+  }
 
   beforeEach(async () => {
     FieldServiceStub = new FieldService(new FormBuilder());
-
-    MainServiceStub = {
-      getConfig: () => EMPTY,
-    };
-
     TestBed.configureTestingModule({
-      imports: [NoopAnimationsModule],
-      declarations: [ConfigComponent, ToolsComponent, ConfigFieldsComponent],
-      providers: [provideMockStore({ initialState }), { provide: FieldService, useValue: FieldServiceStub }, { provide: ApiService, useValue: {} }],
+      imports: [NoopAnimationsModule, SharedModule],
+      declarations: [ConfigComponent, ToolsComponent, ConfigFieldsComponent, GroupFieldsComponent, FieldComponent, TextBoxComponent],
+      providers: [provideMockStore({ initialState }), { provide: FieldService, useValue: FieldServiceStub }],
       schemas: [NO_ERRORS_SCHEMA],
     })
       .overrideComponent(ConfigComponent, {
         set: {
-          providers: [{ provide: MainService, useValue: MainServiceStub }],
+          providers: [{ provide: MainService, useClass: MockMainService }],
         },
       })
-      .compileComponents()
-      .then(() => {
-        fixture = TestBed.createComponent(ConfigComponent);
-        component = fixture.componentInstance;
-      });
+      .compileComponents();
   });
 
-  beforeEach(() => {});
+  beforeEach(() => {
+    fixture = TestBed.createComponent(ConfigComponent);
+    component = fixture.componentInstance;
+  });
 
   it('should create', () => {
     expect(component).toBeTruthy();
@@ -82,7 +126,18 @@ describe('Configuration : MainComponent >> ', () => {
     expect(saveBtn.disabled).toBeTrue();
   });
 
-  /**
-   * - init vars for ToolsComponent and HistoryComponent
-   */
+  it('the save button click should initialize form again', () => {
+    fixture.detectChanges();
+    component.rawConfig = rawConfig;
+    component.config$ = of(rawConfig);
+    component.cd.detectChanges();
+    component.tools.disabledSave = component.fields.form.invalid;
+    component.cd.detectChanges();
+    const saveBtn = fixture.nativeElement.querySelector('app-tools div.control-buttons button.form_config_button_save');
+    expect(saveBtn.disabled).toBeFalse();
+
+    saveBtn.click();
+    component.cd.detectChanges();
+
+  });
 });
