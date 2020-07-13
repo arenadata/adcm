@@ -139,5 +139,10 @@ describe('Configuration : MainComponent >> ', () => {
     saveBtn.click();
     component.cd.detectChanges();
 
+    component.fields.form.get('group').get('field_in_group').setValue('string_not_valid');
+    component.cd.detectChanges();
+
+    expect(saveBtn.disabled).toBeTruthy();
+
   });
 });
