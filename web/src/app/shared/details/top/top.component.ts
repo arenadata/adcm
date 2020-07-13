@@ -22,7 +22,7 @@ import { NavigationService, INavItem } from '../navigation.service';
   template: `
     <app-crumbs [navigation]="items"></app-crumbs>
     <div class="example-spacer"></div>
-    <app-upgrade *ngIf="upgradable" [dataRow]="upgrade"></app-upgrade>
+    <app-upgrade *ngIf="upgradable" [dataRow]="upgrade" xPosition="after"></app-upgrade>
     <app-actions [source]="actions || []" [isIssue]="eIssue" [cluster]="cluster"></app-actions>
   `,
   styles: [':host {display: flex;width: 100%;}']

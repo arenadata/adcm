@@ -14,7 +14,6 @@ import { FormArray, FormControl, FormGroup } from '@angular/forms';
 
 import { FieldService } from '../field.service';
 import { IYContainer, IYField, matchType, reqursionType } from '../yspec/yspec.service';
-import { isArray } from 'util';
 
 type sValue = string | boolean | number;
 
