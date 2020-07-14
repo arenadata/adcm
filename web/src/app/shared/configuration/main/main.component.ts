@@ -60,7 +60,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
     return `${this.url}history/`;
   }
 
-  constructor(private service: MainService, private cd: ChangeDetectorRef, socket: Store<SocketState>) {
+  constructor(private service: MainService, public cd: ChangeDetectorRef, socket: Store<SocketState>) {
     super(socket);
   }
 
