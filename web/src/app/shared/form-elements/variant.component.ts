@@ -18,9 +18,19 @@ import { FieldDirective } from './field.directive';
   template: `
     <ng-container [formGroup]="form">
       <mat-form-field>
-        <mat-select [(value)]="field.value" [formControlName]="field.name">
-          <mat-option *ngFor="let option of field.limits?.source?.value || []" [value]="option">{{ option }}</mat-option>
-        </mat-select>
+        <ng-container *ngIf="field.limits.source.strict; else ac">
+          <mat-select [(value)]="field.value" [formControlName]="field.name">
+            <mat-option *ngFor="let option of field.limits?.source?.value || []" [value]="option">{{ option }}</mat-option>
+          </mat-select>
+        </ng-container>
+        <ng-template #ac>
+          <input type="text" matInput [formControlName]="field.name" [matAutocomplete]="auto" />
+          <mat-autocomplete #auto="matAutocomplete">
+            <mat-option *ngFor="let option of field.limits?.source?.value || []" [value]="option">
+              {{ option }}
+            </mat-option>
+          </mat-autocomplete>
+        </ng-template>
         <mat-error *ngIf="!isValid"><app-error-info [field]="field" [control]="control"></app-error-info></mat-error>
       </mat-form-field>
     </ng-container>
