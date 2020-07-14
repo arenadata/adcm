@@ -32,7 +32,7 @@ describe('VariantComponent', () => {
     fixture = TestBed.createComponent(VariantComponent);
     component = fixture.componentInstance;
     component.form = new FormGroup({ name: new FormControl() });
-    component.field = { name: 'name' } as FieldOptions;
+    component.field = { name: 'name', limits: {} } as FieldOptions;
     fixture.detectChanges();
   });
 

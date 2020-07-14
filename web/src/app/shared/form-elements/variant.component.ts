@@ -18,7 +18,7 @@ import { FieldDirective } from './field.directive';
   template: `
     <ng-container [formGroup]="form">
       <mat-form-field>
-        <ng-container *ngIf="field.limits.source.strict; else ac">
+        <ng-container *ngIf="field.limits?.source?.strict; else ac">
           <mat-select [(value)]="field.value" [formControlName]="field.name">
             <mat-option *ngFor="let option of field.limits?.source?.value || []" [value]="option">{{ option }}</mat-option>
           </mat-select>
