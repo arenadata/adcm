@@ -10,7 +10,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { FormControl, FormGroup } from '@angular/forms';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
+import { FieldOptions } from '../configuration/types';
+import { SharedModule } from '../shared.module';
 import { VariantComponent } from './variant.component';
 
 describe('VariantComponent', () => {
@@ -19,14 +23,16 @@ describe('VariantComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ VariantComponent ]
-    })
-    .compileComponents();
+      imports: [SharedModule, NoopAnimationsModule],
+      declarations: [VariantComponent],
+    }).compileComponents();
   }));
 
   beforeEach(() => {
     fixture = TestBed.createComponent(VariantComponent);
     component = fixture.componentInstance;
+    component.form = new FormGroup({ name: new FormControl() });
+    component.field = { name: 'name' } as FieldOptions;
     fixture.detectChanges();
   });
 
