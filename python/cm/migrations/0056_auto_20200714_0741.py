@@ -15,6 +15,8 @@
 from django.db import migrations, models
 
 
+# Operations for prototypeconfig and stageprototypeconfig models refer
+# to commit 3b30a2691bc301bf8afd2c305bea6b40824afc54
 class Migration(migrations.Migration):
     dependencies = [
         ('cm', '0055_auto_20200424_1241'),

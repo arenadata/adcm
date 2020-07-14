@@ -25,7 +25,6 @@ from datetime import timedelta, datetime
 
 from background_task import background
 from django.db import transaction
-from django.db.utils import IntegrityError
 from django.utils import timezone
 
 import cm.config as config
@@ -834,10 +833,7 @@ def log_check(job_id, group_data, check_data):
     group_title = group_data.pop('title')
 
     if group_title:
-        try:
-            group = GroupCheckLog.objects.create(job_id=job_id, title=group_title)
-        except IntegrityError:
-            group = GroupCheckLog.objects.get(job_id=job_id, title=group_title)
+        group, _ = GroupCheckLog.objects.get_or_create(job_id=job_id, title=group_title)
     else:
         group = None
 
@@ -847,10 +843,9 @@ def log_check(job_id, group_data, check_data):
     if group is not None:
         group_data.update({'group': group})
         log_group_check(**group_data)
-    try:
-        ls = LogStorage.objects.create(job=job, name='ansible', type='check', format='json')
-    except IntegrityError:
-        ls = LogStorage.objects.get(job=job, name='ansible', type='check', format='json')
+
+    ls, _ = LogStorage.objects.get_or_create(job=job, name='ansible', type='check', format='json')
+
     post_event('add_job_log', 'job', job_id, {
         'id': ls.id, 'type': ls.type, 'name': ls.name, 'format': ls.format,
     })
