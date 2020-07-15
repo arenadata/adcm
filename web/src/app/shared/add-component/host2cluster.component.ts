@@ -10,9 +10,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { MatSelectionList, MatSelectionListChange, MatListOption } from '@angular/material/list';
+import { openClose } from '@app/core/animations';
 import { Host } from '@app/core/types';
 import { Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { tap, switchMap } from 'rxjs/operators';
 
 import { BaseFormDirective } from './base-form.directive';
 import { HostComponent } from './host.component';
@@ -20,9 +22,16 @@ import { HostComponent } from './host.component';
 @Component({
   selector: 'app-add-host2cluster',
   template: `
-    <ng-container *ngIf="freeHost$ | async; else load">
-      <div class="tools" [ngClass]="{ hidden: !list.length }">
-        <mat-select
+    <ng-container *ngIf="freeHost$ | async as list; else load">
+      <div [style.overflow]="'hidden'" [@openClose]="showForm || !list.length">
+        <app-add-host #form (cancel)="onCancel($event)" [noCluster]="true"></app-add-host>
+        <app-add-controls [disabled]="!form.form.valid" (cancel)="!list.length ? onCancel() : (showForm = false)" (save)="save()"></app-add-controls>
+      </div>
+      <div [style.overflow]="'hidden'" [@openClose]="!(showForm || !list.length)">
+        <button mat-raised-button (click)="showForm = true" color="accent"><mat-icon>library_add</mat-icon>&nbsp;Create and add a new host to the cluster</button>
+      </div>
+      <div [ngClass]="{ hidden: !list.length }">
+        <!-- <mat-select
           class="add-host2cluster"
           appInfinityScroll
           (topScrollPoint)="nextPage()"
@@ -32,33 +41,31 @@ import { HostComponent } from './host.component';
         >
           <mat-option>...</mat-option>
           <mat-option *ngFor="let host of list" [value]="host.id" [appTooltip]="host.fqdn" [appTooltipShowByCondition]="true">{{ host.fqdn }}</mat-option>
-        </mat-select>
+        </mat-select> -->
 
-        <button
-          mat-icon-button
-          (click)="showForm = !showForm"
-          [color]="showForm ? 'primary' : 'accent'"
-          [matTooltip]="showForm ? 'Hide host creation form' : 'Create and add new host'"
-        >
-          <mat-icon>{{ showForm ? 'clear' : 'add' }}</mat-icon>
-        </button>
+        <mat-selection-list class="add-host2cluster" #listHosts (selectionChange)="selectAllHost($event)">
+          <mat-list-option *ngIf="list.length"><i>Select all available hosts</i></mat-list-option>
+          <mat-list-option *ngFor="let host of list" [value]="host.id" [appTooltip]="host.fqdn" [appTooltipShowByCondition]="true">
+            {{ host.fqdn }}
+          </mat-list-option>
+        </mat-selection-list>
+        <p class="controls">
+          <button #btn mat-raised-button color="accent" [disabled]="!listHosts?._value?.length" (click)="addHost2Cluster(listHosts._value)">
+            Save
+          </button>
+        </p>
       </div>
-
-      <ng-container *ngIf="showForm || !list.length">
-        <app-add-host #form (cancel)="onCancel($event)" [noCluster]="true"></app-add-host>
-        <app-add-controls [disabled]="!form.form.valid" (cancel)="onCancel()" (save)="save()"></app-add-controls>
-      </ng-container>
     </ng-container>
     <ng-template #load><mat-spinner [diameter]="24"></mat-spinner></ng-template>
   `,
   styles: [
     '.row {display:flex;}',
-    '.tools { display: flex; align-items: baseline; margin: 0 -2px 10px; }',
     '.full { display: flex;padding-left: 6px; margin: 3px 0; justify-content: space-between; } .full>label { vertical-align: middle; line-height: 40px; }',
     '.full:nth-child(odd) {background-color: #4e4e4e;}',
     '.full:hover {background-color: #5e5e5e; }',
     '.add-host2cluster { flex: 1; }',
   ],
+  animations: [openClose],
 })
 export class Host2clusterComponent extends BaseFormDirective implements OnInit, OnDestroy {
   freeHost$: Observable<Host[]>;
@@ -69,11 +76,24 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
   limit = 10;
 
   @ViewChild('form') hostForm: HostComponent;
+  @ViewChild('listHosts')
+  private listHosts: MatSelectionList;
 
   ngOnInit() {
-    this.freeHost$ = this.service
+    this.freeHost$ = this.getList();
+  }
+
+  getList() {
+    return this.service
       .getList<Host>('host', { limit: this.limit, page: this.page, cluster_is_null: 'true' })
       .pipe(tap((list) => (this.list = list)));
+  }
+
+  selectAllHost(e: MatSelectionListChange) {
+    if (!e.option.value) {
+      if (e.option.selected) this.listHosts.selectAll();
+      else this.listHosts.deselectAll();
+    }
   }
 
   save() {
@@ -90,12 +110,14 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
     }
   }
 
-  addHost2Cluster(id: number) {
-    if (id)
-      this.service
-        .addHostInCluster(id)
-        .pipe(this.takeUntil())
-        .subscribe(() => (this.list = this.list.filter((a) => a.id !== id)));
+  addHost2Cluster(value: number[]) {
+    this.service
+      .addHostInCluster(value.filter((a) => !!a))
+      .pipe(
+        this.takeUntil(),
+        switchMap((_) => (this.freeHost$ = this.getList()))
+      )
+      .subscribe();
   }
 
   nextPage() {

@@ -17,7 +17,7 @@ import { ClusterService, StackInfo, StackService } from '@app/core';
 import { ApiService } from '@app/core/api';
 import { Host, Prototype, ServicePrototype, StackBase, TypeName } from '@app/core/types';
 import { environment } from '@env/environment';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, of, throwError, forkJoin } from 'rxjs';
 import { concatAll, filter, map, switchMap, catchError } from 'rxjs/operators';
 
 import { DialogComponent } from '../components/dialog.component';
@@ -61,7 +61,7 @@ const MODELS: { [key: string]: FormModel } = {
   },
   host2cluster: {
     name: 'host2cluster',
-    title: 'free host',
+    title: 'available hosts',
   },
 };
 
@@ -133,8 +133,8 @@ export class AddService {
     return b$.pipe(concatAll());
   }
 
-  addHostInCluster(id: number) {
-    return this.cluster.addHost(id);
+  addHostInCluster(ids: number[]) {
+    return forkJoin([...ids.map(id => this.cluster.addHost(id))]);
   }
 
   addService(data: { prototype_id: number }[]) {

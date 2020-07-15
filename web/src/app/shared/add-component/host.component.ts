@@ -10,14 +10,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input, OnInit } from '@angular/core';
-import { clearEmptyField, Cluster, Provider, Host } from '@app/core/types';
+import { MatDialog } from '@angular/material/dialog';
+import { openClose } from '@app/core/animations';
+import { clearEmptyField, Cluster, Host, Provider } from '@app/core/types';
 import { BehaviorSubject } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
 
 import { ActionsDirective } from '../components/actions/actions.directive';
 import { AddService } from './add.service';
 import { BaseFormDirective } from './base-form.directive';
-import { MatDialog } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-add-host',
@@ -45,14 +46,14 @@ import { MatDialog } from '@angular/material/dialog';
         </mat-form-field>
       </div>
 
-      <div *ngIf="expanded" class="inner">
+      <div [@openClose]="expanded" class="inner">
         <app-add-provider [displayMode]="1" (cancel)="createdProvider($event)"></app-add-provider>
       </div>
       <app-input [form]="form" [label]="'Fully qualified domain name'" [controlName]="'fqdn'" [isRequired]="true"></app-input>
 
       <ng-container *ngIf="!noCluster">
         <div class="row">
-          <mat-form-field class="full-width">
+          <mat-form-field class="full-width">            
             <mat-select appInfinityScroll (topScrollPoint)="getNextPageClusters()" placeholder="Cluster" formControlName="cluster_id">
               <mat-option value="">...</mat-option>
               <mat-option *ngFor="let c of clusters$ | async" [value]="c.id">{{ c.name }}</mat-option>
@@ -64,7 +65,8 @@ import { MatDialog } from '@angular/material/dialog';
     </ng-container>
   `,
   styles: ['.inner {padding: 6px 8px;background-color: #4e4e4e;margin: 0 -6px;}', '.row {display: flex;}'],
-  providers: [ActionsDirective]
+  providers: [ActionsDirective],
+  animations: [openClose]
 })
 export class HostComponent extends BaseFormDirective implements OnInit {
   @Input() noCluster = false;
