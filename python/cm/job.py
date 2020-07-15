@@ -25,7 +25,6 @@ from datetime import timedelta, datetime
 
 from background_task import background
 from django.db import transaction
-from django.db.utils import IntegrityError
 from django.utils import timezone
 
 import cm.config as config
@@ -844,15 +843,12 @@ def log_check(job_id, group_data, check_data):
     if group is not None:
         group_data.update({'group': group})
         log_group_check(**group_data)
-    try:
-        l1, _ = LogStorage.objects.get_or_create(
-            job=job, name='ansible', type='check', format='json'
-        )
-        post_event('add_job_log', 'job', job_id, {
-            'id': l1.id, 'type': l1.type, 'name': l1.name, 'format': l1.format,
-        })
-    except IntegrityError:
-        pass
+
+    ls, _ = LogStorage.objects.get_or_create(job=job, name='ansible', type='check', format='json')
+
+    post_event('add_job_log', 'job', job_id, {
+        'id': ls.id, 'type': ls.type, 'name': ls.name, 'format': ls.format,
+    })
     return cl
 
 
