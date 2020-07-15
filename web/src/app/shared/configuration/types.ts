@@ -100,6 +100,7 @@ export interface ConfigOptions {
   ui_options?: UIoptions;
   description?: string;
   activatable?: boolean;
+  required: boolean;
 }
 
 export interface PanelOptions extends ConfigOptions {

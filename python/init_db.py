@@ -19,7 +19,7 @@ import adcm.init_django		# pylint: disable=unused-import
 from django.contrib.auth.models import User
 
 from cm.logger import log
-from cm.models import UserProfile, DummyData
+from cm.models import UserProfile, DummyData, CheckLog, GroupCheckLog
 from cm.bundle import load_adcm
 from cm.config import SECRETS_FILE
 from cm.job import unlock_all
@@ -54,6 +54,11 @@ def create_dummy_data():
     DummyData.objects.create()
 
 
+def clear_temp_tables():
+    CheckLog.objects.all().delete()
+    GroupCheckLog.objects.all().delete()
+
+
 def init():
     log.info("Start initializing ADCM DB...")
     try:
@@ -67,6 +72,7 @@ def init():
     create_status_user()
     event = Event()
     unlock_all(event)
+    clear_temp_tables()
     event.send_state()
     load_adcm()
     create_dummy_data()
