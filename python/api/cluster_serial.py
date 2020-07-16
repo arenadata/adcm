@@ -494,10 +494,18 @@ class HCComponentSerializer(ServiceComponentDetailSerializer):
         if not obj.component.requires:
             return None
         comp_list = {}
+        # We need to restrict requires search by components from the same bundle.
+        # So we create query set that filter all service prototypes from bundle
+        # to use in a comonent seraches.
+        sp_qs = Prototype.objects.filter(bundle=obj.prototype.bundle, type='service')
 
         def process_requires(req_list):
             for c in json.loads(req_list):
-                comp = Component.objects.get(name=c['component'], prototype__name=c['service'])
+                comp = Component.objects.get(
+                    name=c['component'],
+                    prototype__name=c['service'],
+                    prototype__in=sp_qs  # There is no way to do this without 'in'
+                )
                 if comp == obj.component:
                     return
                 if comp.prototype.name not in comp_list:
