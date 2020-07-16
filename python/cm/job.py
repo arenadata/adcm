@@ -265,7 +265,7 @@ def unlock_deleted_objects(job, event):
     selector = json.loads(job.selector)
     if 'cluster' in selector:
         cluster = Cluster.objects.get(id=selector['cluster'])
-        unlock_obj(cluster, event)
+        unlock_objects(cluster, event)
 
 
 def unlock_objects(obj, event, job=None):
