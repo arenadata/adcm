@@ -10,11 +10,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { MatSelectionList, MatSelectionListChange, MatListOption } from '@angular/material/list';
+import { MatSelectionList, MatSelectionListChange } from '@angular/material/list';
+import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { openClose } from '@app/core/animations';
 import { Host } from '@app/core/types';
-import { Observable } from 'rxjs';
-import { tap, switchMap } from 'rxjs/operators';
 
 import { BaseFormDirective } from './base-form.directive';
 import { HostComponent } from './host.component';
@@ -22,71 +21,49 @@ import { HostComponent } from './host.component';
 @Component({
   selector: 'app-add-host2cluster',
   template: `
-    <ng-container *ngIf="freeHost$ | async as list; else load">
-      <div [style.overflow]="'hidden'" [@openClose]="showForm || !list.length">
-        <app-add-host #form (cancel)="onCancel($event)" [noCluster]="true"></app-add-host>
-        <app-add-controls [disabled]="!form.form.valid" (cancel)="!list.length ? onCancel() : (showForm = false)" (save)="save()"></app-add-controls>
-      </div>
-      <div [style.overflow]="'hidden'" [@openClose]="!(showForm || !list.length)">
-        <button mat-raised-button (click)="showForm = true" color="accent"><mat-icon>library_add</mat-icon>&nbsp;Create and add a new host to the cluster</button>
-      </div>
-      <div [ngClass]="{ hidden: !list.length }">
-        <!-- <mat-select
-          class="add-host2cluster"
-          appInfinityScroll
-          (topScrollPoint)="nextPage()"
-          (valueChange)="addHost2Cluster(free.value)"
-          #free
-          placeholder="Select free host and assign to cluster"
-        >
-          <mat-option>...</mat-option>
-          <mat-option *ngFor="let host of list" [value]="host.id" [appTooltip]="host.fqdn" [appTooltipShowByCondition]="true">{{ host.fqdn }}</mat-option>
-        </mat-select> -->
-
-        <mat-selection-list class="add-host2cluster" #listHosts (selectionChange)="selectAllHost($event)">
-          <mat-list-option *ngIf="list.length"><i>Select all available hosts</i></mat-list-option>
-          <mat-list-option *ngFor="let host of list" [value]="host.id" [appTooltip]="host.fqdn" [appTooltipShowByCondition]="true">
-            {{ host.fqdn }}
-          </mat-list-option>
-        </mat-selection-list>
-        <p class="controls">
-          <button #btn mat-raised-button color="accent" [disabled]="!listHosts?._value?.length" (click)="addHost2Cluster(listHosts._value)">
-            Save
-          </button>
-        </p>
-      </div>
-    </ng-container>
-    <ng-template #load><mat-spinner [diameter]="24"></mat-spinner></ng-template>
+    <p></p>
+    <div [@openClose]="showForm">
+      <app-add-host #form (cancel)="onCancel()" [noCluster]="true"></app-add-host>
+      <app-add-controls [disabled]="!form.form.valid" (cancel)="!Count ? onCancel() : (showForm = false)" (save)="save()"></app-add-controls>
+    </div>
+    <mat-selection-list class="add-host2cluster" #listHosts (selectionChange)="selectAllHost($event)">
+      <mat-list-option *ngIf="list.length > 1"><i>Select all available hosts</i></mat-list-option>
+      <mat-list-option *ngFor="let host of list" [value]="host.id" [appTooltip]="host.fqdn" [appTooltipShowByCondition]="true">
+        {{ host.fqdn }}
+      </mat-list-option>
+    </mat-selection-list>
+    <mat-paginator *ngIf="Count" [length]="Count" [pageSizeOptions]="[10, 25, 50, 100]" (page)="pageHandler($event)"></mat-paginator>
+    <div class="bottom-controls">
+      <button [@openClose]="!showForm" mat-raised-button (click)="showForm = true" color="accent">Create</button>
+      <app-add-controls *ngIf="Count" [disabled]="!listHosts?._value?.length" (cancel)="onCancel()" (save)="addHost2Cluster(listHosts._value)"></app-add-controls>
+    </div>
   `,
-  styles: [
-    '.row {display:flex;}',
-    '.full { display: flex;padding-left: 6px; margin: 3px 0; justify-content: space-between; } .full>label { vertical-align: middle; line-height: 40px; }',
-    '.full:nth-child(odd) {background-color: #4e4e4e;}',
-    '.full:hover {background-color: #5e5e5e; }',
-    '.add-host2cluster { flex: 1; }',
-  ],
+  styles: ['.add-host2cluster { flex: 1; }', '.bottom-controls {display: flex; justify-content: space-between; align-items: center;}'],
   animations: [openClose],
 })
 export class Host2clusterComponent extends BaseFormDirective implements OnInit, OnDestroy {
-  freeHost$: Observable<Host[]>;
-  list = [];
+  list: Host[] = [];
   showForm = false;
-
-  page = 0;
-  limit = 10;
+  Count = 0;
 
   @ViewChild('form') hostForm: HostComponent;
-  @ViewChild('listHosts')
-  private listHosts: MatSelectionList;
+  @ViewChild('listHosts') listHosts: MatSelectionList;
+  @ViewChild(MatPaginator) paginator: MatPaginator;
 
   ngOnInit() {
-    this.freeHost$ = this.getList();
+    this.getAvailableHosts();
   }
 
-  getList() {
-    return this.service
-      .getList<Host>('host', { limit: this.limit, page: this.page, cluster_is_null: 'true' })
-      .pipe(tap((list) => (this.list = list)));
+  getAvailableHosts(pageIndex = 0, pageSize = 10) {
+    this.service
+      .getListResults<Host>('host', { limit: pageSize, page: pageIndex, cluster_is_null: 'true' })
+      .pipe(this.takeUntil())
+      .subscribe((r) => {
+        this.Count = r.count;
+        this.showForm = !r.count;
+        this.list = r.results;
+        if (this.listHosts?.options.length) this.listHosts.options.first.selected = false;
+      });
   }
 
   selectAllHost(e: MatSelectionListChange) {
@@ -102,32 +79,19 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
       host.cluster_id = this.service.Cluster.id;
       this.service
         .addHost(host)
-        .pipe(
-          this.takeUntil(),
-          tap(() => this.hostForm.form.controls['fqdn'].setValue(''))
-        )
-        .subscribe();
+        .pipe(this.takeUntil())
+        .subscribe(() => this.hostForm.form.controls['fqdn'].setValue(''));
     }
   }
 
   addHost2Cluster(value: number[]) {
     this.service
       .addHostInCluster(value.filter((a) => !!a))
-      .pipe(
-        this.takeUntil(),
-        switchMap((_) => (this.freeHost$ = this.getList()))
-      )
-      .subscribe();
+      .pipe(this.takeUntil())
+      .subscribe(() => this.getAvailableHosts());
   }
 
-  nextPage() {
-    const count = this.list.length;
-    if (count === (this.page + 1) * this.limit) {
-      this.page++;
-      this.service
-        .getList<Host>('host', { limit: this.limit, page: this.page, cluster_is_null: 'true' })
-        .pipe(this.takeUntil())
-        .subscribe((list) => (this.list = [...this.list, ...list]));
-    }
+  pageHandler(pageEvent: PageEvent) {
+    this.getAvailableHosts(pageEvent.pageIndex, pageEvent.pageSize);
   }
 }

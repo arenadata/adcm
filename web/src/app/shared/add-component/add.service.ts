@@ -141,9 +141,13 @@ export class AddService {
     return this.cluster.addServices(data);
   }
 
-  getList<T>(type: TypeName, param: Params = {}): Observable<T[]> {
+  getListResults<T>(type: TypeName, param: Params = {}) {
     const paramMap = convertToParamMap(param);
-    return this.api.root.pipe(switchMap((root) => this.api.getList<T>(root[type], paramMap).pipe(map((list) => list.results))));
+    return this.api.root.pipe(switchMap((root) => this.api.getList<T>(root[type], paramMap)));
+  }
+
+  getList<T>(type: TypeName, param: Params = {}): Observable<T[]> {    
+    return this.getListResults<T>(type, param).pipe(map((list) => list.results));
   }
 
   getPrototype(name: StackInfo, param: { [key: string]: string | number }): Observable<Prototype[]> {
