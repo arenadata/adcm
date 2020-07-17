@@ -21,8 +21,7 @@ import { HostComponent } from './host.component';
 @Component({
   selector: 'app-add-host2cluster',
   template: `
-    <p></p>
-    <div [@openClose]="showForm">
+    <div [@openClose]="showForm" [style.overflow]="'hidden'">
       <app-add-host #form (cancel)="onCancel()" [noCluster]="true"></app-add-host>
       <app-add-controls [disabled]="!form.form.valid" (cancel)="!Count ? onCancel() : (showForm = false)" (save)="save()"></app-add-controls>
     </div>
@@ -34,7 +33,7 @@ import { HostComponent } from './host.component';
     </mat-selection-list>
     <mat-paginator *ngIf="Count" [length]="Count" [pageSizeOptions]="[10, 25, 50, 100]" (page)="pageHandler($event)"></mat-paginator>
     <div class="bottom-controls">
-      <button [@openClose]="!showForm" mat-raised-button (click)="showForm = true" color="accent">Create</button>
+      <button [style.overflow]="'hidden'" [@openClose]="!showForm" mat-raised-button (click)="showForm = true" color="accent" matTooltip="and add to the cluster">Create</button>
       <app-add-controls *ngIf="Count" [disabled]="!listHosts?._value?.length" (cancel)="onCancel()" (save)="addHost2Cluster(listHosts._value)"></app-add-controls>
     </div>
   `,
