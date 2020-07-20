@@ -10,14 +10,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input, OnInit } from '@angular/core';
-import { clearEmptyField, Cluster, Provider, Host } from '@app/core/types';
+import { MatDialog } from '@angular/material/dialog';
+import { openClose } from '@app/core/animations';
+import { clearEmptyField, Cluster, Host, Provider } from '@app/core/types';
 import { BehaviorSubject } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
 
 import { ActionsDirective } from '../components/actions/actions.directive';
 import { AddService } from './add.service';
 import { BaseFormDirective } from './base-form.directive';
-import { MatDialog } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-add-host',
@@ -45,7 +46,7 @@ import { MatDialog } from '@angular/material/dialog';
         </mat-form-field>
       </div>
 
-      <div *ngIf="expanded" class="inner">
+      <div [@openClose]="expanded" class="inner">
         <app-add-provider [displayMode]="1" (cancel)="createdProvider($event)"></app-add-provider>
       </div>
       <app-input [form]="form" [label]="'Fully qualified domain name'" [controlName]="'fqdn'" [isRequired]="true"></app-input>
@@ -63,8 +64,9 @@ import { MatDialog } from '@angular/material/dialog';
       </ng-container>
     </ng-container>
   `,
-  styles: ['.inner {padding: 6px 8px;background-color: #4e4e4e;margin: 0 -6px;}', '.row {display: flex;}'],
-  providers: [ActionsDirective]
+  styles: [':host {display: block; margin-top: 10px;}', '.inner {padding: 6px 8px;background-color: #4e4e4e;margin: 0 -6px;}', '.row {display: flex;}'],
+  providers: [ActionsDirective],
+  animations: [openClose],
 })
 export class HostComponent extends BaseFormDirective implements OnInit {
   @Input() noCluster = false;
@@ -89,9 +91,9 @@ export class HostComponent extends BaseFormDirective implements OnInit {
       .get('provider_id')
       .valueChanges.pipe(
         this.takeUntil(),
-        filter(a => a)
+        filter((a) => a)
       )
-      .subscribe(value => this.checkAction(+value));
+      .subscribe((value) => this.checkAction(+value));
   }
 
   isError(name: string) {
@@ -107,10 +109,10 @@ export class HostComponent extends BaseFormDirective implements OnInit {
 
   checkAction(provider_id: number) {
     const ACTION_NAME = 'create_host';
-    const provider = this.providers$.getValue().find(a => a.id === provider_id);
+    const provider = this.providers$.getValue().find((a) => a.id === provider_id);
 
     if (provider && provider.actions) {
-      const actions = provider.actions.filter(a => a.button === ACTION_NAME);
+      const actions = provider.actions.filter((a) => a.button === ACTION_NAME);
       if (actions && actions.length) {
         this.action.inputData = { actions };
         this.onCancel();
@@ -135,8 +137,8 @@ export class HostComponent extends BaseFormDirective implements OnInit {
     this.expanded = false;
     this.service
       .getList<Provider>('provider', { limit: this.limit, page: this.pageProvider - 1 })
-      .pipe(tap(_ => this.form.get('provider_id').setValue(id)))
-      .subscribe(list => this.providers$.next(list));
+      .pipe(tap((_) => this.form.get('provider_id').setValue(id)))
+      .subscribe((list) => this.providers$.next(list));
   }
 
   getNextPageClusters() {
@@ -158,14 +160,14 @@ export class HostComponent extends BaseFormDirective implements OnInit {
   getProviders() {
     this.service
       .getList<Provider>('provider', { limit: this.limit, page: this.pageProvider - 1 })
-      .pipe(tap(list => this.form.get('provider_id').setValue(list.length === 1 ? list[0].id : '')))
-      .subscribe(list => this.providers$.next([...this.providers$.getValue(), ...list]));
+      .pipe(tap((list) => this.form.get('provider_id').setValue(list.length === 1 ? list[0].id : '')))
+      .subscribe((list) => this.providers$.next([...this.providers$.getValue(), ...list]));
     if (this.form.get('provider_id').value) this.expanded = false;
   }
 
   getClusters() {
     this.service
       .getList<Cluster>('cluster', { limit: this.limit, page: this.pageCluster - 1 })
-      .subscribe(list => this.clusters$.next([...this.clusters$.getValue(), ...list]));
+      .subscribe((list) => this.clusters$.next([...this.clusters$.getValue(), ...list]));
   }
 }

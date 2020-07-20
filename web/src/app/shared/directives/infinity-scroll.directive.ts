@@ -15,20 +15,21 @@ import { MatSelect } from '@angular/material/select';
 const POINT_WHEN_EMMIT = 100;
 
 @Directive({
-  selector: '[appInfinityScroll]'
+  selector: '[appInfinityScroll]',
 })
 export class InfinityScrollDirective implements OnInit {
   @Output() topScrollPoint = new EventEmitter();
 
-  constructor(private renderer: Renderer2, @Host() private matSelect: MatSelect) {}
+  constructor(private renderer: Renderer2, @Host() private el: MatSelect) {}
 
   ngOnInit(): void {
-    this.matSelect.openedChange.subscribe((open: boolean) => this.registerPanel(open));
+    if ('openedChange' in this.el) this.el.openedChange.subscribe((open: boolean) => this.registerPanel(open));
+    else this.renderer.listen(this.el, 'scroll', this.onScrollPanel.bind(this));
   }
 
   registerPanel(open: boolean) {
     if (open) {
-      const panel = this.matSelect.panel.nativeElement;
+      const panel = (this.el as MatSelect).panel.nativeElement;
       this.renderer.listen(panel, 'scroll', this.onScrollPanel.bind(this));
     }
   }

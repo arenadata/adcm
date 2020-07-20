@@ -20,7 +20,7 @@ import { BaseFormDirective } from './base-form.directive';
   selector: 'app-add-service',
   template: `
     <ng-container *ngIf="options$ | async as protos">
-      <mat-selection-list #listServices class="add-service" (selectionChange)="selectAll($event)">
+      <mat-selection-list #listServices (selectionChange)="selectAll($event)">
         <mat-list-option *ngIf="protos.length"><i>Select all</i></mat-list-option>
         <mat-list-option *ngFor="let proto of protos" [value]="proto">
           {{ proto.name }}

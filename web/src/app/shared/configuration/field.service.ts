@@ -230,21 +230,19 @@ export class FieldService {
   }
 
   private runYspec(value: resultTypes, rules: any) {
-    switch (rules.type) {
+    switch (rules?.type) {
       case 'list': {
         return (value as Array<simpleType>).filter((a) => !!a).map((a) => this.runYspec(a, rules.options));
       }
       case 'dict': {
         return Object.keys(value).reduce((p, c) => {
-          const v = this.runYspec(
-            value[c],
-            rules.options.find((b: any) => b.name === c)
-          );
+          const r = rules.options.find((b: any) => b.name === c);
+          const v = r ? this.runYspec(value[c], r) : null;
           return v !== null ? { ...p, [c]: v } : { ...p };
         }, {});
       }
       default: {
-        return this.checkValue(value, rules.type);
+        return this.checkValue(value, rules?.type);
       }
     }
   }

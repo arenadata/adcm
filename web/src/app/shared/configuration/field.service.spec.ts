@@ -12,12 +12,63 @@
 import { TestBed } from '@angular/core/testing';
 import { FormBuilder, Validators } from '@angular/forms';
 
-import { FieldService, IOutput } from './field.service';
+import { FieldService, IOutput, itemOptions } from './field.service';
 import { ConfigValueTypes, FieldStack, IConfig, ILimits, resultTypes } from './types';
 
-const itemOptionsMock = [
+/**
+ * inputData - data from backend for configuration IConfig.config : FieldStack[] 
+ *           => data4form : itemOptions[] we can render the form based on this data
+ *  
+ * FormControl.value - user input
+ * outputData - this is that we send to backend after parsing FormControl.value  - IOutput
+ * 
+ */
+
+const inputData: IConfig = {
+  attr: {},
+  config: [
+    {
+      name: 'field_string',
+      display_name: 'display_name',
+      subname: '',
+      type: 'string',
+      activatable: false,
+      read_only: false,
+      default: null,
+      value: null,
+      description: '',
+      required: false,
+    },
+    {
+      name: 'group',
+      display_name: 'group_display_name',
+      subname: '',
+      type: 'group',
+      activatable: false,
+      read_only: false,
+      default: null,
+      value: null,
+      description: '',
+      required: false,
+    },
+    {
+      name: 'group',
+      display_name: 'field_in_group_display_name',
+      subname: 'field_in_group',
+      type: 'integer',
+      activatable: false,
+      read_only: false,
+      default: 10,
+      value: null,
+      description: '',
+      required: true,
+    },
+  ],
+};
+
+const data4form: itemOptions[] = [
   {
-    required: false, // not in itemOptions
+    required: false,
     name: 'field_string',
     display_name: 'display_name',
     subname: '',
@@ -68,9 +119,9 @@ const itemOptionsMock = [
   },
 ];
 
-const itemOptionsMock2 = [
+const data4form_simple = [
   {
-    required: false, // not in itemOptions
+    required: false,
     name: 'field_string',
     display_name: 'display_name',
     subname: '',
@@ -118,50 +169,8 @@ describe('Configuration fields service', () => {
     expect(service.getPanels({ config: [] })).toEqual([]);
   });
 
-  it('Prepare data for configuration: getPanels()', () => {
-    const data: IConfig = {
-      attr: {},
-      config: [
-        {
-          name: 'field_string',
-          display_name: 'display_name',
-          subname: '',
-          type: 'string',
-          activatable: false,
-          read_only: false,
-          default: null,
-          value: null,
-          description: '',
-          required: false,
-        },
-        {
-          name: 'group',
-          display_name: 'group_display_name',
-          subname: '',
-          type: 'group',
-          activatable: false,
-          read_only: false,
-          default: null,
-          value: null,
-          description: '',
-          required: false,
-        },
-        {
-          name: 'group',
-          display_name: 'field_in_group_display_name',
-          subname: 'field_in_group',
-          type: 'integer',
-          activatable: false,
-          read_only: false,
-          default: 10,
-          value: null,
-          description: '',
-          required: true,
-        },
-      ],
-    };
-    const output: any /* itemOptions */[] = itemOptionsMock;
-    expect(service.getPanels(data)).toEqual(output);
+  it('FieldStack[] (input data IConfig.config) transform to itemOptions[] by getPanels()', () => {
+    expect(service.getPanels(inputData)).toEqual(data4form);
   });
 
   it('Generate FormGroup : toFormGroup() check value', () => {
@@ -174,7 +183,7 @@ describe('Configuration fields service', () => {
       },
       { validator: () => null }
     );
-    const form = service.toFormGroup(itemOptionsMock as any);
+    const form = service.toFormGroup(data4form);
     expect(form.value).toEqual(fg.value);
   });
 
