@@ -257,7 +257,17 @@ def lock_objects(obj, event):
         log.warning('lock_objects: unknown object type: %s', obj)
 
 
-def unlock_objects(obj, event):
+def unlock_deleted_objects(job, event):
+    if not job:
+        log.warning('unlock_deleted_objects: no job')
+        return
+    selector = json.loads(job.selector)
+    if 'cluster' in selector:
+        cluster = Cluster.objects.get(id=selector['cluster'])
+        unlock_objects(cluster, event)
+
+
+def unlock_objects(obj, event, job=None):
     if isinstance(obj, ClusterObject):
         unlock_obj(obj, event)
         unlock_obj(obj.cluster, event)
@@ -281,6 +291,8 @@ def unlock_objects(obj, event):
             unlock_obj(service, event)
         for host in Host.objects.filter(cluster=obj):
             unlock_obj(host, event)
+    elif obj is None:
+        unlock_deleted_objects(job, event)
     else:
         log.warning('unlock_objects: unknown object type: %s', obj)
 
@@ -750,7 +762,7 @@ def finish_task(task, job, status):
         DummyData.objects.filter(id=1).update(date=timezone.now())
         if state is not None:
             set_action_state(action, task, obj, state)
-        unlock_objects(obj, event)
+        unlock_objects(obj, event, job)
         restore_hc(task, action, status)
         set_task_status(task, status, event)
     event.send_state()
