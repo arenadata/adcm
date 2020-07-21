@@ -24,28 +24,31 @@ import { DisplayMode } from './provider.component';
   selector: 'app-add-host2cluster',
   template: `
     <div [@openClose]="showForm" [style.overflow]="'hidden'">
-      <app-add-host #form [displayMode]="displayMode"></app-add-host>
-      <app-add-controls *ngIf="displayMode === 1" [disabled]="!form.form.valid" (cancel)="!Count ? onCancel() : (showForm = false)" (save)="save()"></app-add-controls>
+      <app-add-host #form [displayMode]="1"></app-add-host>
+      <app-add-controls [disabled]="!form.form.valid" (cancel)="!Count ? onCancel() : (showForm = false)" (save)="save()"></app-add-controls>
     </div>
-    <div class="tools" *ngIf="displayMode === 2">
-      <button
-        mat-icon-button
-        (click)="showForm = !showForm"
-        [color]="showForm ? 'primary' : 'accent'"
-        [matTooltip]="showForm ? 'Hide the form for creating and adding a host' : 'Show the form for creating and adding a host'"
-      >
-        <mat-icon>{{ showForm ? 'clear' : 'add' }}</mat-icon>
-      </button>
-      &nbsp;
-      <mat-checkbox [checked]="false" (click)="selectAllHost(cb.checked)" #cb [matTooltip]="cb.checked ? 'Deselect all' : 'Select all'"></mat-checkbox>
+
+    <div [@openClose]="!showForm" [style.overflow]="'hidden'">
+      <div class="tools">
+        <button
+          mat-icon-button
+          (click)="showForm = !showForm"
+          [color]="showForm ? 'primary' : 'accent'"
+          [matTooltip]="showForm ? 'Hide the form for creating and adding a host' : 'Show the form for creating and adding a host'"
+        >
+          <mat-icon>{{ showForm ? 'clear' : 'add' }}</mat-icon>
+        </button>
+        &nbsp;
+        <mat-checkbox [checked]="false" (click)="selectAllHost(cb.checked)" #cb [matTooltip]="cb.checked ? 'Deselect all' : 'Select all'"></mat-checkbox>
+      </div>
+      <mat-selection-list class="add-host2cluster" #listHosts>
+        <mat-list-option *ngFor="let host of list" [value]="host.id" [appTooltip]="host.fqdn" [appTooltipShowByCondition]="true">
+          {{ host.fqdn }}
+        </mat-list-option>
+      </mat-selection-list>
+      <mat-paginator *ngIf="Count" [length]="Count" [pageSizeOptions]="[10, 25, 50, 100]" (page)="pageHandler($event)"></mat-paginator>
+      <app-add-controls *ngIf="Count" [disabled]="!listHosts?._value?.length" (cancel)="onCancel()" (save)="addHost2Cluster(listHosts._value)"></app-add-controls>
     </div>
-    <mat-selection-list class="add-host2cluster" #listHosts>
-      <mat-list-option *ngFor="let host of list" [value]="host.id" [appTooltip]="host.fqdn" [appTooltipShowByCondition]="true">
-        {{ host.fqdn }}
-      </mat-list-option>
-    </mat-selection-list>
-    <mat-paginator *ngIf="Count" [length]="Count" [pageSizeOptions]="[10, 25, 50, 100]" (page)="pageHandler($event)"></mat-paginator>
-    <app-add-controls *ngIf="Count" [disabled]="!listHosts?._value?.length" (cancel)="onCancel()" (save)="addHost2Cluster(listHosts._value)"></app-add-controls>
   `,
   styles: ['.add-host2cluster { flex: 1; }', '.tools {text-align: right; margin-right: 16px;}'],
   animations: [openClose],
