@@ -93,8 +93,6 @@ export class NavigationService {
   }
 
   getCrumbs(current: IDetails): INavItem[] {
-    //model: { cluster: { id: number; name: string; issue: Issue }; current: { id: number; typeName: string; name: string } }
-
     let output: INavItem[] = [],
       pref = '';
 

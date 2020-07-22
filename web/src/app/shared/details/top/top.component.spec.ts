@@ -17,6 +17,14 @@ import { StuffModule } from '@app/shared/stuff.module';
 import { NavigationService } from '../navigation.service';
 import { TopComponent } from './top.component';
 
+/** 
+ * подготовка данных для дочерних компонентов
+ * проверка navigation.service
+ * проверка обновления свойства current and isIssue
+ * 
+*/
+
+
 describe('TopComponent', () => {
   let component: TopComponent;
   let fixture: ComponentFixture<TopComponent>;

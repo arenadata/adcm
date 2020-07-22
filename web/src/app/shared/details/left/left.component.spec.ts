@@ -16,7 +16,12 @@ import { StuffModule } from '@app/shared/stuff.module';
 
 import { NavigationService } from '../navigation.service';
 import { LeftComponent } from './left.component';
-import { Issue } from '@app/core/types';
+
+/** 
+ * проверка отображения списка
+ * проверка показа правильных иконок у элементов меню
+ * проверка кнопки с action 
+ */
 
 describe('LeftComponent', () => {
   let component: LeftComponent;
