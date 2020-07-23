@@ -13,12 +13,11 @@ import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { MaterialModule } from '@app/shared/material.module';
 import { StuffModule } from '@app/shared/stuff.module';
-
+ 
 import { NavigationService } from '../navigation.service';
 import { LeftComponent } from './left.component';
 
-/** 
- * проверка отображения списка
+/**
  * проверка показа правильных иконок у элементов меню
  * проверка кнопки с action 
  */
@@ -52,7 +51,5 @@ describe('LeftComponent', () => {
     const el: HTMLElement = fixture.debugElement.nativeElement;
     const list = el.querySelectorAll('a');
     expect(list.length).toBeGreaterThan(0);
-
-    //component.issues = { 'service': { }  } as Issue<'service'>;
   });
 });
