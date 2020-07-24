@@ -23,6 +23,7 @@ from rest_framework import status
 
 from cm.logger import log
 from cm.errors import raise_AdcmEx as err
+from cm.adcm_config import VARIANT_FUNCTIONS
 from cm.adcm_config import proto_ref, check_config_type, type_is_complex, read_bundle_file
 from cm.models import StagePrototype, StageComponent, StageAction, StagePrototypeConfig
 from cm.models import ACTION_TYPE, SCRIPT_TYPE, CONFIG_FIELD_TYPE, PROTO_TYPE
@@ -657,33 +658,46 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
                 err('CONFIG_TYPE_ERROR', msg.format(label, value, name, subname, ref))
         return True
 
+    def check_variant_args(conf, name, subname):
+        if 'args' not in conf:
+            return None
+        if not isinstance(conf['args'], dict):
+            msg = 'Config key "{}/{}" of {} "source:args" field should be a map'
+            err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
+        allowed_keys = ('service', 'component')
+        check_extra_keys(conf['args'], allowed_keys, f'{ref} config key "{name}/{subname}"')
+        if 'component' in conf['args'] and 'service' not in conf['args']:
+            msg = 'There is no "service" field in source:args config key "{}/{}" of {}'
+            err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
+        return conf['args']
+
     def check_variant(conf, name, subname):   # pylint: disable=too-many-branches
         if not in_dict(conf, 'source'):
             msg = 'Config key "{}/{}" of {} has no mandatory "source" key'
             err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
         if not isinstance(conf['source'], dict):
-            msg = 'Config key "{}/{}" of {} "source" field should be map'
+            msg = 'Config key "{}/{}" of {} "source" field should be a map'
             err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
         if not in_dict(conf['source'], 'type'):
-            msg = 'Config key "{}/{}" of {} has no mandatory source: type statment'
+            msg = 'Config key "{}/{}" of {} has no mandatory source:type statment'
             err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
-        allowed_keys = ('type', 'name', 'value', 'strict')
+        allowed_keys = ('type', 'name', 'value', 'strict', 'args')
         check_extra_keys(conf['source'], allowed_keys, f'{ref} config key "{name}/{subname}"')
         vtype = conf['source']['type']
         if vtype not in ('inline', 'config', 'builtin'):
             msg = 'Config key "{}/{}" of {} has unknown source type "{}"'
             err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref, vtype))
-        source = {'type': vtype}
+        source = {'type': vtype, 'args': None}
         if 'strict' in conf['source']:
             if not isinstance(conf['source']['strict'], bool):
-                msg = 'Config key "{}/{}" of {} "source: strict" field should be boolean'
+                msg = 'Config key "{}/{}" of {} "source:strict" field should be boolean'
                 err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
             source['strict'] = conf['source']['strict']
         else:
             source['strict'] = True
         if vtype == 'inline':
             if not in_dict(conf['source'], 'value'):
-                msg = 'Config key "{}/{}" of {} has no mandatory source: value statment'
+                msg = 'Config key "{}/{}" of {} has no mandatory source:value statment'
                 err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref, vtype))
             source['value'] = conf['source']['value']
             if not isinstance(source['value'], list):
@@ -691,13 +705,18 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
                 err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
         elif vtype in ('config', 'builtin'):
             if not in_dict(conf['source'], 'name'):
-                msg = 'Config key "{}/{}" of {} has no mandatory source: name statment'
+                msg = 'Config key "{}/{}" of {} has no mandatory source:name statment'
                 err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref, vtype))
             source['name'] = conf['source']['name']
         if vtype == 'builtin':
-            if conf['source']['name'] not in ('free_hosts', 'cluster_hosts'):
+            if conf['source']['name'] not in VARIANT_FUNCTIONS:
                 msg = 'Config key "{}/{}" of {} has unknown builtin function "{}"'
-                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref, conf['source']['name']))
+                err(
+                    'CONFIG_TYPE_ERROR',
+                    msg.format(name, subname, ref, conf['source']['name']),
+                    list(VARIANT_FUNCTIONS.keys())
+                )
+            source['args'] = check_variant_args(conf['source'], name, subname)
         return source
 
     def check_limit(conf_type, value, name, subname, label):

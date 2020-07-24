@@ -20,8 +20,8 @@ from django.db.utils import OperationalError
 
 from cm.logger import log   # pylint: disable=unused-import
 import cm.config as config
-from cm.models import Cluster, Prototype, Host, HostProvider, ADCM
-from cm.models import ClusterObject, PrototypeConfig, ObjectConfig, ConfigLog
+from cm.models import Cluster, Prototype, Host, HostComponent, ServiceComponent, HostProvider
+from cm.models import ClusterObject, PrototypeConfig, ObjectConfig, ConfigLog, ADCM
 from cm.errors import AdcmApiEx
 from cm.errors import raise_AdcmEx as err
 
@@ -342,33 +342,59 @@ def group_is_activatable(spec):
     return False
 
 
-def get_builtin_variant(obj, func_name):
-    def free_host(obj):
-        out = []
-        for host in Host.objects.filter(cluster=None):
-            out.append(host.fqdn)
-        return out
+def variant_host_in_cluster(obj, args):
+    out = []
+    if obj.prototype.type == 'service':
+        cluster = obj.cluster
+    elif obj.prototype.type == 'cluster':
+        cluster = obj
+    else:
+        return []
 
-    def cluster_host(obj):
-        out = []
-        if obj.prototype.type == 'service':
-            cluster = obj.cluster
-        elif obj.prototype.type == 'cluster':
-            cluster = obj
-        else:
+    if 'service' in args:
+        try:
+            service = ClusterObject.objects.get(cluster=cluster, prototype__name=args['service'])
+        except ClusterObject.DoesNotExist:
             return []
-        for host in Host.objects.filter(cluster=cluster):
-            out.append(host.fqdn)
-        return out
+        if 'component' in args:
+            try:
+                comp = ServiceComponent.objects.get(
+                    cluster=cluster, service=service, component__name=args['component']
+                )
+            except ServiceComponent.DoesNotExist:
+                return []
+            for hc in HostComponent.objects.filter(
+                    cluster=cluster, service=service, component=comp):
+                out.append(hc.host.fqdn)
+            return out
+        else:
+            for hc in HostComponent.objects.filter(cluster=cluster, service=service):
+                out.append(hc.host.fqdn)
+            return out
 
-    func_list = {
-        'free_hosts': free_host,
-        'cluster_hosts': cluster_host,
-    }
-    if func_name not in func_list:
+    for host in Host.objects.filter(cluster=cluster):
+        out.append(host.fqdn)
+    return out
+
+
+def variant_host_not_in_clusters(obj, args=None):
+    out = []
+    for host in Host.objects.filter(cluster=None):
+        out.append(host.fqdn)
+    return out
+
+
+VARIANT_FUNCTIONS = {
+    'host_in_cluster': variant_host_in_cluster,
+    'host_not_in_clusters': variant_host_not_in_clusters,
+}
+
+
+def get_builtin_variant(obj, func_name, args):
+    if func_name not in VARIANT_FUNCTIONS:
         log.warning('unknown variant builtin function: %s', func_name)
         return None
-    return func_list[func_name](obj)
+    return VARIANT_FUNCTIONS[func_name](obj, args)
 
 
 def get_variant(obj, conf, limits):
@@ -381,7 +407,7 @@ def get_variant(obj, conf, limits):
         else:
             value = conf[skey[0]][skey[1]]
     elif source['type'] == 'builtin':
-        value = get_builtin_variant(obj, source['name'])
+        value = get_builtin_variant(obj, source['name'], source.get('args', None))
     elif source['type'] == 'inline':
         value = source['value']
     return value
