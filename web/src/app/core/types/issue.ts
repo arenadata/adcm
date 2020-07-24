@@ -16,9 +16,8 @@ export interface InnerIssue {
   issue: Issue;
 }
 
-export interface Issue<K = 'host' | 'service' | 'cluster' | 'provider'> {
-  [K: string]: false | InnerIssue;
-  K: InnerIssue;
+export interface Issue {
+  [key: string]: false | [InnerIssue];
 }
 
 /**
