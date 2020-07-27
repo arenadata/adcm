@@ -342,13 +342,46 @@ def group_is_activatable(spec):
     return False
 
 
-def variant_host_in_cluster(obj, args):
-    out = []
+def get_cluster(obj):
     if obj.prototype.type == 'service':
+        cluster = obj.cluster
+    elif obj.prototype.type == 'host':
         cluster = obj.cluster
     elif obj.prototype.type == 'cluster':
         cluster = obj
     else:
+        return None
+    return cluster
+
+
+def variant_service_in_cluster(obj, args=None):
+    out = []
+    cluster = get_cluster(obj)
+    if not cluster:
+        return []
+
+    for co in ClusterObject.objects.filter(cluster=cluster):
+        out.append(co.prototype.name)
+    return out
+
+
+def variant_service_to_add(obj, args=None):
+    out = []
+    cluster = get_cluster(obj)
+    if not cluster:
+        return []
+
+    for proto in Prototype.objects.filter(bundle=cluster.prototype.bundle, type='service'):
+        if ClusterObject.objects.filter(prototype=proto, cluster=cluster):
+            continue
+        out.append(proto.name)
+    return out
+
+
+def variant_host_in_cluster(obj, args):
+    out = []
+    cluster = get_cluster(obj)
+    if not cluster:
         return []
 
     if 'service' in args:
@@ -387,6 +420,8 @@ def variant_host_not_in_clusters(obj, args=None):
 VARIANT_FUNCTIONS = {
     'host_in_cluster': variant_host_in_cluster,
     'host_not_in_clusters': variant_host_not_in_clusters,
+    'service_in_cluster': variant_service_in_cluster,
+    'service_to_add': variant_service_to_add,
 }
 
 
