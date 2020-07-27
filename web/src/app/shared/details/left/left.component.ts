@@ -18,7 +18,7 @@ import { NavigationService, INavItem } from '../navigation.service';
   selector: 'app-details-left',
   template: `
     <mat-nav-list>
-      <a mat-list-item [appForTest]="'tab_' + item.url" *ngFor="let item of items" [routerLink]="[item.url]" routerLinkActive="active">
+      <a mat-list-item [appForTest]="'tab_' + item.url" *ngFor="let item of items" routerLink="{{ item.url }}" routerLinkActive="active">
         <span>{{ item.title }}</span>
         &nbsp;
         <button *ngIf="item.action" mat-icon-button color="primary" (click)="btnClick(item.action)"><mat-icon>cloud_download</mat-icon></button>
@@ -35,7 +35,7 @@ export class LeftComponent {
     if (c) this.items = this.navigation.getLeft(c);
   }
 
-  @Input() set issues(i: Issue) {
+  @Input() set issue(i: Issue) {
     this.items = this.items.map((a) => ({ ...a, issue: this.navigation.findIssue(a.url, i || {}) ? 'issue' : '' }));
   }
 

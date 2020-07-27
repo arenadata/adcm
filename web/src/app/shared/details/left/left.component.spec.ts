@@ -18,10 +18,10 @@ import { StuffModule } from '@app/shared/stuff.module';
 import { NavigationService } from '../navigation.service';
 import { LeftComponent } from './left.component';
 
-
 describe('LeftComponent', () => {
   let component: LeftComponent;
   let fixture: ComponentFixture<LeftComponent>;
+  const issueIcon = (name: string) => fixture.nativeElement.querySelector(`a[adcm_test=tab_${name}] div mat-icon`);
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
@@ -51,7 +51,7 @@ describe('LeftComponent', () => {
   it('check issue: if item have issue should display icon <priority_hight> name', () => {
     component.current = { typeName: 'cluster', issue: { config: false } };
     fixture.detectChanges();
-    const icon = fixture.nativeElement.querySelector('a[adcm_test=tab_config] div mat-icon');
+    const icon = issueIcon('config');
     expect(icon).toBeTruthy();
     expect(icon.innerText).toBe('priority_hight');
   });
@@ -59,18 +59,29 @@ describe('LeftComponent', () => {
   it('clear issue should not display icon <priority_hight> name', () => {
     component.current = { typeName: 'cluster', issue: { config: false } };
     fixture.detectChanges();
-    const icon = fixture.nativeElement.querySelector('a[adcm_test=tab_config] div mat-icon');
+    const icon = issueIcon('config');
     expect(icon).toBeTruthy();
-    component.issues = {};
+    component.issue = {};
     fixture.detectChanges();
-    const icon1 = fixture.nativeElement.querySelector('a[adcm_test=tab_config] div mat-icon');
+    const icon1 = issueIcon('config');
     expect(icon1).toBeFalsy();
+  });
+
+  it('raise issue should display icon <priority_hight> name', () => {
+    component.current = { typeName: 'cluster' };
+    fixture.detectChanges();
+    const icon = issueIcon('config');
+    expect(icon).toBeFalsy();
+    component.issue = { config: false };
+    fixture.detectChanges();
+    const icon1 = issueIcon('config');
+    expect(icon1).toBeTruthy();
   });
 
   it('if the item have status === 0 should show <check_circle_outline> icon', () => {
     component.current = { typeName: 'cluster', status: 0 };
     fixture.detectChanges();
-    const icon = fixture.nativeElement.querySelector('a[adcm_test=tab_status] div mat-icon');
+    const icon = issueIcon('status');
     expect(icon).toBeTruthy();
     expect(icon.innerText).toBe('check_circle_outline');
   });
@@ -78,7 +89,7 @@ describe('LeftComponent', () => {
   it('if the item have status !== 0 should show <error_outline> icon', () => {
     component.current = { typeName: 'cluster', status: 16 };
     fixture.detectChanges();
-    const icon = fixture.nativeElement.querySelector('a[adcm_test=tab_status] div mat-icon');
+    const icon = issueIcon('status');
     expect(icon).toBeTruthy();
     expect(icon.innerText).toBe('error_outline');
   });

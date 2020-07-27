@@ -20,9 +20,4 @@ export interface Issue {
   [key: string]: false | [InnerIssue];
 }
 
-/**
- * Check Issue
- * @returns true if there's not issues
- * @param issue 
- */
-export const notIssue = (issue: Issue): boolean => !(issue && Object.keys(issue).length);
+export const isIssue = (issue: Issue): boolean => !!(issue && Object.keys(issue).length);

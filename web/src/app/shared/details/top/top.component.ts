@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input } from '@angular/core';
-import { Cluster, IAction, Issue, notIssue } from '@app/core/types';
+import { Cluster, IAction, Issue, isIssue } from '@app/core/types';
 import { UpgradeItem } from '@app/shared/components';
 
 import { IDetails } from '../details.service';
@@ -45,11 +45,11 @@ export class TopComponent {
 
   @Input() set current(c: IDetails) {
     if (c) {
-      this.items = this.navigation.getCrumbs(c);
+      this.items = this.navigation.getTop(c);
       const { id, hostcomponent, issue, upgradable, upgrade } = c.parent || (c as Partial<Cluster>);
       this.cluster = { id, hostcomponent };
       this.upgradable = upgradable;
-      this.eIssue = !notIssue(issue);
+      this.eIssue = isIssue(issue);
       this.upgrade = { issue, upgradable, upgrade };
     }
   }

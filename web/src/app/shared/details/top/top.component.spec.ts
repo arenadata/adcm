@@ -16,14 +16,8 @@ import { StuffModule } from '@app/shared/stuff.module';
 
 import { NavigationService } from '../navigation.service';
 import { TopComponent } from './top.component';
-
-/** 
- * подготовка данных для дочерних компонентов
- * проверка navigation.service
- * проверка обновления свойства current and isIssue
- * 
-*/
-
+import { Cluster } from '@app/core/types';
+import { IDetails } from '../details.service';
 
 describe('TopComponent', () => {
   let component: TopComponent;
@@ -33,7 +27,7 @@ describe('TopComponent', () => {
     TestBed.configureTestingModule({
       imports: [MaterialModule, StuffModule, RouterTestingModule],
       declarations: [TopComponent],
-      providers: [NavigationService]
+      providers: [NavigationService],
     }).compileComponents();
   }));
 
@@ -45,5 +39,47 @@ describe('TopComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('breadcrumbs for item without cluster (parent) should contains full path (app->item_type->item_name)', () => {
+    component.current = { name: 'host_test', typeName: 'host', id: 1, issue: {} } as IDetails;
+    fixture.detectChanges();
+    const links = fixture.nativeElement.querySelectorAll('app-crumbs mat-nav-list a');
+    // app -- hosts -- host_test
+    expect(links.length).toBe(3);
+  });
+
+  it('breadcrumbs for service (item with cluster - parent) should contains full path (app->clusters->cluster_name->services->service_name)', () => {
+    component.current = { name: 'service_test', typeName: 'service', id: 1, issue: {}, parent: { id: 1, name: 'cluster_test', issue: {} } as Cluster } as IDetails;
+    fixture.detectChanges();
+    const links = fixture.nativeElement.querySelectorAll('app-crumbs mat-nav-list a');
+    // app -- clusters -- cluster_tes -- services -- service_test
+    expect(links.length).toBe(5);
+  });
+
+  it('previous element for current in the breadcrumbs should have to name `[current.typeName]s`', () => {
+    component.current = { name: 'service_test', typeName: 'service', id: 1, issue: {}, parent: { id: 1, name: 'cluster_test', issue: {}, typeName: 'cluster' } } as IDetails;
+    fixture.detectChanges();
+    const links = fixture.nativeElement.querySelectorAll('app-crumbs mat-nav-list a');
+    // app -- clusters -- cluster_tes -- services -- service_test
+    expect(links[1].innerText).toBe('CLUSTERS');
+    expect(links[3].innerText).toBe('SERVICES');
+  });
+
+  it('if item contains issue should show icon <priority_hight>', () => {
+    component.current = {
+      name: 'service_test',
+      typeName: 'service',
+      id: 1,
+      issue: {},
+      parent: <unknown>{ id: 1, name: 'cluster_test', issue: { config: false }, typeName: 'cluster' },
+    } as IDetails;
+    fixture.detectChanges();
+    const cluster_link = fixture.nativeElement.querySelector('app-crumbs mat-nav-list a[href="/cluster/1"]');
+    expect(cluster_link).toBeTruthy();
+    const icon = cluster_link.nextSibling;
+    expect(icon).toBeTruthy();
+    expect(icon.tagName).toBe('MAT-ICON');
+    expect(icon.innerText).toBe('priority_hight');
   });
 });

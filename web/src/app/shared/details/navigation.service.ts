@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Injectable } from '@angular/core';
-import { ApiBase, Issue, Job, TypeName } from '@app/core/types';
+import { ApiBase, Issue, Job, TypeName, isIssue, Cluster } from '@app/core/types';
 
 import { IDetails } from './details.service';
 import { ThemePalette } from '@angular/material/core';
@@ -77,43 +77,24 @@ export class NavigationService {
           issue: this.findIssue(i.url, issue),
           status,
         }));
-
       return c.typeName === 'job' ? forJob(c as Job) : def(c.typeName, c.issue || {}, +c.status);
     };
-
     return getMenu(current);
   }
 
-  getCrumbs(current: IDetails): INavItem[] {
-    let output: INavItem[] = [],
-      pref = '';
-
-    if (current.parent || current.typeName === 'cluster') {
-      const cluster = current.parent || current;
-      pref = `/cluster/${cluster.id}`;
-      output = [
-        { url: '/cluster', title: 'clusters' },
-        {
-          id: cluster.id,
-          url: pref,
-          title: cluster.name,
-          issue: this.getIssueMessage(cluster.issue && !!Object.keys(cluster.issue).length),
-        },
-      ];
-    }
-
-    const typeName = current.typeName === 'job' ? 'task' : current.typeName;
-
-    if (current.typeName !== 'cluster')
-      output = [
-        ...output,
-        { url: `${pref}/${typeName}`, title: `${current.typeName}s` },
-        {
-          url: `${pref}/${current.typeName}/${current.id}`,
-          title: current.name,
-        },
-      ];
-
-    return output;
+  getTop(current: IDetails): INavItem[] {
+    const issue = (i: Issue) => (isIssue(i) ? ISSUE_MESSAGE : '');
+    const link = (p: { typeName: string; id: number }) => (p ? `/${p.typeName}/${p.id}` : '');
+    const typeObj = (type: string, prev: string) => ({ url: `${prev}/${type}`, title: `${type}s` });
+    const fullLink = (c: { parent?: Cluster; typeName: TypeName; id: number; name: string; issue: Issue }): INavItem[] => [
+      typeObj(c.typeName === 'job' ? 'task' : c.typeName, link(c.parent)),
+      {
+        id: c.id,
+        url: `${link(c.parent)}${link(c)}`,
+        title: c.name,
+        issue: issue(c.issue),
+      },
+    ];
+    return [current.parent, current].reduce((p, c) => [...p, ...(c ? fullLink(c) : [])], []);
   }
 }
