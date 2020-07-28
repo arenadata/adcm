@@ -11,13 +11,14 @@
 // limitations under the License.
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
+import { ApiService } from '@app/core/api';
+import { Cluster } from '@app/core/types';
 import { MaterialModule } from '@app/shared';
 import { StuffModule } from '@app/shared/stuff.module';
 
+import { IDetails } from '../details.service';
 import { NavigationService } from '../navigation.service';
 import { TopComponent } from './top.component';
-import { Cluster } from '@app/core/types';
-import { IDetails } from '../details.service';
 
 describe('TopComponent', () => {
   let component: TopComponent;
@@ -27,7 +28,7 @@ describe('TopComponent', () => {
     TestBed.configureTestingModule({
       imports: [MaterialModule, StuffModule, RouterTestingModule],
       declarations: [TopComponent],
-      providers: [NavigationService],
+      providers: [NavigationService, { provide: ApiService, useValue: {} }],
     }).compileComponents();
   }));
 
@@ -81,5 +82,62 @@ describe('TopComponent', () => {
     expect(icon).toBeTruthy();
     expect(icon.tagName).toBe('MAT-ICON');
     expect(icon.innerText).toBe('priority_hight');
+  });
+
+  it('if item does not contains issue should hide icon <priority_hight>', () => {
+    component.current = {
+      name: 'service_test',
+      typeName: 'service',
+      id: 1,
+      issue: {},
+      parent: <unknown>{ id: 1, name: 'cluster_test', issue: { config: false }, typeName: 'cluster' },
+    } as IDetails;
+    fixture.detectChanges();
+    const cluster_link = fixture.nativeElement.querySelector('app-crumbs mat-nav-list a[href="/cluster/1"]');
+
+    const icon = cluster_link.nextSibling;
+    expect(icon).toBeTruthy();
+    expect(icon.tagName).toBe('MAT-ICON');
+    expect(icon.innerText).toBe('priority_hight');
+
+    component.isIssue = false;
+    fixture.detectChanges();
+    const icon2 = cluster_link.nextSibling;
+    expect(icon2.tagName).not.toBe('MAT-ICON');
+    expect(icon2.innerText).not.toBe('priority_hight');
+  });
+
+  it('if item contains upgradable should show button upgade', () => {
+    component.current = {
+      name: 'cluster_test',
+      typeName: 'cluster',
+      id: 1,
+      upgradable: true,
+    } as IDetails;
+
+    fixture.detectChanges();
+
+    const up_btn = fixture.nativeElement.querySelector('app-upgrade button[adcm_test=upgrade_btn]');
+    expect(up_btn).toBeTruthy();
+  });
+
+  it('if item does not contain upgradable should hide button upgade', () => {
+    component.current = {
+      name: 'cluster_test',
+      typeName: 'cluster',
+      id: 1,
+      upgradable: true,
+    } as IDetails;
+
+    fixture.detectChanges();
+
+    const up_btn = fixture.nativeElement.querySelector('app-upgrade button[adcm_test=upgrade_btn]');
+    expect(up_btn).toBeTruthy();
+
+    component.upgradable = false;
+    fixture.detectChanges();
+    const up_btn2 = fixture.nativeElement.querySelector('app-upgrade button[adcm_test=upgrade_btn]');
+    expect(up_btn2).toBeFalsy();
+
   });
 });

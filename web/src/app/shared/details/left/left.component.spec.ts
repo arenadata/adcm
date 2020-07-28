@@ -9,6 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+import { NO_ERRORS_SCHEMA, Component } from '@angular/core';
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { Job } from '@app/core/types';
@@ -18,6 +19,9 @@ import { StuffModule } from '@app/shared/stuff.module';
 import { NavigationService } from '../navigation.service';
 import { LeftComponent } from './left.component';
 
+@Component({})
+class ExampleComponent {}
+
 describe('LeftComponent', () => {
   let component: LeftComponent;
   let fixture: ComponentFixture<LeftComponent>;
@@ -25,13 +29,15 @@ describe('LeftComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [MaterialModule, StuffModule, RouterTestingModule],
+      imports: [MaterialModule, StuffModule, RouterTestingModule.withRoutes([{ path: '1', component: ExampleComponent }])],
       declarations: [LeftComponent],
       providers: [NavigationService],
+      schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
   }));
 
   beforeEach(() => {
+    // spyOn(router, 'navigate').and.callFake(() => { });
     fixture = TestBed.createComponent(LeftComponent);
     component = fixture.componentInstance;
     component.current = { typeName: 'cluster' };
@@ -112,7 +118,6 @@ describe('LeftComponent', () => {
     const list = fixture.nativeElement.querySelectorAll('a');
     spyOn(component, 'btnClick');
     list[1].querySelector('div button').click();
-    expect(component.btnClick).toHaveBeenCalled();
     expect(component.btnClick).toHaveBeenCalledWith(jasmine.any(Function));
   });
 });
