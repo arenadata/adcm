@@ -10,26 +10,43 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Injectable } from '@angular/core';
-import { ApiBase, Issue, Job, TypeName, isIssue, Cluster } from '@app/core/types';
-
-import { IDetails } from './details.service';
-import { ThemePalette } from '@angular/material/core';
+import { ApiBase, Cluster, isIssue, Issue, Job, TypeName, IAction, LogFile, JobObject } from '@app/core/types';
 
 const ISSUE_MESSAGE = 'Something is wrong with your cluster configuration, please review it.';
+
+export interface IDetails {
+  parent?: Cluster;
+  typeName: TypeName;
+  id: number;
+  name: string;
+  upgradable: boolean;
+  upgrade: string;
+  status: string | number;
+  actions: IAction[];
+  issue: Issue;
+  log_files?: LogFile[];
+  objects: JobObject[];
+  prototype_name: string;
+  prototype_display_name: string;
+  prototype_version: string;
+  provider_id: number;
+  bundle_id: number;
+  hostcomponent: string;
+}
 
 const IssueSet: { [key: string]: string[] } = {
   service: ['required_service'],
   import: ['required_import'],
 };
 
-type IconMenu = 'issue' | 'status';
+// type IconMenu = 'issue' | 'status';
 
-interface Icon {
-  id: IconMenu;
-  isShow: boolean;
-  color: ThemePalette;
-  name: string;
-}
+// interface Icon {
+//   id: IconMenu;
+//   isShow: boolean;
+//   color: ThemePalette;
+//   name: string;
+// }
 
 export interface INavItem {
   id?: number;

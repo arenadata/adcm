@@ -19,7 +19,7 @@ import { Observable } from 'rxjs';
 import { switchMap, tap } from 'rxjs/operators';
 
 import { SocketListenerDirective } from '../directives/socketListener.directive';
-import { IDetails } from './details.service';
+import { IDetails } from './navigation.service';
 
 @Component({
   selector: 'app-detail',
@@ -102,10 +102,9 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
   reset() {
     this.request$ = this.service.reset().pipe(
       this.takeUntil(),
-      tap((a) => this.run(a)),
-      tap((_) => console.log('GET ::', this.current))
+      tap((a) => this.run(a))
     );
-  } 
+  }
 
   socketListener(m: EventMessage) {
     if ((m.event === 'create' || m.event === 'delete') && m.object.type === 'bundle') {

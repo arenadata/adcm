@@ -10,11 +10,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input } from '@angular/core';
-import { Cluster, IAction, Issue, isIssue } from '@app/core/types';
+import { Cluster, IAction, isIssue, Issue } from '@app/core/types';
 import { UpgradeItem } from '@app/shared/components';
 
-import { IDetails } from '../details.service';
-import { INavItem, NavigationService } from '../navigation.service';
+import { IDetails, INavItem, NavigationService } from '../navigation.service';
 
 @Component({
   selector: 'app-details-top',

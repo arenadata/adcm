@@ -16,8 +16,7 @@ import { Cluster } from '@app/core/types';
 import { MaterialModule } from '@app/shared';
 import { StuffModule } from '@app/shared/stuff.module';
 
-import { IDetails } from '../details.service';
-import { NavigationService } from '../navigation.service';
+import { IDetails, NavigationService } from '../navigation.service';
 import { TopComponent } from './top.component';
 
 describe('TopComponent', () => {
@@ -138,6 +137,5 @@ describe('TopComponent', () => {
     fixture.detectChanges();
     const up_btn2 = fixture.nativeElement.querySelector('app-upgrade button[adcm_test=upgrade_btn]');
     expect(up_btn2).toBeFalsy();
-
   });
 });
