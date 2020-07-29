@@ -712,7 +712,8 @@ class ObjectConfigUpdate(ObjectConfig):
             conf = validated_data.get('config')
             attr = validated_data.get('attr')
             desc = validated_data.get('description', '')
-            cl = cm.api.update_obj_config(instance.obj_ref, conf, attr, desc)
+            cl = cm.api.update_obj_config(
+                instance.obj_ref, conf, attr, desc, self.context['request'].method)
             if validated_data.get('ui'):
                 cl.config = cm.adcm_config.ui_config(validated_data.get('obj'), cl)
             if hasattr(instance.obj_ref, 'adcm'):

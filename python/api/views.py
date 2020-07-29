@@ -421,6 +421,14 @@ class AdcmConfigHistory(ListView):
         serializer = self.update_serializer(cl, data=request.data, context={'request': request})
         return create(serializer, ui=bool(self.for_ui(request)), obj=obj)
 
+    def patch(self, request, adcm_id):
+        """
+        Update host provider config. Config parameter is json
+        """
+        obj, _, cl = self.get_obj(adcm_id)
+        serializer = self.update_serializer(cl, data=request.data, context={'request': request})
+        return create(serializer, ui=bool(self.for_ui(request)), obj=obj)
+
 
 class AdcmConfigVersion(ListView):
     queryset = ConfigLog.objects.all()
@@ -716,6 +724,14 @@ class ProviderConfigHistory(ListView):
         serializer = self.update_serializer(cl, data=request.data, context={'request': request})
         return create(serializer, ui=bool(self.for_ui(request)), obj=obj)
 
+    def patch(self, request, provider_id):
+        """
+        Update host provider config. Config parameter is json
+        """
+        obj, _, cl = self.get_obj(provider_id)
+        serializer = self.update_serializer(cl, data=request.data, context={'request': request})
+        return create(serializer, ui=bool(self.for_ui(request)), obj=obj)
+
 
 class ProviderConfigVersion(ListView):
     queryset = ConfigLog.objects.all()
@@ -954,6 +970,14 @@ class HostConfigHistory(ListView):
         return Response(serializer.data)
 
     def post(self, request, host_id):
+        """
+        Update config of a specified host. Config parameter is json
+        """
+        obj, cl = self.get_obj(host_id)
+        serializer = self.update_serializer(cl, data=request.data, context={'request': request})
+        return create(serializer, ui=bool(self.for_ui(request)), obj=obj)
+
+    def patch(self, request, host_id):
         """
         Update config of a specified host. Config parameter is json
         """

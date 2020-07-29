@@ -257,7 +257,21 @@ def restore_cluster_config(obj_conf, version, desc=''):
     return cl
 
 
-def save_obj_config(obj_conf, conf, desc='', attr=None):
+def save_obj_config(obj_conf, conf, desc='', attr=None, method=None):
+
+    def update(d, u):
+        for k, v in u.items():
+            if isinstance(v, dict):
+                d[k] = update(d.get(k, {}), v)
+            else:
+                d[k] = v
+        return d
+
+    if method == 'PATCH':
+        current_cl = ConfigLog.objects.get(id=obj_conf.current)
+        old_conf = json.loads(current_cl.config)
+        conf = update(old_conf, conf)
+
     cl = ConfigLog(
         obj_ref=obj_conf,
         config=json.dumps(conf),

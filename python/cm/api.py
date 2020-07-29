@@ -392,7 +392,7 @@ def accept_license(bundle):
     bundle.save()
 
 
-def update_obj_config(obj_conf, conf, attr=None, desc=''):
+def update_obj_config(obj_conf, conf, attr=None, desc='', method=None):
     if hasattr(obj_conf, 'adcm'):
         obj = obj_conf.adcm
         proto = obj_conf.adcm.prototype
@@ -416,7 +416,7 @@ def update_obj_config(obj_conf, conf, attr=None, desc=''):
             attr = json.loads(old_conf.attr)
     new_conf = check_json_config(proto, obj, conf, old_conf.config, attr)
     with transaction.atomic():
-        cl = save_obj_config(obj_conf, new_conf, desc, attr)
+        cl = save_obj_config(obj_conf, new_conf, desc, attr, method)
         cm.issue.save_issue(obj)
     if hasattr(obj_conf, 'adcm'):
         prepare_social_auth(new_conf)

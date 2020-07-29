@@ -839,6 +839,14 @@ class ClusterConfigHistory(ListView):
         serializer = self.update_serializer(cl, data=request.data, context={'request': request})
         return create(serializer, ui=bool(self.for_ui(request)), obj=obj)
 
+    def patch(self, request, cluster_id, service_id):
+        """
+        Update config in a specified service and cluster. Config parameter is json
+        """
+        obj, cl = self.get_obj(cluster_id, service_id)
+        serializer = self.update_serializer(cl, data=request.data, context={'request': request})
+        return create(serializer, ui=bool(self.for_ui(request)), obj=obj)
+
 
 class ClusterServiceConfigHistory(ClusterConfigHistory):
     serializer_class = api.cluster_serial.ClusterServiceConfigHistorySerializer
