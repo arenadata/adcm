@@ -17,14 +17,15 @@
   <ng-template #form>
     <div class="form-auth">
       <mat-form-field>
-        <input matInput autofocus placeholder="Login" formControlName="login" required />
+        <input matInput autofocus placeholder="Login" formControlName="login" required appForTest="login" />
       </mat-form-field>
       <mat-form-field>
         <input matInput placeholder="Password" type="password" formControlName="password" (keyup.enter)="login()"
-          required />
+          appForTest="password" required />
       </mat-form-field>
       <p>
-        <button mat-raised-button [disabled]="!authForm.valid" color="primary" (click)="login()" (keyup.enter)="login()">Login</button>
+        <button mat-raised-button [disabled]="!authForm.valid" color="primary" (click)="login()"
+          (keyup.enter)="login()">Login</button>
       </p>
     </div>
   </ng-template>
