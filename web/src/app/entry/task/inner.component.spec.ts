@@ -10,9 +10,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { RouterTestingModule } from '@angular/router/testing';
+import { Job } from '@app/core/types';
 
 import { InnerComponent } from './inner.component';
-import { MatTableModule } from '@angular/material/table';
 
 describe('InnerComponent', () => {
   let component: InnerComponent;
@@ -20,10 +24,9 @@ describe('InnerComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [MatTableModule],
-      declarations: [ InnerComponent ]
-    })
-    .compileComponents();
+      imports: [MatTableModule, MatIconModule, MatTooltipModule, RouterTestingModule],
+      declarations: [InnerComponent],
+    }).compileComponents();
   }));
 
   beforeEach(() => {
@@ -34,5 +37,40 @@ describe('InnerComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('job should display as row', () => {
+    component.dataSource = [{ status: 'created', display_name: 'job_test', id: 1, start_date: '2020-07-30T12:28:59.431072Z', finish_date: '2020-07-30T12:29:00.222917Z' }] as Job[];
+    fixture.detectChanges();
+    const rows = fixture.nativeElement.querySelectorAll('table tr');
+    expect(rows.length).toBe(1);
+  });
+
+  it('changing job status should display the appropriate icon', () => {
+    const getIcon = () => fixture.nativeElement.querySelector('table tr td:last-child mat-icon');
+    component.dataSource = [{ status: 'created', display_name: 'job_test', id: 1, start_date: '2020-07-30T12:28:59.431072Z', finish_date: '2020-07-30T12:29:00.222917Z' }] as Job[];
+    fixture.detectChanges();
+    const last_icon = getIcon();
+    expect(last_icon.innerText).toBe('watch_later');
+    
+    component.dataSource[0].status = 'running';
+    fixture.detectChanges();
+    const last_icon2 = getIcon();
+    expect(last_icon2.innerText).toBe('autorenew');
+    
+    component.dataSource[0].status = 'success';
+    fixture.detectChanges();
+    const last_icon3 = getIcon();
+    expect(last_icon3.innerText).toBe('done');
+    
+    component.dataSource[0].status = 'failed';
+    fixture.detectChanges();
+    const last_icon4 = getIcon();
+    expect(last_icon4.innerText).toBe('error');
+    
+    component.dataSource[0].status = 'aborted';
+    fixture.detectChanges();
+    const last_icon5 = getIcon();
+    expect(last_icon5.innerText).toBe('block');
   });
 });

@@ -11,7 +11,7 @@
 // limitations under the License.
 import { ApiBase } from './api';
 
-export type JobStatus = 'created' | 'running' | 'failed' | 'success';
+export type JobStatus = 'created' | 'running' | 'failed' | 'success' | 'aborted';
 
 export interface JobObject {
   id: number;
