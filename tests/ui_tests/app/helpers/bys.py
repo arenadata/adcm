@@ -45,3 +45,7 @@ def by_xpath(xpath):
 
 def by_tag(tag):
     return By.TAG_NAME, tag
+
+
+def by_id(oid):
+    return By.ID, oid
