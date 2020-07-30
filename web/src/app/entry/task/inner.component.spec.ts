@@ -73,4 +73,22 @@ describe('InnerComponent', () => {
     const last_icon5 = getIcon();
     expect(last_icon5.innerText).toBe('block');
   });
+
+  it('job property should dislplay in the columns of row table', () => {
+    component.dataSource = [{ status: 'created', display_name: 'job_test', id: 1, start_date: '2020-07-30T12:28:59.431072Z', finish_date: '2020-07-30T12:29:00.222917Z' }] as Job[];
+    fixture.detectChanges();
+    const tds = fixture.nativeElement.querySelectorAll('table tr td');
+    expect<string>(tds[0].innerText).toBe('job_test');
+    expect<string>(tds[1].innerText).toBeFalsy();
+    expect<string>(tds[2].innerText).toBeFalsy();
+
+    component.dataSource[0].status = 'running';
+    fixture.detectChanges();
+    expect<string>(tds[1].innerText).toBeTruthy(); //.toBe('Jul 30, 2020, 3:28:59 PM');
+
+    component.dataSource[0].status = 'success';
+    fixture.detectChanges();
+    expect<string>(tds[1].innerText).toBeTruthy(); //.toBe('Jul 30, 2020, 3:28:59 PM');
+    expect<string>(tds[2].innerText).toBeTruthy(); //.toBe('Jul 30, 2020, 3:29:00 PM');
+  });
 });
