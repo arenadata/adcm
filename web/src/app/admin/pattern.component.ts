@@ -16,7 +16,7 @@ import { getProfileSelector, settingsSave, State } from '@app/core/store';
 import { BaseDirective } from '@app/shared';
 import { IConfig } from '@app/shared/configuration/types';
 import { select, Store } from '@ngrx/store';
-import { exhaustMap, filter, map } from 'rxjs/operators';
+import { exhaustMap, filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-pattern',
