@@ -12,7 +12,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '@app/core/api';
-import { EmmitRow, Issue, notIssue } from '@app/core/types';
+import { EmmitRow, Issue, isIssue } from '@app/core/types';
 import { concat, Observable, of } from 'rxjs';
 import { filter, map, switchMap } from 'rxjs/operators';
 
@@ -81,7 +81,7 @@ export class UpgradeComponent extends BaseDirective {
   }
 
   checkIssue() {
-    return this.row.upgradable && notIssue(this.row.issue);
+    return this.row.upgradable && !isIssue(this.row.issue);
   }
 
   runUpgrade(item: Upgrade) {
