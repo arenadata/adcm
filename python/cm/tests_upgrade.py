@@ -17,7 +17,7 @@ from django.test import TestCase
 import cm.api
 import cm.job
 from cm.models import Cluster, Host, ClusterObject, ServiceComponent, HostComponent
-from cm.models import Bundle, Upgrade, Prototype, Component, Action
+from cm.models import Bundle, Upgrade, Prototype, Component, PrototypeConfig, ConfigLog
 from cm.errors import AdcmEx
 
 
@@ -141,6 +141,110 @@ class SetUp():
         )
 
 
+def get_config(obj):
+    cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
+    return json.loads(cl.config)
+
+
+class TestConfigUpgrade(TestCase):
+    add_conf = PrototypeConfig.objects.create
+
+    def cook_proto(self):
+        b = Bundle.objects.create(name='AD1', version='1.0')
+        proto1 = Prototype.objects.create(type="cluster", name="AD1", version="1.0", bundle=b)
+        proto2 = Prototype.objects.create(type="cluster", name="AD1", version="2.0", bundle=b)
+        return (proto1, proto2)
+
+    def test_empty_config(self):
+        (proto1, proto2) = self.cook_proto()
+        cluster = cm.api.add_cluster(proto1, 'Cluster1')
+        self.assertEqual(cluster.config, None)
+        cm.adcm_config.switch_config(cluster, proto2, proto1)
+        self.assertEqual(cluster.config, None)
+
+    def test_empty_first_config(self):
+        (proto1, proto2) = self.cook_proto()
+        self.add_conf(prototype=proto2, name='port', type='integer', default=42)
+        cluster = cm.api.add_cluster(proto1, 'Cluster1')
+        self.assertEqual(cluster.config, None)
+        cm.adcm_config.switch_config(cluster, proto2, proto1)
+        new_config = get_config(cluster)
+        self.assertEqual(new_config['port'], 42)
+
+    def test_adding_parameter(self):
+        (proto1, proto2) = self.cook_proto()
+        self.add_conf(prototype=proto1, name='host', type='string', default='arenadata.com')
+        self.add_conf(prototype=proto2, name='host', type='string', default='arenadata.com')
+        self.add_conf(prototype=proto2, name='port', type='integer', default=42)
+        cluster = cm.api.add_cluster(proto1, 'Cluster1')
+        old_conf = get_config(cluster)
+        self.assertEqual(old_conf, {'host': 'arenadata.com'})
+        cm.adcm_config.switch_config(cluster, proto2, proto1)
+        new_config = get_config(cluster)
+        self.assertEqual(new_config, {'host': 'arenadata.com', 'port': 42})
+
+    def test_deleting_parameter(self):
+        (proto1, proto2) = self.cook_proto()
+        self.add_conf(prototype=proto1, name='host', type='string', default='arenadata.com')
+        self.add_conf(prototype=proto2, name='port', type='integer', default=42)
+        cluster = cm.api.add_cluster(proto1, 'Cluster1')
+        old_conf = get_config(cluster)
+        self.assertEqual(old_conf, {'host': 'arenadata.com'})
+        cm.adcm_config.switch_config(cluster, proto2, proto1)
+        new_config = get_config(cluster)
+        self.assertEqual(new_config, {'port': 42})
+
+    def test_default(self):
+        (proto1, proto2) = self.cook_proto()
+        self.add_conf(prototype=proto1, name='port', type='integer', default=42)
+        self.add_conf(prototype=proto2, name='port', type='integer', default=43)
+        cluster = cm.api.add_cluster(proto1, 'Cluster1')
+        old_conf = get_config(cluster)
+        self.assertEqual(old_conf, {'port': 42})
+        cm.adcm_config.switch_config(cluster, proto2, proto1)
+        new_config = get_config(cluster)
+        self.assertEqual(new_config, {'port': 43})
+
+    def test_non_default(self):
+        (proto1, proto2) = self.cook_proto()
+        self.add_conf(prototype=proto1, name='port', type='integer', default=42)
+        self.add_conf(prototype=proto2, name='port', type='integer', default=43)
+        cluster = cm.api.add_cluster(proto1, 'Cluster1')
+        old_conf = get_config(cluster)
+        old_conf['port'] = 100500
+        cm.adcm_config.save_obj_config(cluster.config, old_conf)
+        cm.adcm_config.switch_config(cluster, proto2, proto1)
+        new_config = get_config(cluster)
+        self.assertEqual(new_config, {'port': 100500})
+
+    def test_add_group(self):
+        (proto1, proto2) = self.cook_proto()
+        self.add_conf(prototype=proto1, name='host', type='string', default='arenadata.com')
+        self.add_conf(prototype=proto2, name='host', type='string', default='arenadata.com')
+        self.add_conf(prototype=proto2, name='advance', type='group')
+        self.add_conf(prototype=proto2, name='advance', subname='port', type='integer', default=42)
+        cluster = cm.api.add_cluster(proto1, 'Cluster1')
+        old_conf = get_config(cluster)
+        self.assertEqual(old_conf, {'host': 'arenadata.com'})
+        cm.adcm_config.switch_config(cluster, proto2, proto1)
+        new_config = get_config(cluster)
+        self.assertEqual(new_config, {'host': 'arenadata.com', 'advance': {'port': 42}})
+
+    def test_add_non_active_group(self):
+        (proto1, proto2) = self.cook_proto()
+        self.add_conf(prototype=proto1, name='host', type='string', default='arenadata.com')
+        self.add_conf(prototype=proto2, name='host', type='string', default='arenadata.com')
+        limits = {"activatable": True, "active": False}
+        self.add_conf(prototype=proto2, name='advance', type='group', limits=json.dumps(limits))
+        self.add_conf(prototype=proto2, name='advance', subname='port', type='integer', default=42)
+        cluster = cm.api.add_cluster(proto1, 'Cluster1')
+        old_conf = get_config(cluster)
+        self.assertEqual(old_conf, {'host': 'arenadata.com'})
+        cm.adcm_config.switch_config(cluster, proto2, proto1)
+        new_config = get_config(cluster)
+        self.assertEqual(new_config, {'host': 'arenadata.com', 'advance': None})
+
+
 class TestUpgrade(TestCase):
 
     def test_cluster_upgrade(self):
@@ -261,111 +365,3 @@ class TestUpgrade(TestCase):
         h2 = Host.objects.get(provider=provider, fqdn='server01.inter.net')
         self.assertEqual(h1.id, h2.id)
         self.assertEqual(h2.prototype.id, new_proto.id)
-
-
-class TestHC(TestCase):
-
-    def test_action_hc_simple(self):   # pylint: disable=too-many-locals
-        setup = SetUp()
-        b1 = setup.cook_cluster_bundle('1.0')
-        cluster = setup.cook_cluster(b1, 'Test1')
-        b2 = setup.cook_provider_bundle('1.0')
-        provider = setup.cook_provider(b2, "DF01")
-        h1 = Host.objects.get(provider=provider, fqdn='server01.inter.net')
-
-        action = Action(name="run")
-        (hc_list, _) = cm.job.check_hostcomponentmap(cluster, action, [])
-        self.assertEqual(hc_list, None)
-
-        try:
-            action = Action(name="run", hostcomponentmap=json.dumps("qwe"))
-            (hc_list, _) = cm.job.check_hostcomponentmap(cluster, action, [])
-            self.assertNotEqual(hc_list, None)
-        except AdcmEx as e:
-            self.assertEqual(e.code, 'TASK_ERROR')
-            self.assertEqual(e.msg, 'hc is required')
-
-        co = ClusterObject.objects.get(cluster=cluster, prototype__name='hadoop')
-        sc1 = ServiceComponent.objects.get(cluster=cluster, service=co, component__name='server')
-        try:
-            action = Action(name="run", hostcomponentmap=json.dumps("qwe"))
-            hc = [{"service_id": co.id, "component_id": sc1.id, "host_id": 500}]
-            (hc_list, _) = cm.job.check_hostcomponentmap(cluster, action, hc)
-            self.assertNotEqual(hc_list, None)
-        except AdcmEx as e:
-            self.assertEqual(e.code, 'HOST_NOT_FOUND')
-
-        try:
-            action = Action(name="run", hostcomponentmap=json.dumps("qwe"))
-            hc = [{"service_id": co.id, "component_id": sc1.id, "host_id": h1.id}]
-            (hc_list, _) = cm.job.check_hostcomponentmap(cluster, action, hc)
-            self.assertNotEqual(hc_list, None)
-        except AdcmEx as e:
-            self.assertEqual(e.code, 'FOREIGN_HOST')
-
-        cm.api.add_host_to_cluster(cluster, h1)
-        try:
-            action = Action(name="run", hostcomponentmap=json.dumps("qwe"))
-            hc = [{"service_id": 500, "component_id": sc1.id, "host_id": h1.id}]
-            (hc_list, _) = cm.job.check_hostcomponentmap(cluster, action, hc)
-            self.assertNotEqual(hc_list, None)
-        except AdcmEx as e:
-            self.assertEqual(e.code, 'SERVICE_NOT_FOUND')
-
-        try:
-            action = Action(name="run", hostcomponentmap=json.dumps("qwe"))
-            hc = [{"service_id": co.id, "component_id": 500, "host_id": h1.id}]
-            (hc_list, _) = cm.job.check_hostcomponentmap(cluster, action, hc)
-            self.assertNotEqual(hc_list, None)
-        except AdcmEx as e:
-            self.assertEqual(e.code, 'COMPONENT_NOT_FOUND')
-
-    def test_action_hc(self):   # pylint: disable=too-many-locals
-        setup = SetUp()
-        b1 = setup.cook_cluster_bundle('1.0')
-        cluster = setup.cook_cluster(b1, 'Test1')
-        b2 = setup.cook_provider_bundle('1.0')
-        provider = setup.cook_provider(b2, "DF01")
-
-        h1 = Host.objects.get(provider=provider, fqdn='server01.inter.net')
-        h2 = Host.objects.get(provider=provider, fqdn='server02.inter.net')
-        co = ClusterObject.objects.get(cluster=cluster, prototype__name='hadoop')
-        sc1 = ServiceComponent.objects.get(cluster=cluster, service=co, component__name='server')
-
-        cm.api.add_host_to_cluster(cluster, h1)
-        cm.api.add_host_to_cluster(cluster, h2)
-
-        try:
-            act_hc = [{'service': 'hadoop', 'component': 'server', 'action': 'delete'}]
-            action = Action(name="run", hostcomponentmap=json.dumps(act_hc))
-            hc = [{"service_id": co.id, "component_id": sc1.id, "host_id": h1.id}]
-            (hc_list, delta) = cm.job.check_hostcomponentmap(cluster, action, hc)
-            self.assertNotEqual(hc_list, None)
-        except AdcmEx as e:
-            self.assertEqual(e.code, 'WRONG_ACTION_HC')
-            self.assertEqual(e.msg[:32], 'no permission to "add" component')
-
-        act_hc = [{'service': 'hadoop', 'component': 'server', 'action': 'add'}]
-        action = Action(name="run", hostcomponentmap=json.dumps(act_hc))
-        hc = [
-            {"service_id": co.id, "component_id": sc1.id, "host_id": h1.id},
-            {"service_id": co.id, "component_id": sc1.id, "host_id": h2.id},
-        ]
-        (hc_list, delta) = cm.job.check_hostcomponentmap(cluster, action, hc)
-        self.assertNotEqual(hc_list, None)
-        self.assertEqual(delta['remove'], {})
-        group = '{}.{}'.format(co.prototype.name, sc1.component.name)
-        self.assertEqual(delta['add'][group]['server01.inter.net'], h1)
-        self.assertEqual(delta['add'][group]['server02.inter.net'], h2)
-
-        cm.api.save_hc(cluster, hc_list)
-        act_hc = [{'service': 'hadoop', 'component': 'server', 'action': 'remove'}]
-        action = Action(name="run", hostcomponentmap=json.dumps(act_hc))
-        hc = [
-            {"service_id": co.id, "component_id": sc1.id, "host_id": h2.id},
-        ]
-        (hc_list, delta) = cm.job.check_hostcomponentmap(cluster, action, hc)
-        self.assertNotEqual(hc_list, None)
-        self.assertEqual(delta['add'], {})
-        group = '{}.{}'.format(co.prototype.name, sc1.component.name)
-        self.assertEqual(delta['remove'][group]['server01.inter.net'], h1)
