@@ -16,7 +16,7 @@ from django.conf.urls import include
 from rest_framework_swagger.views import get_swagger_view
 from rest_framework.schemas import get_schema_view
 
-from api import views, stack_views, cluster_views, docs, job_views
+from api import views, stack_views, cluster_views, docs, job_views, config_views
 
 
 register_converter(views.NameConverter, 'name')
@@ -258,95 +258,95 @@ urlpatterns = [
     ),
     path(
         CLUSTER_CONFIG,
-        cluster_views.ClusterConfig.as_view(),
+        config_views.ClusterConfig.as_view(),
         {'service_id': 0},
         name='cluster-config'
     ),
     path(
         CLUSTER_CONFIG + 'history/',
-        cluster_views.ClusterConfigHistory.as_view(),
+        config_views.ClusterConfigHistory.as_view(),
         {'service_id': 0},
         name='cluster-config-history'
     ),
     path(
         CLUSTER_CONFIG + 'history/<int:version>/',
-        cluster_views.ClusterConfigVersion.as_view(),
+        config_views.ClusterConfigVersion.as_view(),
         {'service_id': 0},
         name='cluster-config-id'
     ),
     path(
         CLUSTER_CONFIG + 'previous/',
-        cluster_views.ClusterConfigVersion.as_view(),
+        config_views.ClusterConfigVersion.as_view(),
         {'service_id': 0, 'version': 'previous'},
         name='cluster-config-prev'
     ),
     path(
         CLUSTER_CONFIG + 'current/',
-        cluster_views.ClusterConfigVersion.as_view(),
+        config_views.ClusterConfigVersion.as_view(),
         {'service_id': 0, 'version': 'current'},
         name='cluster-config-curr'
     ),
     path(
         CLUSTER_CONFIG + 'history/<int:version>/restore/',
-        cluster_views.ClusterConfigRestore.as_view(),
+        config_views.ClusterConfigRestore.as_view(),
         {'service_id': 0},
         name='cluster-config-restore'
     ),
     path(
         SERVICE_CONFIG,
-        cluster_views.ClusterServiceConfig.as_view(),
+        config_views.ClusterServiceConfig.as_view(),
         name='cluster-service-config'
     ),
     path(
         SERVICE_CONFIG + 'previous/',
-        cluster_views.ClusterServiceConfigVersion.as_view(),
+        config_views.ClusterServiceConfigVersion.as_view(),
         {'version': 'previous'},
         name='cluster-service-config-prev'
     ),
     path(
         SERVICE_CONFIG + 'current/',
-        cluster_views.ClusterServiceConfigVersion.as_view(),
+        config_views.ClusterServiceConfigVersion.as_view(),
         {'version': 'current'},
         name='cluster-service-config-curr'
     ),
     path(
         SERVICE_CONFIG + 'history/<int:version>/',
-        cluster_views.ClusterServiceConfigVersion.as_view(),
+        config_views.ClusterServiceConfigVersion.as_view(),
         name='cluster-service-config-id'
     ),
     path(
         SERVICE_CONFIG + 'history/<int:version>/restore/',
-        cluster_views.ClusterConfigRestore.as_view(),
+        config_views.ClusterConfigRestore.as_view(),
         name='cluster-service-config-restore'
     ),
     path(
         SERVICE_CONFIG + 'history/',
-        cluster_views.ClusterServiceConfigHistory.as_view(),
+        config_views.ClusterServiceConfigHistory.as_view(),
         name='cluster-service-config-history'
     ),
 
     path('adcm/', views.AdcmList.as_view(), name='adcm'),
     path('adcm/<int:adcm_id>/', views.AdcmDetail.as_view(), name='adcm-details'),
-    path(ADCM_CONFIG, views.AdcmConfig.as_view(), name='adcm-config'),
+    path(ADCM_CONFIG, config_views.AdcmConfig.as_view(), name='adcm-config'),
     path(
         ADCM_CONFIG + 'history/',
-        views.AdcmConfigHistory.as_view(),
+        config_views.AdcmConfigHistory.as_view(),
         name='adcm-config-history'
     ),
     path(
         ADCM_CONFIG + 'history/<int:version>/',
-        views.AdcmConfigVersion.as_view(),
+        config_views.AdcmConfigVersion.as_view(),
         name='adcm-config-id'
     ),
     path(
         ADCM_CONFIG + 'previous/',
-        views.AdcmConfigVersion.as_view(),
+        config_views.AdcmConfigVersion.as_view(),
         {'version': 'previous'},
         name='adcm-config-prev'
     ),
     path(
         ADCM_CONFIG + 'current/',
-        views.AdcmConfigVersion.as_view(),
+        config_views.AdcmConfigVersion.as_view(),
         {'version': 'current'},
         name='adcm-config-curr'
     ),
@@ -388,32 +388,32 @@ urlpatterns = [
         name='do-provider-upgrade'
     ),
 
-    path(PROVIDER_CONFIG, views.ProviderConfig.as_view(), name='provider-config'),
+    path(PROVIDER_CONFIG, config_views.ProviderConfig.as_view(), name='provider-config'),
     path(
         PROVIDER_CONFIG + 'history/',
-        views.ProviderConfigHistory.as_view(),
+        config_views.ProviderConfigHistory.as_view(),
         name='provider-config-history'
     ),
     path(
         PROVIDER_CONFIG + 'history/<int:version>/',
-        views.ProviderConfigVersion.as_view(),
+        config_views.ProviderConfigVersion.as_view(),
         name='provider-config-id'
     ),
     path(
         PROVIDER_CONFIG + 'previous/',
-        views.ProviderConfigVersion.as_view(),
+        config_views.ProviderConfigVersion.as_view(),
         {'version': 'previous'},
         name='provider-config-prev'
     ),
     path(
         PROVIDER_CONFIG + 'current/',
-        views.ProviderConfigVersion.as_view(),
+        config_views.ProviderConfigVersion.as_view(),
         {'version': 'current'},
         name='provider-config-curr'
     ),
     path(
         PROVIDER_CONFIG + 'history/<int:version>/restore/',
-        views.ProviderConfigRestore.as_view(),
+        config_views.ProviderConfigRestore.as_view(),
         name='provider-config-restore'
     ),
 
@@ -431,30 +431,32 @@ urlpatterns = [
         views.HostTask.as_view(),
         name='host-action-run'
     ),
-    path(HOST_CONFIG, views.HostConfig.as_view(), name='host-config'),
+    path(HOST_CONFIG, config_views.HostConfig.as_view(), name='host-config'),
     path(
-        HOST_CONFIG + 'history/', views.HostConfigHistory.as_view(), name='host-config-history'
+        HOST_CONFIG + 'history/',
+        config_views.HostConfigHistory.as_view(),
+        name='host-config-history'
     ),
     path(
         HOST_CONFIG + 'history/<int:version>/',
-        views.HostConfigVersion.as_view(),
+        config_views.HostConfigVersion.as_view(),
         name='host-config-id'
     ),
     path(
         HOST_CONFIG + 'previous/',
-        views.HostConfigVersion.as_view(),
+        config_views.HostConfigVersion.as_view(),
         {'version': 'previous'},
         name='host-config-prev'
     ),
     path(
         HOST_CONFIG + 'current/',
-        views.HostConfigVersion.as_view(),
+        config_views.HostConfigVersion.as_view(),
         {'version': 'current'},
         name='host-config-curr'
     ),
     path(
         HOST_CONFIG + 'history/<int:version>/restore/',
-        views.HostConfigRestore.as_view(),
+        config_views.HostConfigRestore.as_view(),
         name='host-config-restore'
     ),
 

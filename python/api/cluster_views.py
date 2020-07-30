@@ -10,27 +10,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=arguments-differ
+
 from itertools import chain
 
 from rest_framework import status
 from rest_framework.response import Response
 
-import cm.job
+import api.cluster_serial
+import api.serializers
+import api.stack_serial
 import cm.api
-import cm.bundle
-import cm.status_api
+from api.api_views import DetailViewRO, DetailViewDelete, ActionFilter
+from api.api_views import ListView, PageView, PageViewAdd, InterfaceView
+from api.api_views import create, update, GenericAPIPermView
+from api.serializers import check_obj, filter_actions
 from cm.errors import AdcmApiEx, AdcmEx
 from cm.models import Cluster, Host, HostComponent, Prototype, Action, ServiceComponent
-from cm.models import ClusterObject, ConfigLog, TaskLog, Upgrade, ClusterBind
-from cm.logger import log   # pylint: disable=unused-import
-
-import api.serializers
-import api.cluster_serial
-import api.stack_serial
-from api.serializers import check_obj, filter_actions, get_config_version
-from api.api_views import create, update, GenericAPIPermView
-from api.api_views import ListView, PageView, PageViewAdd, InterfaceView
-from api.api_views import DetailViewRO, DetailViewDelete, ActionFilter
+from cm.models import ClusterObject, TaskLog, Upgrade, ClusterBind
 
 
 def get_obj_conf(cluster_id, service_id):
@@ -106,7 +103,7 @@ class ClusterHostList(PageView):
         'fqdn', 'state', 'provider__name', 'prototype__display_name', 'prototype__version_order'
     )
 
-    def get(self, request, cluster_id):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id):
         """
         List all hosts of a specified cluster
         """
@@ -136,7 +133,7 @@ class ClusterHostDetail(ListView):
         self.check_host(cluster, host)
         return host
 
-    def get(self, request, cluster_id, host_id):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id, host_id):
         """
         Show host of cluster
         """
@@ -162,7 +159,7 @@ class ClusterBundle(ListView):
     serializer_class = api.stack_serial.ServiceSerializer
     serializer_class_ui = api.stack_serial.BundleServiceUISerializer
 
-    def get(self, request, cluster_id):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id):
         """
         List all services of specified cluster of bundle
         """
@@ -181,7 +178,7 @@ class ClusterImport(ListView):
     serializer_class = api.stack_serial.ImportSerializer
     post_serializer = api.cluster_serial.PostImportSerializer
 
-    def get(self, request, cluster_id):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id):
         """
         List all imports avaliable for specified cluster
         """
@@ -189,7 +186,7 @@ class ClusterImport(ListView):
         res = cm.api.get_import(cluster)
         return Response(res)
 
-    def post(self, request, cluster_id):   # pylint: disable=arguments-differ
+    def post(self, request, cluster_id):
         """
         Update bind for cluster
         """
@@ -208,7 +205,7 @@ class ClusterServiceImport(ListView):
     serializer_class = api.stack_serial.ImportSerializer
     post_serializer = api.cluster_serial.PostImportSerializer
 
-    def get(self, request, cluster_id, service_id):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id, service_id):
         """
         List all imports avaliable for specified service in cluster
         """
@@ -246,7 +243,7 @@ class ClusterBindList(ListView):
         else:
             return api.cluster_serial.ClusterBindSerializer
 
-    def get(self, request, cluster_id):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id):
         """
         List all binds of specified cluster
         """
@@ -274,7 +271,7 @@ class ClusterServiceBind(ListView):
         else:
             return api.cluster_serial.ServiceBindSerializer
 
-    def get(self, request, cluster_id, service_id):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id, service_id):
         """
         List all binds of specified service in cluster
         """
@@ -310,7 +307,7 @@ class ClusterServiceBindDetail(DetailViewDelete):
             )
         return check_obj(ClusterBind, {'cluster': cluster, 'id': bind_id}, 'BIND_NOT_FOUND')
 
-    def get(self, request, cluster_id, bind_id, service_id=None):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id, bind_id, service_id=None):
         """
         Show specified bind of specified service in cluster
         """
@@ -318,7 +315,7 @@ class ClusterServiceBindDetail(DetailViewDelete):
         serializer = self.serializer_class(obj, context={'request': request})
         return Response(serializer.data)
 
-    def delete(self, request, cluster_id, bind_id, service_id=None):   # pylint: disable=arguments-differ
+    def delete(self, request, cluster_id, bind_id, service_id=None):
         """
         Unbind specified bind of specified service in cluster
         """
@@ -331,7 +328,7 @@ class ClusterUpgrade(PageView):
     queryset = Upgrade.objects.all()
     serializer_class = api.serializers.UpgradeLinkSerializer
 
-    def get(self, request, cluster_id):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id):
         """
         List all avaliable upgrades for specified cluster
         """
@@ -347,7 +344,7 @@ class ClusterUpgradeDetail(ListView):
     queryset = Upgrade.objects.all()
     serializer_class = api.serializers.UpgradeLinkSerializer
 
-    def get(self, request, cluster_id, upgrade_id):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id, upgrade_id):
         """
         List all avaliable upgrades for specified cluster
         """
@@ -379,7 +376,7 @@ class ClusterActionList(ListView):
     filterset_class = ActionFilter
     filterset_fields = ('name', 'button', 'button_is_null')
 
-    def get(self, request, cluster_id):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id):
         """
         List all actions of a specified cluster
         """
@@ -401,7 +398,7 @@ class ClusterHostActionList(ListView):
     filterset_class = ActionFilter
     filterset_fields = ('name', 'button', 'button_is_null')
 
-    def get(self, request, cluster_id, host_id):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id, host_id):
         """
         List all actions of a specified host in a specified cluster
         """
@@ -447,7 +444,7 @@ class ClusterServiceActionList(ListView):
     filterset_class = ActionFilter
     filterset_fields = ('name', 'button', 'button_is_null')
 
-    def get(self, request, cluster_id, service_id):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id, service_id):
         """
         List all actions of a specified service
         """
@@ -575,7 +572,7 @@ class ClusterServiceList(PageView):
     serializer_class_ui = api.cluster_serial.ClusterServiceUISerializer
     ordering_fields = ('state', 'prototype__display_name', 'prototype__version_order')
 
-    def get(self, request, cluster_id):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id):
         """
         List all services of a specified cluster
         """
@@ -599,7 +596,7 @@ class ClusterServiceDetail(DetailViewRO):
     serializer_class = api.cluster_serial.ClusterServiceDetailSerializer
     serializer_class_ui = api.cluster_serial.ClusterServiceUISerializer
 
-    def get(self, request, cluster_id, service_id):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id, service_id):
         """
         Show service in a specified cluster
         """
@@ -632,7 +629,7 @@ class ServiceComponentList(PageView):
     serializer_class_ui = api.cluster_serial.ServiceComponentDetailSerializer
     ordering_fields = ('component__display_name',)
 
-    def get(self, request, cluster_id, service_id):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id, service_id):
         """
         Show componets of service in a specified cluster
         """
@@ -741,116 +738,3 @@ class HostComponentDetail(GenericAPIPermView):
         obj = self.get_obj(cluster_id, hs_id)
         serializer = self.serializer_class(obj, context={'request': request})
         return Response(serializer.data)
-
-
-class ClusterServiceConfig(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ClusterServiceConfigSerializer
-
-    def get(self, request, cluster_id, service_id):   # pylint: disable=arguments-differ
-        """
-        Show config page for a specified service and cluster
-        """
-        check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        if service_id:
-            check_obj(ClusterObject, service_id, 'SERVICE_NOT_FOUND')
-        obj = ClusterObject()
-        serializer = self.serializer_class(
-            obj, context={'request': request, 'cluster_id': cluster_id, 'service_id': service_id}
-        )
-        return Response(serializer.data)
-
-
-class ClusterConfig(ClusterServiceConfig):
-    """
-    get:
-    Show config page for a specified cluster
-    """
-    serializer_class = api.cluster_serial.ClusterConfigSerializer
-
-
-class ClusterServiceConfigVersion(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ObjectConfig
-
-    def get(self, request, cluster_id, service_id, version):   # pylint: disable=arguments-differ
-        """
-        Show config for a specified version, service and cluster.
-
-        """
-        obj = get_obj_conf(cluster_id, service_id)
-        cl = get_config_version(obj.config, version)
-        if self.for_ui(request):
-            try:
-                cl.config = cm.adcm_config.ui_config(obj, cl)
-            except AdcmEx as e:
-                raise AdcmApiEx(e.code, e.msg, e.http_code)
-        serializer = self.serializer_class(cl, context={'request': request})
-        return Response(serializer.data)
-
-
-class ClusterConfigVersion(ClusterServiceConfigVersion):
-    """
-    get:
-    Show config for a specified version and cluster.
-    """
-
-
-class ClusterConfigRestore(GenericAPIPermView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ObjectConfigRestore
-
-    def patch(self, request, cluster_id, service_id, version):
-        """
-        Restore config of specified version in a specified service and cluster.
-        """
-        obj = get_obj_conf(cluster_id, service_id)
-        try:
-            cl = self.get_queryset().get(obj_ref=obj.config, id=version)
-        except ConfigLog.DoesNotExist:
-            raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist")
-        serializer = self.serializer_class(cl, data=request.data, context={'request': request})
-        return update(serializer)
-
-
-class ClusterConfigHistory(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ClusterConfigHistorySerializer
-    update_serializer = api.cluster_serial.ObjectConfigUpdate
-
-    def get_obj(self, cluster_id, service_id):
-        obj = get_obj_conf(cluster_id, service_id)
-        return (obj, self.get_queryset().get(obj_ref=obj.config, id=obj.config.current))
-
-    def get(self, request, cluster_id, service_id):   # pylint: disable=arguments-differ
-        """
-        Show history of config in a specified service and cluster
-        """
-        obj = get_obj_conf(cluster_id, service_id)
-        cl = self.get_queryset().filter(obj_ref=obj.config).order_by('-id')
-        serializer = self.serializer_class(cl, many=True, context={'request': request})
-        return Response(serializer.data)
-
-    def post(self, request, cluster_id, service_id):
-        """
-        Update config in a specified service and cluster. Config parameter is json
-        """
-        obj, cl = self.get_obj(cluster_id, service_id)
-        serializer = self.update_serializer(cl, data=request.data, context={'request': request})
-        return create(serializer, ui=bool(self.for_ui(request)), obj=obj)
-
-    def patch(self, request, cluster_id, service_id):
-        """
-        Update config in a specified service and cluster. Config parameter is json
-        """
-        obj, cl = self.get_obj(cluster_id, service_id)
-        serializer = self.update_serializer(cl, data=request.data, context={'request': request})
-        return create(serializer, ui=bool(self.for_ui(request)), obj=obj)
-
-
-class ClusterServiceConfigHistory(ClusterConfigHistory):
-    serializer_class = api.cluster_serial.ClusterServiceConfigHistorySerializer
-    """
-    get:
-    Show history of config in a specified service and cluster
-    """
