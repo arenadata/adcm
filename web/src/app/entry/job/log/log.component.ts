@@ -31,7 +31,7 @@ export interface ITimeInfo {
     <app-job-info [TimeInfo]="timeInfo" [status]="status"></app-job-info>
     <div class="wrap" *ngIf="currentLog">
       <ng-container *ngIf="currentLog.type !== 'check'; else check">
-        <app-log-text [log]="currentLog" [status]="status" (onrefresh)="refresh()"></app-log-text>
+        <app-log-text [content]="currentLog.content" [status]="status" (onrefresh)="refresh()"></app-log-text>
       </ng-container>
       <ng-template #check>
         <mat-accordion class="accordion">
@@ -62,7 +62,7 @@ export interface ITimeInfo {
   ],
 })
 export class LogComponent extends SocketListenerDirective implements OnInit, AfterViewInit {
-  currentLog: Partial<LogFile> = {};
+  currentLog = {} as LogFile;
   timeInfo: ITimeInfo;
   status: JobStatus;
 
@@ -107,7 +107,7 @@ export class LogComponent extends SocketListenerDirective implements OnInit, Aft
   }
 
   refresh() {
-    if (!this.currentLog.id) return; // console.error('No `id` for current LogFile');
+    if (!this.currentLog.id) return;
     this.service
       .getLog(this.currentLog.id)
       .pipe(this.takeUntil())

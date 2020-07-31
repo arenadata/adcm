@@ -9,10 +9,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit, Input, ViewChild, ElementRef, DoCheck, Output, EventEmitter } from '@angular/core';
-import { LogFile, JobStatus } from '@app/core/types/task-job';
-import { Subscription, interval } from 'rxjs';
+import { Component, DoCheck, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { JobStatus } from '@app/core/types/task-job';
 import { BaseDirective } from '@app/shared';
+import { interval, Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-log-text',
@@ -27,7 +27,7 @@ import { BaseDirective } from '@app/shared';
         </button>
       </ng-container>
     </div>
-    <textarea appScroll #tea (read)="read($event)" [readonly]="true">{{ log.content || 'Nothing to display...' }}</textarea>
+    <textarea appScroll #tea (read)="read($event)" [readonly]="true">{{ content || 'Nothing to display...' }}</textarea>
   `,
   styles: [
     `
@@ -55,7 +55,7 @@ export class TextComponent extends BaseDirective implements OnInit, DoCheck {
   isRun = false;
   isWatch = false;
   watch: Subscription;
-  @Input() log: LogFile;
+  @Input() content: string;
   @Input() status: JobStatus;
   @Output() onrefresh = new EventEmitter();
 

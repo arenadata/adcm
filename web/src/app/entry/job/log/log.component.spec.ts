@@ -11,15 +11,17 @@
 // limitations under the License.
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatIconModule } from '@angular/material/icon';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { ClusterService } from '@app/core';
 import { EventMessage, getMessage, SocketState } from '@app/core/store';
+import { LogFile } from '@app/core/types';
 import { MemoizedSelector } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { of } from 'rxjs/internal/observable/of';
 
 import { JobInfoComponent } from '../job-info.component';
 import { ITimeInfo, LogComponent } from './log.component';
+import { TextComponent } from './text.component';
 
 const JobMock = { start_date: '', finish_date: '', status: '' };
 
@@ -32,18 +34,19 @@ describe('Job Module :: LogComponent', () => {
   beforeEach(async(() => {
     TestBed.configureTestingModule({
       imports: [MatIconModule],
-      declarations: [LogComponent, JobInfoComponent],
+      declarations: [LogComponent, JobInfoComponent, TextComponent],
       providers: [
         {
           provide: ClusterService,
           useValue: {
             getOperationTimeData: (): ITimeInfo => ({ start: '', end: '', time: '' }),
-            Current: JobMock
-          }
+            Current: JobMock,
+            getLog: () => of({ id: 1, name: 'log_test', type: 'stdout', content: 'First message' }),
+          },
         },
-        { provide: ActivatedRoute, useValue: { params: of({ log: 1 }) } },
-        provideMockStore()
-      ]
+        { provide: ActivatedRoute, useValue: { params: of({ log: 1 }), paramMap: of(convertToParamMap({ log: 1 })) } },
+        provideMockStore(),
+      ],
     }).compileComponents();
   }));
 
@@ -60,11 +63,13 @@ describe('Job Module :: LogComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  /**
-   * id fof log should be required
-   *
-   *
-   *
-   *
-   */
+  it('content should updating', () => {
+    component.currentLog = { id: 1, name: 'log_test', type: 'stdout', content: 'First message' } as LogFile;
+    fixture.detectChanges();
+    const text = fixture.nativeElement.querySelector('div.wrap app-log-text textarea');
+    expect(text.innerHTML).toBe('First message');
+    component.currentLog.content = 'Second message';
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('div.wrap app-log-text textarea').innerHTML).toBe('Second message');
+  });
 });
