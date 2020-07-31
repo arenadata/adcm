@@ -29,9 +29,9 @@ from django.utils import timezone
 
 import cm.config as config
 from cm import api, issue, inventory, adcm_config
-from cm.adcm_config import obj_ref, process_file_type, process_config
+from cm.adcm_config import obj_ref, process_file_type
 from cm.errors import raise_AdcmEx as err
-from cm.inventory import get_obj_config
+from cm.inventory import get_obj_config, process_config_and_attr
 from cm.logger import log
 from cm.models import (
     Cluster, Action, SubAction, TaskLog, JobLog, CheckLog, Host, ADCM,
@@ -113,7 +113,7 @@ def prepare_task(action, obj, selector, conf, attr, spec, old_hc, delta, host_ma
         _job = create_job(action, None, selector, event, task.id)
 
     if conf:
-        new_conf = process_config(task, spec, conf)
+        new_conf = process_config_and_attr(task, conf, attr, spec)
         process_file_type(task, spec, conf)
         task.config = json.dumps(new_conf)
         task.save()
