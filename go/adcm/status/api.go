@@ -101,6 +101,25 @@ func (api *AdcmApi) checkAuth(token string) bool {
 	return true
 }
 
+func (api *AdcmApi) checkSessionAuth(sessionId string) bool {
+	client := api.getClient()
+	req, _ := http.NewRequest("GET", api.Url+"/stack/", nil)
+	req.AddCookie(&http.Cookie{Name: "sessionid", Value: sessionId})
+	//logg.D.f("checkSessionAuth: client %+v, request %+v", client, req)
+	resp, err := client.Do(req)
+	if err != nil {
+		logg.E.f("checkSessionAuth: http error: %v", err)
+		return false
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		logg.W.f("check ADCM sessionId %s fail: %v", sessionId, resp.Status)
+		return false
+	}
+	logg.D.l("checkSessionAuth: check ADCM sessionId ok")
+	return true
+}
+
 func (api *AdcmApi) loadServiceMap() bool {
 	token, ok := api.getToken()
 	if !ok {
