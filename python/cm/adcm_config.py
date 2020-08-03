@@ -378,13 +378,13 @@ def variant_service_to_add(obj, args=None):
     return out
 
 
-def variant_host_in_cluster(obj, args):
+def variant_host_in_cluster(obj, args=None):
     out = []
     cluster = get_cluster(obj)
     if not cluster:
         return []
 
-    if 'service' in args:
+    if args and 'service' in args:
         try:
             service = ClusterObject.objects.get(cluster=cluster, prototype__name=args['service'])
         except ClusterObject.DoesNotExist:
