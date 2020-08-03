@@ -718,7 +718,7 @@ class ObjectConfigUpdate(ObjectConfig):
             if hasattr(instance.obj_ref, 'adcm'):
                 logrotate.run()
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds)
         return cl
 
 

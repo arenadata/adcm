@@ -244,6 +244,20 @@ class TestConfigUpgrade(TestCase):
         new_config = get_config(cluster)
         self.assertEqual(new_config, {'host': 'arenadata.com', 'advance': None})
 
+    def test_add_active_group(self):
+        (proto1, proto2) = self.cook_proto()
+        self.add_conf(prototype=proto1, name='host', type='string', default='arenadata.com')
+        self.add_conf(prototype=proto2, name='host', type='string', default='arenadata.com')
+        limits = {"activatable": True, "active": True}
+        self.add_conf(prototype=proto2, name='advance', type='group', limits=json.dumps(limits))
+        self.add_conf(prototype=proto2, name='advance', subname='port', type='integer', default=42)
+        cluster = cm.api.add_cluster(proto1, 'Cluster1')
+        old_conf = get_config(cluster)
+        self.assertEqual(old_conf, {'host': 'arenadata.com'})
+        cm.adcm_config.switch_config(cluster, proto2, proto1)
+        new_config = get_config(cluster)
+        self.assertEqual(new_config, {'host': 'arenadata.com', 'advance': {'port': 42}})
+
 
 class TestUpgrade(TestCase):
 
