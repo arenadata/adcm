@@ -20,11 +20,14 @@ from cm.models import Cluster, ClusterObject, ServiceComponent, HostComponent, H
 from cm.models import ClusterBind, PrototypeExport, HostProvider, Prototype, PrototypeImport
 
 
-def process_config_and_attr(obj, conf, attr=None):
-    spec, _, _, _ = get_prototype_config(obj.prototype)
+def process_config_and_attr(obj, conf, attr=None, spec=None):
+    if not spec:
+        spec, _, _, _ = get_prototype_config(obj.prototype)
     new_conf = process_config(obj, spec, conf)
     if attr:
-        for key, val in json.loads(attr).items():
+        if isinstance(attr, str):
+            attr = json.loads(attr)
+        for key, val in attr.items():
             if 'active' in val and not val['active']:
                 new_conf[key] = None
     return new_conf
