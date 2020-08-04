@@ -497,7 +497,11 @@ class HCComponentSerializer(ServiceComponentDetailSerializer):
 
         def process_requires(req_list):
             for c in json.loads(req_list):
-                comp = Component.objects.get(name=c['component'], prototype__name=c['service'])
+                comp = Component.objects.get(
+                    name=c['component'],
+                    prototype__name=c['service'],
+                    prototype__bundle_id=obj.component.prototype.bundle_id
+                )
                 if comp == obj.component:
                     return
                 if comp.prototype.name not in comp_list:
