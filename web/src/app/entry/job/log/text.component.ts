@@ -16,19 +16,6 @@ import { interval, Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-log-text',
-  template: `
-    <div class="tools">
-      <ng-container *ngIf="isScroll">
-        <button color="accent" mat-icon-button (click)="down()" matTooltip="To the bottom" [disabled]="(isRun && isWatch) || !isScroll">
-          <mat-icon>arrow_downward</mat-icon>
-        </button>
-        <button color="accent" mat-icon-button (click)="top()" matTooltip="To the top" [disabled]="!isScroll">
-          <mat-icon>arrow_upward</mat-icon>
-        </button>
-      </ng-container>
-    </div>
-    <textarea appScroll #tea (read)="read($event)" [readonly]="true">{{ content || 'Nothing to display...' }}</textarea>
-  `,
   styles: [
     `
       :host {
@@ -49,6 +36,19 @@ import { interval, Subscription } from 'rxjs';
       }
     `,
   ],
+  template: `
+    <div class="tools">
+      <ng-container *ngIf="isScroll">
+        <button color="accent" mat-icon-button (click)="down()" matTooltip="To the bottom" [disabled]="(isRun && isWatch) || !isScroll">
+          <mat-icon>arrow_downward</mat-icon>
+        </button>
+        <button color="accent" mat-icon-button (click)="top()" matTooltip="To the top" [disabled]="!isScroll">
+          <mat-icon>arrow_upward</mat-icon>
+        </button>
+      </ng-container>
+    </div>
+    <textarea appScroll #tea (read)="read($event)" [readonly]="true">{{ content || 'Nothing to display...' }}</textarea>
+  `,
 })
 export class TextComponent extends BaseDirective implements OnInit, DoCheck {
   isScroll = false;
@@ -57,7 +57,7 @@ export class TextComponent extends BaseDirective implements OnInit, DoCheck {
   watch: Subscription;
   @Input() content: string;
   @Input() status: JobStatus;
-  @Output() onrefresh = new EventEmitter();
+  @Output() refresh = new EventEmitter();
 
   @ViewChild('tea', { read: ElementRef }) textarea: ElementRef;
 
@@ -109,10 +109,6 @@ export class TextComponent extends BaseDirective implements OnInit, DoCheck {
     this.isWatch = true;
     this.watch = interval(5000)
       .pipe(this.takeUntil())
-      .subscribe({ next: () => this.refresh() });
-  }
-
-  refresh() {
-    this.onrefresh.emit();
+      .subscribe(_ => this.refresh.emit());
   }
 }

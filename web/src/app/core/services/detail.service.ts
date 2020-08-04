@@ -174,19 +174,14 @@ export class ClusterService {
    */
   getOperationTimeData(job: Job) {
     const { start_date, finish_date, status } = job;
-    if (start_date && finish_date) {
-      const sdn = Date.parse(start_date),
-        fdn = Date.parse(finish_date),
-        ttm = fdn - sdn;
-
-      const sec = Math.floor(ttm / 1000);
-      const min = Math.floor(sec / 60);
-      const time = status !== 'running' ? `${min}m. ${sec - min * 60}s.` : '';
-
-      const a = new Date(sdn);
-      const b = new Date(fdn);
-
-      return { start: a.toLocaleTimeString(), end: status !== 'running' ? b.toLocaleTimeString() : '', time };
-    }
+    const sdn = Date.parse(start_date),
+      fdn = Date.parse(finish_date),
+      ttm = fdn - sdn;
+    const sec = Math.floor(ttm / 1000);
+    const min = Math.floor(sec / 60);
+    const time = status !== 'running' ? `${min}m. ${sec - min * 60}s.` : '';
+    const a = new Date(sdn);
+    const b = new Date(fdn);
+    return { start: a.toLocaleTimeString(), end: status !== 'running' ? b.toLocaleTimeString() : '', time };
   }
 }

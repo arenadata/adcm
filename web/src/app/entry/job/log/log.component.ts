@@ -27,19 +27,6 @@ export interface ITimeInfo {
 
 @Component({
   selector: 'app-job-log',
-  template: `
-    <app-job-info [TimeInfo]="timeInfo" [status]="status"></app-job-info>
-    <div class="wrap" *ngIf="currentLog">
-      <ng-container *ngIf="currentLog.type !== 'check'; else check">
-        <app-log-text [content]="currentLog.content" [status]="status" (onrefresh)="refresh()"></app-log-text>
-      </ng-container>
-      <ng-template #check>
-        <mat-accordion class="accordion">
-          <app-log-check [log]="currentLog"></app-log-check>
-        </mat-accordion>
-      </ng-template>
-    </div>
-  `,
   styles: [
     `
       :host {
@@ -60,6 +47,15 @@ export interface ITimeInfo {
       }
     `,
   ],
+  template: `
+    <app-job-info [timeInfo]="timeInfo" [status]="status"></app-job-info>
+    <div class="wrap">
+      <app-log-text *ngIf="!isCheck" [content]="currentLog.content" [status]="status" (refresh)="refresh()"></app-log-text>
+      <mat-accordion *ngIf="isCheck" class="accordion">
+        <app-log-check [content]="currentLog.content"></app-log-check>
+      </mat-accordion>
+    </div>
+  `,
 })
 export class LogComponent extends SocketListenerDirective implements OnInit, AfterViewInit {
   currentLog = {} as LogFile;
@@ -74,6 +70,10 @@ export class LogComponent extends SocketListenerDirective implements OnInit, Aft
 
   get job(): Job {
     return this.service.Current as Job;
+  }
+
+  get isCheck(): boolean {
+    return this.currentLog.type === 'check';
   }
 
   ngOnInit() {
