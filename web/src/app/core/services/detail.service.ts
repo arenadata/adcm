@@ -107,8 +107,7 @@ export class ClusterService {
       );
   }
 
-  getLog(p: number | string): Observable<LogFile> {
-    const url = typeof p === 'number' ? (this.Current as Job).log_files.find((a) => a.id === p).url : p;
+  getLog(url: string): Observable<LogFile> {
     return this.api.get<LogFile>(url);
   }
 
@@ -176,10 +175,10 @@ export class ClusterService {
     const { start_date, finish_date, status } = job;
     const sdn = Date.parse(start_date),
       fdn = Date.parse(finish_date),
-      ttm = fdn - sdn;
-    const sec = Math.floor(ttm / 1000);
-    const min = Math.floor(sec / 60);
-    const time = status !== 'running' ? `${min}m. ${sec - min * 60}s.` : '';
+      ttm = fdn - sdn,
+      sec = Math.floor(ttm / 1000),
+      min = Math.floor(sec / 60),
+      time = status !== 'running' ? `${min}m. ${sec - min * 60}s.` : '';
     const a = new Date(sdn);
     const b = new Date(fdn);
     return { start: a.toLocaleTimeString(), end: status !== 'running' ? b.toLocaleTimeString() : '', time };
