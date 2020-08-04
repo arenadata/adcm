@@ -218,7 +218,7 @@ def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-local
         return False
 
     new_conf = {}
-    unactive_groups = {}
+    inactive_groups = {}
     for key in new_spec:
         if new_spec[key].type == 'group':
             limits = {}
@@ -226,7 +226,7 @@ def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-local
                 limits = json.loads(new_spec[key].limits)
             if 'activatable' in limits:
                 if 'active' in limits and not limits['active']:
-                    unactive_groups[key.rstrip('/')] = True
+                    inactive_groups[key.rstrip('/')] = True
             continue
         if key in old_spec:
             if is_new_default(key):
@@ -246,9 +246,9 @@ def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-local
                 unflat_conf[k1] = {}
             unflat_conf[k1][k2] = new_conf[key]
 
-    # skip unactive groups in new prototype config
+    # skip inactive groups in new prototype config
     for key in unflat_conf:
-        if key in unactive_groups:
+        if key in inactive_groups:
             unflat_conf[key] = None
 
     save_obj_config(obj.config, unflat_conf, 'upgrade', cl.attr)
@@ -337,7 +337,7 @@ def process_config(obj, spec, old_conf):
         if 'type' in spec[key]:
             if spec[key]['type'] == 'file' and conf[key] is not None:
                 conf[key] = cook_file_type_name(obj, key, '')
-        else:
+        elif conf[key]:
             for subkey in conf[key]:
                 if spec[key][subkey]['type'] == 'file' and conf[key][subkey] is not None:
                     conf[key][subkey] = cook_file_type_name(obj, key, subkey)
