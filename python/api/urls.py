@@ -38,6 +38,7 @@ SERVICE_CONFIG = CLUSTER + SERVICE + 'config/'
 urlpatterns = [
     path('info/', views.ADCMInfo.as_view(), name='adcm-info'),
     path('token/', views.GetAuthToken.as_view(), name='token'),
+    path('logout/', views.LogOut.as_view(), name='logout'),
 
     path('user/', views.UserList.as_view(), name='user-list'),
     path('user/<name:username>/', views.UserDetail.as_view(), name='user-details'),

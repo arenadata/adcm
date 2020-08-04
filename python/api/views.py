@@ -13,10 +13,10 @@
 # pylint: disable=duplicate-except,attribute-defined-outside-init,too-many-lines
 
 import rest_framework
+import django.contrib.auth
 from django.db import transaction
 from django.utils import timezone
 from django.contrib.auth.models import User, Group
-from django.contrib.auth import login as django_login
 from django_filters import rest_framework as drf_filters
 
 from rest_framework import routers, status
@@ -74,6 +74,7 @@ class APIRoot(routers.APIRootView):
         'stats': 'stats',
         'task': 'task',
         'token': 'token',
+        'logout': 'logout',
         'user': 'user-list',
         'group': 'group-list',
         'role': 'role-list',
@@ -110,8 +111,21 @@ class GetAuthToken(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
         token, _created = Token.objects.get_or_create(user=user)
-        django_login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+        django.contrib.auth.login(
+            request, user, backend='django.contrib.auth.backends.ModelBackend'
+        )
         return Response({'token': token.key})
+
+
+class LogOut(GenericAPIView):
+    serializer_class = api.serializers.LogOutSerializer
+
+    def post(self, request, *args, **kwargs):
+        """
+        Logout user from Django session
+        """
+        django.contrib.auth.logout(request)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ADCMInfo(GenericAPIView):
