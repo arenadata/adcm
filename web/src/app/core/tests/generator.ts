@@ -10,14 +10,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export interface InnerIssue {
-  id: number;
-  name: string;
-  issue: Issue;
-}
+/**
+ * Generator data for tests
+ *
+ * @export
+ * @class Generator
+ */
+export class Generator {
 
-export interface Issue {
-  [key: string]: false | [InnerIssue];
 }
-
-export const isIssue = (issue: Issue): boolean => !!(issue && Object.keys(issue).length);

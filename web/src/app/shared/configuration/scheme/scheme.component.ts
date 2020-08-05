@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { FormArray, FormGroup } from '@angular/forms';
 import { FieldDirective } from '@app/shared/form-elements/field.directive';
 
@@ -17,10 +17,10 @@ import { IYContainer, IYField, YspecService } from '../yspec/yspec.service';
 
 @Component({
   selector: 'app-scheme',
-  template: '<app-root-scheme *ngIf="show" #root [form]="itemFormGroup" [isReadOnly]="isReadOnly" [options]="rules" [value]="defaultValue"></app-root-scheme>'
+  template: '<app-root-scheme *ngIf="show" #root [form]="currentFormGroup" [isReadOnly]="isReadOnly" [options]="rules" [value]="defaultValue"></app-root-scheme>',
 })
-export class SchemeComponent extends FieldDirective implements OnInit {
-  itemFormGroup: FormGroup | FormArray;
+export class SchemeComponent extends FieldDirective implements OnInit, OnChanges {
+  currentFormGroup: FormGroup | FormArray;
   rules: IYField | IYContainer;
   defaultValue: any;
   isReadOnly = false;
@@ -30,33 +30,37 @@ export class SchemeComponent extends FieldDirective implements OnInit {
     super();
   }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes.form.firstChange) {
+      this.field.limits.rules = this.rules;
+      this.defaultValue = this.field.value;
+      this.currentFormGroup = this.resetFormGroup();
+    }
+  }
+
   ngOnInit() {
     this.isReadOnly = this.field.read_only;
     this.yspec.Root = this.field.limits.yspec;
     this.rules = this.yspec.build();
     this.field.limits.rules = this.rules;
 
-    this.itemFormGroup = this.field.key
-      .split('/')
-      .reverse()
-      .reduce((p: any, c: string) => p.get(c), this.form) as FormGroup;
-
     this.defaultValue = this.field.value || this.field.default;
-    this.itemFormGroup = this.resetFormGroup(this.itemFormGroup.parent as FormGroup, this.rules.type === 'list');
+    this.currentFormGroup = this.resetFormGroup();
     this.rules.name = '';
   }
 
-  resetFormGroup(parent: FormGroup, isList: boolean) {
-    const form = isList ? new FormArray([]) : new FormGroup({});
-    parent.removeControl(this.field.name);
-    parent.addControl(this.field.name, form);
+  resetFormGroup() {
+    const form = this.currentFormGroup ? this.currentFormGroup : this.rules.type === 'list' ? new FormArray([]) : new FormGroup({});
+    this.form.removeControl(this.field.name);
+    this.form.addControl(this.field.name, form);
     return form;
   }
 
+  /** this is using for restore default value */
   reload() {
     this.show = false;
     this.defaultValue = this.field.default;
-    this.itemFormGroup = this.resetFormGroup(this.itemFormGroup.parent as FormGroup, this.rules.type === 'list');
-    setTimeout(_ => this.show = true, 1);   
+    this.currentFormGroup = this.resetFormGroup();
+    setTimeout((_) => (this.show = true), 1);
   }
 }

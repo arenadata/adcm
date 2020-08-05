@@ -17,8 +17,8 @@ import { ClusterService, StackInfo, StackService } from '@app/core';
 import { ApiService } from '@app/core/api';
 import { Host, Prototype, ServicePrototype, StackBase, TypeName } from '@app/core/types';
 import { environment } from '@env/environment';
-import { Observable, of } from 'rxjs';
-import { concatAll, filter, map, switchMap } from 'rxjs/operators';
+import { Observable, of, throwError, forkJoin } from 'rxjs';
+import { concatAll, filter, map, switchMap, catchError } from 'rxjs/operators';
 
 import { DialogComponent } from '../components/dialog.component';
 import { GenName } from './naming';
@@ -61,7 +61,7 @@ const MODELS: { [key: string]: FormModel } = {
   },
   host2cluster: {
     name: 'host2cluster',
-    title: 'free host',
+    title: 'available hosts',
   },
 };
 
@@ -69,7 +69,14 @@ const MODELS: { [key: string]: FormModel } = {
   providedIn: 'root',
 })
 export class AddService {
-  currentPrototype: StackBase;
+  private _currentPrototype: StackBase;
+  set currentPrototype(a: StackBase) {
+    this._currentPrototype = a;
+  }
+  get currentPrototype(): StackBase {
+    return this._currentPrototype;
+  }
+  
   constructor(private api: ApiService, private stack: StackService, private cluster: ClusterService, public dialog: MatDialog) {}
 
   model(name: string) {
@@ -87,7 +94,6 @@ export class AddService {
       .subscribe(() => {
         const field = form.get('name');
         if (!field.value) field.setValue(GenName.do());
-        console.log('add service', this.model);
       });
   }
 
@@ -127,17 +133,21 @@ export class AddService {
     return b$.pipe(concatAll());
   }
 
-  addHostInCluster(id: number) {
-    return this.cluster.addHost(id);
+  addHostInCluster(ids: number[]) {
+    return forkJoin([...ids.map(id => this.cluster.addHost(id))]);
   }
 
   addService(data: { prototype_id: number }[]) {
     return this.cluster.addServices(data);
   }
 
-  getList<T>(type: TypeName, param: Params = {}): Observable<T[]> {
+  getListResults<T>(type: TypeName, param: Params = {}) {
     const paramMap = convertToParamMap(param);
-    return this.api.root.pipe(switchMap((root) => this.api.getList<T>(root[type], paramMap).pipe(map((list) => list.results))));
+    return this.api.root.pipe(switchMap((root) => this.api.getList<T>(root[type], paramMap)));
+  }
+
+  getList<T>(type: TypeName, param: Params = {}): Observable<T[]> {    
+    return this.getListResults<T>(type, param).pipe(map((list) => list.results));
   }
 
   getPrototype(name: StackInfo, param: { [key: string]: string | number }): Observable<Prototype[]> {
@@ -157,20 +167,7 @@ export class AddService {
     );
   }
 
-  // getFreeHosts(p: Params) {
-  //   const param = convertToParamMap(p);
-  //   return this.api
-  //     .getList<Host>('host', param)
-  //     .pipe(map(a => a.map(b => ({ ...b, name: b.fqdn }))));
-  // }
-
   upload(data: FormData[]) {
-    return this.stack.upload(data);
-  }
-
-  setBundle(id: number, proto: StackBase[]) {
-    if (id && proto.length) {
-      this.currentPrototype = proto.find((a) => a.id === id);
-    }
+    return this.stack.upload(data).pipe(catchError((e) => throwError(e)));
   }
 }

@@ -9,15 +9,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+import { animate, state, style, transition, trigger } from '@angular/animations';
 
-export interface InnerIssue {
-  id: number;
-  name: string;
-  issue: Issue;
-}
-
-export interface Issue {
-  [key: string]: false | [InnerIssue];
-}
-
-export const isIssue = (issue: Issue): boolean => !!(issue && Object.keys(issue).length);
+export const openClose = trigger('openClose', [
+  state('true', style({ height: '*', opacity: 1 })),
+  state('false', style({ height: '0px', opacity: 0 })),
+  transition('true <=> false', [animate('0.5s')]),
+]);

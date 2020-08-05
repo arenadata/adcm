@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit, ViewChild, Output, EventEmitter } from '@angular/core';
 import { EventMessage, SocketState } from '@app/core/store';
 import { SocketListenerDirective } from '@app/shared/directives';
 import { Store } from '@ngrx/store';
@@ -49,6 +49,9 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
     this.config$ = this.getConfig();
   }
 
+  @Output()
+  event = new EventEmitter<{ name: string; data?: any }>();
+
   get cUrl() {
     return `${this.url}current/`;
   }
@@ -57,7 +60,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
     return `${this.url}history/`;
   }
 
-  constructor(private service: MainService, private cd: ChangeDetectorRef, socket: Store<SocketState>) {
+  constructor(private service: MainService, public cd: ChangeDetectorRef, socket: Store<SocketState>) {
     super(socket);
   }
 
@@ -122,6 +125,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
           this.saveFlag = false;
           this.rawConfig = c;
           this.cd.detectChanges();
+          this.event.emit({name: 'send', data: this.fields});
         })
       );
     } else {

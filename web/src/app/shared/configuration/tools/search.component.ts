@@ -18,7 +18,7 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
   selector: 'app-search',
   template: `
     <mat-form-field class="seach-field">
-      <input matInput type="text" placeholder="Search field" [formControl]="search" />
+      <input matInput type="text" placeholder="Search field" [formControl]="search" id="config_search_input" />
       <button mat-button matSuffix mat-icon-button aria-label="Search"><mat-icon>search</mat-icon></button>
       <button mat-button matSuffix mat-icon-button aria-label="Clear" (click)="search.setValue('')">
         <mat-icon>close</mat-icon>

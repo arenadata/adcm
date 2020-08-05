@@ -193,7 +193,7 @@ def get_prototype_config(proto, action=None):
     return (spec, flat_spec, conf, attr)
 
 
-def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-locals
+def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-locals,too-many-branches
     if not obj.config:
         spec, _, conf, attr = get_prototype_config(new_proto)
         obj_conf = init_object_config(spec, conf, attr)
@@ -218,8 +218,15 @@ def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-local
         return False
 
     new_conf = {}
+    inactive_groups = {}
     for key in new_spec:
         if new_spec[key].type == 'group':
+            limits = {}
+            if new_spec[key].limits:
+                limits = json.loads(new_spec[key].limits)
+            if 'activatable' in limits:
+                if 'active' in limits and not limits['active']:
+                    inactive_groups[key.rstrip('/')] = True
             continue
         if key in old_spec:
             if is_new_default(key):
@@ -238,6 +245,11 @@ def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-local
             if k1 not in unflat_conf:
                 unflat_conf[k1] = {}
             unflat_conf[k1][k2] = new_conf[key]
+
+    # skip inactive groups in new prototype config
+    for key in unflat_conf:
+        if key in inactive_groups:
+            unflat_conf[key] = None
 
     save_obj_config(obj.config, unflat_conf, 'upgrade', cl.attr)
     process_file_type(obj, new_unflat_spec, unflat_conf)
@@ -310,7 +322,7 @@ def process_file_type(obj, spec, conf):
         if 'type' in spec[key]:
             if spec[key]['type'] == 'file':
                 save_file_type(obj, key, '', conf[key])
-        else:
+        elif conf[key]:
             for subkey in conf[key]:
                 if spec[key][subkey]['type'] == 'file':
                     save_file_type(obj, key, subkey, conf[key][subkey])
@@ -325,7 +337,7 @@ def process_config(obj, spec, old_conf):
         if 'type' in spec[key]:
             if spec[key]['type'] == 'file' and conf[key] is not None:
                 conf[key] = cook_file_type_name(obj, key, '')
-        else:
+        elif conf[key]:
             for subkey in conf[key]:
                 if spec[key][subkey]['type'] == 'file' and conf[key][subkey] is not None:
                     conf[key][subkey] = cook_file_type_name(obj, key, subkey)
@@ -554,7 +566,7 @@ def check_config_spec(proto, obj, spec, flat_spec, conf, old_conf=None, attr=Non
             err('CONFIG_KEY_ERROR', msg.format(key, ref))
         if not conf[key]:
             msg = 'Key "{}" should contains some subkeys ({})'
-            err('CONFIG_KEY_ERROR', msg.format(key, ref))
+            err('CONFIG_KEY_ERROR', msg.format(key, ref), list(spec[key].keys()))
         for subkey in conf[key]:
             if subkey not in spec[key]:
                 msg = 'There is unknown subkey "{}" for key "{}" in input config ({})'
@@ -658,7 +670,7 @@ def check_config_type(proto, key, subkey, spec, value, default=False, inactive=F
     if spec['type'] in ('string', 'password', 'text'):
         if not isinstance(value, str):
             err('CONFIG_VALUE_ERROR', tmpl2.format("should be string"))
-        if value == '':
+        if 'required' in spec and spec['required'] and value == '':
             err('CONFIG_VALUE_ERROR', tmpl1.format("should be not empty"))
 
     if spec['type'] == 'file':

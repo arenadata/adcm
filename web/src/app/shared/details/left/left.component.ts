@@ -23,14 +23,11 @@ import { NavigationService, INavItem } from '../navigation.service';
         &nbsp;
         <button *ngIf="item.action" mat-icon-button color="primary" (click)="btnClick(item.action)"><mat-icon>cloud_download</mat-icon></button>
         <mat-icon *ngIf="item.issue" color="warn">priority_hight</mat-icon>
-        <ng-container *ngIf="item.url === 'status'">
-          <mat-icon *ngIf="item.status === 0" color="accent">check_circle_outline</mat-icon>
-          <mat-icon *ngIf="item.status !== 0" color="warn">error_outline</mat-icon>
-        </ng-container>
+        <mat-icon *ngIf="item.url === 'status'" [color]="item.status === 0 ? 'accent' : 'warn'">{{ item.status === 0 ? 'check_circle_outline' : 'error_outline' }}</mat-icon>
       </a>
     </mat-nav-list>
   `,
-  styles: ['mat-nav-list {padding-top: 20px;}', 'a span { white-space: nowrap; }']
+  styles: ['mat-nav-list {padding-top: 20px;}', 'a span { white-space: nowrap; }'],
 })
 export class LeftComponent {
   items: INavItem[] = [];
@@ -38,13 +35,12 @@ export class LeftComponent {
     if (c) this.items = this.navigation.getLeft(c);
   }
 
-  @Input() set issues(i: Issue) {
-    if (!i) i = {} as Issue;
-    this.items = this.items.map(a => ({ ...a, issue: this.navigation.findIssue(a.url, i) ? 'issue' : '' }));
+  @Input() set issue(i: Issue) {
+    this.items = this.items.map((a) => ({ ...a, issue: this.navigation.findIssue(a.url, i || {}) ? 'issue' : '' }));
   }
 
   @Input() set status(v: number) {
-    const b = this.items.find(a => a.url === 'status');
+    const b = this.items.find((a) => a.url === 'status');
     if (b) b.status = v;
   }
 

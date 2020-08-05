@@ -14,7 +14,7 @@ export * from './button-spinner.component';
 export * from './issue-info.component';
 export * from './status/status.component';
 export * from './status-info.component';
-export * from './crumbs/crumbs.component';
+export * from './crumbs.component';
 export * from './dialog.component';
 export * from './main-info.component';
 export * from './upgrade.component';

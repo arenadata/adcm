@@ -46,7 +46,19 @@ func checkToken(hub Hub, token string) bool {
 	return true
 }
 
+func djangoAuth(r *http.Request, hub Hub) bool {
+	sessionId, err := r.Cookie("sessionid")
+	if err != nil {
+		logg.D.f("no sessionid cookie")
+		return false
+	}
+	return hub.AdcmApi.checkSessionAuth(sessionId.Value)
+}
+
 func tokenAuth(w http.ResponseWriter, r *http.Request, hub Hub) bool {
+	if djangoAuth(r, hub) {
+		return true
+	}
 	h, ok := r.Header["Authorization"]
 	if !ok {
 		ErrOut4(w, r, "AUTH_ERROR", "no \"Authorization\" header")
