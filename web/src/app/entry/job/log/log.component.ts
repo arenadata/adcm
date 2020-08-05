@@ -83,7 +83,7 @@ export class LogComponent extends SocketListenerDirective implements OnInit {
   }
 
   socketListener(m: EventMessage) {
-    if (m && m.object && m.object.type === 'job' && m.object.id === this.job.id) {
+    if (m?.object?.type === 'job' && m?.object?.id === this.job.id) {
       if (m.event === 'change_job_status') {
         const job = this.job;
         job.status = m.object.details.value as JobStatus;

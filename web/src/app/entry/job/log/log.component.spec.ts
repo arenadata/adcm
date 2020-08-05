@@ -9,10 +9,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { async, ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
-import { ClusterService, WorkerInstance } from '@app/core';
+import { ClusterService } from '@app/core';
 import { ApiService } from '@app/core/api';
 import { EventMessage, getMessage, SocketState } from '@app/core/store';
 import { Job, LogFile } from '@app/core/types';
@@ -33,8 +33,6 @@ describe('Job Module :: LogComponent', () => {
   let service: ClusterService;
   let store: MockStore;
   let messageSelector: MemoizedSelector<SocketState, EventMessage>;
-
-  let worker: WorkerInstance;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
@@ -80,7 +78,7 @@ describe('Job Module :: LogComponent', () => {
     });
   });
 
-  it('if job status === running job-info should display start date and autorenew icon', () => {
+  it('if job status is running job-info should display start date and autorenew icon', () => {
     service.getContext(convertToParamMap({ job: 1 })).subscribe((_) => {
       expect(service.Current.id).toBe(JobMock.id);
       fixture.detectChanges();
@@ -88,6 +86,38 @@ describe('Job Module :: LogComponent', () => {
       const start = info.querySelectorAll('div')[0].querySelector('span');
       const sd = new Date(Date.parse(JobMock.start_date));
       expect(start.innerText).toBe(sd.toLocaleTimeString());
+      jasmine.clock().tick(100);
+      const icon = info.querySelectorAll('div')[1].querySelector('mat-icon');
+      expect(icon.innerText).toBe('autorenew');
+    });
+  });
+
+  it('if add_job_log socket event should update job', () => {
+    service.getContext(convertToParamMap({ job: 1 })).subscribe((_) => {
+      expect(service.Current.id).toBe(JobMock.id);
+      fixture.detectChanges();
+
+      const value = { ...JobMock };
+      /** ! change LogMock ! */
+      value.log_files[0].content = 'Second message';
+
+      component.socketListener({ event: 'add_job_log', object: { type: 'job', id: 1, details: { type: '', value } } });
+      fixture.detectChanges();
+
+      const text = fixture.nativeElement.querySelector('div.wrap app-log-text textarea');
+      expect(text.innerHTML).toBe('Second message');    
+    });
+  });
+
+  it('if change_job_status socket event should update icon in job-info', () => {
+    service.getContext(convertToParamMap({ job: 1 })).subscribe((_) => {
+      expect(service.Current.id).toBe(JobMock.id);
+      fixture.detectChanges();
+      const JOB_STATUS = 'success';
+      component.socketListener({ event: 'change_job_status', object: { type: 'job', id: 1, details: { type: '', value: JOB_STATUS } } });
+      fixture.detectChanges();
+      const icon = fixture.nativeElement.querySelector('app-job-info div.time-info').querySelectorAll('div')[1].querySelector('mat-icon');
+      expect(icon.innerText).toBe('done_all');
     });
   });
 });
