@@ -72,7 +72,7 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
     this.status = status;
 
     const parent = w.current.typeName === 'cluster' ? null : w.cluster;
-    this.issue = parent?.issue || issue;
+    this.issue = issue;
 
     this.current = {
       parent,
