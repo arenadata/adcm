@@ -12,9 +12,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.db import models
-from django.contrib.auth.models import User, Group, Permission
+import json
 
+from django.contrib.auth.models import User, Group, Permission
+from django.db import models
 
 PROTO_TYPE = (
     ('adcm', 'adcm'),
@@ -30,6 +31,38 @@ LICENSE_STATE = (
     ('accepted', 'accepted'),
     ('unaccepted', 'unaccepted'),
 )
+
+
+class JSONFieldFormatError(Exception):
+    pass
+
+
+class JSONField(models.Field):
+    def db_type(self, connection):
+        return 'text'
+
+    def from_db_value(self, value, expression, connection):
+        if value is not None:
+            try:
+                return json.loads(value)
+            except json.JSONDecodeError:
+                raise JSONFieldFormatError(
+                    f"Not correct field format '{expression.field.attname}'"
+                )
+        return value
+
+    def get_prep_value(self, value):
+        if value is not None:
+            return str(json.dumps(value))
+        return value
+
+    def to_python(self, value):
+        if value is not None:
+            return json.loads(value)
+        return value
+
+    def value_to_string(self, obj):
+        return self.value_from_object(obj)
 
 
 class Bundle(models.Model):
