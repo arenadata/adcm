@@ -193,7 +193,8 @@ def get_prototype_config(proto, action=None):
     return (spec, flat_spec, conf, attr)
 
 
-def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-locals,too-many-branches
+def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+    # process objects without config
     if not obj.config:
         spec, _, conf, attr = get_prototype_config(new_proto)
         obj_conf = init_object_config(spec, conf, attr)
@@ -217,15 +218,19 @@ def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-local
                 return True
         return False
 
+    # set new default config values and gather information about activatable groups
     new_conf = {}
+    active_groups = {}
     inactive_groups = {}
     for key in new_spec:
         if new_spec[key].type == 'group':
             limits = {}
             if new_spec[key].limits:
                 limits = json.loads(new_spec[key].limits)
-            if 'activatable' in limits:
-                if 'active' in limits and not limits['active']:
+            if 'activatable' in limits and 'active' in limits:
+                if limits['active']:
+                    active_groups[key.rstrip('/')] = True
+                else:
                     inactive_groups[key.rstrip('/')] = True
             continue
         if key in old_spec:
@@ -236,6 +241,7 @@ def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-local
         else:
             new_conf[key] = get_default(new_spec[key], new_proto)
 
+    # go from flat config to 2-level dictionary
     unflat_conf = {}
     for key in new_conf:
         k1, k2 = key.split('/')
@@ -246,12 +252,18 @@ def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-local
                 unflat_conf[k1] = {}
             unflat_conf[k1][k2] = new_conf[key]
 
-    # skip inactive groups in new prototype config
+    # skip inactive groups and set attributes for new config
+    attr = {}
+    if cl.attr:
+        attr = json.loads(cl.attr)
     for key in unflat_conf:
+        if key in active_groups:
+            attr[key] = {'active': True}
         if key in inactive_groups:
             unflat_conf[key] = None
+            attr[key] = {'active': False}
 
-    save_obj_config(obj.config, unflat_conf, 'upgrade', cl.attr)
+    save_obj_config(obj.config, unflat_conf, 'upgrade', json.dumps(attr))
     process_file_type(obj, new_unflat_spec, unflat_conf)
 
 
