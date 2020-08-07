@@ -201,9 +201,9 @@ class Component(models.Model):
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
-    params = models.TextField(blank=True)       # JSON
-    constraint = models.TextField(blank=True)   # JSON
-    requires = models.TextField(blank=True)     # JSON
+    params = JSONField(blank=True)
+    constraint = JSONField(blank=True)
+    requires = JSONField(blank=True)
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
 
     class Meta:
@@ -494,9 +494,9 @@ class StageComponent(models.Model):
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
-    params = models.TextField(blank=True)       # JSON
-    constraint = models.TextField(blank=True)   # JSON
-    requires = models.TextField(blank=True)     # JSON
+    params = JSONField(blank=True)
+    constraint = JSONField(blank=True)
+    requires = JSONField(blank=True)
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
 
     class Meta:
