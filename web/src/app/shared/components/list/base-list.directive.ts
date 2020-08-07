@@ -21,6 +21,7 @@ import { DialogComponent } from '../dialog.component';
 import { ListComponent } from '../list/list.component';
 import { ListService } from './list.service';
 import { MatDialog } from '@angular/material/dialog';
+import { ActionListComponent } from '@app/shared/action-list/action-list.component';
 
 interface IRowHost extends AdcmHost {
   clusters: Partial<Cluster>[];
@@ -137,7 +138,9 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
   onLoad() {}
 
   getActions() {
-    this.service.getActions(this.row);
+    //this.service.getActions(this.row);
+    this.row.typeName = this.typeName;
+    this.parent.dialog.open(DialogComponent, { data: { title: 'Choose action', model: this.row, component: ActionListComponent } });
   }
 
   addCluster(id: number) {

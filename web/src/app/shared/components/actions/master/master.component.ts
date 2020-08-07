@@ -9,14 +9,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, EventEmitter, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, ElementRef, EventEmitter, OnInit, ViewChild } from '@angular/core';
 import { IAction } from '@app/core/types';
 import { DynamicComponent, DynamicEvent } from '@app/shared/directives/dynamic.directive';
 
 import { BaseDirective } from '../../../directives/base.directive';
 import { ActionParameters } from '../actions.directive';
-import { IValue, MasterService, whatShow } from './master.service';
 import { ActionMasterConfigComponent } from './action-master-config.component';
+import { IValue, MasterService, whatShow } from './master.service';
 
 @Component({
   selector: 'app-master',
@@ -61,7 +61,7 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
     return value && ((value.hostmap && value.hostmap.noValid) || (value.config && !value.config.form?.valid));
   }
 
-  run(value: IValue = {}) {
+  run(value: IValue = {}) {    
     value.attr = this.master?.fields?.attr;
     const data = this.service.parseData(value);
     this.service
