@@ -16,8 +16,10 @@ import { FieldService } from '@app/shared/configuration/field.service';
 import { ConfigFieldsComponent } from '@app/shared/configuration/fields/fields.component';
 import { ServiceHostComponent } from '@app/shared/host-components-map/services2hosts/service-host.component';
 import { Post } from '@app/shared/host-components-map/types';
+import { IConfigAttr } from '@app/shared/configuration/types';
 
 export interface IValue {
+  attr?: IConfigAttr;
   config?: ConfigFieldsComponent;
   hostmap?: ServiceHostComponent;
 }
