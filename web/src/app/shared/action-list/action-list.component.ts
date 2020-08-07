@@ -17,6 +17,8 @@ import { ApiService } from '@app/core/api';
 import { Observable } from 'rxjs';
 import { FlatTreeControl } from '@angular/cdk/tree';
 import { MatTreeFlattener, MatTreeFlatDataSource } from '@angular/material/tree';
+import { MatDialogRef } from '@angular/material/dialog';
+import { DialogComponent } from '../components/dialog.component';
 
 interface FoodNode {
   name: string;
@@ -54,7 +56,7 @@ interface ExampleFlatNode {
   selector: 'app-action-list',
   styles: ['button {margin: 10px;}'],
   template: `
-    <button mat-raised-button color="warn" [appForTest]="'action_btn'" *ngFor="let a of actions$ | async" [appActions]="{ cluster: clusterData, actions: [a] }">
+    <button mat-stroked-button color="warn" [appForTest]="'action_btn'" *ngFor="let a of actions$ | async" [appActions]="{ cluster: clusterData, actions: [a] }">
       <span>{{ a.display_name }}</span>
     </button>
 
@@ -68,7 +70,7 @@ interface ExampleFlatNode {
         <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
           <!-- use a disabled button to provide padding for tree leaf -->
           <button mat-icon-button disabled></button>
-          <button mat-raised-button color="warn" onclick="alert('run action!')">
+          <button mat-stroked-button color="warn" onclick="alert('run action!')">
             <span>{{ node.name }}</span>
           </button>
         </mat-tree-node>
@@ -79,12 +81,15 @@ interface ExampleFlatNode {
               {{ treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right' }}
             </mat-icon>
           </button>
-          <button mat-raised-button color="warn" onclick="alert('run action!')">
+          <button mat-stroked-button color="warn" onclick="alert('run action!')">
             <span>{{ node.name }}</span>
           </button>
         </mat-tree-node>
       </mat-tree>
     </ng-container>
+    <mat-dialog-actions class="controls">
+     <button mat-raised-button color="primary" (click)="dialogRef.close()">Cancel</button>
+    </mat-dialog-actions>
   `,
 })
 export class ActionListComponent implements OnInit, DynamicComponent {
@@ -113,7 +118,7 @@ export class ActionListComponent implements OnInit, DynamicComponent {
 
   hasChild = (_: number, node: ExampleFlatNode) => node.expandable;
 
-  constructor(private api: ApiService) {
+  constructor(private api: ApiService, public dialogRef: MatDialogRef<DialogComponent>) {
     this.dataSource.data = TREE_DATA;
   }
 
