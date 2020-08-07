@@ -61,8 +61,8 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
     return value && ((value.hostmap && value.hostmap.noValid) || (value.config && !value.config.form?.valid));
   }
 
-  run(value: IValue) {
-    value.attr = this.master.fields.attr;
+  run(value: IValue = {}) {
+    value.attr = this.master?.fields?.attr;
     const data = this.service.parseData(value);
     this.service
       .send(this.action.run, data)
