@@ -142,8 +142,11 @@ class SetUp():
 
 
 def get_config(obj):
+    attr = {}
     cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-    return json.loads(cl.config)
+    if cl.attr:
+        attr = json.loads(cl.attr)
+    return json.loads(cl.config), attr
 
 
 class TestConfigUpgrade(TestCase):
@@ -168,7 +171,7 @@ class TestConfigUpgrade(TestCase):
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
         self.assertEqual(cluster.config, None)
         cm.adcm_config.switch_config(cluster, proto2, proto1)
-        new_config = get_config(cluster)
+        new_config, _ = get_config(cluster)
         self.assertEqual(new_config['port'], 42)
 
     def test_adding_parameter(self):
@@ -177,10 +180,10 @@ class TestConfigUpgrade(TestCase):
         self.add_conf(prototype=proto2, name='host', type='string', default='arenadata.com')
         self.add_conf(prototype=proto2, name='port', type='integer', default=42)
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
-        old_conf = get_config(cluster)
+        old_conf, _ = get_config(cluster)
         self.assertEqual(old_conf, {'host': 'arenadata.com'})
         cm.adcm_config.switch_config(cluster, proto2, proto1)
-        new_config = get_config(cluster)
+        new_config, _ = get_config(cluster)
         self.assertEqual(new_config, {'host': 'arenadata.com', 'port': 42})
 
     def test_deleting_parameter(self):
@@ -188,10 +191,10 @@ class TestConfigUpgrade(TestCase):
         self.add_conf(prototype=proto1, name='host', type='string', default='arenadata.com')
         self.add_conf(prototype=proto2, name='port', type='integer', default=42)
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
-        old_conf = get_config(cluster)
+        old_conf, _ = get_config(cluster)
         self.assertEqual(old_conf, {'host': 'arenadata.com'})
         cm.adcm_config.switch_config(cluster, proto2, proto1)
-        new_config = get_config(cluster)
+        new_config, _ = get_config(cluster)
         self.assertEqual(new_config, {'port': 42})
 
     def test_default(self):
@@ -199,10 +202,10 @@ class TestConfigUpgrade(TestCase):
         self.add_conf(prototype=proto1, name='port', type='integer', default=42)
         self.add_conf(prototype=proto2, name='port', type='integer', default=43)
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
-        old_conf = get_config(cluster)
+        old_conf, _ = get_config(cluster)
         self.assertEqual(old_conf, {'port': 42})
         cm.adcm_config.switch_config(cluster, proto2, proto1)
-        new_config = get_config(cluster)
+        new_config, _ = get_config(cluster)
         self.assertEqual(new_config, {'port': 43})
 
     def test_non_default(self):
@@ -210,11 +213,11 @@ class TestConfigUpgrade(TestCase):
         self.add_conf(prototype=proto1, name='port', type='integer', default=42)
         self.add_conf(prototype=proto2, name='port', type='integer', default=43)
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
-        old_conf = get_config(cluster)
+        old_conf, _ = get_config(cluster)
         old_conf['port'] = 100500
         cm.adcm_config.save_obj_config(cluster.config, old_conf)
         cm.adcm_config.switch_config(cluster, proto2, proto1)
-        new_config = get_config(cluster)
+        new_config, _ = get_config(cluster)
         self.assertEqual(new_config, {'port': 100500})
 
     def test_add_group(self):
@@ -224,10 +227,10 @@ class TestConfigUpgrade(TestCase):
         self.add_conf(prototype=proto2, name='advance', type='group')
         self.add_conf(prototype=proto2, name='advance', subname='port', type='integer', default=42)
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
-        old_conf = get_config(cluster)
+        old_conf, _ = get_config(cluster)
         self.assertEqual(old_conf, {'host': 'arenadata.com'})
         cm.adcm_config.switch_config(cluster, proto2, proto1)
-        new_config = get_config(cluster)
+        new_config, _ = get_config(cluster)
         self.assertEqual(new_config, {'host': 'arenadata.com', 'advance': {'port': 42}})
 
     def test_add_non_active_group(self):
@@ -238,11 +241,12 @@ class TestConfigUpgrade(TestCase):
         self.add_conf(prototype=proto2, name='advance', type='group', limits=json.dumps(limits))
         self.add_conf(prototype=proto2, name='advance', subname='port', type='integer', default=42)
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
-        old_conf = get_config(cluster)
+        old_conf, _ = get_config(cluster)
         self.assertEqual(old_conf, {'host': 'arenadata.com'})
         cm.adcm_config.switch_config(cluster, proto2, proto1)
-        new_config = get_config(cluster)
+        new_config, new_attr = get_config(cluster)
         self.assertEqual(new_config, {'host': 'arenadata.com', 'advance': None})
+        self.assertEqual(new_attr, {'advance': {'active': False}})
 
     def test_add_active_group(self):
         (proto1, proto2) = self.cook_proto()
@@ -252,11 +256,12 @@ class TestConfigUpgrade(TestCase):
         self.add_conf(prototype=proto2, name='advance', type='group', limits=json.dumps(limits))
         self.add_conf(prototype=proto2, name='advance', subname='port', type='integer', default=42)
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
-        old_conf = get_config(cluster)
+        old_conf, _ = get_config(cluster)
         self.assertEqual(old_conf, {'host': 'arenadata.com'})
         cm.adcm_config.switch_config(cluster, proto2, proto1)
-        new_config = get_config(cluster)
+        new_config, new_attr = get_config(cluster)
         self.assertEqual(new_config, {'host': 'arenadata.com', 'advance': {'port': 42}})
+        self.assertEqual(new_attr, {'advance': {'active': True}})
 
 
 class TestUpgrade(TestCase):
