@@ -25,6 +25,7 @@ const TestParams: ActionParameters = {
   actions: [
     {
       name: 'test',
+      description: '',
       display_name: 'display_name_test',
       run: 'url',
       config: null,

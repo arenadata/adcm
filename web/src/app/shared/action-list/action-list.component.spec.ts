@@ -12,6 +12,7 @@
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ApiService } from '@app/core/api';
 import { Entities } from '@app/core/types';
 
@@ -23,9 +24,9 @@ describe('ActionListComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [MatDialogModule],
+      imports: [MatDialogModule, NoopAnimationsModule],
       providers: [
-        { provide: ApiService, useValue: {get: () => {}} },
+        { provide: ApiService, useValue: { get: () => {} } },
         {
           provide: MatDialogRef,
           useValue: {
