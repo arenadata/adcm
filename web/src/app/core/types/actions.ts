@@ -23,6 +23,7 @@ export interface IUIOptions {
 
 export interface IAction {
   name: string;
+  description: string;
   display_name: string;
   run: string;
   config: IConfig;

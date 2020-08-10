@@ -19,6 +19,7 @@ import { FlatTreeControl } from '@angular/cdk/tree';
 import { MatTreeFlattener, MatTreeFlatDataSource } from '@angular/material/tree';
 import { MatDialogRef } from '@angular/material/dialog';
 import { DialogComponent } from '../components/dialog.component';
+import { openClose } from '@app/core/animations';
 
 interface FoodNode {
   name: string;
@@ -53,34 +54,122 @@ interface ExampleFlatNode {
 
 @Component({
   selector: 'app-action-list',
-  styles: ['button {margin: 10px;}', '.arrow {margin: 0}'],
+  styles: [
+    'mat-card {margin:10px 10px 0;display: inline-block; min-width: 240px; min-height: 70px; max-width: 480px; vertical-align: top; overflow: hidden;}',
+    'mat-card-header {justify-content: space-between;}',
+    'mat-card-title {font-size: 18px;}',
+    'button {margin-left: 8px;}',
+  ],
   template: `
-    <button mat-stroked-button color="warn" [appForTest]="'action_btn'" *ngFor="let a of actions$ | async" [appActions]="{ cluster: clusterData, actions: [a] }">
-      <span>{{ a.display_name }}</span>
-    </button>
+    <mat-card class="mat-expansion-panel">
+      <mat-card-header>
+        <mat-card-title color="primary">Fruit</mat-card-title>
+        <mat-card-subtitle>some description about this group actions</mat-card-subtitle>
+        <button mat-icon-button (click)="fruit.expand = !fruit.expand"><mat-icon>list</mat-icon></button>
+      </mat-card-header>
+      <div #fruit [@openClose]="!!fruit.expand">
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>Apple</mat-card-title>
+            <mat-card-subtitle>description or some description about this action description or some description about this action</mat-card-subtitle>
+            <button mat-icon-button color="warn"><mat-icon>play_circle_outline</mat-icon></button>
+          </mat-card-header>
+        </mat-card>
 
-    <mat-tree [dataSource]="dataSource" [treeControl]="treeControl">
-      <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
-        <button mat-stroked-button color="warn" onclick="alert('run action!')">
-          <span>{{ node.name }}</span>
-        </button>
-      </mat-tree-node>
-      <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodePadding>
-        <button mat-stroked-button color="warn" onclick="alert('run action!')">
-          <span>{{ node.name }}</span>
-        </button>
-        <button class="arrow" mat-icon-button matTreeNodeToggle [attr.aria-label]="'toggle ' + node.name">
-          <mat-icon>
-            {{ treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right' }}
-          </mat-icon>
-        </button>
-      </mat-tree-node>
-    </mat-tree>
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>Banana</mat-card-title>
+            <mat-card-subtitle>description or some description about this action</mat-card-subtitle>
+            <button mat-icon-button color="warn"><mat-icon>play_circle_outline</mat-icon></button>
+          </mat-card-header>
+        </mat-card>
+
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>Fruit loops</mat-card-title>
+            <mat-card-subtitle>description</mat-card-subtitle>
+            <button mat-icon-button color="warn"><mat-icon>play_circle_outline</mat-icon></button>
+          </mat-card-header>
+        </mat-card>
+      </div>
+    </mat-card>
+
+    <mat-card class="mat-expansion-panel">
+      <mat-card-header>
+        <mat-card-title>Vegetables</mat-card-title>
+        <mat-card-subtitle>description or some description about this action some description about this action</mat-card-subtitle>
+        <button mat-icon-button (click)="veg.expand = !veg.expand"><mat-icon>list</mat-icon></button>
+      </mat-card-header>
+      <div #veg [@openClose]="!!veg.expand">
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>Green</mat-card-title>
+            <mat-card-subtitle></mat-card-subtitle>
+            <button mat-icon-button (click)="green.expand = !green.expand"><mat-icon>list</mat-icon></button>
+          </mat-card-header>
+          <div #green [@openClose]="!!green.expand">
+            <mat-card>
+              <mat-card-header>
+                <mat-card-title>Broccoli</mat-card-title>
+                <mat-card-subtitle>some description about this action</mat-card-subtitle>
+                <button mat-icon-button color="warn"><mat-icon>play_circle_outline</mat-icon></button>
+              </mat-card-header>
+            </mat-card>
+
+            <mat-card>
+              <mat-card-header>
+                <mat-card-title>Brussels sprouts</mat-card-title>
+                <mat-card-subtitle>some description about this action</mat-card-subtitle>
+                <button mat-icon-button color="warn"><mat-icon>play_circle_outline</mat-icon></button>
+              </mat-card-header>
+            </mat-card>
+          </div>
+        </mat-card>
+
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>Orange</mat-card-title>
+            <mat-card-subtitle>some description</mat-card-subtitle>
+            <button mat-icon-button (click)="orange.expand = !orange.expand"><mat-icon>list</mat-icon></button>
+          </mat-card-header>
+          <div #orange [@openClose]="!!orange.expand">
+            <mat-card>
+              <mat-card-header>
+                <mat-card-title>Pumpkins</mat-card-title>
+                <mat-card-subtitle>some description about this action</mat-card-subtitle>
+                <button mat-icon-button color="warn"><mat-icon>play_circle_outline</mat-icon></button>
+              </mat-card-header>
+            </mat-card>
+
+            <mat-card>
+              <mat-card-header>
+                <mat-card-title>Carrots</mat-card-title>
+                <mat-card-subtitle></mat-card-subtitle>
+                <button mat-icon-button color="warn"><mat-icon>play_circle_outline</mat-icon></button>
+              </mat-card-header>
+            </mat-card>
+          </div>
+        </mat-card>
+      </div>
+    </mat-card>
+
+    <mat-card *ngFor="let a of actions$ | async" class="mat-expansion-panel">
+      <mat-card-header>
+        <mat-card-title>{{ a.display_name }}</mat-card-title>
+        <mat-card-subtitle>{{ a.description || 'some description about this action' }}</mat-card-subtitle>
+        <button [appActions]="{ cluster: clusterData, actions: [a] }" mat-icon-button color="warn"><mat-icon>play_circle_outline</mat-icon></button>
+      </mat-card-header>
+    </mat-card>
+
+    <!-- <button mat-stroked-button color="warn" [appForTest]="'action_btn'" *ngFor="let a of actions$ | async" [appActions]="{ cluster: clusterData, actions: [a] }">
+      <span>{{ a.display_name }}</span>
+    </button> -->
 
     <mat-dialog-actions class="controls">
       <button mat-raised-button color="primary" (click)="dialogRef.close()">Cancel</button>
     </mat-dialog-actions>
   `,
+  animations: [openClose],
 })
 export class ActionListComponent implements OnInit, DynamicComponent {
   model: Entities;
