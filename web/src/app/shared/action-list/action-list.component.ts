@@ -45,7 +45,6 @@ const TREE_DATA: FoodNode[] = [
   },
 ];
 
-/** Flat node with expandable and level information */
 interface ExampleFlatNode {
   expandable: boolean;
   name: string;
@@ -54,41 +53,32 @@ interface ExampleFlatNode {
 
 @Component({
   selector: 'app-action-list',
-  styles: ['button {margin: 10px;}'],
+  styles: ['button {margin: 10px;}', '.arrow {margin: 0}'],
   template: `
     <button mat-stroked-button color="warn" [appForTest]="'action_btn'" *ngFor="let a of actions$ | async" [appActions]="{ cluster: clusterData, actions: [a] }">
       <span>{{ a.display_name }}</span>
     </button>
 
-    <button mat-raised-button color="warn" (click)="isShow = !isShow">
-      <span>show tree</span>
-    </button>
+    <mat-tree [dataSource]="dataSource" [treeControl]="treeControl">
+      <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
+        <button mat-stroked-button color="warn" onclick="alert('run action!')">
+          <span>{{ node.name }}</span>
+        </button>
+      </mat-tree-node>
+      <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodePadding>
+        <button mat-stroked-button color="warn" onclick="alert('run action!')">
+          <span>{{ node.name }}</span>
+        </button>
+        <button class="arrow" mat-icon-button matTreeNodeToggle [attr.aria-label]="'toggle ' + node.name">
+          <mat-icon>
+            {{ treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right' }}
+          </mat-icon>
+        </button>
+      </mat-tree-node>
+    </mat-tree>
 
-    <ng-container *ngIf="isShow">
-      <mat-tree [dataSource]="dataSource" [treeControl]="treeControl">
-        <!-- This is the tree node template for leaf nodes -->
-        <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
-          <!-- use a disabled button to provide padding for tree leaf -->
-          <button mat-icon-button disabled></button>
-          <button mat-stroked-button color="warn" onclick="alert('run action!')">
-            <span>{{ node.name }}</span>
-          </button>
-        </mat-tree-node>
-        <!-- This is the tree node template for expandable nodes -->
-        <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodePadding>
-          <button mat-icon-button matTreeNodeToggle [attr.aria-label]="'toggle ' + node.name">
-            <mat-icon class="mat-icon-rtl-mirror">
-              {{ treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right' }}
-            </mat-icon>
-          </button>
-          <button mat-stroked-button color="warn" onclick="alert('run action!')">
-            <span>{{ node.name }}</span>
-          </button>
-        </mat-tree-node>
-      </mat-tree>
-    </ng-container>
     <mat-dialog-actions class="controls">
-     <button mat-raised-button color="primary" (click)="dialogRef.close()">Cancel</button>
+      <button mat-raised-button color="primary" (click)="dialogRef.close()">Cancel</button>
     </mat-dialog-actions>
   `,
 })
