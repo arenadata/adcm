@@ -10,47 +10,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
-
-import { DynamicComponent } from '../directives';
-import { Entities, IAction } from '@app/core/types';
-import { ApiService } from '@app/core/api';
-import { Observable } from 'rxjs';
-import { FlatTreeControl } from '@angular/cdk/tree';
-import { MatTreeFlattener, MatTreeFlatDataSource } from '@angular/material/tree';
 import { MatDialogRef } from '@angular/material/dialog';
-import { DialogComponent } from '../components/dialog.component';
 import { openClose } from '@app/core/animations';
+import { ApiService } from '@app/core/api';
+import { Entities, IAction } from '@app/core/types';
+import { Observable } from 'rxjs';
 
-interface FoodNode {
-  name: string;
-  children?: FoodNode[];
-}
-
-const TREE_DATA: FoodNode[] = [
-  {
-    name: 'Fruit',
-    children: [{ name: 'Apple' }, { name: 'Banana' }, { name: 'Fruit loops' }],
-  },
-  {
-    name: 'Vegetables',
-    children: [
-      {
-        name: 'Green',
-        children: [{ name: 'Broccoli' }, { name: 'Brussels sprouts' }],
-      },
-      {
-        name: 'Orange',
-        children: [{ name: 'Pumpkins' }, { name: 'Carrots' }],
-      },
-    ],
-  },
-];
-
-interface ExampleFlatNode {
-  expandable: boolean;
-  name: string;
-  level: number;
-}
+import { DialogComponent } from '../components/dialog.component';
+import { DynamicComponent } from '../directives';
 
 @Component({
   selector: 'app-action-list',
@@ -175,31 +142,7 @@ export class ActionListComponent implements OnInit, DynamicComponent {
   model: Entities;
   actions$: Observable<IAction[]>;
 
-  isShow = false;
-
-  treeControl = new FlatTreeControl<ExampleFlatNode>(
-    (node) => node.level,
-    (node) => node.expandable
-  );
-
-  treeFlattener = new MatTreeFlattener(
-    (node: FoodNode, level: number) => ({
-      expandable: !!node.children && node.children.length > 0,
-      name: node.name,
-      level: level,
-    }),
-    (node) => node.level,
-    (node) => node.expandable,
-    (node) => node.children
-  );
-
-  dataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);
-
-  hasChild = (_: number, node: ExampleFlatNode) => node.expandable;
-
-  constructor(private api: ApiService, public dialogRef: MatDialogRef<DialogComponent>) {
-    this.dataSource.data = TREE_DATA;
-  }
+  constructor(private api: ApiService, public dialogRef: MatDialogRef<DialogComponent>) {}
 
   ngOnInit(): void {
     this.actions$ = this.api.get<IAction[]>(this.model.action);
