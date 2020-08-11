@@ -18,6 +18,7 @@ import { Subscription } from 'rxjs';
 export enum DisplayMode {
   default,
   inHost,
+  noCluster
 }
 
 @Component({
