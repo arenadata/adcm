@@ -497,7 +497,11 @@ class HCComponentSerializer(ServiceComponentDetailSerializer):
 
         def process_requires(req_list):
             for c in json.loads(req_list):
-                comp = Component.objects.get(name=c['component'], prototype__name=c['service'])
+                comp = Component.objects.get(
+                    name=c['component'],
+                    prototype__name=c['service'],
+                    prototype__bundle_id=obj.component.prototype.bundle_id
+                )
                 if comp == obj.component:
                     return
                 if comp.prototype.name not in comp_list:
@@ -718,7 +722,7 @@ class ObjectConfigUpdate(ObjectConfig):
             if hasattr(instance.obj_ref, 'adcm'):
                 logrotate.run()
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds)
         return cl
 
 

@@ -116,7 +116,7 @@ class Service:
 
 class ConfigurationLocators:
     description = bys.by_xpath("//*[@placeholder='Description configuration']")
-    search_field = bys.by_xpath("//*[@placeholder='Search field']")
+    search_field = bys.by_id("config_search_input")
     config_save_button = bys.by_class("form_config_button_save")
     app_fields_text_boxes = bys.by_tag("app-fields-textbox")
     app_fields_labels = bys.by_tag("app-fields-label")

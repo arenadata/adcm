@@ -350,8 +350,8 @@ class Details(BasePage):
 
 
 class LoginPage(BasePage):
-    login_locator = bys.by_xpath("//input[@placeholder='Login']")
-    passwd_locator = bys.by_xpath("//input[@placeholder='Password']")
+    login_locator = bys.by_id('login')
+    passwd_locator = bys.by_id('password')
     login_form_locator = bys.by_xpath("//*[@formcontrolname='login']")
     _logout = ()
     _user = ()

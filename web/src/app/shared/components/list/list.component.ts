@@ -16,7 +16,7 @@ import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort, MatSortHeader, Sort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { ActivatedRoute, Router } from '@angular/router';
-import { EmmitRow, Issue, notIssue, TypeName } from '@app/core/types';
+import { EmmitRow, Issue, isIssue, TypeName } from '@app/core/types';
 import { BehaviorSubject } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
@@ -170,7 +170,7 @@ export class ListComponent implements OnInit {
   }
 
   notIssue(issue: Issue): boolean {
-    return notIssue(issue);
+    return !isIssue(issue);
   }
 
   clickCell($e: MouseEvent, cmd: string, row: any, item?: any) {
