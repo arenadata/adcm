@@ -10,15 +10,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
-import { MatDialogRef, MatDialog } from '@angular/material/dialog';
+import { ClusterService } from '@app/core';
 import { openClose } from '@app/core/animations';
 import { ApiService } from '@app/core/api';
-import { Entities, IAction, Cluster } from '@app/core/types';
+import { Cluster, Entities, IAction } from '@app/core/types';
 import { Observable } from 'rxjs';
 
-import { DialogComponent } from '../components/dialog.component';
 import { DynamicComponent } from '../directives';
-import { ClusterService } from '@app/core';
 
 @Component({
   selector: 'app-action-list',
