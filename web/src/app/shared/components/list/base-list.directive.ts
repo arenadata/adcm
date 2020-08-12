@@ -138,9 +138,10 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
   onLoad() {}
 
   getActions() {
-    //this.service.getActions(this.row);
     this.row.typeName = this.typeName;
-    this.parent.dialog.open(DialogComponent, { data: { title: 'Choose action', model: this.row, component: ActionListComponent } });
+    this.service.getActions(this.row);
+    
+    // this.parent.dialog.open(DialogComponent, { data: { title: 'Choose action', model: this.row, component: ActionListComponent } });
   }
 
   addCluster(id: number) {

@@ -63,19 +63,20 @@ const all = [
   { id: 4, title: 'Configuration', url: 'config' },
   { id: 5, title: 'Status', url: 'status' },
   { id: 6, title: 'Import', url: 'import' },
+  { id: 7, title: 'Actions', url: 'action' },
   { id: 1, title: 'Services', url: 'service' },
   { id: 2, title: 'Hosts', url: 'host' },
-  { id: 3, title: 'Hosts - Components', url: 'host_component' },
+  { id: 3, title: 'Hosts - Components', url: 'host_component' },  
 ];
 
-const [main, config, m_status, m_import] = all;
+const [main, config, m_status, m_import, actions] = all;
 
 export const Config = {
   menu: {
     cluster: all.sort((a, b) => a.id - b.id),
-    service: [main, config, m_status, m_import],
-    host: [main, config, m_status],
-    provider: [main, config],
+    service: [main, config, m_status, m_import, actions],
+    host: [main, config, m_status, actions],
+    provider: [main, config, actions],
     bundle: [main],
   },
 };

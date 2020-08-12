@@ -10,14 +10,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
-import { MatDialogRef } from '@angular/material/dialog';
+import { MatDialogRef, MatDialog } from '@angular/material/dialog';
 import { openClose } from '@app/core/animations';
 import { ApiService } from '@app/core/api';
-import { Entities, IAction } from '@app/core/types';
+import { Entities, IAction, Cluster } from '@app/core/types';
 import { Observable } from 'rxjs';
 
 import { DialogComponent } from '../components/dialog.component';
 import { DynamicComponent } from '../directives';
+import { ClusterService } from '@app/core';
 
 @Component({
   selector: 'app-action-list',
@@ -130,11 +131,11 @@ import { DynamicComponent } from '../directives';
 
     <!-- <button mat-stroked-button color="warn" [appForTest]="'action_btn'" *ngFor="let a of actions$ | async" [appActions]="{ cluster: clusterData, actions: [a] }">
       <span>{{ a.display_name }}</span>
-    </button> -->
+    </button> 
 
     <mat-dialog-actions class="controls">
       <button mat-raised-button color="primary" (click)="dialogRef.close()">Cancel</button>
-    </mat-dialog-actions>
+    </mat-dialog-actions>-->
   `,
   animations: [openClose],
 })
@@ -142,14 +143,15 @@ export class ActionListComponent implements OnInit, DynamicComponent {
   model: Entities;
   actions$: Observable<IAction[]>;
 
-  constructor(private api: ApiService, public dialogRef: MatDialogRef<DialogComponent>) {}
+  constructor(private ser: ClusterService, private api: ApiService /*, public dialogRef: MatDialogRef<DialogComponent>*/) {}
 
   ngOnInit(): void {
-    this.actions$ = this.api.get<IAction[]>(this.model.action);
+    this.actions$ = this.api.get<IAction[]>(this.ser.Current.action);
   }
 
   get clusterData() {
-    const { id, hostcomponent } = 'hostcomponent' in this.model && this.model.typeName === 'cluster' ? this.model : (this.model as any).cluster || {};
+    const { id, hostcomponent } = this.ser.Cluster || (this.ser.Current as Cluster);
+    //'hostcomponent' in this.model && this.model.typeName === 'cluster' ? this.model : (this.model as any).cluster || {};
     return { id, hostcomponent };
   }
 }

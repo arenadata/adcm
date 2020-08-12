@@ -153,7 +153,7 @@ export class ListComponent implements OnInit {
   }
 
   getClusterData(row: any) {
-    const { id, hostcomponent } = 'hostcomponent' in row && this.type === 'cluster' ? row : row.cluster;
+    const { id, hostcomponent } = row.cluster || row;
     return { id, hostcomponent };
   }
 
