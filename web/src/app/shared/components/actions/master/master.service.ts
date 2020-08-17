@@ -46,7 +46,7 @@ export class MasterService {
       const hc = h?.service.statePost.data;
       return { attr, config, hc };
     };
-    return v ? getData(v.config.attr, v.config, v.hostmap) : undefined;
+    return v ? getData(v.config?.attr, v.config, v.hostmap) : undefined;
   }
 
   send(url: string, value: { config: any; hc: Post[] }) {
