@@ -344,11 +344,12 @@ def save_upgrade(proto, conf):
             check_upgrade_states(proto, item)
             dict_json_to_obj(item['states'], 'available', upg)
             if 'available' in item['states']:
-                upg.state_available = json.dumps(item['states']['available'])
+                upg.state_available = item['states']['available']
             if 'on_success' in item['states']:
                 upg.state_on_success = item['states']['on_success']
         check_upgrade_edition(proto, item)
-        dict_json_to_obj(item, 'from_edition', upg)
+        if in_dict(item, 'from_edition'):
+            upg.from_edition = item['from_edition']
         upg.save()
 
 

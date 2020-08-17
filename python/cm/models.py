@@ -84,10 +84,10 @@ class Upgrade(models.Model):
     description = models.TextField(blank=True)
     min_version = models.CharField(max_length=80)
     max_version = models.CharField(max_length=80)
-    from_edition = models.TextField(blank=True, default='[\"community\"]')  # JSON
+    from_edition = JSONField(default=['community'])
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
-    state_available = models.TextField(blank=True)  # JSON
+    state_available = JSONField()
     state_on_success = models.CharField(max_length=64, blank=True)
 
 
@@ -481,8 +481,8 @@ class StageUpgrade(models.Model):
     max_version = models.CharField(max_length=80)
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
-    from_edition = models.TextField(blank=True, default='[\"community\"]')  # JSON
-    state_available = models.TextField(blank=True)   # JSON
+    from_edition = JSONField(default=['community'])
+    state_available = JSONField()
     state_on_success = models.CharField(max_length=64, blank=True)
 
 
