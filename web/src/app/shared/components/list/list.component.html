@@ -132,58 +132,7 @@
         <mat-icon>priority_hight</mat-icon>
       </button>
       <ng-template #actions>
-
-        <button color="primary" mat-icon-button [matMenuTriggerFor]="actionsMenu"
-          (click)="clickCell($event, 'getActions', row)">
-          <mat-icon>local_activity</mat-icon>
-        </button>
-
-        <mat-menu #actionsMenu="matMenu" xPosition="before" yPosition="below" overlapTrigger="false">
-          <ng-template matMenuContent>
-            <div mat-menu-item disabled *ngIf="row.actions && !row.actions.length; else listActions">
-              <i>No actions</i>
-            </div>
-            <ng-template #listActions>
-              <button [appForTest]="'action_btn'" mat-menu-item *ngFor="let b of row.actions"
-                [appActions]="{ cluster: getClusterData(row), actions: [b] }">
-                <span>{{ b.display_name }}</span>
-              </button>
-              <button mat-menu-item [matMenuTriggerFor]="vertebrates">Vertebrates</button>
-
-              <mat-menu #vertebrates="matMenu" xPosition="before" yPosition="below" overlapTrigger="false">
-                <button mat-menu-item [matMenuTriggerFor]="fish">Fishes</button>
-                <button mat-menu-item [matMenuTriggerFor]="amphibians">Amphibians</button>
-                <button mat-menu-item [matMenuTriggerFor]="reptiles">Reptiles</button>
-                <button mat-menu-item>Birds</button>
-                <button mat-menu-item>Mammals</button>
-              </mat-menu>
-
-              <mat-menu #fish="matMenu" xPosition="before" yPosition="below" overlapTrigger="false">
-                <button mat-menu-item>Baikal oilfish</button>
-                <button mat-menu-item>Bala shark</button>
-                <button mat-menu-item>Ballan wrasse</button>
-                <button mat-menu-item>Bamboo shark</button>
-                <button mat-menu-item>Banded killifish</button>
-              </mat-menu>
-              
-              <mat-menu #amphibians="matMenu" xPosition="before" yPosition="below" overlapTrigger="false">
-                <button mat-menu-item>Sonoran desert toad</button>
-                <button mat-menu-item>Western toad</button>
-                <button mat-menu-item>Arroyo toad</button>
-                <button mat-menu-item>Yosemite toad</button>
-              </mat-menu>
-              
-              <mat-menu #reptiles="matMenu" xPosition="before" yPosition="below" overlapTrigger="false">
-                <button mat-menu-item>Banded Day Gecko</button>
-                <button mat-menu-item>Banded Gila Monster</button>
-                <button mat-menu-item>Black Tree Monitor</button>
-                <button mat-menu-item>Blue Spiny Lizard</button>
-                <button mat-menu-item disabled>Velociraptor</button>
-              </mat-menu>
-            </ng-template>
-          </ng-template>
-        </mat-menu>
-
+        <app-action-list (click)="$event.stopPropagation()" [entity]="row"></app-action-list>
       </ng-template>
     </mat-cell>
   </ng-container>

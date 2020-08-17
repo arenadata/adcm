@@ -16,10 +16,9 @@ import { ApiService } from '@app/core/api';
 import { Cluster, Entities, IAction } from '@app/core/types';
 import { Observable } from 'rxjs';
 
-import { DynamicComponent } from '../directives';
 
 @Component({
-  selector: 'app-action-list',
+  selector: 'app-action-card',
   styles: [
     'mat-card {margin:10px 10px 0;display: inline-block; min-width: 240px; min-height: 70px; max-width: 480px; vertical-align: top; overflow: hidden;}',
     'mat-card-header {justify-content: space-between;}',
@@ -137,7 +136,7 @@ import { DynamicComponent } from '../directives';
   `,
   animations: [openClose],
 })
-export class ActionListComponent implements OnInit, DynamicComponent {
+export class ActionCardComponent implements OnInit {
   model: Entities;
   actions$: Observable<IAction[]>;
 

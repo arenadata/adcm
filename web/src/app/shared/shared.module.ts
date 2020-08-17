@@ -27,6 +27,7 @@ import {
   StatusInfoComponent,
   UpgradeComponent,
 } from './components';
+import { ActionCardComponent } from './components/actions/action-card/action-card.component';
 import { ActionMasterConfigComponent } from './components/actions/master/action-master-config.component';
 import { BaseListDirective } from './components/list/base-list.directive';
 import { ListComponent } from './components/list/list.component';
@@ -40,7 +41,6 @@ import { HostComponentsMapModule } from './host-components-map/host-components-m
 import { MaterialModule } from './material.module';
 import { BreakRowPipe, TagEscPipe } from './pipes';
 import { StuffModule } from './stuff.module';
-import { ActionListComponent } from './action-list/action-list.component';
 
 @NgModule({
   imports: [
@@ -75,7 +75,7 @@ import { ActionListComponent } from './action-list/action-list.component';
     ExportComponent,
     ActionMasterComponent,
     ActionMasterConfigComponent,
-    ActionListComponent,
+    ActionCardComponent,
   ],
   entryComponents: [DialogComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent, ActionMasterComponent],
   exports: [
@@ -102,7 +102,7 @@ import { ActionListComponent } from './action-list/action-list.component';
     MainInfoComponent,
     ImportComponent,
     ExportComponent,
-    ActionListComponent,
+    ActionCardComponent,
   ],
 })
 export class SharedModule {}

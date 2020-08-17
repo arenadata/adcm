@@ -152,10 +152,10 @@ export class ListComponent implements OnInit {
     this.isAllSelected() ? this.selection.clear() : this.data.data.forEach((row) => this.selection.select(row));
   }
 
-  getClusterData(row: any) {
-    const { id, hostcomponent } = row.cluster || row;
-    return { id, hostcomponent };
-  }
+  // getClusterData(row: any) {
+  //   const { id, hostcomponent } = row.cluster || row;
+  //   return { id, hostcomponent };
+  // }
 
   stopPropagation($e: MouseEvent) {
     $e.stopPropagation();

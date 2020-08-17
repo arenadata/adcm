@@ -17,11 +17,11 @@ import { ClusterService } from '@app/core';
 import { ApiService } from '@app/core/api';
 import { Entities } from '@app/core/types';
 
-import { ActionListComponent } from './action-list.component';
+import { ActionCardComponent } from './action-card.component';
 
-describe('ActionListComponent', () => {
-  let component: ActionListComponent;
-  let fixture: ComponentFixture<ActionListComponent>;
+describe('ActionCardComponent', () => {
+  let component: ActionCardComponent;
+  let fixture: ComponentFixture<ActionCardComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
@@ -36,13 +36,13 @@ describe('ActionListComponent', () => {
         //   },
         // },
       ],
-      declarations: [ActionListComponent],
+      declarations: [ActionCardComponent],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(ActionListComponent);
+    fixture = TestBed.createComponent(ActionCardComponent);
     component = fixture.componentInstance;
     component.model = {} as Entities;
     fixture.detectChanges();

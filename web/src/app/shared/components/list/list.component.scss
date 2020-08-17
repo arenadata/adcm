@@ -27,8 +27,3 @@ mat-cell.control {
   flex-basis: 30%;
   width: 100px
 }
-
-.mat-menu-item-submenu-trigger::after {
- left: 5px;
- transform: rotate(180deg) translateY(50%);
-}

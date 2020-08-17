@@ -16,7 +16,7 @@ import { AuthGuard } from '@app/core';
 import { ConfigComponent, DetailComponent, MainInfoComponent, SharedModule, StatusComponent } from '@app/shared';
 
 import { ListEntryComponent } from './list.component';
-import { ActionListComponent } from '@app/shared/action-list/action-list.component';
+import { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';
 
 const entryRouter = [
   {
@@ -49,7 +49,7 @@ const entryRouter = [
       { path: 'main', component: MainInfoComponent },
       { path: 'config', component: ConfigComponent },
       { path: 'status', component: StatusComponent },
-      { path: 'action', component: ActionListComponent },
+      { path: 'action', component: ActionCardComponent },
     ],
   },
   {
@@ -73,7 +73,7 @@ const entryRouter = [
       { path: '', redirectTo: 'main', pathMatch: 'full' },
       { path: 'main', component: MainInfoComponent },
       { path: 'config', component: ConfigComponent },
-      { path: 'action', component: ActionListComponent },
+      { path: 'action', component: ActionCardComponent },
     ],
   },
 ];

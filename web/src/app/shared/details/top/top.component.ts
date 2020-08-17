@@ -18,9 +18,10 @@ import { IDetails, INavItem, NavigationService } from '../navigation.service';
 @Component({
   selector: 'app-details-top',
   template: `
-    <app-crumbs [navigation]="items"></app-crumbs>
-    <div class="example-spacer"></div>
+    <app-crumbs [navigation]="items"></app-crumbs>    
     <app-upgrade *ngIf="upgradable" [dataRow]="upgrade" xPosition="after"></app-upgrade>
+    <div [style.flex]="1"></div>
+    <app-action-list [actions]="actions" [entity]="cluster"></app-action-list>
     <!-- <app-actions [source]="actions || []" [isIssue]="eIssue" [cluster]="cluster"></app-actions> -->
   `,
   styles: [':host {display: flex;width: 100%;}'],
