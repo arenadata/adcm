@@ -17,17 +17,17 @@ import { Component, EventEmitter, Input, Output, ViewChild, ElementRef } from '@
     <p class="controls">
       <button mat-raised-button color="primary" (click)="oncancel()">Cancel</button>
       <span class="example-spacer"></span>
-      <button #btn mat-raised-button [disabled]="disabled" color="accent" (click)="onsave()" (focus)="!disabled">Save</button>
+      <button #btn mat-raised-button [disabled]="disabled" color="accent" (click)="onsave()" (focus)="(!disabled)">{{ title }}</button>
     </p>
   `,
 })
 export class ControlsComponent {
-
+  @Input() title = 'Create';
   @Input() disabled: boolean;
   @Output() cancel = new EventEmitter();
   @Output() save = new EventEmitter();
 
-  @ViewChild('btn', {static: true, read: ElementRef}) saveBtn: ElementRef; 
+  @ViewChild('btn', { static: true, read: ElementRef }) saveBtn: ElementRef;
 
   oncancel() {
     this.cancel.emit();
