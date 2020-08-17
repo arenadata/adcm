@@ -41,7 +41,7 @@ export class AddButtonComponent extends BaseDirective implements OnDestroy {
   showForm() {
     const model = this.service.model(this.name);
     const name = model.title || model.name;
-    const title = ['cluster', 'hostprovider'];
+    const title = ['cluster', 'provider', 'host'];
     this.dialog.open(DialogComponent, {
       width: '75%',
       maxWidth: '1400px',
