@@ -39,7 +39,6 @@ const fromBundle = () =>
 
 const MODELS: { [key: string]: FormModel } = {
   provider: {
-    title: 'hostprovider',
     name: 'provider',
     form: fromBundle(),
   },
@@ -57,11 +56,11 @@ const MODELS: { [key: string]: FormModel } = {
   },
   service: {
     name: 'service',
-    title: 'service',
+    title: 'services'
   },
   host2cluster: {
     name: 'host2cluster',
-    title: 'available hosts',
+    title: 'hosts',
   },
 };
 
