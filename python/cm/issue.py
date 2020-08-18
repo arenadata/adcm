@@ -24,7 +24,7 @@ from cm.models import PrototypeImport, ClusterBind
 def save_issue(obj):
     if obj.prototype.type == 'adcm':
         return
-    obj.issue = json.dumps(check_issue(obj))
+    obj.issue = check_issue(obj)
     obj.save()
     report_issue(obj)
 
@@ -67,7 +67,7 @@ def issue_to_bool(issue):
 
 
 def get_issue(obj):   # pylint: disable=too-many-branches
-    issue = json.loads(obj.issue)
+    issue = obj.issue
     if obj.prototype.type == 'cluster':
         issue['service'] = []
         for co in ClusterObject.objects.filter(cluster=obj):
@@ -111,7 +111,7 @@ def cook_issue(obj, name='name', name_obj=None, iss=None):
         name_obj = obj
     if not iss:
         if obj:
-            iss = json.loads(obj.issue)
+            iss = obj.issue
         else:
             iss = {}
     if iss:

@@ -136,8 +136,8 @@ class ADCM(models.Model):
     name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = models.TextField(blank=True)   # JSON
-    issue = models.TextField(blank=True, default='{}')   # JSON
+    stack = JSONField()
+    issue = JSONField(default={})
 
 
 class Cluster(models.Model):
@@ -146,8 +146,8 @@ class Cluster(models.Model):
     description = models.TextField(blank=True)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = models.TextField(blank=True)   # JSON
-    issue = models.TextField(blank=True)   # JSON
+    stack = JSONField()
+    issue = JSONField()
 
     def __str__(self):
         return str(self.name)
@@ -159,8 +159,8 @@ class HostProvider(models.Model):
     description = models.TextField(blank=True)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = models.TextField(blank=True)   # JSON
-    issue = models.TextField(blank=True)   # JSON
+    stack = JSONField()
+    issue = JSONField()
 
     def __str__(self):
         return str(self.name)
@@ -174,8 +174,8 @@ class Host(models.Model):
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = models.TextField(blank=True)   # JSON
-    issue = models.TextField(blank=True)   # JSON
+    stack = JSONField()
+    issue = JSONField()
 
     def __str__(self):
         return "{}".format(self.fqdn)
@@ -186,8 +186,8 @@ class ClusterObject(models.Model):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = models.TextField(blank=True)   # JSON
-    issue = models.TextField(blank=True)   # JSON
+    stack = JSONField()
+    issue = JSONField()
 
     class Meta:
         unique_together = (('cluster', 'prototype'),)

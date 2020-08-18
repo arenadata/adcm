@@ -26,7 +26,7 @@ class TestUpgradeVersion(TestCase):
     def cook_cluster(self):
         b = Bundle(name="ADH", version="1.0")
         proto = Prototype(type="cluster", name="ADH", bundle=b)
-        return Cluster(prototype=proto, issue='{}')
+        return Cluster(prototype=proto, issue={})
 
     def cook_upgrade(self):
         return Upgrade(
@@ -91,7 +91,7 @@ class TestUpgradeVersion(TestCase):
 
     def test_issue(self):
         obj = self.cook_cluster()
-        obj.issue = json.dumps({"config": False})
+        obj.issue = {"config": False}
         upgrade = self.cook_upgrade()
         self.check_upgrade(obj, upgrade, False)
 
