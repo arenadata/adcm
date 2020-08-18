@@ -132,7 +132,7 @@
         <mat-icon>priority_hight</mat-icon>
       </button>
       <ng-template #actions>
-        <app-action-list (click)="$event.stopPropagation()" [entity]="row"></app-action-list>
+        <app-action-list (click)="$event.stopPropagation()" [cluster]="getClusterData(row)"></app-action-list>
       </ng-template>
     </mat-cell>
   </ng-container>

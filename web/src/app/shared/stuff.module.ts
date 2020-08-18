@@ -20,6 +20,7 @@ import { TooltipComponent } from './components/tooltip/tooltip.component';
 import { TooltipDirective } from './components/tooltip/tooltip.directive';
 import { BaseDirective, ForTestDirective, InfinityScrollDirective, MTextareaDirective, ScrollDirective, SocketListenerDirective } from './directives';
 import { MaterialModule } from './material.module';
+import { MenuItemComponent } from './components/actions/action-list/menu-item/menu-item.component';
 
 @NgModule({
   declarations: [
@@ -36,6 +37,7 @@ import { MaterialModule } from './material.module';
     ActionsComponent,
     ActionsDirective,
     ActionListComponent,
+    MenuItemComponent,
   ],
   imports: [CommonModule, MaterialModule, RouterModule],
   exports: [
@@ -52,6 +54,7 @@ import { MaterialModule } from './material.module';
     ActionsComponent,
     ActionsDirective,
     ActionListComponent,
+    MenuItemComponent,
   ],
 })
 export class StuffModule {}
