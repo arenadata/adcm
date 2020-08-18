@@ -17,6 +17,8 @@ import json
 from django.contrib.auth.models import User, Group, Permission
 from django.db import models
 
+from cm.errors import AdcmEx
+
 PROTO_TYPE = (
     ('adcm', 'adcm'),
     ('service', 'service'),
@@ -33,10 +35,6 @@ LICENSE_STATE = (
 )
 
 
-class JSONFieldFormatError(Exception):
-    pass
-
-
 class JSONField(models.Field):
     def db_type(self, connection):
         return 'text'
@@ -46,9 +44,8 @@ class JSONField(models.Field):
             try:
                 return json.loads(value)
             except json.JSONDecodeError:
-                raise JSONFieldFormatError(
-                    f"Not correct field format '{expression.field.attname}'"
-                )
+                raise AdcmEx(
+                    'JSON_DB_ERROR', msg=f"Not correct field format '{expression.field.attname}'")
         return value
 
     def get_prep_value(self, value):
