@@ -30,5 +30,5 @@ export interface IAction {
   hostcomponentmap: IActionParameter | null;
   button: 'create_host' | null;
   ui_options: IUIOptions;
-  children: IAction[];
+  children?: IAction[];
 }
