@@ -199,7 +199,7 @@ def check_action_state(action, obj):
 
 def lock_obj(obj, event):
     if obj.stack:
-        stack = json.loads(obj.stack)
+        stack = obj.stack
     else:
         stack = []
 
@@ -209,13 +209,13 @@ def lock_obj(obj, event):
         stack.append(obj.state)
 
     log.debug('lock %s, stack: %s', obj_ref(obj), stack)
-    obj.stack = json.dumps(stack)
+    obj.stack = stack
     api.set_object_state(obj, config.Job.LOCKED, event)
 
 
 def unlock_obj(obj, event):
     if obj.stack:
-        stack = json.loads(obj.stack)
+        stack = obj.stack
     else:
         log.warning('no stack in %s for unlock', obj_ref(obj))
         return
@@ -225,7 +225,7 @@ def unlock_obj(obj, event):
         log.warning('empty stack in %s for unlock', obj_ref(obj))
         return
     log.debug('unlock %s, stack: %s', obj_ref(obj), stack)
-    obj.stack = json.dumps(stack)
+    obj.stack = stack
     api.set_object_state(obj, state, event)
 
 

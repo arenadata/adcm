@@ -158,8 +158,8 @@ class TestJob(TestCase):
     def test_unlock_obj(self, mock_set_object_state):
         event = Mock()
         data = [
-            (Mock(stack='["running"]'), mock_set_object_state.assert_called_once),
-            (Mock(stack='[]'), mock_set_object_state.assert_not_called),
+            (Mock(stack=['running']), mock_set_object_state.assert_called_once),
+            (Mock(stack=[]), mock_set_object_state.assert_not_called),
             (Mock(stack=''), mock_set_object_state.assert_not_called),
         ]
 
