@@ -257,12 +257,9 @@ def save_components(proto, conf):
         fix_display_name(cc, component)
         check_component_constraint_definition(proto, comp_name, cc)
         check_component_requires(proto, comp_name, cc)
-        if in_dict(cc, 'params'):
-            component.params = cc['params']
-        if in_dict(cc, 'constraint'):
-            component.constraint = cc['constraint']
-        if in_dict(cc, 'requires'):
-            component.requires = cc['requires']
+        dict_to_obj(cc, 'params', component)
+        dict_to_obj(cc, 'constraint', component)
+        dict_to_obj(cc, 'requires', component)
         component.save()
 
 
