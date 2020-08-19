@@ -30,7 +30,8 @@ const TestParams: ActionParameters = {
       config: null,
       hostcomponentmap: null,
       button: null,
-      ui_options: null
+      ui_options: null,
+      description: ''
     }
   ]
 };
