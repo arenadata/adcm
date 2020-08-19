@@ -15,7 +15,7 @@ import { DynamicComponent, DynamicEvent } from '@app/shared/directives/dynamic.d
 
 import { BaseDirective } from '../../../directives/base.directive';
 import { ActionParameters } from '../actions.directive';
-import { ActionMasterConfigComponent } from './action-master-config.component';
+
 import { IValue, MasterService, whatShow } from './master.service';
 
 @Component({
@@ -42,7 +42,6 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
   show: whatShow;
 
   @ViewChild('runBtn', { read: ElementRef }) runBtn: ElementRef;
-  @ViewChild(ActionMasterConfigComponent) master: ActionMasterConfigComponent;
 
   constructor(private service: MasterService) {
     super();
@@ -61,8 +60,7 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
     return value && ((value.hostmap && value.hostmap.noValid) || (value.config && !value.config.form?.valid));
   }
 
-  run(value: IValue = {}) {    
-    value.attr = this.master?.fields?.attr;
+  run(value: IValue = {}) {
     const data = this.service.parseData(value);
     this.service
       .send(this.action.run, data)

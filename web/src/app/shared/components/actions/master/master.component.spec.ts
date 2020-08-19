@@ -208,7 +208,7 @@ describe('MasterComponent', () => {
     } as ConfigFieldsComponent;
 
     const result = service.parseData({ config });
-    expect(result).toEqual({ config: { string_ctr: 'string_test', bool_ctr: true }, hc: undefined });
+    expect(result).toEqual({ config: { string_ctr: 'string_test', bool_ctr: true }, hc: undefined, attr: undefined });
   });
 
   it('check value when ServiceHostComponent exist', () => {
@@ -216,6 +216,6 @@ describe('MasterComponent', () => {
     const hc = [{ host_id: 1, service_id: 4, component_id: 1, id: 9 }];
     const hostmap = { service: { statePost: { data: hc } } } as ServiceHostComponent;
     const result = service.parseData({ hostmap });
-    expect(result).toEqual({ config: undefined, hc });
+    expect(result).toEqual({ config: undefined, hc, attr: undefined });
   });
 });

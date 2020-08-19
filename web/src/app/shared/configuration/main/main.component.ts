@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit, ViewChild, Output, EventEmitter } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { EventMessage, SocketState } from '@app/core/store';
 import { SocketListenerDirective } from '@app/shared/directives';
 import { Store } from '@ngrx/store';
@@ -19,7 +19,7 @@ import { catchError, tap } from 'rxjs/operators';
 import { ConfigFieldsComponent } from '../fields/fields.component';
 import { HistoryComponent } from '../tools/history.component';
 import { ToolsComponent } from '../tools/tools.component';
-import { IConfig, PanelOptions } from '../types';
+import { IConfig } from '../types';
 import { historyAnime, ISearchParam, MainService } from './main.service';
 
 @Component({
@@ -119,7 +119,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
           this.saveFlag = false;
           this.rawConfig = c;
           this.cd.detectChanges();
-          this.event.emit({name: 'send', data: this.fields});
+          this.event.emit({ name: 'send', data: this.fields });
         })
       );
     } else {
