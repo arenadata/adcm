@@ -25,7 +25,7 @@ import { DisplayMode } from './provider.component';
   template: `
     <div [@openClose]="showForm" [style.overflow]="'hidden'">
       <app-add-host #form [displayMode]="1"></app-add-host>
-      <app-add-controls [disabled]="!form.form.valid" (cancel)="!Count ? onCancel() : (showForm = false)" (save)="save()"></app-add-controls>
+      <app-add-controls [title]="'Create and add'" [disabled]="!form.form.valid" (cancel)="!Count ? onCancel() : (showForm = false)" (save)="save()"></app-add-controls>
     </div>
 
     <div [@openClose]="!showForm" [style.overflow]="'hidden'">
@@ -47,7 +47,7 @@ import { DisplayMode } from './provider.component';
         </mat-list-option>
       </mat-selection-list>
       <mat-paginator *ngIf="Count" [length]="Count" [pageSizeOptions]="[10, 25, 50, 100]" (page)="pageHandler($event)"></mat-paginator>
-      <app-add-controls *ngIf="Count" [disabled]="!listHosts?._value?.length" (cancel)="onCancel()" (save)="addHost2Cluster(listHosts._value)"></app-add-controls>
+      <app-add-controls *ngIf="Count" [title]="'Add'" [disabled]="!listHosts?._value?.length" (cancel)="onCancel()" (save)="addHost2Cluster(listHosts._value)"></app-add-controls>
     </div>
   `,
   styles: ['.add-host2cluster { flex: 1; }', '.tools {text-align: right; margin-right: 16px;}'],
