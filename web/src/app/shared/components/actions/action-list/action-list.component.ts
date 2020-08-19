@@ -9,44 +9,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, Input, OnInit } from '@angular/core';
-import { IAction } from '@app/core/types';
+import { Component, Input } from '@angular/core';
 
-import { ActionsService } from '../actions.service';
-import { mapTo, map } from 'rxjs/operators';
-
-const fruit = {
-  display_name: 'Fruit',
-  desctiption: 'fruit description',
-  children: [
-    { display_name: 'Apple', description: 'description or some description about this action description or some description about this action' },
-    { display_name: 'Banana', description: 'description or some description about this action bannana' },
-    { display_name: 'Fruit loops', description: '' },
-  ],
-};
-
-const vegetable = {
-  display_name: 'Vegetables',
-  desctiption: 'description or some description about this action some description about this action Vegetables',
-  children: [
-    {
-      display_name: 'Green',
-      description: 'description or some description about this action description or some description about this action',
-      children: [
-        { display_name: 'Broccoli', description: 'description or some description about this action description or some description about this action' },
-        { display_name: 'Brussels sprouts', description: 'description or some description about this action bannana' },
-      ],
-    },
-    {
-      display_name: 'Orange',
-      description: 'description or some description about this action bannana',
-      children: [
-        { display_name: 'Pumpkins', description: 'description or some description about this action description or some description about this action' },
-        { display_name: 'Carrots', description: 'description or some description about this action bannana' },
-      ],
-    },
-  ],
-};
+import { ActionsService, fruit, vegetable } from '../actions.service';
 
 @Component({
   selector: 'app-action-list',
@@ -66,8 +31,8 @@ export class ActionListComponent {
   getData(): void {
     if (!this.actions?.length)
       this.service
-        .getActions(this.cluster.action)
-        .pipe(map((a) => [fruit, vegetable, ...a]))
+        .getActions(this.cluster.action)        
         .subscribe((a) => (this.actions = a));
+    else this.actions = [fruit, vegetable, ...this.actions];
   }
 }

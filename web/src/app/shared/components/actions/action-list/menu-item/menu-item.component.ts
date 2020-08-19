@@ -19,7 +19,7 @@ import { MatMenu } from '@angular/material/menu';
   template: ` <mat-menu #menu="matMenu" xPosition="before" yPosition="below" overlapTrigger="false">
     <ng-container *ngFor="let a of items">
       <button *ngIf="!a.children; else branch" [appForTest]="'action_btn'" mat-menu-item [appActions]="{ cluster: cluster, actions: [a] }">
-        <span>{{ a.display_name }}</span>
+        <span class="warn">{{ a.display_name }}</span>
       </button>
       <ng-template #branch>
         <button mat-menu-item [matMenuTriggerFor]="inner.menu">

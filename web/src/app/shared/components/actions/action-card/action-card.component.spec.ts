@@ -13,11 +13,11 @@ import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialogModule } from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { ClusterService } from '@app/core';
-import { ApiService } from '@app/core/api';
-import { Entities } from '@app/core/types';
 
 import { ActionCardComponent } from './action-card.component';
+import { ActionsService } from '../actions.service';
+import { ClusterService } from '../../../../core/services/detail.service';
+import { Entities } from '../../../../core/types/';
 
 describe('ActionCardComponent', () => {
   let component: ActionCardComponent;
@@ -27,8 +27,8 @@ describe('ActionCardComponent', () => {
     TestBed.configureTestingModule({
       imports: [MatDialogModule, NoopAnimationsModule],
       providers: [
-        { provide: ApiService, useValue: { get: () => {} } },
-        { provide: ClusterService, useValue: { Cluster: {}, Current: {}} }
+        { provide: ActionsService, useValue: { getActions: () => {} } },
+        { provide: ClusterService, useValue: { Cluster: {}, Current: {} } },
         // {
         //   provide: MatDialogRef,
         //   useValue: {

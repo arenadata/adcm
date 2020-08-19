@@ -21,6 +21,7 @@ import { TooltipDirective } from './components/tooltip/tooltip.directive';
 import { BaseDirective, ForTestDirective, InfinityScrollDirective, MTextareaDirective, ScrollDirective, SocketListenerDirective } from './directives';
 import { MaterialModule } from './material.module';
 import { MenuItemComponent } from './components/actions/action-list/menu-item/menu-item.component';
+import { CardItemComponent } from './components/actions/action-card/card-item/card-item.component';
 
 @NgModule({
   declarations: [
@@ -38,6 +39,7 @@ import { MenuItemComponent } from './components/actions/action-list/menu-item/me
     ActionsDirective,
     ActionListComponent,
     MenuItemComponent,
+    CardItemComponent,
   ],
   imports: [CommonModule, MaterialModule, RouterModule],
   exports: [
@@ -55,6 +57,7 @@ import { MenuItemComponent } from './components/actions/action-list/menu-item/me
     ActionsDirective,
     ActionListComponent,
     MenuItemComponent,
+    CardItemComponent,
   ],
 })
 export class StuffModule {}
