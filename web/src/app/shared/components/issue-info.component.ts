@@ -63,9 +63,10 @@ export class IssueInfoComponent implements OnInit {
   }
 
   getParent() {
+    const parse = (arr: string[]) => arr.map((b) => b.split(';')[0]).join('/');
     if (this.parent && this.parent.cluster_id !== this.current.id) {
       return this.typeName === 'provider' ? '/provider' : `${this.parent.typeName.split(';')[0]}/${this.parent.id}/${this.typeName}`;
-    } else return this.typeName.split(';')[0];
+    } else return parse(this.typeName.split('/'));
   }
 
   isArray(issue: [] | false): boolean {
