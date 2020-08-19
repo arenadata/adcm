@@ -10,15 +10,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input, OnInit } from '@angular/core';
-import { Issue } from '@app/core/types';
+import { Issue, TypeName } from '@app/core/types';
 
 import { ComponentData } from './tooltip/tooltip.service';
+
+export interface IIssueInfo {
+  id: number;
+  cluster_id: number;
+  typeName: TypeName;
+  issue: Issue;
+}
 
 @Component({
   selector: 'app-issue-info',
   template: `
     <div>{{ intro }}</div>
-    <div *ngFor="let name of getNamesIssue()">
+    <div *ngFor="let name of namesIssue">
       <ng-container *ngIf="isArray(current.issue[name]); else item_tpl">
         <div class="item-step">
           {{ name }}:
@@ -37,9 +44,9 @@ import { ComponentData } from './tooltip/tooltip.service';
 export class IssueInfoComponent implements OnInit {
   issues: Issue;
   @Input() intro = 'Issues in:';
-  @Input() typeName: string;
-  @Input() current: any;
-  @Input() parent: any;
+  @Input() typeName: TypeName;
+  @Input() current: IIssueInfo;
+  @Input() parent: IIssueInfo;
 
   IssuePatch = {
     required_service: 'service',
@@ -56,7 +63,7 @@ export class IssueInfoComponent implements OnInit {
   constructor(private componentData: ComponentData) {}
 
   ngOnInit(): void {
-    this.current = this.current || this.componentData.current;
+    this.current = this.current || (this.componentData.current as any);
     this.typeName = this.typeName || this.componentData.typeName;
     this.current.typeName = this.typeName;
     this.componentData.emitter.emit('Done');
@@ -73,7 +80,7 @@ export class IssueInfoComponent implements OnInit {
     return Array.isArray(issue);
   }
 
-  getNamesIssue() {
+  get namesIssue() {
     return Object.keys(this.current.issue || {});
   }
 }
