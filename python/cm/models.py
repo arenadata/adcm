@@ -378,6 +378,12 @@ class GroupCheckLog(models.Model):
     message = models.TextField(blank=True, null=True)
     result = models.BooleanField(blank=True, null=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['job_id', 'title'], name='unique_group_job')
+        ]
+
 
 class CheckLog(models.Model):
     group = models.ForeignKey(GroupCheckLog, blank=True, null=True, on_delete=models.CASCADE)

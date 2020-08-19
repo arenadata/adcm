@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { ChangeDetectorRef, Component, Input, OnInit, ViewChild, SimpleChanges, OnChanges } from '@angular/core';
+import { Component, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { FieldDirective } from '@app/shared/form-elements/field.directive';
 import { BaseMapListDirective } from '@app/shared/form-elements/map.component';
@@ -31,8 +31,6 @@ export class FieldComponent implements OnInit, OnChanges {
 
   @ViewChild('cc') inputControl: FieldDirective;
 
-  constructor(public cd: ChangeDetectorRef) {}
-
   ngOnInit() {
     this.initCurrentGroup();
   }
@@ -42,7 +40,7 @@ export class FieldComponent implements OnInit, OnChanges {
   }
 
   initCurrentGroup() {
-    const [subname, name] = this.options.key.split('/');
+    const [_, name] = this.options.key.split('/');
     this.currentFormGroup = name ? (this.form.controls[name] as FormGroup) : this.form;
   }
 

@@ -25,14 +25,13 @@ from datetime import timedelta, datetime
 
 from background_task import background
 from django.db import transaction
-from django.db.utils import IntegrityError
 from django.utils import timezone
 
 import cm.config as config
 from cm import api, issue, inventory, adcm_config
-from cm.adcm_config import obj_ref, process_file_type, process_config
+from cm.adcm_config import obj_ref, process_file_type
 from cm.errors import raise_AdcmEx as err
-from cm.inventory import get_obj_config
+from cm.inventory import get_obj_config, process_config_and_attr
 from cm.logger import log
 from cm.models import (
     Cluster, Action, SubAction, TaskLog, JobLog, CheckLog, Host, ADCM,
@@ -114,7 +113,7 @@ def prepare_task(action, obj, selector, conf, attr, spec, old_hc, delta, host_ma
         _job = create_job(action, None, selector, event, task.id)
 
     if conf:
-        new_conf = process_config(task, spec, conf)
+        new_conf = process_config_and_attr(task, conf, attr, spec)
         process_file_type(task, spec, conf)
         task.config = json.dumps(new_conf)
         task.save()
@@ -258,7 +257,17 @@ def lock_objects(obj, event):
         log.warning('lock_objects: unknown object type: %s', obj)
 
 
-def unlock_objects(obj, event):
+def unlock_deleted_objects(job, event):
+    if not job:
+        log.warning('unlock_deleted_objects: no job')
+        return
+    selector = json.loads(job.selector)
+    if 'cluster' in selector:
+        cluster = Cluster.objects.get(id=selector['cluster'])
+        unlock_objects(cluster, event)
+
+
+def unlock_objects(obj, event, job=None):
     if isinstance(obj, ClusterObject):
         unlock_obj(obj, event)
         unlock_obj(obj.cluster, event)
@@ -282,6 +291,8 @@ def unlock_objects(obj, event):
             unlock_obj(service, event)
         for host in Host.objects.filter(cluster=obj):
             unlock_obj(host, event)
+    elif obj is None:
+        unlock_deleted_objects(job, event)
     else:
         log.warning('unlock_objects: unknown object type: %s', obj)
 
@@ -751,7 +762,7 @@ def finish_task(task, job, status):
         DummyData.objects.filter(id=1).update(date=timezone.now())
         if state is not None:
             set_action_state(action, task, obj, state)
-        unlock_objects(obj, event)
+        unlock_objects(obj, event, job)
         restore_hc(task, action, status)
         set_task_status(task, status, event)
     event.send_state()
@@ -844,15 +855,12 @@ def log_check(job_id, group_data, check_data):
     if group is not None:
         group_data.update({'group': group})
         log_group_check(**group_data)
-    try:
-        l1, _ = LogStorage.objects.get_or_create(
-            job=job, name='ansible', type='check', format='json'
-        )
-        post_event('add_job_log', 'job', job_id, {
-            'id': l1.id, 'type': l1.type, 'name': l1.name, 'format': l1.format,
-        })
-    except IntegrityError:
-        pass
+
+    ls, _ = LogStorage.objects.get_or_create(job=job, name='ansible', type='check', format='json')
+
+    post_event('add_job_log', 'job', job_id, {
+        'id': ls.id, 'type': ls.type, 'name': ls.name, 'format': ls.format,
+    })
     return cl
 
 

@@ -141,9 +141,8 @@ def test_playbook_path(sdk_client_fs: ADCMClient):
 
 def test_empty_default_config_value(sdk_client_fs: ADCMClient):
     stack_dir = utils.get_data_dir(__file__, 'empty_default_config_value')
-    with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-        sdk_client_fs.upload_from_fs(stack_dir)
-    errorcodes.CONFIG_VALUE_ERROR.equal(e, 'Default value of config key', 'should be not empty')
+    sdk_client_fs.upload_from_fs(stack_dir)
+    assert sdk_client_fs.service_prototype_list() is not None
 
 
 def test_load_stack_w_empty_config_field(client):

@@ -3,7 +3,7 @@
 
   <ng-container [ngSwitch]="options.controlType">
     <ng-container *ngSwitchCase="'structure'">
-      <app-scheme [field]="options" [form]="form" #cc></app-scheme>
+      <app-scheme [field]="options" [form]="currentFormGroup" #cc></app-scheme>
     </ng-container>
     <ng-container *ngSwitchCase="'map'">
       <app-fields-map [field]="options" [form]="currentFormGroup" #cc></app-fields-map>

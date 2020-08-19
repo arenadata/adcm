@@ -53,7 +53,7 @@ def encrypt_passwords(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cm', '0055_auto_20200424_1241'),
+        ('cm', '0056_auto_20200714_0741'),
     ]
 
     operations = [

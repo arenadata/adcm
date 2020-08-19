@@ -34,10 +34,10 @@ import { SupportComponent } from './support/support.component';
         path: 'admin',
         loadChildren: () => import('app/admin/admin.module').then(m => m.AdminModule),
       },
-      {
-        path: 'wizard',
-        loadChildren: () => import('app/wizard/wizard.module').then(m => m.WizardModule),
-      },
+      // {
+      //   path: 'wizard',
+      //   loadChildren: () => import('app/wizard/wizard.module').then(m => m.WizardModule),
+      // },
       { path: '**', component: PageNotFoundComponent },
     ]),
   ],

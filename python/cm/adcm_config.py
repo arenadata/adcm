@@ -197,7 +197,8 @@ def get_prototype_config(proto, action=None):
     return (spec, flat_spec, conf, attr)
 
 
-def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-locals
+def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+    # process objects without config
     if not obj.config:
         spec, _, conf, attr = get_prototype_config(new_proto)
         obj_conf = init_object_config(spec, conf, attr)
@@ -221,9 +222,20 @@ def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-local
                 return True
         return False
 
+    # set new default config values and gather information about activatable groups
     new_conf = {}
+    active_groups = {}
+    inactive_groups = {}
     for key in new_spec:
         if new_spec[key].type == 'group':
+            limits = {}
+            if new_spec[key].limits:
+                limits = json.loads(new_spec[key].limits)
+            if 'activatable' in limits and 'active' in limits:
+                if limits['active']:
+                    active_groups[key.rstrip('/')] = True
+                else:
+                    inactive_groups[key.rstrip('/')] = True
             continue
         if key in old_spec:
             if is_new_default(key):
@@ -233,6 +245,7 @@ def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-local
         else:
             new_conf[key] = get_default(new_spec[key], new_proto)
 
+    # go from flat config to 2-level dictionary
     unflat_conf = {}
     for key in new_conf:
         k1, k2 = key.split('/')
@@ -243,7 +256,18 @@ def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-local
                 unflat_conf[k1] = {}
             unflat_conf[k1][k2] = new_conf[key]
 
-    save_obj_config(obj.config, unflat_conf, 'upgrade', cl.attr)
+    # skip inactive groups and set attributes for new config
+    attr = {}
+    if cl.attr:
+        attr = json.loads(cl.attr)
+    for key in unflat_conf:
+        if key in active_groups:
+            attr[key] = {'active': True}
+        if key in inactive_groups:
+            unflat_conf[key] = None
+            attr[key] = {'active': False}
+
+    save_obj_config(obj.config, unflat_conf, 'upgrade', json.dumps(attr))
     process_file_type(obj, new_unflat_spec, unflat_conf)
 
 
@@ -314,7 +338,7 @@ def process_file_type(obj, spec, conf):
         if 'type' in spec[key]:
             if spec[key]['type'] == 'file':
                 save_file_type(obj, key, '', conf[key])
-        else:
+        elif conf[key]:
             for subkey in conf[key]:
                 if spec[key][subkey]['type'] == 'file':
                     save_file_type(obj, key, subkey, conf[key][subkey])
@@ -370,7 +394,7 @@ def process_config(obj, spec, old_conf):   # pylint: disable=too-many-branches
                 elif spec[key]['type'] == 'password':
                     if config.ANSIBLE_VAULT_HEADER in conf[key]:
                         conf[key] = {'__ansible_vault': conf[key]}
-        else:
+        elif conf[key]:
             for subkey in conf[key]:
                 if conf[key][subkey] is not None:
                     if spec[key][subkey]['type'] == 'file':
@@ -603,7 +627,7 @@ def check_config_spec(proto, obj, spec, flat_spec, conf, old_conf=None, attr=Non
             err('CONFIG_KEY_ERROR', msg.format(key, ref))
         if not conf[key]:
             msg = 'Key "{}" should contains some subkeys ({})'
-            err('CONFIG_KEY_ERROR', msg.format(key, ref))
+            err('CONFIG_KEY_ERROR', msg.format(key, ref), list(spec[key].keys()))
         for subkey in conf[key]:
             if subkey not in spec[key]:
                 msg = 'There is unknown subkey "{}" for key "{}" in input config ({})'
@@ -708,7 +732,7 @@ def check_config_type(proto, key, subkey, spec, value, default=False, inactive=F
     if spec['type'] in ('string', 'password', 'text'):
         if not isinstance(value, str):
             err('CONFIG_VALUE_ERROR', tmpl2.format("should be string"))
-        if value == '':
+        if 'required' in spec and spec['required'] and value == '':
             err('CONFIG_VALUE_ERROR', tmpl1.format("should be not empty"))
 
     if spec['type'] == 'file':

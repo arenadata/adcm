@@ -12,7 +12,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '@app/core/api';
-import { EmmitRow, Issue, notIssue } from '@app/core/types';
+import { EmmitRow, Issue, isIssue } from '@app/core/types';
 import { concat, Observable, of } from 'rxjs';
 import { filter, map, switchMap } from 'rxjs/operators';
 
@@ -50,7 +50,7 @@ interface Upgrade {
     >
       <mat-icon>sync_problem</mat-icon>
     </button>
-    <mat-menu #menu="matMenu" [overlapTrigger]="false" xPosition="before">
+    <mat-menu #menu="matMenu" [overlapTrigger]="false" [xPosition]="xPosition" yPosition="below">
       <ng-template matMenuContent>
         <button *ngFor="let item of list$ | async" mat-menu-item (click)="runUpgrade(item)">
           <span>{{ item.name || 'No name' }}</span>
@@ -62,6 +62,8 @@ interface Upgrade {
 export class UpgradeComponent extends BaseDirective {
   list$: Observable<Upgrade[]>;
   row: UpgradeItem = { upgradable: false, upgrade: '', issue: null };
+
+  @Input() xPosition = 'before';
 
   @Input()
   set dataRow(row: UpgradeItem) {
@@ -79,7 +81,7 @@ export class UpgradeComponent extends BaseDirective {
   }
 
   checkIssue() {
-    return this.row.upgradable && notIssue(this.row.issue);
+    return this.row.upgradable && !isIssue(this.row.issue);
   }
 
   runUpgrade(item: Upgrade) {

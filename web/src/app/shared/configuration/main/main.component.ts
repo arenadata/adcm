@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { EventMessage, SocketState } from '@app/core/store';
 import { SocketListenerDirective } from '@app/shared/directives';
 import { Store } from '@ngrx/store';
@@ -19,7 +19,7 @@ import { catchError, tap } from 'rxjs/operators';
 import { ConfigFieldsComponent } from '../fields/fields.component';
 import { HistoryComponent } from '../tools/history.component';
 import { ToolsComponent } from '../tools/tools.component';
-import { IConfig, PanelOptions } from '../types';
+import { IConfig } from '../types';
 import { historyAnime, ISearchParam, MainService } from './main.service';
 
 @Component({
@@ -49,6 +49,9 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
     this.config$ = this.getConfig();
   }
 
+  @Output()
+  event = new EventEmitter<{ name: string; data?: any }>();
+
   get cUrl() {
     return `${this.url}current/`;
   }
@@ -57,7 +60,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
     return `${this.url}history/`;
   }
 
-  constructor(private service: MainService, private cd: ChangeDetectorRef, socket: Store<SocketState>) {
+  constructor(private service: MainService, public cd: ChangeDetectorRef, socket: Store<SocketState>) {
     super(socket);
   }
 
@@ -104,24 +107,19 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
     );
   }
 
-  getActivatableGroup() {
-    return this.fields.dataOptions
-      .filter((a) => a.type === 'group' && (a as PanelOptions).activatable)
-      .reduce((p, c: PanelOptions) => ({ ...p, [c.name]: { active: c.active } }), {});
-  }
-
   save() {
     const form = this.fields.form;
     if (form.valid) {
       this.saveFlag = true;
       this.historyComponent.reset();
       const config = this.service.parseValue(this.fields.form.value, this.rawConfig.config);
-      const send = { config, attr: this.getActivatableGroup(), description: this.tools.description.value };
+      const send = { config, attr: this.fields.attr, description: this.tools.description.value };
       this.config$ = this.service.send(this.saveUrl, send).pipe(
         tap((c) => {
           this.saveFlag = false;
           this.rawConfig = c;
           this.cd.detectChanges();
+          this.event.emit({ name: 'send', data: this.fields });
         })
       );
     } else {
