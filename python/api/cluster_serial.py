@@ -302,7 +302,7 @@ class HostComponentUISerializer(serializers.Serializer):
 
 
 class HostComponentSaveSerializer(serializers.Serializer):
-    hc = JSONField()
+    hc = serializers.JSONField()
 
     def validate_hc(self, hc):
         if not hc:
