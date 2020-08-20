@@ -21,12 +21,12 @@ import { BaseFormDirective } from './base-form.directive';
   template: `
     <ng-container *ngIf="options$ | async as protos">
       <mat-selection-list #listServices (selectionChange)="selectAll($event)">
-        <mat-list-option *ngIf="protos.length"><i>Select all</i></mat-list-option>
+        <mat-list-option *ngIf="protos.length">&nbsp;</mat-list-option>
         <mat-list-option *ngFor="let proto of protos" [value]="proto">
           {{ proto.name }}
         </mat-list-option>
       </mat-selection-list>
-      <app-add-controls *ngIf="protos.length; else not" [disabled]="!form.valid" (cancel)="onCancel()" (save)="save()"></app-add-controls>
+      <app-add-controls *ngIf="protos.length; else not" [title]="'Add'" [disabled]="!form.valid" (cancel)="onCancel()" (save)="save()"></app-add-controls>
     </ng-container>
     <ng-template #not>
       <p>
