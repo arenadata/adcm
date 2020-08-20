@@ -25,7 +25,7 @@ export class HostComponent {}
 @Component({
   selector: 'app-services',
   template: `
-    <app-add-button [name]="'service'" class="add-button">Add service</app-add-button>
+    <app-add-button [name]="'service'" class="add-button">Add services</app-add-button>
     <app-list class="main" [appBaseList]="'service2cluster'" appActionHandler></app-list>
   `,
   styles: [':host { flex: 1; }', '.add-button {position:fixed; right: 20px;top:120px;}'],

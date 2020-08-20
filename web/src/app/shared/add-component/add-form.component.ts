@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, ViewChild, ContentChild } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { DynamicComponent } from '@app/shared/directives';
 
 import { FormModel } from './add.service';
