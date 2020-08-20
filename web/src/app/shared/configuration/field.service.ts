@@ -149,29 +149,23 @@ export class FieldService {
     if (field.validator.min !== null) v.push(Validators.min(field.validator.min));
 
     if (field.controlType === 'json') {
-      const jsonParse = (): ValidatorFn => {
-        return (control: AbstractControl): { [key: string]: any } | null => {
-          if (control.value) {
-            try {
-              JSON.parse(control.value);
-              return null;
-            } catch (e) {
-              return { jsonParseError: { value: control.value } };
-            }
-          } else return null;
-        };
+      const jsonParse = (): ValidatorFn => (control: AbstractControl): { [key: string]: any } | null => {
+        if (control.value) {
+          try {
+            JSON.parse(control.value);
+            return null;
+          } catch (e) {
+            return { jsonParseError: { value: control.value } };
+          }
+        } else return null;
       };
+
       v.push(jsonParse());
     }
 
     if (field.controlType === 'map') {
-      const parseKey = (): ValidatorFn => {
-        return (control: AbstractControl): { [key: string]: any } | null => {
-          if (control.value && Object.keys(control.value).length && Object.keys(control.value).some((a) => !a)) {
-            return { parseKey: true };
-          } else return null;
-        };
-      };
+      const parseKey = (): ValidatorFn => (control: AbstractControl): { [key: string]: any } | null =>
+        control.value && Object.keys(control.value).length && Object.keys(control.value).some((a) => !a) ? { parseKey: true } : null;
       v.push(parseKey());
     }
     return v;

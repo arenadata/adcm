@@ -9,15 +9,30 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit, OnChanges, SimpleChanges } from '@angular/core';
-import { FormArray, FormGroup } from '@angular/forms';
+import { Component, OnChanges, OnInit, SimpleChanges } from '@angular/core';
+import { AbstractControl, FormArray, FormGroup, ValidatorFn } from '@angular/forms';
+import { isObject } from '@app/core/types';
 import { FieldDirective } from '@app/shared/form-elements/field.directive';
 
 import { IYContainer, IYField, YspecService } from '../yspec/yspec.service';
 
 @Component({
   selector: 'app-scheme',
-  template: '<app-root-scheme *ngIf="show" #root [form]="currentFormGroup" [isReadOnly]="isReadOnly" [options]="rules" [value]="defaultValue"></app-root-scheme>',
+  styles: [
+    `
+      div.main {
+        flex: 1;
+      }
+      .error {
+        display: block;
+        margin: -20px 0 6px 10px;
+      }
+    `,
+  ],
+  template: `<div class="main">
+    <app-root-scheme *ngIf="show" #root [form]="currentFormGroup" [isReadOnly]="isReadOnly" [options]="rules" [value]="defaultValue"></app-root-scheme>
+    <mat-error *ngIf="hasError('isEmpty')" class="error">Field [{{ field.display_name }}] is required!</mat-error>
+  </div>`,
 })
 export class SchemeComponent extends FieldDirective implements OnInit, OnChanges {
   currentFormGroup: FormGroup | FormArray;
@@ -49,8 +64,16 @@ export class SchemeComponent extends FieldDirective implements OnInit, OnChanges
     this.rules.name = '';
   }
 
+  validator() {
+    const isEmptyArray = (v: any) => (Array.isArray(v) && v.length ? v.some((a) => isEmptyValue(a)) : false);
+    const isEmptyObj = (v: any) => (isObject(v) && Object.keys(v).length ? Object.keys(v).some((a) => isEmptyValue(v[a])) : false);
+    const isEmptyValue = (v: any) => !v || (Array.isArray(v) && !v.length) || (isObject(v) && !Object.keys(v).length) || isEmptyArray(v) || isEmptyObj(v);
+    return (): ValidatorFn => (control: AbstractControl): { [key: string]: any } | null => (isEmptyValue(control.value) ? { isEmpty: true } : null);
+  }
+
   resetFormGroup() {
-    const form = this.currentFormGroup ? this.currentFormGroup : this.rules.type === 'list' ? new FormArray([]) : new FormGroup({});
+    const v = this.validator();
+    const form = this.currentFormGroup ? this.currentFormGroup : this.rules.type === 'list' ? new FormArray([], v()) : new FormGroup({}, v());
     this.form.removeControl(this.field.name);
     this.form.addControl(this.field.name, form);
     return form;
