@@ -19,7 +19,7 @@ export interface IIssueInfo {
   issue: Issue;
   cluster_id?: number;
   name?: string;
-  path?: string;  
+  path?: string;
 }
 
 @Component({
@@ -71,9 +71,7 @@ export class IssueInfoComponent implements OnInit {
   }
 
   get Path() {
-    if (this.parent && this.parent.cluster_id !== this.current.id) {
-      return this.path === 'provider' ? '/provider' : `${this.parent.path}/${this.parent.id}/${this.path}`;
-    } else return this.path;
+    return this.parent && this.parent.cluster_id !== this.current.id ? `${this.parent.path}/${this.parent.id}/${this.path}` : this.path;
   }
 
   isArray(issue: [] | false): boolean {
