@@ -9,15 +9,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+import { EventEmitter } from '@angular/core';
+import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { RouterTestingModule } from '@angular/router/testing';
 
-import { async, TestBed, ComponentFixture } from '@angular/core/testing';
 import { IssueInfoComponent } from './issue-info.component';
 import { ComponentData } from './tooltip/tooltip.service';
-import { EventEmitter } from '@angular/core';
 
 class MockComponentData {
-  typeName = 'cluster';
-  current = { issue: { host_component: false, service: [{ id: 1, name: 'Service_Name', issue: { config: false } }] } };
+  path = 'cluster';
+  current = { id: 1 };
   emitter = new EventEmitter();
 }
 
@@ -27,6 +28,7 @@ describe('Issue-info component', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
+      imports: [RouterTestingModule],
       declarations: [IssueInfoComponent],
       providers: [{ provide: ComponentData, useClass: MockComponentData }],
     }).compileComponents();
@@ -42,4 +44,34 @@ describe('Issue-info component', () => {
     expect(component).toBeTruthy();
   });
 
+  it('issue at the current element', () => {
+    component.current.issue = { host_component: false };
+    fixture.detectChanges();
+    const href = fixture.nativeElement.querySelector('div:last-child a').getAttribute('href');
+    const c = component.current;
+    const issueName = Object.keys(c.issue)[0];
+    expect(href).toBe(`/${c.path}/${c.id}/${issueName}`);
+  });
+
+  it('issue at the daughter elements', () => {
+    component.current.issue = { service: [{ id: 1, name: 'Service_Name', issue: { config: false } }] };
+    fixture.detectChanges();
+    const href = fixture.nativeElement.querySelector('div:last-child a').getAttribute('href');
+    const c = component.current;
+    const daughterName = Object.keys(c.issue)[0];
+    const daughterObj = c.issue[daughterName][0];
+    const issueName = Object.keys(daughterObj.issue)[0];
+    expect(href).toBe(`/${c.path}/${c.id}/${daughterName}/${daughterObj.id}/${issueName}`);
+  });
+
+  it('issue at the parent element', () => {
+    component.current = { id: 2, cluster_id: 1, issue: { cluster: [{ id: 1, name: 'Cluster_Name', issue: { config: false } }] } };
+    fixture.detectChanges();
+    const href = fixture.nativeElement.querySelector('div:last-child a').getAttribute('href');
+    const c = component.current;
+    const parentName = Object.keys(c.issue)[0];
+    const parentObj = c.issue[parentName][0];
+    const issueName = Object.keys(parentObj.issue)[0];
+    expect(href).toBe(`/${parentObj.path}/${parentObj.id}/${issueName}`);
+  });
 });

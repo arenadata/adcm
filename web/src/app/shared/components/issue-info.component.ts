@@ -10,15 +10,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input, OnInit } from '@angular/core';
-import { Issue, TypeName } from '@app/core/types';
+import { Issue } from '@app/core/types';
 
 import { ComponentData } from './tooltip/tooltip.service';
 
 export interface IIssueInfo {
   id: number;
-  cluster_id: number;
-  typeName: TypeName;
   issue: Issue;
+  cluster_id?: number;
+  name?: string;
+  path?: string;  
 }
 
 @Component({
@@ -30,12 +31,12 @@ export interface IIssueInfo {
         <div class="item-step">
           {{ name }}:
           <span *ngFor="let o of current.issue[name]">
-            <b>{{ o.name }}</b> <app-issue-info [current]="o" [typeName]="name" [intro]="''" [parent]="current"></app-issue-info>
+            <b>{{ o.name }}</b> <app-issue-info [current]="o" [path]="name" [intro]="''" [parent]="current"></app-issue-info>
           </span>
         </div>
       </ng-container>
       <ng-template #item_tpl>
-        <a [routerLink]="[getParent(), current.id, IssuePatch[name] || name]">{{ IssueNames[name] || name }}</a>
+        <a [routerLink]="[Path, current.id, IssuePatch[name] || name]">{{ IssueNames[name] || name }}</a>
       </ng-template>
     </div>
   `,
@@ -44,7 +45,7 @@ export interface IIssueInfo {
 export class IssueInfoComponent implements OnInit {
   issues: Issue;
   @Input() intro = 'Issues in:';
-  @Input() typeName: TypeName;
+  @Input() path: string;
   @Input() current: IIssueInfo;
   @Input() parent: IIssueInfo;
 
@@ -63,17 +64,16 @@ export class IssueInfoComponent implements OnInit {
   constructor(private componentData: ComponentData) {}
 
   ngOnInit(): void {
-    this.current = this.current || (this.componentData.current as any);
-    this.typeName = this.typeName || this.componentData.typeName;
-    this.current.typeName = this.typeName;
+    this.current = this.current || this.componentData.current;
+    this.path = this.path || this.componentData.path;
+    this.current.path = this.path;
     this.componentData.emitter.emit('Done');
   }
 
-  getParent() {
-    const parse = (arr: string[]) => arr.map((b) => b.split(';')[0]).join('/');
+  get Path() {
     if (this.parent && this.parent.cluster_id !== this.current.id) {
-      return this.typeName === 'provider' ? '/provider' : `${this.parent.typeName.split(';')[0]}/${this.parent.id}/${this.typeName}`;
-    } else return parse(this.typeName.split('/'));
+      return this.path === 'provider' ? '/provider' : `${this.parent.path}/${this.parent.id}/${this.path}`;
+    } else return this.path;
   }
 
   isArray(issue: [] | false): boolean {

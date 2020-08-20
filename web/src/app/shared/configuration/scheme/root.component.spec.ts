@@ -13,7 +13,7 @@ import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { RootComponent } from './root.component';
 import { FieldService } from '../field.service';
-import { FormBuilder } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, FormGroup } from '@angular/forms';
 import { IYContainer } from '../yspec/yspec.service';
 
 describe('RootComponent', () => {
@@ -22,6 +22,7 @@ describe('RootComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
+      imports: [ReactiveFormsModule],
       declarations: [RootComponent],
       providers: [FieldService, FormBuilder]
     }).compileComponents();
@@ -43,6 +44,7 @@ describe('RootComponent', () => {
       }
     };
     component.options = item;
+    component.form = new FormGroup({});
     
     fixture.detectChanges();
   });
