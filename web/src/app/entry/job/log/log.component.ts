@@ -9,13 +9,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ClusterService } from '@app/core';
 import { EventMessage, SocketState } from '@app/core/store';
 import { Job, JobStatus, LogFile } from '@app/core/types';
 import { SocketListenerDirective } from '@app/shared';
 import { Store } from '@ngrx/store';
+import { Subject } from 'rxjs';
 
 import { TextComponent } from './text.component';
 
@@ -27,19 +28,6 @@ export interface ITimeInfo {
 
 @Component({
   selector: 'app-job-log',
-  template: `
-    <app-job-info [TimeInfo]="timeInfo" [status]="status"></app-job-info>
-    <div class="wrap" *ngIf="currentLog">
-      <ng-container *ngIf="currentLog.type !== 'check'; else check">
-        <app-log-text [log]="currentLog" [status]="status" (onrefresh)="refresh()"></app-log-text>
-      </ng-container>
-      <ng-template #check>
-        <mat-accordion class="accordion">
-          <app-log-check [log]="currentLog"></app-log-check>
-        </mat-accordion>
-      </ng-template>
-    </div>
-  `,
   styles: [
     `
       :host {
@@ -60,13 +48,22 @@ export interface ITimeInfo {
       }
     `,
   ],
+  template: `
+    <app-job-info [timeInfo]="timeInfo" [status]="job.status"></app-job-info>
+    <div class="wrap" *ngIf="currentLog$ | async as log">
+      <app-log-text *ngIf="log.type !== 'check'" [content]="log.content" [status]="job.status" (refresh)="refresh()"></app-log-text>
+      <mat-accordion *ngIf="log.type === 'check'" class="accordion">
+        <app-log-check [content]="log.content"></app-log-check>
+      </mat-accordion>
+    </div>
+  `,
 })
-export class LogComponent extends SocketListenerDirective implements OnInit, AfterViewInit {
-  currentLog: Partial<LogFile> = {};
+export class LogComponent extends SocketListenerDirective implements OnInit {
+  currentLog$ = new Subject<LogFile>();
   timeInfo: ITimeInfo;
-  status: JobStatus;
+  logUrl: string;
 
-  @ViewChild(TextComponent) textComp: TextComponent;
+  @ViewChild(TextComponent, { static: true }) textComp: TextComponent;
 
   constructor(private service: ClusterService, private route: ActivatedRoute, public store: Store<SocketState>) {
     super(store);
@@ -77,40 +74,29 @@ export class LogComponent extends SocketListenerDirective implements OnInit, Aft
   }
 
   ngOnInit() {
-    this.status = this.job.status;
     this.timeInfo = this.service.getOperationTimeData(this.job);
+    this.route.paramMap.pipe(this.takeUntil()).subscribe((p) => {
+      this.logUrl = this.job.log_files.find((a) => a.id === +p.get('log')).url;
+      this.refresh();
+    });
     this.startListenSocket();
   }
 
   socketListener(m: EventMessage) {
-    if (m && m.object && m.object.type === 'job' && m.object.id === this.job.id) {
+    if (m?.object?.type === 'job' && m?.object?.id === this.job.id) {
       if (m.event === 'change_job_status') {
-        this.status = m.object.details.value as JobStatus;
-        if (this.textComp) this.textComp.update(m.object.details.value);
-
         const job = this.job;
-        job.status = this.status;
+        job.status = m.object.details.value as JobStatus;
         job.finish_date = new Date().toISOString();
         this.timeInfo = this.service.getOperationTimeData(job);
+        if (this.textComp) this.textComp.update(job.status);
       }
-
       this.refresh();
     }
   }
 
-  //
-  ngAfterViewInit(): void {
-    this.route.paramMap.pipe(this.takeUntil()).subscribe((p) => {
-      this.currentLog.id = +p.get('log');
-      this.refresh();
-    });
-  }
-
   refresh() {
-    if (!this.currentLog.id) return; // console.error('No `id` for current LogFile');
-    this.service
-      .getLog(this.currentLog.id)
-      .pipe(this.takeUntil())
-      .subscribe((log) => (this.currentLog = log));
+    if (!this.logUrl) return;
+    this.service.getLog(this.logUrl).subscribe((a) => this.currentLog$.next(a));
   }
 }
