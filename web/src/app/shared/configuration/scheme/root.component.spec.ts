@@ -13,7 +13,6 @@ import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormBuilder, ReactiveFormsModule, FormsModule, FormGroup } from '@angular/forms';
 
 import { FieldService } from '../field.service';
-import { FormBuilder, ReactiveFormsModule, FormGroup } from '@angular/forms';
 import { IYContainer } from '../yspec/yspec.service';
 import { RootComponent } from './root.component';
 
