@@ -10,11 +10,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnChanges, OnInit, SimpleChanges } from '@angular/core';
-import { AbstractControl, FormArray, FormGroup, ValidatorFn } from '@angular/forms';
-import { isObject } from '@app/core/types';
+import { AbstractControl, FormArray, FormGroup } from '@angular/forms';
 import { FieldDirective } from '@app/shared/form-elements/field.directive';
 
-import { IYContainer, IYField, YspecService } from '../yspec/yspec.service';
+import { IYContainer, IYField, matchType, YspecService } from '../yspec/yspec.service';
 
 @Component({
   selector: 'app-scheme',
@@ -30,8 +29,8 @@ import { IYContainer, IYField, YspecService } from '../yspec/yspec.service';
     `,
   ],
   template: `<div class="main">
-    <app-root-scheme *ngIf="show" #root [form]="currentFormGroup" [isReadOnly]="isReadOnly" [options]="rules" [value]="defaultValue"></app-root-scheme>
-    <mat-error *ngIf="hasError('isEmpty')" class="error">Field [{{ field.display_name }}] is required!</mat-error>
+    <app-root-scheme #root [form]="currentFormGroup" [isReadOnly]="isReadOnly" [options]="rules" [value]="defaultValue"></app-root-scheme>
+    <mat-error *ngIf="hasError('required')" class="error">Field [{{ field.display_name }}] is required!</mat-error>
   </div>`,
 })
 export class SchemeComponent extends FieldDirective implements OnInit, OnChanges {
@@ -39,7 +38,7 @@ export class SchemeComponent extends FieldDirective implements OnInit, OnChanges
   rules: IYField | IYContainer;
   defaultValue: any;
   isReadOnly = false;
-  show = true;
+  initialField: AbstractControl;
 
   constructor(private yspec: YspecService) {
     super();
@@ -49,7 +48,7 @@ export class SchemeComponent extends FieldDirective implements OnInit, OnChanges
     if (!changes.form.firstChange) {
       this.field.limits.rules = this.rules;
       this.defaultValue = this.field.value;
-      this.currentFormGroup = this.resetFormGroup();
+      this.resetForm();
     }
   }
 
@@ -60,30 +59,35 @@ export class SchemeComponent extends FieldDirective implements OnInit, OnChanges
     this.field.limits.rules = this.rules;
 
     this.defaultValue = this.field.value || this.field.default;
-    this.currentFormGroup = this.resetFormGroup();
+    this.initialField = this.form.controls[this.field.name];
+    if (this.defaultValue !== null) this.resetForm();
     this.rules.name = '';
   }
 
-  validator() {
-    const isEmptyArray = (v: any) => (Array.isArray(v) && v.length ? v.some((a) => isEmptyValue(a)) : false);
-    const isEmptyObj = (v: any) => (isObject(v) && Object.keys(v).length ? Object.keys(v).some((a) => isEmptyValue(v[a])) : false);
-    const isEmptyValue = (v: any) => !v || (Array.isArray(v) && !v.length) || (isObject(v) && !Object.keys(v).length) || isEmptyArray(v) || isEmptyObj(v);
-    return (): ValidatorFn => (control: AbstractControl): { [key: string]: any } | null => (isEmptyValue(control.value) ? { isEmpty: true } : null);
+  // validator() {
+  //   const isEmptyArray = (v: any) => (Array.isArray(v) && v.length ? v.some((a) => isEmptyValue(a)) : false);
+  //   const isEmptyObj = (v: any) => (isObject(v) && Object.keys(v).length ? Object.keys(v).some((a) => isEmptyValue(v[a])) : false);
+  //   const isEmptyValue = (v: any) => !v || (Array.isArray(v) && !v.length) || (isObject(v) && !Object.keys(v).length) || isEmptyArray(v) || isEmptyObj(v);
+  //   return (): ValidatorFn => (control: AbstractControl): { [key: string]: any } | null => (isEmptyValue(control.value) ? { isEmpty: true } : null);
+  // }
+
+  resetForm() {
+    this.currentFormGroup = this.currentFormGroup || this.resetFormGroup(this.rules.type, this.field.name, this.form);
+    //return this.currentFormGroup;
   }
 
-  resetFormGroup() {
-    const v = this.validator();
-    const form = this.currentFormGroup ? this.currentFormGroup : this.rules.type === 'list' ? new FormArray([], v()) : new FormGroup({}, v());
-    this.form.removeControl(this.field.name);
-    this.form.addControl(this.field.name, form);
+  resetFormGroup(type: matchType, name: string, parent: FormGroup) {
+    const form = type === 'list' ? new FormArray([]) : new FormGroup({});
+    parent.setControl(name, form);
     return form;
   }
 
   /** this is using for restore default value */
   reload() {
-    this.show = false;
     this.defaultValue = this.field.default;
-    this.currentFormGroup = this.resetFormGroup();
-    setTimeout((_) => (this.show = true), 1);
+    this.initialField.setValue(this.defaultValue);   
+    this.form.setControl(this.field.name, this.initialField);
+    this.currentFormGroup = undefined;
+    if (this.defaultValue !== null) this.resetForm();
   }
 }

@@ -6,7 +6,7 @@
   </button>
 </div>
 <div class="content">
-  <ng-container [formGroup]="form">
+  <ng-container *ngIf="form" [formGroup]="form">
     <div [ngClass]="{'item-iteration': true, dif: options.type === 'list' || options.type === 'dict'}"
       *ngFor="let item of controls; let i = index; trackBy: trackByFn">
       <app-root-scheme [isReadOnly]="isReadOnly" [form]="item.form" [options]="item.rules" [value]="item.value"

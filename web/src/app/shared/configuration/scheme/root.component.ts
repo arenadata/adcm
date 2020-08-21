@@ -9,11 +9,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { FormArray, FormControl, FormGroup } from '@angular/forms';
 
 import { FieldService } from '../field.service';
 import { IYContainer, IYField, matchType, reqursionType } from '../yspec/yspec.service';
+import { SchemeComponent } from './scheme.component';
 
 type sValue = string | boolean | number;
 
@@ -35,7 +36,7 @@ export interface IControl {
   templateUrl: './root.component.html',
   styleUrls: ['./root.component.scss'],
 })
-export class RootComponent implements OnInit {
+export class RootComponent implements OnInit, OnChanges {
   @Input() form: FormGroup | FormArray;
   @Input() options: IYContainer | IYField;
   @Input() value: IValue | IValue[];
@@ -43,7 +44,15 @@ export class RootComponent implements OnInit {
 
   controls: IControl[] = [];
 
-  constructor(private service: FieldService) {}
+  constructor(private service: FieldService, public parent: SchemeComponent) {}
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes.form && !changes.form.firstChange) {
+      this.controls = [];
+      this.ngOnInit();
+      if (this.form && !this.value) this.add();
+    }
+  }
 
   ngOnInit(): void {
     if (this.value) {
@@ -65,11 +74,16 @@ export class RootComponent implements OnInit {
   remove(i: number) {
     if (Array.isArray(this.form.controls)) {
       (this.form as FormArray).removeAt(i);
-      this.controls = this.controls.filter((a, n) => a.name ? a.name !== i.toString() : n !== i);
+      this.controls = this.controls.filter((a, n) => (a.name ? a.name !== i.toString() : n !== i));
     }
   }
 
   add(v: [string, IValue | sValue] = ['', '']) {
+    if (!this.form) {
+      this.parent.resetForm();
+      return;
+    }
+
     let [name, value] = v;
 
     if ((this.rules as IYContainer).type === 'dict') {
@@ -85,12 +99,10 @@ export class RootComponent implements OnInit {
       }
     } else {
       const rules = Array.isArray(this.rules) ? this.rules.find((a) => a.name === name) : this.rules;
-
       if (rules) {
         let form: FormGroup | FormArray;
         if (rules.type !== 'list' && rules.type !== 'dict') {
           const { validator, controlType } = rules as IYField;
-
           if (Array.isArray(this.form.controls)) {
             name = this.form.controls.length.toString();
             (this.form as FormArray).push(new FormControl(value || '', this.service.setValidator({ validator, controlType })));
@@ -98,8 +110,7 @@ export class RootComponent implements OnInit {
             (this.form as FormGroup).addControl(rules.name, new FormControl(rules.type !== 'bool' ? value || '' : value, this.service.setValidator({ validator, controlType })));
           form = this.form;
         } else {
-          if (rules.type === 'list') form = new FormArray([]);
-          if (rules.type === 'dict') form = new FormGroup({});
+          form = rules.type === 'list' ? new FormArray([]) : new FormGroup({});
           (this.form as FormGroup).addControl(rules.name, form);
         }
         const item: IControl = { name, value, type: rules.type, rules, form, parent: this.options.type as reqursionType };
