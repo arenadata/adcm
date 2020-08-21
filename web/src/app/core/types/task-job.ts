@@ -11,7 +11,7 @@
 // limitations under the License.
 import { ApiBase } from './api';
 
-export type JobStatus = 'created' | 'running' | 'failed' | 'success';
+export type JobStatus = 'created' | 'running' | 'failed' | 'success' | 'aborted';
 
 export interface JobObject {
   id: number;
@@ -38,6 +38,8 @@ export interface JobAction {
 }
 interface JobRaw extends TaskBase {
   log_files: LogFile[];
+  start_date: string;
+  finish_date: string;
 }
 
 export interface TaskRaw extends TaskBase {
@@ -54,7 +56,7 @@ export interface LogFile {
   type: string;
   format: 'txt' | 'json';
   download_url: string;
-  content: string | CheckLog[];
+  content: string | CheckLog[];  
 }
 
 export interface CheckLog {
