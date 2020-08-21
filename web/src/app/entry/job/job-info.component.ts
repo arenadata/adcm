@@ -15,25 +15,6 @@ import { ITimeInfo } from './log/log.component';
 
 @Component({
   selector: 'app-job-info',
-  template: `
-    <div class="time-info">
-      <div>
-        <mat-icon color="primary" class="start_flag">outlined_flag</mat-icon>
-        <span>{{ TimeInfo?.start }}</span>
-      </div>
-      <div>
-        <mat-icon class="icon-locked running" *ngIf="status === 'running'; else done">autorenew</mat-icon>
-        <ng-template #done>
-          <i [class]="status"><mat-icon>{{ getIcon(status) }}</mat-icon></i>
-        </ng-template>
-        <span>{{ TimeInfo?.time }}</span>
-      </div>
-      <div *ngIf="TimeInfo?.end">
-        <mat-icon color="primary" class="finish_flag">outlined_flag</mat-icon>
-        <span>{{ TimeInfo?.end }}</span>
-      </div>
-    </div>
-  `,
   styles: [
     `
       :host {
@@ -61,19 +42,31 @@ import { ITimeInfo } from './log/log.component';
         transform: rotate(150deg);
         font-size: 20px;
       }
-    `
-  ]
+    `,
+  ],
+  template: `
+    <div class="time-info">
+      <div>
+        <mat-icon color="primary" class="start_flag">outlined_flag</mat-icon>
+        <span>{{ timeInfo?.start }}</span>
+      </div>
+      <div>
+        <mat-icon *ngIf="isRun" class="icon-locked running">autorenew</mat-icon>
+        <mat-icon *ngIf="!isRun" [class]="status">{{ Icon(status) }}</mat-icon>
+        <span>{{ timeInfo?.time }}</span>
+      </div>
+      <div *ngIf="timeInfo?.end">
+        <mat-icon color="primary" class="finish_flag">outlined_flag</mat-icon>
+        <span>{{ timeInfo?.end }}</span>
+      </div>
+    </div>
+  `,
 })
 export class JobInfoComponent {
-  @Input() TimeInfo: ITimeInfo;
+  @Input() timeInfo: ITimeInfo;
   @Input() status: JobStatus;
-  
-  getIcon(status: string) {
-    switch (status) {
-      case 'aborted':
-        return 'block';
-      default:
-        return 'done_all';
-    }
+  Icon = (status: string): string => (status === 'aborted' ? 'block' : 'done_all');
+  get isRun(): boolean {
+    return this.status === 'running';
   }
 }
