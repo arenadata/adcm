@@ -1,8 +1,8 @@
 --extra-index-url https://ci.arenadata.io/artifactory/api/pypi/python-packages/simple
 adcm-client
-adcm_pytest_plugin >= 1.2.0
+adcm_pytest_plugin==1.15.0.dev0+qa.1
 -r ./requirements.txt
-allure-pytest==2.5.4
+allure-pytest
 #arenadata_test_suite
 delayed_assert
 docker
