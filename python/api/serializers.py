@@ -252,7 +252,7 @@ class ProfileDetailSerializer(serializers.Serializer):
     def validate_profile(self, raw):
         if isinstance(raw, str):
             raise AdcmApiEx('JSON_ERROR', 'profile should not be just one string')
-        return json.dumps(raw)
+        return raw
 
     def update(self, instance, validated_data):
         instance.profile = validated_data.get('profile', instance.profile)
