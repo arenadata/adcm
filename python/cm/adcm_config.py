@@ -266,7 +266,7 @@ def restore_cluster_config(obj_conf, version, desc=''):
     try:
         cl = ConfigLog.objects.get(obj_ref=obj_conf, id=version)
     except ConfigLog.DoesNotExist:
-        raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist")
+        raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist") from None
     obj_conf.previous = obj_conf.current
     obj_conf.current = version
     obj_conf.save()
