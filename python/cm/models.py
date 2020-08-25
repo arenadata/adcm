@@ -125,8 +125,8 @@ class ObjectConfig(models.Model):
 
 class ConfigLog(models.Model):
     obj_ref = models.ForeignKey(ObjectConfig, on_delete=models.CASCADE)
-    config = models.TextField()         # JSON
-    attr = models.TextField(default=None, null=True)   # JSON
+    config = JSONField(default={})
+    attr = JSONField(default=None, null=True)
     date = models.DateTimeField(auto_now=True)
     description = models.TextField(blank=True)
 
@@ -306,8 +306,8 @@ class PrototypeConfig(models.Model):
     type = models.CharField(max_length=16, choices=CONFIG_FIELD_TYPE)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
-    limits = models.TextField(blank=True)   # JSON
-    ui_options = models.TextField(blank=True, null=True, default=None)   # JSON
+    limits = JSONField(default={})
+    ui_options = JSONField(blank=True, null=True, default={})
     required = models.BooleanField(default=True)
 
     class Meta:
@@ -550,8 +550,8 @@ class StagePrototypeConfig(models.Model):
     type = models.CharField(max_length=16, choices=CONFIG_FIELD_TYPE)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
-    limits = models.TextField(blank=True)   # JSON
-    ui_options = models.TextField(blank=True, null=True, default=None)   # JSON
+    limits = JSONField(default={})
+    ui_options = JSONField(blank=True, null=True, default={})   # JSON
     required = models.BooleanField(default=True)
 
     class Meta:

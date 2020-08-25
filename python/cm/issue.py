@@ -260,10 +260,10 @@ def get_obj_config(obj):
     if obj.config is None:
         return ({}, {})
     cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-    attr = {}
-    if cl.attr:
-        attr = json.loads(cl.attr)
-    return (json.loads(cl.config), attr)
+    attr = cl.attr
+    if not attr:
+        attr = {}
+    return (cl.config, attr)
 
 
 def check_component_constraint(service, hc_in):

@@ -807,7 +807,7 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
             else:
                 sc.display_name = name
         conf['limits'] = process_limits(conf, name, subname)
-        dict_json_to_obj(conf, 'limits', sc)
+        dict_to_obj(conf, 'limits', sc)
         if 'ui_options' in conf:
             if not isinstance(conf['ui_options'], dict):
                 msg = 'ui_options of config key "{}/{}" of {} should be a map'

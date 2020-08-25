@@ -413,7 +413,7 @@ def update_obj_config(obj_conf, conf, attr=None, desc=''):
     old_conf = ConfigLog.objects.get(obj_ref=obj_conf, id=obj_conf.current)
     if not attr:
         if old_conf.attr:
-            attr = json.loads(old_conf.attr)
+            attr = old_conf.attr
     new_conf = check_json_config(proto, obj, conf, old_conf.config, attr)
     with transaction.atomic():
         cl = save_obj_config(obj_conf, new_conf, desc, attr)
@@ -429,10 +429,9 @@ def has_google_oauth():
     if not adcm:
         return False
     cl = ConfigLog.objects.get(obj_ref=adcm[0].config, id=adcm[0].config.current)
-    conf = json.loads(cl.config)
-    if 'google_oauth' not in conf:
+    if 'google_oauth' not in cl.config:
         return False
-    gconf = conf['google_oauth']
+    gconf = cl.config['google_oauth']
     if 'client_id' not in gconf or not gconf['client_id']:
         return False
     return True
@@ -624,10 +623,9 @@ def check_import_default(import_obj, export_obj):
     cl = ConfigLog.objects.get(obj_ref=import_obj.config, id=import_obj.config.current)
     if not cl.attr:
         return
-    attr = json.loads(cl.attr)
     for name in json.loads(pi.default):
-        if name in attr:
-            if 'active' in attr[name] and not attr[name]['active']:
+        if name in cl.attr:
+            if 'active' in cl.attr[name] and not cl.attr[name]['active']:
                 msg = 'Default import "{}" for {} is inactive'
                 err('BIND_ERROR', msg.format(name, obj_ref(import_obj)))
 
