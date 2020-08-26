@@ -7,6 +7,12 @@
   overflow: auto;
 }
 
+mat-drawer {
+  min-width: 240px;
+  background-color: transparent;
+  padding-left: 10px;
+}
+
 .mat-card {
   flex: 1;
   padding: 10px;

@@ -49,7 +49,6 @@ describe('RootComponent', () => {
     };
     component.options = item;
     component.form = new FormGroup({});
-
     fixture.detectChanges();
   });
 
