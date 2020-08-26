@@ -105,7 +105,7 @@ class ContextActionModule(ActionBase):
             )
         elif obj_type == "service" and "service_name" in self._task.args:
             context = check_context(task_vars, 'cluster', 'service')
-            if context['type'] == 'service':
+            if context['type'] == 'service' and self._task.action != 'adcm_config':
                 service = cm.models.ClusterObject.objects.get(pk=context["service_id"])
                 service_name = service.prototype.name
                 if service_name != self._task.args["service_name"]:
