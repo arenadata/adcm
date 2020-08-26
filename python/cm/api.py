@@ -46,7 +46,7 @@ def safe_api(func, args):
     try:
         return func(*args)
     except AdcmEx as e:
-        raise AdcmApiEx(e.code, e.msg, e.http_code)
+        raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
 
 def add_cluster(proto, name, desc=''):
@@ -479,19 +479,19 @@ def check_hc(cluster, hc_in):   # pylint: disable=too-many-branches
             host = Host.objects.get(id=item['host_id'])
         except Host.DoesNotExist:
             msg = 'No host #{}'.format(item['host_id'])
-            raise AdcmEx('HOST_NOT_FOUND', msg)
+            raise AdcmEx('HOST_NOT_FOUND', msg) from None
         try:
             service = ClusterObject.objects.get(id=item['service_id'], cluster=cluster)
         except ClusterObject.DoesNotExist:
             msg = 'No service #{} in {}'.format(item['service_id'], obj_ref(cluster))
-            raise AdcmEx('SERVICE_NOT_FOUND', msg)
+            raise AdcmEx('SERVICE_NOT_FOUND', msg) from None
         try:
             comp = ServiceComponent.objects.get(
                 id=item['component_id'], cluster=cluster, service=service
             )
         except ServiceComponent.DoesNotExist:
             msg = 'No component #{} in {} '.format(item['component_id'], obj_ref(service))
-            raise AdcmEx('COMPONENT_NOT_FOUND', msg)
+            raise AdcmEx('COMPONENT_NOT_FOUND', msg) from None
         if not host.cluster:
             msg = 'host #{} {} does not belong to any cluster'.format(host.id, host.fqdn)
             raise AdcmEx("FOREIGN_HOST", msg)
