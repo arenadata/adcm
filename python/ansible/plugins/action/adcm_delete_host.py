@@ -54,7 +54,7 @@ class ActionModule(ActionBase):
     _VALID_ARGS = frozenset(())
 
     def run(self, tmp=None, task_vars=None):
-        super(ActionModule, self).run(tmp, task_vars)
+        super().run(tmp, task_vars)
         msg = 'You can delete host only in host context'
         host_id = get_context_id(task_vars, 'host', 'host_id', msg)
         log.info('ansible module adcm_delete_host: host #%s', host_id)
@@ -62,6 +62,6 @@ class ActionModule(ActionBase):
         try:
             cm.api.delete_host_by_id(host_id)
         except AdcmEx as e:
-            raise AnsibleError(e.code + ":" + e.msg)
+            raise AnsibleError(e.code + ":" + e.msg) from e
 
         return {"failed": False, "changed": True}

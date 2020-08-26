@@ -80,7 +80,7 @@ class LoadBundle(GenericAPIPermView):
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
 
 class BundleList(PageView):
@@ -113,7 +113,7 @@ class BundleDetail(DetailViewRO):
         try:
             cm.bundle.delete_bundle(bundle)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -131,7 +131,7 @@ class BundleUpdate(GenericAPIPermView):
             serializer = self.serializer_class(bundle, context={'request': request})
             return Response(serializer.data)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds)
+            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds) from e
 
 
 class BundleLicense(GenericAPIPermView):
@@ -146,7 +146,7 @@ class BundleLicense(GenericAPIPermView):
             url = reverse('accept-license', kwargs={'bundle_id': bundle.id}, request=request)
             return Response({'license': bundle.license, 'accept': url, 'text': body})
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds)
+            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds) from e
 
 
 class AcceptLicense(GenericAPIPermView):
@@ -159,7 +159,7 @@ class AcceptLicense(GenericAPIPermView):
             cm.api.accept_license(bundle)
             return Response(status=status.HTTP_200_OK)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds)
+            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds) from e
 
 
 class PrototypeList(PageView):
