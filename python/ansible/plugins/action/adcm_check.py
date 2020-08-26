@@ -112,7 +112,7 @@ class ActionModule(ActionBase):
                              'group_title', 'group_success_msg', 'group_fail_msg'))
 
     def run(self, tmp=None, task_vars=None):
-        super(ActionModule, self).run(tmp, task_vars)
+        super().run(tmp, task_vars)
         job_id = None
         if task_vars is not None and 'job' in task_vars or 'id' in task_vars['job']:
             job_id = task_vars['job']['id']

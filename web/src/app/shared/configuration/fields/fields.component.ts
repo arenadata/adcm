@@ -56,6 +56,10 @@ export class ConfigFieldsComponent {
 
   constructor(private service: FieldService) {}
 
+  get attr() {
+    return this.dataOptions.filter((a) => a.type === 'group' && (a as PanelOptions).activatable).reduce((p, c: PanelOptions) => ({ ...p, [c.name]: { active: c.active } }), {});
+  }
+
   isPanel(item: FieldOptions | PanelOptions) {
     return 'options' in item && !item.hidden;
   }

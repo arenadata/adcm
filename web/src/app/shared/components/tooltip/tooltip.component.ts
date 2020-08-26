@@ -18,11 +18,11 @@ import { IssueInfoComponent } from '../issue-info.component';
 import { StatusInfoComponent } from '../status-info.component';
 import { ComponentData, TooltipOptions, TooltipService } from './tooltip.service';
 
-const POSITION_MARGIN = 20;
+const POSITION_MARGIN = 16;
 
 @Component({
   selector: 'app-simple-text',
-  template: '{{ current }}'
+  template: '{{ current }}',
 })
 export class SimpleTextComponent implements OnInit {
   @Input() current: any;
@@ -36,7 +36,7 @@ export class SimpleTextComponent implements OnInit {
 @Component({
   selector: 'app-tooltip',
   template: '<ng-container *ngComponentOutlet="CurrentComponent; injector: componentInjector"></ng-container>',
-  styleUrls: ['./tooltip.component.scss']
+  styleUrls: ['./tooltip.component.scss'],
 })
 export class TooltipComponent extends BaseDirective implements OnInit, OnDestroy {
   private options: TooltipOptions;
@@ -58,7 +58,7 @@ export class TooltipComponent extends BaseDirective implements OnInit, OnDestroy
   }
 
   ngOnInit(): void {
-    this.service.position$.pipe(this.takeUntil()).subscribe(o => {
+    this.service.position$.pipe(this.takeUntil()).subscribe((o) => {
       if (o) {
         this.clear();
         this.buildComponent(o);
@@ -84,9 +84,7 @@ export class TooltipComponent extends BaseDirective implements OnInit, OnDestroy
     const root = document.querySelector<HTMLElement>('app-root');
     const bodyWidth = root.offsetWidth,
       bodyHeight = root.offsetHeight,
-      eLeft = o.event.x - el.offsetWidth,
       eRight = o.event.x + el.offsetWidth,
-      eTop = o.event.y - el.offsetHeight,
       eBottom = o.event.y + el.offsetHeight;
     const position: any = { left: '', top: '', bottom: '', right: '', height: '' };
 
@@ -124,14 +122,20 @@ export class TooltipComponent extends BaseDirective implements OnInit, OnDestroy
     const emitter = new EventEmitter();
     emitter.pipe(take(1), delay(100), this.takeUntil()).subscribe(() => this.position());
 
+    const parse = (url: string) =>
+      url
+        .split('/')
+        .map((b) => b.split(';')[0])
+        .join('/');
+
     this.componentInjector = Injector.create({
       providers: [
         {
           provide: ComponentData,
-          useValue: { typeName: this.router.url, current: this.options.options.content, emitter: emitter }
-        }
+          useValue: { path: parse(this.router.url), current: this.options.options.content, emitter: emitter },
+        },
       ],
-      parent: this.parentInjector
+      parent: this.parentInjector,
     });
   }
 }

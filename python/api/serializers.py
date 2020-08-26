@@ -42,7 +42,7 @@ def check_obj(model, req, error):
     try:
         return model.objects.get(**kw)
     except model.DoesNotExist:
-        raise AdcmApiEx(error)
+        raise AdcmApiEx(error) from None
 
 
 def get_upgradable_func(self, obj):
@@ -77,7 +77,7 @@ def get_config_version(objconf, version):
     try:
         cl = ConfigLog.objects.get(obj_ref=objconf, id=ver)
     except ConfigLog.DoesNotExist:
-        raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist")
+        raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist") from None
     return cl
 
 
@@ -160,7 +160,7 @@ class GroupSerializer(serializers.Serializer):
         try:
             return Group.objects.create(name=validated_data.get('name'))
         except IntegrityError:
-            raise AdcmApiEx("GROUP_CONFLICT", 'group already exists')
+            raise AdcmApiEx("GROUP_CONFLICT", 'group already exists') from None
 
 
 class GroupDetailSerializer(GroupSerializer):
@@ -188,7 +188,7 @@ class UserSerializer(serializers.Serializer):
             UserProfile.objects.create(login=validated_data.get('username'))
             return user
         except IntegrityError:
-            raise AdcmApiEx("USER_CONFLICT", 'user already exists')
+            raise AdcmApiEx("USER_CONFLICT", 'user already exists') from None
 
 
 class UserDetailSerializer(UserSerializer):
@@ -259,7 +259,7 @@ class ProfileDetailSerializer(serializers.Serializer):
         try:
             instance.save()
         except IntegrityError:
-            raise AdcmApiEx("USER_CONFLICT")
+            raise AdcmApiEx("USER_CONFLICT") from None
         return instance
 
 
@@ -272,7 +272,7 @@ class ProfileSerializer(ProfileDetailSerializer):
         try:
             return UserProfile.objects.create(**validated_data)
         except IntegrityError:
-            raise AdcmApiEx("USER_CONFLICT")
+            raise AdcmApiEx("USER_CONFLICT") from None
 
 
 class EmptySerializer(serializers.Serializer):
@@ -321,11 +321,11 @@ class ProviderSerializer(serializers.Serializer):
                 validated_data.get('description', '')
             )
         except Prototype.DoesNotExist:
-            raise AdcmApiEx('PROTOTYPE_NOT_FOUND')
+            raise AdcmApiEx('PROTOTYPE_NOT_FOUND') from None
         except IntegrityError:
-            raise AdcmApiEx("PROVIDER_CONFLICT")
+            raise AdcmApiEx("PROVIDER_CONFLICT") from None
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
 
 class ProviderDetailSerializer(ProviderSerializer):
@@ -404,7 +404,7 @@ class HostSerializer(serializers.Serializer):
         try:
             return cm.stack.validate_name(name, 'Host name')
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
     def create(self, validated_data):
         try:
@@ -415,11 +415,11 @@ class HostSerializer(serializers.Serializer):
                 validated_data.get('description', '')
             )
         except Prototype.DoesNotExist:
-            raise AdcmApiEx('PROTOTYPE_NOT_FOUND')
+            raise AdcmApiEx('PROTOTYPE_NOT_FOUND') from None
         except IntegrityError:
-            raise AdcmApiEx("HOST_CONFLICT", "duplicate host")
+            raise AdcmApiEx("HOST_CONFLICT", "duplicate host") from None
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
     def update(self, instance, validated_data):
         instance.cluster_id = validated_data.get('cluster_id')
@@ -496,14 +496,14 @@ class ProviderHostSerializer(serializers.Serializer):
         try:
             return cm.stack.validate_name(name, 'Host name')
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
     def create(self, validated_data):
         provider = validated_data.get('provider')
         try:
             proto = Prototype.objects.get(bundle=provider.prototype.bundle, type='host')
         except Prototype.DoesNotExist:
-            raise AdcmApiEx('PROTOTYPE_NOT_FOUND')
+            raise AdcmApiEx('PROTOTYPE_NOT_FOUND') from None
         try:
             return cm.api.add_host(
                 proto,
@@ -512,9 +512,9 @@ class ProviderHostSerializer(serializers.Serializer):
                 validated_data.get('description', '')
             )
         except IntegrityError:
-            raise AdcmApiEx("HOST_CONFLICT", "duplicate host")
+            raise AdcmApiEx("HOST_CONFLICT", "duplicate host") from None
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
 
 class ConfigSerializer(serializers.Serializer):
@@ -760,7 +760,7 @@ class DoUpgradeSerializer(serializers.Serializer):
             upgrade = check_obj(Upgrade, validated_data.get('upgrade_id'), 'UPGRADE_NOT_FOUND')
             return cm.upgrade.do_upgrade(validated_data.get('obj'), upgrade)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
 
 class StatsSerializer(serializers.Serializer):
@@ -908,7 +908,7 @@ class TaskRunSerializer(TaskSerializer):
             obj.jobs = JobLog.objects.filter(task_id=obj.id)
             return obj
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds)
+            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds) from e
 
 
 class TaskPostSerializer(TaskRunSerializer):
