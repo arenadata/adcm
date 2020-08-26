@@ -99,11 +99,12 @@ class LogStorageView(GenericAPIView):
             try:
                 log_storage = LogStorage.objects.get(id=log_id, job=job)
             except LogStorage.DoesNotExist:
-                raise AdcmApiEx('LOG_NOT_FOUND', f'log {log_id} not found for job {job_id}')
+                raise AdcmApiEx(
+                    'LOG_NOT_FOUND', f'log {log_id} not found for job {job_id}') from None
             serializer = self.serializer_class(log_storage, context={'request': request})
             return Response(serializer.data)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
 
 def download_log_file(request, job_id, log_id):
@@ -135,7 +136,7 @@ def download_log_file(request, job_id, log_id):
         response['Content-Disposition'] = f'attachment; filename={filename}'
         return response
     except AdcmEx as e:
-        raise AdcmApiEx(e.code, e.msg, e.http_code)
+        raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
 
 class LogFile(GenericAPIView):
@@ -157,7 +158,7 @@ class LogFile(GenericAPIView):
             serializer = self.serializer_class(ls, context={'request': request})
             return Response(serializer.data)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
 
 class Task(PageView):
@@ -207,7 +208,7 @@ class TaskReStart(GenericAPIView):
         try:
             restart_task(task)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
         return Response(status=status.HTTP_200_OK)
 
 
@@ -220,5 +221,5 @@ class TaskCancel(GenericAPIView):
         try:
             cancel_task(task)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
         return Response(status=status.HTTP_200_OK)

@@ -45,7 +45,8 @@ class JSONField(models.Field):
                 return json.loads(value)
             except json.JSONDecodeError:
                 raise AdcmEx(
-                    'JSON_DB_ERROR', msg=f"Not correct field format '{expression.field.attname}'")
+                    'JSON_DB_ERROR',
+                    msg=f"Not correct field format '{expression.field.attname}'") from None
         return value
 
     def get_prep_value(self, value):

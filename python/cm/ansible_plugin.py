@@ -78,8 +78,8 @@ class ContextActionModule(ActionBase):
     def _get_job_var(self, task_vars, name):
         try:
             return task_vars["job"][name]
-        except KeyError:
-            raise AnsibleError(MSG_NO_CLUSTER_CONTEXT)
+        except KeyError as error:
+            raise AnsibleError(MSG_NO_CLUSTER_CONTEXT) from error
 
     def _do_cluster(self, task_vars, context):
         raise NotImplementedError
