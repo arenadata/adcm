@@ -33,6 +33,8 @@ export type simpleTypes = string | number | boolean;
 export type resultTypes = simpleTypes | simpleTypes[] | object;
 export type controlType = 'boolean' | 'textbox' | 'textarea' | 'json' | 'password' | 'list' | 'map' | 'dropdown' | 'file' | 'text' | 'structure';
 
+export type TValue = string | number | boolean | object | any[];
+
 export interface UIoptions {
   invisible?: boolean;
   no_confirm?: boolean;
@@ -104,7 +106,7 @@ export interface ConfigOptions {
 }
 
 export interface PanelOptions extends ConfigOptions {
-  options: (FieldOptions | PanelOptions)[];  
+  options: (FieldOptions | PanelOptions)[];
   active: boolean;
 }
 
@@ -112,8 +114,8 @@ export interface PanelOptions extends ConfigOptions {
  * For Material form controls
  */
 export interface FieldOptions extends ConfigOptions {
-  default: null | string | number | boolean | object | any[];
-  value: string | number | boolean | object | string[] | null;
+  default: TValue;
+  value: TValue;
   controlType: controlType;
   validator: ValidatorInfo;
   limits?: ILimits;

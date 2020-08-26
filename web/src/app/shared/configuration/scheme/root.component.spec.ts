@@ -15,22 +15,26 @@ import { FormBuilder, ReactiveFormsModule, FormsModule, FormGroup } from '@angul
 import { FieldService } from '../field.service';
 import { IYContainer } from '../yspec/yspec.service';
 import { RootComponent } from './root.component';
+import { SchemeService } from './scheme.service';
+import { FieldOptions } from '../types';
 
 describe('RootComponent', () => {
   let component: RootComponent;
   let fixture: ComponentFixture<RootComponent>;
+  let service: SchemeService;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
       imports: [FormsModule, ReactiveFormsModule],
       declarations: [RootComponent],
-      providers: [FieldService, FormBuilder],
+      providers: [FieldService, FormBuilder, SchemeService],
     }).compileComponents();
   }));
 
   beforeEach(() => {
     fixture = TestBed.createComponent(RootComponent);
     component = fixture.componentInstance;
+    service = TestBed.inject(SchemeService);
 
     const item: IYContainer = {
       name: 'test',

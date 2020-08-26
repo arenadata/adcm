@@ -3,7 +3,13 @@
   width: 100%;
   margin-bottom: 20px;
 
-  & .content {
+  & div.label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between
+  }
+
+  & div.content {
     margin-left: 10px;
 
     & .item-iteration.dif:nth-child(even) {
@@ -16,6 +22,11 @@
       &>div {
         flex: 1;
       }
+    }
+
+    & .remote-btn {
+      align-self: center;
+      margin-left: 10px;
     }
   }
 }
