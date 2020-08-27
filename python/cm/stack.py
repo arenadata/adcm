@@ -359,7 +359,6 @@ def save_export(proto, conf):
     if proto.type not in ('cluster', 'service'):
         msg = 'Only cluster or service can have export section ({})'
         err('INVALID_OBJECT_DEFINITION', msg.format(ref))
-    key = conf['export']
     if isinstance(conf['export'], str):
         export = [conf['export']]
     elif isinstance(conf['export'], list):
@@ -683,16 +682,16 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
             source['strict'] = True
         if vtype == 'inline':
             if not in_dict(conf['source'], 'value'):
-                msg = 'Config key "{}/{}" of {} has no mandatory source: value statment'
-                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref, vtype))
+                msg = 'Config key "{}/{}" of {} has no mandatory source:value statment'
+                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
             source['value'] = conf['source']['value']
             if not isinstance(source['value'], list):
                 msg = 'Config key "{}/{}" of {} source value should be an array'
                 err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
         elif vtype in ('config', 'builtin'):
             if not in_dict(conf['source'], 'name'):
-                msg = 'Config key "{}/{}" of {} has no mandatory source: name statment'
-                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref, vtype))
+                msg = 'Config key "{}/{}" of {} has no mandatory source:name statment'
+                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
             source['name'] = conf['source']['name']
         if vtype == 'builtin':
             if conf['source']['name'] not in ('free_hosts', 'cluster_hosts'):

@@ -33,7 +33,7 @@ def proto_ref(proto):
 def obj_ref(obj):
     if hasattr(obj, 'name'):
         name = obj.name
-    if hasattr(obj, 'fqdn'):
+    elif hasattr(obj, 'fqdn'):
         name = obj.fqdn
     else:
         name = obj.prototype.name
