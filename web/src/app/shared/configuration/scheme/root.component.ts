@@ -31,10 +31,6 @@ export class RootComponent implements OnInit {
 
   constructor(private scheme: SchemeService) {}
 
-  ngOnInit(): void {
-    this.init();
-  }
-
   init() {
     if (this.value) {
       if (this.options.type === 'list' && Array.isArray(this.value)) (this.value as IValue[]).map((x, i) => this.add(['', x]));
@@ -44,8 +40,8 @@ export class RootComponent implements OnInit {
     }
   }
 
-  showControls() {
-    return !this.isReadOnly && (this.options.type === 'list' || this.options.type === 'dict');
+  ngOnInit(): void {
+    this.init();
   }
 
   reload(value: TValue) {
@@ -57,13 +53,6 @@ export class RootComponent implements OnInit {
     this.init();
   }
 
-  remove(name: string | number) {
-    if (Array.isArray(this.form.controls)) {
-      (this.form as FormArray).removeAt(+name);
-      this.controls = this.controls.filter((a, i) => (a.name ? a.name !== name : i !== +name));
-    }
-  }
-
   add(v: [string, IValue | TValue] = ['', '']) {
     const [name, value] = v;
     const flag = (this.rules as IYContainer).type === 'dict';
@@ -71,6 +60,17 @@ export class RootComponent implements OnInit {
       ? this.scheme.addControlsDict(name, value, this.form as FormArray, this.itemRules as IYContainer[])
       : this.scheme.addControls(name, value, this.form, this.rules, this.options.type as reqursionType);
     this.controls = [...this.controls, item];
+  }
+
+  showControls() {
+    return !this.isReadOnly && (this.options.type === 'list' || this.options.type === 'dict');
+  }
+
+  remove(name: string | number) {
+    if (Array.isArray(this.form.controls)) {
+      (this.form as FormArray).removeAt(+name);
+      this.controls = this.controls.filter((a, i) => (a.name ? a.name !== name : i !== +name));
+    }
   }
 
   get rules(): IYField | IYContainer | (IYField | IYContainer)[] {

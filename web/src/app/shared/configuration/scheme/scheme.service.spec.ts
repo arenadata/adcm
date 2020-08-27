@@ -13,6 +13,11 @@ import { TestBed } from '@angular/core/testing';
 
 import { SchemeService } from './scheme.service';
 import { FieldService } from '../field.service';
+import { FormGroup, FormControl, FormArray } from '@angular/forms';
+import { FieldOptions } from '../types';
+
+const form = new FormGroup({ field: new FormControl() });
+const field = (<unknown>{ display_name: 'field_display_name', name: 'field', limits: {}, required: true, value: null, default: null }) as FieldOptions;
 
 describe('SchemeService', () => {
   let service: SchemeService;
@@ -24,5 +29,28 @@ describe('SchemeService', () => {
 
   it('should be created', () => {
     expect(service).toBeTruthy();
+  });
+
+  it('setCurrentForm with type as dict should return FormGroup', () => {
+    const b = service.setCurrentForm('dict', form, field) as FormGroup;
+    expect(b.controls).toEqual(jasmine.any(Object));
+    expect(b instanceof FormGroup).toBeTrue();
+  });
+
+  it('setCurrentForm with type as list should return FormArray', () => {
+    const b = service.setCurrentForm('list', form, field) as FormArray;
+    expect(b.controls).toEqual([]);
+    expect(b instanceof FormArray).toBeTrue();
+  });
+
+  it('setCurrentForm with type not list or dict should return FormControl', () => {
+    const b = service.setCurrentForm('string', form, field) as any;
+    expect(b.controls).toBeUndefined();
+    expect(b instanceof FormControl).toBeTrue();
+  });
+
+  it('setCurrentForm with field is required should has errors {isEmpty: true}', () => {
+    const b = service.setCurrentForm('string', form, field) as any;
+    expect(b.errors).toEqual({isEmpty: true});
   });
 });

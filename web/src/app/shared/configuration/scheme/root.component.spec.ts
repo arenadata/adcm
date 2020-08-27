@@ -10,13 +10,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-import { FormBuilder, ReactiveFormsModule, FormsModule, FormGroup } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { FieldService } from '../field.service';
-import { IYContainer } from '../yspec/yspec.service';
+import { IYField } from '../yspec/yspec.service';
 import { RootComponent } from './root.component';
 import { SchemeService } from './scheme.service';
-import { FieldOptions } from '../types';
+
+const item: IYField = {
+  name: 'test',
+  type: 'string',
+  path: ['test'],
+  controlType: 'textbox',
+  validator: {},
+};
 
 describe('RootComponent', () => {
   let component: RootComponent;
@@ -36,23 +43,23 @@ describe('RootComponent', () => {
     component = fixture.componentInstance;
     service = TestBed.inject(SchemeService);
 
-    const item: IYContainer = {
-      name: 'test',
-      type: 'dict',
-      options: {
-        name: 'test',
-        path: ['test'],
-        type: 'string',
-        controlType: 'textbox',
-        validator: {},
-      },
-    };
     component.options = item;
-    component.form = new FormGroup({});
+    component.form = new FormGroup({ field: new FormControl() });
+    component.value = {};
     fixture.detectChanges();
   });
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should has form as FormGroup | FormArray | FormControl, options as IYContainer | IYField, value as TValue', () => {
+    expect(component.value).toBeDefined();
+    expect(component.options).toBeDefined();
+    expect(component.form).toBeDefined();
+  });
+
+  it('options type as list should displaying as list', () => {
+
   });
 });

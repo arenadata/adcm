@@ -10,10 +10,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnChanges, OnInit, SimpleChanges, ViewChild } from '@angular/core';
-import { AbstractControl, FormGroup } from '@angular/forms';
+import { AbstractControl, FormControl } from '@angular/forms';
 import { FieldDirective } from '@app/shared/form-elements/field.directive';
 
-import { IYContainer, IYField, YspecService } from '../yspec/yspec.service';
+import { IYContainer, IYField, YspecService, reqursionType } from '../yspec/yspec.service';
 import { RootComponent } from './root.component';
 import { SchemeService } from './scheme.service';
 
@@ -45,10 +45,10 @@ export class SchemeComponent extends FieldDirective implements OnInit, OnChanges
     super();
   }
 
-  /** 
-   * after saving, the link between the form and the current (form) is lost 
+  /**
+   * after saving, the link between the form and the current (form) is lost
    * TODO: eliminate
-  */
+   */
   ngOnChanges(changes: SimpleChanges): void {
     if (!changes.form.firstChange) {
       this.field.limits.rules = this.rules;
@@ -61,7 +61,7 @@ export class SchemeComponent extends FieldDirective implements OnInit, OnChanges
     this.rules = this.yspec.build();
     this.field.limits.rules = this.rules;
     this.rules.name = '';
-    this.current = this.scheme.setCurrentForm(this.rules.type, this.form, this.field);
+    this.current = this.scheme.setCurrentForm(this.rules.type as reqursionType, this.form, this.field);
   }
 
   /** this is using for restore default value */

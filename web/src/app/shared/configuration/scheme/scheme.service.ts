@@ -35,15 +35,15 @@ export class SchemeService {
   constructor(private service: FieldService) {}
 
   emptyValidator() {
-    const isEmptyArray = (v: any) => (Array.isArray(v) && v.length ? v.some((a) => isEmptyValue(a)) : false);
-    const isEmptyObj = (v: any) => (isObject(v) && Object.keys(v).length ? Object.keys(v).some((a) => isEmptyValue(v[a])) : false);
+    // const isEmptyArray = (v: any) => (Array.isArray(v) && v.length ? v.some((a) => isEmptyValue(a)) : false);
+    // const isEmptyObj = (v: any) => (isObject(v) && Object.keys(v).length ? Object.keys(v).some((a) => isEmptyValue(v[a])) : false);
     const isEmptyValue = (v: any) => !v || (Array.isArray(v) && !v.length) || (isObject(v) && !Object.keys(v).length);
     return (): ValidatorFn => (control: AbstractControl): { [key: string]: any } | null => (isEmptyValue(control.value) ? { isEmpty: true } : null);
   }
 
   setCurrentForm(type: matchType, parent: FormGroup, field: FieldOptions) {
     const v = field.required ? this.emptyValidator()() : null;
-    const current = type === 'list' ? new FormArray([], v) : new FormGroup({}, v);
+    const current = type === 'list' || type === 'dict' ? (type === 'list' ? new FormArray([], v) : new FormGroup({}, v)) : new FormControl('', v);
     parent.setControl(field.name, current);
     return current;
   }
