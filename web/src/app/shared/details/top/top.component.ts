@@ -18,19 +18,20 @@ import { IDetails, INavItem, NavigationService } from '../navigation.service';
 @Component({
   selector: 'app-details-top',
   template: `
-    <app-crumbs [navigation]="items"></app-crumbs>    
+    <app-crumbs [navigation]="items"></app-crumbs>
     <app-upgrade *ngIf="upgradable" [dataRow]="upgrade" xPosition="after"></app-upgrade>
     <div [style.flex]="1"></div>
-    <app-action-list [asButton]="true" [actions]="actions" [disabled]="disabled" [cluster]="cluster"></app-action-list>
+    <app-action-list [asButton]="true" [actionLink]="actionLink" [actions]="actions" [disabled]="disabled" [cluster]="cluster"></app-action-list>
     <!-- <app-actions [source]="actions || []" [isIssue]="eIssue" [cluster]="cluster"></app-actions> -->
   `,
   styles: [':host {display: flex;width: 100%;}'],
 })
 export class TopComponent {
   items: INavItem[];
-  cluster: { id: number; hostcomponent: string; action: string };
+  cluster: { id: number; hostcomponent: string };
   disabled: boolean;
   upgrade: UpgradeItem;
+  actionLink: string;
   @Input() upgradable: boolean;
   @Input() actions: IAction[] = [];
 
@@ -46,8 +47,9 @@ export class TopComponent {
   @Input() set current(c: IDetails) {
     if (c) {
       this.items = this.navigation.getTop(c);
-      const { id, hostcomponent, issue, upgradable, upgrade, action } = c.parent || (c as Partial<Cluster>);
-      this.cluster = { id, hostcomponent, action };
+      const { id, hostcomponent, issue, upgradable, upgrade } = c.parent || (c as Partial<Cluster>);
+      this.cluster = { id, hostcomponent };
+      this.actionLink = c.action;
       this.upgradable = upgradable;
       this.disabled = isIssue(issue);
       this.upgrade = { issue, upgradable, upgrade };

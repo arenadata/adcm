@@ -28,14 +28,15 @@ import { ActionsService } from '../actions.service';
   `,
 })
 export class ActionListComponent {
-  @Input() cluster: { id: number; hostcomponent: string; action: string };
+  @Input() cluster: { id: number; hostcomponent: string; };
   @Input() disabled: boolean;
-  @Input() actions: any;
+  @Input() actions = [];
   @Input() asButton = false;
+  @Input() actionLink: string;
 
   constructor(private service: ActionsService) {}
 
   getData(): void {
-    if (!this.actions?.length) this.service.getActions(this.cluster.action).subscribe((a) => (this.actions = a));
+    if (!this.actions.length) this.service.getActions(this.actionLink).subscribe((a) => (this.actions = a));
   }
 }

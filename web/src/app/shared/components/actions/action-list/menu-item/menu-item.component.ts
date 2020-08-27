@@ -17,17 +17,22 @@ import { MatMenu } from '@angular/material/menu';
   selector: 'app-menu-item',
   styleUrls: ['./menu-item.component.scss'],
   template: ` <mat-menu #menu="matMenu" xPosition="before" yPosition="below" overlapTrigger="false">
-    <ng-container *ngFor="let a of items">
-      <button *ngIf="!a.children; else branch" [appForTest]="'action_btn'" mat-menu-item [appActions]="{ cluster: cluster, actions: [a] }">
-        <span class="warn">{{ a.display_name }}</span>
-      </button>
-      <ng-template #branch>
-        <button mat-menu-item [matMenuTriggerFor]="inner.menu">
-          <span>{{ a.display_name }}</span>
+    <div mat-menu-item disabled *ngIf="!items?.length; else list">
+      <i>No actions</i>
+    </div>
+    <ng-template #list>
+      <ng-container *ngFor="let a of items">
+        <button *ngIf="!a.children; else branch" [appForTest]="'action_btn'" mat-menu-item [appActions]="{ cluster: cluster, actions: [a] }">
+          <span class="warn">{{ a.display_name }}</span>
         </button>
-        <app-menu-item #inner [items]="a.children" [cluster]="cluster"></app-menu-item>
+        <ng-template #branch>
+          <button mat-menu-item [matMenuTriggerFor]="inner.menu">
+            <span>{{ a.display_name }}</span>
+          </button>
+          <app-menu-item #inner [items]="a.children" [cluster]="cluster"></app-menu-item>
+        </ng-template> 
+        </ng-container>
       </ng-template>
-    </ng-container>
   </mat-menu>`,
 })
 export class MenuItemComponent {

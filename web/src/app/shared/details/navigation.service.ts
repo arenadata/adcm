@@ -22,6 +22,8 @@ export interface IDetails {
   upgradable: boolean;
   upgrade: string;
   status: string | number;
+  /** link to actionss */
+  action: string;
   actions: IAction[];
   issue: Issue;
   log_files?: LogFile[];

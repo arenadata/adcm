@@ -20,6 +20,7 @@ import { ActionsService } from '../actions.service';
   selector: 'app-action-card',
   template: `
     <ng-container *ngIf="actions$ | async as actions">
+      <p *ngIf="!actions.length">Nothing to display.</p>
       <app-card-item [items]="actions" [cluster]="clusterData"></app-card-item>
     </ng-container>
   `, 

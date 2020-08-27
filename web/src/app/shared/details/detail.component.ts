@@ -61,7 +61,7 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
   }
 
   run(w: WorkerInstance) {
-    const { id, name, typeName, actions, issue, status, prototype_name, prototype_display_name, prototype_version, bundle_id } = w.current;
+    const { id, name, typeName, action, actions, issue, status, prototype_name, prototype_display_name, prototype_version, bundle_id } = w.current;
     const { upgradable, upgrade, hostcomponent } = w.current as Cluster;
     const { log_files, objects } = w.current as Job;
     const { provider_id } = w.current as Host;
@@ -80,6 +80,7 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
       name,
       typeName,
       actions,
+      action,
       issue,
       upgradable,
       upgrade,
