@@ -812,6 +812,14 @@ def get_job_objects(obj):
     return resp
 
 
+def get_job_object_type(obj):
+    try:
+        action = Action.objects.get(id=obj.action_id)
+        return action.prototype.type
+    except Action.DoesNotExist:
+        return None
+
+
 class TaskListSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     pid = serializers.IntegerField(read_only=True)
@@ -851,6 +859,7 @@ class TaskSerializer(TaskListSerializer):
     restart = hlink('task-restart', 'id', 'task_id')
     terminatable = serializers.SerializerMethodField()
     cancel = hlink('task-cancel', 'id', 'task_id')
+    object_type = serializers.SerializerMethodField()
 
     def get_terminatable(self, obj):
         try:
@@ -892,6 +901,9 @@ class TaskSerializer(TaskListSerializer):
 
     def get_objects(self, obj):
         return get_job_objects(obj)
+
+    def get_object_type(self, obj):
+        return get_job_object_type(obj)
 
 
 class TaskRunSerializer(TaskSerializer):
