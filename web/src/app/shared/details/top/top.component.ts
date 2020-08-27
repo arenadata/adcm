@@ -24,7 +24,7 @@ import { IDetails, INavItem, NavigationService } from '../navigation.service';
     <app-action-list [asButton]="true" [actionLink]="actionLink" [actions]="actions" [disabled]="disabled" [cluster]="cluster"></app-action-list>
     <!-- <app-actions [source]="actions || []" [isIssue]="eIssue" [cluster]="cluster"></app-actions> -->
   `,
-  styles: [':host {display: flex;width: 100%;}'],
+  styles: [':host {display: flex;width: 100%;padding-right: 10px;}', 'app-action-list {display: block; margin-top: 2px;}'],
 })
 export class TopComponent {
   items: INavItem[];
