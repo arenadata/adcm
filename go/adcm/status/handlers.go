@@ -35,7 +35,7 @@ type clusterDetails struct {
 
 func index(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprintf(w, "<a href=\"%sapi/v1/\">Status Server API</a>\n", r.URL.Path)
+	fmt.Fprint(w, "<a href=\"api/v1/\">Status Server API</a>\n")
 	logg.I.f("%s %s %d\n", r.Method, r.URL.Path, 200)
 }
 
