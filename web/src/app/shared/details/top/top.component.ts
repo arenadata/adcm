@@ -21,7 +21,7 @@ import { IDetails, INavItem, NavigationService } from '../navigation.service';
     <app-crumbs [navigation]="items"></app-crumbs>    
     <app-upgrade *ngIf="upgradable" [dataRow]="upgrade" xPosition="after"></app-upgrade>
     <div [style.flex]="1"></div>
-    <app-action-list [actions]="actions" [disabled]="disabled" [cluster]="cluster"></app-action-list>
+    <app-action-list [asButton]="true" [actions]="actions" [disabled]="disabled" [cluster]="cluster"></app-action-list>
     <!-- <app-actions [source]="actions || []" [isIssue]="eIssue" [cluster]="cluster"></app-actions> -->
   `,
   styles: [':host {display: flex;width: 100%;}'],

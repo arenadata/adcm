@@ -18,29 +18,17 @@ import { ActionsService } from '../actions.service';
 
 @Component({
   selector: 'app-action-card',
-  styles: [
-
-  ],
   template: `
     <ng-container *ngIf="actions$ | async as actions">
       <app-card-item [items]="actions" [cluster]="clusterData"></app-card-item>
     </ng-container>
-
-    <!-- <button mat-stroked-button color="warn" [appForTest]="'action_btn'" *ngFor="let a of actions$ | async" [appActions]="{ cluster: clusterData, actions: [a] }">
-      <span>{{ a.display_name }}</span>
-    </button> 
-
-    <mat-dialog-actions class="controls">
-      <button mat-raised-button color="primary" (click)="dialogRef.close()">Cancel</button>
-    </mat-dialog-actions>-->
-  `,
- 
+  `, 
 })
 export class ActionCardComponent implements OnInit {
   model: Entities;
   actions$: Observable<any[]>;
 
-  constructor(private details: ClusterService, private service: ActionsService /*, public dialogRef: MatDialogRef<DialogComponent>*/) {}
+  constructor(private details: ClusterService, private service: ActionsService) {}
 
   ngOnInit(): void {
     this.actions$ = this.service.getActions(this.details.Current.action);
@@ -48,7 +36,6 @@ export class ActionCardComponent implements OnInit {
 
   get clusterData() {
     const { id, hostcomponent } = this.details.Cluster || (this.details.Current as Cluster);
-    //'hostcomponent' in this.model && this.model.typeName === 'cluster' ? this.model : (this.model as any).cluster || {};
     return { id, hostcomponent };
   }
 }

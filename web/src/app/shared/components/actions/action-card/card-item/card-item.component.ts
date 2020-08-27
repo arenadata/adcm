@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { openClose } from '@app/core/animations';
 
 @Component({
@@ -19,7 +19,7 @@ import { openClose } from '@app/core/animations';
       <mat-card *ngIf="a.children?.length; else branch" class="mat-expansion-panel">
         <mat-card-header>
           <mat-card-title>{{ a.display_name }}</mat-card-title>
-          <mat-card-subtitle>{{ a.description || 'some description about this action' }}</mat-card-subtitle>
+          <mat-card-subtitle>{{ a.description }}</mat-card-subtitle>
           <button mat-icon-button (click)="a.expand = !a.expand"><mat-icon>list</mat-icon></button>
         </mat-card-header>
         <div [@openClose]="!!a.expand">
@@ -30,8 +30,8 @@ import { openClose } from '@app/core/animations';
         <mat-card>
           <mat-card-header>
             <mat-card-title>{{ a.display_name }}</mat-card-title>
-            <mat-card-subtitle>{{ a.description || 'some description about this action' }}</mat-card-subtitle>
-            <button [appActions]="{ cluster: cluster, actions: [a] }" mat-icon-button color="warn"><mat-icon>play_circle_outline</mat-icon></button>
+            <mat-card-subtitle>{{ a.description }}</mat-card-subtitle>
+            <button [appActions]="{ cluster: cluster, actions: [a] }" mat-icon-button color="accent"><mat-icon>play_circle_outline</mat-icon></button>
           </mat-card-header>
         </mat-card>
       </ng-template>
@@ -45,11 +45,7 @@ import { openClose } from '@app/core/animations';
   ],
   animations: [openClose],
 })
-export class CardItemComponent implements OnInit {
+export class CardItemComponent {
   @Input() items: any;
   @Input() cluster: { id: number; hostcomponent: string };
-  constructor() {}
-
-  ngOnInit(): void {
-  }
 }

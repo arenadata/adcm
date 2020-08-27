@@ -11,14 +11,19 @@
 // limitations under the License.
 import { Component, Input } from '@angular/core';
 
-import { ActionsService, fruit, vegetable } from '../actions.service';
+import { ActionsService } from '../actions.service';
 
 @Component({
   selector: 'app-action-list',
   template: `
-    <button color="accent" [disabled]="disabled" mat-icon-button [matMenuTriggerFor]="panel.menu" (click)="getData()" matTooltip="Choose action">
+    <button *ngIf="!asButton; else btn" mat-icon-button color="accent" [disabled]="disabled" [matMenuTriggerFor]="panel.menu" (click)="getData()" matTooltip="Choose action">
       <mat-icon>play_circle_outline</mat-icon>
     </button>
+    <ng-template #btn>
+      <button mat-raised-button color="warn" [disabled]="disabled" [matMenuTriggerFor]="panel.menu" (click)="getData()">
+        <span>Run action</span>&nbsp;<mat-icon>add_task</mat-icon>
+      </button>
+    </ng-template>
     <app-menu-item #panel [items]="actions" [cluster]="cluster"></app-menu-item>
   `,
 })
@@ -26,13 +31,11 @@ export class ActionListComponent {
   @Input() cluster: { id: number; hostcomponent: string; action: string };
   @Input() disabled: boolean;
   @Input() actions: any;
+  @Input() asButton = false;
+
   constructor(private service: ActionsService) {}
 
   getData(): void {
-    if (!this.actions?.length)
-      this.service
-        .getActions(this.cluster.action)        
-        .subscribe((a) => (this.actions = a));
-    else this.actions = [fruit, vegetable, ...this.actions];
+    if (!this.actions?.length) this.service.getActions(this.cluster.action).subscribe((a) => (this.actions = a));
   }
 }

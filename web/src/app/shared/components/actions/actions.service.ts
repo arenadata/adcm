@@ -11,41 +11,39 @@
 // limitations under the License.
 import { Injectable } from '@angular/core';
 import { ApiService } from '@app/core/api';
-import { IAction } from '@app/core/types/actions';
-import { map } from 'rxjs/operators';
 
-export const fruit = {
-  display_name: 'Fruit',
-  desctiption: 'fruit description',
-  children: [
-    { display_name: 'Apple', description: 'description or some description about this action description or some description about this action' },
-    { display_name: 'Banana', description: 'description or some description about this action bannana' },
-    { display_name: 'Fruit loops', description: '' },
-  ],
-};
+// export const fruit = {
+//   display_name: 'Fruit',
+//   desctiption: 'fruit description',
+//   children: [
+//     { display_name: 'Apple', description: 'description or some description about this action description or some description about this action' },
+//     { display_name: 'Banana', description: 'description or some description about this action bannana' },
+//     { display_name: 'Fruit loops', description: '' },
+//   ],
+// };
 
-export const vegetable = {
-  display_name: 'Vegetables',
-  desctiption: 'description or some description about this action some description about this action Vegetables',
-  children: [
-    {
-      display_name: 'Green',
-      description: 'description or some description about this action description or some description about this action',
-      children: [
-        { display_name: 'Broccoli', description: 'description or some description about this action description or some description about this action' },
-        { display_name: 'Brussels sprouts', description: 'description or some description about this action bannana' },
-      ],
-    },
-    {
-      display_name: 'Orange',
-      description: 'description or some description about this action bannana',
-      children: [
-        { display_name: 'Pumpkins', description: 'description or some description about this action description or some description about this action' },
-        { display_name: 'Carrots', description: 'description or some description about this action bannana' },
-      ],
-    },
-  ],
-};
+// export const vegetable = {
+//   display_name: 'Vegetables',
+//   desctiption: 'description or some description about this action some description about this action Vegetables',
+//   children: [
+//     {
+//       display_name: 'Green',
+//       description: 'description or some description about this action description or some description about this action',
+//       children: [
+//         { display_name: 'Broccoli', description: 'description or some description about this action description or some description about this action' },
+//         { display_name: 'Brussels sprouts', description: 'description or some description about this action bannana' },
+//       ],
+//     },
+//     {
+//       display_name: 'Orange',
+//       description: 'description or some description about this action bannana',
+//       children: [
+//         { display_name: 'Pumpkins', description: 'description or some description about this action description or some description about this action' },
+//         { display_name: 'Carrots', description: 'description or some description about this action bannana' },
+//       ],
+//     },
+//   ],
+// };
 
 @Injectable({
   providedIn: 'root',
@@ -54,6 +52,6 @@ export class ActionsService {
   constructor(private api: ApiService) {}
 
   getActions(url: string) {
-    return this.api.get<any[]>(url).pipe(map((a) => [fruit, vegetable, ...a]));
+    return this.api.get<any[]>(url); //.pipe(map((a) => [fruit, vegetable, ...a]));
   }
 }
