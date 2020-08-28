@@ -55,7 +55,7 @@ def filter_actions(obj, actions_set):
     filtered = []
     for act in actions_set:
         if act.state_available != '':
-            available = json.loads(act.state_available)
+            available = act.state_available
             if available == 'any':
                 filtered.append(act)
             elif obj.state in available:
@@ -247,12 +247,12 @@ class ProfileDetailSerializer(serializers.Serializer):
 
     username = serializers.CharField(read_only=True, source='login')
     change_password = MyUrlField(read_only=True, view_name='profile-passwd')
-    profile = JSONField()
+    profile = serializers.JSONField()
 
     def validate_profile(self, raw):
         if isinstance(raw, str):
             raise AdcmApiEx('JSON_ERROR', 'profile should not be just one string')
-        return json.dumps(raw)
+        return raw
 
     def update(self, instance, validated_data):
         instance.profile = validated_data.get('profile', instance.profile)
@@ -551,13 +551,13 @@ class ActionSerializer(serializers.Serializer):
     type = serializers.CharField()
     display_name = serializers.CharField(required=False)
     description = serializers.CharField(required=False)
-    ui_options = JSONField(required=False)
+    ui_options = serializers.JSONField(required=False)
     button = serializers.CharField(required=False)
     script = serializers.CharField()
     script_type = serializers.CharField()
     state_on_success = serializers.CharField()
     state_on_fail = serializers.CharField()
-    hostcomponentmap = JSONField(required=False)
+    hostcomponentmap = serializers.JSONField(required=False)
     allow_to_terminate = serializers.BooleanField(read_only=True)
     partial_execution = serializers.BooleanField(read_only=True)
 
@@ -568,13 +568,13 @@ class SubActionSerializer(serializers.Serializer):
     script = serializers.CharField()
     script_type = serializers.CharField()
     state_on_fail = serializers.CharField(required=False)
-    params = JSONField(required=False)
+    params = serializers.JSONField(required=False)
 
 
 class ActionDetailSerializer(ActionSerializer):
-    state_available = JSONField()
-    params = JSONField(required=False)
-    log_files = JSONField(required=False)
+    state_available = serializers.JSONField()
+    params = serializers.JSONField(required=False)
+    log_files = serializers.JSONField(required=False)
     config = serializers.SerializerMethodField()
     subs = serializers.SerializerMethodField()
 
@@ -685,7 +685,7 @@ class ActionShort(serializers.Serializer):
     display_name = serializers.CharField(required=False)
     button = serializers.CharField(required=False)
     config = serializers.SerializerMethodField()
-    hostcomponentmap = JSONField(read_only=False)
+    hostcomponentmap = serializers.JSONField(read_only=False)
 
     def get_config(self, obj):
         context = self.context
@@ -728,8 +728,8 @@ class UpgradeSerializer(serializers.Serializer):
     upgradable = serializers.BooleanField(required=False)
     license = serializers.CharField(required=False)
     license_url = hlink('bundle-license', 'bundle_id', 'bundle_id')
-    from_edition = JSONField(required=False)
-    state_available = JSONField(required=False)
+    from_edition = serializers.JSONField(required=False)
+    state_available = serializers.JSONField(required=False)
     state_on_success = serializers.CharField(required=False)
 
 
@@ -785,7 +785,7 @@ def get_job_action(obj):
 
 def get_job_objects(obj):
     resp = []
-    selector = json.loads(obj.selector)
+    selector = obj.selector
     for obj_type in selector:
         try:
             if obj_type == 'cluster':
@@ -842,11 +842,11 @@ class JobShort(serializers.Serializer):
 
 
 class TaskSerializer(TaskListSerializer):
-    selector = JSONField(read_only=True)
-    config = JSONField(required=False)
-    attr = JSONField(required=False)
-    hc = JSONField(required=False)
-    hosts = JSONField(required=False)
+    selector = serializers.JSONField(read_only=True)
+    config = serializers.JSONField(required=False)
+    attr = serializers.JSONField(required=False)
+    hc = serializers.JSONField(required=False)
+    hosts = serializers.JSONField(required=False)
     action_url = serializers.HyperlinkedIdentityField(
         read_only=True,
         view_name='action-details',
@@ -925,7 +925,7 @@ class TaskRunSerializer(TaskSerializer):
 
 class TaskPostSerializer(TaskRunSerializer):
     action_id = serializers.IntegerField()
-    selector = JSONField()
+    selector = serializers.JSONField()
 
     def validate_selector(self, selector):
         if not isinstance(selector, dict):

@@ -85,10 +85,10 @@ class Upgrade(models.Model):
     description = models.TextField(blank=True)
     min_version = models.CharField(max_length=80)
     max_version = models.CharField(max_length=80)
-    from_edition = models.TextField(blank=True, default='[\"community\"]')  # JSON
+    from_edition = JSONField(default=['community'])
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
-    state_available = models.TextField(blank=True)  # JSON
+    state_available = JSONField()
     state_on_success = models.CharField(max_length=64, blank=True)
 
 
@@ -137,8 +137,8 @@ class ADCM(models.Model):
     name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = models.TextField(blank=True)   # JSON
-    issue = models.TextField(blank=True, default='{}')   # JSON
+    stack = JSONField()
+    issue = JSONField(default={})
 
 
 class Cluster(models.Model):
@@ -147,8 +147,8 @@ class Cluster(models.Model):
     description = models.TextField(blank=True)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = models.TextField(blank=True)   # JSON
-    issue = models.TextField(blank=True)   # JSON
+    stack = JSONField()
+    issue = JSONField()
 
     def __str__(self):
         return str(self.name)
@@ -160,8 +160,8 @@ class HostProvider(models.Model):
     description = models.TextField(blank=True)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = models.TextField(blank=True)   # JSON
-    issue = models.TextField(blank=True)   # JSON
+    stack = JSONField()
+    issue = JSONField()
 
     def __str__(self):
         return str(self.name)
@@ -175,8 +175,8 @@ class Host(models.Model):
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = models.TextField(blank=True)   # JSON
-    issue = models.TextField(blank=True)   # JSON
+    stack = JSONField()
+    issue = JSONField()
 
     def __str__(self):
         return "{}".format(self.fqdn)
@@ -187,8 +187,8 @@ class ClusterObject(models.Model):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = models.TextField(blank=True)   # JSON
-    issue = models.TextField(blank=True)   # JSON
+    stack = JSONField()
+    issue = JSONField()
 
     class Meta:
         unique_together = (('cluster', 'prototype'),)
@@ -233,7 +233,7 @@ class Action(models.Model):
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
-    ui_options = models.TextField(blank=True, null=True, default=None)   # JSON
+    ui_options = JSONField(null=True, default=None)
 
     type = models.CharField(max_length=16, choices=ACTION_TYPE)
     button = models.CharField(max_length=64, default=None, null=True)
@@ -243,12 +243,12 @@ class Action(models.Model):
 
     state_on_success = models.CharField(max_length=64, blank=True)
     state_on_fail = models.CharField(max_length=64, blank=True)
-    state_available = models.TextField(blank=True)    # JSON
+    state_available = JSONField()
 
-    params = models.TextField(blank=True)             # JSON
-    log_files = models.TextField(blank=True)          # JSON
+    params = JSONField(default={})
+    log_files = JSONField()
 
-    hostcomponentmap = models.TextField(blank=True)   # JSON
+    hostcomponentmap = JSONField()
     allow_to_terminate = models.BooleanField(default=False)
     partial_execution = models.BooleanField(default=False)
 
@@ -266,7 +266,7 @@ class SubAction(models.Model):
     script = models.CharField(max_length=160)
     script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
     state_on_fail = models.CharField(max_length=64, blank=True)
-    params = models.TextField(blank=True)             # JSON
+    params = JSONField(default={})
 
 
 class HostComponent(models.Model):
@@ -330,7 +330,7 @@ class PrototypeImport(models.Model):
     max_version = models.CharField(max_length=80)
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
-    default = models.TextField(null=True, default=None)   # JSON
+    default = JSONField(null=True, default=None)
     required = models.BooleanField(default=False)
     multibind = models.BooleanField(default=False)
 
@@ -366,7 +366,7 @@ JOB_STATUS = (
 
 class UserProfile(models.Model):
     login = models.CharField(max_length=32, unique=True)
-    profile = models.TextField()   # JSON
+    profile = JSONField()
 
 
 class Role(models.Model):
@@ -382,8 +382,8 @@ class JobLog(models.Model):
     action_id = models.PositiveIntegerField()
     sub_action_id = models.PositiveIntegerField(default=0)
     pid = models.PositiveIntegerField(blank=True, default=0)
-    selector = models.TextField()               # JSON
-    log_files = models.TextField(blank=True)    # JSON
+    selector = JSONField()
+    log_files = JSONField()
     status = models.CharField(max_length=16, choices=JOB_STATUS)
     start_date = models.DateTimeField()
     finish_date = models.DateTimeField(db_index=True)
@@ -393,12 +393,12 @@ class TaskLog(models.Model):
     action_id = models.PositiveIntegerField()
     object_id = models.PositiveIntegerField()
     pid = models.PositiveIntegerField(blank=True, default=0)
-    selector = models.TextField()                    # JSON
+    selector = JSONField()
     status = models.CharField(max_length=16, choices=JOB_STATUS)
-    config = models.TextField(null=True)             # JSON
-    attr = models.TextField(null=True)               # JSON
-    hostcomponentmap = models.TextField(null=True)   # JSON
-    hosts = models.TextField(null=True)   # JSON
+    config = JSONField(null=True)
+    attr = JSONField(null=True)
+    hostcomponentmap = JSONField(null=True)
+    hosts = JSONField(null=True)
     start_date = models.DateTimeField()
     finish_date = models.DateTimeField()
 
@@ -482,8 +482,8 @@ class StageUpgrade(models.Model):
     max_version = models.CharField(max_length=80)
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
-    from_edition = models.TextField(blank=True, default='[\"community\"]')  # JSON
-    state_available = models.TextField(blank=True)   # JSON
+    from_edition = JSONField(default=['community'])
+    state_available = JSONField()
     state_on_success = models.CharField(max_length=64, blank=True)
 
 
@@ -506,7 +506,7 @@ class StageAction(models.Model):
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
-    ui_options = models.TextField(blank=True, null=True, default=None)   # JSON
+    ui_options = JSONField(null=True, default=None)
 
     type = models.CharField(max_length=16, choices=ACTION_TYPE)
     button = models.CharField(max_length=64, default=None, null=True)
@@ -516,12 +516,12 @@ class StageAction(models.Model):
 
     state_on_success = models.CharField(max_length=64, blank=True)
     state_on_fail = models.CharField(max_length=64, blank=True)
-    state_available = models.TextField(blank=True)    # JSON
+    state_available = JSONField()
 
-    params = models.TextField(blank=True)             # JSON
-    log_files = models.TextField(blank=True)          # JSON
+    params = JSONField(default={})
+    log_files = JSONField()
 
-    hostcomponentmap = models.TextField(blank=True)   # JSON
+    hostcomponentmap = JSONField()
     allow_to_terminate = models.BooleanField(default=False)
     partial_execution = models.BooleanField(default=False)
 
@@ -539,7 +539,7 @@ class StageSubAction(models.Model):
     script = models.CharField(max_length=160)
     script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
     state_on_fail = models.CharField(max_length=64, blank=True)
-    params = models.TextField(blank=True)             # JSON
+    params = JSONField(default={})
 
 
 class StagePrototypeConfig(models.Model):
@@ -574,7 +574,7 @@ class StagePrototypeImport(models.Model):
     max_version = models.CharField(max_length=80)
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
-    default = models.TextField(null=True, default=None)   # JSON
+    default = JSONField(null=True, default=None)
     required = models.BooleanField(default=False)
     multibind = models.BooleanField(default=False)
 

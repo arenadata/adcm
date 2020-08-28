@@ -20,7 +20,7 @@ import cm.config as config
 import cm.job
 import cm.stack
 import cm.status_api
-from api.serializers import hlink, JSONField, DataField, get_job_action, get_job_objects
+from api.serializers import hlink, DataField, get_job_action, get_job_objects
 from cm.models import Action, SubAction
 
 
@@ -40,7 +40,7 @@ class JobSerializer(JobListSerializer):
     action = serializers.SerializerMethodField()
     display_name = serializers.SerializerMethodField()
     objects = serializers.SerializerMethodField()
-    selector = JSONField(required=False)
+    selector = serializers.JSONField(required=False)
     log_dir = serializers.CharField(read_only=True)
     log_files = DataField(read_only=True)
     action_url = hlink('action-details', 'action_id', 'action_id')
