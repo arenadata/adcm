@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-
 from cm.logger import log   # pylint: disable=unused-import
 import cm.status_api
 from cm.errors import AdcmEx
