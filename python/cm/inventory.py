@@ -91,7 +91,7 @@ def get_obj_config(obj):
 
 def get_obj_state(obj):
     if obj.stack:
-        state = json.loads(obj.stack)
+        state = obj.stack
         if state:
             return state[-1]
     return obj.state

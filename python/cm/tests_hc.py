@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-
 from django.test import TestCase
 
 import cm.api
@@ -36,7 +34,7 @@ class TestHC(TestCase):
         self.assertEqual(hc_list, None)
 
         try:
-            action = Action(name="run", hostcomponentmap=json.dumps("qwe"))
+            action = Action(name="run", hostcomponentmap='qwe')
             (hc_list, _) = cm.job.check_hostcomponentmap(cluster, action, [])
             self.assertNotEqual(hc_list, None)
         except AdcmEx as e:
@@ -46,7 +44,7 @@ class TestHC(TestCase):
         co = ClusterObject.objects.get(cluster=cluster, prototype__name='hadoop')
         sc1 = ServiceComponent.objects.get(cluster=cluster, service=co, component__name='server')
         try:
-            action = Action(name="run", hostcomponentmap=json.dumps("qwe"))
+            action = Action(name="run", hostcomponentmap='qwe')
             hc = [{"service_id": co.id, "component_id": sc1.id, "host_id": 500}]
             (hc_list, _) = cm.job.check_hostcomponentmap(cluster, action, hc)
             self.assertNotEqual(hc_list, None)
@@ -54,7 +52,7 @@ class TestHC(TestCase):
             self.assertEqual(e.code, 'HOST_NOT_FOUND')
 
         try:
-            action = Action(name="run", hostcomponentmap=json.dumps("qwe"))
+            action = Action(name="run", hostcomponentmap='qwe')
             hc = [{"service_id": co.id, "component_id": sc1.id, "host_id": h1.id}]
             (hc_list, _) = cm.job.check_hostcomponentmap(cluster, action, hc)
             self.assertNotEqual(hc_list, None)
@@ -63,7 +61,7 @@ class TestHC(TestCase):
 
         cm.api.add_host_to_cluster(cluster, h1)
         try:
-            action = Action(name="run", hostcomponentmap=json.dumps("qwe"))
+            action = Action(name="run", hostcomponentmap="qwe")
             hc = [{"service_id": 500, "component_id": sc1.id, "host_id": h1.id}]
             (hc_list, _) = cm.job.check_hostcomponentmap(cluster, action, hc)
             self.assertNotEqual(hc_list, None)
@@ -71,7 +69,7 @@ class TestHC(TestCase):
             self.assertEqual(e.code, 'SERVICE_NOT_FOUND')
 
         try:
-            action = Action(name="run", hostcomponentmap=json.dumps("qwe"))
+            action = Action(name="run", hostcomponentmap="qwe")
             hc = [{"service_id": co.id, "component_id": 500, "host_id": h1.id}]
             (hc_list, _) = cm.job.check_hostcomponentmap(cluster, action, hc)
             self.assertNotEqual(hc_list, None)
@@ -95,7 +93,7 @@ class TestHC(TestCase):
 
         try:
             act_hc = [{'service': 'hadoop', 'component': 'server', 'action': 'delete'}]
-            action = Action(name="run", hostcomponentmap=json.dumps(act_hc))
+            action = Action(name="run", hostcomponentmap=act_hc)
             hc = [{"service_id": co.id, "component_id": sc1.id, "host_id": h1.id}]
             (hc_list, delta) = cm.job.check_hostcomponentmap(cluster, action, hc)
             self.assertNotEqual(hc_list, None)
@@ -104,7 +102,7 @@ class TestHC(TestCase):
             self.assertEqual(e.msg[:32], 'no permission to "add" component')
 
         act_hc = [{'service': 'hadoop', 'component': 'server', 'action': 'add'}]
-        action = Action(name="run", hostcomponentmap=json.dumps(act_hc))
+        action = Action(name="run", hostcomponentmap=act_hc)
         hc = [
             {"service_id": co.id, "component_id": sc1.id, "host_id": h1.id},
             {"service_id": co.id, "component_id": sc1.id, "host_id": h2.id},
@@ -118,7 +116,7 @@ class TestHC(TestCase):
 
         cm.api.save_hc(cluster, hc_list)
         act_hc = [{'service': 'hadoop', 'component': 'server', 'action': 'remove'}]
-        action = Action(name="run", hostcomponentmap=json.dumps(act_hc))
+        action = Action(name="run", hostcomponentmap=act_hc)
         hc = [
             {"service_id": co.id, "component_id": sc1.id, "host_id": h2.id},
         ]

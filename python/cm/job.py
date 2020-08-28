@@ -14,7 +14,6 @@
 
 import json
 import os
-import re
 import shutil
 import signal
 import subprocess
@@ -115,7 +114,7 @@ def prepare_task(action, obj, selector, conf, attr, spec, old_hc, delta, host_ma
     if conf:
         new_conf = process_config_and_attr(task, conf, attr, spec)
         process_file_type(task, spec, conf)
-        task.config = json.dumps(new_conf)
+        task.config = new_conf
         task.save()
 
     return task
@@ -189,7 +188,7 @@ def check_action_state(action, obj):
         err('TASK_ERROR', 'object is locked')
     if action.state_available == '':
         err('TASK_ERROR', 'action is disabled')
-    available = json.loads(action.state_available)
+    available = action.state_available
     if available == 'any':
         return
     if obj.state in available:
@@ -199,7 +198,7 @@ def check_action_state(action, obj):
 
 def lock_obj(obj, event):
     if obj.stack:
-        stack = json.loads(obj.stack)
+        stack = obj.stack
     else:
         stack = []
 
@@ -209,13 +208,13 @@ def lock_obj(obj, event):
         stack.append(obj.state)
 
     log.debug('lock %s, stack: %s', obj_ref(obj), stack)
-    obj.stack = json.dumps(stack)
+    obj.stack = stack
     api.set_object_state(obj, config.Job.LOCKED, event)
 
 
 def unlock_obj(obj, event):
     if obj.stack:
-        stack = json.loads(obj.stack)
+        stack = obj.stack
     else:
         log.warning('no stack in %s for unlock', obj_ref(obj))
         return
@@ -225,7 +224,7 @@ def unlock_obj(obj, event):
         log.warning('empty stack in %s for unlock', obj_ref(obj))
         return
     log.debug('unlock %s, stack: %s', obj_ref(obj), stack)
-    obj.stack = json.dumps(stack)
+    obj.stack = stack
     api.set_object_state(obj, state, event)
 
 
@@ -261,7 +260,7 @@ def unlock_deleted_objects(job, event):
     if not job:
         log.warning('unlock_deleted_objects: no job')
         return
-    selector = json.loads(job.selector)
+    selector = job.selector
     if 'cluster' in selector:
         cluster = Cluster.objects.get(id=selector['cluster'])
         unlock_objects(cluster, event)
@@ -402,7 +401,7 @@ def check_hostcomponentmap(cluster, action, hc):
         err('TASK_ERROR', 'Only cluster objects can have action with hostcomponentmap')
 
     hostmap = api.check_hc(cluster, hc)
-    return hostmap, cook_delta(cluster, hostmap, json.loads(action.hostcomponentmap))
+    return hostmap, cook_delta(cluster, hostmap, action.hostcomponentmap)
 
 
 def check_selector(selector, key):
@@ -499,7 +498,7 @@ def get_old_hc(saved_hc):
     if not saved_hc:
         return {}
     old_hc = {}
-    for hc in json.loads(saved_hc):
+    for hc in saved_hc:
         service = ClusterObject.objects.get(id=hc['service_id'])
         comp = ServiceComponent.objects.get(id=hc['component_id'])
         host = Host.objects.get(id=hc['host_id'])
@@ -513,10 +512,10 @@ def re_prepare_job(task, job):
     hosts = None
     delta = {}
     if task.config:
-        conf = json.loads(task.config)
+        conf = task.config
     if task.hosts:
-        hosts = json.loads(task.hosts)
-    selector = json.loads(task.selector)
+        hosts = task.hosts
+    selector = task.selector
     action = Action.objects.get(id=task.action_id)
     obj, cluster, _provider = get_action_context(action, selector)
     sub_action = None
@@ -525,7 +524,7 @@ def re_prepare_job(task, job):
     if action.hostcomponentmap:
         new_hc = get_new_hc(cluster)
         old_hc = get_old_hc(task.hostcomponentmap)
-        delta = cook_delta(cluster, new_hc, json.loads(action.hostcomponentmap), old_hc)
+        delta = cook_delta(cluster, new_hc, action.hostcomponentmap, old_hc)
     prepare_job(action, sub_action, selector, job.id, obj, conf, delta, hosts)
 
 
@@ -576,14 +575,14 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
         },
     }
     if action.params:
-        job_conf['job']['params'] = json.loads(action.params)
+        job_conf['job']['params'] = action.params
 
     if sub_action:
         job_conf['job']['script'] = sub_action.script
         job_conf['job']['job_name'] = sub_action.name
         job_conf['job']['command'] = sub_action.name
         if sub_action.params:
-            job_conf['job']['params'] = json.loads(sub_action.params)
+            job_conf['job']['params'] = sub_action.params
 
     if 'cluster' in selector:
         job_conf['job']['cluster_id'] = selector['cluster']
@@ -627,11 +626,11 @@ def create_one_job_task(action, selector, obj, conf, attr, hc, hosts, event):
     task = TaskLog(
         action_id=action.id,
         object_id=obj.id,
-        selector=json.dumps(selector),
-        config=json.dumps(conf),
-        attr=json.dumps(attr),
-        hostcomponentmap=json.dumps(hc),
-        hosts=json.dumps(hosts),
+        selector=selector,
+        config=conf,
+        attr=attr,
+        hostcomponentmap=hc,
+        hosts=hosts,
         start_date=timezone.now(),
         finish_date=timezone.now(),
         status=config.Job.CREATED,
@@ -645,7 +644,7 @@ def create_job(action, sub_action, selector, event, task_id=0):
     job = JobLog(
         task_id=task_id,
         action_id=action.id,
-        selector=json.dumps(selector),
+        selector=selector,
         log_files=action.log_files,
         start_date=timezone.now(),
         finish_date=timezone.now(),
@@ -736,14 +735,14 @@ def restore_hc(task, action, status):
     if not action.hostcomponentmap:
         return
 
-    selector = json.loads(task.selector)
+    selector = task.selector
     if 'cluster' not in selector:
         log.error('no cluster in task #%s selector', task.id)
         return
     cluster = Cluster.objects.get(id=selector['cluster'])
 
     host_comp_list = []
-    for hc in json.loads(task.hostcomponentmap):
+    for hc in task.hostcomponentmap:
         host = Host.objects.get(id=hc['host_id'])
         service = ClusterObject.objects.get(id=hc['service_id'], cluster=cluster)
         comp = ServiceComponent.objects.get(id=hc['component_id'], cluster=cluster, service=service)
@@ -772,17 +771,6 @@ def cook_log_name(tag, level, ext='txt'):
     return f'{tag}-{level}.{ext}'
 
 
-def get_host_log_files(job_id, tag):
-    logs = []
-    p = re.compile('^' + str(job_id) + '-' + tag + r'-(out|err)\.(txt|json)$')
-    for item in os.listdir(config.LOG_DIR):
-        m = p.findall(item)
-        if m:
-            (level, ext) = m[0]
-            logs.append((level, ext, item))
-    return logs
-
-
 def get_log(job):
     log_storage = LogStorage.objects.filter(job=job)
     logs = []
@@ -795,28 +783,6 @@ def get_log(job):
             'id': ls.id
         })
 
-    return logs
-
-
-def get_log_files(job):
-    logs = []
-    for level in ['out', 'err']:
-        logs.append({
-            'level': level,
-            'tag': 'ansible',
-            'type': 'txt',
-            'file': cook_log_name(job.id, 'ansible', level)
-        })
-    if job.log_files == '':
-        return logs
-    for tag in json.loads(job.log_files):
-        for (level, ext, file) in get_host_log_files(job.id, tag):
-            logs.append({
-                'level': level,
-                'tag': tag,
-                'type': ext,
-                'file': file
-            })
     return logs
 
 
@@ -984,10 +950,7 @@ def prepare_ansible_config(job_id):
     job = JobLog.objects.get(id=job_id)
     action = Action.objects.get(id=job.action_id)
 
-    try:
-        params = json.loads(action.params)
-    except json.JSONDecodeError:
-        params = {}
+    params = action.params
 
     if 'jinja2_native' in params:
         config_parser['defaults']['jinja2_native'] = str(params['jinja2_native'])
