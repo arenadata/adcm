@@ -23,6 +23,8 @@ import { SchemeService } from './scheme.service';
 describe('SchemeComponent', () => {
   let component: SchemeComponent;
   let fixture: ComponentFixture<SchemeComponent>;
+  let service: SchemeService;
+  let fieldService: FieldService;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
@@ -34,6 +36,7 @@ describe('SchemeComponent', () => {
 
   beforeEach(() => {
     fixture = TestBed.createComponent(SchemeComponent);
+    service = TestBed.inject(SchemeService);
     component = fixture.componentInstance;
     component.form = new FormGroup({ field: new FormControl() });
     const yspec = { root: { match: 'list' as matchType, item: 'string' }, string: { match: 'string' as matchType } };
@@ -59,4 +62,6 @@ describe('SchemeComponent', () => {
     expect(error).toBeTruthy();
     expect(error.innerText).toBe('Field [field_display_name] is required!');
   });
+
+ 
 });
