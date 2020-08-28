@@ -338,7 +338,7 @@ class ProfileDetail(DetailViewRO):
                 up = UserProfile.objects.create(login=user.username)
                 up.save()
             except User.DoesNotExist:
-                raise AdcmApiEx('USER_NOT_FOUND')
+                raise AdcmApiEx('USER_NOT_FOUND') from None
         return up
 
     def patch(self, request, *args, **kwargs):
@@ -537,7 +537,7 @@ class ProviderDetail(DetailViewDelete):
         try:
             cm.api.delete_host_provider(provider)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -622,7 +622,7 @@ class HostDetail(DetailViewDelete):
         try:
             cm.api.delete_host(host)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -748,7 +748,7 @@ class ProviderConfigRestore(GenericAPIPermView):
         try:
             obj = self.get_queryset().get(obj_ref=cc, id=version)
         except ConfigLog.DoesNotExist:
-            raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist")
+            raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist") from None
         serializer = self.serializer_class(obj, data=request.data, context={'request': request})
         return update(serializer)
 
@@ -993,6 +993,6 @@ class HostConfigRestore(GenericAPIPermView):
         try:
             obj = self.get_queryset().get(obj_ref=cc, id=version)
         except ConfigLog.DoesNotExist:
-            raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist")
+            raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist") from None
         serializer = self.serializer_class(obj, data=request.data, context={'request': request})
         return update(serializer)

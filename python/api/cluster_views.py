@@ -153,7 +153,7 @@ class ClusterHostDetail(ListView):
         try:
             cm.api.remove_host_from_cluster(host)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -622,7 +622,7 @@ class ClusterServiceDetail(DetailViewRO):
         try:
             cm.api.delete_service(service)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -784,7 +784,7 @@ class ClusterServiceConfigVersion(ListView):
             try:
                 cl.config = cm.adcm_config.ui_config(obj, cl)
             except AdcmEx as e:
-                raise AdcmApiEx(e.code, e.msg, e.http_code)
+                raise AdcmApiEx(e.code, e.msg, e.http_code) from e
         serializer = self.serializer_class(cl, context={'request': request})
         return Response(serializer.data)
 
@@ -808,7 +808,7 @@ class ClusterConfigRestore(GenericAPIPermView):
         try:
             cl = self.get_queryset().get(obj_ref=obj.config, id=version)
         except ConfigLog.DoesNotExist:
-            raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist")
+            raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist") from None
         serializer = self.serializer_class(cl, data=request.data, context={'request': request})
         return update(serializer)
 

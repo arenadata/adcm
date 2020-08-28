@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 from django.db import IntegrityError
 from rest_framework import serializers
 
@@ -70,11 +69,11 @@ class ClusterSerializer(serializers.Serializer):
                 validated_data.get('description', ''),
             )
         except Prototype.DoesNotExist:
-            raise AdcmApiEx('PROTOTYPE_NOT_FOUND')
+            raise AdcmApiEx('PROTOTYPE_NOT_FOUND') from None
         except IntegrityError:
-            raise AdcmApiEx("CLUSTER_CONFLICT")
+            raise AdcmApiEx("CLUSTER_CONFLICT") from None
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
     def update(self, instance, validated_data):
         instance.name = validated_data.get('name', instance.name)
@@ -83,7 +82,7 @@ class ClusterSerializer(serializers.Serializer):
             instance.save()
         except IntegrityError:
             msg = 'cluster with name "{}" already exists'.format(instance.name)
-            raise AdcmApiEx("CLUSTER_CONFLICT", msg)
+            raise AdcmApiEx("CLUSTER_CONFLICT", msg) from None
         return instance
 
 
@@ -196,7 +195,7 @@ class ClusterHostAddSerializer(ClusterHostDetailSerializer):
         try:
             cm.api.add_host_to_cluster(cluster, host)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
         return host
 
 
@@ -354,9 +353,9 @@ class ClusterServiceSerializer(serializers.Serializer):
                 validated_data.get('prototype_id'),
             )
         except IntegrityError:
-            raise AdcmApiEx('SERVICE_CONFLICT')
+            raise AdcmApiEx('SERVICE_CONFLICT') from None
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
 
 class ClusterServiceDetailSerializer(ClusterServiceSerializer):
@@ -453,19 +452,14 @@ class ServiceComponentDetailSerializer(ServiceComponentSerializer):
     monitoring = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
 
-    def load_json(self, value):
-        if value:
-            return json.loads(value)
-        return None
-
     def get_constraint(self, obj):
-        return self.load_json(obj.component.constraint)
+        return obj.component.constraint
 
     def get_requires(self, obj):
-        return self.load_json(obj.component.requires)
+        return obj.component.requires
 
     def get_params(self, obj):
-        return self.load_json(obj.component.params)
+        return obj.component.params
 
     def get_monitoring(self, obj):
         return obj.component.monitoring
@@ -496,7 +490,7 @@ class HCComponentSerializer(ServiceComponentDetailSerializer):
         comp_list = {}
 
         def process_requires(req_list):
-            for c in json.loads(req_list):
+            for c in req_list:
                 comp = Component.objects.get(
                     name=c['component'],
                     prototype__name=c['service'],
@@ -616,7 +610,7 @@ class DoBindSerializer(serializers.Serializer):
                 validated_data.get('export_service_id', 0)
             )
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
 
 class DoServiceBindSerializer(serializers.Serializer):
@@ -639,7 +633,7 @@ class DoServiceBindSerializer(serializers.Serializer):
                 validated_data.get('export_service_id')
             )
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
 
 class ClusterServiceConfigSerializer(serializers.Serializer):
@@ -722,7 +716,7 @@ class ObjectConfigUpdate(ObjectConfig):
             if hasattr(instance.obj_ref, 'adcm'):
                 logrotate.run()
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds)
+            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds) from e
         return cl
 
 
@@ -735,7 +729,7 @@ class ObjectConfigRestore(ObjectConfig):
                 validated_data.get('description', instance.description)
             )
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
         return cc
 
 
@@ -793,4 +787,4 @@ class PostImportSerializer(serializers.Serializer):
             service = self.context.get('service')
             return cm.api.multi_bind(cluster, service, bind)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds)
+            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds) from e
