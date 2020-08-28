@@ -15,7 +15,7 @@ from rest_framework import serializers
 from cm.logger import log   # pylint: disable=unused-import
 import cm.config as config
 from cm.models import ClusterObject, Prototype, Bundle
-from api.serializers import hlink, JSONField, UrlField
+from api.serializers import hlink, UrlField
 from api.serializers import ActionDetailSerializer, ConfigSerializer, UpgradeSerializer
 
 
@@ -103,9 +103,9 @@ class ComponentSerializer(serializers.Serializer):
     name = serializers.CharField()
     display_name = serializers.CharField(required=False)
     description = serializers.CharField(required=False)
-    params = JSONField(required=False)
-    constraint = JSONField(required=False)
-    requires = JSONField(required=False)
+    params = serializers.JSONField(required=False)
+    constraint = serializers.JSONField(required=False)
+    requires = serializers.JSONField(required=False)
     monitoring = serializers.CharField(read_only=True)
 
 
@@ -120,7 +120,7 @@ class ImportSerializer(serializers.Serializer):
     max_version = serializers.CharField(read_only=True)
     min_strict = serializers.BooleanField(required=False)
     max_strict = serializers.BooleanField(required=False)
-    default = JSONField(read_only=True)
+    default = serializers.JSONField(read_only=True)
     required = serializers.BooleanField(read_only=True)
     multibind = serializers.BooleanField(read_only=True)
 
