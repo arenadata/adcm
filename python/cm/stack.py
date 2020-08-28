@@ -254,12 +254,12 @@ def save_components(proto, conf):
         dict_to_obj(cc, 'description', component)
         dict_to_obj(cc, 'display_name', component)
         dict_to_obj(cc, 'monitoring', component)
-        dict_json_to_obj(cc, 'params', component)
         fix_display_name(cc, component)
         check_component_constraint_definition(proto, comp_name, cc)
         check_component_requires(proto, comp_name, cc)
-        dict_json_to_obj(cc, 'constraint', component)
-        dict_json_to_obj(cc, 'requires', component)
+        dict_to_obj(cc, 'params', component)
+        dict_to_obj(cc, 'constraint', component)
+        dict_to_obj(cc, 'requires', component)
         component.save()
 
 
