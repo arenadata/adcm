@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 from django.db import IntegrityError
 from rest_framework import serializers
 
@@ -453,19 +452,14 @@ class ServiceComponentDetailSerializer(ServiceComponentSerializer):
     monitoring = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
 
-    def load_json(self, value):
-        if value:
-            return json.loads(value)
-        return None
-
     def get_constraint(self, obj):
-        return self.load_json(obj.component.constraint)
+        return obj.component.constraint
 
     def get_requires(self, obj):
-        return self.load_json(obj.component.requires)
+        return obj.component.requires
 
     def get_params(self, obj):
-        return self.load_json(obj.component.params)
+        return obj.component.params
 
     def get_monitoring(self, obj):
         return obj.component.monitoring
@@ -496,7 +490,7 @@ class HCComponentSerializer(ServiceComponentDetailSerializer):
         comp_list = {}
 
         def process_requires(req_list):
-            for c in json.loads(req_list):
+            for c in req_list:
                 comp = Component.objects.get(
                     name=c['component'],
                     prototype__name=c['service'],

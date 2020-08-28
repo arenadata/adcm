@@ -221,7 +221,7 @@ def check_hc(cluster):
             for comp in Component.objects.filter(prototype=co.prototype):
                 if not comp.constraint:
                     continue
-                const = json.loads(comp.constraint)
+                const = comp.constraint
                 if not const:
                     continue
                 if len(const) == 2 and const[0] == 0 and const[1] == '+':
@@ -249,7 +249,7 @@ def check_component_requires(shc_list):
         return False
 
     for shc in [i for i in shc_list if i[2].component.requires]:
-        for r in json.loads(shc[2].component.requires):
+        for r in shc[2].component.requires:
             if not check_component_req(r['service'], r['component']):
                 ref = f'component "{shc[2].component.name}" of service "{shc[0].prototype.name}"'
                 msg = 'no required component "{}" of service "{}" for {}'
@@ -313,5 +313,5 @@ def check_component_constraint(service, hc_in):
     for c in Component.objects.filter(prototype=service.prototype):
         if not c.constraint:
             continue
-        const = json.loads(c.constraint)
+        const = c.constraint
         check(c, const)
