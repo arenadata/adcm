@@ -39,13 +39,11 @@ def get_context(task_vars):
     return task_vars['context']
 
 
-def check_context(task_vars, *context_type, err_msg=None):
+def check_context(task_vars, context_type, err_msg=None):
     context = get_context(task_vars)
-    if context['type'] not in context_type:
+    if context['type'] != context_type:
         if not err_msg:
-            err_msg = MSG_WRONG_CONTEXT.format(
-                ','.join(context_type), context['type']
-            )
+            err_msg = MSG_WRONG_CONTEXT.format(context_type, context['type'])
         raise AnsibleError(err_msg)
     return context
 
@@ -98,13 +96,15 @@ class ContextActionModule(ActionBase):
         obj_type = self._task.args["type"]
 
         if obj_type == 'cluster':
-            check_context(task_vars, 'cluster', 'service')
+            check_context(task_vars, 'cluster')
+            check_context(task_vars, 'service')
             res = self._do_cluster(
                 task_vars,
                 {'cluster_id': self._get_job_var(task_vars, 'cluster_id')}
             )
         elif obj_type == "service" and "service_name" in self._task.args:
-            context = check_context(task_vars, 'cluster', 'service')
+            _ = check_context(task_vars, 'cluster')
+            context = check_context(task_vars, 'service')
             if context['type'] == 'service':
                 service = cm.models.ClusterObject.objects.get(pk=context["service_id"])
                 service_name = service.prototype.name
