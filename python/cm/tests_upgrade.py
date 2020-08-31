@@ -26,7 +26,7 @@ class TestUpgradeVersion(TestCase):
     def cook_cluster(self):
         b = Bundle(name="ADH", version="1.0")
         proto = Prototype(type="cluster", name="ADH", bundle=b)
-        return Cluster(prototype=proto, issue='{}')
+        return Cluster(prototype=proto, issue={})
 
     def cook_upgrade(self):
         return Upgrade(
@@ -34,7 +34,7 @@ class TestUpgradeVersion(TestCase):
             max_version="2.0",
             min_strict=False,
             max_strict=False,
-            state_available='"any"'
+            state_available='any'
         )
 
     def check_upgrade(self, obj, upgrade, result):
@@ -80,7 +80,7 @@ class TestUpgradeVersion(TestCase):
     def test_state(self):
         obj = self.cook_cluster()
         upgrade = self.cook_upgrade()
-        upgrade.state_available = json.dumps(["installed", "any"])
+        upgrade.state_available = ["installed", "any"]
         obj.prototype.version = "1.5"
 
         obj.state = "created"
@@ -91,7 +91,7 @@ class TestUpgradeVersion(TestCase):
 
     def test_issue(self):
         obj = self.cook_cluster()
-        obj.issue = json.dumps({"config": False})
+        obj.issue = {"config": False}
         upgrade = self.cook_upgrade()
         self.check_upgrade(obj, upgrade, False)
 
@@ -137,7 +137,7 @@ class SetUp():
             bundle=bundle,
             min_version="1.0",
             max_version="2.0",
-            state_available='["created"]'
+            state_available=['created']
         )
 
 

@@ -239,7 +239,7 @@ def re_check_actions():
     for act in StageAction.objects.all():
         if not act.hostcomponentmap:
             continue
-        hc = json.loads(act.hostcomponentmap)
+        hc = act.hostcomponentmap
         ref = 'in hc_acl of action "{}" of {}'.format(act.name, proto_ref(act.prototype))
         for item in hc:
             sp = StagePrototype.objects.filter(type='service', name=item['service'])
