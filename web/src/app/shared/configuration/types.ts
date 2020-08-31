@@ -35,12 +35,35 @@ export type controlType = 'boolean' | 'textbox' | 'textarea' | 'json' | 'passwor
 
 export type TValue = string | number | boolean | object | any[];
 
-export interface UIoptions {
+/**
+ *```
+ {
+    invisible?: boolean;
+    no_confirm?: boolean;
+    advanced?: boolean;
+ }
+ ```
+ *
+ */
+export interface IUIoptions {
   invisible?: boolean;
   no_confirm?: boolean;
   advanced?: boolean;
 }
 
+/**
+ * ```
+ {
+    min?: number;
+    max?: number;
+    option?: any;
+    read_only?: stateType[];   // created | locked
+    yspec?: IYspec;
+    rules?: any;
+    active?: boolean;
+}
+ * ```
+ */
 export interface ILimits {
   min?: number;
   max?: number;
@@ -61,18 +84,18 @@ export interface ValidatorInfo {
 /**
  * Property config object from backend
  */
-export interface FieldStack {
+export interface IFieldStack {
   type: ConfigValueTypes;
   name: string;
   subname: string;
   display_name: string;
-  default: null | string | number | boolean | object | any[];
-  value: null | string | number | boolean;
+  default: TValue;
+  value: TValue;
   required: boolean;
-  description: string;
+  description?: string;
   limits?: ILimits;
   read_only: boolean;
-  ui_options?: UIoptions;
+  ui_options?: IUIoptions;
   activatable: boolean;
 }
 
@@ -83,10 +106,17 @@ export interface IConfig {
   id?: number;
   date?: string;
   description?: string;
-  config: FieldStack[];
+  config: IFieldStack[];
   attr?: IConfigAttr;
 }
 
+/**
+ *```
+{
+    [group: string]: { active: boolean };
+}
+```
+ */
 export interface IConfigAttr {
   [group: string]: { active: boolean };
 }
@@ -99,7 +129,7 @@ export interface ConfigOptions {
   subname: string;
   hidden: boolean;
   read_only: boolean;
-  ui_options?: UIoptions;
+  ui_options?: IUIoptions;
   description?: string;
   activatable?: boolean;
   required: boolean;

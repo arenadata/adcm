@@ -11,134 +11,22 @@
 // limitations under the License.
 import { TestBed } from '@angular/core/testing';
 import { FormBuilder, Validators } from '@angular/forms';
+import { Configuration, FieldFactory, itemOptionsArr } from '@app/core/tests/configuration';
 
-import { FieldService, IOutput, itemOptions, ISource } from './field.service';
-import { ConfigValueTypes, FieldStack, IConfig, ILimits, resultTypes } from './types';
+import { FieldService, IOutput, ISource } from './field.service';
+import { ConfigValueTypes, IFieldStack, ILimits, resultTypes } from './types';
 import { IYspec } from './yspec/yspec.service';
 
 /**
  * inputData - data from backend for configuration IConfig.config : FieldStack[]
- *           => data4form : itemOptions[] we can render the form based on this data
+ * formData : itemOptions[] -  we can render the form based on inputData
  *
  * FormControl.value - user input
  * outputData - this is that we send to backend after parsing FormControl.value  - IOutput
  *
  */
-
-const inputData: IConfig = {
-  attr: {},
-  config: [
-    {
-      name: 'field_string',
-      display_name: 'display_name',
-      subname: '',
-      type: 'string',
-      activatable: false,
-      read_only: false,
-      default: null,
-      value: null,
-      description: '',
-      required: false,
-    },
-    {
-      name: 'group',
-      display_name: 'group_display_name',
-      subname: '',
-      type: 'group',
-      activatable: false,
-      read_only: false,
-      default: null,
-      value: null,
-      description: '',
-      required: false,
-    },
-    {
-      name: 'group',
-      display_name: 'field_in_group_display_name',
-      subname: 'field_in_group',
-      type: 'integer',
-      activatable: false,
-      read_only: false,
-      default: 10,
-      value: null,
-      description: '',
-      required: true,
-    },
-  ],
-};
-
-const data4form: itemOptions[] = [
-  {
-    required: false,
-    name: 'field_string',
-    display_name: 'display_name',
-    subname: '',
-    type: 'string',
-    activatable: false,
-    read_only: false,
-    default: null,
-    value: '',
-    description: '',
-    key: 'field_string',
-    validator: { required: false, min: null, max: null, pattern: null },
-    controlType: 'textbox',
-    hidden: false,
-    compare: [],
-  },
-  {
-    name: 'group',
-    display_name: 'group_display_name',
-    subname: '',
-    type: 'group',
-    activatable: false,
-    read_only: false,
-    default: null,
-    value: null,
-    description: '',
-    required: false,
-    hidden: false,
-    active: true,
-    options: [
-      {
-        name: 'field_in_group',
-        display_name: 'field_in_group_display_name',
-        subname: 'field_in_group',
-        type: 'integer',
-        activatable: false,
-        read_only: false,
-        default: 10,
-        value: '',
-        description: '',
-        required: true,
-        key: 'field_in_group/group',
-        validator: { required: true, min: null, max: null, pattern: /^[-]?\d+$/ },
-        controlType: 'textbox',
-        hidden: false,
-        compare: [],
-      },
-    ],
-  },
-];
-
-const data4form_simple = [
-  {
-    required: false,
-    name: 'field_string',
-    display_name: 'display_name',
-    subname: '',
-    type: 'string',
-    activatable: false,
-    read_only: false,
-    default: null,
-    value: '',
-    description: '',
-    key: 'field_string',
-    validator: { required: false, min: null, max: null, pattern: null },
-    controlType: 'textbox',
-    hidden: false,
-    compare: [],
-  },
-];
+const inputData = new Configuration(FieldFactory.add(['string', ['integer']]));
+const formData = itemOptionsArr;
 
 describe('Configuration fields service', () => {
   let service: FieldService;
@@ -171,25 +59,26 @@ describe('Configuration fields service', () => {
   });
 
   it('FieldStack[] (input data IConfig.config) transform to itemOptions[] by getPanels()', () => {
-    expect(service.getPanels(inputData)).toEqual(data4form);
+    const output = service.getPanels(inputData);
+    expect(output).toEqual(formData);
   });
 
   it('Generate FormGroup : toFormGroup() check value', () => {
     const fg = service.fb.group(
       {
-        field_string: service.fb.control(''),
-        group: service.fb.group({
-          field_in_group: ['', [Validators.required, Validators.pattern(/^[-]?\d+$/)]],
+        field_string_0: service.fb.control(''),
+        field_group_1: service.fb.group({
+          subname_integer_0: ['', [Validators.required, Validators.pattern(/^[-]?\d+$/)]],
         }),
       },
       { validator: () => null }
     );
-    const form = service.toFormGroup(data4form);
+    const form = service.toFormGroup(formData);
     expect(form.value).toEqual(fg.value);
   });
 
   it('Check result : parseValue(empty, empty) should return {}', () => {
-    const source: FieldStack[] = [];
+    const source: IFieldStack[] = [];
     const value: IOutput = {};
     expect(service.parseValue(value, source)).toEqual({});
   });

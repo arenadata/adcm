@@ -18,7 +18,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { FieldService, IOutput } from '../field.service';
-import { CompareConfig, FieldOptions, FieldStack, IConfig, PanelOptions } from '../types';
+import { CompareConfig, FieldOptions, IFieldStack, IConfig, PanelOptions } from '../types';
 
 export interface ISearchParam {
   advanced: boolean;
@@ -53,7 +53,7 @@ export class MainService {
     this.fields.filterApply(options, search);
   }
 
-  parseValue(output: IOutput, source: FieldStack[]) {
+  parseValue(output: IOutput, source: IFieldStack[]) {
     return this.fields.parseValue(output, source);
   }
 

@@ -13,7 +13,7 @@ import { Injectable } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { getControlType, getPattern, isEmptyObject } from '@app/core/types';
 
-import { ConfigValueTypes, controlType, FieldOptions, FieldStack, IConfig, ILimits, PanelOptions, resultTypes, ValidatorInfo } from './types';
+import { ConfigValueTypes, controlType, FieldOptions, IFieldStack, IConfig, ILimits, PanelOptions, resultTypes, ValidatorInfo } from './types';
 import { matchType, simpleType } from './yspec/yspec.service';
 
 export type itemOptions = FieldOptions | PanelOptions;
@@ -42,7 +42,7 @@ export class FieldService {
 
   isVisibleField = (a: itemOptions) => !a.ui_options?.invisible;
   isAdvancedField = (a: itemOptions) => this.isVisibleField(a) && a.ui_options?.advanced;
-  isHidden = (a: FieldStack) => !!(a.ui_options?.invisible || a.ui_options?.advanced);
+  isHidden = (a: IFieldStack) => !!(a.ui_options?.invisible || a.ui_options?.advanced);
 
   /**
    * Parse and prepare source data from backend
@@ -65,7 +65,7 @@ export class FieldService {
       return fn[type] ? fn[type] : def;
     };
 
-    const getField = (item: FieldStack): FieldOptions => ({
+    const getField = (item: IFieldStack): FieldOptions => ({
       ...item,
       key: `${item.subname ? item.subname + '/' : ''}${item.name}`,
       value: getValue(item.type)(item.value, item.default, item.required),
@@ -80,9 +80,9 @@ export class FieldService {
       compare: [],
     });
 
-    const getPanels = (source: FieldStack, dataConfig: IConfig): PanelOptions => {
+    const getPanels = (source: IFieldStack, dataConfig: IConfig): PanelOptions => {
       const { config, attr } = dataConfig;
-      const fo = (b: FieldStack) => b.type !== 'group' && b.subname && b.name === source.name;
+      const fo = (b: IFieldStack) => b.type !== 'group' && b.subname && b.name === source.name;
       return {
         ...source,
         hidden: this.isHidden(source),
@@ -204,13 +204,13 @@ export class FieldService {
    * Output form, cast to source type
    */
   public parseValue(output: IOutput, source: ISource[]): IOutput {
-    const findField = (name: string, p?: string): Partial<FieldStack> => source.find((a) => (p ? a.name === p && a.subname === name : a.name === name) && !a.read_only);
+    const findField = (name: string, p?: string): Partial<IFieldStack> => source.find((a) => (p ? a.name === p && a.subname === name : a.name === name) && !a.read_only);
 
     const runYspecParse = (v: any, f: Partial<FieldOptions>) => ((v === {} || v === []) && !f.value ? f.value : this.runYspec(v, f.limits.rules));
 
     const runParse = (v: IOutput, parentName?: string): IOutput => {
       const runByValue = (p: IOutput, c: string) => {
-        const checkType = (data: resultTypes | IOutput, field: Partial<FieldStack>): resultTypes => {
+        const checkType = (data: resultTypes | IOutput, field: Partial<IFieldStack>): resultTypes => {
           const { type } = field;
           if (type === 'structure') return runYspecParse(data, field);
           else if (type === 'group') return this.checkValue(runParse(data as IOutput, field.name), type);

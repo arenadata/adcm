@@ -18,6 +18,19 @@ export type simpleType = 'string' | 'integer' | 'float' | 'bool' | 'int' | 'one_
 export type reqursionType = 'list' | 'dict';
 export type matchType = simpleType | reqursionType;
 
+/**
+ *```
+ {
+    match: matchType;
+    selector?: string;
+    variants?: { [key: string]: string };
+    item?: string;
+    items?: IRoot;        // { [key: string]: string; }
+    required_items?: string[];
+    default_item?: string;
+ }
+ ```
+ */
 interface IYRoot {
   match: matchType;
   selector?: string;
@@ -28,6 +41,13 @@ interface IYRoot {
   default_item?: string;
 }
 
+/**
+ *``` 
+ {
+    [key: string]: IYRoot;
+ }
+ ```
+ */
 export interface IYspec {
   [key: string]: IYRoot;
 }
@@ -52,12 +72,12 @@ export interface IYField {
 }
 
 /**
- * ``` 
+ * ```
  * {
  *   name:      string;
  *   type:      reqursionType;    // 'list' | 'dict'
  *   options:   IYContainer | IYField | (IYContainer | IYField)[];
- * } 
+ * }
  *```
  */
 export interface IYContainer {
@@ -108,8 +128,8 @@ export class YspecService {
       controlType: getControlType(field.type),
       validator: {
         required: this.findRule(field.path, 'required_items'),
-        pattern: getPattern(field.type)
-      }
+        pattern: getPattern(field.type),
+      },
     };
   }
 
@@ -129,7 +149,7 @@ export class YspecService {
     return {
       type: 'dict',
       name,
-      options: Object.keys(items).map((item_name: string) => this.build(items[item_name], [...path, item_name]))
+      options: Object.keys(items).map((item_name: string) => this.build(items[item_name], [...path, item_name])),
     };
   }
 
