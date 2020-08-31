@@ -11,19 +11,20 @@
 # limitations under the License.
 
 import functools
-import json
 
 from django.db import transaction
 from version_utils import rpm
 
-import cm.issue
 import cm.config as config
+import cm.issue
 import cm.status_api
 from cm.adcm_config import proto_ref, obj_ref, switch_config
 from cm.errors import raise_AdcmEx as err
-from cm.logger import log  # pylint: disable=unused-import
-from cm.models import Prototype, Component, Host, HostComponent, ServiceComponent
-from cm.models import PrototypeImport, ClusterBind, ClusterObject, Upgrade
+from cm.logger import log
+from cm.models import (
+    Prototype, Component, Host, HostComponent, ServiceComponent, PrototypeImport,
+    ClusterBind, ClusterObject, Upgrade
+)
 
 
 def check_license(bundle):
@@ -98,7 +99,7 @@ def check_upgrade_version(obj, upgrade):
 def check_upgrade_edition(obj, upgrade):
     if not upgrade.from_edition:
         return True, ''
-    from_edition = json.loads(upgrade.from_edition)
+    from_edition = upgrade.from_edition
     if obj.prototype.bundle.edition not in from_edition:
         msg = 'bundle edition "{}" is not in upgrade list: {}'
         return False, msg.format(obj.prototype.bundle.edition, from_edition)
@@ -109,7 +110,7 @@ def check_upgrade_state(obj, upgrade):
     if obj.state == config.Job.LOCKED:
         return False, 'object is locked'
     if upgrade.state_available:
-        available = json.loads(upgrade.state_available)
+        available = upgrade.state_available
         if obj.state in available:
             return True, ''
         elif available == 'any':
