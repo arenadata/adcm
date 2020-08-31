@@ -282,10 +282,9 @@ def re_check_components():
 def re_check_config():
     for c in StagePrototypeConfig.objects.filter(type='variant'):
         ref = proto_ref(c.prototype)
-        lim = json.loads(c.limits)
-        if lim['source']['type'] != 'list':
+        if c.limits['source']['type'] != 'list':
             continue
-        keys = lim['source']['name'].split('/')
+        keys = c.limits['source']['name'].split('/')
         name = keys[0]
         subname = ''
         if len(keys) > 1:
@@ -294,7 +293,7 @@ def re_check_config():
             s = StagePrototypeConfig.objects.get(prototype=c.prototype, name=name, subname=subname)
         except StagePrototypeConfig.DoesNotExist:
             msg = f'Unknown config source name "{{}}" for {ref} config "{c.name}/{c.subname}"'
-            err('INVALID_CONFIG_DEFINITION', msg.format(lim['source']['name']))
+            err('INVALID_CONFIG_DEFINITION', msg.format(c.limits['source']['name']))
         if s == c:
             msg = f'Config parameter "{c.name}/{c.subname}" can not refer to itself ({ref})'
             err('INVALID_CONFIG_DEFINITION', msg)
