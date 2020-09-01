@@ -71,6 +71,11 @@ export class CompTile extends Tile {
   }
 }
 
+/**
+ * State user selection
+ *
+ * @class StatePost
+ */
 export class StatePost {
   private _data: Post[];
 
