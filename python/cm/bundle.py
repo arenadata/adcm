@@ -15,7 +15,6 @@ import os.path
 import hashlib
 import tarfile
 import shutil
-import json
 import functools
 
 from version_utils import rpm
