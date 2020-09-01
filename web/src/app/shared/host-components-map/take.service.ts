@@ -127,30 +127,35 @@ export class TakeService {
     };
   }
 
-  clearServiceFromHost(data: { rel: CompTile; model: HostTile }, state: StatePost) {
-    this.clear([data.model, data.rel]);
+  clearServiceFromHost(data: { rel: CompTile; model: HostTile }, state: StatePost, cs: CompTile[], hs: HostTile[], form: FormGroup, source: Map<string, Tile[]>) {
+    this.clear([data.model, data.rel], source);
     state.delete(new Post(data.model.id, data.rel.service_id, data.rel.id));
-    this.clearDependencies(data.rel, state);
-    this.setFormValue(data.rel);
+    this.clearDependencies(data.rel, state, cs, hs, form);
+    this.setFormValue(data.rel, form);
   }
 
-  clearHostFromService(data: { rel: HostTile; model: CompTile }, state: StatePost) {
-    this.clear([data.rel, data.model]);
+  clearHostFromService(data: { rel: HostTile; model: CompTile }, state: StatePost, cs: CompTile[], hs: HostTile[], form: FormGroup, source: Map<string, Tile[]>) {
+    this.clear([data.rel, data.model], source);
     state.delete(new Post(data.rel.id, data.model.service_id, data.model.id));
-    this.clearDependencies(data.model, state);
-    this.setFormValue(data.model);
+    this.clearDependencies(data.model, state, cs, hs, form);
+    this.setFormValue(data.model, form);
   }
 
-  clearDependencies(comp: CompTile, state: StatePost) {
+  clearDependencies(comp: CompTile, state: StatePost, cs: CompTile[], hs: HostTile[], form: FormGroup) {
     const getLimitsFromState = (prototype_id: number) => this.raw.component.find((b) => b.prototype_id === prototype_id).constraint;
     if (comp.requires?.length) {
       this.findDependencies(comp, cs).forEach((a) => {
         a.limit = getLimitsFromState(a.prototype_id);
         a.notification = '';
       });
-      state.data.map((a) => this.checkDependencies(cs.find((b) => b.id === a.component_id), cs));
-      this.formGroup.reset();
-      this.formFill();
+      state.data.map((a) =>
+        this.checkDependencies(
+          cs.find((b) => b.id === a.component_id),
+          cs
+        )
+      );
+      form.reset();
+      this.formFill(cs, hs, form);
     }
   }
 
@@ -163,12 +168,12 @@ export class TakeService {
     this.findDependencies(c, cs).forEach((a) => (a.limit = a.limit ? [...a.limit, 'depend'] : ['depend']));
   }
 
-  takeHost(h: HostTile, cs: CompTile[], hs: HostTile[], s: IStream) {
-    this.getLink(cs, s).getSelected(hs, s).next(h, s);
+  takeHost(h: HostTile, cs: CompTile[], hs: HostTile[], s: IStream, state: StatePost, load: StatePost, form: FormGroup, source: Map<string, Tile[]>) {
+    this.getLink(cs, s).getSelected(hs, s).next(h, s, state, cs, hs, load, form, source);
   }
 
-  takeComponent(c: CompTile, cs: CompTile[], hs: HostTile[], s: IStream) {
-    this.getLink(hs, s).getSelected(cs, s).next(c, s);
+  takeComponent(c: CompTile, cs: CompTile[], hs: HostTile[], s: IStream, state: StatePost, load: StatePost, form: FormGroup, source: Map<string, Tile[]>) {
+    this.getLink(hs, s).getSelected(cs, s).next(c, s, state, cs, hs, load, form, source);
   }
 
   getLink(source: Tile[], stream: IStream) {
@@ -184,25 +189,25 @@ export class TakeService {
     return this;
   }
 
-  next(target: Tile, stream: IStream) {
-    if (stream.link) this.handleLink(stream.link, target);
+  next(target: Tile, stream: IStream, state: StatePost, cs: CompTile[], hs: HostTile[], load: StatePost, form: FormGroup, source: Map<string, Tile[]>) {
+    if (stream.link) this.handleLink(stream.link, target, state, cs, hs, load, form, source);
     else if (stream.selected !== target) {
       target.isSelected = true;
       target.relations.forEach((e) => (stream.linkSource.find((s) => s.name === e.name && s.id === e.id).isLink = true));
     }
   }
 
-  handleLink(link: Tile, target: Tile) {
+  handleLink(link: Tile, target: Tile, state: StatePost, cs: CompTile[], hs: HostTile[], load: StatePost, form: FormGroup, source: Map<string, Tile[]>) {
     const isComp = target instanceof CompTile;
     const Component = (isComp ? target : link) as CompTile;
     const Host = isComp ? link : target;
     const post = new Post(Host.id, Component.service_id, Component.id);
+    const flag = (host_id: number, com: CompTile) => load.data.some((a) => a.component_id === com.id && a.service_id === com.service_id && a.host_id === host_id);
 
     const checkActions = (host_id: number, com: CompTile, action: 'add' | 'remove'): boolean => {
       if (com.actions?.length) {
-        const flag = this.loadPost.data.some((a) => a.component_id === com.id && a.service_id === com.service_id && a.host_id === host_id);
-        if (action === 'remove') return flag ? com.actions.some((a) => a === 'remove') : true;
-        if (action === 'add') return flag ? true : com.actions.some((a) => a === 'add');
+        if (action === 'remove') return flag(host_id, com) ? com.actions.some((a) => a === 'remove') : true;
+        if (action === 'add') return flag(host_id, com) ? true : com.actions.some((a) => a === 'add');
       } else return true;
     };
 
@@ -214,28 +219,28 @@ export class TakeService {
 
     if (link.relations.find((e) => e.id === target.id)) {
       if (!checkActions(Host.id, Component, 'remove')) return;
-      this.clear([target, link]);
-      this.statePost.delete(post);
-      this.clearDependencies(Component);
+      this.clear([target, link], source);
+      state.delete(post);
+      this.clearDependencies(Component, state, cs, hs, form);
     } else if (noLimit(Component.limit, Component.relations.length)) {
       if (!checkActions(Host.id, Component, 'add')) return;
       if (Component.requires?.length) {
-        const requires = Component.requires.reduce((p, c) => (c.components.some((a) => this.Components.some((b) => b.prototype_id === a.prototype_id)) ? p : [...p, c]), []);
+        const requires = Component.requires.reduce((p, c) => (c.components.some((a) => cs.some((b) => b.prototype_id === a.prototype_id)) ? p : [...p, c]), []);
         if (requires.length) {
           this.dialog4Requires(requires);
           return;
         } else {
-          this.checkDependencies(Component);
-          this.formGroup.reset();
-          this.formFill();
+          this.checkDependencies(Component, cs);
+          form.reset();
+          this.formFill(cs, hs, form);
         }
       }
       link.relations.push(target);
       target.relations.push(link);
       target.isLink = true;
-      this.statePost.add(post);
+      state.add(post);
     }
-    this.setFormValue(Component);
+    this.setFormValue(Component, form);
   }
 
   dialog4Requires(model: IRequires[]) {
@@ -257,14 +262,14 @@ export class TakeService {
       .subscribe();
   }
 
-  setFormValue(c: CompTile) {
-    this.formGroup.controls[`${c.service_id}/${c.id}`].setValue(c.relations);
+  setFormValue(c: CompTile, form: FormGroup) {
+    form.controls[`${c.service_id}/${c.id}`].setValue(c.relations);
   }
 
-  clear(tiles: Tile[]) {
+  clear(tiles: Tile[], source: Map<string, Tile[]>) {
+    const find = (name: string, id: number) => source.get(name).find((h) => h.id === id);
     for (let a of tiles) {
-      const name = 'service_id' in a ? 'compo' : 'host';
-      const link = this.sourceMap.get(name).find((h) => h.id === a.id);
+      const link = find('service_id' in a ? 'compo' : 'host', a.id);
       const rel = tiles.find((b) => b !== a);
       link.relations = link.relations.filter((r) => r.id !== rel.id);
       a.isLink = false;

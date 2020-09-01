@@ -214,7 +214,7 @@ describe('MasterComponent', () => {
   it('check value when ServiceHostComponent exist', () => {
     const service = fixture.debugElement.injector.get(MasterService);
     const hc = [{ host_id: 1, service_id: 4, component_id: 1, id: 9 }];
-    const hostmap = { service: { statePost: { data: hc } } } as ServiceHostComponent;
+    const hostmap = { statePost: { data: hc } } as ServiceHostComponent;
     const result = service.parseData({ hostmap });
     expect(result).toEqual({ config: undefined, hc, attr: undefined });
   });

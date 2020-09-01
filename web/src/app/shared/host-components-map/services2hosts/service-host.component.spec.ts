@@ -204,9 +204,7 @@ describe('Service Host Map Component', () => {
   const initialState = { socket: {} };
 
   const initDefault = (r: IRawHosComponent) => {
-    component.service.init(r);
-    component.hosts = component.service.Hosts;
-    component.serviceComponents = component.service.Components;
+    component.init(r);
     fixture.detectChanges();
   };
 

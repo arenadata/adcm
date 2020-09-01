@@ -46,6 +46,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
     ['host', []],
     ['compo', []],
   ]);
+
   form = new FormGroup({});
 
   @Input()
@@ -176,19 +177,19 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
   }
 
   clearServiceFromHost(data: { rel: CompTile; model: HostTile }) {
-    this.service.clearServiceFromHost(data, this.statePost);
+    this.service.clearServiceFromHost(data, this.statePost, this.Components, this.Hosts, this.form, this.sourceMap);
   }
 
   clearHostFromService(data: { rel: HostTile; model: CompTile }) {
-    this.service.clearHostFromService(data, this.statePost);
+    this.service.clearHostFromService(data, this.statePost, this.Components, this.Hosts, this.form, this.sourceMap);
   }
 
   selectHost(host: HostTile) {
-    this.service.takeHost(host, this.Components, this.Hosts, this.stream);
+    this.service.takeHost(host, this.Components, this.Hosts, this.stream, this.statePost, this.loadPost, this.form, this.sourceMap);
   }
 
   selectService(comp: CompTile) {
-    this.service.takeComponent(comp, this.Components, this.Hosts, this.stream);
+    this.service.takeComponent(comp, this.Components, this.Hosts, this.stream, this.statePost, this.loadPost, this.form, this.sourceMap);
   }
 
   save() {
