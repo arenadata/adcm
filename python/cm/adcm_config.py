@@ -360,7 +360,7 @@ def variant_service_in_cluster(obj, args=None):
     if not cluster:
         return []
 
-    for co in ClusterObject.objects.filter(cluster=cluster):
+    for co in ClusterObject.objects.filter(cluster=cluster).order_by('prototype__name'):
         out.append(co.prototype.name)
     return out
 
@@ -371,9 +371,10 @@ def variant_service_to_add(obj, args=None):
     if not cluster:
         return []
 
-    for proto in Prototype.objects.filter(bundle=cluster.prototype.bundle, type='service'):
-        if ClusterObject.objects.filter(prototype=proto, cluster=cluster):
-            continue
+    for proto in Prototype.objects \
+            .filter(bundle=cluster.prototype.bundle, type='service') \
+            .exclude(id__in=ClusterObject.objects.filter(cluster=cluster).values('prototype')) \
+            .order_by('name'):
         out.append(proto.name)
     return out
 
@@ -396,23 +397,26 @@ def variant_host_in_cluster(obj, args=None):
                 )
             except ServiceComponent.DoesNotExist:
                 return []
-            for hc in HostComponent.objects.filter(
-                    cluster=cluster, service=service, component=comp):
+            for hc in HostComponent.objects \
+                    .filter(cluster=cluster, service=service, component=comp) \
+                    .order_by('host__fqdn'):
                 out.append(hc.host.fqdn)
             return out
         else:
-            for hc in HostComponent.objects.filter(cluster=cluster, service=service):
+            for hc in HostComponent.objects \
+                    .filter(cluster=cluster, service=service) \
+                    .order_by('host__fqdn'):
                 out.append(hc.host.fqdn)
             return out
 
-    for host in Host.objects.filter(cluster=cluster):
+    for host in Host.objects.filter(cluster=cluster).order_by('fqdn'):
         out.append(host.fqdn)
     return out
 
 
 def variant_host_not_in_clusters(obj, args=None):
     out = []
-    for host in Host.objects.filter(cluster=None):
+    for host in Host.objects.filter(cluster=None).order_by('fqdn'):
         out.append(host.fqdn)
     return out
 
