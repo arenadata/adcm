@@ -26,7 +26,7 @@ export interface WorkerInstance {
 type pagesType = 'cluster' | 'host' | 'provider' | 'service' | 'job' | 'bundle';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ClusterService {
   private worker: WorkerInstance | null;
@@ -40,6 +40,7 @@ export class ClusterService {
   }
 
   set Cluster(cluster: Cluster) {
+    if (cluster) cluster.typeName = 'cluster';
     if (this.worker) this.worker.cluster = cluster;
     else this.worker = { current: cluster, cluster: cluster };
   }
@@ -77,7 +78,7 @@ export class ClusterService {
         prototype_name: j.action ? j.action.prototype_name : '',
         prototype_version: j.action ? j.action.prototype_version : '',
         bundle_id: j.action ? j.action.bundle_id : null,
-        name: j.action ? `${j.action.display_name}` : 'Object has been deleted'
+        name: j.action ? `${j.action.display_name}` : 'Object has been deleted',
       }))
     );
   }
@@ -87,14 +88,14 @@ export class ClusterService {
   }
 
   getContext(param: ParamMap): Observable<WorkerInstance> {
-    const typeName = EntitiNames.find(a => param.keys.some(b => a === b));
+    const typeName = EntitiNames.find((a) => param.keys.some((b) => a === b));
     const id = +param.get(typeName);
     const cluster$ = param.has('cluster') ? this.api.getOne<Cluster>('cluster', +param.get('cluster')) : of(null);
 
     return cluster$
       .pipe(
-        tap(cluster => (this.Cluster = cluster)),
-        switchMap(cluster => (cluster && typeName !== 'cluster' ? this.api.get(`${cluster[typeName]}${id}/`) : this[`one_${typeName}`](id)))
+        tap((cluster) => (this.Cluster = cluster)),
+        switchMap((cluster) => (cluster && typeName !== 'cluster' ? this.api.get(`${cluster[typeName]}${id}/`) : this[`one_${typeName}`](id)))
       )
       .pipe(
         map((a: Entities) => {
@@ -106,8 +107,7 @@ export class ClusterService {
       );
   }
 
-  getLog(p: number | string): Observable<LogFile> {
-    const url = typeof p === 'number' ? (this.Current as Job).log_files.find(a => a.id === p).url : p;
+  getLog(url: string): Observable<LogFile> {
     return this.api.get<LogFile>(url);
   }
 
@@ -117,15 +117,15 @@ export class ClusterService {
 
   getServices(p: ParamMap) {
     return this.api.getList<Service>(this.Cluster.service, p).pipe(
-      map(r => {
-        r.results = r.results.map(a => ({ ...a, cluster: this.Cluster }));
+      map((r) => {
+        r.results = r.results.map((a) => ({ ...a, cluster: this.Cluster }));
         return r;
       })
     );
   }
 
   addServices(output: { prototype_id: number }[]) {
-    return forkJoin(output.map(o => this.api.post<Service>(this.Cluster.service, o)));
+    return forkJoin(output.map((o) => this.api.post<Service>(this.Cluster.service, o)));
   }
 
   getHosts(p: ParamMap) {
@@ -140,8 +140,8 @@ export class ClusterService {
     if (!this.Current) return EMPTY;
     const typeName = this.Current.typeName;
     return this.api.get<Entities>(this.Current.url).pipe(
-      filter(_ => !!this.worker),
-      map(a => {
+      filter((_) => !!this.worker),
+      map((a) => {
         if (typeName === 'cluster') this.worker.cluster = { ...(a as Cluster), typeName };
         this.worker.current = { ...a, typeName, name: a.display_name || a.name || (a as Host).fqdn };
         return this.worker;
@@ -152,8 +152,8 @@ export class ClusterService {
   getMainInfo() {
     return this.api.get<any>(`${this.Current.config}current/`).pipe(
       map((a: any) => a.config.find((b: { name: string }) => b.name === '__main_info')),
-      filter(a => a),
-      map(a => a.value)
+      filter((a) => a),
+      map((a) => a.value)
     );
   }
 
@@ -173,19 +173,14 @@ export class ClusterService {
    */
   getOperationTimeData(job: Job) {
     const { start_date, finish_date, status } = job;
-    if (start_date && finish_date) {
-      const sdn = Date.parse(start_date),
-        fdn = Date.parse(finish_date),
-        ttm = fdn - sdn;
-
-      const sec = Math.floor(ttm / 1000);
-      const min = Math.floor(sec / 60);
-      const time = status !== 'running' ? `${min}m. ${sec - min * 60}s.` : '';
-
-      const a = new Date(sdn);
-      const b = new Date(fdn);
-
-      return { start: a.toLocaleTimeString(), end: status !== 'running' ? b.toLocaleTimeString() : '', time };
-    }
+    const sdn = Date.parse(start_date),
+      fdn = Date.parse(finish_date),
+      ttm = fdn - sdn,
+      sec = Math.floor(ttm / 1000),
+      min = Math.floor(sec / 60),
+      time = status !== 'running' ? `${min}m. ${sec - min * 60}s.` : '';
+    const a = new Date(sdn);
+    const b = new Date(fdn);
+    return { start: a.toLocaleTimeString(), end: status !== 'running' ? b.toLocaleTimeString() : '', time };
   }
 }

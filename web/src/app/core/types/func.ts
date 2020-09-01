@@ -12,8 +12,6 @@
 import { controlType } from '@app/shared/configuration/types';
 import { matchType } from '@app/shared/configuration/yspec/yspec.service';
 
-import { InnerIssue, Issue } from './issue';
-
 export const isBoolean = (x: any) => typeof x === 'boolean';
 export const isObject = (x: any) => x !== null && typeof x === 'object';
 export const isEmptyObject = (x: any) => isObject(x) && !Object.keys(x).length;
@@ -40,20 +38,6 @@ export function getControlType(name: string): controlType {
     text: 'textarea',
   };
   return a[name] || name;
-}
-
-export function issueMessage(e: { id: number; name: string; issue: Issue }, typeName: string) {
-  const IssueName = {
-    config: 'configuration',
-    host_component: 'host - components',
-  };
-  if (e.issue)
-    return Object.keys(e.issue).reduce((a, c) => {
-      if (typeof e.issue[c] === 'object') {
-        const inner = e.issue[c] as InnerIssue;
-        return `${a}<div>${c}: <b>${inner.name}</b>${issueMessage(inner, c)}</div>`;
-      } else return `<li><a href="/${typeName}/${e.id}/${c}">${IssueName[c]}</a></li>`;
-    }, '');
 }
 
 /**

@@ -20,11 +20,14 @@ from cm.models import Cluster, ClusterObject, ServiceComponent, HostComponent, H
 from cm.models import ClusterBind, PrototypeExport, HostProvider, Prototype, PrototypeImport
 
 
-def process_config_and_attr(obj, conf, attr=None):
-    spec, _, _, _ = get_prototype_config(obj.prototype)
+def process_config_and_attr(obj, conf, attr=None, spec=None):
+    if not spec:
+        spec, _, _, _ = get_prototype_config(obj.prototype)
     new_conf = process_config(obj, spec, conf)
     if attr:
-        for key, val in json.loads(attr).items():
+        if isinstance(attr, str):
+            attr = json.loads(attr)
+        for key, val in attr.items():
             if 'active' in val and not val['active']:
                 new_conf[key] = None
     return new_conf
@@ -46,7 +49,7 @@ def get_import(cluster):   # pylint: disable=too-many-branches
                     imports[imp.name] = []
                 else:
                     imports[imp.name] = {}
-                for group in json.loads(imp.default):
+                for group in imp.default:
                     cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
                     conf = process_config_and_attr(obj, json.loads(cl.config), cl.attr)
                     if imp.multibind:
@@ -91,7 +94,7 @@ def get_obj_config(obj):
 
 def get_obj_state(obj):
     if obj.stack:
-        state = json.loads(obj.stack)
+        state = obj.stack
         if state:
             return state[-1]
     return obj.state

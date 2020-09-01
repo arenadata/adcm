@@ -25,8 +25,8 @@ import { filter } from 'rxjs/operators';
     <footer>
       <div>
         <span class="left">
-          <span>VERSION:</span>
-          <a target="_blank" href="https://docs.arenadata.io/adcm/notes.html#{{ versionData.version }}">{{ versionData.version }}-{{ versionData.commit_id }}</a>
+          <span>VERSION: </span>
+          <a target="_blank" rel="noopener" href="https://docs.arenadata.io/adcm/notes.html#{{ versionData.version }}">{{ versionData.version }}-{{ versionData.commit_id }}</a>
         </span>
         <span>ARENADATA &copy; {{ currentYear }}</span>
       </div>

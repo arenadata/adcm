@@ -22,17 +22,19 @@ def task_generator(action, selector):
         service = Prototype.objects.get(type='service', name='Simple_service',
                                         version='new_version')
     except Prototype.DoesNotExist:
-        raise AdcmEx('TASK_GENERATOR_ERROR', 'service Simple_service not found')
+        raise AdcmEx('TASK_GENERATOR_ERROR', 'service Simple_service not found') from None
 
     try:
         stop = Action.objects.get(context='service', context_id=service.id, name='stop')
     except Prototype.DoesNotExist:
-        raise AdcmEx('TASK_GENERATOR_ERROR', 'action stop of service ZOOKEEPER not found')
+        raise AdcmEx(
+            'TASK_GENERATOR_ERROR', 'action stop of service ZOOKEEPER not found') from None
 
     try:
         start = Action.objects.get(context='service', context_id=service.id, name='start')
     except Prototype.DoesNotExist:
-        raise AdcmEx('TASK_GENERATOR_ERROR', 'action start of service ZOOKEEPER not found')
+        raise AdcmEx(
+            'TASK_GENERATOR_ERROR', 'action start of service ZOOKEEPER not found') from None
 
     return (
         {'action': stop, 'selector': selector},

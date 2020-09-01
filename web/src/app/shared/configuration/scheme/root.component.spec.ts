@@ -10,11 +10,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { FormBuilder, ReactiveFormsModule, FormsModule, FormGroup } from '@angular/forms';
 
-import { RootComponent } from './root.component';
 import { FieldService } from '../field.service';
-import { FormBuilder } from '@angular/forms';
 import { IYContainer } from '../yspec/yspec.service';
+import { RootComponent } from './root.component';
 
 describe('RootComponent', () => {
   let component: RootComponent;
@@ -22,15 +22,16 @@ describe('RootComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
+      imports: [FormsModule, ReactiveFormsModule],
       declarations: [RootComponent],
-      providers: [FieldService, FormBuilder]
+      providers: [FieldService, FormBuilder],
     }).compileComponents();
   }));
 
   beforeEach(() => {
     fixture = TestBed.createComponent(RootComponent);
     component = fixture.componentInstance;
-  
+
     const item: IYContainer = {
       name: 'test',
       type: 'dict',
@@ -39,11 +40,11 @@ describe('RootComponent', () => {
         path: ['test'],
         type: 'string',
         controlType: 'textbox',
-        validator: {}
-      }
+        validator: {},
+      },
     };
     component.options = item;
-    
+    component.form = new FormGroup({});
     fixture.detectChanges();
   });
 

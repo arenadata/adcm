@@ -55,7 +55,7 @@ export class StatusService {
       map(s =>
         s
           .filter(se => (service_id ? se.id === service_id : true))
-          .reduce((a, c) => (a = [...a, ...c.components.map(b => ({ ...b, service_id: c.id }))]), [])
+          .reduce((a, c) => [...a, ...c.components.map(b => ({ ...b, service_id: c.id }))], [])
           .filter(co => co.status !== 0),
       ),
     );

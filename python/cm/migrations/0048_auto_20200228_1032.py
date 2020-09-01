@@ -44,7 +44,7 @@ def add_logs(apps, schema_editor):
             job=job, name='ansible', type='stderr', format='txt',
             body=get_body(job, 'ansible', 'err', 'txt'))
         try:
-            log_files = json.loads(job.log_files)
+            log_files = job.log_files
             if 'check' in log_files:
                 LogStorage.objects.create(
                     job=job, name='ansible', type='check', format='json',

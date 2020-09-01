@@ -11,7 +11,7 @@
 // limitations under the License.
 import { Component, Input } from '@angular/core';
 
-import { IDetails } from './details.service';
+import { IDetails } from './navigation.service';
 
 @Component({
   selector: 'app-details-subtitle',
@@ -30,7 +30,7 @@ import { IDetails } from './details.service';
         </a>
       </ng-template>
     </ng-container>
-  `
+  `,
 })
 export class SubtitleComponent {
   cur: IDetails;

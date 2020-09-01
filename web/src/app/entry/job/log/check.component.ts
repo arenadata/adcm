@@ -15,7 +15,7 @@ import { CheckLog, LogFile } from '@app/core/types/task-job';
 @Component({
   selector: 'app-log-check',
   template: `
-    <mat-expansion-panel *ngFor="let item of log.content; trackBy: trackBy" class="panel" [expanded]="current?.title === item.title" (opened)="current = item">
+    <mat-expansion-panel *ngFor="let item of content; trackBy: trackBy" class="panel" [expanded]="current?.title === item.title" (opened)="current = item">
       <mat-expansion-panel-header>
         <mat-panel-title> <mat-icon *ngIf="item.type === 'group'" color="primary" [style.fontSize.rem]="'1.2'">list</mat-icon> {{ item.title }} </mat-panel-title>
         <mat-panel-description class="item-info">
@@ -25,7 +25,7 @@ import { CheckLog, LogFile } from '@app/core/types/task-job';
       <ng-container *ngIf="item.type === 'group'; else one">
         <p>{{ item.message }}</p>
         <mat-accordion>
-          <app-log-check [log]="item"></app-log-check>
+          <app-log-check [content]="item.content"></app-log-check>
         </mat-accordion>
       </ng-container>
       <ng-template #one>
@@ -55,7 +55,7 @@ import { CheckLog, LogFile } from '@app/core/types/task-job';
   ],
 })
 export class CheckComponent {
-  @Input() log: LogFile | CheckLog;
+  @Input() content: CheckLog[] = [];
   current: CheckLog;
   trackBy(index: number) {
     return index;

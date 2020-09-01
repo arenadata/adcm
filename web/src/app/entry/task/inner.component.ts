@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { Job } from '@app/core/types';
 
 @Component({
@@ -46,9 +46,8 @@ import { Job } from '@app/core/types';
   `,
   styleUrls: ['./task.component.scss']
 })
-export class InnerComponent implements OnInit {
+export class InnerComponent {
   displayColumns = ['job_name', 'start_date_job', 'finish_date_job', 'status_job'];
-  
   
   @Input() dataSource: Job[];
 
@@ -59,8 +58,4 @@ export class InnerComponent implements OnInit {
     failed: 'error',
     aborted: 'block'
   };
-
-  constructor() {}
-
-  ngOnInit(): void {}
 }

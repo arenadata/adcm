@@ -17,7 +17,7 @@ import { ClusterService, StackInfo, StackService } from '@app/core';
 import { ApiService } from '@app/core/api';
 import { Host, Prototype, ServicePrototype, StackBase, TypeName } from '@app/core/types';
 import { environment } from '@env/environment';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, of, throwError, forkJoin } from 'rxjs';
 import { concatAll, filter, map, switchMap, catchError } from 'rxjs/operators';
 
 import { DialogComponent } from '../components/dialog.component';
@@ -39,7 +39,6 @@ const fromBundle = () =>
 
 const MODELS: { [key: string]: FormModel } = {
   provider: {
-    title: 'hostprovider',
     name: 'provider',
     form: fromBundle(),
   },
@@ -57,11 +56,11 @@ const MODELS: { [key: string]: FormModel } = {
   },
   service: {
     name: 'service',
-    title: 'service',
+    title: 'services'
   },
   host2cluster: {
     name: 'host2cluster',
-    title: 'free host',
+    title: 'hosts',
   },
 };
 
@@ -133,17 +132,21 @@ export class AddService {
     return b$.pipe(concatAll());
   }
 
-  addHostInCluster(id: number) {
-    return this.cluster.addHost(id);
+  addHostInCluster(ids: number[]) {
+    return forkJoin([...ids.map(id => this.cluster.addHost(id))]);
   }
 
   addService(data: { prototype_id: number }[]) {
     return this.cluster.addServices(data);
   }
 
-  getList<T>(type: TypeName, param: Params = {}): Observable<T[]> {
+  getListResults<T>(type: TypeName, param: Params = {}) {
     const paramMap = convertToParamMap(param);
-    return this.api.root.pipe(switchMap((root) => this.api.getList<T>(root[type], paramMap).pipe(map((list) => list.results))));
+    return this.api.root.pipe(switchMap((root) => this.api.getList<T>(root[type], paramMap)));
+  }
+
+  getList<T>(type: TypeName, param: Params = {}): Observable<T[]> {    
+    return this.getListResults<T>(type, param).pipe(map((list) => list.results));
   }
 
   getPrototype(name: StackInfo, param: { [key: string]: string | number }): Observable<Prototype[]> {
