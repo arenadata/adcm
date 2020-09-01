@@ -11,7 +11,7 @@
 // limitations under the License.
 import { CdkTableModule } from '@angular/cdk/table';
 import { NgModule } from '@angular/core';
-//import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -57,7 +57,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     MatInputModule,
     MatCheckboxModule,
     MatButtonModule,
-    //MatAutocompleteModule,
+    MatAutocompleteModule,
     //MatRadioModule,
     MatDialogModule,
     MatTooltipModule,

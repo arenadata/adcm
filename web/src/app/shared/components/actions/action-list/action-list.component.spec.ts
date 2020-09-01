@@ -10,8 +10,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-import { ApiService } from '@app/core/api/api.service';
+import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
+
+import { ApiService } from '../../../../core/api/api.service';
 import { ActionListComponent } from './action-list.component';
+import { MenuItemComponent } from './menu-item/menu-item.component';
 
 describe('ActionListComponent', () => {
   let component: ActionListComponent;
@@ -19,8 +23,9 @@ describe('ActionListComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
+      imports: [MatMenuModule, MatIconModule],
       providers: [{ provide: ApiService, useValue: {} }],
-      declarations: [ActionListComponent],
+      declarations: [ActionListComponent, MenuItemComponent],
     }).compileComponents();
   }));
 

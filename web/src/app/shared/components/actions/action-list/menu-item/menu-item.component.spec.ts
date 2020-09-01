@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-import { ApiService } from '@app/core/api/api.service';
+import { ApiService } from '../../../../../core/api/api.service';
 import { MenuItemComponent } from './menu-item.component';
 import { MatMenuModule } from '@angular/material/menu';
 
