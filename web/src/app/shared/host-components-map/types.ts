@@ -32,6 +32,23 @@ export class Post implements Post {
   constructor(public host_id: number, public service_id: number, public component_id: number, public id?: number) {}
 }
 
+/**
+ *```
+  {
+    id: number;
+    name: string;
+    relations: Tile[] = [];
+    isSelected?: boolean;
+    isLink?: boolean;
+    limit?: Constraint;
+    disabled: boolean;
+    actions?: ActionParam[];
+    color?: 'none' | 'white' | 'gray' | 'yellow';
+    notification?: string;
+  }
+ ```
+ * @class Tile
+ */
 export class Tile {
   id: number;
   name: string;

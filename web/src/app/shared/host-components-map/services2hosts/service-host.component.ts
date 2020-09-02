@@ -19,7 +19,8 @@ import { Store } from '@ngrx/store';
 
 import { SocketListenerDirective } from '../../directives/socketListener.directive';
 import { TakeService } from '../take.service';
-import { CompTile, HostTile, Post, IStream, StatePost, Tile, IRawHosComponent } from '../types';
+import { CompTile, HostTile, IRawHosComponent, IStream, Post, StatePost, Tile } from '../types';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-service-host',
@@ -110,10 +111,15 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
 
   socketListener(m: EventMessage) {
     const isCurrent = (type: string, id: number) => type === 'cluster' && id === this.cluster.id;
-    if ((m.event === 'change_hostcomponentmap' || m.event === 'change_state') && isCurrent(m.object.type, m.object.id) && !this.saveFlag) {
+    if (
+      (m.event === 'change_hostcomponentmap' || m.event === 'change_state') &&
+      isCurrent(m.object.type, m.object.id) &&
+      !this.saveFlag
+    ) {
       this.reset().load();
     }
-    if ((m.event === 'add' || m.event === 'remove') && isCurrent(m.object.details.type, +m.object.details.value)) this.update(m);
+    if ((m.event === 'add' || m.event === 'remove') && isCurrent(m.object.details.type, +m.object.details.value))
+      this.update(m);
   }
 
   reset() {
@@ -131,12 +137,42 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
   }
 
   add(io: IEMObject) {
-    if (io.type === 'host') {
-      const { id } = io;
-      this.Hosts = [...this.Hosts, new HostTile({ id, fqdn: 'name' })];
+    const { id, type, details } = io;
+    if (details.type === 'cluster' && +details.value === this.cluster.id) {
+      this.service
+        .load(this.cluster.hostcomponent)
+        .pipe(this.takeUntil())
+        .subscribe((raw: IRawHosComponent) => {
+          if (type === 'host')
+            this.Hosts = [
+              ...this.Hosts,
+              ...raw.host
+                .filter((h) => h.id === id)
+                .map((h) => new HostTile(h))
+                .map((h) => ({ ...h, disabled: this.service.checkEmptyHost(h, this.actionParameters) })),
+            ];
+          if (type === 'service')
+            this.Components = [
+              ...this.Components,
+              ...raw.component
+                .filter((a) => a.service_id === id && this.Components.every((b) => b.id !== a.id))
+                .map(
+                  (c) =>
+                    new CompTile(
+                      c,
+                      this.actionParameters
+                        ? this.actionParameters
+                            .filter((a) => a.service === c.service_name && a.component === c.name)
+                            .map((b) => b.action)
+                        : null
+                    )
+                ),
+            ];
+        });
     }
   }
 
+  /** host only */
   remove(io: IEMObject) {
     if (io.type === 'host') {
       const { id } = io;
@@ -157,11 +193,22 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
   }
 
   init(raw: IRawHosComponent) {
-    if (raw.host) this.Hosts = raw.host.map((h) => new HostTile(h));
+    if (raw.host)
+      this.Hosts = raw.host
+        .map((h) => new HostTile(h))
+        .map((h) => ({ ...h, disabled: this.service.checkEmptyHost(h, this.actionParameters) }));
 
     if (raw.component) {
       const list = raw.component.map(
-        (c) => new CompTile(c, this.actionParameters ? this.actionParameters.filter((a) => a.service === c.service_name && a.component === c.name).map((b) => b.action) : null)
+        (c) =>
+          new CompTile(
+            c,
+            this.actionParameters
+              ? this.actionParameters
+                  .filter((a) => a.service === c.service_name && a.component === c.name)
+                  .map((b) => b.action)
+              : null
+          )
       );
       this.Components = [...this.Components, ...list];
     }
@@ -171,7 +218,6 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
       this.statePost.update(raw.hc);
       this.loadPost.update(raw.hc);
       this.service.setRelations(raw.hc, this.Components, this.Hosts, this.actionParameters);
-      this.Hosts = this.actionParameters ? this.service.checkEmptyHost(this.Hosts, this.actionParameters) : this.Hosts;
     }
     this.service.formFill(this.Components, this.Hosts, this.form);
   }
@@ -185,11 +231,29 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
   }
 
   selectHost(host: HostTile) {
-    this.service.takeHost(host, this.Components, this.Hosts, this.stream, this.statePost, this.loadPost, this.form, this.sourceMap);
+    this.service.takeHost(
+      host,
+      this.Components,
+      this.Hosts,
+      this.stream,
+      this.statePost,
+      this.loadPost,
+      this.form,
+      this.sourceMap
+    );
   }
 
   selectService(comp: CompTile) {
-    this.service.takeComponent(comp, this.Components, this.Hosts, this.stream, this.statePost, this.loadPost, this.form, this.sourceMap);
+    this.service.takeComponent(
+      comp,
+      this.Components,
+      this.Hosts,
+      this.stream,
+      this.statePost,
+      this.loadPost,
+      this.form,
+      this.sourceMap
+    );
   }
 
   save() {
@@ -207,20 +271,15 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
   }
 
   restore() {
+    const ma = (a: Tile) => {
+      a.isSelected = false;
+      a.isLink = false;
+      a.relations = [];
+    };
     this.statePost.clear();
     this.statePost.update(this.loadPost.data);
-
-    this.Hosts.forEach((a) => {
-      a.isSelected = false;
-      a.isLink = false;
-      a.relations = [];
-    });
-    this.Components.forEach((a) => {
-      a.isSelected = false;
-      a.isLink = false;
-      a.relations = [];
-    });
-
+    this.Hosts.forEach(ma);
+    this.Components.forEach(ma);
     this.service.setRelations(this.loadPost.data, this.Components, this.Hosts, this.actionParameters);
     this.service.formFill(this.Components, this.Hosts, this.form);
   }

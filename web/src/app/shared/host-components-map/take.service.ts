@@ -13,8 +13,9 @@ import { Injectable } from '@angular/core';
 import { FormControl, FormGroup, ValidationErrors } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '@app/core/api';
-import { IActionParameter, IRequires } from '@app/core/types';
-import { filter, switchMap, take, tap, map } from 'rxjs/operators';
+import { Component, Host, IActionParameter, IRequires, Service } from '@app/core/types';
+import { Observable } from 'rxjs';
+import { filter, map, switchMap, take } from 'rxjs/operators';
 
 import { AddService } from '../add-component/add.service';
 import { DialogComponent } from '../components';
@@ -23,8 +24,6 @@ import { CompTile, Constraint, HostTile, IRawHosComponent, IStream, Post, StateP
 
 @Injectable()
 export class TakeService {
-  raw: IRawHosComponent;
-
   constructor(private api: ApiService, private dialog: MatDialog, private add: AddService) {}
 
   load(url: string) {
@@ -36,14 +35,24 @@ export class TakeService {
     return this.api.post<Post[]>(hostcomponent, send).pipe(take(1));
   }
 
-  checkEmptyHost(hs: HostTile[], ap: IActionParameter[]) {
-    if (ap) {
-      const isShrink = ap.every((a) => a.action === 'remove');
-      const isExpand = ap.every((a) => a.action === 'add');
-      const condition = (b: CompTile) => (a: IActionParameter) => b.component === `${a.service}/${a.component}`;
-      const existCondition = (rel: CompTile[]) => (isShrink ? ap.some((a) => rel.some((b) => condition(b)(a))) : ap.every((a) => rel.some((b) => condition(b)(a))));
-      return hs.map((a) => ({ ...a, disabled: existCondition(a.relations as CompTile[]) ? isExpand : isShrink }));
-    }
+  getHost(host_id: number, cid: number): Observable<Host> {
+    return this.api.root.pipe(switchMap((root) => this.api.get<Host>(`${root['cluster']}${cid}/host/${host_id}/`)));
+  }
+
+  getService(service_id: number, cid: number): Observable<Service> {
+    return this.api.root.pipe(
+      switchMap((root) => this.api.get<Service>(`${root['cluster']}${cid}/service/${service_id}/`))
+    );
+  }
+
+  checkEmptyHost(h: HostTile, ap: IActionParameter[]) {
+    if (!ap) return false;
+    const isShrink = ap.every((a) => a.action === 'remove');
+    const isExpand = ap.every((a) => a.action === 'add');
+    const condition = (b: CompTile) => (a: IActionParameter) => b.component === `${a.service}/${a.component}`;
+    const existCondition = (rel: CompTile[]) =>
+      isShrink ? ap.some((a) => rel.some((b) => condition(b)(a))) : ap.every((a) => rel.some((b) => condition(b)(a)));
+    return existCondition(h.relations as CompTile[]) ? isExpand : isShrink;
   }
 
   setRelations(rel: Post[], cs: CompTile[], hs: HostTile[], ap: IActionParameter[]) {
@@ -65,7 +74,12 @@ export class TakeService {
   }
 
   formFill(components: CompTile[], hosts: HostTile[], form: FormGroup) {
-    components.map((a) => form.addControl(`${a.service_id}/${a.id}`, new FormControl(a.relations.length, this.validateConstraints(a, hosts.length))));
+    components.map((a) =>
+      form.addControl(
+        `${a.service_id}/${a.id}`,
+        new FormControl(a.relations.length, this.validateConstraints(a, hosts.length))
+      )
+    );
   }
 
   /**
@@ -84,9 +98,13 @@ export class TakeService {
  */
   validateConstraints(component: CompTile, hostLength: number) {
     const getError = (constraint: Constraint, relations: HostTile[]) => {
+      if (!constraint?.length) return null;
       const [a1, a2, a3] = constraint;
       const countRelations = relations.length;
-      const depend = () => (relations.some((a) => a.relations.some((b) => b.id === component.id)) ? null : 'Must be installed because it is a dependency of another component');
+      const depend = () =>
+        relations.some((a) => a.relations.some((b) => b.id === component.id))
+          ? null
+          : 'Must be installed because it is a dependency of another component';
       if (a3 && a3 === 'depend') return depend();
       else if (a2) {
         switch (a2) {
@@ -127,14 +145,28 @@ export class TakeService {
     };
   }
 
-  clearServiceFromHost(data: { rel: CompTile; model: HostTile }, state: StatePost, cs: CompTile[], hs: HostTile[], form: FormGroup, source: Map<string, Tile[]>) {
+  clearServiceFromHost(
+    data: { rel: CompTile; model: HostTile },
+    state: StatePost,
+    cs: CompTile[],
+    hs: HostTile[],
+    form: FormGroup,
+    source: Map<string, Tile[]>
+  ) {
     this.clear([data.model, data.rel], source);
     state.delete(new Post(data.model.id, data.rel.service_id, data.rel.id));
     this.clearDependencies(data.rel, state, cs, hs, form);
     this.setFormValue(data.rel, form);
   }
 
-  clearHostFromService(data: { rel: HostTile; model: CompTile }, state: StatePost, cs: CompTile[], hs: HostTile[], form: FormGroup, source: Map<string, Tile[]>) {
+  clearHostFromService(
+    data: { rel: HostTile; model: CompTile },
+    state: StatePost,
+    cs: CompTile[],
+    hs: HostTile[],
+    form: FormGroup,
+    source: Map<string, Tile[]>
+  ) {
     this.clear([data.rel, data.model], source);
     state.delete(new Post(data.rel.id, data.model.service_id, data.model.id));
     this.clearDependencies(data.model, state, cs, hs, form);
@@ -142,7 +174,7 @@ export class TakeService {
   }
 
   clearDependencies(comp: CompTile, state: StatePost, cs: CompTile[], hs: HostTile[], form: FormGroup) {
-    const getLimitsFromState = (prototype_id: number) => this.raw.component.find((b) => b.prototype_id === prototype_id).constraint;
+    const getLimitsFromState = (prototype_id: number) => cs.find((b) => b.prototype_id === prototype_id).limit;
     if (comp.requires?.length) {
       this.findDependencies(comp, cs).forEach((a) => {
         a.limit = getLimitsFromState(a.prototype_id);
@@ -160,7 +192,8 @@ export class TakeService {
   }
 
   findDependencies(c: CompTile, cs: CompTile[]) {
-    const r = c.requires?.reduce((p, a) => [...p, ...a.components.map((b) => ({ prototype_id: b.prototype_id }))], []) || [];
+    const r =
+      c.requires?.reduce((p, a) => [...p, ...a.components.map((b) => ({ prototype_id: b.prototype_id }))], []) || [];
     return cs.filter((a) => r.some((b) => b.prototype_id === a.prototype_id));
   }
 
@@ -168,11 +201,29 @@ export class TakeService {
     this.findDependencies(c, cs).forEach((a) => (a.limit = a.limit ? [...a.limit, 'depend'] : ['depend']));
   }
 
-  takeHost(h: HostTile, cs: CompTile[], hs: HostTile[], s: IStream, state: StatePost, load: StatePost, form: FormGroup, source: Map<string, Tile[]>) {
+  takeHost(
+    h: HostTile,
+    cs: CompTile[],
+    hs: HostTile[],
+    s: IStream,
+    state: StatePost,
+    load: StatePost,
+    form: FormGroup,
+    source: Map<string, Tile[]>
+  ) {
     this.getLink(cs, s).getSelected(hs, s).next(h, s, state, cs, hs, load, form, source);
   }
 
-  takeComponent(c: CompTile, cs: CompTile[], hs: HostTile[], s: IStream, state: StatePost, load: StatePost, form: FormGroup, source: Map<string, Tile[]>) {
+  takeComponent(
+    c: CompTile,
+    cs: CompTile[],
+    hs: HostTile[],
+    s: IStream,
+    state: StatePost,
+    load: StatePost,
+    form: FormGroup,
+    source: Map<string, Tile[]>
+  ) {
     this.getLink(hs, s).getSelected(cs, s).next(c, s, state, cs, hs, load, form, source);
   }
 
@@ -189,20 +240,41 @@ export class TakeService {
     return this;
   }
 
-  next(target: Tile, stream: IStream, state: StatePost, cs: CompTile[], hs: HostTile[], load: StatePost, form: FormGroup, source: Map<string, Tile[]>) {
+  next(
+    target: Tile,
+    stream: IStream,
+    state: StatePost,
+    cs: CompTile[],
+    hs: HostTile[],
+    load: StatePost,
+    form: FormGroup,
+    source: Map<string, Tile[]>
+  ) {
     if (stream.link) this.handleLink(stream.link, target, state, cs, hs, load, form, source);
     else if (stream.selected !== target) {
       target.isSelected = true;
-      target.relations.forEach((e) => (stream.linkSource.find((s) => s.name === e.name && s.id === e.id).isLink = true));
+      target.relations.forEach(
+        (e) => (stream.linkSource.find((s) => s.name === e.name && s.id === e.id).isLink = true)
+      );
     }
   }
 
-  handleLink(link: Tile, target: Tile, state: StatePost, cs: CompTile[], hs: HostTile[], load: StatePost, form: FormGroup, source: Map<string, Tile[]>) {
+  handleLink(
+    link: Tile,
+    target: Tile,
+    state: StatePost,
+    cs: CompTile[],
+    hs: HostTile[],
+    load: StatePost,
+    form: FormGroup,
+    source: Map<string, Tile[]>
+  ) {
     const isComp = target instanceof CompTile;
-    const Component = (isComp ? target : link) as CompTile;
-    const Host = isComp ? link : target;
-    const post = new Post(Host.id, Component.service_id, Component.id);
-    const flag = (host_id: number, com: CompTile) => load.data.some((a) => a.component_id === com.id && a.service_id === com.service_id && a.host_id === host_id);
+    const component = (isComp ? target : link) as CompTile;
+    const host = isComp ? link : target;
+    const post = new Post(host.id, component.service_id, component.id);
+    const flag = (host_id: number, com: CompTile) =>
+      load.data.some((a) => a.component_id === com.id && a.service_id === com.service_id && a.host_id === host_id);
 
     const checkActions = (host_id: number, com: CompTile, action: 'add' | 'remove'): boolean => {
       if (com.actions?.length) {
@@ -212,25 +284,28 @@ export class TakeService {
     };
 
     const noLimit = (c: Constraint, r: number) => {
-      if (!c) return true;
+      if (!c?.length) return true;
       const v = c[c.length - 1];
       return v === '+' || v === 'odd' || v > r || v === 'depend';
     };
 
     if (link.relations.find((e) => e.id === target.id)) {
-      if (!checkActions(Host.id, Component, 'remove')) return;
+      if (!checkActions(host.id, component, 'remove')) return;
       this.clear([target, link], source);
       state.delete(post);
-      this.clearDependencies(Component, state, cs, hs, form);
-    } else if (noLimit(Component.limit, Component.relations.length)) {
-      if (!checkActions(Host.id, Component, 'add')) return;
-      if (Component.requires?.length) {
-        const requires = Component.requires.reduce((p, c) => (c.components.some((a) => cs.some((b) => b.prototype_id === a.prototype_id)) ? p : [...p, c]), []);
+      this.clearDependencies(component, state, cs, hs, form);
+    } else if (noLimit(component.limit, component.relations.length)) {
+      if (!checkActions(host.id, component, 'add')) return;
+      if (component.requires?.length) {
+        const requires = component.requires.reduce(
+          (p, c) => (c.components.some((a) => cs.some((b) => b.prototype_id === a.prototype_id)) ? p : [...p, c]),
+          []
+        );
         if (requires.length) {
           this.dialog4Requires(requires);
           return;
         } else {
-          this.checkDependencies(Component, cs);
+          this.checkDependencies(component, cs);
           form.reset();
           this.formFill(cs, hs, form);
         }
@@ -240,7 +315,7 @@ export class TakeService {
       target.isLink = true;
       state.add(post);
     }
-    this.setFormValue(Component, form);
+    this.setFormValue(component, form);
   }
 
   dialog4Requires(model: IRequires[]) {
