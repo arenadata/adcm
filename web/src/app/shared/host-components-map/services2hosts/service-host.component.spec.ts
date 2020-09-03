@@ -21,10 +21,10 @@ import { provideMockStore } from '@ngrx/store/testing';
 
 import { Much2ManyComponent } from '../much-2-many/much-2-many.component';
 import { TakeService } from '../take.service';
-import { ServiceHostComponent } from './service-host.component';
 import { IRawHosComponent } from '../types';
-import { By } from '@angular/platform-browser';
+import { ServiceHostComponent } from './service-host.component';
 
+// TODO: /core/testing/generator
 const hc = [
   {
     id: 1,

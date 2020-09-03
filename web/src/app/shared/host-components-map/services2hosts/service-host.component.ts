@@ -20,7 +20,6 @@ import { Store } from '@ngrx/store';
 import { SocketListenerDirective } from '../../directives/socketListener.directive';
 import { TakeService } from '../take.service';
 import { CompTile, HostTile, IRawHosComponent, IStream, Post, StatePost, Tile } from '../types';
-import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-service-host',
@@ -146,27 +145,18 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
           if (type === 'host')
             this.Hosts = [
               ...this.Hosts,
-              ...raw.host
-                .filter((h) => h.id === id)
-                .map((h) => new HostTile(h))
-                .map((h) => ({ ...h, disabled: this.service.checkEmptyHost(h, this.actionParameters) })),
+              ...this.service.fillHost(
+                raw.host.filter((h) => h.id === id),
+                this.actionParameters
+              ),
             ];
           if (type === 'service')
             this.Components = [
               ...this.Components,
-              ...raw.component
-                .filter((a) => a.service_id === id && this.Components.every((b) => b.id !== a.id))
-                .map(
-                  (c) =>
-                    new CompTile(
-                      c,
-                      this.actionParameters
-                        ? this.actionParameters
-                            .filter((a) => a.service === c.service_name && a.component === c.name)
-                            .map((b) => b.action)
-                        : null
-                    )
-                ),
+              ...this.service.fillComponent(
+                raw.component.filter((a) => a.service_id === id && this.Components.every((b) => b.id !== a.id)),
+                this.actionParameters
+              ),
             ];
         });
     }
@@ -193,25 +183,10 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
   }
 
   init(raw: IRawHosComponent) {
-    if (raw.host)
-      this.Hosts = raw.host
-        .map((h) => new HostTile(h))
-        .map((h) => ({ ...h, disabled: this.service.checkEmptyHost(h, this.actionParameters) }));
+    if (raw.host) this.Hosts = this.service.fillHost(raw.host, this.actionParameters);
 
-    if (raw.component) {
-      const list = raw.component.map(
-        (c) =>
-          new CompTile(
-            c,
-            this.actionParameters
-              ? this.actionParameters
-                  .filter((a) => a.service === c.service_name && a.component === c.name)
-                  .map((b) => b.action)
-              : null
-          )
-      );
-      this.Components = [...this.Components, ...list];
-    }
+    if (raw.component)
+      this.Components = [...this.Components, ...this.service.fillComponent(raw.component, this.actionParameters)];
 
     if (raw.hc) {
       this.initFlag = false;
@@ -223,11 +198,11 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
   }
 
   clearServiceFromHost(data: { rel: CompTile; model: HostTile }) {
-    this.service.clearServiceFromHost(data, this.statePost, this.Components, this.Hosts, this.form, this.sourceMap);
+    this.service.clearServiceFromHost(data, this.statePost, this.Components, this.Hosts, this.form);
   }
 
   clearHostFromService(data: { rel: HostTile; model: CompTile }) {
-    this.service.clearHostFromService(data, this.statePost, this.Components, this.Hosts, this.form, this.sourceMap);
+    this.service.clearHostFromService(data, this.statePost, this.Components, this.Hosts, this.form);
   }
 
   selectHost(host: HostTile) {
@@ -239,7 +214,6 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
       this.statePost,
       this.loadPost,
       this.form,
-      this.sourceMap
     );
   }
 
@@ -251,8 +225,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
       this.stream,
       this.statePost,
       this.loadPost,
-      this.form,
-      this.sourceMap
+      this.form
     );
   }
 

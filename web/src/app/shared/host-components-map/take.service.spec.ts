@@ -45,6 +45,26 @@ describe('HostComponentsMap :: TakeService', () => {
     expect(service).toBeTruthy();
   });
 
+  xit('fillHost should return HostTile[] by response result', () => {
+
+  });
+
+  xit('fillComponennt should return CompTile[] by response result', () => {
+
+  });
+
+  xit('setRelations should detect relations between host-component by response result', () => {
+
+  });
+
+  xit('takeHost or takeComponent should set needed attributes for host or component', () => {
+
+  });
+
+  xit('clearHostFromService or clearServiceFromHost should remove property from host or component', () => {
+
+  });
+
   it('validateConstraints fn should be null if argument is null', () => {
     const mCompTile = new CompTile(ctData);
     expect(service.validateConstraints(mCompTile, 0)()).toBeNull();
