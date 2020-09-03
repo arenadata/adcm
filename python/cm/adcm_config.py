@@ -173,8 +173,7 @@ def load_social_auth():
         # module is imported, in which the "load_social_auth()" function is called.
         if error.code == 'JSON_DB_ERROR':
             executor = MigrationExecutor(connections[DEFAULT_DB_ALIAS])
-            last_migration = executor.loader.graph.leaf_nodes('cm')[-1]
-            if last_migration[1] == '0057_auto_20200831_1055':
+            if ('cm', '0057_auto_20200831_1055') not in executor.loader.applied_migrations:
                 return
         raise error
 
