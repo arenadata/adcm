@@ -47,6 +47,8 @@ export class AuthInterceptor implements HttpInterceptor {
         if (res.status === 500) this.router.navigate(['/500']);
         // if (res.status === 504) this.router.navigate(['/504']);
 
+        // Http failure response for /api/v1/: 0 Unknown Error HttpErrorResponse
+
         if (res.error.code !== 'USER_NOT_FOUND' && res.error.code !== 'AUTH_ERROR' && res.error.code !== 'CONFIG_NOT_FOUND')
           this.channel.next('errorMessage', {
             subtitle: res.error.code || res.name,
