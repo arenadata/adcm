@@ -54,12 +54,11 @@ def filter_actions(obj, actions_set):
         return []
     filtered = []
     for act in actions_set:
-        if act.state_available != '':
-            available = act.state_available
-            if available == 'any':
-                filtered.append(act)
-            elif obj.state in available:
-                filtered.append(act)
+        available = act.state_available
+        if available == 'any':
+            filtered.append(act)
+        elif obj.state in available:
+            filtered.append(act)
     for act in actions_set:
         act.config = PrototypeConfig.objects.filter(
             prototype=act.prototype, action=act
