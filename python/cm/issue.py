@@ -219,11 +219,7 @@ def check_hc(cluster):
     if not shc_list:
         for co in ClusterObject.objects.filter(cluster=cluster):
             for comp in Component.objects.filter(prototype=co.prototype):
-                if not comp.constraint:
-                    continue
                 const = comp.constraint
-                if not const:
-                    continue
                 if len(const) == 2 and const[0] == 0 and const[1] == '+':
                     continue
                 log.debug('void host components for %s', proto_ref(co.prototype))
@@ -311,7 +307,4 @@ def check_component_constraint(service, hc_in):
             check_odd(count, const[0], comp)
 
     for c in Component.objects.filter(prototype=service.prototype):
-        if not c.constraint:
-            continue
-        const = c.constraint
-        check(c, const)
+        check(c, c.constraint)

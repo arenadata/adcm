@@ -35,6 +35,7 @@ import { ConfigComponent } from './main/main.component';
 import { ItemComponent } from './scheme/item.component';
 import { RootComponent } from './scheme/root.component';
 import { SchemeComponent } from './scheme/scheme.component';
+import { SchemeService } from './scheme/scheme.service';
 import { ColorOptionDirective } from './tools/color-option.directive';
 import { HistoryComponent } from './tools/history.component';
 import { SearchComponent } from './tools/search.component';
@@ -72,6 +73,6 @@ const material = [
   ],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, StuffModule, FormElementsModule, ...material],
   exports: [ConfigComponent, ConfigFieldsComponent],
-  providers: [FieldService, YspecService],
+  providers: [FieldService, YspecService, SchemeService],
 })
 export class ConfigurationModule {}
