@@ -9,26 +9,22 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { IConfig } from '@app/shared/configuration/types';
+import { TestBed } from '@angular/core/testing';
+import { ApiService } from '@app/core/api/api.service';
 
-export interface IActionParameter {
-  action: 'add' | 'remove';
-  component: string;
-  service: string;
-}
+import { ActionsService } from './actions.service';
 
-export interface IUIOptions {
-  disclaimer?: string;
-}
+describe('ActionsService', () => {
+  let service: ActionsService;
 
-export interface IAction {
-  name: string;
-  description: string;
-  display_name: string;
-  run: string;
-  config: IConfig;
-  hostcomponentmap: IActionParameter | null;
-  button: 'create_host' | null;
-  ui_options: IUIOptions;
-  children?: IAction[];
-}
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [{provide: ApiService, useValue: {}}]
+    });
+    service = TestBed.inject(ActionsService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+});

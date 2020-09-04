@@ -803,10 +803,7 @@ def check_multi_bind(actual_import, cluster, service, export_cluster, export_ser
 
 
 def push_obj(obj, state):
-    if obj.stack:
-        stack = obj.stack
-    else:
-        stack = []
+    stack = obj.stack
 
     if not stack:
         stack = [state]

@@ -88,7 +88,7 @@ class Upgrade(models.Model):
     from_edition = JSONField(default=['community'])
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
-    state_available = JSONField()
+    state_available = JSONField(default=[])
     state_on_success = models.CharField(max_length=64, blank=True)
 
 
@@ -137,7 +137,7 @@ class ADCM(models.Model):
     name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = JSONField()
+    stack = JSONField(default=[])
     issue = JSONField(default={})
 
 
@@ -147,8 +147,8 @@ class Cluster(models.Model):
     description = models.TextField(blank=True)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = JSONField()
-    issue = JSONField()
+    stack = JSONField(default=[])
+    issue = JSONField(default={})
 
     def __str__(self):
         return str(self.name)
@@ -160,8 +160,8 @@ class HostProvider(models.Model):
     description = models.TextField(blank=True)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = JSONField()
-    issue = JSONField()
+    stack = JSONField(default=[])
+    issue = JSONField(default={})
 
     def __str__(self):
         return str(self.name)
@@ -175,8 +175,8 @@ class Host(models.Model):
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = JSONField()
-    issue = JSONField()
+    stack = JSONField(default=[])
+    issue = JSONField(default={})
 
     def __str__(self):
         return "{}".format(self.fqdn)
@@ -187,8 +187,8 @@ class ClusterObject(models.Model):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = JSONField()
-    issue = JSONField()
+    stack = JSONField(default=[])
+    issue = JSONField(default={})
 
     class Meta:
         unique_together = (('cluster', 'prototype'),)
@@ -200,8 +200,8 @@ class Component(models.Model):
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
     params = JSONField(default={})
-    constraint = JSONField(default=[])
-    requires = JSONField(default={})
+    constraint = JSONField(default=[0, '+'])
+    requires = JSONField(default=[])
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
 
     class Meta:
@@ -243,12 +243,12 @@ class Action(models.Model):
 
     state_on_success = models.CharField(max_length=64, blank=True)
     state_on_fail = models.CharField(max_length=64, blank=True)
-    state_available = JSONField()
+    state_available = JSONField(default=[])
 
     params = JSONField(default={})
-    log_files = JSONField()
+    log_files = JSONField(default=[])
 
-    hostcomponentmap = JSONField()
+    hostcomponentmap = JSONField(default=[])
     allow_to_terminate = models.BooleanField(default=False)
     partial_execution = models.BooleanField(default=False)
 
@@ -366,7 +366,7 @@ JOB_STATUS = (
 
 class UserProfile(models.Model):
     login = models.CharField(max_length=32, unique=True)
-    profile = JSONField()
+    profile = JSONField(default='')
 
 
 class Role(models.Model):
@@ -382,8 +382,8 @@ class JobLog(models.Model):
     action_id = models.PositiveIntegerField()
     sub_action_id = models.PositiveIntegerField(default=0)
     pid = models.PositiveIntegerField(blank=True, default=0)
-    selector = JSONField()
-    log_files = JSONField()
+    selector = JSONField(default={})
+    log_files = JSONField(default=[])
     status = models.CharField(max_length=16, choices=JOB_STATUS)
     start_date = models.DateTimeField()
     finish_date = models.DateTimeField(db_index=True)
@@ -393,12 +393,12 @@ class TaskLog(models.Model):
     action_id = models.PositiveIntegerField()
     object_id = models.PositiveIntegerField()
     pid = models.PositiveIntegerField(blank=True, default=0)
-    selector = JSONField()
+    selector = JSONField(default={})
     status = models.CharField(max_length=16, choices=JOB_STATUS)
-    config = JSONField(null=True)
-    attr = JSONField(null=True)
-    hostcomponentmap = JSONField(null=True)
-    hosts = JSONField(null=True)
+    config = JSONField(null=True, default=None)
+    attr = JSONField(null=True, default=None)
+    hostcomponentmap = JSONField(null=True, default=None)
+    hosts = JSONField(null=True, default=None)
     start_date = models.DateTimeField()
     finish_date = models.DateTimeField()
 
@@ -483,7 +483,7 @@ class StageUpgrade(models.Model):
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
     from_edition = JSONField(default=['community'])
-    state_available = JSONField()
+    state_available = JSONField(default=[])
     state_on_success = models.CharField(max_length=64, blank=True)
 
 
@@ -493,8 +493,8 @@ class StageComponent(models.Model):
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
     params = JSONField(default={})
-    constraint = JSONField(default=[])
-    requires = JSONField(default={})
+    constraint = JSONField(default=[0, '+'])
+    requires = JSONField(default=[])
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
 
     class Meta:
@@ -516,12 +516,12 @@ class StageAction(models.Model):
 
     state_on_success = models.CharField(max_length=64, blank=True)
     state_on_fail = models.CharField(max_length=64, blank=True)
-    state_available = JSONField()
+    state_available = JSONField(default=[])
 
     params = JSONField(default={})
-    log_files = JSONField()
+    log_files = JSONField(default=[])
 
-    hostcomponentmap = JSONField()
+    hostcomponentmap = JSONField(default=[])
     allow_to_terminate = models.BooleanField(default=False)
     partial_execution = models.BooleanField(default=False)
 
