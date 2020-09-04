@@ -11,8 +11,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 pip3 install -U pip
 pip3 install -r requirements-test.txt
+
 find . -name "*.pyc" -type f -delete
 find . -name "__pycache__" -type d -delete
 { # try

@@ -29,6 +29,9 @@
     <ng-container *ngSwitchCase="'option'">
       <app-fields-dropdown [field]="options" [form]="currentFormGroup"></app-fields-dropdown>
     </ng-container>
+    <ng-container *ngSwitchCase="'variant'">
+      <app-fields-variant [field]="options" [form]="currentFormGroup"></app-fields-variant>
+    </ng-container>
 
     <span class="info" style="align-self: baseline;">
       <mat-icon style="vertical-align: middle;" [ngClass]="'info-icon'" *ngIf="options.description"

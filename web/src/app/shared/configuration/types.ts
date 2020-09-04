@@ -28,7 +28,8 @@ export type ConfigValueTypes =
   | 'list'
   | 'file'
   | 'text'
-  | 'password';
+  | 'password'
+  | 'variant';
 export type simpleTypes = string | number | boolean;
 export type resultTypes = simpleTypes | simpleTypes[] | object;
 export type controlType = 'boolean' | 'textbox' | 'textarea' | 'json' | 'password' | 'list' | 'map' | 'dropdown' | 'file' | 'text' | 'structure';
@@ -64,6 +65,13 @@ export interface IUIoptions {
 }
  * ```
  */
+export interface IVariantSet {
+  name?: string;
+  strict: boolean;
+  type: 'config' | 'inline';
+  value: string[];
+}
+
 export interface ILimits {
   min?: number;
   max?: number;
@@ -72,6 +80,7 @@ export interface ILimits {
   yspec?: IYspec;
   rules?: any;
   active?: boolean;
+  source?: IVariantSet;
 }
 
 export interface ValidatorInfo {
