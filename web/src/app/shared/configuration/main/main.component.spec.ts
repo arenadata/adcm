@@ -143,6 +143,5 @@ describe('Configuration : MainComponent >> ', () => {
     component.cd.detectChanges();
 
     expect(saveBtn.disabled).toBeTruthy();
-
   });
 });

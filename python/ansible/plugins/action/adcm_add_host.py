@@ -66,7 +66,7 @@ class ActionModule(ActionBase):
     _VALID_ARGS = frozenset(('fqdn', 'description'))
 
     def run(self, tmp=None, task_vars=None):
-        super(ActionModule, self).run(tmp, task_vars)
+        super().run(tmp, task_vars)
         msg = 'You can add host only in host provider context'
         provider_id = get_context_id(task_vars, 'provider', 'provider_id', msg)
 
@@ -82,6 +82,6 @@ class ActionModule(ActionBase):
         try:
             host = cm.api.add_provider_host(provider_id, fqdn, desc)
         except AdcmEx as e:
-            raise AnsibleError(e.code + ":" + e.msg)
+            raise AnsibleError(e.code + ":" + e.msg) from e
 
         return {"failed": False, "changed": True, "host_id": host.id}

@@ -16,7 +16,7 @@ import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort, MatSortHeader, Sort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { ActivatedRoute, Router } from '@angular/router';
-import { EmmitRow, Issue, isIssue, TypeName } from '@app/core/types';
+import { EmmitRow, isIssue, Issue, TypeName } from '@app/core/types';
 import { BehaviorSubject } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
@@ -153,15 +153,9 @@ export class ListComponent implements OnInit {
   }
 
   getClusterData(row: any) {
-    if ('hostcomponent' in row && this.type === 'cluster') {
-      const id = row.id,
-        hostcomponent = row.hostcomponent;
-      return { id, hostcomponent };
-    } else if ('cluster' in row) {
-      const id = row.cluster.id,
-        hostcomponent = row.cluster.hostcomponent;
-      return { id, hostcomponent };
-    }
+    const { id, hostcomponent } = row.cluster || row;
+    const { action } = row;
+    return { id, hostcomponent, action };
   }
 
   stopPropagation($e: MouseEvent) {

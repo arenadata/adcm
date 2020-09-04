@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Injectable } from '@angular/core';
-import { ApiBase, TypeName } from '@app/core/types/api';
+import { ApiBase } from '@app/core/types/api';
 import { EventEmitter } from 'events';
 import { Subject } from 'rxjs';
 
@@ -31,8 +31,8 @@ export interface TooltipDisplayOptions {
 
 @Injectable()
 export class ComponentData {
-  typeName: TypeName;
-  current: ApiBase;
+  path: string;
+  current: any;
   emitter: EventEmitter;
 }
 

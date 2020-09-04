@@ -132,26 +132,7 @@
         <mat-icon>priority_hight</mat-icon>
       </button>
       <ng-template #actions>
-
-        <button color="primary" mat-icon-button [matMenuTriggerFor]="actionsMenu"
-          (click)="clickCell($event, 'getActions', row)">
-          <mat-icon>local_activity</mat-icon>
-        </button>
-
-        <mat-menu #actionsMenu="matMenu" xPosition="before" yPosition="below" overlapTrigger="false">
-          <ng-template matMenuContent>
-            <div mat-menu-item disabled *ngIf="row.actions && !row.actions.length; else listActions">
-              <i>No actions</i>
-            </div>
-            <ng-template #listActions>
-              <button [appForTest]="'action_btn'" mat-menu-item *ngFor="let b of row.actions"
-                [appActions]="{ cluster: getClusterData(row), actions: [b] }">
-                <span>{{ b.display_name }}</span>
-              </button>
-            </ng-template>
-          </ng-template>
-        </mat-menu>
-
+        <app-action-list (click)="$event.stopPropagation()" [actionLink]="row.action" [cluster]="getClusterData(row)"></app-action-list>
       </ng-template>
     </mat-cell>
   </ng-container>

@@ -20,14 +20,15 @@ import { BundlesComponent } from './bundles.component';
 import { ButtonUploaderComponent } from './button-uploader.component';
 import { ConfirmEqualValidatorDirective } from './confirm-equal-validator.directive';
 import { DropdownComponent } from './dropdown.component';
+import { ErrorInfoComponent } from './error-info.component';
+import { FieldDirective } from './field.directive';
 import { InputComponent } from './input.component';
 import { JsonComponent } from './json.component';
 import { BaseMapListDirective, FieldListComponent, FieldMapComponent } from './map.component';
 import { PasswordComponent } from './password.component';
 import { TextBoxComponent } from './text-box.component';
 import { TextareaComponent } from './textarea.component';
-import { FieldDirective } from './field.directive';
-import { ErrorInfoComponent } from './error-info.component';
+import { VariantComponent } from './variant.component';
 
 @NgModule({
   declarations: [
@@ -45,7 +46,8 @@ import { ErrorInfoComponent } from './error-info.component';
     BaseMapListDirective,
     ConfirmEqualValidatorDirective,
     FieldDirective,
-    ErrorInfoComponent
+    ErrorInfoComponent,
+    VariantComponent,
   ],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, MaterialModule, StuffModule],
   exports: [
@@ -59,7 +61,8 @@ import { ErrorInfoComponent } from './error-info.component';
     DropdownComponent,
     BundlesComponent,
     InputComponent,
-    ButtonUploaderComponent
+    ButtonUploaderComponent,
+    VariantComponent,
   ],
 })
 export class FormElementsModule {}

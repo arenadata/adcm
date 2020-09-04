@@ -239,7 +239,7 @@ def re_check_actions():
     for act in StageAction.objects.all():
         if not act.hostcomponentmap:
             continue
-        hc = json.loads(act.hostcomponentmap)
+        hc = act.hostcomponentmap
         ref = 'in hc_acl of action "{}" of {}'.format(act.name, proto_ref(act.prototype))
         for item in hc:
             sp = StagePrototype.objects.filter(type='service', name=item['service'])
@@ -256,7 +256,7 @@ def re_check_components():
         if not comp.requires:
             continue
         ref = 'in requires of component "{}" of {}'.format(comp.name, proto_ref(comp.prototype))
-        req_list = json.loads(comp.requires)
+        req_list = comp.requires
         for i, item in enumerate(req_list):
             if 'service' in item:
                 try:
@@ -275,7 +275,7 @@ def re_check_components():
             if comp == req_comp:
                 msg = 'Component can not require themself {}'
                 err('COMPONENT_CONSTRAINT_ERROR', msg.format(ref))
-        comp.requires = json.dumps(req_list)
+        comp.requires = req_list
         comp.save()
 
 
