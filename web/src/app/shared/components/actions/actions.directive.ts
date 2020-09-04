@@ -34,6 +34,7 @@ export class ActionsDirective {
 
   @HostListener('click')
   onClick() {
+    this.dialog.closeAll();
     const dialogModel = this.prepare();
     this.dialog.open(DialogComponent, dialogModel);
   }

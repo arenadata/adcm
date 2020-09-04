@@ -83,7 +83,7 @@ def add_host(proto, provider, fqdn, desc='', lock=False):
         )
         host.save()
         if lock:
-            host.stack = json.dumps(['created'])
+            host.stack = ['created']
             set_object_state(host, config.Job.LOCKED, event)
         process_file_type(host, spec, conf)
         cm.issue.save_issue(host)
@@ -805,16 +805,13 @@ def check_multi_bind(actual_import, cluster, service, export_cluster, export_ser
 
 
 def push_obj(obj, state):
-    if obj.stack:
-        stack = json.loads(obj.stack)
-    else:
-        stack = []
+    stack = obj.stack
 
     if not stack:
         stack = [state]
     else:
         stack[0] = state
-    obj.stack = json.dumps(stack)
+    obj.stack = stack
     obj.save()
     return obj
 
