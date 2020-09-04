@@ -10,25 +10,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input, OnInit } from '@angular/core';
-import { FormArray, FormControl, FormGroup } from '@angular/forms';
+import { FormArray, FormGroup } from '@angular/forms';
 
-import { FieldService } from '../field.service';
-import { IYContainer, IYField, matchType, reqursionType } from '../yspec/yspec.service';
-
-type sValue = string | boolean | number;
-
-export interface IValue {
-  [key: string]: sValue;
-}
-
-export interface IControl {
-  name: string;
-  type: matchType;
-  rules: IYField | IYContainer | (IYField | IYContainer)[];
-  form: FormGroup | FormArray;
-  value: IValue | sValue;
-  parent: reqursionType;
-}
+import { TValue } from '../types';
+import { IYContainer, IYField, reqursionType } from '../yspec/yspec.service';
+import { IControl, IValue, SchemeService } from './scheme.service';
 
 @Component({
   selector: 'app-root-scheme',
@@ -38,84 +24,52 @@ export interface IControl {
 export class RootComponent implements OnInit {
   @Input() form: FormGroup | FormArray;
   @Input() options: IYContainer | IYField;
-  @Input() value: IValue | IValue[];
+  @Input() value: TValue;
   @Input() isReadOnly = false;
 
   controls: IControl[] = [];
 
-  constructor(private service: FieldService) {}
+  constructor(private scheme: SchemeService) {}
 
-  ngOnInit(): void {
+  init() {
     if (this.value) {
-      if (this.options.type === 'list' && Array.isArray(this.value)) {
-        const value = this.value as IValue[];
-        value.map((x, i) => this.add([i.toString(), x]));
-      } else if (typeof this.value === 'object') {
-        Object.keys(this.value).map((x) => this.add([x, this.value[x]]));
-      }
+      if (this.options.type === 'list' && Array.isArray(this.value)) (this.value as IValue[]).map((x, i) => this.add(['', x]));
+      else if (typeof this.value === 'object') Object.keys(this.value).map((x) => this.add([x, this.value[x]]));
     } else if (this.options.type === 'dict' && Array.isArray(this.options.options)) {
       this.options.options.map((x) => this.add([x.name, '']));
     }
+  }
+
+  ngOnInit(): void {
+    this.init();
+  }
+
+  reload(value: TValue) {
+    this.value = value;
+    this.controls = [];
+    if (Array.isArray(this.form.controls)) {
+      this.form.controls.forEach((v, i) => (this.form as FormArray).removeAt(i));
+    }
+    this.init();
+  }
+
+  add(v: [string, IValue | TValue] = ['', '']) {
+    const [name, value] = v;
+    const flag = (this.rules as IYContainer).type === 'dict';
+    const item = flag
+      ? this.scheme.addControlsDict(name, value, this.form as FormArray, this.itemRules as IYContainer[])
+      : this.scheme.addControls(name, value, this.form, this.rules, this.options.type as reqursionType);
+    this.controls = [...this.controls, item];
   }
 
   showControls() {
     return !this.isReadOnly && (this.options.type === 'list' || this.options.type === 'dict');
   }
 
-  remove(i: number) {
+  remove(name: string | number) {
     if (Array.isArray(this.form.controls)) {
-      (this.form as FormArray).removeAt(i);
-      this.controls = this.controls.filter((a, n) => a.name ? a.name !== i.toString() : n !== i);
-    }
-  }
-
-  add(v: [string, IValue | sValue] = ['', '']) {
-    let [name, value] = v;
-
-    if ((this.rules as IYContainer).type === 'dict') {
-      const rules = this.itemRules;
-
-      if (!value) value = rules.reduce((p, c) => ({ ...p, [c.name]: '' }), {});
-
-      if (this.checkValue(value, rules)) {
-        const form = new FormGroup({});
-        (this.form as FormArray).push(form);
-        const item: IControl = { name, value, type: (this.rules as IYContainer).type, rules, form, parent: 'list' };
-        this.controls = [...this.controls, item];
-      }
-    } else {
-      const rules = Array.isArray(this.rules) ? this.rules.find((a) => a.name === name) : this.rules;
-
-      if (rules) {
-        let form: FormGroup | FormArray;
-        if (rules.type !== 'list' && rules.type !== 'dict') {
-          const { validator, controlType } = rules as IYField;
-
-          if (Array.isArray(this.form.controls)) {
-            name = this.form.controls.length.toString();
-            (this.form as FormArray).push(new FormControl(value || '', this.service.setValidator({ validator, controlType })));
-          } else
-            (this.form as FormGroup).addControl(rules.name, new FormControl(rules.type !== 'bool' ? value || '' : value, this.service.setValidator({ validator, controlType })));
-          form = this.form;
-        } else {
-          if (rules.type === 'list') form = new FormArray([]);
-          if (rules.type === 'dict') form = new FormGroup({});
-          (this.form as FormGroup).addControl(rules.name, form);
-        }
-        const item: IControl = { name, value, type: rules.type, rules, form, parent: this.options.type as reqursionType };
-        this.controls = [...this.controls, item];
-      }
-    }
-  }
-
-  checkValue(value: IValue | sValue, rules: (IYField | IYContainer)[]) {
-    if (!value) return false;
-    if (Array.isArray(rules)) {
-      if (Array.isArray(value)) {
-        return rules.some((a) => a.name === value[0]);
-      } else if (typeof value === 'object') {
-        return Object.keys(value).every((x) => rules.some((a) => a.name === x));
-      }
+      (this.form as FormArray).removeAt(+name);
+      this.controls = this.controls.filter((a, i) => (a.name ? a.name !== name : i !== +name));
     }
   }
 
@@ -126,9 +80,5 @@ export class RootComponent implements OnInit {
 
   get itemRules(): (IYField | IYContainer)[] {
     return (this.rules as IYContainer).options as (IYField | IYContainer)[];
-  }
-
-  trackByFn(index: number, item: any) {
-    return item.name || index;
   }
 }
