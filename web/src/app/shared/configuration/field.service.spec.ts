@@ -12,16 +12,17 @@
 import { TestBed } from '@angular/core/testing';
 import { FormBuilder, Validators } from '@angular/forms';
 
-import { FieldService, IOutput, itemOptions } from './field.service';
+import { FieldService, IOutput, itemOptions, ISource } from './field.service';
 import { ConfigValueTypes, FieldStack, IConfig, ILimits, resultTypes } from './types';
+import { IYspec } from './yspec/yspec.service';
 
 /**
- * inputData - data from backend for configuration IConfig.config : FieldStack[] 
+ * inputData - data from backend for configuration IConfig.config : FieldStack[]
  *           => data4form : itemOptions[] we can render the form based on this data
- *  
+ *
  * FormControl.value - user input
  * outputData - this is that we send to backend after parsing FormControl.value  - IOutput
- * 
+ *
  */
 
 const inputData: IConfig = {
@@ -343,7 +344,7 @@ describe('Configuration fields service', () => {
         field_map_not_object: 'string',
         field_list_not_array: 'string',
         field_null: null,
-      }
+      },
     });
   });
 
@@ -465,5 +466,94 @@ describe('Configuration fields service', () => {
 
   it('Map fieldType :: checkValue("{}", "map") should return null', () => {
     expect(checkValue({}, 'map')).toBeNull();
+  });
+
+  /**
+   *
+   * check value - mocking the click save button
+   *
+   */
+  it('parseValue - for structure: after init with empty field with not required', () => {
+    const source: ISource[] = [{ type: 'structure', name: 'field', subname: '', read_only: false, value: null, limits: { rules: {} } }];
+    const output: IOutput = { field: {} };
+
+    const result = service.parseValue(output, source);
+    expect(result).toEqual({ field: null });
+
+    const output2: IOutput = { field: [] };
+
+    const result2 = service.parseValue(output2, source);
+    expect(result2).toEqual({ field: null });
+  });
+
+  it('parseValue - for structure: list', () => {
+    const rules = {
+      name: 'root',
+      type: 'list',
+      options: {
+        name: 'listener',
+        type: 'dict',
+        options: [
+          {
+            controlType: 'textbox',
+            name: 'name',
+            path: ['name', 'listener'],
+            type: 'string',
+            validator: {
+              pattern: null,
+              required: true,
+            },
+          },
+          {
+            controlType: 'textbox',
+            name: 'port',
+            path: ['port', 'listener'],
+            type: 'int',
+            validator: { required: true, pattern: /^[-]?\d+$/ },
+          },
+          { name: 'ssl enable', type: 'bool', path: [], controlType: 'boolean', validator: {} },
+          { name: 'sasl protocol', type: 'string', path: [], controlType: 'textbox', validator: {} },
+        ],
+      },
+    };
+
+    const yspec: IYspec = {
+      boolean: { match: 'bool' },
+      integer: { match: 'int' },
+      string: { match: 'string' },
+      root: {
+        match: 'list',
+        item: 'listener',
+      },
+      listener: {
+        items: {
+          name: 'string',
+          port: 'integer',
+          'sasl protocol': 'string',
+          'ssl enable': 'boolean',
+        },
+        match: 'dict',
+        required_items: ['name', 'port'],
+      },
+    };
+
+    const source: ISource[] = [
+      {
+        limits: {
+          rules,
+          yspec,
+        },
+        name: 'listeners',
+        read_only: false,
+        subname: '',
+        type: 'structure',
+        value: [{ name: 'DEFAULT', port: 9092 }],
+      },
+    ];
+
+    const output = { listeners: [{ name: 'DEFAULT', port: '9092' }] };
+    const result = service.parseValue(output, source);
+
+    expect(result).toEqual({ listeners: [{ name: 'DEFAULT', port: 9092 }] });
   });
 });

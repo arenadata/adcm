@@ -10,11 +10,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { AbstractControl } from '@angular/forms';
 
-import { IControl } from './root.component';
 import { controlType, ValidatorInfo } from '../types';
 import { IYField } from '../yspec/yspec.service';
-import { AbstractControl } from '@angular/forms';
+import { IControl } from './scheme.service';
 
 @Component({
   selector: 'app-item-scheme',
@@ -55,7 +55,7 @@ export class ItemComponent implements OnInit {
   @Input() item: IControl;
   @Input() index: number;
   @Input() isReadOnly = false;
-  @Output() remove = new EventEmitter<number>();
+  @Output() remove = new EventEmitter<string>();
 
   controlType: controlType;
   validator: ValidatorInfo;
@@ -69,7 +69,7 @@ export class ItemComponent implements OnInit {
   }
 
   emmit() {
-    this.remove.emit(this.index);
+    this.remove.emit(this.item.name);
   }
 
   get control() {
