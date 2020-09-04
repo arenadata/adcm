@@ -45,23 +45,23 @@ describe('HostComponentsMap :: TakeService', () => {
     expect(service).toBeTruthy();
   });
 
-  xit('fillHost should return HostTile[] by response result', () => {
+  xit('fillHost() should return HostTile[] by response result', () => {
 
   });
 
-  xit('fillComponennt should return CompTile[] by response result', () => {
+  xit('fillComponennt() should return CompTile[] by response result', () => {
 
   });
 
-  xit('setRelations should detect relations between host-component by response result', () => {
+  xit('setRelations() should detect relations between host-component by response result', () => {
 
   });
 
-  xit('takeHost or takeComponent should set needed attributes for host or component', () => {
+  xit('next() should set needed attributes for host or component', () => {
 
   });
 
-  xit('clearHostFromService or clearServiceFromHost should remove property from host or component', () => {
+  xit('divorce() should remove property from host or component', () => {
 
   });
 

@@ -9,37 +9,29 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { animate, state, style, transition, trigger } from '@angular/animations';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { ChannelService } from '@app/core';
+import { notify } from '@app/core/animations';
 import { EventMessage, IEMObject, SocketState } from '@app/core/store';
 import { IActionParameter } from '@app/core/types';
 import { Store } from '@ngrx/store';
 
 import { SocketListenerDirective } from '../../directives/socketListener.directive';
-import { TakeService } from '../take.service';
-import { CompTile, HostTile, IRawHosComponent, IStream, Post, StatePost, Tile } from '../types';
+import { TakeService, getSelected } from '../take.service';
+import { CompTile, HostTile, IRawHosComponent, Post, StatePost, Tile } from '../types';
 
 @Component({
   selector: 'app-service-host',
   templateUrl: './service-host.component.html',
   styleUrls: ['./service-host.component.scss'],
-  animations: [
-    trigger('popup', [
-      state('show', style({ opacity: 1 })),
-      state('hide', style({ opacity: 0 })),
-      transition('hide => show', [animate('.2s')]),
-      transition('show => hide', [animate('2s')]),
-    ]),
-  ],
+  animations: [notify],
 })
 export class ServiceHostComponent extends SocketListenerDirective implements OnInit {
   showSpinner = false;
   showPopup = false;
   notify = '';
 
-  stream = {} as IStream;
   statePost = new StatePost();
   loadPost = new StatePost();
   sourceMap = new Map<string, Tile[]>([
@@ -197,36 +189,30 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
     this.service.formFill(this.Components, this.Hosts, this.form);
   }
 
-  clearServiceFromHost(data: { rel: CompTile; model: HostTile }) {
-    this.service.clearServiceFromHost(data, this.statePost, this.Components, this.Hosts, this.form);
+  clearServiceFromHost(data: { relation: CompTile; model: HostTile }) {
+    this.service.divorce([data.relation, data.model], this.Components, this.Hosts, this.statePost, this.form);
   }
 
-  clearHostFromService(data: { rel: HostTile; model: CompTile }) {
-    this.service.clearHostFromService(data, this.statePost, this.Components, this.Hosts, this.form);
+  clearHostFromService(data: { relation: HostTile; model: CompTile }) {
+    this.service.divorce([data.model, data.relation], this.Components, this.Hosts, this.statePost, this.form);
   }
 
   selectHost(host: HostTile) {
-    this.service.takeHost(
-      host,
-      this.Components,
-      this.Hosts,
-      this.stream,
-      this.statePost,
-      this.loadPost,
-      this.form,
-    );
+    const stream = {
+      linkSource: this.Components,
+      link: getSelected(this.Components),
+      selected: getSelected(this.Hosts),
+    };
+    this.service.next(host, stream, this.Components, this.Hosts, this.statePost, this.loadPost, this.form);
   }
 
-  selectService(comp: CompTile) {
-    this.service.takeComponent(
-      comp,
-      this.Components,
-      this.Hosts,
-      this.stream,
-      this.statePost,
-      this.loadPost,
-      this.form
-    );
+  selectService(component: CompTile) {
+    const stream = {
+      linkSource: this.Hosts,
+      link: getSelected(this.Hosts),
+      selected: getSelected(this.Components),
+    };
+    this.service.next(component, stream, this.Components, this.Hosts, this.statePost, this.loadPost, this.form);
   }
 
   save() {

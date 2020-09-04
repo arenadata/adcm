@@ -1,5 +1,5 @@
 <div class="controls" [ngStyle]="{'position': fixedButton ? 'fixed': 'initial'}">
-  <span [@popup]="showPopup? 'show': 'hide'" class="notify">
+  <span [@notify]="showPopup? 'show': 'hide'" class="notify">
     <mat-icon color="accent">done</mat-icon>&nbsp;<span>{{ notify }}</span>
   </span>
   &nbsp;&nbsp;

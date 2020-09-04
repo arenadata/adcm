@@ -24,7 +24,7 @@ export class Much2ManyComponent {
   isShow = false;
 
   @Output() clickToTitleEvt: EventEmitter<any> = new EventEmitter();
-  @Output() clearRelationEvt: EventEmitter<any> = new EventEmitter();
+  @Output() clearRelationEvt: EventEmitter<{ relation: Tile; model: Tile }> = new EventEmitter();
   @Input() model: Tile;
   @Input() form: FormGroup;
 
@@ -56,9 +56,9 @@ export class Much2ManyComponent {
     this.isShow = !this.isShow;
   }
 
-  clearRelation(rel: Tile) {
-    this.model.relations = this.model.relations.filter((a) => a !== rel);
-    this.clearRelationEvt.emit({ rel: rel, model: this.model });
+  clearRelation(relation: Tile) {
+    this.model.relations = this.model.relations.filter((a) => a !== relation);
+    this.clearRelationEvt.emit({ relation, model: this.model });
   }
 
   setNotify() {

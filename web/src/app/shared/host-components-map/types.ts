@@ -126,7 +126,15 @@ export class StatePost {
     data.forEach((a) => this.add(new Post(a.host_id, a.service_id, a.component_id, a.id)));
   }
 }
-
+/**
+ *```
+  {
+    link: Tile;
+    linkSource: Tile[];
+    selected: Tile;
+  }
+  *```
+ */
 export interface IStream {
   link: Tile;
   linkSource: Tile[];
