@@ -193,9 +193,8 @@ def get_prototype_config(proto, action=None):
             prototype=proto, action=action, type='group').order_by('id'):
         spec[c.name] = {}
         conf[c.name] = {}
-        if c.limits:
-            if 'activatable' in c.limits:
-                attr[c.name] = {'active': c.limits['active']}
+        if 'activatable' in c.limits:
+            attr[c.name] = {'active': c.limits['active']}
 
     for c in PrototypeConfig.objects.filter(prototype=proto, action=action).order_by('id'):
         flat_spec['{}/{}'.format(c.name, c.subname)] = c
@@ -240,9 +239,7 @@ def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-local
     inactive_groups = {}
     for key in new_spec:
         if new_spec[key].type == 'group':
-            limits = {}
-            if new_spec[key].limits:
-                limits = new_spec[key].limits
+            limits = new_spec[key].limits
             if 'activatable' in limits and 'active' in limits:
                 if limits['active']:
                     active_groups[key.rstrip('/')] = True
@@ -369,9 +366,8 @@ def process_config(obj, spec, old_conf):
 def group_is_activatable(spec):
     if spec.type != 'group':
         return False
-    if spec.limits:
-        if 'activatable' in spec.limits:
-            return spec.limits['activatable']
+    if 'activatable' in spec.limits:
+        return spec.limits['activatable']
     return False
 
 
@@ -718,16 +714,15 @@ def check_config_type(proto, key, subkey, spec, value, default=False, inactive=F
             err('CONFIG_VALUE_ERROR', tmpl2.format("should be float"))
 
     if spec['type'] == 'integer' or spec['type'] == 'float':
-        if 'limits' in spec:
-            limits = spec['limits']
-            if 'min' in limits:
-                if value < limits['min']:
-                    msg = 'should be more than {}'.format(limits['min'])
-                    err('CONFIG_VALUE_ERROR', tmpl2.format(msg))
-            if 'max' in limits:
-                if value > limits['max']:
-                    msg = 'should be less than {}'.format(limits['max'])
-                    err('CONFIG_VALUE_ERROR', tmpl2.format(msg))
+        limits = spec['limits']
+        if 'min' in limits:
+            if value < limits['min']:
+                msg = 'should be more than {}'.format(limits['min'])
+                err('CONFIG_VALUE_ERROR', tmpl2.format(msg))
+        if 'max' in limits:
+            if value > limits['max']:
+                msg = 'should be less than {}'.format(limits['max'])
+                err('CONFIG_VALUE_ERROR', tmpl2.format(msg))
 
     if spec['type'] == 'option':
         option = spec['limits']['option']
