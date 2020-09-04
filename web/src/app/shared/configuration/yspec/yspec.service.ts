@@ -32,6 +32,17 @@ export interface IYspec {
   [key: string]: IYRoot;
 }
 
+/**
+ *```
+{
+    name:         string;
+    path:         string[];
+    type:         simpleType;
+    controlType:  controlType;
+    validator:    ValidatorInfo;
+}
+ *```
+ */
 export interface IYField {
   name: string;
   path: string[];
@@ -40,6 +51,15 @@ export interface IYField {
   validator: ValidatorInfo;
 }
 
+/**
+ * ``` 
+ * {
+ *   name:      string;
+ *   type:      reqursionType;    // 'list' | 'dict'
+ *   options:   IYContainer | IYField | (IYContainer | IYField)[];
+ * } 
+ *```
+ */
 export interface IYContainer {
   name: string;
   type: reqursionType;
