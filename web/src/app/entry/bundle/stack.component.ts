@@ -42,7 +42,6 @@ export class StackComponent {
       </tr>
     </table>
   `,
-  styles: [],
 })
 export class MainComponent implements OnInit {
   model: any;

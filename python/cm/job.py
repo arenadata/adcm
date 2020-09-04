@@ -186,8 +186,6 @@ def get_action_context(action, selector):
 def check_action_state(action, obj):
     if obj.state == config.Job.LOCKED:
         err('TASK_ERROR', 'object is locked')
-    if action.state_available == '':
-        err('TASK_ERROR', 'action is disabled')
     available = action.state_available
     if available == 'any':
         return
@@ -197,10 +195,7 @@ def check_action_state(action, obj):
 
 
 def lock_obj(obj, event):
-    if obj.stack:
-        stack = obj.stack
-    else:
-        stack = []
+    stack = obj.stack
 
     if not stack:
         stack = [obj.state]
