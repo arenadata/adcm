@@ -1,4 +1,3 @@
-#!/bin/sh
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,17 +10,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+  - type: cluster
+    name: PassCheckerServiceAction
+    version: 1
 
-pip3 install -U pip
-pip3 install -r requirements-test.txt
+  - type: service
+    name: PassChecker
+    version: 1
 
-find . -name "*.pyc" -type f -delete
-find . -name "__pycache__" -type d -delete
-{ # try
-    pytest tests/functional/test_adcm_upgrade.py -s -v -n auto --maxfail 30 \
-    --showlocals --alluredir ./allure-results/ --durations=20 &&
-    chmod -R o+xw allure-results
-} || { # catch
-    chmod -R o+xw allure-results
-    exit 1
-}
+    actions:
+        check-password:
+            type: job
+            script: cluster/check_password_service.yaml
+            script_type: ansible
+            states:
+                available:
+                    - created
+
+    config:
+        password:
+            type: password
+            required: yes
