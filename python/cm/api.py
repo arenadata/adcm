@@ -232,6 +232,23 @@ def delete_service_by_id(service_id):
     cm.status_api.load_service_map()
 
 
+def delete_service_by_name(service_name, cluster_id):
+    """
+    Unconditional removal of service from cluster
+
+    This is intended for use in adcm_delete_service ansible plugin only
+    """
+    try:
+        service = ClusterObject.objects.get(cluster__id=cluster_id, prototype__name=service_name)
+    except ClusterObject.DoesNotExist:
+        msg = 'Service with name "{}" not found in cluster #{}'
+        err('SERVICE_NOT_FOUND', msg.format(service_name, cluster_id))
+    service_id = service.id
+    service.delete()
+    cm.status_api.post_event('delete', 'service', service_id)
+    cm.status_api.load_service_map()
+
+
 def delete_service(service):
     if HostComponent.objects.filter(cluster=service.cluster, service=service):
         err('SERVICE_CONFLICT', 'Service #{} has component(s) on host(s)'.format(service.id))
@@ -805,10 +822,7 @@ def check_multi_bind(actual_import, cluster, service, export_cluster, export_ser
 
 
 def push_obj(obj, state):
-    if obj.stack:
-        stack = obj.stack
-    else:
-        stack = []
+    stack = obj.stack
 
     if not stack:
         stack = [state]
