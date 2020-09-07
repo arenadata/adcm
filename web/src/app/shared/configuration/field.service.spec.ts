@@ -11,10 +11,10 @@
 // limitations under the License.
 import { TestBed } from '@angular/core/testing';
 import { FormBuilder, Validators } from '@angular/forms';
-import { Configuration, FieldFactory, itemOptionsArr } from '@app/core/tests/configuration';
+import { Configuration, FieldFactory, toFormOptions, itemOptionsArr } from '@app/core/tests/configuration';
 
 import { FieldService, IOutput, ISource } from './field.service';
-import { ConfigValueTypes, IFieldStack, ILimits, resultTypes } from './types';
+import { IFieldStack, ILimits, resultTypes, TNForm } from './types';
 import { IYspec } from './yspec/yspec.service';
 
 /**
@@ -30,7 +30,7 @@ const formData = itemOptionsArr;
 
 describe('Configuration fields service', () => {
   let service: FieldService;
-  let checkValue: (value: resultTypes, type: ConfigValueTypes) => resultTypes;
+  let checkValue: (value: resultTypes, type: TNForm) => resultTypes;
   // let parseValue: (value: IOutput, source: Partial<FieldStack>[]) => IOutput;
 
   beforeEach(() => {
@@ -84,7 +84,7 @@ describe('Configuration fields service', () => {
   });
 
   it('Check result : parseValue(form without grop)', () => {
-    const source: { name: string; subname: string; type: ConfigValueTypes; read_only: boolean; limits?: ILimits; value: any }[] = [
+    const source: { name: string; subname: string; type: TNForm; read_only: boolean; limits?: ILimits; value: any }[] = [
       { name: 'field_string', type: 'string', read_only: false, subname: '', value: '' },
       { name: 'field_int', type: 'integer', read_only: false, subname: '', value: '' },
       { name: 'field_int_as_str', type: 'integer', read_only: false, subname: '', value: '' },
@@ -153,7 +153,7 @@ describe('Configuration fields service', () => {
   });
 
   it('Check result : parseValue(form with grop)', () => {
-    const source: { name: string; subname: string; type: ConfigValueTypes; read_only: boolean; limits?: ILimits; value: any }[] = [
+    const source: { name: string; subname: string; type: TNForm; read_only: boolean; limits?: ILimits; value: any }[] = [
       { name: 'field_string', type: 'string', read_only: false, subname: '', value: '' },
       { name: 'group_1', subname: '', type: 'group', read_only: false, value: '' },
       { name: 'group_1', subname: 'field_int', type: 'integer', read_only: false, value: '' },

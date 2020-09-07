@@ -11,12 +11,11 @@
 // limitations under the License.
 import { Injectable } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
-import { getControlType, getPattern, isEmptyObject } from '@app/core/types';
+import { isEmptyObject } from '@app/core/types';
 
-import { ConfigValueTypes, controlType, FieldOptions, IFieldStack, IConfig, ILimits, PanelOptions, resultTypes, ValidatorInfo } from './types';
-import { matchType, simpleType } from './yspec/yspec.service';
+import { controlType, IConfig, IFieldOptions, IFieldStack, ILimits, IPanelOptions, IValidator, resultTypes, TNBase, TNForm } from './types';
 
-export type itemOptions = FieldOptions | PanelOptions;
+export type TFormOptions = IFieldOptions | IPanelOptions;
 
 export interface IOutput {
   [key: string]: resultTypes;
@@ -25,7 +24,7 @@ export interface IOutput {
 export interface ISource {
   name: string;
   subname: string;
-  type: ConfigValueTypes;
+  type: TNForm;
   read_only: boolean;
   limits?: ILimits;
   value: any;
@@ -36,71 +35,91 @@ export interface IToolsEvent {
   conditions?: { advanced: boolean; search: string } | boolean;
 }
 
+const isVisibleField = (a: TFormOptions) => !a.ui_options?.invisible;
+const isAdvancedField = (a: TFormOptions) => this.isVisibleField(a) && a.ui_options?.advanced;
+const isHidden = (a: IFieldStack) => !!(a.ui_options?.invisible || a.ui_options?.advanced);
+export const getControlType = (name: TNForm): controlType => {
+  const a: Partial<{ [key in TNForm | controlType]: controlType }> = {
+    bool: 'boolean',
+    int: 'textbox',
+    integer: 'textbox',
+    float: 'textbox',
+    string: 'textbox',
+    file: 'textarea',
+    text: 'textarea',
+  };
+  return a[name] || (name as controlType);
+};
+export const getPattern = (name: TNForm): RegExp => {
+  const fn = {
+    integer: () => new RegExp(/^[-]?\d+$/),
+    int: () => new RegExp(/^[-]?\d+$/),
+    float: () => new RegExp(/^[-]?[0-9]+(\.[0-9]+)?$/),
+  };
+  return fn[name] ? fn[name]() : null;
+};
+const getValue = (type: string) => {
+  const def = (value: number | string) => (value === null || value === undefined ? '' : String(value));
+  const fn = {
+    boolean: (value: boolean | null, d: boolean | null, required: boolean) => {
+      const allow = String(value) === 'true' || String(value) === 'false' || String(value) === 'null';
+      return allow ? value : required ? d : null;
+    },
+    json: (value: string) => (value === null ? '' : JSON.stringify(value, undefined, 4)),
+    map: (value: object, de: object) => (!value ? de : value),
+    list: (value: string[], de: string[]) => (!value ? de : value),
+    structure: (value: any) => value,
+  };
+  return fn[type] ? fn[type] : def;
+};
+export const getKey = (n: string, sn: string) => (sn ? `${sn}/${n}` : n);
+
+export const getValidator = (required: boolean, min: number, max: number, type: TNForm) => ({
+  required,
+  min,
+  max,
+  pattern: getPattern(type),
+});
+
+const getField = (item: IFieldStack): IFieldOptions => ({
+  ...item,
+  key: getKey(item.name, item.subname),
+  value: getValue(item.type)(item.value, item.default, item.required),
+  validator: getValidator(item.required, item.limits?.min, item.limits?.max, item.type),
+  controlType: getControlType(item.type),
+  hidden: item.name === '__main_info' || isHidden(item),
+  compare: [],
+});
+
+const getPanel = (source: IFieldStack, dataConfig: IConfig): IPanelOptions => {
+  const { config, attr } = dataConfig;
+  const fo = (b: IFieldStack) => b.type !== 'group' && b.subname && b.name === source.name;
+  return {
+    ...source,
+    hidden: isHidden(source),
+    active: source.activatable ? attr[source.name]?.active : true,
+    options: config
+      .filter(fo)
+      .map(getField)
+      // switch off validation for field if !(activatable: true && active: false) - line: 146
+      .map((c) => ({ ...c, name: c.subname, activatable: source.activatable && !attr[source.name]?.active })),
+  };
+};
+
 @Injectable()
 export class FieldService {
   constructor(public fb: FormBuilder) {}
 
-  isVisibleField = (a: itemOptions) => !a.ui_options?.invisible;
-  isAdvancedField = (a: itemOptions) => this.isVisibleField(a) && a.ui_options?.advanced;
-  isHidden = (a: IFieldStack) => !!(a.ui_options?.invisible || a.ui_options?.advanced);
-
   /**
    * Parse and prepare source data from backend
    */
-  public getPanels(data: IConfig): itemOptions[] {
-    const getValue = (type: string) => {
-      const def = (value: number | string) => (value === null || value === undefined ? '' : String(value));
-
-      const fn = {
-        boolean: (value: boolean | null, d: boolean | null, required: boolean) => {
-          const allow = String(value) === 'true' || String(value) === 'false' || String(value) === 'null';
-          return allow ? value : required ? d : null;
-        },
-        json: (value: string) => (value === null ? '' : JSON.stringify(value, undefined, 4)),
-        map: (value: object, de: object) => (!value ? de : value),
-        list: (value: string[], de: string[]) => (!value ? de : value),
-        structure: (value: any) => value,
-      };
-
-      return fn[type] ? fn[type] : def;
-    };
-
-    const getField = (item: IFieldStack): FieldOptions => ({
-      ...item,
-      key: `${item.subname ? item.subname + '/' : ''}${item.name}`,
-      value: getValue(item.type)(item.value, item.default, item.required),
-      validator: {
-        required: item.required,
-        min: item.limits ? item.limits.min : null,
-        max: item.limits ? item.limits.max : null,
-        pattern: getPattern(item.type),
-      },
-      controlType: getControlType(item.type as matchType),
-      hidden: item.name === '__main_info' || this.isHidden(item),
-      compare: [],
-    });
-
-    const getPanels = (source: IFieldStack, dataConfig: IConfig): PanelOptions => {
-      const { config, attr } = dataConfig;
-      const fo = (b: IFieldStack) => b.type !== 'group' && b.subname && b.name === source.name;
-      return {
-        ...source,
-        hidden: this.isHidden(source),
-        active: source.activatable ? attr[source.name]?.active : true,
-        options: config
-          .filter(fo)
-          .map(getField)
-          // switch off validation for field if !(activatable: true && active: false) - line: 146
-          .map((c) => ({ ...c, name: c.subname, activatable: source.activatable && !attr[source.name]?.active })),
-      };
-    };
-
+  public getPanels(data: IConfig): TFormOptions[] {
     return data?.config
       ?.filter((a) => a.name !== '__main_info')
       .reduce((p, c) => {
         if (c.subname) return p;
         if (c.type !== 'group') return [...p, getField(c)];
-        else return [...p, getPanels(c, data)];
+        else return [...p, getPanel(c, data)];
       }, []);
   }
 
@@ -108,9 +127,9 @@ export class FieldService {
    * Generate FormGroup
    * @param options
    */
-  public toFormGroup(options: itemOptions[] = []): FormGroup {
-    const isVisible = (a: itemOptions) => !a.read_only && !(a.ui_options && a.ui_options.invisible);
-    const check = (a: itemOptions) => ('options' in a ? (a.activatable ? this.isVisibleField(a) : isVisible(a) ? a.options.some((b) => check(b)) : false) : isVisible(a));
+  public toFormGroup(options: TFormOptions[] = []): FormGroup {
+    const isVisible = (a: TFormOptions) => !a.read_only && !(a.ui_options && a.ui_options.invisible);
+    const check = (a: TFormOptions) => ('options' in a ? (a.activatable ? isVisibleField(a) : isVisible(a) ? a.options.some((b) => check(b)) : false) : isVisible(a));
     return this.fb.group(
       options.reduce((p, c) => this.runByTree(c, p), {}),
       {
@@ -120,7 +139,7 @@ export class FieldService {
   }
 
   // TODO:
-  private runByTree(field: itemOptions, controls: { [key: string]: {} }): { [key: string]: {} } {
+  private runByTree(field: TFormOptions, controls: { [key: string]: {} }): { [key: string]: {} } {
     if ('options' in field) {
       controls[field.name] = this.fb.group(
         field.options.reduce((p, a) => {
@@ -135,7 +154,7 @@ export class FieldService {
     }
   }
 
-  private fillForm(field: FieldOptions, controls: {}) {
+  private fillForm(field: IFieldOptions, controls: {}) {
     const name = field.subname || field.name;
     const validator = field.activatable ? [] : this.setValidator(field);
     controls[name] = this.fb.control(field.value, validator);
@@ -149,7 +168,7 @@ export class FieldService {
    * Using from outside to set validator for FormControl by type
    * @param field Partial<FieldOptions>{ ValidatorInfo, controlType }
    */
-  public setValidator(field: { validator: ValidatorInfo; controlType: controlType }) {
+  public setValidator(field: { validator: IValidator; controlType: controlType }) {
     const v: ValidatorFn[] = [];
 
     if (field.validator.required) v.push(Validators.required);
@@ -183,19 +202,19 @@ export class FieldService {
   /**
    * Filter by group and all fields
    */
-  public filterApply(dataOptions: itemOptions[], c: { advanced: boolean; search: string }): itemOptions[] {
-    return dataOptions.filter((a) => this.isVisibleField(a)).map((a) => this.handleTree(a, c));
+  public filterApply(dataOptions: TFormOptions[], c: { advanced: boolean; search: string }): TFormOptions[] {
+    return dataOptions.filter((a) => isVisibleField(a)).map((a) => this.handleTree(a, c));
   }
 
-  private handleTree(a: itemOptions, c: { advanced: boolean; search: string }) {
+  private handleTree(a: TFormOptions, c: { advanced: boolean; search: string }) {
     if ('options' in a) {
       const result = a.options.map((b) => this.handleTree(b, c));
       if (c.search) a.hidden = a.options.filter((b) => !b.hidden).length === 0;
-      else a.hidden = this.isAdvancedField(a) ? !c.advanced : false;
+      else a.hidden = isAdvancedField(a) ? !c.advanced : false;
       return result;
-    } else if (this.isVisibleField(a)) {
+    } else if (isVisibleField(a)) {
       a.hidden = !(a.display_name.toLowerCase().includes(c.search.toLowerCase()) || JSON.stringify(a.value).includes(c.search));
-      if (!a.hidden && this.isAdvancedField(a)) a.hidden = !c.advanced;
+      if (!a.hidden && isAdvancedField(a)) a.hidden = !c.advanced;
       return a;
     }
   }
@@ -206,7 +225,7 @@ export class FieldService {
   public parseValue(output: IOutput, source: ISource[]): IOutput {
     const findField = (name: string, p?: string): Partial<IFieldStack> => source.find((a) => (p ? a.name === p && a.subname === name : a.name === name) && !a.read_only);
 
-    const runYspecParse = (v: any, f: Partial<FieldOptions>) => ((v === {} || v === []) && !f.value ? f.value : this.runYspec(v, f.limits.rules));
+    const runYspecParse = (v: any, f: Partial<IFieldOptions>) => ((v === {} || v === []) && !f.value ? f.value : this.runYspec(v, f.limits.rules));
 
     const runParse = (v: IOutput, parentName?: string): IOutput => {
       const runByValue = (p: IOutput, c: string) => {
@@ -235,7 +254,7 @@ export class FieldService {
   private runYspec(value: resultTypes, rules: any) {
     switch (rules?.type) {
       case 'list': {
-        return (value as Array<simpleType>).filter((a) => !!a).map((a) => this.runYspec(a, rules.options));
+        return (value as Array<TNBase>).filter((a) => !!a).map((a) => this.runYspec(a, rules.options));
       }
       case 'dict': {
         return Object.keys(value).reduce((p, c) => {
@@ -250,7 +269,7 @@ export class FieldService {
     }
   }
 
-  checkValue(value: resultTypes, type: ConfigValueTypes): resultTypes {
+  checkValue(value: resultTypes, type: TNForm): resultTypes {
     if (value === '' || value === null || isEmptyObject(value)) return null;
     if (typeof value === 'boolean') return value;
     else if (typeof value === 'string')

@@ -9,12 +9,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { itemOptions } from '@app/shared/configuration/field.service';
+import { getControlType, getKey, getValidator, TFormOptions } from '@app/shared/configuration/field.service';
 
-import { ConfigValueTypes, IConfig, IConfigAttr, ILimits, stateType, TValue, IUIoptions, IFieldStack } from '../../shared/configuration/types';
+import { IConfig, IConfigAttr, IFieldStack, ILimits, IUIoptions, stateType, TNForm, TValue } from '../../shared/configuration/types';
 import { IYContainer, IYField, IYspec } from '../../shared/configuration/yspec/yspec.service';
 
-export const itemOptionsArr: itemOptions[] = [
+export const itemOptionsArr: TFormOptions[] = [
   {
     required: true,
     name: 'field_string_0',
@@ -26,7 +26,7 @@ export const itemOptionsArr: itemOptions[] = [
     default: null,
     value: '',
     key: 'field_string_0',
-    validator: { required: true, min: null, max: null, pattern: null },
+    validator: { required: true, min: undefined, max: undefined, pattern: null },
     controlType: 'textbox',
     hidden: false,
     compare: [],
@@ -55,7 +55,7 @@ export const itemOptionsArr: itemOptions[] = [
         value: '',
         required: true,
         key: 'subname_integer_0/field_group_1',
-        validator: { required: true, min: null, max: null, pattern: /^[-]?\d+$/ },
+        validator: { required: true, min: undefined, max: undefined, pattern: /^[-]?\d+$/ },
         controlType: 'textbox',
         hidden: false,
         compare: [],
@@ -95,15 +95,7 @@ export class FieldStack implements IFieldStack {
   limits: ILimits;
   ui_options: IUIoptions;
 
-  constructor(
-    id: number,
-    public type: ConfigValueTypes,
-    public name: string = null,
-    public value = null,
-    public read_only = false,
-    public required = true,
-    public activatable = false
-  ) {
+  constructor(id: number, public type: TNForm, public name: string = null, public value = null, public required = true, public read_only = false, public activatable = false) {
     const dn = `field_${type}_${id}`;
     this.name = !this.name ? dn : this.name;
     this.subname = this.name === dn ? '' : `subname_${type}_${id}`;
@@ -127,12 +119,37 @@ export class Configuration implements IConfig {
 }
 
 export class FieldFactory {
-  public static addGroup(id: number, params: ConfigValueTypes[]): IFieldStack[] {
+  public static addGroup(id: number, params: TNForm[]): IFieldStack[] {
     const group = new FieldStack(id, 'group');
     return params.reduce((p, c, i) => [...p, new FieldStack(i, c, group.name)], [group]);
   }
 
-  public static add(params: (ConfigValueTypes | ConfigValueTypes[])[]) {
+  /**
+   * return group if params as array
+   */
+  public static add(params: (TNForm | TNForm[])[]) {
     return params.reduce<IFieldStack[]>((p, c, i) => [...p, ...(Array.isArray(c) ? this.addGroup(i, c) : [new FieldStack(i, c)])], []);
   }
 }
+
+const toPanel = (a: IFieldStack) => ({
+  options: [],
+  active: true,
+  hidden: false,
+});
+
+const toField = (a: IFieldStack) => ({
+  controlType: getControlType(a.type),
+  validator: getValidator(a.required, a.limits?.min, a.limits?.max, a.type),
+  compare: [],
+  key: getKey(a.name, a.subname),
+  hidden: false,
+});
+
+export const toFormOptions = (stack: IFieldStack[]): TFormOptions[] => {
+  return stack.reduce((p, c) => {
+    if (c.subname) return p;
+    if (c.type !== 'group') return [...p, toField(c)];
+    else return [...p, toPanel(c)];
+  }, []);
+};

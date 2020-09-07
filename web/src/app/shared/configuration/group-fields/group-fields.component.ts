@@ -15,7 +15,7 @@ import { MatExpansionPanel } from '@angular/material/expansion';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 
 import { FieldService } from '../field.service';
-import { FieldOptions, PanelOptions } from '../types';
+import { IFieldOptions, IPanelOptions } from '../types';
 
 @Component({
   selector: 'app-group-fields',
@@ -29,7 +29,7 @@ import { FieldOptions, PanelOptions } from '../types';
 })
 export class GroupFieldsComponent implements OnInit {
   active = true;
-  @Input() panel: PanelOptions;
+  @Input() panel: IPanelOptions;
   @Input() form: FormGroup;
   @ViewChild('ep') expanel: MatExpansionPanel;
 
@@ -56,7 +56,7 @@ export class GroupFieldsComponent implements OnInit {
   checkFields(flag: boolean) {
     this.panel.options
       .filter((a) => !('options' in a))
-      .forEach((a: FieldOptions) => {
+      .forEach((a: IFieldOptions) => {
         const split = a.key.split('/');
         const [name, ...other] = split;
         const currentFormGroup = other.reverse().reduce((p, c) => p.get(c), this.form) as FormGroup;
@@ -66,7 +66,7 @@ export class GroupFieldsComponent implements OnInit {
       });
   }
 
-  updateValidator(formControl: AbstractControl, a: FieldOptions, flag: boolean) {
+  updateValidator(formControl: AbstractControl, a: IFieldOptions, flag: boolean) {
     if (formControl) {
       if (!flag) formControl.clearValidators();
       else if (a.validator) formControl.setValidators(this.service.setValidator(a));

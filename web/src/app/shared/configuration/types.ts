@@ -10,30 +10,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { IYspec } from './yspec/yspec.service';
+import { TFormOptions } from './field.service';
 
 export type stateType = 'created' | 'locked';
 
-export type ConfigValueTypes =
-  | 'structure'
-  | 'group'
-  | 'dict'
-  | 'string'
-  | 'integer'
-  | 'int'
-  | 'float'
-  | 'boolean'
-  | 'option'
-  | 'json'
-  | 'map'
-  | 'list'
-  | 'file'
-  | 'text'
-  | 'password'
-  | 'variant';
+export type TNBase = 'string' | 'integer' | 'int' | 'boolean' | 'bool' | 'float';
+export type TNReq = 'dict' | 'list';
+export type TNSpec = 'structure' | 'group' | 'option' | 'json' | 'map' | 'file' | 'text' | 'password' | 'variant';
+export type TNForm = TNBase | TNReq | TNSpec;
 export type simpleTypes = string | number | boolean;
 export type resultTypes = simpleTypes | simpleTypes[] | object;
-export type controlType = 'boolean' | 'textbox' | 'textarea' | 'json' | 'password' | 'list' | 'map' | 'dropdown' | 'file' | 'text' | 'structure';
-
 export type TValue = string | number | boolean | object | any[];
 
 /**
@@ -83,29 +69,22 @@ export interface ILimits {
   source?: IVariantSet;
 }
 
-export interface ValidatorInfo {
-  pattern?: string | RegExp;
-  required?: boolean;
-  max?: number;
-  min?: number;
-}
-
 /**
  * Property config object from backend
  */
 export interface IFieldStack {
-  type: ConfigValueTypes;
   name: string;
   subname: string;
   display_name: string;
+  type: TNForm;
   default: TValue;
   value: TValue;
   required: boolean;
+  activatable: boolean;
+  read_only: boolean;
   description?: string;
   limits?: ILimits;
-  read_only: boolean;
   ui_options?: IUIoptions;
-  activatable: boolean;
 }
 
 /**
@@ -130,44 +109,52 @@ export interface IConfigAttr {
   [group: string]: { active: boolean };
 }
 
-export interface ConfigOptions {
-  key?: string;
-  type: ConfigValueTypes;
-  display_name: string;
-  name: string;
-  subname: string;
-  hidden: boolean;
-  read_only: boolean;
-  ui_options?: IUIoptions;
-  description?: string;
-  activatable?: boolean;
-  required: boolean;
-}
-
-export interface PanelOptions extends ConfigOptions {
-  options: (FieldOptions | PanelOptions)[];
-  active: boolean;
-}
+//#region Modified data for ngForm build
 
 /**
- * For Material form controls
+ * Mark for rendering required component
  */
-export interface FieldOptions extends ConfigOptions {
-  default: TValue;
-  value: TValue;
-  controlType: controlType;
-  validator: ValidatorInfo;
-  limits?: ILimits;
-  compare: Compare[];
+export type controlType = 'boolean' | 'textbox' | 'textarea' | 'json' | 'password' | 'list' | 'map' | 'dropdown' | 'file' | 'text' | 'structure';
+
+/**
+  *```
+    pattern?: string | RegExp;
+    required?: boolean;
+    max?: number;
+    min?: number;
+```
+ */
+export interface IValidator {
+  pattern?: string | RegExp;
+  required?: boolean;
+  max?: number;
+  min?: number;
 }
 
 export interface CompareConfig extends IConfig {
   color: string;
 }
 
-interface Compare {
+export interface ICompare {
   id: number;
   date: string;
   value: string;
   color: string;
 }
+
+export interface IFormOptions extends IFieldStack {
+  key?: string;
+  hidden: boolean;
+}
+
+export interface IPanelOptions extends IFormOptions {
+  options: TFormOptions[];
+  active: boolean;
+}
+
+export interface IFieldOptions extends IFormOptions {
+  controlType: controlType;
+  validator: IValidator;
+  compare: ICompare[];
+}
+//#endregion

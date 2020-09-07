@@ -12,7 +12,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { AbstractControl } from '@angular/forms';
 
-import { controlType, ValidatorInfo } from '../types';
+import { controlType, IValidator } from '../types';
 import { IYField } from '../yspec/yspec.service';
 import { IControl } from './scheme.service';
 
@@ -58,7 +58,7 @@ export class ItemComponent implements OnInit {
   @Output() remove = new EventEmitter<string>();
 
   controlType: controlType;
-  validator: ValidatorInfo;
+  validator: IValidator;
 
   ngOnInit() {
     const rules = this.item.rules as IYField;

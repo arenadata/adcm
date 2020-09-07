@@ -10,13 +10,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Injectable } from '@angular/core';
-import { getControlType, getPattern, IRoot } from '@app/core/types';
+import { IRoot } from '@app/core/types';
 
-import { FieldOptions, controlType, ValidatorInfo } from '../types';
+import { IFieldOptions, controlType, IValidator, TNBase, TNReq } from '../types';
+import { getControlType, getPattern } from '../field.service';
 
-export type simpleType = 'string' | 'integer' | 'float' | 'bool' | 'int' | 'one_of' | 'dict_key_selection';
-export type reqursionType = 'list' | 'dict';
-export type matchType = simpleType | reqursionType;
+export type TMatch = TNBase | TNReq;
 
 /**
  *```
@@ -32,7 +31,7 @@ export type matchType = simpleType | reqursionType;
  ```
  */
 interface IYRoot {
-  match: matchType;
+  match: TMatch;
   selector?: string;
   variants?: { [key: string]: string };
   item?: string;
@@ -66,9 +65,9 @@ export interface IYspec {
 export interface IYField {
   name: string;
   path: string[];
-  type: simpleType;
+  type: TNBase;
   controlType: controlType;
-  validator: ValidatorInfo;
+  validator: IValidator;
 }
 
 /**
@@ -82,11 +81,11 @@ export interface IYField {
  */
 export interface IYContainer {
   name: string;
-  type: reqursionType;
+  type: TNReq;
   options: IYContainer | IYField | (IYContainer | IYField)[];
 }
 
-export interface IStructure extends FieldOptions {
+export interface IStructure extends IFieldOptions {
   rules: { options: any; type: string; name: string };
 }
 
@@ -119,7 +118,7 @@ export class YspecService {
     }
   }
 
-  field(field: { type: simpleType; path: string[] }): IYField {
+  field(field: { type: TNBase; path: string[] }): IYField {
     const name = field.path.reverse()[0];
     return {
       name,
