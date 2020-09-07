@@ -28,15 +28,25 @@ export type ConfigValueTypes =
   | 'list'
   | 'file'
   | 'text'
-  | 'password';
+  | 'password'
+  | 'variant';
 export type simpleTypes = string | number | boolean;
 export type resultTypes = simpleTypes | simpleTypes[] | object;
-export type controlType = 'boolean' | 'textbox' | 'textarea' | 'json' | 'password' | 'list' | 'map' | 'dropdown' | 'file' | 'text';
+export type controlType = 'boolean' | 'textbox' | 'textarea' | 'json' | 'password' | 'list' | 'map' | 'dropdown' | 'file' | 'text' | 'structure';
+
+export type TValue = string | number | boolean | object | any[];
 
 export interface UIoptions {
   invisible?: boolean;
   no_confirm?: boolean;
   advanced?: boolean;
+}
+
+export interface IVariantSet {
+  name?: string;
+  strict: boolean;
+  type: 'config' | 'inline';
+  value: string[];
 }
 
 export interface ILimits {
@@ -47,6 +57,7 @@ export interface ILimits {
   yspec?: IYspec;
   rules?: any;
   active?: boolean;
+  source?: IVariantSet;
 }
 
 export interface ValidatorInfo {
@@ -104,7 +115,7 @@ export interface ConfigOptions {
 }
 
 export interface PanelOptions extends ConfigOptions {
-  options: (FieldOptions | PanelOptions)[];  
+  options: (FieldOptions | PanelOptions)[];
   active: boolean;
 }
 
@@ -112,8 +123,8 @@ export interface PanelOptions extends ConfigOptions {
  * For Material form controls
  */
 export interface FieldOptions extends ConfigOptions {
-  default: null | string | number | boolean | object | any[];
-  value: string | number | boolean | object | string[] | null;
+  default: TValue;
+  value: TValue;
   controlType: controlType;
   validator: ValidatorInfo;
   limits?: ILimits;

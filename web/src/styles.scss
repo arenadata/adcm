@@ -61,6 +61,10 @@ app-root {
   }
 }
 
+.top .mat-list-item-content {
+  justify-content: center;
+}
+
 /** css for list only  - TODO: make the list as module and lazy loading  */
 mat-toolbar.toolbar {
   height: auto;
