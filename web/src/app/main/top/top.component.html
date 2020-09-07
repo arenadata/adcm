@@ -3,21 +3,21 @@
     <img src="/assets/adcm-logo.png" alt="Arenadata cluster manager" />
   </a>
 
-  <div class="col s12 l6 top-menu">
-    <button class="topmenu_clusters" mat-button color="accent" routerLink="/cluster" routerLinkActive="mat-warn">
-      CLUSTERS
-    </button>
-    <button class="topmenu_hostproviders" mat-button color="accent" routerLink="/provider" routerLinkActive="mat-warn">
-      HOSTPROVIDERS
-    </button>
-    <button class="topmenu_hosts" mat-button color="accent" routerLink="/host" routerLinkActive="mat-warn">
-      HOSTS
-    </button>
-    <button class="topmenu_jobs" mat-button color="accent" routerLink="/task" routerLinkActive="mat-warn">JOBS</button>
-    <button class="topmenu_bundles" mat-button color="accent" routerLink="/bundle" routerLinkActive="mat-warn">
-      BUNDLES
-    </button>
-  </div>
+  <mat-nav-list class="col s12 l6 top-menu">
+    <a mat-list-item class="topmenu_clusters top" routerLink="/cluster" routerLinkActive="mat-warn">
+      <span>CLUSTERS</span>
+    </a>
+    <a mat-list-item class="topmenu_hostproviders top" routerLink="/provider" routerLinkActive="mat-warn">
+      <span>HOSTPROVIDERS</span>
+    </a>
+    <a mat-list-item class="topmenu_hosts top" routerLink="/host" routerLinkActive="mat-warn">
+      <span>HOSTS</span>
+    </a>
+    <a mat-list-item class="topmenu_jobs top" routerLink="/task" routerLinkActive="mat-warn"><span>JOBS</span></a>
+    <a mat-list-item class="topmenu_bundles top" routerLink="/bundle" routerLinkActive="mat-warn">
+      <span>BUNDLES</span>
+    </a>
+  </mat-nav-list>
 
   <span class="col s12 l3" [style.textAlign]="'right'">
     <span *ngIf="(isAuth$ | async)">

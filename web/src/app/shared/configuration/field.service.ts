@@ -22,6 +22,15 @@ export interface IOutput {
   [key: string]: resultTypes;
 }
 
+export interface ISource {
+  name: string;
+  subname: string;
+  type: ConfigValueTypes;
+  read_only: boolean;
+  limits?: ILimits;
+  value: any;
+}
+
 export interface IToolsEvent {
   name: string;
   conditions?: { advanced: boolean; search: string } | boolean;
@@ -149,29 +158,23 @@ export class FieldService {
     if (field.validator.min !== null) v.push(Validators.min(field.validator.min));
 
     if (field.controlType === 'json') {
-      const jsonParse = (): ValidatorFn => {
-        return (control: AbstractControl): { [key: string]: any } | null => {
-          if (control.value) {
-            try {
-              JSON.parse(control.value);
-              return null;
-            } catch (e) {
-              return { jsonParseError: { value: control.value } };
-            }
-          } else return null;
-        };
+      const jsonParse = (): ValidatorFn => (control: AbstractControl): { [key: string]: any } | null => {
+        if (control.value) {
+          try {
+            JSON.parse(control.value);
+            return null;
+          } catch (e) {
+            return { jsonParseError: { value: control.value } };
+          }
+        } else return null;
       };
+
       v.push(jsonParse());
     }
 
     if (field.controlType === 'map') {
-      const parseKey = (): ValidatorFn => {
-        return (control: AbstractControl): { [key: string]: any } | null => {
-          if (control.value && Object.keys(control.value).length && Object.keys(control.value).some((a) => !a)) {
-            return { parseKey: true };
-          } else return null;
-        };
-      };
+      const parseKey = (): ValidatorFn => (control: AbstractControl): { [key: string]: any } | null =>
+        control.value && Object.keys(control.value).length && Object.keys(control.value).some((a) => !a) ? { parseKey: true } : null;
       v.push(parseKey());
     }
     return v;
@@ -200,16 +203,16 @@ export class FieldService {
   /**
    * Output form, cast to source type
    */
-  public parseValue(output: IOutput, source: { name: string; subname: string; type: ConfigValueTypes; read_only: boolean; limits?: ILimits; value: any }[]): IOutput {
+  public parseValue(output: IOutput, source: ISource[]): IOutput {
     const findField = (name: string, p?: string): Partial<FieldStack> => source.find((a) => (p ? a.name === p && a.subname === name : a.name === name) && !a.read_only);
 
-    const runYspecParse = (v: any, rules: any) => this.runYspec(v, rules);
+    const runYspecParse = (v: any, f: Partial<FieldOptions>) => ((v === {} || v === []) && !f.value ? f.value : this.runYspec(v, f.limits.rules));
 
     const runParse = (v: IOutput, parentName?: string): IOutput => {
       const runByValue = (p: IOutput, c: string) => {
         const checkType = (data: resultTypes | IOutput, field: Partial<FieldStack>): resultTypes => {
           const { type } = field;
-          if (type === 'structure') return runYspecParse(data, field.limits.rules);
+          if (type === 'structure') return runYspecParse(data, field);
           else if (type === 'group') return this.checkValue(runParse(data as IOutput, field.name), type);
           else return this.checkValue(data, type);
         };
