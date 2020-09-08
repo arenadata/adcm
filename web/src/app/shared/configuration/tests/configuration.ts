@@ -9,60 +9,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { getControlType, getKey, getValidator, TFormOptions } from '@app/shared/configuration/field.service';
+import { getControlType, getKey, getOptions, getValidator, getValue, TFormOptions } from '../field.service';
 
-import { IConfig, IConfigAttr, IFieldStack, ILimits, IUIoptions, stateType, TNForm, TValue } from '../../shared/configuration/types';
-import { IYContainer, IYField, IYspec } from '../../shared/configuration/yspec/yspec.service';
-
-export const itemOptionsArr: TFormOptions[] = [
-  {
-    required: true,
-    name: 'field_string_0',
-    display_name: 'display_field_string_0_',
-    subname: '',
-    type: 'string',
-    activatable: false,
-    read_only: false,
-    default: null,
-    value: '',
-    key: 'field_string_0',
-    validator: { required: true, min: undefined, max: undefined, pattern: null },
-    controlType: 'textbox',
-    hidden: false,
-    compare: [],
-  },
-  {
-    name: 'field_group_1',
-    display_name: 'display_field_group_1_',
-    subname: '',
-    type: 'group',
-    activatable: false,
-    read_only: false,
-    default: null,
-    value: null,
-    required: true,
-    hidden: false,
-    active: true,
-    options: [
-      {
-        name: 'subname_integer_0',
-        display_name: 'display_field_group_1_subname_integer_0',
-        subname: 'subname_integer_0',
-        type: 'integer',
-        activatable: false,
-        read_only: false,
-        default: null,
-        value: '',
-        required: true,
-        key: 'subname_integer_0/field_group_1',
-        validator: { required: true, min: undefined, max: undefined, pattern: /^[-]?\d+$/ },
-        controlType: 'textbox',
-        hidden: false,
-        compare: [],
-      },
-    ],
-  },
-];
+import { IConfig, IConfigAttr, IFieldStack, ILimits, IUIoptions, stateType, TNForm, TValue } from '../types';
+import { IYContainer, IYField, IYspec } from '../yspec/yspec.service';
 
 export class YContainer {}
 
@@ -100,6 +50,7 @@ export class FieldStack implements IFieldStack {
     this.name = !this.name ? dn : this.name;
     this.subname = this.name === dn ? '' : `subname_${type}_${id}`;
     this.display_name = `display_${this.name}_${this.subname}`;
+    this.value = getValue(this.type)(this.value, this.default, this.required);
   }
 
   set Limits(limits: ILimits) {
@@ -132,24 +83,27 @@ export class FieldFactory {
   }
 }
 
-const toPanel = (a: IFieldStack) => ({
-  options: [],
+const toPanel = (a: IFieldStack, data: IConfig) => ({
+  ...a,
+  options: getOptions(a, data),
   active: true,
   hidden: false,
 });
 
 const toField = (a: IFieldStack) => ({
+  ...a,
   controlType: getControlType(a.type),
   validator: getValidator(a.required, a.limits?.min, a.limits?.max, a.type),
   compare: [],
   key: getKey(a.name, a.subname),
   hidden: false,
+  value: getValue(a.type)(a.value, a.default, a.required),
 });
 
-export const toFormOptions = (stack: IFieldStack[]): TFormOptions[] => {
-  return stack.reduce((p, c) => {
+export const toFormOptions = (data: IConfig): TFormOptions[] => {
+  return data.config.reduce((p, c) => {
     if (c.subname) return p;
     if (c.type !== 'group') return [...p, toField(c)];
-    else return [...p, toPanel(c)];
+    else return [...p, toPanel(c, data)];
   }, []);
 };

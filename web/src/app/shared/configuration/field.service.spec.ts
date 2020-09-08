@@ -11,7 +11,7 @@
 // limitations under the License.
 import { TestBed } from '@angular/core/testing';
 import { FormBuilder, Validators } from '@angular/forms';
-import { Configuration, FieldFactory, toFormOptions, itemOptionsArr } from '@app/core/tests/configuration';
+import { Configuration, FieldFactory, toFormOptions } from './tests/configuration';
 
 import { FieldService, IOutput, ISource } from './field.service';
 import { IFieldStack, ILimits, resultTypes, TNForm } from './types';
@@ -26,7 +26,7 @@ import { IYspec } from './yspec/yspec.service';
  *
  */
 const inputData = new Configuration(FieldFactory.add(['string', ['integer']]));
-const formData = itemOptionsArr;
+const formData = toFormOptions(inputData);
 
 describe('Configuration fields service', () => {
   let service: FieldService;
@@ -46,24 +46,24 @@ describe('Configuration fields service', () => {
     expect(service).toBeTruthy();
   });
 
-  it('Prepare data for configuration: getPanels(undefined) should return undefined', () => {
+  it('getPanels(undefined) should return undefined', () => {
     expect(service.getPanels(undefined)).toEqual(undefined);
   });
 
-  it('Prepare data for configuration: getPanels({}) should return undefined', () => {
+  it('getPanels({}) should return undefined', () => {
     expect(service.getPanels({} as any)).toEqual(undefined);
   });
 
-  it('Prepare data for configuration: getPanels({config: []}) should return []', () => {
+  it('getPanels({config: []}) should return []', () => {
     expect(service.getPanels({ config: [] })).toEqual([]);
   });
 
-  it('FieldStack[] (input data IConfig.config) transform to itemOptions[] by getPanels()', () => {
+  it('getPanels should transform FieldStack[] to itemOptions[]', () => {
     const output = service.getPanels(inputData);
     expect(output).toEqual(formData);
   });
 
-  it('Generate FormGroup : toFormGroup() check value', () => {
+  it('toFormGroup should generate FormGroup and check value', () => {
     const fg = service.fb.group(
       {
         field_string_0: service.fb.control(''),

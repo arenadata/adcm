@@ -13,7 +13,7 @@ import { Injectable } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { isEmptyObject } from '@app/core/types';
 
-import { controlType, IConfig, IFieldOptions, IFieldStack, ILimits, IPanelOptions, IValidator, resultTypes, TNBase, TNForm } from './types';
+import { controlType, IConfig, IConfigAttr, IFieldOptions, IFieldStack, ILimits, IPanelOptions, IValidator, resultTypes, TNBase, TNForm } from './types';
 
 export type TFormOptions = IFieldOptions | IPanelOptions;
 
@@ -36,42 +36,42 @@ export interface IToolsEvent {
 }
 
 const isVisibleField = (a: TFormOptions) => !a.ui_options?.invisible;
-const isAdvancedField = (a: TFormOptions) => this.isVisibleField(a) && a.ui_options?.advanced;
+const isAdvancedField = (a: TFormOptions) => isVisibleField(a) && a.ui_options?.advanced;
 const isHidden = (a: IFieldStack) => !!(a.ui_options?.invisible || a.ui_options?.advanced);
-export const getControlType = (name: TNForm): controlType => {
-  const a: Partial<{ [key in TNForm | controlType]: controlType }> = {
-    bool: 'boolean',
-    int: 'textbox',
-    integer: 'textbox',
-    float: 'textbox',
-    string: 'textbox',
-    file: 'textarea',
-    text: 'textarea',
-  };
-  return a[name] || (name as controlType);
+
+const typeToControl: Partial<{ [key in TNForm | controlType]: controlType }> = {
+  bool: 'boolean',
+  int: 'textbox',
+  integer: 'textbox',
+  float: 'textbox',
+  string: 'textbox',
+  file: 'textarea',
+  text: 'textarea',
 };
-export const getPattern = (name: TNForm): RegExp => {
-  const fn = {
-    integer: () => new RegExp(/^[-]?\d+$/),
-    int: () => new RegExp(/^[-]?\d+$/),
-    float: () => new RegExp(/^[-]?[0-9]+(\.[0-9]+)?$/),
-  };
-  return fn[name] ? fn[name]() : null;
+
+export const getControlType = (t: TNForm): controlType => typeToControl[t] || (t as controlType);
+
+const patternFn = {
+  integer: () => new RegExp(/^[-]?\d+$/),
+  int: () => new RegExp(/^[-]?\d+$/),
+  float: () => new RegExp(/^[-]?[0-9]+(\.[0-9]+)?$/),
 };
-const getValue = (type: string) => {
+
+export const getPattern = (t: TNForm): RegExp => (patternFn[t] ? patternFn[t]() : null);
+
+const fn = {
+  boolean: (v: boolean | null, d: boolean | null, r: boolean) => (String(v) === 'true' || String(v) === 'false' || String(v) === 'null' ? v : r ? d : null),
+  json: (v: string) => (v === null ? '' : JSON.stringify(v, undefined, 4)),
+  map: (v: object, d: object) => (!v ? d : v),
+  list: (v: string[], d: string[]) => (!v ? d : v),
+  structure: (v: any) => v,
+};
+
+export const getValue = (t: TNForm) => {
   const def = (value: number | string) => (value === null || value === undefined ? '' : String(value));
-  const fn = {
-    boolean: (value: boolean | null, d: boolean | null, required: boolean) => {
-      const allow = String(value) === 'true' || String(value) === 'false' || String(value) === 'null';
-      return allow ? value : required ? d : null;
-    },
-    json: (value: string) => (value === null ? '' : JSON.stringify(value, undefined, 4)),
-    map: (value: object, de: object) => (!value ? de : value),
-    list: (value: string[], de: string[]) => (!value ? de : value),
-    structure: (value: any) => value,
-  };
-  return fn[type] ? fn[type] : def;
+  return fn[t] ? fn[t] : def;
 };
+
 export const getKey = (n: string, sn: string) => (sn ? `${sn}/${n}` : n);
 
 export const getValidator = (required: boolean, min: number, max: number, type: TNForm) => ({
@@ -91,20 +91,21 @@ const getField = (item: IFieldStack): IFieldOptions => ({
   compare: [],
 });
 
-const getPanel = (source: IFieldStack, dataConfig: IConfig): IPanelOptions => {
-  const { config, attr } = dataConfig;
-  const fo = (b: IFieldStack) => b.type !== 'group' && b.subname && b.name === source.name;
-  return {
-    ...source,
-    hidden: isHidden(source),
-    active: source.activatable ? attr[source.name]?.active : true,
-    options: config
-      .filter(fo)
-      .map(getField)
-      // switch off validation for field if !(activatable: true && active: false) - line: 146
-      .map((c) => ({ ...c, name: c.subname, activatable: source.activatable && !attr[source.name]?.active })),
-  };
-};
+const fo = (n: string) => (b: IFieldStack) => b.type !== 'group' && b.subname && b.name === n;
+const isActive = (a: IConfigAttr, n: string) => a[n]?.active;
+export const getOptions = (a: IFieldStack, d: IConfig) =>
+  d.config
+    .filter(fo(a.name))
+    .map(getField)
+    // switch off validation for field if !(activatable: true && active: false) - line: 146
+    .map((c) => ({ ...c, name: c.subname, activatable: a.activatable && !isActive(d.attr, a.name) }));
+
+const getPanel = (a: IFieldStack, d: IConfig): IPanelOptions => ({
+  ...a,
+  hidden: isHidden(a),
+  active: a.activatable ? isActive(d.attr, a.name) : true,
+  options: getOptions(a, d),
+});
 
 @Injectable()
 export class FieldService {
