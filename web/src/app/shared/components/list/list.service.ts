@@ -21,7 +21,7 @@ import { Observable } from 'rxjs';
 const COLUMNS_SET = {
   cluster: ['name', 'prototype_version', 'description', 'state', 'status', 'actions', 'import', 'upgrade', 'config', 'controls'],
   host2cluster: ['fqdn', 'provider_name', 'state', 'status', 'actions', 'config', 'remove'],
-  service2cluster: ['display_name', 'version_no_sort', 'state', 'status', 'import', 'actions', 'config'],
+  service2cluster: ['display_name', 'version_no_sort', 'state', 'status', 'actions', 'import', 'config'],
   host: ['fqdn', 'provider_name', 'host2cluster', 'state', 'status', 'actions', 'config', 'controls'],
   provider: ['name', 'prototype_version', 'state', 'actions', 'upgrade', 'config', 'controls'],
   job: ['action', 'objects', 'start_date', 'finish_date', 'status'],
