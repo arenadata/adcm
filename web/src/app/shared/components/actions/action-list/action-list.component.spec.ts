@@ -9,36 +9,29 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-import { FormControl, FormGroup } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 
-import { ItemComponent } from './item.component';
-import { IControl } from './scheme.service';
+import { ApiService } from '../../../../core/api/api.service';
+import { ActionListComponent } from './action-list.component';
+import { MenuItemComponent } from './menu-item/menu-item.component';
 
-describe('ItemComponent', () => {
-  let component: ItemComponent;
-  let fixture: ComponentFixture<ItemComponent>;
+describe('ActionListComponent', () => {
+  let component: ActionListComponent;
+  let fixture: ComponentFixture<ActionListComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ItemComponent],
-      schemas: [NO_ERRORS_SCHEMA],
+      imports: [MatMenuModule, MatIconModule],
+      providers: [{ provide: ApiService, useValue: {} }],
+      declarations: [ActionListComponent, MenuItemComponent],
     }).compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(ItemComponent);
+    fixture = TestBed.createComponent(ActionListComponent);
     component = fixture.componentInstance;
-    const item: IControl = {
-      name: 'test',
-      type: 'string',
-      rules: { name: 'test', type: 'string', path: ['test'], validator: {}, controlType: 'textbox' },
-      form: new FormGroup({ test: new FormControl() }),
-      parent: 'dict',
-      value: {},
-    };
-    component.item = item;
     fixture.detectChanges();
   });
 

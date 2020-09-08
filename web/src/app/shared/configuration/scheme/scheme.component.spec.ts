@@ -10,34 +10,58 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-
-import { SchemeComponent } from './scheme.component';
+import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MaterialModule } from '@app/shared/material.module';
-import { YspecService } from '../yspec/yspec.service';
-import { RootComponent } from './root.component';
+
 import { FieldService } from '../field.service';
-import { FormBuilder } from '@angular/forms';
+import { FieldOptions } from '../types';
+import { matchType, YspecService } from '../yspec/yspec.service';
+import { RootComponent } from './root.component';
+import { SchemeComponent } from './scheme.component';
+import { SchemeService } from './scheme.service';
 
 describe('SchemeComponent', () => {
   let component: SchemeComponent;
   let fixture: ComponentFixture<SchemeComponent>;
+  let service: SchemeService;
+  let fieldService: FieldService;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [MaterialModule],
-      declarations: [ SchemeComponent, RootComponent ],
-      providers: [YspecService, FieldService, FormBuilder]
-    })
-    .compileComponents();
+      imports: [MaterialModule, FormsModule, ReactiveFormsModule],
+      declarations: [SchemeComponent, RootComponent],
+      providers: [YspecService, FieldService, FormBuilder, SchemeService],
+    }).compileComponents();
   }));
 
   beforeEach(() => {
     fixture = TestBed.createComponent(SchemeComponent);
+    service = TestBed.inject(SchemeService);
     component = fixture.componentInstance;
-    //fixture.detectChanges();
+    component.form = new FormGroup({ field: new FormControl() });
+    const yspec = { root: { match: 'list' as matchType, item: 'string' }, string: { match: 'string' as matchType } };
+    component.field = (<unknown>{ display_name: 'field_display_name', name: 'field', limits: { yspec }, required: true, value: null, default: null }) as FieldOptions;
+    fixture.detectChanges();
   });
 
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should has formGroup and fieldOptions.limits.yspec', () => {
+    expect(component.field?.limits?.yspec).toBeTruthy();
+    expect(component.form).toBeTruthy();
+  });
+
+  it('after init should be current form for children component', () => {
+    expect(component.current).toBeTruthy();
+  });
+
+  it('if field is required and value of default is null should shown error notification', () => {
+    const error = fixture.nativeElement.querySelector('mat-error');
+    expect(error).toBeTruthy();
+    expect(error.innerText).toBe('Field [field_display_name] is required!');
+  });
+
+ 
 });

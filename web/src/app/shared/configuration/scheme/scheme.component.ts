@@ -9,58 +9,63 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit, OnChanges, SimpleChanges } from '@angular/core';
-import { FormArray, FormGroup } from '@angular/forms';
+import { Component, OnChanges, OnInit, SimpleChanges, ViewChild } from '@angular/core';
+import { AbstractControl, FormControl } from '@angular/forms';
 import { FieldDirective } from '@app/shared/form-elements/field.directive';
 
-import { IYContainer, IYField, YspecService } from '../yspec/yspec.service';
+import { IYContainer, IYField, YspecService, reqursionType } from '../yspec/yspec.service';
+import { RootComponent } from './root.component';
+import { SchemeService } from './scheme.service';
 
 @Component({
   selector: 'app-scheme',
-  template: '<app-root-scheme *ngIf="show" #root [form]="currentFormGroup" [isReadOnly]="isReadOnly" [options]="rules" [value]="defaultValue"></app-root-scheme>',
+  styles: [
+    `
+      div.main {
+        flex: 1;
+      }
+      .error {
+        display: block;
+        margin: -20px 0 6px 10px;
+      }
+    `,
+  ],
+  template: `<div class="main">
+    <app-root-scheme #root [isReadOnly]="field.read_only" [form]="current" [options]="rules" [value]="field.value || field.default"></app-root-scheme>
+    <mat-error *ngIf="hasError('isEmpty')" class="error">Field [{{ field.display_name }}] is required!</mat-error>
+  </div>`,
 })
 export class SchemeComponent extends FieldDirective implements OnInit, OnChanges {
-  currentFormGroup: FormGroup | FormArray;
   rules: IYField | IYContainer;
-  defaultValue: any;
-  isReadOnly = false;
-  show = true;
+  current: AbstractControl;
 
-  constructor(private yspec: YspecService) {
+  @ViewChild('root') root: RootComponent;
+
+  constructor(private yspec: YspecService, private scheme: SchemeService) {
     super();
   }
 
+  /**
+   * after saving, the link between the form and the current (form) is lost
+   * TODO: eliminate
+   */
   ngOnChanges(changes: SimpleChanges): void {
     if (!changes.form.firstChange) {
       this.field.limits.rules = this.rules;
-      this.defaultValue = this.field.value;
-      this.currentFormGroup = this.resetFormGroup();
+      this.form.setControl(this.field.name, this.current);
     }
   }
 
   ngOnInit() {
-    this.isReadOnly = this.field.read_only;
     this.yspec.Root = this.field.limits.yspec;
     this.rules = this.yspec.build();
     this.field.limits.rules = this.rules;
-
-    this.defaultValue = this.field.value || this.field.default;
-    this.currentFormGroup = this.resetFormGroup();
     this.rules.name = '';
-  }
-
-  resetFormGroup() {
-    const form = this.currentFormGroup ? this.currentFormGroup : this.rules.type === 'list' ? new FormArray([]) : new FormGroup({});
-    this.form.removeControl(this.field.name);
-    this.form.addControl(this.field.name, form);
-    return form;
+    this.current = this.scheme.setCurrentForm(this.rules.type as reqursionType, this.form, this.field);
   }
 
   /** this is using for restore default value */
   reload() {
-    this.show = false;
-    this.defaultValue = this.field.default;
-    this.currentFormGroup = this.resetFormGroup();
-    setTimeout((_) => (this.show = true), 1);
+    this.root.reload(this.field.default);
   }
 }

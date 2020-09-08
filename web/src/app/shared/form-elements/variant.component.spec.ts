@@ -9,36 +9,30 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, FormGroup } from '@angular/forms';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
-import { ItemComponent } from './item.component';
-import { IControl } from './scheme.service';
+import { FieldOptions } from '../configuration/types';
+import { SharedModule } from '../shared.module';
+import { VariantComponent } from './variant.component';
 
-describe('ItemComponent', () => {
-  let component: ItemComponent;
-  let fixture: ComponentFixture<ItemComponent>;
+describe('VariantComponent', () => {
+  let component: VariantComponent;
+  let fixture: ComponentFixture<VariantComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ItemComponent],
-      schemas: [NO_ERRORS_SCHEMA],
+      imports: [SharedModule, NoopAnimationsModule],
+      declarations: [VariantComponent],
     }).compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(ItemComponent);
+    fixture = TestBed.createComponent(VariantComponent);
     component = fixture.componentInstance;
-    const item: IControl = {
-      name: 'test',
-      type: 'string',
-      rules: { name: 'test', type: 'string', path: ['test'], validator: {}, controlType: 'textbox' },
-      form: new FormGroup({ test: new FormControl() }),
-      parent: 'dict',
-      value: {},
-    };
-    component.item = item;
+    component.form = new FormGroup({ name: new FormControl() });
+    component.field = { name: 'name', limits: {} } as FieldOptions;
     fixture.detectChanges();
   });
 
