@@ -139,7 +139,7 @@ describe('MasterComponent', () => {
   it('should be show template for current action if host-map exist only', () => {
     component.model = {
       actions: [
-        { name: 'a1', description: '', display_name: 'display a1', run: 'url a1', ui_options: null, config: null, hostcomponentmap: { component: '', action: 'add', service: '' }, button: null }
+        { name: 'a1', description: '', display_name: 'display a1', run: 'url a1', ui_options: null, config: null, hostcomponentmap: [{ component: '', action: 'add', service: '' }], button: null }
       ]
     };
     fixture.detectChanges();
@@ -175,7 +175,7 @@ describe('MasterComponent', () => {
               }
             ]
           },
-          hostcomponentmap: { component: '', action: 'add', service: '' },
+          hostcomponentmap: [{ component: '', action: 'add', service: '' }],
           button: null
         }
       ]
