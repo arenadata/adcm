@@ -14,6 +14,7 @@ import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from
 import { isEmptyObject } from '@app/core/types';
 
 import { controlType, IConfig, IConfigAttr, IFieldOptions, IFieldStack, ILimits, IPanelOptions, IValidator, resultTypes, TNBase, TNForm } from './types';
+import { ISearchParam } from './main/main.service';
 
 export type TFormOptions = IFieldOptions | IPanelOptions;
 
@@ -51,9 +52,10 @@ const typeToControl: Partial<{ [key in TNForm | controlType]: controlType }> = {
 
 export const getControlType = (t: TNForm): controlType => typeToControl[t] || (t as controlType);
 
+const intPattern = () => new RegExp(/^[-]?\d+$/);
 const patternFn = {
-  integer: () => new RegExp(/^[-]?\d+$/),
-  int: () => new RegExp(/^[-]?\d+$/),
+  integer: intPattern,
+  int: intPattern,
   float: () => new RegExp(/^[-]?[0-9]+(\.[0-9]+)?$/),
 };
 
@@ -106,6 +108,18 @@ const getPanel = (a: IFieldStack, d: IConfig): IPanelOptions => ({
   active: a.activatable ? isActive(d.attr, a.name) : true,
   options: getOptions(a, d),
 });
+
+const handleTree = (c: ISearchParam) => (a: TFormOptions) => {
+  if ('options' in a) {
+    a.options = a.options.map(handleTree(c));
+    if (c.search) a.hidden = a.options.filter((b) => !b.hidden).length === 0;
+    else a.hidden = isAdvancedField(a) ? !c.advanced : false;
+  } else if (isVisibleField(a)) {
+    a.hidden = !(a.display_name.toLowerCase().includes(c.search.toLowerCase()) || String(a.value).toLocaleLowerCase().includes(c.search.toLocaleLowerCase()));
+    if (!a.hidden && isAdvancedField(a)) a.hidden = !c.advanced;
+  }
+  return a;
+};
 
 @Injectable()
 export class FieldService {
@@ -203,21 +217,8 @@ export class FieldService {
   /**
    * Filter by group and all fields
    */
-  public filterApply(dataOptions: TFormOptions[], c: { advanced: boolean; search: string }): TFormOptions[] {
-    return dataOptions.filter((a) => isVisibleField(a)).map((a) => this.handleTree(a, c));
-  }
-
-  private handleTree(a: TFormOptions, c: { advanced: boolean; search: string }) {
-    if ('options' in a) {
-      const result = a.options.map((b) => this.handleTree(b, c));
-      if (c.search) a.hidden = a.options.filter((b) => !b.hidden).length === 0;
-      else a.hidden = isAdvancedField(a) ? !c.advanced : false;
-      return result;
-    } else if (isVisibleField(a)) {
-      a.hidden = !(a.display_name.toLowerCase().includes(c.search.toLowerCase()) || JSON.stringify(a.value).includes(c.search));
-      if (!a.hidden && isAdvancedField(a)) a.hidden = !c.advanced;
-      return a;
-    }
+  public filterApply(options: TFormOptions[], c: ISearchParam): TFormOptions[] {
+    return options.filter((a) => isVisibleField(a)).map(handleTree(c));
   }
 
   /**

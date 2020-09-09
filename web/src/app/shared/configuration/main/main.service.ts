@@ -20,6 +20,12 @@ import { map } from 'rxjs/operators';
 import { FieldService, IOutput, TFormOptions } from '../field.service';
 import { CompareConfig, IConfig, IFieldOptions, IFieldStack } from '../types';
 
+/**
+ *```
+  advanced: boolean;
+  search: string;
+  ```
+ */
 export interface ISearchParam {
   advanced: boolean;
   search: string;

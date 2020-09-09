@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { getControlType, getKey, getOptions, getValidator, getValue, TFormOptions } from '../field.service';
+import { getControlType, getKey, getOptions, getValidator, getValue, TFormOptions, IOutput } from '../field.service';
 
 import { IConfig, IConfigAttr, IFieldStack, ILimits, IUIoptions, stateType, TNForm, TValue } from '../types';
 import { IYContainer, IYField, IYspec } from '../yspec/yspec.service';
@@ -107,3 +107,14 @@ export const toFormOptions = (data: IConfig): TFormOptions[] => {
     else return [...p, toPanel(c, data)];
   }, []);
 };
+
+export const setValue = (data: IFieldStack[], v: TValue): IOutput =>
+  data
+    .filter((a) => !a.subname)
+    .reduce(
+      (p, c, i) => ({
+        ...p,
+        [c.name]: c.type === 'group' ? data.filter((a) => a.name === c.name && a.type !== 'group').reduce((a, b, k) => ({ ...a, [b.subname]: v[i][k] }), {}) : v ? v[i] : null,
+      }),
+      {}
+    );
