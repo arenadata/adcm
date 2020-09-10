@@ -72,7 +72,7 @@ describe('MasterComponent', () => {
 
   it('should be show template for current action if model.actions.length === 1 and config = null and host-map = null', () => {
     component.model = {
-      actions: [{ name: 'a1', display_name: 'display a1', run: 'url a1', ui_options: null, config: null, hostcomponentmap: null, button: null }]
+      actions: [{ name: 'a1', description: '', display_name: 'display a1', run: 'url a1', ui_options: null, config: null, hostcomponentmap: null, button: null }]
     };
     fixture.detectChanges();
     const compHost: HTMLElement = fixture.debugElement.nativeElement;
@@ -87,8 +87,8 @@ describe('MasterComponent', () => {
   it('should be show actions list for choose current action if model.actions.length > 1', () => {
     component.model = {
       actions: [
-        { name: 'a1', display_name: 'display a1', run: 'url a1', ui_options: null, config: null, hostcomponentmap: null, button: null },
-        { name: 'a2', display_name: 'display a2', run: 'url a2', ui_options: null, config: null, hostcomponentmap: null, button: null }
+        { name: 'a1', description: '', display_name: 'display a1', run: 'url a1', ui_options: null, config: null, hostcomponentmap: null, button: null },
+        { name: 'a2', description: '', display_name: 'display a2', run: 'url a2', ui_options: null, config: null, hostcomponentmap: null, button: null }
       ]
     };
     fixture.detectChanges();
@@ -103,6 +103,7 @@ describe('MasterComponent', () => {
       actions: [
         {
           name: 'a1',
+          description: '',
           display_name: 'display a1',
           run: 'url a1',
           ui_options: null,
@@ -138,7 +139,7 @@ describe('MasterComponent', () => {
   it('should be show template for current action if host-map exist only', () => {
     component.model = {
       actions: [
-        { name: 'a1', display_name: 'display a1', run: 'url a1', ui_options: null, config: null, hostcomponentmap: { component: '', action: 'add', service: '' }, button: null }
+        { name: 'a1', description: '', display_name: 'display a1', run: 'url a1', ui_options: null, config: null, hostcomponentmap: [{ component: '', action: 'add', service: '' }], button: null }
       ]
     };
     fixture.detectChanges();
@@ -154,6 +155,7 @@ describe('MasterComponent', () => {
       actions: [
         {
           name: 'a1',
+          description: '',
           display_name: 'display a1',
           run: 'url a1',
           ui_options: null,
@@ -173,7 +175,7 @@ describe('MasterComponent', () => {
               }
             ]
           },
-          hostcomponentmap: { component: '', action: 'add', service: '' },
+          hostcomponentmap: [{ component: '', action: 'add', service: '' }],
           button: null
         }
       ]
@@ -206,14 +208,14 @@ describe('MasterComponent', () => {
     } as ConfigFieldsComponent;
 
     const result = service.parseData({ config });
-    expect(result).toEqual({ config: { string_ctr: 'string_test', bool_ctr: true }, hc: undefined });
+    expect(result).toEqual({ config: { string_ctr: 'string_test', bool_ctr: true }, hc: undefined, attr: undefined });
   });
 
   it('check value when ServiceHostComponent exist', () => {
     const service = fixture.debugElement.injector.get(MasterService);
     const hc = [{ host_id: 1, service_id: 4, component_id: 1, id: 9 }];
-    const hostmap = { service: { statePost: { data: hc } } } as ServiceHostComponent;
+    const hostmap = { statePost: { data: hc } } as ServiceHostComponent;
     const result = service.parseData({ hostmap });
-    expect(result).toEqual({ config: undefined, hc });
+    expect(result).toEqual({ config: undefined, hc, attr: undefined });
   });
 });

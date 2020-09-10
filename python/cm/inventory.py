@@ -49,7 +49,7 @@ def get_import(cluster):   # pylint: disable=too-many-branches
                     imports[imp.name] = []
                 else:
                     imports[imp.name] = {}
-                for group in json.loads(imp.default):
+                for group in imp.default:
                     cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
                     conf = process_config_and_attr(obj, json.loads(cl.config), cl.attr)
                     if imp.multibind:
@@ -94,7 +94,7 @@ def get_obj_config(obj):
 
 def get_obj_state(obj):
     if obj.stack:
-        state = json.loads(obj.stack)
+        state = obj.stack
         if state:
             return state[-1]
     return obj.state

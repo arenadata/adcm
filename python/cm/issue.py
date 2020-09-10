@@ -24,7 +24,7 @@ from cm.models import PrototypeImport, ClusterBind
 def save_issue(obj):
     if obj.prototype.type == 'adcm':
         return
-    obj.issue = json.dumps(check_issue(obj))
+    obj.issue = check_issue(obj)
     obj.save()
     report_issue(obj)
 
@@ -67,7 +67,7 @@ def issue_to_bool(issue):
 
 
 def get_issue(obj):   # pylint: disable=too-many-branches
-    issue = json.loads(obj.issue)
+    issue = obj.issue
     if obj.prototype.type == 'cluster':
         issue['service'] = []
         for co in ClusterObject.objects.filter(cluster=obj):
@@ -111,7 +111,7 @@ def cook_issue(obj, name='name', name_obj=None, iss=None):
         name_obj = obj
     if not iss:
         if obj:
-            iss = json.loads(obj.issue)
+            iss = obj.issue
         else:
             iss = {}
     if iss:
@@ -219,11 +219,7 @@ def check_hc(cluster):
     if not shc_list:
         for co in ClusterObject.objects.filter(cluster=cluster):
             for comp in Component.objects.filter(prototype=co.prototype):
-                if not comp.constraint:
-                    continue
-                const = json.loads(comp.constraint)
-                if not const:
-                    continue
+                const = comp.constraint
                 if len(const) == 2 and const[0] == 0 and const[1] == '+':
                     continue
                 log.debug('void host components for %s', proto_ref(co.prototype))
@@ -249,7 +245,7 @@ def check_component_requires(shc_list):
         return False
 
     for shc in [i for i in shc_list if i[2].component.requires]:
-        for r in json.loads(shc[2].component.requires):
+        for r in shc[2].component.requires:
             if not check_component_req(r['service'], r['component']):
                 ref = f'component "{shc[2].component.name}" of service "{shc[0].prototype.name}"'
                 msg = 'no required component "{}" of service "{}" for {}'
@@ -311,7 +307,4 @@ def check_component_constraint(service, hc_in):
             check_odd(count, const[0], comp)
 
     for c in Component.objects.filter(prototype=service.prototype):
-        if not c.constraint:
-            continue
-        const = json.loads(c.constraint)
-        check(c, const)
+        check(c, c.constraint)

@@ -10,20 +10,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+import collections
 import copy
 import json
-import collections
+import os
+
 import yspec.checker
 from django.conf import settings
+from django.db import DEFAULT_DB_ALIAS, connections
+from django.db.migrations.executor import MigrationExecutor
 from django.db.utils import OperationalError
 
-from cm.logger import log   # pylint: disable=unused-import
 import cm.config as config
-from cm.models import Cluster, Prototype, Host, HostProvider, ADCM
-from cm.models import ClusterObject, PrototypeConfig, ObjectConfig, ConfigLog
-from cm.errors import AdcmApiEx
+from cm.errors import AdcmApiEx, AdcmEx
 from cm.errors import raise_AdcmEx as err
+from cm.logger import log
+from cm.models import (
+    Cluster, Prototype, Host, HostProvider, ADCM, ClusterObject, PrototypeConfig, ObjectConfig,
+    ConfigLog
+)
 
 
 def proto_ref(proto):
@@ -159,6 +164,19 @@ def load_social_auth():
             return
     except OperationalError:
         return
+    except AdcmEx as error:
+        # This code handles the "JSON_DB_ERROR" error that occurs when
+        # the "0057_auto_20200831_1055" migration is applied. In the "ADCM" object,
+        # the "stack" field type was changed from "TextField" to "JSONField", so the "stack" field
+        # contained an empty string, which is not a valid json format.
+        # This error occurs due to the fact that when "manage.py migrate" is started, the "urls.py"
+        # module is imported, in which the "load_social_auth()" function is called.
+        if error.code == 'JSON_DB_ERROR':
+            executor = MigrationExecutor(connections[DEFAULT_DB_ALIAS])
+            if ('cm', '0057_auto_20200831_1055') not in executor.loader.applied_migrations:
+                return
+        raise error
+
     try:
         cl = ConfigLog.objects.get(obj_ref=adcm[0].config, id=adcm[0].config.current)
         prepare_social_auth(json.loads(cl.config))
@@ -193,7 +211,8 @@ def get_prototype_config(proto, action=None):
     return (spec, flat_spec, conf, attr)
 
 
-def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-locals,too-many-branches
+def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+    # process objects without config
     if not obj.config:
         spec, _, conf, attr = get_prototype_config(new_proto)
         obj_conf = init_object_config(spec, conf, attr)
@@ -217,16 +236,20 @@ def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-local
                 return True
         return False
 
+    # set new default config values and gather information about activatable groups
     new_conf = {}
-    unactive_groups = {}
+    active_groups = {}
+    inactive_groups = {}
     for key in new_spec:
         if new_spec[key].type == 'group':
             limits = {}
             if new_spec[key].limits:
                 limits = json.loads(new_spec[key].limits)
-            if 'activatable' in limits:
-                if 'active' in limits and not limits['active']:
-                    unactive_groups[key.rstrip('/')] = True
+            if 'activatable' in limits and 'active' in limits:
+                if limits['active']:
+                    active_groups[key.rstrip('/')] = True
+                else:
+                    inactive_groups[key.rstrip('/')] = True
             continue
         if key in old_spec:
             if is_new_default(key):
@@ -236,6 +259,7 @@ def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-local
         else:
             new_conf[key] = get_default(new_spec[key], new_proto)
 
+    # go from flat config to 2-level dictionary
     unflat_conf = {}
     for key in new_conf:
         k1, k2 = key.split('/')
@@ -246,12 +270,18 @@ def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-local
                 unflat_conf[k1] = {}
             unflat_conf[k1][k2] = new_conf[key]
 
-    # skip unactive groups in new prototype config
+    # skip inactive groups and set attributes for new config
+    attr = {}
+    if cl.attr:
+        attr = json.loads(cl.attr)
     for key in unflat_conf:
-        if key in unactive_groups:
+        if key in active_groups:
+            attr[key] = {'active': True}
+        if key in inactive_groups:
             unflat_conf[key] = None
+            attr[key] = {'active': False}
 
-    save_obj_config(obj.config, unflat_conf, 'upgrade', cl.attr)
+    save_obj_config(obj.config, unflat_conf, 'upgrade', json.dumps(attr))
     process_file_type(obj, new_unflat_spec, unflat_conf)
 
 
@@ -259,7 +289,7 @@ def restore_cluster_config(obj_conf, version, desc=''):
     try:
         cl = ConfigLog.objects.get(obj_ref=obj_conf, id=version)
     except ConfigLog.DoesNotExist:
-        raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist")
+        raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist") from None
     obj_conf.previous = obj_conf.current
     obj_conf.current = version
     obj_conf.save()
@@ -337,7 +367,7 @@ def process_config(obj, spec, old_conf):
         if 'type' in spec[key]:
             if spec[key]['type'] == 'file' and conf[key] is not None:
                 conf[key] = cook_file_type_name(obj, key, '')
-        else:
+        elif conf[key]:
             for subkey in conf[key]:
                 if spec[key][subkey]['type'] == 'file' and conf[key][subkey] is not None:
                     conf[key][subkey] = cook_file_type_name(obj, key, subkey)

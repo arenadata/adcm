@@ -10,10 +10,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormBuilder } from '@angular/forms';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { TextBoxComponent } from '@app/shared/form-elements/text-box.component';
+import { SharedModule } from '@app/shared/shared.module';
 import { provideMockStore } from '@ngrx/store/testing';
 import { EMPTY, of } from 'rxjs';
 
@@ -25,7 +26,6 @@ import { ToolsComponent } from '../tools/tools.component';
 import { IConfig } from '../types';
 import { ConfigComponent } from './main.component';
 import { MainService } from './main.service';
-import { SharedModule } from '@app/shared/shared.module';
 
 const rawConfig: IConfig = {
   attr: {},
@@ -143,6 +143,5 @@ describe('Configuration : MainComponent >> ', () => {
     component.cd.detectChanges();
 
     expect(saveBtn.disabled).toBeTruthy();
-
   });
 });

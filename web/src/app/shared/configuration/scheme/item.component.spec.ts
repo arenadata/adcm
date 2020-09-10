@@ -11,12 +11,10 @@
 // limitations under the License.
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { FormControl, FormGroup } from '@angular/forms';
 
 import { ItemComponent } from './item.component';
-import { FormGroup, FormControl } from '@angular/forms';
-import { IControl } from './root.component';
-import { MaterialModule } from '@app/shared/material.module';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { IControl } from './scheme.service';
 
 describe('ItemComponent', () => {
   let component: ItemComponent;
@@ -25,7 +23,7 @@ describe('ItemComponent', () => {
   beforeEach(async(() => {
     TestBed.configureTestingModule({
       declarations: [ItemComponent],
-      schemas: [NO_ERRORS_SCHEMA]
+      schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
   }));
 
@@ -38,7 +36,7 @@ describe('ItemComponent', () => {
       rules: { name: 'test', type: 'string', path: ['test'], validator: {}, controlType: 'textbox' },
       form: new FormGroup({ test: new FormControl() }),
       parent: 'dict',
-      value: {}
+      value: {},
     };
     component.item = item;
     fixture.detectChanges();

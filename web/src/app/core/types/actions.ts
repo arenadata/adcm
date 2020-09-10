@@ -11,6 +11,17 @@
 // limitations under the License.
 import { IConfig } from '@app/shared/configuration/types';
 
+/**
+ * 
+ *```
+{
+    action: 'add' | 'remove';  
+    component: string;    // name of servise to work with  
+    service: string;    // name of component to work with
+}
+```
+ *
+ */
 export interface IActionParameter {
   action: 'add' | 'remove';
   component: string;
@@ -23,10 +34,12 @@ export interface IUIOptions {
 
 export interface IAction {
   name: string;
+  description: string;
   display_name: string;
   run: string;
   config: IConfig;
-  hostcomponentmap: IActionParameter | null;
+  hostcomponentmap: IActionParameter[];
   button: 'create_host' | null;
   ui_options: IUIOptions;
+  children?: IAction[];
 }

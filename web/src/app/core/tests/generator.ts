@@ -17,5 +17,14 @@
  * @class Generator
  */
 export class Generator {
+  getExample(i: number, data = { id: 'bundle_id', bundle_edition: 'comutity' || 'enterprise', other: ['display_name', 'version'] }) {
+    return [].reduce((p, c) => (p[c] = `${c}_${i}`), {}); 
+    // { bundle_id: i, display_name: `bundle_${i}`, version: `0.0${i}`, bundle_edition: 'community' };
+  }
 
+  getArray<T>(count: number) {
+    return Array(count)
+      .fill(0)
+      .map((_, i) => this.getExample(i));
+  }
 }

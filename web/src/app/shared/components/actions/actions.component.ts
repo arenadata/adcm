@@ -21,10 +21,11 @@ import { BaseDirective } from '../../directives/base.directive';
   selector: 'app-actions',
   template: `
     <div #wrap>
-      <button tabindex="-1"
+      <button
+        tabindex="-1"
         *ngFor="let action of actions"
         #button
-        mat-raised-button
+        mat-stroked-button
         color="warn"
         [appForTest]="'action_btn'"
         [disabled]="isIssue"
@@ -37,8 +38,9 @@ import { BaseDirective } from '../../directives/base.directive';
       <mat-icon>more_vert</mat-icon>
     </button>
     <mat-menu #menu="matMenu" class="menu-more">
-      <button tabindex="-1"
-        mat-raised-button
+      <button
+        tabindex="-1"
+        mat-stroked-button
         color="warn"
         class="menu-more-action"
         *ngFor="let a of forMenu"
@@ -50,7 +52,7 @@ import { BaseDirective } from '../../directives/base.directive';
       </button>
     </mat-menu>
   `,
-  styleUrls: ['./actions.component.scss']
+  styleUrls: ['./actions.component.scss'],
 })
 export class ActionsComponent extends BaseDirective implements OnInit, AfterViewChecked {
   actions: IAction[] = [];
@@ -92,10 +94,10 @@ export class ActionsComponent extends BaseDirective implements OnInit, AfterView
   }
 
   onresize() {
-    const bw = this.buttons.map<number>(b => b.nativeElement.offsetWidth + 10);
+    const bw = this.buttons.map<number>((b) => b.nativeElement.offsetWidth + 10);
     const elWidth = +this.el.nativeElement.clientWidth - 50;
     const dw = this.calcWidth(elWidth, bw);
-    // 
+    //
     this.forMenu = this.actions.slice(dw[0]);
     this.render.setStyle(this.wrap.nativeElement, 'width', `${dw[1]}px`);
     this.render.setStyle(this.more.nativeElement, 'display', dw[2] ? 'block' : 'none');

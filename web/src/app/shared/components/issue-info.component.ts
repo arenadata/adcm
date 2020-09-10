@@ -14,21 +14,29 @@ import { Issue } from '@app/core/types';
 
 import { ComponentData } from './tooltip/tooltip.service';
 
+export interface IIssueInfo {
+  id: number;
+  issue: Issue;
+  cluster_id?: number;
+  name?: string;
+  path?: string;
+}
+
 @Component({
   selector: 'app-issue-info',
   template: `
     <div>{{ intro }}</div>
-    <div *ngFor="let name of getNamesIssue()">
+    <div *ngFor="let name of namesIssue">
       <ng-container *ngIf="isArray(current.issue[name]); else item_tpl">
         <div class="item-step">
           {{ name }}:
           <span *ngFor="let o of current.issue[name]">
-            <b>{{ o.name }}</b> <app-issue-info [current]="o" [typeName]="name" [intro]="''" [parent]="current"></app-issue-info>
+            <b>{{ o.name }}</b> <app-issue-info [current]="o" [path]="name" [intro]="''" [parent]="current"></app-issue-info>
           </span>
         </div>
       </ng-container>
       <ng-template #item_tpl>
-        <a [routerLink]="[getParent(), current.id, IssuePatch[name] || name]">{{ IssueNames[name] || name }}</a>
+        <a [routerLink]="[Path, current.id, IssuePatch[name] || name]">{{ IssueNames[name] || name }}</a>
       </ng-template>
     </div>
   `,
@@ -37,9 +45,9 @@ import { ComponentData } from './tooltip/tooltip.service';
 export class IssueInfoComponent implements OnInit {
   issues: Issue;
   @Input() intro = 'Issues in:';
-  @Input() typeName: string;
-  @Input() current: any;
-  @Input() parent: any;
+  @Input() path: string;
+  @Input() current: IIssueInfo;
+  @Input() parent: IIssueInfo;
 
   IssuePatch = {
     required_service: 'service',
@@ -57,22 +65,20 @@ export class IssueInfoComponent implements OnInit {
 
   ngOnInit(): void {
     this.current = this.current || this.componentData.current;
-    this.typeName = this.typeName || this.componentData.typeName;
-    this.current.typeName = this.typeName;
+    this.path = this.path || this.componentData.path;
+    this.current.path = this.path;
     this.componentData.emitter.emit('Done');
   }
 
-  getParent() {
-    if (this.parent && this.parent.cluster_id !== this.current.id) {
-      return this.typeName === 'provider' ? '/provider' : `${this.parent.typeName.split(';')[0]}/${this.parent.id}/${this.typeName}`;
-    } else return this.typeName.split(';')[0];
+  get Path() {
+    return this.parent && this.parent.cluster_id !== this.current.id ? `${this.parent.path}/${this.parent.id}/${this.path}` : this.path;
   }
 
   isArray(issue: [] | false): boolean {
     return Array.isArray(issue);
   }
 
-  getNamesIssue() {
+  get namesIssue() {
     return Object.keys(this.current.issue || {});
   }
 }
