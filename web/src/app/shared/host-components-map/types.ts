@@ -32,6 +32,23 @@ export class Post implements Post {
   constructor(public host_id: number, public service_id: number, public component_id: number, public id?: number) {}
 }
 
+/**
+ *```
+  {
+    id: number;
+    name: string;
+    relations: Tile[] = [];
+    isSelected?: boolean;
+    isLink?: boolean;
+    limit?: Constraint;
+    disabled: boolean;
+    actions?: ActionParam[];
+    color?: 'none' | 'white' | 'gray' | 'yellow';
+    notification?: string;
+  }
+ ```
+ * @class Tile
+ */
 export class Tile {
   id: number;
   name: string;
@@ -71,6 +88,11 @@ export class CompTile extends Tile {
   }
 }
 
+/**
+ * State user selection
+ *
+ * @class StatePost
+ */
 export class StatePost {
   private _data: Post[];
 
@@ -104,7 +126,15 @@ export class StatePost {
     data.forEach((a) => this.add(new Post(a.host_id, a.service_id, a.component_id, a.id)));
   }
 }
-
+/**
+ *```
+  {
+    link: Tile;
+    linkSource: Tile[];
+    selected: Tile;
+  }
+  *```
+ */
 export interface IStream {
   link: Tile;
   linkSource: Tile[];
