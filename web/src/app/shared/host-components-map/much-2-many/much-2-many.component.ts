@@ -9,10 +9,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { Tile, CompTile } from '../types';
-import { TakeService } from '../take.service';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { FormGroup } from '@angular/forms';
 import { isNumber } from '@app/core/types';
+
+import { CompTile, Tile } from '../types';
 
 @Component({
   selector: 'app-much-2-many',
@@ -23,10 +24,9 @@ export class Much2ManyComponent {
   isShow = false;
 
   @Output() clickToTitleEvt: EventEmitter<any> = new EventEmitter();
-  @Output() clearRelationEvt: EventEmitter<any> = new EventEmitter();
+  @Output() clearRelationEvt: EventEmitter<{ relation: Tile; model: Tile }> = new EventEmitter();
   @Input() model: Tile;
-
-  constructor(private service: TakeService) {}
+  @Input() form: FormGroup;
 
   isDisabled() {
     if (this.model.actions) return !this.model.actions.length;
@@ -34,10 +34,9 @@ export class Much2ManyComponent {
   }
 
   isError() {
-    const form = this.service.formGroup;
-    if ('service_id' in this.model && Object.keys(form.controls).length) {
+    if ('service_id' in this.model && Object.keys(this.form.controls).length) {
       const sc = this.model as CompTile;
-      const control = form.controls[`${sc.service_id}/${sc.id}`];
+      const control = this.form.controls[`${sc.service_id}/${sc.id}`];
       if (!control) return false;
       sc.notification = control.errors?.error;
       return control.invalid;
@@ -57,9 +56,9 @@ export class Much2ManyComponent {
     this.isShow = !this.isShow;
   }
 
-  clearRelation(rel: Tile) {
-    this.model.relations = this.model.relations.filter((a) => a !== rel);
-    this.clearRelationEvt.emit({ rel: rel, model: this.model });
+  clearRelation(relation: Tile) {
+    this.model.relations = this.model.relations.filter((a) => a !== relation);
+    this.clearRelationEvt.emit({ relation, model: this.model });
   }
 
   setNotify() {
