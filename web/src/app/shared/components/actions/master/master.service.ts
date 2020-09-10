@@ -35,15 +35,15 @@ export class MasterService {
   constructor(private api: ApiService, private configService: FieldService) {}
 
   spotShow(action: IAction): whatShow {
-    const config = !!(action.config && action.config.config.length);
-    const hm = !!action.hostcomponentmap;
+    const config = action.config?.config?.length;
+    const hm = action.hostcomponentmap?.length;
     return config ? (hm ? whatShow.stepper : whatShow.config) : hm ? whatShow.hostMap : whatShow.none;
   }
 
   parseData(v: IValue) {
     const getData = (attr: IConfigAttr, c: ConfigFieldsComponent, h: ServiceHostComponent) => {
       const config = c ? this.configService.parseValue(c.form.value, c.rawConfig.config) : undefined;
-      const hc = h?.service.statePost.data;
+      const hc = h?.statePost.data;
       return { attr, config, hc };
     };
     return v ? getData(v.config?.attr, v.config, v.hostmap) : undefined;
