@@ -251,32 +251,59 @@ def re_check_actions():
                 err('INVALID_ACTION_DEFINITION', msg.format(item['component'], sp[0].name, ref))
 
 
+def check_component_requires(comp):
+    if not comp.requires:
+        return
+    ref = 'in requires of component "{}" of {}'.format(comp.name, proto_ref(comp.prototype))
+    req_list = comp.requires
+    for i, item in enumerate(req_list):
+        if 'service' in item:
+            try:
+                service = StagePrototype.objects.get(name=item['service'], type='service')
+            except StagePrototype.DoesNotExist:
+                msg = 'Unknown service "{}" {}'
+                err('COMPONENT_CONSTRAINT_ERROR', msg.format(item['service'], ref))
+        else:
+            service = comp.prototype
+            req_list[i]['service'] = comp.prototype.name
+        try:
+            req_comp = StageComponent.objects.get(name=item['component'], prototype=service)
+        except StageComponent.DoesNotExist:
+            msg = 'Unknown component "{}" {}'
+            err('COMPONENT_CONSTRAINT_ERROR', msg.format(item['component'], ref))
+        if comp == req_comp:
+            msg = 'Component can not require themself {}'
+            err('COMPONENT_CONSTRAINT_ERROR', msg.format(ref))
+    comp.requires = req_list
+    comp.save()
+
+
+def check_binded_component(comp):
+    if not comp.binded_to:
+        return
+    ref = 'in "binded_to" of component "{}" of {}'.format(comp.name, proto_ref(comp.prototype))
+    bind = comp.binded_to
+    try:
+        service = StagePrototype.objects.get(name=bind['service'], type='service')
+    except StagePrototype.DoesNotExist:
+        msg = 'Unknown service "{}" {}'
+        err('COMPONENT_CONSTRAINT_ERROR', msg.format(bind['service'], ref))
+
+    try:
+        bind_comp = StageComponent.objects.get(name=bind['component'], prototype=service)
+    except StageComponent.DoesNotExist:
+        msg = 'Unknown component "{}" {}'
+        err('COMPONENT_CONSTRAINT_ERROR', msg.format(bind['component'], ref))
+
+    if comp == bind_comp:
+        msg = 'Component can not require themself {}'
+        err('COMPONENT_CONSTRAINT_ERROR', msg.format(ref))
+
+
 def re_check_components():
     for comp in StageComponent.objects.all():
-        if not comp.requires:
-            continue
-        ref = 'in requires of component "{}" of {}'.format(comp.name, proto_ref(comp.prototype))
-        req_list = comp.requires
-        for i, item in enumerate(req_list):
-            if 'service' in item:
-                try:
-                    service = StagePrototype.objects.get(name=item['service'], type='service')
-                except StagePrototype.DoesNotExist:
-                    msg = 'Unknown service "{}" {}'
-                    err('COMPONENT_CONSTRAINT_ERROR', msg.format(item['service'], ref))
-            else:
-                service = comp.prototype
-                req_list[i]['service'] = comp.prototype.name
-            try:
-                req_comp = StageComponent.objects.get(name=item['component'], prototype=service)
-            except StageComponent.DoesNotExist:
-                msg = 'Unknown component "{}" {}'
-                err('COMPONENT_CONSTRAINT_ERROR', msg.format(item['component'], ref))
-            if comp == req_comp:
-                msg = 'Component can not require themself {}'
-                err('COMPONENT_CONSTRAINT_ERROR', msg.format(ref))
-        comp.requires = req_list
-        comp.save()
+        check_component_requires(comp)
+        check_binded_component(comp)
 
 
 def re_check_config():
@@ -372,10 +399,10 @@ def copy_stage_sub_actons(bundle):
 
 def copy_stage_component(stage_components, prototype):
     components = prepare_bulk(
-        stage_components,
-        Component,
-        prototype,
-        ('name', 'display_name', 'description', 'params', 'monitoring', 'requires', 'constraint')
+        stage_components, Component, prototype, (
+            'name', 'display_name', 'description', 'params', 'monitoring', 'requires',
+            'binded_to', 'constraint'
+        )
     )
     Component.objects.bulk_create(components)
 
@@ -468,11 +495,13 @@ def update_bundle_from_stage(bundle):   # pylint: disable=too-many-locals,too-ma
             try:
                 comp = Component.objects.get(prototype=p, name=scomp.name)
                 update_obj(comp, scomp, (
-                    'display_name', 'description', 'params', 'monitoring', 'requires', 'constraint'
+                    'display_name', 'description', 'params', 'monitoring', 'requires',
+                    'binded_to', 'constraint'
                 ))
             except Component.DoesNotExist:
                 comp = copy_obj(scomp, Component, (
-                    'name', 'display_name', 'description', 'params', 'requires', 'constraint'
+                    'name', 'display_name', 'description', 'params', 'requires',
+                    'binded_to', 'constraint'
                 ))
                 comp.prototype = p
             comp.save()

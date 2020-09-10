@@ -232,6 +232,7 @@ def check_hc(cluster):
             return False
     try:
         check_component_requires(shc_list)
+        check_binded_components(shc_list)
     except AdcmEx:
         return False
     return True
@@ -250,6 +251,32 @@ def check_component_requires(shc_list):
                 ref = f'component "{shc[2].component.name}" of service "{shc[0].prototype.name}"'
                 msg = 'no required component "{}" of service "{}" for {}'
                 err('COMPONENT_CONSTRAINT_ERROR', msg.format(r['component'], r['service'], ref))
+
+
+def check_binded_components(shc_list):
+    def component_on_host(component, host):
+        return [i for i in shc_list if i[1] == host and i[2].component == component]
+
+    def binded_host_components(service, comp):
+        return [
+            i for i in shc_list if i[0].prototype.name == service and i[2].component.name == comp
+        ]
+
+    def check_binded_component(component):
+        service = component.binded_to['service']
+        comp_name = component.binded_to['component']
+        ref = f'component "{comp_name}" of service "{service}"'
+        binded_hc = binded_host_components(service, comp_name)
+        if not binded_hc:
+            msg = f'binded service "{service}", component "{comp_name}" not in hc for {ref}'
+            err('COMPONENT_CONSTRAINT_ERROR', msg)
+        for shc in binded_hc:
+            if not component_on_host(component, shc[1]):
+                msg = 'No binded component "{}" on host "{}" for {}'
+                err('COMPONENT_CONSTRAINT_ERROR', msg.format(component.name, shc[1].fqdn, ref))
+
+    for shc in [i for i in shc_list if i[2].component.binded_to]:
+        check_binded_component(shc[2].component)
 
 
 def get_obj_config(obj):

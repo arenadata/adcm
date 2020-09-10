@@ -202,6 +202,7 @@ class Component(models.Model):
     params = JSONField(default={})
     constraint = JSONField(default=[0, '+'])
     requires = JSONField(default=[])
+    binded_to = JSONField(default={})
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
 
     class Meta:
@@ -495,6 +496,7 @@ class StageComponent(models.Model):
     params = JSONField(default={})
     constraint = JSONField(default=[0, '+'])
     requires = JSONField(default=[])
+    binded_to = JSONField(default={})
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
 
     class Meta:

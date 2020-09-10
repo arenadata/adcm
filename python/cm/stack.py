@@ -234,6 +234,23 @@ def check_component_requires(proto, name, conf):
         check_extra_keys(item, ('service', 'component'), f'requires of component "{name}" of {ref}')
 
 
+def check_binded_component(proto, name, conf):
+    if not isinstance(conf, dict):
+        return
+    if 'binded_to' not in conf:
+        return
+    bind = conf['binded_to']
+    ref = proto_ref(proto)
+    if not isinstance(bind, dict):
+        msg = 'binded_to of component "{}" in {} should be a map'
+        err('INVALID_COMPONENT_DEFINITION', msg.format(name, ref))
+    check_extra_keys(bind, ('service', 'component'), f'binded_to of component "{name}" of {ref}')
+    msg = 'Component "{}" has no mandatory "{}" key in binded_to statment ({})'
+    for item in ('service', 'component'):
+        if item not in bind:
+            err('INVALID_COMPONENT_DEFINITION', msg.format(name, item, ref))
+
+
 def save_components(proto, conf):
     ref = proto_ref(proto)
     if not in_dict(conf, 'components'):
@@ -248,7 +265,10 @@ def save_components(proto, conf):
         cc = conf['components'][comp_name]
         err_msg = 'Component name "{}" of {}'.format(comp_name, ref)
         validate_name(comp_name, err_msg)
-        allow = ('display_name', 'description', 'params', 'constraint', 'requires', 'monitoring')
+        allow = (
+            'display_name', 'description', 'params', 'constraint', 'requires',
+            'binded_to', 'monitoring'
+        )
         check_extra_keys(cc, allow, 'component "{}" of {}'.format(comp_name, ref))
         component = StageComponent(prototype=proto, name=comp_name)
         dict_to_obj(cc, 'description', component)
@@ -257,9 +277,11 @@ def save_components(proto, conf):
         fix_display_name(cc, component)
         check_component_constraint_definition(proto, comp_name, cc)
         check_component_requires(proto, comp_name, cc)
+        check_binded_component(proto, comp_name, cc)
         dict_to_obj(cc, 'params', component)
         dict_to_obj(cc, 'constraint', component)
         dict_to_obj(cc, 'requires', component)
+        dict_to_obj(cc, 'binded_to', component)
         component.save()
 
 

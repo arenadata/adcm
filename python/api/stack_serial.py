@@ -106,6 +106,7 @@ class ComponentSerializer(serializers.Serializer):
     params = serializers.JSONField(required=False)
     constraint = serializers.JSONField(required=False)
     requires = serializers.JSONField(required=False)
+    binded_to = serializers.JSONField(required=False)
     monitoring = serializers.CharField(read_only=True)
 
 
