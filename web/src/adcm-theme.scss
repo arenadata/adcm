@@ -81,9 +81,9 @@ a {
   color: mat-color($mat-orange, 500)!important;
 }
 
-.mat-list-item.mat-accent {
-  color: mat-color($mat-green, A400);
-}
+//.mat-list-item.mat-accent {
+//  color: mat-color($mat-green, A400);
+//}
 
 a.active .mat-list-item-content {
   // font-weight: bold;
@@ -101,4 +101,5 @@ a.active .mat-list-item-content {
 
 .top-menu.mat-list-base .mat-list-item {
   color: mat-color($mat-green, A400);
+  width: auto;
 }
