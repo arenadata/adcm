@@ -11,11 +11,11 @@
 // limitations under the License.
 import { TestBed } from '@angular/core/testing';
 import { FormBuilder, Validators } from '@angular/forms';
-import { Configuration, FieldFactory, toFormOptions, setValue } from './tests/configuration';
 
-import { FieldService, IOutput, ISource, getValue } from './field.service';
-import { IFieldStack, ILimits, resultTypes, TNForm } from './types';
-import { IYspec } from './yspec/yspec.service';
+import { FieldService, getValue, IOutput, ISource } from './field.service';
+import { Configuration, FieldFactory, setValue, toFormOptions } from './tests/configuration';
+import { IFieldStack, resultTypes, TNForm } from './types';
+import { IYspec, IYContainer, IYField } from './yspec/yspec.service';
 
 /**
  * inputData - data from backend for configuration IConfig.config : FieldStack[]
@@ -120,7 +120,6 @@ describe('Configuration fields service', () => {
     ]);
   });
 
-  /** If config has group the filterApply has returned array without group, check this!  */
   it('filterApply with search by display_name and value should change the fields satisfy search condition on as hidden, in case when config have group', () => {
     const source = new Configuration(FieldFactory.add(['string', ['text']]));
     source.config[2].value = 'other text';
@@ -370,8 +369,8 @@ describe('Configuration fields service', () => {
     expect(result2).toEqual({ field: null });
   });
 
-  it('parseValue - for structure: list', () => {
-    const rules = {
+  it('parseValue for structure should return list', () => {
+    const rules: IYContainer | IYField = {
       name: 'root',
       type: 'list',
       options: {
@@ -421,23 +420,12 @@ describe('Configuration fields service', () => {
       },
     };
 
-    const source: ISource[] = [
-      {
-        limits: {
-          rules,
-          yspec,
-        },
-        name: 'listeners',
-        read_only: false,
-        subname: '',
-        type: 'structure',
-        value: [{ name: 'DEFAULT', port: 9092 }],
-      },
-    ];
+    const source = new Configuration(FieldFactory.add(['structure']));
+    source.config[0].value = [{ name: 'DEFAULT', port: 9092 }];
+    source.config[0].limits = { rules, yspec };
+    const output = { field_structure_0: [{ name: 'DEFAULT', port: '9092' }] };
+    const result = service.parseValue(output, source.config);
 
-    const output = { listeners: [{ name: 'DEFAULT', port: '9092' }] };
-    const result = service.parseValue(output, source);
-
-    expect(result).toEqual({ listeners: [{ name: 'DEFAULT', port: 9092 }] });
+    expect(result).toEqual({ field_structure_0: [ Object({ name: 'DEFAULT', port: 9092 }) ] });
   });
 });
