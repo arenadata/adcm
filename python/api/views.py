@@ -13,7 +13,7 @@
 # pylint: disable=duplicate-except,attribute-defined-outside-init,too-many-lines
 
 import rest_framework
-from django.db import transaction
+from django.db import transaction, models
 from django.utils import timezone
 from django.contrib.auth.models import User, Group
 from django.contrib.auth import login as django_login
@@ -24,8 +24,8 @@ from rest_framework.authtoken.models import Token
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
-import api.cluster_serial
 import api.serializers
+import api.cluster_views
 import cm.api
 import cm.config as config
 import cm.job
@@ -35,7 +35,7 @@ from cm.api import safe_api
 from cm.errors import AdcmEx, AdcmApiEx
 from cm.models import (
     HostProvider, Host, ADCM, Action, JobLog, TaskLog, Upgrade, ObjectConfig,
-    ConfigLog, UserProfile, DummyData, Role,
+    ConfigLog, UserProfile, DummyData, Role, Cluster, ClusterObject,
 )
 from adcm.settings import ADCM_VERSION
 from api.serializers import check_obj, filter_actions, get_config_version
@@ -378,68 +378,6 @@ class AdcmDetail(DetailViewRO):
     error_code = 'ADCM_NOT_FOUND'
 
 
-class AdcmConfig(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.AdcmConfigSerializer
-
-    def get(self, request, adcm_id):   # pylint: disable=arguments-differ
-        """
-        Show current config for a adcm object
-        """
-        check_obj(ADCM, adcm_id, 'ADCM_NOT_FOUND')
-        obj = ObjectConfig()
-        serializer = self.serializer_class(
-            obj, context={'request': request, 'adcm_id': adcm_id}
-        )
-        return Response(serializer.data)
-
-
-class AdcmConfigHistory(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.AdcmConfigHistorySerializer
-    update_serializer = api.cluster_serial.ObjectConfigUpdate
-
-    def get_obj(self, adcm_id):
-        adcm = check_obj(ADCM, adcm_id, 'ADCM_NOT_FOUND')
-        oc = check_obj(ObjectConfig, {'adcm': adcm}, 'CONFIG_NOT_FOUND')
-        return (adcm, oc, self.get_queryset().get(obj_ref=oc, id=oc.current))
-
-    def get(self, request, adcm_id):   # pylint: disable=arguments-differ
-        """
-        Show history of config of an adcm object
-        """
-        _, oc, _ = self.get_obj(adcm_id)
-        obj = self.get_queryset().filter(obj_ref=oc).order_by('-id')
-        serializer = self.serializer_class(obj, many=True, context={'request': request})
-        return Response(serializer.data)
-
-    def post(self, request, adcm_id):
-        """
-        Update host provider config. Config parameter is json
-        """
-        obj, _, cl = self.get_obj(adcm_id)
-        serializer = self.update_serializer(cl, data=request.data, context={'request': request})
-        return create(serializer, ui=bool(self.for_ui(request)), obj=obj)
-
-
-class AdcmConfigVersion(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ObjectConfig
-
-    def get(self, request, adcm_id, version):   # pylint: disable=arguments-differ
-        """
-        Show config for a specified version of adcm object.
-
-        """
-        adcm = check_obj(ADCM, adcm_id, 'ADCM_NOT_FOUND')
-        oc = check_obj(ObjectConfig, {'adcm': adcm}, 'CONFIG_NOT_FOUND')
-        cl = get_config_version(oc, version)
-        if self.for_ui(request):
-            cl.config = cm.adcm_config.ui_config(adcm, cl)
-        serializer = self.serializer_class(cl, context={'request': request})
-        return Response(serializer.data)
-
-
 class ADCMActionList(ListView):
     queryset = Action.objects.filter(prototype__type='adcm')
     serializer_class = api.serializers.ADCMActionList
@@ -673,86 +611,6 @@ class TaskStats(GenericAPIPermView):
         return Response(data)
 
 
-class ProviderConfig(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ProviderConfigSerializer
-
-    def get(self, request, provider_id):   # pylint: disable=arguments-differ
-        """
-        Show current config for a specified host provider
-        """
-        check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        obj = ObjectConfig()
-        serializer = self.serializer_class(
-            obj, context={'request': request, 'provider_id': provider_id}
-        )
-        return Response(serializer.data)
-
-
-class ProviderConfigHistory(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ProviderConfigHistorySerializer
-    update_serializer = api.cluster_serial.ObjectConfigUpdate
-
-    def get_obj(self, provider_id):
-        provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        cc = check_obj(ObjectConfig, {'hostprovider': provider}, 'CONFIG_NOT_FOUND')
-        return (provider, cc, self.get_queryset().get(obj_ref=cc, id=cc.current))
-
-    def get(self, request, provider_id):   # pylint: disable=arguments-differ
-        """
-        Show history of config of a specified host provider
-        """
-        _, cc, _ = self.get_obj(provider_id)
-        obj = self.get_queryset().filter(obj_ref=cc).order_by('-id')
-        serializer = self.serializer_class(obj, many=True, context={'request': request})
-        return Response(serializer.data)
-
-    def post(self, request, provider_id):
-        """
-        Update host provider config. Config parameter is json
-        """
-        obj, _, cl = self.get_obj(provider_id)
-        serializer = self.update_serializer(cl, data=request.data, context={'request': request})
-        return create(serializer, ui=bool(self.for_ui(request)), obj=obj)
-
-
-class ProviderConfigVersion(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ObjectConfig
-
-    def get(self, request, provider_id, version):   # pylint: disable=arguments-differ
-        """
-        Show config for a specified version and host provider.
-
-        """
-        provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        oc = check_obj(ObjectConfig, {'hostprovider': provider}, 'CONFIG_NOT_FOUND')
-        cl = get_config_version(oc, version)
-        if self.for_ui(request):
-            cl.config = cm.adcm_config.ui_config(provider, cl)
-        serializer = self.serializer_class(cl, context={'request': request})
-        return Response(serializer.data)
-
-
-class ProviderConfigRestore(GenericAPIPermView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ObjectConfigRestore
-
-    def patch(self, request, provider_id, version):
-        """
-        Restore config of specified version of a specified host provider.
-        """
-        provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        cc = check_obj(ObjectConfig, {'hostprovider': provider}, 'CONFIG_NOT_FOUND')
-        try:
-            obj = self.get_queryset().get(obj_ref=cc, id=version)
-        except ConfigLog.DoesNotExist:
-            raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist") from None
-        serializer = self.serializer_class(obj, data=request.data, context={'request': request})
-        return update(serializer)
-
-
 class ProviderActionList(ListView):
     queryset = Action.objects.filter(prototype__type='provider')
     serializer_class = api.serializers.ProviderActionList
@@ -919,80 +777,146 @@ class HostTask(GenericAPIPermView):
         return create(serializer, action_id=int(action_id), selector={'host': host.id})
 
 
-class HostConfig(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.HostConfigSerializer
+def get_objects_for_config(object_type):
+    if object_type == 'adcm':
+        return ADCM.objects.all()
+    if object_type == 'cluster':
+        return Cluster.objects.all()
+    elif object_type == 'provider':
+        return HostProvider.objects.all()
+    elif object_type == 'service':
+        return ClusterObject.objects.all()
+    elif object_type == 'host':
+        return Host.objects.all()
+    else:
+        # FIXME: What is is?
+        return Cluster.objects.all()
 
-    def get(self, request, host_id):   # pylint: disable=arguments-differ
-        """
-        Show current config for a specified host
-        """
-        check_obj(Host, host_id, 'HOST_NOT_FOUND')
-        obj = ObjectConfig()
-        serializer = self.serializer_class(obj, context={'request': request, 'host_id': host_id})
+
+def get_obj(objects, object_type, object_id):
+    try:
+        obj = objects.get(id=object_id)
+    except models.ObjectDoesNotExist:
+        errors = {
+            'adcm': 'ADCM_NOT_FOUND',
+            'cluster': 'CLUSTER_NOT_FOUND',
+            'provider': 'PROVIDER_NOT_FOUND',
+            'host': 'HOST_NOT_FOUND',
+            'service': 'SERVICE_NOT_FOUND',
+        }
+        raise AdcmApiEx(errors[object_type]) from None
+
+    if object_type == 'provider':
+        object_type = 'hostprovider'
+    if object_type == 'service':
+        object_type = 'clusterobject'
+    oc = check_obj(ObjectConfig, {object_type: obj}, 'CONFIG_NOT_FOUND')
+    cl = ConfigLog.objects.get(obj_ref=oc, id=oc.current)
+    return obj, oc, cl
+
+
+class ConfigView(ListView):
+    serializer_class = api.serializers.HistoryCurrentPreviousConfigSerializer
+    object_type = None
+
+    def get_queryset(self):
+        return get_objects_for_config(self.object_type)
+
+    def get(self, request, *args, **kwargs):
+        object_type = kwargs['object_type']
+        self.object_type = object_type
+        object_id = kwargs[f'{object_type}_id']
+        obj, _, _ = get_obj(self.get_queryset(), object_type, object_id)
+        serializer = self.serializer_class(
+            self.get_queryset().get(id=obj.id), context={'request': request})
         return Response(serializer.data)
 
 
-class HostConfigHistory(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.HostConfigHistorySerializer
-    update_serializer = api.cluster_serial.ObjectConfigUpdate
+class ConfigHistoryView(ListView):
+    serializer_class = api.serializers.ConfigHistorySerializer
+    update_serializer = api.serializers.ObjectConfigUpdateSerializer
+    object_type = None
 
-    def get_obj(self, host_id):
-        host = check_obj(Host, host_id, 'HOST_NOT_FOUND')
-        cc = check_obj(ObjectConfig, {'host': host}, 'CONFIG_NOT_FOUND')
-        return (host, self.get_queryset().get(obj_ref=cc, id=cc.current))
+    def get_queryset(self):
+        return get_objects_for_config(self.object_type)
 
-    def get(self, request, host_id):   # pylint: disable=arguments-differ
-        """
-        Show history of config of a specified host
-        """
-        host = check_obj(Host, host_id, 'HOST_NOT_FOUND')
-        cc = check_obj(ObjectConfig, {'host': host}, 'CONFIG_NOT_FOUND')
-        obj = self.get_queryset().filter(obj_ref=cc).order_by('-id')
-        serializer = self.serializer_class(obj, many=True, context={'request': request})
+    def get(self, request, *args, **kwargs):
+        object_type = kwargs['object_type']
+        self.object_type = object_type
+        object_id = kwargs[f'{object_type}_id']
+        obj, _, _ = get_obj(self.get_queryset(), object_type, object_id)
+        cl = ConfigLog.objects.filter(obj_ref=obj.config).order_by('-id')
+        # FIXME: What is is?
+        for c in cl:
+            c.object_type = object_type
+            c.object_id = object_id
+
+        serializer = self.serializer_class(cl, many=True, context={'request': request})
         return Response(serializer.data)
 
-    def post(self, request, host_id):
-        """
-        Update config of a specified host. Config parameter is json
-        """
-        obj, cl = self.get_obj(host_id)
+    def post(self, request, *args, **kwargs):
+        object_type = kwargs['object_type']
+        self.object_type = object_type
+        object_id = kwargs[f'{object_type}_id']
+        obj, _, cl = get_obj(self.get_queryset(), object_type, object_id)
         serializer = self.update_serializer(cl, data=request.data, context={'request': request})
         return create(serializer, ui=bool(self.for_ui(request)), obj=obj)
 
 
-class HostConfigVersion(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ObjectConfig
+class ConfigVersionView(ListView):
+    serializer_class = api.serializers.ObjectConfigSerializer
+    object_type = None
 
-    def get(self, request, host_id, version):   # pylint: disable=arguments-differ
-        """
-        Show config for a specified version and host.
+    def get_queryset(self):
+        return get_objects_for_config(self.object_type)
 
-        """
-        host = check_obj(Host, host_id, 'HOST_NOT_FOUND')
-        oc = check_obj(ObjectConfig, {'host': host}, 'CONFIG_NOT_FOUND')
+    def get(self, request, *args, **kwargs):
+        object_type = kwargs['object_type']
+        self.object_type = object_type
+        object_id = kwargs[f'{object_type}_id']
+        version = kwargs['version']
+        obj, oc, _ = get_obj(self.get_queryset(), object_type, object_id)
         cl = get_config_version(oc, version)
         if self.for_ui(request):
-            cl.config = cm.adcm_config.ui_config(host, cl)
+            cl.config = cm.adcm_config.ui_config(obj, cl)
         serializer = self.serializer_class(cl, context={'request': request})
         return Response(serializer.data)
 
 
-class HostConfigRestore(GenericAPIPermView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ObjectConfigRestore
+class ConfigHistoryVersionView(ConfigVersionView):
+    """
+    get:
+    Show config for a specified version.
+    """
 
-    def patch(self, request, host_id, version):
-        """
-        Restore config of specified version of a specified host.
-        """
-        host = check_obj(Host, host_id, 'HOST_NOT_FOUND')
-        cc = check_obj(ObjectConfig, {'host': host}, 'CONFIG_NOT_FOUND')
-        try:
-            obj = self.get_queryset().get(obj_ref=cc, id=version)
-        except ConfigLog.DoesNotExist:
-            raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist") from None
-        serializer = self.serializer_class(obj, data=request.data, context={'request': request})
+
+class ConfigHistoryRestoreView(GenericAPIPermView):
+    serializer_class = api.serializers.ObjectConfigRestoreSerializer
+    object_type = None
+
+    def get_queryset(self):
+        return get_objects_for_config(self.object_type)
+
+    def patch(self, request, *args, **kwargs):
+        object_type = kwargs['object_type']
+        self.object_type = object_type
+        object_id = kwargs[f'{object_type}_id']
+        version = kwargs['version']
+        _, oc, _ = get_obj(self.get_queryset(), object_type, object_id)
+        cl = get_config_version(oc, version)
+        serializer = self.serializer_class(cl, data=request.data, context={'request': request})
         return update(serializer)
+
+
+class ConfigPreviousView(ConfigVersionView):
+    """
+    get:
+    Show config for a specified version.
+    """
+
+
+class ConfigCurrentView(ConfigVersionView):
+    """
+    get:
+    Show config for a specified version.
+    """
