@@ -35,6 +35,37 @@ HOST_CONFIG = HOST + 'config/'
 SERVICE_CONFIG = CLUSTER + SERVICE + 'config/'
 
 
+urlpatterns_config = [
+    path(
+        '',
+        views.ConfigView.as_view(),
+        name='config'
+    ),
+    path(
+        'history/',
+        views.ConfigHistoryView.as_view(),
+        name='config-history'
+    ),
+    path(
+        'history/<int:version>/',
+        views.ConfigHistoryVersionView.as_view(),
+        name='config-history-version'
+    ),
+    path(
+        'previous/',
+        views.ConfigPreviousView.as_view(),
+        {'version': 'previous'},
+        name='config-previous'
+    ),
+    path(
+        'current/',
+        views.ConfigCurrentView.as_view(),
+        {'version': 'current'},
+        name='config-current'
+    ),
+]
+
+
 urlpatterns = [
     path('info/', views.ADCMInfo.as_view(), name='adcm-info'),
     path('token/', views.GetAuthToken.as_view(), name='token'),
@@ -334,35 +365,8 @@ urlpatterns = [
 
     path(
         ADCM_CONFIG,
-        views.ConfigView.as_view(),
-        {'object_type': 'adcm'},
-        name='adcm-config'
-    ),
-    path(
-        ADCM_CONFIG + 'history/',
-        views.ConfigHistoryView.as_view(),
-        {'object_type': 'adcm'},
-        name='adcm-config-history'
-    ),
-    path(
-        ADCM_CONFIG + 'history/<int:version>/',
-        views.ConfigHistoryVersionView.as_view(),
-        {'object_type': 'adcm'},
-        name='adcm-config-history-version'
-    ),
-    path(
-        ADCM_CONFIG + 'previous/',
-        views.ConfigPreviousView.as_view(),
-        {'object_type': 'adcm',
-         'version': 'previous'},
-        name='adcm-config-previous'
-    ),
-    path(
-        ADCM_CONFIG + 'current/',
-        views.ConfigCurrentView.as_view(),
-        {'object_type': 'adcm',
-         'version': 'current'},
-        name='adcm-config-current'
+        include(urlpatterns_config),
+        {'object_type': 'adcm'}
     ),
 
     path('adcm/<int:adcm_id>/action/', views.ADCMActionList.as_view(), name='adcm-action'),
@@ -405,41 +409,8 @@ urlpatterns = [
 
     path(
         PROVIDER_CONFIG,
-        views.ConfigView.as_view(),
-        {'object_type': 'provider'},
-        name='provider-config'
-    ),
-    path(
-        PROVIDER_CONFIG + 'history/',
-        views.ConfigHistoryView.as_view(),
-        {'object_type': 'provider'},
-        name='provider-config-history'
-    ),
-    path(
-        PROVIDER_CONFIG + 'history/<int:version>/',
-        views.ConfigHistoryVersionView.as_view(),
-        {'object_type': 'provider'},
-        name='provider-config-history-version'
-    ),
-    path(
-        PROVIDER_CONFIG + 'history/<int:version>/restore/',
-        views.ConfigHistoryRestoreView.as_view(),
-        {'object_type': 'provider'},
-        name='provider-config-history-version-restore'
-    ),
-    path(
-        PROVIDER_CONFIG + 'previous/',
-        views.ConfigPreviousView.as_view(),
-        {'object_type': 'provider',
-         'version': 'previous'},
-        name='provider-config-previous'
-    ),
-    path(
-        PROVIDER_CONFIG + 'current/',
-        views.ConfigCurrentView.as_view(),
-        {'object_type': 'provider',
-         'version': 'current'},
-        name='provider-config-current'
+        include(urlpatterns_config),
+        {'object_type': 'provider'}
     ),
 
     path('host/', views.HostList.as_view(), name='host'),

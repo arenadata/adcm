@@ -309,7 +309,7 @@ class AdcmSerializer(serializers.Serializer):
 class AdcmDetailSerializer(AdcmSerializer):
     prototype_version = serializers.SerializerMethodField()
     bundle_id = serializers.SerializerMethodField()
-    config = ConfigURL(view_name='adcm-config')
+    config = ConfigURL(view_name='config')
 
     def get_prototype_version(self, obj):
         return obj.prototype.version
@@ -353,7 +353,7 @@ class ProviderDetailSerializer(ProviderSerializer):
     license = serializers.SerializerMethodField()
     bundle_id = serializers.SerializerMethodField()
     prototype = hlink('provider-type-details', 'prototype_id', 'prototype_id')
-    config = ConfigURL(view_name='provider-config')
+    config = ConfigURL(view_name='config')
     action = hlink('provider-action', 'id', 'provider_id')
     upgrade = hlink('provider-upgrade', 'id', 'provider_id')
     host = hlink('provider-host', 'id', 'provider_id')
@@ -959,19 +959,19 @@ class HistoryCurrentPreviousConfigSerializer(serializers.Serializer):
 
     def get_history(self, obj):
         object_type = obj.prototype.type
-        view_name = f'{object_type}-config-history'
+        view_name = 'config-history'
         return ConfigURL(read_only=True, view_name=view_name).get_url(
             obj, view_name, self.context['request'], format=None)
 
     def get_current(self, obj):
         object_type = obj.prototype.type
-        view_name = f'{object_type}-config-current'
+        view_name = 'config-current'
         return ConfigURL(read_only=True, view_name=view_name).get_url(
             obj, view_name, self.context['request'], format=None)
 
     def get_previous(self, obj):
         object_type = obj.prototype.type
-        view_name = f'{object_type}-config-previous'
+        view_name = 'config-previous'
         return ConfigURL(read_only=True, view_name=view_name).get_url(
             obj, view_name, self.context['request'], format=None)
 
@@ -1021,6 +1021,6 @@ class ConfigHistorySerializer(ObjectConfigSerializer):
 
     def get_url(self, obj):
         object_type = obj.object_type
-        view_name = f'{object_type}-config-history-version'
+        view_name = 'config-history-version'
         return ConfigVersionURL(read_only=True, view_name=view_name).get_url(
             obj, view_name, self.context['request'], format=None)
