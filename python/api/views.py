@@ -239,7 +239,6 @@ class ADCMAction(GenericAPIPermView):
         Show specified action of an ADCM
         """
         adcm = check_obj(ADCM, adcm_id, 'ADCM_NOT_FOUND')
-        obj = filter_actions(adcm, self.get_queryset().filter(prototype=adcm.prototype))
         obj = check_obj(
             Action,
             {'prototype': adcm.prototype, 'id': action_id},
@@ -552,7 +551,6 @@ class ProviderAction(GenericAPIPermView):
         Show specified action of a specified host provider
         """
         provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        obj = filter_actions(provider, self.get_queryset().filter(prototype=provider.prototype))
         obj = check_obj(
             Action,
             {'prototype': provider.prototype, 'id': action_id},
