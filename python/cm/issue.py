@@ -40,7 +40,7 @@ def report_issue(obj):
 def check_issue(obj):
     disp = {
         'cluster': check_cluster_issue,
-        'service': check_obj_issue,
+        'service': check_service_issue,
         'provider': check_obj_issue,
         'host': check_obj_issue,
         'adcm': check_adcm_issue,
@@ -136,6 +136,15 @@ def check_cluster_issue(cluster):
     return issue
 
 
+def check_service_issue(service):
+    issue = {}
+    if not check_config(service):
+        issue['config'] = False
+    if not check_required_import(service.cluster):
+        issue['required_import'] = False
+    return issue
+
+
 def check_obj_issue(obj):
     if not check_config(obj):
         return {'config': False}
@@ -188,27 +197,35 @@ def check_required_services(cluster):
 
 
 def check_required_import(cluster):
+    res, code = do_check_import(cluster)
+    log.debug('do_check_import result: %s, code: %s', res, code)
+    return res
+
+
+def do_check_import(cluster):
     def check_import(pi):
         if not pi.required:
-            return True
-        import_exist = False
+            return (True, 'NOT_REQIURED')
+        import_exist = (False, None)
         for cb in ClusterBind.objects.filter(cluster=cluster):
             if cb.source_cluster and cb.source_cluster.prototype.name == pi.name:
-                import_exist = True
+                import_exist = (True, 'CLUSTER_IMPORTED')
             if cb.source_service and cb.source_service.prototype.name == pi.name:
-                import_exist = True
+                import_exist = (True, 'SERVICE_IMPORTED')
         return import_exist
 
+    res = (True, None)
     for pi in PrototypeImport.objects.filter(prototype=cluster.prototype):
-        if not check_import(pi):
-            return False
+        res = check_import(pi)
+        if not res[0]:
+            return res
 
     for co in ClusterObject.objects.filter(cluster=cluster):
         for pi in PrototypeImport.objects.filter(prototype=co.prototype):
-            if not check_import(pi):
-                return False
-
-    return True
+            res = check_import(pi)
+            if not res[0]:
+                return res
+    return res
 
 
 def check_hc(cluster):
