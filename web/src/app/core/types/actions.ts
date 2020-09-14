@@ -17,7 +17,7 @@ import { IConfig } from '@app/shared/configuration/types';
 {
     action: 'add' | 'remove';  
     component: string;    // name of servise to work with  
-    service: string;    // name of component to work with
+    service: string;      // name of component to work with
 }
 ```
  *
