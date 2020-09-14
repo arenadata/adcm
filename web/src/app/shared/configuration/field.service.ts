@@ -13,7 +13,17 @@ import { Injectable } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { getControlType, getPattern, isEmptyObject } from '@app/core/types';
 
-import { ConfigValueTypes, controlType, FieldOptions, FieldStack, IConfig, ILimits, PanelOptions, resultTypes, ValidatorInfo } from './types';
+import {
+  ConfigValueTypes,
+  controlType,
+  FieldOptions,
+  FieldStack,
+  IConfig,
+  ILimits,
+  PanelOptions,
+  resultTypes,
+  ValidatorInfo,
+} from './types';
 import { matchType, simpleType } from './yspec/yspec.service';
 
 export type itemOptions = FieldOptions | PanelOptions;
@@ -109,8 +119,9 @@ export class FieldService {
    * @param options
    */
   public toFormGroup(options: itemOptions[] = []): FormGroup {
-    const isVisible = (a: itemOptions) => !a.read_only && !(a.ui_options && a.ui_options.invisible);
-    const check = (a: itemOptions) => ('options' in a ? (a.activatable ? this.isVisibleField(a) : isVisible(a) ? a.options.some((b) => check(b)) : false) : isVisible(a));
+    const isVisible = (a: itemOptions) => !a.read_only && !a.ui_options?.invisible;
+    const check = (a: itemOptions) =>
+      'options' in a ? (!a.active ? false : isVisible(a) ? a.options.some((b) => check(b)) : false) : isVisible(a);
     return this.fb.group(
       options.reduce((p, c) => this.runByTree(c, p), {}),
       {
@@ -174,7 +185,9 @@ export class FieldService {
 
     if (field.controlType === 'map') {
       const parseKey = (): ValidatorFn => (control: AbstractControl): { [key: string]: any } | null =>
-        control.value && Object.keys(control.value).length && Object.keys(control.value).some((a) => !a) ? { parseKey: true } : null;
+        control.value && Object.keys(control.value).length && Object.keys(control.value).some((a) => !a)
+          ? { parseKey: true }
+          : null;
       v.push(parseKey());
     }
     return v;
@@ -194,7 +207,9 @@ export class FieldService {
       else a.hidden = this.isAdvancedField(a) ? !c.advanced : false;
       return result;
     } else if (this.isVisibleField(a)) {
-      a.hidden = !(a.display_name.toLowerCase().includes(c.search.toLowerCase()) || JSON.stringify(a.value).includes(c.search));
+      a.hidden = !(
+        a.display_name.toLowerCase().includes(c.search.toLowerCase()) || JSON.stringify(a.value).includes(c.search)
+      );
       if (!a.hidden && this.isAdvancedField(a)) a.hidden = !c.advanced;
       return a;
     }
@@ -204,9 +219,11 @@ export class FieldService {
    * Output form, cast to source type
    */
   public parseValue(output: IOutput, source: ISource[]): IOutput {
-    const findField = (name: string, p?: string): Partial<FieldStack> => source.find((a) => (p ? a.name === p && a.subname === name : a.name === name) && !a.read_only);
+    const findField = (name: string, p?: string): Partial<FieldStack> =>
+      source.find((a) => (p ? a.name === p && a.subname === name : a.name === name) && !a.read_only);
 
-    const runYspecParse = (v: any, f: Partial<FieldOptions>) => ((v === {} || v === []) && !f.value ? f.value : this.runYspec(v, f.limits.rules));
+    const runYspecParse = (v: any, f: Partial<FieldOptions>) =>
+      (v === {} || v === []) && !f.value ? f.value : this.runYspec(v, f.limits.rules);
 
     const runParse = (v: IOutput, parentName?: string): IOutput => {
       const runByValue = (p: IOutput, c: string) => {
