@@ -23,6 +23,14 @@ import { CompTile, Constraint, HostTile, IRawHosComponent, IStream, Post, StateP
 
 export const getSelected = (from: Tile[]) => from.find((a) => a.isSelected);
 
+const isShrink = (ap: IActionParameter[]) => ap.every((a) => a.action === 'remove');
+const isExpand = (ap: IActionParameter[]) => ap.every((a) => a.action === 'add');
+const accord = (a: IActionParameter) => (b: CompTile) => b.component === `${a.service}/${a.component}`;
+const existCondition = (rel: CompTile[], ap: IActionParameter[]) =>
+  isShrink(ap) ? ap.some((a) => rel.some(accord(a))) : ap.every((a) => rel.some(accord(a)));
+const checkEmptyHost = (h: HostTile, ap: IActionParameter[]) =>
+  ap ? (existCondition(h.relations as CompTile[], ap) ? isExpand(ap) : isShrink(ap)) : false;
+
 @Injectable()
 export class TakeService {
   /**
@@ -46,14 +54,12 @@ export class TakeService {
   //#endregion
 
   //#region after a successful download, run and fill in
-  fillHost(ph: Partial<Host>[], ap: IActionParameter[]) {
-    const isShrink = () => ap.every((a) => a.action === 'remove');
-    const isExpand = () => ap.every((a) => a.action === 'add');
-    const condition = (b: CompTile) => (a: IActionParameter) => b.component === `${a.service}/${a.component}`;
-    const existCondition = (rel: CompTile[]) =>
-      isShrink() ? ap.some((a) => rel.some((b) => condition(b)(a))) : ap.every((a) => rel.some((b) => condition(b)(a)));
-    const checkEmptyHost = (h: HostTile) => (existCondition(h.relations as CompTile[]) ? isExpand() : isShrink());
-    return ph.map((h) => new HostTile(h)).map((h) => ({ ...h, disabled: !ap ? false : checkEmptyHost(h) }));
+
+  /**
+   * Mapping backend source hosts to detect `disabled` properties based on action parameters, if present
+   */
+  fillHost(hosts: Partial<Host>[], ap?: IActionParameter[]): HostTile[] {
+    return hosts.map((h) => new HostTile(h)).map((h) => ({ ...h, disabled: checkEmptyHost(h, ap) }));
   }
 
   fillComponent(pc: Component[], ap: IActionParameter[]) {
