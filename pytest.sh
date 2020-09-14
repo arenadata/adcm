@@ -18,7 +18,7 @@ pip3 install -r requirements-test.txt
 find . -name "*.pyc" -type f -delete
 find . -name "__pycache__" -type d -delete
 { # try
-    pytest tests/functional/test_adcm_upgrade.py -s -v -n auto --maxfail 30 \
+    pytest tests/functional tests/ui_tests -s -v -n auto --maxfail 30 \
     --showlocals --alluredir ./allure-results/ --durations=20 &&
     chmod -R o+xw allure-results
 } || { # catch

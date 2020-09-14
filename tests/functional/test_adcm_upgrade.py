@@ -30,11 +30,13 @@ def old_adcm_images():
 
 
 @contextmanager
-def adcm_client(adcm_repo, adcm_tag, volumes, pull=False):
+def adcm_client(adcm_repo, adcm_tag, volumes, init=False):
     """
-    Run ADCM container from image {adcm_repo}:{adcm_tag}. If image was pulled remove it after
+    Run ADCM container from image {adcm_repo}:{adcm_tag}.
+    If init=True new initialised image will be generated.
+    If we use 'image' fixture we don't need to initialize it one more time.
     """
-    if pull:
+    if init:
         with allure.step(f"Create isolated image copy from {adcm_repo}:{adcm_tag}"):
             new_image = get_initialized_adcm_image(adcm_repo=adcm_repo,
                                                    adcm_tag=adcm_tag,
@@ -54,7 +56,7 @@ def adcm_client(adcm_repo, adcm_tag, volumes, pull=False):
         except (ConnectionError, NotFound):
             # https://github.com/docker/docker-py/issues/1966 workaround
             pass
-    if pull:
+    if init:
         with allure.step(f"Remove ADCM image {repo}:{tag}"):
             dw.client.images.remove(f'{repo}:{tag}', force=True)
 
@@ -83,7 +85,7 @@ def test_upgrade_adcm(old_adcm, volume, image):
     with adcm_client(adcm_repo=old_repo,
                      adcm_tag=old_tag,
                      volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}},
-                     pull=True) as old_adcm_client:
+                     init=True) as old_adcm_client:
         bundle = old_adcm_client.upload_from_fs(get_data_dir(__file__, 'cluster_bundle'))
         cluster_name = f"test_{random_string()}"
         bundle.cluster_prototype().cluster_create(
@@ -106,7 +108,7 @@ def test_pass_in_cluster_config_encryption_after_upgrade(old_adcm, volume, image
     with adcm_client(adcm_repo=old_repo,
                      adcm_tag=old_tag,
                      volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}},
-                     pull=True) as old_adcm_client:
+                     init=True) as old_adcm_client:
         hostprovider_bundle = old_adcm_client.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
         hostprovider = hostprovider_bundle.provider_create(
             name=f"test_{random_string()}"
@@ -141,7 +143,7 @@ def test_pass_in_service_config_encryption_after_upgrade(old_adcm, volume, image
     with adcm_client(adcm_repo=old_repo,
                      adcm_tag=old_tag,
                      volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}},
-                     pull=True) as old_adcm_client:
+                     init=True) as old_adcm_client:
         hostprovider_bundle = old_adcm_client.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
         hostprovider = hostprovider_bundle.provider_create(
             name=f"test_{random_string()}"
