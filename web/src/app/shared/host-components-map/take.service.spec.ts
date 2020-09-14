@@ -16,7 +16,7 @@ import { Component, Host } from '@app/core/types';
 import { ApiService } from '../../core/api';
 import { AddService } from '../add-component/add.service';
 import { TakeService } from './take.service';
-import { CompTile } from './types';
+import { CompTile, HostTile, Tile } from './types';
 
 const ctData: Component = {
   id: 1,
@@ -51,7 +51,7 @@ describe('HostComponentsMap :: TakeService', () => {
   });
 
   it('fillHost should return Hostile[] with the disabled=false property, if action parameters is null', () => {
-    const hosts = [{ id: 1, fqdn: 'host_1' }] as Host[];
+    const hosts = [{ id: 1, name: 'host_1', relations: [], disabled: false }];
     expect(service.fillHost(hosts)).toEqual([{ id: 1, name: 'host_1', disabled: false, relations: [] }]);
   });
 

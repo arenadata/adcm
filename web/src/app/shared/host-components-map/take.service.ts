@@ -58,8 +58,8 @@ export class TakeService {
   /**
    * Mapping backend source hosts to detect `disabled` properties based on action parameters, if present
    */
-  fillHost(hosts: Partial<Host>[], ap?: IActionParameter[]): HostTile[] {
-    return hosts.map((h) => new HostTile(h)).map((h) => ({ ...h, disabled: checkEmptyHost(h, ap) }));
+  fillHost(hosts: HostTile[], ap?: IActionParameter[]): HostTile[] {
+    return hosts.map((h) => ({ ...h, disabled: checkEmptyHost(h, ap) }));
   }
 
   fillComponent(pc: Component[], ap: IActionParameter[]) {
