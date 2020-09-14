@@ -9,36 +9,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { controlType } from '@app/shared/configuration/types';
-import { matchType } from '@app/shared/configuration/yspec/yspec.service';
-
 export const isBoolean = (x: any) => typeof x === 'boolean';
 export const isObject = (x: any) => x !== null && typeof x === 'object';
 export const isEmptyObject = (x: any) => isObject(x) && !Object.keys(x).length;
 export const isNumber = (x: any) => typeof x === 'number' && !isNaN(x);
 export const randomInteger = (max: number, min: number = 0): number => Math.floor(min + Math.random() * (max + 1 - min));
-
-export function getPattern(name: string): RegExp {
-  const fn = {
-    integer: () => new RegExp(/^[-]?\d+$/),
-    int: () => new RegExp(/^[-]?\d+$/),
-    float: () => new RegExp(/^[-]?[0-9]+(\.[0-9]+)?$/),
-  };
-  return fn[name] ? fn[name]() : null;
-}
-
-export function getControlType(name: string): controlType {
-  const a: Partial<{ [key in matchType | controlType]: controlType }> = {
-    bool: 'boolean',
-    int: 'textbox',
-    integer: 'textbox',
-    float: 'textbox',
-    string: 'textbox',
-    file: 'textarea',
-    text: 'textarea',
-  };
-  return a[name] || name;
-}
 
 /**
  * Remove empty, null, undefined properties

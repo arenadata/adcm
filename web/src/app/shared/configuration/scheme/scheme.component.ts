@@ -10,10 +10,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnChanges, OnInit, SimpleChanges, ViewChild } from '@angular/core';
-import { AbstractControl, FormControl } from '@angular/forms';
+import { AbstractControl } from '@angular/forms';
 import { FieldDirective } from '@app/shared/form-elements/field.directive';
 
-import { IYContainer, IYField, YspecService, reqursionType } from '../yspec/yspec.service';
+import { TNReq } from '../types';
+import { IYContainer, IYField, YspecService } from '../yspec/yspec.service';
 import { RootComponent } from './root.component';
 import { SchemeService } from './scheme.service';
 
@@ -61,7 +62,7 @@ export class SchemeComponent extends FieldDirective implements OnInit, OnChanges
     this.rules = this.yspec.build();
     this.field.limits.rules = this.rules;
     this.rules.name = '';
-    this.current = this.scheme.setCurrentForm(this.rules.type as reqursionType, this.form, this.field);
+    this.current = this.scheme.setCurrentForm(this.rules.type as TNReq, this.form, this.field);
   }
 
   /** this is using for restore default value */

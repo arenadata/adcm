@@ -11,10 +11,10 @@
 // limitations under the License.
 import { Component, EventEmitter, Input, Output, QueryList, ViewChildren } from '@angular/core';
 
-import { FieldService } from '../field.service';
+import { FieldService, TFormOptions } from '../field.service';
 import { FieldComponent } from '../field/field.component';
 import { GroupFieldsComponent } from '../group-fields/group-fields.component';
-import { FieldOptions, IConfig, PanelOptions } from '../types';
+import { IConfig, IPanelOptions } from '../types';
 
 @Component({
   selector: 'app-config-fields',
@@ -28,7 +28,7 @@ import { FieldOptions, IConfig, PanelOptions } from '../types';
   `,
 })
 export class ConfigFieldsComponent {
-  @Input() dataOptions: (FieldOptions | PanelOptions)[] = [];
+  @Input() dataOptions: TFormOptions[] = [];
   @Input() form = this.service.toFormGroup();
   rawConfig: IConfig;
   shapshot: any;
@@ -57,14 +57,14 @@ export class ConfigFieldsComponent {
   constructor(private service: FieldService) {}
 
   get attr() {
-    return this.dataOptions.filter((a) => a.type === 'group' && (a as PanelOptions).activatable).reduce((p, c: PanelOptions) => ({ ...p, [c.name]: { active: c.active } }), {});
+    return this.dataOptions.filter((a) => a.type === 'group' && (a as IPanelOptions).activatable).reduce((p, c: IPanelOptions) => ({ ...p, [c.name]: { active: c.active } }), {});
   }
 
-  isPanel(item: FieldOptions | PanelOptions) {
+  isPanel(item: TFormOptions) {
     return 'options' in item && !item.hidden;
   }
 
-  trackBy(index: number, item: PanelOptions): string {
+  trackBy(index: number, item: IPanelOptions): string {
     return item.name;
   }
 }
