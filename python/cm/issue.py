@@ -239,13 +239,16 @@ def check_hc(cluster):
 
 
 def check_component_requires(shc_list):
+    def get_components_with_requires():
+        return [i for i in shc_list if i[2].component.requires]
+
     def check_component_req(service, component):
         for shc in shc_list:
             if shc[0].prototype.name == service and shc[2].component.name == component:
                 return True
         return False
 
-    for shc in [i for i in shc_list if i[2].component.requires]:
+    for shc in get_components_with_requires():
         for r in shc[2].component.requires:
             if not check_component_req(r['service'], r['component']):
                 ref = f'component "{shc[2].component.name}" of service "{shc[0].prototype.name}"'
@@ -254,6 +257,9 @@ def check_component_requires(shc_list):
 
 
 def check_binded_components(shc_list):
+    def get_components_binded_to():
+        return [i for i in shc_list if i[2].component.binded_to]
+
     def component_on_host(component, host):
         return [i for i in shc_list if i[1] == host and i[2].component == component]
 
@@ -275,7 +281,7 @@ def check_binded_components(shc_list):
                 msg = 'No binded component "{}" on host "{}" for {}'
                 err('COMPONENT_CONSTRAINT_ERROR', msg.format(component.name, shc[1].fqdn, ref))
 
-    for shc in [i for i in shc_list if i[2].component.binded_to]:
+    for shc in get_components_binded_to():
         check_binded_component(shc[2].component)
 
 
