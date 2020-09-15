@@ -34,7 +34,7 @@ from adcm.settings import ADCM_VERSION
 from api.serializers import check_obj, filter_actions
 from api.api_views import (
     DetailViewRO, DetailViewDelete, ActionFilter, ListView,
-    PageView, PageViewAdd, GenericAPIPermView, create, update
+    PageView, PageViewAdd, GenericAPIPermView, create
 )
 
 
