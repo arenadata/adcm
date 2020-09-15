@@ -16,7 +16,7 @@ from django.conf.urls import include
 from rest_framework_swagger.views import get_swagger_view
 from rest_framework.schemas import get_schema_view
 
-from api import views, stack_views, cluster_views, docs, job_views
+from api import views, user_views, stack_views, cluster_views, docs, job_views
 
 
 register_converter(views.NameConverter, 'name')
@@ -38,25 +38,28 @@ SERVICE_CONFIG = CLUSTER + SERVICE + 'config/'
 urlpatterns = [
     path('info/', views.ADCMInfo.as_view(), name='adcm-info'),
     path('token/', views.GetAuthToken.as_view(), name='token'),
+    path('logout/', views.LogOut.as_view(), name='logout'),
 
-    path('user/', views.UserList.as_view(), name='user-list'),
-    path('user/<name:username>/', views.UserDetail.as_view(), name='user-details'),
-    path('user/<name:username>/role/', views.ChangeUserRole.as_view(), name='change-user-role'),
-    path('user/<name:username>/group/', views.AddUser2Group.as_view(), name='add-user-group'),
-    path('user/<name:username>/password/', views.UserPasswd.as_view(), name='user-passwd'),
-
-    path('group/', views.GroupList.as_view(), name='group-list'),
-    path('group/<name:name>/', views.GroupDetail.as_view(), name='group-details'),
-    path('group/<name:name>/role/', views.ChangeGroupRole.as_view(), name='change-group-role'),
-
-    path('profile/', views.ProfileList.as_view(), name='profile-list'),
-    path('profile/<name:username>/', views.ProfileDetail.as_view(), name='profile-details'),
+    path('user/', user_views.UserList.as_view(), name='user-list'),
+    path('user/<name:username>/', user_views.UserDetail.as_view(), name='user-details'),
     path(
-        'profile/<name:username>/password/', views.UserPasswd.as_view(), name='profile-passwd'
+        'user/<name:username>/role/', user_views.ChangeUserRole.as_view(), name='change-user-role'
+    ),
+    path('user/<name:username>/group/', user_views.AddUser2Group.as_view(), name='add-user-group'),
+    path('user/<name:username>/password/', user_views.UserPasswd.as_view(), name='user-passwd'),
+
+    path('group/', user_views.GroupList.as_view(), name='group-list'),
+    path('group/<name:name>/', user_views.GroupDetail.as_view(), name='group-details'),
+    path('group/<name:name>/role/', user_views.ChangeGroupRole.as_view(), name='change-group-role'),
+
+    path('profile/', user_views.ProfileList.as_view(), name='profile-list'),
+    path('profile/<name:username>/', user_views.ProfileDetail.as_view(), name='profile-details'),
+    path(
+        'profile/<name:username>/password/', user_views.UserPasswd.as_view(), name='profile-passwd'
     ),
 
-    path('role/', views.RoleList.as_view(), name='role-list'),
-    path('role/<int:role_id>/', views.RoleDetail.as_view(), name='role-details'),
+    path('role/', user_views.RoleList.as_view(), name='role-list'),
+    path('role/<int:role_id>/', user_views.RoleDetail.as_view(), name='role-details'),
 
     path('stats/', views.Stats.as_view(), name='stats'),
     path('stats/task/<int:task_id>/', views.TaskStats.as_view(), name='task-stats'),
