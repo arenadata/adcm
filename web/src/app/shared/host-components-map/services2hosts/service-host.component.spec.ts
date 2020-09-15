@@ -21,9 +21,15 @@ import { provideMockStore } from '@ngrx/store/testing';
 
 import { Much2ManyComponent } from '../much-2-many/much-2-many.component';
 import { TakeService } from '../take.service';
+import { ComponentFactory, HCFactory, HcmHost } from '../test';
 import { IRawHosComponent } from '../types';
 import { ServiceHostComponent } from './service-host.component';
-import { raw, hc } from '../test';
+
+function genData() {
+  const _c = ComponentFactory(4, 1);
+  const host = [new HcmHost('test', 1)];
+  return { component: _c, host, hc: HCFactory(1, 1, 4) };
+}
 
 describe('Service Host Map Component', () => {
   let component: ServiceHostComponent;
@@ -63,9 +69,7 @@ describe('Service Host Map Component', () => {
   });
 
   it('should display compnents and hosts as button', () => {
-    raw.hc = hc;
-    initDefault(raw);
-    //fixture.whenStable().then(() => {
+    initDefault(genData());
     const cElement: HTMLElement = fixture.nativeElement;
     const components = cElement.querySelectorAll('.wrapper').item(0).querySelectorAll('app-much-2-many');
     const hosts = cElement.querySelectorAll('.wrapper').item(1).querySelectorAll('app-much-2-many');
@@ -74,13 +78,10 @@ describe('Service Host Map Component', () => {
     const host_relations = hosts.item(0).querySelector('.relations-list').children;
     expect(host_relations.length).toBe(4);
     components.forEach((a) => expect(a.querySelector('.relations-list').children.length).toBe(1));
-    //});
   });
 
   it('should mark host/component as selected and(or) as linked', () => {
-    raw.hc = hc;
-    initDefault(raw);
-    //fixture.whenStable().then(() => {
+    initDefault(genData());
     const cElement: HTMLElement = fixture.nativeElement;
     const components = cElement.querySelectorAll('.wrapper').item(0).querySelectorAll('app-much-2-many');
     const hosts = cElement.querySelectorAll('.wrapper').item(1).querySelectorAll('app-much-2-many');
@@ -89,13 +90,11 @@ describe('Service Host Map Component', () => {
     fixture.detectChanges();
     expect(host.querySelector('.m2m').classList.contains('selected')).toBeTrue();
     components.forEach((a) => expect(a.querySelector('.m2m').classList.contains('linked')).toBeTrue());
-    //});
   });
 
   it('should add relative on click and check linked and selected property', () => {
-    raw.hc = [];
-    initDefault(raw);
-    //fixture.whenStable().then(() => {
+    const data = { component: ComponentFactory(4, 1), host: [new HcmHost('test', 1)], hc: [] };
+    initDefault(data);
     const cElement: HTMLElement = fixture.nativeElement;
     const components = cElement.querySelectorAll('.wrapper').item(0).querySelectorAll('app-much-2-many');
     const hosts = cElement.querySelectorAll('.wrapper').item(1).querySelectorAll('app-much-2-many');
@@ -154,12 +153,14 @@ describe('Service Host Map Component', () => {
     fixture.detectChanges();
     expect(host_isSelect()).toBeFalse();
     // end
-    //});
   });
 
   it('check dependencies and add validation rules for them', () => {
-    raw.hc = [];
-    initDefault(raw);
+    const data = { component: ComponentFactory(4, 1), host: [new HcmHost('test', 1)], hc: [] };
+    data.component[1].constraint = [1, 2];
+    data.component[2].constraint = [0, '+'];
+    data.component[3].constraint = [0, 1];
+    initDefault(data);
     const cElement: HTMLElement = fixture.nativeElement;
     const components = cElement.querySelectorAll('.wrapper').item(0).querySelectorAll('app-much-2-many');
     const hosts = cElement.querySelectorAll('.wrapper').item(1).querySelectorAll('app-much-2-many');
@@ -176,8 +177,8 @@ describe('Service Host Map Component', () => {
       const title = c.querySelector('.m2m .title-container button.title') as HTMLElement;
       const star = title.querySelector('span.warn');
       const last = title.querySelector('span:last-child');
-      const data = raw.component[i];
-      if (data.constraint?.length) {
+      const d = data.component[i];
+      if (d.constraint?.length) {
         expect(star).toBeDefined();
         // mouseover
         //expect(last.attributes.getNamedItem('ng-reflect-message').value).toBe('Must be installed at least 1 components.');
@@ -194,7 +195,7 @@ describe('Service Host Map Component', () => {
       const title = c.querySelector('.m2m .title-container button.title') as HTMLElement;
       const star = title.querySelector('span.warn');
       const last = title.querySelector('span:last-child');
-      const data = raw.component[i];
+      const d = data.component[i];
       if (i !== 0) {
         expect(star).toBeDefined();
         //expect(last.attributes.getNamedItem('ng-reflect-message').value).toBe('Must be installed at least 1 components.');

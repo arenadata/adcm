@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { IAction } from './actions';
-import { Component } from './host-component';
+import { IComponent } from './host-component';
 import { Issue } from './issue';
 import { Job, Task } from './task-job';
 
@@ -73,7 +73,7 @@ export interface Host extends ApiBase {
 }
 
 export interface Service extends ApiBase {
-  components: Component[];
+  components: IComponent[];
   status: number;
   hostcomponent: string;
   display_name: string;

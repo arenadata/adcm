@@ -11,7 +11,7 @@
 // limitations under the License.
 import { Injectable } from '@angular/core';
 import { ApiService } from '@app/core/api';
-import { Cluster, Component, Host, HostComponent, Service } from '@app/core/types';
+import { Cluster, IComponent, Host, HostComponent, Service } from '@app/core/types';
 import { combineLatest, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -50,7 +50,7 @@ export class StatusService {
     return combineLatest([statuses$, host_components$]);
   }
 
-  getServiceComponentsByCluster(cluster: Cluster, service_id?: number): Observable<Component[]> {
+  getServiceComponentsByCluster(cluster: Cluster, service_id?: number): Observable<IComponent[]> {
     return this.api.get<Service[]>(cluster.service).pipe(
       map(s =>
         s
@@ -176,7 +176,7 @@ export class StatusService {
 
   getHostComponents(url: string): Observable<HostComponent[]> {
     return this.api
-      .get<{ host: Host[]; hc: HostComponent[]; component: Component[] }>(url)
+      .get<{ host: Host[]; hc: HostComponent[]; component: IComponent[] }>(url)
       .pipe(
         map(a => a.hc.map(hc => ({ ...hc, monitoring: a.component.find(b => b.id === hc.component_id).monitoring }))),
       );

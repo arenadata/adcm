@@ -13,13 +13,13 @@ import { Injectable } from '@angular/core';
 import { FormControl, FormGroup, ValidationErrors } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '@app/core/api';
-import { Component, Host, IActionParameter, IRequires } from '@app/core/types';
+import { IComponent, IActionParameter, IRequires } from '@app/core/types';
 import { filter, map, switchMap, take } from 'rxjs/operators';
 
 import { AddService } from '../add-component/add.service';
 import { DialogComponent } from '../components';
 import { DependenciesComponent } from './dependencies.component';
-import { CompTile, Constraint, HostTile, IRawHosComponent, IStream, Post, StatePost, Tile } from './types';
+import { CompTile, TConstraint, HostTile, IRawHosComponent, IStream, Post, StatePost, Tile } from './types';
 
 export const getSelected = (from: Tile[]) => from.find((a) => a.isSelected);
 
@@ -33,13 +33,6 @@ const checkEmptyHost = (h: HostTile, ap: IActionParameter[]) =>
 
 @Injectable()
 export class TakeService {
-  /**
-   * Object for saving state on user click
-   *
-   * @memberof TakeService
-   */
-  stream = {} as IStream;
-
   constructor(private api: ApiService, private dialog: MatDialog, private add: AddService) {}
 
   //#region ----- HttpClient ------
@@ -62,7 +55,7 @@ export class TakeService {
     return hosts.map((h) => ({ ...h, disabled: checkEmptyHost(h, ap) }));
   }
 
-  fillComponent(pc: Component[], ap: IActionParameter[]) {
+  fillComponent(pc: IComponent[], ap: IActionParameter[]) {
     return pc.map(
       (c) =>
         new CompTile(
@@ -116,7 +109,7 @@ export class TakeService {
   ```
  */
   validateConstraints(component: CompTile, hostLength: number) {
-    const getError = (constraint: Constraint, relations: HostTile[]) => {
+    const getError = (constraint: TConstraint, relations: HostTile[]) => {
       if (!constraint?.length) return null;
       const [a1, a2, a3] = constraint;
       const countRelations = relations.length;
@@ -205,8 +198,8 @@ export class TakeService {
 
   //#region handler user events
   divorce(both: [CompTile, HostTile], cs: CompTile[], hs: HostTile[], state: StatePost, form: FormGroup) {
-    both.forEach((a) => {
-      a.relations = a.relations.filter((r) => r.id !== both.find((b) => b.id !== a.id).id);
+    both.forEach((a, i) => {
+      a.relations = a.relations.filter((r) => r.id !== (i ? both[0].id : both[1].id));
       a.isLink = false;
     });
 
@@ -259,7 +252,7 @@ export class TakeService {
       } else return true;
     };
 
-    const noConstraint = (c: Constraint, r: number) => {
+    const noConstraint = (c: TConstraint, r: number) => {
       if (!c?.length) return true;
       const v = c[c.length - 1];
       return v === '+' || v === 'odd' || v > r || v === 'depend';

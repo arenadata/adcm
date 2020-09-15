@@ -11,14 +11,14 @@
 // limitations under the License.
 import { TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
-import { Component, Host } from '@app/core/types';
+import { IComponent } from '@app/core/types';
 
 import { ApiService } from '../../core/api';
 import { AddService } from '../add-component/add.service';
 import { TakeService } from './take.service';
-import { CompTile, HostTile, Tile } from './types';
+import { CompTile } from './types';
 
-const ctData: Component = {
+const ctData: IComponent = {
   id: 1,
   prototype_id: 3,
   service_id: 2,
@@ -28,7 +28,7 @@ const ctData: Component = {
   display_name: 'test',
   status: 16,
   constraint: '',
-  monitoring: 'passive',
+  //monitoring: 'passive',
 };
 
 describe('HostComponentsMap :: TakeService', () => {
@@ -54,14 +54,6 @@ describe('HostComponentsMap :: TakeService', () => {
     const hosts = [{ id: 1, name: 'host_1', relations: [], disabled: false }];
     expect(service.fillHost(hosts)).toEqual([{ id: 1, name: 'host_1', disabled: false, relations: [] }]);
   });
-
-  xit('fillComponennt() should return CompTile[] by response result', () => {});
-
-  xit('setRelations() should detect relations between host-component by response result', () => {});
-
-  xit('next() should set needed attributes for host or component', () => {});
-
-  xit('divorce() should remove property from host or component', () => {});
 
   it('validateConstraints fn should be null if argument is null', () => {
     const mCompTile = new CompTile(ctData);

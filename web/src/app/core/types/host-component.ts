@@ -38,7 +38,7 @@ export interface HostComponent {
 /**
  * A service component that may be installed on hosts in a cluster.
  */
-export interface Component {
+export interface IComponent {
   id: number;
   prototype_id: number;
   service_id: number;
@@ -48,7 +48,7 @@ export interface Component {
   display_name: string;
   status: number;
   constraint: any;
-  monitoring: 'passive' | 'active';
+  monitoring?: 'passive' | 'active'; // status page
   requires?: IRequires[];
 }
 
