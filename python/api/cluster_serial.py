@@ -22,10 +22,11 @@ from cm.logger import log   # pylint: disable=unused-import
 from cm.errors import AdcmApiEx, AdcmEx
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent, Component
 
-from api.serializers import check_obj, filter_actions, get_upgradable_func
-from api.serializers import hlink, JSONField, UrlField
-from api.serializers import ClusterActionShort, ClusterHostActionShort
-from api.serializers import ServiceActionShort, ConfigURL
+from api.serializers import (
+    check_obj, filter_actions, get_upgradable_func, hlink, JSONField, UrlField, ClusterActionShort,
+    ClusterHostActionShort, ServiceActionShort
+)
+from api.config.serializers import ConfigURL
 
 
 def get_cluster_id(obj):
@@ -98,7 +99,7 @@ class ClusterDetailSerializer(ClusterSerializer):
     hostcomponent = hlink('host-component', 'id', 'cluster_id')
     status = serializers.SerializerMethodField()
     status_url = hlink('cluster-status', 'id', 'cluster_id')
-    config = ConfigURL(view_name='cluster-config')
+    config = ConfigURL(view_name='config')
     serviceprototype = hlink('cluster-service-prototype', 'id', 'cluster_id')
     upgrade = hlink('cluster-upgrade', 'id', 'cluster_id')
     imports = hlink('cluster-import', 'id', 'cluster_id')
@@ -174,7 +175,7 @@ class ClusterHostDetailSerializer(ClusterHostSerializer):
     status = serializers.SerializerMethodField()
     monitoring = serializers.SerializerMethodField()
     host_url = hlink('host-details', 'id', 'host_id')
-    config = ConfigURL(view_name='host-config')
+    config = ConfigURL(view_name='config')
 
     def get_issue(self, obj):
         return cm.issue.get_issue(obj)

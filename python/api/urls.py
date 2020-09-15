@@ -256,45 +256,7 @@ urlpatterns = [
         cluster_views.ClusterServiceBindDetail.as_view(),
         name='cluster-service-bind-details'
     ),
-
-    path(
-        CLUSTER_CONFIG,
-        views.ConfigView.as_view(),
-        {'object_type': 'cluster'},
-        name='cluster-config'
-    ),
-    path(
-        CLUSTER_CONFIG + 'history/',
-        views.ConfigHistoryView.as_view(),
-        {'object_type': 'cluster'},
-        name='cluster-config-history'
-    ),
-    path(
-        CLUSTER_CONFIG + 'history/<int:version>/',
-        views.ConfigHistoryVersionView.as_view(),
-        {'object_type': 'cluster'},
-        name='cluster-config-history-version'
-    ),
-    path(
-        CLUSTER_CONFIG + 'history/<int:version>/restore/',
-        views.ConfigHistoryRestoreView.as_view(),
-        {'object_type': 'cluster'},
-        name='cluster-config-history-version-restore'
-    ),
-    path(
-        CLUSTER_CONFIG + 'previous/',
-        views.ConfigPreviousView.as_view(),
-        {'object_type': 'cluster',
-         'version': 'previous'},
-        name='cluster-config-previous'
-    ),
-    path(
-        CLUSTER_CONFIG + 'current/',
-        views.ConfigCurrentView.as_view(),
-        {'object_type': 'cluster',
-         'version': 'current'},
-        name='cluster-config-current'
-    ),
+    path(CLUSTER_CONFIG, include('api.config.urls'), {'object_type': 'cluster'}),
 
     path(
         SERVICE_CONFIG,
@@ -331,40 +293,7 @@ urlpatterns = [
 
     path('adcm/', views.AdcmList.as_view(), name='adcm'),
     path('adcm/<int:adcm_id>/', views.AdcmDetail.as_view(), name='adcm-details'),
-
-    path(
-        ADCM_CONFIG,
-        views.ConfigView.as_view(),
-        {'object_type': 'adcm'},
-        name='adcm-config'
-    ),
-    path(
-        ADCM_CONFIG + 'history/',
-        views.ConfigHistoryView.as_view(),
-        {'object_type': 'adcm'},
-        name='adcm-config-history'
-    ),
-    path(
-        ADCM_CONFIG + 'history/<int:version>/',
-        views.ConfigHistoryVersionView.as_view(),
-        {'object_type': 'adcm'},
-        name='adcm-config-history-version'
-    ),
-    path(
-        ADCM_CONFIG + 'previous/',
-        views.ConfigPreviousView.as_view(),
-        {'object_type': 'adcm',
-         'version': 'previous'},
-        name='adcm-config-previous'
-    ),
-    path(
-        ADCM_CONFIG + 'current/',
-        views.ConfigCurrentView.as_view(),
-        {'object_type': 'adcm',
-         'version': 'current'},
-        name='adcm-config-current'
-    ),
-
+    path(ADCM_CONFIG, include('api.config.urls'), {'object_type': 'adcm'}),
     path('adcm/<int:adcm_id>/action/', views.ADCMActionList.as_view(), name='adcm-action'),
     path(
         'adcm/<int:adcm_id>/action/<int:action_id>/',
@@ -402,45 +331,7 @@ urlpatterns = [
         views.DoProviderUpgrade.as_view(),
         name='do-provider-upgrade'
     ),
-
-    path(
-        PROVIDER_CONFIG,
-        views.ConfigView.as_view(),
-        {'object_type': 'provider'},
-        name='provider-config'
-    ),
-    path(
-        PROVIDER_CONFIG + 'history/',
-        views.ConfigHistoryView.as_view(),
-        {'object_type': 'provider'},
-        name='provider-config-history'
-    ),
-    path(
-        PROVIDER_CONFIG + 'history/<int:version>/',
-        views.ConfigHistoryVersionView.as_view(),
-        {'object_type': 'provider'},
-        name='provider-config-history-version'
-    ),
-    path(
-        PROVIDER_CONFIG + 'history/<int:version>/restore/',
-        views.ConfigHistoryRestoreView.as_view(),
-        {'object_type': 'provider'},
-        name='provider-config-history-version-restore'
-    ),
-    path(
-        PROVIDER_CONFIG + 'previous/',
-        views.ConfigPreviousView.as_view(),
-        {'object_type': 'provider',
-         'version': 'previous'},
-        name='provider-config-previous'
-    ),
-    path(
-        PROVIDER_CONFIG + 'current/',
-        views.ConfigCurrentView.as_view(),
-        {'object_type': 'provider',
-         'version': 'current'},
-        name='provider-config-current'
-    ),
+    path(PROVIDER_CONFIG, include('api.config.urls'), {'object_type': 'provider'}),
 
     path('host/', views.HostList.as_view(), name='host'),
     path(HOST, views.HostDetail.as_view(), name='host-details'),
@@ -456,45 +347,7 @@ urlpatterns = [
         views.HostTask.as_view(),
         name='host-action-run'
     ),
-
-    path(
-        HOST_CONFIG,
-        views.ConfigView.as_view(),
-        {'object_type': 'host'},
-        name='host-config'
-    ),
-    path(
-        HOST_CONFIG + 'history/',
-        views.ConfigHistoryView.as_view(),
-        {'object_type': 'host'},
-        name='host-config-history'
-    ),
-    path(
-        HOST_CONFIG + 'history/<int:version>/',
-        views.ConfigHistoryVersionView.as_view(),
-        {'object_type': 'host'},
-        name='host-config-history-version'
-    ),
-    path(
-        HOST_CONFIG + 'history/<int:version>/restore/',
-        views.ConfigHistoryRestoreView.as_view(),
-        {'object_type': 'host'},
-        name='host-config-history-version-restore'
-    ),
-    path(
-        HOST_CONFIG + 'previous/',
-        views.ConfigPreviousView.as_view(),
-        {'object_type': 'host',
-         'version': 'previous'},
-        name='host-config-previous'
-    ),
-    path(
-        HOST_CONFIG + 'current/',
-        views.ConfigCurrentView.as_view(),
-        {'object_type': 'host',
-         'version': 'current'},
-        name='host-config-current'
-    ),
+    path(HOST_CONFIG, include('api.config.urls'), {'object_type': 'host'}),
 
     path('task/', job_views.Task.as_view(), name='task'),
     path('task/<int:task_id>/', job_views.TaskDetail.as_view(), name='task-details'),

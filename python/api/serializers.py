@@ -1,5 +1,3 @@
-# FIXME:
-# pylint: disable=too-many-lines
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -23,7 +21,6 @@ from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 from rest_framework.reverse import reverse
 
-import logrotate
 import cm.config as config
 import cm.job
 import cm.stack
@@ -35,6 +32,7 @@ from cm.models import (
     Action, SubAction, Prototype, PrototypeConfig, JobLog, UserProfile, Upgrade, HostProvider,
     ConfigLog, Role, Host, Cluster, ClusterObject
 )
+from api.config.serializers import ConfigURL
 
 
 def check_obj(model, req, error):
@@ -114,23 +112,6 @@ class UrlField(serializers.HyperlinkedIdentityField):
     def get_url(self, obj, view_name, request, format):		# pylint: disable=redefined-builtin
         kwargs = self.get_kwargs(obj)
         return reverse(self.view_name, kwargs=kwargs, request=request, format=format)
-
-
-class ConfigURL(UrlField):
-    def get_kwargs(self, obj):
-        return {
-            'object_type': obj.prototype.type,
-            f'{obj.prototype.type}_id': obj.id
-        }
-
-
-class ConfigVersionURL(UrlField):
-    def get_kwargs(self, obj):
-        return {
-            'object_type': obj.object_type,
-            f'{obj.object_type}_id': obj.object_id,
-            'version': obj.id
-        }
 
 
 class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):
@@ -309,7 +290,7 @@ class AdcmSerializer(serializers.Serializer):
 class AdcmDetailSerializer(AdcmSerializer):
     prototype_version = serializers.SerializerMethodField()
     bundle_id = serializers.SerializerMethodField()
-    config = ConfigURL(view_name='adcm-config')
+    config = ConfigURL(view_name='config')
 
     def get_prototype_version(self, obj):
         return obj.prototype.version
@@ -353,7 +334,7 @@ class ProviderDetailSerializer(ProviderSerializer):
     license = serializers.SerializerMethodField()
     bundle_id = serializers.SerializerMethodField()
     prototype = hlink('provider-type-details', 'prototype_id', 'prototype_id')
-    config = ConfigURL(view_name='provider-config')
+    config = ConfigURL(view_name='config')
     action = hlink('provider-action', 'id', 'provider_id')
     upgrade = hlink('provider-upgrade', 'id', 'provider_id')
     host = hlink('provider-host', 'id', 'provider_id')
@@ -451,7 +432,7 @@ class HostDetailSerializer(HostSerializer):
     issue = serializers.SerializerMethodField()
     bundle_id = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
-    config = ConfigURL(view_name='host-config')
+    config = ConfigURL(view_name='config')
     action = hlink('host-action', 'id', 'host_id')
     prototype = hlink('host-type-details', 'prototype_id', 'prototype_id')
 
@@ -950,77 +931,3 @@ class TaskPostSerializer(TaskRunSerializer):
         if not isinstance(selector, dict):
             raise AdcmApiEx('JSON_ERROR', 'selector should be a map')
         return selector
-
-
-class HistoryCurrentPreviousConfigSerializer(serializers.Serializer):
-    history = serializers.SerializerMethodField()
-    current = serializers.SerializerMethodField()
-    previous = serializers.SerializerMethodField()
-
-    def get_history(self, obj):
-        object_type = obj.prototype.type
-        view_name = f'{object_type}-config-history'
-        return ConfigURL(read_only=True, view_name=view_name).get_url(
-            obj, view_name, self.context['request'], format=None)
-
-    def get_current(self, obj):
-        object_type = obj.prototype.type
-        view_name = f'{object_type}-config-current'
-        return ConfigURL(read_only=True, view_name=view_name).get_url(
-            obj, view_name, self.context['request'], format=None)
-
-    def get_previous(self, obj):
-        object_type = obj.prototype.type
-        view_name = f'{object_type}-config-previous'
-        return ConfigURL(read_only=True, view_name=view_name).get_url(
-            obj, view_name, self.context['request'], format=None)
-
-
-class ObjectConfigSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    date = serializers.DateTimeField(read_only=True)
-    description = serializers.CharField(required=False, allow_blank=True)
-    config = JSONField(read_only=True)
-    attr = JSONField(required=False)
-
-
-class ObjectConfigUpdateSerializer(ObjectConfigSerializer):
-    config = JSONField()
-    attr = JSONField(required=False)
-
-    def update(self, instance, validated_data):
-        try:
-            conf = validated_data.get('config')
-            attr = validated_data.get('attr')
-            desc = validated_data.get('description', '')
-            cl = cm.api.update_obj_config(instance.obj_ref, conf, attr, desc)
-            if validated_data.get('ui'):
-                cl.config = cm.adcm_config.ui_config(validated_data.get('obj'), cl)
-            if hasattr(instance.obj_ref, 'adcm'):
-                logrotate.run()
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds) from e
-        return cl
-
-
-class ObjectConfigRestoreSerializer(ObjectConfigSerializer):
-    def update(self, instance, validated_data):
-        try:
-            cc = cm.adcm_config.restore_cluster_config(
-                instance.obj_ref,
-                instance.id,
-                validated_data.get('description', instance.description)
-            )
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
-        return cc
-
-
-class ConfigHistorySerializer(ObjectConfigSerializer):
-    url = serializers.SerializerMethodField()
-
-    def get_url(self, obj):
-        object_type = obj.object_type
-        view_name = f'{object_type}-config-history-version'
-        return ConfigVersionURL(read_only=True, view_name=view_name).get_url(
-            obj, view_name, self.context['request'], format=None)
