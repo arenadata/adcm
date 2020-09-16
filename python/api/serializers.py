@@ -125,6 +125,10 @@ class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):
         return attrs
 
 
+class LogOutSerializer(serializers.Serializer):
+    pass
+
+
 class PermSerializer(serializers.Serializer):
     name = serializers.CharField()
     codename = serializers.CharField()
