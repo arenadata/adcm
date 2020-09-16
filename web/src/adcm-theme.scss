@@ -78,8 +78,12 @@ a {
 }
 
 .mat-list-item.mat-warn {
-  color: mat-color($mat-orange, 500);
+  color: mat-color($mat-orange, 500)!important;
 }
+
+//.mat-list-item.mat-accent {
+//  color: mat-color($mat-green, A400);
+//}
 
 a.active .mat-list-item-content {
   // font-weight: bold;
@@ -87,10 +91,16 @@ a.active .mat-list-item-content {
   color: mat-color($mat-green, A400);
 }
 
-.mat-nav-list a {
+.mat-nav-list a:not(.top) {
   color: mat-color($mat-blue-grey, 200) !important;
 
   &:hover {
     color: mat-color($mat-blue-grey, 50) !important;
   }
+}
+
+.top-menu.mat-list-base .mat-list-item {
+  color: mat-color($mat-green, A400);
+  width: auto;
+  height: 40px;
 }

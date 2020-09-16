@@ -20,13 +20,9 @@ import { ComponentData } from './tooltip/tooltip.service';
 @Component({
   selector: 'app-status-info',
   template: `
-    <div *ngIf="(statusInfo$ | async) as components">
+    <div *ngIf="statusInfo$ | async as components">
       <ng-container *ngIf="!components.length">Nothing to display</ng-container>
-      <a
-        [routerLink]="['/cluster', cluster.id, 'service', c.service_id, 'status']"
-        *ngFor="let c of components"
-        class="component"
-      >
+      <a [routerLink]="['/cluster', cluster.id, 'service', c.service_id, 'status']" *ngFor="let c of components" class="component">
         {{ (c.display_name || c.name || c.component_display_name || c.component).toUpperCase() }}&nbsp;<ng-container
           *ngTemplateOutlet="status; context: { status: c.status }"
         ></ng-container>
@@ -40,7 +36,7 @@ import { ComponentData } from './tooltip/tooltip.service';
   styles: ['mat-icon {vertical-align: middle;}', 'a.component {display: block; padding: 6px 8px;}'],
 })
 export class StatusInfoComponent implements OnInit {
-  typeName: string;
+  path: string;
   cluster: Cluster;
   current: ApiBase;
   statusInfo$: Observable<any>;
@@ -49,9 +45,9 @@ export class StatusInfoComponent implements OnInit {
 
   ngOnInit(): void {
     this.current = this.current || this.componentData.current;
-    this.typeName = this.typeName || this.componentData.typeName;
+    this.path = this.path || this.componentData.path;
 
-    const [name] = this.typeName.split('/').reverse();
+    const [name] = this.path.split('/').reverse();
 
     let req$ = of([]);
 
@@ -62,17 +58,15 @@ export class StatusInfoComponent implements OnInit {
         break;
       case 'service':
         req$ = this.service.getClusterById((<any>this.current).cluster_id).pipe(
-          tap(c => (this.cluster = c)),
-          switchMap(cluster => this.service.getServiceComponentsByCluster(cluster, this.current.id))
+          tap((c) => (this.cluster = c)),
+          switchMap((cluster) => this.service.getServiceComponentsByCluster(cluster, this.current.id))
         );
         break;
       case 'host':
         if ((<any>this.current).cluster_id)
           req$ = this.service.getClusterById((<any>this.current).cluster_id).pipe(
-            tap(c => (this.cluster = c)),
-            switchMap(cluster =>
-              this.service.getStatusInfo(cluster.id, cluster.hostcomponent).pipe(map(a => this.service.getComponentsOnly(a, this.current.id)))
-            )
+            tap((c) => (this.cluster = c)),
+            switchMap((cluster) => this.service.getStatusInfo(cluster.id, cluster.hostcomponent).pipe(map((a) => this.service.getComponentsOnly(a, this.current.id))))
           );
         break;
     }

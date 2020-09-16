@@ -9,26 +9,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit, Input, ViewChild, ElementRef, DoCheck, Output, EventEmitter } from '@angular/core';
-import { LogFile, JobStatus } from '@app/core/types/task-job';
-import { Subscription, interval } from 'rxjs';
+import { Component, DoCheck, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { JobStatus } from '@app/core/types/task-job';
 import { BaseDirective } from '@app/shared';
+import { interval, Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-log-text',
-  template: `
-    <div class="tools">
-      <ng-container *ngIf="isScroll">
-        <button color="accent" mat-icon-button (click)="down()" matTooltip="To the bottom" [disabled]="(isRun && isWatch) || !isScroll">
-          <mat-icon>arrow_downward</mat-icon>
-        </button>
-        <button color="accent" mat-icon-button (click)="top()" matTooltip="To the top" [disabled]="!isScroll">
-          <mat-icon>arrow_upward</mat-icon>
-        </button>
-      </ng-container>
-    </div>
-    <textarea appScroll #tea (read)="read($event)" [readonly]="true">{{ log.content || 'Nothing to display...' }}</textarea>
-  `,
   styles: [
     `
       :host {
@@ -49,15 +36,28 @@ import { BaseDirective } from '@app/shared';
       }
     `,
   ],
+  template: `
+    <div class="tools">
+      <ng-container *ngIf="isScroll">
+        <button color="accent" mat-icon-button (click)="down()" matTooltip="To the bottom" [disabled]="(isRun && isWatch) || !isScroll">
+          <mat-icon>arrow_downward</mat-icon>
+        </button>
+        <button color="accent" mat-icon-button (click)="top()" matTooltip="To the top" [disabled]="!isScroll">
+          <mat-icon>arrow_upward</mat-icon>
+        </button>
+      </ng-container>
+    </div>
+    <textarea appScroll #tea (read)="read($event)" [readonly]="true">{{ content || 'Nothing to display...' }}</textarea>
+  `,
 })
 export class TextComponent extends BaseDirective implements OnInit, DoCheck {
   isScroll = false;
   isRun = false;
   isWatch = false;
   watch: Subscription;
-  @Input() log: LogFile;
+  @Input() content: string;
   @Input() status: JobStatus;
-  @Output() onrefresh = new EventEmitter();
+  @Output() refresh = new EventEmitter();
 
   @ViewChild('tea', { read: ElementRef }) textarea: ElementRef;
 
@@ -109,10 +109,6 @@ export class TextComponent extends BaseDirective implements OnInit, DoCheck {
     this.isWatch = true;
     this.watch = interval(5000)
       .pipe(this.takeUntil())
-      .subscribe({ next: () => this.refresh() });
-  }
-
-  refresh() {
-    this.onrefresh.emit();
+      .subscribe(_ => this.refresh.emit());
   }
 }

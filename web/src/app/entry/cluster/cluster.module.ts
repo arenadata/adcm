@@ -16,6 +16,7 @@ import { SharedModule, DetailComponent, MainInfoComponent, ConfigComponent, Stat
 
 import { ClusterListComponent, HcmapComponent, HostComponent, ServicesComponent } from './cluster.component';
 import { AuthGuard } from '@app/core';
+import { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';
 
 
 const clusterRoutes: Routes = [
@@ -38,6 +39,7 @@ const clusterRoutes: Routes = [
       { path: 'config', component: ConfigComponent },
       { path: 'status', component: StatusComponent },
       { path: 'import', component: ImportComponent },
+      { path: 'action', component: ActionCardComponent },
     ],
   },
   {
@@ -51,6 +53,7 @@ const clusterRoutes: Routes = [
       { path: 'config', component: ConfigComponent },
       { path: 'status', component: StatusComponent },
       { path: 'import', component: ImportComponent },
+      { path: 'action', component: ActionCardComponent },
     ],
   },
   {
@@ -63,6 +66,7 @@ const clusterRoutes: Routes = [
       { path: 'main', component: MainInfoComponent },
       { path: 'config', component: ConfigComponent },
       { path: 'status', component: StatusComponent },
+      { path: 'action', component: ActionCardComponent },
     ],
   },
 ];

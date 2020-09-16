@@ -80,7 +80,7 @@ class ActionModule(ActionBase):
     _VALID_ARGS = frozenset(('name', 'format', 'path', 'content'))
 
     def run(self, tmp=None, task_vars=None):
-        super(ActionModule, self).run(tmp, task_vars)
+        super().run(tmp, task_vars)
         if task_vars is not None and 'job' in task_vars or 'id' in task_vars['job']:
             job_id = task_vars['job']['id']
 
@@ -106,10 +106,12 @@ class ActionModule(ActionBase):
                                                     task_vars=task_vars, tmp=tmp)
                 try:
                     body = base64.standard_b64decode(slurp_return['content']).decode()
-                except Error:
-                    raise AdcmEx('UNKNOWN_ERROR', msg='Error b64decode for slurp module')
-                except UnicodeDecodeError:
-                    raise AdcmEx('UNKNOWN_ERROR', msg='Error UnicodeDecodeError for slurp module')
+                except Error as error:
+                    raise AdcmEx(
+                        'UNKNOWN_ERROR', msg='Error b64decode for slurp module') from error
+                except UnicodeDecodeError as error:
+                    raise AdcmEx(
+                        'UNKNOWN_ERROR', msg='Error UnicodeDecodeError for slurp module') from error
                 log_custom(job_id, name, log_format, body)
 
         except AdcmEx as e:

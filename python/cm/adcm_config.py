@@ -10,21 +10,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+import collections
 import copy
 import json
-import collections
+import os
+
 import yspec.checker
 from django.conf import settings
+from django.db import DEFAULT_DB_ALIAS, connections
+from django.db.migrations.executor import MigrationExecutor
 from django.db.utils import OperationalError
 from ansible.parsing.vault import VaultSecret, VaultAES256
 
-from cm.logger import log   # pylint: disable=unused-import
 import cm.config as config
-from cm.models import Cluster, Prototype, Host, HostProvider, ADCM
-from cm.models import ClusterObject, PrototypeConfig, ObjectConfig, ConfigLog
-from cm.errors import AdcmApiEx
+from cm.errors import AdcmApiEx, AdcmEx
 from cm.errors import raise_AdcmEx as err
+from cm.logger import log
+from cm.models import (
+    Cluster, Prototype, Host, HostProvider, ADCM, ClusterObject, PrototypeConfig, ObjectConfig,
+    ConfigLog
+)
 
 
 def proto_ref(proto):
@@ -34,7 +39,7 @@ def proto_ref(proto):
 def obj_ref(obj):
     if hasattr(obj, 'name'):
         name = obj.name
-    if hasattr(obj, 'fqdn'):
+    elif hasattr(obj, 'fqdn'):
         name = obj.fqdn
     else:
         name = obj.prototype.name
@@ -163,6 +168,19 @@ def load_social_auth():
             return
     except OperationalError:
         return
+    except AdcmEx as error:
+        # This code handles the "JSON_DB_ERROR" error that occurs when
+        # the "0057_auto_20200831_1055" migration is applied. In the "ADCM" object,
+        # the "stack" field type was changed from "TextField" to "JSONField", so the "stack" field
+        # contained an empty string, which is not a valid json format.
+        # This error occurs due to the fact that when "manage.py migrate" is started, the "urls.py"
+        # module is imported, in which the "load_social_auth()" function is called.
+        if error.code == 'JSON_DB_ERROR':
+            executor = MigrationExecutor(connections[DEFAULT_DB_ALIAS])
+            if ('cm', '0057_auto_20200831_1055') not in executor.loader.applied_migrations:
+                return
+        raise error
+
     try:
         cl = ConfigLog.objects.get(obj_ref=adcm[0].config, id=adcm[0].config.current)
         prepare_social_auth(json.loads(cl.config))
@@ -275,7 +293,7 @@ def restore_cluster_config(obj_conf, version, desc=''):
     try:
         cl = ConfigLog.objects.get(obj_ref=obj_conf, id=version)
     except ConfigLog.DoesNotExist:
-        raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist")
+        raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist") from None
     obj_conf.previous = obj_conf.current
     obj_conf.current = version
     obj_conf.save()

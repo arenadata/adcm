@@ -46,7 +46,7 @@ def safe_api(func, args):
     try:
         return func(*args)
     except AdcmEx as e:
-        raise AdcmApiEx(e.code, e.msg, e.http_code)
+        raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
 
 def add_cluster(proto, name, desc=''):
@@ -83,7 +83,7 @@ def add_host(proto, provider, fqdn, desc='', lock=False):
         )
         host.save()
         if lock:
-            host.stack = json.dumps(['created'])
+            host.stack = ['created']
             set_object_state(host, config.Job.LOCKED, event)
         process_file_type(host, spec, conf)
         cm.issue.save_issue(host)
@@ -227,6 +227,23 @@ def delete_service_by_id(service_id):
         service = ClusterObject.objects.get(id=service_id)
     except ClusterObject.DoesNotExist:
         err('SERVICE_NOT_FOUND', 'Service with id #{} is not found'.format(service_id))
+    service.delete()
+    cm.status_api.post_event('delete', 'service', service_id)
+    cm.status_api.load_service_map()
+
+
+def delete_service_by_name(service_name, cluster_id):
+    """
+    Unconditional removal of service from cluster
+
+    This is intended for use in adcm_delete_service ansible plugin only
+    """
+    try:
+        service = ClusterObject.objects.get(cluster__id=cluster_id, prototype__name=service_name)
+    except ClusterObject.DoesNotExist:
+        msg = 'Service with name "{}" not found in cluster #{}'
+        err('SERVICE_NOT_FOUND', msg.format(service_name, cluster_id))
+    service_id = service.id
     service.delete()
     cm.status_api.post_event('delete', 'service', service_id)
     cm.status_api.load_service_map()
@@ -479,19 +496,19 @@ def check_hc(cluster, hc_in):   # pylint: disable=too-many-branches
             host = Host.objects.get(id=item['host_id'])
         except Host.DoesNotExist:
             msg = 'No host #{}'.format(item['host_id'])
-            raise AdcmEx('HOST_NOT_FOUND', msg)
+            raise AdcmEx('HOST_NOT_FOUND', msg) from None
         try:
             service = ClusterObject.objects.get(id=item['service_id'], cluster=cluster)
         except ClusterObject.DoesNotExist:
             msg = 'No service #{} in {}'.format(item['service_id'], obj_ref(cluster))
-            raise AdcmEx('SERVICE_NOT_FOUND', msg)
+            raise AdcmEx('SERVICE_NOT_FOUND', msg) from None
         try:
             comp = ServiceComponent.objects.get(
                 id=item['component_id'], cluster=cluster, service=service
             )
         except ServiceComponent.DoesNotExist:
             msg = 'No component #{} in {} '.format(item['component_id'], obj_ref(service))
-            raise AdcmEx('COMPONENT_NOT_FOUND', msg)
+            raise AdcmEx('COMPONENT_NOT_FOUND', msg) from None
         if not host.cluster:
             msg = 'host #{} {} does not belong to any cluster'.format(host.id, host.fqdn)
             raise AdcmEx("FOREIGN_HOST", msg)
@@ -805,16 +822,13 @@ def check_multi_bind(actual_import, cluster, service, export_cluster, export_ser
 
 
 def push_obj(obj, state):
-    if obj.stack:
-        stack = json.loads(obj.stack)
-    else:
-        stack = []
+    stack = obj.stack
 
     if not stack:
         stack = [state]
     else:
         stack[0] = state
-    obj.stack = json.dumps(stack)
+    obj.stack = stack
     obj.save()
     return obj
 

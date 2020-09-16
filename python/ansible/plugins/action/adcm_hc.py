@@ -67,7 +67,7 @@ class ActionModule(ActionBase):
     _VALID_SUB_ARGS = frozenset(('action', 'service', 'component', 'host'))
 
     def run(self, tmp=None, task_vars=None):
-        super(ActionModule, self).run(tmp, task_vars)
+        super().run(tmp, task_vars)
         msg = 'You can modify hc only in cluster or service context'
         cluster_id = get_context_id(task_vars, 'cluster', 'cluster_id', msg)
         job_id = task_vars['job']['id']
@@ -88,6 +88,6 @@ class ActionModule(ActionBase):
         try:
             cm.api.change_hc(job_id, cluster_id, ops)
         except AdcmEx as e:
-            raise AnsibleError(e.code + ": " + e.msg)
+            raise AnsibleError(e.code + ": " + e.msg) from e
 
         return {"failed": False, "changed": True}
