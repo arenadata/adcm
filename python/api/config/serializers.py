@@ -12,14 +12,28 @@
 
 # pylint: disable=redefined-builtin
 
+import json
+
 from rest_framework import serializers
-from rest_framework.fields import JSONField
 from rest_framework.reverse import reverse
 
 import logrotate
 from cm.adcm_config import ui_config, restore_cluster_config
 from cm.api import update_obj_config
 from cm.errors import AdcmEx, AdcmApiEx
+
+
+class JSONField(serializers.JSONField):
+    def to_representation(self, value):
+        if value == '':
+            return None
+        elif not isinstance(value, str):
+            return value
+        else:
+            return json.loads(value)
+
+    def to_internal_value(self, data):
+        return data
 
 
 class ConfigURL(serializers.HyperlinkedIdentityField):
@@ -66,13 +80,11 @@ class ObjectConfigSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     date = serializers.DateTimeField(read_only=True)
     description = serializers.CharField(required=False, allow_blank=True)
-    config = JSONField(read_only=True)
+    config = JSONField()
     attr = JSONField(required=False)
 
 
 class ObjectConfigUpdateSerializer(ObjectConfigSerializer):
-    config = JSONField()
-    attr = JSONField(required=False)
 
     def update(self, instance, validated_data):
         try:
