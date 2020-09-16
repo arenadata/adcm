@@ -23,9 +23,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name='host',
-            name='description',
-            field=models.TextField(blank=True),
+            model_name='host', name='description', field=models.TextField(blank=True),
         ),
         migrations.AddField(
             model_name='prototypeconfig',
@@ -38,53 +36,63 @@ class Migration(migrations.Migration):
             field=models.CharField(blank=True, max_length=160),
         ),
         migrations.AlterField(
-            model_name='bundle',
-            name='description',
-            field=models.TextField(blank=True),
+            model_name='bundle', name='description', field=models.TextField(blank=True),
         ),
         migrations.AlterField(
-            model_name='cluster',
-            name='description',
-            field=models.TextField(blank=True),
+            model_name='cluster', name='description', field=models.TextField(blank=True),
         ),
         migrations.AlterField(
-            model_name='component',
-            name='description',
-            field=models.TextField(blank=True),
+            model_name='component', name='description', field=models.TextField(blank=True),
         ),
         migrations.AlterField(
-            model_name='prototype',
-            name='description',
-            field=models.TextField(blank=True),
+            model_name='prototype', name='description', field=models.TextField(blank=True),
         ),
         migrations.AlterField(
             model_name='prototypeconfig',
             name='type',
-            field=models.CharField(choices=[('string', 'string'), ('text', 'text'), ('password', 'password'), ('json', 'json'), ('integer', 'integer'), ('float', 'float'), ('option', 'option'), ('boolean', 'boolean'), ('file', 'file')], max_length=16),
+            field=models.CharField(
+                choices=[
+                    ('string', 'string'),
+                    ('text', 'text'),
+                    ('password', 'password'),
+                    ('json', 'json'),
+                    ('integer', 'integer'),
+                    ('float', 'float'),
+                    ('option', 'option'),
+                    ('boolean', 'boolean'),
+                    ('file', 'file'),
+                ],
+                max_length=16,
+            ),
         ),
         migrations.AlterField(
-            model_name='stagecomponent',
-            name='description',
-            field=models.TextField(blank=True),
+            model_name='stagecomponent', name='description', field=models.TextField(blank=True),
         ),
         migrations.AlterField(
-            model_name='stageprototype',
-            name='description',
-            field=models.TextField(blank=True),
+            model_name='stageprototype', name='description', field=models.TextField(blank=True),
         ),
         migrations.AlterField(
             model_name='stageprototypeconfig',
             name='type',
-            field=models.CharField(choices=[('string', 'string'), ('text', 'text'), ('password', 'password'), ('json', 'json'), ('integer', 'integer'), ('float', 'float'), ('option', 'option'), ('boolean', 'boolean'), ('file', 'file')], max_length=16),
+            field=models.CharField(
+                choices=[
+                    ('string', 'string'),
+                    ('text', 'text'),
+                    ('password', 'password'),
+                    ('json', 'json'),
+                    ('integer', 'integer'),
+                    ('float', 'float'),
+                    ('option', 'option'),
+                    ('boolean', 'boolean'),
+                    ('file', 'file'),
+                ],
+                max_length=16,
+            ),
         ),
         migrations.AlterField(
-            model_name='stageupgrade',
-            name='description',
-            field=models.TextField(blank=True),
+            model_name='stageupgrade', name='description', field=models.TextField(blank=True),
         ),
         migrations.AlterField(
-            model_name='upgrade',
-            name='description',
-            field=models.TextField(blank=True),
+            model_name='upgrade', name='description', field=models.TextField(blank=True),
         ),
     ]

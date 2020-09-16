@@ -11,9 +11,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name='prototype',
-            name='path',
-            field=models.CharField(default='', max_length=160),
+            model_name='prototype', name='path', field=models.CharField(default='', max_length=160),
         ),
         migrations.AddField(
             model_name='stageprototype',

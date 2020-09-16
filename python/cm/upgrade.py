@@ -22,8 +22,15 @@ from cm.adcm_config import proto_ref, obj_ref, switch_config
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
 from cm.models import (
-    Prototype, Component, Host, HostComponent, ServiceComponent, PrototypeImport,
-    ClusterBind, ClusterObject, Upgrade
+    Prototype,
+    Component,
+    Host,
+    HostComponent,
+    ServiceComponent,
+    PrototypeImport,
+    ClusterBind,
+    ClusterObject,
+    Upgrade,
 )
 
 
@@ -122,14 +129,14 @@ def check_upgrade_state(obj, upgrade):
         return False, 'no available states'
 
 
-def check_upgrade_import(obj, upgrade):   # pylint: disable=too-many-branches
+def check_upgrade_import(obj, upgrade):  # pylint: disable=too-many-branches
     def get_export(cbind):
         if cbind.source_service:
             return cbind.source_service
         else:
             return cbind.source_cluster
 
-    def get_import(cbind):   # pylint: disable=redefined-outer-name
+    def get_import(cbind):  # pylint: disable=redefined-outer-name
         if cbind.service:
             return cbind.service
         else:
@@ -155,10 +162,17 @@ def check_upgrade_import(obj, upgrade):   # pylint: disable=too-many-branches
             return False, msg.format(proto_ref(proto), export.prototype.name)
         if not version_in(export.prototype.version, pi):
             msg = 'Import "{}" of {} versions ({}, {}) does not match export version: {} ({})'
-            return (False, msg.format(
-                export.prototype.name, proto_ref(proto), pi.min_version, pi.max_version,
-                export.prototype.version, obj_ref(export)
-            ))
+            return (
+                False,
+                msg.format(
+                    export.prototype.name,
+                    proto_ref(proto),
+                    pi.min_version,
+                    pi.max_version,
+                    export.prototype.version,
+                    obj_ref(export),
+                ),
+            )
 
     for cbind in ClusterBind.objects.filter(source_cluster=obj):
         export = get_export(cbind)
@@ -173,9 +187,10 @@ def check_upgrade_import(obj, upgrade):   # pylint: disable=too-many-branches
         pi = PrototypeImport.objects.get(prototype=import_obj.prototype, name=export.prototype.name)
         if not version_in(proto.version, pi):
             msg = 'Export of {} does not match import versions: ({}, {}) ({})'
-            return (False, msg.format(
-                proto_ref(proto), pi.min_version, pi.max_version, obj_ref(import_obj)
-            ))
+            return (
+                False,
+                msg.format(proto_ref(proto), pi.min_version, pi.max_version, obj_ref(import_obj)),
+            )
 
     return True, ''
 
@@ -186,7 +201,10 @@ def check_upgrade(obj, upgrade):
         return False, '{} has issue: {}'.format(obj_ref(obj), issue)
 
     check_list = [
-        check_upgrade_version, check_upgrade_edition, check_upgrade_state, check_upgrade_import
+        check_upgrade_version,
+        check_upgrade_edition,
+        check_upgrade_state,
+        check_upgrade_import,
     ]
     for func in check_list:
         ok, msg = func(obj, upgrade)

@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import adcm.init_django   # pylint: disable=unused-import
+import adcm.init_django  # pylint: disable=unused-import
 import api.urls
 
 
@@ -47,13 +47,13 @@ def drf_docs():
 
         print("{}".format(p.pattern))
         if order:
-            print("	ORDERING:  {}".format([
-                fix_ordering(ord, p.callback.view_class) for ord in order
-            ]))
+            print(
+                "	ORDERING:  {}".format([fix_ordering(ord, p.callback.view_class) for ord in order])
+            )
         if filtr:
-            print("	FILTERING: {}".format([
-                fix_ordering(flt, p.callback.view_class) for flt in filtr
-            ]))
+            print(
+                "	FILTERING: {}".format([fix_ordering(flt, p.callback.view_class) for flt in filtr])
+            )
 
 
 drf_docs()

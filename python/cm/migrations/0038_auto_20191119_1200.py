@@ -22,15 +22,9 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name='adcm',
-            name='issue',
-            field=models.TextField(blank=True, default='{}'),
+            model_name='adcm', name='issue', field=models.TextField(blank=True, default='{}'),
         ),
-        migrations.AddField(
-            model_name='adcm',
-            name='stack',
-            field=models.TextField(blank=True),
-        ),
+        migrations.AddField(model_name='adcm', name='stack', field=models.TextField(blank=True),),
         migrations.AddField(
             model_name='adcm',
             name='state',

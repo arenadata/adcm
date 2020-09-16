@@ -21,22 +21,12 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='action',
-            name='required_hostcomponentmap',
-        ),
-        migrations.RemoveField(
-            model_name='stageaction',
-            name='required_hostcomponentmap',
+        migrations.RemoveField(model_name='action', name='required_hostcomponentmap',),
+        migrations.RemoveField(model_name='stageaction', name='required_hostcomponentmap',),
+        migrations.AddField(
+            model_name='action', name='hostcomponentmap', field=models.TextField(blank=True),
         ),
         migrations.AddField(
-            model_name='action',
-            name='hostcomponentmap',
-            field=models.TextField(blank=True),
-        ),
-        migrations.AddField(
-            model_name='stageaction',
-            name='hostcomponentmap',
-            field=models.TextField(blank=True),
+            model_name='stageaction', name='hostcomponentmap', field=models.TextField(blank=True),
         ),
     ]

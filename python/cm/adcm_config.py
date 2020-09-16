@@ -18,7 +18,7 @@ import yspec.checker
 from django.conf import settings
 from django.db.utils import OperationalError
 
-from cm.logger import log   # pylint: disable=unused-import
+from cm.logger import log  # pylint: disable=unused-import
 import cm.config as config
 from cm.models import Cluster, Prototype, Host, HostProvider, ADCM
 from cm.models import ClusterObject, PrototypeConfig, ObjectConfig, ConfigLog
@@ -63,7 +63,7 @@ def to_flat_dict(conf, spec):
     return flat
 
 
-def get_default(c, proto=None):   # pylint: disable=too-many-branches
+def get_default(c, proto=None):  # pylint: disable=too-many-branches
     value = c.default
     if c.default == '':
         value = None
@@ -89,9 +89,7 @@ def get_default(c, proto=None):   # pylint: disable=too-many-branches
     elif c.type == 'file':
         if proto:
             if c.default:
-                value = read_file_type(
-                    proto, c.default, proto.bundle.hash, c.name, c.subname
-                )
+                value = read_file_type(proto, c.default, proto.bundle.hash, c.name, c.subname)
     return value
 
 
@@ -129,10 +127,7 @@ def read_bundle_file(proto, fname, bundle_hash, pattern, ref=None):
 def init_object_config(spec, conf, attr):
     if not conf:
         return None
-    obj_conf = ObjectConfig(
-        current=0,
-        previous=0
-    )
+    obj_conf = ObjectConfig(current=0, previous=0)
     obj_conf.save()
     save_obj_config(obj_conf, conf, 'init', attr)
     return obj_conf
@@ -172,8 +167,9 @@ def get_prototype_config(proto, action=None):
     conf = {}
     attr = {}
     flist = ('default', 'required', 'type', 'limits')
-    for c in PrototypeConfig.objects.filter(
-            prototype=proto, action=action, type='group').order_by('id'):
+    for c in PrototypeConfig.objects.filter(prototype=proto, action=action, type='group').order_by(
+        'id'
+    ):
         spec[c.name] = {}
         conf[c.name] = {}
         if c.limits:
@@ -193,7 +189,9 @@ def get_prototype_config(proto, action=None):
     return (spec, flat_spec, conf, attr)
 
 
-def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+def switch_config(
+    obj, new_proto, old_proto
+):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     # process objects without config
     if not obj.config:
         spec, _, conf, attr = get_prototype_config(new_proto)
@@ -282,11 +280,7 @@ def restore_cluster_config(obj_conf, version, desc=''):
 
 
 def save_obj_config(obj_conf, conf, desc='', attr=None):
-    cl = ConfigLog(
-        obj_ref=obj_conf,
-        config=json.dumps(conf),
-        description=desc
-    )
+    cl = ConfigLog(obj_ref=obj_conf, config=json.dumps(conf), description=desc)
     if isinstance(attr, dict):
         cl.attr = json.dumps(attr)
     else:
@@ -500,7 +494,7 @@ def check_read_only(obj, spec, conf, old_conf):
 
 
 def restore_read_only(obj, spec, conf, old_conf):
-    for key in spec:   # pylint: disable=too-many-nested-blocks
+    for key in spec:  # pylint: disable=too-many-nested-blocks
         if 'type' in spec[key]:
             if config_is_ro(obj, key, spec[key]['limits']) and key not in conf:
                 if key in old_conf:
@@ -528,7 +522,7 @@ def check_attr(proto, attr, spec):
     if not attr:
         return
     ref = proto_ref(proto)
-    allowed_key = ('active', )
+    allowed_key = ('active',)
     if not isinstance(attr, dict):
         err('ATTRIBUTE_ERROR', 'Attr should be a map')
     for key in attr:
@@ -551,7 +545,9 @@ def check_attr(proto, attr, spec):
                 err('ATTRIBUTE_ERROR', msg.format('active', key, ref))
 
 
-def check_config_spec(proto, obj, spec, flat_spec, conf, old_conf=None, attr=None):   # pylint: disable=too-many-branches,too-many-statements
+def check_config_spec(
+    proto, obj, spec, flat_spec, conf, old_conf=None, attr=None
+):  # pylint: disable=too-many-branches,too-many-statements
     ref = proto_ref(proto)
     if isinstance(conf, (float, int)):
         err('JSON_ERROR', 'config should not be just one int or float')
@@ -586,8 +582,13 @@ def check_config_spec(proto, obj, spec, flat_spec, conf, old_conf=None, attr=Non
         for subkey in spec[key]:
             if subkey in conf[key]:
                 check_config_type(
-                    proto, key, subkey, spec[key][subkey],
-                    conf[key][subkey], False, is_inactive(key)
+                    proto,
+                    key,
+                    subkey,
+                    spec[key][subkey],
+                    conf[key][subkey],
+                    False,
+                    is_inactive(key),
                 )
             elif key_is_required(key, subkey, spec[key][subkey]):
                 msg = 'There is no required subkey "{}" for key "{}" ({})'
@@ -632,7 +633,9 @@ def check_config_spec(proto, obj, spec, flat_spec, conf, old_conf=None, attr=Non
     return conf
 
 
-def check_config_type(proto, key, subkey, spec, value, default=False, inactive=False):   # pylint: disable=too-many-branches,too-many-statements,too-many-locals
+def check_config_type(
+    proto, key, subkey, spec, value, default=False, inactive=False
+):  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
     ref = proto_ref(proto)
     if default:
         label = 'Default value'

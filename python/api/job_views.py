@@ -22,7 +22,11 @@ from rest_framework.reverse import reverse
 import cm.config as config
 from api.api_views import DetailViewRO, create, PageView
 from api.job_serial import (
-    JobSerializer, JobListSerializer, LogStorageSerializer, LogStorageListSerializer, LogSerializer
+    JobSerializer,
+    JobListSerializer,
+    LogStorageSerializer,
+    LogStorageListSerializer,
+    LogSerializer,
 )
 from api.serializers import TaskSerializer, TaskListSerializer, TaskPostSerializer
 from api.serializers import check_obj
@@ -36,6 +40,7 @@ class JobList(PageView):
     get:
     List all jobs
     """
+
     queryset = JobLog.objects.order_by('-id')
     serializer_class = JobListSerializer
     serializer_class_ui = JobSerializer
@@ -57,19 +62,10 @@ class JobDetail(GenericAPIView):
         for lg in logs:
             log_id = lg['id']
             lg['url'] = reverse(
-                'log-storage',
-                kwargs={
-                    'job_id': job.id,
-                    'log_id': log_id
-                },
-                request=request)
+                'log-storage', kwargs={'job_id': job.id, 'log_id': log_id}, request=request
+            )
             lg['download_url'] = reverse(
-                'download-log',
-                kwargs={
-                    'job_id': job.id,
-                    'log_id': log_id
-                },
-                request=request
+                'download-log', kwargs={'job_id': job.id, 'log_id': log_id}, request=request
             )
 
         job.log_files = logs
@@ -100,7 +96,8 @@ class LogStorageView(GenericAPIView):
                 log_storage = LogStorage.objects.get(id=log_id, job=job)
             except LogStorage.DoesNotExist:
                 raise AdcmApiEx(
-                    'LOG_NOT_FOUND', f'log {log_id} not found for job {job_id}') from None
+                    'LOG_NOT_FOUND', f'log {log_id} not found for job {job_id}'
+                ) from None
             serializer = self.serializer_class(log_storage, context={'request': request})
             return Response(serializer.data)
         except AdcmEx as e:
@@ -166,6 +163,7 @@ class Task(PageView):
     get:
     List all tasks
     """
+
     queryset = TaskLog.objects.order_by('-id')
     serializer_class = TaskListSerializer
     serializer_class_ui = TaskSerializer
@@ -187,6 +185,7 @@ class TaskDetail(DetailViewRO):
     get:
     Show task
     """
+
     queryset = TaskLog.objects.all()
     serializer_class = TaskSerializer
     lookup_field = 'id'

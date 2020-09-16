@@ -22,7 +22,6 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='prototype',
-            unique_together={('bundle', 'type', 'name', 'version')},
+            name='prototype', unique_together={('bundle', 'type', 'name', 'version')},
         ),
     ]

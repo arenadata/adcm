@@ -22,9 +22,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name='bundle',
-            name='version_order',
-            field=models.PositiveIntegerField(default=0),
+            model_name='bundle', name='version_order', field=models.PositiveIntegerField(default=0),
         ),
         migrations.AddField(
             model_name='prototype',

@@ -14,6 +14,7 @@
 # pylint: disable=wrong-import-position, unused-import, import-error
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 ANSIBLE_METADATA = {'metadata_version': '1.1', 'supported_by': 'Arenadata'}
@@ -73,9 +74,7 @@ class ActionModule(ActionBase):
         fqdn = self._task.args.get('fqdn', None)
         host_id = self._task.args.get('host_id', None)
 
-        log.info(
-            'ansible module: cluster_id %s, fqdn %s, host_id: %s', cluster_id, fqdn, host_id
-        )
+        log.info('ansible module: cluster_id %s, fqdn %s, host_id: %s', cluster_id, fqdn, host_id)
         try:
             cm.api.add_host_to_cluster_by_id(cluster_id, fqdn, host_id)
         except AdcmEx as e:

@@ -23,18 +23,48 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name='configlog',
-            name='attr',
-            field=models.TextField(default=None, null=True),
+            model_name='configlog', name='attr', field=models.TextField(default=None, null=True),
         ),
         migrations.AlterField(
             model_name='prototypeconfig',
             name='type',
-            field=models.CharField(choices=[('string', 'string'), ('text', 'text'), ('password', 'password'), ('json', 'json'), ('integer', 'integer'), ('float', 'float'), ('option', 'option'), ('boolean', 'boolean'), ('file', 'file'), ('list', 'list'), ('map', 'map'), ('group', 'group')], max_length=16),
+            field=models.CharField(
+                choices=[
+                    ('string', 'string'),
+                    ('text', 'text'),
+                    ('password', 'password'),
+                    ('json', 'json'),
+                    ('integer', 'integer'),
+                    ('float', 'float'),
+                    ('option', 'option'),
+                    ('boolean', 'boolean'),
+                    ('file', 'file'),
+                    ('list', 'list'),
+                    ('map', 'map'),
+                    ('group', 'group'),
+                ],
+                max_length=16,
+            ),
         ),
         migrations.AlterField(
             model_name='stageprototypeconfig',
             name='type',
-            field=models.CharField(choices=[('string', 'string'), ('text', 'text'), ('password', 'password'), ('json', 'json'), ('integer', 'integer'), ('float', 'float'), ('option', 'option'), ('boolean', 'boolean'), ('file', 'file'), ('list', 'list'), ('map', 'map'), ('group', 'group')], max_length=16),
+            field=models.CharField(
+                choices=[
+                    ('string', 'string'),
+                    ('text', 'text'),
+                    ('password', 'password'),
+                    ('json', 'json'),
+                    ('integer', 'integer'),
+                    ('float', 'float'),
+                    ('option', 'option'),
+                    ('boolean', 'boolean'),
+                    ('file', 'file'),
+                    ('list', 'list'),
+                    ('map', 'map'),
+                    ('group', 'group'),
+                ],
+                max_length=16,
+            ),
         ),
     ]

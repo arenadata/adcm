@@ -26,7 +26,12 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='StageUpgrade',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('name', models.CharField(blank=True, max_length=160)),
                 ('description', models.CharField(blank=True, max_length=160)),
                 ('min_version', models.CharField(max_length=80)),
@@ -38,24 +43,56 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Upgrade',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('name', models.CharField(blank=True, max_length=160)),
                 ('description', models.CharField(blank=True, max_length=160)),
                 ('min_version', models.CharField(max_length=80)),
                 ('max_version', models.CharField(max_length=80)),
                 ('state_available', models.TextField(blank=True)),
                 ('state_on_success', models.CharField(blank=True, max_length=64)),
-                ('bundle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Bundle')),
+                (
+                    'bundle',
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Bundle'),
+                ),
             ],
         ),
         migrations.AlterField(
             model_name='prototypeconfig',
             name='type',
-            field=models.CharField(choices=[('string', 'string'), ('password', 'password'), ('json', 'json'), ('integer', 'integer'), ('float', 'float'), ('option', 'option'), ('boolean', 'boolean'), ('file', 'file')], max_length=16),
+            field=models.CharField(
+                choices=[
+                    ('string', 'string'),
+                    ('password', 'password'),
+                    ('json', 'json'),
+                    ('integer', 'integer'),
+                    ('float', 'float'),
+                    ('option', 'option'),
+                    ('boolean', 'boolean'),
+                    ('file', 'file'),
+                ],
+                max_length=16,
+            ),
         ),
         migrations.AlterField(
             model_name='stageprototypeconfig',
             name='type',
-            field=models.CharField(choices=[('string', 'string'), ('password', 'password'), ('json', 'json'), ('integer', 'integer'), ('float', 'float'), ('option', 'option'), ('boolean', 'boolean'), ('file', 'file')], max_length=16),
+            field=models.CharField(
+                choices=[
+                    ('string', 'string'),
+                    ('password', 'password'),
+                    ('json', 'json'),
+                    ('integer', 'integer'),
+                    ('float', 'float'),
+                    ('option', 'option'),
+                    ('boolean', 'boolean'),
+                    ('file', 'file'),
+                ],
+                max_length=16,
+            ),
         ),
     ]

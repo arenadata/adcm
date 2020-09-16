@@ -80,7 +80,8 @@ class LogStorageSerializer(serializers.Serializer):
         if obj.type in ['stdout', 'stderr']:
             if content is None:
                 path_file = os.path.join(
-                    config.RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}')
+                    config.RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}'
+                )
                 with open(path_file, 'r') as f:
                     content = f.read()
         elif obj.type == 'check':
@@ -107,7 +108,8 @@ class LogStorageListSerializer(LogStorageSerializer):
         return reverse(
             'log-storage',
             kwargs={'job_id': obj.job_id, 'log_id': obj.id},
-            request=self.context['request'])
+            request=self.context['request'],
+        )
 
 
 class LogSerializer(serializers.Serializer):
@@ -137,7 +139,8 @@ class LogSerializer(serializers.Serializer):
         if obj.type in ['stdout', 'stderr']:
             if content is None:
                 path_file = os.path.join(
-                    config.RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}')
+                    config.RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}'
+                )
                 with open(path_file, 'r') as f:
                     content = f.read()
         elif obj.type == 'check':

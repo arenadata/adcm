@@ -22,9 +22,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name='action',
-            name='description',
-            field=models.TextField(blank=True),
+            model_name='action', name='description', field=models.TextField(blank=True),
         ),
         migrations.AddField(
             model_name='action',
@@ -42,9 +40,7 @@ class Migration(migrations.Migration):
             field=models.CharField(blank=True, max_length=160),
         ),
         migrations.AddField(
-            model_name='stageaction',
-            name='description',
-            field=models.TextField(blank=True),
+            model_name='stageaction', name='description', field=models.TextField(blank=True),
         ),
         migrations.AddField(
             model_name='stageaction',

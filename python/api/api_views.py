@@ -57,6 +57,7 @@ class DjangoModelPerm(DjangoModelPermissions):
     """
     Similar to `DjangoModelPermissions`, but adding 'view' permissions.
     """
+
     perms_map = {
         'GET': ['%(app_label)s.view_%(model_name)s'],
         'OPTIONS': ['%(app_label)s.view_%(model_name)s'],
@@ -72,7 +73,7 @@ class GenericAPIPermView(GenericAPIView):
     permission_classes = (DjangoModelPerm,)
 
 
-class InterfaceView():
+class InterfaceView:
     def for_ui(self, request):
         view = self.request.query_params.get('view', None)
         return bool(view == 'interface')
@@ -192,8 +193,13 @@ class PageView(GenericAPIView, InterfaceView):
                     obj = obj.values(*fields)
 
             except (FieldError, ValueError):
-                qp = ','.join([f'{k}={v}' for k, v in request.query_params.items()
-                               if k in ['fields', 'distinct']])
+                qp = ','.join(
+                    [
+                        f'{k}={v}'
+                        for k, v in request.query_params.items()
+                        if k in ['fields', 'distinct']
+                    ]
+                )
                 msg = f'Bad query params: {qp}'
                 raise AdcmApiEx('BAD_QUERY_PARAMS', msg=msg) from None
 

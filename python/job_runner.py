@@ -16,7 +16,7 @@ import sys
 import json
 import subprocess
 
-import adcm.init_django		# pylint: disable=unused-import
+import adcm.init_django  # pylint: disable=unused-import
 
 from cm.logger import log
 import cm.config as config
@@ -80,9 +80,12 @@ def env_configuration(job_config):
 def post_log(job_id, log_type, log_name):
     l1 = LogStorage.objects.filter(job__id=job_id, type=log_type, name=log_name).first()
     if l1:
-        cm.status_api.post_event('add_job_log', 'job', job_id, {
-            'id': l1.id, 'type': l1.type, 'name': l1.name, 'format': l1.format,
-        })
+        cm.status_api.post_event(
+            'add_job_log',
+            'job',
+            job_id,
+            {'id': l1.id, 'type': l1.type, 'name': l1.name, 'format': l1.format,},
+        )
 
 
 def run_ansible(job_id):
@@ -102,7 +105,7 @@ def run_ansible(job_id):
         f'@{config.RUN_DIR}/{job_id}/config.json',
         '-i',
         f'{config.RUN_DIR}/{job_id}/inventory.json',
-        playbook
+        playbook,
     ]
     if 'params' in conf['job']:
         if 'ansible_tags' in conf['job']['params']:

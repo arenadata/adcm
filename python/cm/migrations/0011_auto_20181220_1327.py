@@ -22,13 +22,9 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name='action',
-            name='button',
-            field=models.BooleanField(default=False),
+            model_name='action', name='button', field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='stageaction',
-            name='button',
-            field=models.BooleanField(default=False),
+            model_name='stageaction', name='button', field=models.BooleanField(default=False),
         ),
     ]

@@ -24,7 +24,6 @@ from cm.models import TaskLog, JobLog
 
 
 class PreparationData:
-
     def __init__(self, number_tasks, number_jobs):
         self.number_tasks = number_tasks
         self.number_jobs = number_jobs
@@ -43,7 +42,7 @@ class PreparationData:
                 'config': '',
                 'hostcomponentmap': '',
                 'start_date': timezone.now(),
-                'finish_date': timezone.now()
+                'finish_date': timezone.now(),
             }
             self.tasks.append(TaskLog.objects.create(**task_log_data))
             for jn in range(1, self.number_jobs + 1):
@@ -54,7 +53,7 @@ class PreparationData:
                     'selector': {'cluster': task_id},
                     'status': 'success',
                     'start_date': timezone.now(),
-                    'finish_date': timezone.now()
+                    'finish_date': timezone.now(),
                 }
                 self.jobs.append(JobLog.objects.create(**job_log_data))
 
@@ -66,7 +65,6 @@ class PreparationData:
 
 
 class TestTaskRunner(TestCase):
-
     def setUp(self):
         log.debug = Mock()
         log.error = Mock()
@@ -79,10 +77,7 @@ class TestTaskRunner(TestCase):
         process_mock.configure_mock(**attrs)
         mock_subprocess_popen.return_value = process_mock
         code = task_runner.run_job(1, 1, '')
-        cmd = [
-            '{}/job_runner.py'.format(config.CODE_DIR),
-            str(1)
-        ]
+        cmd = ['{}/job_runner.py'.format(config.CODE_DIR), str(1)]
         mock_subprocess_popen.assert_called_once_with(cmd, stderr='')
         process_mock.wait.assert_called_once()
         self.assertEqual(code, 0)
@@ -115,7 +110,6 @@ class TestTaskRunner(TestCase):
 
 
 class TestJobRunner(TestCase):
-
     def setUp(self):
         log.info = Mock()
         log.debug = Mock()
@@ -149,7 +143,8 @@ class TestJobRunner(TestCase):
         stack_dir = '/adcm/data/bundle/bundle_hash'
         python_paths = filter(
             lambda x: x != '',
-            [f'./pmod:{stack_dir}/pmod'] + cmd_env.get('PYTHONPATH', '').split(':'))
+            [f'./pmod:{stack_dir}/pmod'] + cmd_env.get('PYTHONPATH', '').split(':'),
+        )
         cmd_env['PYTHONPATH'] = ':'.join(python_paths)
         self.assertDictEqual(cmd_env, job_runner.set_pythonpath(os.environ.copy(), stack_dir))
 
@@ -163,13 +158,18 @@ class TestJobRunner(TestCase):
     @patch('os.chdir')
     @patch('job_runner.open_file')
     @patch('job_runner.read_config')
-    def test_run_ansible(self, mock_read_config, mock_open_file, mock_chdir, mock_subprocess_popen,
-                         mock_set_job_status, mock_exit, mock_job_set_job_status, mock_event):
-        conf = {
-            'job': {'playbook': 'test',
-                    'id': 1},
-            'env': {'stack_dir': 'test'}
-        }
+    def test_run_ansible(
+        self,
+        mock_read_config,
+        mock_open_file,
+        mock_chdir,
+        mock_subprocess_popen,
+        mock_set_job_status,
+        mock_exit,
+        mock_job_set_job_status,
+        mock_event,
+    ):
+        conf = {'job': {'playbook': 'test', 'id': 1}, 'env': {'stack_dir': 'test'}}
         mock_read_config.return_value = conf
         _file = Mock()
         mock_open_file.return_value = _file
@@ -186,10 +186,9 @@ class TestJobRunner(TestCase):
 
         mock_read_config.assert_called_once_with(1)
 
-        mock_open_file.assert_has_calls([
-            call(config.RUN_DIR, 'ansible-stdout', 1),
-            call(config.RUN_DIR, 'ansible-stderr', 1)
-        ])
+        mock_open_file.assert_has_calls(
+            [call(config.RUN_DIR, 'ansible-stdout', 1), call(config.RUN_DIR, 'ansible-stderr', 1)]
+        )
         mock_chdir.assert_called_with(conf['env']['stack_dir'])
 
         mock_set_job_status.assert_called_once_with(1, 0, 1, event)
@@ -200,8 +199,12 @@ class TestJobRunner(TestCase):
                 '@{}/{}/config.json'.format(config.RUN_DIR, 1),
                 '-i',
                 '{}/{}/inventory.json'.format(config.RUN_DIR, 1),
-                conf['job']['playbook']
-            ], env=env, stdout=_file, stderr=_file)
+                conf['job']['playbook'],
+            ],
+            env=env,
+            stdout=_file,
+            stderr=_file,
+        )
         mock_exit.assert_called_once()
         mock_job_set_job_status.assert_called_with(1, config.Job.RUNNING, event, 1)
 

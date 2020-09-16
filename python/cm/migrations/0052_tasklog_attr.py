@@ -22,9 +22,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='tasklog',
-            name='attr',
-            field=models.TextField(null=True),
-        ),
+        migrations.AddField(model_name='tasklog', name='attr', field=models.TextField(null=True),),
     ]

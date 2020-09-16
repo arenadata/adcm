@@ -29,8 +29,19 @@ import cm.adcm_config
 from cm.api import safe_api
 from cm.errors import AdcmApiEx, AdcmEx
 from cm.models import (
-    Action, SubAction, Prototype, PrototypeConfig, JobLog, UserProfile, Upgrade, HostProvider,
-    ConfigLog, Role, Host, Cluster, ClusterObject
+    Action,
+    SubAction,
+    Prototype,
+    PrototypeConfig,
+    JobLog,
+    UserProfile,
+    Upgrade,
+    HostProvider,
+    ConfigLog,
+    Role,
+    Host,
+    Cluster,
+    ClusterObject,
 )
 
 
@@ -61,9 +72,9 @@ def filter_actions(obj, actions_set):
             elif obj.state in available:
                 filtered.append(act)
     for act in actions_set:
-        act.config = PrototypeConfig.objects.filter(
-            prototype=act.prototype, action=act
-        ).order_by('id')
+        act.config = PrototypeConfig.objects.filter(prototype=act.prototype, action=act).order_by(
+            'id'
+        )
     return filtered
 
 
@@ -109,7 +120,7 @@ class UrlField(serializers.HyperlinkedIdentityField):
     def get_kwargs(self, obj):
         return {}
 
-    def get_url(self, obj, view_name, request, format):		# pylint: disable=redefined-builtin
+    def get_url(self, obj, view_name, request, format):  # pylint: disable=redefined-builtin
         kwargs = self.get_kwargs(obj)
         return reverse(self.view_name, kwargs=kwargs, request=request, format=format)
 
@@ -117,8 +128,7 @@ class UrlField(serializers.HyperlinkedIdentityField):
 class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):
     def validate(self, attrs):
         user = django.contrib.auth.authenticate(
-            username=attrs.get('username'),
-            password=attrs.get('password')
+            username=attrs.get('username'), password=attrs.get('password')
         )
         if not user:
             raise AdcmApiEx('AUTH_ERROR', 'Wrong user or password')
@@ -183,7 +193,7 @@ class UserSerializer(serializers.Serializer):
             user = User.objects.create_user(
                 validated_data.get('username'),
                 password=validated_data.get('password'),
-                is_superuser=validated_data.get('is_superuser', True)
+                is_superuser=validated_data.get('is_superuser', True),
             )
             UserProfile.objects.create(login=validated_data.get('username'))
             return user
@@ -200,7 +210,7 @@ class UserDetailSerializer(UserSerializer):
 class AddUser2GroupSerializer(serializers.Serializer):
     name = serializers.CharField()
 
-    def update(self, user, validated_data):   # pylint: disable=arguments-differ
+    def update(self, user, validated_data):  # pylint: disable=arguments-differ
         group = check_obj(Group, {'name': validated_data.get('name')}, 'GROUP_NOT_FOUND')
         group.user_set.add(user)
         return group
@@ -210,7 +220,7 @@ class AddUserRoleSerializer(serializers.Serializer):
     role_id = serializers.IntegerField()
     name = serializers.CharField(read_only=True)
 
-    def update(self, user, validated_data):   # pylint: disable=arguments-differ
+    def update(self, user, validated_data):  # pylint: disable=arguments-differ
         role = check_obj(Role, {'id': validated_data.get('role_id')}, 'ROLE_NOT_FOUND')
         return safe_api(cm.api.add_user_role, (user, role))
 
@@ -219,7 +229,7 @@ class AddGroupRoleSerializer(serializers.Serializer):
     role_id = serializers.IntegerField()
     name = serializers.CharField(read_only=True)
 
-    def update(self, group, validated_data):   # pylint: disable=arguments-differ
+    def update(self, group, validated_data):  # pylint: disable=arguments-differ
         role = check_obj(Role, {'id': validated_data.get('role_id')}, 'ROLE_NOT_FOUND')
         return safe_api(cm.api.add_group_role, (group, role))
 
@@ -229,7 +239,7 @@ class UserPasswdSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     @transaction.atomic
-    def update(self, user, validated_data):   # pylint: disable=arguments-differ
+    def update(self, user, validated_data):  # pylint: disable=arguments-differ
         user.set_password(validated_data.get('password'))
         user.save()
         token = Token.objects.get(user=user)
@@ -318,7 +328,7 @@ class ProviderSerializer(serializers.Serializer):
             return cm.api.add_host_provider(
                 validated_data.get('prototype_id'),
                 validated_data.get('name'),
-                validated_data.get('description', '')
+                validated_data.get('description', ''),
             )
         except Prototype.DoesNotExist:
             raise AdcmApiEx('PROTOTYPE_NOT_FOUND') from None
@@ -391,9 +401,7 @@ class HostSerializer(serializers.Serializer):
         return cm.issue.get_issue(obj)
 
     def validate_prototype_id(self, prototype_id):
-        proto = check_obj(
-            Prototype, {'id': prototype_id, 'type': 'host'}, "PROTOTYPE_NOT_FOUND"
-        )
+        proto = check_obj(Prototype, {'id': prototype_id, 'type': 'host'}, "PROTOTYPE_NOT_FOUND")
         return proto
 
     def validate_provider_id(self, provider_id):
@@ -412,7 +420,7 @@ class HostSerializer(serializers.Serializer):
                 validated_data.get('prototype_id'),
                 validated_data.get('provider_id'),
                 validated_data.get('fqdn'),
-                validated_data.get('description', '')
+                validated_data.get('description', ''),
             )
         except Prototype.DoesNotExist:
             raise AdcmApiEx('PROTOTYPE_NOT_FOUND') from None
@@ -509,7 +517,7 @@ class ProviderHostSerializer(serializers.Serializer):
                 proto,
                 self.context.get('provider'),
                 validated_data.get('fqdn'),
-                validated_data.get('description', '')
+                validated_data.get('description', ''),
             )
         except IntegrityError:
             raise AdcmApiEx("HOST_CONFLICT", "duplicate host") from None
@@ -529,10 +537,10 @@ class ConfigSerializer(serializers.Serializer):
     ui_options = JSONField(required=False)
     required = serializers.BooleanField()
 
-    def get_default(self, obj):   # pylint: disable=arguments-differ
+    def get_default(self, obj):  # pylint: disable=arguments-differ
         return cm.adcm_config.get_default(obj)
 
-    def get_value(self, obj):     # pylint: disable=arguments-differ
+    def get_value(self, obj):  # pylint: disable=arguments-differ
         proto = self.context.get('prototype', None)
         return cm.adcm_config.get_default(obj, proto)
 
@@ -593,7 +601,7 @@ class ActionDetailSerializer(ActionSerializer):
 
 
 class ClusterServiceActionUrlField(UrlField):
-    def get_url(self, obj, view_name, request, format):		# pylint: disable=redefined-builtin
+    def get_url(self, obj, view_name, request, format):  # pylint: disable=redefined-builtin
         kwargs = {
             'cluster_id': self.context['cluster_id'],
             'service_id': self.context['service_id'],
@@ -603,7 +611,7 @@ class ClusterServiceActionUrlField(UrlField):
 
 
 class ClusterHostActionUrlField(UrlField):
-    def get_url(self, obj, view_name, request, format):		# pylint: disable=redefined-builtin
+    def get_url(self, obj, view_name, request, format):  # pylint: disable=redefined-builtin
         kwargs = {
             'cluster_id': self.context['cluster_id'],
             'host_id': self.context['host_id'],
@@ -804,11 +812,9 @@ def get_job_objects(obj):
                 name = ''
         except ObjectDoesNotExist:
             name = 'does not exist'
-        resp.append({
-            'type': obj_type,
-            'id': selector[obj_type],
-            'name': name,
-        })
+        resp.append(
+            {'type': obj_type, 'id': selector[obj_type], 'name': name,}
+        )
     return resp
 
 
@@ -851,7 +857,7 @@ class TaskSerializer(TaskListSerializer):
         read_only=True,
         view_name='action-details',
         lookup_field='action_id',
-        lookup_url_kwarg='action_id'
+        lookup_url_kwarg='action_id',
     )
     action = serializers.SerializerMethodField()
     objects = serializers.SerializerMethodField()
@@ -915,7 +921,7 @@ class TaskRunSerializer(TaskSerializer):
                 validated_data.get('config', None),
                 validated_data.get('attr', None),
                 validated_data.get('hc', None),
-                validated_data.get('hosts', None)
+                validated_data.get('hosts', None),
             )
             obj.jobs = JobLog.objects.filter(task_id=obj.id)
             return obj

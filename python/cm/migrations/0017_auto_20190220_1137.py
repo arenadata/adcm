@@ -22,7 +22,6 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='stageprototype',
-            unique_together={('type', 'name', 'version')},
+            name='stageprototype', unique_together={('type', 'name', 'version')},
         ),
     ]

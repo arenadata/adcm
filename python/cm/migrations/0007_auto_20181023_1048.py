@@ -22,20 +22,12 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name='cluster',
-            name='stack',
-            field=models.TextField(blank=True),
+            model_name='cluster', name='stack', field=models.TextField(blank=True),
         ),
         migrations.AddField(
-            model_name='clusterobject',
-            name='stack',
-            field=models.TextField(blank=True),
+            model_name='clusterobject', name='stack', field=models.TextField(blank=True),
         ),
-        migrations.AddField(
-            model_name='host',
-            name='stack',
-            field=models.TextField(blank=True),
-        ),
+        migrations.AddField(model_name='host', name='stack', field=models.TextField(blank=True),),
         migrations.AddField(
             model_name='joblog',
             name='pid',

@@ -21,11 +21,7 @@ from django.utils import timezone
 from cm.logger import log
 from cm.models import ADCM, ConfigLog
 
-PERIODS = {
-    'HOURLY': Task.HOURLY,
-    'DAILY': Task.DAILY,
-    'WEEKLY': Task.WEEKLY
-}
+PERIODS = {'HOURLY': Task.HOURLY, 'DAILY': Task.DAILY, 'WEEKLY': Task.WEEKLY}
 
 
 @background(schedule=60)
@@ -33,8 +29,12 @@ def run_logrotate(path):
     cmd = ['logrotate', '-f', path]
     proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
     output, error = proc.communicate()
-    log.info('RUN: logrotate -f %s, output: %s, error: %s', path,
-             output.decode(errors='ignore'), error.decode(errors='ignore'))
+    log.info(
+        'RUN: logrotate -f %s, output: %s, error: %s',
+        path,
+        output.decode(errors='ignore'),
+        error.decode(errors='ignore'),
+    )
 
 
 def create_task(path, name, period, turn):

@@ -23,8 +23,6 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterField(
-            model_name='joblog',
-            name='finish_date',
-            field=models.DateTimeField(db_index=True),
+            model_name='joblog', name='finish_date', field=models.DateTimeField(db_index=True),
         ),
     ]

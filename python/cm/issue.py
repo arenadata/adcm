@@ -12,7 +12,7 @@
 
 import json
 
-from cm.logger import log   # pylint: disable=unused-import
+from cm.logger import log  # pylint: disable=unused-import
 import cm.status_api
 from cm.errors import AdcmEx
 from cm.errors import raise_AdcmEx as err
@@ -66,7 +66,7 @@ def issue_to_bool(issue):
     return True
 
 
-def get_issue(obj):   # pylint: disable=too-many-branches
+def get_issue(obj):  # pylint: disable=too-many-branches
     issue = obj.issue
     if obj.prototype.type == 'cluster':
         issue['service'] = []
@@ -146,10 +146,10 @@ def check_adcm_issue(obj):
     return {}
 
 
-def check_config(obj):   # pylint: disable=too-many-branches
+def check_config(obj):  # pylint: disable=too-many-branches
     spec, _, _, _ = get_prototype_config(obj.prototype)
     conf, attr = get_obj_config(obj)
-    for key in spec:   # pylint: disable=too-many-nested-blocks
+    for key in spec:  # pylint: disable=too-many-nested-blocks
         if 'required' in spec[key]:
             if spec[key]['required']:
                 if key in conf and conf[key] is None:

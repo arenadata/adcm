@@ -42,7 +42,6 @@ class Migration(migrations.Migration):
             field=models.TextField(blank=True, default='[\"community\"]'),
         ),
         migrations.AlterUniqueTogether(
-            name='bundle',
-            unique_together={('name', 'version', 'edition')},
+            name='bundle', unique_together={('name', 'version', 'edition')},
         ),
     ]

@@ -37,8 +37,13 @@ from cm.models import PrototypeExport, PrototypeImport, StagePrototypeExport, St
 
 
 STAGE = (
-    StagePrototype, StageComponent, StageAction, StagePrototypeConfig,
-    StageUpgrade, StagePrototypeExport, StagePrototypeImport
+    StagePrototype,
+    StageComponent,
+    StageAction,
+    StagePrototypeConfig,
+    StageUpgrade,
+    StagePrototypeExport,
+    StagePrototypeImport,
 )
 
 
@@ -87,9 +92,12 @@ def order_model_versions(model):
         items.append(obj)
     ver = ""
     count = 0
-    for obj in sorted(items, key=functools.cmp_to_key(
+    for obj in sorted(
+        items,
+        key=functools.cmp_to_key(
             lambda obj1, obj2: rpm.compare_versions(obj1.version, obj2.version)
-    )):
+        ),
+    ):
         if ver != obj.version:
             count += 1
         # log.debug("MODEL %s count: %s, %s %s", model, count, obj.name, obj.version)
@@ -219,6 +227,7 @@ def check_stage():
     def count(model):
         if model.objects.all().count():
             err('BUNDLE_ERROR', 'Stage is not empty {}'.format(model))
+
     for model in STAGE:
         count(model)
 
@@ -309,10 +318,22 @@ def second_pass():
 def copy_stage_prototype(stage_prototypes, bundle):
     prototypes = []  # Map for stage prototype id: new prototype
     for sp in stage_prototypes:
-        p = copy_obj(sp, Prototype, (
-            'type', 'path', 'name', 'version', 'required', 'shared', 'monitoring',
-            'display_name', 'description', 'adcm_min_version'
-        ))
+        p = copy_obj(
+            sp,
+            Prototype,
+            (
+                'type',
+                'path',
+                'name',
+                'version',
+                'required',
+                'shared',
+                'monitoring',
+                'display_name',
+                'description',
+                'adcm_min_version',
+            ),
+        )
         p.bundle = bundle
         prototypes.append(p)
     Prototype.objects.bulk_create(prototypes)
@@ -321,10 +342,21 @@ def copy_stage_prototype(stage_prototypes, bundle):
 def copy_stage_upgrade(stage_upgrades, bundle):
     upgrades = []
     for su in stage_upgrades:
-        upg = copy_obj(su, Upgrade, (
-            'name', 'description', 'min_version', 'max_version', 'min_strict', 'max_strict',
-            'state_available', 'state_on_success', 'from_edition',
-        ))
+        upg = copy_obj(
+            su,
+            Upgrade,
+            (
+                'name',
+                'description',
+                'min_version',
+                'max_version',
+                'min_strict',
+                'max_strict',
+                'state_available',
+                'state_on_success',
+                'from_edition',
+            ),
+        )
         upg.bundle = bundle
         upgrades.append(upg)
     Upgrade.objects.bulk_create(upgrades)
@@ -344,10 +376,24 @@ def copy_stage_actons(stage_actions, prototype):
         stage_actions,
         Action,
         prototype,
-        ('name', 'type', 'script', 'script_type', 'state_on_success',
-         'state_on_fail', 'state_available', 'params', 'log_files',
-         'hostcomponentmap', 'button', 'display_name', 'description', 'ui_options',
-         'allow_to_terminate', 'partial_execution')
+        (
+            'name',
+            'type',
+            'script',
+            'script_type',
+            'state_on_success',
+            'state_on_fail',
+            'state_available',
+            'params',
+            'log_files',
+            'hostcomponentmap',
+            'button',
+            'display_name',
+            'description',
+            'ui_options',
+            'allow_to_terminate',
+            'partial_execution',
+        ),
     )
     Action.objects.bulk_create(actions)
 
@@ -360,11 +406,13 @@ def copy_stage_sub_actons(bundle):
             prototype__type=ssubaction.action.prototype.type,
             prototype__name=ssubaction.action.prototype.name,
             prototype__version=ssubaction.action.prototype.version,
-            name=ssubaction.action.name
+            name=ssubaction.action.name,
         )
-        sub = copy_obj(ssubaction, SubAction, (
-            'name', 'display_name', 'script', 'script_type', 'state_on_fail', 'params'
-        ))
+        sub = copy_obj(
+            ssubaction,
+            SubAction,
+            ('name', 'display_name', 'script', 'script_type', 'state_on_fail', 'params'),
+        )
         sub.action = action
         sub_actions.append(sub)
     SubAction.objects.bulk_create(sub_actions)
@@ -375,17 +423,26 @@ def copy_stage_component(stage_components, prototype):
         stage_components,
         Component,
         prototype,
-        ('name', 'display_name', 'description', 'params', 'monitoring', 'requires', 'constraint')
+        ('name', 'display_name', 'description', 'params', 'monitoring', 'requires', 'constraint'),
     )
     Component.objects.bulk_create(components)
 
 
 def copy_stage_import(stage_imports, prototype):
     imports = prepare_bulk(
-        stage_imports, PrototypeImport, prototype, (
-            'name', 'min_version', 'max_version', 'min_strict', 'max_strict',
-            'default', 'required', 'multibind'
-        )
+        stage_imports,
+        PrototypeImport,
+        prototype,
+        (
+            'name',
+            'min_version',
+            'max_version',
+            'min_strict',
+            'max_strict',
+            'default',
+            'required',
+            'multibind',
+        ),
     )
     PrototypeImport.objects.bulk_create(imports)
 
@@ -393,10 +450,21 @@ def copy_stage_import(stage_imports, prototype):
 def copy_stage_config(stage_config, prototype):
     target_config = []
     for sc in stage_config:
-        c = copy_obj(sc, PrototypeConfig, (
-            'name', 'subname', 'default', 'type', 'description',
-            'display_name', 'limits', 'required', 'ui_options'
-        ))
+        c = copy_obj(
+            sc,
+            PrototypeConfig,
+            (
+                'name',
+                'subname',
+                'default',
+                'type',
+                'description',
+                'display_name',
+                'limits',
+                'required',
+                'ui_options',
+            ),
+        )
         if sc.action:
             c.action = Action.objects.get(prototype=prototype, name=sc.action.name)
         c.prototype = prototype
@@ -412,9 +480,11 @@ def check_license(bundle):
 
 
 def copy_stage(bundle_hash, bundle_proto):
-    bundle = copy_obj(bundle_proto, Bundle, (
-        'name', 'version', 'edition', 'license_path', 'license_hash', 'description'
-    ))
+    bundle = copy_obj(
+        bundle_proto,
+        Bundle,
+        ('name', 'version', 'edition', 'license_path', 'license_hash', 'description'),
+    )
     bundle.hash = bundle_hash
     check_license(bundle)
     if bundle.license_path:
@@ -445,7 +515,9 @@ def copy_stage(bundle_hash, bundle_proto):
     return bundle
 
 
-def update_bundle_from_stage(bundle):   # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+def update_bundle_from_stage(
+    bundle,
+):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     for sp in StagePrototype.objects.all():
         try:
             p = Prototype.objects.get(bundle=bundle, type=sp.type, name=sp.name, version=sp.version)
@@ -458,52 +530,112 @@ def update_bundle_from_stage(bundle):   # pylint: disable=too-many-locals,too-ma
             p.monitoring = sp.monitoring
             p.adcm_min_version = sp.adcm_min_version
         except Prototype.DoesNotExist:
-            p = copy_obj(sp, Prototype, (
-                'type', 'path', 'name', 'version', 'required', 'shared', 'monitoring',
-                'display_name', 'description', 'adcm_min_version'
-            ))
+            p = copy_obj(
+                sp,
+                Prototype,
+                (
+                    'type',
+                    'path',
+                    'name',
+                    'version',
+                    'required',
+                    'shared',
+                    'monitoring',
+                    'display_name',
+                    'description',
+                    'adcm_min_version',
+                ),
+            )
             p.bundle = bundle
         p.save()
         for scomp in StageComponent.objects.filter(prototype=sp):
             try:
                 comp = Component.objects.get(prototype=p, name=scomp.name)
-                update_obj(comp, scomp, (
-                    'display_name', 'description', 'params', 'monitoring', 'requires', 'constraint'
-                ))
+                update_obj(
+                    comp,
+                    scomp,
+                    (
+                        'display_name',
+                        'description',
+                        'params',
+                        'monitoring',
+                        'requires',
+                        'constraint',
+                    ),
+                )
             except Component.DoesNotExist:
-                comp = copy_obj(scomp, Component, (
-                    'name', 'display_name', 'description', 'params', 'requires', 'constraint'
-                ))
+                comp = copy_obj(
+                    scomp,
+                    Component,
+                    ('name', 'display_name', 'description', 'params', 'requires', 'constraint'),
+                )
                 comp.prototype = p
             comp.save()
         for saction in StageAction.objects.filter(prototype=sp):
             try:
                 action = Action.objects.get(prototype=p, name=saction.name)
-                update_obj(action, saction, (
-                    'type', 'script', 'script_type', 'state_on_success',
-                    'state_on_fail', 'state_available', 'params', 'log_files',
-                    'hostcomponentmap', 'button', 'display_name', 'description', 'ui_options',
-                    'allow_to_terminate', 'partial_execution'
-                ))
+                update_obj(
+                    action,
+                    saction,
+                    (
+                        'type',
+                        'script',
+                        'script_type',
+                        'state_on_success',
+                        'state_on_fail',
+                        'state_available',
+                        'params',
+                        'log_files',
+                        'hostcomponentmap',
+                        'button',
+                        'display_name',
+                        'description',
+                        'ui_options',
+                        'allow_to_terminate',
+                        'partial_execution',
+                    ),
+                )
             except Action.DoesNotExist:
-                action = copy_obj(saction, Action, (
-                    'name', 'type', 'script', 'script_type', 'state_on_success',
-                    'state_on_fail', 'state_available', 'params', 'log_files',
-                    'hostcomponentmap', 'button', 'display_name', 'description', 'ui_options',
-                    'allow_to_terminate', 'partial_execution'
-                ))
+                action = copy_obj(
+                    saction,
+                    Action,
+                    (
+                        'name',
+                        'type',
+                        'script',
+                        'script_type',
+                        'state_on_success',
+                        'state_on_fail',
+                        'state_available',
+                        'params',
+                        'log_files',
+                        'hostcomponentmap',
+                        'button',
+                        'display_name',
+                        'description',
+                        'ui_options',
+                        'allow_to_terminate',
+                        'partial_execution',
+                    ),
+                )
                 action.prototype = p
             action.save()
             SubAction.objects.filter(action=action).delete()
             for ssubaction in StageSubAction.objects.filter(action=saction):
-                sub = copy_obj(ssubaction, SubAction, (
-                    'script', 'script_type', 'state_on_fail', 'params'
-                ))
+                sub = copy_obj(
+                    ssubaction, SubAction, ('script', 'script_type', 'state_on_fail', 'params')
+                )
                 sub.action = action
                 sub.save()
         for sc in StagePrototypeConfig.objects.filter(prototype=sp):
             flist = (
-                'default', 'type', 'description', 'display_name', 'limits', 'required', 'ui_options'
+                'default',
+                'type',
+                'description',
+                'display_name',
+                'limits',
+                'required',
+                'ui_options',
             )
             act = None
             if sc.action:
@@ -525,19 +657,40 @@ def update_bundle_from_stage(bundle):   # pylint: disable=too-many-locals,too-ma
             pe.save()
         PrototypeImport.objects.filter(prototype=p).delete()
         for si in StagePrototypeImport.objects.filter(prototype=sp):
-            pi = copy_obj(si, PrototypeImport, (
-                'name', 'min_version', 'max_version', 'min_strict', 'max_strict',
-                'default', 'required', 'multibind'
-            ))
+            pi = copy_obj(
+                si,
+                PrototypeImport,
+                (
+                    'name',
+                    'min_version',
+                    'max_version',
+                    'min_strict',
+                    'max_strict',
+                    'default',
+                    'required',
+                    'multibind',
+                ),
+            )
             pi.prototype = p
             pi.save()
 
     Upgrade.objects.filter(bundle=bundle).delete()
     for su in StageUpgrade.objects.all():
-        upg = copy_obj(su, Upgrade, (
-            'name', 'description', 'min_version', 'max_version', 'min_strict', 'max_strict',
-            'state_available', 'state_on_success', 'from_edition'
-        ))
+        upg = copy_obj(
+            su,
+            Upgrade,
+            (
+                'name',
+                'description',
+                'min_version',
+                'max_version',
+                'min_strict',
+                'max_strict',
+                'state_available',
+                'state_on_success',
+                'from_edition',
+            ),
+        )
         upg.bundle = bundle
         upg.save()
 

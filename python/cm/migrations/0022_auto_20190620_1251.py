@@ -25,23 +25,29 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name='prototype',
-            name='shared',
-            field=models.BooleanField(default=False),
+            model_name='prototype', name='shared', field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='stageprototype',
-            name='shared',
-            field=models.BooleanField(default=False),
+            model_name='stageprototype', name='shared', field=models.BooleanField(default=False),
         ),
         migrations.AlterField(
             model_name='clusterbind',
             name='source_cluster',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='source_cluster', to='cm.Cluster'),
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name='source_cluster',
+                to='cm.Cluster',
+            ),
         ),
         migrations.AlterField(
             model_name='clusterbind',
             name='source_service',
-            field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='source_service', to='cm.ClusterObject'),
+            field=models.ForeignKey(
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name='source_service',
+                to='cm.ClusterObject',
+            ),
         ),
     ]

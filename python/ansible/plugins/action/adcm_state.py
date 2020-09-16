@@ -12,9 +12,11 @@
 
 # pylint: disable=wrong-import-position, unused-import, import-error
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import sys
+
 sys.path.append('/adcm/python')
 import adcm.init_django
 
@@ -24,7 +26,7 @@ from cm.api import (
     set_host_state,
     set_service_state,
     set_service_state_by_id,
-    set_provider_state
+    set_provider_state,
 )
 from cm.status_api import Event
 
@@ -89,11 +91,7 @@ class ActionModule(ContextActionModule):
     _MANDATORY_ARGS = ('type', 'state')
 
     def _do_cluster(self, task_vars, context):
-        res = self._wrap_call(
-            set_cluster_state,
-            context['cluster_id'],
-            self._task.args["state"]
-        )
+        res = self._wrap_call(set_cluster_state, context['cluster_id'], self._task.args["state"])
         res['state'] = self._task.args["state"]
         return res
 
@@ -102,7 +100,7 @@ class ActionModule(ContextActionModule):
             set_service_state,
             context['cluster_id'],
             self._task.args["service_name"],
-            self._task.args["state"]
+            self._task.args["state"],
         )
         res['state'] = self._task.args["state"]
         return res
@@ -112,36 +110,25 @@ class ActionModule(ContextActionModule):
             set_service_state_by_id,
             context['cluster_id'],
             context['service_id'],
-            self._task.args["state"]
+            self._task.args["state"],
         )
         res['state'] = self._task.args["state"]
         return res
 
     def _do_host(self, task_vars, context):
-        res = self._wrap_call(
-            set_host_state,
-            context['host_id'],
-            self._task.args["state"],
-        )
+        res = self._wrap_call(set_host_state, context['host_id'], self._task.args["state"],)
         res['state'] = self._task.args["state"]
         return res
 
     def _do_host_from_provider(self, task_vars, context):
-        res = self._wrap_call(
-            set_host_state,
-            self._task.args['host_id'],
-            self._task.args["state"],
-        )
+        res = self._wrap_call(set_host_state, self._task.args['host_id'], self._task.args["state"],)
         res['state'] = self._task.args["state"]
         return res
 
     def _do_provider(self, task_vars, context):
         event = Event()
         res = self._wrap_call(
-            set_provider_state,
-            context['provider_id'],
-            self._task.args["state"],
-            event
+            set_provider_state, context['provider_id'], self._task.args["state"], event
         )
         event.send_state()
         res['state'] = self._task.args["state"]

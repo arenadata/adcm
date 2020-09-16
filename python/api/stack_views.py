@@ -22,7 +22,7 @@ from cm.errors import AdcmEx, AdcmApiEx
 from cm.models import Bundle, Prototype, Component, Action
 from cm.models import PrototypeConfig, Upgrade, PrototypeExport
 from cm.models import PrototypeImport
-from cm.logger import log   # pylint: disable=unused-import
+from cm.logger import log  # pylint: disable=unused-import
 
 import api.serializers
 import api.stack_serial
@@ -88,6 +88,7 @@ class BundleList(PageView):
     get:
     List all bundles
     """
+
     queryset = Bundle.objects.exclude(hash='adcm')
     serializer_class = api.stack_serial.BundleSerializer
     filterset_fields = ('name', 'version')
@@ -102,6 +103,7 @@ class BundleDetail(DetailViewRO):
     delete:
     Remove bundle
     """
+
     queryset = Bundle.objects.all()
     serializer_class = api.stack_serial.BundleSerializer
     lookup_field = 'id'
@@ -167,6 +169,7 @@ class PrototypeList(PageView):
     get:
     List all stack prototypes
     """
+
     queryset = Prototype.objects.all()
     serializer_class = api.stack_serial.PrototypeSerializer
     filterset_fields = ('name', 'bundle_id', 'type')
@@ -178,6 +181,7 @@ class ServiceList(PageView):
     get:
     List all stack services
     """
+
     queryset = Prototype.objects.filter(type='service')
     serializer_class = api.stack_serial.ServiceSerializer
     filterset_fields = ('name', 'bundle_id')
@@ -189,6 +193,7 @@ class ServiceDetail(DetailViewRO):
     get:
     Show stack service
     """
+
     queryset = Prototype.objects.filter(type='service')
     serializer_class = api.stack_serial.ServiceDetailSerializer
     lookup_field = 'id'
@@ -199,9 +204,9 @@ class ServiceDetail(DetailViewRO):
         service = super().get_object()
         service.actions = Action.objects.filter(prototype__type='service', prototype__id=service.id)
         service.components = Component.objects.filter(prototype=service)
-        service.config = PrototypeConfig.objects.filter(
-            prototype=service, action=None
-        ).order_by('id')
+        service.config = PrototypeConfig.objects.filter(prototype=service, action=None).order_by(
+            'id'
+        )
         service.exports = PrototypeExport.objects.filter(prototype=service)
         service.imports = PrototypeImport.objects.filter(prototype=service)
         return service
@@ -238,6 +243,7 @@ class HostTypeList(PageView):
     get:
     List all host types
     """
+
     queryset = Prototype.objects.filter(type='host')
     serializer_class = api.stack_serial.HostTypeSerializer
     filterset_fields = ('name', 'bundle_id')
@@ -249,6 +255,7 @@ class ProviderTypeList(PageView):
     get:
     List all host providers types
     """
+
     queryset = Prototype.objects.filter(type='provider')
     serializer_class = api.stack_serial.ProviderTypeSerializer
     filterset_fields = ('name', 'bundle_id', 'display_name')
@@ -260,6 +267,7 @@ class ClusterTypeList(PageView):
     get:
     List all cluster types
     """
+
     queryset = Prototype.objects.filter(type='cluster')
     serializer_class = api.stack_serial.ClusterTypeSerializer
     filterset_fields = ('name', 'bundle_id', 'display_name')
@@ -271,6 +279,7 @@ class AdcmTypeList(ListView):
     get:
     List adcm root object prototypes
     """
+
     queryset = Prototype.objects.filter(type='adcm')
     serializer_class = api.stack_serial.AdcmTypeSerializer
     filterset_fields = ('bundle_id',)
@@ -281,6 +290,7 @@ class PrototypeDetail(DetailViewRO):
     get:
     Show prototype
     """
+
     queryset = Prototype.objects.all()
     serializer_class = api.stack_serial.PrototypeDetailSerializer
     lookup_field = 'id'
@@ -306,6 +316,7 @@ class AdcmTypeDetail(PrototypeDetail):
     get:
     Show adcm prototype
     """
+
     queryset = Prototype.objects.filter(type='adcm')
     serializer_class = api.stack_serial.AdcmTypeDetailSerializer
 
@@ -315,6 +326,7 @@ class ClusterTypeDetail(PrototypeDetail):
     get:
     Show cluster prototype
     """
+
     queryset = Prototype.objects.filter(type='cluster')
     serializer_class = api.stack_serial.ClusterTypeDetailSerializer
 
@@ -324,6 +336,7 @@ class HostTypeDetail(PrototypeDetail):
     get:
     Show host prototype
     """
+
     queryset = Prototype.objects.filter(type='host')
     serializer_class = api.stack_serial.HostTypeDetailSerializer
 
@@ -333,6 +346,7 @@ class ProviderTypeDetail(PrototypeDetail):
     get:
     Show host provider prototype
     """
+
     queryset = Prototype.objects.filter(type='provider')
     serializer_class = api.stack_serial.ProviderTypeDetailSerializer
 

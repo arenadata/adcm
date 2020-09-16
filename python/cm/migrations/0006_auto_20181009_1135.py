@@ -32,8 +32,6 @@ class Migration(migrations.Migration):
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='tasklog',
-            name='hostcomponentmap',
-            field=models.TextField(null=True),
+            model_name='tasklog', name='hostcomponentmap', field=models.TextField(null=True),
         ),
     ]

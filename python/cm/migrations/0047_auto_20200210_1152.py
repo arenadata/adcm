@@ -22,18 +22,12 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name='action',
-            name='partial_execution',
-            field=models.BooleanField(default=False),
+            model_name='action', name='partial_execution', field=models.BooleanField(default=False),
         ),
         migrations.AddField(
             model_name='stageaction',
             name='partial_execution',
             field=models.BooleanField(default=False),
         ),
-        migrations.AddField(
-            model_name='tasklog',
-            name='hosts',
-            field=models.TextField(null=True),
-        ),
+        migrations.AddField(model_name='tasklog', name='hosts', field=models.TextField(null=True),),
     ]

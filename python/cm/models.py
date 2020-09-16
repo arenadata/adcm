@@ -45,8 +45,8 @@ class JSONField(models.Field):
                 return json.loads(value)
             except json.JSONDecodeError:
                 raise AdcmEx(
-                    'JSON_DB_ERROR',
-                    msg=f"Not correct field format '{expression.field.attname}'") from None
+                    'JSON_DB_ERROR', msg=f"Not correct field format '{expression.field.attname}'"
+                ) from None
         return value
 
     def get_prep_value(self, value):
@@ -126,8 +126,8 @@ class ObjectConfig(models.Model):
 
 class ConfigLog(models.Model):
     obj_ref = models.ForeignKey(ObjectConfig, on_delete=models.CASCADE)
-    config = models.TextField()         # JSON
-    attr = models.TextField(default=None, null=True)   # JSON
+    config = models.TextField()  # JSON
+    attr = models.TextField(default=None, null=True)  # JSON
     date = models.DateTimeField(auto_now=True)
     description = models.TextField(blank=True)
 
@@ -307,8 +307,8 @@ class PrototypeConfig(models.Model):
     type = models.CharField(max_length=16, choices=CONFIG_FIELD_TYPE)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
-    limits = models.TextField(blank=True)   # JSON
-    ui_options = models.TextField(blank=True, null=True, default=None)   # JSON
+    limits = models.TextField(blank=True)  # JSON
+    ui_options = models.TextField(blank=True, null=True, default=None)  # JSON
     required = models.BooleanField(default=True)
 
     class Meta:
@@ -349,7 +349,7 @@ class ClusterBind(models.Model):
         related_name='source_service',
         on_delete=models.CASCADE,
         null=True,
-        default=None
+        default=None,
     )
 
     class Meta:
@@ -360,7 +360,7 @@ JOB_STATUS = (
     ('created', 'created'),
     ('running', 'running'),
     ('success', 'success'),
-    ('failed', 'failed')
+    ('failed', 'failed'),
 )
 
 
@@ -410,10 +410,7 @@ class GroupCheckLog(models.Model):
     result = models.BooleanField(blank=True, null=True)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=['job_id', 'title'], name='unique_group_job')
-        ]
+        constraints = [models.UniqueConstraint(fields=['job_id', 'title'], name='unique_group_job')]
 
 
 class CheckLog(models.Model):
@@ -447,11 +444,13 @@ class LogStorage(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['job'], condition=models.Q(type='check'), name='unique_check_job')
+                fields=['job'], condition=models.Q(type='check'), name='unique_check_job'
+            )
         ]
 
 
 # Stage: Temporary tables to load bundle
+
 
 class StagePrototype(models.Model):
     type = models.CharField(max_length=16, choices=PROTO_TYPE)
@@ -551,8 +550,8 @@ class StagePrototypeConfig(models.Model):
     type = models.CharField(max_length=16, choices=CONFIG_FIELD_TYPE)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
-    limits = models.TextField(blank=True)   # JSON
-    ui_options = models.TextField(blank=True, null=True, default=None)   # JSON
+    limits = models.TextField(blank=True)  # JSON
+    ui_options = models.TextField(blank=True, null=True, default=None)  # JSON
     required = models.BooleanField(default=True)
 
     class Meta:

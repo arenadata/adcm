@@ -18,7 +18,7 @@ import cm.job
 import cm.status_api
 import logrotate
 from cm.api import safe_api
-from cm.logger import log   # pylint: disable=unused-import
+from cm.logger import log  # pylint: disable=unused-import
 from cm.errors import AdcmApiEx, AdcmEx
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent, Component
 
@@ -349,8 +349,7 @@ class ClusterServiceSerializer(serializers.Serializer):
     def create(self, validated_data):
         try:
             return cm.api.add_service_to_cluster(
-                self.context.get('cluster'),
-                validated_data.get('prototype_id'),
+                self.context.get('cluster'), validated_data.get('prototype_id'),
             )
         except IntegrityError:
             raise AdcmApiEx('SERVICE_CONFLICT') from None
@@ -494,14 +493,12 @@ class HCComponentSerializer(ServiceComponentDetailSerializer):
                 comp = Component.objects.get(
                     name=c['component'],
                     prototype__name=c['service'],
-                    prototype__bundle_id=obj.component.prototype.bundle_id
+                    prototype__bundle_id=obj.component.prototype.bundle_id,
                 )
                 if comp == obj.component:
                     return
                 if comp.prototype.name not in comp_list:
-                    comp_list[comp.prototype.name] = {
-                        'components': {}, 'service': comp.prototype
-                    }
+                    comp_list[comp.prototype.name] = {'components': {}, 'service': comp.prototype}
                 if comp.name in comp_list[comp.prototype.name]['components']:
                     return
                 comp_list[comp.prototype.name]['components'][comp.name] = comp
@@ -518,19 +515,19 @@ class HCComponentSerializer(ServiceComponentDetailSerializer):
             service = comp_list[service_name]['service']
             for comp_name in comp_list[service_name]['components']:
                 comp = comp_list[service_name]['components'][comp_name]
-                comp_out.append({
-                    'prototype_id': comp.id,
-                    'name': comp_name,
-                    'display_name': comp.display_name,
-                })
+                comp_out.append(
+                    {'prototype_id': comp.id, 'name': comp_name, 'display_name': comp.display_name,}
+                )
             if not comp_out:
                 continue
-            out.append({
-                'prototype_id': service.id,
-                'name': service_name,
-                'display_name': service.display_name,
-                'components': comp_out
-            })
+            out.append(
+                {
+                    'prototype_id': service.id,
+                    'name': service_name,
+                    'display_name': service.display_name,
+                    'components': comp_out,
+                }
+            )
         return out
 
 
@@ -583,10 +580,7 @@ class ServiceBindSerializer(BindSerializer):
 class ClusterBindSerializer(BindSerializer):
     class MyUrlField(UrlField):
         def get_kwargs(self, obj):
-            return {
-                'bind_id': obj.id,
-                'cluster_id': obj.cluster.id
-            }
+            return {'bind_id': obj.id, 'cluster_id': obj.cluster.id}
 
     url = MyUrlField(read_only=True, view_name='cluster-bind-details')
 
@@ -607,7 +601,7 @@ class DoBindSerializer(serializers.Serializer):
                 validated_data.get('cluster'),
                 None,
                 export_cluster,
-                validated_data.get('export_service_id', 0)
+                validated_data.get('export_service_id', 0),
             )
         except AdcmEx as e:
             raise AdcmApiEx(e.code, e.msg, e.http_code) from e
@@ -630,7 +624,7 @@ class DoServiceBindSerializer(serializers.Serializer):
                 validated_data.get('cluster'),
                 validated_data.get('service'),
                 export_cluster,
-                validated_data.get('export_service_id')
+                validated_data.get('export_service_id'),
             )
         except AdcmEx as e:
             raise AdcmApiEx(e.code, e.msg, e.http_code) from e
@@ -726,7 +720,7 @@ class ObjectConfigRestore(ObjectConfig):
             cc = cm.adcm_config.restore_cluster_config(
                 instance.obj_ref,
                 instance.id,
-                validated_data.get('description', instance.description)
+                validated_data.get('description', instance.description),
             )
         except AdcmEx as e:
             raise AdcmApiEx(e.code, e.msg, e.http_code) from e

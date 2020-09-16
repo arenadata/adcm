@@ -82,9 +82,23 @@ def check_object_definition(fname, conf, def_type, obj_list):
         msg = 'Duplicate definition of {} (file {})'
         err('INVALID_OBJECT_DEFINITION', msg.format(ref, fname))
     allow = (
-        'type', 'name', 'version', 'display_name', 'description', 'actions', 'components',
-        'config', 'upgrade', 'export', 'import', 'required', 'shared', 'monitoring',
-        'adcm_min_version', 'edition', 'license',
+        'type',
+        'name',
+        'version',
+        'display_name',
+        'description',
+        'actions',
+        'components',
+        'config',
+        'upgrade',
+        'export',
+        'import',
+        'required',
+        'shared',
+        'monitoring',
+        'adcm_min_version',
+        'edition',
+        'license',
     )
     check_extra_keys(conf, allow, ref)
 
@@ -107,16 +121,12 @@ def get_config_files(path, bundle_hash):
         ('config.json', 'json'),
     ]
     if not os.path.isdir(path):
-        return err(
-            'STACK_LOAD_ERROR',
-            'no directory: {}'.format(path),
-            status.HTTP_404_NOT_FOUND
-        )
+        return err('STACK_LOAD_ERROR', 'no directory: {}'.format(path), status.HTTP_404_NOT_FOUND)
     for root, _, files in os.walk(path):
         for conf_file, conf_type in conf_types:
             if conf_file in files:
                 dirs = root.split('/')
-                path = os.path.join('', *dirs[dirs.index(bundle_hash) + 1:])
+                path = os.path.join('', *dirs[dirs.index(bundle_hash) + 1 :])
                 conf_list.append((path, root + '/' + conf_file, conf_type))
                 break
     if not conf_list:
@@ -126,11 +136,7 @@ def get_config_files(path, bundle_hash):
 
 
 def read_definition(conf_file, conf_type):
-    parsers = {
-        'toml': toml.load,
-        'yaml': yaml.safe_load,
-        'json': json.load
-    }
+    parsers = {'toml': toml.load, 'yaml': yaml.safe_load, 'json': json.load}
     fn = parsers[conf_type]
     if os.path.isfile(conf_file):
         with open(conf_file) as fd:
@@ -280,7 +286,7 @@ def check_versions(proto, conf, label):
     check_extra_keys(
         conf['versions'],
         ('min', 'max', 'min_strict', 'max_strict'),
-        '{} versions of {}'.format(label, proto_ref(proto))
+        '{} versions of {}'.format(label, proto_ref(proto)),
     )
     if 'min' in conf['versions'] and 'min_strict' in conf['versions']:
         msg = 'min and min_strict can not be used simultaneously in versions of {} ({})'
@@ -471,10 +477,7 @@ def save_sub_actions(proto, conf, action):
     for sub in conf['scripts']:
         check_sub_action(proto, sub, action)
         sub_action = StageSubAction(
-            action=action,
-            script=sub['script'],
-            script_type=sub['script_type'],
-            name=sub['name']
+            action=action, script=sub['script'], script_type=sub['script_type'], name=sub['name']
         )
         sub_action.display_name = sub['name']
         if 'display_name' in sub:
@@ -592,9 +595,21 @@ def check_action(proto, action, act_config):
         if (script_type, script_type) not in SCRIPT_TYPE:
             err('WRONG_ACTION_TYPE', '{} has unknown script_type "{}"'.format(ref, script_type))
     allow = (
-        'type', 'script', 'script_type', 'scripts', 'states', 'params', 'config',
-        'log_files', 'hc_acl', 'button', 'display_name', 'description', 'ui_options',
-        'allow_to_terminate', 'partial_execution'
+        'type',
+        'script',
+        'script_type',
+        'scripts',
+        'states',
+        'params',
+        'config',
+        'log_files',
+        'hc_acl',
+        'button',
+        'display_name',
+        'description',
+        'ui_options',
+        'allow_to_terminate',
+        'partial_execution',
     )
     check_extra_keys(act_config, allow, ref)
 
@@ -626,7 +641,9 @@ def get_yspec(proto, ref, bundle_hash, conf, name, subname):
     return schema
 
 
-def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pylint: disable=too-many-locals,too-many-statements,too-many-branches
+def save_prototype_config(
+    proto, proto_conf, bundle_hash, action=None
+):  # pylint: disable=too-many-locals,too-many-statements,too-many-branches
     if not in_dict(proto_conf, 'config'):
         return
     conf_dict = proto_conf['config']
@@ -658,7 +675,7 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
                 err('CONFIG_TYPE_ERROR', msg.format(label, value, name, subname, ref))
         return True
 
-    def check_variant(conf, name, subname):   # pylint: disable=too-many-branches
+    def check_variant(conf, name, subname):  # pylint: disable=too-many-branches
         if not in_dict(conf, 'source'):
             msg = 'Config key "{}/{}" of {} has no mandatory "source" key'
             err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
@@ -721,7 +738,7 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
             err('INVALID_CONFIG_DEFINITION', msg.format(label, name, subname, ref))
         return True
 
-    def process_limits(conf, name, subname):   # pylint: disable=too-many-branches
+    def process_limits(conf, name, subname):  # pylint: disable=too-many-branches
         def valudate_bool(value, label, name):
             if not isinstance(value, bool):
                 msg = 'config group "{}" {} field ("{}") is not boolean ({})'
@@ -770,7 +787,7 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
             return err('CONFIG_TYPE_ERROR', msg.format(name, subname, value, ref))
         return value
 
-    def cook_conf(obj, conf, name, subname):   # pylint: disable=too-many-branches
+    def cook_conf(obj, conf, name, subname):  # pylint: disable=too-many-branches
         if not in_dict(conf, 'type'):
             msg = 'No type in config key "{}/{}" of {}'
             err('INVALID_CONFIG_DEFINITION', msg.format(name, subname, ref))
@@ -785,21 +802,36 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
                 err('INVALID_CONFIG_DEFINITION', msg.format(name, ref))
         if is_group(conf):
             allow = (
-                'type', 'description', 'display_name', 'required', 'ui_options',
-                'name', 'subs', 'activatable', 'active'
+                'type',
+                'description',
+                'display_name',
+                'required',
+                'ui_options',
+                'name',
+                'subs',
+                'activatable',
+                'active',
             )
         else:
             allow = (
-                'type', 'description', 'display_name', 'default', 'required', 'name', 'yspec',
-                'option', 'source', 'limits', 'max', 'min', 'read_only', 'writable', 'ui_options'
+                'type',
+                'description',
+                'display_name',
+                'default',
+                'required',
+                'name',
+                'yspec',
+                'option',
+                'source',
+                'limits',
+                'max',
+                'min',
+                'read_only',
+                'writable',
+                'ui_options',
             )
         check_extra_keys(conf, allow, 'config key "{}/{}" of {}'.format(name, subname, ref))
-        sc = StagePrototypeConfig(
-            prototype=obj,
-            action=action,
-            name=name,
-            type=conf['type']
-        )
+        sc = StagePrototypeConfig(prototype=obj, action=action, name=name, type=conf['type'])
         dict_to_obj(conf, 'description', sc)
         dict_to_obj(conf, 'display_name', sc)
         if 'display_name' not in conf:
@@ -899,8 +931,10 @@ def validate_name(value, name):
     if not isinstance(value, str):
         err("WRONG_NAME", '{} should be string'.format(name))
     p = re.compile(NAME_REGEX)
-    msg1 = '{} is incorrect. Only latin characters, digits,' \
+    msg1 = (
+        '{} is incorrect. Only latin characters, digits,'
         ' dots (.), dashes (-), and underscores (_) are allowed.'
+    )
     if p.fullmatch(value) is None:
         err("WRONG_NAME", msg1.format(name))
     msg2 = "{} is too long. Max length is {}"

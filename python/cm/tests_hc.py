@@ -20,8 +20,7 @@ from cm.tests_upgrade import SetUp
 
 
 class TestHC(TestCase):
-
-    def test_action_hc_simple(self):   # pylint: disable=too-many-locals
+    def test_action_hc_simple(self):  # pylint: disable=too-many-locals
         setup = SetUp()
         b1 = setup.cook_cluster_bundle('1.0')
         cluster = setup.cook_cluster(b1, 'Test1')
@@ -76,7 +75,7 @@ class TestHC(TestCase):
         except AdcmEx as e:
             self.assertEqual(e.code, 'COMPONENT_NOT_FOUND')
 
-    def test_action_hc(self):   # pylint: disable=too-many-locals
+    def test_action_hc(self):  # pylint: disable=too-many-locals
         setup = SetUp()
         b1 = setup.cook_cluster_bundle('1.0')
         cluster = setup.cook_cluster(b1, 'Test1')

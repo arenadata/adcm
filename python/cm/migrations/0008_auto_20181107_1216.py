@@ -22,23 +22,15 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name='stageupgrade',
-            name='max_strict',
-            field=models.BooleanField(default=False),
+            model_name='stageupgrade', name='max_strict', field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='stageupgrade',
-            name='min_strict',
-            field=models.BooleanField(default=False),
+            model_name='stageupgrade', name='min_strict', field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='upgrade',
-            name='max_strict',
-            field=models.BooleanField(default=False),
+            model_name='upgrade', name='max_strict', field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='upgrade',
-            name='min_strict',
-            field=models.BooleanField(default=False),
+            model_name='upgrade', name='min_strict', field=models.BooleanField(default=False),
         ),
     ]

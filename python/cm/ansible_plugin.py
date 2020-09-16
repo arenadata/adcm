@@ -43,9 +43,7 @@ def check_context(task_vars, *context_type, err_msg=None):
     context = get_context(task_vars)
     if context['type'] not in context_type:
         if not err_msg:
-            err_msg = MSG_WRONG_CONTEXT.format(
-                ','.join(context_type), context['type']
-            )
+            err_msg = MSG_WRONG_CONTEXT.format(','.join(context_type), context['type'])
         raise AnsibleError(err_msg)
     return context
 
@@ -100,8 +98,7 @@ class ContextActionModule(ActionBase):
         if obj_type == 'cluster':
             check_context(task_vars, 'cluster', 'service')
             res = self._do_cluster(
-                task_vars,
-                {'cluster_id': self._get_job_var(task_vars, 'cluster_id')}
+                task_vars, {'cluster_id': self._get_job_var(task_vars, 'cluster_id')}
             )
         elif obj_type == "service" and "service_name" in self._task.args:
             context = check_context(task_vars, 'cluster', 'service')
@@ -115,8 +112,7 @@ class ContextActionModule(ActionBase):
                     # use (for cluster context and for service context)
                     raise AnsibleError(MSG_WRONG_SERVICE)
             res = self._do_service_by_name(
-                task_vars,
-                {'cluster_id': self._get_job_var(task_vars, 'cluster_id')}
+                task_vars, {'cluster_id': self._get_job_var(task_vars, 'cluster_id')}
             )
         elif obj_type == "service":
             check_context(task_vars, 'service')
@@ -124,26 +120,19 @@ class ContextActionModule(ActionBase):
                 task_vars,
                 {
                     'cluster_id': self._get_job_var(task_vars, 'cluster_id'),
-                    'service_id': self._get_job_var(task_vars, 'service_id')
-                }
+                    'service_id': self._get_job_var(task_vars, 'service_id'),
+                },
             )
         elif obj_type == "host" and "host_id" in self._task.args:
             check_context(task_vars, 'provider')
-            res = self._do_host_from_provider(
-                task_vars,
-                {}
-            )
+            res = self._do_host_from_provider(task_vars, {})
         elif obj_type == "host":
             check_context(task_vars, 'host')
-            res = self._do_host(
-                task_vars,
-                {'host_id': self._get_job_var(task_vars, 'host_id')}
-            )
+            res = self._do_host(task_vars, {'host_id': self._get_job_var(task_vars, 'host_id')})
         elif obj_type == "provider":
             check_context(task_vars, 'provider')
             res = self._do_provider(
-                task_vars,
-                {'provider_id': self._get_job_var(task_vars, 'provider_id')}
+                task_vars, {'provider_id': self._get_job_var(task_vars, 'provider_id')}
             )
         else:
             raise AnsibleError(MSG_NO_ROUTE)

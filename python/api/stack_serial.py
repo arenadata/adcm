@@ -12,7 +12,7 @@
 
 from rest_framework import serializers
 
-from cm.logger import log   # pylint: disable=unused-import
+from cm.logger import log  # pylint: disable=unused-import
 import cm.config as config
 from cm.models import ClusterObject, Prototype, Bundle
 from api.serializers import hlink, UrlField

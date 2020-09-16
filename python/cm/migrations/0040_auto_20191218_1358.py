@@ -25,7 +25,12 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='CheckLog',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('job_id', models.PositiveIntegerField(default=0)),
                 ('title', models.TextField()),
                 ('message', models.TextField()),
@@ -35,11 +40,45 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='prototypeconfig',
             name='type',
-            field=models.CharField(choices=[('string', 'string'), ('text', 'text'), ('password', 'password'), ('json', 'json'), ('integer', 'integer'), ('float', 'float'), ('option', 'option'), ('boolean', 'boolean'), ('file', 'file'), ('list', 'list'), ('map', 'map'), ('structure', 'structure'), ('group', 'group')], max_length=16),
+            field=models.CharField(
+                choices=[
+                    ('string', 'string'),
+                    ('text', 'text'),
+                    ('password', 'password'),
+                    ('json', 'json'),
+                    ('integer', 'integer'),
+                    ('float', 'float'),
+                    ('option', 'option'),
+                    ('boolean', 'boolean'),
+                    ('file', 'file'),
+                    ('list', 'list'),
+                    ('map', 'map'),
+                    ('structure', 'structure'),
+                    ('group', 'group'),
+                ],
+                max_length=16,
+            ),
         ),
         migrations.AlterField(
             model_name='stageprototypeconfig',
             name='type',
-            field=models.CharField(choices=[('string', 'string'), ('text', 'text'), ('password', 'password'), ('json', 'json'), ('integer', 'integer'), ('float', 'float'), ('option', 'option'), ('boolean', 'boolean'), ('file', 'file'), ('list', 'list'), ('map', 'map'), ('structure', 'structure'), ('group', 'group')], max_length=16),
+            field=models.CharField(
+                choices=[
+                    ('string', 'string'),
+                    ('text', 'text'),
+                    ('password', 'password'),
+                    ('json', 'json'),
+                    ('integer', 'integer'),
+                    ('float', 'float'),
+                    ('option', 'option'),
+                    ('boolean', 'boolean'),
+                    ('file', 'file'),
+                    ('list', 'list'),
+                    ('map', 'map'),
+                    ('structure', 'structure'),
+                    ('group', 'group'),
+                ],
+                max_length=16,
+            ),
         ),
     ]

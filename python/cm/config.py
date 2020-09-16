@@ -48,7 +48,7 @@ if os.path.exists(SECRETS_FILE):
         STATUS_SECRET_KEY = data['token']
 
 
-class Job():
+class Job:
     CREATED = 'created'
     SUCCESS = 'success'
     FAILED = 'failed'

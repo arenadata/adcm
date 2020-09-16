@@ -23,7 +23,6 @@ TIMEOUT = 0.01
 
 
 class Event:
-
     def __init__(self):
         self.events = []
 
@@ -54,9 +53,9 @@ def api_post(path, data):
             data=json.dumps(data),
             headers={
                 'Content-Type': 'application/json',
-                'Authorization': 'Token ' + STATUS_SECRET_KEY
+                'Authorization': 'Token ' + STATUS_SECRET_KEY,
             },
-            timeout=TIMEOUT
+            timeout=TIMEOUT,
         )
         if r.status_code not in (200, 201):
             log.error("POST %s error %d: %s", url, r.status_code, r.text)
@@ -76,9 +75,9 @@ def api_get(path):
             url,
             headers={
                 'Content-Type': 'application/json',
-                'Authorization': 'Token ' + STATUS_SECRET_KEY
+                'Authorization': 'Token ' + STATUS_SECRET_KEY,
             },
-            timeout=TIMEOUT
+            timeout=TIMEOUT,
         )
         if r.status_code not in (200, 201):
             log.error("GET %s error %d: %s", url, r.status_code, r.text)
@@ -95,14 +94,7 @@ def post_event(event, obj_type, obj_id, det_type=None, det_val=None):
     details = {'type': det_type, 'value': det_val}
     if det_type and not det_val:
         details = det_type
-    data = {
-        'event': event,
-        'object': {
-            'type': obj_type,
-            'id': int(obj_id),
-            'details': details,
-        }
-    }
+    data = {'event': event, 'object': {'type': obj_type, 'id': int(obj_id), 'details': details,}}
     return api_post('/event/', data)
 
 

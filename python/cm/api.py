@@ -20,19 +20,40 @@ import cm.errors
 import cm.issue
 import cm.config as config
 import cm.status_api
-from cm.logger import log   # pylint: disable=unused-import
+from cm.logger import log  # pylint: disable=unused-import
 from cm.upgrade import check_license, version_in
 from cm.adcm_config import (
-    proto_ref, obj_ref, prepare_social_auth, process_file_type, read_bundle_file,
-    get_prototype_config, init_object_config, save_obj_config, check_json_config
+    proto_ref,
+    obj_ref,
+    prepare_social_auth,
+    process_file_type,
+    read_bundle_file,
+    get_prototype_config,
+    init_object_config,
+    save_obj_config,
+    check_json_config,
 )
 from cm.errors import AdcmEx, AdcmApiEx
 from cm.errors import raise_AdcmEx as err
 from cm.status_api import Event
 from cm.models import (
-    Cluster, Prototype, Component, Host, HostComponent, ADCM, ClusterObject,
-    ServiceComponent, ConfigLog, HostProvider, PrototypeImport, PrototypeExport,
-    ClusterBind, Action, JobLog, DummyData, Role,
+    Cluster,
+    Prototype,
+    Component,
+    Host,
+    HostComponent,
+    ADCM,
+    ClusterObject,
+    ServiceComponent,
+    ConfigLog,
+    HostProvider,
+    PrototypeImport,
+    PrototypeExport,
+    ClusterBind,
+    Action,
+    JobLog,
+    DummyData,
+    Role,
 )
 
 
@@ -75,11 +96,7 @@ def add_host(proto, provider, fqdn, desc='', lock=False):
     with transaction.atomic():
         obj_conf = init_object_config(spec, conf, attr)
         host = Host(
-            prototype=proto,
-            provider=provider,
-            fqdn=fqdn,
-            config=obj_conf,
-            description=desc
+            prototype=proto, provider=provider, fqdn=fqdn, config=obj_conf, description=desc
         )
         host.save()
         if lock:
@@ -283,9 +300,12 @@ def add_service_to_cluster(cluster, proto):
     if not proto.shared:
         if cluster.prototype.bundle != proto.bundle:
             msg = '{} does not belong to bundle "{}" {}'
-            err('SERVICE_CONFLICT', msg.format(
-                proto_ref(proto), cluster.prototype.bundle.name, cluster.prototype.version
-            ))
+            err(
+                'SERVICE_CONFLICT',
+                msg.format(
+                    proto_ref(proto), cluster.prototype.bundle.name, cluster.prototype.version
+                ),
+            )
     spec, _, conf, attr = get_prototype_config(proto)
     with transaction.atomic():
         obj_conf = init_object_config(spec, conf, attr)
@@ -443,15 +463,13 @@ def get_hc(cluster):
         return None
     hc_map = []
     for hc in HostComponent.objects.filter(cluster=cluster):
-        hc_map.append({
-            'host_id': hc.host.id,
-            'service_id': hc.service.id,
-            'component_id': hc.component.id,
-        })
+        hc_map.append(
+            {'host_id': hc.host.id, 'service_id': hc.service.id, 'component_id': hc.component.id,}
+        )
     return hc_map
 
 
-def check_hc(cluster, hc_in):   # pylint: disable=too-many-branches
+def check_hc(cluster, hc_in):  # pylint: disable=too-many-branches
     def check_sub(sub_key, sub_type, item):
         if sub_key not in item:
             msg = '"{}" sub-field of hostcomponent is required'
@@ -511,12 +529,7 @@ def save_hc(cluster, host_comp_list):
     HostComponent.objects.filter(cluster=cluster).delete()
     result = []
     for (proto, host, comp) in host_comp_list:
-        hc = HostComponent(
-            cluster=cluster,
-            service=proto,
-            host=host,
-            component=comp,
-        )
+        hc = HostComponent(cluster=cluster, service=proto, host=host, component=comp,)
         hc.save()
         result.append(hc)
     cm.status_api.post_event('change_hostcomponentmap', 'cluster', cluster.id)
@@ -539,7 +552,7 @@ def get_bind(cluster, service, source_cluster, source_service):
             cluster=cluster,
             service=service,
             source_cluster=source_cluster,
-            source_service=source_service
+            source_service=source_service,
         )
     except ClusterBind.DoesNotExist:
         return None
@@ -559,25 +572,29 @@ def get_import(cluster, service=None):
             if pe.prototype.type == 'cluster':
                 for cls in Cluster.objects.filter(prototype=pe.prototype):
                     binded = get_bind(cluster, service, cls, None)
-                    exports.append({
-                        'obj_name': cls.name,
-                        'bundle_name': cls.prototype.display_name,
-                        'bundle_version': cls.prototype.version,
-                        'id': {'cluster_id': cls.id},
-                        'binded': bool(binded),
-                        'bind_id': getattr(binded, 'id', None),
-                    })
+                    exports.append(
+                        {
+                            'obj_name': cls.name,
+                            'bundle_name': cls.prototype.display_name,
+                            'bundle_version': cls.prototype.version,
+                            'id': {'cluster_id': cls.id},
+                            'binded': bool(binded),
+                            'bind_id': getattr(binded, 'id', None),
+                        }
+                    )
             elif pe.prototype.type == 'service':
                 for co in ClusterObject.objects.filter(prototype=pe.prototype):
                     binded = get_bind(cluster, service, co.cluster, co)
-                    exports.append({
-                        'obj_name': co.cluster.name + '/' + co.prototype.display_name,
-                        'bundle_name': co.prototype.display_name,
-                        'bundle_version': co.prototype.version,
-                        'id': {'cluster_id': co.cluster.id, 'service_id': co.id},
-                        'binded': bool(binded),
-                        'bind_id': getattr(binded, 'id', None),
-                    })
+                    exports.append(
+                        {
+                            'obj_name': co.cluster.name + '/' + co.prototype.display_name,
+                            'bundle_name': co.prototype.display_name,
+                            'bundle_version': co.prototype.version,
+                            'id': {'cluster_id': co.cluster.id, 'service_id': co.id},
+                            'binded': bool(binded),
+                            'bind_id': getattr(binded, 'id', None),
+                        }
+                    )
             else:
                 err('BIND_ERROR', 'unexpected export type: {}'.format(pe.prototype.type))
         return exports
@@ -587,13 +604,15 @@ def get_import(cluster, service=None):
     if service:
         proto = service.prototype
     for pi in PrototypeImport.objects.filter(prototype=proto):
-        imports.append({
-            'id': pi.id,
-            'name': pi.name,
-            'required': pi.required,
-            'multibind': pi.multibind,
-            'exports': get_export(cluster, service, pi)
-        })
+        imports.append(
+            {
+                'id': pi.id,
+                'name': pi.name,
+                'required': pi.required,
+                'multibind': pi.multibind,
+                'exports': get_export(cluster, service, pi),
+            }
+        )
     return imports
 
 
@@ -639,7 +658,7 @@ def get_bind_obj(cluster, service):
     return obj
 
 
-def multi_bind(cluster, service, bind_list):   # pylint: disable=too-many-locals,too-many-statements
+def multi_bind(cluster, service, bind_list):  # pylint: disable=too-many-locals,too-many-statements
     def get_pi(import_id, import_obj):
         try:
             pi = PrototypeImport.objects.get(id=import_id)
@@ -696,15 +715,22 @@ def multi_bind(cluster, service, bind_list):   # pylint: disable=too-many-locals
             err('BIND_ERROR', msg.format(obj_ref(export_obj), pi.name))
         if not version_in(export_obj.prototype.version, pi):
             msg = 'Import "{}" of {} versions ({}, {}) does not match export version: {} ({})'
-            err('BIND_ERROR', msg.format(
-                export_obj.prototype.name, proto_ref(pi.prototype), pi.min_version, pi.max_version,
-                export_obj.prototype.version, obj_ref(export_obj)
-            ))
+            err(
+                'BIND_ERROR',
+                msg.format(
+                    export_obj.prototype.name,
+                    proto_ref(pi.prototype),
+                    pi.min_version,
+                    pi.max_version,
+                    export_obj.prototype.version,
+                    obj_ref(export_obj),
+                ),
+            )
         cbind = ClusterBind(
             cluster=cluster,
             service=service,
             source_cluster=export_cluster,
-            source_service=export_co
+            source_service=export_co,
         )
         new_bind[cook_key(export_cluster, export_co)] = (pi, cbind, export_obj)
 
@@ -730,7 +756,7 @@ def multi_bind(cluster, service, bind_list):   # pylint: disable=too-many-locals
     return get_import(cluster, service)
 
 
-def bind(cluster, service, export_cluster, export_service_id):   # pylint: disable=too-many-branches
+def bind(cluster, service, export_cluster, export_service_id):  # pylint: disable=too-many-branches
     '''
     Adapter between old and new bind interface
     /api/.../bind/ -> /api/.../import/
@@ -865,9 +891,7 @@ def set_service_state(cluster_id, service_name, state):
         err('CLUSTER_NOT_FOUND', msg.format(cluster_id))
     try:
         proto = Prototype.objects.get(
-            type='service',
-            name=service_name,
-            bundle=cluster.prototype.bundle
+            type='service', name=service_name, bundle=cluster.prototype.bundle
         )
     except Prototype.DoesNotExist:
         msg = 'Service "{}" does not exist'
@@ -891,7 +915,7 @@ def set_service_state_by_id(cluster_id, service_id, state):
     return push_obj(obj, state)
 
 
-def change_hc(job_id, cluster_id, operations):   # pylint: disable=too-many-branches
+def change_hc(job_id, cluster_id, operations):  # pylint: disable=too-many-branches
     '''
     For use in ansible plugin adcm_hc
     '''

@@ -19,10 +19,12 @@ from ansible.plugins.lookup import LookupBase
 try:
     from __main__ import display
 except ImportError:
-    from ansible.utils.display import Display   # pylint: disable=ungrouped-imports
+    from ansible.utils.display import Display  # pylint: disable=ungrouped-imports
+
     display = Display()
 
 import sys
+
 sys.path.append('/adcm/python')
 import adcm.init_django
 import cm.api
@@ -65,8 +67,7 @@ RETURN = """
 
 
 class LookupModule(LookupBase):
-
-    def run(self, terms, variables=None, **kwargs):   # pylint: disable=too-many-branches
+    def run(self, terms, variables=None, **kwargs):  # pylint: disable=too-many-branches
         log.debug('run %s %s', terms, kwargs)
         ret = []
         event = Event()
@@ -79,9 +80,7 @@ class LookupModule(LookupBase):
                 raise AnsibleError('there is no cluster in hostvars')
             cluster = variables['cluster']
             if 'service_name' in kwargs:
-                res = cm.api.set_service_state(
-                    cluster['id'], kwargs['service_name'], terms[1]
-                )
+                res = cm.api.set_service_state(cluster['id'], kwargs['service_name'], terms[1])
             elif 'job' in variables and 'service_id' in variables['job']:
                 res = cm.api.set_service_state_by_id(
                     cluster['id'], variables['job']['service_id'], terms[1]
