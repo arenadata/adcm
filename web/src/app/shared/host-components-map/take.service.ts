@@ -31,6 +31,40 @@ const existCondition = (rel: CompTile[], ap: IActionParameter[]) =>
 const checkEmptyHost = (h: HostTile, ap: IActionParameter[]) =>
   ap ? (existCondition(h.relations as CompTile[], ap) ? isExpand(ap) : isShrink(ap)) : false;
 
+//#region user click
+
+const checkConstraint = (c: TConstraint, r: number) => {
+  if (!c?.length) return true;
+  const v = c[c.length - 1];
+  return v === '+' || v === 'odd' || v > r || v === 'depend';
+};
+
+const flag = (host_id: number, com: CompTile, load: StatePost) =>
+  load.data.some((a) => a.component_id === com.id && a.service_id === com.service_id && a.host_id === host_id);
+
+const checkActions = (host_id: number, com: CompTile, action: 'add' | 'remove', load: StatePost): boolean => {
+  if (com.actions?.length) {
+    if (action === 'remove') return flag(host_id, com, load) ? com.actions.some((a) => a === 'remove') : true;
+    if (action === 'add') return flag(host_id, com, load) ? true : com.actions.some((a) => a === 'add');
+  } else return true;
+};
+
+const findDependencies = (c: CompTile, cs: CompTile[]) => {
+  const r =
+    c.requires?.reduce((p, a) => [...p, ...a.components.map((b) => ({ prototype_id: b.prototype_id }))], []) || [];
+  return cs.filter((a) => r.some((b) => b.prototype_id === a.prototype_id));
+};
+
+const checkDependencies = (c: CompTile, cs: CompTile[]) =>
+  findDependencies(c, cs).forEach((a) => (a.limit = a.limit ? [...a.limit, 'depend'] : ['depend']));
+
+const checkRequires = (component: CompTile, cs: CompTile[]) =>
+  component.requires.reduce(
+    (p, c) => (c.components.some((a) => cs.some((b) => b.prototype_id === a.prototype_id)) ? p : [...p, c]),
+    []
+  );
+
+//#endregion
 @Injectable()
 export class TakeService {
   constructor(private api: ApiService, private dialog: MatDialog, private add: AddService) {}
@@ -168,13 +202,13 @@ export class TakeService {
   clearDependencies(comp: CompTile, state: StatePost, cs: CompTile[], hs: HostTile[], form: FormGroup) {
     const getLimitsFromState = (prototype_id: number) => cs.find((b) => b.prototype_id === prototype_id).limit;
     if (comp.requires?.length) {
-      this.findDependencies(comp, cs).forEach((a) => {
+      findDependencies(comp, cs).forEach((a) => {
         a.limit = getLimitsFromState(a.prototype_id);
         a.notification = '';
       });
 
       state.data.map((a) =>
-        this.checkDependencies(
+        checkDependencies(
           cs.find((b) => b.id === a.component_id),
           cs
         )
@@ -185,15 +219,6 @@ export class TakeService {
     }
   }
 
-  findDependencies(c: CompTile, cs: CompTile[]) {
-    const r =
-      c.requires?.reduce((p, a) => [...p, ...a.components.map((b) => ({ prototype_id: b.prototype_id }))], []) || [];
-    return cs.filter((a) => r.some((b) => b.prototype_id === a.prototype_id));
-  }
-
-  checkDependencies(c: CompTile, cs: CompTile[]) {
-    this.findDependencies(c, cs).forEach((a) => (a.limit = a.limit ? [...a.limit, 'depend'] : ['depend']));
-  }
   //#endregion
 
   //#region handler user events
@@ -242,37 +267,19 @@ export class TakeService {
     const isComp = target instanceof CompTile;
     const component = (isComp ? target : link) as CompTile;
     const host = isComp ? link : target;
-    const flag = (host_id: number, com: CompTile) =>
-      load.data.some((a) => a.component_id === com.id && a.service_id === com.service_id && a.host_id === host_id);
-
-    const checkActions = (host_id: number, com: CompTile, action: 'add' | 'remove'): boolean => {
-      if (com.actions?.length) {
-        if (action === 'remove') return flag(host_id, com) ? com.actions.some((a) => a === 'remove') : true;
-        if (action === 'add') return flag(host_id, com) ? true : com.actions.some((a) => a === 'add');
-      } else return true;
-    };
-
-    const noConstraint = (c: TConstraint, r: number) => {
-      if (!c?.length) return true;
-      const v = c[c.length - 1];
-      return v === '+' || v === 'odd' || v > r || v === 'depend';
-    };
 
     if (link.relations.find((e) => e.id === target.id)) {
-      if (checkActions(host.id, component, 'remove')) this.divorce([component, host], cs, hs, state, form);
+      if (checkActions(host.id, component, 'remove', load)) this.divorce([component, host], cs, hs, state, form);
       return;
-    } else if (noConstraint(component.limit, component.relations.length)) {
-      if (!checkActions(host.id, component, 'add')) return;
+    } else if (checkConstraint(component.limit, component.relations.length)) {
+      if (!checkActions(host.id, component, 'add', load)) return;
       if (component.requires?.length) {
-        const requires = component.requires.reduce(
-          (p, c) => (c.components.some((a) => cs.some((b) => b.prototype_id === a.prototype_id)) ? p : [...p, c]),
-          []
-        );
+        const requires = checkRequires(component, cs);
         if (requires.length) {
           this.dialog4Requires(requires);
           return;
         } else {
-          this.checkDependencies(component, cs);
+          checkDependencies(component, cs);
           form.reset();
           this.formFill(cs, hs, form);
         }

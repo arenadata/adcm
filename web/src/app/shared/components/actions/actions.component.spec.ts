@@ -18,12 +18,12 @@ describe('ActionsComponent', () => {
   let component: ActionsComponent;
   let fixture: ComponentFixture<ActionsComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(async () => {
     TestBed.configureTestingModule({
       imports: [MaterialModule],
       declarations: [ActionsComponent]
     }).compileComponents();
-  }));
+  });
 
   beforeEach(() => {
     fixture = TestBed.createComponent(ActionsComponent);

@@ -29,7 +29,7 @@ describe('MasterComponent', () => {
   let ApiServiceStub: Partial<ApiService>;
   let FieldServiceStub: Partial<FieldService>;
 
-  beforeEach(async(() => {
+  beforeEach(async() => {
     ApiServiceStub = {};
     FieldServiceStub = new FieldService({} as FormBuilder);
 
@@ -39,7 +39,7 @@ describe('MasterComponent', () => {
       providers: [MasterService, { provide: ApiService, useValue: ApiServiceStub }, { provide: FieldService, useValue: FieldServiceStub }],
       schemas: [NO_ERRORS_SCHEMA]
     }).compileComponents();
-  }));
+  });
 
   beforeEach(() => {
     fixture = TestBed.createComponent(MasterComponent);

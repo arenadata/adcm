@@ -14,116 +14,15 @@ import { newArray } from '@app/core/types/func';
 
 import { Post, TConstraint } from '../types';
 
-export const raw = {
-  component: [
-    {
-      id: 1,
-      name: 'NODE',
-      prototype_id: 41,
-      display_name: 'Taxi Node',
-      constraint: null,
-      requires: [
-        {
-          prototype_id: 20,
-          name: 'UBER',
-          display_name: 'Uber Taxi Service',
-          components: [
-            {
-              prototype_id: 38,
-              name: 'UBER_SERVER',
-              display_name: 'UBER_SERVER',
-            },
-            {
-              prototype_id: 40,
-              name: 'SLAVE',
-              display_name: 'Just slave',
-            },
-            {
-              prototype_id: 39,
-              name: 'UBER_NODE',
-              display_name: 'Simple Uber node',
-            },
-          ],
-        },
-      ],
-    },
-    {
-      id: 2,
-      name: 'UBER_SERVER',
-      prototype_id: 38,
-      display_name: 'UBER_SERVER',
-      requires: [
-        {
-          prototype_id: 20,
-          name: 'UBER',
-          display_name: 'Uber Taxi Service',
-          components: [
-            {
-              prototype_id: 40,
-              name: 'SLAVE',
-              display_name: 'Just slave',
-            },
-            {
-              prototype_id: 39,
-              name: 'UBER_NODE',
-              display_name: 'Simple Uber node',
-            },
-          ],
-        },
-        {
-          prototype_id: 21,
-          name: 'GETTAXI',
-          display_name: 'GETTAXI',
-          components: [
-            {
-              prototype_id: 41,
-              name: 'NODE',
-              display_name: 'Taxi Node',
-            },
-          ],
-        },
-      ],
-    },
-    {
-      id: 3,
-      name: 'UBER_NODE',
-      prototype_id: 39,
-      display_name: 'Simple Uber node',
-      requires: null,
-    },
-    {
-      id: 4,
-      name: 'SLAVE',
-      prototype_id: 40,
-      requires: [
-        {
-          prototype_id: 21,
-          name: 'GETTAXI',
-          display_name: 'GETTAXI',
-          components: [
-            {
-              prototype_id: 41,
-              name: 'NODE',
-              display_name: 'Taxi Node',
-            },
-          ],
-        },
-        {
-          prototype_id: 20,
-          name: 'UBER',
-          display_name: 'Uber Taxi Service',
-          components: [
-            {
-              prototype_id: 38,
-              name: 'UBER_SERVER',
-              display_name: 'UBER_SERVER',
-            },
-          ],
-        },
-      ],
-    },
-  ],
-};
+export class HCmRequires implements IRequires {
+  name: string;
+  display_name: string;
+  components?: IRequires[];
+  constructor(public prototype_id: number) {
+    this.name = `name_${prototype_id}`;
+    this.display_name = `display_name_${prototype_id}`;
+  }
+}
 
 export class HostComponent {
   id: number;
@@ -141,9 +40,11 @@ export class HCmComponent {
   display_name: string;
   service_name: string;
   service_state = 'created';
+  prototype_id: number;
   constraint: TConstraint = null;
-  requires: IRequires[];
+  requires: HCmRequires[];
   constructor(public id: number, public service_id: number) {
+    this.prototype_id = id;
     this.name = `component_${id}`;
     this.display_name = `component_display_name_${id}`;
     this.service_name = `service_${service_id}`;

@@ -14,14 +14,16 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Router } from '@angular/router';
+import { RouterTestingModule } from '@angular/router/testing';
 import { ChannelService } from '@app/core';
 import { ApiService } from '@app/core/api/api.service';
 import { AddService } from '@app/shared/add-component/add.service';
+import { SharedModule } from '@app/shared/shared.module';
 import { provideMockStore } from '@ngrx/store/testing';
 
 import { Much2ManyComponent } from '../much-2-many/much-2-many.component';
 import { TakeService } from '../take.service';
-import { ComponentFactory, HCFactory, HcmHost } from '../test';
+import { ComponentFactory, HCFactory, HcmHost, HCmRequires } from '../test';
 import { IRawHosComponent } from '../types';
 import { ServiceHostComponent } from './service-host.component';
 
@@ -44,16 +46,17 @@ describe('Service Host Map Component', () => {
 
   beforeEach(async () => {
     TestBed.configureTestingModule({
-      imports: [NoopAnimationsModule],
+      imports: [NoopAnimationsModule, SharedModule, RouterTestingModule],
       declarations: [ServiceHostComponent, Much2ManyComponent],
       providers: [
+        MatDialog,
         TakeService,
         ChannelService,
         provideMockStore({ initialState }),
         { provide: ApiService, useValue: {} },
         { provide: AddService, useValue: {} },
-        { provide: MatDialog, useValue: {} },
-        Router,
+        //{ provide: MatDialog, useValue: {} },
+        //Router,
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -203,5 +206,31 @@ describe('Service Host Map Component', () => {
         expect(star).toBeNull();
       }
     });
+  });
+
+  it('if component has `requires` should show dialog with `requires`', () => {
+    const data = { component: ComponentFactory(1, 1), host: [new HcmHost('test', 1)], hc: [] };
+    const r = new HCmRequires(2);
+    r.components = [new HCmRequires(3)];
+    data.component[0].requires = [r];
+    initDefault(data);
+
+    const cElement: HTMLElement = fixture.nativeElement;
+    const components = cElement.querySelectorAll('.wrapper').item(0).querySelectorAll('app-much-2-many');
+    const hosts = cElement.querySelectorAll('.wrapper').item(1).querySelectorAll('app-much-2-many');
+    const host = hosts.item(0);
+    const comp = components.item(0);
+    const host_btn = host.querySelector('.m2m .title-container button.title') as HTMLElement;
+    const comp_btn = comp.querySelector('.m2m .title-container button.title') as HTMLElement;
+
+    host_btn.click();
+    fixture.detectChanges();
+
+    comp_btn.click();
+    fixture.detectChanges();
+
+    const dialog = document.querySelector('app-dependencies') as HTMLElement;
+    expect(dialog.innerText).toContain('display_name_2');
+    expect(dialog.innerText).toContain('display_name_3');
   });
 });
