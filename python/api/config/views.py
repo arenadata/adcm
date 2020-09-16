@@ -60,6 +60,13 @@ def get_obj(objects, object_type, object_id):
     return obj, oc, cl
 
 
+def get_object_type_id_version(**kwargs):
+    object_type = kwargs.get('object_type')
+    object_id = kwargs.get(f'{object_type}_id')
+    version = kwargs.get('version')
+    return object_type, object_id, version
+
+
 class ConfigView(ListView):
     serializer_class = serializers.HistoryCurrentPreviousConfigSerializer
     object_type = None
@@ -68,9 +75,8 @@ class ConfigView(ListView):
         return get_objects_for_config(self.object_type)
 
     def get(self, request, *args, **kwargs):
-        object_type = kwargs['object_type']
+        object_type, object_id, _ = get_object_type_id_version(**kwargs)
         self.object_type = object_type
-        object_id = kwargs[f'{object_type}_id']
         obj, _, _ = get_obj(self.get_queryset(), object_type, object_id)
         serializer = self.serializer_class(
             self.get_queryset().get(id=obj.id), context={'request': request})
@@ -86,9 +92,8 @@ class ConfigHistoryView(ListView):
         return get_objects_for_config(self.object_type)
 
     def get(self, request, *args, **kwargs):
-        object_type = kwargs['object_type']
+        object_type, object_id, _ = get_object_type_id_version(**kwargs)
         self.object_type = object_type
-        object_id = kwargs[f'{object_type}_id']
         obj, _, _ = get_obj(self.get_queryset(), object_type, object_id)
         cl = ConfigLog.objects.filter(obj_ref=obj.config).order_by('-id')
         # Variables object_type and object_id are needed to correctly build the hyperlink
@@ -101,9 +106,8 @@ class ConfigHistoryView(ListView):
         return Response(serializer.data)
 
     def post(self, request, *args, **kwargs):
-        object_type = kwargs['object_type']
+        object_type, object_id, _ = get_object_type_id_version(**kwargs)
         self.object_type = object_type
-        object_id = kwargs[f'{object_type}_id']
         obj, _, cl = get_obj(self.get_queryset(), object_type, object_id)
         serializer = self.update_serializer(cl, data=request.data, context={'request': request})
         return create(serializer, ui=bool(self.for_ui(request)), obj=obj)
@@ -117,10 +121,8 @@ class ConfigVersionView(ListView):
         return get_objects_for_config(self.object_type)
 
     def get(self, request, *args, **kwargs):
-        object_type = kwargs['object_type']
+        object_type, object_id, version = get_object_type_id_version(**kwargs)
         self.object_type = object_type
-        object_id = kwargs[f'{object_type}_id']
-        version = kwargs['version']
         obj, oc, _ = get_obj(self.get_queryset(), object_type, object_id)
         cl = get_config_version(oc, version)
         if self.for_ui(request):
@@ -137,10 +139,8 @@ class ConfigHistoryRestoreView(GenericAPIPermView):
         return get_objects_for_config(self.object_type)
 
     def patch(self, request, *args, **kwargs):
-        object_type = kwargs['object_type']
+        object_type, object_id, version = get_object_type_id_version(**kwargs)
         self.object_type = object_type
-        object_id = kwargs[f'{object_type}_id']
-        version = kwargs['version']
         _, oc, _ = get_obj(self.get_queryset(), object_type, object_id)
         cl = get_config_version(oc, version)
         serializer = self.serializer_class(cl, data=request.data, context={'request': request})

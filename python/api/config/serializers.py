@@ -56,24 +56,9 @@ class ConfigVersionURL(serializers.HyperlinkedIdentityField):
 
 
 class HistoryCurrentPreviousConfigSerializer(serializers.Serializer):
-    history = serializers.SerializerMethodField()
-    current = serializers.SerializerMethodField()
-    previous = serializers.SerializerMethodField()
-
-    def get_history(self, obj):
-        view_name = 'config-history'
-        return ConfigURL(read_only=True, view_name=view_name).get_url(
-            obj, view_name, self.context['request'], format=None)
-
-    def get_current(self, obj):
-        view_name = 'config-current'
-        return ConfigURL(read_only=True, view_name=view_name).get_url(
-            obj, view_name, self.context['request'], format=None)
-
-    def get_previous(self, obj):
-        view_name = 'config-previous'
-        return ConfigURL(read_only=True, view_name=view_name).get_url(
-            obj, view_name, self.context['request'], format=None)
+    history = ConfigURL(read_only=True, view_name='config-history')
+    current = ConfigURL(read_only=True, view_name='config-current')
+    previous = ConfigURL(read_only=True, view_name='config-previous')
 
 
 class ObjectConfigSerializer(serializers.Serializer):
@@ -115,9 +100,4 @@ class ObjectConfigRestoreSerializer(ObjectConfigSerializer):
 
 
 class ConfigHistorySerializer(ObjectConfigSerializer):
-    url = serializers.SerializerMethodField()
-
-    def get_url(self, obj):
-        view_name = 'config-history-version'
-        return ConfigVersionURL(read_only=True, view_name=view_name).get_url(
-            obj, view_name, self.context['request'], format=None)
+    url = ConfigVersionURL(read_only=True, view_name='config-history-version')
