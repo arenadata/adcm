@@ -32,6 +32,7 @@ from cm.models import (
     Action, SubAction, Prototype, PrototypeConfig, JobLog, UserProfile, Upgrade, HostProvider,
     ConfigLog, Role, Host, Cluster, ClusterObject
 )
+from api.config.serializers import ConfigURL
 
 
 def check_obj(model, req, error):
@@ -293,7 +294,7 @@ class AdcmSerializer(serializers.Serializer):
 class AdcmDetailSerializer(AdcmSerializer):
     prototype_version = serializers.SerializerMethodField()
     bundle_id = serializers.SerializerMethodField()
-    config = hlink('adcm-config', 'id', 'adcm_id')
+    config = ConfigURL(view_name='config')
 
     def get_prototype_version(self, obj):
         return obj.prototype.version
@@ -337,7 +338,7 @@ class ProviderDetailSerializer(ProviderSerializer):
     license = serializers.SerializerMethodField()
     bundle_id = serializers.SerializerMethodField()
     prototype = hlink('provider-type-details', 'prototype_id', 'prototype_id')
-    config = hlink('provider-config', 'id', 'provider_id')
+    config = ConfigURL(view_name='config')
     action = hlink('provider-action', 'id', 'provider_id')
     upgrade = hlink('provider-upgrade', 'id', 'provider_id')
     host = hlink('provider-host', 'id', 'provider_id')
@@ -435,7 +436,7 @@ class HostDetailSerializer(HostSerializer):
     issue = serializers.SerializerMethodField()
     bundle_id = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
-    config = hlink('host-config', 'id', 'host_id')
+    config = ConfigURL(view_name='config')
     action = hlink('host-action', 'id', 'host_id')
     prototype = hlink('host-type-details', 'prototype_id', 'prototype_id')
 
