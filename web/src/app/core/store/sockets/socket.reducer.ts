@@ -12,6 +12,16 @@
 import { TypeName } from '@app/core/types';
 import { Action, createAction, createFeatureSelector, createReducer, createSelector, on, props } from '@ngrx/store';
 
+export interface IEMObject {
+  type: TypeName;
+  id: number;
+  details: {
+    id?: string;
+    type: string;
+    value: any;
+  };
+}
+
 export interface EventMessage {
   event:
     | 'add'
@@ -27,15 +37,7 @@ export interface EventMessage {
     | 'raise_issue'
     | 'clear_issue'
     | 'upgrade';
-  object?: {
-    type: TypeName;
-    id: number;
-    details: {
-      id?: string;
-      type: string;
-      value: any;
-    };
-  };
+  object?: IEMObject;
 }
 
 export type StatusType = 'open' | 'close' | 're-open';
@@ -53,25 +55,25 @@ export interface SocketState {
 
 const initialState: SocketState = {
   status: null,
-  message: null
+  message: null,
 };
 
 const reducer = createReducer(
   initialState,
-  on(socketInit, state => ({ ...state })),
+  on(socketInit, (state) => ({ ...state })),
   on(socketOpen, (state, { status }) => ({
     ...state,
-    status
+    status,
   })),
   on(socketClose, (state, { status }) => ({
     ...state,
-    status
+    status,
   })),
   on(socketResponse, (state, { message }) => ({
     ...state,
-    message
+    message,
   })),
-  on(clearMessages, state => ({ ...state, message: null }))
+  on(clearMessages, (state) => ({ ...state, message: null }))
 );
 
 export function socketReducer(state: SocketState, action: Action) {
@@ -80,4 +82,4 @@ export function socketReducer(state: SocketState, action: Action) {
 
 export const getSocketState = createFeatureSelector<SocketState>('socket');
 export const getConnectStatus = createSelector(getSocketState, (state: SocketState) => state.status);
-export const getMessage = createSelector(getSocketState, state => state.message);
+export const getMessage = createSelector(getSocketState, (state) => state.message);

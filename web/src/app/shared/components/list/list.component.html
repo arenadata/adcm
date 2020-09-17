@@ -220,7 +220,7 @@
           <mat-icon>check_circle_outline</mat-icon>
         </button>
         <button *ngIf="row.status !== 0" [appForTest]="'row_status'" mat-icon-button color="warn" [appTooltip]="row"
-          [appTooltipComponent]="'status'" (click)="clickCell($event, 'status', row)">
+          [appTooltipComponent]="'status'" [appTooltipPosition]="'left'" (click)="clickCell($event, 'status', row)">
           <mat-icon>error_outline</mat-icon>
         </button>
       </ng-template>

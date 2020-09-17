@@ -58,6 +58,7 @@ export class TooltipService {
   }
 
   show(event: MouseEvent, source: HTMLElement, options: TooltipDisplayOptions) {
+    this.positionSource.next();
     clearTimeout(this.timeOut);
     if (this.isShow(source, options)) {
       this.positionSource.next({ event, source, options });
