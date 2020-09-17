@@ -124,9 +124,26 @@ mat-checkbox.advanced>label>span {
   max-width: none !important;
 }
 
+.snack-bar-notify {
+  max-width: 60vw !important;
+  overflow: auto;
+  background-color: #595959;
+  color: #00e676;
+
+  & button {
+    color: #78909c;
+  }
+}
+
 .snack-bar-error {
   max-width: 60vw !important;
   overflow: auto;
+  background-color: #595959;
+  color: #ff9800;
+
+  & button {
+    color: #78909c;
+  }
 }
 
 .mat-card-header {
