@@ -13,7 +13,6 @@ import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { Router } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
 import { ChannelService } from '@app/core';
 import { ApiService } from '@app/core/api/api.service';
@@ -31,6 +30,16 @@ function genData() {
   const _c = ComponentFactory(4, 1);
   const host = [new HcmHost('test', 1)];
   return { component: _c, host, hc: HCFactory(1, 1, 4) };
+}
+
+function domFirstElems(n: HTMLElement) {
+  const components = n.querySelectorAll('.wrapper').item(0).querySelectorAll('app-much-2-many');
+  const hosts = n.querySelectorAll('.wrapper').item(1).querySelectorAll('app-much-2-many');
+  const host = hosts.item(0);
+  const comp = components.item(0);
+  const hostBtn = host.querySelector('.m2m .title-container button.title') as HTMLElement;
+  const compBtn = comp.querySelector('.m2m .title-container button.title') as HTMLElement;
+  return { components, hosts, host, comp, hostBtn, compBtn };
 }
 
 describe('Service Host Map Component', () => {
@@ -55,8 +64,6 @@ describe('Service Host Map Component', () => {
         provideMockStore({ initialState }),
         { provide: ApiService, useValue: {} },
         { provide: AddService, useValue: {} },
-        //{ provide: MatDialog, useValue: {} },
-        //Router,
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -73,9 +80,9 @@ describe('Service Host Map Component', () => {
 
   it('should display compnents and hosts as button', () => {
     initDefault(genData());
-    const cElement: HTMLElement = fixture.nativeElement;
-    const components = cElement.querySelectorAll('.wrapper').item(0).querySelectorAll('app-much-2-many');
-    const hosts = cElement.querySelectorAll('.wrapper').item(1).querySelectorAll('app-much-2-many');
+    const dom = domFirstElems(fixture.nativeElement);
+    const components = dom.components;
+    const hosts = dom.hosts;
     expect(hosts.length).toBe(1);
     expect(components.length).toBe(4);
     const host_relations = hosts.item(0).querySelector('.relations-list').children;
@@ -85,10 +92,9 @@ describe('Service Host Map Component', () => {
 
   it('should mark host/component as selected and(or) as linked', () => {
     initDefault(genData());
-    const cElement: HTMLElement = fixture.nativeElement;
-    const components = cElement.querySelectorAll('.wrapper').item(0).querySelectorAll('app-much-2-many');
-    const hosts = cElement.querySelectorAll('.wrapper').item(1).querySelectorAll('app-much-2-many');
-    const host = hosts.item(0);
+    const dom = domFirstElems(fixture.nativeElement);
+    const components = dom.components;
+    const host = dom.host;
     (host.querySelector('.m2m .title-container button.title') as HTMLElement).click();
     fixture.detectChanges();
     expect(host.querySelector('.m2m').classList.contains('selected')).toBeTrue();
@@ -98,13 +104,11 @@ describe('Service Host Map Component', () => {
   it('should add relative on click and check linked and selected property', () => {
     const data = { component: ComponentFactory(4, 1), host: [new HcmHost('test', 1)], hc: [] };
     initDefault(data);
-    const cElement: HTMLElement = fixture.nativeElement;
-    const components = cElement.querySelectorAll('.wrapper').item(0).querySelectorAll('app-much-2-many');
-    const hosts = cElement.querySelectorAll('.wrapper').item(1).querySelectorAll('app-much-2-many');
-    const host = hosts.item(0);
-    const comp = components.item(0);
-    const host_btn = host.querySelector('.m2m .title-container button.title') as HTMLElement;
-    const comp_btn = comp.querySelector('.m2m .title-container button.title') as HTMLElement;
+    const dom = domFirstElems(fixture.nativeElement);
+    const host = dom.host;
+    const comp = dom.comp;
+    const host_btn = dom.hostBtn;
+    const comp_btn = dom.compBtn;
     const host_relations = host.querySelector('.relations-list').children;
     const comp_relations = comp.querySelector('.relations-list').children;
 
@@ -164,13 +168,10 @@ describe('Service Host Map Component', () => {
     data.component[2].constraint = [0, '+'];
     data.component[3].constraint = [0, 1];
     initDefault(data);
-    const cElement: HTMLElement = fixture.nativeElement;
-    const components = cElement.querySelectorAll('.wrapper').item(0).querySelectorAll('app-much-2-many');
-    const hosts = cElement.querySelectorAll('.wrapper').item(1).querySelectorAll('app-much-2-many');
-    const host = hosts.item(0);
-    const comp = components.item(0);
-    const host_btn = host.querySelector('.m2m .title-container button.title') as HTMLElement;
-    const comp_btn = comp.querySelector('.m2m .title-container button.title') as HTMLElement;
+    const dom = domFirstElems(fixture.nativeElement);
+    const components = dom.components;
+    const host_btn = dom.hostBtn;
+    const comp_btn = dom.compBtn;
 
     comp_btn.click();
     fixture.detectChanges();
@@ -211,17 +212,13 @@ describe('Service Host Map Component', () => {
   it('if component has `requires` should show dialog with `requires`', () => {
     const data = { component: ComponentFactory(1, 1), host: [new HcmHost('test', 1)], hc: [] };
     const r = new HCmRequires(2);
-    r.components = [new HCmRequires(1), new HCmRequires(3)];
+    r.components = [new HCmRequires(3)];
     data.component[0].requires = [r];
     initDefault(data);
 
-    const cElement: HTMLElement = fixture.nativeElement;
-    const components = cElement.querySelectorAll('.wrapper').item(0).querySelectorAll('app-much-2-many');
-    const hosts = cElement.querySelectorAll('.wrapper').item(1).querySelectorAll('app-much-2-many');
-    const host = hosts.item(0);
-    const comp = components.item(0);
-    const host_btn = host.querySelector('.m2m .title-container button.title') as HTMLElement;
-    const comp_btn = comp.querySelector('.m2m .title-container button.title') as HTMLElement;
+    const dom = domFirstElems(fixture.nativeElement);
+    const host_btn = dom.hostBtn;
+    const comp_btn = dom.compBtn;
 
     host_btn.click();
     fixture.detectChanges();
@@ -231,7 +228,7 @@ describe('Service Host Map Component', () => {
 
     const dialog = document.querySelector('app-dependencies') as HTMLElement;
     expect(dialog).toBeTruthy();
-    expect(dialog.innerText).toContain('display_name_2');
-    expect(dialog.innerText).toContain('display_name_3');
+    expect(dialog.innerText).toContain('component_display_name_2');
+    expect(dialog.innerText).toContain('component_display_name_3');
   });
 });

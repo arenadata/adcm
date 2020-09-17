@@ -20,7 +20,7 @@ export class HCmRequires implements IRequires {
   components?: IRequires[];
   constructor(public prototype_id: number) {
     this.name = `name_${prototype_id}`;
-    this.display_name = `display_name_${prototype_id}`;
+    this.display_name = `component_display_name_${prototype_id}`;
   }
 }
 
