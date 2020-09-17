@@ -60,7 +60,7 @@ const checkDependencies = (c: CompTile, cs: CompTile[]) =>
 
 const checkRequires = (component: CompTile, cs: CompTile[]) =>
   component.requires.reduce(
-    (p, c) => (c.components.some((a) => cs.some((b) => b.prototype_id === a.prototype_id)) ? p : [...p, c]),
+    (p, c) => (c.components.every((a) => cs.some((b) => b.prototype_id === a.prototype_id)) ? p : [...p, c]),
     []
   );
 

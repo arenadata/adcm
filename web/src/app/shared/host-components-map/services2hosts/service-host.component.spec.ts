@@ -211,7 +211,7 @@ describe('Service Host Map Component', () => {
   it('if component has `requires` should show dialog with `requires`', () => {
     const data = { component: ComponentFactory(1, 1), host: [new HcmHost('test', 1)], hc: [] };
     const r = new HCmRequires(2);
-    r.components = [new HCmRequires(3)];
+    r.components = [new HCmRequires(1), new HCmRequires(3)];
     data.component[0].requires = [r];
     initDefault(data);
 
@@ -230,6 +230,7 @@ describe('Service Host Map Component', () => {
     fixture.detectChanges();
 
     const dialog = document.querySelector('app-dependencies') as HTMLElement;
+    expect(dialog).toBeTruthy();
     expect(dialog.innerText).toContain('display_name_2');
     expect(dialog.innerText).toContain('display_name_3');
   });
