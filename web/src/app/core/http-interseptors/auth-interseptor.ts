@@ -45,12 +45,12 @@ export class AuthInterceptor implements HttpInterceptor {
         }
 
         if (res.status === 500) this.router.navigate(['/500']);
-        // if (res.status === 504) this.router.navigate(['/504']);
-
-        // Http failure response for /api/v1/: 0 Unknown Error HttpErrorResponse
 
         if (res.error.code !== 'USER_NOT_FOUND' && res.error.code !== 'AUTH_ERROR' && res.error.code !== 'CONFIG_NOT_FOUND') {
-          const message = res.name === 'HttpErrorResponse' ? 'No connection to backend. Check your internet connection.' : res.name;
+          const message =
+            res.statusText === 'Unknown Error' || res.statusText === 'Gateway Timeout'
+              ? 'No connection to back-end. Check your internet connection.'
+              : `${res.statusText.toUpperCase()} ${res.error.code ? ` : ${res.error.code} >>> ${res.error.desc}` : res.error?.detail || ''}`;
           this.channel.next('notifying', `${message}::error`);
         }
 

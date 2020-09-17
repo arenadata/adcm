@@ -59,7 +59,7 @@ export class AppService {
       tap((status) => {
         if (status === 'open') this.channel.next('notifying', 'Connection established.');
         if (status === 'close') {
-          this.channel.next('notifying', 'Connection lost. Recovery attempt.');
+          this.channel.next('notifying', 'Connection lost. Recovery attempt.::error');
           this.store.dispatch(rootError());
         }
       })
@@ -92,12 +92,14 @@ export class AppService {
     // notification
     this.channel.on<string>('notifying').subscribe((m) => {
       const astr = m.split('::');
-      this.snackBar.open(astr[0], 'Hide', {
-        duration: 7000,
-        panelClass: astr[1] ? 'snack-bar-error' : 'snack-bar-notify',
-      });
-    }
-    );
+      const data = astr[1]
+        ? { panelClass: 'snack-bar-error' }
+        : {
+            duration: 7000,
+            panelClass: 'snack-bar-notify',
+          };
+      this.snackBar.open(astr[0], 'Hide', data);
+    });
 
     // test only
     // this.store
