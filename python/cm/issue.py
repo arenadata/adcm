@@ -140,7 +140,7 @@ def check_service_issue(service):
     issue = {}
     if not check_config(service):
         issue['config'] = False
-    if not check_required_import(service.cluster):
+    if not check_required_import(service.cluster, service):
         issue['required_import'] = False
     return issue
 
@@ -196,13 +196,13 @@ def check_required_services(cluster):
     return True
 
 
-def check_required_import(cluster):
-    res, code = do_check_import(cluster)
+def check_required_import(cluster, service=None):
+    res, code = do_check_import(cluster, service)
     log.debug('do_check_import result: %s, code: %s', res, code)
     return res
 
 
-def do_check_import(cluster):
+def do_check_import(cluster, service=None):
     def check_import(pi):
         if not pi.required:
             return (True, 'NOT_REQIURED')
@@ -215,16 +215,14 @@ def do_check_import(cluster):
         return import_exist
 
     res = (True, None)
-    for pi in PrototypeImport.objects.filter(prototype=cluster.prototype):
+    proto = cluster.prototype
+    if service:
+        proto = service.prototype
+    for pi in PrototypeImport.objects.filter(prototype=proto):
         res = check_import(pi)
         if not res[0]:
             return res
 
-    for co in ClusterObject.objects.filter(cluster=cluster):
-        for pi in PrototypeImport.objects.filter(prototype=co.prototype):
-            res = check_import(pi)
-            if not res[0]:
-                return res
     return res
 
 
