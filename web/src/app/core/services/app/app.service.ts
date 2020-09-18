@@ -95,7 +95,7 @@ export class AppService {
       const data = astr[1]
         ? { panelClass: 'snack-bar-error' }
         : {
-            duration: 7000,
+            duration: 5000,
             panelClass: 'snack-bar-notify',
           };
       this.snackBar.open(astr[0], 'Hide', data);
