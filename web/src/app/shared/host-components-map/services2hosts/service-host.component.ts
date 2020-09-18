@@ -236,11 +236,15 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
       a.isLink = false;
       a.relations = [];
     };
-    this.statePost.clear();
-    this.statePost.update(this.loadPost.data);
+    
     this.Hosts.forEach(ma);
     this.Components.forEach(ma);
+
+    this.statePost.clear();
+    this.statePost.update(this.loadPost.data);
+
     this.service.setRelations(this.loadPost.data, this.Components, this.Hosts, this.actionParameters);
+    this.form = new FormGroup({});
     this.service.formFill(this.Components, this.Hosts, this.form);
   }
 }
