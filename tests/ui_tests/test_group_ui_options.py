@@ -8,7 +8,6 @@ from adcm_pytest_plugin.utils import get_data_dir
 # pylint: disable=W0611, W0621
 from tests.ui_tests.app.configuration import Configuration
 from tests.ui_tests.app.locators import Common, ConfigurationLocators
-from tests.ui_tests.app.pages import LoginPage
 
 DATADIR = get_data_dir(__file__)
 BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
@@ -33,14 +32,7 @@ def service(sdk_client_fs):
 
 
 @pytest.fixture()
-def login(app_fs):
-    app_fs.driver.get(app_fs.adcm.url)
-    login = LoginPage(app_fs.driver)
-    login.login("admin", "admin")
-
-
-@pytest.fixture()
-def ui_config(app_fs, login, service):
+def ui_config(app_fs, login_to_adcm, service):
     return Configuration(app_fs.driver,
                          "{}/cluster/{}/service/{}/config".format(app_fs.adcm.url,
                                                                   service.cluster_id,
@@ -77,17 +69,14 @@ def activatable_with_not_filled_required_fields(ui_config):
 
 def test_groups_count(group_elements):
     """Check groups count
-
-    :return:
     """
     assert len(group_elements[0]) == group_elements[1], len(group_elements)
 
 
 def test_save_groups(group_elements, ui_config, sdk_client_fs: ADCMClient):
     """Click save configuration button and check that configuration was saved
-    :return:
     """
-    _ = group_elements
+
     app_fields = ui_config.get_app_fields()
     for textbox in app_fields:
         if "field_for_group_without_options:" in textbox.text:
