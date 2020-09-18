@@ -166,14 +166,10 @@ class BasePage:
     @staticmethod
     def get_checkbox_element_status(element):
         """Get checkbox element status, checked or not
-
         :param element: WebElement
         :return: boolean
         """
-        el_class = element.get_attribute("class")
-        if "mat-checkbox-checked" in el_class:
-            return True
-        return True
+        return "mat-checkbox-checked" in element.get_attribute("class")
 
     def clear_element(self, element):
         element.send_keys(Keys.CONTROL + "a")
