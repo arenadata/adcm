@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-
 import django.contrib.auth
 import rest_framework.authtoken.serializers
 from django.contrib.auth.models import User, Group
@@ -85,19 +83,6 @@ def hlink(view, lookup, lookup_url):
     return serializers.HyperlinkedIdentityField(
         view_name=view, lookup_field=lookup, lookup_url_kwarg=lookup_url
     )
-
-
-class JSONField(serializers.JSONField):
-    def to_representation(self, value):
-        if value == '':
-            return None
-        elif not isinstance(value, str):
-            return value
-        else:
-            return json.loads(value)
-
-    def to_internal_value(self, data):
-        return data
 
 
 class DataField(serializers.CharField):
@@ -432,7 +417,7 @@ class HostSerializer(serializers.Serializer):
 
 
 class HostDetailSerializer(HostSerializer):
-    # stack = JSONField(read_only=True)
+    # stack = serializers.JSONField(read_only=True)
     issue = serializers.SerializerMethodField()
     bundle_id = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
@@ -493,7 +478,7 @@ class ProviderHostSerializer(serializers.Serializer):
     fqdn = serializers.CharField(help_text='fully qualified domain name')
     description = serializers.CharField(required=False)
     state = serializers.CharField(read_only=True)
-    # stack = JSONField(read_only=True)
+    # stack = serializers.JSONField(read_only=True)
     url = hlink('host-details', 'id', 'host_id')
 
     def validate_fqdn(self, name):
@@ -529,8 +514,8 @@ class ConfigSerializer(serializers.Serializer):
     default = serializers.SerializerMethodField()
     value = serializers.SerializerMethodField()
     type = serializers.CharField()
-    limits = JSONField(required=False)
-    ui_options = JSONField(required=False)
+    limits = serializers.JSONField(required=False)
+    ui_options = serializers.JSONField(required=False)
     required = serializers.BooleanField()
 
     def get_default(self, obj):   # pylint: disable=arguments-differ
