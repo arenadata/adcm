@@ -1,5 +1,4 @@
 import os
-import yaml
 
 DATA = [("invisible", "true", "advanced", "true"), ("invisible", "false", "advanced", "false"),
         ("invisible", "false", "advanced", "true"), ('invisible', "true", "advanced", "false")]
