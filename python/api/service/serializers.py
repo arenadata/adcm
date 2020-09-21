@@ -202,14 +202,12 @@ class ServiceComponentUrlField(serializers.HyperlinkedIdentityField):
 
 class ImportPostSerializer(serializers.Serializer):
     bind = serializers.JSONField()
-    cluster_id = serializers.IntegerField()
 
     def create(self, validated_data):
         try:
             binds = validated_data.get('bind')
             service = self.context.get('service')
-            cluster = check_obj(
-                Cluster, {'id': validated_data.get('cluster_id')}, 'CLUSTER_NOT_FOUND')
+            cluster = self.context.get('cluster')
             return multi_bind(cluster, service, binds)
         except AdcmEx as error:
             raise AdcmApiEx(error.code, error.msg, error.http_code, error.adds) from error
@@ -227,7 +225,6 @@ class ServiceBindSerializer(BindSerializer):
 
 class ServiceBindPostSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
-    cluster_id = serializers.IntegerField()
     export_cluster_id = serializers.IntegerField()
     export_service_id = serializers.IntegerField()
     export_cluster_name = serializers.CharField(read_only=True)
@@ -235,13 +232,12 @@ class ServiceBindPostSerializer(serializers.Serializer):
     export_cluster_prototype_name = serializers.CharField(read_only=True)
 
     def create(self, validated_data):
-        cluster = check_obj(Cluster, validated_data.get('cluster_id'), 'CLUSTER_NOT_FOUND')
         export_cluster = check_obj(
             Cluster, validated_data.get('export_cluster_id'), 'CLUSTER_NOT_FOUND'
         )
         try:
             return bind(
-                cluster,
+                validated_data.get('cluster'),
                 validated_data.get('service'),
                 export_cluster,
                 validated_data.get('export_service_id')

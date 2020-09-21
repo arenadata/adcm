@@ -30,6 +30,7 @@ class ServiceListView(PageView):
     queryset = ClusterObject.objects.all()
     serializer_class = serializers.ServiceSerializer
     serializer_class_ui = serializers.ServiceUISerializer
+    filterset_fields = ('cluster_id', )
     ordering_fields = ('state', 'prototype__display_name', 'prototype__version_order')
 
     def get(self, request, *args, **kwargs):
@@ -125,7 +126,7 @@ class ServiceTask(GenericAPIPermView):
 class ServiceComponentListView(PageView):
     queryset = ServiceComponent.objects.all()
     serializer_class = serializers.ServiceComponentSerializer
-    serializer_class_ui = serializers.ServiceComponentDetailsUrlField
+    serializer_class_ui = serializers.ServiceComponentDetailSerializer
     ordering_fields = ('component__display_name', )
 
     def get(self, request, *args, **kwargs):
@@ -172,8 +173,13 @@ class ServiceImportView(ListView):
 
     def post(self, request, service_id):
         service = check_obj(ClusterObject, {'id': service_id}, 'SERVICE_NOT_FOUND')
+        try:
+            cluster = service.cluster
+        except models.ObjectDoesNotExist:
+            raise AdcmApiEx('CLUSTER_NOT_FOUND') from None
         serializer = self.post_serializer_class(
-            data=request.data, context={'request': request, 'service': service})
+            data=request.data,
+            context={'request': request, 'cluster': cluster, 'service': service})
         if serializer.is_valid():
             return Response(
                 serializer.create(serializer.validated_data), status=status.HTTP_200_OK)
@@ -204,8 +210,12 @@ class ServiceBindView(ListView):
         Bind two services
         """
         service = check_obj(ClusterObject, {'id': service_id}, 'SERVICE_NOT_FOUND')
+        try:
+            cluster = service.cluster
+        except models.ObjectDoesNotExist:
+            raise AdcmApiEx('CLUSTER_NOT_FOUND') from None
         serializer = self.get_serializer_class()(data=request.data, context={'request': request})
-        return create(serializer, service=service)
+        return create(serializer, cluster=cluster, service=service)
 
 
 class ServiceBindDetailView(DetailViewDelete):
