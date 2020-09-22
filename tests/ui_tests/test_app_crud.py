@@ -72,7 +72,7 @@ def host(app):
 
 
 @pytest.fixture()
-def data(request):
+def data():
     yield {'name': utils.random_string(),
            'description': utils.random_string()}
 
