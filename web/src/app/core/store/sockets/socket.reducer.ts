@@ -14,17 +14,6 @@ import { Action, createAction, createFeatureSelector, createReducer, createSelec
 
 /**
  * Event Message Object dispatched from socket
- * ```
-  {
-    type: TypeName;  // string 'cluster' | 'host' ...etc.
-    id: number;
-    details: {
-      id?: string;
-      type: string;
-      value: any;
-    }
-   }
-   ```
  */
 export interface IEMObject {
   type: TypeName;
