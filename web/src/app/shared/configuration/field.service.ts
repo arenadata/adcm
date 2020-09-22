@@ -74,12 +74,12 @@ const patternFn = {
 export const getPattern = (t: TNForm): RegExp => (patternFn[t] ? patternFn[t]() : null);
 
 const fn = {
-  boolean: (v: boolean | null, d: boolean | null, r: boolean) =>
+  boolean: (v: boolean | null, d: boolean | null, r: boolean): boolean | null =>
     String(v) === 'true' || String(v) === 'false' || String(v) === 'null' ? v : r ? d : null,
-  json: (v: string) => (v === null ? '' : JSON.stringify(v, undefined, 4)),
-  map: (v: object, d: object) => (!v ? d : v),
-  list: (v: string[], d: string[]) => (!v ? d : v),
-  structure: (v: any) => v,
+  json: (v: string): string => (v === null ? '' : JSON.stringify(v, undefined, 4)),
+  map: (v: object, d: object): object => (!v ? d : v),
+  list: (v: string[], d: string[]): string[] => (!v ? d : v),
+  structure: (v: any): any => v,
 };
 
 export const getValue = (t: TNForm) => {
@@ -87,7 +87,7 @@ export const getValue = (t: TNForm) => {
   return fn[t] ? fn[t] : def;
 };
 
-export const getKey = (n: string, sn: string) => (sn ? `${sn}/${n}` : n);
+export const getKey = (name: string, subname: string): string => (subname ? `${subname}/${name}` : name);
 
 export const getValidator = (required: boolean, min: number, max: number, type: TNForm) => ({
   required,

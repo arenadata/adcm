@@ -81,7 +81,7 @@ export function getRandomColor(): string {
   return newArray(6, (_, i) => i).reduce((p) => (p += letters[Math.floor(Math.random() * 16)]), '#');
 }
 
-export function uniqid(prefix: string = '', isFloat: boolean = false) {
+export function uniqid(prefix: string = '', isFloat: boolean = false): string {
   const seed = (s: number, w: number, z = s.toString(16)): string =>
     w < z.length ? z.slice(z.length - w) : w > z.length ? new Array(1 + (w - z.length)).join('0') + z : z;
   let result =
