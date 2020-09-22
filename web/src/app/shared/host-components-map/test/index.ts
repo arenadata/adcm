@@ -51,7 +51,7 @@ export class HCmComponent {
   }
 }
 
-export const ComponentFactory = (count: number, service_id: number) =>
+export const ComponentFactory = (count: number, service_id: number): IComponent[] =>
   newArray<IComponent>(count, (_, i) => new HCmComponent(i + 1, service_id) as IComponent);
 
 export const HCFactory = (host_id: number, service_id: number, components: number): Post[] =>

@@ -1,3 +1,4 @@
+import { IFieldOptions } from './../types';
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,7 +12,7 @@
 // limitations under the License.
 import { getControlType, getKey, getOptions, getValidator, getValue, TFormOptions, IOutput } from '../field.service';
 
-import { IConfig, IConfigAttr, IFieldStack, ILimits, IUIoptions, stateType, TNForm, TValue } from '../types';
+import { IConfig, IConfigAttr, IFieldStack, ILimits, IPanelOptions, IUIoptions, stateType, TNForm, TValue } from '../types';
 import { IYContainer, IYField, IYspec } from '../yspec/yspec.service';
 
 export class YContainer {}
@@ -45,7 +46,15 @@ export class FieldStack implements IFieldStack {
   limits: ILimits;
   ui_options: IUIoptions;
 
-  constructor(id: number, public type: TNForm, public name: string = null, public value = null, public required = true, public read_only = false, public activatable = false) {
+  constructor(
+    id: number,
+    public type: TNForm,
+    public name: string = null,
+    public value = null,
+    public required = true,
+    public read_only = false,
+    public activatable = false
+  ) {
     const dn = `field_${type}_${id}`;
     this.name = !this.name ? dn : this.name;
     this.subname = this.name === dn ? '' : `subname_${type}_${id}`;
@@ -79,18 +88,21 @@ export class FieldFactory {
    * return group if params as array
    */
   public static add(params: (TNForm | TNForm[])[]) {
-    return params.reduce<IFieldStack[]>((p, c, i) => [...p, ...(Array.isArray(c) ? this.addGroup(i, c) : [new FieldStack(i, c)])], []);
+    return params.reduce<IFieldStack[]>(
+      (p, c, i) => [...p, ...(Array.isArray(c) ? this.addGroup(i, c) : [new FieldStack(i, c)])],
+      []
+    );
   }
 }
 
-const toPanel = (a: IFieldStack, data: IConfig) => ({
+const toPanel = (a: IFieldStack, data: IConfig): IPanelOptions => ({
   ...a,
   options: getOptions(a, data),
   active: true,
   hidden: false,
 });
 
-const toField = (a: IFieldStack) => ({
+const toField = (a: IFieldStack): IFieldOptions => ({
   ...a,
   controlType: getControlType(a.type),
   validator: getValidator(a.required, a.limits?.min, a.limits?.max, a.type),
@@ -114,7 +126,14 @@ export const setValue = (data: IFieldStack[], v: TValue): IOutput =>
     .reduce(
       (p, c, i) => ({
         ...p,
-        [c.name]: c.type === 'group' ? data.filter((a) => a.name === c.name && a.type !== 'group').reduce((a, b, k) => ({ ...a, [b.subname]: v[i][k] }), {}) : v ? v[i] : null,
+        [c.name]:
+          c.type === 'group'
+            ? data
+                .filter((a) => a.name === c.name && a.type !== 'group')
+                .reduce((a, b, k) => ({ ...a, [b.subname]: v[i][k] }), {})
+            : v
+            ? v[i]
+            : null,
       }),
       {}
     );

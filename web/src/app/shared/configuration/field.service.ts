@@ -13,8 +13,20 @@ import { Injectable } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { isEmptyObject } from '@app/core/types';
 
-import { controlType, IConfig, IConfigAttr, IFieldOptions, IFieldStack, ILimits, IPanelOptions, IValidator, resultTypes, TNBase, TNForm } from './types';
 import { ISearchParam } from './main/main.service';
+import {
+  controlType,
+  IConfig,
+  IConfigAttr,
+  IFieldOptions,
+  IFieldStack,
+  ILimits,
+  IPanelOptions,
+  IValidator,
+  resultTypes,
+  TNBase,
+  TNForm,
+} from './types';
 
 export type TFormOptions = IFieldOptions | IPanelOptions;
 
@@ -62,7 +74,8 @@ const patternFn = {
 export const getPattern = (t: TNForm): RegExp => (patternFn[t] ? patternFn[t]() : null);
 
 const fn = {
-  boolean: (v: boolean | null, d: boolean | null, r: boolean) => (String(v) === 'true' || String(v) === 'false' || String(v) === 'null' ? v : r ? d : null),
+  boolean: (v: boolean | null, d: boolean | null, r: boolean) =>
+    String(v) === 'true' || String(v) === 'false' || String(v) === 'null' ? v : r ? d : null,
   json: (v: string) => (v === null ? '' : JSON.stringify(v, undefined, 4)),
   map: (v: object, d: object) => (!v ? d : v),
   list: (v: string[], d: string[]) => (!v ? d : v),
@@ -109,13 +122,16 @@ const getPanel = (a: IFieldStack, d: IConfig): IPanelOptions => ({
   options: getOptions(a, d),
 });
 
-const handleTree = (c: ISearchParam) => (a: TFormOptions) => {
+const handleTree = (c: ISearchParam): ((a: TFormOptions) => TFormOptions) => (a: TFormOptions): TFormOptions => {
   if ('options' in a) {
     a.options = a.options.map(handleTree(c));
     if (c.search) a.hidden = a.options.filter((b) => !b.hidden).length === 0;
     else a.hidden = isAdvancedField(a) ? !c.advanced : false;
   } else if (isVisibleField(a)) {
-    a.hidden = !(a.display_name.toLowerCase().includes(c.search.toLowerCase()) || String(a.value).toLocaleLowerCase().includes(c.search.toLocaleLowerCase()));
+    a.hidden = !(
+      a.display_name.toLowerCase().includes(c.search.toLowerCase()) ||
+      String(a.value).toLocaleLowerCase().includes(c.search.toLocaleLowerCase())
+    );
     if (!a.hidden && isAdvancedField(a)) a.hidden = !c.advanced;
   }
   return a;
@@ -144,7 +160,14 @@ export class FieldService {
    */
   public toFormGroup(options: TFormOptions[] = []): FormGroup {
     const isVisible = (a: TFormOptions) => !a.read_only && !(a.ui_options && a.ui_options.invisible);
-    const check = (a: TFormOptions) => ('options' in a ? (a.activatable ? isVisibleField(a) : isVisible(a) ? a.options.some((b) => check(b)) : false) : isVisible(a));
+    const check = (a: TFormOptions) =>
+      'options' in a
+        ? a.activatable
+          ? isVisibleField(a)
+          : isVisible(a)
+          ? a.options.some((b) => check(b))
+          : false
+        : isVisible(a);
     return this.fb.group(
       options.reduce((p, c) => this.runByTree(c, p), {}),
       {
@@ -208,7 +231,9 @@ export class FieldService {
 
     if (field.controlType === 'map') {
       const parseKey = (): ValidatorFn => (control: AbstractControl): { [key: string]: any } | null =>
-        control.value && Object.keys(control.value).length && Object.keys(control.value).some((a) => !a) ? { parseKey: true } : null;
+        control.value && Object.keys(control.value).length && Object.keys(control.value).some((a) => !a)
+          ? { parseKey: true }
+          : null;
       v.push(parseKey());
     }
     return v;
@@ -225,9 +250,11 @@ export class FieldService {
    * Output form, cast to source type
    */
   public parseValue(output: IOutput, source: ISource[]): IOutput {
-    const findField = (name: string, p?: string): Partial<IFieldStack> => source.find((a) => (p ? a.name === p && a.subname === name : a.name === name) && !a.read_only);
+    const findField = (name: string, p?: string): Partial<IFieldStack> =>
+      source.find((a) => (p ? a.name === p && a.subname === name : a.name === name) && !a.read_only);
 
-    const runYspecParse = (v: any, f: Partial<IFieldOptions>) => ((v === {} || v === []) && !f.value ? f.value : this.runYspec(v, f.limits.rules));
+    const runYspecParse = (v: any, f: Partial<IFieldOptions>) =>
+      Object.keys(v).length && !f.value ? f.value : this.runYspec(v, f.limits.rules);
 
     const runParse = (v: IOutput, parentName?: string): IOutput => {
       const runByValue = (p: IOutput, c: string) => {

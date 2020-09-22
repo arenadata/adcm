@@ -21,25 +21,30 @@ import { DialogComponent } from '../components';
 import { DependenciesComponent } from './dependencies.component';
 import { CompTile, TConstraint, HostTile, IRawHosComponent, IStream, Post, StatePost, Tile } from './types';
 
-export const getSelected = (from: Tile[]) => from.find((a) => a.isSelected);
+export const getSelected = (from: Tile[]): Tile => from.find((a) => a.isSelected);
 
-const isShrink = (ap: IActionParameter[]) => ap.every((a) => a.action === 'remove');
-const isExpand = (ap: IActionParameter[]) => ap.every((a) => a.action === 'add');
-const accord = (a: IActionParameter) => (b: CompTile) => b.component === `${a.service}/${a.component}`;
-const existCondition = (rel: CompTile[], ap: IActionParameter[]) =>
+const isShrink = (ap: IActionParameter[]): boolean => ap.every((a) => a.action === 'remove');
+
+const isExpand = (ap: IActionParameter[]): boolean => ap.every((a) => a.action === 'add');
+
+const accord = (a: IActionParameter): ((b: CompTile) => boolean) => (b: CompTile): boolean =>
+  b.component === `${a.service}/${a.component}`;
+
+const existCondition = (rel: CompTile[], ap: IActionParameter[]): boolean =>
   isShrink(ap) ? ap.some((a) => rel.some(accord(a))) : ap.every((a) => rel.some(accord(a)));
-const checkEmptyHost = (h: HostTile, ap: IActionParameter[]) =>
+
+const checkEmptyHost = (h: HostTile, ap: IActionParameter[]): boolean =>
   ap ? (existCondition(h.relations as CompTile[], ap) ? isExpand(ap) : isShrink(ap)) : false;
 
 //#region user click
 
-const checkConstraint = (c: TConstraint, r: number) => {
+const checkConstraint = (c: TConstraint, r: number): boolean => {
   if (!c?.length) return true;
   const v = c[c.length - 1];
   return v === '+' || v === 'odd' || v > r || v === 'depend';
 };
 
-const flag = (host_id: number, com: CompTile, load: StatePost) =>
+const flag = (host_id: number, com: CompTile, load: StatePost): boolean =>
   load.data.some((a) => a.component_id === com.id && a.service_id === com.service_id && a.host_id === host_id);
 
 const checkActions = (host_id: number, com: CompTile, action: 'add' | 'remove', load: StatePost): boolean => {
@@ -49,17 +54,20 @@ const checkActions = (host_id: number, com: CompTile, action: 'add' | 'remove', 
   } else return true;
 };
 
-const findDependencies = (c: CompTile, cs: CompTile[]) => {
+const findDependencies = (c: CompTile, cs: CompTile[]): CompTile[] => {
   const r =
-    c.requires?.reduce((p, a) => [...p, ...a.components.map((b) => ({ prototype_id: b.prototype_id }))], []) || [];
+    c.requires?.reduce<{ prototype_id: number }[]>(
+      (p, a) => [...p, ...a.components.map((b) => ({ prototype_id: b.prototype_id }))],
+      []
+    ) || [];
   return cs.filter((a) => r.some((b) => b.prototype_id === a.prototype_id));
 };
 
-const checkDependencies = (c: CompTile, cs: CompTile[]) =>
+const checkDependencies = (c: CompTile, cs: CompTile[]): void =>
   findDependencies(c, cs).forEach((a) => (a.limit = a.limit ? [...a.limit, 'depend'] : ['depend']));
 
-const checkRequires = (component: CompTile, cs: CompTile[]) =>
-  component.requires.reduce(
+const checkRequires = (component: CompTile, cs: CompTile[]): IRequires[] =>
+  component.requires.reduce<IRequires[]>(
     (p, c) => (c.components.every((a) => cs.some((b) => b.prototype_id === a.prototype_id)) ? p : [...p, c]),
     []
   );

@@ -32,7 +32,16 @@ function genData() {
   return { component: _c, host, hc: HCFactory(1, 1, 4) };
 }
 
-function domFirstElems(n: HTMLElement) {
+function domFirstElems(
+  n: HTMLElement
+): {
+  components: NodeListOf<Element>;
+  hosts: NodeListOf<Element>;
+  host: Element;
+  comp: Element;
+  hostBtn: HTMLElement;
+  compBtn: HTMLElement;
+} {
   const components = n.querySelectorAll('.wrapper').item(0).querySelectorAll('app-much-2-many');
   const hosts = n.querySelectorAll('.wrapper').item(1).querySelectorAll('app-much-2-many');
   const host = hosts.item(0);
@@ -48,7 +57,7 @@ describe('Service Host Map Component', () => {
 
   const initialState = { socket: {} };
 
-  const initDefault = (r: IRawHosComponent) => {
+  const initDefault = (r: IRawHosComponent): void => {
     component.init(r);
     fixture.detectChanges();
   };

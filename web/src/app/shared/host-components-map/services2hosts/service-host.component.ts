@@ -231,7 +231,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
   }
 
   restore() {
-    const ma = (a: Tile) => {
+    const ma = (a: Tile): void => {
       a.isSelected = false;
       a.isLink = false;
       a.relations = [];
