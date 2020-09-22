@@ -74,7 +74,7 @@ export const getValue = (t: TNForm) => {
   return fn[t] ? fn[t] : def;
 };
 
-export const getKey = (n: string, sn: string) => (sn ? `${sn}/${n}` : n);
+export const getKey = (name: string, subname: string): string => (subname ? `${subname}/${name}` : name);
 
 export const getValidator = (required: boolean, min: number, max: number, type: TNForm) => ({
   required,
