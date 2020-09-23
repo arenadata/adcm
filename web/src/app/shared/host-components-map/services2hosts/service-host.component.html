@@ -1,8 +1,4 @@
 <div class="controls" [ngStyle]="{'position': fixedButton ? 'fixed': 'initial'}">
-  <span [@notify]="showPopup? 'show': 'hide'" class="notify">
-    <mat-icon color="accent">done</mat-icon>&nbsp;<span>{{ notify }}</span>
-  </span>
-  &nbsp;&nbsp;
   <button mat-raised-button color="primary" (click)="restore()">Restore</button>
   <button [disabled]="noValid" mat-raised-button color="accent" (click)="save()" *ngIf="!hideButton">Save</button>
 </div>

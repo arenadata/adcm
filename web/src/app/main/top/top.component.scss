@@ -7,11 +7,16 @@
 }
 
 a {
-  line-height: normal;
+  display: flex;
+  align-items: center;
 
   img {
     height: 40px;
     vertical-align: bottom;
+  }
+
+  &:hover {
+    text-decoration: none;
   }
 }
 
