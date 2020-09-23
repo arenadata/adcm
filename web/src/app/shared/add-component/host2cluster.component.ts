@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { MatSelectionList } from '@angular/material/list';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
@@ -57,9 +57,8 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
   list: Host[] = [];
   showForm = false;
   Count = 0;
-
-  displayMode: DisplayMode = DisplayMode.default;
-
+  displayMode: DisplayMode = DisplayMode.default;  
+  @Output() event = new EventEmitter();
   @ViewChild('form') hostForm: HostComponent;
   @ViewChild('listHosts') listHosts: MatSelectionList;
   @ViewChild('cb') allCbx: MatCheckbox;
@@ -94,7 +93,10 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
       this.service
         .addHost(host)
         .pipe(this.takeUntil())
-        .subscribe(() => this.hostForm.form.controls['fqdn'].setValue(''));
+        .subscribe((a) => {
+          this.hostForm.form.controls['fqdn'].setValue('');
+          this.event.emit(`Host [ ${a.fqdn} ] has been added successfully.`);
+        });
     }
   }
 
