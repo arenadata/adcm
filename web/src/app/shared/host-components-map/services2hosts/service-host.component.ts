@@ -29,8 +29,6 @@ import { CompTile, HostTile, IRawHosComponent, Post, StatePost, Tile } from '../
 })
 export class ServiceHostComponent extends SocketListenerDirective implements OnInit {
   showSpinner = false;
-  showPopup = false;
-  notify = '';
 
   statePost = new StatePost();
   loadPost = new StatePost();
@@ -223,10 +221,8 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
       this.loadPost.update(data);
       this.statePost.update(data);
       this.saveResult.emit(data);
-      this.notify = 'Settings saved.';
-      this.showPopup = true;
-      setTimeout(() => (this.showPopup = false), 2000);
       this.saveFlag = false;
+      this.channel.next('notifying', 'Successfully saved.');
     });
   }
 
