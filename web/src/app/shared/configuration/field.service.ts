@@ -254,7 +254,7 @@ export class FieldService {
       source.find((a) => (p ? a.name === p && a.subname === name : a.name === name) && !a.read_only);
 
     const runYspecParse = (v: any, f: Partial<IFieldOptions>) =>
-      Object.keys(v).length && !f.value ? f.value : this.runYspec(v, f.limits.rules);
+      !Object.keys(v).length && !f.value ? f.value : this.runYspec(v, f.limits.rules);
 
     const runParse = (v: IOutput, parentName?: string): IOutput => {
       const runByValue = (p: IOutput, c: string) => {
