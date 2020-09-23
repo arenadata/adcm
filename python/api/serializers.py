@@ -901,10 +901,10 @@ class TaskRunSerializer(TaskSerializer):
             obj = cm.job.start_task(
                 validated_data.get('action_id'),
                 validated_data.get('selector'),
-                validated_data.get('config', None),
-                validated_data.get('attr', None),
-                validated_data.get('hc', None),
-                validated_data.get('hosts', None)
+                validated_data.get('config', {}),
+                validated_data.get('attr', {}),
+                validated_data.get('hc', []),
+                validated_data.get('hosts', [])
             )
             obj.jobs = JobLog.objects.filter(task_id=obj.id)
             return obj

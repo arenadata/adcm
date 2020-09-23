@@ -138,7 +138,7 @@ def init_object_config(spec, conf, attr):
         previous=0
     )
     obj_conf.save()
-    save_obj_config(obj_conf, conf, 'init', attr)
+    save_obj_config(obj_conf, conf, attr, 'init')
     return obj_conf
 
 
@@ -273,7 +273,7 @@ def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-local
             unflat_conf[key] = None
             cl.attr[key] = {'active': False}
 
-    save_obj_config(obj.config, unflat_conf, 'upgrade', cl.attr)
+    save_obj_config(obj.config, unflat_conf, cl.attr, 'upgrade')
     process_file_type(obj, new_unflat_spec, unflat_conf)
 
 
@@ -291,7 +291,7 @@ def restore_cluster_config(obj_conf, version, desc=''):
     return cl
 
 
-def save_obj_config(obj_conf, conf, desc='', attr=None):
+def save_obj_config(obj_conf, conf, attr, desc=''):
     cl = ConfigLog(
         obj_ref=obj_conf,
         config=conf,
@@ -756,7 +756,7 @@ def replace_object_config(obj, key, subkey, value):
         conf[key][subkey] = value
     else:
         conf[key] = value
-    save_obj_config(obj.config, conf, 'ansible update', cl.attr)
+    save_obj_config(obj.config, conf, cl.attr, 'ansible update')
 
 
 def set_cluster_config(cluster_id, keys, value):

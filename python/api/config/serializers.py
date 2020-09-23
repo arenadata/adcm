@@ -59,7 +59,7 @@ class ObjectConfigUpdateSerializer(ObjectConfigSerializer):
     def update(self, instance, validated_data):
         try:
             conf = validated_data.get('config')
-            attr = validated_data.get('attr')
+            attr = validated_data.get('attr', {})
             desc = validated_data.get('description', '')
             cl = update_obj_config(instance.obj_ref, conf, attr, desc)
             if validated_data.get('ui'):

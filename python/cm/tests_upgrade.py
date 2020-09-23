@@ -213,7 +213,7 @@ class TestConfigUpgrade(TestCase):
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
         old_conf, _ = get_config(cluster)
         old_conf['port'] = 100500
-        cm.adcm_config.save_obj_config(cluster.config, old_conf)
+        cm.adcm_config.save_obj_config(cluster.config, old_conf, {})
         cm.adcm_config.switch_config(cluster, proto2, proto1)
         new_config, _ = get_config(cluster)
         self.assertEqual(new_config, {'port': 100500})
