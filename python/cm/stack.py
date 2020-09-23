@@ -342,7 +342,7 @@ def save_upgrade(proto, conf):
         dict_to_obj(item, 'description', upg)
         if 'states' in item:
             check_upgrade_states(proto, item)
-            dict_json_to_obj(item['states'], 'available', upg)
+            dict_to_obj(item['states'], 'available', upg)
             if 'available' in item['states']:
                 upg.state_available = item['states']['available']
             if 'on_success' in item['states']:
@@ -812,7 +812,7 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
             if not isinstance(conf['ui_options'], dict):
                 msg = 'ui_options of config key "{}/{}" of {} should be a map'
                 err('INVALID_CONFIG_DEFINITION', msg.format(name, subname, ref))
-        dict_json_to_obj(conf, 'ui_options', sc)
+        dict_to_obj(conf, 'ui_options', sc)
         if 'default' in conf:
             check_config_type(proto, name, subname, conf, conf['default'], bundle_hash)
         if type_is_complex(conf['type']):
