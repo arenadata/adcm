@@ -136,13 +136,11 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
 
     if (lbs.includes(cmd)) {
       nav(cmd === 'title' ? [] : [cmd]);
+    } else if (cmd === 'new-tab') {
+      const url = this.parent.router.serializeUrl(createUrl([]));
+      window.open(url, '_blank');
     } else {
-      if (cmd === 'new-tab') {
-        const url = this.parent.router.serializeUrl(createUrl([]));
-        window.open(url, '_blank');
-      } else {
-        this[cmd](item);
-      }
+      this[cmd](item);
     }
   }
 
