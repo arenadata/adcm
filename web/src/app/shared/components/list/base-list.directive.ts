@@ -127,18 +127,30 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
 
   listEvents(event: EmmitRow) {
     const lbs = ['title', 'status', 'config', 'import'];
-    const nav = (a: string[]) => this.parent.router.navigate(['./', this.row.id, ...a], { relativeTo: this.parent.route });
+
+    const createUrl = (a: string[]) => this.parent.router.createUrlTree(['./', this.row.id, ...a], { relativeTo: this.parent.route });
+    const nav = (a: string[]) => this.parent.router.navigateByUrl(createUrl(a));
 
     this.row = event.row;
     const { cmd, item } = event;
-    lbs.includes(cmd) ? nav(cmd === 'title' ? [] : [cmd]) : this[cmd](item);
+
+    if (lbs.includes(cmd)) {
+      nav(cmd === 'title' ? [] : [cmd]);
+    } else {
+      if (cmd === 'new-tab') {
+        const url = this.parent.router.serializeUrl(createUrl([]));
+        window.open(url, '_blank');
+      } else {
+        this[cmd](item);
+      }
+    }
   }
 
   onLoad() {}
 
   // getActions() {
   //   this.row.typeName = this.typeName;
-  //   this.service.getActions(this.row);    
+  //   this.service.getActions(this.row);
   //   // this.parent.dialog.open(DialogComponent, { data: { title: 'Choose action', model: this.row, component: ActionCardComponent } });
   // }
 
