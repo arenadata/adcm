@@ -126,15 +126,13 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
   }
 
   listEvents(event: EmmitRow) {
-    const lbs = ['title', 'status', 'config', 'import'];
-
     const createUrl = (a: string[]) => this.parent.router.createUrlTree(['./', this.row.id, ...a], { relativeTo: this.parent.route });
     const nav = (a: string[]) => this.parent.router.navigateByUrl(createUrl(a));
 
     this.row = event.row;
     const { cmd, item } = event;
 
-    if (lbs.includes(cmd)) {
+    if (['title', 'status', 'config', 'import'].includes(cmd)) {
       nav(cmd === 'title' ? [] : [cmd]);
     } else if (cmd === 'new-tab') {
       const url = this.parent.router.serializeUrl(createUrl([]));
