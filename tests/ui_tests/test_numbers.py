@@ -6,32 +6,20 @@ from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import parametrize_by_data_subdirs, get_data_dir
 
 from tests.ui_tests.app.locators import Common
-from tests.ui_tests.app.pages import LoginPage
-from tests.ui_tests.app.configuration import Configuration
+from .utils import prepare_cluster_and_get_config
 
 
 RANGE_VALUES = [("float", 0.15), ("float", 0), ("float", -1.2),
                 ("integer", 4), ("integer", 0), ("integer", -3)]
 
 
-@pytest.fixture()
-def login(app_fs):
-    app_fs.driver.get(app_fs.adcm.url)
-    login = LoginPage(app_fs.driver)
-    login.login("admin", "admin")
-
-
 @parametrize_by_data_subdirs(__file__, 'bundles')
-def test_number_validation(sdk_client_fs: ADCMClient, path, app_fs, login):
+def test_number_validation(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm):
     """Check that we have errors and save button is not active
      for number field with values out of range
     """
-    _ = login
-    bundle = sdk_client_fs.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
-    cluster = bundle.cluster_create(name=cluster_name)
-    config = Configuration(app_fs.driver,
-                           "{}/cluster/{}/config".format(app_fs.adcm.url, cluster.cluster_id))
+    _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
+
     assert config.save_button_status()
     fields = config.get_app_fields()
     form_field = fields[0].find_elements(*Common.mat_form_field)[0]
@@ -51,32 +39,25 @@ def test_number_validation(sdk_client_fs: ADCMClient, path, app_fs, login):
 
 
 @pytest.mark.parametrize("number_type, value", RANGE_VALUES)
-def test_number_in_range_values(sdk_client_fs: ADCMClient, value, app_fs, number_type, login):
+def test_number_in_range_values(sdk_client_fs: ADCMClient, value, app_fs, number_type,
+                                login_to_adcm):
     """Check that save button active for number fields in min-max range
     """
-    _ = login
+
     path = get_data_dir(__file__) + "/bundles/{}-positive_and_negative".format(number_type)
-    bundle = sdk_client_fs.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
-    cluster = bundle.cluster_create(name=cluster_name)
-    config = Configuration(app_fs.driver,
-                           "{}/cluster/{}/config".format(app_fs.adcm.url, cluster.cluster_id))
+    _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     fields = config.get_app_fields()
     form_field = fields[0].find_elements(*Common.mat_form_field)[0]
     config.set_element_value_in_input(form_field, str(value))
     assert config.save_button_status()
 
 
-def test_float_in_integer_field(sdk_client_fs: ADCMClient, app_fs, login):
+def test_float_in_integer_field(sdk_client_fs: ADCMClient, app_fs, login_to_adcm):
     """Check that we cannot set float in integer field
     """
-    _ = login
+    _ = login_to_adcm
     path = get_data_dir(__file__) + "/bundles/integer-positive_and_negative"
-    bundle = sdk_client_fs.upload_from_fs(path)
-    cluster_name = path.split("/")[-1]
-    cluster = bundle.cluster_create(name=cluster_name)
-    config = Configuration(app_fs.driver,
-                           "{}/cluster/{}/config".format(app_fs.adcm.url, cluster.cluster_id))
+    _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     fields = config.get_app_fields()
     form_field = fields[0].find_elements(*Common.mat_form_field)[0]
     config.set_element_value_in_input(form_field, "1.2")
