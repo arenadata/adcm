@@ -13,8 +13,13 @@ import { Injectable } from '@angular/core';
 import { Subject, Observable } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 
+export enum keyChannelStrim {
+  'scroll',
+  'notifying',
+  'load_complete'
+}
 export interface IBroadcast {
-  key: string;
+  key: keyChannelStrim;
   value: any;
 }
 
@@ -24,11 +29,11 @@ export interface IBroadcast {
 export class ChannelService {
   private event = new Subject<IBroadcast>();
 
-  next<T>(key: string, value: T) {
+  next<T>(key: keyChannelStrim, value: T) {
     this.event.next({ key, value });
   }
 
-  on<T = any>(key: string): Observable<T> {
+  on<T = any>(key: keyChannelStrim): Observable<T> {
     return this.event.asObservable().pipe(
       filter((e) => e.key === key),
       map<IBroadcast, T>((a) => a.value)

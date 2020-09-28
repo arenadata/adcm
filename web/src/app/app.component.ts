@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, ElementRef, OnInit } from '@angular/core';
-import { AppService } from '@app/core';
+import { AppService, ChannelService, keyChannelStrim } from '@app/core';
 import { filter } from 'rxjs/operators';
 
 @Component({
@@ -39,7 +39,7 @@ export class AppComponent implements OnInit {
   currentYear = new Date().getFullYear();
   versionData = { version: '', commit_id: '' };
 
-  constructor(private elRef: ElementRef, private service: AppService) {}
+  constructor(private elRef: ElementRef, private service: AppService, private radio: ChannelService) {}
 
   ngOnInit() {
     this.service.getRootAndCheckAuth().subscribe((c) => {
@@ -57,6 +57,8 @@ export class AppComponent implements OnInit {
     this.service.checkUserProfile().subscribe((_) => this.console('User profile :: saved', 'profile'));
 
     this.versionData = this.service.getVersion(this.versionData);
+
+    this.radio.on<string>(keyChannelStrim.load_complete).subscribe(a => this.console(a, 'load_complete'));
   }
 
   console(text: string, css?: string) {

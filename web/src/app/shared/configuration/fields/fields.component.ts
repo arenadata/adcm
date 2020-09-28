@@ -1,3 +1,4 @@
+import { FullyRenderedService } from './../../../core/services/fully-rendered.service';
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -9,12 +10,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, EventEmitter, Input, Output, QueryList, ViewChildren } from '@angular/core';
+
+import { Component, EventEmitter, Input, NgZone, Output, QueryList, ViewChildren } from '@angular/core';
+import { interval } from 'rxjs';
+import { distinctUntilChanged, filter, map, startWith, take, tap } from 'rxjs/operators';
 
 import { FieldService } from '../field.service';
 import { FieldComponent } from '../field/field.component';
 import { GroupFieldsComponent } from '../group-fields/group-fields.component';
 import { FieldOptions, IConfig, PanelOptions } from '../types';
+import { ChannelService, keyChannelStrim } from '@app/core';
 
 @Component({
   selector: 'app-config-fields',
@@ -46,6 +51,7 @@ export class ConfigFieldsComponent {
     this.isAdvanced = data.config.some((a) => a.ui_options && a.ui_options.advanced);
     this.shapshot = { ...this.form.value };
     this.event.emit({ name: 'load', data: { form: this.form } });
+    this.stableView();
   }
 
   @ViewChildren(FieldComponent)
@@ -54,7 +60,7 @@ export class ConfigFieldsComponent {
   @ViewChildren(GroupFieldsComponent)
   groups: QueryList<GroupFieldsComponent>;
 
-  constructor(private service: FieldService) {}
+  constructor(private service: FieldService, private fr: FullyRenderedService, private radio: ChannelService) {}
 
   get attr() {
     return this.dataOptions.filter((a) => a.type === 'group' && (a as PanelOptions).activatable).reduce((p, c: PanelOptions) => ({ ...p, [c.name]: { active: c.active } }), {});
@@ -66,5 +72,15 @@ export class ConfigFieldsComponent {
 
   trackBy(index: number, item: PanelOptions): string {
     return item.name;
+  }
+
+  /**
+   * This method detects the moment rendering final of all fields and groups (with internal fields) on the page
+   * it's need for test
+   *
+   * @memberof ConfigFieldsComponent
+   */
+  stableView() {
+    this.fr.stableView(() => this.radio.next(keyChannelStrim.load_complete, 'Config has been loaded'));
   }
 }

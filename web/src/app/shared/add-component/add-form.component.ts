@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, ViewChild } from '@angular/core';
-import { ChannelService } from '@app/core';
+import { ChannelService, keyChannelStrim } from '@app/core';
 import { DynamicComponent } from '@app/shared/directives';
 
 import { FormModel } from './add.service';
@@ -51,6 +51,6 @@ export class AddFormComponent implements DynamicComponent {
   }
 
   message(m: string) {
-    this.channel.next('notifying', m);
+    this.channel.next(keyChannelStrim.notifying, m);
   }
 }

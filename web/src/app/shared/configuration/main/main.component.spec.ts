@@ -1,3 +1,4 @@
+import { FullyRenderedService } from './../../../core/services/fully-rendered.service';
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -76,9 +77,9 @@ describe('Configuration : MainComponent >> ', () => {
   const initialState = { socket: {} };
   class MockMainService {
     getConfig = () => EMPTY;
-    filterApply = () => {};
+    filterApply = () => { };
     getHistoryList = () => EMPTY;
-    parseValue = () => {};
+    parseValue = () => { };
     send = () => EMPTY;
   }
 
@@ -87,7 +88,7 @@ describe('Configuration : MainComponent >> ', () => {
     TestBed.configureTestingModule({
       imports: [NoopAnimationsModule, SharedModule],
       declarations: [ConfigComponent, ToolsComponent, ConfigFieldsComponent, GroupFieldsComponent, FieldComponent, TextBoxComponent],
-      providers: [provideMockStore({ initialState }), { provide: FieldService, useValue: FieldServiceStub }],
+      providers: [provideMockStore({ initialState }), { provide: FieldService, useValue: FieldServiceStub }, { provide: FullyRenderedService, useValue: { stableView: () => { } } }],
       schemas: [NO_ERRORS_SCHEMA],
     })
       .overrideComponent(ConfigComponent, {
