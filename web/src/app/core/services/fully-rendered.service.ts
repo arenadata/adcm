@@ -12,7 +12,7 @@
 import { Injectable, NgZone } from '@angular/core';
 import { NavigationStart, Router } from '@angular/router';
 import { interval } from 'rxjs';
-import { distinctUntilChanged, filter, map, startWith, take, takeUntil, tap } from 'rxjs/operators';
+import { distinctUntilChanged, filter, map, startWith, take, tap } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root',
