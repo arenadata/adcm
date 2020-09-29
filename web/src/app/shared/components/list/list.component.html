@@ -1,8 +1,12 @@
 <mat-table [dataSource]="data" [trackBy]="trackBy" matSort>
   <mat-header-row *matHeaderRowDef="columns" [appMultiSort]="sortParam" (mousedownevent)="addToSorting=$event">
   </mat-header-row>
-  <mat-row appHover *matRowDef="let row; columns: columns" (click)="clickCell($event, 'title', row)"
-    [ngClass]="{ 'select-table-item': current ? row.id === current.id : false }"></mat-row>
+  <mat-row appHover
+           *matRowDef="let row; columns: columns"
+           (click)="clickCell($event, 'title', row)"
+           (auxclick)="clickCell($event, 'new-tab', row)"
+           [ngClass]="{ 'select-table-item': current ? row.id === current.id : false }"
+  ></mat-row>
 
   <!-- Checkbox Column -->
   <ng-container matColumnDef="select">
