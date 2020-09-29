@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, Input, OnInit, Output, EventEmitter } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { openClose } from '@app/core/animations';
 import { clearEmptyField, Cluster, Host, Provider } from '@app/core/types';
@@ -149,7 +149,7 @@ export class HostComponent extends BaseFormDirective implements OnInit {
         this.takeUntil(),
         tap(() => this.form.controls['fqdn'].setValue(''))
       )
-      .subscribe((_) => this.event.emit());
+      .subscribe((a) => this.event.emit(`Host [ ${a.fqdn} ] has been added successfully.`));
   }
 
   createdProvider(id: number) {
