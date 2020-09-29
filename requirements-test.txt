@@ -8,9 +8,11 @@ allure-pytest==2.5.4
 delayed_assert
 docker
 jsonschema
-pytest
+# rerunfailures is incompatible with latest pytest https://github.com/pytest-dev/pytest-rerunfailures/pull/135
+pytest < 6.1.0
 pytest-lazy-fixture
 pytest-xdist>=2.0.0
+pytest-rerunfailures
 pyyaml
 requests
 retrying==1.3.3

@@ -761,14 +761,6 @@ class ClusterServiceConfig(ListView):
         return Response(serializer.data)
 
 
-class ClusterConfig(ClusterServiceConfig):
-    """
-    get:
-    Show config page for a specified cluster
-    """
-    serializer_class = api.cluster_serial.ClusterConfigSerializer
-
-
 class ClusterServiceConfigVersion(ListView):
     queryset = ConfigLog.objects.all()
     serializer_class = api.cluster_serial.ObjectConfig
@@ -787,13 +779,6 @@ class ClusterServiceConfigVersion(ListView):
                 raise AdcmApiEx(e.code, e.msg, e.http_code) from e
         serializer = self.serializer_class(cl, context={'request': request})
         return Response(serializer.data)
-
-
-class ClusterConfigVersion(ClusterServiceConfigVersion):
-    """
-    get:
-    Show config for a specified version and cluster.
-    """
 
 
 class ClusterConfigRestore(GenericAPIPermView):
