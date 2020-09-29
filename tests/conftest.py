@@ -9,6 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=W0621
+
 import allure
 import json
 import os
@@ -17,6 +19,7 @@ import sys
 import tempfile
 
 from tests.ui_tests.app.app import ADCMTest
+from tests.ui_tests.app.pages import LoginPage
 
 pytest_plugins = "adcm_pytest_plugin"
 
@@ -36,7 +39,7 @@ def process_browser_log_entry(entry):
 def write_json_file(f_name, j_data):
     f_path = "/".join([tempfile.mkdtemp(), f_name])
     with open(f_path, 'w') as f:
-        json.dump(j_data, f)
+        json.dump(j_data, f, indent=2)
     return f_path
 
 
@@ -53,25 +56,18 @@ def pytest_runtest_makereport(item, call):
 
 
 @pytest.fixture()
-def gather_logs(app, request):
-    yield
-    if request.node.rep_call.failed:
-        logs = app.gather_logs(request.node.name)
-        allure.attach.file(logs, "{}.tar".format(request.node.name))
-
-
-@pytest.fixture()
 def app_fs(adcm_fs, request):
     adcm_app = ADCMTest(adcm_fs)
     yield adcm_app
     if request.node.rep_setup.passed:
         if request.node.rep_call.failed:
+            allure.attach(adcm_app.driver.page_source,
+                          name="page_source",
+                          attachment_type=allure.attachment_type.TEXT)
             adcm_app.driver.execute_script("document.body.bgColor = 'white';")
             allure.attach(adcm_app.driver.get_screenshot_as_png(),
                           name="screenshot",
                           attachment_type=allure.attachment_type.PNG)
-            logs = adcm_app.gather_logs(request.node.name)
-            allure.attach.file(logs, "adcm_logs.tar")
             console_logs = adcm_app.driver.get_log('browser')
             perf_log = adcm_app.driver.get_log("performance")
             events = [process_browser_log_entry(entry) for entry in perf_log]
@@ -88,6 +84,16 @@ def app_fs(adcm_fs, request):
             allure.attach.file(events_json, name="all_events_log",
                                attachment_type=allure.attachment_type.JSON)
     adcm_app.destroy()
+
+
+@pytest.fixture(scope="function")
+def login_to_adcm(app_fs):
+    """Perform login on Login page ADCM
+    :param app_fs:
+    """
+    app_fs.driver.get(app_fs.adcm.url)
+    login = LoginPage(app_fs.driver)
+    login.login("admin", "admin")
 
 
 @pytest.fixture()
