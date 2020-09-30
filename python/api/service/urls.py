@@ -16,59 +16,28 @@ from . import views
 
 
 urlpatterns = [
-    path(
-        'service/',
-        views.ServiceListView.as_view(),
-        name='service'
-    ),
-    path(
-        'service/<int:service_id>/',
-        views.ServiceDetailView.as_view(),
-        name='service-details'
-    ),
-    path(
-        'service/<int:service_id>/action/',
-        views.ServiceActionListView.as_view(),
-        name='service-action'
-    ),
-    path(
-        'service/<int:service_id>/action/<int:action_id>/',
-        views.ServiceActionView.as_view(),
-        name='service-action-details'
-    ),
-    path(
-        'service/<int:service_id>/action/<int:action_id>/run/',
-        views.ServiceTask.as_view(),
-        name='service-action-run'
-    ),
-    path(
-        'service/<int:service_id>/component/',
-        views.ServiceComponentListView.as_view(),
-        name='service-component'
-    ),
-    path(
-        'service/<int:service_id>/component/<int:component_id>/',
-        views.ServiceComponentDetailView.as_view(),
-        name='service-component-details'
-    ),
-    path(
-        'service/<int:service_id>/import/',
-        views.ServiceImportView.as_view(),
-        name='service-import'
-    ),
-    path(
-        'service/<int:service_id>/bind/',
-        views.ServiceBindView.as_view(),
-        name='service-bind'
-    ),
-    path(
-        'service/<int:service_id>/bind/<int:bind_id>/',
-        views.ServiceBindDetailView.as_view(),
-        name='service-bind-details'
-    ),
-    path(
-        'service/<int:service_id>/config/',
-        include('api.config.urls'),
-        {'object_type': 'service'}
-    ),
+    path('', views.ServiceListView.as_view(), name='service'),
+    path('<int:service_id>/', include([
+        path('', views.ServiceDetailView.as_view(), name='service-details'),
+        path('action/', include([
+            path('', views.ServiceActionListView.as_view(), name='service-action'),
+            path('<int:action_id>/', include([
+                path('', views.ServiceActionView.as_view(), name='service-action-details'),
+                path('run/', views.ServiceTask.as_view(), name='service-action-run'),
+            ])),
+        ])),
+        path('component/', include([
+            path('', views.ServiceComponentListView.as_view(), name='service-component'),
+            path('<int:component_id>/', views.ServiceComponentDetailView.as_view(),
+                 name='service-component-details'),
+        ])),
+
+        path('import/', views.ServiceImportView.as_view(), name='service-import'),
+        path('bind/', include([
+            path('', views.ServiceBindView.as_view(), name='service-bind'),
+            path('<int:bind_id>/', views.ServiceBindDetailView.as_view(),
+                 name='service-bind-details'),
+        ])),
+        path('config/', include('api.config.urls'), {'object_type': 'service'}),
+    ])),
 ]

@@ -293,7 +293,7 @@ urlpatterns = [
         cluster_views.ClusterServiceConfigHistory.as_view(),
         name='cluster-service-config-history'
     ),
-    path('', include('api.service.urls')),
+    path('service/', include('api.service.urls')),
 
     path('adcm/', views.AdcmList.as_view(), name='adcm'),
     path('adcm/<int:adcm_id>/', views.AdcmDetail.as_view(), name='adcm-details'),
