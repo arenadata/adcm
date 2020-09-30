@@ -10,13 +10,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, EventEmitter, Input, Output, QueryList, ViewChildren } from '@angular/core';
-import { ChannelService, keyChannelStrim } from '@app/core';
+import { ChannelService, FullyRenderedService, keyChannelStrim } from '@app/core';
 
 import { FieldService } from '../field.service';
 import { FieldComponent } from '../field/field.component';
 import { GroupFieldsComponent } from '../group-fields/group-fields.component';
 import { FieldOptions, IConfig, PanelOptions } from '../types';
-import { FullyRenderedService } from './../../../core/services/fully-rendered.service';
 
 @Component({
   selector: 'app-config-fields',
