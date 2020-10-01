@@ -325,7 +325,7 @@ class Configuration(BasePage):
         return self.driver.find_elements(*ConfigurationLocators.app_fields_password)
 
     def get_display_names(self):
-        self._wait_element_present(Common.display_names)
+        self._wait_element_present(Common.display_names, timer=15)
         return {name.text for name in self.driver.find_elements(*Common.display_names)}
 
     def set_search_field(self, search_pattern):
