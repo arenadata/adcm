@@ -526,7 +526,7 @@ def re_prepare_job(task, job):
 def prepare_job(action, sub_action, selector, job_id, obj, conf, delta, hosts):
     prepare_job_config(action, sub_action, selector, job_id, obj, conf)
     inventory.prepare_job_inventory(selector, job_id, delta, hosts)
-    prepare_ansible_config(job_id)
+    prepare_ansible_config(job_id, action, sub_action)
 
 
 def prepare_context(selector):
@@ -927,7 +927,7 @@ def log_rotation():
         log.info('rotation log from fs')
 
 
-def prepare_ansible_config(job_id):
+def prepare_ansible_config(job_id, action, sub_action):
     config_parser = ConfigParser()
     config_parser['defaults'] = {
         'stdout_callback': 'yaml'
@@ -942,10 +942,9 @@ def prepare_ansible_config(job_id):
             config.PYTHON_SITE_PACKAGES, 'ansible_mitogen/plugins/strategy')
         config_parser['defaults']['host_key_checking'] = 'False'
 
-    job = JobLog.objects.get(id=job_id)
-    action = Action.objects.get(id=job.action_id)
-
     params = action.params
+    if sub_action:
+        params = sub_action.params
 
     if 'jinja2_native' in params:
         config_parser['defaults']['jinja2_native'] = str(params['jinja2_native'])
