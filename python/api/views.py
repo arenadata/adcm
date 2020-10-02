@@ -49,6 +49,7 @@ class APIRoot(routers.APIRootView):
         'profile': 'profile-list',
         'provider': 'provider',
         'host': 'host',
+        'service': 'service',
         'job': 'job',
         'stack': 'stack',
         'stats': 'stats',
