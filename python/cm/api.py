@@ -743,6 +743,8 @@ def multi_bind(cluster, service, bind_list):   # pylint: disable=too-many-locals
             log.info('unbind %s from %s', obj_ref(export_obj), obj_ref(import_obj))
 
         cm.issue.save_issue(cluster)
+        if service:
+            cm.issue.save_issue(service)
 
     return get_import(cluster, service)
 
