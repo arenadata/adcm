@@ -20,8 +20,8 @@ import { AddService } from './add.service';
   selector: '[appBaseForm]',
 })
 export class BaseFormDirective extends BaseDirective {
-  form  = new FormGroup({});
-  
+  form = new FormGroup({});
+
   constructor(public service: AddService, public dialog: MatDialog) {
     super();
   }

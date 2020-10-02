@@ -13,7 +13,6 @@
 # Created by a1wen at 27.02.19
 
 # pylint: disable=E0401, E0611, W0611, W0621
-import tempfile
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -42,7 +41,7 @@ class ADCMTest:
         self.capabilities['goog:loggingPrefs'] = {'browser': 'ALL', 'performance': 'ALL'}
         self.driver = webdriver.Chrome(options=self.opts, desired_capabilities=self.capabilities)
         self.driver.set_window_size(1800, 1000)
-        self.driver.implicitly_wait(0.5)
+        self.driver.implicitly_wait(5)
         self.adcm = adcm
         self._client = adcm.api.objects
         self.ui = Ui(self.driver)
@@ -80,12 +79,3 @@ class ADCMTest:
 
     def destroy(self):
         self.driver.quit()
-
-    def gather_logs(self, file_name):
-        bits, _ = self.adcm.container.get_archive('/adcm/data/log/')
-        f_name = ".".join([file_name, "tar"])
-        f_path = "/".join([tempfile.mkdtemp(), f_name])
-        with open(f_path, 'wb') as f:
-            for chunk in bits:
-                f.write(chunk)
-        return f_path

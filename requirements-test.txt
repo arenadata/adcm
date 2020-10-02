@@ -1,15 +1,18 @@
 --extra-index-url https://ci.arenadata.io/artifactory/api/pypi/python-packages/simple
 adcm-client
-adcm_pytest_plugin >= 1.2.0
+adcm_pytest_plugin >= 1.16.2
+# Docker interactions fixed in 1.16.2 https://github.com/arenadata/adcm_pytest_plugin/pull/34
 -r ./requirements.txt
 allure-pytest==2.5.4
 #arenadata_test_suite
 delayed_assert
 docker
 jsonschema
-pytest
+# rerunfailures is incompatible with latest pytest https://github.com/pytest-dev/pytest-rerunfailures/pull/135
+pytest < 6.1.0
 pytest-lazy-fixture
 pytest-xdist>=2.0.0
+pytest-rerunfailures
 pyyaml
 requests
 retrying==1.3.3
