@@ -98,6 +98,8 @@ def run_ansible(job_id):
     os.chdir(conf['env']['stack_dir'])
     cmd = [
         'ansible-playbook',
+        '--vault-password-file',
+        f'{config.CODE_DIR}/ansible_secret.py',
         '-e',
         f'@{config.RUN_DIR}/{job_id}/config.json',
         '-i',
