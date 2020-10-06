@@ -9,9 +9,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Directive, Input, ElementRef, HostListener } from '@angular/core';
-import { TooltipService, PositionType, ComponentName } from '../tooltip/tooltip.service';
+import { Directive, ElementRef, HostListener, Input } from '@angular/core';
 import { ApiBase } from '@app/core/types/api';
+
+import { ComponentName, PositionType, TooltipService } from '../tooltip/tooltip.service';
 
 @Directive({
   selector: '[appTooltip]',
@@ -23,11 +24,9 @@ export class TooltipDirective {
 
   /**
    * TODO: To show tooltip by condition [04.12.2019]
-   * ConditionType - under construction, 
+   * ConditionType - under construction,
    * Now - one the condition this is width and scroll of source
    * tooltip.component.ts line: 118 checkBuild()
-   * @type boolean
-   * @memberof TooltipDirective
    */
   @Input() appTooltipShowByCondition: boolean;
 
@@ -39,7 +38,7 @@ export class TooltipDirective {
       content: this.appTooltip,
       componentName: this.appTooltipComponent,
       position: this.appTooltipPosition,
-      condition: this.appTooltipShowByCondition
+      condition: this.appTooltipShowByCondition,
     };
     if (this.appTooltip) this.tooltip.show(e, this.el.nativeElement, options);
   }

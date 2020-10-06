@@ -19,7 +19,7 @@ find . -name "*.pyc" -type f -delete
 find . -name "__pycache__" -type d -delete
 { # try
     pytest tests/functional tests/ui_tests -s -v -n auto --maxfail 30 \
-    --showlocals --alluredir ./allure-results/ --durations=20 &&
+    --showlocals --alluredir ./allure-results/ --durations=20 --reruns 2 &&
     chmod -R o+xw allure-results
 } || { # catch
     chmod -R o+xw allure-results

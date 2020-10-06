@@ -22,10 +22,11 @@ from cm.logger import log   # pylint: disable=unused-import
 from cm.errors import AdcmApiEx, AdcmEx
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent, Component
 
-from api.serializers import check_obj, filter_actions, get_upgradable_func
-from api.serializers import hlink, JSONField, UrlField
-from api.serializers import ClusterActionShort, ClusterHostActionShort
-from api.serializers import ServiceActionShort
+from api.serializers import (
+    check_obj, filter_actions, get_upgradable_func, hlink, JSONField, UrlField, ClusterActionShort,
+    ClusterHostActionShort, ServiceActionShort
+)
+from api.config.serializers import ConfigURL
 
 
 def get_cluster_id(obj):
@@ -98,7 +99,7 @@ class ClusterDetailSerializer(ClusterSerializer):
     hostcomponent = hlink('host-component', 'id', 'cluster_id')
     status = serializers.SerializerMethodField()
     status_url = hlink('cluster-status', 'id', 'cluster_id')
-    config = hlink('cluster-config', 'id', 'cluster_id')
+    config = ConfigURL(view_name='config')
     serviceprototype = hlink('cluster-service-prototype', 'id', 'cluster_id')
     upgrade = hlink('cluster-upgrade', 'id', 'cluster_id')
     imports = hlink('cluster-import', 'id', 'cluster_id')
@@ -174,7 +175,7 @@ class ClusterHostDetailSerializer(ClusterHostSerializer):
     status = serializers.SerializerMethodField()
     monitoring = serializers.SerializerMethodField()
     host_url = hlink('host-details', 'id', 'host_id')
-    config = hlink('host-config', 'id', 'host_id')
+    config = ConfigURL(view_name='config')
 
     def get_issue(self, obj):
         return cm.issue.get_issue(obj)
@@ -368,7 +369,7 @@ class ClusterServiceDetailSerializer(ClusterServiceSerializer):
     monitoring = serializers.SerializerMethodField()
     action = ClusterServiceUrlField(read_only=True, view_name='cluster-service-action')
     config = ClusterServiceUrlField(read_only=True, view_name='cluster-service-config')
-    component = ClusterServiceUrlField(read_only=True, view_name='service-component')
+    component = ClusterServiceUrlField(read_only=True, view_name='cluster-service-component')
     imports = ClusterServiceUrlField(read_only=True, view_name='cluster-service-import')
     bind = ClusterServiceUrlField(read_only=True, view_name='cluster-service-bind')
     prototype = hlink('service-type-details', 'prototype_id', 'prototype_id')
@@ -430,7 +431,7 @@ class ServiceComponentSerializer(serializers.Serializer):
     prototype_id = serializers.SerializerMethodField()
     display_name = serializers.SerializerMethodField()
     description = serializers.SerializerMethodField()
-    url = MyUrlField(read_only=True, view_name='service-component-details')
+    url = MyUrlField(read_only=True, view_name='cluster-service-component-details')
 
     def get_name(self, obj):
         return obj.component.name
@@ -649,46 +650,6 @@ class ClusterServiceConfigSerializer(serializers.Serializer):
     previous = MyUrlField(read_only=True, view_name='cluster-service-config-prev')
 
 
-class AdcmConfigSerializer(serializers.Serializer):
-    class MyUrlField(UrlField):
-        def get_kwargs(self, obj):
-            return {'adcm_id': self.context['adcm_id']}
-
-    history = MyUrlField(read_only=True, view_name='adcm-config-history')
-    current = MyUrlField(read_only=True, view_name='adcm-config-curr')
-    previous = MyUrlField(read_only=True, view_name='adcm-config-prev')
-
-
-class ProviderConfigSerializer(serializers.Serializer):
-    class MyUrlField(UrlField):
-        def get_kwargs(self, obj):
-            return {'provider_id': self.context['provider_id']}
-
-    history = MyUrlField(read_only=True, view_name='provider-config-history')
-    current = MyUrlField(read_only=True, view_name='provider-config-curr')
-    previous = MyUrlField(read_only=True, view_name='provider-config-prev')
-
-
-class HostConfigSerializer(serializers.Serializer):
-    class MyUrlField(UrlField):
-        def get_kwargs(self, obj):
-            return {'host_id': self.context['host_id']}
-
-    history = MyUrlField(read_only=True, view_name='host-config-history')
-    current = MyUrlField(read_only=True, view_name='host-config-curr')
-    previous = MyUrlField(read_only=True, view_name='host-config-prev')
-
-
-class ClusterConfigSerializer(serializers.Serializer):
-    class MyUrlField(UrlField):
-        def get_kwargs(self, obj):
-            return {'cluster_id': self.context['cluster_id']}
-
-    history = MyUrlField(read_only=True, view_name='cluster-config-history')
-    current = MyUrlField(read_only=True, view_name='cluster-config-curr')
-    previous = MyUrlField(read_only=True, view_name='cluster-config-prev')
-
-
 class ObjectConfig(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     date = serializers.DateTimeField(read_only=True)
@@ -751,30 +712,6 @@ class ClusterConfigHistorySerializer(ConfigHistorySerializer):
             return {'cluster_id': get_cluster_id(obj), 'version': obj.id}
 
     url = MyUrlField(read_only=True, view_name='cluster-config-id')
-
-
-class AdcmConfigHistorySerializer(ConfigHistorySerializer):
-    class MyUrlField(UrlField):
-        def get_kwargs(self, obj):
-            return {'adcm_id': obj.obj_ref.adcm.id, 'version': obj.id}
-
-    url = MyUrlField(read_only=True, view_name='adcm-config-id')
-
-
-class ProviderConfigHistorySerializer(ConfigHistorySerializer):
-    class MyUrlField(UrlField):
-        def get_kwargs(self, obj):
-            return {'provider_id': obj.obj_ref.hostprovider.id, 'version': obj.id}
-
-    url = MyUrlField(read_only=True, view_name='provider-config-id')
-
-
-class HostConfigHistorySerializer(ConfigHistorySerializer):
-    class MyUrlField(UrlField):
-        def get_kwargs(self, obj):
-            return {'host_id': obj.obj_ref.host.id, 'version': obj.id}
-
-    url = MyUrlField(read_only=True, view_name='host-config-id')
 
 
 class PostImportSerializer(serializers.Serializer):
