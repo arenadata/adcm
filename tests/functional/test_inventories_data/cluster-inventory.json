@@ -12,7 +12,6 @@
                      "float_key": 34.7,
                      "bool": false,
                      "option": null,
-                     "password": "qwerty",
                      "json": {},
                      "text-type": "lorem ipsum",
                      "file-type": null,
@@ -38,7 +37,6 @@
                         },
                         "svc-file": null,
                         "svc-text-area": "big dataaaaaaaaaaaaa",
-                        "svc-password": "qwerty1234",
                         "svc-ro-created": "bluh",
                         "svc-w-installed": 222,
                         "svc-read-only": 2.5
