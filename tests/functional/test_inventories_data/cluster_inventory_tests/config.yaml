@@ -29,10 +29,6 @@
         type: text
         required: false
         default: big dataaaaaaaaaaaaa
-    svc-password:
-        type: password
-        default: qwerty1234
-        required: false
     svc-ro-created:
       type: string
       default: bluh
@@ -163,10 +159,6 @@
                 https: 443
                 ftp: 21
             required: FALSE
-        password:
-            default: qwerty
-            type: password
-            required: false
         json:
             type: json
             required: false

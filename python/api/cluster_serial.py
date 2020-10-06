@@ -369,7 +369,7 @@ class ClusterServiceDetailSerializer(ClusterServiceSerializer):
     monitoring = serializers.SerializerMethodField()
     action = ClusterServiceUrlField(read_only=True, view_name='cluster-service-action')
     config = ClusterServiceUrlField(read_only=True, view_name='cluster-service-config')
-    component = ClusterServiceUrlField(read_only=True, view_name='service-component')
+    component = ClusterServiceUrlField(read_only=True, view_name='cluster-service-component')
     imports = ClusterServiceUrlField(read_only=True, view_name='cluster-service-import')
     bind = ClusterServiceUrlField(read_only=True, view_name='cluster-service-bind')
     prototype = hlink('service-type-details', 'prototype_id', 'prototype_id')
@@ -431,7 +431,7 @@ class ServiceComponentSerializer(serializers.Serializer):
     prototype_id = serializers.SerializerMethodField()
     display_name = serializers.SerializerMethodField()
     description = serializers.SerializerMethodField()
-    url = MyUrlField(read_only=True, view_name='service-component-details')
+    url = MyUrlField(read_only=True, view_name='cluster-service-component-details')
 
     def get_name(self, obj):
         return obj.component.name
