@@ -16,7 +16,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 
 import { AuthService } from '../auth/auth.service';
-import { ChannelService, PreloaderService } from '../services';
+import { ChannelService, keyChannelStrim, PreloaderService } from '../services';
 
 const EXCLUDE_URLS = ['/api/v1/token/', '/assets/config.json'];
 
@@ -54,7 +54,7 @@ export class AuthInterceptor implements HttpInterceptor {
             res.statusText === 'Unknown Error' || res.statusText === 'Gateway Timeout'
               ? 'No connection to back-end. Check your internet connection.'
               : `[ ${res.statusText.toUpperCase()} ] ${res.error.code ? ` ${res.error.code} -- ${res.error.desc}` : res.error?.detail || ''}`;
-          this.channel.next('notifying', `${message}::error`);
+          this.channel.next(keyChannelStrim.notifying, `${message}::error`);
         }
 
         return throwError(res);
