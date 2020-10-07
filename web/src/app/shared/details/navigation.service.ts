@@ -34,6 +34,7 @@ export interface IDetails {
   provider_id: number;
   bundle_id: number;
   hostcomponent: string;
+  state: string;
 }
 
 const IssueSet: { [key: string]: string[] } = {
@@ -68,7 +69,7 @@ const all = [
   { id: 7, title: 'Actions', url: 'action' },
   { id: 1, title: 'Services', url: 'service' },
   { id: 2, title: 'Hosts', url: 'host' },
-  { id: 3, title: 'Hosts - Components', url: 'host_component' },  
+  { id: 3, title: 'Hosts - Components', url: 'host_component' },
 ];
 
 const [main, config, m_status, m_import, actions] = all;
