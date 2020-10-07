@@ -54,7 +54,7 @@ class ADCMTest:
         self._client = None
 
     def create_driver(self):
-        if self.selenoid['host'] is not None:
+        if self.selenoid['host']:
             self.driver = webdriver.Remote(
                 command_executor=f"http://{self.selenoid['host']}:{self.selenoid['port']}/wd/hub",
                 options=self.opts,
