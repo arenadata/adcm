@@ -233,12 +233,12 @@ urlpatterns = [
     path(
         CLUSTER + SERVICE + 'component/',
         cluster_views.ServiceComponentList.as_view(),
-        name='service-component'
+        name='cluster-service-component'
     ),
     path(
         CLUSTER + SERVICE + 'component/<int:component_id>/',
         cluster_views.ServiceComponentDetail.as_view(),
-        name='service-component-details'
+        name='cluster-service-component-details'
     ),
     path(
         CLUSTER + SERVICE + 'import/',
@@ -289,6 +289,7 @@ urlpatterns = [
         cluster_views.ClusterServiceConfigHistory.as_view(),
         name='cluster-service-config-history'
     ),
+    path('service/', include('api.service.urls')),
 
     path('adcm/', views.AdcmList.as_view(), name='adcm'),
     path('adcm/<int:adcm_id>/', views.AdcmDetail.as_view(), name='adcm-details'),
