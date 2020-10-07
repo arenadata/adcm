@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-
 from django.test import TestCase
 
 import cm.api
@@ -145,8 +143,8 @@ def get_config(obj):
     attr = {}
     cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
     if cl.attr:
-        attr = json.loads(cl.attr)
-    return json.loads(cl.config), attr
+        attr = cl.attr
+    return cl.config, attr
 
 
 class TestConfigUpgrade(TestCase):
@@ -215,7 +213,7 @@ class TestConfigUpgrade(TestCase):
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
         old_conf, _ = get_config(cluster)
         old_conf['port'] = 100500
-        cm.adcm_config.save_obj_config(cluster.config, old_conf)
+        cm.adcm_config.save_obj_config(cluster.config, old_conf, {})
         cm.adcm_config.switch_config(cluster, proto2, proto1)
         new_config, _ = get_config(cluster)
         self.assertEqual(new_config, {'port': 100500})
@@ -238,7 +236,7 @@ class TestConfigUpgrade(TestCase):
         self.add_conf(prototype=proto1, name='host', type='string', default='arenadata.com')
         self.add_conf(prototype=proto2, name='host', type='string', default='arenadata.com')
         limits = {"activatable": True, "active": False}
-        self.add_conf(prototype=proto2, name='advance', type='group', limits=json.dumps(limits))
+        self.add_conf(prototype=proto2, name='advance', type='group', limits=limits)
         self.add_conf(prototype=proto2, name='advance', subname='port', type='integer', default=42)
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
         old_conf, _ = get_config(cluster)
@@ -253,7 +251,7 @@ class TestConfigUpgrade(TestCase):
         self.add_conf(prototype=proto1, name='host', type='string', default='arenadata.com')
         self.add_conf(prototype=proto2, name='host', type='string', default='arenadata.com')
         limits = {"activatable": True, "active": True}
-        self.add_conf(prototype=proto2, name='advance', type='group', limits=json.dumps(limits))
+        self.add_conf(prototype=proto2, name='advance', type='group', limits=limits)
         self.add_conf(prototype=proto2, name='advance', subname='port', type='integer', default=42)
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
         old_conf, _ = get_config(cluster)
