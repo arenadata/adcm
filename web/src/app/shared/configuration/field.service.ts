@@ -137,7 +137,7 @@ export class FieldService {
 
   private fillForm(field: FieldOptions, controls: {}) {
     const name = field.subname || field.name;
-    const validator = field.activatable ? [] : this.setValidator(field);
+    const validator = this.setValidator(field);
     controls[name] = this.fb.control(field.value, validator);
     if (field.controlType === 'password' && !field.ui_options?.no_confirm) {
       controls[`confirm_${name}`] = this.fb.control(field.value, validator);
@@ -146,7 +146,7 @@ export class FieldService {
   }
 
   /**
-   * Using from outside to set validator for FormControl by type
+   * External use (scheme.service) to set validator for FormControl by type
    * @param field Partial<FieldOptions>{ ValidatorInfo, controlType }
    */
   public setValidator(field: { validator: ValidatorInfo; controlType: controlType }) {

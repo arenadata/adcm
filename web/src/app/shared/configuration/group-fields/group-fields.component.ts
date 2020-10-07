@@ -14,7 +14,6 @@ import { AbstractControl, FormGroup } from '@angular/forms';
 import { MatExpansionPanel } from '@angular/material/expansion';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 
-import { FieldService } from '../field.service';
 import { FieldOptions, PanelOptions } from '../types';
 
 @Component({
@@ -32,8 +31,6 @@ export class GroupFieldsComponent implements OnInit {
   @Input() panel: PanelOptions;
   @Input() form: FormGroup;
   @ViewChild('ep') expanel: MatExpansionPanel;
-
-  constructor(private service: FieldService) {}
 
   ngOnInit(): void {
     if (this.panel.activatable) this.activatable(this.panel.active);
@@ -61,15 +58,16 @@ export class GroupFieldsComponent implements OnInit {
         const [name, ...other] = split;
         const currentFormGroup = other.reverse().reduce((p, c) => p.get(c), this.form) as FormGroup;
         const formControl = currentFormGroup.controls[name];
-        this.updateValidator(formControl, a, flag);
-        if (a.type === 'password') this.updateValidator(currentFormGroup.controls['confirm_' + name], a, flag);
+
+        this.updateValidator(formControl, flag);
+        if (a.type === 'password') this.updateValidator(currentFormGroup.controls['confirm_' + name], flag);
       });
   }
 
-  updateValidator(formControl: AbstractControl, a: FieldOptions, flag: boolean) {
+  updateValidator(formControl: AbstractControl, flag: boolean) {
     if (formControl) {
-      if (!flag) formControl.clearValidators();
-      else if (a.validator) formControl.setValidators(this.service.setValidator(a));
+      if (!flag) formControl.disable();
+      else formControl.enable();
       formControl.updateValueAndValidity();
       formControl.markAsTouched();
       this.form.updateValueAndValidity();
