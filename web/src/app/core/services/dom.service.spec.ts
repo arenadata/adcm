@@ -12,7 +12,7 @@
 
 import { TestBed } from '@angular/core/testing';
 
-import { DomServiceService } from './dom-service.service';
+import { DomServiceService } from './dom.service';
 
 describe('DomServiceService', () => {
   let service: DomServiceService;
