@@ -12,14 +12,14 @@
 
 import { TestBed } from '@angular/core/testing';
 
-import { DomServiceService } from './dom.service';
+import { DomService } from './dom.service';
 
-describe('DomServiceService', () => {
-  let service: DomServiceService;
+describe('DomService', () => {
+  let service: DomService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(DomServiceService);
+    service = TestBed.inject(DomService);
   });
 
   it('should be created', () => {
