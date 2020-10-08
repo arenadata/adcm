@@ -13,7 +13,7 @@ import { Component, ComponentFactoryResolver, EventEmitter, Inject, OnInit, Type
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 import { DynamicComponent, DynamicDirective, DynamicEvent } from '../directives/dynamic.directive';
-import { ChannelService } from '@app/core';
+import { ChannelService, keyChannelStrim } from '@app/core';
 
 export interface DialogData {
   title: string;
@@ -95,7 +95,7 @@ export class DialogComponent implements OnInit {
   }
 
   scroll(stop: { direct: -1 | 1 | 0; screenTop: number }) {
-    this.channel.next('scroll', stop);
+    this.channel.next(keyChannelStrim.scroll, stop);
   }
 
   _noClick(): void {

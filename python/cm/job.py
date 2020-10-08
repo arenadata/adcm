@@ -316,7 +316,7 @@ def check_action_config(action, obj, conf, attr):
     obj_conf = None
     if obj.config:
         cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-        obj_conf = json.loads(cl.config)
+        obj_conf = cl.config
     adcm_config.check_attr(proto, attr, flat_spec)
     adcm_config.process_variant(obj, spec, obj_conf)
     new_conf = adcm_config.check_config_spec(proto, action, spec, flat_spec, conf, None, attr)
@@ -894,7 +894,7 @@ def log_rotation():
     log.info('Run log rotation')
     adcm_object = ADCM.objects.get(id=1)
     cl = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
-    adcm_conf = json.loads(cl.config)
+    adcm_conf = cl.config
 
     log_rotation_on_db = adcm_conf['job_log']['log_rotation_in_db']
     log_rotation_on_fs = adcm_conf['job_log']['log_rotation_on_fs']
@@ -934,7 +934,7 @@ def prepare_ansible_config(job_id):
     }
     adcm_object = ADCM.objects.get(id=1)
     cl = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
-    adcm_conf = json.loads(cl.config)
+    adcm_conf = cl.config
     mitogen = adcm_conf['ansible_settings']['mitogen']
     if mitogen:
         config_parser['defaults']['strategy'] = 'mitogen_linear'
