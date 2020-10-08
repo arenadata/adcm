@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { EventEmitter } from '@angular/core';
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 
 import { IssueInfoComponent } from './issue-info.component';
@@ -26,13 +26,13 @@ describe('Issue-info component', () => {
   let fixture: ComponentFixture<IssueInfoComponent>;
   let component: IssueInfoComponent;
 
-  beforeEach(async(() => {
+  beforeEach(async () => {
     TestBed.configureTestingModule({
       imports: [RouterTestingModule],
       declarations: [IssueInfoComponent],
       providers: [{ provide: ComponentData, useClass: MockComponentData }],
     }).compileComponents();
-  }));
+  });
 
   beforeEach(() => {
     fixture = TestBed.createComponent(IssueInfoComponent);

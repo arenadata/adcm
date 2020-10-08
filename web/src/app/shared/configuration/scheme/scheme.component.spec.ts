@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MaterialModule } from '@app/shared/material.module';
 
@@ -26,13 +26,13 @@ describe('SchemeComponent', () => {
   let service: SchemeService;
   let fieldService: FieldService;
 
-  beforeEach(async(() => {
+  beforeEach(async () => {
     TestBed.configureTestingModule({
       imports: [MaterialModule, FormsModule, ReactiveFormsModule],
       declarations: [SchemeComponent, RootComponent],
       providers: [YspecService, FieldService, FormBuilder, SchemeService],
     }).compileComponents();
-  }));
+  });
 
   beforeEach(() => {
     fixture = TestBed.createComponent(SchemeComponent);
@@ -63,5 +63,5 @@ describe('SchemeComponent', () => {
     expect(error.innerText).toBe('Field [field_display_name] is required!');
   });
 
- 
+
 });

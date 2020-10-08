@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 
@@ -21,13 +21,13 @@ describe('ActionListComponent', () => {
   let component: ActionListComponent;
   let fixture: ComponentFixture<ActionListComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(async () => {
     TestBed.configureTestingModule({
       imports: [MatMenuModule, MatIconModule],
       providers: [{ provide: ApiService, useValue: {} }],
       declarations: [ActionListComponent, MenuItemComponent],
     }).compileComponents();
-  }));
+  });
 
   beforeEach(() => {
     fixture = TestBed.createComponent(ActionListComponent);
