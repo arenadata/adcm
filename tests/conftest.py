@@ -59,8 +59,8 @@ def pytest_runtest_makereport(item, call):
 def app_fs(adcm_fs, request):
     adcm_app = ADCMTest(adcm_fs)
     yield adcm_app
-    if request.node.rep_setup.passed:
-        if request.node.rep_call.failed:
+    try:
+        if request.node.rep_setup.failed or request.node.rep_call.failed:
             allure.attach(adcm_app.driver.page_source,
                           name="page_source",
                           attachment_type=allure.attachment_type.TEXT)
@@ -83,6 +83,8 @@ def app_fs(adcm_fs, request):
                                attachment_type=allure.attachment_type.JSON)
             allure.attach.file(events_json, name="all_events_log",
                                attachment_type=allure.attachment_type.JSON)
+    except AttributeError:
+        pass
     adcm_app.destroy()
 
 

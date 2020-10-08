@@ -28,10 +28,6 @@ CLUSTER = 'cluster/<int:cluster_id>/'
 PROVIDER = 'provider/<int:provider_id>/'
 HOST = 'host/<int:host_id>/'
 SERVICE = 'service/<int:service_id>/'
-ADCM_CONFIG = 'adcm/<int:adcm_id>/config/'
-CLUSTER_CONFIG = CLUSTER + 'config/'
-PROVIDER_CONFIG = PROVIDER + 'config/'
-HOST_CONFIG = HOST + 'config/'
 SERVICE_CONFIG = CLUSTER + SERVICE + 'config/'
 
 
@@ -237,12 +233,12 @@ urlpatterns = [
     path(
         CLUSTER + SERVICE + 'component/',
         cluster_views.ServiceComponentList.as_view(),
-        name='service-component'
+        name='cluster-service-component'
     ),
     path(
         CLUSTER + SERVICE + 'component/<int:component_id>/',
         cluster_views.ServiceComponentDetail.as_view(),
-        name='service-component-details'
+        name='cluster-service-component-details'
     ),
     path(
         CLUSTER + SERVICE + 'import/',
@@ -259,7 +255,7 @@ urlpatterns = [
         cluster_views.ClusterServiceBindDetail.as_view(),
         name='cluster-service-bind-details'
     ),
-    path(CLUSTER_CONFIG, include('api.config.urls'), {'object_type': 'cluster'}),
+    path(CLUSTER + 'config/', include('api.config.urls'), {'object_type': 'cluster'}),
 
     path(
         SERVICE_CONFIG,
@@ -293,10 +289,11 @@ urlpatterns = [
         cluster_views.ClusterServiceConfigHistory.as_view(),
         name='cluster-service-config-history'
     ),
+    path('service/', include('api.service.urls')),
 
     path('adcm/', views.AdcmList.as_view(), name='adcm'),
     path('adcm/<int:adcm_id>/', views.AdcmDetail.as_view(), name='adcm-details'),
-    path(ADCM_CONFIG, include('api.config.urls'), {'object_type': 'adcm'}),
+    path('adcm/<int:adcm_id>/config/', include('api.config.urls'), {'object_type': 'adcm'}),
     path('adcm/<int:adcm_id>/action/', views.ADCMActionList.as_view(), name='adcm-action'),
     path(
         'adcm/<int:adcm_id>/action/<int:action_id>/',
@@ -334,7 +331,7 @@ urlpatterns = [
         views.DoProviderUpgrade.as_view(),
         name='do-provider-upgrade'
     ),
-    path(PROVIDER_CONFIG, include('api.config.urls'), {'object_type': 'provider'}),
+    path(PROVIDER + 'config/', include('api.config.urls'), {'object_type': 'provider'}),
 
     path('host/', views.HostList.as_view(), name='host'),
     path(HOST, views.HostDetail.as_view(), name='host-details'),
@@ -350,7 +347,7 @@ urlpatterns = [
         views.HostTask.as_view(),
         name='host-action-run'
     ),
-    path(HOST_CONFIG, include('api.config.urls'), {'object_type': 'host'}),
+    path(HOST + 'config/', include('api.config.urls'), {'object_type': 'host'}),
 
     path('task/', job_views.Task.as_view(), name='task'),
     path('task/<int:task_id>/', job_views.TaskDetail.as_view(), name='task-details'),

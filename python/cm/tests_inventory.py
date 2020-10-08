@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
+
 from unittest.mock import patch, Mock
 
 from django.test import TestCase
@@ -32,7 +32,7 @@ class TestInventory(TestCase):
         mock_process_config.return_value = {}
         obj_mock = Mock(prototype={})
 
-        attr = '{"global": {"active": ""}}'
+        attr = {"global": {"active": ""}}
         conf = cm.inventory.process_config_and_attr(obj_mock, {}, attr)
 
         self.assertDictEqual(conf, {'global': None})
@@ -49,7 +49,7 @@ class TestInventory(TestCase):
 
         cm.inventory.get_obj_config(cluster)
         mock_process_config_and_attr.assert_called_once_with(
-            cluster, json.loads(config_log.config), config_log.attr)
+            cluster, config_log.config, config_log.attr)
 
     @patch('cm.inventory.get_import')
     @patch('cm.inventory.get_obj_config')

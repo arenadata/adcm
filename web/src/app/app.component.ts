@@ -10,8 +10,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, ElementRef, OnInit } from '@angular/core';
-import { AppService } from '@app/core';
+import { AppService, ChannelService, keyChannelStrim } from '@app/core';
 import { filter } from 'rxjs/operators';
+
+/** Magic strings for marking loading stages and other, for ci tests */
+const enum flagForConsole {
+  'profile' = 'profile',
+  'socket' = 'socket',
+  'load_complete' = 'load_complete'
+}
 
 @Component({
   selector: 'app-root',
@@ -39,7 +46,7 @@ export class AppComponent implements OnInit {
   currentYear = new Date().getFullYear();
   versionData = { version: '', commit_id: '' };
 
-  constructor(private elRef: ElementRef, private service: AppService) {}
+  constructor(private elRef: ElementRef, private service: AppService, private radio: ChannelService) {}
 
   ngOnInit() {
     this.service.getRootAndCheckAuth().subscribe((c) => {
@@ -52,11 +59,13 @@ export class AppComponent implements OnInit {
     this.service
       .checkWSconnectStatus()
       .pipe(filter((a) => a === 'open'))
-      .subscribe((_) => this.console('Socket status :: open', 'socket'));
+      .subscribe((_) => this.console('Socket status :: open', flagForConsole.socket));
 
-    this.service.checkUserProfile().subscribe((_) => this.console('User profile :: saved', 'profile'));
+    this.service.checkUserProfile().subscribe((_) => this.console('User profile :: saved', flagForConsole.profile));
 
     this.versionData = this.service.getVersion(this.versionData);
+
+    this.radio.on<string>(keyChannelStrim.load_complete).subscribe(a => this.console(a, flagForConsole.load_complete));
   }
 
   console(text: string, css?: string) {
