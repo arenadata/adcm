@@ -3,7 +3,7 @@ adcm-client
 adcm_pytest_plugin >= 1.16.2
 # Docker interactions fixed in 1.16.2 https://github.com/arenadata/adcm_pytest_plugin/pull/34
 -r ./requirements.txt
-allure-pytest==2.5.4
+allure-pytest
 #arenadata_test_suite
 delayed_assert
 docker
