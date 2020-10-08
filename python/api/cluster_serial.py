@@ -23,7 +23,7 @@ from cm.errors import AdcmApiEx, AdcmEx
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent, Component
 
 from api.serializers import (
-    check_obj, filter_actions, get_upgradable_func, hlink, JSONField, UrlField, ClusterActionShort,
+    check_obj, filter_actions, get_upgradable_func, hlink, UrlField, ClusterActionShort,
     ClusterHostActionShort, ServiceActionShort
 )
 from api.config.serializers import ConfigURL
@@ -88,7 +88,7 @@ class ClusterSerializer(serializers.Serializer):
 
 
 class ClusterDetailSerializer(ClusterSerializer):
-    # stack = JSONField(read_only=True)
+    # stack = serializers.JSONField(read_only=True)
     issue = serializers.SerializerMethodField()
     bundle_id = serializers.SerializerMethodField()
     edition = serializers.SerializerMethodField()
@@ -158,7 +158,7 @@ class ClusterHostUrlField(UrlField):
 
 class ClusterHostSerializer(serializers.Serializer):
     state = serializers.CharField(read_only=True)
-    # stack = JSONField(read_only=True)
+    # stack = serializers.JSONField(read_only=True)
     cluster_id = serializers.IntegerField(read_only=True)
     fqdn = serializers.CharField(read_only=True)
     id = serializers.IntegerField(help_text='host id', read_only=True)
@@ -361,7 +361,7 @@ class ClusterServiceSerializer(serializers.Serializer):
 
 class ClusterServiceDetailSerializer(ClusterServiceSerializer):
     prototype_id = serializers.IntegerField(read_only=True)
-    # stack = JSONField(read_only=True)
+    # stack = serializers.JSONField(read_only=True)
     description = serializers.SerializerMethodField()
     bundle_id = serializers.SerializerMethodField()
     issue = serializers.SerializerMethodField()
@@ -654,22 +654,22 @@ class ObjectConfig(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     date = serializers.DateTimeField(read_only=True)
     description = serializers.CharField(required=False, allow_blank=True)
-    config = JSONField(read_only=True)
-    attr = JSONField(required=False)
+    config = serializers.JSONField(read_only=True)
+    attr = serializers.JSONField(required=False)
 
 
 class ConfigHistorySerializer(ObjectConfig):
-    config = JSONField()
+    config = serializers.JSONField()
 
 
 class ObjectConfigUpdate(ObjectConfig):
-    config = JSONField()
-    attr = JSONField(required=False)
+    config = serializers.JSONField()
+    attr = serializers.JSONField(required=False)
 
     def update(self, instance, validated_data):
         try:
             conf = validated_data.get('config')
-            attr = validated_data.get('attr')
+            attr = validated_data.get('attr', {})
             desc = validated_data.get('description', '')
             cl = cm.api.update_obj_config(instance.obj_ref, conf, attr, desc)
             if validated_data.get('ui'):
@@ -715,7 +715,7 @@ class ClusterConfigHistorySerializer(ConfigHistorySerializer):
 
 
 class PostImportSerializer(serializers.Serializer):
-    bind = JSONField()
+    bind = serializers.JSONField()
 
     def create(self, validated_data):
         try:
