@@ -147,10 +147,7 @@ def assert_string_type(*args):
                     action_status = entity.action_run(name='job').wait()
                     assert action_status == 'success'
     else:
-        if sent_value_type == 'empty_value':
-            assert_config_value_error(entity, sent_data)
-        else:
-            assert entity.config_set(sent_data) == sent_data
+        assert entity.config_set(sent_data) == sent_data
 
         action_status = entity.action_run(name='job').wait()
         assert action_status == 'success'
@@ -187,8 +184,8 @@ def assert_password_type(*args):
                     action_status = entity.action_run(name='job').wait()
                     assert action_status == 'success'
     else:
-        if sent_value_type == 'empty_value':
-            assert_config_value_error(entity, sent_data)
+        if sent_value_type == 'correct_value':
+            assert '$ANSIBLE_VAULT;1.1;AES256' in entity.config_set(sent_data)['password']
         else:
             assert entity.config_set(sent_data) == sent_data
 
@@ -227,10 +224,7 @@ def assert_text_type(*args):
                     action_status = entity.action_run(name='job').wait()
                     assert action_status == 'success'
     else:
-        if sent_value_type == 'empty_value':
-            assert_config_value_error(entity, sent_data)
-        else:
-            assert entity.config_set(sent_data) == sent_data
+        assert entity.config_set(sent_data) == sent_data
 
         action_status = entity.action_run(name='job').wait()
         assert action_status == 'success'
