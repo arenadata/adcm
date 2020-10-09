@@ -12,7 +12,7 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ValidatorFn } from '@angular/forms';
 import { MatCheckboxChange } from '@angular/material/checkbox';
-import { ChannelService, ClusterService } from '@app/core';
+import { ChannelService, ClusterService, keyChannelStrim } from '@app/core';
 import { IExport, IImport } from '@app/core/types';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -135,7 +135,7 @@ export class ImportComponent implements OnInit {
             .map((a) => ({ ...obj, export_id: JSON.parse(a) }));
           bind = [...bind, ...items];
         });
-      this.current.bindImport({ bind }).subscribe((_) => this.channel.next('notifying', 'Successfully saved'));
+      this.current.bindImport({ bind }).subscribe((_) => this.channel.next(keyChannelStrim.notifying, 'Successfully saved'));
     }
   }
 }

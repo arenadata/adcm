@@ -320,7 +320,7 @@ class TestJob(TestCase):
         mock_prepare_job_inventory.assert_called_once_with({'cluster': 1}, job.id, {}, None)
         mock_prepare_job_config.assert_called_once_with(action, None, {'cluster': 1},
                                                         job.id, cluster, '')
-        mock_prepare_ansible_config.assert_called_once_with(job.id)
+        mock_prepare_ansible_config.assert_called_once_with(job.id, action, None)
 
     @patch('cm.job.get_obj_config')
     def test_get_adcm_config(self, mock_get_obj_config):

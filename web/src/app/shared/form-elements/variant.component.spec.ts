@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, FormGroup } from '@angular/forms';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
@@ -21,12 +21,12 @@ describe('VariantComponent', () => {
   let component: VariantComponent;
   let fixture: ComponentFixture<VariantComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(async () => {
     TestBed.configureTestingModule({
       imports: [SharedModule, NoopAnimationsModule],
       declarations: [VariantComponent],
     }).compileComponents();
-  }));
+  });
 
   beforeEach(() => {
     fixture = TestBed.createComponent(VariantComponent);

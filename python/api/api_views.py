@@ -229,7 +229,7 @@ class ListView(GenericAPIView, InterfaceView):
     filter_backends = (AdcmFilterBackend,)
     permission_classes = (DjangoModelPerm,)
 
-    def get(self, request):
+    def get(self, request, *args, **kwargs):
         obj = self.filter_queryset(self.get_queryset())
         serializer_class = self.select_serializer(request)
         serializer = serializer_class(obj, many=True, context={'request': request})

@@ -11,7 +11,7 @@
 // limitations under the License.
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormGroup } from '@angular/forms';
-import { ChannelService } from '@app/core';
+import { ChannelService, keyChannelStrim } from '@app/core';
 import { notify } from '@app/core/animations';
 import { EventMessage, IEMObject, SocketState } from '@app/core/store';
 import { IActionParameter } from '@app/core/types';
@@ -93,7 +93,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
     super.startListenSocket();
 
     this.channel
-      .on('scroll')
+      .on(keyChannelStrim.scroll)
       .pipe(this.takeUntil())
       .subscribe((e) => (this.scrollEventData = e));
   }
@@ -222,7 +222,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
       this.statePost.update(data);
       this.saveResult.emit(data);
       this.saveFlag = false;
-      this.channel.next('notifying', 'Successfully saved.');
+      this.channel.next(keyChannelStrim.notifying, 'Successfully saved.');
     });
   }
 

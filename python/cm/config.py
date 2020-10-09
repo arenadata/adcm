@@ -42,10 +42,15 @@ SECRETS_FILE = os.path.join(BASE_DIR, 'data', 'var', 'secrets.json')
 
 STATUS_SECRET_KEY = ''
 
+ANSIBLE_SECRET = ''
+
+ANSIBLE_VAULT_HEADER = '$ANSIBLE_VAULT;1.1;AES256'
+
 if os.path.exists(SECRETS_FILE):
     with open(SECRETS_FILE) as f:
         data = json.load(f)
         STATUS_SECRET_KEY = data['token']
+        ANSIBLE_SECRET = data['adcmuser']['password']
 
 
 class Job():
