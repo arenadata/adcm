@@ -18,7 +18,7 @@ import { select, Store } from '@ngrx/store';
 import { combineLatest } from 'rxjs';
 import { filter, switchMap, tap } from 'rxjs/operators';
 
-import { ChannelService } from '../channel.service';
+import { ChannelService, keyChannelStrim } from '../channel.service';
 import { ConfigService, IVersionInfo } from '../config.service';
 
 @Injectable()
@@ -41,7 +41,7 @@ export class AppService {
       switchMap((_) => this.config.load()),
       tap((c) => {
         if (!c) {
-          this.channel.next('notifying', 'New version available. Page has been refreshed.');
+          this.channel.next(keyChannelStrim.notifying, 'New version available. Page has been refreshed.');
           setTimeout(() => location.reload(), 2000);
         } else {
           this.store.dispatch(socketInit());
@@ -57,9 +57,9 @@ export class AppService {
       select(getConnectStatus),
       filter((a) => !!a),
       tap((status) => {
-        if (status === 'open') this.channel.next('notifying', 'Connection established.');
+        if (status === 'open') this.channel.next(keyChannelStrim.notifying, 'Connection established.');
         if (status === 'close') {
-          this.channel.next('notifying', 'Connection lost. Recovery attempt.::error');
+          this.channel.next(keyChannelStrim.notifying, 'Connection lost. Recovery attempt.::error');
           this.store.dispatch(rootError());
         }
       })
@@ -90,7 +90,7 @@ export class AppService {
     this.router.events.pipe(filter((e) => e instanceof NavigationStart)).subscribe(() => this.dialog.closeAll());
 
     // notification
-    this.channel.on<string>('notifying').subscribe((m) => {
+    this.channel.on<string>(keyChannelStrim.notifying).subscribe((m) => {
       const astr = m.split('::');
       const data = astr[1]
         ? { panelClass: 'snack-bar-error' }

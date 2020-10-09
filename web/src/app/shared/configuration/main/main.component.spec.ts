@@ -13,6 +13,7 @@ import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormBuilder } from '@angular/forms';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { FullyRenderedService } from '@app/core';
 import { TextBoxComponent } from '@app/shared/form-elements/text-box.component';
 import { SharedModule } from '@app/shared/shared.module';
 import { provideMockStore } from '@ngrx/store/testing';
@@ -76,9 +77,9 @@ describe('Configuration : MainComponent >> ', () => {
   const initialState = { socket: {} };
   class MockMainService {
     getConfig = () => EMPTY;
-    filterApply = () => {};
+    filterApply = () => { };
     getHistoryList = () => EMPTY;
-    parseValue = () => {};
+    parseValue = () => { };
     send = () => EMPTY;
   }
 
@@ -87,7 +88,7 @@ describe('Configuration : MainComponent >> ', () => {
     TestBed.configureTestingModule({
       imports: [NoopAnimationsModule, SharedModule],
       declarations: [ConfigComponent, ToolsComponent, ConfigFieldsComponent, GroupFieldsComponent, FieldComponent, TextBoxComponent],
-      providers: [provideMockStore({ initialState }), { provide: FieldService, useValue: FieldServiceStub }],
+      providers: [provideMockStore({ initialState }), { provide: FieldService, useValue: FieldServiceStub }, { provide: FullyRenderedService, useValue: { stableView: () => { } } }],
       schemas: [NO_ERRORS_SCHEMA],
     })
       .overrideComponent(ConfigComponent, {
