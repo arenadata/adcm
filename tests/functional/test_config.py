@@ -165,7 +165,8 @@ def assert_password_type(*args):
             if sent_value_type in ['empty_value', 'null_value']:
                 assert_config_value_error(entity, sent_data)
             else:
-                assert '$ANSIBLE_VAULT;1.1;AES256' in entity.config_set(sent_data)['password']
+                assert entity.config_set(
+                    sent_data)['password'].startswith('$ANSIBLE_VAULT;1.1;AES256')
 
             action_status = entity.action_run(name='job').wait()
             assert action_status == 'success'
@@ -173,7 +174,8 @@ def assert_password_type(*args):
             if sent_value_type in ['empty_value', 'null_value']:
                 assert_config_value_error(entity, sent_data)
             else:
-                assert '$ANSIBLE_VAULT;1.1;AES256' in entity.config_set(sent_data)['password']
+                assert entity.config_set(
+                    sent_data)['password'].startswith('$ANSIBLE_VAULT;1.1;AES256')
 
             if isinstance(entity, Cluster):
                 assert_action_has_issues(entity)
@@ -185,7 +187,7 @@ def assert_password_type(*args):
                     assert action_status == 'success'
     else:
         if sent_value_type == 'correct_value':
-            assert '$ANSIBLE_VAULT;1.1;AES256' in entity.config_set(sent_data)['password']
+            assert entity.config_set(sent_data)['password'].startswith('$ANSIBLE_VAULT;1.1;AES256')
         else:
             assert entity.config_set(sent_data) == sent_data
 
