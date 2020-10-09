@@ -80,6 +80,7 @@ export class FieldService {
       compare: [],
     });
 
+
     const getPanels = (source: FieldStack, dataConfig: IConfig): PanelOptions => {
       const { config, attr } = dataConfig;
       const fo = (b: FieldStack) => b.type !== 'group' && b.subname && b.name === source.name;
@@ -109,8 +110,8 @@ export class FieldService {
    * @param options
    */
   public toFormGroup(options: itemOptions[] = []): FormGroup {
-    const isVisible = (a: itemOptions) => !a.read_only && !(a.ui_options && a.ui_options.invisible);
-    const check = (a: itemOptions) => ('options' in a ? (a.activatable ? this.isVisibleField(a) : isVisible(a) ? a.options.some((b) => check(b)) : false) : isVisible(a));
+    const check = (a: itemOptions) =>
+      'options' in a ? (this.isVisibleField(a) && !a.read_only ? a.options.some((b) => check(b)) : false) : this.isVisibleField(a) && !a.read_only;
     return this.fb.group(
       options.reduce((p, c) => this.runByTree(c, p), {}),
       {
@@ -135,10 +136,21 @@ export class FieldService {
     }
   }
 
+   /**
+     * All field in the activatable group must be disabled
+     *
+     * `field.activatable (disabled) = group.activatable && !group.active`
+     * see: [getPanels](field.service.ts#getPanels)
+     *
+     * This is need to clear the validation
+     *
+     * **Important!** There is possible a collision if `group.advanced && group.activatable && group.active`
+     * *TODO:* test coverage ^^
+    */
   private fillForm(field: FieldOptions, controls: {}) {
     const name = field.subname || field.name;
     const validator = this.setValidator(field);
-    controls[name] = this.fb.control(field.value, validator);
+    controls[name] = this.fb.control({ value: field.value, disabled: field.activatable }, validator);
     if (field.controlType === 'password' && !field.ui_options?.no_confirm) {
       controls[`confirm_${name}`] = this.fb.control(field.value, validator);
     }
