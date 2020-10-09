@@ -4,7 +4,7 @@
   gather_facts: false
   vars:
     sent_value: ''
-    test_value:
+    test_value: ''
   tasks:
   - name: Ansible | List all known variables and facts
     debug:

@@ -277,10 +277,13 @@ def get_string_sent_test_value(*args):
             test_value = DEFAULTS[config_type]
 
     if sent_value_type == 'empty_value':
-        if is_default:
-            test_value = DEFAULTS[config_type]
+        if is_required:
+            if is_default:
+                test_value = DEFAULTS[config_type]
+            else:
+                test_value = VARS[config_type]['null_value']
         else:
-            test_value = VARS[config_type]['null_value']
+            test_value = VARS[config_type]['empty_value']
 
     return sent_value, test_value
 
@@ -295,10 +298,13 @@ def get_password_sent_test_value(*args):
             test_value = DEFAULTS[config_type]
 
     if sent_value_type == 'empty_value':
-        if is_default:
-            test_value = DEFAULTS[config_type]
+        if is_required:
+            if is_default:
+                test_value = DEFAULTS[config_type]
+            else:
+                test_value = VARS[config_type]['null_value']
         else:
-            test_value = VARS[config_type]['null_value']
+            test_value = VARS[config_type]['empty_value']
 
     return sent_value, test_value
 
@@ -313,10 +319,13 @@ def get_text_sent_test_value(*args):
             test_value = DEFAULTS[config_type]
 
     if sent_value_type == 'empty_value':
-        if is_default:
-            test_value = DEFAULTS[config_type]
+        if is_required:
+            if is_default:
+                test_value = DEFAULTS[config_type]
+            else:
+                test_value = VARS[config_type]['null_value']
         else:
-            test_value = VARS[config_type]['null_value']
+            test_value = VARS[config_type]['empty_value']
 
     return sent_value, test_value
 
