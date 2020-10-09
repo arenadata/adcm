@@ -80,7 +80,6 @@ export class FieldService {
       compare: [],
     });
 
-
     const getPanels = (source: FieldStack, dataConfig: IConfig): PanelOptions => {
       const { config, attr } = dataConfig;
       const fo = (b: FieldStack) => b.type !== 'group' && b.subname && b.name === source.name;
@@ -111,7 +110,13 @@ export class FieldService {
    */
   public toFormGroup(options: itemOptions[] = []): FormGroup {
     const check = (a: itemOptions) =>
-      'options' in a ? (this.isVisibleField(a) && !a.read_only ? a.options.some((b) => check(b)) : false) : this.isVisibleField(a) && !a.read_only;
+      'options' in a
+        ? a.activatable
+          ? this.isVisibleField(a)                  // if group.activatable - only visible
+          : this.isVisibleField(a) && !a.read_only  // else visible an not read_only
+          ? a.options.some((b) => check(b))         // check inner fields
+          : false
+        : this.isVisibleField(a) && !a.read_only;   // for fields in group
     return this.fb.group(
       options.reduce((p, c) => this.runByTree(c, p), {}),
       {
@@ -136,17 +141,17 @@ export class FieldService {
     }
   }
 
-   /**
-     * All field in the activatable group must be disabled
-     *
-     * `field.activatable (disabled) = group.activatable && !group.active`
-     * see: [getPanels](field.service.ts#getPanels)
-     *
-     * This is need to clear the validation
-     *
-     * **Important!** There is possible a collision if `group.advanced && group.activatable && group.active`
-     * *TODO:* test coverage ^^
-    */
+  /**
+   * All field in the activatable group must be disabled
+   *
+   * `field.activatable (disabled) = group.activatable && !group.active`
+   * see: [getPanels](field.service.ts#getPanels)
+   *
+   * This is need to clear the validation
+   *
+   * **Important!** There is possible a collision if `group.advanced && group.activatable && group.active`
+   * *TODO:* test coverage ^^
+   */
   private fillForm(field: FieldOptions, controls: {}) {
     const name = field.subname || field.name;
     const validator = this.setValidator(field);
