@@ -316,7 +316,7 @@ def check_action_config(action, obj, conf, attr):
     obj_conf = None
     if obj.config:
         cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-        obj_conf = json.loads(cl.config)
+        obj_conf = cl.config
     adcm_config.check_attr(proto, attr, flat_spec)
     adcm_config.process_variant(obj, spec, obj_conf)
     new_conf = adcm_config.check_config_spec(proto, action, spec, flat_spec, conf, None, attr)
@@ -526,7 +526,7 @@ def re_prepare_job(task, job):
 def prepare_job(action, sub_action, selector, job_id, obj, conf, delta, hosts):
     prepare_job_config(action, sub_action, selector, job_id, obj, conf)
     inventory.prepare_job_inventory(selector, job_id, delta, hosts)
-    prepare_ansible_config(job_id)
+    prepare_ansible_config(job_id, action, sub_action)
 
 
 def prepare_context(selector):
@@ -894,7 +894,7 @@ def log_rotation():
     log.info('Run log rotation')
     adcm_object = ADCM.objects.get(id=1)
     cl = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
-    adcm_conf = json.loads(cl.config)
+    adcm_conf = cl.config
 
     log_rotation_on_db = adcm_conf['job_log']['log_rotation_in_db']
     log_rotation_on_fs = adcm_conf['job_log']['log_rotation_on_fs']
@@ -927,14 +927,14 @@ def log_rotation():
         log.info('rotation log from fs')
 
 
-def prepare_ansible_config(job_id):
+def prepare_ansible_config(job_id, action, sub_action):
     config_parser = ConfigParser()
     config_parser['defaults'] = {
         'stdout_callback': 'yaml'
     }
     adcm_object = ADCM.objects.get(id=1)
     cl = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
-    adcm_conf = json.loads(cl.config)
+    adcm_conf = cl.config
     mitogen = adcm_conf['ansible_settings']['mitogen']
     if mitogen:
         config_parser['defaults']['strategy'] = 'mitogen_linear'
@@ -942,10 +942,9 @@ def prepare_ansible_config(job_id):
             config.PYTHON_SITE_PACKAGES, 'ansible_mitogen/plugins/strategy')
         config_parser['defaults']['host_key_checking'] = 'False'
 
-    job = JobLog.objects.get(id=job_id)
-    action = Action.objects.get(id=job.action_id)
-
     params = action.params
+    if sub_action:
+        params = sub_action.params
 
     if 'jinja2_native' in params:
         config_parser['defaults']['jinja2_native'] = str(params['jinja2_native'])

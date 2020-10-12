@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable = unexpected-keyword-arg
-import json
+
 from datetime import timedelta
 from subprocess import Popen, PIPE
 
@@ -55,7 +55,7 @@ def create_task(path, name, period, turn):
 def run():
     adcm_object = ADCM.objects.get(id=1)
     cl = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
-    adcm_conf = json.loads(cl.config)
+    adcm_conf = cl.config
     period = PERIODS[adcm_conf['logrotate']['rotation_period']]
 
     use_rotation_nginx_server = adcm_conf['logrotate']['nginx_server']

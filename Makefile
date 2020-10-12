@@ -2,6 +2,8 @@
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 ADCMBASE_IMAGE ?= arenadata/adcmbase
 ADCMBASE_TAG ?= 20200812154141
+SELENOID_HOST ?= 10.92.2.65
+SELENOID_PORT ?= 4444
 
 
 # Default target
@@ -47,7 +49,8 @@ unittests: ## Run unittests
 pytest: ## Run functional tests
 	docker pull ci.arenadata.io/functest:u18-x64
 	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host -v $(CURDIR)/:/adcm -w /adcm/ \
-	-e BUILD_TAG=${BUILD_TAG} -e ADCM_TAG=$(subst /,_,$(BRANCH_NAME)) -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/  ci.arenadata.io/functest:u18-x64 /bin/sh -e ./pytest.sh
+	-e BUILD_TAG=${BUILD_TAG} -e ADCM_TAG=$(subst /,_,$(BRANCH_NAME)) -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
+	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" ci.arenadata.io/functest:u18-x64 /bin/sh -e ./pytest.sh
 
 ng_tests: ## Run Angular tests
 	docker pull ci.arenadata.io/functest:u18-x64
