@@ -109,7 +109,7 @@ export class FieldService {
    * @param options
    */
   public toFormGroup(options: itemOptions[] = []): FormGroup {
-    const check = (a: itemOptions) =>
+    const check = (a: itemOptions): boolean =>
       'options' in a
         ? a.activatable
           ? this.isVisibleField(a)                  // if group.activatable - only visible

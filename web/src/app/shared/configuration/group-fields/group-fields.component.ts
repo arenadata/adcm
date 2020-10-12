@@ -56,7 +56,7 @@ export class GroupFieldsComponent implements OnInit {
       .forEach((a: FieldOptions) => {
         const split = a.key.split('/');
         const [name, ...other] = split;
-        const currentFormGroup = other.reverse().reduce((p, c) => p.get(c), this.form) as FormGroup;
+        const currentFormGroup = <unknown>other.reverse().reduce((p, c) => p.get(c), this.form) as FormGroup;
         const formControl = currentFormGroup.controls[name];
 
         this.updateValidator(formControl, flag);
