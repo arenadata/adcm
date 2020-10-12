@@ -50,7 +50,8 @@ def adcm(image, request):
 
 @pytest.fixture()
 def app(adcm, request):
-    app = ADCMTest(adcm)
+    app = ADCMTest()
+    app.attache_adcm(adcm)
     app.base_page()
     request.addfinalizer(app.destroy)
     return app
