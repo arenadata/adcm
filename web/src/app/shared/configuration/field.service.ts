@@ -150,16 +150,10 @@ export class FieldService {
    *
    * This is need to clear the validation
    *
-   * **Important!** There is possible a collision if `group.advanced && group.activatable && group.active`
-   * *TODO:* test coverage ^^
    */
   private fillForm(field: FieldOptions, controls: {}) {
     const name = field.subname || field.name;
-    const validator = this.setValidator(field);
-    controls[name] = this.fb.control({ value: field.value, disabled: field.activatable }, validator);
-    if (field.controlType === 'password' && !field.ui_options?.no_confirm) {
-      controls[`confirm_${name}`] = this.fb.control({ value: field.value, disabled: field.activatable }, validator);
-    }
+    controls[name] = this.fb.control({ value: field.value, disabled: field.activatable }, this.setValidator(field));
     return controls;
   }
 

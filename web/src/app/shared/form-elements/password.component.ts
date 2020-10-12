@@ -10,8 +10,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
+import { FormControl } from '@angular/forms';
 
+import { FieldService } from './../configuration/field.service';
 import { FieldDirective } from './field.directive';
+
 
 @Component({
   selector: 'app-fields-password',
@@ -28,11 +31,20 @@ import { FieldDirective } from './field.directive';
       </mat-form-field>
     </ng-container>
   `,
-  styleUrls: ['./password.component.scss']
+  styleUrls: ['./password.component.scss'],
 })
 export class PasswordComponent extends FieldDirective implements OnInit {
+  constructor(private service: FieldService) {
+    super();
+  }
+
   ngOnInit() {
+    if (!this.field.ui_options?.no_confirm) {
+      this.form.addControl(`confirm_${this.field.name}`, new FormControl(this.field.value, this.service.setValidator(this.field)));
+    }
+
     super.ngOnInit();
+
     const confirm = this.getConfirmPasswordField();
     if (confirm) confirm.markAllAsTouched();
   }
