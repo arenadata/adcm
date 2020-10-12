@@ -3,7 +3,7 @@ adcm-client
 adcm_pytest_plugin >= 1.19.2
 # Docker IP binding is changed in https://github.com/arenadata/adcm_pytest_plugin/pull/50
 -r ./requirements.txt
-allure-pytest==2.5.4
+allure-pytest
 #arenadata_test_suite
 delayed_assert
 docker
