@@ -112,11 +112,12 @@ export class FieldService {
     const check = (a: itemOptions): boolean =>
       'options' in a
         ? a.activatable
-          ? this.isVisibleField(a)                  // if group.activatable - only visible
-          : this.isVisibleField(a) && !a.read_only  // else visible an not read_only
-          ? a.options.some((b) => check(b))         // check inner fields
+          ? this.isVisibleField(a) // if group.activatable - only visible
+          : this.isVisibleField(a) && !a.read_only // else visible an not read_only
+          ? a.options.some((b) => check(b)) // check inner fields
           : false
-        : this.isVisibleField(a) && !a.read_only;   // for fields in group
+        : this.isVisibleField(a) && !a.read_only; // for fields in group
+
     return this.fb.group(
       options.reduce((p, c) => this.runByTree(c, p), {}),
       {
@@ -157,7 +158,7 @@ export class FieldService {
     const validator = this.setValidator(field);
     controls[name] = this.fb.control({ value: field.value, disabled: field.activatable }, validator);
     if (field.controlType === 'password' && !field.ui_options?.no_confirm) {
-      controls[`confirm_${name}`] = this.fb.control(field.value, validator);
+      controls[`confirm_${name}`] = this.fb.control({ value: field.value, disabled: field.activatable }, validator);
     }
     return controls;
   }
