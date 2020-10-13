@@ -13,6 +13,7 @@ import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { AbstractControl, FormGroup } from '@angular/forms';
 import { MatExpansionPanel } from '@angular/material/expansion';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
+import { FieldService } from '@app/shared/configuration/field.service';
 
 import { FieldOptions, PanelOptions } from '../types';
 
@@ -31,6 +32,8 @@ export class GroupFieldsComponent implements OnInit {
   @Input() panel: PanelOptions;
   @Input() form: FormGroup;
   @ViewChild('ep') expanel: MatExpansionPanel;
+
+  constructor(private service: FieldService) {}
 
   ngOnInit(): void {
     if (this.panel.activatable) this.activatable(this.panel.active);
@@ -56,18 +59,17 @@ export class GroupFieldsComponent implements OnInit {
       .forEach((a: FieldOptions) => {
         const split = a.key.split('/');
         const [name, ...other] = split;
-        const currentFormGroup = <unknown>other.reverse().reduce((p, c) => p.get(c), this.form) as FormGroup;
+        const currentFormGroup = (<unknown>other.reverse().reduce((p, c) => p.get(c), this.form)) as FormGroup;
         const formControl = currentFormGroup.controls[name];
-
-        this.updateValidator(formControl, flag);
-        if (a.type === 'password') this.updateValidator(currentFormGroup.controls['confirm_' + name], flag);
+        this.updateValidator(formControl, flag, a);
+        if (a.type === 'password') this.updateValidator(currentFormGroup.controls['confirm_' + name], flag, a, formControl);
       });
   }
 
-  updateValidator(formControl: AbstractControl, flag: boolean) {
+  updateValidator(formControl: AbstractControl, flag: boolean, a: FieldOptions, currentFormControl?: AbstractControl) {
     if (formControl) {
-      if (!flag) formControl.disable();
-      else formControl.enable();
+      if (!flag) formControl.clearValidators();
+      else formControl.setValidators(this.service.setValidator(a, currentFormControl));
       formControl.updateValueAndValidity();
       formControl.markAsTouched();
       this.form.updateValueAndValidity();

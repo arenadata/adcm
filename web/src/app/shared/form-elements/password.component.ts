@@ -25,7 +25,7 @@ import { FieldDirective } from './field.directive';
         <mat-error *ngIf="hasError('required')"> Field [{{ field.display_name }}] is required! </mat-error>
       </mat-form-field>
       <mat-form-field *ngIf="getConfirmPasswordField()">
-        <input matInput appConfirmEqualValidator="{{ field.name }}" [formControlName]="'confirm_' + field.name" type="password" [readonly]="field.read_only" />
+        <input matInput [formControlName]="'confirm_' + field.name" type="password" [readonly]="field.read_only" />
         <mat-error *ngIf="hasErrorConfirm('required')"> Confirm [{{ field.display_name }}] is required! </mat-error>
         <mat-error *ngIf="hasErrorConfirm('notEqual')"> Field [{{ field.display_name }}] and confirm [{{ field.display_name }}] does not match! </mat-error>
       </mat-form-field>
@@ -40,7 +40,7 @@ export class PasswordComponent extends FieldDirective implements OnInit {
 
   ngOnInit() {
     if (!this.field.ui_options?.no_confirm) {
-      this.form.addControl(`confirm_${this.field.name}`, new FormControl(this.field.value, this.service.setValidator(this.field)));
+      this.form.addControl(`confirm_${this.field.name}`, new FormControl(this.field.value, this.service.setValidator(this.field, this.control)));
     }
 
     super.ngOnInit();

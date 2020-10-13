@@ -1,3 +1,4 @@
+import { FormControl } from '@angular/forms';
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -142,18 +143,9 @@ export class FieldService {
     }
   }
 
-  /**
-   * All field in the activatable group must be disabled
-   *
-   * `field.activatable (disabled) = group.activatable && !group.active`
-   * see: [getPanels](field.service.ts#getPanels)
-   *
-   * This is need to clear the validation
-   *
-   */
   private fillForm(field: FieldOptions, controls: {}) {
     const name = field.subname || field.name;
-    controls[name] = this.fb.control({ value: field.value, disabled: field.activatable }, this.setValidator(field));
+    controls[name] = this.fb.control(field.value, field.activatable ? [] : this.setValidator(field));
     return controls;
   }
 
@@ -161,13 +153,21 @@ export class FieldService {
    * External use (scheme.service) to set validator for FormControl by type
    * @param field Partial<FieldOptions>{ ValidatorInfo, controlType }
    */
-  public setValidator(field: { validator: ValidatorInfo; controlType: controlType }) {
+  public setValidator(field: { validator: ValidatorInfo; controlType: controlType }, controlToCompare?: AbstractControl) {
     const v: ValidatorFn[] = [];
 
     if (field.validator.required) v.push(Validators.required);
     if (field.validator.pattern) v.push(Validators.pattern(field.validator.pattern));
-    if (field.validator.max !== null) v.push(Validators.max(field.validator.max));
-    if (field.validator.min !== null) v.push(Validators.min(field.validator.min));
+    if (field.validator.max) v.push(Validators.max(field.validator.max));
+    if (field.validator.min) v.push(Validators.min(field.validator.min));
+
+    if (field.controlType === 'password') {
+      const passwordConfirm = (): ValidatorFn => (control: AbstractControl): { [key: string]: any } | null => {
+        if (controlToCompare && controlToCompare.value !== control.value) return { notEqual: true };
+        return null;
+      };
+      v.push(passwordConfirm());
+    }
 
     if (field.controlType === 'json') {
       const jsonParse = (): ValidatorFn => (control: AbstractControl): { [key: string]: any } | null => {
