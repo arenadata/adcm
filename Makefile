@@ -54,16 +54,16 @@ pytest: ## Run functional tests
 	ci.arenadata.io/functest:3.8.6.slim.buster-x64 /bin/sh -e ./pytest.sh
 
 ng_tests: ## Run Angular tests
-	docker pull ci.arenadata.io/functest:u18-x64
-	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web/src ci.arenadata.io/functest:u18-x64 /bin/sh -c "export CHROME_BIN=/usr/bin/chromium-browser; npm install && ng test --watch=false"
+	docker pull ci.arenadata.io/functest:3.8.6.slim.buster-x64
+	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web/src ci.arenadata.io/functest:3.8.6.slim.buster-x64 /bin/sh -c "export CHROME_BIN=/usr/bin/chromium-browser; npm install && ng test --watch=false"
 
 linters : ## Run linters
 	docker pull ci.arenadata.io/pr-builder:3-x64
 	docker run -i --rm -v $(CURDIR)/:/source -w /source ci.arenadata.io/pr-builder:3-x64 /linters.sh shellcheck pylint pep8
 
 npm_check: ## Run npm-check
-	docker pull ci.arenadata.io/functest:u18-x64
-	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web/src ci.arenadata.io/functest:u18-x64 \
+	docker pull ci.arenadata.io/functest:3.8.6.slim.buster-x64
+	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web/src ci.arenadata.io/functest:3.8.6.slim.buster-x64 \
 	/bin/bash -c 'npm i --production && { ignore=`cat ../../.npmcheckignore | grep -v "#"`\; npm-check --production --skip-unused --ignore $$ignore || true; } && npm audit'
 
 django_tests : ## Run django tests.
