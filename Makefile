@@ -55,7 +55,7 @@ pytest: ## Run functional tests
 
 ng_tests: ## Run Angular tests
 	docker pull ci.arenadata.io/functest:3.8.6.slim.buster-x64
-	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web/src ci.arenadata.io/functest:3.8.6.slim.buster-x64 /bin/sh -c "export CHROME_BIN=/usr/bin/chromium-browser; npm install && ng test --watch=false"
+	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web/src ci.arenadata.io/functest:3.8.6.slim.buster-x64 /bin/sh -c "export CHROME_BIN=/usr/bin/google-chrome; npm install && ng test --watch=false"
 
 linters : ## Run linters
 	docker pull ci.arenadata.io/pr-builder:3-x64
