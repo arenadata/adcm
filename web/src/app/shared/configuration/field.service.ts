@@ -72,8 +72,8 @@ export class FieldService {
       value: getValue(item.type)(item.value, item.default, item.required),
       validator: {
         required: item.required,
-        min: item.limits ? item.limits.min : null,
-        max: item.limits ? item.limits.max : null,
+        min: item.limits?.min ? item.limits.min : null,
+        max: item.limits?.max ? item.limits.max : null,
         pattern: getPattern(item.type),
       },
       controlType: getControlType(item.type as matchType),

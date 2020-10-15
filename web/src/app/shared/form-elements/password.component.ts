@@ -15,7 +15,6 @@ import { FormControl } from '@angular/forms';
 import { FieldService } from './../configuration/field.service';
 import { FieldDirective } from './field.directive';
 
-
 @Component({
   selector: 'app-fields-password',
   template: `
@@ -40,7 +39,7 @@ export class PasswordComponent extends FieldDirective implements OnInit {
 
   ngOnInit() {
     if (!this.field.ui_options?.no_confirm) {
-      this.form.addControl(`confirm_${this.field.name}`, new FormControl(this.field.value, this.service.setValidator(this.field, this.control)));
+      this.form.addControl(`confirm_${this.field.name}`, new FormControl(this.field.value, this.field.activatable ? [] : this.service.setValidator(this.field, this.control)));
     }
 
     super.ngOnInit();
