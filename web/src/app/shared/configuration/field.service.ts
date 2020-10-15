@@ -72,8 +72,8 @@ export class FieldService {
       value: getValue(item.type)(item.value, item.default, item.required),
       validator: {
         required: item.required,
-        min: item.limits?.min ? item.limits.min : null,
-        max: item.limits?.max ? item.limits.max : null,
+        min: item.limits?.min,
+        max: item.limits?.max,
         pattern: getPattern(item.type),
       },
       controlType: getControlType(item.type as matchType),
@@ -158,8 +158,10 @@ export class FieldService {
 
     if (field.validator.required) v.push(Validators.required);
     if (field.validator.pattern) v.push(Validators.pattern(field.validator.pattern));
-    if (field.validator.max !== null) v.push(Validators.max(field.validator.max));
-    if (field.validator.min !== null) v.push(Validators.min(field.validator.min));
+    //if (field.validator.max !== null)
+    v.push(Validators.max(field.validator.max));
+    //if (field.validator.min !== null)
+    v.push(Validators.min(field.validator.min));
 
     if (field.controlType === 'password') {
       const passwordConfirm = (): ValidatorFn => (control: AbstractControl): { [key: string]: any } | null => {
