@@ -13,6 +13,7 @@ pytest < 6.1.0
 pytest-lazy-fixture
 pytest-xdist>=2.0.0
 pytest-rerunfailures
+pytest-timeout
 pyyaml
 requests
 retrying==1.3.3
