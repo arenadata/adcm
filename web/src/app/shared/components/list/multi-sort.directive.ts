@@ -56,7 +56,7 @@ export class MultiSortDirective {
       active = p[0] === '-' ? p.substr(1) : p;
 
     const column = el.querySelector(`mat-header-cell.mat-column-${active}`) || el.querySelector(`mat-header-cell[mat-sort-header="${active}"]`);
-    if (p) {
+    if (p && column) {
       this.renderer.setAttribute(column, 'aria-sort', direction);
 
       const container = column.querySelector('div.mat-sort-header-container');
