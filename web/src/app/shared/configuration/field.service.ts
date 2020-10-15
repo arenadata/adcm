@@ -1,4 +1,3 @@
-import { FormControl } from '@angular/forms';
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -10,6 +9,7 @@ import { FormControl } from '@angular/forms';
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 import { Injectable } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { getControlType, getPattern, isEmptyObject } from '@app/core/types';
@@ -158,8 +158,8 @@ export class FieldService {
 
     if (field.validator.required) v.push(Validators.required);
     if (field.validator.pattern) v.push(Validators.pattern(field.validator.pattern));
-    if (field.validator.max) v.push(Validators.max(field.validator.max));
-    if (field.validator.min) v.push(Validators.min(field.validator.min));
+    if (field.validator.max !== null) v.push(Validators.max(field.validator.max));
+    if (field.validator.min !== null) v.push(Validators.min(field.validator.min));
 
     if (field.controlType === 'password') {
       const passwordConfirm = (): ValidatorFn => (control: AbstractControl): { [key: string]: any } | null => {
