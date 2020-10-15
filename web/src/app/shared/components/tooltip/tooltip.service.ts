@@ -9,9 +9,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Injectable } from '@angular/core';
+import { EventEmitter, Injectable } from '@angular/core';
 import { ApiBase } from '@app/core/types/api';
-import { EventEmitter } from 'events';
 import { Subject } from 'rxjs';
 
 export type ComponentName = 'issue' | 'status' | undefined;
@@ -33,7 +32,7 @@ export interface TooltipDisplayOptions {
 export class ComponentData {
   path: string;
   current: any;
-  emitter: EventEmitter;
+  emitter: EventEmitter<any>;
 }
 
 @Injectable({
