@@ -15,7 +15,7 @@ import { MatExpansionPanel } from '@angular/material/expansion';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 import { FieldService } from '@app/shared/configuration/field.service';
 
-import { FieldOptions, PanelOptions } from '../types';
+import { IFieldOptions, IPanelOptions } from '../types';
 
 @Component({
   selector: 'app-group-fields',
@@ -66,7 +66,7 @@ export class GroupFieldsComponent implements OnInit {
       });
   }
 
-  updateValidator(formControl: AbstractControl, flag: boolean, a: FieldOptions, currentFormControl?: AbstractControl) {
+  updateValidator(formControl: AbstractControl, flag: boolean, a: IFieldOptions, currentFormControl?: AbstractControl) {
     if (formControl) {
       if (!flag) formControl.clearValidators();
       else formControl.setValidators(this.service.setValidator(a, currentFormControl));
