@@ -23,6 +23,7 @@ class Configuration(BasePage):
         if url:
             self.get(url, "config")
         self._wait_element_present(ConfigurationLocators.app_conf_form, 15)
+        self._wait_element_present(ConfigurationLocators.load_marker, 15)
 
     def assert_field_editable(self, field, editable=True):
         """Check that we can edit specific field or not

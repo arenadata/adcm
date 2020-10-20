@@ -9,6 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 import { Injectable } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { isEmptyObject } from '@app/core/types';
@@ -145,6 +146,53 @@ export class FieldService {
    * Parse and prepare source data from backend
    */
   public getPanels(data: IConfig): TFormOptions[] {
+    const getValue = (type: string) => {
+      const def = (value: number | string) => (value === null || value === undefined ? '' : String(value));
+
+      const fn = {
+        boolean: (value: boolean | null, d: boolean | null, required: boolean) => {
+          const allow = String(value) === 'true' || String(value) === 'false' || String(value) === 'null';
+          return allow ? value : required ? d : null;
+        },
+        json: (value: string) => (value === null ? '' : JSON.stringify(value, undefined, 4)),
+        map: (value: object, de: object) => (!value ? de : value),
+        list: (value: string[], de: string[]) => (!value ? de : value),
+        structure: (value: any) => value,
+      };
+
+      return fn[type] ? fn[type] : def;
+    };
+
+    const getField = (item: FieldStack): FieldOptions => ({
+      ...item,
+      key: `${item.subname ? item.subname + '/' : ''}${item.name}`,
+      value: getValue(item.type)(item.value, item.default, item.required),
+      validator: {
+        required: item.required,
+        min: item.limits?.min,
+        max: item.limits?.max,
+        pattern: getPattern(item.type),
+      },
+      controlType: getControlType(item.type as matchType),
+      hidden: item.name === '__main_info' || this.isHidden(item),
+      compare: [],
+    });
+
+    const getPanels = (source: FieldStack, dataConfig: IConfig): PanelOptions => {
+      const { config, attr } = dataConfig;
+      const fo = (b: FieldStack) => b.type !== 'group' && b.subname && b.name === source.name;
+      return {
+        ...source,
+        hidden: this.isHidden(source),
+        active: source.activatable ? attr[source.name]?.active : true,
+        options: config
+          .filter(fo)
+          .map(getField)
+          // switch off validation for field if !(activatable: true && active: false) - line: 146
+          .map((c) => ({ ...c, name: c.subname, activatable: source.activatable && !attr[source.name]?.active })),
+      };
+    };
+
     return data?.config
       ?.filter((a) => a.name !== '__main_info')
       .reduce((p, c) => {
@@ -158,16 +206,16 @@ export class FieldService {
    * Generate FormGroup
    * @param options
    */
-  public toFormGroup(options: TFormOptions[] = []): FormGroup {
-    const isVisible = (a: TFormOptions) => !a.read_only && !(a.ui_options && a.ui_options.invisible);
-    const check = (a: TFormOptions) =>
+  public toFormGroup(options: itemOptions[] = []): FormGroup {
+    const check = (a: itemOptions): boolean =>
       'options' in a
         ? a.activatable
-          ? isVisibleField(a)
-          : isVisible(a)
-          ? a.options.some((b) => check(b))
+          ? this.isVisibleField(a) // if group.activatable - only visible
+          : this.isVisibleField(a) && !a.read_only // else visible an not read_only
+          ? a.options.some((b) => check(b)) // check inner fields
           : false
-        : isVisible(a);
+        : this.isVisibleField(a) && !a.read_only; // for fields in group
+
     return this.fb.group(
       options.reduce((p, c) => this.runByTree(c, p), {}),
       {
@@ -194,25 +242,32 @@ export class FieldService {
 
   private fillForm(field: IFieldOptions, controls: {}) {
     const name = field.subname || field.name;
-    const validator = field.activatable ? [] : this.setValidator(field);
-    controls[name] = this.fb.control(field.value, validator);
-    if (field.controlType === 'password' && !field.ui_options?.no_confirm) {
-      controls[`confirm_${name}`] = this.fb.control(field.value, validator);
-    }
+    controls[name] = this.fb.control(field.value, field.activatable ? [] : this.setValidator(field));
     return controls;
   }
 
   /**
-   * Using from outside to set validator for FormControl by type
+   * External use (scheme.service) to set validator for FormControl by type
    * @param field Partial<FieldOptions>{ ValidatorInfo, controlType }
    */
-  public setValidator(field: { validator: IValidator; controlType: controlType }) {
+  public setValidator(field: { validator: ValidatorInfo; controlType: controlType }, controlToCompare?: AbstractControl) {
+
     const v: ValidatorFn[] = [];
 
     if (field.validator.required) v.push(Validators.required);
     if (field.validator.pattern) v.push(Validators.pattern(field.validator.pattern));
-    if (field.validator.max !== null) v.push(Validators.max(field.validator.max));
-    if (field.validator.min !== null) v.push(Validators.min(field.validator.min));
+    //if (field.validator.max !== null)
+    v.push(Validators.max(field.validator.max));
+    //if (field.validator.min !== null)
+    v.push(Validators.min(field.validator.min));
+
+    if (field.controlType === 'password') {
+      const passwordConfirm = (): ValidatorFn => (control: AbstractControl): { [key: string]: any } | null => {
+        if (controlToCompare && controlToCompare.value !== control.value) return { notEqual: true };
+        return null;
+      };
+      v.push(passwordConfirm());
+    }
 
     if (field.controlType === 'json') {
       const jsonParse = (): ValidatorFn => (control: AbstractControl): { [key: string]: any } | null => {

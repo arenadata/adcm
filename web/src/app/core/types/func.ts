@@ -13,6 +13,7 @@ export const isBoolean = (x: any) => typeof x === 'boolean';
 export const isObject = (x: any) => x !== null && typeof x === 'object';
 export const isEmptyObject = (x: any) => isObject(x) && !Object.keys(x).length;
 export const isNumber = (x: any) => typeof x === 'number' && !isNaN(x);
+
 export const randomInteger = (max: number, min: number = 0): number =>
   Math.floor(min + Math.random() * (max + 1 - min));
 
@@ -57,7 +58,7 @@ export function nullEmptyField(input: Object): Object {
  * @param a
  */
 export function flatten<T>(a: T[]) {
-  return a.reduce<T[]>((acc, val) => (Array.isArray(val) ? acc.concat(flatten<T>(val)) : acc.concat(val)), []);
+  return a.reduce<T[]>((acc, val) => (Array.isArray(val) ? acc.concat(flatten<T>(val as T[])) : acc.concat(val)), []);
 }
 
 /**
