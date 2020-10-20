@@ -29,11 +29,11 @@ SCHEMAS = os.path.join(os.path.dirname(__file__), "schemas/")
 
 
 @pytest.fixture(scope="module")
-def adcm(image, request):
+def adcm(image, request, adcm_credentials):
     repo, tag = image
     dw = DockerWrapper()
     adcm = dw.run_adcm(image=repo, tag=tag, pull=False)
-    adcm.api.auth(username='admin', password='admin')
+    adcm.api.auth(**adcm_credentials)
 
     def fin():
         adcm.stop()
