@@ -18,8 +18,8 @@ export const isEmptyObject = (x: any) => isObject(x) && !Object.keys(x).length;
 export const isNumber = (x: any) => typeof x === 'number' && !isNaN(x);
 export const randomInteger = (max: number, min: number = 0): number => Math.floor(min + Math.random() * (max + 1 - min));
 
-export function getPattern(name: string): RegExp {
-  const fn = {
+export function getPattern(name: string): RegExp | null {
+  const fn: { [key: string]: () => RegExp } = {
     integer: () => new RegExp(/^[-]?\d+$/),
     int: () => new RegExp(/^[-]?\d+$/),
     float: () => new RegExp(/^[-]?[0-9]+(\.[0-9]+)?$/),
@@ -80,7 +80,7 @@ export function nullEmptyField(input: Object): Object {
  * @param a
  */
 export function flatten<T>(a: T[]) {
-  return a.reduce<T[]>((acc, val) => (Array.isArray(val) ? acc.concat(flatten<T>(val)) : acc.concat(val)), []);
+  return a.reduce<T[]>((acc, val) => (Array.isArray(val) ? acc.concat(flatten<T>(val as T[])) : acc.concat(val)), []);
 }
 
 export const newArray = (length: number) => Array.from(new Array(length), (_, i) => i);
