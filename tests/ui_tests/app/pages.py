@@ -359,10 +359,10 @@ class LoginPage(BasePage):
         self._login = None
         self._password = None
 
-    def login(self, login, password):
+    def login(self, username, password):
         self._login = self._wait_element_present(LoginPage.login_locator)
         self._password = self._wait_element_present(LoginPage.passwd_locator)
-        self._login.send_keys(login)
+        self._login.send_keys(username)
         self._password.send_keys(password)
         self._password.send_keys(Keys.RETURN)
         self._contains_url("admin")

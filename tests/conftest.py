@@ -119,11 +119,22 @@ def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
     web_driver.close_tab()
 
 
+@pytest.fixture(scope='session')
+def adcm_credentials():
+    """
+    Provides ADCM username and password by default
+    Examples:
+        login(**adcm_credentials)
+    """
+    return {'username': 'admin', 'password': 'admin'}
+
+
 @pytest.fixture(scope="function")
-def login_to_adcm(app_fs):
+def login_to_adcm(app_fs, adcm_credentials):
     """Perform login on Login page ADCM
     :param app_fs:
+    :param adcm_credentials:
     """
     app_fs.driver.get(app_fs.adcm.url)
     login = LoginPage(app_fs.driver)
-    login.login("admin", "admin")
+    login.login(**adcm_credentials)
