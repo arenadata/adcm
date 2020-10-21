@@ -22,11 +22,11 @@ from tests.library.errorcodes import TASK_ERROR
 
 
 @pytest.fixture(scope="function")
-def adcm(image, request):
+def adcm(image, request, adcm_credentials):
     repo, tag = image
     dw = DockerWrapper()
     adcm = dw.run_adcm(image=repo, tag=tag, pull=False)
-    adcm.api.auth(username='admin', password='admin')
+    adcm.api.auth(**adcm_credentials)
 
     def fin():
         adcm.stop()

@@ -9,6 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 import { Injectable } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { getControlType, getPattern, isEmptyObject } from '@app/core/types';
@@ -71,8 +72,8 @@ export class FieldService {
       value: getValue(item.type)(item.value, item.default, item.required),
       validator: {
         required: item.required,
-        min: item.limits ? item.limits.min : null,
-        max: item.limits ? item.limits.max : null,
+        min: item.limits?.min,
+        max: item.limits?.max,
         pattern: getPattern(item.type),
       },
       controlType: getControlType(item.type as matchType),
@@ -109,8 +110,15 @@ export class FieldService {
    * @param options
    */
   public toFormGroup(options: itemOptions[] = []): FormGroup {
-    const isVisible = (a: itemOptions) => !a.read_only && !(a.ui_options && a.ui_options.invisible);
-    const check = (a: itemOptions) => ('options' in a ? (a.activatable ? this.isVisibleField(a) : isVisible(a) ? a.options.some((b) => check(b)) : false) : isVisible(a));
+    const check = (a: itemOptions): boolean =>
+      'options' in a
+        ? a.activatable
+          ? this.isVisibleField(a) // if group.activatable - only visible
+          : this.isVisibleField(a) && !a.read_only // else visible an not read_only
+          ? a.options.some((b) => check(b)) // check inner fields
+          : false
+        : this.isVisibleField(a) && !a.read_only; // for fields in group
+
     return this.fb.group(
       options.reduce((p, c) => this.runByTree(c, p), {}),
       {
@@ -137,25 +145,31 @@ export class FieldService {
 
   private fillForm(field: FieldOptions, controls: {}) {
     const name = field.subname || field.name;
-    const validator = field.activatable ? [] : this.setValidator(field);
-    controls[name] = this.fb.control(field.value, validator);
-    if (field.controlType === 'password' && !field.ui_options?.no_confirm) {
-      controls[`confirm_${name}`] = this.fb.control(field.value, validator);
-    }
+    controls[name] = this.fb.control(field.value, field.activatable ? [] : this.setValidator(field));
     return controls;
   }
 
   /**
-   * Using from outside to set validator for FormControl by type
+   * External use (scheme.service) to set validator for FormControl by type
    * @param field Partial<FieldOptions>{ ValidatorInfo, controlType }
    */
-  public setValidator(field: { validator: ValidatorInfo; controlType: controlType }) {
+  public setValidator(field: { validator: ValidatorInfo; controlType: controlType }, controlToCompare?: AbstractControl) {
     const v: ValidatorFn[] = [];
 
     if (field.validator.required) v.push(Validators.required);
     if (field.validator.pattern) v.push(Validators.pattern(field.validator.pattern));
-    if (field.validator.max !== null) v.push(Validators.max(field.validator.max));
-    if (field.validator.min !== null) v.push(Validators.min(field.validator.min));
+    //if (field.validator.max !== null)
+    v.push(Validators.max(field.validator.max));
+    //if (field.validator.min !== null)
+    v.push(Validators.min(field.validator.min));
+
+    if (field.controlType === 'password') {
+      const passwordConfirm = (): ValidatorFn => (control: AbstractControl): { [key: string]: any } | null => {
+        if (controlToCompare && controlToCompare.value !== control.value) return { notEqual: true };
+        return null;
+      };
+      v.push(passwordConfirm());
+    }
 
     if (field.controlType === 'json') {
       const jsonParse = (): ValidatorFn => (control: AbstractControl): { [key: string]: any } | null => {
