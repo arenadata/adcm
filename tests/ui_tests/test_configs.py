@@ -49,6 +49,11 @@ DEFAULT_VALUE = {"string": "string",
                  "file": "./file.txt"}
 
 
+class ListWithoutRepr(list):
+    def __repr__(self):
+        return '<%s instance at %#x>' % (self.__class__.__name__, id(self))
+
+
 def generate_group_data():
     """Generate data set for groups
     :return: list with data
@@ -217,7 +222,7 @@ def generate_group_configs(group_config_data):
             cluster_config['subs'] = [sub_config]
             config_dict['config'] = [cluster_config]
             config_dict['name'] = random_string()
-            config = [config_dict]
+            config = ListWithoutRepr([config_dict])
             expected_result = generate_group_expected_result(data)
             group_configs.append((config, expected_result))
     return group_configs
@@ -315,7 +320,7 @@ def prepare_group_config(config):
         with open("{}/file.txt".format(d_name), 'w') as f:
             f.write("test")
     with open("{}/config.yaml".format(d_name), 'w') as yaml_file:
-        yaml.dump(config, yaml_file)
+        yaml.dump(list(config), yaml_file)
     return config[0], d_name
 
 
