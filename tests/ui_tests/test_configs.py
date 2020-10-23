@@ -49,6 +49,11 @@ DEFAULT_VALUE = {"string": "string",
                  "file": "./file.txt"}
 
 
+class ListWithoutRepr(list):
+    def __repr__(self):
+        return '<%s instance at %#x>' % (self.__class__.__name__, id(self))
+
+
 def generate_group_data():
     """Generate data set for groups
     :return: list with data
@@ -217,7 +222,7 @@ def generate_group_configs(group_config_data):
             cluster_config['subs'] = [sub_config]
             config_dict['config'] = [cluster_config]
             config_dict['name'] = random_string()
-            config = [config_dict]
+            config = ListWithoutRepr([config_dict])
             expected_result = generate_group_expected_result(data)
             group_configs.append((config, expected_result))
     return group_configs
@@ -287,36 +292,36 @@ def prepare_config(config):
 
 
 def prepare_group_config(config):
-    if "activatable" in config[0][0]['config'][0].keys():
+    if "activatable" in config[0]['config'][0].keys():
         activatable = True
-        active = config[0][0]['config'][0]['active']
+        active = config[0]['config'][0]['active']
     else:
         activatable = False
         active = False
-    data_type = config[0][0]['config'][0]['subs'][0]['type']
-    read_only = bool('read_only' in config[0][0]['config'][0]['subs'][0].keys())
-    default = bool('default' in config[0][0]['config'][0]['subs'][0].keys())
+    data_type = config[0]['config'][0]['subs'][0]['type']
+    read_only = bool('read_only' in config[0]['config'][0]['subs'][0].keys())
+    default = bool('default' in config[0]['config'][0]['subs'][0].keys())
     temp = "{}_activatab_{}_act_{}_req_{}_ro_{}_cont_{}_grinvis_{}_gradv_{}_fiinvis_{}_fiadv_{}"
     config_folder_name = temp.format(
         data_type,
         activatable,
         active,
-        config[0][0]['config'][0]['subs'][0]['required'],
+        config[0]['config'][0]['subs'][0]['required'],
         read_only,
         default,
-        config[0][0]['config'][0]['ui_options']['invisible'],
-        config[0][0]['config'][0]['ui_options']['advanced'],
-        config[0][0]['config'][0]['subs'][0]['ui_options']['invisible'],
-        config[0][0]['config'][0]['subs'][0]['ui_options']['advanced'])
+        config[0]['config'][0]['ui_options']['invisible'],
+        config[0]['config'][0]['ui_options']['advanced'],
+        config[0]['config'][0]['subs'][0]['ui_options']['invisible'],
+        config[0]['config'][0]['subs'][0]['ui_options']['advanced'])
     temdir = tempfile.mkdtemp()
     d_name = "{}/configs/groups/{}".format(temdir, config_folder_name)
     os.makedirs(d_name)
-    if config[0][0]['config'][0]['subs'][0]['name'] == 'file':
+    if config[0]['config'][0]['subs'][0]['name'] == 'file':
         with open("{}/file.txt".format(d_name), 'w') as f:
             f.write("test")
     with open("{}/config.yaml".format(d_name), 'w') as yaml_file:
-        yaml.dump(config[0], yaml_file)
-    return config[0][0], config[1], d_name
+        yaml.dump(list(config), yaml_file)
+    return config[0], d_name
 
 
 @pytest.mark.parametrize("config_dict", configs)
@@ -365,8 +370,9 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs, login_to
         assert not fields, "Config fields presented, expected no"
 
 
-@pytest.mark.parametrize("config_dict", group_configs)
-def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, app_fs, login_to_adcm):
+@pytest.mark.parametrize("config_dict,expected_results", group_configs)
+def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, expected_results,
+                             app_fs, login_to_adcm):
     """Test for configuration fields with groups. Before start test actions
     we always create configuration and expected result. All logic for test
     expected result in functions before this test function. If we have
@@ -380,12 +386,12 @@ def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, app_fs, log
     3. Create cluster
     4. Open configuration page
     5. Check save button status
-    6. Check field configuration (depends on expected result dict and bundle configuration"""
+    6. Check field configuration (depends on expected result dict and bundle configuration)"""
 
     data = prepare_group_config(config_dict)
     config = data[0]
-    expected = data[1]
-    path = data[2]
+    expected = expected_results
+    path = data[1]
     allure.attach.file("/".join([path, 'config.yaml']),
                        attachment_type=allure.attachment_type.YAML,
                        name='config.yaml')
