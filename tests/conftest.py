@@ -59,13 +59,28 @@ def pytest_runtest_makereport(item, call):
     setattr(item, "rep_" + rep.when, rep)
 
 
+def pytest_addoption(parser):
+    parser.addoption("--firefox", action="store_true", default=False,
+                     help='Additionally run UI tests on Firefox browser.')
+
+
+def pytest_generate_tests(metafunc):
+    if 'browser' in metafunc.fixturenames:
+        browsers = ['Chrome']
+        firefox = metafunc.config.getoption('--firefox')
+        if firefox:
+            browsers.append('Firefox')
+
+        metafunc.parametrize('browser', browsers, scope='session')
+
+
 @pytest.fixture(scope="session")
-def web_driver():
+def web_driver(browser):
     """
         Create ADCMTest object and initialize web driver session
         Destroy session after test is done
     """
-    driver = ADCMTest()
+    driver = ADCMTest(browser)
     driver.create_driver()
     yield driver
     try:
