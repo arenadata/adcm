@@ -61,7 +61,7 @@ export class StatusService {
   }
 
   getHostcomponentStatus(k: HostComponent, all: IAllStatus) {
-    const c = all.services[k.service_id].details.find((e) => +e.host === k.host_id && +e.component === k.component_id);
+    const c = all.services[k.service_id]?.details.find((e) => +e.host === k.host_id && +e.component === k.component_id);
     return c ? c.status : null;
   }
 
@@ -139,7 +139,7 @@ export class StatusService {
       .map((b) => ({
         name: b.service_display_name || b.service,
         id: b.service_id,
-        status: (all as IAllStatus).services[b.service_id].status,
+        status: (all as IAllStatus).services[b.service_id]?.status,
         relations: findComponents(b.service_id),
       }))
       .filter((z) => z.relations.length);
