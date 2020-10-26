@@ -89,7 +89,7 @@ export class StatusService {
         .map((e) => ({
           id: e.service_id,
           name: e.service_display_name || e.service_name,
-          status: (all as IAllStatus).services[e.service_id].status,
+          status: (all as IAllStatus).services[e.service_id]?.status,
           components: findComponents(e),
         }))
         .filter((z) => z.components.length);
@@ -100,7 +100,7 @@ export class StatusService {
       .map((b) => ({
         name: b.host,
         id: b.host_id,
-        status: (all as IAllStatus).hosts[b.host_id] ? (all as IAllStatus).hosts[b.host_id].status : null,
+        status: (all as IAllStatus).hosts[b.host_id] ? (all as IAllStatus).hosts[b.host_id]?.status : null,
         relations: findServices(b.host_id),
       }))
       .filter((z) => z.relations.length);
@@ -117,7 +117,7 @@ export class StatusService {
         .map((e) => ({
           id: e.host_id,
           name: e.host,
-          status: (all as IAllStatus).hosts[e.host_id].status,
+          status: (all as IAllStatus).hosts[e.host_id]?.status,
         }));
 
     const findComponents = (id: number) =>
