@@ -506,7 +506,7 @@ def save_actions(proto, conf, bundle_hash):
         fix_display_name(ac, action)
 
         check_action_hc(proto, ac, action_name)
-        dict_to_obj(ac, 'hostcomponentmap', action)
+        dict_to_obj(ac, 'hc_acl', action, 'hostcomponentmap')
 
         if check_action_states(proto, action_name, ac):
             if 'on_success' in ac['states'] and ac['states']['on_success']:
@@ -926,12 +926,14 @@ def in_dict(dictionary, key):
         return False
 
 
-def dict_to_obj(dictionary, key, obj):
+def dict_to_obj(dictionary, key, obj, obj_key=None):
+    if not obj_key:
+        obj_key = key
     if not isinstance(dictionary, dict):
         return
     if key in dictionary:
         if dictionary[key] is not None:
-            setattr(obj, key, dictionary[key])
+            setattr(obj, obj_key, dictionary[key])
 
 
 def dict_json_to_obj(dictionary, key, obj, obj_key=''):

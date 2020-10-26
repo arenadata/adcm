@@ -30,7 +30,7 @@ def old_adcm_images():
 
 
 @contextmanager
-def adcm_client(adcm_repo, adcm_tag, volumes, init=False):
+def adcm_client(adcm_repo, adcm_credentials, adcm_tag, volumes, init=False):
     """
     Run ADCM container from image {adcm_repo}:{adcm_tag}.
     If init=True new initialised image will be generated.
@@ -47,7 +47,7 @@ def adcm_client(adcm_repo, adcm_tag, volumes, init=False):
     with allure.step(f"Run ADCM from image {repo}:{tag}"):
         dw = DockerWrapper()
         adcm = dw.run_adcm(image=repo, tag=tag, volumes=volumes, pull=False)
-        adcm.api.auth(username='admin', password='admin')
+        adcm.api.auth(**adcm_credentials)
     yield ADCMClient(api=adcm.api)
     with allure.step(f"Stop ADCM from image {repo}:{tag}"):
         adcm.container.kill()
@@ -80,9 +80,10 @@ def volume(request):
 
 
 @pytest.mark.parametrize("old_adcm", old_adcm_images(), ids=repr)
-def test_upgrade_adcm(old_adcm, volume, image):
+def test_upgrade_adcm(old_adcm, volume, image, adcm_credentials):
     old_repo, old_tag = old_adcm
     with adcm_client(adcm_repo=old_repo,
+                     adcm_credentials=adcm_credentials,
                      adcm_tag=old_tag,
                      volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}},
                      init=True) as old_adcm_client:
@@ -94,6 +95,7 @@ def test_upgrade_adcm(old_adcm, volume, image):
 
     latest_repo, latest_tag = image
     with adcm_client(adcm_repo=latest_repo,
+                     adcm_credentials=adcm_credentials,
                      adcm_tag=latest_tag,
                      volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}}
                      ) as latest_adcm_client:
@@ -103,9 +105,10 @@ def test_upgrade_adcm(old_adcm, volume, image):
 
 
 @pytest.mark.parametrize("old_adcm", old_adcm_images(), ids=repr)
-def test_pass_in_cluster_config_encryption_after_upgrade(old_adcm, volume, image):
+def test_pass_in_cluster_config_encryption_after_upgrade(old_adcm, volume, image, adcm_credentials):
     old_repo, old_tag = old_adcm
     with adcm_client(adcm_repo=old_repo,
+                     adcm_credentials=adcm_credentials,
                      adcm_tag=old_tag,
                      volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}},
                      init=True) as old_adcm_client:
@@ -129,6 +132,7 @@ def test_pass_in_cluster_config_encryption_after_upgrade(old_adcm, volume, image
 
     latest_repo, latest_tag = image
     with adcm_client(adcm_repo=latest_repo,
+                     adcm_credentials=adcm_credentials,
                      adcm_tag=latest_tag,
                      volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}}
                      ) as latest_adcm_client:
@@ -138,9 +142,10 @@ def test_pass_in_cluster_config_encryption_after_upgrade(old_adcm, volume, image
 
 
 @pytest.mark.parametrize("old_adcm", old_adcm_images(), ids=repr)
-def test_pass_in_service_config_encryption_after_upgrade(old_adcm, volume, image):
+def test_pass_in_service_config_encryption_after_upgrade(old_adcm, volume, image, adcm_credentials):
     old_repo, old_tag = old_adcm
     with adcm_client(adcm_repo=old_repo,
+                     adcm_credentials=adcm_credentials,
                      adcm_tag=old_tag,
                      volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}},
                      init=True) as old_adcm_client:
@@ -165,6 +170,7 @@ def test_pass_in_service_config_encryption_after_upgrade(old_adcm, volume, image
 
     latest_repo, latest_tag = image
     with adcm_client(adcm_repo=latest_repo,
+                     adcm_credentials=adcm_credentials,
                      adcm_tag=latest_tag,
                      volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}}
                      ) as latest_adcm_client:

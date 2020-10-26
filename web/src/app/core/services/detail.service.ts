@@ -95,7 +95,7 @@ export class ClusterService {
     return cluster$
       .pipe(
         tap((cluster) => (this.Cluster = cluster)),
-        switchMap((cluster) => (cluster && typeName !== 'cluster' ? this.api.get(`${cluster[typeName]}${id}/`) : this[`one_${typeName}`](id)))
+        switchMap((cluster) => (cluster && typeName !== 'cluster' ? this.api.get<Entities>(`${cluster[typeName]}${id}/`) : this[`one_${typeName}`](id)))
       )
       .pipe(
         map((a: Entities) => {
