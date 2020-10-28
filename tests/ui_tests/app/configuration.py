@@ -315,6 +315,10 @@ class Configuration(BasePage):
 
     def get_tooltip_text_for_element(self, element):
         tooltip_icon = self._get_tooltip_el_for_field(element)
+        # Hack for firefox because of move_to_element does not scroll to the element
+        # https://github.com/mozilla/geckodriver/issues/776
+        if self.driver.capabilities['browserName'] == 'firefox':
+            self.driver.execute_script('arguments[0].scrollIntoView(true)', element)
         action = ActionChains(self.driver)
         action.move_to_element(tooltip_icon).perform()
         return self.driver.find_element(*Common.tooltip).text
