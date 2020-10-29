@@ -16,7 +16,7 @@
 
 import os
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
+from selenium.webdriver import (ChromeOptions, FirefoxOptions)
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
 from selenium.webdriver.common.keys import Keys
@@ -32,8 +32,8 @@ class ADCMTest:
 
     __slots__ = ('opts', 'capabilities', 'driver', 'ui', 'adcm', '_client', 'selenoid')
 
-    def __init__(self):
-        self.opts = Options()
+    def __init__(self, browser='Chrome'):
+        self.opts = FirefoxOptions() if browser == 'Firefox' else ChromeOptions()
         self.opts.headless = True
         self.opts.add_argument('--no-sandbox')
         self.opts.add_argument('--disable-extensions')
@@ -42,7 +42,7 @@ class ADCMTest:
         self.opts.add_argument("--start-maximized")
         self.opts.add_argument("--enable-logging")
         self.opts.add_argument("--enable-automation")
-        self.capabilities = webdriver.DesiredCapabilities.CHROME.copy()
+        self.capabilities = self.opts.capabilities.copy()
         self.capabilities['acceptSslCerts'] = True
         self.capabilities['acceptInsecureCerts'] = True
         self.capabilities['goog:loggingPrefs'] = {'browser': 'ALL', 'performance': 'ALL'}
@@ -60,8 +60,11 @@ class ADCMTest:
                 options=self.opts,
                 desired_capabilities=self.capabilities)
         else:
-            self.driver = webdriver.Chrome(options=self.opts,
-                                           desired_capabilities=self.capabilities)
+            self.driver = webdriver.Firefox(options=self.opts,
+                                            desired_capabilities=self.capabilities) \
+                if self.capabilities['browserName'] == 'firefox' \
+                else webdriver.Chrome(options=self.opts,
+                                      desired_capabilities=self.capabilities)
         self.driver.set_window_size(1800, 1000)
         self.driver.implicitly_wait(1)
         self.ui = Ui(self.driver)

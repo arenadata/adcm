@@ -77,7 +77,7 @@ import { StuffModule } from './stuff.module';
     ActionMasterConfigComponent,
     ActionCardComponent,
   ],
-  entryComponents: [DialogComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent, ActionMasterComponent],
+  // entryComponents: [DialogComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent, ActionMasterComponent],
   exports: [
     FormsModule,
     ReactiveFormsModule,
