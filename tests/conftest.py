@@ -65,6 +65,9 @@ def pytest_addoption(parser):
 
 
 def pytest_generate_tests(metafunc):
+    """
+    Parametrize web_driver fixture of browser names based on run options
+    """
     if 'browser' in metafunc.fixturenames:
         browsers = ['Chrome']
         firefox = metafunc.config.getoption('--firefox')
@@ -79,6 +82,7 @@ def web_driver(browser):
     """
         Create ADCMTest object and initialize web driver session
         Destroy session after test is done
+        :param browser: browser name from pytest_generate_tests hook
     """
     driver = ADCMTest(browser)
     driver.create_driver()
