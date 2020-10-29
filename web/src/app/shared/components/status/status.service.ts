@@ -42,7 +42,7 @@ export interface IAllStatus {
   providedIn: 'root',
 })
 export class StatusService {
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService) { }
 
   getStatusInfo(id: number, hostcomponent_link: string) {
     const statuses$ = this.getAllClusterStatus(id),
@@ -50,31 +50,33 @@ export class StatusService {
     return combineLatest([statuses$, host_components$]);
   }
 
+  getHostComponents(url: string): Observable<HostComponent[]> {
+    return this.api
+      .get<{ host: Host[]; hc: HostComponent[]; component: Component[] }>(url)
+      .pipe(map((a) => a.hc.map((hc) => ({ ...hc, monitoring: a.component.find((b) => b.id === hc.component_id).monitoring }))));
+  }
+
   getServiceComponentsByCluster(cluster: Cluster, service_id?: number): Observable<Component[]> {
-    return this.api.get<Service[]>(cluster.service).pipe(
-      map(s =>
-        s
-          .filter(se => (service_id ? se.id === service_id : true))
-          .reduce((a, c) => [...a, ...c.components.map(b => ({ ...b, service_id: c.id }))], [])
-          .filter(co => co.status !== 0),
-      ),
-    );
+    return this.api.get<Component[]>(cluster.status_url).pipe(map((s) => s.filter((se) => (service_id ? se.service_id === service_id : true))));
   }
 
   getHostcomponentStatus(k: HostComponent, all: IAllStatus) {
-    const c = all.services[k.service_id].details.find(e => +e.host === k.host_id && +e.component === k.component_id);
+    const c = all.services[k.service_id]?.details.find((e) => +e.host === k.host_id && +e.component === k.component_id);
     return c ? c.status : null;
   }
 
+  /**
+   *
+   */
   fillStatus(a: [IAllStatus, HostComponent[]], host_id?: number, service_id?: number): StatusInfo[] {
     const all: IAllStatus = a[0],
       hc: HostComponent[] = a[1];
 
     const findComponents = (e: HostComponent) =>
       hc
-        .filter(k => k.host_id === e.host_id && k.service_id === e.service_id)
-        .filter(k => k.monitoring !== 'passive')
-        .map(k => ({
+        .filter((k) => k.host_id === e.host_id && k.service_id === e.service_id)
+        .filter((k) => k.monitoring !== 'passive')
+        .map((k) => ({
           id: k.component_id,
           name: k.component_display_name,
           status: this.getHostcomponentStatus(k, all),
@@ -82,76 +84,75 @@ export class StatusService {
 
     const findServices = (id: number) =>
       hc
-        .filter(b => (service_id ? b.host_id === id && b.service_id === service_id : b.host_id === id))
-        .reduce((acc, cur) => (!acc.some(c => c.service_id === cur.service_id) ? [...acc, cur] : acc), [])
-        .map(e => ({
+        .filter((b) => (service_id ? b.host_id === id && b.service_id === service_id : b.host_id === id))
+        .reduce((acc, cur) => (!acc.some((c) => c.service_id === cur.service_id) ? [...acc, cur] : acc), [])
+        .map((e) => ({
           id: e.service_id,
           name: e.service_display_name || e.service_name,
-          status: (all as IAllStatus).services[e.service_id].status,
+          status: (all as IAllStatus).services[e.service_id]?.status,
           components: findComponents(e),
-        })).filter(z => z.components.length);
+        }))
+        .filter((z) => z.components.length);
 
     return hc
-      .filter(h => (host_id ? h.host_id === host_id : true))
-      .reduce((acc, cur) => (!acc.some(c => c.host_id === cur.host_id) ? [...acc, cur] : acc), [])
-      .map(b => ({
+      .filter((h) => (host_id ? h.host_id === host_id : true))
+      .reduce((acc, cur) => (!acc.some((c) => c.host_id === cur.host_id) ? [...acc, cur] : acc), [])
+      .map((b) => ({
         name: b.host,
         id: b.host_id,
-        status: (all as IAllStatus).hosts[b.host_id] ? (all as IAllStatus).hosts[b.host_id].status : null,
+        status: (all as IAllStatus).hosts[b.host_id] ? (all as IAllStatus).hosts[b.host_id]?.status : null,
         relations: findServices(b.host_id),
       }))
-      .filter(z => z.relations.length);
+      .filter((z) => z.relations.length);
   }
 
-  fillStatusByService(a: [IAllStatus, HostComponent[]], service_id?: number) {
+  fillStatusByService(a: [IAllStatus, HostComponent[]], service_id?: number): StatusInfo[] {
     const all: IAllStatus = a[0],
       hc: HostComponent[] = a[1];
 
     const findHost = (hoc: HostComponent) =>
       hc
-        .filter(b => b.component_id === hoc.component_id)
-        .reduce((acc, cur) => (!acc.some(c => c.host_id === cur.host_id) ? [...acc, cur] : acc), [])
-        .map(e => ({
+        .filter((b) => b.component_id === hoc.component_id)
+        .reduce((acc, cur) => (!acc.some((c) => c.host_id === cur.host_id) ? [...acc, cur] : acc), [])
+        .map((e) => ({
           id: e.host_id,
           name: e.host,
-          status: (all as IAllStatus).hosts[e.host_id].status,
+          status: (all as IAllStatus).hosts[e.host_id]?.status,
         }));
 
     const findComponents = (id: number) =>
       hc
-        .filter(b => (service_id ? b.service_id === id && b.service_id === service_id : b.service_id === id))
-        .filter(b => b.monitoring !== 'passive')
-        .reduce((acc, cur) => (!acc.some(c => c.component_id === cur.component_id) ? [...acc, cur] : acc), [])
-        .map(e => ({
+        .filter((b) => (service_id ? b.service_id === id && b.service_id === service_id : b.service_id === id))
+        .filter((b) => b.monitoring !== 'passive')
+        .reduce((acc, cur) => (!acc.some((c) => c.component_id === cur.component_id) ? [...acc, cur] : acc), [])
+        .map((e) => ({
           id: e.component_id,
           name: e.component_display_name || e.component,
           status: this.getHostcomponentStatus(e, all),
           components: findHost(e),
-        })).filter(z => z.components.length);
+        }))
+        .filter((z) => z.components.length);
 
     return hc
-      .filter(s => (service_id ? s.service_id === service_id : true))
-      .reduce((acc, cur) => (!acc.some(c => c.service_id === cur.service_id) ? [...acc, cur] : acc), [])
-      .map(b => ({
+      .filter((s) => (service_id ? s.service_id === service_id : true))
+      .reduce((acc, cur) => (!acc.some((c) => c.service_id === cur.service_id) ? [...acc, cur] : acc), [])
+      .map((b) => ({
         name: b.service_display_name || b.service,
         id: b.service_id,
-        status: (all as IAllStatus).services[b.service_id].status,
+        status: (all as IAllStatus).services[b.service_id]?.status,
         relations: findComponents(b.service_id),
-      })).filter(z => z.relations.length);
+      }))
+      .filter((z) => z.relations.length);
   }
 
   getComponentsOnly(a: [IAllStatus, HostComponent[]], host_id?: number) {
     const all: IAllStatus = a[0],
       hc: HostComponent[] = a[1];
     return hc
-      .filter(h => (host_id ? host_id === h.host_id : true))
-      .reduce(
-        (acc, cur) =>
-          !acc.some(c => c.host_id === cur.host_id && c.service_id === cur.service_id) ? [...acc, cur] : acc,
-        [],
-      )
-      .map(k => ({ ...k, status: this.getHostcomponentStatus(k, all) }))
-      .filter(b => b.status !== 0);
+      .filter((h) => (host_id ? host_id === h.host_id : true))
+      .reduce((acc, cur) => (!acc.some((c) => c.host_id === cur.host_id && c.service_id === cur.service_id) ? [...acc, cur] : acc), [])
+      .map((k) => ({ ...k, status: this.getHostcomponentStatus(k, all) }))
+      .filter((b) => b.status !== 0);
   }
 
   getClusterById(id: number) {
@@ -163,35 +164,15 @@ export class StatusService {
   }
 
   getHostStatus(host: Host, cid: number) {
-    return this.api.get<IStatus>(`/status/api/v1/cluster/${cid}/host/${host.id}/`).pipe(map(c => ({ ...host, ...c })));
-  }
-
-  getHosts(url: string) {
-    return this.api.get<Host[]>(url);
-  }
-
-  getServices(url: string) {
-    return this.api.get<Service[]>(url);
-  }
-
-  getHostComponents(url: string): Observable<HostComponent[]> {
-    return this.api
-      .get<{ host: Host[]; hc: HostComponent[]; component: Component[] }>(url)
-      .pipe(
-        map(a => a.hc.map(hc => ({ ...hc, monitoring: a.component.find(b => b.id === hc.component_id).monitoring }))),
-      );
+    return this.api.get<IStatus>(`/status/api/v1/cluster/${cid}/host/${host.id}/`).pipe(map((c) => ({ ...host, ...c })));
   }
 
   getServiceStatus(s: Service, cluster_id: number) {
-    return this.api
-      .get<IStatus>(`/status/api/v1/cluster/${cluster_id}/service/${s.id}/`)
-      .pipe(map(c => ({ ...s, ...c })));
+    return this.api.get<IStatus>(`/status/api/v1/cluster/${cluster_id}/service/${s.id}/`).pipe(map((c) => ({ ...s, ...c })));
   }
 
   getHostComponentStatus(hc: HostComponent) {
-    return this.api
-      .get<IStatus>(`/status/api/v1/host/${hc.host_id}/component/${hc.component_id}/`)
-      .pipe(map(c => ({ ...hc, ...c })));
+    return this.api.get<IStatus>(`/status/api/v1/host/${hc.host_id}/component/${hc.component_id}/`).pipe(map((c) => ({ ...hc, ...c })));
   }
 
   updateHostStatus(id: string, cid: number, value: number) {
