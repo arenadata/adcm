@@ -58,6 +58,7 @@ export interface Cluster extends ApiBase {
   serviceprototype: string;
   upgradable: boolean;
   upgrade: string;
+  status_url: string;
 }
 
 export interface Provider extends ApiBase {

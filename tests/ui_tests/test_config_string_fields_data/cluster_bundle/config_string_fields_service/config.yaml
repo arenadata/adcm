@@ -7,18 +7,18 @@
     - &id002
       description: string_required_by_default_group
       display_name: string_required_by_default_group
-      default: AZAZA Lalka
+      default: Some ordinary string
       name: string_required_by_default_group
       type: string
     - &id003
-      default: AZAZA Lalka
+      default: Some ordinary string
       description: string_required_by_option_group
       display_name: string_required_by_option_group
       name: string_required_by_option_group
       type: string
       required: true
     - &id005
-      default: AZAZA Lalka
+      default: Some ordinary string
       description: string_with_ui_options_is_false_group
       display_name: string_with_ui_options_is_false_group
       name: string_with_ui_options_is_false_group
@@ -27,7 +27,7 @@
         advanced: false
         invisible: false
     - &id006
-      default: AZAZA Lalka
+      default: Some ordinary string
       description: 'Inivisible string'
       display_name: invisible_string_group
       name: invisible_string_group
@@ -35,7 +35,7 @@
       ui_options:
         invisible: true
     - &id007
-      default: AZAZA Lalka
+      default: Some ordinary string
       description: advanced_string_group
       display_name: advanced_string_group
       name: advanced_string_group
@@ -44,7 +44,7 @@
         advanced: true
     - &id008
       description: 'Advanced invisible string'
-      default: AZAZA Lalka
+      default: Some ordinary string
       display_name: advanced_invisible_string_group
       name: advanced_invisible_string_group
       type: string
@@ -52,14 +52,14 @@
         advanced: true
         invisible: true
     - &id012
-      default: AZAZA Lalka
+      default: Some ordinary string
       description: string read_only_any_group
       display_name: string read_only_any_group
       name: string_read_only_any_group
       read_only: any
       type: string
     - &id011
-      default: AZAZA Lalka
+      default: Some ordinary string
       display_name: no_required_string_group
       name: no_required_string_group
       description: no_required_string_group
@@ -73,20 +73,20 @@
     type: group
     subs: &id040
     - &id041
-      default: AZAZA Lalka
+      default: Some ordinary string
       description: string_required_by_default_activatable_false
       display_name: string_required_by_default_activatable_false
       name: string_required_by_default_activatable_false
       type: string
     - &id042
-      default: AZAZA Lalka
+      default: Some ordinary string
       description: string_required_by_option_activatable_false
       display_name: string_required_by_option_activatable_false
       name: string_required_by_option_activatable_false
       type: string
       required: true
     - &id044
-      default: AZAZA Lalka
+      default: Some ordinary string
       description: string_with_ui_options_is_false_activatable_false
       display_name: string_with_ui_options_is_false_activatable_false
       name: string_with_ui_options_is_false_activatable_false
@@ -95,7 +95,7 @@
         advanced: false
         invisible: false
     - &id045
-      default: AZAZA Lalka
+      default: Some ordinary string
       description: invisible_string_activatable_false
       display_name: invisible_string_activatable_false
       name: invisible_string_activatable_false
@@ -103,7 +103,7 @@
       ui_options:
         invisible: true
     - &id046
-      default: AZAZA Lalka
+      default: Some ordinary string
       description: advanced_string_activatable_false
       display_name: advanced_string_activatable_false
       name: advanced_string_activatable_false
@@ -112,7 +112,7 @@
         advanced: true
     - &id047
       description: advanced_invisible_string_activatable_false
-      default: AZAZA Lalka
+      default: Some ordinary string
       display_name: advanced_invisible_string_activatable_false
       name: advanced_invisible_string_activatable_false
       type: string
@@ -120,14 +120,14 @@
         advanced: true
         invisible: true
     - &id051
-      default: AZAZA Lalka
+      default: Some ordinary string
       description: string read_only_any_activatable_false
       display_name: string read_only_any_activatable_false
       name: string_read_only_any_activatable_false
       read_only: any
       type: string
     - &id043
-      default: AZAZA Lalka
+      default: Some ordinary string
       display_name: no_required_string_activatable_false
       name: no_required_string_activatable_false
       description: no_required_string_activatable_false
@@ -135,40 +135,40 @@
       required: false
   - name: string_required_by_default_without_type
     type: string
-    default: AZAZA Lalka
+    default: Some ordinary string
   - name: string_required_by_option_without_type
-    default: AZAZA Lalka
+    default: Some ordinary string
     type: string
     required: true
   - name: string_with_ui_options_is_false_without_type
-    default: AZAZA Lalka
+    default: Some ordinary string
     type: string
     ui_options:
       advanced: false
       invisible: false
   - name: invisible_string_without_type
-    default: AZAZA Lalka
+    default: Some ordinary string
     type: string
     ui_options:
       invisible: true
   - name: advanced_string_without_type
     type: string
-    default: AZAZA Lalka
+    default: Some ordinary string
     ui_options:
       advanced: true
   - name: advanced_invisible_string_without_type
     type: string
-    default: AZAZA Lalka
+    default: Some ordinary string
     ui_options:
       advanced: true
       invisible: true
   - name: no_required_string_without_type
-    default: AZAZA Lalka
+    default: Some ordinary string
     description: no_required_string_without_type
     type: string
     required: false
   - name: string_read_only_any_without_type
-    default: AZAZA Lalka
+    default: Some ordinary string
     read_only: any
     type: string
   - description: 'Configuration for test strings activatable true'
@@ -181,18 +181,18 @@
     - &id028
       description: string_required_by_default_activatable_true
       display_name: string_required_by_default_activatable_true
-      default: AZAZA Lalka
+      default: Some ordinary string
       name: string_required_by_default_activatable_true
       type: string
     - &id029
-      default: AZAZA Lalka
+      default: Some ordinary string
       description: 'String_required_by_option'
       display_name: string_required_by_option_activatable_true
       name: string_required_by_option_activatable_true
       type: string
       required: true
     - &id031
-      default: AZAZA Lalka
+      default: Some ordinary string
       description: 'string_with_ui_options_is_false'
       display_name: string_with_ui_options_is_false_activatable_true
       name: string_with_ui_options_is_false_activatable_true
@@ -201,7 +201,7 @@
         advanced: false
         invisible: false
     - &id032
-      default: AZAZA Lalka
+      default: Some ordinary string
       description: 'Inivisible string'
       display_name: invisible_string_activatable_true
       name: invisible_string_activatable_true
@@ -209,7 +209,7 @@
       ui_options:
         invisible: true
     - &id033
-      default: AZAZA Lalka
+      default: Some ordinary string
       description: 'Advanced string'
       display_name: advanced_string_activatable_true
       name: advanced_string_activatable_true
@@ -218,7 +218,7 @@
         advanced: true
     - &id034
       description: 'Advanced invisible string'
-      default: AZAZA Lalka
+      default: Some ordinary string
       display_name: advanced_invisible_string_activatable_true
       name: advanced_invisible_string_activatable_true
       type: string
@@ -226,14 +226,14 @@
         advanced: true
         invisible: true
     - &id038
-      default: AZAZA Lalka
+      default: Some ordinary string
       description: 'Read only with default'
       display_name: string read_only_any_activatable_true
       name: string_read_only_any_activatable_true
       read_only: any
       type: string
     - &id037
-      default: AZAZA Lalka
+      default: Some ordinary string
       display_name: no_required_string_activatable_true
       name: no_required_string_activatable_true
       description: no_required_string_activatable_true

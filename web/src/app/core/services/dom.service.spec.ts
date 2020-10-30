@@ -9,11 +9,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-export * from './preloader.service';
-export * from './config.service';
-export * from './detail.service';
-export * from './stack.service';
-export * from './channel.service';
-export * from './app/app.service';
-export * from './fully-rendered.service';
-export * from './dom.service';
+
+import { TestBed } from '@angular/core/testing';
+
+import { DomService } from './dom.service';
+
+describe('DomService', () => {
+  let service: DomService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({});
+    service = TestBed.inject(DomService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+});
