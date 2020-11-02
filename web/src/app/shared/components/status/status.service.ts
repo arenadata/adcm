@@ -52,12 +52,12 @@ export class StatusService {
 
   getHostComponents(url: string): Observable<HostComponent[]> {
     return this.api
-      .get<{ host: Host[]; hc: HostComponent[]; component: Component[] }>(url)
+      .get<{ host: Host[]; hc: HostComponent[]; component: IComponent[] }>(url)
       .pipe(map((a) => a.hc.map((hc) => ({ ...hc, monitoring: a.component.find((b) => b.id === hc.component_id).monitoring }))));
   }
 
-  getServiceComponentsByCluster(cluster: Cluster, service_id?: number): Observable<Component[]> {
-    return this.api.get<Component[]>(cluster.status_url).pipe(map((s) => s.filter((se) => (service_id ? se.service_id === service_id : true))));
+  getServiceComponentsByCluster(cluster: Cluster, service_id?: number): Observable<IComponent[]> {
+    return this.api.get<IComponent[]>(cluster.status_url).pipe(map((s) => s.filter((se) => (service_id ? se.service_id === service_id : true))));
   }
 
   getHostcomponentStatus(k: HostComponent, all: IAllStatus) {

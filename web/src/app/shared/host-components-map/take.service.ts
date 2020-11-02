@@ -30,11 +30,11 @@ const isExpand = (ap: IActionParameter[]): boolean => ap.every((a) => a.action =
 const accord = (a: IActionParameter): ((b: CompTile) => boolean) => (b: CompTile): boolean =>
   b.component === `${a.service}/${a.component}`;
 
-const existCondition = (rel: CompTile[], ap: IActionParameter[]): boolean =>
+export const isExist = (rel: CompTile[], ap: IActionParameter[]): boolean =>
   isShrink(ap) ? ap.some((a) => rel.some(accord(a))) : ap.every((a) => rel.some(accord(a)));
 
-const checkEmptyHost = (h: HostTile, ap: IActionParameter[]): boolean =>
-  ap ? (existCondition(h.relations as CompTile[], ap) ? isExpand(ap) : isShrink(ap)) : false;
+export const disableHost = (h: HostTile, ap: IActionParameter[]): boolean =>
+  ap ? (isExist(h.relations as CompTile[], ap) ? isExpand(ap) : isShrink(ap)) : false;
 
 //#region user click
 
@@ -94,7 +94,7 @@ export class TakeService {
    * Mapping backend source hosts to detect `disabled` properties based on action parameters, if present
    */
   fillHost(hosts: HostTile[], ap?: IActionParameter[]): HostTile[] {
-    return hosts.map((h) => ({ ...h, disabled: checkEmptyHost(h, ap) }));
+    return hosts.map((h) => ({ ...h, disabled: disableHost(h, ap) }));
   }
 
   fillComponent(pc: IComponent[], ap: IActionParameter[]) {
@@ -231,12 +231,13 @@ export class TakeService {
 
   //#region handler user events
   divorce(both: [CompTile, HostTile], cs: CompTile[], hs: HostTile[], state: StatePost, form: FormGroup) {
-    both.forEach((a, i) => {
-      a.relations = a.relations.filter((r) => r.id !== (i ? both[0].id : both[1].id));
-      a.isLink = false;
-    });
-
     const [component, host] = both;
+
+    component.isLink = false;
+    component.relations = component.relations.filter((r) => r.id !== host.id);
+    host.isLink = false;
+    host.relations = host.relations.filter((r) => r.id !== component.id);
+
     state.delete(new Post(host.id, component.service_id, component.id));
     this.clearDependencies(component, state, cs, hs, form);
     this.setFormValue(component, form);

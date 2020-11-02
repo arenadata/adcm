@@ -12,20 +12,18 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { ChannelService, keyChannelStrim } from '@app/core';
-import { notify } from '@app/core/animations';
 import { EventMessage, IEMObject, SocketState } from '@app/core/store';
 import { IActionParameter } from '@app/core/types';
 import { Store } from '@ngrx/store';
 
 import { SocketListenerDirective } from '../../directives/socketListener.directive';
-import { TakeService, getSelected } from '../take.service';
+import { getSelected, TakeService } from '../take.service';
 import { CompTile, HostTile, IRawHosComponent, Post, StatePost, Tile } from '../types';
 
 @Component({
   selector: 'app-service-host',
   templateUrl: './service-host.component.html',
   styleUrls: ['./service-host.component.scss'],
-  animations: [notify],
 })
 export class ServiceHostComponent extends SocketListenerDirective implements OnInit {
   showSpinner = false;
@@ -173,7 +171,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
   }
 
   init(raw: IRawHosComponent) {
-    if (raw.host) this.Hosts = raw.host.map((h) => new HostTile(h)); 
+    if (raw.host) this.Hosts = raw.host.map((h) => new HostTile(h));
 
     if (raw.component)
       this.Components = [...this.Components, ...this.service.fillComponent(raw.component, this.actionParameters)];
@@ -232,7 +230,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
       a.isLink = false;
       a.relations = [];
     };
-    
+
     this.Hosts.forEach(ma);
     this.Components.forEach(ma);
 

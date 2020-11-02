@@ -51,6 +51,10 @@ export class HCmComponent {
   }
 }
 
+/**
+ * Array with specific service id and components with id by index [1, count]
+ * see: class HCmComponent
+*/
 export const ComponentFactory = (count: number, service_id: number): IComponent[] =>
   newArray<IComponent>(count, (_, i) => new HCmComponent(i + 1, service_id) as IComponent);
 
