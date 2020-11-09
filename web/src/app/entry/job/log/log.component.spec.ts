@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { ClusterService } from '@app/core';
@@ -34,7 +34,7 @@ describe('Job Module :: LogComponent', () => {
   let store: MockStore;
   let messageSelector: MemoizedSelector<SocketState, EventMessage>;
 
-  beforeEach(async(() => {
+  beforeEach(async () => {
     TestBed.configureTestingModule({
       imports: [MatIconModule],
       declarations: [LogComponent, JobInfoComponent, TextComponent],
@@ -44,7 +44,7 @@ describe('Job Module :: LogComponent', () => {
         provideMockStore(),
       ],
     }).compileComponents();
-  }));
+  });
 
   beforeEach(() => {
     jasmine.clock().install();
@@ -105,7 +105,7 @@ describe('Job Module :: LogComponent', () => {
       fixture.detectChanges();
 
       const text = fixture.nativeElement.querySelector('div.wrap app-log-text textarea');
-      expect(text.innerHTML).toBe('Second message');    
+      expect(text.innerHTML).toBe('Second message');
     });
   });
 
