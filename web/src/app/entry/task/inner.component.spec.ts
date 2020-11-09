@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -22,12 +22,12 @@ describe('InnerComponent', () => {
   let component: InnerComponent;
   let fixture: ComponentFixture<InnerComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(async () => {
     TestBed.configureTestingModule({
       imports: [MatTableModule, MatIconModule, MatTooltipModule, RouterTestingModule],
       declarations: [InnerComponent],
     }).compileComponents();
-  }));
+  });
 
   beforeEach(() => {
     fixture = TestBed.createComponent(InnerComponent);
@@ -52,22 +52,22 @@ describe('InnerComponent', () => {
     fixture.detectChanges();
     const last_icon = getIcon();
     expect(last_icon.innerText).toBe('watch_later');
-    
+
     component.dataSource[0].status = 'running';
     fixture.detectChanges();
     const last_icon2 = getIcon();
     expect(last_icon2.innerText).toBe('autorenew');
-    
+
     component.dataSource[0].status = 'success';
     fixture.detectChanges();
     const last_icon3 = getIcon();
     expect(last_icon3.innerText).toBe('done');
-    
+
     component.dataSource[0].status = 'failed';
     fixture.detectChanges();
     const last_icon4 = getIcon();
     expect(last_icon4.innerText).toBe('error');
-    
+
     component.dataSource[0].status = 'aborted';
     fixture.detectChanges();
     const last_icon5 = getIcon();

@@ -20,19 +20,23 @@ import { ActionsService } from '../actions.service';
       <mat-icon>play_circle_outline</mat-icon>
     </button>
     <ng-template #btn>
-      <button mat-raised-button color="warn" [disabled]="disabled" [matMenuTriggerFor]="panel.menu" (click)="getData()">
-        <span>Run action</span>&nbsp;<mat-icon>add_task</mat-icon>
+      <button mat-raised-button color="accent" [disabled]="disabled" [matMenuTriggerFor]="panel.menu" (click)="getData()">
+        <span>Run action</span>
+        &nbsp;
+        <mat-icon class="icon-locked running" *ngIf="state === 'locked'; else pi">autorenew</mat-icon>
+        <ng-template #pi><mat-icon>play_circle_outline</mat-icon></ng-template>
       </button>
     </ng-template>
     <app-menu-item #panel [items]="actions" [cluster]="cluster"></app-menu-item>
   `,
 })
 export class ActionListComponent {
-  @Input() cluster: { id: number; hostcomponent: string; };
+  @Input() cluster: { id: number; hostcomponent: string };
   @Input() disabled: boolean;
   @Input() actions = [];
   @Input() asButton = false;
   @Input() actionLink: string;
+  @Input() state: string;
 
   constructor(private service: ActionsService) {}
 

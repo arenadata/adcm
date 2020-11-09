@@ -10,25 +10,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialogModule } from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { provideMockStore } from '@ngrx/store/testing';
 
-import { ActionCardComponent } from './action-card.component';
-import { ActionsService } from '../actions.service';
 import { ClusterService } from '../../../../core/services/detail.service';
 import { Entities } from '../../../../core/types/';
+import { ActionsService } from '../actions.service';
+import { ActionCardComponent } from './action-card.component';
 
 describe('ActionCardComponent', () => {
   let component: ActionCardComponent;
   let fixture: ComponentFixture<ActionCardComponent>;
+  const initialState = { socket: {} };
 
-  beforeEach(async(() => {
+  beforeEach(async () => {
     TestBed.configureTestingModule({
       imports: [MatDialogModule, NoopAnimationsModule],
       providers: [
         { provide: ActionsService, useValue: { getActions: () => {} } },
         { provide: ClusterService, useValue: { Cluster: {}, Current: {} } },
+        provideMockStore({ initialState }),
         // {
         //   provide: MatDialogRef,
         //   useValue: {
@@ -39,7 +42,7 @@ describe('ActionCardComponent', () => {
       declarations: [ActionCardComponent],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
-  }));
+  });
 
   beforeEach(() => {
     fixture = TestBed.createComponent(ActionCardComponent);
