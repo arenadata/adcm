@@ -10,17 +10,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
 import { MatListModule } from '@angular/material/list';
+import { ApiService } from '@app/core/api/api.service';
+import { FieldService } from '@app/shared/configuration/field.service';
+import { ConfigFieldsComponent } from '@app/shared/configuration/fields/fields.component';
+import { ServiceHostComponent } from '@app/shared/host-components-map/services2hosts/service-host.component';
 
 import { ActionMasterConfigComponent } from './action-master-config.component';
 import { ActionMasterComponent as MasterComponent } from './master.component';
 import { MasterService } from './master.service';
-import { ApiService } from '@app/core/api/api.service';
-import { FieldService } from '@app/shared/configuration/field.service';
-import { FormGroup, FormControl, FormBuilder } from '@angular/forms';
-import { ServiceHostComponent } from '@app/shared/host-components-map/services2hosts/service-host.component';
-import { ConfigFieldsComponent } from '@app/shared/configuration/fields/fields.component';
 
 describe('MasterComponent', () => {
   let component: MasterComponent;
@@ -29,7 +29,7 @@ describe('MasterComponent', () => {
   let ApiServiceStub: Partial<ApiService>;
   let FieldServiceStub: Partial<FieldService>;
 
-  beforeEach(async() => {
+  beforeEach(async () => {
     ApiServiceStub = {};
     FieldServiceStub = new FieldService({} as FormBuilder);
 
