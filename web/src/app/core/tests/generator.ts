@@ -10,6 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 /**
  * Generator data for tests
  *
@@ -18,7 +19,7 @@
  */
 export class Generator {
   getExample(i: number, data = { id: 'bundle_id', bundle_edition: 'comutity' || 'enterprise', other: ['display_name', 'version'] }) {
-    return [].reduce((p, c) => (p[c] = `${c}_${i}`), {}); 
+    return [].reduce((p, c) => (p[c] = `${c}_${i}`), {});
     // { bundle_id: i, display_name: `bundle_${i}`, version: `0.0${i}`, bundle_edition: 'community' };
   }
 
@@ -28,3 +29,5 @@ export class Generator {
       .map((_, i) => this.getExample(i));
   }
 }
+
+

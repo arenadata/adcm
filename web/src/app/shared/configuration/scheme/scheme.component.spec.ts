@@ -14,8 +14,8 @@ import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule }
 import { MaterialModule } from '@app/shared/material.module';
 
 import { FieldService } from '../field.service';
-import { FieldOptions } from '../types';
-import { matchType, YspecService } from '../yspec/yspec.service';
+import { IFieldOptions, TNForm } from '../types';
+import { YspecService } from '../yspec/yspec.service';
 import { RootComponent } from './root.component';
 import { SchemeComponent } from './scheme.component';
 import { SchemeService } from './scheme.service';
@@ -39,8 +39,8 @@ describe('SchemeComponent', () => {
     service = TestBed.inject(SchemeService);
     component = fixture.componentInstance;
     component.form = new FormGroup({ field: new FormControl() });
-    const yspec = { root: { match: 'list' as matchType, item: 'string' }, string: { match: 'string' as matchType } };
-    component.field = (<unknown>{ display_name: 'field_display_name', name: 'field', limits: { yspec }, required: true, value: null, default: null }) as FieldOptions;
+    const yspec = { root: { match: 'list' as TNForm, item: 'string' }, string: { match: 'string' as TNForm } };
+    component.field = (<unknown>{ display_name: 'field_display_name', name: 'field', limits: { yspec }, required: true, value: null, default: null }) as IFieldOptions;
     fixture.detectChanges();
   });
 
