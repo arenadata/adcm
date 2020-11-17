@@ -16,6 +16,7 @@ from django.conf.urls import include
 from rest_framework_swagger.views import get_swagger_view
 from rest_framework.schemas import get_schema_view
 
+from adcm.settings import RBAC
 from api import views, user_views, stack_views, cluster_views, docs, job_views
 
 
@@ -378,3 +379,7 @@ urlpatterns = [
 
     path('', views.APIRoot.as_view()),
 ]
+
+
+if RBAC:
+    urlpatterns.append(path('rbac/', include('adwp_rbac.urls')))

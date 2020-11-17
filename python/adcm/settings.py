@@ -55,6 +55,13 @@ else:
     ADCM_VERSION = '2019.02.07.00'
 
 
+try:
+    from adwp_rbac import RBAC_ON   # pylint: disable=unused-import
+    RBAC = True
+except ImportError:
+    RBAC = False
+
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
@@ -78,8 +85,12 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework.authtoken',
     'social_django',
-    'cm.apps.CmConfig',
+    'adwp_rbac',
+    'cm',
 ]
+
+
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -213,12 +224,24 @@ LOGGING = {
             '()': 'django.utils.log.RequireDebugFalse',
         },
     },
+    'formatters': {
+        'adwp': {
+            'format': '{asctime} {levelname} {module} {message}',
+            'style': '{',
+        },
+    },
     'handlers': {
         'file': {
             'level': 'DEBUG',
             'filters': ['require_debug_false'],
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'data/log/adcm_debug.log'),
+        },
+        'adwp_file': {
+            'level': 'DEBUG',
+            'formatter': 'adwp',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'data/log/adwp.log'),
         },
     },
     'loggers': {
@@ -227,5 +250,10 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
+        'adwp': {
+             'handlers': ['adwp_file'],
+             'level': 'DEBUG',
+             'propagate': True,
+         },
     },
 }

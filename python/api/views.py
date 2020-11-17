@@ -21,6 +21,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
+from adcm.settings import ADCM_VERSION, RBAC
 import api.serializers
 import api.cluster_views
 import cm.api
@@ -30,7 +31,6 @@ import cm.stack
 import cm.status_api
 from cm.errors import AdcmEx, AdcmApiEx
 from cm.models import HostProvider, Host, ADCM, Action, JobLog, TaskLog, Upgrade
-from adcm.settings import ADCM_VERSION
 from api.serializers import check_obj, filter_actions
 from api.api_views import (
     DetailViewRO, DetailViewDelete, ActionFilter, ListView,
@@ -61,6 +61,11 @@ class APIRoot(routers.APIRootView):
         'role': 'role-list',
         'info': 'adcm-info',
     }
+
+    def get(self, requiest, *args, **kwargs):   # pylint: disable=arguments-differ
+        if RBAC:
+            self.api_root_dict['rbac'] = 'adwp_rbac:adwp-rbac'
+        return super().get(requiest, *args, **kwargs)
 
 
 class NameConverter:
