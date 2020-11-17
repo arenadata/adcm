@@ -9,36 +9,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { controlType } from '@app/shared/configuration/types';
-import { matchType } from '@app/shared/configuration/yspec/yspec.service';
-
 export const isBoolean = (x: any) => typeof x === 'boolean';
 export const isObject = (x: any) => x !== null && typeof x === 'object';
 export const isEmptyObject = (x: any) => isObject(x) && !Object.keys(x).length;
 export const isNumber = (x: any) => typeof x === 'number' && !isNaN(x);
-export const randomInteger = (max: number, min: number = 0): number => Math.floor(min + Math.random() * (max + 1 - min));
 
-export function getPattern(name: string): RegExp | null {
-  const fn: { [key: string]: () => RegExp } = {
-    integer: () => new RegExp(/^[-]?\d+$/),
-    int: () => new RegExp(/^[-]?\d+$/),
-    float: () => new RegExp(/^[-]?[0-9]+(\.[0-9]+)?$/),
-  };
-  return fn[name] ? fn[name]() : null;
-}
-
-export function getControlType(name: string): controlType {
-  const a: Partial<{ [key in matchType | controlType]: controlType }> = {
-    bool: 'boolean',
-    int: 'textbox',
-    integer: 'textbox',
-    float: 'textbox',
-    string: 'textbox',
-    file: 'textarea',
-    text: 'textarea',
-  };
-  return a[name] || name;
-}
+export const randomInteger = (max: number, min: number = 0): number =>
+  Math.floor(min + Math.random() * (max + 1 - min));
 
 /**
  * Remove empty, null, undefined properties
@@ -68,7 +45,8 @@ export function nullEmptyField(input: Object): Object {
       // tslint:disable-next-line: deprecation
       output[key] = nullEmptyField(data);
       if (!Object.keys(output[key]).length) delete output[key];
-    } else if ((typeof data === 'number' && isNaN(data)) || (typeof data === 'string' && !data) || data === null) output[key] = null;
+    } else if ((typeof data === 'number' && isNaN(data)) || (typeof data === 'string' && !data) || data === null)
+      output[key] = null;
     else if (isBoolean(data) || (typeof data === 'number' && data === 0) || data) output[key] = data;
     return output;
   }, {});
@@ -83,7 +61,17 @@ export function flatten<T>(a: T[]) {
   return a.reduce<T[]>((acc, val) => (Array.isArray(val) ? acc.concat(flatten<T>(val as T[])) : acc.concat(val)), []);
 }
 
-export const newArray = (length: number) => Array.from(new Array(length), (_, i) => i);
+/**
+ *
+ *
+ * @template T
+ * @param {number} count
+ * @param {(_: never, i: number) => T} fn
+ * @returns
+ */
+export function newArray<T>(count: number, fn: (_: never, i: number) => T) {
+  return Array(count).fill(0).map(fn);
+}
 
 /**
  * @returns 16-bit hex string
@@ -91,12 +79,16 @@ export const newArray = (length: number) => Array.from(new Array(length), (_, i)
  */
 export function getRandomColor(): string {
   const letters = '0123456789ABCDEF';
-  return newArray(6).reduce((p) => (p += letters[Math.floor(Math.random() * 16)]), '#');
+  return newArray(6, (_, i) => i).reduce((p) => (p += letters[Math.floor(Math.random() * 16)]), '#');
 }
 
-export function uniqid(prefix: string = '', isFloat: boolean = false) {
-  const seed = (s: number, w: number, z = s.toString(16)): string => (w < z.length ? z.slice(z.length - w) : w > z.length ? new Array(1 + (w - z.length)).join('0') + z : z);
-  let result = prefix + seed(parseInt((new Date().getTime() / 1000).toString(), 10), 8) + seed(Math.floor(Math.random() * 0x75bcd15) + 1, 5);
+export function uniqid(prefix: string = '', isFloat: boolean = false): string {
+  const seed = (s: number, w: number, z = s.toString(16)): string =>
+    w < z.length ? z.slice(z.length - w) : w > z.length ? new Array(1 + (w - z.length)).join('0') + z : z;
+  let result =
+    prefix +
+    seed(parseInt((new Date().getTime() / 1000).toString(), 10), 8) +
+    seed(Math.floor(Math.random() * 0x75bcd15) + 1, 5);
   if (isFloat) result += (Math.random() * 10).toFixed(8).toString();
   return result;
 }

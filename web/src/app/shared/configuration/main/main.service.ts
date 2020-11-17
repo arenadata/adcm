@@ -17,9 +17,15 @@ import { getRandomColor, isObject } from '@app/core/types';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { FieldService, IOutput } from '../field.service';
-import { CompareConfig, FieldOptions, FieldStack, IConfig, PanelOptions } from '../types';
+import { FieldService, IOutput, TFormOptions } from '../field.service';
+import { CompareConfig, IConfig, IFieldOptions, IFieldStack } from '../types';
 
+/**
+ *```
+  advanced: boolean;
+  search: string;
+  ```
+ */
 export interface ISearchParam {
   advanced: boolean;
   search: string;
@@ -49,11 +55,11 @@ export class MainService {
     return this.api.get<IConfig>(url);
   }
 
-  filterApply(options: (FieldOptions | PanelOptions)[], search: ISearchParam) {
+  filterApply(options: TFormOptions[], search: ISearchParam) {
     this.fields.filterApply(options, search);
   }
 
-  parseValue(output: IOutput, source: FieldStack[]) {
+  parseValue(output: IOutput, source: IFieldStack[]) {
     return this.fields.parseValue(output, source);
   }
 
@@ -65,25 +71,25 @@ export class MainService {
     return this.api.get<IConfig[]>(url).pipe(map((h) => h.filter((a) => a.id !== currentVersionId).map((b) => ({ ...b, color: getRandomColor() }))));
   }
 
-  compareConfig(ids: number[], dataOptions: (FieldOptions | PanelOptions)[], compareConfig: CompareConfig[]) {
+  compareConfig(ids: number[], dataOptions: TFormOptions[], compareConfig: CompareConfig[]) {
     dataOptions.map((a) => this.runClear(a, ids));
     const cc = ids.map((id) => compareConfig.find((a) => a.id === id));
     dataOptions.map((a) => this.runCheck(a, cc));
   }
 
-  runClear(a: FieldOptions | PanelOptions, ids: number[]) {
+  runClear(a: TFormOptions, ids: number[]) {
     if ('options' in a) a.options.map((b) => this.runClear(b, ids));
     else if (a.compare.length) a.compare = a.compare.filter((b) => ids.includes(b.id));
     return a;
   }
 
-  runCheck(a: FieldOptions | PanelOptions, configs: CompareConfig[]) {
+  runCheck(a: TFormOptions, configs: CompareConfig[]) {
     if ('options' in a) a.options.map((b) => this.runCheck(b, configs));
     else this.checkField(a, configs);
     return a;
   }
 
-  checkField(a: FieldOptions, configs: CompareConfig[]) {
+  checkField(a: IFieldOptions, configs: CompareConfig[]) {
     configs
       .filter((b) => a.compare.every((e) => e.id !== b.id))
       .map((c) => {

@@ -59,7 +59,7 @@ describe('RootComponent', () => {
     expect(component.form).toBeDefined();
   });
 
-  it('options type as list should displaying as list', () => {
+  xit('options type as list should displaying as list', () => {
 
   });
 });

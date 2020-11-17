@@ -12,137 +12,23 @@
 import { TestBed } from '@angular/core/testing';
 import { FormBuilder, Validators } from '@angular/forms';
 
-import { FieldService, IOutput, itemOptions, ISource } from './field.service';
-import { ConfigValueTypes, FieldStack, IConfig, ILimits, resultTypes } from './types';
-import { IYspec } from './yspec/yspec.service';
+import { FieldService, getValue, IOutput, ISource } from './field.service';
+import { Configuration, FieldFactory, setValue, toFormOptions } from './tests/configuration';
+import { IFieldStack, resultTypes, TNForm } from './types';
+import { IYspec, IYContainer, IYField } from './yspec/yspec.service';
 
 /**
  * inputData - data from backend for configuration IConfig.config : FieldStack[]
- *           => data4form : itemOptions[] we can render the form based on this data
+ * formData : itemOptions[] -  we can render the form based on inputData
  *
  * FormControl.value - user input
  * outputData - this is that we send to backend after parsing FormControl.value  - IOutput
  *
  */
 
-const inputData: IConfig = {
-  attr: {},
-  config: [
-    {
-      name: 'field_string',
-      display_name: 'display_name',
-      subname: '',
-      type: 'string',
-      activatable: false,
-      read_only: false,
-      default: null,
-      value: null,
-      description: '',
-      required: false,
-    },
-    {
-      name: 'group',
-      display_name: 'group_display_name',
-      subname: '',
-      type: 'group',
-      activatable: false,
-      read_only: false,
-      default: null,
-      value: null,
-      description: '',
-      required: false,
-    },
-    {
-      name: 'group',
-      display_name: 'field_in_group_display_name',
-      subname: 'field_in_group',
-      type: 'integer',
-      activatable: false,
-      read_only: false,
-      default: 10,
-      value: null,
-      description: '',
-      required: true,
-    },
-  ],
-};
-
-const data4form: itemOptions[] = [
-  {
-    required: false,
-    name: 'field_string',
-    display_name: 'display_name',
-    subname: '',
-    type: 'string',
-    activatable: false,
-    read_only: false,
-    default: null,
-    value: '',
-    description: '',
-    key: 'field_string',
-    validator: { required: false, min: undefined, max: undefined, pattern: null },
-    controlType: 'textbox',
-    hidden: false,
-    compare: [],
-  },
-  {
-    name: 'group',
-    display_name: 'group_display_name',
-    subname: '',
-    type: 'group',
-    activatable: false,
-    read_only: false,
-    default: null,
-    value: null,
-    description: '',
-    required: false,
-    hidden: false,
-    active: true,
-    options: [
-      {
-        name: 'field_in_group',
-        display_name: 'field_in_group_display_name',
-        subname: 'field_in_group',
-        type: 'integer',
-        activatable: false,
-        read_only: false,
-        default: 10,
-        value: '',
-        description: '',
-        required: true,
-        key: 'field_in_group/group',
-        validator: { required: true, min: undefined, max: undefined, pattern: /^[-]?\d+$/ },
-        controlType: 'textbox',
-        hidden: false,
-        compare: [],
-      },
-    ],
-  },
-];
-
-const data4form_simple = [
-  {
-    required: false,
-    name: 'field_string',
-    display_name: 'display_name',
-    subname: '',
-    type: 'string',
-    activatable: false,
-    read_only: false,
-    default: null,
-    value: '',
-    description: '',
-    key: 'field_string',
-    validator: { required: false, min: null, max: null, pattern: null },
-    controlType: 'textbox',
-    hidden: false,
-    compare: [],
-  },
-];
-
 describe('Configuration fields service', () => {
   let service: FieldService;
-  let checkValue: (value: resultTypes, type: ConfigValueTypes) => resultTypes;
+  let checkValue: (value: resultTypes, type: TNForm) => resultTypes;
   // let parseValue: (value: IOutput, source: Partial<FieldStack>[]) => IOutput;
 
   beforeEach(() => {
@@ -158,193 +44,190 @@ describe('Configuration fields service', () => {
     expect(service).toBeTruthy();
   });
 
-  it('Prepare data for configuration: getPanels(undefined) should return undefined', () => {
+  it('getPanels(undefined) should return undefined', () => {
     expect(service.getPanels(undefined)).toEqual(undefined);
   });
 
-  it('Prepare data for configuration: getPanels({}) should return undefined', () => {
+  it('getPanels({}) should return undefined', () => {
     expect(service.getPanels({} as any)).toEqual(undefined);
   });
 
-  it('Prepare data for configuration: getPanels({config: []}) should return []', () => {
+  it('getPanels({config: []}) should return []', () => {
     expect(service.getPanels({ config: [] })).toEqual([]);
   });
 
-  it('FieldStack[] (input data IConfig.config) transform to itemOptions[] by getPanels()', () => {
-    expect(service.getPanels(inputData)).toEqual(data4form);
+  it('getPanels should transform FieldStack[] to itemOptions[]', () => {
+    const inputData = new Configuration(FieldFactory.add(['string', ['integer']]));
+    const formData = toFormOptions(inputData);
+    const output = service.getPanels(inputData);
+    expect(output).toEqual(formData);
   });
 
-  it('Generate FormGroup : toFormGroup() check value', () => {
+  it('toFormGroup should generate FormGroup and check value', () => {
+    const inputData = new Configuration(FieldFactory.add(['string', ['integer']]));
+    const formData = toFormOptions(inputData);
     const fg = service.fb.group(
       {
-        field_string: service.fb.control(''),
-        group: service.fb.group({
-          field_in_group: ['', [Validators.required, Validators.pattern(/^[-]?\d+$/)]],
+        field_string_0: service.fb.control(''),
+        field_group_1: service.fb.group({
+          subname_integer_0: ['', [Validators.required, Validators.pattern(/^[-]?\d+$/)]],
         }),
       },
       { validator: () => null }
     );
-    const form = service.toFormGroup(data4form);
+    const form = service.toFormGroup(formData);
     expect(form.value).toEqual(fg.value);
   });
 
-  it('Check result : parseValue(empty, empty) should return {}', () => {
-    const source: FieldStack[] = [];
+  it('filterApply with search by display_name and value should change the fields satisfy search condition on as hidden', () => {
+    const source = new Configuration(FieldFactory.add(['string', 'json', 'integer', 'text']));
+    source.config[1].value = { key: 'string_0' };
+    source.config[3].value = 'other text';
+    const formOpt = toFormOptions(source);
+    expect(service.filterApply(formOpt, { search: 'string_0', advanced: false }).filter((a) => !a.hidden)).toEqual([
+      {
+        type: 'string',
+        name: 'field_string_0',
+        value: '',
+        required: true,
+        read_only: false,
+        activatable: false,
+        default: null,
+        subname: '',
+        display_name: 'display_field_string_0_',
+        controlType: 'textbox',
+        validator: { required: true, min: undefined, max: undefined, pattern: null },
+        compare: [],
+        key: 'field_string_0',
+        hidden: false,
+      },
+      {
+        type: 'json',
+        name: 'field_json_1',
+        value: getValue('json')({ key: 'string_0' }),
+        required: true,
+        read_only: false,
+        activatable: false,
+        default: null,
+        subname: '',
+        display_name: 'display_field_json_1_',
+        controlType: 'json',
+        validator: { required: true, min: undefined, max: undefined, pattern: null },
+        compare: [],
+        key: 'field_json_1',
+        hidden: false,
+      },
+    ]);
+  });
+
+  it('filterApply with search by display_name and value should change the fields satisfy search condition on as hidden, in case when config have group', () => {
+    const source = new Configuration(FieldFactory.add(['string', ['text']]));
+    source.config[2].value = 'other text';
+    const formOpt = toFormOptions(source);
+    expect(service.filterApply(formOpt, { search: 'string_0', advanced: false }) as any).toEqual([
+      {
+        type: 'string',
+        name: 'field_string_0',
+        value: '',
+        required: true,
+        read_only: false,
+        activatable: false,
+        default: null,
+        subname: '',
+        display_name: 'display_field_string_0_',
+        controlType: 'textbox',
+        validator: { required: true, min: undefined, max: undefined, pattern: null },
+        compare: [],
+        key: 'field_string_0',
+        hidden: false,
+      },
+      {
+        activatable: false,
+        active: true,
+        default: null,
+        display_name: 'display_field_group_1_',
+        hidden: true,
+        name: 'field_group_1',
+        read_only: false,
+        required: true,
+        subname: '',
+        type: 'group',
+        value: '',
+        options: [
+          {
+            type: 'text',
+            name: 'subname_text_0',
+            value: 'other text',
+            required: true,
+            read_only: false,
+            activatable: false,
+            default: null,
+            subname: 'subname_text_0',
+            display_name: 'display_field_group_1_subname_text_0',
+            key: 'subname_text_0/field_group_1',
+            validator: { required: true, min: undefined, max: undefined, pattern: null },
+            controlType: 'textarea',
+            hidden: true,
+            compare: [],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('parseValue should miss the read_only field', () => {
+    const source = new Configuration(FieldFactory.add(['string']));
+    const value = setValue(source.config, ['some string']);
+    source.config[0].read_only = true;
+    expect(service.parseValue(value, source.config)).toEqual({});
+  });
+
+  it('parseValue should miss the read_only field, in case when config have group', () => {
+    const source = new Configuration(FieldFactory.add([['string']]));
+    const value = setValue(source.config, [['some string']]);
+    // the first it's group
+    source.config[1].read_only = true;
+    expect(service.parseValue(value, source.config)).toEqual({});
+  });
+
+  it('parseValue(empty, empty) should return {}', () => {
+    const source: IFieldStack[] = [];
     const value: IOutput = {};
     expect(service.parseValue(value, source)).toEqual({});
   });
 
-  it('Check result : parseValue(form without grop)', () => {
-    const source: { name: string; subname: string; type: ConfigValueTypes; read_only: boolean; limits?: ILimits; value: any }[] = [
-      { name: 'field_string', type: 'string', read_only: false, subname: '', value: '' },
-      { name: 'field_int', type: 'integer', read_only: false, subname: '', value: '' },
-      { name: 'field_int_as_str', type: 'integer', read_only: false, subname: '', value: '' },
-      { name: 'field_int_0', type: 'integer', read_only: false, subname: '', value: '' },
-      { name: 'field_float', type: 'float', read_only: false, subname: '', value: '' },
-      { name: 'field_float_as_str', type: 'float', read_only: false, subname: '', value: '' },
-      { name: 'field_bool', type: 'boolean', read_only: false, subname: '', value: '' },
-      { name: 'field_bool_undefined', type: 'boolean', read_only: false, subname: '', value: '' },
-      { name: 'field_bool_null', type: 'boolean', read_only: false, subname: '', value: '' },
-      { name: 'field_json', type: 'json', read_only: false, subname: '', value: '' },
-      { name: 'field_map', type: 'map', read_only: false, subname: '', value: '' },
-      { name: 'field_map_empty', type: 'map', read_only: false, subname: '', value: '' },
-      { name: 'field_map_not_object', type: 'map', read_only: false, subname: '', value: '' },
-      { name: 'field_list', type: 'list', read_only: false, subname: '', value: '' },
-      { name: 'field_list_empty', type: 'list', read_only: false, subname: '', value: '' },
-      { name: 'field_list_not_array', type: 'list', read_only: false, subname: '', value: '' },
-      { name: 'field_option_str', type: 'option', read_only: false, subname: '', value: '' },
-      { name: 'field_option_int', type: 'option', read_only: false, subname: '', value: '' },
-      // { name: 'field_option_float', type: 'option', read_only: false },
-      { name: 'field_null', type: 'string', read_only: false, subname: '', value: '' },
-      { name: 'field_readonly', type: 'float', read_only: true, subname: '', value: '' },
-    ];
-    const value: IOutput = {
-      field_string: 'a',
-      field_int: 1,
-      field_int_0: 0,
-      field_int_as_str: '123',
-      field_bool: true,
-      field_bool_undefined: undefined,
-      field_bool_null: null,
-      field_float: 1.2,
-      field_float_as_str: '1.23',
-      field_json: {},
-      field_map: { key: 'value' },
-      field_map_empty: {},
-      field_map_not_object: 'string',
-      field_list: ['a', 1],
-      field_list_empty: [],
-      field_list_not_array: 'string',
-      field_option_str: 'option string',
-      field_option_int: 0,
-      field_null: '',
-      field_readonly: 'readonly string',
-    };
-    expect(service.parseValue(value, source)).toEqual({
-      field_string: 'a',
-      field_int: 1,
-      field_int_0: 0,
-      field_int_as_str: 123,
-      field_bool: true,
-      field_bool_undefined: undefined,
-      field_bool_null: null,
-      field_float: 1.2,
-      field_float_as_str: 1.23,
-      field_map: { key: 'value' },
-      field_list: ['a', 1],
-      field_option_str: 'option string',
-      field_option_int: 0,
-      field_map_not_object: 'string',
-      field_list_not_array: 'string',
-      field_json: null,
-      field_null: null,
-      field_map_empty: null,
-      field_list_empty: null,
+  it('parseValue should cast the string from the form to its original type', () => {
+    const source = new Configuration(
+      FieldFactory.add(['string', 'integer', 'integer', 'integer', 'boolean', 'boolean', 'boolean', 'float', 'float', 'map', 'map', 'list', 'list', 'option', 'option'])
+    );
+    const value = setValue(source.config, ['a', 1, 0, '123', true, undefined, null, 1.2, '1.23', { key: 'value' }, 'string', ['a', 1], 'string', 'option string', 0]);
+    expect(service.parseValue(value, source.config)).toEqual({
+      field_string_0: 'a',
+      field_integer_1: 1,
+      field_integer_2: 0,
+      field_integer_3: 123,
+      field_boolean_4: true,
+      field_boolean_5: undefined,
+      field_boolean_6: null,
+      field_float_7: 1.2,
+      field_float_8: 1.23,
+      field_map_9: Object({ key: 'value' }),
+      field_map_10: 'string',
+      field_list_11: ['a', 1],
+      field_list_12: 'string',
+      field_option_13: 'option string',
+      field_option_14: 0,
     });
   });
 
-  it('Check result : parseValue(form with grop)', () => {
-    const source: { name: string; subname: string; type: ConfigValueTypes; read_only: boolean; limits?: ILimits; value: any }[] = [
-      { name: 'field_string', type: 'string', read_only: false, subname: '', value: '' },
-      { name: 'group_1', subname: '', type: 'group', read_only: false, value: '' },
-      { name: 'group_1', subname: 'field_int', type: 'integer', read_only: false, value: '' },
-      { name: 'group_1', subname: 'field_int_as_str', type: 'integer', read_only: false, value: '' },
-      { name: 'group_1', subname: 'field_int_0', type: 'integer', read_only: false, value: '' },
-      { name: 'group_1', subname: 'field_float', type: 'float', read_only: false, value: '' },
-      { name: 'group_1', subname: 'field_float_as_str', type: 'float', read_only: false, value: '' },
-      { name: 'field_bool', type: 'boolean', read_only: false, subname: '', value: '' },
-      { name: 'field_bool_undefined', type: 'boolean', read_only: false, subname: '', value: '' },
-      { name: 'field_bool_null', type: 'boolean', read_only: false, subname: '', value: '' },
-      { name: 'group_2', type: 'group', read_only: false, subname: '', value: '' },
-      { subname: 'field_json', name: 'group_2', type: 'json', read_only: false, value: '' },
-      { subname: 'field_map', name: 'group_2', type: 'map', read_only: false, value: '' },
-      { subname: 'field_map_empty', name: 'group_2', type: 'map', read_only: false, value: '' },
-      { subname: 'field_map_not_object', name: 'group_2', type: 'map', read_only: false, value: '' },
-      { subname: 'field_list', name: 'group_2', type: 'list', read_only: false, value: '' },
-      { subname: 'field_list_empty', name: 'group_2', type: 'list', read_only: false, value: '' },
-      { subname: 'field_list_not_array', name: 'group_2', type: 'list', read_only: false, value: '' },
-      { subname: 'field_option_str', name: 'group_2', type: 'option', read_only: false, value: '' },
-      { subname: 'field_option_int', name: 'group_2', type: 'option', read_only: false, value: '' },
-      // { name: 'field_option_float', type: 'option', read_only: false },
-      { subname: 'field_null', name: 'group_2', type: 'string', read_only: false, value: '' },
-      { subname: 'field_readonly', name: 'group_2', type: 'float', read_only: true, value: '' },
-      { name: 'group_3', type: 'group', read_only: false, subname: '', value: '' },
-      { subname: 'field_readonly', name: 'group_3', read_only: true, value: '###', type: 'string' },
-      { subname: 'field_empty_readonly', name: 'group_3', read_only: true, value: '', type: 'string' },
-    ];
-    /** form value after user input */
+  it('parseValue should cast the string from the form to its original type, in case when config have group', () => {
+    const source = new Configuration(FieldFactory.add(['string', ['integer', 'float', 'float', 'string'], ['map', 'list', 'map', 'list', 'option'], []]));
+    const value = setValue(source.config, ['a', ['12', '1.0', '1.2', ''], [null, null, 'str', 'str', 0]]);
 
-    const value: IOutput = {
-      field_string: 'a',
-      group_1: {
-        field_int: 1,
-        field_int_0: 0,
-        field_float: 1.2,
-        field_int_as_str: '123',
-        field_float_as_str: '1.23',
-      },
-      field_bool: true,
-      field_bool_undefined: undefined,
-      field_bool_null: null,
-      group_2: {
-        field_json: null,
-        field_map_empty: null,
-        field_list_empty: null,
-        field_map: { key: 'value' },
-        field_map_not_object: 'string',
-        field_list: ['a', 1],
-        field_list_not_array: 'string',
-        field_option_str: 'option string',
-        field_option_int: 0,
-        field_null: '',
-        field_readonly: 'readonly string',
-      },
-      group_3: {},
-    };
-    expect(service.parseValue(value, source)).toEqual({
-      field_string: 'a',
-      group_1: {
-        field_int: 1,
-        field_int_0: 0,
-        field_float: 1.2,
-        field_int_as_str: 123,
-        field_float_as_str: 1.23,
-      },
-      field_bool: true,
-      field_bool_undefined: undefined,
-      field_bool_null: null,
-      group_2: {
-        field_json: null,
-        field_map_empty: null,
-        field_list_empty: null,
-        field_map: { key: 'value' },
-        field_list: ['a', 1],
-        field_option_str: 'option string',
-        field_option_int: 0,
-        field_map_not_object: 'string',
-        field_list_not_array: 'string',
-        field_null: null,
-      },
+    expect(service.parseValue(value, source.config)).toEqual({
+      field_string_0: 'a',
+      field_group_1: { subname_integer_0: 12, subname_float_1: 1, subname_float_2: 1.2, subname_string_3: null },
+      field_group_2: { subname_map_0: null, subname_list_1: null, subname_map_2: 'str', subname_list_3: 'str', subname_option_4: 0 },
     });
   });
 
@@ -473,7 +356,7 @@ describe('Configuration fields service', () => {
    * check value - mocking the click save button
    *
    */
-  it('parseValue - for structure: after init with empty field with not required', () => {
+  it('parseValue - for structure: after init with empty field and not required', () => {
     const source: ISource[] = [{ type: 'structure', name: 'field', subname: '', read_only: false, value: null, limits: { rules: {} } }];
     const output: IOutput = { field: {} };
 
@@ -486,8 +369,8 @@ describe('Configuration fields service', () => {
     expect(result2).toEqual({ field: null });
   });
 
-  it('parseValue - for structure: list', () => {
-    const rules = {
+  it('parseValue for structure should return list', () => {
+    const rules: IYContainer | IYField = {
       name: 'root',
       type: 'list',
       options: {
@@ -537,23 +420,12 @@ describe('Configuration fields service', () => {
       },
     };
 
-    const source: ISource[] = [
-      {
-        limits: {
-          rules,
-          yspec,
-        },
-        name: 'listeners',
-        read_only: false,
-        subname: '',
-        type: 'structure',
-        value: [{ name: 'DEFAULT', port: 9092 }],
-      },
-    ];
+    const source = new Configuration(FieldFactory.add(['structure']));
+    source.config[0].value = [{ name: 'DEFAULT', port: 9092 }];
+    source.config[0].limits = { rules, yspec };
+    const output = { field_structure_0: [{ name: 'DEFAULT', port: '9092' }] };
+    const result = service.parseValue(output, source.config);
 
-    const output = { listeners: [{ name: 'DEFAULT', port: '9092' }] };
-    const result = service.parseValue(output, source);
-
-    expect(result).toEqual({ listeners: [{ name: 'DEFAULT', port: 9092 }] });
+    expect(result).toEqual({ field_structure_0: [ Object({ name: 'DEFAULT', port: 9092 }) ] });
   });
 });

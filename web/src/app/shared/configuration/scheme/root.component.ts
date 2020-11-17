@@ -12,8 +12,8 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { FormArray, FormGroup } from '@angular/forms';
 
-import { TValue } from '../types';
-import { IYContainer, IYField, reqursionType } from '../yspec/yspec.service';
+import { TNReq, TValue } from '../types';
+import { IYContainer, IYField } from '../yspec/yspec.service';
 import { IControl, IValue, SchemeService } from './scheme.service';
 
 @Component({
@@ -58,7 +58,7 @@ export class RootComponent implements OnInit {
     const flag = (this.rules as IYContainer).type === 'dict';
     const item = flag
       ? this.scheme.addControlsDict(name, value, this.form as FormArray, this.itemRules as IYContainer[])
-      : this.scheme.addControls(name, value, this.form, this.rules, this.options.type as reqursionType);
+      : this.scheme.addControls(name, value, this.form, this.rules, this.options.type as TNReq);
     this.controls = [...this.controls, item];
   }
 
