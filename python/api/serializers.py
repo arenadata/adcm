@@ -12,7 +12,7 @@
 
 import django.contrib.auth
 import rest_framework.authtoken.serializers
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
 from rest_framework import serializers
@@ -24,11 +24,10 @@ import cm.job
 import cm.stack
 import cm.status_api
 import cm.adcm_config
-from cm.api import safe_api
 from cm.errors import AdcmApiEx, AdcmEx
 from cm.models import (
     Action, SubAction, Prototype, PrototypeConfig, JobLog, UserProfile, Upgrade, HostProvider,
-    ConfigLog, Role, Host, Cluster, ClusterObject
+    ConfigLog, Host, Cluster, ClusterObject
 )
 from api.config.serializers import ConfigURL
 
@@ -115,55 +114,11 @@ class LogOutSerializer(serializers.Serializer):
     pass
 
 
-class PermSerializer(serializers.Serializer):
-    name = serializers.CharField()
-    codename = serializers.CharField()
-    app_label = serializers.SerializerMethodField()
-    model = serializers.SerializerMethodField()
-
-    def get_app_label(self, obj):
-        return obj.content_type.app_label
-
-    def get_model(self, obj):
-        return obj.content_type.model
-
-
-class RoleSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField(read_only=True)
-    description = serializers.CharField(read_only=True)
-    url = hlink('role-details', 'id', 'role_id')
-
-
-class RoleDetailSerializer(RoleSerializer):
-    permissions = PermSerializer(many=True, read_only=True)
-
-
-class GroupSerializer(serializers.Serializer):
-    name = serializers.CharField()
-    url = hlink('group-details', 'name', 'name')
-    change_role = hlink('change-group-role', 'name', 'name')
-
-    @transaction.atomic
-    def create(self, validated_data):
-        try:
-            return Group.objects.create(name=validated_data.get('name'))
-        except IntegrityError:
-            raise AdcmApiEx("GROUP_CONFLICT", 'group already exists') from None
-
-
-class GroupDetailSerializer(GroupSerializer):
-    permissions = PermSerializer(many=True, read_only=True)
-    role = RoleSerializer(many=True, source='role_set')
-
-
 class UserSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
     url = hlink('user-details', 'username', 'username')
-    change_group = hlink('add-user-group', 'username', 'username')
     change_password = hlink('user-passwd', 'username', 'username')
-    change_role = hlink('change-user-role', 'username', 'username')
     is_superuser = serializers.BooleanField(required=False)
 
     @transaction.atomic
@@ -178,39 +133,6 @@ class UserSerializer(serializers.Serializer):
             return user
         except IntegrityError:
             raise AdcmApiEx("USER_CONFLICT", 'user already exists') from None
-
-
-class UserDetailSerializer(UserSerializer):
-    user_permissions = PermSerializer(many=True)
-    groups = GroupSerializer(many=True)
-    role = RoleSerializer(many=True, source='role_set')
-
-
-class AddUser2GroupSerializer(serializers.Serializer):
-    name = serializers.CharField()
-
-    def update(self, user, validated_data):   # pylint: disable=arguments-differ
-        group = check_obj(Group, {'name': validated_data.get('name')}, 'GROUP_NOT_FOUND')
-        group.user_set.add(user)
-        return group
-
-
-class AddUserRoleSerializer(serializers.Serializer):
-    role_id = serializers.IntegerField()
-    name = serializers.CharField(read_only=True)
-
-    def update(self, user, validated_data):   # pylint: disable=arguments-differ
-        role = check_obj(Role, {'id': validated_data.get('role_id')}, 'ROLE_NOT_FOUND')
-        return safe_api(cm.api.add_user_role, (user, role))
-
-
-class AddGroupRoleSerializer(serializers.Serializer):
-    role_id = serializers.IntegerField()
-    name = serializers.CharField(read_only=True)
-
-    def update(self, group, validated_data):   # pylint: disable=arguments-differ
-        role = check_obj(Role, {'id': validated_data.get('role_id')}, 'ROLE_NOT_FOUND')
-        return safe_api(cm.api.add_group_role, (group, role))
 
 
 class UserPasswdSerializer(serializers.Serializer):

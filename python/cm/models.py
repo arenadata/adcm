@@ -14,7 +14,6 @@ from __future__ import unicode_literals
 
 import json
 
-from django.contrib.auth.models import User, Group, Permission
 from django.db import models
 
 from cm.errors import AdcmEx
@@ -367,14 +366,6 @@ JOB_STATUS = (
 class UserProfile(models.Model):
     login = models.CharField(max_length=32, unique=True)
     profile = JSONField(default='')
-
-
-class Role(models.Model):
-    name = models.CharField(max_length=32, unique=True)
-    description = models.TextField(blank=True)
-    permissions = models.ManyToManyField(Permission, blank=True)
-    user = models.ManyToManyField(User, blank=True)
-    group = models.ManyToManyField(Group, blank=True)
 
 
 class JobLog(models.Model):
