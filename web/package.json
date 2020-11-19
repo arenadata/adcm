@@ -9,7 +9,7 @@
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e",
-    "bundle-report": "ng build --prod --stats-json && webpack-bundle-analyzer ./dist/stats-es2015.json"
+    "bundle-report": "ng build --prod --stats-json && webpack-bundle-analyzer ./dist/stats.json"
   },
   "private": true,
   "dependencies": {
@@ -35,8 +35,8 @@
   "devDependencies": {
     "@angular-devkit/build-angular": "~0.1100.2",
     "@angular/cli": "^11.0.2",
-    "@angular/language-service": "11.0.1",
     "@angular/compiler-cli": "11.0.1",
+    "@angular/language-service": "11.0.1",
     "@ngrx/schematics": "^10.0.1",
     "@types/jasmine": "~3.6.0",
     "@types/jasminewd2": "~2.0.8",
@@ -51,8 +51,8 @@
     "karma-coverage-istanbul-reporter": "~3.0.2",
     "karma-jasmine": "~4.0.0",
     "karma-jasmine-html-reporter": "^1.5.0",
-    "node-sass": "^4.14.1",
     "protractor": "~7.0.0",
+    "sass": "^1.29.0",
     "ts-node": "~9.0.0",
     "tslint": "~6.1.0",
     "typescript": "~4.0.2",
