@@ -107,6 +107,17 @@ urlpatterns = [
         stack_views.ServiceProtoActionList.as_view(),
         name='service-actions'
     ),
+    path('stack/component/', stack_views.ComponentList.as_view(), name='component-type'),
+#    path(
+#        'stack/component/<int:prototype_id>/',
+#        stack_views.ComponentDetail.as_view(),
+#        name='component-type-details'
+#    ),
+#    path(
+#        'stack/component/<int:prototype_id>/action/',
+#        stack_views.ComponentProtoActionList.as_view(),
+#        name='component-actions'
+#    ),
     path('stack/provider/', stack_views.ProviderTypeList.as_view(), name='provider-type'),
     path(
         'stack/provider/<int:prototype_id>/',

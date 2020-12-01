@@ -22,6 +22,7 @@ from cm.errors import AdcmEx
 PROTO_TYPE = (
     ('adcm', 'adcm'),
     ('service', 'service'),
+    ('component', 'component'),
     ('cluster', 'cluster'),
     ('host', 'host'),
     ('provider', 'provider'),
@@ -101,6 +102,7 @@ MONITORING_TYPE = (
 class Prototype(models.Model):
     bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE)
     type = models.CharField(max_length=16, choices=PROTO_TYPE)
+    parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
     path = models.CharField(max_length=160, default='')
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
@@ -108,6 +110,8 @@ class Prototype(models.Model):
     version_order = models.PositiveIntegerField(default=0)
     required = models.BooleanField(default=False)
     shared = models.BooleanField(default=False)
+    constraint = JSONField(default=[0, '+'])
+    requires = JSONField(default=[])
     adcm_min_version = models.CharField(max_length=80, default=None, null=True)
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
     description = models.TextField(blank=True)
@@ -116,7 +120,7 @@ class Prototype(models.Model):
         return str(self.name)
 
     class Meta:
-        unique_together = (('bundle', 'type', 'name', 'version'),)
+        unique_together = (('bundle', 'type', 'parent', 'name', 'version'),)
 
 
 class ObjectConfig(models.Model):
@@ -185,6 +189,7 @@ class Host(models.Model):
 class ClusterObject(models.Model):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
+    service = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
     stack = JSONField(default=[])
@@ -196,6 +201,9 @@ class ClusterObject(models.Model):
 
 class Component(models.Model):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
+    comp_prototype = models.ForeignKey(
+        Prototype, on_delete=models.CASCADE, null=True, default=None, related_name='+'
+    )
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
@@ -212,6 +220,9 @@ class ServiceComponent(models.Model):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
     component = models.ForeignKey(Component, on_delete=models.CASCADE)
+    co_comp = models.ForeignKey(
+        ClusterObject, on_delete=models.CASCADE, null=True, default=None, related_name='hc'
+    )
 
     class Meta:
         unique_together = (('cluster', 'service', 'component'),)
@@ -274,6 +285,9 @@ class HostComponent(models.Model):
     host = models.ForeignKey(Host, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
     component = models.ForeignKey(ServiceComponent, on_delete=models.CASCADE)
+    co_comp = models.ForeignKey(
+        ClusterObject, on_delete=models.CASCADE, related_name='comp', null=True, default=None
+    )
     state = models.CharField(max_length=64, default='created')
 
     class Meta:

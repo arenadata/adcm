@@ -233,6 +233,17 @@ class ServiceProtoActionList(GenericAPIPermView):
         return Response(serializer.data)
 
 
+class ComponentList(PageView):
+    """
+    get:
+    List all stack components
+    """
+    queryset = Prototype.objects.filter(type='component')
+    serializer_class = api.stack_serial.ComponentTypeSerializer
+    filterset_fields = ('name', 'bundle_id')
+    ordering_fields = ('display_name', 'version_order')
+
+
 class HostTypeList(PageView):
     """
     get:
