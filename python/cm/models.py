@@ -220,9 +220,11 @@ class ServiceComponent(models.Model):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
     component = models.ForeignKey(Component, on_delete=models.CASCADE)
-    co_comp = models.ForeignKey(
-        ClusterObject, on_delete=models.CASCADE, null=True, default=None, related_name='hc'
-    )
+    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE, null=True, default=None)
+    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
+    state = models.CharField(max_length=64, default='created')
+    stack = JSONField(default=[])
+    issue = JSONField(default={})
 
     class Meta:
         unique_together = (('cluster', 'service', 'component'),)
@@ -285,9 +287,6 @@ class HostComponent(models.Model):
     host = models.ForeignKey(Host, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
     component = models.ForeignKey(ServiceComponent, on_delete=models.CASCADE)
-    co_comp = models.ForeignKey(
-        ClusterObject, on_delete=models.CASCADE, related_name='comp', null=True, default=None
-    )
     state = models.CharField(max_length=64, default='created')
 
     class Meta:
