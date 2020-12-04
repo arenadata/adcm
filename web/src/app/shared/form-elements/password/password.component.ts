@@ -104,6 +104,7 @@ export class PasswordComponent extends FieldDirective implements OnInit, AfterVi
   }
 
   hideDummy(isConfirmField: boolean): void {
+    if (this.field.read_only) return null;
     this.isHideDummy = true;
     this.cd.detectChanges();
 
