@@ -21,10 +21,10 @@ import {
 } from '@angular/core';
 import { AbstractControl, FormControl } from '@angular/forms';
 import { fromEvent, merge } from 'rxjs';
-import { debounceTime, filter, pluck, tap } from 'rxjs/operators';
+import { debounceTime, pluck, tap } from 'rxjs/operators';
 
-import { FieldService } from './../../configuration/field.service';
 import { FieldDirective } from '../field.directive';
+import { FieldService } from './../../configuration/field.service';
 
 @Component({
   selector: 'app-fields-password',
@@ -71,33 +71,43 @@ export class PasswordComponent extends FieldDirective implements OnInit, AfterVi
       this.hideDummy(false);
     }
 
-    const confirm = this.ConfirmPasswordField;
-    if (confirm) confirm.markAllAsTouched();
+    if (this.ConfirmPasswordField) this.ConfirmPasswordField.markAllAsTouched();
   }
 
   ngAfterViewInit(): void {
-    const a = fromEvent(this.input.nativeElement, 'blur');
-    const b = fromEvent(this.conf.nativeElement, 'blur');
-    const c = fromEvent(this.input.nativeElement, 'focus');
-    const d = fromEvent(this.conf.nativeElement, 'focus');
+    if (this.ConfirmPasswordField) {
+      const a = fromEvent(this.input.nativeElement, 'blur');
+      const c = fromEvent(this.input.nativeElement, 'focus');
+      const b = fromEvent(this.conf.nativeElement, 'blur');
+      const d = fromEvent(this.conf.nativeElement, 'focus');
 
-    merge(a, b, c, d)
-      .pipe(
-        debounceTime(100),
-        pluck('type'),
-        tap((res: 'focus' | 'blur') => {
-          if (res === 'blur' && (this.isValidField() || this.isEmpty())) {
-            if ((this.isValidField() && this.isEmpty()) || this.isEmpty()) {
-              this.control.setValue(this.value);
-              this.ConfirmPasswordField.setValue(this.value);
+      merge(a, b, c, d)
+        .pipe(
+          debounceTime(100),
+          pluck('type'),
+          tap((res: 'focus' | 'blur') => {
+            if (res === 'blur' && (this.isValidField() || this.isEmpty())) {
+              if ((this.isValidField() && this.isEmpty()) || this.isEmpty()) {
+                this.control.setValue(this.value);
+                this.ConfirmPasswordField.setValue(this.value);
+              }
+              this.isHideDummy = false;
+              this.cd.detectChanges();
             }
-
-            this.isHideDummy = false;
-            this.cd.detectChanges();
+          })
+        )
+        .subscribe();
+    } else {
+      fromEvent(this.input.nativeElement, 'blur').pipe(tap(res => {
+        if (this.control.valid || this.value !== '' && this.control.value === '') {
+          if ((this.control.valid && this.value !== '' && this.control.value === '') || this.value !== '' && this.control.value === '') {
+            this.control.setValue(this.value);
           }
-        })
-      )
-      .subscribe();
+          this.isHideDummy = false;
+          this.cd.detectChanges();
+        }
+      })).subscribe();
+    }
   }
 
   isValidField(): boolean {
@@ -105,7 +115,7 @@ export class PasswordComponent extends FieldDirective implements OnInit, AfterVi
   }
 
   isEmpty(): boolean {
-    return this.control.value === '' && this.ConfirmPasswordField.value === '' && this.value !== '';
+    return this.value !== '' && this.control.value === '' && this.ConfirmPasswordField.value === '';
   }
 
   hideDummy(isConfirmField: boolean): void {
@@ -120,7 +130,7 @@ export class PasswordComponent extends FieldDirective implements OnInit, AfterVi
     }
 
     this.control.setValue('');
-    this.ConfirmPasswordField.setValue('');
+    if (this.ConfirmPasswordField) this.ConfirmPasswordField.setValue('');
   }
 
   get ConfirmPasswordField(): AbstractControl {
@@ -144,6 +154,7 @@ export class PasswordComponent extends FieldDirective implements OnInit, AfterVi
 
   confirmPasswordFieldUpdate() {
     this.dummy = this.control.value;
+    this.value = this.control.value;
     const confirm = this.ConfirmPasswordField;
     return confirm ? confirm.updateValueAndValidity() : '';
   }
