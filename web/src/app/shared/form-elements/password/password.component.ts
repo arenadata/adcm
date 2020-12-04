@@ -66,6 +66,11 @@ export class PasswordComponent extends FieldDirective implements OnInit, AfterVi
         )
       );
     }
+
+    if (this.field.required && !this.field.value) {
+      this.hideDummy(false);
+    }
+
     const confirm = this.ConfirmPasswordField;
     if (confirm) confirm.markAllAsTouched();
   }
