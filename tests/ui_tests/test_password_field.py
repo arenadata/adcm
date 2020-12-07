@@ -30,10 +30,10 @@ def test_password_noconfirm_false_required_true(sdk_client_fs: ADCMClient, app_f
 
     assert not config.save_button_status()
     password_field = config.get_password_elements()[0]
-    forms = [form.text for form in password_field.find_elements(*Common.mat_form_field)]
-    assert len(forms) == 2, forms
-    assert 'Field [password] is required!' in forms, forms
-    assert 'Confirm [password] is required!' in forms, forms
+    errors = [error.text for error in password_field.find_elements(*Common.mat_error)]
+    assert len(errors) == 2, errors
+    assert 'Field [password] is required!' in errors, errors
+    assert 'Confirm [password] is required!' in errors, errors
 
 
 def test_password_noconfirm_true_required_false(sdk_client_fs: ADCMClient, app_fs,
@@ -46,7 +46,10 @@ def test_password_noconfirm_true_required_false(sdk_client_fs: ADCMClient, app_f
 
     assert config.save_button_status()
     password_field = config.get_password_elements()[0]
-    forms = [form.text for form in password_field.find_elements(*Common.mat_form_field)]
+    forms = [
+        form.text for form in password_field.find_elements(*Common.mat_form_field)
+        if form.is_displayed()
+    ]
     assert len(forms) == 1, forms
 
 
@@ -60,6 +63,6 @@ def test_password_noconfirm_true_required_true(sdk_client_fs: ADCMClient, app_fs
 
     assert not config.save_button_status()
     password_field = config.get_password_elements()[0]
-    forms = [form.text for form in password_field.find_elements(*Common.mat_form_field)]
-    assert len(forms) == 1, forms
-    assert forms[0] == 'Field [password] is required!', forms
+    errors = [error.text for error in password_field.find_elements(*Common.mat_error)]
+    assert len(errors) == 1, errors
+    assert 'Field [password] is required!' in errors, errors
