@@ -113,11 +113,6 @@ urlpatterns = [
         stack_views.ComponentTypeDetail.as_view(),
         name='component-type-details'
     ),
-#    path(
-#        'stack/component/<int:prototype_id>/action/',
-#        stack_views.ComponentProtoActionList.as_view(),
-#        name='component-actions'
-#    ),
     path('stack/provider/', stack_views.ProviderTypeList.as_view(), name='provider-type'),
     path(
         'stack/provider/<int:prototype_id>/',

@@ -251,12 +251,12 @@ def save_components(proto, conf):
         allow = ('display_name', 'description', 'params', 'constraint', 'requires', 'monitoring')
         check_extra_keys(cc, allow, 'component "{}" of {}'.format(comp_name, ref))
         component = StagePrototype(
-            type = 'component',
-            parent = proto,
-            path = proto.path,
+            type='component',
+            parent=proto,
+            path=proto.path,
             name=comp_name,
-            version = proto.version,
-            adcm_min_version = proto.adcm_min_version,
+            version=proto.version,
+            adcm_min_version=proto.adcm_min_version,
         )
         dict_to_obj(cc, 'description', component)
         dict_to_obj(cc, 'display_name', component)

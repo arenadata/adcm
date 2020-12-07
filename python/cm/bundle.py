@@ -468,7 +468,7 @@ def update_bundle_from_stage(bundle):   # pylint: disable=too-many-locals,too-ma
             ))
             p.bundle = bundle
         p.save()
-        #for scomp in StageComponent.objects.filter(prototype=sp):
+        # for scomp in StageComponent.objects.filter(prototype=sp):
         #    try:
         #        comp = Component.objects.get(prototype=p, name=scomp.name)
         #        update_obj(comp, scomp, (

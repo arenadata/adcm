@@ -23,18 +23,18 @@ def create_component_prototype(apps, schema_editor):
     Component = apps.get_model('cm', 'Component')
     for comp in Component.objects.all():
         proto = Prototype(
-            bundle = comp.prototype.bundle,
-            type = 'component',
-            parent = comp.prototype,
-            path = comp.prototype.path,
-            name = comp.name,
-            display_name = comp.display_name,
-            version = comp.prototype.version,
-            constraint = comp.constraint,
-            requires = comp.requires,
-            adcm_min_version = comp.prototype.adcm_min_version,
-            monitoring = comp.monitoring,
-            description = comp.description,
+            bundle=comp.prototype.bundle,
+            type='component',
+            parent=comp.prototype,
+            path=comp.prototype.path,
+            name=comp.name,
+            display_name=comp.display_name,
+            version=comp.prototype.version,
+            constraint=comp.constraint,
+            requires=comp.requires,
+            adcm_min_version=comp.prototype.adcm_min_version,
+            monitoring=comp.monitoring,
+            description=comp.description,
         )
         proto.save()
         comp.comp_prototype = proto
