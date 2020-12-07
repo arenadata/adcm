@@ -278,8 +278,8 @@ class HostComponentSerializer(serializers.Serializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data['component'] = instance.component.component.name
-        data['component_display_name'] = instance.component.component.display_name
+        data['component'] = instance.component.prototype.name
+        data['component_display_name'] = instance.component.prototype.display_name
         data['host'] = instance.host.fqdn
         data['service_name'] = instance.service.prototype.name
         data['service_display_name'] = instance.service.prototype.display_name
@@ -434,16 +434,16 @@ class ServiceComponentSerializer(serializers.Serializer):
     url = MyUrlField(read_only=True, view_name='cluster-service-component-details')
 
     def get_name(self, obj):
-        return obj.component.name
+        return obj.prototype.name
 
     def get_prototype_id(self, obj):
-        return obj.component.id
+        return obj.prototype.id
 
     def get_display_name(self, obj):
-        return obj.component.display_name
+        return obj.prototype.display_name
 
     def get_description(self, obj):
-        return obj.component.description
+        return obj.prototype.description
 
 
 class ServiceComponentDetailSerializer(ServiceComponentSerializer):

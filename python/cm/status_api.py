@@ -163,7 +163,7 @@ def load_service_map():
     hc_map = {}
     services = {}
     passive = {}
-    for c in ServiceComponent.objects.filter(component__monitoring='passive'):
+    for c in ServiceComponent.objects.filter(prototype__monitoring='passive'):
         passive[c.id] = True
 
     for hc in HostComponent.objects.all():

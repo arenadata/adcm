@@ -219,7 +219,7 @@ class Component(models.Model):
 class ServiceComponent(models.Model):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
-    component = models.ForeignKey(Component, on_delete=models.CASCADE)
+    component = models.ForeignKey(Component, on_delete=models.CASCADE, null=True, default=None)
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE, null=True, default=None)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
@@ -468,6 +468,7 @@ class LogStorage(models.Model):
 
 class StagePrototype(models.Model):
     type = models.CharField(max_length=16, choices=PROTO_TYPE)
+    parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
     name = models.CharField(max_length=160)
     path = models.CharField(max_length=160, default='')
     display_name = models.CharField(max_length=160, blank=True)
@@ -477,6 +478,8 @@ class StagePrototype(models.Model):
     license_hash = models.CharField(max_length=64, default=None, null=True)
     required = models.BooleanField(default=False)
     shared = models.BooleanField(default=False)
+    constraint = JSONField(default=[0, '+'])
+    requires = JSONField(default=[])
     adcm_min_version = models.CharField(max_length=80, default=None, null=True)
     description = models.TextField(blank=True)
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')

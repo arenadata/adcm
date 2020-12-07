@@ -30,7 +30,7 @@ from cm.errors import AdcmEx, AdcmApiEx
 from cm.errors import raise_AdcmEx as err
 from cm.status_api import Event
 from cm.models import (
-    Cluster, Prototype, Component, Host, HostComponent, ADCM, ClusterObject,
+    Cluster, Prototype, Host, HostComponent, ADCM, ClusterObject,
     ServiceComponent, ConfigLog, HostProvider, PrototypeImport, PrototypeExport,
     ClusterBind, Action, JobLog, DummyData, Role,
 )
@@ -318,8 +318,8 @@ def add_service_to_cluster(cluster, proto):
 
 
 def add_components_to_service(cluster, service):
-    for comp in Component.objects.filter(prototype=service.prototype):
-        sc = ServiceComponent(cluster=cluster, service=service, component=comp)
+    for comp in Prototype.objects.filter(type='component', parent=service.prototype):
+        sc = ServiceComponent(cluster=cluster, service=service, prototype=comp)
         sc.save()
 
 
@@ -931,7 +931,7 @@ def change_hc(job_id, cluster_id, operations):   # pylint: disable=too-many-bran
             err('SERVICE_NOT_FOUND', msg.format(op['service'], cluster.id))
         try:
             component = ServiceComponent.objects.get(
-                cluster=cluster, service=service, component__name=op['component']
+                cluster=cluster, service=service, prototype__name=op['component']
             )
         except ServiceComponent.DoesNotExist:
             msg = 'component "{}" does not exist in service "{}"'

@@ -352,13 +352,13 @@ def cook_delta(cluster, new_hc, action_hc, old=None):
 
     new = {}
     for service, host, comp in new_hc:
-        key = cook_comp_key(service.prototype.name, comp.component.name)
+        key = cook_comp_key(service.prototype.name, comp.prototype.name)
         add_to_dict(new, key, host.fqdn, host)
 
     if not old:
         old = {}
         for hc in HostComponent.objects.filter(cluster=cluster):
-            key = cook_comp_key(hc.service.prototype.name, hc.component.component.name)
+            key = cook_comp_key(hc.service.prototype.name, hc.component.prototype.name)
             add_to_dict(old, key, hc.host.fqdn, hc.host)
 
     delta = {'add': {}, 'remove': {}}

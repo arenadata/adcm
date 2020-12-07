@@ -129,7 +129,7 @@ class ComponentTypeSerializer(PrototypeSerializer):
     constraint = serializers.JSONField(required=False)
     requires = serializers.JSONField(required=False)
     monitoring = serializers.CharField(read_only=True)
-#    url = hlink('component-type-details', 'id', 'prototype_id')
+    url = hlink('component-type-details', 'id', 'prototype_id')
 
 
 class ServiceSerializer(PrototypeSerializer):
@@ -140,7 +140,7 @@ class ServiceSerializer(PrototypeSerializer):
 
 class ServiceDetailSerializer(ServiceSerializer):
     actions = ActionDetailSerializer(many=True, read_only=True)
-    components = ComponentSerializer(many=True, read_only=True)
+    components = ComponentTypeSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
     exports = ExportSerializer(many=True, read_only=True)
     imports = ImportSerializer(many=True, read_only=True)
@@ -195,6 +195,11 @@ class ProviderTypeDetailSerializer(ProviderTypeSerializer):
 
 
 class HostTypeDetailSerializer(HostTypeSerializer):
+    actions = ActionDetailSerializer(many=True, read_only=True)
+    config = ConfigSerializer(many=True, read_only=True)
+
+
+class ComponentTypeDetailSerializer(ComponentTypeSerializer):
     actions = ActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
 

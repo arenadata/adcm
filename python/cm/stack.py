@@ -24,7 +24,7 @@ from rest_framework import status
 from cm.logger import log
 from cm.errors import raise_AdcmEx as err
 from cm.adcm_config import proto_ref, check_config_type, type_is_complex, read_bundle_file
-from cm.models import StagePrototype, StageComponent, StageAction, StagePrototypeConfig
+from cm.models import StagePrototype, StageAction, StagePrototypeConfig
 from cm.models import ACTION_TYPE, SCRIPT_TYPE, CONFIG_FIELD_TYPE, PROTO_TYPE
 from cm.models import StagePrototypeExport, StagePrototypeImport, StageUpgrade, StageSubAction
 
@@ -250,14 +250,20 @@ def save_components(proto, conf):
         validate_name(comp_name, err_msg)
         allow = ('display_name', 'description', 'params', 'constraint', 'requires', 'monitoring')
         check_extra_keys(cc, allow, 'component "{}" of {}'.format(comp_name, ref))
-        component = StageComponent(prototype=proto, name=comp_name)
+        component = StagePrototype(
+            type = 'component',
+            parent = proto,
+            path = proto.path,
+            name=comp_name,
+            version = proto.version,
+            adcm_min_version = proto.adcm_min_version,
+        )
         dict_to_obj(cc, 'description', component)
         dict_to_obj(cc, 'display_name', component)
         dict_to_obj(cc, 'monitoring', component)
         fix_display_name(cc, component)
         check_component_constraint_definition(proto, comp_name, cc)
         check_component_requires(proto, comp_name, cc)
-        dict_to_obj(cc, 'params', component)
         dict_to_obj(cc, 'constraint', component)
         dict_to_obj(cc, 'requires', component)
         component.save()

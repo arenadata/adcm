@@ -15,7 +15,7 @@ from django.test import TestCase
 import cm.api
 import cm.job
 from cm.models import Cluster, Host, ClusterObject, ServiceComponent, HostComponent
-from cm.models import Bundle, Upgrade, Prototype, Component, PrototypeConfig, ConfigLog
+from cm.models import Bundle, Upgrade, Prototype, PrototypeConfig, ConfigLog
 from cm.errors import AdcmEx
 
 
@@ -100,10 +100,10 @@ class SetUp():
         b.save()
         Prototype.objects.create(type="cluster", name="ADH", version=ver, bundle=b)
         sp2 = Prototype.objects.create(type="service", name="hive", bundle=b)
-        Component.objects.create(prototype=sp2, name='server')
+        Prototype.objects.create(parent=sp2, type='component', name='server', bundle=b)
         sp1 = Prototype.objects.create(type="service", name="hadoop", version=ver, bundle=b)
-        Component.objects.create(prototype=sp1, name='server')
-        Component.objects.create(prototype=sp1, name='node')
+        Prototype.objects.create(parent=sp1, type='component', name='server', bundle=b)
+        Prototype.objects.create(parent=sp1, type='component', name='node', bundle=b)
         return b
 
     def cook_provider_bundle(self, ver):
@@ -300,8 +300,8 @@ class TestUpgrade(TestCase):
         provider = setup.cook_provider(b3, "DF01")
 
         co = ClusterObject.objects.get(cluster=cluster, prototype__name='hadoop')
-        sc1 = ServiceComponent.objects.get(cluster=cluster, service=co, component__name='server')
-        sc2 = ServiceComponent.objects.get(cluster=cluster, service=co, component__name='node')
+        sc1 = ServiceComponent.objects.get(cluster=cluster, service=co, prototype__name='server')
+        sc2 = ServiceComponent.objects.get(cluster=cluster, service=co, prototype__name='node')
         h1 = Host.objects.get(provider=provider, fqdn='server01.inter.net')
         h2 = Host.objects.get(provider=provider, fqdn='server02.inter.net')
         cm.api.add_host_to_cluster(cluster, h1)
@@ -316,7 +316,7 @@ class TestUpgrade(TestCase):
         self.assertEqual(hc1.component.id, sc2.id)
 
         new_co_proto = Prototype.objects.get(type="service", name="hadoop", bundle=b2)
-        new_comp_node = Component.objects.get(name='node', prototype=new_co_proto)
+        new_comp_node = Prototype.objects.get(name='node', type='component', parent=new_co_proto)
         new_comp_node.delete()
 
         upgrade = setup.cook_upgrade(b2)
@@ -331,32 +331,32 @@ class TestUpgrade(TestCase):
         b1 = setup.cook_cluster_bundle('1.0')
         b2 = setup.cook_cluster_bundle('2.0')
         sp = Prototype.objects.get(bundle=b2, type="service", name="hadoop")
-        Component.objects.create(prototype=sp, name='data')
+        Prototype.objects.create(parent=sp, type='component', name='data', bundle=b2)
         setup.cook_cluster(b1, 'Test0')
         cluster = setup.cook_cluster(b1, 'Test1')
 
         co = ClusterObject.objects.get(cluster=cluster, prototype__name='hadoop')
-        sc11 = ServiceComponent.objects.get(cluster=cluster, service=co, component__name='server')
-        self.assertEqual(sc11.component.prototype, co.prototype)
+        sc11 = ServiceComponent.objects.get(cluster=cluster, service=co, prototype__name='server')
+        self.assertEqual(sc11.prototype.parent, co.prototype)
 
-        sc12 = ServiceComponent.objects.get(cluster=cluster, service=co, component__name='node')
-        self.assertEqual(sc12.component.prototype, co.prototype)
+        sc12 = ServiceComponent.objects.get(cluster=cluster, service=co, prototype__name='node')
+        self.assertEqual(sc12.prototype.parent, co.prototype)
 
         new_co_proto = Prototype.objects.get(type="service", name="hadoop", bundle=b2)
         cm.upgrade.switch_components(cluster, co, new_co_proto)
 
-        new_comp1 = Component.objects.get(name='server', prototype=new_co_proto)
-        sc21 = ServiceComponent.objects.get(cluster=cluster, service=co, component__name='server')
+        new_comp1 = Prototype.objects.get(name='server', type='component', parent=new_co_proto)
+        sc21 = ServiceComponent.objects.get(cluster=cluster, service=co, prototype__name='server')
         self.assertEqual(sc11.id, sc21.id)
-        self.assertEqual(sc21.component, new_comp1)
-        new_comp2 = Component.objects.get(name='node', prototype=new_co_proto)
-        sc22 = ServiceComponent.objects.get(cluster=cluster, service=co, component__name='node')
+        self.assertEqual(sc21.prototype, new_comp1)
+        new_comp2 = Prototype.objects.get(name='node', type='component', parent=new_co_proto)
+        sc22 = ServiceComponent.objects.get(cluster=cluster, service=co, prototype__name='node')
         self.assertEqual(sc12.id, sc22.id)
-        self.assertEqual(sc22.component, new_comp2)
+        self.assertEqual(sc22.prototype, new_comp2)
 
-        new_comp3 = Component.objects.get(name='data', prototype=new_co_proto)
-        sc23 = ServiceComponent.objects.get(cluster=cluster, service=co, component__name='data')
-        self.assertEqual(sc23.component, new_comp3)
+        new_comp3 = Prototype.objects.get(name='data', type='component', parent=new_co_proto)
+        sc23 = ServiceComponent.objects.get(cluster=cluster, service=co, prototype__name='data')
+        self.assertEqual(sc23.prototype, new_comp3)
 
     def test_provider_upgrade(self):
         setup = SetUp()

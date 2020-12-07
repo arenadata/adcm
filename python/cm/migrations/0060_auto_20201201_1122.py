@@ -105,10 +105,30 @@ class Migration(migrations.Migration):
             name='state',
             field=models.CharField(default='created', max_length=64),
         ),
+        migrations.AddField(
+            model_name='stageprototype',
+            name='constraint',
+            field=cm.models.JSONField(default=[0, '+']),
+        ),
+        migrations.AddField(
+            model_name='stageprototype',
+            name='parent',
+            field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.stageprototype'),
+        ),
+        migrations.AddField(
+            model_name='stageprototype',
+            name='requires',
+            field=cm.models.JSONField(default=[]),
+        ),
         migrations.AlterField(
             model_name='prototype',
             name='type',
             field=models.CharField(choices=[('adcm', 'adcm'), ('service', 'service'), ('component', 'component'), ('cluster', 'cluster'), ('host', 'host'), ('provider', 'provider')], max_length=16),
+        ),
+        migrations.AlterField(
+            model_name='servicecomponent',
+            name='component',
+            field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.component'),
         ),
         migrations.AlterField(
             model_name='stageprototype',

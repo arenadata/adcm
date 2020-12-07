@@ -15,7 +15,7 @@ import cm.status_api
 from cm.errors import AdcmEx
 from cm.errors import raise_AdcmEx as err
 from cm.adcm_config import proto_ref, obj_ref, get_prototype_config
-from cm.models import ConfigLog, Host, ClusterObject, Prototype, Component, HostComponent
+from cm.models import ConfigLog, Host, ClusterObject, Prototype, HostComponent
 from cm.models import PrototypeImport, ClusterBind
 
 
@@ -231,7 +231,7 @@ def check_hc(cluster):
 
     if not shc_list:
         for co in ClusterObject.objects.filter(cluster=cluster):
-            for comp in Component.objects.filter(prototype=co.prototype):
+            for comp in Prototype.objects.filter(parent=co.prototype, type='component'):
                 const = comp.constraint
                 if len(const) == 2 and const[0] == 0 and const[1] == '+':
                     continue
@@ -253,12 +253,12 @@ def check_hc(cluster):
 def check_component_requires(shc_list):
     def check_component_req(service, component):
         for shc in shc_list:
-            if shc[0].prototype.name == service and shc[2].component.name == component:
+            if shc[0].prototype.name == service and shc[2].prototype.name == component:
                 return True
         return False
 
-    for shc in [i for i in shc_list if i[2].component.requires]:
-        for r in shc[2].component.requires:
+    for shc in [i for i in shc_list if i[2].prototype.requires]:
+        for r in shc[2].prototype.requires:
             if not check_component_req(r['service'], r['component']):
                 ref = f'component "{shc[2].component.name}" of service "{shc[0].prototype.name}"'
                 msg = 'no required component "{}" of service "{}" for {}'
@@ -300,7 +300,7 @@ def check_component_constraint(service, hc_in):
     def check(comp, const):
         count = 0
         for (_, _, c) in hc_in:
-            if comp.name == c.component.name:
+            if comp.name == c.prototype.name:
                 count += 1
 
         if isinstance(const[0], int):
@@ -319,5 +319,5 @@ def check_component_constraint(service, hc_in):
         elif const[0] == 'odd':
             check_odd(count, const[0], comp)
 
-    for c in Component.objects.filter(prototype=service.prototype):
+    for c in Prototype.objects.filter(parent=service.prototype, type='component'):
         check(c, c.constraint)
