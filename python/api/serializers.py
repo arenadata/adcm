@@ -278,14 +278,11 @@ class AdcmSerializer(serializers.Serializer):
 
 class AdcmDetailSerializer(AdcmSerializer):
     prototype_version = serializers.SerializerMethodField()
-    bundle_id = serializers.SerializerMethodField()
+    bundle_id = serializers.CharField(read_only=True)
     config = ConfigURL(view_name='config')
 
     def get_prototype_version(self, obj):
         return obj.prototype.version
-
-    def get_bundle_id(self, obj):
-        return obj.prototype.bundle.id
 
 
 class ProviderSerializer(serializers.Serializer):
@@ -319,9 +316,9 @@ class ProviderSerializer(serializers.Serializer):
 
 class ProviderDetailSerializer(ProviderSerializer):
     issue = serializers.SerializerMethodField()
-    edition = serializers.SerializerMethodField()
-    license = serializers.SerializerMethodField()
-    bundle_id = serializers.SerializerMethodField()
+    edition = serializers.CharField(read_only=True)
+    license = serializers.CharField(read_only=True)
+    bundle_id = serializers.CharField(read_only=True)
     prototype = hlink('provider-type-details', 'prototype_id', 'prototype_id')
     config = ConfigURL(view_name='config')
     action = hlink('provider-action', 'id', 'provider_id')
@@ -330,15 +327,6 @@ class ProviderDetailSerializer(ProviderSerializer):
 
     def get_issue(self, obj):
         return cm.issue.get_issue(obj)
-
-    def get_bundle_id(self, obj):
-        return obj.prototype.bundle_id
-
-    def get_edition(self, obj):
-        return obj.prototype.bundle.edition
-
-    def get_license(self, obj):
-        return obj.prototype.bundle.license
 
 
 class ProviderUISerializer(ProviderDetailSerializer):
@@ -419,7 +407,7 @@ class HostSerializer(serializers.Serializer):
 class HostDetailSerializer(HostSerializer):
     # stack = serializers.JSONField(read_only=True)
     issue = serializers.SerializerMethodField()
-    bundle_id = serializers.SerializerMethodField()
+    bundle_id = serializers.CharField(read_only=True)
     status = serializers.SerializerMethodField()
     config = ConfigURL(view_name='config')
     action = hlink('host-action', 'id', 'host_id')
@@ -427,9 +415,6 @@ class HostDetailSerializer(HostSerializer):
 
     def get_issue(self, obj):
         return cm.issue.get_issue(obj)
-
-    def get_bundle_id(self, obj):
-        return obj.prototype.bundle_id
 
     def get_status(self, obj):
         return cm.status_api.get_host_status(obj.id)

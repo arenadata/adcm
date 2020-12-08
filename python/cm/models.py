@@ -144,6 +144,10 @@ class ADCM(models.Model):
     stack = JSONField(default=[])
     issue = JSONField(default={})
 
+    @property
+    def bundle_id(self):
+        return self.prototype.bundle_id
+
 
 class Cluster(models.Model):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
@@ -153,6 +157,18 @@ class Cluster(models.Model):
     state = models.CharField(max_length=64, default='created')
     stack = JSONField(default=[])
     issue = JSONField(default={})
+
+    @property
+    def bundle_id(self):
+        return self.prototype.bundle_id
+
+    @property
+    def edition(self):
+        return self.prototype.bundle.edition
+
+    @property
+    def license(self):
+        return self.prototype.bundle.license
 
     def __str__(self):
         return str(self.name)
@@ -166,6 +182,18 @@ class HostProvider(models.Model):
     state = models.CharField(max_length=64, default='created')
     stack = JSONField(default=[])
     issue = JSONField(default={})
+
+    @property
+    def bundle_id(self):
+        return self.prototype.bundle_id
+
+    @property
+    def edition(self):
+        return self.prototype.bundle.edition
+
+    @property
+    def license(self):
+        return self.prototype.bundle.license
 
     def __str__(self):
         return str(self.name)
@@ -182,6 +210,14 @@ class Host(models.Model):
     stack = JSONField(default=[])
     issue = JSONField(default={})
 
+    @property
+    def bundle_id(self):
+        return self.prototype.bundle_id
+
+    @property
+    def monitoring(self):
+        return self.prototype.monitoring
+
     def __str__(self):
         return "{}".format(self.fqdn)
 
@@ -195,6 +231,30 @@ class ClusterObject(models.Model):
     stack = JSONField(default=[])
     issue = JSONField(default={})
 
+    @property
+    def bundle_id(self):
+        return self.prototype.bundle_id
+
+    @property
+    def version(self):
+        return self.prototype.version
+
+    @property
+    def name(self):
+        return self.prototype.name
+
+    @property
+    def display_name(self):
+        return self.prototype.display_name
+
+    @property
+    def description(self):
+        return self.prototype.description
+
+    @property
+    def monitoring(self):
+        return self.prototype.monitoring
+
     class Meta:
         unique_together = (('cluster', 'prototype'),)
 
@@ -207,6 +267,30 @@ class ServiceComponent(models.Model):
     state = models.CharField(max_length=64, default='created')
     stack = JSONField(default=[])
     issue = JSONField(default={})
+
+    @property
+    def name(self):
+        return self.prototype.name
+
+    @property
+    def display_name(self):
+        return self.prototype.display_name
+
+    @property
+    def description(self):
+        return self.prototype.description
+
+    @property
+    def constraint(self):
+        return self.prototype.constraint
+
+    @property
+    def requires(self):
+        return self.prototype.requires
+
+    @property
+    def monitoring(self):
+        return self.prototype.monitoring
 
     class Meta:
         unique_together = (('cluster', 'service', 'prototype'),)
