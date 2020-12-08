@@ -199,27 +199,9 @@ class ClusterObject(models.Model):
         unique_together = (('cluster', 'prototype'),)
 
 
-class Component(models.Model):
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
-    comp_prototype = models.ForeignKey(
-        Prototype, on_delete=models.CASCADE, null=True, default=None, related_name='+'
-    )
-    name = models.CharField(max_length=160)
-    display_name = models.CharField(max_length=160, blank=True)
-    description = models.TextField(blank=True)
-    params = JSONField(default={})
-    constraint = JSONField(default=[0, '+'])
-    requires = JSONField(default=[])
-    monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
-
-    class Meta:
-        unique_together = (('prototype', 'name'),)
-
-
 class ServiceComponent(models.Model):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
-    component = models.ForeignKey(Component, on_delete=models.CASCADE, null=True, default=None)
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE, null=True, default=None)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
@@ -227,7 +209,7 @@ class ServiceComponent(models.Model):
     issue = JSONField(default={})
 
     class Meta:
-        unique_together = (('cluster', 'service', 'component'),)
+        unique_together = (('cluster', 'service', 'prototype'),)
 
 
 ACTION_TYPE = (
@@ -488,7 +470,7 @@ class StagePrototype(models.Model):
         return str(self.name)
 
     class Meta:
-        unique_together = (('type', 'name', 'version'),)
+        unique_together = (('type', 'parent', 'name', 'version'),)
 
 
 class StageUpgrade(models.Model):
@@ -501,20 +483,6 @@ class StageUpgrade(models.Model):
     from_edition = JSONField(default=['community'])
     state_available = JSONField(default=[])
     state_on_success = models.CharField(max_length=64, blank=True)
-
-
-class StageComponent(models.Model):
-    prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
-    name = models.CharField(max_length=160)
-    display_name = models.CharField(max_length=160, blank=True)
-    description = models.TextField(blank=True)
-    params = JSONField(default={})
-    constraint = JSONField(default=[0, '+'])
-    requires = JSONField(default=[])
-    monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
-
-    class Meta:
-        unique_together = (('prototype', 'name'),)
 
 
 class StageAction(models.Model):

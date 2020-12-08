@@ -20,7 +20,7 @@ import logrotate
 from cm.api import safe_api
 from cm.logger import log   # pylint: disable=unused-import
 from cm.errors import AdcmApiEx, AdcmEx
-from cm.models import Action, Cluster, Host, Prototype, ServiceComponent, Component
+from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
 
 from api.serializers import (
     check_obj, filter_actions, get_upgradable_func, hlink, UrlField, ClusterActionShort,
@@ -482,33 +482,34 @@ class HCComponentSerializer(ServiceComponentDetailSerializer):
         return obj.service.prototype.display_name
 
     def get_requires(self, obj):
-        if not obj.component.requires:
+        if not obj.prototype.requires:
             return None
         comp_list = {}
 
         def process_requires(req_list):
             for c in req_list:
-                comp = Component.objects.get(
+                comp = Prototype.objects.get(
+                    type='component',
                     name=c['component'],
-                    prototype__name=c['service'],
-                    prototype__bundle_id=obj.component.prototype.bundle_id
+                    parent__name=c['service'],
+                    parent__bundle_id=obj.prototype.bundle_id
                 )
-                if comp == obj.component:
+                if comp == obj.prototype:
                     return
-                if comp.prototype.name not in comp_list:
-                    comp_list[comp.prototype.name] = {
-                        'components': {}, 'service': comp.prototype
+                if comp.name not in comp_list:
+                    comp_list[comp.name] = {
+                        'components': {}, 'service': comp.parent
                     }
-                if comp.name in comp_list[comp.prototype.name]['components']:
+                if comp.name in comp_list[comp.name]['components']:
                     return
-                comp_list[comp.prototype.name]['components'][comp.name] = comp
+                comp_list[comp.parent.name]['components'][comp.name] = comp
                 if comp.requires:
                     process_requires(comp.requires)
 
         # def check_hc(comp):
         #    return HostComponent.objects.filter(cluster=obj.cluster, component__component=comp)
 
-        process_requires(obj.component.requires)
+        process_requires(obj.requires)
         out = []
         for service_name in comp_list:
             comp_out = []
