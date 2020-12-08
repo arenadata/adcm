@@ -41,10 +41,10 @@
                         "svc-w-installed": 222,
                         "svc-read-only": 2.5
                      },
-                     "ZOOKEEPER_SERVER": {
+                     "ZOOKEEPER_CLIENT": {
                         "component_id": 1
                      },
-                     "ZOOKEEPER_CLIENT": {
+                     "ZOOKEEPER_SERVER": {
                         "component_id": 2
                      }
                   }
