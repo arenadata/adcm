@@ -139,6 +139,10 @@ class Migration(migrations.Migration):
             name='prototype',
             unique_together={('bundle', 'type', 'parent', 'name', 'version')},
         ),
+        migrations.AlterUniqueTogether(
+            name='stageprototype',
+            unique_together={('type', 'parent', 'name', 'version')},
+        ),
         migrations.RunPython(create_component_prototype),
         migrations.RunPython(fix_service_component),
     ]
