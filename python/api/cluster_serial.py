@@ -449,21 +449,17 @@ class ServiceComponentSerializer(serializers.Serializer):
 class ServiceComponentDetailSerializer(ServiceComponentSerializer):
     constraint = serializers.SerializerMethodField()
     requires = serializers.SerializerMethodField()
-    params = serializers.SerializerMethodField()
     monitoring = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
 
     def get_constraint(self, obj):
-        return obj.component.constraint
+        return obj.prototype.constraint
 
     def get_requires(self, obj):
-        return obj.component.requires
-
-    def get_params(self, obj):
-        return obj.component.params
+        return obj.prototype.requires
 
     def get_monitoring(self, obj):
-        return obj.component.monitoring
+        return obj.prototype.monitoring
 
     def get_status(self, obj):
         return cm.status_api.get_component_status(obj.id)
