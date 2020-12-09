@@ -90,7 +90,7 @@ class ClusterSerializer(serializers.Serializer):
 class ClusterDetailSerializer(ClusterSerializer):
     # stack = serializers.JSONField(read_only=True)
     issue = serializers.SerializerMethodField()
-    bundle_id = serializers.CharField(read_only=True)
+    bundle_id = serializers.IntegerField(read_only=True)
     edition = serializers.CharField(read_only=True)
     license = serializers.CharField(read_only=True)
     action = hlink('cluster-action', 'id', 'cluster_id')
@@ -341,7 +341,7 @@ class ClusterServiceDetailSerializer(ClusterServiceSerializer):
     prototype_id = serializers.IntegerField(read_only=True)
     # stack = serializers.JSONField(read_only=True)
     description = serializers.CharField(read_only=True)
-    bundle_id = serializers.CharField(read_only=True)
+    bundle_id = serializers.IntegerField(read_only=True)
     issue = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     monitoring = serializers.CharField(read_only=True)
@@ -401,8 +401,8 @@ class ServiceComponentSerializer(serializers.Serializer):
 
 
 class ServiceComponentDetailSerializer(ServiceComponentSerializer):
-    constraint = serializers.CharField(read_only=True)
-    requires = serializers.CharField(read_only=True)
+    constraint = serializers.JSONField(read_only=True)
+    requires = serializers.JSONField(read_only=True)
     monitoring = serializers.CharField(read_only=True)
     status = serializers.SerializerMethodField()
 

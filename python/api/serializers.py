@@ -278,7 +278,7 @@ class AdcmSerializer(serializers.Serializer):
 
 class AdcmDetailSerializer(AdcmSerializer):
     prototype_version = serializers.SerializerMethodField()
-    bundle_id = serializers.CharField(read_only=True)
+    bundle_id = serializers.IntegerField(read_only=True)
     config = ConfigURL(view_name='config')
 
     def get_prototype_version(self, obj):
@@ -318,7 +318,7 @@ class ProviderDetailSerializer(ProviderSerializer):
     issue = serializers.SerializerMethodField()
     edition = serializers.CharField(read_only=True)
     license = serializers.CharField(read_only=True)
-    bundle_id = serializers.CharField(read_only=True)
+    bundle_id = serializers.IntegerField(read_only=True)
     prototype = hlink('provider-type-details', 'prototype_id', 'prototype_id')
     config = ConfigURL(view_name='config')
     action = hlink('provider-action', 'id', 'provider_id')
@@ -407,7 +407,7 @@ class HostSerializer(serializers.Serializer):
 class HostDetailSerializer(HostSerializer):
     # stack = serializers.JSONField(read_only=True)
     issue = serializers.SerializerMethodField()
-    bundle_id = serializers.CharField(read_only=True)
+    bundle_id = serializers.IntegerField(read_only=True)
     status = serializers.SerializerMethodField()
     config = ConfigURL(view_name='config')
     action = hlink('host-action', 'id', 'host_id')
