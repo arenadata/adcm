@@ -371,7 +371,7 @@ def copy_stage_sub_actons(bundle):
     SubAction.objects.bulk_create(sub_actions)
 
 
-def copy_stage_component(stage_components, prototype, bundle):
+def copy_stage_component(stage_components, stage_proto, prototype, bundle):
     componets = []
     for c in stage_components:
         comp = copy_obj(c, Prototype, (
@@ -382,6 +382,10 @@ def copy_stage_component(stage_components, prototype, bundle):
         comp.parent = prototype
         componets.append(comp)
     Prototype.objects.bulk_create(componets)
+    for sp in StagePrototype.objects.filter(type='component', parent=stage_proto):
+        p = Prototype.objects.get(name=sp.name, type='component', bundle=bundle)
+        copy_stage_actons(StageAction.objects.filter(prototype=sp), p)
+        copy_stage_config(StagePrototypeConfig.objects.filter(prototype=sp), p)
 
 
 def copy_stage_import(stage_imports, prototype):
@@ -438,7 +442,9 @@ def copy_stage(bundle_hash, bundle_proto):
         p = Prototype.objects.get(name=sp.name, type=sp.type, bundle=bundle)
         copy_stage_actons(StageAction.objects.filter(prototype=sp), p)
         copy_stage_config(StagePrototypeConfig.objects.filter(prototype=sp), p)
-        copy_stage_component(StagePrototype.objects.filter(parent=sp, type='component'), p, bundle)
+        copy_stage_component(
+            StagePrototype.objects.filter(parent=sp, type='component'), sp, p, bundle
+        )
         for se in StagePrototypeExport.objects.filter(prototype=sp):
             pe = PrototypeExport(prototype=p, name=se.name)
             pe.save()

@@ -182,7 +182,7 @@ def save_prototype(path, conf, def_type, bundle_hash):
     proto.save()
     save_actions(proto, conf, bundle_hash)
     save_upgrade(proto, conf)
-    save_components(proto, conf)
+    save_components(proto, conf, bundle_hash)
     save_prototype_config(proto, conf, bundle_hash)
     save_export(proto, conf)
     save_import(proto, conf)
@@ -234,7 +234,7 @@ def check_component_requires(proto, name, conf):
         check_extra_keys(item, ('service', 'component'), f'requires of component "{name}" of {ref}')
 
 
-def save_components(proto, conf):
+def save_components(proto, conf, bundle_hash):
     ref = proto_ref(proto)
     if not in_dict(conf, 'components'):
         return
@@ -248,7 +248,10 @@ def save_components(proto, conf):
         cc = conf['components'][comp_name]
         err_msg = 'Component name "{}" of {}'.format(comp_name, ref)
         validate_name(comp_name, err_msg)
-        allow = ('display_name', 'description', 'params', 'constraint', 'requires', 'monitoring')
+        allow = (
+            'display_name', 'description', 'params', 'constraint', 'requires', 'monitoring',
+            'actions', 'config',
+        )
         check_extra_keys(cc, allow, 'component "{}" of {}'.format(comp_name, ref))
         component = StagePrototype(
             type='component',
@@ -267,6 +270,8 @@ def save_components(proto, conf):
         dict_to_obj(cc, 'constraint', component)
         dict_to_obj(cc, 'requires', component)
         component.save()
+        save_actions(component, cc, bundle_hash)
+        save_prototype_config(component, cc, bundle_hash)
 
 
 def check_upgrade(proto, conf):

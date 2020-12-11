@@ -405,6 +405,7 @@ class ServiceComponentDetailSerializer(ServiceComponentSerializer):
     requires = serializers.JSONField(read_only=True)
     monitoring = serializers.CharField(read_only=True)
     status = serializers.SerializerMethodField()
+    config = ConfigURL(view_name='config')
 
     def get_status(self, obj):
         return cm.status_api.get_component_status(obj.id)

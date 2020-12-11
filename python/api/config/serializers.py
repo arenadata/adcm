@@ -27,16 +27,22 @@ class ConfigURL(serializers.HyperlinkedIdentityField):
             'object_type': obj.prototype.type,
             f'{obj.prototype.type}_id': obj.id
         }
+        if obj.prototype.type == 'component':
+            kwargs['service_id'] = obj.service.id
+            kwargs['cluster_id'] = obj.cluster.id
         return reverse(view_name, kwargs=kwargs, request=request, format=format)
 
 
 class ConfigVersionURL(serializers.HyperlinkedIdentityField):
     def get_url(self, obj, view_name, request, format):
         kwargs = {
-            'object_type': obj.object_type,
-            f'{obj.object_type}_id': obj.object_id,
+            'object_type': obj.object.prototype.type,
+            f'{obj.object.prototype.type}_id': obj.object.id,
             'version': obj.id
         }
+        if obj.object.prototype.type == 'component':
+            kwargs['service_id'] = obj.object.service.id
+            kwargs['cluster_id'] = obj.object.cluster.id
         return reverse(view_name, kwargs=kwargs, request=request, format=format)
 
 

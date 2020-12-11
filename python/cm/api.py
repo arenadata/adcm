@@ -319,7 +319,9 @@ def add_service_to_cluster(cluster, proto):
 
 def add_components_to_service(cluster, service):
     for comp in Prototype.objects.filter(type='component', parent=service.prototype):
-        sc = ServiceComponent(cluster=cluster, service=service, prototype=comp)
+        spec, _, conf, attr = get_prototype_config(comp)
+        obj_conf = init_object_config(spec, conf, attr)
+        sc = ServiceComponent(cluster=cluster, service=service, prototype=comp, config=obj_conf)
         sc.save()
 
 
@@ -418,6 +420,9 @@ def update_obj_config(obj_conf, conf, attr, desc=''):
     elif hasattr(obj_conf, 'clusterobject'):
         obj = obj_conf.clusterobject
         proto = obj_conf.clusterobject.prototype
+    elif hasattr(obj_conf, 'servicecomponent'):
+        obj = obj_conf.servicecomponent
+        proto = obj_conf.servicecomponent.prototype
     elif hasattr(obj_conf, 'cluster'):
         obj = obj_conf.cluster
         proto = obj_conf.cluster.prototype

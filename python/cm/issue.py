@@ -39,6 +39,7 @@ def check_issue(obj):
     disp = {
         'cluster': check_cluster_issue,
         'service': check_service_issue,
+        'component': check_obj_issue,
         'provider': check_obj_issue,
         'host': check_obj_issue,
         'adcm': check_adcm_issue,
