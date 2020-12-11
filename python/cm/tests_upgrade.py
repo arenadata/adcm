@@ -17,6 +17,7 @@ import cm.job
 from cm.models import Cluster, Host, ClusterObject, ServiceComponent, HostComponent
 from cm.models import Bundle, Upgrade, Prototype, Component, PrototypeConfig, ConfigLog
 from cm.errors import AdcmEx
+from cm import adcm_config
 
 
 class TestUpgradeVersion(TestCase):
@@ -259,6 +260,35 @@ class TestConfigUpgrade(TestCase):
         cm.adcm_config.switch_config(cluster, proto2, proto1)
         new_config, new_attr = get_config(cluster)
         self.assertEqual(new_config, {'host': 'arenadata.com', 'advance': {'port': 42}})
+        self.assertEqual(new_attr, {'advance': {'active': True}})
+
+    def test_from_active_group_to_not_active_group(self):
+        """Scenario:
+        * Create prototype1 with activatable group, active=False
+        * Create prototype2 with activatable group, active=False
+        * Create cluster from prototype1
+        * Update cluster config, activate group, set value
+        * Update cluster config from prototype2
+        * Expect that the cluster configuration has not changed
+        """
+        proto1, proto2 = self.cook_proto()
+        self.add_conf(prototype=proto1, name='advance', type='group',
+                      limits={"activatable": True, "active": False})
+        self.add_conf(prototype=proto1, name='advance', subname='port', type='integer', default=11)
+
+        self.add_conf(prototype=proto2, name='advance', type='group',
+                      limits={"activatable": True, "active": False})
+        self.add_conf(prototype=proto2, name='advance', subname='port', type='integer', default=22)
+        cluster = cm.api.add_cluster(proto1, 'Cluster1')
+        cm.api.update_obj_config(
+            cluster.config, {'advance': {'port': 33}}, {'advance': {'active': True}}
+        )
+        old_conf, old_attr = get_config(cluster)
+        self.assertEqual(old_conf, {'advance': {'port': 33}})
+        self.assertEqual(old_attr, {'advance': {'active': True}})
+        adcm_config.switch_config(cluster, proto2, proto1)
+        new_conf, new_attr = get_config(cluster)
+        self.assertEqual(new_conf, {'advance': {'port': 33}})
         self.assertEqual(new_attr, {'advance': {'active': True}})
 
 
