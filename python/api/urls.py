@@ -250,7 +250,7 @@ urlpatterns = [
         CLUSTER + SERVICE + 'component/<int:component_id>/config/',
         include('api.config.urls'),
         {'object_type': 'component'}
-        ),
+    ),
     path(
         CLUSTER + SERVICE + 'import/',
         cluster_views.ClusterServiceImport.as_view(),
