@@ -56,11 +56,12 @@ class ObjectConfigSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     date = serializers.DateTimeField(read_only=True)
     description = serializers.CharField(required=False, allow_blank=True)
-    config = serializers.JSONField()
+    config = serializers.JSONField(read_only=True)
     attr = serializers.JSONField(required=False)
 
 
 class ObjectConfigUpdateSerializer(ObjectConfigSerializer):
+    config = serializers.JSONField()
 
     def update(self, instance, validated_data):
         try:

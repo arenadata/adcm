@@ -16,7 +16,6 @@ from rest_framework import serializers
 import cm.api
 import cm.job
 import cm.status_api
-import logrotate
 from cm.api import safe_api
 from cm.logger import log   # pylint: disable=unused-import
 from cm.errors import AdcmApiEx, AdcmEx
@@ -346,7 +345,7 @@ class ClusterServiceDetailSerializer(ClusterServiceSerializer):
     status = serializers.SerializerMethodField()
     monitoring = serializers.CharField(read_only=True)
     action = ClusterServiceUrlField(read_only=True, view_name='cluster-service-action')
-    config = ClusterServiceUrlField(read_only=True, view_name='cluster-service-config')
+    config = ConfigURL(view_name='config')
     component = ClusterServiceUrlField(read_only=True, view_name='cluster-service-component')
     imports = ClusterServiceUrlField(read_only=True, view_name='cluster-service-import')
     bind = ClusterServiceUrlField(read_only=True, view_name='cluster-service-bind')
@@ -578,83 +577,6 @@ class DoServiceBindSerializer(serializers.Serializer):
             )
         except AdcmEx as e:
             raise AdcmApiEx(e.code, e.msg, e.http_code) from e
-
-
-class ClusterServiceConfigSerializer(serializers.Serializer):
-    class MyUrlField(UrlField):
-        def get_kwargs(self, obj):
-            return {
-                'cluster_id': self.context['cluster_id'],
-                'service_id': self.context['service_id'],
-            }
-
-    history = MyUrlField(read_only=True, view_name='cluster-service-config-history')
-    current = MyUrlField(read_only=True, view_name='cluster-service-config-curr')
-    previous = MyUrlField(read_only=True, view_name='cluster-service-config-prev')
-
-
-class ObjectConfig(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    date = serializers.DateTimeField(read_only=True)
-    description = serializers.CharField(required=False, allow_blank=True)
-    config = serializers.JSONField(read_only=True)
-    attr = serializers.JSONField(required=False)
-
-
-class ConfigHistorySerializer(ObjectConfig):
-    config = serializers.JSONField()
-
-
-class ObjectConfigUpdate(ObjectConfig):
-    config = serializers.JSONField()
-    attr = serializers.JSONField(required=False)
-
-    def update(self, instance, validated_data):
-        try:
-            conf = validated_data.get('config')
-            attr = validated_data.get('attr', {})
-            desc = validated_data.get('description', '')
-            cl = cm.api.update_obj_config(instance.obj_ref, conf, attr, desc)
-            if validated_data.get('ui'):
-                cl.config = cm.adcm_config.ui_config(validated_data.get('obj'), cl)
-            if hasattr(instance.obj_ref, 'adcm'):
-                logrotate.run()
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds) from e
-        return cl
-
-
-class ObjectConfigRestore(ObjectConfig):
-    def update(self, instance, validated_data):
-        try:
-            cc = cm.adcm_config.restore_cluster_config(
-                instance.obj_ref,
-                instance.id,
-                validated_data.get('description', instance.description)
-            )
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
-        return cc
-
-
-class ClusterServiceConfigHistorySerializer(ConfigHistorySerializer):
-    class MyUrlField(UrlField):
-        def get_kwargs(self, obj):
-            return {
-                'cluster_id': get_cluster_id(obj),
-                'service_id': obj.obj_ref.clusterobject.id,
-                'version': obj.id,
-            }
-
-    url = MyUrlField(read_only=True, view_name='cluster-service-config-id')
-
-
-class ClusterConfigHistorySerializer(ConfigHistorySerializer):
-    class MyUrlField(UrlField):
-        def get_kwargs(self, obj):
-            return {'cluster_id': get_cluster_id(obj), 'version': obj.id}
-
-    url = MyUrlField(read_only=True, view_name='cluster-config-id')
 
 
 class PostImportSerializer(serializers.Serializer):

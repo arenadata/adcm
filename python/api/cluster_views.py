@@ -21,13 +21,13 @@ import cm.bundle
 import cm.status_api
 from cm.errors import AdcmApiEx, AdcmEx
 from cm.models import Cluster, Host, HostComponent, Prototype, Action, ServiceComponent
-from cm.models import ClusterObject, ConfigLog, TaskLog, Upgrade, ClusterBind
+from cm.models import ClusterObject, TaskLog, Upgrade, ClusterBind
 from cm.logger import log   # pylint: disable=unused-import
 
 import api.serializers
 import api.cluster_serial
 import api.stack_serial
-from api.serializers import check_obj, filter_actions, get_config_version
+from api.serializers import check_obj, filter_actions
 from api.api_views import create, update, GenericAPIPermView
 from api.api_views import ListView, PageView, PageViewAdd, InterfaceView
 from api.api_views import DetailViewRO, DetailViewDelete, ActionFilter
@@ -741,93 +741,3 @@ class HostComponentDetail(GenericAPIPermView):
         obj = self.get_obj(cluster_id, hs_id)
         serializer = self.serializer_class(obj, context={'request': request})
         return Response(serializer.data)
-
-
-class ClusterServiceConfig(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ClusterServiceConfigSerializer
-
-    def get(self, request, cluster_id, service_id):   # pylint: disable=arguments-differ
-        """
-        Show config page for a specified service and cluster
-        """
-        check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        if service_id:
-            check_obj(ClusterObject, service_id, 'SERVICE_NOT_FOUND')
-        obj = ClusterObject()
-        serializer = self.serializer_class(
-            obj, context={'request': request, 'cluster_id': cluster_id, 'service_id': service_id}
-        )
-        return Response(serializer.data)
-
-
-class ClusterServiceConfigVersion(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ObjectConfig
-
-    def get(self, request, cluster_id, service_id, version):   # pylint: disable=arguments-differ
-        """
-        Show config for a specified version, service and cluster.
-
-        """
-        obj = get_obj_conf(cluster_id, service_id)
-        cl = get_config_version(obj.config, version)
-        if self.for_ui(request):
-            try:
-                cl.config = cm.adcm_config.ui_config(obj, cl)
-            except AdcmEx as e:
-                raise AdcmApiEx(e.code, e.msg, e.http_code) from e
-        serializer = self.serializer_class(cl, context={'request': request})
-        return Response(serializer.data)
-
-
-class ClusterConfigRestore(GenericAPIPermView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ObjectConfigRestore
-
-    def patch(self, request, cluster_id, service_id, version):
-        """
-        Restore config of specified version in a specified service and cluster.
-        """
-        obj = get_obj_conf(cluster_id, service_id)
-        try:
-            cl = self.get_queryset().get(obj_ref=obj.config, id=version)
-        except ConfigLog.DoesNotExist:
-            raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist") from None
-        serializer = self.serializer_class(cl, data=request.data, context={'request': request})
-        return update(serializer)
-
-
-class ClusterConfigHistory(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ClusterConfigHistorySerializer
-    update_serializer = api.cluster_serial.ObjectConfigUpdate
-
-    def get_obj(self, cluster_id, service_id):
-        obj = get_obj_conf(cluster_id, service_id)
-        return (obj, self.get_queryset().get(obj_ref=obj.config, id=obj.config.current))
-
-    def get(self, request, cluster_id, service_id):   # pylint: disable=arguments-differ
-        """
-        Show history of config in a specified service and cluster
-        """
-        obj = get_obj_conf(cluster_id, service_id)
-        cl = self.get_queryset().filter(obj_ref=obj.config).order_by('-id')
-        serializer = self.serializer_class(cl, many=True, context={'request': request})
-        return Response(serializer.data)
-
-    def post(self, request, cluster_id, service_id):
-        """
-        Update config in a specified service and cluster. Config parameter is json
-        """
-        obj, cl = self.get_obj(cluster_id, service_id)
-        serializer = self.update_serializer(cl, data=request.data, context={'request': request})
-        return create(serializer, ui=bool(self.for_ui(request)), obj=obj)
-
-
-class ClusterServiceConfigHistory(ClusterConfigHistory):
-    serializer_class = api.cluster_serial.ClusterServiceConfigHistorySerializer
-    """
-    get:
-    Show history of config in a specified service and cluster
-    """

@@ -28,7 +28,6 @@ CLUSTER = 'cluster/<int:cluster_id>/'
 PROVIDER = 'provider/<int:provider_id>/'
 HOST = 'host/<int:host_id>/'
 SERVICE = 'service/<int:service_id>/'
-SERVICE_CONFIG = CLUSTER + SERVICE + 'config/'
 
 
 urlpatterns = [
@@ -266,40 +265,10 @@ urlpatterns = [
         cluster_views.ClusterServiceBindDetail.as_view(),
         name='cluster-service-bind-details'
     ),
-    path(CLUSTER + 'config/', include('api.config.urls'), {'object_type': 'cluster'}),
 
-    path(
-        SERVICE_CONFIG,
-        cluster_views.ClusterServiceConfig.as_view(),
-        name='cluster-service-config'
-    ),
-    path(
-        SERVICE_CONFIG + 'previous/',
-        cluster_views.ClusterServiceConfigVersion.as_view(),
-        {'version': 'previous'},
-        name='cluster-service-config-prev'
-    ),
-    path(
-        SERVICE_CONFIG + 'current/',
-        cluster_views.ClusterServiceConfigVersion.as_view(),
-        {'version': 'current'},
-        name='cluster-service-config-curr'
-    ),
-    path(
-        SERVICE_CONFIG + 'history/<int:version>/',
-        cluster_views.ClusterServiceConfigVersion.as_view(),
-        name='cluster-service-config-id'
-    ),
-    path(
-        SERVICE_CONFIG + 'history/<int:version>/restore/',
-        cluster_views.ClusterConfigRestore.as_view(),
-        name='cluster-service-config-restore'
-    ),
-    path(
-        SERVICE_CONFIG + 'history/',
-        cluster_views.ClusterServiceConfigHistory.as_view(),
-        name='cluster-service-config-history'
-    ),
+    path(CLUSTER + 'config/', include('api.config.urls'), {'object_type': 'cluster'}),
+    path(CLUSTER + SERVICE + 'config/', include('api.config.urls'), {'object_type': 'service'}),
+
     path('service/', include('api.service.urls')),
 
     path('adcm/', views.AdcmList.as_view(), name='adcm'),
