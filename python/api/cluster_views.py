@@ -20,17 +20,17 @@ import cm.api
 import cm.bundle
 import cm.status_api
 from cm.errors import AdcmApiEx, AdcmEx
-from cm.models import Cluster, Host, HostComponent, Prototype, Action, ServiceComponent
-from cm.models import ClusterObject, TaskLog, Upgrade, ClusterBind
+from cm.models import Cluster, Host, HostComponent, Prototype, ServiceComponent
+from cm.models import ClusterObject, Upgrade, ClusterBind
 from cm.logger import log   # pylint: disable=unused-import
 
 import api.serializers
 import api.cluster_serial
 import api.stack_serial
-from api.serializers import check_obj, filter_actions
+from api.serializers import check_obj
 from api.api_views import create, update, GenericAPIPermView
 from api.api_views import ListView, PageView, PageViewAdd, InterfaceView
-from api.api_views import DetailViewRO, DetailViewDelete, ActionFilter
+from api.api_views import DetailViewRO, DetailViewDelete
 
 
 def get_obj_conf(cluster_id, service_id):

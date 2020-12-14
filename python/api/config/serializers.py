@@ -22,9 +22,6 @@ from cm.api import update_obj_config
 from cm.errors import AdcmEx, AdcmApiEx
 
 
-from cm.logger import log
-
-
 class ConfigURL(serializers.HyperlinkedIdentityField):
     def get_url(self, obj, view_name, request, format):
         kwargs = {

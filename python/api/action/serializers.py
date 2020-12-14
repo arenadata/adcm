@@ -19,6 +19,7 @@ from rest_framework.reverse import reverse
 
 import cm.job
 import cm.adcm_config
+import cm.config as config
 from cm.errors import AdcmEx, AdcmApiEx
 from cm.models import PrototypeConfig, Action, SubAction, JobLog
 from cm.models import HostProvider, Host, Cluster, ClusterObject, ServiceComponent
@@ -140,7 +141,7 @@ class StackActionSerializer(serializers.Serializer):
 
 class ActionSerializer(StackActionSerializer):
     url = ActionDetailURL(read_only=True, view_name='object-action-details')
-    
+
 
 class ActionShort(serializers.Serializer):
     name = serializers.CharField()

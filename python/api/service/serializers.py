@@ -17,16 +17,15 @@ from rest_framework import serializers
 from rest_framework.reverse import reverse
 
 from api.config.serializers import ConfigURL
-from api.serializers import (
-    check_obj, filter_actions, ActionShort
-)
+from api.serializers import check_obj, filter_actions, ActionShort
 from api.cluster_serial import BindSerializer
+from api.action.serializers import ActionURL
+
 from cm import issue
 from cm import status_api
 from cm.api import add_service_to_cluster, multi_bind, bind
 from cm.errors import AdcmApiEx, AdcmEx
 from cm.models import Prototype, Action, ServiceComponent, Cluster
-from api.action.serializers import ActionURL
 
 
 class ServiceObjectUrlField(serializers.HyperlinkedIdentityField):

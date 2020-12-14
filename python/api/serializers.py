@@ -13,7 +13,6 @@
 import django.contrib.auth
 import rest_framework.authtoken.serializers
 from django.contrib.auth.models import User, Group
-from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
@@ -27,8 +26,8 @@ import cm.adcm_config
 from cm.api import safe_api
 from cm.errors import AdcmApiEx, AdcmEx
 from cm.models import (
-    Action, SubAction, Prototype, PrototypeConfig, JobLog, UserProfile, Upgrade, HostProvider,
-    ConfigLog, Role, Host, Cluster, ClusterObject
+    Action, Prototype, PrototypeConfig, UserProfile, Upgrade, HostProvider,
+    ConfigLog, Role
 )
 from api.api_views import hlink
 from api.config.serializers import ConfigURL

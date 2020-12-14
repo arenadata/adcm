@@ -29,11 +29,11 @@ import cm.job
 import cm.stack
 import cm.status_api
 from cm.errors import AdcmEx, AdcmApiEx
-from cm.models import HostProvider, Host, ADCM, Action, JobLog, TaskLog, Upgrade
+from cm.models import HostProvider, Host, ADCM, JobLog, TaskLog, Upgrade
 from adcm.settings import ADCM_VERSION
-from api.serializers import check_obj, filter_actions
+from api.serializers import check_obj
 from api.api_views import (
-    DetailViewRO, DetailViewDelete, ActionFilter, ListView,
+    DetailViewRO, DetailViewDelete, ListView,
     PageView, PageViewAdd, GenericAPIPermView, create
 )
 
