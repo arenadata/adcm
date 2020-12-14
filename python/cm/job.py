@@ -437,7 +437,6 @@ def check_component_task(cluster_id, action):
         err('CLUSTER_NOT_FOUND')
 
 
-
 def check_cluster(cluster_id):
     try:
         cluster = Cluster.objects.get(id=cluster_id)
