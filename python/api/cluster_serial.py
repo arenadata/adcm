@@ -22,11 +22,10 @@ from cm.errors import AdcmApiEx, AdcmEx
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
 
 from api.serializers import (
-    check_obj, filter_actions, get_upgradable_func, hlink, UrlField, ClusterActionShort,
-    ClusterHostActionShort, ServiceActionShort
+    check_obj, filter_actions, get_upgradable_func, hlink, UrlField
 )
 from api.config.serializers import ConfigURL
-from api.action.serializers import ActionURL
+from api.action.serializers import ActionURL, ActionShort
 
 
 def get_cluster_id(obj):
@@ -93,7 +92,7 @@ class ClusterDetailSerializer(ClusterSerializer):
     bundle_id = serializers.IntegerField(read_only=True)
     edition = serializers.CharField(read_only=True)
     license = serializers.CharField(read_only=True)
-    action = hlink('cluster-action', 'id', 'cluster_id')
+    action = ActionURL(view_name='object-action')
     service = hlink('cluster-service', 'id', 'cluster_id')
     host = hlink('cluster-host', 'id', 'cluster_id')
     hostcomponent = hlink('host-component', 'id', 'cluster_id')
@@ -125,7 +124,7 @@ class ClusterUISerializer(ClusterDetailSerializer):
         act_set = Action.objects.filter(prototype=obj.prototype)
         self.context['object'] = obj
         self.context['cluster_id'] = obj.id
-        actions = ClusterActionShort(filter_actions(obj, act_set), many=True, context=self.context)
+        actions = ActionShort(filter_actions(obj, act_set), many=True, context=self.context)
         return actions.data
 
     def get_prototype_version(self, obj):
@@ -157,12 +156,12 @@ class ClusterHostSerializer(serializers.Serializer):
 
 class ClusterHostDetailSerializer(ClusterHostSerializer):
     issue = serializers.SerializerMethodField()
-    action = ClusterHostUrlField(read_only=True, view_name='cluster-host-action')
     cluster_url = hlink('cluster-details', 'cluster_id', 'cluster_id')
     status = serializers.SerializerMethodField()
     monitoring = serializers.CharField(read_only=True)
     host_url = hlink('host-details', 'id', 'host_id')
     config = ConfigURL(view_name='config')
+    action = ActionURL(view_name='object-action')
 
     def get_issue(self, obj):
         return cm.issue.get_issue(obj)
@@ -197,7 +196,7 @@ class ClusterHostUISerializer(ClusterHostDetailSerializer):
         act_set = Action.objects.filter(prototype=obj.prototype)
         self.context['object'] = obj
         self.context['host_id'] = obj.id
-        actions = ClusterHostActionShort(
+        actions = ActionShort(
             filter_actions(obj, act_set), many=True, context=self.context
         )
         return actions.data
@@ -345,7 +344,7 @@ class ClusterServiceDetailSerializer(ClusterServiceSerializer):
     issue = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     monitoring = serializers.CharField(read_only=True)
-    action = ClusterServiceUrlField(read_only=True, view_name='cluster-service-action')
+    action = ActionURL(view_name='object-action')
     config = ConfigURL(view_name='config')
     component = ClusterServiceUrlField(read_only=True, view_name='cluster-service-component')
     imports = ClusterServiceUrlField(read_only=True, view_name='cluster-service-import')
@@ -372,7 +371,7 @@ class ClusterServiceUISerializer(ClusterServiceDetailSerializer):
         self.context['object'] = obj
         self.context['service_id'] = obj.id
         actions = filter_actions(obj, act_set)
-        acts = ServiceActionShort(actions, many=True, context=self.context)
+        acts = ActionShort(actions, many=True, context=self.context)
         return acts.data
 
     def get_components(self, obj):

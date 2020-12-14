@@ -17,7 +17,7 @@ from django.http.request import QueryDict
 from django_filters import rest_framework as drf_filters
 
 import rest_framework.pagination
-from rest_framework import status
+from rest_framework import status, serializers
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 from rest_framework.generics import GenericAPIView
@@ -36,6 +36,12 @@ def check_obj(model, kw_req, error):
         return model.get(**kw_req)
     except ObjectDoesNotExist:
         raise AdcmApiEx(error) from None
+
+
+def hlink(view, lookup, lookup_url):
+    return serializers.HyperlinkedIdentityField(
+        view_name=view, lookup_field=lookup, lookup_url_kwarg=lookup_url
+    )
 
 
 def save(serializer, code, **kwargs):

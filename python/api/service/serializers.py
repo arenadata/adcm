@@ -18,7 +18,7 @@ from rest_framework.reverse import reverse
 
 from api.config.serializers import ConfigURL
 from api.serializers import (
-    check_obj, filter_actions, ActionSerializer, ActionDetailSerializer, ActionShort
+    check_obj, filter_actions, ActionShort
 )
 from api.cluster_serial import BindSerializer
 from cm import issue
@@ -26,6 +26,7 @@ from cm import status_api
 from cm.api import add_service_to_cluster, multi_bind, bind
 from cm.errors import AdcmApiEx, AdcmEx
 from cm.models import Prototype, Action, ServiceComponent, Cluster
+from api.action.serializers import ActionURL
 
 
 class ServiceObjectUrlField(serializers.HyperlinkedIdentityField):
@@ -80,7 +81,7 @@ class ServiceDetailSerializer(ServiceSerializer):
     issue = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     monitoring = serializers.CharField(read_only=True)
-    action = ServiceObjectUrlField(read_only=True, view_name='service-action')
+    action = ActionURL(read_only=True, view_name='object-action')
     config = ConfigURL(read_only=True, view_name='config')
     component = ServiceObjectUrlField(read_only=True, view_name='service-component')
     imports = ServiceObjectUrlField(read_only=True, view_name='service-import')
@@ -144,14 +145,6 @@ class ServiceUISerializer(ServiceDetailSerializer):
 
     def get_version(self, obj):
         return obj.prototype.version
-
-
-class ServiceActionListSerializer(ActionSerializer):
-    url = ServiceActionDetailsUrlField(read_only=True, view_name='service-action-details')
-
-
-class ServiceActionDetailsSerializer(ActionDetailSerializer):
-    run = ServiceActionDetailsUrlField(read_only=True, view_name='service-action-run')
 
 
 class ServiceComponentUrlField(serializers.HyperlinkedIdentityField):

@@ -20,7 +20,9 @@ import cm.config as config
 import cm.job
 import cm.stack
 import cm.status_api
-from api.serializers import hlink, DataField, get_job_action, get_job_objects
+from api.serializers import DataField
+from api.api_views import hlink
+from api.action.serializers import get_job_action, get_job_objects
 from cm.models import Action, SubAction
 
 

@@ -16,7 +16,9 @@ from cm.logger import log   # pylint: disable=unused-import
 import cm.config as config
 from cm.models import ClusterObject, Prototype, Bundle
 from api.serializers import hlink, UrlField
-from api.serializers import ActionDetailSerializer, ConfigSerializer, UpgradeSerializer
+from api.serializers import UpgradeSerializer
+from api.config.serializers import ConfigSerializer
+from api.action.serializers import StackActionDetailSerializer
 
 
 class Stack(serializers.Serializer):
@@ -139,7 +141,7 @@ class ServiceSerializer(PrototypeSerializer):
 
 
 class ServiceDetailSerializer(ServiceSerializer):
-    actions = ActionDetailSerializer(many=True, read_only=True)
+    actions = StackActionDetailSerializer(many=True, read_only=True)
     components = ComponentTypeSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
     exports = ExportSerializer(many=True, read_only=True)
@@ -184,33 +186,33 @@ class ProviderTypeSerializer(PrototypeSerializer):
 
 
 class PrototypeDetailSerializer(PrototypeSerializer):
-    actions = ActionDetailSerializer(many=True, read_only=True)
+    actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
 
 
 class ProviderTypeDetailSerializer(ProviderTypeSerializer):
-    actions = ActionDetailSerializer(many=True, read_only=True)
+    actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
     upgrade = UpgradeSerializer(many=True, read_only=True)
 
 
 class HostTypeDetailSerializer(HostTypeSerializer):
-    actions = ActionDetailSerializer(many=True, read_only=True)
+    actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
 
 
 class ComponentTypeDetailSerializer(ComponentTypeSerializer):
-    actions = ActionDetailSerializer(many=True, read_only=True)
+    actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
 
 
 class AdcmTypeDetailSerializer(AdcmTypeSerializer):
-    actions = ActionDetailSerializer(many=True, read_only=True)
+    actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
 
 
 class ClusterTypeDetailSerializer(ClusterTypeSerializer):
-    actions = ActionDetailSerializer(many=True, read_only=True)
+    actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
     upgrade = UpgradeSerializer(many=True, read_only=True)
     exports = ExportSerializer(many=True, read_only=True)

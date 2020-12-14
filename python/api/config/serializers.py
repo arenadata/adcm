@@ -16,9 +16,13 @@ from rest_framework import serializers
 from rest_framework.reverse import reverse
 
 import logrotate
+import cm.adcm_config
 from cm.adcm_config import ui_config, restore_cluster_config
 from cm.api import update_obj_config
 from cm.errors import AdcmEx, AdcmApiEx
+
+
+from cm.logger import log
 
 
 class ConfigURL(serializers.HyperlinkedIdentityField):
@@ -27,6 +31,9 @@ class ConfigURL(serializers.HyperlinkedIdentityField):
             'object_type': obj.prototype.type,
             f'{obj.prototype.type}_id': obj.id
         }
+        if obj.prototype.type == 'service':
+            if 'cluster' in request.path:
+                kwargs['cluster_id'] = obj.cluster.id
         if obj.prototype.type == 'component':
             kwargs['service_id'] = obj.service.id
             kwargs['cluster_id'] = obj.cluster.id
@@ -40,6 +47,9 @@ class ConfigVersionURL(serializers.HyperlinkedIdentityField):
             f'{obj.object.prototype.type}_id': obj.object.id,
             'version': obj.id
         }
+        if obj.object.prototype.type == 'service':
+            if 'cluster' in request.path:
+                kwargs['cluster_id'] = obj.object.cluster.id
         if obj.object.prototype.type == 'component':
             kwargs['service_id'] = obj.object.service.id
             kwargs['cluster_id'] = obj.object.cluster.id
@@ -93,3 +103,30 @@ class ObjectConfigRestoreSerializer(ObjectConfigSerializer):
 
 class ConfigHistorySerializer(ObjectConfigSerializer):
     url = ConfigVersionURL(read_only=True, view_name='config-history-version')
+
+
+class ConfigSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    description = serializers.CharField(required=False)
+    display_name = serializers.CharField(required=False)
+    subname = serializers.CharField()
+    default = serializers.SerializerMethodField()
+    value = serializers.SerializerMethodField()
+    type = serializers.CharField()
+    limits = serializers.JSONField(required=False)
+    ui_options = serializers.JSONField(required=False)
+    required = serializers.BooleanField()
+
+    def get_default(self, obj):   # pylint: disable=arguments-differ
+        return cm.adcm_config.get_default(obj)
+
+    def get_value(self, obj):     # pylint: disable=arguments-differ
+        proto = self.context.get('prototype', None)
+        return cm.adcm_config.get_default(obj, proto)
+
+
+class ConfigSerializerUI(ConfigSerializer):
+    activatable = serializers.SerializerMethodField()
+
+    def get_activatable(self, obj):
+        return bool(cm.adcm_config.group_is_activatable(obj))

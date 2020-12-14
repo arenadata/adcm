@@ -17,7 +17,7 @@ from rest_framework.response import Response
 from api.api_views import (
     PageView, create, DetailViewRO, ListView, ActionFilter, GenericAPIPermView, DetailViewDelete
 )
-from api.serializers import check_obj, filter_actions, TaskRunSerializer
+from api.serializers import check_obj, filter_actions
 from api.stack_serial import ImportSerializer
 from api.cluster_serial import BindSerializer
 from cm.api import delete_service, get_import, unbind
@@ -71,56 +71,6 @@ class ServiceDetailView(DetailViewRO):
         except AdcmEx as error:
             raise AdcmApiEx(error.code, error.msg, error.http_code) from error
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class ServiceActionListView(ListView):
-    queryset = Action.objects.filter(prototype__type='service')
-    serializer_class = serializers.ServiceActionListSerializer
-    serializer_class_ui = serializers.ServiceActionDetailsSerializer
-    filterset_class = ActionFilter
-    filterset_fields = ('name', 'button', 'button_is_null')
-
-    def get(self, request, *args, **kwargs):
-        """
-        List all action of a specified service
-        """
-        service_id = kwargs['service_id']
-        service = check_obj(ClusterObject, {'id': service_id}, 'SERVICE_NOT_FOUND')
-        actions = filter_actions(
-            service, self.filter_queryset(self.get_queryset().filter(prototype=service.prototype)))
-        serializer_class = self.select_serializer(request)
-        serializer = serializer_class(
-            actions, many=True, context={'request': request, 'service_id': service_id})
-        return Response(serializer.data)
-
-
-class ServiceActionView(GenericAPIPermView):
-    queryset = Action.objects.filter(prototype__type='service')
-    serializer_class = serializers.ServiceActionDetailsSerializer
-
-    def get(self, request, service_id, action_id):
-        service = check_obj(ClusterObject, {'id': service_id}, 'SERVICE_NOT_FOUND')
-        action = check_obj(
-            Action, {'prototype': service.prototype, 'id': action_id}, 'ACTION_NOT_FOUND')
-        serializer = self.serializer_class(
-            action, context={'request': request, 'service_id': service_id})
-        return Response(serializer.data)
-
-
-class ServiceTask(GenericAPIPermView):
-    queryset = TaskLog.objects.all()
-    serializer_class = TaskRunSerializer
-
-    def post(self, request, service_id, action_id):
-        """
-        Run specified action of a specified service
-        """
-        service = check_obj(ClusterObject, {'id': service_id}, 'SERVICE_NOT_FOUND')
-        action = check_obj(
-            Action, {'prototype': service.prototype, 'id': action_id}, 'ACTION_NOT_FOUND')
-        selector = {'cluster': service.cluster.id, 'service': service.id}
-        serializer = self.serializer_class(data=request.data, context={'request': request})
-        return create(serializer, action_id=action.id, selector=selector)
 
 
 class ServiceComponentListView(PageView):
