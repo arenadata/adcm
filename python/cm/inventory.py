@@ -122,7 +122,8 @@ def get_cluster_config(cluster_id):
         }
         for component in ServiceComponent.objects.filter(cluster=cluster, service=service):
             res['services'][service.prototype.name][component.prototype.name] = {
-                'component_id': component.id
+                'component_id': component.id,
+                'config': get_obj_config(component)
             }
     return res
 

@@ -251,6 +251,11 @@ urlpatterns = [
         {'object_type': 'component'}
     ),
     path(
+        CLUSTER + SERVICE + 'component/<int:component_id>/action/',
+        include('api.action.urls'),
+        {'object_type': 'component'}
+    ),
+    path(
         CLUSTER + SERVICE + 'import/',
         cluster_views.ClusterServiceImport.as_view(),
         name='cluster-service-import'

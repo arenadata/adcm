@@ -93,6 +93,14 @@ def get_issue(obj):   # pylint: disable=too-many-branches
         if cluster_iss:
             issue['cluster'] = [cluster_iss]
 
+    elif obj.prototype.type == 'component':
+        cluster_iss = cook_issue(obj.cluster)
+        if cluster_iss:
+            issue['cluster'] = [cluster_iss]
+        service_iss = cook_issue(obj.service)
+        if service_iss:
+            issue['service'] = [service_iss]
+
     elif obj.prototype.type == 'host':
         if obj.cluster:
             cluster_iss = cook_issue(obj.cluster)

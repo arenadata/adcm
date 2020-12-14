@@ -26,6 +26,7 @@ from api.serializers import (
     ClusterHostActionShort, ServiceActionShort
 )
 from api.config.serializers import ConfigURL
+from api.action.serializers import ActionURL
 
 
 def get_cluster_id(obj):
@@ -405,6 +406,7 @@ class ServiceComponentDetailSerializer(ServiceComponentSerializer):
     monitoring = serializers.CharField(read_only=True)
     status = serializers.SerializerMethodField()
     config = ConfigURL(view_name='config')
+    action = ActionURL(view_name='object-action')
 
     def get_status(self, obj):
         return cm.status_api.get_component_status(obj.id)

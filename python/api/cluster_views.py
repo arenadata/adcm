@@ -661,7 +661,7 @@ class ServiceComponentDetail(GenericAPIPermView):
             {'cluster': cluster, 'service': co, 'id': component_id},
             'COMPONENT_NOT_FOUND'
         )
-        serializer = self.serializer_class(obj, context={'request': request})
+        serializer = self.serializer_class(obj, context={'request': request, 'object': obj})
         return Response(serializer.data)
 
 
