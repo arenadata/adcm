@@ -14,10 +14,10 @@ from django.test import TestCase
 
 import cm.api
 import cm.job
-from cm.models import Cluster, Host, ClusterObject, ServiceComponent, HostComponent
-from cm.models import Bundle, Upgrade, Prototype, Component, PrototypeConfig, ConfigLog
-from cm.errors import AdcmEx
 from cm import adcm_config
+from cm.errors import AdcmEx
+from cm.models import Bundle, Upgrade, Prototype, Component, PrototypeConfig, ConfigLog
+from cm.models import Cluster, Host, ClusterObject, ServiceComponent, HostComponent
 
 
 class TestUpgradeVersion(TestCase):
@@ -157,6 +157,10 @@ class TestConfigUpgrade(TestCase):
         proto2 = Prototype.objects.create(type="cluster", name="AD1", version="2.0", bundle=b)
         return (proto1, proto2)
 
+    def add_prototype_config(self, data):
+        for kwargs in data:
+            self.add_conf(**kwargs)
+
     def test_empty_config(self):
         (proto1, proto2) = self.cook_proto()
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
@@ -291,6 +295,794 @@ class TestConfigUpgrade(TestCase):
         self.assertEqual(new_conf, {'advance': {'port': 33}})
         self.assertEqual(new_attr, {'advance': {'active': True}})
 
+    def test_with_group_to_without_group(self):
+        """
+        * Create prototype 1 with group
+          conf: {'advance': {'port': 11}}
+          attr: {}
+        * Create prototype 2 without group
+          conf: {'port': 22}
+          attr: {}
+        * Create cluster from prototype 1
+        * Update config from prototype 2
+        * Expected: ???
+        * Result:
+          conf: {'port': 22}
+          attr: {}
+        """
+        p1, p2 = self.cook_proto()
+        data = [
+            {
+                'prototype': p1,
+                'name': 'advance',
+                'type': 'group',
+                'limits': {}
+            },
+            {
+                'prototype': p1,
+                'name': 'advance',
+                'subname': 'port',
+                'type': 'integer',
+                'default': 11
+            },
+            {
+                'prototype': p2,
+                'name': 'port',
+                'type': 'integer',
+                'default': 22
+            },
+        ]
+        self.add_prototype_config(data)
+
+        cluster = cm.api.add_cluster(p1, 'cluster')
+
+        old_conf, old_attr = get_config(cluster)
+
+        self.assertEqual(old_conf, {'advance': {'port': 11}})
+        self.assertEqual(old_attr, {})
+
+        adcm_config.switch_config(cluster, p2, p1)
+
+        new_conf, new_attr = get_config(cluster)
+        print(f'conf: {new_conf}\nattr: {new_attr}')
+        self.assertTrue(False)
+
+    def test_with_group_to_activatable_group_active_true(self):
+        """
+        * Create prototype 1 with group
+          conf: {'advance': {'port': 11}}
+          attr: {}
+        * Create prototype 2 without group
+          conf: {'advance': {'port': 22}}
+          attr: {'advance': {'active': True}}
+        * Create cluster from prototype 1
+        * Update config from prototype 2
+        * Expected: ???
+        * Result:
+          conf: {'advance': {'port': 22}}
+          attr: {'advance': {'active': True}}
+        """
+        p1, p2 = self.cook_proto()
+        data = [
+            {
+                'prototype': p1,
+                'name': 'advance',
+                'type': 'group',
+                'limits': {}
+            },
+            {
+                'prototype': p1,
+                'name': 'advance',
+                'subname': 'port',
+                'type': 'integer',
+                'default': 11
+            },
+            {
+                'prototype': p2,
+                'name': 'advance',
+                'type': 'group',
+                'limits': {
+                    'activatable': True,
+                    'active': True
+                }
+            },
+            {
+                'prototype': p2,
+                'name': 'advance',
+                'subname': 'port',
+                'type': 'integer',
+                'default': 22
+            },
+        ]
+        self.add_prototype_config(data)
+
+        cluster = cm.api.add_cluster(p1, 'cluster')
+
+        old_conf, old_attr = get_config(cluster)
+
+        self.assertEqual(old_conf, {'advance': {'port': 11}})
+        self.assertEqual(old_attr, {})
+
+        adcm_config.switch_config(cluster, p2, p1)
+
+        new_conf, new_attr = get_config(cluster)
+        print(f'conf: {new_conf}\nattr: {new_attr}')
+        self.assertTrue(False)
+
+    def test_with_group_to_activatable_group_active_false(self):
+        """
+        * Create prototype 1 with group
+          conf: {'advance': {'port': 11}}
+          attr: {}
+        * Create prototype 2 without group
+          conf: {'advance': {'port': 22}}
+          attr: {'advance': {'active': False}}
+        * Create cluster from prototype 1
+        * Update config from prototype 2
+        * Expected: ???
+        * Result:
+          conf: {'advance': None}
+          attr: {'advance': {'active': False}}
+        """
+        p1, p2 = self.cook_proto()
+        data = [
+            {
+                'prototype': p1,
+                'name': 'advance',
+                'type': 'group',
+                'limits': {}
+            },
+            {
+                'prototype': p1,
+                'name': 'advance',
+                'subname': 'port',
+                'type': 'integer',
+                'default': 11
+            },
+            {
+                'prototype': p2,
+                'name': 'advance',
+                'type': 'group',
+                'limits': {
+                    'activatable': True,
+                    'active': False
+                }
+            },
+            {
+                'prototype': p2,
+                'name': 'advance',
+                'subname': 'port',
+                'type': 'integer',
+                'default': 22
+            },
+        ]
+        self.add_prototype_config(data)
+
+        cluster = cm.api.add_cluster(p1, 'cluster')
+
+        old_conf, old_attr = get_config(cluster)
+
+        self.assertEqual(old_conf, {'advance': {'port': 11}})
+        self.assertEqual(old_attr, {})
+
+        adcm_config.switch_config(cluster, p2, p1)
+
+        new_conf, new_attr = get_config(cluster)
+        print(f'conf: {new_conf}\nattr: {new_attr}')
+        self.assertTrue(False)
+
+    def test_without_group_to_activatable_group_active_true(self):
+        """
+        * Create prototype 1 without group
+          conf: {'port': 11}
+          attr: {}
+        * Create prototype 2 with activatable group, active=True
+          conf: {'advance': {'port': 22}}
+          attr: {'advance': {'active': True}}
+        * Create cluster from prototype 1
+        * Update cluster config from prototype 2
+        * Expected: ???
+        * Result:
+          conf: {'advance': {'port': 22}}
+          attr: {'advance': {'active': True}}
+        """
+        p1, p2 = self.cook_proto()
+        data = [
+            {
+                'prototype': p1,
+                'name': 'port',
+                'type': 'integer',
+                'default': 11
+            },
+            {
+                'prototype': p2,
+                'name': 'advance',
+                'type': 'group',
+                'limits': {
+                    'activatable': True,
+                    'active': True
+                }
+            },
+            {
+                'prototype': p2,
+                'name': 'advance',
+                'subname': 'port',
+                'type': 'integer',
+                'default': 22
+            }
+        ]
+        self.add_prototype_config(data)
+        cluster = cm.api.add_cluster(p1, 'cluster')
+        old_conf, old_attr = get_config(cluster)
+        self.assertEqual(old_conf, {'port': 11})
+        self.assertEqual(old_attr, {})
+        adcm_config.switch_config(cluster, p2, p1)
+        new_conf, new_attr = get_config(cluster)
+        print(f'conf: {new_conf}\nattr: {new_attr}')
+        self.assertTrue(False)
+
+    def test_without_group_to_activatable_group_active_false(self):
+        """
+        * Create prototype 1 without group
+          conf: {'port': 11}
+          attr: {}
+        * Create prototype 2 with activatable group, active=False
+          conf: {'advance': {'port': 22}}
+          attr: {'advance': {'active': False}}
+        * Create cluster from prototype 1
+        * Update cluster config from prototype 2
+        * Expected: ???
+        * Result:
+          conf: {'advance': None}
+          attr: {'advance': {'active': False}}
+        """
+
+        p1, p2 = self.cook_proto()
+
+        data = [
+            {
+                'prototype': p1,
+                'name': 'port',
+                'type': 'integer',
+                'default': 11
+            },
+            {
+                'prototype': p2,
+                'name': 'advance',
+                'type': 'group',
+                'limits': {
+                    'activatable': True,
+                    'active': False
+                }
+            },
+            {
+                'prototype': p2,
+                'name': 'advance',
+                'subname': 'port',
+                'type': 'integer',
+                'default': 22
+            }
+        ]
+
+        self.add_prototype_config(data)
+
+        cluster = cm.api.add_cluster(p1, 'cluster')
+
+        old_conf, old_attr = get_config(cluster)
+
+        self.assertEqual(old_conf, {'port': 11})
+        self.assertEqual(old_attr, {})
+
+        adcm_config.switch_config(cluster, p2, p1)
+
+        new_conf, new_attr = get_config(cluster)
+        print(f'conf: {new_conf}\nattr: {new_attr}')
+        self.assertTrue(False)
+
+    def test_from_activatable_group_active_true_to_without_group(self):
+        """
+        * Create prototype 1 with activatable group, active=True
+          conf: {'advance': {'port': 11}}
+          attr: {'advance': {'active': True}}
+        * Create prototype 2 without group
+          conf: {'port': 22}
+          attr: {}
+        * Create cluster from prototype 1
+        * Update cluster config from prototype 2
+        * Expected: ???
+        * Result:
+          conf: {'port': 22}
+          attr: {'advance': {'active': True}}
+        """
+
+        p1, p2 = self.cook_proto()
+        data = [
+            {
+                'prototype': p1,
+                'name': 'advance',
+                'type': 'group',
+                'limits': {
+                    'activatable': True,
+                    'active': True
+                }
+            },
+            {
+                'prototype': p1,
+                'name': 'advance',
+                'subname': 'port',
+                'type': 'integer',
+                'default': 11
+            },
+            {
+                'prototype': p2,
+                'name': 'port',
+                'type': 'integer',
+                'default': 22
+            },
+        ]
+        self.add_prototype_config(data)
+
+        cluster = cm.api.add_cluster(p1, 'cluster')
+
+        old_conf, old_attr = get_config(cluster)
+
+        self.assertEqual(old_conf, {'advance': {'port': 11}})
+        self.assertEqual(old_attr, {'advance': {'active': True}})
+
+        adcm_config.switch_config(cluster, p2, p1)
+
+        new_conf, new_attr = get_config(cluster)
+        print(f'conf: {new_conf}\nattr: {new_attr}')
+        self.assertTrue(False)
+
+    def test_from_activatable_group_active_true_to_with_group(self):
+        """
+        * Create prototype 1 with activatable group, active=True
+          conf: {'advance': {'port': 11}}
+          attr: {'advance': {'active': True}}
+        * Create prototype 2 with group
+          conf: {'advance': {'port': 22}}
+          attr: {}
+        * Create cluster from prototype 1
+        * Update cluster config from prototype 2
+        * Expected: ???
+        * Result:
+          conf: {'advance': {'port': 22}}
+          attr: {'advance': {'active': True}}
+        """
+
+        p1, p2 = self.cook_proto()
+        data = [
+            {
+                'prototype': p1,
+                'name': 'advance',
+                'type': 'group',
+                'limits': {
+                    'activatable': True,
+                    'active': True
+                }
+            },
+            {
+                'prototype': p1,
+                'name': 'advance',
+                'subname': 'port',
+                'type': 'integer',
+                'default': 11
+            },
+            {
+                'prototype': p2,
+                'name': 'advance',
+                'type': 'group',
+                'limits': {}
+            },
+            {
+                'prototype': p2,
+                'name': 'advance',
+                'subname': 'port',
+                'type': 'integer',
+                'default': 22
+            },
+        ]
+        self.add_prototype_config(data)
+
+        cluster = cm.api.add_cluster(p1, 'cluster')
+
+        old_conf, old_attr = get_config(cluster)
+
+        self.assertEqual(old_conf, {'advance': {'port': 11}})
+        self.assertEqual(old_attr, {'advance': {'active': True}})
+
+        adcm_config.switch_config(cluster, p2, p1)
+
+        new_conf, new_attr = get_config(cluster)
+        print(f'conf: {new_conf}\nattr: {new_attr}')
+        self.assertTrue(False)
+
+    def test_from_activatable_group_active_true_to_activatable_group_active_true(self):
+        """
+        * Create prototype 1 with activatable group, active=True
+          conf: {'advance': {'port': 11}}
+          attr: {'advance': {'active': True}}
+        * Create prototype 2 with activatable group, active=True
+          conf: {'advance': {'port': 22}}
+          attr: {'advance': {'active': True}}
+        * Create cluster from prototype 1
+        * Update cluster config from prototype 2
+        * Expected: ???
+        * Result:
+          conf: {'advance': {'port': 22}}
+          attr: {'advance': {'active': True}}
+        """
+
+        p1, p2 = self.cook_proto()
+        data = [
+            {
+                'prototype': p1,
+                'name': 'advance',
+                'type': 'group',
+                'limits': {
+                    'activatable': True,
+                    'active': True
+                }
+            },
+            {
+                'prototype': p1,
+                'name': 'advance',
+                'subname': 'port',
+                'type': 'integer',
+                'default': 11
+            },
+            {
+                'prototype': p2,
+                'name': 'advance',
+                'type': 'group',
+                'limits': {
+                    'activatable': True,
+                    'active': True
+                }
+            },
+            {
+                'prototype': p2,
+                'name': 'advance',
+                'subname': 'port',
+                'type': 'integer',
+                'default': 22
+            },
+        ]
+        self.add_prototype_config(data)
+
+        cluster = cm.api.add_cluster(p1, 'cluster')
+
+        old_conf, old_attr = get_config(cluster)
+
+        self.assertEqual(old_conf, {'advance': {'port': 11}})
+        self.assertEqual(old_attr, {'advance': {'active': True}})
+
+        adcm_config.switch_config(cluster, p2, p1)
+
+        new_conf, new_attr = get_config(cluster)
+        print(f'conf: {new_conf}\nattr: {new_attr}')
+        self.assertTrue(False)
+
+    def test_from_activatable_group_active_true_to_activatable_group_active_false(self):
+        """
+        * Create prototype 1 with activatable group, active=True
+          conf: {'advance': {'port': 11}}
+          attr: {'advance': {'active': True}}
+        * Create prototype 2 with activatable group, active=True
+          conf: {'advance': {'port': 22}}
+          attr: {'advance': {'active': False}}
+        * Create cluster from prototype 1
+        * Update cluster config from prototype 2
+        * Expected: ???
+        * Result:
+          conf: {'advance': {'port': 22}}
+          attr: {'advance': {'active': True}}
+        """
+
+        p1, p2 = self.cook_proto()
+        data = [
+            {
+                'prototype': p1,
+                'name': 'advance',
+                'type': 'group',
+                'limits': {
+                    'activatable': True,
+                    'active': True
+                }
+            },
+            {
+                'prototype': p1,
+                'name': 'advance',
+                'subname': 'port',
+                'type': 'integer',
+                'default': 11
+            },
+            {
+                'prototype': p2,
+                'name': 'advance',
+                'type': 'group',
+                'limits': {
+                    'activatable': True,
+                    'active': False
+                }
+            },
+            {
+                'prototype': p2,
+                'name': 'advance',
+                'subname': 'port',
+                'type': 'integer',
+                'default': 22
+            },
+        ]
+        self.add_prototype_config(data)
+
+        cluster = cm.api.add_cluster(p1, 'cluster')
+
+        old_conf, old_attr = get_config(cluster)
+
+        self.assertEqual(old_conf, {'advance': {'port': 11}})
+        self.assertEqual(old_attr, {'advance': {'active': True}})
+
+        adcm_config.switch_config(cluster, p2, p1)
+
+        new_conf, new_attr = get_config(cluster)
+        print(f'conf: {new_conf}\nattr: {new_attr}')
+        self.assertTrue(False)
+
+    def test_from_activatable_group_active_false_to_without_group(self):
+        """
+        * Create prototype 1 with activatable group, active=False
+          conf: {'advance': {'port': 11}}
+          attr: {'advance': {'active': False}}
+        * Create prototype 2 without group
+          conf: {'port': 22}
+          attr: {}
+        * Create cluster from prototype 1
+        * Update cluster config from prototype 2
+        * Expected: ???
+        * Result:
+          conf: {'port': 22}
+          attr: {'advance': {'active': False}}
+        """
+
+        p1, p2 = self.cook_proto()
+        data = [
+            {
+                'prototype': p1,
+                'name': 'advance',
+                'type': 'group',
+                'limits': {
+                    'activatable': True,
+                    'active': False
+                }
+            },
+            {
+                'prototype': p1,
+                'name': 'advance',
+                'subname': 'port',
+                'type': 'integer',
+                'default': 11
+            },
+            {
+                'prototype': p2,
+                'name': 'port',
+                'type': 'integer',
+                'default': 22
+            },
+        ]
+        self.add_prototype_config(data)
+
+        cluster = cm.api.add_cluster(p1, 'cluster')
+
+        old_conf, old_attr = get_config(cluster)
+
+        self.assertEqual(old_conf, {'advance': {'port': 11}})
+        self.assertEqual(old_attr, {'advance': {'active': False}})
+
+        adcm_config.switch_config(cluster, p2, p1)
+
+        new_conf, new_attr = get_config(cluster)
+        print(f'conf: {new_conf}\nattr: {new_attr}')
+        self.assertTrue(False)
+
+    def test_from_activatable_group_active_false_to_with_group(self):
+        """
+        * Create prototype 1 with activatable group, active=False
+          conf: {'advance': {'port': 11}}
+          attr: {'advance': {'active': False}}
+        * Create prototype 2 with group
+          conf: {'advance': {'port': 22}}
+          attr: {}
+        * Create cluster from prototype 1
+        * Update cluster config from prototype 2
+        * Expected: ???
+        * Result:
+          conf: {'advance': {'port': 22}}
+          attr: {'advance': {'active': False}}
+        """
+
+        p1, p2 = self.cook_proto()
+        data = [
+            {
+                'prototype': p1,
+                'name': 'advance',
+                'type': 'group',
+                'limits': {
+                    'activatable': True,
+                    'active': False
+                }
+            },
+            {
+                'prototype': p1,
+                'name': 'advance',
+                'subname': 'port',
+                'type': 'integer',
+                'default': 11
+            },
+            {
+                'prototype': p2,
+                'name': 'advance',
+                'type': 'group',
+                'limits': {}
+            },
+            {
+                'prototype': p2,
+                'name': 'advance',
+                'subname': 'port',
+                'type': 'integer',
+                'default': 22
+            },
+        ]
+        self.add_prototype_config(data)
+
+        cluster = cm.api.add_cluster(p1, 'cluster')
+
+        old_conf, old_attr = get_config(cluster)
+
+        self.assertEqual(old_conf, {'advance': {'port': 11}})
+        self.assertEqual(old_attr, {'advance': {'active': False}})
+
+        adcm_config.switch_config(cluster, p2, p1)
+
+        new_conf, new_attr = get_config(cluster)
+        print(f'conf: {new_conf}\nattr: {new_attr}')
+        self.assertTrue(False)
+
+    def test_from_activatable_group_active_false_to_activatable_group_active_true(self):
+        """
+        * Create prototype 1 with activatable group, active=False
+          conf: {'advance': {'port': 11}}
+          attr: {'advance': {'active': False}}
+        * Create prototype 2 with activatable group, active=True
+          conf: {'advance': {'port': 22}}
+          attr: {'advance': {'active': True}}
+        * Create cluster from prototype 1
+        * Update cluster config from prototype 2
+        * Expected: ???
+        * Result:
+          conf: {'advance': None}
+          attr: {'advance': {'active': False}}
+        """
+
+        p1, p2 = self.cook_proto()
+        data = [
+            {
+                'prototype': p1,
+                'name': 'advance',
+                'type': 'group',
+                'limits': {
+                    'activatable': True,
+                    'active': False
+                }
+            },
+            {
+                'prototype': p1,
+                'name': 'advance',
+                'subname': 'port',
+                'type': 'integer',
+                'default': 11
+            },
+            {
+                'prototype': p2,
+                'name': 'advance',
+                'type': 'group',
+                'limits': {
+                    'activatable': True,
+                    'active': True
+                }
+            },
+            {
+                'prototype': p2,
+                'name': 'advance',
+                'subname': 'port',
+                'type': 'integer',
+                'default': 22
+            },
+        ]
+
+        self.add_prototype_config(data)
+
+        cluster = cm.api.add_cluster(p1, 'cluster')
+
+        old_conf, old_attr = get_config(cluster)
+
+        self.assertEqual(old_conf, {'advance': {'port': 11}})
+        self.assertEqual(old_attr, {'advance': {'active': False}})
+
+        adcm_config.switch_config(cluster, p2, p1)
+
+        new_conf, new_attr = get_config(cluster)
+        print(f'conf: {new_conf}\nattr: {new_attr}')
+        self.assertTrue(False)
+
+    def test_from_activatable_group_active_false_to_activatable_group_active_false(self):
+        """
+        * Create prototype 1 with activatable group, active=False
+          conf: {'advance': {'port': 11}}
+          attr: {'advance': {'active': False}}
+        * Create prototype 2 with activatable group, active=False
+          conf: {'advance': {'port': 22}}
+          attr: {'advance': {'active': False}}
+        * Create cluster from prototype 1
+        * Update config from prototype 2
+        * Expected: ???
+        * Result:
+          conf: {'advance': None}
+          attr: {'advance': {'active': False}}
+        """
+
+        p1, p2 = self.cook_proto()
+        data = [
+            {
+                'prototype': p1,
+                'name': 'advance',
+                'type': 'group',
+                'limits': {
+                    'activatable': True,
+                    'active': False
+                }
+            },
+            {
+                'prototype': p1,
+                'name': 'advance',
+                'subname': 'port',
+                'type': 'integer',
+                'default': 11
+            },
+            {
+                'prototype': p2,
+                'name': 'advance',
+                'type': 'group',
+                'limits': {
+                    'activatable': True,
+                    'active': False
+                }
+            },
+            {
+                'prototype': p2,
+                'name': 'advance',
+                'subname': 'port',
+                'type': 'integer',
+                'default': 22
+            },
+        ]
+
+        self.add_prototype_config(data)
+
+        cluster = cm.api.add_cluster(p1, 'cluster')
+
+        old_conf, old_attr = get_config(cluster)
+
+        self.assertEqual(old_conf, {'advance': {'port': 11}})
+        self.assertEqual(old_attr, {'advance': {'active': False}})
+
+        adcm_config.switch_config(cluster, p2, p1)
+
+        new_conf, new_attr = get_config(cluster)
+        print(f'conf: {new_conf}\nattr: {new_attr}')
+        self.assertTrue(False)
+
 
 class TestUpgrade(TestCase):
 
@@ -320,7 +1112,7 @@ class TestUpgrade(TestCase):
         self.assertEqual(co1.id, co2.id)
         self.assertEqual(co2.prototype.id, new_proto.id)
 
-    def test_hc(self):   # pylint: disable=too-many-locals
+    def test_hc(self):  # pylint: disable=too-many-locals
         setup = SetUp()
         b1 = setup.cook_cluster_bundle('1.0')
         b2 = setup.cook_cluster_bundle('2.0')
@@ -356,7 +1148,7 @@ class TestUpgrade(TestCase):
         r = HostComponent.objects.filter(cluster=cluster, service=co, component=sc2)
         self.assertEqual(len(r), 0)
 
-    def test_component(self):   # pylint: disable=too-many-locals
+    def test_component(self):  # pylint: disable=too-many-locals
         setup = SetUp()
         b1 = setup.cook_cluster_bundle('1.0')
         b2 = setup.cook_cluster_bundle('2.0')
