@@ -82,7 +82,6 @@ def get_job_object_type(obj):
         return None
 
 
-
 class ActionURL(serializers.HyperlinkedIdentityField):
     def get_url(self, obj, view_name, request, format):
         kwargs = {
