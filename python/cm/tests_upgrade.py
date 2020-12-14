@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=too-many-lines, redundant-unittest-assert, too-many-public-methods
+
 from django.test import TestCase
 
 import cm.api
