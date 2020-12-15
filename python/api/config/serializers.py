@@ -63,13 +63,11 @@ class ObjectConfigSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     date = serializers.DateTimeField(read_only=True)
     description = serializers.CharField(required=False, allow_blank=True)
-    config = serializers.JSONField(read_only=True)
+    config = serializers.JSONField()
     attr = serializers.JSONField(required=False)
 
 
 class ObjectConfigUpdateSerializer(ObjectConfigSerializer):
-    config = serializers.JSONField()
-
     def update(self, instance, validated_data):
         try:
             conf = validated_data.get('config')
@@ -86,6 +84,8 @@ class ObjectConfigUpdateSerializer(ObjectConfigSerializer):
 
 
 class ObjectConfigRestoreSerializer(ObjectConfigSerializer):
+    config = serializers.JSONField(read_only=True)
+
     def update(self, instance, validated_data):
         try:
             cc = restore_cluster_config(
