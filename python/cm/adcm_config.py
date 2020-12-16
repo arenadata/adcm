@@ -245,10 +245,17 @@ def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-local
         if new_spec[key].type == 'group':
             limits = new_spec[key].limits
             if 'activatable' in limits and 'active' in limits:
-                if limits['active']:
-                    active_groups[key.rstrip('/')] = True
+                group_name = key.rstrip('/')
+                # check group activity in old configuration
+                if group_name in cl.attr:
+                    if cl.attr[group_name]['active']:
+                        active_groups[group_name] = True
+                    else:
+                        inactive_groups[group_name] = True
+                elif limits['active']:
+                    active_groups[group_name] = True
                 else:
-                    inactive_groups[key.rstrip('/')] = True
+                    inactive_groups[group_name] = True
             continue
         if key in old_spec:
             if is_new_default(key):
