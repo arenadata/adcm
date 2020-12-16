@@ -12,7 +12,10 @@
 
 import json
 from django.db import migrations
-from cm.adcm_config import process_password, obj_to_dict
+from cm.adcm_config import ansible_encrypt_and_format, obj_to_dict
+
+
+from cm.logger import log
 
 
 def get_prototype_config(proto, PrototypeConfig):
@@ -32,8 +35,33 @@ def get_prototype_config(proto, PrototypeConfig):
     return spec
 
 
+def process_password(spec, conf):
+    def update_password(passwd):
+        if '$ANSIBLE_VAULT;' in passwd:
+            return passwd
+        return ansible_encrypt_and_format(passwd)
+
+    for key in conf:
+        if key not in spec:
+            continue
+        if 'type' in spec[key]:
+            if spec[key]['type'] == 'password' and conf[key]:
+                conf[key] = update_password(conf[key])
+        else:
+            if not conf[key]:
+                continue
+            for subkey in conf[key]:
+                if subkey not in spec[key]:
+                    continue
+                if spec[key][subkey]['type'] == 'password' and conf[key][subkey]:
+                    conf[key][subkey] = update_password(conf[key][subkey])
+    return conf
+
+
 def process_objects(obj, ConfigLog, PrototypeConfig):
     spec = get_prototype_config(obj.prototype, PrototypeConfig)
+    if not spec:
+        return
     for cl in ConfigLog.objects.filter(obj_ref=obj.config):
         conf = json.loads(cl.config)
         process_password(spec, conf)
@@ -45,8 +73,10 @@ def encrypt_passwords(apps, schema_editor):
     ConfigLog = apps.get_model('cm', 'ConfigLog')
     PrototypeConfig = apps.get_model('cm', 'PrototypeConfig')
     for model_name in 'Cluster', 'ClusterObject', 'HostProvider', 'Host', 'ADCM':
+        log.debug('QQ model %s', model_name)
         Model = apps.get_model('cm', model_name)
         for obj in Model.objects.filter(config__isnull=False):
+            log.debug('QQ model %s, obj %s', model_name, obj)
             process_objects(obj, ConfigLog, PrototypeConfig)
 
 
