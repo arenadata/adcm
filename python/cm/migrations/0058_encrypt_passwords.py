@@ -58,7 +58,6 @@ def process_password(spec, conf):
     return conf
 
 
-
 def process_objects(obj, ConfigLog, PrototypeConfig):
     spec = get_prototype_config(obj.prototype, PrototypeConfig)
     if not spec:
@@ -68,8 +67,6 @@ def process_objects(obj, ConfigLog, PrototypeConfig):
         process_password(spec, conf)
         cl.config = json.dumps(conf)
         cl.save()
-
-
 
 
 def encrypt_passwords(apps, schema_editor):
