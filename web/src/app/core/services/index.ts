@@ -15,3 +15,5 @@ export * from './detail.service';
 export * from './stack.service';
 export * from './channel.service';
 export * from './app/app.service';
+export * from './fully-rendered.service';
+export * from './dom.service';

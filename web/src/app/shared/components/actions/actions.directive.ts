@@ -34,6 +34,7 @@ export class ActionsDirective {
 
   @HostListener('click')
   onClick() {
+    this.dialog.closeAll();
     const dialogModel = this.prepare();
     this.dialog.open(DialogComponent, dialogModel);
   }
@@ -47,7 +48,7 @@ export class ActionsDirective {
     const act = model.actions[0];
     const isMulty = model.actions.length > 1;
 
-    const width = isMulty || act.config?.config.length || act.hostcomponentmap ? '90%' : '400px';
+    const width = isMulty || act.config?.config.length || act.hostcomponentmap?.length ? '90%' : '400px';
     const title = act.ui_options?.disclaimer ? act.ui_options.disclaimer : isMulty ? 'Run an actions?' : `Run an action [ ${act.display_name} ]?`;
 
     return {

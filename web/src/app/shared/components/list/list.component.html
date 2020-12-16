@@ -1,8 +1,12 @@
 <mat-table [dataSource]="data" [trackBy]="trackBy" matSort>
   <mat-header-row *matHeaderRowDef="columns" [appMultiSort]="sortParam" (mousedownevent)="addToSorting=$event">
   </mat-header-row>
-  <mat-row appHover *matRowDef="let row; columns: columns" (click)="clickCell($event, 'title', row)"
-    [ngClass]="{ 'select-table-item': current ? row.id === current.id : false }"></mat-row>
+  <mat-row appHover
+           *matRowDef="let row; columns: columns"
+           (click)="clickCell($event, 'title', row)"
+           (auxclick)="clickCell($event, 'new-tab', row)"
+           [ngClass]="{ 'select-table-item': current ? row.id === current.id : false }"
+  ></mat-row>
 
   <!-- Checkbox Column -->
   <ng-container matColumnDef="select">
@@ -132,26 +136,7 @@
         <mat-icon>priority_hight</mat-icon>
       </button>
       <ng-template #actions>
-
-        <button color="primary" mat-icon-button [matMenuTriggerFor]="actionsMenu"
-          (click)="clickCell($event, 'getActions', row)">
-          <mat-icon>local_activity</mat-icon>
-        </button>
-
-        <mat-menu #actionsMenu="matMenu" xPosition="before" yPosition="below" overlapTrigger="false">
-          <ng-template matMenuContent>
-            <div mat-menu-item disabled *ngIf="row.actions && !row.actions.length; else listActions">
-              <i>No actions</i>
-            </div>
-            <ng-template #listActions>
-              <button [appForTest]="'action_btn'" mat-menu-item *ngFor="let b of row.actions"
-                [appActions]="{ cluster: getClusterData(row), actions: [b] }">
-                <span>{{ b.display_name }}</span>
-              </button>
-            </ng-template>
-          </ng-template>
-        </mat-menu>
-
+        <app-action-list (click)="$event.stopPropagation()" [actionLink]="row.action" [cluster]="getClusterData(row)"></app-action-list>
       </ng-template>
     </mat-cell>
   </ng-container>
@@ -239,7 +224,7 @@
           <mat-icon>check_circle_outline</mat-icon>
         </button>
         <button *ngIf="row.status !== 0" [appForTest]="'row_status'" mat-icon-button color="warn" [appTooltip]="row"
-          [appTooltipComponent]="'status'" (click)="clickCell($event, 'status', row)">
+          [appTooltipComponent]="'status'" [appTooltipPosition]="'left'" (click)="clickCell($event, 'status', row)">
           <mat-icon>error_outline</mat-icon>
         </button>
       </ng-template>

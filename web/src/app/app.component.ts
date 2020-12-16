@@ -9,15 +9,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 import { Component, ElementRef, OnInit } from '@angular/core';
-import { AppService } from '@app/core';
+import { AppService, ChannelService, DomService, keyChannelStrim } from '@app/core';
 import { filter } from 'rxjs/operators';
+
+import { TooltipComponent } from './shared/components/tooltip/tooltip.component';
+
+/** Magic strings for marking loading stages and other, for ci tests */
+const enum flagForConsole {
+  'profile' = 'profile',
+  'socket' = 'socket',
+  'load_complete' = 'load_complete',
+}
 
 @Component({
   selector: 'app-root',
   template: `
     <app-top></app-top>
-    <app-tooltip></app-tooltip>
     <main>
       <app-progress></app-progress>
       <router-outlet></router-outlet>
@@ -26,7 +35,9 @@ import { filter } from 'rxjs/operators';
       <div>
         <span class="left">
           <span>VERSION: </span>
-          <a target="_blank" href="https://docs.arenadata.io/adcm/notes.html#{{ versionData.version }}">{{ versionData.version }}-{{ versionData.commit_id }}</a>
+          <a target="_blank" rel="noopener" href="https://docs.arenadata.io/adcm/notes.html#{{ versionData.version }}"
+            >{{ versionData.version }}-{{ versionData.commit_id }}</a
+          >
         </span>
         <span>ARENADATA &copy; {{ currentYear }}</span>
       </div>
@@ -39,9 +50,16 @@ export class AppComponent implements OnInit {
   currentYear = new Date().getFullYear();
   versionData = { version: '', commit_id: '' };
 
-  constructor(private elRef: ElementRef, private service: AppService) {}
+  constructor(
+    private elRef: ElementRef,
+    private service: AppService,
+    private radio: ChannelService,
+    private dom: DomService
+  ) {}
 
   ngOnInit() {
+    this.dom.appendComponentToBody(TooltipComponent);
+
     this.service.getRootAndCheckAuth().subscribe((c) => {
       if (!c) this.elRef.nativeElement.innerHTML = '';
       else this.versionData = { ...c };
@@ -52,13 +70,21 @@ export class AppComponent implements OnInit {
     this.service
       .checkWSconnectStatus()
       .pipe(filter((a) => a === 'open'))
-      .subscribe((_) => this.console('Socket status :: open', 'socket'));
+      .subscribe((_) => this.console('Socket status :: open', flagForConsole.socket));
 
-    this.service.checkUserProfile().subscribe((_) => this.console('User profile :: saved', 'profile'));
+    this.service.checkUserProfile().subscribe((_) => this.console('User profile :: saved', flagForConsole.profile));
 
     this.versionData = this.service.getVersion(this.versionData);
+
+    this.radio
+      .on<string>(keyChannelStrim.load_complete)
+      .subscribe((a) => this.console(a, flagForConsole.load_complete));
   }
 
+  /**
+   * TODO: move this to component and append through DomService (as TooltipComponent - line: 61)
+   * important - to approve with QA!
+   */
   console(text: string, css?: string) {
     const console = this.elRef.nativeElement.querySelector('div.console');
     if (!text) console.innerHTML = '';

@@ -27,6 +27,7 @@ import {
   StatusInfoComponent,
   UpgradeComponent,
 } from './components';
+import { ActionCardComponent } from './components/actions/action-card/action-card.component';
 import { ActionMasterConfigComponent } from './components/actions/master/action-master-config.component';
 import { BaseListDirective } from './components/list/base-list.directive';
 import { ListComponent } from './components/list/list.component';
@@ -74,8 +75,9 @@ import { StuffModule } from './stuff.module';
     ExportComponent,
     ActionMasterComponent,
     ActionMasterConfigComponent,
+    ActionCardComponent,
   ],
-  entryComponents: [DialogComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent, ActionMasterComponent],
+  // entryComponents: [DialogComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent, ActionMasterComponent],
   exports: [
     FormsModule,
     ReactiveFormsModule,
@@ -100,6 +102,7 @@ import { StuffModule } from './stuff.module';
     MainInfoComponent,
     ImportComponent,
     ExportComponent,
+    ActionCardComponent,
   ],
 })
 export class SharedModule {}

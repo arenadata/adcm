@@ -54,14 +54,23 @@ class ActionModule(ActionBase):
     _VALID_ARGS = frozenset(())
 
     def run(self, tmp=None, task_vars=None):
-        super(ActionModule, self).run(tmp, task_vars)
-        msg = 'You can delete service only in service context'
-        service_id = get_context_id(task_vars, 'service', 'service_id', msg)
-        log.info('ansible module adcm_delete_service: service #%s', service_id)
-
-        try:
-            cm.api.delete_service_by_id(service_id)
-        except AdcmEx as e:
-            raise AnsibleError(e.code + ":" + e.msg)
+        super().run(tmp, task_vars)
+        service = self._task.args.get('service', None)
+        if service:
+            msg = 'You can delete service by name only in cluster context'
+            cluster_id = get_context_id(task_vars, 'cluster', 'cluster_id', msg)
+            log.info('ansible module adcm_delete_service: service "%s"', service)
+            try:
+                cm.api.delete_service_by_name(service, cluster_id)
+            except AdcmEx as e:
+                raise AnsibleError(e.code + ":" + e.msg) from e
+        else:
+            msg = 'You can delete service only in service context'
+            service_id = get_context_id(task_vars, 'service', 'service_id', msg)
+            log.info('ansible module adcm_delete_service: service #%s', service_id)
+            try:
+                cm.api.delete_service_by_id(service_id)
+            except AdcmEx as e:
+                raise AnsibleError(e.code + ":" + e.msg) from e
 
         return {"failed": False, "changed": True}

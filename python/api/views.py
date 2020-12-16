@@ -10,13 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=duplicate-except,attribute-defined-outside-init,too-many-lines
+# pylint: disable=duplicate-except,attribute-defined-outside-init
 
 import rest_framework
-from django.db import transaction
-from django.utils import timezone
-from django.contrib.auth.models import User, Group
-from django.contrib.auth import login as django_login
+import django.contrib.auth
 from django_filters import rest_framework as drf_filters
 
 from rest_framework import routers, status
@@ -24,38 +21,21 @@ from rest_framework.authtoken.models import Token
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
-import api.cluster_serial
 import api.serializers
+import api.cluster_views
 import cm.api
 import cm.config as config
 import cm.job
 import cm.stack
 import cm.status_api
-from cm.api import safe_api
 from cm.errors import AdcmEx, AdcmApiEx
-from cm.models import (
-    HostProvider, Host, ADCM, Action, JobLog, TaskLog, Upgrade, ObjectConfig,
-    ConfigLog, UserProfile, DummyData, Role,
-)
+from cm.models import HostProvider, Host, ADCM, Action, JobLog, TaskLog, Upgrade
 from adcm.settings import ADCM_VERSION
-from api.serializers import check_obj, filter_actions, get_config_version
+from api.serializers import check_obj, filter_actions
 from api.api_views import (
     DetailViewRO, DetailViewDelete, ActionFilter, ListView,
-    PageView, PageViewAdd, GenericAPIPermView, create, update
+    PageView, PageViewAdd, GenericAPIPermView, create
 )
-
-
-@transaction.atomic
-def delete_user(username):
-    DummyData.objects.filter(id=1).update(date=timezone.now())
-    user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
-    try:
-        profile = UserProfile.objects.get(login=user.username)
-        profile.delete()
-    except UserProfile.DoesNotExist:
-        pass
-    user.delete()
-    return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class APIRoot(routers.APIRootView):
@@ -69,11 +49,13 @@ class APIRoot(routers.APIRootView):
         'profile': 'profile-list',
         'provider': 'provider',
         'host': 'host',
+        'service': 'service',
         'job': 'job',
         'stack': 'stack',
         'stats': 'stats',
         'task': 'task',
         'token': 'token',
+        'logout': 'logout',
         'user': 'user-list',
         'group': 'group-list',
         'role': 'role-list',
@@ -110,8 +92,21 @@ class GetAuthToken(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
         token, _created = Token.objects.get_or_create(user=user)
-        django_login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+        django.contrib.auth.login(
+            request, user, backend='django.contrib.auth.backends.ModelBackend'
+        )
         return Response({'token': token.key})
+
+
+class LogOut(GenericAPIView):
+    serializer_class = api.serializers.LogOutSerializer
+
+    def post(self, request, *args, **kwargs):
+        """
+        Logout user from Django session
+        """
+        django.contrib.auth.logout(request)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ADCMInfo(GenericAPIView):
@@ -126,234 +121,6 @@ class ADCMInfo(GenericAPIView):
             'adcm_version': ADCM_VERSION,
             'google_oauth': cm.api.has_google_oauth()
         })
-
-
-class UserList(PageViewAdd):
-    """
-    get:
-    List all existing users
-
-    post:
-    Create new user
-    """
-    queryset = User.objects.all()
-    serializer_class = api.serializers.UserSerializer
-    ordering_fields = ('username',)
-
-
-class UserDetail(GenericAPIPermView):
-    queryset = User.objects.all()
-    serializer_class = api.serializers.UserDetailSerializer
-
-    def get(self, request, username):
-        """
-        show user
-        """
-        user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
-        serializer = self.serializer_class(user, context={'request': request})
-        return Response(serializer.data)
-
-    def delete(self, request, username):
-        """
-        delete user and profile
-        """
-        return delete_user(username)
-
-
-class UserPasswd(GenericAPIPermView):
-    queryset = User.objects.all()
-    serializer_class = api.serializers.UserPasswdSerializer
-
-    def patch(self, request, username):
-        """
-        Change user password
-        """
-        user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
-        serializer = self.serializer_class(user, data=request.data, context={'request': request})
-        return update(serializer)
-
-
-class AddUser2Group(GenericAPIPermView):
-    queryset = User.objects.all()
-    serializer_class = api.serializers.AddUser2GroupSerializer
-
-    def post(self, request, username):
-        """
-        Add user to group
-        """
-        user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
-        serializer = self.serializer_class(user, data=request.data, context={'request': request})
-        return update(serializer)
-
-    def delete(self, request, username):
-        """
-        Remove user from group
-        """
-        user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
-        serializer = self.serializer_class(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        group = check_obj(
-            Group, {'name': serializer.data['name']}, 'GROUP_NOT_FOUND'
-        )
-        group.user_set.remove(user)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class ChangeUserRole(GenericAPIPermView):
-    queryset = User.objects.all()
-    serializer_class = api.serializers.AddUserRoleSerializer
-
-    def post(self, request, username):
-        """
-        Add user role
-        """
-        user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
-        serializer = self.serializer_class(user, data=request.data, context={'request': request})
-        return update(serializer)
-
-    def delete(self, request, username):
-        """
-        Remove user role
-        """
-        user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
-        serializer = self.serializer_class(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        role = check_obj(Role, {'id': serializer.data['role_id']}, 'ROLE_NOT_FOUND')
-        safe_api(cm.api.remove_user_role, (user, role))
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class GroupList(PageViewAdd):
-    """
-    get:
-    List all existing user groups
-
-    post:
-    Create new user group
-    """
-    queryset = Group.objects.all()
-    serializer_class = api.serializers.GroupSerializer
-    ordering_fields = ('name',)
-
-
-class GroupDetail(GenericAPIPermView):
-    queryset = Group.objects.all()
-    serializer_class = api.serializers.GroupDetailSerializer
-
-    def get(self, request, name):
-        """
-        show user group
-        """
-        group = check_obj(Group, {'name': name}, 'GROUP_NOT_FOUND')
-        serializer = self.serializer_class(group, context={'request': request})
-        return Response(serializer.data)
-
-    def delete(self, request, name):
-        """
-        delete user group
-        """
-        group = check_obj(Group, {'name': name}, 'GROUP_NOT_FOUND')
-        group.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class ChangeGroupRole(GenericAPIPermView):
-    queryset = User.objects.all()
-    serializer_class = api.serializers.AddGroupRoleSerializer
-
-    def post(self, request, name):
-        """
-        Add group role
-        """
-        group = check_obj(Group, {'name': name}, 'GROUP_NOT_FOUND')
-        serializer = self.serializer_class(group, data=request.data, context={'request': request})
-        return update(serializer)
-
-    def delete(self, request, name):
-        """
-        Remove group role
-        """
-        group = check_obj(Group, {'name': name}, 'GROUP_NOT_FOUND')
-        serializer = self.serializer_class(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        role = check_obj(Role, {'id': serializer.data['role_id']}, 'ROLE_NOT_FOUND')
-        safe_api(cm.api.remove_group_role, (group, role))
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class RoleList(PageView):
-    """
-    get:
-    List all existing roles
-    """
-    queryset = Role.objects.all()
-    serializer_class = api.serializers.RoleSerializer
-    ordering_fields = ('name',)
-
-
-class RoleDetail(PageView):
-    queryset = Role.objects.all()
-    serializer_class = api.serializers.RoleDetailSerializer
-
-    def get(self, request, role_id):   # pylint: disable=arguments-differ
-        """
-        show role
-        """
-        role = check_obj(Role, {'id': role_id}, 'ROLE_NOT_FOUND')
-        serializer = self.serializer_class(role, context={'request': request})
-        return Response(serializer.data)
-
-
-class ProfileList(PageViewAdd):
-    """
-    get:
-    List all existing user's profiles
-
-    post:
-    Create new user profile
-    """
-    queryset = UserProfile.objects.all()
-    serializer_class = api.serializers.ProfileSerializer
-    ordering_fields = ('username',)
-
-
-class ProfileDetail(DetailViewRO):
-    """
-    get:
-    Show user profile
-    """
-    queryset = UserProfile.objects.all()
-    serializer_class = api.serializers.ProfileDetailSerializer
-    lookup_field = 'login'
-    lookup_url_kwarg = 'username'
-    error_code = 'USER_NOT_FOUND'
-
-    def get_object(self):
-        login = self.kwargs['username']
-        try:
-            up = UserProfile.objects.get(login=login)
-        except UserProfile.DoesNotExist:
-            try:
-                user = User.objects.get(username=login)
-                up = UserProfile.objects.create(login=user.username)
-                up.save()
-            except User.DoesNotExist:
-                raise AdcmApiEx('USER_NOT_FOUND')
-        return up
-
-    def patch(self, request, *args, **kwargs):
-        """
-        Edit user profile
-        """
-        obj = self.get_object()
-        serializer = self.serializer_class(obj, data=request.data, context={'request': request})
-        return update(serializer)
-
-    def delete(self, request, username):
-        """
-        delete user and profile
-        """
-        return delete_user(username)
 
 
 class AdcmList(ListView):
@@ -376,68 +143,6 @@ class AdcmDetail(DetailViewRO):
     lookup_field = 'id'
     lookup_url_kwarg = 'adcm_id'
     error_code = 'ADCM_NOT_FOUND'
-
-
-class AdcmConfig(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.AdcmConfigSerializer
-
-    def get(self, request, adcm_id):   # pylint: disable=arguments-differ
-        """
-        Show current config for a adcm object
-        """
-        check_obj(ADCM, adcm_id, 'ADCM_NOT_FOUND')
-        obj = ObjectConfig()
-        serializer = self.serializer_class(
-            obj, context={'request': request, 'adcm_id': adcm_id}
-        )
-        return Response(serializer.data)
-
-
-class AdcmConfigHistory(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.AdcmConfigHistorySerializer
-    update_serializer = api.cluster_serial.ObjectConfigUpdate
-
-    def get_obj(self, adcm_id):
-        adcm = check_obj(ADCM, adcm_id, 'ADCM_NOT_FOUND')
-        oc = check_obj(ObjectConfig, {'adcm': adcm}, 'CONFIG_NOT_FOUND')
-        return (adcm, oc, self.get_queryset().get(obj_ref=oc, id=oc.current))
-
-    def get(self, request, adcm_id):   # pylint: disable=arguments-differ
-        """
-        Show history of config of an adcm object
-        """
-        _, oc, _ = self.get_obj(adcm_id)
-        obj = self.get_queryset().filter(obj_ref=oc).order_by('-id')
-        serializer = self.serializer_class(obj, many=True, context={'request': request})
-        return Response(serializer.data)
-
-    def post(self, request, adcm_id):
-        """
-        Update host provider config. Config parameter is json
-        """
-        obj, _, cl = self.get_obj(adcm_id)
-        serializer = self.update_serializer(cl, data=request.data, context={'request': request})
-        return create(serializer, ui=bool(self.for_ui(request)), obj=obj)
-
-
-class AdcmConfigVersion(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ObjectConfig
-
-    def get(self, request, adcm_id, version):   # pylint: disable=arguments-differ
-        """
-        Show config for a specified version of adcm object.
-
-        """
-        adcm = check_obj(ADCM, adcm_id, 'ADCM_NOT_FOUND')
-        oc = check_obj(ObjectConfig, {'adcm': adcm}, 'CONFIG_NOT_FOUND')
-        cl = get_config_version(oc, version)
-        if self.for_ui(request):
-            cl.config = cm.adcm_config.ui_config(adcm, cl)
-        serializer = self.serializer_class(cl, context={'request': request})
-        return Response(serializer.data)
 
 
 class ADCMActionList(ListView):
@@ -471,7 +176,6 @@ class ADCMAction(GenericAPIPermView):
         Show specified action of an ADCM
         """
         adcm = check_obj(ADCM, adcm_id, 'ADCM_NOT_FOUND')
-        obj = filter_actions(adcm, self.get_queryset().filter(prototype=adcm.prototype))
         obj = check_obj(
             Action,
             {'prototype': adcm.prototype, 'id': action_id},
@@ -537,7 +241,7 @@ class ProviderDetail(DetailViewDelete):
         try:
             cm.api.delete_host_provider(provider)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -622,7 +326,7 @@ class HostDetail(DetailViewDelete):
         try:
             cm.api.delete_host(host)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -673,86 +377,6 @@ class TaskStats(GenericAPIPermView):
         return Response(data)
 
 
-class ProviderConfig(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ProviderConfigSerializer
-
-    def get(self, request, provider_id):   # pylint: disable=arguments-differ
-        """
-        Show current config for a specified host provider
-        """
-        check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        obj = ObjectConfig()
-        serializer = self.serializer_class(
-            obj, context={'request': request, 'provider_id': provider_id}
-        )
-        return Response(serializer.data)
-
-
-class ProviderConfigHistory(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ProviderConfigHistorySerializer
-    update_serializer = api.cluster_serial.ObjectConfigUpdate
-
-    def get_obj(self, provider_id):
-        provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        cc = check_obj(ObjectConfig, {'hostprovider': provider}, 'CONFIG_NOT_FOUND')
-        return (provider, cc, self.get_queryset().get(obj_ref=cc, id=cc.current))
-
-    def get(self, request, provider_id):   # pylint: disable=arguments-differ
-        """
-        Show history of config of a specified host provider
-        """
-        _, cc, _ = self.get_obj(provider_id)
-        obj = self.get_queryset().filter(obj_ref=cc).order_by('-id')
-        serializer = self.serializer_class(obj, many=True, context={'request': request})
-        return Response(serializer.data)
-
-    def post(self, request, provider_id):
-        """
-        Update host provider config. Config parameter is json
-        """
-        obj, _, cl = self.get_obj(provider_id)
-        serializer = self.update_serializer(cl, data=request.data, context={'request': request})
-        return create(serializer, ui=bool(self.for_ui(request)), obj=obj)
-
-
-class ProviderConfigVersion(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ObjectConfig
-
-    def get(self, request, provider_id, version):   # pylint: disable=arguments-differ
-        """
-        Show config for a specified version and host provider.
-
-        """
-        provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        oc = check_obj(ObjectConfig, {'hostprovider': provider}, 'CONFIG_NOT_FOUND')
-        cl = get_config_version(oc, version)
-        if self.for_ui(request):
-            cl.config = cm.adcm_config.ui_config(provider, cl)
-        serializer = self.serializer_class(cl, context={'request': request})
-        return Response(serializer.data)
-
-
-class ProviderConfigRestore(GenericAPIPermView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ObjectConfigRestore
-
-    def patch(self, request, provider_id, version):
-        """
-        Restore config of specified version of a specified host provider.
-        """
-        provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        cc = check_obj(ObjectConfig, {'hostprovider': provider}, 'CONFIG_NOT_FOUND')
-        try:
-            obj = self.get_queryset().get(obj_ref=cc, id=version)
-        except ConfigLog.DoesNotExist:
-            raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist")
-        serializer = self.serializer_class(obj, data=request.data, context={'request': request})
-        return update(serializer)
-
-
 class ProviderActionList(ListView):
     queryset = Action.objects.filter(prototype__type='provider')
     serializer_class = api.serializers.ProviderActionList
@@ -784,7 +408,6 @@ class ProviderAction(GenericAPIPermView):
         Show specified action of a specified host provider
         """
         provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        obj = filter_actions(provider, self.get_queryset().filter(prototype=provider.prototype))
         obj = check_obj(
             Action,
             {'prototype': provider.prototype, 'id': action_id},
@@ -917,82 +540,3 @@ class HostTask(GenericAPIPermView):
         )
         serializer = self.serializer_class(data=request.data, context={'request': request})
         return create(serializer, action_id=int(action_id), selector={'host': host.id})
-
-
-class HostConfig(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.HostConfigSerializer
-
-    def get(self, request, host_id):   # pylint: disable=arguments-differ
-        """
-        Show current config for a specified host
-        """
-        check_obj(Host, host_id, 'HOST_NOT_FOUND')
-        obj = ObjectConfig()
-        serializer = self.serializer_class(obj, context={'request': request, 'host_id': host_id})
-        return Response(serializer.data)
-
-
-class HostConfigHistory(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.HostConfigHistorySerializer
-    update_serializer = api.cluster_serial.ObjectConfigUpdate
-
-    def get_obj(self, host_id):
-        host = check_obj(Host, host_id, 'HOST_NOT_FOUND')
-        cc = check_obj(ObjectConfig, {'host': host}, 'CONFIG_NOT_FOUND')
-        return (host, self.get_queryset().get(obj_ref=cc, id=cc.current))
-
-    def get(self, request, host_id):   # pylint: disable=arguments-differ
-        """
-        Show history of config of a specified host
-        """
-        host = check_obj(Host, host_id, 'HOST_NOT_FOUND')
-        cc = check_obj(ObjectConfig, {'host': host}, 'CONFIG_NOT_FOUND')
-        obj = self.get_queryset().filter(obj_ref=cc).order_by('-id')
-        serializer = self.serializer_class(obj, many=True, context={'request': request})
-        return Response(serializer.data)
-
-    def post(self, request, host_id):
-        """
-        Update config of a specified host. Config parameter is json
-        """
-        obj, cl = self.get_obj(host_id)
-        serializer = self.update_serializer(cl, data=request.data, context={'request': request})
-        return create(serializer, ui=bool(self.for_ui(request)), obj=obj)
-
-
-class HostConfigVersion(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ObjectConfig
-
-    def get(self, request, host_id, version):   # pylint: disable=arguments-differ
-        """
-        Show config for a specified version and host.
-
-        """
-        host = check_obj(Host, host_id, 'HOST_NOT_FOUND')
-        oc = check_obj(ObjectConfig, {'host': host}, 'CONFIG_NOT_FOUND')
-        cl = get_config_version(oc, version)
-        if self.for_ui(request):
-            cl.config = cm.adcm_config.ui_config(host, cl)
-        serializer = self.serializer_class(cl, context={'request': request})
-        return Response(serializer.data)
-
-
-class HostConfigRestore(GenericAPIPermView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ObjectConfigRestore
-
-    def patch(self, request, host_id, version):
-        """
-        Restore config of specified version of a specified host.
-        """
-        host = check_obj(Host, host_id, 'HOST_NOT_FOUND')
-        cc = check_obj(ObjectConfig, {'host': host}, 'CONFIG_NOT_FOUND')
-        try:
-            obj = self.get_queryset().get(obj_ref=cc, id=version)
-        except ConfigLog.DoesNotExist:
-            raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist")
-        serializer = self.serializer_class(obj, data=request.data, context={'request': request})
-        return update(serializer)

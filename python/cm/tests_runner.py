@@ -196,6 +196,8 @@ class TestJobRunner(TestCase):
         mock_subprocess_popen.assert_called_once_with(
             [
                 'ansible-playbook',
+                '--vault-password-file',
+                f'{config.CODE_DIR}/ansible_secret.py',
                 '-e',
                 '@{}/{}/config.json'.format(config.RUN_DIR, 1),
                 '-i',

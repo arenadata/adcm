@@ -35,7 +35,7 @@ def check_obj(model, kw_req, error):
     try:
         return model.get(**kw_req)
     except ObjectDoesNotExist:
-        raise AdcmApiEx(error)
+        raise AdcmApiEx(error) from None
 
 
 def save(serializer, code, **kwargs):
@@ -195,7 +195,7 @@ class PageView(GenericAPIView, InterfaceView):
                 qp = ','.join([f'{k}={v}' for k, v in request.query_params.items()
                                if k in ['fields', 'distinct']])
                 msg = f'Bad query params: {qp}'
-                raise AdcmApiEx('BAD_QUERY_PARAMS', msg=msg)
+                raise AdcmApiEx('BAD_QUERY_PARAMS', msg=msg) from None
 
         page = self.paginate_queryset(obj)
         if self.is_paged(request):
@@ -229,7 +229,7 @@ class ListView(GenericAPIView, InterfaceView):
     filter_backends = (AdcmFilterBackend,)
     permission_classes = (DjangoModelPerm,)
 
-    def get(self, request):
+    def get(self, request, *args, **kwargs):
         obj = self.filter_queryset(self.get_queryset())
         serializer_class = self.select_serializer(request)
         serializer = serializer_class(obj, many=True, context={'request': request})

@@ -1,0 +1,10 @@
+
+- type: cluster
+  name: password_no_confirm_true_required_true
+  version: 1
+  config:
+  - name: password
+    type: password
+    required: true
+    ui_options:
+      no_confirm: true

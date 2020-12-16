@@ -9,14 +9,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, Host, IRequires } from '@app/core/types';
+import { IComponent, Host, IRequires } from '@app/core/types';
 
 export type ActionParam = 'add' | 'remove';
-export type ConstraintValue = number | '+' | 'odd' | 'depend';
-export type Constraint = ConstraintValue[];
+export type TConstraintValue = number | '+' | 'odd' | 'depend';
+export type TConstraint = TConstraintValue[];
 
 export interface IRawHosComponent {
-  component: Component[];
+  component: IComponent[];
   host: Partial<Host>[];
   hc: Post[];
 }
@@ -32,13 +32,30 @@ export class Post implements Post {
   constructor(public host_id: number, public service_id: number, public component_id: number, public id?: number) {}
 }
 
+/**
+ *```
+  {
+    id: number;
+    name: string;
+    relations: Tile[] = [];
+    isSelected?: boolean;
+    isLink?: boolean;
+    limit?: Constraint;
+    disabled: boolean;
+    actions?: ActionParam[];
+    color?: 'none' | 'white' | 'gray' | 'yellow';
+    notification?: string;
+  }
+ ```
+ * @class Tile
+ */
 export class Tile {
   id: number;
   name: string;
   relations: Tile[] = [];
   isSelected?: boolean;
   isLink?: boolean;
-  limit?: Constraint;
+  limit?: TConstraint;
   disabled: boolean;
   actions?: ActionParam[];
   color?: 'none' | 'white' | 'gray' | 'yellow';
@@ -58,7 +75,7 @@ export class CompTile extends Tile {
   service_id: number;
   component: string;
   requires: IRequires[];
-  constructor(rawComponent: Component, public actions?: ActionParam[]) {
+  constructor(rawComponent: IComponent, public actions?: ActionParam[]) {
     super();
     this.id = rawComponent.id;
     this.service_id = rawComponent.service_id;
@@ -71,6 +88,11 @@ export class CompTile extends Tile {
   }
 }
 
+/**
+ * State user selection
+ *
+ * @class StatePost
+ */
 export class StatePost {
   private _data: Post[];
 
@@ -104,7 +126,15 @@ export class StatePost {
     data.forEach((a) => this.add(new Post(a.host_id, a.service_id, a.component_id, a.id)));
   }
 }
-
+/**
+ *```
+  {
+    link: Tile;
+    linkSource: Tile[];
+    selected: Tile;
+  }
+  *```
+ */
 export interface IStream {
   link: Tile;
   linkSource: Tile[];

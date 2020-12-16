@@ -1,5 +1,4 @@
 import os
-import yaml
 
 
 TYPES = ("string", "password", "integer", "text", 'boolean', 'float', 'option', 'list', 'map', 'json', 'file')

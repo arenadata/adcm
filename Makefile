@@ -1,7 +1,9 @@
 # Set number of threads
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 ADCMBASE_IMAGE ?= arenadata/adcmbase
-ADCMBASE_TAG ?= 20200707155213
+ADCMBASE_TAG ?= 20200812154141
+SELENOID_HOST ?= 10.92.2.65
+SELENOID_PORT ?= 4444
 
 
 # Default target
@@ -45,21 +47,23 @@ unittests: ## Run unittests
 	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/tests/base $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /bin/sh -e ./run_test.sh
 
 pytest: ## Run functional tests
-	docker pull ci.arenadata.io/functest:u18-x64
+	docker pull ci.arenadata.io/functest:3.8.6.slim.buster-x64
 	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host -v $(CURDIR)/:/adcm -w /adcm/ \
-	-e BUILD_TAG=${BUILD_TAG} -e ADCM_TAG=$(subst /,_,$(BRANCH_NAME)) -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/  ci.arenadata.io/functest:u18-x64 /bin/sh -e ./pytest.sh
+	-e BUILD_TAG=${BUILD_TAG} -e ADCM_TAG=$(subst /,_,$(BRANCH_NAME)) -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
+	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" \
+	ci.arenadata.io/functest:3.8.6.slim.buster-x64 /bin/sh -e ./pytest.sh
 
 ng_tests: ## Run Angular tests
-	docker pull ci.arenadata.io/functest:u18-x64
-	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web/src ci.arenadata.io/functest:u18-x64 /bin/sh -c "export CHROME_BIN=/usr/bin/chromium-browser; npm install && ng test --watch=false"
+	docker pull ci.arenadata.io/functest:3.8.6.slim.buster-x64
+	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web/src ci.arenadata.io/functest:3.8.6.slim.buster-x64 /bin/sh -c "export CHROME_BIN=/usr/bin/google-chrome; npm install && ng test --watch=false"
 
 linters : ## Run linters
 	docker pull ci.arenadata.io/pr-builder:3-x64
 	docker run -i --rm -v $(CURDIR)/:/source -w /source ci.arenadata.io/pr-builder:3-x64 /linters.sh shellcheck pylint pep8
 
 npm_check: ## Run npm-check
-	docker pull ci.arenadata.io/functest:u18-x64
-	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web/src ci.arenadata.io/functest:u18-x64 \
+	docker pull ci.arenadata.io/functest:3.8.6.slim.buster-x64
+	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web/src ci.arenadata.io/functest:3.8.6.slim.buster-x64 \
 	/bin/bash -c 'npm i --production && { ignore=`cat ../../.npmcheckignore | grep -v "#"`\; npm-check --production --skip-unused --ignore $$ignore || true; } && npm audit'
 
 django_tests : ## Run django tests.

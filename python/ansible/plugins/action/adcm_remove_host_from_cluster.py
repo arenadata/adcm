@@ -64,7 +64,7 @@ class ActionModule(ActionBase):
     _VALID_ARGS = frozenset(('fqdn', 'host_id'))
 
     def run(self, tmp=None, task_vars=None):
-        super(ActionModule, self).run(tmp, task_vars)
+        super().run(tmp, task_vars)
 
         context = get_context(task_vars)
         if 'cluster_id' not in context:
@@ -79,6 +79,6 @@ class ActionModule(ActionBase):
         try:
             cm.api.remove_host_from_cluster_by_id(cluster_id, fqdn, host_id)
         except AdcmEx as e:
-            raise AnsibleError(e.code + ": " + e.msg)
+            raise AnsibleError(e.code + ": " + e.msg) from e
 
         return {"failed": False, "changed": True}

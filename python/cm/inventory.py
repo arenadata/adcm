@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import json
+import os
 
 import cm.config as config
 from cm.logger import log
@@ -25,8 +25,6 @@ def process_config_and_attr(obj, conf, attr=None, spec=None):
         spec, _, _, _ = get_prototype_config(obj.prototype)
     new_conf = process_config(obj, spec, conf)
     if attr:
-        if isinstance(attr, str):
-            attr = json.loads(attr)
         for key, val in attr.items():
             if 'active' in val and not val['active']:
                 new_conf[key] = None
@@ -49,9 +47,9 @@ def get_import(cluster):   # pylint: disable=too-many-branches
                     imports[imp.name] = []
                 else:
                     imports[imp.name] = {}
-                for group in json.loads(imp.default):
+                for group in imp.default:
                     cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-                    conf = process_config_and_attr(obj, json.loads(cl.config), cl.attr)
+                    conf = process_config_and_attr(obj, cl.config, cl.attr)
                     if imp.multibind:
                         imports[imp.name].append({group: conf[group]})
                     else:
@@ -66,7 +64,7 @@ def get_import(cluster):   # pylint: disable=too-many-branches
         conf_ref = obj.config
         export_proto = obj.prototype
         cl = ConfigLog.objects.get(obj_ref=conf_ref, id=conf_ref.current)
-        conf = process_config_and_attr(obj, json.loads(cl.config), cl.attr)
+        conf = process_config_and_attr(obj, cl.config, cl.attr)
         actual_import = get_actual_import(bind, obj)
         if actual_import.multibind:
             if export_proto.name not in imports:
@@ -88,13 +86,12 @@ def get_obj_config(obj):
     if obj.config is None:
         return {}
     cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-    js_conf = json.loads(cl.config)
-    return process_config_and_attr(obj, js_conf, cl.attr)
+    return process_config_and_attr(obj, cl.config, cl.attr)
 
 
 def get_obj_state(obj):
     if obj.stack:
-        state = json.loads(obj.stack)
+        state = obj.stack
         if state:
             return state[-1]
     return obj.state

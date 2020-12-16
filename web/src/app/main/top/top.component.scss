@@ -7,19 +7,28 @@
 }
 
 a {
-  line-height: normal;
+  display: flex;
+  align-items: center;
 
   img {
     height: 40px;
     vertical-align: bottom;
   }
+
+  &:hover {
+    text-decoration: none;
+  }
 }
 
 .top-menu {
-  display:flex;
+  display: flex;
   justify-content: center;
   height: 40px;
   justify-items: baseline;
+
+  & a {
+    font-size: 14px;
+  }
 }
 
 .job-status {

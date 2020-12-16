@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-
 from django.test import TestCase
 
 import cm.api
@@ -19,6 +17,7 @@ import cm.job
 from cm.models import Cluster, Host, ClusterObject, ServiceComponent, HostComponent
 from cm.models import Bundle, Upgrade, Prototype, Component, PrototypeConfig, ConfigLog
 from cm.errors import AdcmEx
+from cm import adcm_config
 
 
 class TestUpgradeVersion(TestCase):
@@ -26,7 +25,7 @@ class TestUpgradeVersion(TestCase):
     def cook_cluster(self):
         b = Bundle(name="ADH", version="1.0")
         proto = Prototype(type="cluster", name="ADH", bundle=b)
-        return Cluster(prototype=proto, issue='{}')
+        return Cluster(prototype=proto, issue={})
 
     def cook_upgrade(self):
         return Upgrade(
@@ -34,7 +33,7 @@ class TestUpgradeVersion(TestCase):
             max_version="2.0",
             min_strict=False,
             max_strict=False,
-            state_available='"any"'
+            state_available='any'
         )
 
     def check_upgrade(self, obj, upgrade, result):
@@ -80,7 +79,7 @@ class TestUpgradeVersion(TestCase):
     def test_state(self):
         obj = self.cook_cluster()
         upgrade = self.cook_upgrade()
-        upgrade.state_available = json.dumps(["installed", "any"])
+        upgrade.state_available = ["installed", "any"]
         obj.prototype.version = "1.5"
 
         obj.state = "created"
@@ -91,7 +90,7 @@ class TestUpgradeVersion(TestCase):
 
     def test_issue(self):
         obj = self.cook_cluster()
-        obj.issue = json.dumps({"config": False})
+        obj.issue = {"config": False}
         upgrade = self.cook_upgrade()
         self.check_upgrade(obj, upgrade, False)
 
@@ -137,7 +136,7 @@ class SetUp():
             bundle=bundle,
             min_version="1.0",
             max_version="2.0",
-            state_available='["created"]'
+            state_available=['created']
         )
 
 
@@ -145,8 +144,8 @@ def get_config(obj):
     attr = {}
     cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
     if cl.attr:
-        attr = json.loads(cl.attr)
-    return json.loads(cl.config), attr
+        attr = cl.attr
+    return cl.config, attr
 
 
 class TestConfigUpgrade(TestCase):
@@ -215,7 +214,7 @@ class TestConfigUpgrade(TestCase):
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
         old_conf, _ = get_config(cluster)
         old_conf['port'] = 100500
-        cm.adcm_config.save_obj_config(cluster.config, old_conf)
+        cm.adcm_config.save_obj_config(cluster.config, old_conf, {})
         cm.adcm_config.switch_config(cluster, proto2, proto1)
         new_config, _ = get_config(cluster)
         self.assertEqual(new_config, {'port': 100500})
@@ -238,7 +237,7 @@ class TestConfigUpgrade(TestCase):
         self.add_conf(prototype=proto1, name='host', type='string', default='arenadata.com')
         self.add_conf(prototype=proto2, name='host', type='string', default='arenadata.com')
         limits = {"activatable": True, "active": False}
-        self.add_conf(prototype=proto2, name='advance', type='group', limits=json.dumps(limits))
+        self.add_conf(prototype=proto2, name='advance', type='group', limits=limits)
         self.add_conf(prototype=proto2, name='advance', subname='port', type='integer', default=42)
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
         old_conf, _ = get_config(cluster)
@@ -253,7 +252,7 @@ class TestConfigUpgrade(TestCase):
         self.add_conf(prototype=proto1, name='host', type='string', default='arenadata.com')
         self.add_conf(prototype=proto2, name='host', type='string', default='arenadata.com')
         limits = {"activatable": True, "active": True}
-        self.add_conf(prototype=proto2, name='advance', type='group', limits=json.dumps(limits))
+        self.add_conf(prototype=proto2, name='advance', type='group', limits=limits)
         self.add_conf(prototype=proto2, name='advance', subname='port', type='integer', default=42)
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
         old_conf, _ = get_config(cluster)
@@ -261,6 +260,35 @@ class TestConfigUpgrade(TestCase):
         cm.adcm_config.switch_config(cluster, proto2, proto1)
         new_config, new_attr = get_config(cluster)
         self.assertEqual(new_config, {'host': 'arenadata.com', 'advance': {'port': 42}})
+        self.assertEqual(new_attr, {'advance': {'active': True}})
+
+    def test_from_active_group_to_not_active_group(self):
+        """Scenario:
+        * Create prototype1 with activatable group, active=False
+        * Create prototype2 with activatable group, active=False
+        * Create cluster from prototype1
+        * Update cluster config, activate group, set value
+        * Update cluster config from prototype2
+        * Expect that the cluster configuration has not changed
+        """
+        proto1, proto2 = self.cook_proto()
+        self.add_conf(prototype=proto1, name='advance', type='group',
+                      limits={"activatable": True, "active": False})
+        self.add_conf(prototype=proto1, name='advance', subname='port', type='integer', default=11)
+
+        self.add_conf(prototype=proto2, name='advance', type='group',
+                      limits={"activatable": True, "active": False})
+        self.add_conf(prototype=proto2, name='advance', subname='port', type='integer', default=22)
+        cluster = cm.api.add_cluster(proto1, 'Cluster1')
+        cm.api.update_obj_config(
+            cluster.config, {'advance': {'port': 33}}, {'advance': {'active': True}}
+        )
+        old_conf, old_attr = get_config(cluster)
+        self.assertEqual(old_conf, {'advance': {'port': 33}})
+        self.assertEqual(old_attr, {'advance': {'active': True}})
+        adcm_config.switch_config(cluster, proto2, proto1)
+        new_conf, new_attr = get_config(cluster)
+        self.assertEqual(new_conf, {'advance': {'port': 33}})
         self.assertEqual(new_attr, {'advance': {'active': True}})
 
 

@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { openClose } from '@app/core/animations';
 import { clearEmptyField, Cluster, Host, Provider } from '@app/core/types';
@@ -19,6 +19,7 @@ import { filter, tap } from 'rxjs/operators';
 import { ActionsDirective } from '../components/actions/actions.directive';
 import { AddService } from './add.service';
 import { BaseFormDirective } from './base-form.directive';
+import { DisplayMode } from './provider.component';
 
 @Component({
   selector: 'app-add-host',
@@ -49,9 +50,20 @@ import { BaseFormDirective } from './base-form.directive';
       <div [@openClose]="expanded" class="inner">
         <app-add-provider [displayMode]="1" (cancel)="createdProvider($event)"></app-add-provider>
       </div>
-      <app-input [form]="form" [label]="'Fully qualified domain name'" [controlName]="'fqdn'" [isRequired]="true"></app-input>
 
-      <ng-container *ngIf="!noCluster">
+      <app-input *ngIf="displayMode < 2" [form]="form" [label]="'Fully qualified domain name'" [controlName]="'fqdn'" [isRequired]="true"></app-input>
+
+      <div class="row" *ngIf="displayMode === 2">
+        <mat-form-field class="full-width">
+          <input required matInput placeholder="Fully qualified domain name" formControlName="fqdn" />
+          <button [style.fontSize.px]="24" [disabled]="!form.valid" matTooltip="Create host" matSuffix mat-icon-button [color]="'accent'" (click)="save()">
+            <mat-icon>add_box</mat-icon>
+          </button>
+          <mat-error *ngIf="form.get('fqdn').hasError('required')">Fully qualified domain name is required </mat-error>
+        </mat-form-field>
+      </div>
+
+      <ng-container *ngIf="displayMode === 0">
         <div class="row">
           <mat-form-field class="full-width">
             <mat-select appInfinityScroll (topScrollPoint)="getNextPageClusters()" placeholder="Cluster" formControlName="cluster_id">
@@ -64,12 +76,19 @@ import { BaseFormDirective } from './base-form.directive';
       </ng-container>
     </ng-container>
   `,
-  styles: [':host {display: block; margin-top: 10px;}', '.inner {padding: 6px 8px;background-color: #4e4e4e;margin: 0 -6px;}', '.row {display: flex;}'],
+  styles: [
+    ':host {display: block; margin-top: 10px;}',
+    '.inner {overflow: hidden; margin: 0 -6px;}',
+    '.inner app-add-provider {padding: 10px 24px; background-color: #4e4e4e;display:block;}',
+    '.row {display: flex;}',
+  ],
   providers: [ActionsDirective],
   animations: [openClose],
 })
 export class HostComponent extends BaseFormDirective implements OnInit {
-  @Input() noCluster = false;
+  @Input() displayMode: DisplayMode = DisplayMode.default;
+  @Output() event = new EventEmitter();
+
   providers$ = new BehaviorSubject<Partial<Provider[]>>([]);
   clusters$ = new BehaviorSubject<Partial<Cluster>[]>([]);
   expanded = false;
@@ -123,14 +142,14 @@ export class HostComponent extends BaseFormDirective implements OnInit {
 
   save() {
     const data = clearEmptyField(this.form.value) as Host;
-    if (this.noCluster) data.cluster_id = this.service.Cluster.id;
+    if (this.displayMode !== 0) data.cluster_id = this.service.Cluster.id;
     this.service
       .addHost(data)
       .pipe(
         this.takeUntil(),
         tap(() => this.form.controls['fqdn'].setValue(''))
       )
-      .subscribe();
+      .subscribe((a) => this.event.emit(`Host [ ${a.fqdn} ] has been added successfully.`));
   }
 
   createdProvider(id: number) {

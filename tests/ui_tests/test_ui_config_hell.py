@@ -5,7 +5,6 @@ from adcm_pytest_plugin.utils import get_data_dir
 
 # pylint: disable=W0611, W0621
 from tests.ui_tests.app.configuration import Configuration
-from tests.ui_tests.app.pages import LoginPage
 
 DATADIR = get_data_dir(__file__)
 BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
@@ -21,13 +20,6 @@ def ui_hell_fs(sdk_client_fs):
 
 
 @pytest.fixture()
-def login(app_fs):
-    app_fs.driver.get(app_fs.adcm.url)
-    login = LoginPage(app_fs.driver)
-    login.login("admin", "admin")
-
-
-@pytest.fixture()
 def prototype_display_names(ui_hell_fs):
     display_header_name = ui_hell_fs.display_name
     display_names = {config['display_name'] for config in ui_hell_fs.prototype().config}
@@ -35,7 +27,7 @@ def prototype_display_names(ui_hell_fs):
 
 
 @pytest.fixture()
-def ui_display_names(login, app_fs, ui_hell_fs):
+def ui_display_names(login_to_adcm, app_fs, ui_hell_fs):
     ui_config = Configuration(app_fs.driver,
                               "{}/cluster/{}/service/{}/config".format(app_fs.adcm.url,
                                                                        ui_hell_fs.cluster_id,

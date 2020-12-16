@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-
 import django.contrib.auth
 import rest_framework.authtoken.serializers
 from django.contrib.auth.models import User, Group
@@ -32,6 +30,7 @@ from cm.models import (
     Action, SubAction, Prototype, PrototypeConfig, JobLog, UserProfile, Upgrade, HostProvider,
     ConfigLog, Role, Host, Cluster, ClusterObject
 )
+from api.config.serializers import ConfigURL
 
 
 def check_obj(model, req, error):
@@ -42,7 +41,7 @@ def check_obj(model, req, error):
     try:
         return model.objects.get(**kw)
     except model.DoesNotExist:
-        raise AdcmApiEx(error)
+        raise AdcmApiEx(error) from None
 
 
 def get_upgradable_func(self, obj):
@@ -54,12 +53,11 @@ def filter_actions(obj, actions_set):
         return []
     filtered = []
     for act in actions_set:
-        if act.state_available != '':
-            available = json.loads(act.state_available)
-            if available == 'any':
-                filtered.append(act)
-            elif obj.state in available:
-                filtered.append(act)
+        available = act.state_available
+        if available == 'any':
+            filtered.append(act)
+        elif obj.state in available:
+            filtered.append(act)
     for act in actions_set:
         act.config = PrototypeConfig.objects.filter(
             prototype=act.prototype, action=act
@@ -77,7 +75,7 @@ def get_config_version(objconf, version):
     try:
         cl = ConfigLog.objects.get(obj_ref=objconf, id=ver)
     except ConfigLog.DoesNotExist:
-        raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist")
+        raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist") from None
     return cl
 
 
@@ -85,19 +83,6 @@ def hlink(view, lookup, lookup_url):
     return serializers.HyperlinkedIdentityField(
         view_name=view, lookup_field=lookup, lookup_url_kwarg=lookup_url
     )
-
-
-class JSONField(serializers.JSONField):
-    def to_representation(self, value):
-        if value == '':
-            return None
-        elif not isinstance(value, str):
-            return value
-        else:
-            return json.loads(value)
-
-    def to_internal_value(self, data):
-        return data
 
 
 class DataField(serializers.CharField):
@@ -124,6 +109,10 @@ class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):
             raise AdcmApiEx('AUTH_ERROR', 'Wrong user or password')
         attrs['user'] = user
         return attrs
+
+
+class LogOutSerializer(serializers.Serializer):
+    pass
 
 
 class PermSerializer(serializers.Serializer):
@@ -160,7 +149,7 @@ class GroupSerializer(serializers.Serializer):
         try:
             return Group.objects.create(name=validated_data.get('name'))
         except IntegrityError:
-            raise AdcmApiEx("GROUP_CONFLICT", 'group already exists')
+            raise AdcmApiEx("GROUP_CONFLICT", 'group already exists') from None
 
 
 class GroupDetailSerializer(GroupSerializer):
@@ -188,7 +177,7 @@ class UserSerializer(serializers.Serializer):
             UserProfile.objects.create(login=validated_data.get('username'))
             return user
         except IntegrityError:
-            raise AdcmApiEx("USER_CONFLICT", 'user already exists')
+            raise AdcmApiEx("USER_CONFLICT", 'user already exists') from None
 
 
 class UserDetailSerializer(UserSerializer):
@@ -247,19 +236,19 @@ class ProfileDetailSerializer(serializers.Serializer):
 
     username = serializers.CharField(read_only=True, source='login')
     change_password = MyUrlField(read_only=True, view_name='profile-passwd')
-    profile = JSONField()
+    profile = serializers.JSONField()
 
     def validate_profile(self, raw):
         if isinstance(raw, str):
             raise AdcmApiEx('JSON_ERROR', 'profile should not be just one string')
-        return json.dumps(raw)
+        return raw
 
     def update(self, instance, validated_data):
         instance.profile = validated_data.get('profile', instance.profile)
         try:
             instance.save()
         except IntegrityError:
-            raise AdcmApiEx("USER_CONFLICT")
+            raise AdcmApiEx("USER_CONFLICT") from None
         return instance
 
 
@@ -272,7 +261,7 @@ class ProfileSerializer(ProfileDetailSerializer):
         try:
             return UserProfile.objects.create(**validated_data)
         except IntegrityError:
-            raise AdcmApiEx("USER_CONFLICT")
+            raise AdcmApiEx("USER_CONFLICT") from None
 
 
 class EmptySerializer(serializers.Serializer):
@@ -290,7 +279,7 @@ class AdcmSerializer(serializers.Serializer):
 class AdcmDetailSerializer(AdcmSerializer):
     prototype_version = serializers.SerializerMethodField()
     bundle_id = serializers.SerializerMethodField()
-    config = hlink('adcm-config', 'id', 'adcm_id')
+    config = ConfigURL(view_name='config')
 
     def get_prototype_version(self, obj):
         return obj.prototype.version
@@ -321,11 +310,11 @@ class ProviderSerializer(serializers.Serializer):
                 validated_data.get('description', '')
             )
         except Prototype.DoesNotExist:
-            raise AdcmApiEx('PROTOTYPE_NOT_FOUND')
+            raise AdcmApiEx('PROTOTYPE_NOT_FOUND') from None
         except IntegrityError:
-            raise AdcmApiEx("PROVIDER_CONFLICT")
+            raise AdcmApiEx("PROVIDER_CONFLICT") from None
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
 
 class ProviderDetailSerializer(ProviderSerializer):
@@ -334,7 +323,7 @@ class ProviderDetailSerializer(ProviderSerializer):
     license = serializers.SerializerMethodField()
     bundle_id = serializers.SerializerMethodField()
     prototype = hlink('provider-type-details', 'prototype_id', 'prototype_id')
-    config = hlink('provider-config', 'id', 'provider_id')
+    config = ConfigURL(view_name='config')
     action = hlink('provider-action', 'id', 'provider_id')
     upgrade = hlink('provider-upgrade', 'id', 'provider_id')
     host = hlink('provider-host', 'id', 'provider_id')
@@ -404,7 +393,7 @@ class HostSerializer(serializers.Serializer):
         try:
             return cm.stack.validate_name(name, 'Host name')
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
     def create(self, validated_data):
         try:
@@ -415,11 +404,11 @@ class HostSerializer(serializers.Serializer):
                 validated_data.get('description', '')
             )
         except Prototype.DoesNotExist:
-            raise AdcmApiEx('PROTOTYPE_NOT_FOUND')
+            raise AdcmApiEx('PROTOTYPE_NOT_FOUND') from None
         except IntegrityError:
-            raise AdcmApiEx("HOST_CONFLICT", "duplicate host")
+            raise AdcmApiEx("HOST_CONFLICT", "duplicate host") from None
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
     def update(self, instance, validated_data):
         instance.cluster_id = validated_data.get('cluster_id')
@@ -428,11 +417,11 @@ class HostSerializer(serializers.Serializer):
 
 
 class HostDetailSerializer(HostSerializer):
-    # stack = JSONField(read_only=True)
+    # stack = serializers.JSONField(read_only=True)
     issue = serializers.SerializerMethodField()
     bundle_id = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
-    config = hlink('host-config', 'id', 'host_id')
+    config = ConfigURL(view_name='config')
     action = hlink('host-action', 'id', 'host_id')
     prototype = hlink('host-type-details', 'prototype_id', 'prototype_id')
 
@@ -489,21 +478,21 @@ class ProviderHostSerializer(serializers.Serializer):
     fqdn = serializers.CharField(help_text='fully qualified domain name')
     description = serializers.CharField(required=False)
     state = serializers.CharField(read_only=True)
-    # stack = JSONField(read_only=True)
+    # stack = serializers.JSONField(read_only=True)
     url = hlink('host-details', 'id', 'host_id')
 
     def validate_fqdn(self, name):
         try:
             return cm.stack.validate_name(name, 'Host name')
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
     def create(self, validated_data):
         provider = validated_data.get('provider')
         try:
             proto = Prototype.objects.get(bundle=provider.prototype.bundle, type='host')
         except Prototype.DoesNotExist:
-            raise AdcmApiEx('PROTOTYPE_NOT_FOUND')
+            raise AdcmApiEx('PROTOTYPE_NOT_FOUND') from None
         try:
             return cm.api.add_host(
                 proto,
@@ -512,9 +501,9 @@ class ProviderHostSerializer(serializers.Serializer):
                 validated_data.get('description', '')
             )
         except IntegrityError:
-            raise AdcmApiEx("HOST_CONFLICT", "duplicate host")
+            raise AdcmApiEx("HOST_CONFLICT", "duplicate host") from None
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
 
 class ConfigSerializer(serializers.Serializer):
@@ -525,8 +514,8 @@ class ConfigSerializer(serializers.Serializer):
     default = serializers.SerializerMethodField()
     value = serializers.SerializerMethodField()
     type = serializers.CharField()
-    limits = JSONField(required=False)
-    ui_options = JSONField(required=False)
+    limits = serializers.JSONField(required=False)
+    ui_options = serializers.JSONField(required=False)
     required = serializers.BooleanField()
 
     def get_default(self, obj):   # pylint: disable=arguments-differ
@@ -551,13 +540,13 @@ class ActionSerializer(serializers.Serializer):
     type = serializers.CharField()
     display_name = serializers.CharField(required=False)
     description = serializers.CharField(required=False)
-    ui_options = JSONField(required=False)
+    ui_options = serializers.JSONField(required=False)
     button = serializers.CharField(required=False)
     script = serializers.CharField()
     script_type = serializers.CharField()
     state_on_success = serializers.CharField()
     state_on_fail = serializers.CharField()
-    hostcomponentmap = JSONField(required=False)
+    hostcomponentmap = serializers.JSONField(required=False)
     allow_to_terminate = serializers.BooleanField(read_only=True)
     partial_execution = serializers.BooleanField(read_only=True)
 
@@ -568,13 +557,13 @@ class SubActionSerializer(serializers.Serializer):
     script = serializers.CharField()
     script_type = serializers.CharField()
     state_on_fail = serializers.CharField(required=False)
-    params = JSONField(required=False)
+    params = serializers.JSONField(required=False)
 
 
 class ActionDetailSerializer(ActionSerializer):
-    state_available = JSONField()
-    params = JSONField(required=False)
-    log_files = JSONField(required=False)
+    state_available = serializers.JSONField()
+    params = serializers.JSONField(required=False)
+    log_files = serializers.JSONField(required=False)
     config = serializers.SerializerMethodField()
     subs = serializers.SerializerMethodField()
 
@@ -685,7 +674,7 @@ class ActionShort(serializers.Serializer):
     display_name = serializers.CharField(required=False)
     button = serializers.CharField(required=False)
     config = serializers.SerializerMethodField()
-    hostcomponentmap = JSONField(read_only=False)
+    hostcomponentmap = serializers.JSONField(read_only=False)
 
     def get_config(self, obj):
         context = self.context
@@ -728,8 +717,8 @@ class UpgradeSerializer(serializers.Serializer):
     upgradable = serializers.BooleanField(required=False)
     license = serializers.CharField(required=False)
     license_url = hlink('bundle-license', 'bundle_id', 'bundle_id')
-    from_edition = JSONField(required=False)
-    state_available = JSONField(required=False)
+    from_edition = serializers.JSONField(required=False)
+    state_available = serializers.JSONField(required=False)
     state_on_success = serializers.CharField(required=False)
 
 
@@ -760,7 +749,7 @@ class DoUpgradeSerializer(serializers.Serializer):
             upgrade = check_obj(Upgrade, validated_data.get('upgrade_id'), 'UPGRADE_NOT_FOUND')
             return cm.upgrade.do_upgrade(validated_data.get('obj'), upgrade)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
 
 class StatsSerializer(serializers.Serializer):
@@ -785,7 +774,7 @@ def get_job_action(obj):
 
 def get_job_objects(obj):
     resp = []
-    selector = json.loads(obj.selector)
+    selector = obj.selector
     for obj_type in selector:
         try:
             if obj_type == 'cluster':
@@ -812,6 +801,14 @@ def get_job_objects(obj):
     return resp
 
 
+def get_job_object_type(obj):
+    try:
+        action = Action.objects.get(id=obj.action_id)
+        return action.prototype.type
+    except Action.DoesNotExist:
+        return None
+
+
 class TaskListSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     pid = serializers.IntegerField(read_only=True)
@@ -834,11 +831,11 @@ class JobShort(serializers.Serializer):
 
 
 class TaskSerializer(TaskListSerializer):
-    selector = JSONField(read_only=True)
-    config = JSONField(required=False)
-    attr = JSONField(required=False)
-    hc = JSONField(required=False)
-    hosts = JSONField(required=False)
+    selector = serializers.JSONField(read_only=True)
+    config = serializers.JSONField(required=False)
+    attr = serializers.JSONField(required=False)
+    hc = serializers.JSONField(required=False)
+    hosts = serializers.JSONField(required=False)
     action_url = serializers.HyperlinkedIdentityField(
         read_only=True,
         view_name='action-details',
@@ -851,6 +848,7 @@ class TaskSerializer(TaskListSerializer):
     restart = hlink('task-restart', 'id', 'task_id')
     terminatable = serializers.SerializerMethodField()
     cancel = hlink('task-cancel', 'id', 'task_id')
+    object_type = serializers.SerializerMethodField()
 
     def get_terminatable(self, obj):
         try:
@@ -893,6 +891,9 @@ class TaskSerializer(TaskListSerializer):
     def get_objects(self, obj):
         return get_job_objects(obj)
 
+    def get_object_type(self, obj):
+        return get_job_object_type(obj)
+
 
 class TaskRunSerializer(TaskSerializer):
     def create(self, validated_data):
@@ -900,20 +901,20 @@ class TaskRunSerializer(TaskSerializer):
             obj = cm.job.start_task(
                 validated_data.get('action_id'),
                 validated_data.get('selector'),
-                validated_data.get('config', None),
-                validated_data.get('attr', None),
-                validated_data.get('hc', None),
-                validated_data.get('hosts', None)
+                validated_data.get('config', {}),
+                validated_data.get('attr', {}),
+                validated_data.get('hc', []),
+                validated_data.get('hosts', [])
             )
             obj.jobs = JobLog.objects.filter(task_id=obj.id)
             return obj
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds)
+            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds) from e
 
 
 class TaskPostSerializer(TaskRunSerializer):
     action_id = serializers.IntegerField()
-    selector = JSONField()
+    selector = serializers.JSONField()
 
     def validate_selector(self, selector):
         if not isinstance(selector, dict):

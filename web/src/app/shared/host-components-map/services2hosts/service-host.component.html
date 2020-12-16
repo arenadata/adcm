@@ -1,8 +1,4 @@
 <div class="controls" [ngStyle]="{'position': fixedButton ? 'fixed': 'initial'}">
-  <span [@popup]="showPopup? 'show': 'hide'" class="notify">
-    <mat-icon color="accent">done</mat-icon>&nbsp;<span>{{ notify }}</span>
-  </span>
-  &nbsp;&nbsp;
   <button mat-raised-button color="primary" (click)="restore()">Restore</button>
   <button [disabled]="noValid" mat-raised-button color="accent" (click)="save()" *ngIf="!hideButton">Save</button>
 </div>
@@ -11,10 +7,10 @@
   <div>
     <h3><span>Components</span></h3>
     <div class="wrapper">
-      <div *ngIf="!serviceComponents?.length">
+      <div *ngIf="!Components?.length">
         Add services on the <a [routerLink]="['/cluster', cluster?.id, 'service']">services page.</a>
       </div>
-      <app-much-2-many *ngFor="let service of serviceComponents" [model]="service"
+      <app-much-2-many *ngFor="let service of Components" [model]="service" [form]="form"
         (clickToTitleEvt)="selectService($event)" (clearRelationEvt)="clearHostFromService($event)">
       </app-much-2-many>
     </div>
@@ -24,10 +20,10 @@
       <app-add-button [name]="'host2cluster'" [asIcon]="true" [style.lineHeight.px]="16"></app-add-button>
     </h3>
     <div class="wrapper">
-      <div *ngIf="!hosts?.length">
+      <div *ngIf="!Hosts?.length">
         Add hosts on the <a [routerLink]="['/cluster', cluster?.id, 'host']">hosts page.</a>
       </div>
-      <app-much-2-many *ngFor="let host of hosts" [model]="host" (clickToTitleEvt)="selectHost($event)"
+      <app-much-2-many *ngFor="let host of Hosts" [model]="host" [form]="form" (clickToTitleEvt)="selectHost($event)"
         (clearRelationEvt)="clearServiceFromHost($event)">
       </app-much-2-many>
     </div>

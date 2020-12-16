@@ -15,7 +15,6 @@ import os.path
 import hashlib
 import tarfile
 import shutil
-import json
 import functools
 
 from version_utils import rpm
@@ -239,7 +238,7 @@ def re_check_actions():
     for act in StageAction.objects.all():
         if not act.hostcomponentmap:
             continue
-        hc = json.loads(act.hostcomponentmap)
+        hc = act.hostcomponentmap
         ref = 'in hc_acl of action "{}" of {}'.format(act.name, proto_ref(act.prototype))
         for item in hc:
             sp = StagePrototype.objects.filter(type='service', name=item['service'])
@@ -256,7 +255,7 @@ def re_check_components():
         if not comp.requires:
             continue
         ref = 'in requires of component "{}" of {}'.format(comp.name, proto_ref(comp.prototype))
-        req_list = json.loads(comp.requires)
+        req_list = comp.requires
         for i, item in enumerate(req_list):
             if 'service' in item:
                 try:
@@ -275,17 +274,16 @@ def re_check_components():
             if comp == req_comp:
                 msg = 'Component can not require themself {}'
                 err('COMPONENT_CONSTRAINT_ERROR', msg.format(ref))
-        comp.requires = json.dumps(req_list)
+        comp.requires = req_list
         comp.save()
 
 
 def re_check_config():
     for c in StagePrototypeConfig.objects.filter(type='variant'):
         ref = proto_ref(c.prototype)
-        lim = json.loads(c.limits)
-        if lim['source']['type'] != 'list':
+        if c.limits['source']['type'] != 'list':
             continue
-        keys = lim['source']['name'].split('/')
+        keys = c.limits['source']['name'].split('/')
         name = keys[0]
         subname = ''
         if len(keys) > 1:
@@ -294,7 +292,7 @@ def re_check_config():
             s = StagePrototypeConfig.objects.get(prototype=c.prototype, name=name, subname=subname)
         except StagePrototypeConfig.DoesNotExist:
             msg = f'Unknown config source name "{{}}" for {ref} config "{c.name}/{c.subname}"'
-            err('INVALID_CONFIG_DEFINITION', msg.format(lim['source']['name']))
+            err('INVALID_CONFIG_DEFINITION', msg.format(c.limits['source']['name']))
         if s == c:
             msg = f'Config parameter "{c.name}/{c.subname}" can not refer to itself ({ref})'
             err('INVALID_CONFIG_DEFINITION', msg)

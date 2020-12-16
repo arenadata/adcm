@@ -254,12 +254,12 @@ def save_components(proto, conf):
         dict_to_obj(cc, 'description', component)
         dict_to_obj(cc, 'display_name', component)
         dict_to_obj(cc, 'monitoring', component)
-        dict_json_to_obj(cc, 'params', component)
         fix_display_name(cc, component)
         check_component_constraint_definition(proto, comp_name, cc)
         check_component_requires(proto, comp_name, cc)
-        dict_json_to_obj(cc, 'constraint', component)
-        dict_json_to_obj(cc, 'requires', component)
+        dict_to_obj(cc, 'params', component)
+        dict_to_obj(cc, 'constraint', component)
+        dict_to_obj(cc, 'requires', component)
         component.save()
 
 
@@ -342,13 +342,14 @@ def save_upgrade(proto, conf):
         dict_to_obj(item, 'description', upg)
         if 'states' in item:
             check_upgrade_states(proto, item)
-            dict_json_to_obj(item['states'], 'available', upg)
+            dict_to_obj(item['states'], 'available', upg)
             if 'available' in item['states']:
-                upg.state_available = json.dumps(item['states']['available'])
+                upg.state_available = item['states']['available']
             if 'on_success' in item['states']:
                 upg.state_on_success = item['states']['on_success']
         check_upgrade_edition(proto, item)
-        dict_json_to_obj(item, 'from_edition', upg)
+        if in_dict(item, 'from_edition'):
+            upg.from_edition = item['from_edition']
         upg.save()
 
 
@@ -359,7 +360,6 @@ def save_export(proto, conf):
     if proto.type not in ('cluster', 'service'):
         msg = 'Only cluster or service can have export section ({})'
         err('INVALID_OBJECT_DEFINITION', msg.format(ref))
-    key = conf['export']
     if isinstance(conf['export'], str):
         export = [conf['export']]
     elif isinstance(conf['export'], list):
@@ -420,7 +420,7 @@ def save_import(proto, conf):
         set_version(si, conf['import'][key])
         dict_to_obj(conf['import'][key], 'required', si)
         dict_to_obj(conf['import'][key], 'multibind', si)
-        dict_json_to_obj(conf['import'][key], 'default', si)
+        dict_to_obj(conf['import'][key], 'default', si)
         si.save()
 
 
@@ -478,7 +478,7 @@ def save_sub_actions(proto, conf, action):
         sub_action.display_name = sub['name']
         if 'display_name' in sub:
             sub_action.display_name = sub['display_name']
-        dict_json_to_obj(sub, 'params', sub_action)
+        dict_to_obj(sub, 'params', sub_action)
         if 'on_fail' in sub:
             sub_action.state_on_fail = sub['on_fail']
         sub_action.save()
@@ -500,20 +500,20 @@ def save_actions(proto, conf, bundle_hash):
         dict_to_obj(ac, 'description', action)
         dict_to_obj(ac, 'allow_to_terminate', action)
         dict_to_obj(ac, 'partial_execution', action)
-        dict_json_to_obj(ac, 'ui_options', action)
-        dict_json_to_obj(ac, 'params', action)
-        dict_json_to_obj(ac, 'log_files', action)
+        dict_to_obj(ac, 'ui_options', action)
+        dict_to_obj(ac, 'params', action)
+        dict_to_obj(ac, 'log_files', action)
         fix_display_name(ac, action)
 
         check_action_hc(proto, ac, action_name)
-        dict_json_to_obj(ac, 'hc_acl', action, 'hostcomponentmap')
+        dict_to_obj(ac, 'hc_acl', action, 'hostcomponentmap')
 
         if check_action_states(proto, action_name, ac):
             if 'on_success' in ac['states'] and ac['states']['on_success']:
                 action.state_on_success = ac['states']['on_success']
             if 'on_fail' in ac['states'] and ac['states']['on_fail']:
                 action.state_on_fail = ac['states']['on_fail']
-            action.state_available = json.dumps(ac['states']['available'])
+            action.state_available = ac['states']['available']
         action.save()
         save_sub_actions(proto, ac, action)
         save_prototype_config(proto, ac, bundle_hash, action)
@@ -683,16 +683,16 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
             source['strict'] = True
         if vtype == 'inline':
             if not in_dict(conf['source'], 'value'):
-                msg = 'Config key "{}/{}" of {} has no mandatory source: value statment'
-                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref, vtype))
+                msg = 'Config key "{}/{}" of {} has no mandatory source:value statment'
+                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
             source['value'] = conf['source']['value']
             if not isinstance(source['value'], list):
                 msg = 'Config key "{}/{}" of {} source value should be an array'
                 err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
         elif vtype in ('config', 'builtin'):
             if not in_dict(conf['source'], 'name'):
-                msg = 'Config key "{}/{}" of {} has no mandatory source: name statment'
-                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref, vtype))
+                msg = 'Config key "{}/{}" of {} has no mandatory source:name statment'
+                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
             source['name'] = conf['source']['name']
         if vtype == 'builtin':
             if conf['source']['name'] not in ('free_hosts', 'cluster_hosts'):
@@ -807,12 +807,12 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
             else:
                 sc.display_name = name
         conf['limits'] = process_limits(conf, name, subname)
-        dict_json_to_obj(conf, 'limits', sc)
+        dict_to_obj(conf, 'limits', sc)
         if 'ui_options' in conf:
             if not isinstance(conf['ui_options'], dict):
                 msg = 'ui_options of config key "{}/{}" of {} should be a map'
                 err('INVALID_CONFIG_DEFINITION', msg.format(name, subname, ref))
-        dict_json_to_obj(conf, 'ui_options', sc)
+        dict_to_obj(conf, 'ui_options', sc)
         if 'default' in conf:
             check_config_type(proto, name, subname, conf, conf['default'], bundle_hash)
         if type_is_complex(conf['type']):
@@ -926,12 +926,14 @@ def in_dict(dictionary, key):
         return False
 
 
-def dict_to_obj(dictionary, key, obj):
+def dict_to_obj(dictionary, key, obj, obj_key=None):
+    if not obj_key:
+        obj_key = key
     if not isinstance(dictionary, dict):
         return
     if key in dictionary:
         if dictionary[key] is not None:
-            setattr(obj, key, dictionary[key])
+            setattr(obj, obj_key, dictionary[key])
 
 
 def dict_json_to_obj(dictionary, key, obj, obj_key=''):

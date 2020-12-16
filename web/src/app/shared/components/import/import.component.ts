@@ -12,7 +12,7 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ValidatorFn } from '@angular/forms';
 import { MatCheckboxChange } from '@angular/material/checkbox';
-import { ClusterService } from '@app/core';
+import { ChannelService, ClusterService, keyChannelStrim } from '@app/core';
 import { IExport, IImport } from '@app/core/types';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -24,7 +24,7 @@ interface IComposite {
 const trueOnly = (): ValidatorFn => (control: AbstractControl): { [key: string]: any } | null => (control.value ? null : { trueOnly: !control.value });
 
 const requiredObject = (): ValidatorFn => (control: AbstractControl): { [key: string]: boolean } | null =>
-  Object.keys(control.value).some(key => control.value[key]) ? null : { requiered: true };
+  Object.keys(control.value).some((key) => control.value[key]) ? null : { requiered: true };
 
 @Component({
   selector: 'app-exports',
@@ -38,7 +38,7 @@ const requiredObject = (): ValidatorFn => (control: AbstractControl): { [key: st
       </ng-container>
     </ng-container>
   `,
-  styles: ['.component {padding: 6px 8px; margin-bottom: 18px; font-size: 18px;}', '.component div {font-size: 12px;margin-left: 24px; margin-top: 4px;}']
+  styles: ['.component {padding: 6px 8px; margin-bottom: 18px; font-size: 18px;}', '.component div {font-size: 12px;margin-left: 24px; margin-top: 4px;}'],
 })
 export class ExportComponent {
   @Input() form: FormGroup;
@@ -54,14 +54,14 @@ export class ExportComponent {
 
       if (e.checked)
         Object.keys(group.controls)
-          .map(key => {
+          .map((key) => {
             group.controls[key].clearValidators();
             return key;
           })
-          .filter(key => key !== this.getKey(item.id))
-          .map(key => group.controls[key].setValue(false));
+          .filter((key) => key !== this.getKey(item.id))
+          .map((key) => group.controls[key].setValue(false));
       else if (this.import.required) {
-        Object.keys(group.controls).map(key => {
+        Object.keys(group.controls).map((key) => {
           const c = group.controls[key];
           c.setValidators(trueOnly());
           c.updateValueAndValidity();
@@ -87,14 +87,14 @@ export class ExportComponent {
       </div>
     </div>
   `,
-  styleUrls: ['./import.component.scss']
+  styleUrls: ['./import.component.scss'],
 })
 export class ImportComponent implements OnInit {
   form = new FormGroup({});
   data$: Observable<IImport[]>;
   asIs = false;
 
-  constructor(private current: ClusterService) {}
+  constructor(private current: ClusterService, private channel: ChannelService) {}
 
   getKey(id: IComposite) {
     return JSON.stringify(id);
@@ -106,10 +106,10 @@ export class ImportComponent implements OnInit {
 
   ngOnInit() {
     this.data$ = this.current.getImportData().pipe(
-      tap(a => (this.asIs = !!a.length)),
-      tap(a =>
+      tap((a) => (this.asIs = !!a.length)),
+      tap((a) =>
         a.map((i: IImport) => {
-          const validFlag = i.required && !i.multibind && i.exports.every(e => !e.binded);
+          const validFlag = i.required && !i.multibind && i.exports.every((e) => !e.binded);
           const exportGroup = i.exports.reduce((p, c) => {
             const fc = {};
             fc[`${this.getKey(c.id)}`] = new FormControl(c.binded, validFlag ? trueOnly() : null);
@@ -126,16 +126,16 @@ export class ImportComponent implements OnInit {
     if (!this.form.invalid) {
       let bind = [];
       Object.keys(this.form.controls)
-        .filter(a => Object.keys(this.form.controls[a].value).length)
-        .map(key => {
+        .filter((a) => Object.keys(this.form.controls[a].value).length)
+        .map((key) => {
           const obj = JSON.parse(key);
           const value = this.form.controls[key].value;
           const items = Object.keys(value)
-            .filter(a => value[a] === true)
-            .map(a => ({ ...obj, export_id: JSON.parse(a) }));
+            .filter((a) => value[a] === true)
+            .map((a) => ({ ...obj, export_id: JSON.parse(a) }));
           bind = [...bind, ...items];
         });
-      this.current.bindImport({ bind }).subscribe();
+      this.current.bindImport({ bind }).subscribe((_) => this.channel.next(keyChannelStrim.notifying, 'Successfully saved'));
     }
   }
 }

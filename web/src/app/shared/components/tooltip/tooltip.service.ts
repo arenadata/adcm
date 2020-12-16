@@ -9,9 +9,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Injectable } from '@angular/core';
-import { ApiBase, TypeName } from '@app/core/types/api';
-import { EventEmitter } from 'events';
+import { EventEmitter, Injectable } from '@angular/core';
+import { ApiBase } from '@app/core/types/api';
 import { Subject } from 'rxjs';
 
 export type ComponentName = 'issue' | 'status' | undefined;
@@ -31,9 +30,9 @@ export interface TooltipDisplayOptions {
 
 @Injectable()
 export class ComponentData {
-  typeName: TypeName;
-  current: ApiBase;
-  emitter: EventEmitter;
+  path: string;
+  current: any;
+  emitter: EventEmitter<any>;
 }
 
 @Injectable({
@@ -58,6 +57,7 @@ export class TooltipService {
   }
 
   show(event: MouseEvent, source: HTMLElement, options: TooltipDisplayOptions) {
+    this.positionSource.next();
     clearTimeout(this.timeOut);
     if (this.isShow(source, options)) {
       this.positionSource.next({ event, source, options });

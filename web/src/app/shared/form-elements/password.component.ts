@@ -10,7 +10,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
+import { FormControl } from '@angular/forms';
 
+import { FieldService } from './../configuration/field.service';
 import { FieldDirective } from './field.directive';
 
 @Component({
@@ -22,17 +24,26 @@ import { FieldDirective } from './field.directive';
         <mat-error *ngIf="hasError('required')"> Field [{{ field.display_name }}] is required! </mat-error>
       </mat-form-field>
       <mat-form-field *ngIf="getConfirmPasswordField()">
-        <input matInput appConfirmEqualValidator="{{ field.name }}" [formControlName]="'confirm_' + field.name" type="password" [readonly]="field.read_only" />
+        <input matInput [formControlName]="'confirm_' + field.name" type="password" [readonly]="field.read_only" />
         <mat-error *ngIf="hasErrorConfirm('required')"> Confirm [{{ field.display_name }}] is required! </mat-error>
         <mat-error *ngIf="hasErrorConfirm('notEqual')"> Field [{{ field.display_name }}] and confirm [{{ field.display_name }}] does not match! </mat-error>
       </mat-form-field>
     </ng-container>
   `,
-  styleUrls: ['./password.component.scss']
+  styleUrls: ['./password.component.scss'],
 })
 export class PasswordComponent extends FieldDirective implements OnInit {
+  constructor(private service: FieldService) {
+    super();
+  }
+
   ngOnInit() {
+    if (!this.field.ui_options?.no_confirm) {
+      this.form.addControl(`confirm_${this.field.name}`, new FormControl(this.field.value, this.field.activatable ? [] : this.service.setValidator(this.field, this.control)));
+    }
+
     super.ngOnInit();
+
     const confirm = this.getConfirmPasswordField();
     if (confirm) confirm.markAllAsTouched();
   }

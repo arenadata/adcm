@@ -166,14 +166,10 @@ class BasePage:
     @staticmethod
     def get_checkbox_element_status(element):
         """Get checkbox element status, checked or not
-
         :param element: WebElement
         :return: boolean
         """
-        el_class = element.get_attribute("class")
-        if "mat-checkbox-checked" in el_class:
-            return True
-        return True
+        return "mat-checkbox-checked" in element.get_attribute("class")
 
     def clear_element(self, element):
         element.send_keys(Keys.CONTROL + "a")
@@ -363,10 +359,10 @@ class LoginPage(BasePage):
         self._login = None
         self._password = None
 
-    def login(self, login, password):
+    def login(self, username, password):
         self._login = self._wait_element_present(LoginPage.login_locator)
         self._password = self._wait_element_present(LoginPage.passwd_locator)
-        self._login.send_keys(login)
+        self._login.send_keys(username)
         self._password.send_keys(password)
         self._password.send_keys(Keys.RETURN)
         self._contains_url("admin")

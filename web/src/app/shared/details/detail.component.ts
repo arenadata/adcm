@@ -11,7 +11,7 @@
 // limitations under the License.
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ChannelService, ClusterService, WorkerInstance } from '@app/core';
+import { ChannelService, ClusterService, keyChannelStrim, WorkerInstance } from '@app/core';
 import { EventMessage, SocketState } from '@app/core/store';
 import { Cluster, Host, IAction, Issue, Job, isIssue } from '@app/core/types';
 import { Store } from '@ngrx/store';
@@ -61,7 +61,7 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
   }
 
   run(w: WorkerInstance) {
-    const { id, name, typeName, actions, issue, status, prototype_name, prototype_display_name, prototype_version, bundle_id } = w.current;
+    const { id, name, typeName, action, actions, issue, status, prototype_name, prototype_display_name, prototype_version, bundle_id, state } = w.current;
     const { upgradable, upgrade, hostcomponent } = w.current as Cluster;
     const { log_files, objects } = w.current as Job;
     const { provider_id } = w.current as Host;
@@ -80,10 +80,12 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
       name,
       typeName,
       actions,
+      action,
       issue,
       upgradable,
       upgrade,
       status,
+      state,
       log_files,
       objects,
       prototype_name,
@@ -96,7 +98,7 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
   }
 
   scroll(stop: { direct: -1 | 1 | 0; screenTop: number }) {
-    this.channel.next('scroll', stop);
+    this.channel.next(keyChannelStrim.scroll, stop);
   }
 
   reset() {
