@@ -150,15 +150,16 @@ def check_upgrade_import(obj, upgrade):   # pylint: disable=too-many-branches
             return False, msg.format(proto_ref(impr_obj.prototype))
         try:
             pi = PrototypeImport.objects.get(prototype=proto, name=export.prototype.name)
+            if not version_in(export.prototype.version, pi):
+                msg = 'Import "{}" of {} versions ({}, {}) does not match export version: {} ({})'
+                return (False, msg.format(
+                    export.prototype.name, proto_ref(proto), pi.min_version, pi.max_version,
+                    export.prototype.version, obj_ref(export)
+                ))
         except PrototypeImport.DoesNotExist:
-            msg = 'New version of {} does not have import "{}"'
-            return False, msg.format(proto_ref(proto), export.prototype.name)
-        if not version_in(export.prototype.version, pi):
-            msg = 'Import "{}" of {} versions ({}, {}) does not match export version: {} ({})'
-            return (False, msg.format(
-                export.prototype.name, proto_ref(proto), pi.min_version, pi.max_version,
-                export.prototype.version, obj_ref(export)
-            ))
+            # msg = 'New version of {} does not have import "{}"'   # ADCM-1507
+            # return False, msg.format(proto_ref(proto), export.prototype.name)
+            cbind.delete()
 
     for cbind in ClusterBind.objects.filter(source_cluster=obj):
         export = get_export(cbind)

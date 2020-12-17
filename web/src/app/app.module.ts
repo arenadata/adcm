@@ -37,7 +37,7 @@ import { LogComponent } from './ws-logs/log.component';
     SharedModule,
     EntryModule,
     MainModule,
-    RouterModule.forRoot([]),
+    RouterModule.forRoot([], { relativeLinkResolution: 'legacy' }),
     StoreModule.forRoot(reducers),
     EffectsModule.forRoot(StoreEffects),
     // StoreRouterConnectingModule.forRoot(),

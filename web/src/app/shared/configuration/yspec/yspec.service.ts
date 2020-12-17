@@ -10,16 +10,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Injectable } from '@angular/core';
-import { getControlType, getPattern, IRoot } from '@app/core/types';
+import { IRoot } from '@app/core/types';
 
-import { FieldOptions, controlType, ValidatorInfo } from '../types';
+import { IFieldOptions, controlType, IValidator, TNBase, TNReq } from '../types';
+import { getControlType, getPattern } from '../field.service';
 
-export type simpleType = 'string' | 'integer' | 'float' | 'bool' | 'int' | 'one_of' | 'dict_key_selection';
-export type reqursionType = 'list' | 'dict';
-export type matchType = simpleType | reqursionType;
+export type TMatch = TNBase | TNReq;
 
+/**
+ *```
+ {
+    match: matchType;
+    selector?: string;
+    variants?: { [key: string]: string };
+    item?: string;
+    items?: IRoot;        // { [key: string]: string; }
+    required_items?: string[];
+    default_item?: string;
+ }
+ ```
+ */
 interface IYRoot {
-  match: matchType;
+  match: TMatch;
   selector?: string;
   variants?: { [key: string]: string };
   item?: string;
@@ -28,6 +40,13 @@ interface IYRoot {
   default_item?: string;
 }
 
+/**
+ *``` 
+ {
+    [key: string]: IYRoot;
+ }
+ ```
+ */
 export interface IYspec {
   [key: string]: IYRoot;
 }
@@ -46,27 +65,27 @@ export interface IYspec {
 export interface IYField {
   name: string;
   path: string[];
-  type: simpleType;
+  type: TNBase;
   controlType: controlType;
-  validator: ValidatorInfo;
+  validator: IValidator;
 }
 
 /**
- * ``` 
+ * ```
  * {
  *   name:      string;
  *   type:      reqursionType;    // 'list' | 'dict'
  *   options:   IYContainer | IYField | (IYContainer | IYField)[];
- * } 
+ * }
  *```
  */
 export interface IYContainer {
   name: string;
-  type: reqursionType;
+  type: TNReq;
   options: IYContainer | IYField | (IYContainer | IYField)[];
 }
 
-export interface IStructure extends FieldOptions {
+export interface IStructure extends IFieldOptions {
   rules: { options: any; type: string; name: string };
 }
 
@@ -99,7 +118,7 @@ export class YspecService {
     }
   }
 
-  field(field: { type: simpleType; path: string[] }): IYField {
+  field(field: { type: TNBase; path: string[] }): IYField {
     const name = field.path.reverse()[0];
     return {
       name,
@@ -108,8 +127,8 @@ export class YspecService {
       controlType: getControlType(field.type),
       validator: {
         required: this.findRule(field.path, 'required_items'),
-        pattern: getPattern(field.type)
-      }
+        pattern: getPattern(field.type),
+      },
     };
   }
 
@@ -129,7 +148,7 @@ export class YspecService {
     return {
       type: 'dict',
       name,
-      options: Object.keys(items).map((item_name: string) => this.build(items[item_name], [...path, item_name]))
+      options: Object.keys(items).map((item_name: string) => this.build(items[item_name], [...path, item_name])),
     };
   }
 

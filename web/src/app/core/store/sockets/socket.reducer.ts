@@ -12,6 +12,9 @@
 import { TypeName } from '@app/core/types';
 import { Action, createAction, createFeatureSelector, createReducer, createSelector, on, props } from '@ngrx/store';
 
+/**
+ * Event Message Object dispatched from socket
+ */
 export interface IEMObject {
   type: TypeName;
   id: number;

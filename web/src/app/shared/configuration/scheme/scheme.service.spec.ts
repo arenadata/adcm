@@ -14,10 +14,10 @@ import { TestBed } from '@angular/core/testing';
 import { SchemeService } from './scheme.service';
 import { FieldService } from '../field.service';
 import { FormGroup, FormControl, FormArray } from '@angular/forms';
-import { FieldOptions } from '../types';
+import { IFieldOptions } from '../types';
 
 const form = new FormGroup({ field: new FormControl() });
-const field = (<unknown>{ display_name: 'field_display_name', name: 'field', limits: {}, required: true, value: null, default: null }) as FieldOptions;
+const field = (<unknown>{ display_name: 'field_display_name', name: 'field', limits: {}, required: true, value: null, default: null }) as IFieldOptions;
 
 describe('SchemeService', () => {
   let service: SchemeService;

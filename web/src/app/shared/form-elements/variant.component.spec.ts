@@ -13,7 +13,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, FormGroup } from '@angular/forms';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
-import { FieldOptions } from '../configuration/types';
+import { IFieldOptions } from '../configuration/types';
 import { SharedModule } from '../shared.module';
 import { VariantComponent } from './variant.component';
 
@@ -32,7 +32,7 @@ describe('VariantComponent', () => {
     fixture = TestBed.createComponent(VariantComponent);
     component = fixture.componentInstance;
     component.form = new FormGroup({ name: new FormControl() });
-    component.field = { name: 'name', limits: {} } as FieldOptions;
+    component.field = { name: 'name', limits: {} } as IFieldOptions;
     fixture.detectChanges();
   });
 

@@ -15,7 +15,7 @@ import { FieldDirective } from '@app/shared/form-elements/field.directive';
 import { BaseMapListDirective } from '@app/shared/form-elements/map.component';
 
 import { SchemeComponent } from '../scheme/scheme.component';
-import { FieldOptions } from '../types';
+import { IFieldOptions } from '../types';
 
 @Component({
   selector: 'app-field',
@@ -24,7 +24,7 @@ import { FieldOptions } from '../types';
 })
 export class FieldComponent implements OnInit, OnChanges {
   @Input()
-  options: FieldOptions;
+  options: IFieldOptions;
   @Input()
   form: FormGroup;
   currentFormGroup: FormGroup;

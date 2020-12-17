@@ -9,7 +9,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, ElementRef, EventEmitter, HostListener, Injector, Input, OnDestroy, OnInit, Renderer2, Type } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  HostListener,
+  Injector,
+  Input,
+  OnDestroy,
+  OnInit,
+  Renderer2,
+  Type,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { BaseDirective } from '@app/shared/directives';
 import { delay, take } from 'rxjs/operators';
@@ -33,6 +44,7 @@ export class SimpleTextComponent implements OnInit {
   }
 }
 
+const kit = { issue: IssueInfoComponent, status: StatusInfoComponent };
 @Component({
   selector: 'app-tooltip',
   template: '<ng-container *ngComponentOutlet="CurrentComponent; injector: componentInjector"></ng-container>',
@@ -45,7 +57,13 @@ export class TooltipComponent extends BaseDirective implements OnInit, OnDestroy
   CurrentComponent: Type<SimpleTextComponent | IssueInfoComponent | StatusInfoComponent>;
   componentInjector: Injector;
 
-  constructor(private el: ElementRef, private service: TooltipService, private renderer: Renderer2, private router: Router, private parentInjector: Injector) {
+  constructor(
+    private el: ElementRef,
+    private service: TooltipService,
+    private renderer: Renderer2,
+    private router: Router,
+    private parentInjector: Injector
+  ) {
     super();
   }
 
@@ -114,7 +132,7 @@ export class TooltipComponent extends BaseDirective implements OnInit, OnDestroy
   buildComponent(o: TooltipOptions) {
     this.options = o;
     this.source = this.options.source;
-    this.CurrentComponent = { issue: IssueInfoComponent, status: StatusInfoComponent }[this.options.options.componentName] || SimpleTextComponent;
+    this.CurrentComponent = kit[this.options.options.componentName] || SimpleTextComponent;
 
     const emitter = new EventEmitter();
     emitter.pipe(take(1), delay(100), this.takeUntil()).subscribe(() => this.position());
