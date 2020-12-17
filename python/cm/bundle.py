@@ -383,7 +383,7 @@ def copy_stage_component(stage_components, stage_proto, prototype, bundle):
         componets.append(comp)
     Prototype.objects.bulk_create(componets)
     for sp in StagePrototype.objects.filter(type='component', parent=stage_proto):
-        p = Prototype.objects.get(name=sp.name, type='component', bundle=bundle)
+        p = Prototype.objects.get(name=sp.name, type='component', parent=prototype, bundle=bundle)
         copy_stage_actons(StageAction.objects.filter(prototype=sp), p)
         copy_stage_config(StagePrototypeConfig.objects.filter(prototype=sp), p)
 
