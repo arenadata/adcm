@@ -363,8 +363,8 @@ class ClusterServiceUISerializer(ClusterServiceDetailSerializer):
     components = serializers.SerializerMethodField()
     name = serializers.CharField(read_only=True)
     version = serializers.CharField(read_only=True)
-    action = ClusterServiceUrlField(read_only=True, view_name='cluster-service-action')
-    config = ClusterServiceUrlField(read_only=True, view_name='cluster-service-config')
+    action = ActionURL(view_name='object-action')
+    config = ConfigURL(view_name='config')
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
