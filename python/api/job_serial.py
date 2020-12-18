@@ -29,6 +29,7 @@ from cm.models import (
 
 from api.api_views import hlink
 
+
 def get_job_action(obj):
     try:
         act = Action.objects.get(id=obj.action_id)
@@ -200,7 +201,6 @@ class TaskPostSerializer(RunTaskSerializer):
         if not isinstance(selector, dict):
             raise AdcmApiEx('JSON_ERROR', 'selector should be a map')
         return selector
-
 
 
 class JobListSerializer(serializers.Serializer):
