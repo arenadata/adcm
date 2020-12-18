@@ -13,14 +13,29 @@
 from django.db import models
 from rest_framework.response import Response
 
-from api.api_views import ListView, GenericAPIPermView, create, update
-from api.serializers import check_obj, get_config_version
+from api.api_views import ListView, GenericAPIPermView, create, update, check_obj
+
 from cm.adcm_config import ui_config
 from cm.errors import AdcmApiEx
 from cm.models import (
     ADCM, Cluster, HostProvider, Host, ClusterObject, ServiceComponent, ConfigLog, ObjectConfig
 )
+
 from . import serializers
+
+
+def get_config_version(objconf, version):
+    if version == 'previous':
+        ver = objconf.previous
+    elif version == 'current':
+        ver = objconf.current
+    else:
+        ver = version
+    try:
+        cl = ConfigLog.objects.get(obj_ref=objconf, id=ver)
+    except ConfigLog.DoesNotExist:
+        raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist") from None
+    return cl
 
 
 def get_objects_for_config(object_type):

@@ -17,9 +17,9 @@ from rest_framework import serializers
 from rest_framework.reverse import reverse
 
 from api.config.serializers import ConfigURL
-from api.serializers import check_obj, filter_actions, ActionShort
+from api.api_views import check_obj, filter_actions
 from api.cluster_serial import BindSerializer
-from api.action.serializers import ActionURL
+from api.action.serializers import ActionURL, ActionShort
 
 from cm import issue
 from cm import status_api
@@ -118,16 +118,12 @@ class ServiceComponentDetailSerializer(ServiceComponentSerializer):
         return status_api.get_component_status(obj.id)
 
 
-class ActionShortSerializer(ActionShort):
-    run = ServiceActionDetailsUrlField(read_only=True, view_name='service-action-run')
-
-
 class ServiceUISerializer(ServiceDetailSerializer):
     actions = serializers.SerializerMethodField()
     components = serializers.SerializerMethodField()
     name = serializers.CharField(read_only=True)
     version = serializers.SerializerMethodField()
-    action = ServiceObjectUrlField(read_only=True, view_name='service-action')
+    action = ActionURL(view_name='object-action')
     config = ConfigURL(read_only=True, view_name='config')
 
     def get_actions(self, obj):
@@ -135,7 +131,7 @@ class ServiceUISerializer(ServiceDetailSerializer):
         self.context['object'] = obj
         self.context['service_id'] = obj.id
         actions = filter_actions(obj, act_set)
-        acts = ActionShortSerializer(actions, many=True, context=self.context)
+        acts = ActionShort(actions, many=True, context=self.context)
         return acts.data
 
     def get_components(self, obj):

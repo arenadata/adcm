@@ -18,6 +18,7 @@ from django_filters import rest_framework as drf_filters
 
 import rest_framework.pagination
 from rest_framework import status, serializers
+from rest_framework.reverse import reverse
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 from rest_framework.generics import GenericAPIView
@@ -26,14 +27,20 @@ from rest_framework.permissions import DjangoModelPermissions
 
 from adcm.settings import REST_FRAMEWORK
 
-from cm.models import Action
+import cm.upgrade
+import cm.config as config
+from cm.models import Action, ConfigLog, PrototypeConfig
 from cm.errors import AdcmApiEx
 from cm.logger import log
 
 
-def check_obj(model, kw_req, error):
+def check_obj(model, req, error):
+    if isinstance(req, dict):
+        kw = req
+    else:
+        kw = {'id': req}
     try:
-        return model.get(**kw_req)
+        return model.objects.get(**kw)
     except ObjectDoesNotExist:
         raise AdcmApiEx(error) from None
 
@@ -57,6 +64,36 @@ def create(serializer, **kwargs):
 
 def update(serializer, **kwargs):
     return save(serializer, status.HTTP_200_OK, **kwargs)
+
+
+def filter_actions(obj, actions_set):
+    if obj.state == config.Job.LOCKED:
+        return []
+    filtered = []
+    for act in actions_set:
+        available = act.state_available
+        if available == 'any':
+            filtered.append(act)
+        elif obj.state in available:
+            filtered.append(act)
+    for act in actions_set:
+        act.config = PrototypeConfig.objects.filter(
+            prototype=act.prototype, action=act
+        ).order_by('id')
+    return filtered
+
+
+def get_upgradable_func(self, obj):
+    return bool(cm.upgrade.get_upgrade(obj))
+
+
+class UrlField(serializers.HyperlinkedIdentityField):
+    def get_kwargs(self, obj):
+        return {}
+
+    def get_url(self, obj, view_name, request, format):		# pylint: disable=redefined-builtin
+        kwargs = self.get_kwargs(obj)
+        return reverse(self.view_name, kwargs=kwargs, request=request, format=format)
 
 
 class DjangoModelPerm(DjangoModelPermissions):
@@ -252,10 +289,16 @@ class ListViewAdd(ListView):
 class DetailViewRO(GenericAPIView, InterfaceView):
     permission_classes = (DjangoModelPerm,)
 
+    def check_obj(self, kw_req):
+        try:
+            return self.get_queryset().get(**kw_req)
+        except ObjectDoesNotExist:
+            raise AdcmApiEx(self.error_code) from None
+
     def get_object(self):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
         kw_req = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
-        return check_obj(self.get_queryset(), kw_req, self.error_code)
+        return self.check_obj(kw_req)
 
     def get(self, request, *args, **kwargs):
         obj = self.get_object()

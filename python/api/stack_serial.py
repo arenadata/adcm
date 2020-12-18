@@ -15,7 +15,8 @@ from rest_framework import serializers
 from cm.logger import log   # pylint: disable=unused-import
 import cm.config as config
 from cm.models import ClusterObject, Prototype, Bundle
-from api.serializers import hlink, UrlField
+
+from api.api_views import hlink, UrlField
 from api.serializers import UpgradeSerializer
 from api.config.serializers import ConfigSerializer
 from api.action.serializers import StackActionDetailSerializer

@@ -27,8 +27,7 @@ from cm.logger import log   # pylint: disable=unused-import
 import api.serializers
 import api.cluster_serial
 import api.stack_serial
-from api.serializers import check_obj
-from api.api_views import create, update, GenericAPIPermView
+from api.api_views import create, update, check_obj, GenericAPIPermView
 from api.api_views import ListView, PageView, PageViewAdd, InterfaceView
 from api.api_views import DetailViewRO, DetailViewDelete
 

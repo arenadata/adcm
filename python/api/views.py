@@ -31,10 +31,9 @@ import cm.status_api
 from cm.errors import AdcmEx, AdcmApiEx
 from cm.models import HostProvider, Host, ADCM, JobLog, TaskLog, Upgrade
 from adcm.settings import ADCM_VERSION
-from api.serializers import check_obj
 from api.api_views import (
     DetailViewRO, DetailViewDelete, ListView,
-    PageView, PageViewAdd, GenericAPIPermView, create
+    PageView, PageViewAdd, GenericAPIPermView, create, check_obj
 )
 
 

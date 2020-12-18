@@ -20,12 +20,11 @@ from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
 import cm.config as config
-from api.api_views import DetailViewRO, create, PageView
+from api.api_views import DetailViewRO, create, check_obj, PageView
 from api.job_serial import (
     JobSerializer, JobListSerializer, LogStorageSerializer, LogStorageListSerializer, LogSerializer
 )
-from api.serializers import check_obj
-from api.action.serializers import TaskSerializer, TaskListSerializer, TaskPostSerializer
+from api.job_serial import TaskSerializer, TaskListSerializer, TaskPostSerializer
 from cm.errors import AdcmEx, AdcmApiEx
 from cm.job import get_log, restart_task, cancel_task
 from cm.models import JobLog, TaskLog, LogStorage

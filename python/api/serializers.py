@@ -16,82 +16,18 @@ from django.contrib.auth.models import User, Group
 from django.db import IntegrityError, transaction
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
-from rest_framework.reverse import reverse
 
-import cm.config as config
 import cm.job
 import cm.stack
 import cm.status_api
 import cm.adcm_config
 from cm.api import safe_api
 from cm.errors import AdcmApiEx, AdcmEx
-from cm.models import (
-    Action, Prototype, PrototypeConfig, UserProfile, Upgrade, HostProvider,
-    ConfigLog, Role
-)
-from api.api_views import hlink
+from cm.models import Action, Prototype, UserProfile, Upgrade, HostProvider, Role
+
+from api.api_views import check_obj, hlink, filter_actions, get_upgradable_func, UrlField
 from api.config.serializers import ConfigURL
 from api.action.serializers import ActionURL, ActionShort
-
-
-def check_obj(model, req, error):
-    if isinstance(req, dict):
-        kw = req
-    else:
-        kw = {'id': req}
-    try:
-        return model.objects.get(**kw)
-    except model.DoesNotExist:
-        raise AdcmApiEx(error) from None
-
-
-def get_upgradable_func(self, obj):
-    return bool(cm.upgrade.get_upgrade(obj))
-
-
-def filter_actions(obj, actions_set):
-    if obj.state == config.Job.LOCKED:
-        return []
-    filtered = []
-    for act in actions_set:
-        available = act.state_available
-        if available == 'any':
-            filtered.append(act)
-        elif obj.state in available:
-            filtered.append(act)
-    for act in actions_set:
-        act.config = PrototypeConfig.objects.filter(
-            prototype=act.prototype, action=act
-        ).order_by('id')
-    return filtered
-
-
-def get_config_version(objconf, version):
-    if version == 'previous':
-        ver = objconf.previous
-    elif version == 'current':
-        ver = objconf.current
-    else:
-        ver = version
-    try:
-        cl = ConfigLog.objects.get(obj_ref=objconf, id=ver)
-    except ConfigLog.DoesNotExist:
-        raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist") from None
-    return cl
-
-
-class DataField(serializers.CharField):
-    def to_representation(self, value):
-        return value
-
-
-class UrlField(serializers.HyperlinkedIdentityField):
-    def get_kwargs(self, obj):
-        return {}
-
-    def get_url(self, obj, view_name, request, format):		# pylint: disable=redefined-builtin
-        kwargs = self.get_kwargs(obj)
-        return reverse(self.view_name, kwargs=kwargs, request=request, format=format)
 
 
 class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):

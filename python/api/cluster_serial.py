@@ -21,9 +21,7 @@ from cm.logger import log   # pylint: disable=unused-import
 from cm.errors import AdcmApiEx, AdcmEx
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
 
-from api.serializers import (
-    check_obj, filter_actions, get_upgradable_func, hlink, UrlField
-)
+from api.api_views import check_obj, hlink, filter_actions, get_upgradable_func, UrlField
 from api.config.serializers import ConfigURL
 from api.action.serializers import ActionURL, ActionShort
 
@@ -33,18 +31,6 @@ def get_cluster_id(obj):
         return obj.obj_ref.clusterobject.cluster.id
     else:
         return obj.obj_ref.cluster.id
-
-
-class ClusterBundleSerializer(serializers.Serializer):
-    class MyUrlField(UrlField):
-        def get_kwargs(self, obj):
-            return {'prototype_id': obj.id}
-
-    service = MyUrlField(read_only=True, view_name='service-type-details')
-    service_id = serializers.IntegerField(read_only=True, source='id')
-    description = serializers.CharField(read_only=True)
-    name = serializers.CharField(read_only=True)
-    version = serializers.CharField(read_only=True)
 
 
 class ClusterSerializer(serializers.Serializer):

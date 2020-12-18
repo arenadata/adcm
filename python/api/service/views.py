@@ -15,11 +15,11 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from api.api_views import (
-    PageView, create, DetailViewRO, ListView, GenericAPIPermView, DetailViewDelete
+    PageView, create, check_obj, DetailViewRO, ListView, GenericAPIPermView, DetailViewDelete
 )
-from api.serializers import check_obj
 from api.stack_serial import ImportSerializer
 from api.cluster_serial import BindSerializer
+
 from cm.api import delete_service, get_import, unbind
 from cm.errors import AdcmEx, AdcmApiEx
 from cm.models import ClusterObject, ServiceComponent, Prototype, ClusterBind

@@ -26,8 +26,7 @@ from cm.logger import log   # pylint: disable=unused-import
 
 import api.serializers
 import api.stack_serial
-from api.serializers import check_obj
-from api.api_views import ListView, DetailViewRO, PageView, GenericAPIPermView
+from api.api_views import ListView, DetailViewRO, PageView, GenericAPIPermView, check_obj
 
 
 class CsrfOffSessionAuthentication(SessionAuthentication):

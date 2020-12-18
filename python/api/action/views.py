@@ -13,8 +13,10 @@
 from django.db import models
 from rest_framework.response import Response
 
-from api.api_views import ListView, GenericAPIPermView, ActionFilter, create
-from api.serializers import check_obj, filter_actions
+from api.api_views import (
+    ListView, GenericAPIPermView, ActionFilter, create, check_obj, filter_actions
+)
+from api.job_serial import RunTaskSerializer
 from cm.errors import AdcmApiEx
 from cm.models import ADCM, Cluster, HostProvider, Host, ClusterObject, ServiceComponent
 from cm.models import Action, TaskLog
@@ -115,7 +117,7 @@ class ActionDetail(GenericAPIPermView):
 
 class RunTask(GenericAPIPermView):
     queryset = TaskLog.objects.all()
-    serializer_class = serializers.RunTaskSerializer
+    serializer_class = RunTaskSerializer
 
     def post(self, request, *args, **kwargs):
         """

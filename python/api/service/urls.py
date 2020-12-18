@@ -24,7 +24,6 @@ urlpatterns = [
             path('<int:component_id>/', views.ServiceComponentDetailView.as_view(),
                  name='service-component-details'),
         ])),
-
         path('import/', views.ServiceImportView.as_view(), name='service-import'),
         path('bind/', include([
             path('', views.ServiceBindView.as_view(), name='service-bind'),
