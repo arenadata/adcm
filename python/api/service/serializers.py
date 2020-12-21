@@ -80,7 +80,7 @@ class ServiceDetailSerializer(ServiceSerializer):
     status = serializers.SerializerMethodField()
     monitoring = serializers.CharField(read_only=True)
     action = CommonAPIURL(read_only=True, view_name='object-action')
-    config = CommonAPIURL(read_only=True, view_name='config')
+    config = CommonAPIURL(read_only=True, view_name='object-config')
     component = ServiceObjectUrlField(read_only=True, view_name='service-component')
     imports = ServiceObjectUrlField(read_only=True, view_name='service-import')
     bind = ServiceObjectUrlField(read_only=True, view_name='service-bind')
@@ -123,7 +123,7 @@ class ServiceUISerializer(ServiceDetailSerializer):
     name = serializers.CharField(read_only=True)
     version = serializers.SerializerMethodField()
     action = CommonAPIURL(view_name='object-action')
-    config = CommonAPIURL(read_only=True, view_name='config')
+    config = CommonAPIURL(view_name='object-config')
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
