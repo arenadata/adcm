@@ -87,11 +87,35 @@ def get_upgradable_func(self, obj):
     return bool(cm.upgrade.get_upgrade(obj))
 
 
+def get_api_url_kwargs(obj, request):
+    obj_type = obj.prototype.type
+    kwargs = {
+        'object_type': obj_type,
+        f'{obj_type}_id': obj.id,
+    }
+    if obj_type == 'service':
+        if 'cluster' in request.path:
+            kwargs['cluster_id'] = obj.cluster.id
+    elif obj_type == 'host':
+        if 'cluster' in request.path:
+            kwargs['cluster_id'] = obj.cluster.id
+    elif obj_type == 'component':
+        kwargs['service_id'] = obj.service.id
+        kwargs['cluster_id'] = obj.cluster.id
+    return kwargs
+
+
+class CommonAPIURL(serializers.HyperlinkedIdentityField):
+    def get_url(self, obj, view_name, request, format):   # pylint: disable=redefined-builtin
+        kwargs = get_api_url_kwargs(obj, request)
+        return reverse(view_name, kwargs=kwargs, request=request, format=format)
+
+
 class UrlField(serializers.HyperlinkedIdentityField):
     def get_kwargs(self, obj):
         return {}
 
-    def get_url(self, obj, view_name, request, format):		# pylint: disable=redefined-builtin
+    def get_url(self, obj, view_name, request, format):	   # pylint: disable=redefined-builtin
         kwargs = self.get_kwargs(obj)
         return reverse(self.view_name, kwargs=kwargs, request=request, format=format)
 

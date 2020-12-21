@@ -20,43 +20,20 @@ import cm.adcm_config
 from cm.adcm_config import ui_config, restore_cluster_config
 from cm.api import update_obj_config
 from cm.errors import AdcmEx, AdcmApiEx
-
-
-class ConfigURL(serializers.HyperlinkedIdentityField):
-    def get_url(self, obj, view_name, request, format):
-        kwargs = {
-            'object_type': obj.prototype.type,
-            f'{obj.prototype.type}_id': obj.id
-        }
-        if obj.prototype.type == 'service':
-            if 'cluster' in request.path:
-                kwargs['cluster_id'] = obj.cluster.id
-        if obj.prototype.type == 'component':
-            kwargs['service_id'] = obj.service.id
-            kwargs['cluster_id'] = obj.cluster.id
-        return reverse(view_name, kwargs=kwargs, request=request, format=format)
+from api.api_views import get_api_url_kwargs, CommonAPIURL
 
 
 class ConfigVersionURL(serializers.HyperlinkedIdentityField):
     def get_url(self, obj, view_name, request, format):
-        kwargs = {
-            'object_type': obj.object.prototype.type,
-            f'{obj.object.prototype.type}_id': obj.object.id,
-            'version': obj.id
-        }
-        if obj.object.prototype.type == 'service':
-            if 'cluster' in request.path:
-                kwargs['cluster_id'] = obj.object.cluster.id
-        if obj.object.prototype.type == 'component':
-            kwargs['service_id'] = obj.object.service.id
-            kwargs['cluster_id'] = obj.object.cluster.id
+        kwargs = get_api_url_kwargs(self.context.get('object'), request)
+        kwargs['version'] = obj.id
         return reverse(view_name, kwargs=kwargs, request=request, format=format)
 
 
 class HistoryCurrentPreviousConfigSerializer(serializers.Serializer):
-    history = ConfigURL(read_only=True, view_name='config-history')
-    current = ConfigURL(read_only=True, view_name='config-current')
-    previous = ConfigURL(read_only=True, view_name='config-previous')
+    history = CommonAPIURL(read_only=True, view_name='config-history')
+    current = CommonAPIURL(read_only=True, view_name='config-current')
+    previous = CommonAPIURL(read_only=True, view_name='config-previous')
 
 
 class ObjectConfigSerializer(serializers.Serializer):

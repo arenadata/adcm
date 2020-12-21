@@ -18,44 +18,15 @@ from rest_framework.reverse import reverse
 import cm.job
 import cm.adcm_config
 from cm.models import PrototypeConfig, SubAction
+
+from api.api_views import get_api_url_kwargs
 from api.config.serializers import ConfigSerializerUI
-
-
-class ActionURL(serializers.HyperlinkedIdentityField):
-    def get_url(self, obj, view_name, request, format):
-        kwargs = {
-            'object_type': obj.prototype.type,
-            f'{obj.prototype.type}_id': obj.id,
-        }
-        if obj.prototype.type == 'service':
-            if 'cluster' in request.path:
-                kwargs['cluster_id'] = obj.cluster.id
-        elif obj.prototype.type == 'host':
-            if 'cluster' in request.path:
-                kwargs['cluster_id'] = obj.cluster.id
-        elif obj.prototype.type == 'component':
-            kwargs['service_id'] = obj.service.id
-            kwargs['cluster_id'] = obj.cluster.id
-        return reverse(view_name, kwargs=kwargs, request=request, format=format)
 
 
 class ActionDetailURL(serializers.HyperlinkedIdentityField):
     def get_url(self, obj, view_name, request, format):
-        action_obj = self.context.get('object')
-        kwargs = {
-            'object_type': obj.prototype.type,
-            f'{obj.prototype.type}_id': action_obj.id,
-            'action_id': obj.id
-        }
-        if obj.prototype.type == 'service':
-            if 'cluster' in request.path:
-                kwargs['cluster_id'] = action_obj.cluster.id
-        elif obj.prototype.type == 'host':
-            if 'cluster' in request.path:
-                kwargs['cluster_id'] = action_obj.cluster.id
-        elif obj.prototype.type == 'component':
-            kwargs['service_id'] = action_obj.service.id
-            kwargs['cluster_id'] = action_obj.cluster.id
+        kwargs = get_api_url_kwargs(self.context.get('object'), request)
+        kwargs['action_id'] = obj.id
         return reverse(view_name, kwargs=kwargs, request=request, format=format)
 
 

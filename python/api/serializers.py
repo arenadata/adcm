@@ -25,9 +25,9 @@ from cm.api import safe_api
 from cm.errors import AdcmApiEx, AdcmEx
 from cm.models import Action, Prototype, UserProfile, Upgrade, HostProvider, Role
 
-from api.api_views import check_obj, hlink, filter_actions, get_upgradable_func, UrlField
-from api.config.serializers import ConfigURL
-from api.action.serializers import ActionURL, ActionShort
+from api.api_views import check_obj, hlink, filter_actions, get_upgradable_func
+from api.api_views import UrlField, CommonAPIURL
+from api.action.serializers import ActionShort
 
 
 class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):
@@ -210,8 +210,8 @@ class AdcmSerializer(serializers.Serializer):
 class AdcmDetailSerializer(AdcmSerializer):
     prototype_version = serializers.SerializerMethodField()
     bundle_id = serializers.IntegerField(read_only=True)
-    config = ConfigURL(view_name='config')
-    action = ActionURL(view_name='object-action')
+    config = CommonAPIURL(view_name='object-config')
+    action = CommonAPIURL(view_name='object-action')
 
     def get_prototype_version(self, obj):
         return obj.prototype.version
@@ -252,8 +252,8 @@ class ProviderDetailSerializer(ProviderSerializer):
     license = serializers.CharField(read_only=True)
     bundle_id = serializers.IntegerField(read_only=True)
     prototype = hlink('provider-type-details', 'prototype_id', 'prototype_id')
-    config = ConfigURL(view_name='config')
-    action = ActionURL(view_name='object-action')
+    config = CommonAPIURL(view_name='object-config')
+    action = CommonAPIURL(view_name='object-action')
     upgrade = hlink('provider-upgrade', 'id', 'provider_id')
     host = hlink('provider-host', 'id', 'provider_id')
 
@@ -341,8 +341,8 @@ class HostDetailSerializer(HostSerializer):
     issue = serializers.SerializerMethodField()
     bundle_id = serializers.IntegerField(read_only=True)
     status = serializers.SerializerMethodField()
-    config = ConfigURL(view_name='config')
-    action = ActionURL(view_name='object-action')
+    config = CommonAPIURL(view_name='object-config')
+    action = CommonAPIURL(view_name='object-action')
     prototype = hlink('host-type-details', 'prototype_id', 'prototype_id')
 
     def get_issue(self, obj):

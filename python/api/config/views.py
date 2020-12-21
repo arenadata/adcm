@@ -101,7 +101,7 @@ class ConfigView(ListView):
         self.object_type = object_type
         obj, _, _ = get_obj(self.get_queryset(), object_type, object_id)
         serializer = self.serializer_class(
-            self.get_queryset().get(id=obj.id), context={'request': request})
+            self.get_queryset().get(id=obj.id), context={'request': request, 'object': obj})
         return Response(serializer.data)
 
 
@@ -118,19 +118,18 @@ class ConfigHistoryView(ListView):
         self.object_type = object_type
         obj, _, _ = get_obj(self.get_queryset(), object_type, object_id)
         cl = ConfigLog.objects.filter(obj_ref=obj.config).order_by('-id')
-        # Variable object is needed to correctly build the hyperlink
-        # in the serializer
-        for c in cl:
-            c.object = obj
-
-        serializer = self.serializer_class(cl, many=True, context={'request': request})
+        serializer = self.serializer_class(
+            cl, many=True, context={'request': request, 'object': obj}
+        )
         return Response(serializer.data)
 
     def post(self, request, *args, **kwargs):
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
         self.object_type = object_type
         obj, _, cl = get_obj(self.get_queryset(), object_type, object_id)
-        serializer = self.update_serializer(cl, data=request.data, context={'request': request})
+        serializer = self.update_serializer(
+            cl, data=request.data, context={'request': request, 'object': obj}
+        )
         return create(serializer, ui=bool(self.for_ui(request)), obj=obj)
 
 

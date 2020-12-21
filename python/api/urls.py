@@ -175,6 +175,7 @@ urlpatterns = [
         CLUSTER + 'service/', cluster_views.ClusterServiceList.as_view(), name='cluster-service'
     ),
 
+    path(CLUSTER + HOST + 'config/', include('api.config.urls'), {'object_type': 'host'}),
     path(CLUSTER + HOST + 'action/', include('api.action.urls'), {'object_type': 'host'}),
 
     path(CLUSTER + 'action/', include('api.action.urls'), {'object_type': 'cluster'}),

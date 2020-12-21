@@ -16,10 +16,9 @@ from django.db.utils import IntegrityError
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
-from api.config.serializers import ConfigURL
-from api.api_views import check_obj, filter_actions
+from api.api_views import check_obj, filter_actions, CommonAPIURL
 from api.cluster_serial import BindSerializer
-from api.action.serializers import ActionURL, ActionShort
+from api.action.serializers import ActionShort
 
 from cm import issue
 from cm import status_api
@@ -80,8 +79,8 @@ class ServiceDetailSerializer(ServiceSerializer):
     issue = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     monitoring = serializers.CharField(read_only=True)
-    action = ActionURL(read_only=True, view_name='object-action')
-    config = ConfigURL(read_only=True, view_name='config')
+    action = CommonAPIURL(read_only=True, view_name='object-action')
+    config = CommonAPIURL(read_only=True, view_name='config')
     component = ServiceObjectUrlField(read_only=True, view_name='service-component')
     imports = ServiceObjectUrlField(read_only=True, view_name='service-import')
     bind = ServiceObjectUrlField(read_only=True, view_name='service-bind')
@@ -123,8 +122,8 @@ class ServiceUISerializer(ServiceDetailSerializer):
     components = serializers.SerializerMethodField()
     name = serializers.CharField(read_only=True)
     version = serializers.SerializerMethodField()
-    action = ActionURL(view_name='object-action')
-    config = ConfigURL(read_only=True, view_name='config')
+    action = CommonAPIURL(view_name='object-action')
+    config = CommonAPIURL(read_only=True, view_name='config')
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)

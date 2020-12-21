@@ -21,9 +21,9 @@ from cm.logger import log   # pylint: disable=unused-import
 from cm.errors import AdcmApiEx, AdcmEx
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
 
-from api.api_views import check_obj, hlink, filter_actions, get_upgradable_func, UrlField
-from api.config.serializers import ConfigURL
-from api.action.serializers import ActionURL, ActionShort
+from api.api_views import check_obj, hlink, filter_actions, get_upgradable_func
+from api.api_views import UrlField, CommonAPIURL
+from api.action.serializers import ActionShort
 
 
 def get_cluster_id(obj):
@@ -78,13 +78,13 @@ class ClusterDetailSerializer(ClusterSerializer):
     bundle_id = serializers.IntegerField(read_only=True)
     edition = serializers.CharField(read_only=True)
     license = serializers.CharField(read_only=True)
-    action = ActionURL(view_name='object-action')
+    action = CommonAPIURL(view_name='object-action')
     service = hlink('cluster-service', 'id', 'cluster_id')
     host = hlink('cluster-host', 'id', 'cluster_id')
     hostcomponent = hlink('host-component', 'id', 'cluster_id')
     status = serializers.SerializerMethodField()
     status_url = hlink('cluster-status', 'id', 'cluster_id')
-    config = ConfigURL(view_name='config')
+    config = CommonAPIURL(view_name='object-config')
     serviceprototype = hlink('cluster-service-prototype', 'id', 'cluster_id')
     upgrade = hlink('cluster-upgrade', 'id', 'cluster_id')
     imports = hlink('cluster-import', 'id', 'cluster_id')
@@ -146,8 +146,8 @@ class ClusterHostDetailSerializer(ClusterHostSerializer):
     status = serializers.SerializerMethodField()
     monitoring = serializers.CharField(read_only=True)
     host_url = hlink('host-details', 'id', 'host_id')
-    config = ConfigURL(view_name='config')
-    action = ActionURL(view_name='object-action')
+    config = CommonAPIURL(view_name='object-config')
+    action = CommonAPIURL(view_name='object-action')
 
     def get_issue(self, obj):
         return cm.issue.get_issue(obj)
@@ -330,8 +330,8 @@ class ClusterServiceDetailSerializer(ClusterServiceSerializer):
     issue = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     monitoring = serializers.CharField(read_only=True)
-    action = ActionURL(view_name='object-action')
-    config = ConfigURL(view_name='config')
+    config = CommonAPIURL(view_name='object-config')
+    action = CommonAPIURL(view_name='object-action')
     component = ClusterServiceUrlField(read_only=True, view_name='cluster-service-component')
     imports = ClusterServiceUrlField(read_only=True, view_name='cluster-service-import')
     bind = ClusterServiceUrlField(read_only=True, view_name='cluster-service-bind')
@@ -349,8 +349,8 @@ class ClusterServiceUISerializer(ClusterServiceDetailSerializer):
     components = serializers.SerializerMethodField()
     name = serializers.CharField(read_only=True)
     version = serializers.CharField(read_only=True)
-    action = ActionURL(view_name='object-action')
-    config = ConfigURL(view_name='config')
+    config = CommonAPIURL(view_name='object-config')
+    action = CommonAPIURL(view_name='object-action')
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
@@ -390,8 +390,8 @@ class ServiceComponentDetailSerializer(ServiceComponentSerializer):
     requires = serializers.JSONField(read_only=True)
     monitoring = serializers.CharField(read_only=True)
     status = serializers.SerializerMethodField()
-    config = ConfigURL(view_name='config')
-    action = ActionURL(view_name='object-action')
+    config = CommonAPIURL(view_name='object-config')
+    action = CommonAPIURL(view_name='object-action')
 
     def get_status(self, obj):
         return cm.status_api.get_component_status(obj.id)
