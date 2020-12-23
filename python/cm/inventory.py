@@ -121,8 +121,9 @@ def get_cluster_config(cluster_id):
             'config': get_obj_config(service)
         }
         for component in ServiceComponent.objects.filter(cluster=cluster, service=service):
-            res['services'][service.prototype.name][component.component.name] = {
-                'component_id': component.id
+            res['services'][service.prototype.name][component.prototype.name] = {
+                'component_id': component.id,
+                'config': get_obj_config(component)
             }
     return res
 
@@ -148,7 +149,7 @@ def get_host_groups(cluster_id, delta, action_host=None):
     for hc in all_hosts:
         if action_host and hc.host.id not in action_host:
             continue
-        key1 = '{}.{}'.format(hc.service.prototype.name, hc.component.component.name)
+        key1 = '{}.{}'.format(hc.service.prototype.name, hc.component.prototype.name)
         if key1 not in groups:
             groups[key1] = {'hosts': {}}
         groups[key1]['hosts'][hc.host.fqdn] = get_obj_config(hc.host)

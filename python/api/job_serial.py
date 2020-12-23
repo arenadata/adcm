@@ -13,15 +13,194 @@
 import json
 import os
 
+from django.core.exceptions import ObjectDoesNotExist
+
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
-import cm.config as config
 import cm.job
 import cm.stack
 import cm.status_api
-from api.serializers import hlink, DataField, get_job_action, get_job_objects
-from cm.models import Action, SubAction
+import cm.config as config
+from cm.errors import AdcmEx, AdcmApiEx
+from cm.models import (
+    Action, SubAction, JobLog, HostProvider, Host, Cluster, ClusterObject, ServiceComponent
+)
+
+from api.api_views import hlink
+
+
+def get_job_action(obj):
+    try:
+        act = Action.objects.get(id=obj.action_id)
+        return {
+            'name': act.name,
+            'display_name': act.display_name,
+            'prototype_id': act.prototype.id,
+            'prototype_name': act.prototype.name,
+            'prototype_version': act.prototype.version,
+            'prototype_type': act.prototype.type,
+        }
+    except Action.DoesNotExist:
+        return None
+
+
+def get_job_objects(obj):
+    resp = []
+    selector = obj.selector
+    for obj_type in selector:
+        try:
+            if obj_type == 'cluster':
+                cluster = Cluster.objects.get(id=selector[obj_type])
+                name = cluster.name
+            elif obj_type == 'service':
+                service = ClusterObject.objects.get(id=selector[obj_type])
+                name = service.prototype.display_name
+            elif obj_type == 'component':
+                comp = ServiceComponent.objects.get(id=selector[obj_type])
+                name = comp.prototype.display_name
+            elif obj_type == 'provider':
+                provider = HostProvider.objects.get(id=selector[obj_type])
+                name = provider.name
+            elif obj_type == 'host':
+                host = Host.objects.get(id=selector[obj_type])
+                name = host.fqdn
+            else:
+                name = ''
+        except ObjectDoesNotExist:
+            name = 'does not exist'
+        resp.append({
+            'type': obj_type,
+            'id': selector[obj_type],
+            'name': name,
+        })
+    return resp
+
+
+def get_job_object_type(obj):
+    try:
+        action = Action.objects.get(id=obj.action_id)
+        return action.prototype.type
+    except Action.DoesNotExist:
+        return None
+
+
+class DataField(serializers.CharField):
+    def to_representation(self, value):
+        return value
+
+
+class JobShort(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    display_name = serializers.CharField(read_only=True)
+    status = serializers.CharField(read_only=True)
+    start_date = serializers.DateTimeField(read_only=True)
+    finish_date = serializers.DateTimeField(read_only=True)
+    url = hlink('job-details', 'id', 'job_id')
+
+
+class TaskListSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    pid = serializers.IntegerField(read_only=True)
+    object_id = serializers.IntegerField(read_only=True)
+    action_id = serializers.IntegerField(read_only=True)
+    status = serializers.CharField(read_only=True)
+    start_date = serializers.DateTimeField(read_only=True)
+    finish_date = serializers.DateTimeField(read_only=True)
+    url = hlink('task-details', 'id', 'task_id')
+
+
+class TaskSerializer(TaskListSerializer):
+    selector = serializers.JSONField(read_only=True)
+    config = serializers.JSONField(required=False)
+    attr = serializers.JSONField(required=False)
+    hc = serializers.JSONField(required=False)
+    hosts = serializers.JSONField(required=False)
+    action_url = serializers.HyperlinkedIdentityField(
+        read_only=True,
+        view_name='action-details',
+        lookup_field='action_id',
+        lookup_url_kwarg='action_id'
+    )
+    action = serializers.SerializerMethodField()
+    objects = serializers.SerializerMethodField()
+    jobs = serializers.SerializerMethodField()
+    restart = hlink('task-restart', 'id', 'task_id')
+    terminatable = serializers.SerializerMethodField()
+    cancel = hlink('task-cancel', 'id', 'task_id')
+    object_type = serializers.SerializerMethodField()
+
+    def get_terminatable(self, obj):
+        try:
+            action = Action.objects.get(id=obj.action_id)
+            allow_to_terminate = action.allow_to_terminate
+        except Action.DoesNotExist:
+            allow_to_terminate = False
+        # pylint: disable=simplifiable-if-statement
+        if allow_to_terminate and obj.status in [config.Job.CREATED, config.Job.RUNNING]:
+            # pylint: enable=simplifiable-if-statement
+            return True
+        else:
+            return False
+
+    def get_jobs(self, obj):
+        task_jobs = JobLog.objects.filter(task_id=obj.id)
+        for job in task_jobs:
+            if job.sub_action_id:
+                try:
+                    sub = SubAction.objects.get(id=job.sub_action_id)
+                    job.display_name = sub.display_name
+                    job.name = sub.name
+                except SubAction.DoesNotExist:
+                    job.display_name = None
+                    job.name = None
+            else:
+                try:
+                    action = Action.objects.get(id=job.action_id)
+                    job.display_name = action.display_name
+                    job.name = action.name
+                except Action.DoesNotExist:
+                    job.display_name = None
+                    job.name = None
+        jobs = JobShort(task_jobs, many=True, context=self.context)
+        return jobs.data
+
+    def get_action(self, obj):
+        return get_job_action(obj)
+
+    def get_objects(self, obj):
+        return get_job_objects(obj)
+
+    def get_object_type(self, obj):
+        return get_job_object_type(obj)
+
+
+class RunTaskSerializer(TaskSerializer):
+    def create(self, validated_data):
+        try:
+            obj = cm.job.start_task(
+                validated_data.get('action_id'),
+                validated_data.get('selector'),
+                validated_data.get('config', {}),
+                validated_data.get('attr', {}),
+                validated_data.get('hc', []),
+                validated_data.get('hosts', [])
+            )
+            obj.jobs = JobLog.objects.filter(task_id=obj.id)
+            return obj
+        except AdcmEx as e:
+            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds) from e
+
+
+class TaskPostSerializer(RunTaskSerializer):
+    action_id = serializers.IntegerField()
+    selector = serializers.JSONField()
+
+    def validate_selector(self, selector):
+        if not isinstance(selector, dict):
+            raise AdcmApiEx('JSON_ERROR', 'selector should be a map')
+        return selector
 
 
 class JobListSerializer(serializers.Serializer):
