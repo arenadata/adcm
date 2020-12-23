@@ -16,34 +16,24 @@ from rest_framework import serializers
 from rest_framework.reverse import reverse
 
 import logrotate
+import cm.adcm_config
 from cm.adcm_config import ui_config, restore_cluster_config
 from cm.api import update_obj_config
 from cm.errors import AdcmEx, AdcmApiEx
-
-
-class ConfigURL(serializers.HyperlinkedIdentityField):
-    def get_url(self, obj, view_name, request, format):
-        kwargs = {
-            'object_type': obj.prototype.type,
-            f'{obj.prototype.type}_id': obj.id
-        }
-        return reverse(view_name, kwargs=kwargs, request=request, format=format)
+from api.api_views import get_api_url_kwargs, CommonAPIURL
 
 
 class ConfigVersionURL(serializers.HyperlinkedIdentityField):
     def get_url(self, obj, view_name, request, format):
-        kwargs = {
-            'object_type': obj.object_type,
-            f'{obj.object_type}_id': obj.object_id,
-            'version': obj.id
-        }
+        kwargs = get_api_url_kwargs(self.context.get('object'), request)
+        kwargs['version'] = obj.id
         return reverse(view_name, kwargs=kwargs, request=request, format=format)
 
 
 class HistoryCurrentPreviousConfigSerializer(serializers.Serializer):
-    history = ConfigURL(read_only=True, view_name='config-history')
-    current = ConfigURL(read_only=True, view_name='config-current')
-    previous = ConfigURL(read_only=True, view_name='config-previous')
+    history = CommonAPIURL(read_only=True, view_name='config-history')
+    current = CommonAPIURL(read_only=True, view_name='config-current')
+    previous = CommonAPIURL(read_only=True, view_name='config-previous')
 
 
 class ObjectConfigSerializer(serializers.Serializer):
@@ -55,7 +45,6 @@ class ObjectConfigSerializer(serializers.Serializer):
 
 
 class ObjectConfigUpdateSerializer(ObjectConfigSerializer):
-
     def update(self, instance, validated_data):
         try:
             conf = validated_data.get('config')
@@ -72,6 +61,8 @@ class ObjectConfigUpdateSerializer(ObjectConfigSerializer):
 
 
 class ObjectConfigRestoreSerializer(ObjectConfigSerializer):
+    config = serializers.JSONField(read_only=True)
+
     def update(self, instance, validated_data):
         try:
             cc = restore_cluster_config(
@@ -86,3 +77,30 @@ class ObjectConfigRestoreSerializer(ObjectConfigSerializer):
 
 class ConfigHistorySerializer(ObjectConfigSerializer):
     url = ConfigVersionURL(read_only=True, view_name='config-history-version')
+
+
+class ConfigSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    description = serializers.CharField(required=False)
+    display_name = serializers.CharField(required=False)
+    subname = serializers.CharField()
+    default = serializers.SerializerMethodField()
+    value = serializers.SerializerMethodField()
+    type = serializers.CharField()
+    limits = serializers.JSONField(required=False)
+    ui_options = serializers.JSONField(required=False)
+    required = serializers.BooleanField()
+
+    def get_default(self, obj):   # pylint: disable=arguments-differ
+        return cm.adcm_config.get_default(obj)
+
+    def get_value(self, obj):     # pylint: disable=arguments-differ
+        proto = self.context.get('prototype', None)
+        return cm.adcm_config.get_default(obj, proto)
+
+
+class ConfigSerializerUI(ConfigSerializer):
+    activatable = serializers.SerializerMethodField()
+
+    def get_activatable(self, obj):
+        return bool(cm.adcm_config.group_is_activatable(obj))
