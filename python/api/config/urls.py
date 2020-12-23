@@ -19,7 +19,7 @@ urlpatterns = [
     path(
         '',
         views.ConfigView.as_view(),
-        name='config'
+        name='object-config'
     ),
     path(
         'history/',
