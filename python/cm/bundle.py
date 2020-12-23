@@ -470,22 +470,10 @@ def update_bundle_from_stage(bundle):   # pylint: disable=too-many-locals,too-ma
         except Prototype.DoesNotExist:
             p = copy_obj(sp, Prototype, (
                 'type', 'path', 'name', 'version', 'required', 'shared', 'monitoring',
-                'display_name', 'description', 'adcm_min_version'
+                'constraint', 'requires', 'display_name', 'description', 'adcm_min_version'
             ))
             p.bundle = bundle
         p.save()
-        # for scomp in StageComponent.objects.filter(prototype=sp):
-        #    try:
-        #        comp = Component.objects.get(prototype=p, name=scomp.name)
-        #        update_obj(comp, scomp, (
-        #            'display_name', 'description', 'params', 'monitoring', 'requires', 'constraint'
-        #        ))
-        #    except Component.DoesNotExist:
-        #        comp = copy_obj(scomp, Component, (
-        #            'name', 'display_name', 'description', 'params', 'requires', 'constraint'
-        #        ))
-        #        comp.prototype = p
-        #    comp.save()
         for saction in StageAction.objects.filter(prototype=sp):
             try:
                 action = Action.objects.get(prototype=p, name=saction.name)
