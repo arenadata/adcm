@@ -24,7 +24,7 @@ from rest_framework import status
 from cm.logger import log
 from cm.errors import raise_AdcmEx as err
 from cm.adcm_config import proto_ref, check_config_type, type_is_complex, read_bundle_file
-from cm.models import StagePrototype, StageComponent, StageAction, StagePrototypeConfig
+from cm.models import StagePrototype, StageAction, StagePrototypeConfig
 from cm.models import ACTION_TYPE, SCRIPT_TYPE, CONFIG_FIELD_TYPE, PROTO_TYPE
 from cm.models import StagePrototypeExport, StagePrototypeImport, StageUpgrade, StageSubAction
 
@@ -182,7 +182,7 @@ def save_prototype(path, conf, def_type, bundle_hash):
     proto.save()
     save_actions(proto, conf, bundle_hash)
     save_upgrade(proto, conf)
-    save_components(proto, conf)
+    save_components(proto, conf, bundle_hash)
     save_prototype_config(proto, conf, bundle_hash)
     save_export(proto, conf)
     save_import(proto, conf)
@@ -234,7 +234,7 @@ def check_component_requires(proto, name, conf):
         check_extra_keys(item, ('service', 'component'), f'requires of component "{name}" of {ref}')
 
 
-def save_components(proto, conf):
+def save_components(proto, conf, bundle_hash):
     ref = proto_ref(proto)
     if not in_dict(conf, 'components'):
         return
@@ -248,19 +248,30 @@ def save_components(proto, conf):
         cc = conf['components'][comp_name]
         err_msg = 'Component name "{}" of {}'.format(comp_name, ref)
         validate_name(comp_name, err_msg)
-        allow = ('display_name', 'description', 'params', 'constraint', 'requires', 'monitoring')
+        allow = (
+            'display_name', 'description', 'params', 'constraint', 'requires', 'monitoring',
+            'actions', 'config',
+        )
         check_extra_keys(cc, allow, 'component "{}" of {}'.format(comp_name, ref))
-        component = StageComponent(prototype=proto, name=comp_name)
+        component = StagePrototype(
+            type='component',
+            parent=proto,
+            path=proto.path,
+            name=comp_name,
+            version=proto.version,
+            adcm_min_version=proto.adcm_min_version,
+        )
         dict_to_obj(cc, 'description', component)
         dict_to_obj(cc, 'display_name', component)
         dict_to_obj(cc, 'monitoring', component)
         fix_display_name(cc, component)
         check_component_constraint_definition(proto, comp_name, cc)
         check_component_requires(proto, comp_name, cc)
-        dict_to_obj(cc, 'params', component)
         dict_to_obj(cc, 'constraint', component)
         dict_to_obj(cc, 'requires', component)
         component.save()
+        save_actions(component, cc, bundle_hash)
+        save_prototype_config(component, cc, bundle_hash)
 
 
 def check_upgrade(proto, conf):

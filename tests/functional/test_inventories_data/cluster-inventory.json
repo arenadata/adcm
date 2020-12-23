@@ -1,6 +1,6 @@
 {
-  "all": {
-    "children": {
+   "all": {
+      "children": {
          "CLUSTER": {
             "hosts": {},
             "vars": {
@@ -31,21 +31,23 @@
                      "version": "3.4.10",
                      "state": "created",
                      "config": {
-                        "client_port": "2181",
                         "dirs": {
                            "data": "/var/lib/zookeeper"
                         },
+                        "client_port": "2181",
                         "svc-file": null,
                         "svc-text-area": "big dataaaaaaaaaaaaa",
                         "svc-ro-created": "bluh",
                         "svc-w-installed": 222,
                         "svc-read-only": 2.5
                      },
-                     "ZOOKEEPER_SERVER": {
-                        "component_id": 1
-                     },
                      "ZOOKEEPER_CLIENT": {
-                        "component_id": 2
+                        "component_id": 1,
+                        "config": {}
+                     },
+                     "ZOOKEEPER_SERVER": {
+                        "component_id": 2,
+                        "config": {}
                      }
                   }
                }
