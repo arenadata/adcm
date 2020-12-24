@@ -25,7 +25,7 @@ from cm.logger import log
 from cm.errors import raise_AdcmEx as err
 from cm.adcm_config import VARIANT_FUNCTIONS
 from cm.adcm_config import proto_ref, check_config_type, type_is_complex, read_bundle_file
-from cm.models import StagePrototype, StageComponent, StageAction, StagePrototypeConfig
+from cm.models import StagePrototype, StageAction, StagePrototypeConfig
 from cm.models import ACTION_TYPE, SCRIPT_TYPE, CONFIG_FIELD_TYPE, PROTO_TYPE
 from cm.models import StagePrototypeExport, StagePrototypeImport, StageUpgrade, StageSubAction
 
@@ -183,7 +183,7 @@ def save_prototype(path, conf, def_type, bundle_hash):
     proto.save()
     save_actions(proto, conf, bundle_hash)
     save_upgrade(proto, conf)
-    save_components(proto, conf)
+    save_components(proto, conf, bundle_hash)
     save_prototype_config(proto, conf, bundle_hash)
     save_export(proto, conf)
     save_import(proto, conf)
@@ -235,7 +235,7 @@ def check_component_requires(proto, name, conf):
         check_extra_keys(item, ('service', 'component'), f'requires of component "{name}" of {ref}')
 
 
-def save_components(proto, conf):
+def save_components(proto, conf, bundle_hash):
     ref = proto_ref(proto)
     if not in_dict(conf, 'components'):
         return
@@ -249,19 +249,30 @@ def save_components(proto, conf):
         cc = conf['components'][comp_name]
         err_msg = 'Component name "{}" of {}'.format(comp_name, ref)
         validate_name(comp_name, err_msg)
-        allow = ('display_name', 'description', 'params', 'constraint', 'requires', 'monitoring')
+        allow = (
+            'display_name', 'description', 'params', 'constraint', 'requires', 'monitoring',
+            'actions', 'config',
+        )
         check_extra_keys(cc, allow, 'component "{}" of {}'.format(comp_name, ref))
-        component = StageComponent(prototype=proto, name=comp_name)
+        component = StagePrototype(
+            type='component',
+            parent=proto,
+            path=proto.path,
+            name=comp_name,
+            version=proto.version,
+            adcm_min_version=proto.adcm_min_version,
+        )
         dict_to_obj(cc, 'description', component)
         dict_to_obj(cc, 'display_name', component)
         dict_to_obj(cc, 'monitoring', component)
-        dict_json_to_obj(cc, 'params', component)
         fix_display_name(cc, component)
         check_component_constraint_definition(proto, comp_name, cc)
         check_component_requires(proto, comp_name, cc)
-        dict_json_to_obj(cc, 'constraint', component)
-        dict_json_to_obj(cc, 'requires', component)
+        dict_to_obj(cc, 'constraint', component)
+        dict_to_obj(cc, 'requires', component)
         component.save()
+        save_actions(component, cc, bundle_hash)
+        save_prototype_config(component, cc, bundle_hash)
 
 
 def check_upgrade(proto, conf):
@@ -343,13 +354,14 @@ def save_upgrade(proto, conf):
         dict_to_obj(item, 'description', upg)
         if 'states' in item:
             check_upgrade_states(proto, item)
-            dict_json_to_obj(item['states'], 'available', upg)
+            dict_to_obj(item['states'], 'available', upg)
             if 'available' in item['states']:
-                upg.state_available = json.dumps(item['states']['available'])
+                upg.state_available = item['states']['available']
             if 'on_success' in item['states']:
                 upg.state_on_success = item['states']['on_success']
         check_upgrade_edition(proto, item)
-        dict_json_to_obj(item, 'from_edition', upg)
+        if in_dict(item, 'from_edition'):
+            upg.from_edition = item['from_edition']
         upg.save()
 
 
@@ -360,7 +372,6 @@ def save_export(proto, conf):
     if proto.type not in ('cluster', 'service'):
         msg = 'Only cluster or service can have export section ({})'
         err('INVALID_OBJECT_DEFINITION', msg.format(ref))
-    key = conf['export']
     if isinstance(conf['export'], str):
         export = [conf['export']]
     elif isinstance(conf['export'], list):
@@ -421,7 +432,7 @@ def save_import(proto, conf):
         set_version(si, conf['import'][key])
         dict_to_obj(conf['import'][key], 'required', si)
         dict_to_obj(conf['import'][key], 'multibind', si)
-        dict_json_to_obj(conf['import'][key], 'default', si)
+        dict_to_obj(conf['import'][key], 'default', si)
         si.save()
 
 
@@ -479,7 +490,7 @@ def save_sub_actions(proto, conf, action):
         sub_action.display_name = sub['name']
         if 'display_name' in sub:
             sub_action.display_name = sub['display_name']
-        dict_json_to_obj(sub, 'params', sub_action)
+        dict_to_obj(sub, 'params', sub_action)
         if 'on_fail' in sub:
             sub_action.state_on_fail = sub['on_fail']
         sub_action.save()
@@ -501,20 +512,20 @@ def save_actions(proto, conf, bundle_hash):
         dict_to_obj(ac, 'description', action)
         dict_to_obj(ac, 'allow_to_terminate', action)
         dict_to_obj(ac, 'partial_execution', action)
-        dict_json_to_obj(ac, 'ui_options', action)
-        dict_json_to_obj(ac, 'params', action)
-        dict_json_to_obj(ac, 'log_files', action)
+        dict_to_obj(ac, 'ui_options', action)
+        dict_to_obj(ac, 'params', action)
+        dict_to_obj(ac, 'log_files', action)
         fix_display_name(ac, action)
 
         check_action_hc(proto, ac, action_name)
-        dict_json_to_obj(ac, 'hc_acl', action, 'hostcomponentmap')
+        dict_to_obj(ac, 'hc_acl', action, 'hostcomponentmap')
 
         if check_action_states(proto, action_name, ac):
             if 'on_success' in ac['states'] and ac['states']['on_success']:
                 action.state_on_success = ac['states']['on_success']
             if 'on_fail' in ac['states'] and ac['states']['on_fail']:
                 action.state_on_fail = ac['states']['on_fail']
-            action.state_available = json.dumps(ac['states']['available'])
+            action.state_available = ac['states']['available']
         action.save()
         save_sub_actions(proto, ac, action)
         save_prototype_config(proto, ac, bundle_hash, action)
@@ -698,7 +709,7 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
         if vtype == 'inline':
             if not in_dict(conf['source'], 'value'):
                 msg = 'Config key "{}/{}" of {} has no mandatory source:value statment'
-                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref, vtype))
+                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
             source['value'] = conf['source']['value']
             if not isinstance(source['value'], list):
                 msg = 'Config key "{}/{}" of {} source value should be an array'
@@ -706,7 +717,7 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
         elif vtype in ('config', 'builtin'):
             if not in_dict(conf['source'], 'name'):
                 msg = 'Config key "{}/{}" of {} has no mandatory source:name statment'
-                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref, vtype))
+                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
             source['name'] = conf['source']['name']
         if vtype == 'builtin':
             if conf['source']['name'] not in VARIANT_FUNCTIONS:
@@ -826,12 +837,12 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
             else:
                 sc.display_name = name
         conf['limits'] = process_limits(conf, name, subname)
-        dict_json_to_obj(conf, 'limits', sc)
+        dict_to_obj(conf, 'limits', sc)
         if 'ui_options' in conf:
             if not isinstance(conf['ui_options'], dict):
                 msg = 'ui_options of config key "{}/{}" of {} should be a map'
                 err('INVALID_CONFIG_DEFINITION', msg.format(name, subname, ref))
-        dict_json_to_obj(conf, 'ui_options', sc)
+        dict_to_obj(conf, 'ui_options', sc)
         if 'default' in conf:
             check_config_type(proto, name, subname, conf, conf['default'], bundle_hash)
         if type_is_complex(conf['type']):
@@ -945,12 +956,14 @@ def in_dict(dictionary, key):
         return False
 
 
-def dict_to_obj(dictionary, key, obj):
+def dict_to_obj(dictionary, key, obj, obj_key=None):
+    if not obj_key:
+        obj_key = key
     if not isinstance(dictionary, dict):
         return
     if key in dictionary:
         if dictionary[key] is not None:
-            setattr(obj, key, dictionary[key])
+            setattr(obj, obj_key, dictionary[key])
 
 
 def dict_json_to_obj(dictionary, key, obj, obj_key=''):

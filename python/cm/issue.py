@@ -10,21 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-
 from cm.logger import log   # pylint: disable=unused-import
 import cm.status_api
 from cm.errors import AdcmEx
 from cm.errors import raise_AdcmEx as err
 from cm.adcm_config import proto_ref, obj_ref, get_prototype_config
-from cm.models import ConfigLog, Host, ClusterObject, Prototype, Component, HostComponent
+from cm.models import ConfigLog, Host, ClusterObject, Prototype, HostComponent
 from cm.models import PrototypeImport, ClusterBind
 
 
 def save_issue(obj):
     if obj.prototype.type == 'adcm':
         return
-    obj.issue = json.dumps(check_issue(obj))
+    obj.issue = check_issue(obj)
     obj.save()
     report_issue(obj)
 
@@ -40,7 +38,8 @@ def report_issue(obj):
 def check_issue(obj):
     disp = {
         'cluster': check_cluster_issue,
-        'service': check_obj_issue,
+        'service': check_service_issue,
+        'component': check_obj_issue,
         'provider': check_obj_issue,
         'host': check_obj_issue,
         'adcm': check_adcm_issue,
@@ -67,7 +66,7 @@ def issue_to_bool(issue):
 
 
 def get_issue(obj):   # pylint: disable=too-many-branches
-    issue = json.loads(obj.issue)
+    issue = obj.issue
     if obj.prototype.type == 'cluster':
         issue['service'] = []
         for co in ClusterObject.objects.filter(cluster=obj):
@@ -94,6 +93,14 @@ def get_issue(obj):   # pylint: disable=too-many-branches
         if cluster_iss:
             issue['cluster'] = [cluster_iss]
 
+    elif obj.prototype.type == 'component':
+        cluster_iss = cook_issue(obj.cluster)
+        if cluster_iss:
+            issue['cluster'] = [cluster_iss]
+        service_iss = cook_issue(obj.service)
+        if service_iss:
+            issue['service'] = [service_iss]
+
     elif obj.prototype.type == 'host':
         if obj.cluster:
             cluster_iss = cook_issue(obj.cluster)
@@ -111,7 +118,7 @@ def cook_issue(obj, name='name', name_obj=None, iss=None):
         name_obj = obj
     if not iss:
         if obj:
-            iss = json.loads(obj.issue)
+            iss = obj.issue
         else:
             iss = {}
     if iss:
@@ -133,6 +140,15 @@ def check_cluster_issue(cluster):
         issue['required_import'] = False
     if not check_hc(cluster):
         issue['host_component'] = False
+    return issue
+
+
+def check_service_issue(service):
+    issue = {}
+    if not check_config(service):
+        issue['config'] = False
+    if not check_required_import(service.cluster, service):
+        issue['required_import'] = False
     return issue
 
 
@@ -187,28 +203,34 @@ def check_required_services(cluster):
     return True
 
 
-def check_required_import(cluster):
+def check_required_import(cluster, service=None):
+    res, code = do_check_import(cluster, service)
+    log.debug('do_check_import result: %s, code: %s', res, code)
+    return res
+
+
+def do_check_import(cluster, service=None):
     def check_import(pi):
         if not pi.required:
-            return True
-        import_exist = False
+            return (True, 'NOT_REQIURED')
+        import_exist = (False, None)
         for cb in ClusterBind.objects.filter(cluster=cluster):
             if cb.source_cluster and cb.source_cluster.prototype.name == pi.name:
-                import_exist = True
+                import_exist = (True, 'CLUSTER_IMPORTED')
             if cb.source_service and cb.source_service.prototype.name == pi.name:
-                import_exist = True
+                import_exist = (True, 'SERVICE_IMPORTED')
         return import_exist
 
-    for pi in PrototypeImport.objects.filter(prototype=cluster.prototype):
-        if not check_import(pi):
-            return False
+    res = (True, None)
+    proto = cluster.prototype
+    if service:
+        proto = service.prototype
+    for pi in PrototypeImport.objects.filter(prototype=proto):
+        res = check_import(pi)
+        if not res[0]:
+            return res
 
-    for co in ClusterObject.objects.filter(cluster=cluster):
-        for pi in PrototypeImport.objects.filter(prototype=co.prototype):
-            if not check_import(pi):
-                return False
-
-    return True
+    return res
 
 
 def check_hc(cluster):
@@ -218,12 +240,8 @@ def check_hc(cluster):
 
     if not shc_list:
         for co in ClusterObject.objects.filter(cluster=cluster):
-            for comp in Component.objects.filter(prototype=co.prototype):
-                if not comp.constraint:
-                    continue
-                const = json.loads(comp.constraint)
-                if not const:
-                    continue
+            for comp in Prototype.objects.filter(parent=co.prototype, type='component'):
+                const = comp.constraint
                 if len(const) == 2 and const[0] == 0 and const[1] == '+':
                     continue
                 log.debug('void host components for %s', proto_ref(co.prototype))
@@ -244,12 +262,12 @@ def check_hc(cluster):
 def check_component_requires(shc_list):
     def check_component_req(service, component):
         for shc in shc_list:
-            if shc[0].prototype.name == service and shc[2].component.name == component:
+            if shc[0].prototype.name == service and shc[2].prototype.name == component:
                 return True
         return False
 
-    for shc in [i for i in shc_list if i[2].component.requires]:
-        for r in json.loads(shc[2].component.requires):
+    for shc in [i for i in shc_list if i[2].prototype.requires]:
+        for r in shc[2].prototype.requires:
             if not check_component_req(r['service'], r['component']):
                 ref = f'component "{shc[2].component.name}" of service "{shc[0].prototype.name}"'
                 msg = 'no required component "{}" of service "{}" for {}'
@@ -260,10 +278,10 @@ def get_obj_config(obj):
     if obj.config is None:
         return ({}, {})
     cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-    attr = {}
-    if cl.attr:
-        attr = json.loads(cl.attr)
-    return (json.loads(cl.config), attr)
+    attr = cl.attr
+    if not attr:
+        attr = {}
+    return (cl.config, attr)
 
 
 def check_component_constraint(service, hc_in):
@@ -291,7 +309,7 @@ def check_component_constraint(service, hc_in):
     def check(comp, const):
         count = 0
         for (_, _, c) in hc_in:
-            if comp.name == c.component.name:
+            if comp.name == c.prototype.name:
                 count += 1
 
         if isinstance(const[0], int):
@@ -310,8 +328,5 @@ def check_component_constraint(service, hc_in):
         elif const[0] == 'odd':
             check_odd(count, const[0], comp)
 
-    for c in Component.objects.filter(prototype=service.prototype):
-        if not c.constraint:
-            continue
-        const = json.loads(c.constraint)
-        check(c, const)
+    for c in Prototype.objects.filter(parent=service.prototype, type='component'):
+        check(c, c.constraint)

@@ -44,14 +44,14 @@ def check_context(task_vars, *context_type, err_msg=None):
     if context['type'] not in context_type:
         if not err_msg:
             err_msg = MSG_WRONG_CONTEXT.format(
-                ','.join(context_type), context['type']
+                ', '.join(context_type), context['type']
             )
         raise AnsibleError(err_msg)
     return context
 
 
 def get_context_id(task_vars, context_type, id_type, err_msg=None):
-    check_context(task_vars, context_type, err_msg)
+    check_context(task_vars, context_type, err_msg=err_msg)
     if id_type not in task_vars['context']:
         raise AnsibleError(MSG_WRONG_CONTEXT_ID.format(id_type))
     return task_vars['context'][id_type]
@@ -78,8 +78,8 @@ class ContextActionModule(ActionBase):
     def _get_job_var(self, task_vars, name):
         try:
             return task_vars["job"][name]
-        except KeyError:
-            raise AnsibleError(MSG_NO_CLUSTER_CONTEXT)
+        except KeyError as error:
+            raise AnsibleError(MSG_NO_CLUSTER_CONTEXT) from error
 
     def _do_cluster(self, task_vars, context):
         raise NotImplementedError

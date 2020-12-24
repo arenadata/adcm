@@ -55,7 +55,7 @@ from ansible.plugins.action import ActionBase
 sys.path.append('/adcm/python')
 import adcm.init_django
 import cm.api
-from cm.ansible_plugin import get_context_id
+from cm.ansible_plugin import check_context, MSG_WRONG_CONTEXT_ID
 from cm.errors import AdcmEx
 from cm.logger import log
 
@@ -67,9 +67,12 @@ class ActionModule(ActionBase):
     _VALID_SUB_ARGS = frozenset(('action', 'service', 'component', 'host'))
 
     def run(self, tmp=None, task_vars=None):
-        super(ActionModule, self).run(tmp, task_vars)
+        super().run(tmp, task_vars)
         msg = 'You can modify hc only in cluster or service context'
-        cluster_id = get_context_id(task_vars, 'cluster', 'cluster_id', msg)
+        check_context(task_vars, 'cluster', 'service', msg)
+        if 'cluster_id' not in task_vars['context']:
+            raise AnsibleError(MSG_WRONG_CONTEXT_ID.format('cluster_id'))
+        cluster_id = task_vars['context']['cluster_id']
         job_id = task_vars['job']['id']
         ops = self._task.args['operations']
 
@@ -88,6 +91,6 @@ class ActionModule(ActionBase):
         try:
             cm.api.change_hc(job_id, cluster_id, ops)
         except AdcmEx as e:
-            raise AnsibleError(e.code + ": " + e.msg)
+            raise AnsibleError(e.code + ": " + e.msg) from e
 
         return {"failed": False, "changed": True}

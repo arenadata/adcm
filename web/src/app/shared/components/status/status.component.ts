@@ -48,14 +48,47 @@ export class StatusComponent extends SocketListenerDirective implements OnInit, 
 
   socketListener(e: EventMessage) {
     if (
-      (e.event === 'remove' &&
-        e.object.details.type === 'cluster' &&
-        'cluster_id' in this.details.Current &&
-        +e.object.details.value === this.details.Current.cluster_id) ||
+      (e.event === 'remove' && e.object.details.type === 'cluster' && 'cluster_id' in this.details.Current && +e.object.details.value === this.details.Current.cluster_id) ||
       e.event === 'change_hostcomponentmap'
     )
       this.init();
     if (e.event === 'change_status') this.change_status(e);
+  }
+
+  init() {
+    const typeName = this.details.Current.typeName;
+    if (typeName === 'cluster') this.showChangeView = true;
+    else this.view = <'host' | 'service'>typeName;
+    this.getStatusInfo();
+  }
+
+  getStatusInfo() {
+    const effect = (hcm: StatusInfo[]) => {
+      this.hcm = hcm;
+      if (!hcm.length) this.loadString = 'Nothing to display.';
+    };
+
+    if (!this.details.Cluster) {
+      if ('cluster_id' in this.details.Current && this.details.Current.cluster_id) {
+        this.statusInfo$ = this.service.getClusterById(this.details.Current.cluster_id).pipe(
+          switchMap((cluster) => this.service.getStatusInfo(cluster.id, cluster.hostcomponent).pipe(map((a) => this.service.fillStatus(a)))),
+          tap<StatusInfo[]>(effect)
+        );
+      }
+    } else {
+      const { id, hostcomponent } = this.details.Cluster;
+      const { typeName, id: current_id } = this.details.Current;
+      this.statusInfo$ = this.service.getStatusInfo(id, hostcomponent).pipe(
+        map((a) => (typeName === 'host' ? this.service.fillStatus(a, current_id) : this.service.fillStatusByService(a, typeName !== 'cluster' ? current_id : null))),
+        tap<StatusInfo[]>(effect)
+      );
+    }
+  }
+
+  changeView(matSelectChange: MatSelectChange) {
+    this.listIcon = 'view_list';
+    this.view = matSelectChange.value;
+    this.getStatusInfo();
   }
 
   toggleExpand() {
@@ -67,48 +100,25 @@ export class StatusComponent extends SocketListenerDirective implements OnInit, 
       this.listIcon = 'list';
       this.listTooltip = 'Collapse all';
     }
-    this.panels.forEach(p => (p.expanded = this.listIcon === 'list'));
-  }
-
-  changeView(matSelectChange: MatSelectChange) {
-    this.listIcon = 'view_list';
-    this.view = matSelectChange.value;
-    this.getStatusInfo();
-  }
-
-  getStatusInfo(rid?: number) {
-    const { id, hostcomponent } = { ...this.details.Cluster };
-
-    if (!this.details.Cluster) {
-      if ('cluster_id' in this.details.Current && this.details.Current.cluster_id) {
-        this.statusInfo$ = this.service
-          .getClusterById(this.details.Current.cluster_id)
-          .pipe(switchMap(cluster => this.service.getStatusInfo(cluster.id, cluster.hostcomponent).pipe(map(a => this.service.fillStatus(a, id)))))
-          .pipe(tap(hcm => (this.hcm = hcm)));
-      } else this.loadString = 'Nothing to display.';
-    } else
-      this.statusInfo$ = this.service
-        .getStatusInfo(id, hostcomponent)
-        .pipe(map(a => (this.view === 'host' ? this.service.fillStatus(a, rid) : this.service.fillStatusByService(a, rid))))
-        .pipe(tap(hcm => (this.hcm = hcm)));
+    this.panels.forEach((p) => (p.expanded = this.listIcon === 'list'));
   }
 
   change_status(e: EventMessage) {
     if (e.object.type === 'host') {
-      const c = this.hcm.find(h => h.id === e.object.id);
+      const c = this.hcm.find((h) => h.id === e.object.id);
       if (c) c.status = +e.object.details.value;
 
-      this.hcm.forEach(a => {
-        const fh = a.relations.find(h => h.id === e.object.id);
+      this.hcm.forEach((a) => {
+        const fh = a.relations.find((h) => h.id === e.object.id);
         if (fh) fh.status = +e.object.details.value;
       });
     }
 
     if (e.object.type === 'service') {
-      const c = this.hcm.filter(h => h.relations.find(co => co.id === e.object.id));
+      const c = this.hcm.filter((h) => h.relations.find((co) => co.id === e.object.id));
       if (c) {
-        c.forEach(ho => {
-          const f = ho.relations.find(co => co.id === e.object.id);
+        c.forEach((ho) => {
+          const f = ho.relations.find((co) => co.id === e.object.id);
           if (f) f.status = +e.object.details.value;
         });
       }
@@ -118,33 +128,15 @@ export class StatusComponent extends SocketListenerDirective implements OnInit, 
       const host_id = e.object.id,
         component_id = +e.object.details.id;
       if (this.hcm.length) {
-        const c = this.hcm.find(h => h.id === host_id).relations.find(s => s.components.some(co => co.id === component_id));
+        const c = this.hcm.find((h) => h.id === host_id).relations.find((s) => s.components.some((co) => co.id === component_id));
         if (c) {
-          const f = c.components.find(co => co.id === component_id);
+          const f = c.components.find((co) => co.id === component_id);
           if (f) f.status = +e.object.details.value;
         }
       }
-      const sc = this.hcm.find(co => co.id === component_id);
+      const sc = this.hcm.find((co) => co.id === component_id);
       if (sc) sc.status = +e.object.details.value;
     }
     if (this.hcm.length) this.statusInfo$ = of(this.hcm);
-  }
-
-  init() {
-    const { id, typeName } = { ...this.details.Current };
-    switch (typeName) {
-      case 'cluster':
-        this.showChangeView = true;
-        this.getStatusInfo();
-        break;
-      case 'service':
-        this.view = 'service';
-        this.getStatusInfo(id);
-        break;
-      case 'host':
-        this.view = 'host';
-        this.getStatusInfo(id);
-        break;
-    }
   }
 }

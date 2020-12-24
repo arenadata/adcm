@@ -19,15 +19,14 @@ from rest_framework.authentication import TokenAuthentication, SessionAuthentica
 import cm.api
 import cm.bundle
 from cm.errors import AdcmEx, AdcmApiEx
-from cm.models import Bundle, Prototype, Component, Action
+from cm.models import Bundle, Prototype, Action
 from cm.models import PrototypeConfig, Upgrade, PrototypeExport
 from cm.models import PrototypeImport
 from cm.logger import log   # pylint: disable=unused-import
 
 import api.serializers
 import api.stack_serial
-from api.serializers import check_obj
-from api.api_views import ListView, DetailViewRO, PageView, GenericAPIPermView
+from api.api_views import ListView, DetailViewRO, PageView, GenericAPIPermView, check_obj
 
 
 class CsrfOffSessionAuthentication(SessionAuthentication):
@@ -80,7 +79,7 @@ class LoadBundle(GenericAPIPermView):
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
 
 class BundleList(PageView):
@@ -113,7 +112,7 @@ class BundleDetail(DetailViewRO):
         try:
             cm.bundle.delete_bundle(bundle)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -131,7 +130,7 @@ class BundleUpdate(GenericAPIPermView):
             serializer = self.serializer_class(bundle, context={'request': request})
             return Response(serializer.data)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds)
+            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds) from e
 
 
 class BundleLicense(GenericAPIPermView):
@@ -146,7 +145,7 @@ class BundleLicense(GenericAPIPermView):
             url = reverse('accept-license', kwargs={'bundle_id': bundle.id}, request=request)
             return Response({'license': bundle.license, 'accept': url, 'text': body})
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds)
+            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds) from e
 
 
 class AcceptLicense(GenericAPIPermView):
@@ -159,7 +158,7 @@ class AcceptLicense(GenericAPIPermView):
             cm.api.accept_license(bundle)
             return Response(status=status.HTTP_200_OK)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds)
+            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds) from e
 
 
 class PrototypeList(PageView):
@@ -198,7 +197,7 @@ class ServiceDetail(DetailViewRO):
     def get_object(self):
         service = super().get_object()
         service.actions = Action.objects.filter(prototype__type='service', prototype__id=service.id)
-        service.components = Component.objects.filter(prototype=service)
+        service.components = Prototype.objects.filter(parent=service, type='component')
         service.config = PrototypeConfig.objects.filter(
             prototype=service, action=None
         ).order_by('id')
@@ -231,6 +230,17 @@ class ServiceProtoActionList(GenericAPIPermView):
         obj = self.get_queryset().filter(prototype_id=service_id)
         serializer = self.serializer_class(obj, many=True, context={'request': request})
         return Response(serializer.data)
+
+
+class ComponentList(PageView):
+    """
+    get:
+    List all stack components
+    """
+    queryset = Prototype.objects.filter(type='component')
+    serializer_class = api.stack_serial.ComponentTypeSerializer
+    filterset_fields = ('name', 'bundle_id')
+    ordering_fields = ('display_name', 'version_order')
 
 
 class HostTypeList(PageView):
@@ -317,6 +327,15 @@ class ClusterTypeDetail(PrototypeDetail):
     """
     queryset = Prototype.objects.filter(type='cluster')
     serializer_class = api.stack_serial.ClusterTypeDetailSerializer
+
+
+class ComponentTypeDetail(PrototypeDetail):
+    """
+    get:
+    Show component prototype
+    """
+    queryset = Prototype.objects.filter(type='component')
+    serializer_class = api.stack_serial.ComponentTypeDetailSerializer
 
 
 class HostTypeDetail(PrototypeDetail):

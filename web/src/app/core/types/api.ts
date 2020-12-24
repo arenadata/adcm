@@ -10,26 +10,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { IAction } from './actions';
-import { Component } from './host-component';
+import { IComponent } from './host-component';
 import { Issue } from './issue';
 import { Job, Task } from './task-job';
 
-export type TypeName =
-  | 'bundle'
-  | 'cluster'
-  | 'host'
-  | 'provider'
-  | 'service'
-  | 'job'
-  | 'task'
-  | 'user'
-  | 'profile'
-  | 'adcm'
-  | 'stats'
-  | 'hostcomponent'
-  | 'component';
+export type TypeName = 'bundle' | 'cluster' | 'host' | 'provider' | 'service' | 'job' | 'task' | 'user' | 'profile' | 'adcm' | 'stats' | 'hostcomponent' | 'component';
 export type Entities = Cluster | Service | Host | Provider | Job | Task | Bundle;
 
+/**
+ *```
+ {
+   [key: string]: string;
+ }
+ ```
+ */
 export interface IRoot {
   [key: string]: string;
 }
@@ -64,6 +58,7 @@ export interface Cluster extends ApiBase {
   serviceprototype: string;
   upgradable: boolean;
   upgrade: string;
+  status_url: string;
 }
 
 export interface Provider extends ApiBase {
@@ -79,7 +74,7 @@ export interface Host extends ApiBase {
 }
 
 export interface Service extends ApiBase {
-  components: Component[];
+  components: IComponent[];
   status: number;
   hostcomponent: string;
   display_name: string;

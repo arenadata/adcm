@@ -12,13 +12,17 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.db import models
-from django.contrib.auth.models import User, Group, Permission
+import json
 
+from django.contrib.auth.models import User, Group, Permission
+from django.db import models
+
+from cm.errors import AdcmEx
 
 PROTO_TYPE = (
     ('adcm', 'adcm'),
     ('service', 'service'),
+    ('component', 'component'),
     ('cluster', 'cluster'),
     ('host', 'host'),
     ('provider', 'provider'),
@@ -30,6 +34,34 @@ LICENSE_STATE = (
     ('accepted', 'accepted'),
     ('unaccepted', 'unaccepted'),
 )
+
+
+class JSONField(models.Field):
+    def db_type(self, connection):
+        return 'text'
+
+    def from_db_value(self, value, expression, connection):
+        if value is not None:
+            try:
+                return json.loads(value)
+            except json.JSONDecodeError:
+                raise AdcmEx(
+                    'JSON_DB_ERROR',
+                    msg=f"Not correct field format '{expression.field.attname}'") from None
+        return value
+
+    def get_prep_value(self, value):
+        if value is not None:
+            return str(json.dumps(value))
+        return value
+
+    def to_python(self, value):
+        if value is not None:
+            return json.loads(value)
+        return value
+
+    def value_to_string(self, obj):
+        return self.value_from_object(obj)
 
 
 class Bundle(models.Model):
@@ -54,10 +86,10 @@ class Upgrade(models.Model):
     description = models.TextField(blank=True)
     min_version = models.CharField(max_length=80)
     max_version = models.CharField(max_length=80)
-    from_edition = models.TextField(blank=True, default='[\"community\"]')  # JSON
+    from_edition = JSONField(default=['community'])
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
-    state_available = models.TextField(blank=True)  # JSON
+    state_available = JSONField(default=[])
     state_on_success = models.CharField(max_length=64, blank=True)
 
 
@@ -70,6 +102,7 @@ MONITORING_TYPE = (
 class Prototype(models.Model):
     bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE)
     type = models.CharField(max_length=16, choices=PROTO_TYPE)
+    parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
     path = models.CharField(max_length=160, default='')
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
@@ -77,6 +110,8 @@ class Prototype(models.Model):
     version_order = models.PositiveIntegerField(default=0)
     required = models.BooleanField(default=False)
     shared = models.BooleanField(default=False)
+    constraint = JSONField(default=[0, '+'])
+    requires = JSONField(default=[])
     adcm_min_version = models.CharField(max_length=80, default=None, null=True)
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
     description = models.TextField(blank=True)
@@ -85,7 +120,7 @@ class Prototype(models.Model):
         return str(self.name)
 
     class Meta:
-        unique_together = (('bundle', 'type', 'name', 'version'),)
+        unique_together = (('bundle', 'type', 'parent', 'name', 'version'),)
 
 
 class ObjectConfig(models.Model):
@@ -95,8 +130,8 @@ class ObjectConfig(models.Model):
 
 class ConfigLog(models.Model):
     obj_ref = models.ForeignKey(ObjectConfig, on_delete=models.CASCADE)
-    config = models.TextField()         # JSON
-    attr = models.TextField(default=None, null=True)   # JSON
+    config = JSONField(default={})
+    attr = JSONField(default={})
     date = models.DateTimeField(auto_now=True)
     description = models.TextField(blank=True)
 
@@ -106,8 +141,12 @@ class ADCM(models.Model):
     name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = models.TextField(blank=True)   # JSON
-    issue = models.TextField(blank=True, default='{}')   # JSON
+    stack = JSONField(default=[])
+    issue = JSONField(default={})
+
+    @property
+    def bundle_id(self):
+        return self.prototype.bundle_id
 
 
 class Cluster(models.Model):
@@ -116,8 +155,20 @@ class Cluster(models.Model):
     description = models.TextField(blank=True)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = models.TextField(blank=True)   # JSON
-    issue = models.TextField(blank=True)   # JSON
+    stack = JSONField(default=[])
+    issue = JSONField(default={})
+
+    @property
+    def bundle_id(self):
+        return self.prototype.bundle_id
+
+    @property
+    def edition(self):
+        return self.prototype.bundle.edition
+
+    @property
+    def license(self):
+        return self.prototype.bundle.license
 
     def __str__(self):
         return str(self.name)
@@ -129,8 +180,20 @@ class HostProvider(models.Model):
     description = models.TextField(blank=True)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = models.TextField(blank=True)   # JSON
-    issue = models.TextField(blank=True)   # JSON
+    stack = JSONField(default=[])
+    issue = JSONField(default={})
+
+    @property
+    def bundle_id(self):
+        return self.prototype.bundle_id
+
+    @property
+    def edition(self):
+        return self.prototype.bundle.edition
+
+    @property
+    def license(self):
+        return self.prototype.bundle.license
 
     def __str__(self):
         return str(self.name)
@@ -144,8 +207,16 @@ class Host(models.Model):
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = models.TextField(blank=True)   # JSON
-    issue = models.TextField(blank=True)   # JSON
+    stack = JSONField(default=[])
+    issue = JSONField(default={})
+
+    @property
+    def bundle_id(self):
+        return self.prototype.bundle_id
+
+    @property
+    def monitoring(self):
+        return self.prototype.monitoring
 
     def __str__(self):
         return "{}".format(self.fqdn)
@@ -154,36 +225,75 @@ class Host(models.Model):
 class ClusterObject(models.Model):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
+    service = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = models.TextField(blank=True)   # JSON
-    issue = models.TextField(blank=True)   # JSON
+    stack = JSONField(default=[])
+    issue = JSONField(default={})
+
+    @property
+    def bundle_id(self):
+        return self.prototype.bundle_id
+
+    @property
+    def version(self):
+        return self.prototype.version
+
+    @property
+    def name(self):
+        return self.prototype.name
+
+    @property
+    def display_name(self):
+        return self.prototype.display_name
+
+    @property
+    def description(self):
+        return self.prototype.description
+
+    @property
+    def monitoring(self):
+        return self.prototype.monitoring
 
     class Meta:
         unique_together = (('cluster', 'prototype'),)
 
 
-class Component(models.Model):
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
-    name = models.CharField(max_length=160)
-    display_name = models.CharField(max_length=160, blank=True)
-    description = models.TextField(blank=True)
-    params = models.TextField(blank=True)       # JSON
-    constraint = models.TextField(blank=True)   # JSON
-    requires = models.TextField(blank=True)     # JSON
-    monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
-
-    class Meta:
-        unique_together = (('prototype', 'name'),)
-
-
 class ServiceComponent(models.Model):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
-    component = models.ForeignKey(Component, on_delete=models.CASCADE)
+    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE, null=True, default=None)
+    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
+    state = models.CharField(max_length=64, default='created')
+    stack = JSONField(default=[])
+    issue = JSONField(default={})
+
+    @property
+    def name(self):
+        return self.prototype.name
+
+    @property
+    def display_name(self):
+        return self.prototype.display_name
+
+    @property
+    def description(self):
+        return self.prototype.description
+
+    @property
+    def constraint(self):
+        return self.prototype.constraint
+
+    @property
+    def requires(self):
+        return self.prototype.requires
+
+    @property
+    def monitoring(self):
+        return self.prototype.monitoring
 
     class Meta:
-        unique_together = (('cluster', 'service', 'component'),)
+        unique_together = (('cluster', 'service', 'prototype'),)
 
 
 ACTION_TYPE = (
@@ -202,7 +312,7 @@ class Action(models.Model):
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
-    ui_options = models.TextField(blank=True, null=True, default=None)   # JSON
+    ui_options = JSONField(default={})
 
     type = models.CharField(max_length=16, choices=ACTION_TYPE)
     button = models.CharField(max_length=64, default=None, null=True)
@@ -212,12 +322,12 @@ class Action(models.Model):
 
     state_on_success = models.CharField(max_length=64, blank=True)
     state_on_fail = models.CharField(max_length=64, blank=True)
-    state_available = models.TextField(blank=True)    # JSON
+    state_available = JSONField(default=[])
 
-    params = models.TextField(blank=True)             # JSON
-    log_files = models.TextField(blank=True)          # JSON
+    params = JSONField(default={})
+    log_files = JSONField(default=[])
 
-    hostcomponentmap = models.TextField(blank=True)   # JSON
+    hostcomponentmap = JSONField(default=[])
     allow_to_terminate = models.BooleanField(default=False)
     partial_execution = models.BooleanField(default=False)
 
@@ -235,7 +345,7 @@ class SubAction(models.Model):
     script = models.CharField(max_length=160)
     script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
     state_on_fail = models.CharField(max_length=64, blank=True)
-    params = models.TextField(blank=True)             # JSON
+    params = JSONField(default={})
 
 
 class HostComponent(models.Model):
@@ -276,8 +386,8 @@ class PrototypeConfig(models.Model):
     type = models.CharField(max_length=16, choices=CONFIG_FIELD_TYPE)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
-    limits = models.TextField(blank=True)   # JSON
-    ui_options = models.TextField(blank=True, null=True, default=None)   # JSON
+    limits = JSONField(default={})
+    ui_options = JSONField(blank=True, default={})
     required = models.BooleanField(default=True)
 
     class Meta:
@@ -299,7 +409,7 @@ class PrototypeImport(models.Model):
     max_version = models.CharField(max_length=80)
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
-    default = models.TextField(null=True, default=None)   # JSON
+    default = JSONField(null=True, default=None)
     required = models.BooleanField(default=False)
     multibind = models.BooleanField(default=False)
 
@@ -335,7 +445,7 @@ JOB_STATUS = (
 
 class UserProfile(models.Model):
     login = models.CharField(max_length=32, unique=True)
-    profile = models.TextField()   # JSON
+    profile = JSONField(default='')
 
 
 class Role(models.Model):
@@ -351,8 +461,8 @@ class JobLog(models.Model):
     action_id = models.PositiveIntegerField()
     sub_action_id = models.PositiveIntegerField(default=0)
     pid = models.PositiveIntegerField(blank=True, default=0)
-    selector = models.TextField()               # JSON
-    log_files = models.TextField(blank=True)    # JSON
+    selector = JSONField(default={})
+    log_files = JSONField(default=[])
     status = models.CharField(max_length=16, choices=JOB_STATUS)
     start_date = models.DateTimeField()
     finish_date = models.DateTimeField(db_index=True)
@@ -362,12 +472,12 @@ class TaskLog(models.Model):
     action_id = models.PositiveIntegerField()
     object_id = models.PositiveIntegerField()
     pid = models.PositiveIntegerField(blank=True, default=0)
-    selector = models.TextField()                    # JSON
+    selector = JSONField(default={})
     status = models.CharField(max_length=16, choices=JOB_STATUS)
-    config = models.TextField(null=True)             # JSON
-    attr = models.TextField(null=True)               # JSON
-    hostcomponentmap = models.TextField(null=True)   # JSON
-    hosts = models.TextField(null=True)   # JSON
+    config = JSONField(null=True, default=None)
+    attr = JSONField(default={})
+    hostcomponentmap = JSONField(null=True, default=None)
+    hosts = JSONField(null=True, default=None)
     start_date = models.DateTimeField()
     finish_date = models.DateTimeField()
 
@@ -424,6 +534,7 @@ class LogStorage(models.Model):
 
 class StagePrototype(models.Model):
     type = models.CharField(max_length=16, choices=PROTO_TYPE)
+    parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
     name = models.CharField(max_length=160)
     path = models.CharField(max_length=160, default='')
     display_name = models.CharField(max_length=160, blank=True)
@@ -433,6 +544,8 @@ class StagePrototype(models.Model):
     license_hash = models.CharField(max_length=64, default=None, null=True)
     required = models.BooleanField(default=False)
     shared = models.BooleanField(default=False)
+    constraint = JSONField(default=[0, '+'])
+    requires = JSONField(default=[])
     adcm_min_version = models.CharField(max_length=80, default=None, null=True)
     description = models.TextField(blank=True)
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
@@ -441,7 +554,7 @@ class StagePrototype(models.Model):
         return str(self.name)
 
     class Meta:
-        unique_together = (('type', 'name', 'version'),)
+        unique_together = (('type', 'parent', 'name', 'version'),)
 
 
 class StageUpgrade(models.Model):
@@ -451,23 +564,9 @@ class StageUpgrade(models.Model):
     max_version = models.CharField(max_length=80)
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
-    from_edition = models.TextField(blank=True, default='[\"community\"]')  # JSON
-    state_available = models.TextField(blank=True)   # JSON
+    from_edition = JSONField(default=['community'])
+    state_available = JSONField(default=[])
     state_on_success = models.CharField(max_length=64, blank=True)
-
-
-class StageComponent(models.Model):
-    prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
-    name = models.CharField(max_length=160)
-    display_name = models.CharField(max_length=160, blank=True)
-    description = models.TextField(blank=True)
-    params = models.TextField(blank=True)       # JSON
-    constraint = models.TextField(blank=True)   # JSON
-    requires = models.TextField(blank=True)     # JSON
-    monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
-
-    class Meta:
-        unique_together = (('prototype', 'name'),)
 
 
 class StageAction(models.Model):
@@ -475,7 +574,7 @@ class StageAction(models.Model):
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
-    ui_options = models.TextField(blank=True, null=True, default=None)   # JSON
+    ui_options = JSONField(default={})
 
     type = models.CharField(max_length=16, choices=ACTION_TYPE)
     button = models.CharField(max_length=64, default=None, null=True)
@@ -485,12 +584,12 @@ class StageAction(models.Model):
 
     state_on_success = models.CharField(max_length=64, blank=True)
     state_on_fail = models.CharField(max_length=64, blank=True)
-    state_available = models.TextField(blank=True)    # JSON
+    state_available = JSONField(default=[])
 
-    params = models.TextField(blank=True)             # JSON
-    log_files = models.TextField(blank=True)          # JSON
+    params = JSONField(default={})
+    log_files = JSONField(default=[])
 
-    hostcomponentmap = models.TextField(blank=True)   # JSON
+    hostcomponentmap = JSONField(default=[])
     allow_to_terminate = models.BooleanField(default=False)
     partial_execution = models.BooleanField(default=False)
 
@@ -508,7 +607,7 @@ class StageSubAction(models.Model):
     script = models.CharField(max_length=160)
     script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
     state_on_fail = models.CharField(max_length=64, blank=True)
-    params = models.TextField(blank=True)             # JSON
+    params = JSONField(default={})
 
 
 class StagePrototypeConfig(models.Model):
@@ -520,8 +619,8 @@ class StagePrototypeConfig(models.Model):
     type = models.CharField(max_length=16, choices=CONFIG_FIELD_TYPE)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
-    limits = models.TextField(blank=True)   # JSON
-    ui_options = models.TextField(blank=True, null=True, default=None)   # JSON
+    limits = JSONField(default={})
+    ui_options = JSONField(blank=True, default={})   # JSON
     required = models.BooleanField(default=True)
 
     class Meta:
@@ -543,7 +642,7 @@ class StagePrototypeImport(models.Model):
     max_version = models.CharField(max_length=80)
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
-    default = models.TextField(null=True, default=None)   # JSON
+    default = JSONField(null=True, default=None)
     required = models.BooleanField(default=False)
     multibind = models.BooleanField(default=False)
 

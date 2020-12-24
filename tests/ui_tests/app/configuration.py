@@ -23,6 +23,8 @@ class Configuration(BasePage):
         if url:
             self.get(url, "config")
         self._wait_element_present(ConfigurationLocators.app_conf_form, 15)
+        # 30 seconds timeout here is caused by possible long load of config page
+        self._wait_element_present(ConfigurationLocators.load_marker, 30)
 
     def assert_field_editable(self, field, editable=True):
         """Check that we can edit specific field or not
@@ -42,15 +44,22 @@ class Configuration(BasePage):
         :return:
         """
         current_value = self.get_field_value_by_type(field, field_type)
-        if field_type == 'file':
-            expected_value = 'test'
-        if field_type == 'map':
-            map_config = self.get_map_field_config(field)
-            assert set(map_config.keys()) == set(map_config.keys())
-            assert set(map_config.values()) == set(map_config.values())
+        if field_type == 'password':
+            # In case of password we have no raw password in API after writing.
+            if expected_value is not None and expected_value != "":
+                assert current_value is not None, "Password field expected to be filled"
+            else:
+                assert current_value is None or current_value == "", "Password have to be empty"
         else:
-            err_message = "Default value wrong. Current value {}".format(current_value)
-            assert current_value == expected_value, err_message
+            if field_type == 'file':
+                expected_value = 'test'
+            if field_type == 'map':
+                map_config = self.get_map_field_config(field)
+                assert set(map_config.keys()) == set(map_config.keys())
+                assert set(map_config.values()) == set(map_config.values())
+            else:
+                err_message = "Default value wrong. Current value {}".format(current_value)
+                assert current_value == expected_value, err_message
 
     def assert_alerts_presented(self, field_type):
         """Check that frontend errors presented on screen and error type in text
@@ -307,6 +316,10 @@ class Configuration(BasePage):
 
     def get_tooltip_text_for_element(self, element):
         tooltip_icon = self._get_tooltip_el_for_field(element)
+        # Hack for firefox because of move_to_element does not scroll to the element
+        # https://github.com/mozilla/geckodriver/issues/776
+        if self.driver.capabilities['browserName'] == 'firefox':
+            self.driver.execute_script('arguments[0].scrollIntoView(true)', element)
         action = ActionChains(self.driver)
         action.move_to_element(tooltip_icon).perform()
         return self.driver.find_element(*Common.tooltip).text
@@ -318,7 +331,7 @@ class Configuration(BasePage):
         return self.driver.find_elements(*ConfigurationLocators.app_fields_password)
 
     def get_display_names(self):
-        self._wait_element_present(Common.display_names)
+        self._wait_element_present(Common.display_names, timer=15)
         return {name.text for name in self.driver.find_elements(*Common.display_names)}
 
     def set_search_field(self, search_pattern):

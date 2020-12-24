@@ -15,7 +15,6 @@ import os.path
 import hashlib
 import tarfile
 import shutil
-import json
 import functools
 
 from version_utils import rpm
@@ -30,14 +29,14 @@ import cm.status_api
 from cm.adcm_config import proto_ref, get_prototype_config, init_object_config, switch_config
 from cm.errors import raise_AdcmEx as err
 from cm.models import Cluster, Host, Upgrade, StageUpgrade, ADCM
-from cm.models import Bundle, Prototype, Component, Action, SubAction, PrototypeConfig
-from cm.models import StagePrototype, StageComponent, StageAction
+from cm.models import Bundle, Prototype, Action, SubAction, PrototypeConfig
+from cm.models import StagePrototype, StageAction
 from cm.models import StageSubAction, StagePrototypeConfig
 from cm.models import PrototypeExport, PrototypeImport, StagePrototypeExport, StagePrototypeImport
 
 
 STAGE = (
-    StagePrototype, StageComponent, StageAction, StagePrototypeConfig,
+    StagePrototype, StageAction, StagePrototypeConfig,
     StageUpgrade, StagePrototypeExport, StagePrototypeImport
 )
 
@@ -239,24 +238,25 @@ def re_check_actions():
     for act in StageAction.objects.all():
         if not act.hostcomponentmap:
             continue
-        hc = json.loads(act.hostcomponentmap)
+        hc = act.hostcomponentmap
         ref = 'in hc_acl of action "{}" of {}'.format(act.name, proto_ref(act.prototype))
         for item in hc:
             sp = StagePrototype.objects.filter(type='service', name=item['service'])
             if not sp:
                 msg = 'Unknown service "{}" {}'
                 err('INVALID_ACTION_DEFINITION', msg.format(item['service'], ref))
-            if not StageComponent.objects.filter(prototype=sp[0], name=item['component']):
+            if not StagePrototype.objects.filter(
+                    parent=sp[0], type='component', name=item['component']):
                 msg = 'Unknown component "{}" of service "{}" {}'
                 err('INVALID_ACTION_DEFINITION', msg.format(item['component'], sp[0].name, ref))
 
 
 def re_check_components():
-    for comp in StageComponent.objects.all():
+    for comp in StagePrototype.objects.filter(type='component'):
         if not comp.requires:
             continue
         ref = 'in requires of component "{}" of {}'.format(comp.name, proto_ref(comp.prototype))
-        req_list = json.loads(comp.requires)
+        req_list = comp.requires
         for i, item in enumerate(req_list):
             if 'service' in item:
                 try:
@@ -268,21 +268,23 @@ def re_check_components():
                 service = comp.prototype
                 req_list[i]['service'] = comp.prototype.name
             try:
-                req_comp = StageComponent.objects.get(name=item['component'], prototype=service)
-            except StageComponent.DoesNotExist:
+                req_comp = StagePrototype.objects.get(
+                    name=item['component'], type='component', parent=service
+                )
+            except StagePrototype.DoesNotExist:
                 msg = 'Unknown component "{}" {}'
                 err('COMPONENT_CONSTRAINT_ERROR', msg.format(item['component'], ref))
             if comp == req_comp:
                 msg = 'Component can not require themself {}'
                 err('COMPONENT_CONSTRAINT_ERROR', msg.format(ref))
-        comp.requires = json.dumps(req_list)
+        comp.requires = req_list
         comp.save()
 
 
 def re_check_config():
     for c in StagePrototypeConfig.objects.filter(type='variant'):
         ref = proto_ref(c.prototype)
-        lim = json.loads(c.limits)
+        lim = c.limits
         if lim['source']['type'] == 'list':
             keys = lim['source']['name'].split('/')
             name = keys[0]
@@ -312,8 +314,8 @@ def re_check_config():
             if 'component' in lim['source']['args']:
                 comp = lim['source']['args']['component']
                 try:
-                    StageComponent.objects.get(name=comp)
-                except StageComponent.DoesNotExist:
+                    StagePrototype.objects.get(type='component', name=comp, parent=c.prototype)
+                except StagePrototype.DoesNotExist:
                     msg = 'Component "{}" in source:args of {} config "{}/{}" does not exists'
                     err('INVALID_CONFIG_DEFINITION', msg.format(comp, ref, c.name, c.subname))
 
@@ -388,14 +390,21 @@ def copy_stage_sub_actons(bundle):
     SubAction.objects.bulk_create(sub_actions)
 
 
-def copy_stage_component(stage_components, prototype):
-    components = prepare_bulk(
-        stage_components,
-        Component,
-        prototype,
-        ('name', 'display_name', 'description', 'params', 'monitoring', 'requires', 'constraint')
-    )
-    Component.objects.bulk_create(components)
+def copy_stage_component(stage_components, stage_proto, prototype, bundle):
+    componets = []
+    for c in stage_components:
+        comp = copy_obj(c, Prototype, (
+            'type', 'path', 'name', 'version', 'required', 'monitoring',
+            'constraint', 'requires', 'display_name', 'description', 'adcm_min_version'
+        ))
+        comp.bundle = bundle
+        comp.parent = prototype
+        componets.append(comp)
+    Prototype.objects.bulk_create(componets)
+    for sp in StagePrototype.objects.filter(type='component', parent=stage_proto):
+        p = Prototype.objects.get(name=sp.name, type='component', parent=prototype, bundle=bundle)
+        copy_stage_actons(StageAction.objects.filter(prototype=sp), p)
+        copy_stage_config(StagePrototypeConfig.objects.filter(prototype=sp), p)
 
 
 def copy_stage_import(stage_imports, prototype):
@@ -445,14 +454,16 @@ def copy_stage(bundle_hash, bundle_proto):
         msg = 'Bundle "{}" {} already installed'
         err('BUNDLE_ERROR', msg.format(bundle_proto.name, bundle_proto.version))
 
-    stage_prototypes = StagePrototype.objects.all()
+    stage_prototypes = StagePrototype.objects.exclude(type='component')
     copy_stage_prototype(stage_prototypes, bundle)
 
     for sp in stage_prototypes:
         p = Prototype.objects.get(name=sp.name, type=sp.type, bundle=bundle)
         copy_stage_actons(StageAction.objects.filter(prototype=sp), p)
         copy_stage_config(StagePrototypeConfig.objects.filter(prototype=sp), p)
-        copy_stage_component(StageComponent.objects.filter(prototype=sp), p)
+        copy_stage_component(
+            StagePrototype.objects.filter(parent=sp, type='component'), sp, p, bundle
+        )
         for se in StagePrototypeExport.objects.filter(prototype=sp):
             pe = PrototypeExport(prototype=p, name=se.name)
             pe.save()
@@ -478,22 +489,10 @@ def update_bundle_from_stage(bundle):   # pylint: disable=too-many-locals,too-ma
         except Prototype.DoesNotExist:
             p = copy_obj(sp, Prototype, (
                 'type', 'path', 'name', 'version', 'required', 'shared', 'monitoring',
-                'display_name', 'description', 'adcm_min_version'
+                'constraint', 'requires', 'display_name', 'description', 'adcm_min_version'
             ))
             p.bundle = bundle
         p.save()
-        for scomp in StageComponent.objects.filter(prototype=sp):
-            try:
-                comp = Component.objects.get(prototype=p, name=scomp.name)
-                update_obj(comp, scomp, (
-                    'display_name', 'description', 'params', 'monitoring', 'requires', 'constraint'
-                ))
-            except Component.DoesNotExist:
-                comp = copy_obj(scomp, Component, (
-                    'name', 'display_name', 'description', 'params', 'requires', 'constraint'
-                ))
-                comp.prototype = p
-            comp.save()
         for saction in StageAction.objects.filter(prototype=sp):
             try:
                 action = Action.objects.get(prototype=p, name=saction.name)

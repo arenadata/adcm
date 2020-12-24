@@ -16,3 +16,10 @@ export const openClose = trigger('openClose', [
   state('false', style({ height: '0px', opacity: 0 })),
   transition('true <=> false', [animate('0.5s')]),
 ]);
+
+export const notify = trigger('notify', [
+  state('show', style({ opacity: 1 })),
+  state('hide', style({ opacity: 0 })),
+  transition('hide => show', [animate('.2s')]),
+  transition('show => hide', [animate('2s')]),
+]);

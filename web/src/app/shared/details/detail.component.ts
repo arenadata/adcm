@@ -11,15 +11,15 @@
 // limitations under the License.
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ChannelService, ClusterService, WorkerInstance } from '@app/core';
+import { ChannelService, ClusterService, keyChannelStrim, WorkerInstance } from '@app/core';
 import { EventMessage, SocketState } from '@app/core/store';
-import { Cluster, Host, IAction, Issue, Job, notIssue } from '@app/core/types';
+import { Cluster, Host, IAction, Issue, Job, isIssue } from '@app/core/types';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 import { switchMap, tap } from 'rxjs/operators';
 
 import { SocketListenerDirective } from '../directives/socketListener.directive';
-import { IDetails } from './details.service';
+import { IDetails } from './navigation.service';
 
 @Component({
   selector: 'app-detail',
@@ -28,12 +28,10 @@ import { IDetails } from './details.service';
 })
 export class DetailComponent extends SocketListenerDirective implements OnInit, OnDestroy {
   request$: Observable<WorkerInstance>;
-  isIssue: boolean;
   upgradable = false;
   actions: IAction[] = [];
-  issues: Issue;
   status: number | string;
-
+  issue: Issue;
   current: IDetails;
   currentName = '';
 
@@ -58,26 +56,23 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
     this.service.clearWorker();
   }
 
-  notIssue(issue: Issue) {
-    return !notIssue(issue);
+  get isIssue() {
+    return isIssue(this.issue);
   }
 
   run(w: WorkerInstance) {
-    const { id, name, typeName, actions, issue, status, prototype_name, prototype_display_name, prototype_version, bundle_id } = w.current;
+    const { id, name, typeName, action, actions, issue, status, prototype_name, prototype_display_name, prototype_version, bundle_id, state } = w.current;
     const { upgradable, upgrade, hostcomponent } = w.current as Cluster;
     const { log_files, objects } = w.current as Job;
     const { provider_id } = w.current as Host;
 
     this.currentName = name;
-
-    const parent = w.current.typeName === 'cluster' ? null : w.cluster;
-
     this.actions = actions;
     this.upgradable = upgradable;
-    this.issues = issue;
     this.status = status;
 
-    this.isIssue = this.notIssue(parent ? parent.issue : issue);
+    const parent = w.current.typeName === 'cluster' ? null : w.cluster;
+    this.issue = issue;
 
     this.current = {
       parent,
@@ -85,10 +80,12 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
       name,
       typeName,
       actions,
+      action,
       issue,
       upgradable,
       upgrade,
       status,
+      state,
       log_files,
       objects,
       prototype_name,
@@ -101,14 +98,13 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
   }
 
   scroll(stop: { direct: -1 | 1 | 0; screenTop: number }) {
-    this.channel.next('scroll', stop);
+    this.channel.next(keyChannelStrim.scroll, stop);
   }
 
   reset() {
     this.request$ = this.service.reset().pipe(
       this.takeUntil(),
-      tap((a) => this.run(a)),
-      tap((_) => console.log('GET ::', this.current))
+      tap((a) => this.run(a))
     );
   }
 
@@ -128,15 +124,12 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
         this.reset();
         return;
       }
-
-      if (m.event === 'clear_issue') this.issues = {} as Issue;
-      if (m.event === 'raise_issue') this.issues = m.object.details.value as Issue;
+      if (m.event === 'clear_issue') this.issue = {};
+      if (m.event === 'raise_issue') this.issue = m.object.details.value;
       if (m.event === 'change_status') this.status = +m.object.details.value;
     }
 
     // parent
-    if (this.service.Cluster?.id === m.object.id && this.Current?.typeName !== 'cluster' && m.object.type === 'cluster' && m.event === 'clear_issue') this.issues = {} as Issue;
-
-    this.isIssue = this.notIssue(this.issues);
+    if (this.service.Cluster?.id === m.object.id && this.Current?.typeName !== 'cluster' && m.object.type === 'cluster' && m.event === 'clear_issue') this.issue = {};
   }
 }

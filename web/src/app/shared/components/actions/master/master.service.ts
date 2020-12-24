@@ -16,6 +16,7 @@ import { FieldService } from '@app/shared/configuration/field.service';
 import { ConfigFieldsComponent } from '@app/shared/configuration/fields/fields.component';
 import { ServiceHostComponent } from '@app/shared/host-components-map/services2hosts/service-host.component';
 import { Post } from '@app/shared/host-components-map/types';
+import { IConfigAttr } from '@app/shared/configuration/types';
 
 export interface IValue {
   config?: ConfigFieldsComponent;
@@ -26,7 +27,7 @@ export enum whatShow {
   none = 'none',
   config = 'config',
   hostMap = 'hostmap',
-  stepper = 'stepper'
+  stepper = 'stepper',
 }
 
 @Injectable()
@@ -34,18 +35,18 @@ export class MasterService {
   constructor(private api: ApiService, private configService: FieldService) {}
 
   spotShow(action: IAction): whatShow {
-    const config = !!(action.config && action.config.config.length);
-    const hm = !!action.hostcomponentmap;
+    const config = action.config?.config?.length;
+    const hm = action.hostcomponentmap?.length;
     return config ? (hm ? whatShow.stepper : whatShow.config) : hm ? whatShow.hostMap : whatShow.none;
   }
 
   parseData(v: IValue) {
-    const getData = (c: ConfigFieldsComponent, h: ServiceHostComponent) => {
+    const getData = (attr: IConfigAttr, c: ConfigFieldsComponent, h: ServiceHostComponent) => {
       const config = c ? this.configService.parseValue(c.form.value, c.rawConfig.config) : undefined;
-      const hc = h ? h.service.statePost.data : undefined;
-      return { config, hc };
+      const hc = h?.statePost.data;
+      return { attr, config, hc };
     };
-    return v ? getData(v.config, v.hostmap) : undefined;
+    return v ? getData(v.config?.attr, v.config, v.hostmap) : undefined;
   }
 
   send(url: string, value: { config: any; hc: Post[] }) {

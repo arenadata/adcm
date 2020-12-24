@@ -20,12 +20,11 @@ from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
 import cm.config as config
-from api.api_views import DetailViewRO, create, PageView
+from api.api_views import DetailViewRO, create, check_obj, PageView
 from api.job_serial import (
     JobSerializer, JobListSerializer, LogStorageSerializer, LogStorageListSerializer, LogSerializer
 )
-from api.serializers import TaskSerializer, TaskListSerializer, TaskPostSerializer
-from api.serializers import check_obj
+from api.job_serial import TaskSerializer, TaskListSerializer, TaskPostSerializer
 from cm.errors import AdcmEx, AdcmApiEx
 from cm.job import get_log, restart_task, cancel_task
 from cm.models import JobLog, TaskLog, LogStorage
@@ -99,11 +98,12 @@ class LogStorageView(GenericAPIView):
             try:
                 log_storage = LogStorage.objects.get(id=log_id, job=job)
             except LogStorage.DoesNotExist:
-                raise AdcmApiEx('LOG_NOT_FOUND', f'log {log_id} not found for job {job_id}')
+                raise AdcmApiEx(
+                    'LOG_NOT_FOUND', f'log {log_id} not found for job {job_id}') from None
             serializer = self.serializer_class(log_storage, context={'request': request})
             return Response(serializer.data)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
 
 def download_log_file(request, job_id, log_id):
@@ -135,7 +135,7 @@ def download_log_file(request, job_id, log_id):
         response['Content-Disposition'] = f'attachment; filename={filename}'
         return response
     except AdcmEx as e:
-        raise AdcmApiEx(e.code, e.msg, e.http_code)
+        raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
 
 class LogFile(GenericAPIView):
@@ -157,7 +157,7 @@ class LogFile(GenericAPIView):
             serializer = self.serializer_class(ls, context={'request': request})
             return Response(serializer.data)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
 
 class Task(PageView):
@@ -207,7 +207,7 @@ class TaskReStart(GenericAPIView):
         try:
             restart_task(task)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
         return Response(status=status.HTTP_200_OK)
 
 
@@ -220,5 +220,5 @@ class TaskCancel(GenericAPIView):
         try:
             cancel_task(task)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
         return Response(status=status.HTTP_200_OK)

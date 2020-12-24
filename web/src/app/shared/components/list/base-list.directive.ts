@@ -10,17 +10,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Directive, Host, Input, OnDestroy, OnInit } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
 import { ParamMap } from '@angular/router';
 import { EventMessage, SocketState } from '@app/core/store';
 import { Bundle, Cluster, EmmitRow, Entities, Host as AdcmHost, TypeName } from '@app/core/types';
 import { Store } from '@ngrx/store';
-import { mergeMap, switchMap, tap, filter } from 'rxjs/operators';
+import { filter, mergeMap, switchMap, tap } from 'rxjs/operators';
 
 import { SocketListenerDirective } from '../../directives/socketListener.directive';
 import { DialogComponent } from '../dialog.component';
 import { ListComponent } from '../list/list.component';
 import { ListService } from './list.service';
-import { MatDialog } from '@angular/material/dialog';
 
 interface IRowHost extends AdcmHost {
   clusters: Partial<Cluster>[];
@@ -126,19 +126,29 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
   }
 
   listEvents(event: EmmitRow) {
-    const lbs = ['title', 'status', 'config', 'import'];
-    const nav = (a: string[]) => this.parent.router.navigate(['./', this.row.id, ...a], { relativeTo: this.parent.route });
+    const createUrl = (a: string[]) => this.parent.router.createUrlTree(['./', this.row.id, ...a], { relativeTo: this.parent.route });
+    const nav = (a: string[]) => this.parent.router.navigateByUrl(createUrl(a));
 
     this.row = event.row;
     const { cmd, item } = event;
-    lbs.includes(cmd) ? nav(cmd === 'title' ? [] : [cmd]) : this[cmd](item);
+
+    if (['title', 'status', 'config', 'import'].includes(cmd)) {
+      nav(cmd === 'title' ? [] : [cmd]);
+    } else if (cmd === 'new-tab') {
+      const url = this.parent.router.serializeUrl(createUrl([]));
+      window.open(url, '_blank');
+    } else {
+      this[cmd](item);
+    }
   }
 
   onLoad() {}
 
-  getActions() {
-    this.service.getActions(this.row);
-  }
+  // getActions() {
+  //   this.row.typeName = this.typeName;
+  //   this.service.getActions(this.row);
+  //   // this.parent.dialog.open(DialogComponent, { data: { title: 'Choose action', model: this.row, component: ActionCardComponent } });
+  // }
 
   addCluster(id: number) {
     if (id) this.service.addClusterToHost(id, this.row as AdcmHost);

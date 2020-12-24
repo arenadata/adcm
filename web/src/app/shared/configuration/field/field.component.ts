@@ -9,13 +9,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { ChangeDetectorRef, Component, Input, OnInit, ViewChild, SimpleChanges, OnChanges } from '@angular/core';
+import { Component, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { FieldDirective } from '@app/shared/form-elements/field.directive';
 import { BaseMapListDirective } from '@app/shared/form-elements/map.component';
 
 import { SchemeComponent } from '../scheme/scheme.component';
-import { FieldOptions } from '../types';
+import { IFieldOptions } from '../types';
 
 @Component({
   selector: 'app-field',
@@ -24,7 +24,7 @@ import { FieldOptions } from '../types';
 })
 export class FieldComponent implements OnInit, OnChanges {
   @Input()
-  options: FieldOptions;
+  options: IFieldOptions;
   @Input()
   form: FormGroup;
   currentFormGroup: FormGroup;

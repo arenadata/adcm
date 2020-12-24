@@ -1,3 +1,4 @@
+import { Observable } from 'rxjs';
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -39,7 +40,7 @@ export class AuthService {
     return this.api.get<{google_oauth: boolean}>(`${environment.apiRoot}info/`).pipe(map(a => a.google_oauth));
   }
 
-  login(login: string, password: string) {
+  login(login: string, password: string): Observable<{ token: string }> {
     return this.api.post(`${environment.apiRoot}token/`, { username: login, password }).pipe(
       tap((response: { token: string }) => {
         let token = response && response.token;

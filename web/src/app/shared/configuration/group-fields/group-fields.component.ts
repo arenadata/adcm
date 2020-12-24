@@ -13,9 +13,9 @@ import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { AbstractControl, FormGroup } from '@angular/forms';
 import { MatExpansionPanel } from '@angular/material/expansion';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
+import { FieldService } from '@app/shared/configuration/field.service';
 
-import { FieldService } from '../field.service';
-import { FieldOptions, PanelOptions } from '../types';
+import { IFieldOptions, IPanelOptions } from '../types';
 
 @Component({
   selector: 'app-group-fields',
@@ -29,7 +29,7 @@ import { FieldOptions, PanelOptions } from '../types';
 })
 export class GroupFieldsComponent implements OnInit {
   active = true;
-  @Input() panel: PanelOptions;
+  @Input() panel: IPanelOptions;
   @Input() form: FormGroup;
   @ViewChild('ep') expanel: MatExpansionPanel;
 
@@ -56,20 +56,20 @@ export class GroupFieldsComponent implements OnInit {
   checkFields(flag: boolean) {
     this.panel.options
       .filter((a) => !('options' in a))
-      .forEach((a: FieldOptions) => {
+      .forEach((a: IFieldOptions) => {
         const split = a.key.split('/');
         const [name, ...other] = split;
-        const currentFormGroup = other.reverse().reduce((p, c) => p.get(c), this.form) as FormGroup;
+        const currentFormGroup = (<unknown>other.reverse().reduce((p, c) => p.get(c), this.form)) as FormGroup;
         const formControl = currentFormGroup.controls[name];
-        this.updateValidator(formControl, a, flag);
-        if (a.type === 'password') this.updateValidator(currentFormGroup.controls['confirm_' + name], a, flag);
+        this.updateValidator(formControl, flag, a);
+        if (a.type === 'password') this.updateValidator(currentFormGroup.controls['confirm_' + name], flag, a, formControl);
       });
   }
 
-  updateValidator(formControl: AbstractControl, a: FieldOptions, flag: boolean) {
+  updateValidator(formControl: AbstractControl, flag: boolean, a: IFieldOptions, currentFormControl?: AbstractControl) {
     if (formControl) {
       if (!flag) formControl.clearValidators();
-      else if (a.validator) formControl.setValidators(this.service.setValidator(a));
+      else formControl.setValidators(this.service.setValidator(a, currentFormControl));
       formControl.updateValueAndValidity();
       formControl.markAsTouched();
       this.form.updateValueAndValidity();

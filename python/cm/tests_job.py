@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
 import os
 from unittest.mock import patch, Mock, call
 
@@ -96,7 +95,7 @@ class TestJob(TestCase):
             prototype=prototype, state_on_success='create', state_on_fail='installed')
 
         job = models.JobLog(
-            action_id=action.id, selector=f'{{"cluster": {cluster.id}}}',
+            action_id=action.id, selector={'cluster': cluster.id},
             start_date=timezone.now(), finish_date=timezone.now())
 
         data = [
@@ -158,8 +157,8 @@ class TestJob(TestCase):
     def test_unlock_obj(self, mock_set_object_state):
         event = Mock()
         data = [
-            (Mock(stack='["running"]'), mock_set_object_state.assert_called_once),
-            (Mock(stack='[]'), mock_set_object_state.assert_not_called),
+            (Mock(stack=['running']), mock_set_object_state.assert_called_once),
+            (Mock(stack=[]), mock_set_object_state.assert_not_called),
             (Mock(stack=''), mock_set_object_state.assert_not_called),
         ]
 
@@ -224,17 +223,24 @@ class TestJob(TestCase):
         cluster = models.Cluster.objects.create(prototype=prototype)
         cluster_object = models.ClusterObject.objects.create(prototype=prototype, cluster=cluster)
         host = models.Host.objects.create(prototype=prototype, cluster=cluster)
-        component = models.Component.objects.create(prototype=prototype)
+        component = models.Prototype.objects.create(
+            parent=prototype, type='component', bundle=bundle
+        )
         service_component = models.ServiceComponent.objects.create(
-            cluster=cluster, service=cluster_object, component=component)
-        hostcomponentmap = (f'[{{"host_id": {host.id}, "service_id": {cluster_object.id},'
-                            f' "component_id": {service_component.id}}}]')
+            cluster=cluster, service=cluster_object, prototype=component)
+        hostcomponentmap = [
+            {
+                'host_id': host.id,
+                'service_id': cluster_object.id,
+                'component_id': service_component.id
+            }
+        ]
         action = models.Action.objects.create(
             prototype=prototype, hostcomponentmap=hostcomponentmap)
         task = models.TaskLog.objects.create(
             action_id=action.id, object_id=cluster.id,
             start_date=timezone.now(), finish_date=timezone.now(),
-            selector=f'{{"cluster": {cluster.id}}}',
+            selector={'cluster': cluster.id},
             hostcomponentmap=hostcomponentmap)
 
         job_module.restore_hc(task, action, config.Job.FAILED)
@@ -316,7 +322,7 @@ class TestJob(TestCase):
         mock_prepare_job_inventory.assert_called_once_with({'cluster': 1}, job.id, {}, None)
         mock_prepare_job_config.assert_called_once_with(action, None, {'cluster': 1},
                                                         job.id, cluster, '')
-        mock_prepare_ansible_config.assert_called_once_with(job.id)
+        mock_prepare_ansible_config.assert_called_once_with(job.id, action, None)
 
     @patch('cm.job.get_obj_config')
     def test_get_adcm_config(self, mock_get_obj_config):
@@ -416,7 +422,7 @@ class TestJob(TestCase):
         job = models.JobLog.objects.create(
             action_id=action.id, start_date=timezone.now(), finish_date=timezone.now())
 
-        action.params = '{"ansible_tags": "create_users"}'
+        action.params = {'ansible_tags': 'create_users'}
         action.save()
         sub_action = models.SubAction(action=action)
         selector = {'cluster': 1}
@@ -523,21 +529,28 @@ class TestJob(TestCase):
         cluster = models.Cluster.objects.create(prototype=prototype)
         cluster_object = models.ClusterObject.objects.create(prototype=prototype, cluster=cluster)
         host = models.Host.objects.create(prototype=prototype, cluster=cluster)
-        component = models.Component.objects.create(prototype=prototype)
+        component = models.Prototype.objects.create(
+            parent=prototype, type='component', bundle=bundle
+        )
         service_component = models.ServiceComponent.objects.create(
-            cluster=cluster, service=cluster_object, component=component)
+            cluster=cluster, service=cluster_object, prototype=component)
         action = models.Action.objects.create(
             prototype=prototype,
-            hostcomponentmap='[{"service": "", "component": "", "action": ""}]')
+            hostcomponentmap=[{'service': '', 'component': '', 'action': ''}])
         sub_action = models.SubAction.objects.create(action=action)
-        hostcomponentmap = (f'[{{"host_id": {host.id}, "service_id": {cluster_object.id},'
-                            f' "component_id": {service_component.id}}}]')
-        selector = f'{{"cluster": {cluster.id}}}'
+        hostcomponentmap = [
+            {
+                'host_id': host.id,
+                'service_id': cluster_object.id,
+                'component_id': service_component.id
+            }
+        ]
+        selector = {'cluster': cluster.id}
         task = models.TaskLog.objects.create(
             action_id=action.id, object_id=1, start_date=timezone.now(),
             finish_date=timezone.now(), hostcomponentmap=hostcomponentmap,
             selector=selector,
-            config='{"sleeptime": 1}')
+            config={"sleeptime": 1})
         job = models.JobLog.objects.create(
             task_id=task.id, action_id=action.id, sub_action_id=sub_action.id,
             start_date=timezone.now(), finish_date=timezone.now())
@@ -547,7 +560,7 @@ class TestJob(TestCase):
         mock_get_new_hc.assert_called_once_with(cluster)
         mock_get_old_hc.assert_called_once_with(task.hostcomponentmap)
         mock_cook_delta.assert_called_once_with(
-            cluster, new_hc, json.loads(action.hostcomponentmap), old_hc)
+            cluster, new_hc, action.hostcomponentmap, old_hc)
         mock_prepare_job.assert_called_once_with(
-            action, sub_action, json.loads(selector), job.id, cluster,
-            json.loads(task.config), delta, None)
+            action, sub_action, selector, job.id, cluster,
+            task.config, delta, None)

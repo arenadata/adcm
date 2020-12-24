@@ -12,7 +12,7 @@
 import { Directive, Input, OnInit } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 
-import { FieldOptions } from '../configuration/types';
+import { IFieldOptions } from '../configuration/types';
 import { BaseDirective } from '../directives';
 
 @Directive({
@@ -20,7 +20,7 @@ import { BaseDirective } from '../directives';
 })
 export class FieldDirective extends BaseDirective implements OnInit {
   @Input() form: FormGroup;
-  @Input() field: FieldOptions;
+  @Input() field: IFieldOptions;
 
   ngOnInit() {
     this.control.markAllAsTouched();

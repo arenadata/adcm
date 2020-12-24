@@ -12,7 +12,7 @@
 import { Component, Input } from '@angular/core';
 import { FormControl } from '@angular/forms';
 
-import { FieldOptions } from '../configuration/types';
+import { IFieldOptions } from '../configuration/types';
 
 @Component({
   selector: 'app-error-info',
@@ -26,7 +26,7 @@ import { FieldOptions } from '../configuration/types';
 })
 export class ErrorInfoComponent {
   @Input() control: FormControl;
-  @Input() field: FieldOptions;
+  @Input() field: IFieldOptions;
 
   hasError(name: string) {
     return this.control.hasError(name);

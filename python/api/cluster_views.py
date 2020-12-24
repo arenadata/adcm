@@ -20,17 +20,16 @@ import cm.api
 import cm.bundle
 import cm.status_api
 from cm.errors import AdcmApiEx, AdcmEx
-from cm.models import Cluster, Host, HostComponent, Prototype, Action, ServiceComponent
-from cm.models import ClusterObject, ConfigLog, TaskLog, Upgrade, ClusterBind
+from cm.models import Cluster, Host, HostComponent, Prototype, ServiceComponent
+from cm.models import ClusterObject, Upgrade, ClusterBind
 from cm.logger import log   # pylint: disable=unused-import
 
 import api.serializers
 import api.cluster_serial
 import api.stack_serial
-from api.serializers import check_obj, filter_actions, get_config_version
-from api.api_views import create, update, GenericAPIPermView
+from api.api_views import create, update, check_obj, GenericAPIPermView
 from api.api_views import ListView, PageView, PageViewAdd, InterfaceView
-from api.api_views import DetailViewRO, DetailViewDelete, ActionFilter
+from api.api_views import DetailViewRO, DetailViewDelete
 
 
 def get_obj_conf(cluster_id, service_id):
@@ -153,7 +152,7 @@ class ClusterHostDetail(ListView):
         try:
             cm.api.remove_host_from_cluster(host)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -372,203 +371,6 @@ class DoClusterUpgrade(GenericAPIPermView):
         return create(serializer, upgrade_id=int(upgrade_id), obj=cluster)
 
 
-class ClusterActionList(ListView):
-    queryset = Action.objects.filter(prototype__type='cluster')
-    serializer_class = api.serializers.ClusterActionList
-    serializer_class_ui = api.serializers.ClusterActionDetail
-    filterset_class = ActionFilter
-    filterset_fields = ('name', 'button', 'button_is_null')
-
-    def get(self, request, cluster_id):   # pylint: disable=arguments-differ
-        """
-        List all actions of a specified cluster
-        """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        obj = filter_actions(cluster, self.filter_queryset(
-            self.get_queryset().filter(prototype=cluster.prototype)
-        ))
-        serializer_class = self.select_serializer(request)
-        serializer = serializer_class(
-            obj, many=True, context={'request': request, 'cluster_id': cluster.id}
-        )
-        return Response(serializer.data)
-
-
-class ClusterHostActionList(ListView):
-    queryset = Action.objects.filter(prototype__type='host')
-    serializer_class = api.serializers.ClusterHostActionList
-    serializer_class_ui = api.serializers.ClusterHostActionDetail
-    filterset_class = ActionFilter
-    filterset_fields = ('name', 'button', 'button_is_null')
-
-    def get(self, request, cluster_id, host_id):   # pylint: disable=arguments-differ
-        """
-        List all actions of a specified host in a specified cluster
-        """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        host = check_obj(Host, host_id, 'HOST_NOT_FOUND')
-        obj = filter_actions(host, self.filter_queryset(
-            self.get_queryset().filter(prototype=host.prototype)
-        ))
-        serializer_class = self.select_serializer(request)
-        serializer = serializer_class(
-            obj, many=True, context={
-                'request': request, 'cluster_id': cluster.id, 'host_id': host_id
-            }
-        )
-        return Response(serializer.data)
-
-
-class ClusterHostAction(GenericAPIPermView):
-    queryset = Action.objects.filter(prototype__type='host')
-    serializer_class = api.serializers.ClusterHostActionDetail
-
-    def get(self, request, cluster_id, host_id, action_id):
-        """
-        Show specified actions of a specified host in a specified cluster
-        """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        host = check_obj(Host, host_id, 'HOST_NOT_FOUND')
-        obj = check_obj(
-            Action,
-            {'prototype': host.prototype, 'id': action_id},
-            'ACTION_NOT_FOUND'
-        )
-        serializer = self.serializer_class(
-            obj, context={'request': request, 'cluster_id': cluster.id, 'host_id': host_id}
-        )
-        return Response(serializer.data)
-
-
-class ClusterServiceActionList(ListView):
-    queryset = Action.objects.filter(prototype__type='service')
-    serializer_class = api.serializers.ClusterServiceActionList
-    serializer_class_ui = api.serializers.ClusterServiceActionDetail
-    filterset_class = ActionFilter
-    filterset_fields = ('name', 'button', 'button_is_null')
-
-    def get(self, request, cluster_id, service_id):   # pylint: disable=arguments-differ
-        """
-        List all actions of a specified service
-        """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        service = check_obj(
-            ClusterObject, {'cluster': cluster, 'id': service_id}, 'SERVICE_NOT_FOUND'
-        )
-        obj = filter_actions(service, self.filter_queryset(
-            self.get_queryset().filter(prototype=service.prototype)
-        ))
-        serializer_class = self.select_serializer(request)
-        serializer = serializer_class(
-            obj,
-            many=True,
-            context={'request': request, 'cluster_id': cluster_id, 'service_id': service_id}
-        )
-        return Response(serializer.data)
-
-
-class ClusterServiceAction(GenericAPIPermView):
-    queryset = Action.objects.filter(prototype__type='service')
-    serializer_class = api.serializers.ClusterServiceActionDetail
-
-    def get(self, request, cluster_id, service_id, action_id):
-        """
-        Show specified action of a specified service
-        """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        service = check_obj(
-            ClusterObject, {'cluster': cluster, 'id': service_id}, 'SERVICE_NOT_FOUND'
-        )
-        obj = check_obj(
-            Action,
-            {'prototype': service.prototype, 'id': action_id},
-            'ACTION_NOT_FOUND'
-        )
-        serializer = self.serializer_class(
-            obj,
-            context={'request': request, 'cluster_id': cluster_id, 'service_id': service_id}
-        )
-        return Response(serializer.data)
-
-
-class ClusterAction(GenericAPIPermView):
-    queryset = Action.objects.all()
-    serializer_class = api.serializers.ClusterActionDetail
-
-    def get(self, request, cluster_id, action_id):
-        """
-        Show specified action of a specified cluster
-        """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        obj = check_obj(
-            Action,
-            {'prototype': cluster.prototype, 'id': action_id},
-            'ACTION_NOT_FOUND'
-        )
-        serializer = self.serializer_class(
-            obj, context={'request': request, 'cluster_id': cluster_id}
-        )
-        return Response(serializer.data)
-
-
-class ClusterTask(GenericAPIPermView):
-    queryset = TaskLog.objects.all()
-    serializer_class = api.serializers.TaskRunSerializer
-
-    def post(self, request, cluster_id, action_id):
-        """
-        Ran specified action of a specified cluster
-        """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        check_obj(
-            Action,
-            {'prototype': cluster.prototype, 'id': action_id},
-            'ACTION_NOT_FOUND'
-        )
-        serializer = self.serializer_class(data=request.data, context={'request': request})
-        return create(serializer, action_id=int(action_id), selector={'cluster': cluster.id})
-
-
-class ClusterHostTask(GenericAPIPermView):
-    queryset = TaskLog.objects.all()
-    serializer_class = api.serializers.TaskRunSerializer
-
-    def post(self, request, cluster_id, host_id, action_id):
-        """
-        Ran specified action of a specified host in a specified cluster
-        """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        host = check_obj(Host, host_id, 'HOST_NOT_FOUND')
-        check_obj(
-            Action,
-            {'prototype': host.prototype, 'id': action_id},
-            'ACTION_NOT_FOUND'
-        )
-        serializer = self.serializer_class(data=request.data, context={'request': request})
-        selector = {'host': host.id, 'cluster': cluster.id}
-        return create(serializer, action_id=int(action_id), selector=selector)
-
-
-class ClusterServiceTask(GenericAPIPermView):
-    queryset = TaskLog.objects.all()
-    serializer_class = api.serializers.TaskRunSerializer
-
-    def post(self, request, cluster_id, service_id, action_id):
-        """
-        Ran specified action of a specified service in cluster
-        """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        service = check_obj(ClusterObject, service_id, 'SERVICE_NOT_FOUND')
-        check_obj(
-            Action,
-            {'prototype': service.prototype, 'id': action_id},
-            'ACTION_NOT_FOUND'
-        )
-        selector = {'cluster': cluster.id, 'service': service.id}
-        serializer = self.serializer_class(data=request.data, context={'request': request})
-        return create(serializer, action_id=int(action_id), selector=selector)
-
-
 class ClusterServiceList(PageView):
     queryset = ClusterObject.objects.all()
     serializer_class = api.cluster_serial.ClusterServiceSerializer
@@ -622,7 +424,7 @@ class ClusterServiceDetail(DetailViewRO):
         try:
             cm.api.delete_service(service)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code)
+            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -741,108 +543,3 @@ class HostComponentDetail(GenericAPIPermView):
         obj = self.get_obj(cluster_id, hs_id)
         serializer = self.serializer_class(obj, context={'request': request})
         return Response(serializer.data)
-
-
-class ClusterServiceConfig(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ClusterServiceConfigSerializer
-
-    def get(self, request, cluster_id, service_id):   # pylint: disable=arguments-differ
-        """
-        Show config page for a specified service and cluster
-        """
-        check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        if service_id:
-            check_obj(ClusterObject, service_id, 'SERVICE_NOT_FOUND')
-        obj = ClusterObject()
-        serializer = self.serializer_class(
-            obj, context={'request': request, 'cluster_id': cluster_id, 'service_id': service_id}
-        )
-        return Response(serializer.data)
-
-
-class ClusterConfig(ClusterServiceConfig):
-    """
-    get:
-    Show config page for a specified cluster
-    """
-    serializer_class = api.cluster_serial.ClusterConfigSerializer
-
-
-class ClusterServiceConfigVersion(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ObjectConfig
-
-    def get(self, request, cluster_id, service_id, version):   # pylint: disable=arguments-differ
-        """
-        Show config for a specified version, service and cluster.
-
-        """
-        obj = get_obj_conf(cluster_id, service_id)
-        cl = get_config_version(obj.config, version)
-        if self.for_ui(request):
-            try:
-                cl.config = cm.adcm_config.ui_config(obj, cl)
-            except AdcmEx as e:
-                raise AdcmApiEx(e.code, e.msg, e.http_code)
-        serializer = self.serializer_class(cl, context={'request': request})
-        return Response(serializer.data)
-
-
-class ClusterConfigVersion(ClusterServiceConfigVersion):
-    """
-    get:
-    Show config for a specified version and cluster.
-    """
-
-
-class ClusterConfigRestore(GenericAPIPermView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ObjectConfigRestore
-
-    def patch(self, request, cluster_id, service_id, version):
-        """
-        Restore config of specified version in a specified service and cluster.
-        """
-        obj = get_obj_conf(cluster_id, service_id)
-        try:
-            cl = self.get_queryset().get(obj_ref=obj.config, id=version)
-        except ConfigLog.DoesNotExist:
-            raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist")
-        serializer = self.serializer_class(cl, data=request.data, context={'request': request})
-        return update(serializer)
-
-
-class ClusterConfigHistory(ListView):
-    queryset = ConfigLog.objects.all()
-    serializer_class = api.cluster_serial.ClusterConfigHistorySerializer
-    update_serializer = api.cluster_serial.ObjectConfigUpdate
-
-    def get_obj(self, cluster_id, service_id):
-        obj = get_obj_conf(cluster_id, service_id)
-        return (obj, self.get_queryset().get(obj_ref=obj.config, id=obj.config.current))
-
-    def get(self, request, cluster_id, service_id):   # pylint: disable=arguments-differ
-        """
-        Show history of config in a specified service and cluster
-        """
-        obj = get_obj_conf(cluster_id, service_id)
-        cl = self.get_queryset().filter(obj_ref=obj.config).order_by('-id')
-        serializer = self.serializer_class(cl, many=True, context={'request': request})
-        return Response(serializer.data)
-
-    def post(self, request, cluster_id, service_id):
-        """
-        Update config in a specified service and cluster. Config parameter is json
-        """
-        obj, cl = self.get_obj(cluster_id, service_id)
-        serializer = self.update_serializer(cl, data=request.data, context={'request': request})
-        return create(serializer, ui=bool(self.for_ui(request)), obj=obj)
-
-
-class ClusterServiceConfigHistory(ClusterConfigHistory):
-    serializer_class = api.cluster_serial.ClusterServiceConfigHistorySerializer
-    """
-    get:
-    Show history of config in a specified service and cluster
-    """

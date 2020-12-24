@@ -11,11 +11,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+pip3 install -U pip
 pip3 install -r requirements-test.txt
+
 find . -name "*.pyc" -type f -delete
 find . -name "__pycache__" -type d -delete
 { # try
-    pytest tests/functional tests/ui_tests -s -v -n auto --showlocals --alluredir ./allure-results/ --durations=20 &&
+    pytest tests/ui_tests tests/functional -s -v -n auto --maxfail 30 \
+    --showlocals --alluredir ./allure-results/ --durations=20 \
+    --reruns 2 --remote-executor-host "$SELENOID_HOST" --timeout=360 &&
     chmod -R o+xw allure-results
 } || { # catch
     chmod -R o+xw allure-results

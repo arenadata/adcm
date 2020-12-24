@@ -25,18 +25,19 @@ const TestParams: ActionParameters = {
   actions: [
     {
       name: 'test',
+      description: '',
       display_name: 'display_name_test',
       run: 'url',
       config: null,
       hostcomponentmap: null,
       button: null,
-      ui_options: null
-    }
-  ]
+      ui_options: null,
+    },
+  ],
 };
 
 @Component({
-  template: '<button [appActions]="TestParam">ActionsTestName</button>'
+  template: '<button [appActions]="TestParam">ActionsTestName</button>',
 })
 class TestComponent {
   testParams: ActionParameters;
@@ -53,7 +54,7 @@ describe('ActionsDirective', () => {
       imports: [MatDialogModule, NoopAnimationsModule],
       declarations: [TestComponent, ActionsDirective],
       providers: [ActionsDirective, { provide: ApiService, useValue: {} }, { provide: FieldService, useValue: {} }],
-      schemas: [NO_ERRORS_SCHEMA]
+      schemas: [NO_ERRORS_SCHEMA],
     }).createComponent(TestComponent);
 
     component = fixture.componentInstance;
@@ -69,7 +70,7 @@ describe('ActionsDirective', () => {
     fixture.detectChanges();
     const result = directive.prepare();
     expect(result).toEqual({
-      data: { title: 'No parameters for run the action', model: null, component: null }
+      data: { title: 'No parameters for run the action', model: null, component: null },
     });
   });
 
@@ -84,10 +85,8 @@ describe('ActionsDirective', () => {
       data: {
         title: 'Run an action [ display_name_test ]?',
         model: TestParams,
-        component: ActionMasterComponent
-      }
+        component: ActionMasterComponent,
+      },
     });
   });
-
-
 });

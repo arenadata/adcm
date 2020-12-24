@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
 from unittest.mock import patch, Mock
 
 from django.test import TestCase
@@ -59,16 +58,16 @@ class TestApi(TestCase):
             'description': '',
             'config_id': self.object_config.id,
             'state': 'installed',
-            'stack': '[]',
-            'issue': '{}'
+            'stack': [],
+            'issue': {}
         })
 
     def test_push_obj(self):
 
         data = [
-            ('[]', 'created'),
+            ([], 'created'),
             ('', 'running'),
-            ('["created"]', 'running'),
+            (['created'], 'running'),
         ]
 
         for stack, state in data:
@@ -77,7 +76,7 @@ class TestApi(TestCase):
                 self.cluster.save()
 
                 cluster = api_module.push_obj(self.cluster, state)
-                self.assertEqual(cluster.stack, json.dumps([state]))
+                self.assertEqual(cluster.stack, [state])
 
     def test_set_object_state(self):
         event = Mock()
@@ -97,9 +96,11 @@ class TestApi(TestCase):
         cluster_object = models.ClusterObject.objects.create(
             prototype=self.prototype, cluster=self.cluster)
         host = models.Host.objects.create(prototype=self.prototype, cluster=self.cluster)
-        component = models.Component.objects.create(prototype=self.prototype)
+        component = models.Prototype.objects.create(
+            parent=self.prototype, type='component', bundle_id=self.bundle.id, name='node'
+        )
         service_component = models.ServiceComponent.objects.create(
-            cluster=self.cluster, service=cluster_object, component=component)
+            cluster=self.cluster, service=cluster_object, prototype=component)
 
         models.HostComponent.objects.create(
             cluster=self.cluster, host=host, service=cluster_object, component=service_component)

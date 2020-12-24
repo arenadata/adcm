@@ -10,16 +10,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Injectable } from '@angular/core';
-import { Router, NavigationStart } from '@angular/router';
-import { getFirstAdminLogin, getRoot, isAuthenticated, loadRoot, State, getConnectStatus, socketInit, loadStack, loadProfile, getProfile, rootError } from '@app/core/store';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { NavigationStart, Router } from '@angular/router';
+import { getConnectStatus, getFirstAdminLogin, getProfile, getRoot, isAuthenticated, loadProfile, loadRoot, loadStack, rootError, socketInit, State } from '@app/core/store';
 import { select, Store } from '@ngrx/store';
 import { combineLatest } from 'rxjs';
 import { filter, switchMap, tap } from 'rxjs/operators';
 
+import { ChannelService, keyChannelStrim } from '../channel.service';
 import { ConfigService, IVersionInfo } from '../config.service';
-import { MatDialog } from '@angular/material/dialog';
-import { ChannelService } from '../channel.service';
-import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Injectable()
 export class AppService {
@@ -41,7 +41,7 @@ export class AppService {
       switchMap((_) => this.config.load()),
       tap((c) => {
         if (!c) {
-          this.channel.next('errorMessage', { title: 'New version available. Page has been refreshed.' });
+          this.channel.next(keyChannelStrim.notifying, 'New version available. Page has been refreshed.');
           setTimeout(() => location.reload(), 2000);
         } else {
           this.store.dispatch(socketInit());
@@ -56,10 +56,10 @@ export class AppService {
     return this.store.pipe(
       select(getConnectStatus),
       filter((a) => !!a),
-      tap(status => {
-        if (status === 'open') this.channel.next('errorMessage', { title: 'Connection established.' });
+      tap((status) => {
+        if (status === 'open') this.channel.next(keyChannelStrim.notifying, 'Connection established.');
         if (status === 'close') {
-          this.channel.next('errorMessage', { title: 'Connection lost. Recovery attempt.' });
+          this.channel.next(keyChannelStrim.notifying, 'Connection lost. Recovery attempt.::error');
           this.store.dispatch(rootError());
         }
       })
@@ -89,13 +89,17 @@ export class AppService {
     // close dialog
     this.router.events.pipe(filter((e) => e instanceof NavigationStart)).subscribe(() => this.dialog.closeAll());
 
-    // error notification
-    this.channel.on('errorMessage').subscribe((e) =>
-      this.snackBar.open(`${e.title} ${e.subtitle || ''}`, 'Hide', {
-        duration: 5000,
-        panelClass: 'snack-bar-error',
-      })
-    );
+    // notification
+    this.channel.on<string>(keyChannelStrim.notifying).subscribe((m) => {
+      const astr = m.split('::');
+      const data = astr[1]
+        ? { panelClass: 'snack-bar-error' }
+        : {
+            duration: 5000,
+            panelClass: 'snack-bar-notify',
+          };
+      this.snackBar.open(astr[0], 'Hide', data);
+    });
 
     // test only
     // this.store

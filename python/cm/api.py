@@ -30,7 +30,7 @@ from cm.errors import AdcmEx, AdcmApiEx
 from cm.errors import raise_AdcmEx as err
 from cm.status_api import Event
 from cm.models import (
-    Cluster, Prototype, Component, Host, HostComponent, ADCM, ClusterObject,
+    Cluster, Prototype, Host, HostComponent, ADCM, ClusterObject,
     ServiceComponent, ConfigLog, HostProvider, PrototypeImport, PrototypeExport,
     ClusterBind, Action, JobLog, DummyData, Role,
 )
@@ -46,7 +46,7 @@ def safe_api(func, args):
     try:
         return func(*args)
     except AdcmEx as e:
-        raise AdcmApiEx(e.code, e.msg, e.http_code)
+        raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
 
 def add_cluster(proto, name, desc=''):
@@ -83,7 +83,7 @@ def add_host(proto, provider, fqdn, desc='', lock=False):
         )
         host.save()
         if lock:
-            host.stack = json.dumps(['created'])
+            host.stack = ['created']
             set_object_state(host, config.Job.LOCKED, event)
         process_file_type(host, spec, conf)
         cm.issue.save_issue(host)
@@ -232,6 +232,23 @@ def delete_service_by_id(service_id):
     cm.status_api.load_service_map()
 
 
+def delete_service_by_name(service_name, cluster_id):
+    """
+    Unconditional removal of service from cluster
+
+    This is intended for use in adcm_delete_service ansible plugin only
+    """
+    try:
+        service = ClusterObject.objects.get(cluster__id=cluster_id, prototype__name=service_name)
+    except ClusterObject.DoesNotExist:
+        msg = 'Service with name "{}" not found in cluster #{}'
+        err('SERVICE_NOT_FOUND', msg.format(service_name, cluster_id))
+    service_id = service.id
+    service.delete()
+    cm.status_api.post_event('delete', 'service', service_id)
+    cm.status_api.load_service_map()
+
+
 def delete_service(service):
     if HostComponent.objects.filter(cluster=service.cluster, service=service):
         err('SERVICE_CONFLICT', 'Service #{} has component(s) on host(s)'.format(service.id))
@@ -301,8 +318,10 @@ def add_service_to_cluster(cluster, proto):
 
 
 def add_components_to_service(cluster, service):
-    for comp in Component.objects.filter(prototype=service.prototype):
-        sc = ServiceComponent(cluster=cluster, service=service, component=comp)
+    for comp in Prototype.objects.filter(type='component', parent=service.prototype):
+        spec, _, conf, attr = get_prototype_config(comp)
+        obj_conf = init_object_config(spec, conf, attr)
+        sc = ServiceComponent(cluster=cluster, service=service, prototype=comp, config=obj_conf)
         sc.save()
 
 
@@ -392,13 +411,18 @@ def accept_license(bundle):
     bundle.save()
 
 
-def update_obj_config(obj_conf, conf, attr=None, desc=''):
+def update_obj_config(obj_conf, conf, attr, desc=''):
+    if not isinstance(attr, dict):
+        err('INVALID_CONFIG_UPDATE', 'attr should be a map')
     if hasattr(obj_conf, 'adcm'):
         obj = obj_conf.adcm
         proto = obj_conf.adcm.prototype
     elif hasattr(obj_conf, 'clusterobject'):
         obj = obj_conf.clusterobject
         proto = obj_conf.clusterobject.prototype
+    elif hasattr(obj_conf, 'servicecomponent'):
+        obj = obj_conf.servicecomponent
+        proto = obj_conf.servicecomponent.prototype
     elif hasattr(obj_conf, 'cluster'):
         obj = obj_conf.cluster
         proto = obj_conf.cluster.prototype
@@ -413,10 +437,10 @@ def update_obj_config(obj_conf, conf, attr=None, desc=''):
     old_conf = ConfigLog.objects.get(obj_ref=obj_conf, id=obj_conf.current)
     if not attr:
         if old_conf.attr:
-            attr = json.loads(old_conf.attr)
+            attr = old_conf.attr
     new_conf = check_json_config(proto, obj, conf, old_conf.config, attr)
     with transaction.atomic():
-        cl = save_obj_config(obj_conf, new_conf, desc, attr)
+        cl = save_obj_config(obj_conf, new_conf, attr, desc)
         cm.issue.save_issue(obj)
     if hasattr(obj_conf, 'adcm'):
         prepare_social_auth(new_conf)
@@ -429,10 +453,9 @@ def has_google_oauth():
     if not adcm:
         return False
     cl = ConfigLog.objects.get(obj_ref=adcm[0].config, id=adcm[0].config.current)
-    conf = json.loads(cl.config)
-    if 'google_oauth' not in conf:
+    if 'google_oauth' not in cl.config:
         return False
-    gconf = conf['google_oauth']
+    gconf = cl.config['google_oauth']
     if 'client_id' not in gconf or not gconf['client_id']:
         return False
     return True
@@ -479,19 +502,19 @@ def check_hc(cluster, hc_in):   # pylint: disable=too-many-branches
             host = Host.objects.get(id=item['host_id'])
         except Host.DoesNotExist:
             msg = 'No host #{}'.format(item['host_id'])
-            raise AdcmEx('HOST_NOT_FOUND', msg)
+            raise AdcmEx('HOST_NOT_FOUND', msg) from None
         try:
             service = ClusterObject.objects.get(id=item['service_id'], cluster=cluster)
         except ClusterObject.DoesNotExist:
             msg = 'No service #{} in {}'.format(item['service_id'], obj_ref(cluster))
-            raise AdcmEx('SERVICE_NOT_FOUND', msg)
+            raise AdcmEx('SERVICE_NOT_FOUND', msg) from None
         try:
             comp = ServiceComponent.objects.get(
                 id=item['component_id'], cluster=cluster, service=service
             )
         except ServiceComponent.DoesNotExist:
             msg = 'No component #{} in {} '.format(item['component_id'], obj_ref(service))
-            raise AdcmEx('COMPONENT_NOT_FOUND', msg)
+            raise AdcmEx('COMPONENT_NOT_FOUND', msg) from None
         if not host.cluster:
             msg = 'host #{} {} does not belong to any cluster'.format(host.id, host.fqdn)
             raise AdcmEx("FOREIGN_HOST", msg)
@@ -624,10 +647,9 @@ def check_import_default(import_obj, export_obj):
     cl = ConfigLog.objects.get(obj_ref=import_obj.config, id=import_obj.config.current)
     if not cl.attr:
         return
-    attr = json.loads(cl.attr)
     for name in json.loads(pi.default):
-        if name in attr:
-            if 'active' in attr[name] and not attr[name]['active']:
+        if name in cl.attr:
+            if 'active' in cl.attr[name] and not cl.attr[name]['active']:
                 msg = 'Default import "{}" for {} is inactive'
                 err('BIND_ERROR', msg.format(name, obj_ref(import_obj)))
 
@@ -726,6 +748,8 @@ def multi_bind(cluster, service, bind_list):   # pylint: disable=too-many-locals
             log.info('unbind %s from %s', obj_ref(export_obj), obj_ref(import_obj))
 
         cm.issue.save_issue(cluster)
+        if service:
+            cm.issue.save_issue(service)
 
     return get_import(cluster, service)
 
@@ -805,16 +829,13 @@ def check_multi_bind(actual_import, cluster, service, export_cluster, export_ser
 
 
 def push_obj(obj, state):
-    if obj.stack:
-        stack = json.loads(obj.stack)
-    else:
-        stack = []
+    stack = obj.stack
 
     if not stack:
         stack = [state]
     else:
         stack[0] = state
-    obj.stack = json.dumps(stack)
+    obj.stack = stack
     obj.save()
     return obj
 
@@ -915,7 +936,7 @@ def change_hc(job_id, cluster_id, operations):   # pylint: disable=too-many-bran
             err('SERVICE_NOT_FOUND', msg.format(op['service'], cluster.id))
         try:
             component = ServiceComponent.objects.get(
-                cluster=cluster, service=service, component__name=op['component']
+                cluster=cluster, service=service, prototype__name=op['component']
             )
         except ServiceComponent.DoesNotExist:
             msg = 'component "{}" does not exist in service "{}"'

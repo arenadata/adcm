@@ -10,48 +10,53 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input } from '@angular/core';
-import { Cluster, IAction, Issue, notIssue } from '@app/core/types';
+import { Cluster, IAction, isIssue, Issue } from '@app/core/types';
 import { UpgradeItem } from '@app/shared/components';
-import { Observable, of } from 'rxjs';
 
-import { IDetails } from '../details.service';
-import { NavigationService, INavItem } from '../navigation.service';
+import { IDetails, INavItem, NavigationService } from '../navigation.service';
 
 @Component({
   selector: 'app-details-top',
   template: `
     <app-crumbs [navigation]="items"></app-crumbs>
-    <div class="example-spacer"></div>
     <app-upgrade *ngIf="upgradable" [dataRow]="upgrade" xPosition="after"></app-upgrade>
-    <app-actions [source]="actions || []" [isIssue]="eIssue" [cluster]="cluster"></app-actions>
+    <div [style.flex]="1"></div>
+    <app-action-list *ngIf="actionFlag" [asButton]="true" [actionLink]="actionLink" [actions]="actions" [state]="state" [disabled]="disabled" [cluster]="cluster"></app-action-list>
+    <!-- <app-actions [source]="actions || []" [isIssue]="eIssue" [cluster]="cluster"></app-actions> -->
   `,
-  styles: [':host {display: flex;width: 100%;}']
+  styles: [':host {display: flex;width: 100%;padding-right: 10px;}', 'app-action-list {display: block; margin-top: 2px;}'],
 })
 export class TopComponent {
   items: INavItem[];
   cluster: { id: number; hostcomponent: string };
-  eIssue: boolean;
+  disabled: boolean;
+  state: string;
   upgrade: UpgradeItem;
+  actionLink: string;
+  actionFlag = false;
+  @Input() upgradable: boolean;
+  @Input() actions: IAction[] = [];
 
   @Input() set isIssue(v: boolean) {
-    this.eIssue = v;
+    this.disabled = v;
     if (this.upgrade) this.upgrade.issue = (v ? { issue: '' } : {}) as Issue;
     if (this.items) {
-      const a = this.items.find(b => b.id);
+      const a = this.items.find((b) => b.id);
       if (a) a.issue = this.navigation.getIssueMessage(v);
     }
   }
 
-  @Input() upgradable: boolean;
-  @Input() actions: IAction[] = [];
-
   @Input() set current(c: IDetails) {
-    if (c) {      
-      this.items = this.navigation.getCrumbs(c);
+    if (c) {
+      const exclude = ['bundle', 'job'];
+      this.actionFlag = !exclude.includes(c.typeName);
+      this.items = this.navigation.getTop(c);
       const { id, hostcomponent, issue, upgradable, upgrade } = c.parent || (c as Partial<Cluster>);
       this.cluster = { id, hostcomponent };
+      this.actionLink = c.action;
       this.upgradable = upgradable;
-      this.eIssue = !notIssue(issue);
+      this.disabled = isIssue(issue) || c.state === 'locked';
+      this.state = c.state;
       this.upgrade = { issue, upgradable, upgrade };
     }
   }
