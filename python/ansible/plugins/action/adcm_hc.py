@@ -70,7 +70,7 @@ class ActionModule(ActionBase):
         super().run(tmp, task_vars)
         msg = 'You can modify hc only in cluster or service context'
         cluster_id = get_object_id_from_context(
-            task_vars, 'cluster_id', 'cluster', 'service',err_msg=msg)
+            task_vars, 'cluster_id', 'cluster', 'service', err_msg=msg)
         job_id = task_vars['job']['id']
         ops = self._task.args['operations']
 
