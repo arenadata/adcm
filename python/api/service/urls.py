@@ -19,19 +19,11 @@ urlpatterns = [
     path('', views.ServiceListView.as_view(), name='service'),
     path('<int:service_id>/', include([
         path('', views.ServiceDetailView.as_view(), name='service-details'),
-        path('action/', include([
-            path('', views.ServiceActionListView.as_view(), name='service-action'),
-            path('<int:action_id>/', include([
-                path('', views.ServiceActionView.as_view(), name='service-action-details'),
-                path('run/', views.ServiceTask.as_view(), name='service-action-run'),
-            ])),
-        ])),
         path('component/', include([
             path('', views.ServiceComponentListView.as_view(), name='service-component'),
             path('<int:component_id>/', views.ServiceComponentDetailView.as_view(),
                  name='service-component-details'),
         ])),
-
         path('import/', views.ServiceImportView.as_view(), name='service-import'),
         path('bind/', include([
             path('', views.ServiceBindView.as_view(), name='service-bind'),
@@ -39,5 +31,6 @@ urlpatterns = [
                  name='service-bind-details'),
         ])),
         path('config/', include('api.config.urls'), {'object_type': 'service'}),
+        path('action/', include('api.action.urls'), {'object_type': 'service'}),
     ])),
 ]

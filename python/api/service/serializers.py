@@ -16,11 +16,10 @@ from django.db.utils import IntegrityError
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
-from api.config.serializers import ConfigURL
-from api.serializers import (
-    check_obj, filter_actions, ActionSerializer, ActionDetailSerializer, ActionShort
-)
+from api.api_views import check_obj, filter_actions, CommonAPIURL
 from api.cluster_serial import BindSerializer
+from api.action.serializers import ActionShort
+
 from cm import issue
 from cm import status_api
 from cm.api import add_service_to_cluster, multi_bind, bind
@@ -49,17 +48,11 @@ class ServiceActionDetailsUrlField(serializers.HyperlinkedIdentityField):
 class ServiceSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     cluster_id = serializers.IntegerField(required=True)
-    name = serializers.SerializerMethodField(read_only=True)
-    display_name = serializers.SerializerMethodField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    display_name = serializers.CharField(read_only=True)
     state = serializers.CharField(read_only=True)
     prototype_id = serializers.IntegerField(required=True, help_text='id of service prototype')
     url = ServiceObjectUrlField(read_only=True, view_name='service-details')
-
-    def get_name(self, obj):
-        return obj.prototype.name
-
-    def get_display_name(self, obj):
-        return obj.prototype.display_name
 
     def validate_prototype_id(self, prototype_id):
         prototype = check_obj(
@@ -81,13 +74,13 @@ class ServiceSerializer(serializers.Serializer):
 
 class ServiceDetailSerializer(ServiceSerializer):
     prototype_id = serializers.IntegerField(read_only=True)
-    description = serializers.SerializerMethodField()
-    bundle_id = serializers.SerializerMethodField()
+    description = serializers.CharField(read_only=True)
+    bundle_id = serializers.IntegerField(read_only=True)
     issue = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
-    monitoring = serializers.SerializerMethodField()
-    action = ServiceObjectUrlField(read_only=True, view_name='service-action')
-    config = ConfigURL(read_only=True, view_name='config')
+    monitoring = serializers.CharField(read_only=True)
+    action = CommonAPIURL(read_only=True, view_name='object-action')
+    config = CommonAPIURL(read_only=True, view_name='object-config')
     component = ServiceObjectUrlField(read_only=True, view_name='service-component')
     imports = ServiceObjectUrlField(read_only=True, view_name='service-import')
     bind = ServiceObjectUrlField(read_only=True, view_name='service-bind')
@@ -95,17 +88,8 @@ class ServiceDetailSerializer(ServiceSerializer):
         view_name='service-type-details', lookup_field='prototype_id',
         lookup_url_kwarg='prototype_id')
 
-    def get_description(self, obj):
-        return obj.prototype.description
-
     def get_issue(self, obj):
         return issue.get_issue(obj)
-
-    def get_bundle_id(self, obj):
-        return obj.prototype.bundle_id
-
-    def get_monitoring(self, obj):
-        return obj.prototype.monitoring
 
     def get_status(self, obj):
         return status_api.get_service_status(obj.cluster.id, obj.id)
@@ -113,85 +97,48 @@ class ServiceDetailSerializer(ServiceSerializer):
 
 class ServiceComponentSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
-    name = serializers.SerializerMethodField()
+    name = serializers.CharField(read_only=True)
     prototype_id = serializers.SerializerMethodField()
-    display_name = serializers.SerializerMethodField()
-    description = serializers.SerializerMethodField()
+    display_name = serializers.CharField(read_only=True)
+    description = serializers.CharField(read_only=True)
     url = ServiceComponentDetailsUrlField(read_only=True, view_name='service-component-details')
 
-    def get_name(self, obj):
-        return obj.component.name
-
     def get_prototype_id(self, obj):
-        return obj.component.id
-
-    def get_display_name(self, obj):
-        return obj.component.display_name
-
-    def get_description(self, obj):
-        return obj.component.description
+        return obj.prototype.id
 
 
 class ServiceComponentDetailSerializer(ServiceComponentSerializer):
-    constraint = serializers.SerializerMethodField()
-    requires = serializers.SerializerMethodField()
-    params = serializers.SerializerMethodField()
-    monitoring = serializers.SerializerMethodField()
+    constraint = serializers.JSONField(read_only=True)
+    requires = serializers.JSONField(read_only=True)
+    monitoring = serializers.CharField(read_only=True)
     status = serializers.SerializerMethodField()
-
-    def get_constraint(self, obj):
-        return obj.component.constraint
-
-    def get_requires(self, obj):
-        return obj.component.requires
-
-    def get_params(self, obj):
-        return obj.component.params
-
-    def get_monitoring(self, obj):
-        return obj.component.monitoring
 
     def get_status(self, obj):
         return status_api.get_component_status(obj.id)
 
 
-class ActionShortSerializer(ActionShort):
-    run = ServiceActionDetailsUrlField(read_only=True, view_name='service-action-run')
-
-
 class ServiceUISerializer(ServiceDetailSerializer):
     actions = serializers.SerializerMethodField()
     components = serializers.SerializerMethodField()
-    name = serializers.SerializerMethodField()
+    name = serializers.CharField(read_only=True)
     version = serializers.SerializerMethodField()
-    action = ServiceObjectUrlField(read_only=True, view_name='service-action')
-    config = ConfigURL(read_only=True, view_name='config')
+    action = CommonAPIURL(view_name='object-action')
+    config = CommonAPIURL(view_name='object-config')
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
         self.context['object'] = obj
         self.context['service_id'] = obj.id
         actions = filter_actions(obj, act_set)
-        acts = ActionShortSerializer(actions, many=True, context=self.context)
+        acts = ActionShort(actions, many=True, context=self.context)
         return acts.data
 
     def get_components(self, obj):
         comps = ServiceComponent.objects.filter(service=obj, cluster=obj.cluster)
         return ServiceComponentDetailSerializer(comps, many=True, context=self.context).data
 
-    def get_name(self, obj):
-        return obj.prototype.name
-
     def get_version(self, obj):
         return obj.prototype.version
-
-
-class ServiceActionListSerializer(ActionSerializer):
-    url = ServiceActionDetailsUrlField(read_only=True, view_name='service-action-details')
-
-
-class ServiceActionDetailsSerializer(ActionDetailSerializer):
-    run = ServiceActionDetailsUrlField(read_only=True, view_name='service-action-run')
 
 
 class ServiceComponentUrlField(serializers.HyperlinkedIdentityField):
