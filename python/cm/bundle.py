@@ -284,21 +284,40 @@ def re_check_components():
 def re_check_config():
     for c in StagePrototypeConfig.objects.filter(type='variant'):
         ref = proto_ref(c.prototype)
-        if c.limits['source']['type'] != 'list':
-            continue
-        keys = c.limits['source']['name'].split('/')
-        name = keys[0]
-        subname = ''
-        if len(keys) > 1:
-            subname = keys[1]
-        try:
-            s = StagePrototypeConfig.objects.get(prototype=c.prototype, name=name, subname=subname)
-        except StagePrototypeConfig.DoesNotExist:
-            msg = f'Unknown config source name "{{}}" for {ref} config "{c.name}/{c.subname}"'
-            err('INVALID_CONFIG_DEFINITION', msg.format(c.limits['source']['name']))
-        if s == c:
-            msg = f'Config parameter "{c.name}/{c.subname}" can not refer to itself ({ref})'
-            err('INVALID_CONFIG_DEFINITION', msg)
+        lim = c.limits
+        if lim['source']['type'] == 'list':
+            keys = lim['source']['name'].split('/')
+            name = keys[0]
+            subname = ''
+            if len(keys) > 1:
+                subname = keys[1]
+            try:
+                s = StagePrototypeConfig.objects.get(
+                    prototype=c.prototype, name=name, subname=subname
+                )
+            except StagePrototypeConfig.DoesNotExist:
+                msg = f'Unknown config source name "{{}}" for {ref} config "{c.name}/{c.subname}"'
+                err('INVALID_CONFIG_DEFINITION', msg.format(lim['source']['name']))
+            if s == c:
+                msg = f'Config parameter "{c.name}/{c.subname}" can not refer to itself ({ref})'
+                err('INVALID_CONFIG_DEFINITION', msg)
+        elif lim['source']['type'] == 'builtin':
+            if not lim['source']['args']:
+                continue
+            if 'service' in lim['source']['args']:
+                service = lim['source']['args']['service']
+                try:
+                    StagePrototype.objects.get(type='service', name=service)
+                except StagePrototype.DoesNotExist:
+                    msg = 'Service "{}" in source:args of {} config "{}/{}" does not exists'
+                    err('INVALID_CONFIG_DEFINITION', msg.format(service, ref, c.name, c.subname))
+            if 'component' in lim['source']['args']:
+                comp = lim['source']['args']['component']
+                try:
+                    StagePrototype.objects.get(type='component', name=comp, parent=c.prototype)
+                except StagePrototype.DoesNotExist:
+                    msg = 'Component "{}" in source:args of {} config "{}/{}" does not exists'
+                    err('INVALID_CONFIG_DEFINITION', msg.format(comp, ref, c.name, c.subname))
 
 
 def second_pass():
