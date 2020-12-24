@@ -19,15 +19,14 @@ from rest_framework.authentication import TokenAuthentication, SessionAuthentica
 import cm.api
 import cm.bundle
 from cm.errors import AdcmEx, AdcmApiEx
-from cm.models import Bundle, Prototype, Component, Action
+from cm.models import Bundle, Prototype, Action
 from cm.models import PrototypeConfig, Upgrade, PrototypeExport
 from cm.models import PrototypeImport
 from cm.logger import log   # pylint: disable=unused-import
 
 import api.serializers
 import api.stack_serial
-from api.serializers import check_obj
-from api.api_views import ListView, DetailViewRO, PageView, GenericAPIPermView
+from api.api_views import ListView, DetailViewRO, PageView, GenericAPIPermView, check_obj
 
 
 class CsrfOffSessionAuthentication(SessionAuthentication):
@@ -198,7 +197,7 @@ class ServiceDetail(DetailViewRO):
     def get_object(self):
         service = super().get_object()
         service.actions = Action.objects.filter(prototype__type='service', prototype__id=service.id)
-        service.components = Component.objects.filter(prototype=service)
+        service.components = Prototype.objects.filter(parent=service, type='component')
         service.config = PrototypeConfig.objects.filter(
             prototype=service, action=None
         ).order_by('id')
@@ -231,6 +230,17 @@ class ServiceProtoActionList(GenericAPIPermView):
         obj = self.get_queryset().filter(prototype_id=service_id)
         serializer = self.serializer_class(obj, many=True, context={'request': request})
         return Response(serializer.data)
+
+
+class ComponentList(PageView):
+    """
+    get:
+    List all stack components
+    """
+    queryset = Prototype.objects.filter(type='component')
+    serializer_class = api.stack_serial.ComponentTypeSerializer
+    filterset_fields = ('name', 'bundle_id')
+    ordering_fields = ('display_name', 'version_order')
 
 
 class HostTypeList(PageView):
@@ -317,6 +327,15 @@ class ClusterTypeDetail(PrototypeDetail):
     """
     queryset = Prototype.objects.filter(type='cluster')
     serializer_class = api.stack_serial.ClusterTypeDetailSerializer
+
+
+class ComponentTypeDetail(PrototypeDetail):
+    """
+    get:
+    Show component prototype
+    """
+    queryset = Prototype.objects.filter(type='component')
+    serializer_class = api.stack_serial.ComponentTypeDetailSerializer
 
 
 class HostTypeDetail(PrototypeDetail):

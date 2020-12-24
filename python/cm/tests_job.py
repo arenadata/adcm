@@ -223,9 +223,11 @@ class TestJob(TestCase):
         cluster = models.Cluster.objects.create(prototype=prototype)
         cluster_object = models.ClusterObject.objects.create(prototype=prototype, cluster=cluster)
         host = models.Host.objects.create(prototype=prototype, cluster=cluster)
-        component = models.Component.objects.create(prototype=prototype)
+        component = models.Prototype.objects.create(
+            parent=prototype, type='component', bundle=bundle
+        )
         service_component = models.ServiceComponent.objects.create(
-            cluster=cluster, service=cluster_object, component=component)
+            cluster=cluster, service=cluster_object, prototype=component)
         hostcomponentmap = [
             {
                 'host_id': host.id,
@@ -527,9 +529,11 @@ class TestJob(TestCase):
         cluster = models.Cluster.objects.create(prototype=prototype)
         cluster_object = models.ClusterObject.objects.create(prototype=prototype, cluster=cluster)
         host = models.Host.objects.create(prototype=prototype, cluster=cluster)
-        component = models.Component.objects.create(prototype=prototype)
+        component = models.Prototype.objects.create(
+            parent=prototype, type='component', bundle=bundle
+        )
         service_component = models.ServiceComponent.objects.create(
-            cluster=cluster, service=cluster_object, component=component)
+            cluster=cluster, service=cluster_object, prototype=component)
         action = models.Action.objects.create(
             prototype=prototype,
             hostcomponentmap=[{'service': '', 'component': '', 'action': ''}])
