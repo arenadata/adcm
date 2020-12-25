@@ -43,7 +43,7 @@ from ansible.plugins.action import ActionBase
 sys.path.append('/adcm/python')
 import adcm.init_django
 import cm.api
-from cm.ansible_plugin import get_context_id
+from cm.ansible_plugin import get_object_id_from_context
 from cm.errors import AdcmEx
 from cm.logger import log
 
@@ -56,7 +56,7 @@ class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
         super().run(tmp, task_vars)
         msg = 'You can delete host only in host context'
-        host_id = get_context_id(task_vars, 'host', 'host_id', msg)
+        host_id = get_object_id_from_context(task_vars, 'host_id', 'host', err_msg=msg)
         log.info('ansible module adcm_delete_host: host #%s', host_id)
 
         try:
