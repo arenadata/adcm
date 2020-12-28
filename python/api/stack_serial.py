@@ -15,8 +15,11 @@ from rest_framework import serializers
 from cm.logger import log   # pylint: disable=unused-import
 import cm.config as config
 from cm.models import ClusterObject, Prototype, Bundle
-from api.serializers import hlink, UrlField
-from api.serializers import ActionDetailSerializer, ConfigSerializer, UpgradeSerializer
+
+from api.api_views import hlink, UrlField
+from api.serializers import UpgradeSerializer
+from api.config.serializers import ConfigSerializer
+from api.action.serializers import StackActionDetailSerializer
 
 
 class Stack(serializers.Serializer):
@@ -98,18 +101,6 @@ class PrototypeShort(serializers.ModelSerializer):
         fields = ('name',)
 
 
-class ComponentSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField()
-    display_name = serializers.CharField(required=False)
-    description = serializers.CharField(required=False)
-    params = serializers.JSONField(required=False)
-    constraint = serializers.JSONField(required=False)
-    requires = serializers.JSONField(required=False)
-    binded_to = serializers.JSONField(required=False)
-    monitoring = serializers.CharField(read_only=True)
-
-
 class ExportSerializer(serializers.Serializer):
     name = serializers.CharField(read_only=True)
 
@@ -126,6 +117,14 @@ class ImportSerializer(serializers.Serializer):
     multibind = serializers.BooleanField(read_only=True)
 
 
+class ComponentTypeSerializer(PrototypeSerializer):
+    constraint = serializers.JSONField(required=False)
+    requires = serializers.JSONField(required=False)
+    bound_to = serializers.JSONField(required=False)
+    monitoring = serializers.CharField(read_only=True)
+    url = hlink('component-type-details', 'id', 'prototype_id')
+
+
 class ServiceSerializer(PrototypeSerializer):
     shared = serializers.BooleanField(read_only=True)
     monitoring = serializers.CharField(read_only=True)
@@ -133,8 +132,8 @@ class ServiceSerializer(PrototypeSerializer):
 
 
 class ServiceDetailSerializer(ServiceSerializer):
-    actions = ActionDetailSerializer(many=True, read_only=True)
-    components = ComponentSerializer(many=True, read_only=True)
+    actions = StackActionDetailSerializer(many=True, read_only=True)
+    components = ComponentTypeSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
     exports = ExportSerializer(many=True, read_only=True)
     imports = ImportSerializer(many=True, read_only=True)
@@ -178,28 +177,33 @@ class ProviderTypeSerializer(PrototypeSerializer):
 
 
 class PrototypeDetailSerializer(PrototypeSerializer):
-    actions = ActionDetailSerializer(many=True, read_only=True)
+    actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
 
 
 class ProviderTypeDetailSerializer(ProviderTypeSerializer):
-    actions = ActionDetailSerializer(many=True, read_only=True)
+    actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
     upgrade = UpgradeSerializer(many=True, read_only=True)
 
 
 class HostTypeDetailSerializer(HostTypeSerializer):
-    actions = ActionDetailSerializer(many=True, read_only=True)
+    actions = StackActionDetailSerializer(many=True, read_only=True)
+    config = ConfigSerializer(many=True, read_only=True)
+
+
+class ComponentTypeDetailSerializer(ComponentTypeSerializer):
+    actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
 
 
 class AdcmTypeDetailSerializer(AdcmTypeSerializer):
-    actions = ActionDetailSerializer(many=True, read_only=True)
+    actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
 
 
 class ClusterTypeDetailSerializer(ClusterTypeSerializer):
-    actions = ActionDetailSerializer(many=True, read_only=True)
+    actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
     upgrade = UpgradeSerializer(many=True, read_only=True)
     exports = ExportSerializer(many=True, read_only=True)

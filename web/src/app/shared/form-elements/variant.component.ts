@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 
 import { FieldDirective } from './field.directive';
 
@@ -36,4 +36,10 @@ import { FieldDirective } from './field.directive';
     </ng-container>
   `,
 })
-export class VariantComponent extends FieldDirective {}
+export class VariantComponent extends FieldDirective implements OnInit {
+  ngOnInit() {
+    if (this.field.read_only) {
+      this.control.disable();
+    }
+  }
+}

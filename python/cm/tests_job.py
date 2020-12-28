@@ -223,9 +223,11 @@ class TestJob(TestCase):
         cluster = models.Cluster.objects.create(prototype=prototype)
         cluster_object = models.ClusterObject.objects.create(prototype=prototype, cluster=cluster)
         host = models.Host.objects.create(prototype=prototype, cluster=cluster)
-        component = models.Component.objects.create(prototype=prototype)
+        component = models.Prototype.objects.create(
+            parent=prototype, type='component', bundle=bundle
+        )
         service_component = models.ServiceComponent.objects.create(
-            cluster=cluster, service=cluster_object, component=component)
+            cluster=cluster, service=cluster_object, prototype=component)
         hostcomponentmap = [
             {
                 'host_id': host.id,
@@ -320,7 +322,7 @@ class TestJob(TestCase):
         mock_prepare_job_inventory.assert_called_once_with({'cluster': 1}, job.id, {}, None)
         mock_prepare_job_config.assert_called_once_with(action, None, {'cluster': 1},
                                                         job.id, cluster, '')
-        mock_prepare_ansible_config.assert_called_once_with(job.id)
+        mock_prepare_ansible_config.assert_called_once_with(job.id, action, None)
 
     @patch('cm.job.get_obj_config')
     def test_get_adcm_config(self, mock_get_obj_config):
@@ -527,9 +529,11 @@ class TestJob(TestCase):
         cluster = models.Cluster.objects.create(prototype=prototype)
         cluster_object = models.ClusterObject.objects.create(prototype=prototype, cluster=cluster)
         host = models.Host.objects.create(prototype=prototype, cluster=cluster)
-        component = models.Component.objects.create(prototype=prototype)
+        component = models.Prototype.objects.create(
+            parent=prototype, type='component', bundle=bundle
+        )
         service_component = models.ServiceComponent.objects.create(
-            cluster=cluster, service=cluster_object, component=component)
+            cluster=cluster, service=cluster_object, prototype=component)
         action = models.Action.objects.create(
             prototype=prototype,
             hostcomponentmap=[{'service': '', 'component': '', 'action': ''}])

@@ -13,25 +13,68 @@ import { Injectable } from '@angular/core';
 import { FormControl, FormGroup, ValidationErrors } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '@app/core/api';
-import { Component, Host, IActionParameter, IRequires } from '@app/core/types';
+import { IComponent, IActionParameter, IRequires } from '@app/core/types';
 import { filter, map, switchMap, take } from 'rxjs/operators';
 
 import { AddService } from '../add-component/add.service';
 import { DialogComponent } from '../components';
 import { DependenciesComponent } from './dependencies.component';
-import { CompTile, Constraint, HostTile, IRawHosComponent, IStream, Post, StatePost, Tile } from './types';
+import { CompTile, TConstraint, HostTile, IRawHosComponent, IStream, Post, StatePost, Tile } from './types';
 
-export const getSelected = (from: Tile[]) => from.find((a) => a.isSelected);
+export const getSelected = (from: Tile[]): Tile => from.find((a) => a.isSelected);
 
+const isShrink = (ap: IActionParameter[]): boolean => ap.every((a) => a.action === 'remove');
+
+const isExpand = (ap: IActionParameter[]): boolean => ap.every((a) => a.action === 'add');
+
+const accord = (a: IActionParameter): ((b: CompTile) => boolean) => (b: CompTile): boolean =>
+  b.component === `${a.service}/${a.component}`;
+
+export const isExist = (rel: CompTile[], ap: IActionParameter[]): boolean =>
+  isShrink(ap) ? ap.some((a) => rel.some(accord(a))) : ap.every((a) => rel.some(accord(a)));
+
+export const disableHost = (h: HostTile, ap: IActionParameter[]): boolean =>
+  ap ? (isExist(h.relations as CompTile[], ap) ? isExpand(ap) : isShrink(ap)) : false;
+
+//#region user click
+
+const checkConstraint = (c: TConstraint, r: number): boolean => {
+  if (!c?.length) return true;
+  const v = c[c.length - 1];
+  return v === '+' || v === 'odd' || v > r || v === 'depend';
+};
+
+const flag = (host_id: number, com: CompTile, load: StatePost): boolean =>
+  load.data.some((a) => a.component_id === com.id && a.service_id === com.service_id && a.host_id === host_id);
+
+const checkActions = (host_id: number, com: CompTile, action: 'add' | 'remove', load: StatePost): boolean => {
+  if (com.actions?.length) {
+    if (action === 'remove') return flag(host_id, com, load) ? com.actions.some((a) => a === 'remove') : true;
+    if (action === 'add') return flag(host_id, com, load) ? true : com.actions.some((a) => a === 'add');
+  } else return true;
+};
+
+const findDependencies = (c: CompTile, cs: CompTile[]): CompTile[] => {
+  const r =
+    c.requires?.reduce<{ prototype_id: number }[]>(
+      (p, a) => [...p, ...a.components.map((b) => ({ prototype_id: b.prototype_id }))],
+      []
+    ) || [];
+  return cs.filter((a) => r.some((b) => b.prototype_id === a.prototype_id));
+};
+
+const checkDependencies = (c: CompTile, cs: CompTile[]): void =>
+  findDependencies(c, cs).forEach((a) => (a.limit = a.limit ? [...a.limit, 'depend'] : ['depend']));
+
+const checkRequires = (component: CompTile, cs: CompTile[]): IRequires[] =>
+  component.requires.reduce<IRequires[]>(
+    (p, c) => (c.components.every((a) => cs.some((b) => b.prototype_id === a.prototype_id)) ? p : [...p, c]),
+    []
+  );
+
+//#endregion
 @Injectable()
 export class TakeService {
-  /**
-   * Object for saving state on user click
-   *
-   * @memberof TakeService
-   */
-  stream = {} as IStream;
-
   constructor(private api: ApiService, private dialog: MatDialog, private add: AddService) {}
 
   //#region ----- HttpClient ------
@@ -46,17 +89,15 @@ export class TakeService {
   //#endregion
 
   //#region after a successful download, run and fill in
-  fillHost(ph: Partial<Host>[], ap: IActionParameter[]) {
-    const isShrink = () => ap.every((a) => a.action === 'remove');
-    const isExpand = () => ap.every((a) => a.action === 'add');
-    const condition = (b: CompTile) => (a: IActionParameter) => b.component === `${a.service}/${a.component}`;
-    const existCondition = (rel: CompTile[]) =>
-      isShrink() ? ap.some((a) => rel.some((b) => condition(b)(a))) : ap.every((a) => rel.some((b) => condition(b)(a)));
-    const checkEmptyHost = (h: HostTile) => (existCondition(h.relations as CompTile[]) ? isExpand() : isShrink());
-    return ph.map((h) => new HostTile(h)).map((h) => ({ ...h, disabled: !ap ? false : checkEmptyHost(h) }));
+
+  /**
+   * Mapping backend source hosts to detect `disabled` properties based on action parameters, if present
+   */
+  fillHost(hosts: HostTile[], ap?: IActionParameter[]): HostTile[] {
+    return hosts.map((h) => ({ ...h, disabled: disableHost(h, ap) }));
   }
 
-  fillComponent(pc: Component[], ap: IActionParameter[]) {
+  fillComponent(pc: IComponent[], ap: IActionParameter[]) {
     return pc.map(
       (c) =>
         new CompTile(
@@ -110,7 +151,7 @@ export class TakeService {
   ```
  */
   validateConstraints(component: CompTile, hostLength: number) {
-    const getError = (constraint: Constraint, relations: HostTile[]) => {
+    const getError = (constraint: TConstraint, relations: HostTile[]) => {
       if (!constraint?.length) return null;
       const [a1, a2, a3] = constraint;
       const countRelations = relations.length;
@@ -169,13 +210,13 @@ export class TakeService {
   clearDependencies(comp: CompTile, state: StatePost, cs: CompTile[], hs: HostTile[], form: FormGroup) {
     const getLimitsFromState = (prototype_id: number) => cs.find((b) => b.prototype_id === prototype_id).limit;
     if (comp.requires?.length) {
-      this.findDependencies(comp, cs).forEach((a) => {
+      findDependencies(comp, cs).forEach((a) => {
         a.limit = getLimitsFromState(a.prototype_id);
         a.notification = '';
       });
 
       state.data.map((a) =>
-        this.checkDependencies(
+        checkDependencies(
           cs.find((b) => b.id === a.component_id),
           cs
         )
@@ -186,25 +227,17 @@ export class TakeService {
     }
   }
 
-  findDependencies(c: CompTile, cs: CompTile[]) {
-    const r =
-      c.requires?.reduce((p, a) => [...p, ...a.components.map((b) => ({ prototype_id: b.prototype_id }))], []) || [];
-    return cs.filter((a) => r.some((b) => b.prototype_id === a.prototype_id));
-  }
-
-  checkDependencies(c: CompTile, cs: CompTile[]) {
-    this.findDependencies(c, cs).forEach((a) => (a.limit = a.limit ? [...a.limit, 'depend'] : ['depend']));
-  }
   //#endregion
 
   //#region handler user events
   divorce(both: [CompTile, HostTile], cs: CompTile[], hs: HostTile[], state: StatePost, form: FormGroup) {
-    both.forEach((a) => {
-      a.relations = a.relations.filter((r) => r.id !== both.find((b) => b.id !== a.id).id);
-      a.isLink = false;
-    });
-
     const [component, host] = both;
+
+    component.isLink = false;
+    component.relations = component.relations.filter((r) => r.id !== host.id);
+    host.isLink = false;
+    host.relations = host.relations.filter((r) => r.id !== component.id);
+
     state.delete(new Post(host.id, component.service_id, component.id));
     this.clearDependencies(component, state, cs, hs, form);
     this.setFormValue(component, form);
@@ -243,37 +276,19 @@ export class TakeService {
     const isComp = target instanceof CompTile;
     const component = (isComp ? target : link) as CompTile;
     const host = isComp ? link : target;
-    const flag = (host_id: number, com: CompTile) =>
-      load.data.some((a) => a.component_id === com.id && a.service_id === com.service_id && a.host_id === host_id);
-
-    const checkActions = (host_id: number, com: CompTile, action: 'add' | 'remove'): boolean => {
-      if (com.actions?.length) {
-        if (action === 'remove') return flag(host_id, com) ? com.actions.some((a) => a === 'remove') : true;
-        if (action === 'add') return flag(host_id, com) ? true : com.actions.some((a) => a === 'add');
-      } else return true;
-    };
-
-    const noConstraint = (c: Constraint, r: number) => {
-      if (!c?.length) return true;
-      const v = c[c.length - 1];
-      return v === '+' || v === 'odd' || v > r || v === 'depend';
-    };
 
     if (link.relations.find((e) => e.id === target.id)) {
-      if (checkActions(host.id, component, 'remove')) this.divorce([component, host], cs, hs, state, form);
+      if (checkActions(host.id, component, 'remove', load)) this.divorce([component, host], cs, hs, state, form);
       return;
-    } else if (noConstraint(component.limit, component.relations.length)) {
-      if (!checkActions(host.id, component, 'add')) return;
+    } else if (checkConstraint(component.limit, component.relations.length)) {
+      if (!checkActions(host.id, component, 'add', load)) return;
       if (component.requires?.length) {
-        const requires = component.requires.reduce(
-          (p, c) => (c.components.some((a) => cs.some((b) => b.prototype_id === a.prototype_id)) ? p : [...p, c]),
-          []
-        );
+        const requires = checkRequires(component, cs);
         if (requires.length) {
           this.dialog4Requires(requires);
           return;
         } else {
-          this.checkDependencies(component, cs);
+          checkDependencies(component, cs);
           form.reset();
           this.formFill(cs, hs, form);
         }

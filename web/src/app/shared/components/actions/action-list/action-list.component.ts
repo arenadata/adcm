@@ -10,33 +10,60 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input } from '@angular/core';
+import { IAction } from '@app/core/types';
+import { Observable } from 'rxjs';
 
 import { ActionsService } from '../actions.service';
 
 @Component({
   selector: 'app-action-list',
   template: `
-    <button *ngIf="!asButton; else btn" mat-icon-button color="accent" [disabled]="disabled" [matMenuTriggerFor]="panel.menu" (click)="getData()" matTooltip="Choose action">
+    <button
+      *ngIf="!asButton; else btn"
+      mat-icon-button
+      color="accent"
+      [disabled]="disabled"
+      [matMenuTriggerFor]="panel.menu"
+      (click)="getData()"
+      matTooltip="Choose action"
+    >
       <mat-icon>play_circle_outline</mat-icon>
     </button>
     <ng-template #btn>
-      <button mat-raised-button color="warn" [disabled]="disabled" [matMenuTriggerFor]="panel.menu" (click)="getData()">
-        <span>Run action</span>&nbsp;<mat-icon>add_task</mat-icon>
+      <button
+        mat-raised-button
+        color="accent"
+        [disabled]="disabled"
+        [matMenuTriggerFor]="panel.menu"
+        (click)="getData()"
+      >
+        <span>Run action</span>
+        &nbsp;
+        <mat-icon class="icon-locked running" *ngIf="state === 'locked'; else pi">autorenew</mat-icon>
+        <ng-template #pi><mat-icon>play_circle_outline</mat-icon></ng-template>
       </button>
     </ng-template>
-    <app-menu-item #panel [items]="actions" [cluster]="cluster"></app-menu-item>
+    <app-menu-item #panel [items]="actions$ | async" [cluster]="cluster"></app-menu-item>
   `,
 })
 export class ActionListComponent {
-  @Input() cluster: { id: number; hostcomponent: string; };
+  @Input() cluster: { id: number; hostcomponent: string };
   @Input() disabled: boolean;
-  @Input() actions = [];
   @Input() asButton = false;
   @Input() actionLink: string;
+  @Input() state: string;
+
+  /**
+   * @deprecated in the fight against caching
+   */
+  @Input() actions = [];
+
+  actions$: Observable<IAction[]>;
 
   constructor(private service: ActionsService) {}
 
   getData(): void {
-    if (!this.actions.length) this.service.getActions(this.actionLink).subscribe((a) => (this.actions = a));
+    // if (!this.actions.length) ADCM-1505 it's possible cache after finished job
+    this.actions$ = this.service.getActions(this.actionLink); //.subscribe((a) => (this.actions = a));
   }
 }

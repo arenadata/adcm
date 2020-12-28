@@ -9,8 +9,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { NO_ERRORS_SCHEMA, Component } from '@angular/core';
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { Component, NO_ERRORS_SCHEMA } from '@angular/core';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { Job } from '@app/core/types';
 import { MaterialModule } from '@app/shared/material.module';
@@ -27,14 +27,14 @@ describe('LeftComponent', () => {
   let fixture: ComponentFixture<LeftComponent>;
   const issueIcon = (name: string) => fixture.nativeElement.querySelector(`a[adcm_test=tab_${name}] div mat-icon`);
 
-  beforeEach(async(() => {
+  beforeEach(async () => {
     TestBed.configureTestingModule({
       imports: [MaterialModule, StuffModule, RouterTestingModule.withRoutes([{ path: '1', component: ExampleComponent }])],
       declarations: [LeftComponent],
       providers: [NavigationService],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
-  }));
+  });
 
   beforeEach(() => {
     // spyOn(router, 'navigate').and.callFake(() => { });

@@ -42,7 +42,7 @@ class TestHC(TestCase):
             self.assertEqual(e.msg, 'hc is required')
 
         co = ClusterObject.objects.get(cluster=cluster, prototype__name='hadoop')
-        sc1 = ServiceComponent.objects.get(cluster=cluster, service=co, component__name='server')
+        sc1 = ServiceComponent.objects.get(cluster=cluster, service=co, prototype__name='server')
         try:
             action = Action(name="run", hostcomponentmap='qwe')
             hc = [{"service_id": co.id, "component_id": sc1.id, "host_id": 500}]
@@ -86,7 +86,7 @@ class TestHC(TestCase):
         h1 = Host.objects.get(provider=provider, fqdn='server01.inter.net')
         h2 = Host.objects.get(provider=provider, fqdn='server02.inter.net')
         co = ClusterObject.objects.get(cluster=cluster, prototype__name='hadoop')
-        sc1 = ServiceComponent.objects.get(cluster=cluster, service=co, component__name='server')
+        sc1 = ServiceComponent.objects.get(cluster=cluster, service=co, prototype__name='server')
 
         cm.api.add_host_to_cluster(cluster, h1)
         cm.api.add_host_to_cluster(cluster, h2)
@@ -110,7 +110,7 @@ class TestHC(TestCase):
         (hc_list, delta) = cm.job.check_hostcomponentmap(cluster, action, hc)
         self.assertNotEqual(hc_list, None)
         self.assertEqual(delta['remove'], {})
-        group = '{}.{}'.format(co.prototype.name, sc1.component.name)
+        group = '{}.{}'.format(co.prototype.name, sc1.prototype.name)
         self.assertEqual(delta['add'][group]['server01.inter.net'], h1)
         self.assertEqual(delta['add'][group]['server02.inter.net'], h2)
 
@@ -123,5 +123,5 @@ class TestHC(TestCase):
         (hc_list, delta) = cm.job.check_hostcomponentmap(cluster, action, hc)
         self.assertNotEqual(hc_list, None)
         self.assertEqual(delta['add'], {})
-        group = '{}.{}'.format(co.prototype.name, sc1.component.name)
+        group = '{}.{}'.format(co.prototype.name, sc1.prototype.name)
         self.assertEqual(delta['remove'][group]['server01.inter.net'], h1)

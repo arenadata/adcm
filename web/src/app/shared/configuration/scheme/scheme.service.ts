@@ -10,12 +10,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Injectable } from '@angular/core';
-import { FormArray, FormControl, FormGroup, ValidatorFn, AbstractControl } from '@angular/forms';
+import { AbstractControl, FormArray, FormControl, FormGroup, ValidatorFn } from '@angular/forms';
+import { isObject } from '@app/core/types/func';
 
 import { FieldService } from '../field.service';
-import { TValue, FieldOptions } from '../types';
-import { IYContainer, IYField, matchType, reqursionType } from '../yspec/yspec.service';
-import { isObject } from '@app/core/types/func';
+import { IFieldOptions, TNForm, TNReq, TValue } from '../types';
+import { IYContainer, IYField } from '../yspec/yspec.service';
 
 export interface IValue {
   [key: string]: TValue;
@@ -23,11 +23,11 @@ export interface IValue {
 
 export interface IControl {
   name: string;
-  type: matchType;
+  type: TNForm;
   rules: IYField | IYContainer | (IYField | IYContainer)[];
   form: FormGroup | FormArray;
   value: IValue | TValue;
-  parent: reqursionType;
+  parent: TNReq;
 }
 
 @Injectable()
@@ -41,7 +41,7 @@ export class SchemeService {
     return (): ValidatorFn => (control: AbstractControl): { [key: string]: any } | null => (isEmptyValue(control.value) ? { isEmpty: true } : null);
   }
 
-  setCurrentForm(type: matchType, parent: FormGroup, field: FieldOptions) {
+  setCurrentForm(type: TNForm, parent: FormGroup, field: IFieldOptions) {
     const v = field.required ? this.emptyValidator()() : null;
     const current = type === 'list' || type === 'dict' ? (type === 'list' ? new FormArray([], v) : new FormGroup({}, v)) : new FormControl('', v);
     parent.setControl(field.name, current);
@@ -68,7 +68,7 @@ export class SchemeService {
     }
   }
 
-  addControls(name: string, value: TValue | IValue, currentForm: FormGroup | FormArray, opt: IYContainer | IYField | (IYContainer | IYField)[], type: reqursionType): IControl {
+  addControls(name: string, value: TValue | IValue, currentForm: FormGroup | FormArray, opt: IYContainer | IYField | (IYContainer | IYField)[], type: TNReq): IControl {
     const rules = Array.isArray(opt) ? opt.find((a) => a.name === name) : opt;
     if (!rules) return;
     let form = currentForm;

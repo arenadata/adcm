@@ -23,8 +23,9 @@ from rest_framework import status
 
 from cm.logger import log
 from cm.errors import raise_AdcmEx as err
+from cm.adcm_config import VARIANT_FUNCTIONS
 from cm.adcm_config import proto_ref, check_config_type, type_is_complex, read_bundle_file
-from cm.models import StagePrototype, StageComponent, StageAction, StagePrototypeConfig
+from cm.models import StagePrototype, StageAction, StagePrototypeConfig
 from cm.models import ACTION_TYPE, SCRIPT_TYPE, CONFIG_FIELD_TYPE, PROTO_TYPE
 from cm.models import StagePrototypeExport, StagePrototypeImport, StageUpgrade, StageSubAction
 
@@ -182,7 +183,7 @@ def save_prototype(path, conf, def_type, bundle_hash):
     proto.save()
     save_actions(proto, conf, bundle_hash)
     save_upgrade(proto, conf)
-    save_components(proto, conf)
+    save_components(proto, conf, bundle_hash)
     save_prototype_config(proto, conf, bundle_hash)
     save_export(proto, conf)
     save_import(proto, conf)
@@ -234,24 +235,24 @@ def check_component_requires(proto, name, conf):
         check_extra_keys(item, ('service', 'component'), f'requires of component "{name}" of {ref}')
 
 
-def check_binded_component(proto, name, conf):
+def check_bound_component(proto, name, conf):
     if not isinstance(conf, dict):
         return
-    if 'binded_to' not in conf:
+    if 'bound_to' not in conf:
         return
-    bind = conf['binded_to']
+    bind = conf['bound_to']
     ref = proto_ref(proto)
     if not isinstance(bind, dict):
-        msg = 'binded_to of component "{}" in {} should be a map'
+        msg = 'bound_to of component "{}" in {} should be a map'
         err('INVALID_COMPONENT_DEFINITION', msg.format(name, ref))
-    check_extra_keys(bind, ('service', 'component'), f'binded_to of component "{name}" of {ref}')
-    msg = 'Component "{}" has no mandatory "{}" key in binded_to statment ({})'
+    check_extra_keys(bind, ('service', 'component'), f'bound_to of component "{name}" of {ref}')
+    msg = 'Component "{}" has no mandatory "{}" key in bound_to statment ({})'
     for item in ('service', 'component'):
         if item not in bind:
             err('INVALID_COMPONENT_DEFINITION', msg.format(name, item, ref))
 
 
-def save_components(proto, conf):
+def save_components(proto, conf, bundle_hash):
     ref = proto_ref(proto)
     if not in_dict(conf, 'components'):
         return
@@ -266,23 +267,32 @@ def save_components(proto, conf):
         err_msg = 'Component name "{}" of {}'.format(comp_name, ref)
         validate_name(comp_name, err_msg)
         allow = (
-            'display_name', 'description', 'params', 'constraint', 'requires',
-            'binded_to', 'monitoring'
+            'display_name', 'description', 'params', 'constraint', 'requires', 'monitoring',
+            'bound_to', 'actions', 'config',
         )
         check_extra_keys(cc, allow, 'component "{}" of {}'.format(comp_name, ref))
-        component = StageComponent(prototype=proto, name=comp_name)
+        component = StagePrototype(
+            type='component',
+            parent=proto,
+            path=proto.path,
+            name=comp_name,
+            version=proto.version,
+            adcm_min_version=proto.adcm_min_version,
+        )
         dict_to_obj(cc, 'description', component)
         dict_to_obj(cc, 'display_name', component)
         dict_to_obj(cc, 'monitoring', component)
         fix_display_name(cc, component)
         check_component_constraint_definition(proto, comp_name, cc)
         check_component_requires(proto, comp_name, cc)
-        check_binded_component(proto, comp_name, cc)
+        check_bound_component(proto, comp_name, cc)
         dict_to_obj(cc, 'params', component)
         dict_to_obj(cc, 'constraint', component)
         dict_to_obj(cc, 'requires', component)
-        dict_to_obj(cc, 'binded_to', component)
+        dict_to_obj(cc, 'bound_to', component)
         component.save()
+        save_actions(component, cc, bundle_hash)
+        save_prototype_config(component, cc, bundle_hash)
 
 
 def check_upgrade(proto, conf):
@@ -364,7 +374,7 @@ def save_upgrade(proto, conf):
         dict_to_obj(item, 'description', upg)
         if 'states' in item:
             check_upgrade_states(proto, item)
-            dict_json_to_obj(item['states'], 'available', upg)
+            dict_to_obj(item['states'], 'available', upg)
             if 'available' in item['states']:
                 upg.state_available = item['states']['available']
             if 'on_success' in item['states']:
@@ -528,7 +538,7 @@ def save_actions(proto, conf, bundle_hash):
         fix_display_name(ac, action)
 
         check_action_hc(proto, ac, action_name)
-        dict_to_obj(ac, 'hostcomponentmap', action)
+        dict_to_obj(ac, 'hc_acl', action, 'hostcomponentmap')
 
         if check_action_states(proto, action_name, ac):
             if 'on_success' in ac['states'] and ac['states']['on_success']:
@@ -679,26 +689,39 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
                 err('CONFIG_TYPE_ERROR', msg.format(label, value, name, subname, ref))
         return True
 
+    def check_variant_args(conf, name, subname):
+        if 'args' not in conf:
+            return None
+        if not isinstance(conf['args'], dict):
+            msg = 'Config key "{}/{}" of {} "source:args" field should be a map'
+            err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
+        allowed_keys = ('service', 'component')
+        check_extra_keys(conf['args'], allowed_keys, f'{ref} config key "{name}/{subname}"')
+        if 'component' in conf['args'] and 'service' not in conf['args']:
+            msg = 'There is no "service" field in source:args config key "{}/{}" of {}'
+            err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
+        return conf['args']
+
     def check_variant(conf, name, subname):   # pylint: disable=too-many-branches
         if not in_dict(conf, 'source'):
             msg = 'Config key "{}/{}" of {} has no mandatory "source" key'
             err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
         if not isinstance(conf['source'], dict):
-            msg = 'Config key "{}/{}" of {} "source" field should be map'
+            msg = 'Config key "{}/{}" of {} "source" field should be a map'
             err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
         if not in_dict(conf['source'], 'type'):
-            msg = 'Config key "{}/{}" of {} has no mandatory source: type statment'
+            msg = 'Config key "{}/{}" of {} has no mandatory source:type statment'
             err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
-        allowed_keys = ('type', 'name', 'value', 'strict')
+        allowed_keys = ('type', 'name', 'value', 'strict', 'args')
         check_extra_keys(conf['source'], allowed_keys, f'{ref} config key "{name}/{subname}"')
         vtype = conf['source']['type']
         if vtype not in ('inline', 'config', 'builtin'):
             msg = 'Config key "{}/{}" of {} has unknown source type "{}"'
             err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref, vtype))
-        source = {'type': vtype}
+        source = {'type': vtype, 'args': None}
         if 'strict' in conf['source']:
             if not isinstance(conf['source']['strict'], bool):
-                msg = 'Config key "{}/{}" of {} "source: strict" field should be boolean'
+                msg = 'Config key "{}/{}" of {} "source:strict" field should be boolean'
                 err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
             source['strict'] = conf['source']['strict']
         else:
@@ -717,9 +740,14 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
                 err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
             source['name'] = conf['source']['name']
         if vtype == 'builtin':
-            if conf['source']['name'] not in ('free_hosts', 'cluster_hosts'):
+            if conf['source']['name'] not in VARIANT_FUNCTIONS:
                 msg = 'Config key "{}/{}" of {} has unknown builtin function "{}"'
-                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref, conf['source']['name']))
+                err(
+                    'CONFIG_TYPE_ERROR',
+                    msg.format(name, subname, ref, conf['source']['name']),
+                    list(VARIANT_FUNCTIONS.keys())
+                )
+            source['args'] = check_variant_args(conf['source'], name, subname)
         return source
 
     def check_limit(conf_type, value, name, subname, label):
@@ -829,12 +857,12 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
             else:
                 sc.display_name = name
         conf['limits'] = process_limits(conf, name, subname)
-        dict_json_to_obj(conf, 'limits', sc)
+        dict_to_obj(conf, 'limits', sc)
         if 'ui_options' in conf:
             if not isinstance(conf['ui_options'], dict):
                 msg = 'ui_options of config key "{}/{}" of {} should be a map'
                 err('INVALID_CONFIG_DEFINITION', msg.format(name, subname, ref))
-        dict_json_to_obj(conf, 'ui_options', sc)
+        dict_to_obj(conf, 'ui_options', sc)
         if 'default' in conf:
             check_config_type(proto, name, subname, conf, conf['default'], bundle_hash)
         if type_is_complex(conf['type']):
@@ -948,12 +976,14 @@ def in_dict(dictionary, key):
         return False
 
 
-def dict_to_obj(dictionary, key, obj):
+def dict_to_obj(dictionary, key, obj, obj_key=None):
+    if not obj_key:
+        obj_key = key
     if not isinstance(dictionary, dict):
         return
     if key in dictionary:
         if dictionary[key] is not None:
-            setattr(obj, key, dictionary[key])
+            setattr(obj, obj_key, dictionary[key])
 
 
 def dict_json_to_obj(dictionary, key, obj, obj_key=''):

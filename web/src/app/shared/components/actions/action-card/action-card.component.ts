@@ -11,8 +11,11 @@
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
 import { ClusterService } from '@app/core';
-import { Cluster, Entities } from '@app/core/types';
-import { Observable } from 'rxjs';
+import { EventMessage, SocketState } from '@app/core/store';
+import { Cluster, Entities, isIssue } from '@app/core/types';
+import { SocketListenerDirective } from '@app/shared/directives';
+import { Store } from '@ngrx/store';
+import { Observable, of } from 'rxjs';
 
 import { ActionsService } from '../actions.service';
 
@@ -23,16 +26,26 @@ import { ActionsService } from '../actions.service';
       <p *ngIf="!actions.length">Nothing to display.</p>
       <app-card-item [items]="actions" [cluster]="clusterData"></app-card-item>
     </ng-container>
-  `, 
+  `,
 })
-export class ActionCardComponent implements OnInit {
+export class ActionCardComponent extends SocketListenerDirective implements OnInit {
   model: Entities;
-  actions$: Observable<any[]>;
+  actions$: Observable<any[]> = of([]);
 
-  constructor(private details: ClusterService, private service: ActionsService) {}
+  constructor(private details: ClusterService, private service: ActionsService, socket: Store<SocketState>) {
+    super(socket);
+  }
 
   ngOnInit(): void {
-    this.actions$ = this.service.getActions(this.details.Current.action);
+    if (!isIssue(this.details.Current.issue))
+      this.actions$ = this.service.getActions(this.details.Current.action);
+    super.startListenSocket();
+  }
+
+  socketListener(m: EventMessage) {
+    if (this.details.Current?.typeName === m.object.type && this.details.Current?.id === m.object.id && (m.event === 'change_state' || m.event === 'clear_issue')) {
+      this.actions$ = this.service.getActions(this.details.Current.action);
+    }
   }
 
   get clusterData() {

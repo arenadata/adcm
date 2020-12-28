@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import json
+import os
 
 import cm.config as config
 from cm.logger import log
@@ -25,8 +25,6 @@ def process_config_and_attr(obj, conf, attr=None, spec=None):
         spec, _, _, _ = get_prototype_config(obj.prototype)
     new_conf = process_config(obj, spec, conf)
     if attr:
-        if isinstance(attr, str):
-            attr = json.loads(attr)
         for key, val in attr.items():
             if 'active' in val and not val['active']:
                 new_conf[key] = None
@@ -51,7 +49,7 @@ def get_import(cluster):   # pylint: disable=too-many-branches
                     imports[imp.name] = {}
                 for group in imp.default:
                     cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-                    conf = process_config_and_attr(obj, json.loads(cl.config), cl.attr)
+                    conf = process_config_and_attr(obj, cl.config, cl.attr)
                     if imp.multibind:
                         imports[imp.name].append({group: conf[group]})
                     else:
@@ -66,7 +64,7 @@ def get_import(cluster):   # pylint: disable=too-many-branches
         conf_ref = obj.config
         export_proto = obj.prototype
         cl = ConfigLog.objects.get(obj_ref=conf_ref, id=conf_ref.current)
-        conf = process_config_and_attr(obj, json.loads(cl.config), cl.attr)
+        conf = process_config_and_attr(obj, cl.config, cl.attr)
         actual_import = get_actual_import(bind, obj)
         if actual_import.multibind:
             if export_proto.name not in imports:
@@ -88,8 +86,7 @@ def get_obj_config(obj):
     if obj.config is None:
         return {}
     cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-    js_conf = json.loads(cl.config)
-    return process_config_and_attr(obj, js_conf, cl.attr)
+    return process_config_and_attr(obj, cl.config, cl.attr)
 
 
 def get_obj_state(obj):
@@ -124,8 +121,9 @@ def get_cluster_config(cluster_id):
             'config': get_obj_config(service)
         }
         for component in ServiceComponent.objects.filter(cluster=cluster, service=service):
-            res['services'][service.prototype.name][component.component.name] = {
-                'component_id': component.id
+            res['services'][service.prototype.name][component.prototype.name] = {
+                'component_id': component.id,
+                'config': get_obj_config(component)
             }
     return res
 
@@ -151,7 +149,7 @@ def get_host_groups(cluster_id, delta, action_host=None):
     for hc in all_hosts:
         if action_host and hc.host.id not in action_host:
             continue
-        key1 = '{}.{}'.format(hc.service.prototype.name, hc.component.component.name)
+        key1 = '{}.{}'.format(hc.service.prototype.name, hc.component.prototype.name)
         if key1 not in groups:
             groups[key1] = {'hosts': {}}
         groups[key1]['hosts'][hc.host.fqdn] = get_obj_config(hc.host)

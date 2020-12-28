@@ -13,189 +13,43 @@ import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { Router } from '@angular/router';
+import { RouterTestingModule } from '@angular/router/testing';
 import { ChannelService } from '@app/core';
 import { ApiService } from '@app/core/api/api.service';
 import { AddService } from '@app/shared/add-component/add.service';
+import { SharedModule } from '@app/shared/shared.module';
 import { provideMockStore } from '@ngrx/store/testing';
 
 import { Much2ManyComponent } from '../much-2-many/much-2-many.component';
 import { TakeService } from '../take.service';
+import { ComponentFactory, HCFactory, HcmHost, HCmRequires } from '../test';
 import { IRawHosComponent } from '../types';
 import { ServiceHostComponent } from './service-host.component';
 
-// TODO: /core/testing/generator
-const hc = [
-  {
-    id: 1,
-    host_id: 2,
-    service_id: 2,
-    component_id: 4,
-  },
-  {
-    id: 2,
-    host_id: 2,
-    service_id: 2,
-    component_id: 2,
-  },
-  {
-    id: 3,
-    host_id: 2,
-    service_id: 2,
-    component_id: 3,
-  },
-  {
-    id: 4,
-    host_id: 2,
-    service_id: 1,
-    component_id: 1,
-  },
-];
-const raw: IRawHosComponent = {
-  hc: [],
-  host: [
-    {
-      state: 'created',
-      cluster_id: 2,
-      fqdn: 'bbb',
-      id: 2,
-      prototype_id: 18,
-      provider_id: 1,
-    },
-  ],
-  component: [
-    {
-      id: 1,
-      name: 'NODE',
-      prototype_id: 41,
-      display_name: 'Taxi Node',
-      constraint: null,
-      requires: [
-        {
-          prototype_id: 20,
-          name: 'UBER',
-          display_name: 'Uber Taxi Service',
-          components: [
-            {
-              prototype_id: 38,
-              name: 'UBER_SERVER',
-              display_name: 'UBER_SERVER',
-            },
-            {
-              prototype_id: 40,
-              name: 'SLAVE',
-              display_name: 'Just slave',
-            },
-            {
-              prototype_id: 39,
-              name: 'UBER_NODE',
-              display_name: 'Simple Uber node',
-            },
-          ],
-        },
-      ],
-      monitoring: 'active',
-      status: 16,
-      service_id: 1,
-      service_name: 'GETTAXI',
-      service_state: 'created',
-    },
-    {
-      id: 2,
-      name: 'UBER_SERVER',
-      prototype_id: 38,
-      display_name: 'UBER_SERVER',
-      constraint: [1, 2],
-      requires: [
-        {
-          prototype_id: 20,
-          name: 'UBER',
-          display_name: 'Uber Taxi Service',
-          components: [
-            {
-              prototype_id: 40,
-              name: 'SLAVE',
-              display_name: 'Just slave',
-            },
-            {
-              prototype_id: 39,
-              name: 'UBER_NODE',
-              display_name: 'Simple Uber node',
-            },
-          ],
-        },
-        {
-          prototype_id: 21,
-          name: 'GETTAXI',
-          display_name: 'GETTAXI',
-          components: [
-            {
-              prototype_id: 41,
-              name: 'NODE',
-              display_name: 'Taxi Node',
-            },
-          ],
-        },
-      ],
-      monitoring: 'active',
-      status: 16,
-      service_id: 2,
-      service_name: 'UBER',
-      service_state: 'created',
-    },
-    {
-      id: 3,
-      name: 'UBER_NODE',
-      prototype_id: 39,
-      display_name: 'Simple Uber node',
-      constraint: [0, '+'],
-      requires: null,
-      monitoring: 'active',
-      status: 16,
-      service_id: 2,
-      service_name: 'UBER',
-      service_state: 'created',
-    },
-    {
-      id: 4,
-      name: 'SLAVE',
-      prototype_id: 40,
-      display_name: 'Just slave',
-      constraint: [0, 1],
-      requires: [
-        {
-          prototype_id: 21,
-          name: 'GETTAXI',
-          display_name: 'GETTAXI',
-          components: [
-            {
-              prototype_id: 41,
-              name: 'NODE',
-              display_name: 'Taxi Node',
-            },
-          ],
-        },
-        {
-          prototype_id: 20,
-          name: 'UBER',
-          display_name: 'Uber Taxi Service',
-          components: [
-            {
-              prototype_id: 38,
-              name: 'UBER_SERVER',
-              display_name: 'UBER_SERVER',
-            },
-          ],
-        },
-      ],
-      monitoring: 'active',
-      status: 16,
-      service_id: 2,
-      service_name: 'UBER',
-      service_state: 'created',
-    },
-  ],
-};
+function genData() {
+  const _c = ComponentFactory(4, 1);
+  const host = [new HcmHost('test', 1)];
+  return { component: _c, host, hc: HCFactory(1, 1, 4) };
+}
+
+function domFirstElems(
+  n: HTMLElement
+): {
+  components: NodeListOf<Element>;
+  hosts: NodeListOf<Element>;
+  host: Element;
+  comp: Element;
+  hostBtn: HTMLElement;
+  compBtn: HTMLElement;
+} {
+  const components = n.querySelectorAll('.wrapper').item(0).querySelectorAll('app-much-2-many');
+  const hosts = n.querySelectorAll('.wrapper').item(1).querySelectorAll('app-much-2-many');
+  const host = hosts.item(0);
+  const comp = components.item(0);
+  const hostBtn = host.querySelector('.m2m .title-container button.title') as HTMLElement;
+  const compBtn = comp.querySelector('.m2m .title-container button.title') as HTMLElement;
+  return { components, hosts, host, comp, hostBtn, compBtn };
+}
 
 describe('Service Host Map Component', () => {
   let component: ServiceHostComponent;
@@ -203,23 +57,22 @@ describe('Service Host Map Component', () => {
 
   const initialState = { socket: {} };
 
-  const initDefault = (r: IRawHosComponent) => {
+  const initDefault = (r: IRawHosComponent): void => {
     component.init(r);
     fixture.detectChanges();
   };
 
   beforeEach(async () => {
     TestBed.configureTestingModule({
-      imports: [NoopAnimationsModule],
+      imports: [NoopAnimationsModule, SharedModule, RouterTestingModule],
       declarations: [ServiceHostComponent, Much2ManyComponent],
       providers: [
+        MatDialog,
         TakeService,
         ChannelService,
         provideMockStore({ initialState }),
         { provide: ApiService, useValue: {} },
         { provide: AddService, useValue: {} },
-        { provide: MatDialog, useValue: {} },
-        Router,
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -235,46 +88,36 @@ describe('Service Host Map Component', () => {
   });
 
   it('should display compnents and hosts as button', () => {
-    raw.hc = hc;
-    initDefault(raw);
-    //fixture.whenStable().then(() => {
-    const cElement: HTMLElement = fixture.nativeElement;
-    const components = cElement.querySelectorAll('.wrapper').item(0).querySelectorAll('app-much-2-many');
-    const hosts = cElement.querySelectorAll('.wrapper').item(1).querySelectorAll('app-much-2-many');
+    initDefault(genData());
+    const dom = domFirstElems(fixture.nativeElement);
+    const components = dom.components;
+    const hosts = dom.hosts;
     expect(hosts.length).toBe(1);
     expect(components.length).toBe(4);
     const host_relations = hosts.item(0).querySelector('.relations-list').children;
     expect(host_relations.length).toBe(4);
     components.forEach((a) => expect(a.querySelector('.relations-list').children.length).toBe(1));
-    //});
   });
 
   it('should mark host/component as selected and(or) as linked', () => {
-    raw.hc = hc;
-    initDefault(raw);
-    //fixture.whenStable().then(() => {
-    const cElement: HTMLElement = fixture.nativeElement;
-    const components = cElement.querySelectorAll('.wrapper').item(0).querySelectorAll('app-much-2-many');
-    const hosts = cElement.querySelectorAll('.wrapper').item(1).querySelectorAll('app-much-2-many');
-    const host = hosts.item(0);
+    initDefault(genData());
+    const dom = domFirstElems(fixture.nativeElement);
+    const components = dom.components;
+    const host = dom.host;
     (host.querySelector('.m2m .title-container button.title') as HTMLElement).click();
     fixture.detectChanges();
     expect(host.querySelector('.m2m').classList.contains('selected')).toBeTrue();
     components.forEach((a) => expect(a.querySelector('.m2m').classList.contains('linked')).toBeTrue());
-    //});
   });
 
   it('should add relative on click and check linked and selected property', () => {
-    raw.hc = [];
-    initDefault(raw);
-    //fixture.whenStable().then(() => {
-    const cElement: HTMLElement = fixture.nativeElement;
-    const components = cElement.querySelectorAll('.wrapper').item(0).querySelectorAll('app-much-2-many');
-    const hosts = cElement.querySelectorAll('.wrapper').item(1).querySelectorAll('app-much-2-many');
-    const host = hosts.item(0);
-    const comp = components.item(0);
-    const host_btn = host.querySelector('.m2m .title-container button.title') as HTMLElement;
-    const comp_btn = comp.querySelector('.m2m .title-container button.title') as HTMLElement;
+    const data = { component: ComponentFactory(4, 1), host: [new HcmHost('test', 1)], hc: [] };
+    initDefault(data);
+    const dom = domFirstElems(fixture.nativeElement);
+    const host = dom.host;
+    const comp = dom.comp;
+    const host_btn = dom.hostBtn;
+    const comp_btn = dom.compBtn;
     const host_relations = host.querySelector('.relations-list').children;
     const comp_relations = comp.querySelector('.relations-list').children;
 
@@ -326,19 +169,18 @@ describe('Service Host Map Component', () => {
     fixture.detectChanges();
     expect(host_isSelect()).toBeFalse();
     // end
-    //});
   });
 
   it('check dependencies and add validation rules for them', () => {
-    raw.hc = [];
-    initDefault(raw);
-    const cElement: HTMLElement = fixture.nativeElement;
-    const components = cElement.querySelectorAll('.wrapper').item(0).querySelectorAll('app-much-2-many');
-    const hosts = cElement.querySelectorAll('.wrapper').item(1).querySelectorAll('app-much-2-many');
-    const host = hosts.item(0);
-    const comp = components.item(0);
-    const host_btn = host.querySelector('.m2m .title-container button.title') as HTMLElement;
-    const comp_btn = comp.querySelector('.m2m .title-container button.title') as HTMLElement;
+    const data = { component: ComponentFactory(4, 1), host: [new HcmHost('test', 1)], hc: [] };
+    data.component[1].constraint = [1, 2];
+    data.component[2].constraint = [0, '+'];
+    data.component[3].constraint = [0, 1];
+    initDefault(data);
+    const dom = domFirstElems(fixture.nativeElement);
+    const components = dom.components;
+    const host_btn = dom.hostBtn;
+    const comp_btn = dom.compBtn;
 
     comp_btn.click();
     fixture.detectChanges();
@@ -348,8 +190,8 @@ describe('Service Host Map Component', () => {
       const title = c.querySelector('.m2m .title-container button.title') as HTMLElement;
       const star = title.querySelector('span.warn');
       const last = title.querySelector('span:last-child');
-      const data = raw.component[i];
-      if (data.constraint?.length) {
+      const d = data.component[i];
+      if (d.constraint?.length) {
         expect(star).toBeDefined();
         // mouseover
         //expect(last.attributes.getNamedItem('ng-reflect-message').value).toBe('Must be installed at least 1 components.');
@@ -366,7 +208,7 @@ describe('Service Host Map Component', () => {
       const title = c.querySelector('.m2m .title-container button.title') as HTMLElement;
       const star = title.querySelector('span.warn');
       const last = title.querySelector('span:last-child');
-      const data = raw.component[i];
+      const d = data.component[i];
       if (i !== 0) {
         expect(star).toBeDefined();
         //expect(last.attributes.getNamedItem('ng-reflect-message').value).toBe('Must be installed at least 1 components.');
@@ -374,5 +216,28 @@ describe('Service Host Map Component', () => {
         expect(star).toBeNull();
       }
     });
+  });
+
+  it('if component has `requires` should show dialog with `requires`', () => {
+    const data = { component: ComponentFactory(1, 1), host: [new HcmHost('test', 1)], hc: [] };
+    const r = new HCmRequires(2);
+    r.components = [new HCmRequires(3)];
+    data.component[0].requires = [r];
+    initDefault(data);
+
+    const dom = domFirstElems(fixture.nativeElement);
+    const host_btn = dom.hostBtn;
+    const comp_btn = dom.compBtn;
+
+    host_btn.click();
+    fixture.detectChanges();
+
+    comp_btn.click();
+    fixture.detectChanges();
+
+    const dialog = document.querySelector('app-dependencies') as HTMLElement;
+    expect(dialog).toBeTruthy();
+    expect(dialog.innerText).toContain('component_display_name_2');
+    expect(dialog.innerText).toContain('component_display_name_3');
   });
 });

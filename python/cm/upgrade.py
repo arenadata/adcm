@@ -22,7 +22,7 @@ from cm.adcm_config import proto_ref, obj_ref, switch_config
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
 from cm.models import (
-    Prototype, Component, Host, HostComponent, ServiceComponent, PrototypeImport,
+    Prototype, Host, HostComponent, ServiceComponent, PrototypeImport,
     ClusterBind, ClusterObject, Upgrade
 )
 
@@ -60,17 +60,19 @@ def switch_service(co, new_proto):
 def switch_components(cluster, co, new_co_proto):
     for sc in ServiceComponent.objects.filter(cluster=cluster, service=co):
         try:
-            comp = Component.objects.get(prototype=new_co_proto, name=sc.component.name)
-            sc.component = comp
+            comp = Prototype.objects.get(
+                parent=new_co_proto, type='component', name=sc.prototype.name
+            )
+            sc.prototype = comp
             sc.save()
-        except Component.DoesNotExist:
+        except Prototype.DoesNotExist:
             # sc.delete() ?!
             pass
-    for comp in Component.objects.filter(prototype=new_co_proto):
+    for comp in Prototype.objects.filter(parent=new_co_proto, type='component'):
         try:
-            ServiceComponent.objects.get(cluster=cluster, service=co, component=comp)
+            ServiceComponent.objects.get(cluster=cluster, service=co, prototype=comp)
         except ServiceComponent.DoesNotExist:
-            sc = ServiceComponent(cluster=cluster, service=co, component=comp)
+            sc = ServiceComponent(cluster=cluster, service=co, prototype=comp)
             sc.save()
 
 
@@ -150,15 +152,16 @@ def check_upgrade_import(obj, upgrade):   # pylint: disable=too-many-branches
             return False, msg.format(proto_ref(impr_obj.prototype))
         try:
             pi = PrototypeImport.objects.get(prototype=proto, name=export.prototype.name)
+            if not version_in(export.prototype.version, pi):
+                msg = 'Import "{}" of {} versions ({}, {}) does not match export version: {} ({})'
+                return (False, msg.format(
+                    export.prototype.name, proto_ref(proto), pi.min_version, pi.max_version,
+                    export.prototype.version, obj_ref(export)
+                ))
         except PrototypeImport.DoesNotExist:
-            msg = 'New version of {} does not have import "{}"'
-            return False, msg.format(proto_ref(proto), export.prototype.name)
-        if not version_in(export.prototype.version, pi):
-            msg = 'Import "{}" of {} versions ({}, {}) does not match export version: {} ({})'
-            return (False, msg.format(
-                export.prototype.name, proto_ref(proto), pi.min_version, pi.max_version,
-                export.prototype.version, obj_ref(export)
-            ))
+            # msg = 'New version of {} does not have import "{}"'   # ADCM-1507
+            # return False, msg.format(proto_ref(proto), export.prototype.name)
+            cbind.delete()
 
     for cbind in ClusterBind.objects.filter(source_cluster=obj):
         export = get_export(cbind)
@@ -204,8 +207,10 @@ def switch_hc(obj, upgrade):
 
     def find_component(component, proto):
         try:
-            return Component.objects.get(prototype=proto, name=component.component.name)
-        except Component.DoesNotExist:
+            return Prototype.objects.get(
+                parent=proto, type='component', name=component.prototype.name
+            )
+        except Prototype.DoesNotExist:
             return None
 
     if obj.prototype.type == 'host':

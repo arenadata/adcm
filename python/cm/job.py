@@ -163,6 +163,10 @@ def get_action_context(action, selector):
         check_selector(selector, 'cluster')
         obj = check_service_task(selector['cluster'], action)
         cluster = obj.cluster
+    elif action.prototype.type == 'component':
+        check_selector(selector, 'cluster')
+        obj = check_component_task(selector['cluster'], action)
+        cluster = obj.cluster
     elif action.prototype.type == 'host':
         check_selector(selector, 'host')
         obj = check_host(selector['host'], selector)
@@ -316,7 +320,7 @@ def check_action_config(action, obj, conf, attr):
     obj_conf = None
     if obj.config:
         cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-        obj_conf = json.loads(cl.config)
+        obj_conf = cl.config
     adcm_config.check_attr(proto, attr, flat_spec)
     adcm_config.process_variant(obj, spec, obj_conf)
     new_conf = adcm_config.check_config_spec(proto, action, spec, flat_spec, conf, None, attr)
@@ -352,13 +356,13 @@ def cook_delta(cluster, new_hc, action_hc, old=None):
 
     new = {}
     for service, host, comp in new_hc:
-        key = cook_comp_key(service.prototype.name, comp.component.name)
+        key = cook_comp_key(service.prototype.name, comp.prototype.name)
         add_to_dict(new, key, host.fqdn, host)
 
     if not old:
         old = {}
         for hc in HostComponent.objects.filter(cluster=cluster):
-            key = cook_comp_key(hc.service.prototype.name, hc.component.component.name)
+            key = cook_comp_key(hc.service.prototype.name, hc.component.prototype.name)
             add_to_dict(old, key, hc.host.fqdn, hc.host)
 
     delta = {'add': {}, 'remove': {}}
@@ -415,6 +419,20 @@ def check_service_task(cluster_id, action):
             msg = (f'service #{action.prototype.id} for action '
                    f'"{action.name}" is not installed in cluster #{cluster.id}')
             err('CLUSTER_SERVICE_NOT_FOUND', msg)
+    except Cluster.DoesNotExist:
+        err('CLUSTER_NOT_FOUND')
+
+
+def check_component_task(cluster_id, action):
+    try:
+        cluster = Cluster.objects.get(id=cluster_id)
+        try:
+            component = ServiceComponent.objects.get(cluster=cluster, prototype=action.prototype)
+            return component
+        except ServiceComponent.DoesNotExist:
+            msg = (f'component #{action.prototype.id} for action '
+                   f'"{action.name}" is not installed in cluster #{cluster.id}')
+            err('COMPONENT_NOT_FOUND', msg)
     except Cluster.DoesNotExist:
         err('CLUSTER_NOT_FOUND')
 
@@ -526,7 +544,7 @@ def re_prepare_job(task, job):
 def prepare_job(action, sub_action, selector, job_id, obj, conf, delta, hosts):
     prepare_job_config(action, sub_action, selector, job_id, obj, conf)
     inventory.prepare_job_inventory(selector, job_id, delta, hosts)
-    prepare_ansible_config(job_id)
+    prepare_ansible_config(job_id, action, sub_action)
 
 
 def prepare_context(selector):
@@ -537,6 +555,9 @@ def prepare_context(selector):
     if 'service' in selector:
         context['type'] = 'service'
         context['service_id'] = selector['service']
+    if 'component' in selector:
+        context['type'] = 'component'
+        context['component_id'] = selector['component']
     if 'provider' in selector:
         context['type'] = 'provider'
         context['provider_id'] = selector['provider']
@@ -586,6 +607,11 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
         job_conf['job']['hostgroup'] = obj.prototype.name
         job_conf['job']['service_id'] = obj.id
         job_conf['job']['service_type_id'] = obj.prototype.id
+    elif action.prototype.type == 'component':
+        job_conf['job']['hostgroup'] = f'{obj.service.prototype.name}.{obj.prototype.name}'
+        job_conf['job']['service_id'] = obj.service.id
+        job_conf['job']['component_id'] = obj.id
+        job_conf['job']['component_type_id'] = obj.prototype.id
     elif action.prototype.type == 'cluster':
         job_conf['job']['hostgroup'] = 'CLUSTER'
     elif action.prototype.type == 'host':
@@ -894,7 +920,7 @@ def log_rotation():
     log.info('Run log rotation')
     adcm_object = ADCM.objects.get(id=1)
     cl = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
-    adcm_conf = json.loads(cl.config)
+    adcm_conf = cl.config
 
     log_rotation_on_db = adcm_conf['job_log']['log_rotation_in_db']
     log_rotation_on_fs = adcm_conf['job_log']['log_rotation_on_fs']
@@ -927,14 +953,14 @@ def log_rotation():
         log.info('rotation log from fs')
 
 
-def prepare_ansible_config(job_id):
+def prepare_ansible_config(job_id, action, sub_action):
     config_parser = ConfigParser()
     config_parser['defaults'] = {
         'stdout_callback': 'yaml'
     }
     adcm_object = ADCM.objects.get(id=1)
     cl = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
-    adcm_conf = json.loads(cl.config)
+    adcm_conf = cl.config
     mitogen = adcm_conf['ansible_settings']['mitogen']
     if mitogen:
         config_parser['defaults']['strategy'] = 'mitogen_linear'
@@ -942,10 +968,9 @@ def prepare_ansible_config(job_id):
             config.PYTHON_SITE_PACKAGES, 'ansible_mitogen/plugins/strategy')
         config_parser['defaults']['host_key_checking'] = 'False'
 
-    job = JobLog.objects.get(id=job_id)
-    action = Action.objects.get(id=job.action_id)
-
     params = action.params
+    if sub_action:
+        params = sub_action.params
 
     if 'jinja2_native' in params:
         config_parser['defaults']['jinja2_native'] = str(params['jinja2_native'])

@@ -9,13 +9,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MaterialModule } from '@app/shared/material.module';
 
 import { FieldService } from '../field.service';
-import { FieldOptions } from '../types';
-import { matchType, YspecService } from '../yspec/yspec.service';
+import { IFieldOptions, TNForm } from '../types';
+import { YspecService } from '../yspec/yspec.service';
 import { RootComponent } from './root.component';
 import { SchemeComponent } from './scheme.component';
 import { SchemeService } from './scheme.service';
@@ -26,21 +26,21 @@ describe('SchemeComponent', () => {
   let service: SchemeService;
   let fieldService: FieldService;
 
-  beforeEach(async(() => {
+  beforeEach(async () => {
     TestBed.configureTestingModule({
       imports: [MaterialModule, FormsModule, ReactiveFormsModule],
       declarations: [SchemeComponent, RootComponent],
       providers: [YspecService, FieldService, FormBuilder, SchemeService],
     }).compileComponents();
-  }));
+  });
 
   beforeEach(() => {
     fixture = TestBed.createComponent(SchemeComponent);
     service = TestBed.inject(SchemeService);
     component = fixture.componentInstance;
     component.form = new FormGroup({ field: new FormControl() });
-    const yspec = { root: { match: 'list' as matchType, item: 'string' }, string: { match: 'string' as matchType } };
-    component.field = (<unknown>{ display_name: 'field_display_name', name: 'field', limits: { yspec }, required: true, value: null, default: null }) as FieldOptions;
+    const yspec = { root: { match: 'list' as TNForm, item: 'string' }, string: { match: 'string' as TNForm } };
+    component.field = (<unknown>{ display_name: 'field_display_name', name: 'field', limits: { yspec }, required: true, value: null, default: null }) as IFieldOptions;
     fixture.detectChanges();
   });
 
@@ -63,5 +63,5 @@ describe('SchemeComponent', () => {
     expect(error.innerText).toBe('Field [field_display_name] is required!');
   });
 
- 
+
 });
