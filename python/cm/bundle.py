@@ -268,7 +268,7 @@ def check_component_requires(comp):
             req_list[i]['service'] = comp.prototype.name
         try:
             req_comp = StagePrototype.objects.get(
-                    name=item['component'], type='component', parent=service
+                name=item['component'], type='component', parent=service
             )
         except StagePrototype.DoesNotExist:
             msg = 'Unknown component "{}" {}'
