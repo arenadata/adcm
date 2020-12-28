@@ -967,7 +967,8 @@ def prepare_ansible_config(job_id, action, sub_action):
         config_parser['defaults']['strategy_plugins'] = os.path.join(
             config.PYTHON_SITE_PACKAGES, 'ansible_mitogen/plugins/strategy')
         config_parser['defaults']['host_key_checking'] = 'False'
-
+    forks = adcm_conf['ansible_settings']['forks']
+    config_parser['defaults']['forks'] = str(forks)
     params = action.params
     if sub_action:
         params = sub_action.params
