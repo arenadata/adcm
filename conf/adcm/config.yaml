@@ -70,8 +70,8 @@
             This is the default number of parallel processes to spawn when communicating with remote hosts.
           type: integer
           default: 5
-          min: 2
-          max: 99
+          min: 1
+          max: 100
     - name: "logrotate"
       display_name: "Logrotate"
       type: "group"
