@@ -100,12 +100,13 @@ def get_random_cluster_service_component(client, cluster, service) -> dict:
         :py:class:`ValueError`
             If service is not found
     """
-    components = client.cluster.service.component.list(cluster_id=cluster['id'],
-                                                       service_id=service['id'])
-    if not components:
-        raise ValueError('Service has not components')
-    else:
+    components = client.cluster.service.component.list(
+        cluster_id=cluster['id'],
+        service_id=service['id']
+    )
+    if components:
         return random.choice(components)
+    raise ValueError('Service has not components')
 
 
 def get_host_by_fqdn(client, fqdn):

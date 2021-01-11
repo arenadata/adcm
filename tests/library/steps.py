@@ -16,8 +16,13 @@ import tempfile
 import allure
 from adcm_pytest_plugin import utils
 
-from .utils import get_host_by_fqdn, get_random_service, get_service_id_by_name, get_random_host_prototype, \
+from .utils import (
+    get_host_by_fqdn,
+    get_random_service,
+    get_service_id_by_name,
+    get_random_host_prototype,
     get_random_cluster_prototype
+)
 
 
 def _pack_bundle(bundledir):
