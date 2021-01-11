@@ -108,8 +108,11 @@ def test_host_in_cluster_must_be_locked_when_cluster_action_running(client, prep
 
 def test_host_must_be_locked_when_host_action_running(client, host):
     client.host.action.run.create(
-        action_id=filter_action_by_name(client.host.action.list(host_id=host['id']),
-                                              'action-locker')[0]['id'], host_id=host['id'])
+        action_id=filter_action_by_name(
+            client.host.action.list(host_id=host['id']), 'action-locker'
+        )[0]['id'],
+        host_id=host['id']
+    )
     assert client.host.read(host_id=host['id'])['state'] == 'locked'
 
 
