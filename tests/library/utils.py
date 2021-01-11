@@ -2,13 +2,13 @@ import random
 import time
 
 
-def get_action_by_name(client, adcm_entity, name):
+def get_action_by_name(client, cluster, name):
     """
     Get action by name from some object
 
     Args:
         client: ADCM client API objects
-        adcm_entity: adcm entity. For example: host, cluster and etc.
+        cluster: cluster object
         name: action name
 
     Returns:
@@ -19,11 +19,11 @@ def get_action_by_name(client, adcm_entity, name):
             If action is not found
 
     """
-    action_list = client.adcm_entity.action.list(id=adcm_entity['id'])
+    action_list = client.adcm_entity.action.list(cluster_id=cluster['id'])
     for action in action_list:
         if action['name'] == name:
             return action
-    raise ValueError(f"Action with name '{name}' is not found in entity '{adcm_entity}'")
+    raise ValueError(f"Action with name '{name}' is not found in cluster '{cluster}'")
 
 
 def filter_action_by_name(actions, name):

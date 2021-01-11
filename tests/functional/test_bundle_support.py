@@ -141,7 +141,7 @@ def test_run_parametrized_action_must_be_runned(client):
             client.cluster.action.list(cluster_id=cluster['id']),
             'install')[0]['id'],
         cluster_id=cluster['id'], config={"param": "bluuuuuuuuuuuuuuh"})
-    utils.wait_until(client, action)
+    wait_until(client, action)
     assert client.job.read(job_id=client.job.list()[0]['id'])['status'] == 'success'
 
 
