@@ -19,7 +19,7 @@ def get_action_by_name(client, cluster, name):
             If action is not found
 
     """
-    action_list = client.adcm_entity.action.list(cluster_id=cluster['id'])
+    action_list = client.cluster.action.list(cluster_id=cluster['id'])
     for action in action_list:
         if action['name'] == name:
             return action
