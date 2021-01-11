@@ -20,7 +20,7 @@ from docker.errors import NotFound
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import (get_data_dir, random_string, get_initialized_adcm_image)
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
-from adcm_pytest_plugin.docker import DockerWrapper
+from adcm_pytest_plugin.docker_utils import DockerWrapper
 
 
 def old_adcm_images():

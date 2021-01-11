@@ -13,11 +13,12 @@ import allure
 import coreapi
 import pytest
 from adcm_pytest_plugin import utils
-from adcm_pytest_plugin.docker import DockerWrapper
+from adcm_pytest_plugin.docker_utils import DockerWrapper
 
 # pylint: disable=E0401, E0611, W0611, W0621
 from tests.library import errorcodes as err
 from tests.library import steps
+from tests.library.utils import wait_until, filter_action_by_name
 
 
 @pytest.fixture(scope="function")
@@ -93,10 +94,10 @@ def test_check_cluster_state_after_run_action_when_empty(cluster_bundle, state, 
     cluster = client.cluster.create(prototype_id=client.stack.cluster.list()[0]['id'],
                                     name=utils.random_string())
     action = client.cluster.action.run.create(
-        action_id=utils.filter_action_by_name(
+        action_id=filter_action_by_name(
             client.cluster.action.list(cluster_id=cluster['id']), 'install')[0]['id'],
         cluster_id=cluster['id'])
-    utils.wait_until(client, action)
+    wait_until(client, action)
     assert client.cluster.read(cluster_id=cluster['id'])['state'] == state
 
 
@@ -116,10 +117,10 @@ def test_check_host_state_after_run_action_when_empty(host_bundle, state, client
                               provider_id=provider['id'],
                               fqdn=utils.random_string())
     action = client.host.action.run.create(
-        action_id=utils.filter_action_by_name(
+        action_id=filter_action_by_name(
             client.host.action.list(host_id=host['id']), 'init')[0]['id'],
         host_id=host['id'])
-    utils.wait_until(client, action)
+    wait_until(client, action)
     assert client.host.read(host_id=host['id'])['state'] == state
 
 
@@ -136,7 +137,7 @@ def test_run_parametrized_action_must_be_runned(client):
     cluster = client.cluster.create(prototype_id=client.stack.cluster.list()[0]['id'],
                                     name=utils.random_string())
     action = client.cluster.action.run.create(
-        action_id=utils.filter_action_by_name(
+        action_id=filter_action_by_name(
             client.cluster.action.list(cluster_id=cluster['id']),
             'install')[0]['id'],
         cluster_id=cluster['id'], config={"param": "bluuuuuuuuuuuuuuh"})

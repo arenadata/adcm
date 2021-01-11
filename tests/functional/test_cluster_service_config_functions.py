@@ -17,12 +17,17 @@ import allure
 import coreapi
 import pytest
 from adcm_pytest_plugin import utils
-from adcm_pytest_plugin.docker import DockerWrapper
+from adcm_pytest_plugin.docker_utils import DockerWrapper
 from jsonschema import validate
 
 # pylint: disable=E0401, W0601, W0611, W0621
 from tests.library import errorcodes as err
 from tests.library import steps
+from tests.library.utils import (
+    get_random_service,
+    get_random_cluster_service_component,
+    get_action_by_name, wait_until
+)
 
 BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
 SCHEMAS = os.path.join(os.path.dirname(__file__), "schemas/")
@@ -56,7 +61,7 @@ class TestClusterServiceConfig:
                     "zoo.cfg": {"autopurge.purgeInterval": 30, "dataDir": "/dev/0", "port": 80},
                     "required-key": "value"}
         cluster_svc = client.cluster.service.create(
-            cluster_id=cluster['id'], prototype_id=utils.get_random_service(client)['id'])
+            cluster_id=cluster['id'], prototype_id=get_random_service(client)['id'])
         config = client.cluster.service.config.history.create(cluster_id=cluster['id'],
                                                               service_id=cluster_svc['id'],
                                                               description='simple desc',
@@ -71,7 +76,7 @@ class TestClusterServiceConfig:
         cluster = steps.create_cluster(client)
         with allure.step('Create service on the cluster'):
             cluster_svc = client.cluster.service.create(
-                cluster_id=cluster['id'], prototype_id=utils.get_random_service(client)['id'])
+                cluster_id=cluster['id'], prototype_id=get_random_service(client)['id'])
         with allure.step('Try to create config from non-json string'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
@@ -84,7 +89,7 @@ class TestClusterServiceConfig:
         cluster = steps.create_cluster(client)
         with allure.step('Create service on the cluster'):
             cluster_svc = client.cluster.service.create(
-                cluster_id=cluster['id'], prototype_id=utils.get_random_service(client)['id'])
+                cluster_id=cluster['id'], prototype_id=get_random_service(client)['id'])
         with allure.step('Try to create config from a number'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
@@ -100,7 +105,7 @@ class TestClusterServiceConfig:
                                   "required-key": "110"}
         with allure.step('Create service on the cluster'):
             cluster_svc = client.cluster.service.create(
-                cluster_id=cluster['id'], prototype_id=utils.get_random_service(client)['id'])
+                cluster_id=cluster['id'], prototype_id=get_random_service(client)['id'])
         with allure.step('Try to create config when config doesn\'t have required'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
@@ -116,7 +121,7 @@ class TestClusterServiceConfig:
                                               "dataDir": "/zookeeper", "port": 80}}
         with allure.step('Create service on the cluster'):
             cluster_svc = client.cluster.service.create(
-                cluster_id=cluster['id'], prototype_id=utils.get_random_service(client)['id'])
+                cluster_id=cluster['id'], prototype_id=get_random_service(client)['id'])
         with allure.step('Try to create config without required key'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
@@ -133,7 +138,7 @@ class TestClusterServiceConfig:
                                   "required-key": "value"}
         with allure.step('Create service on the cluster'):
             cluster_svc = client.cluster.service.create(
-                cluster_id=cluster['id'], prototype_id=utils.get_random_service(client)['id'])
+                cluster_id=cluster['id'], prototype_id=get_random_service(client)['id'])
         with allure.step('Try to create config when parameter is not integer'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
@@ -150,7 +155,7 @@ class TestClusterServiceConfig:
                                   "required-key": "value"}
         with allure.step('Create service on the cluster'):
             cluster_svc = client.cluster.service.create(
-                cluster_id=cluster['id'], prototype_id=utils.get_random_service(client)['id'])
+                cluster_id=cluster['id'], prototype_id=get_random_service(client)['id'])
         with allure.step('Try to create config when param is not float'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
@@ -167,7 +172,7 @@ class TestClusterServiceConfig:
                                   "required-key": 500}
         with allure.step('Create service on the cluster'):
             cluster_svc = client.cluster.service.create(
-                cluster_id=cluster['id'], prototype_id=utils.get_random_service(client)['id'])
+                cluster_id=cluster['id'], prototype_id=get_random_service(client)['id'])
         with allure.step('Try to create config when param is not float'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
@@ -184,7 +189,7 @@ class TestClusterServiceConfig:
                                   "required-key": "value"}
         with allure.step('Create service on the cluster'):
             cluster_svc = client.cluster.service.create(
-                cluster_id=cluster['id'], prototype_id=utils.get_random_service(client)['id'])
+                cluster_id=cluster['id'], prototype_id=get_random_service(client)['id'])
         with allure.step('Try to create config has not option in a list'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
@@ -203,7 +208,7 @@ class TestClusterServiceConfig:
                                       "required-key": "value"}
         with allure.step('Create service on the cluster'):
             cluster_svc = client.cluster.service.create(
-                cluster_id=cluster['id'], prototype_id=utils.get_random_service(client)['id'])
+                cluster_id=cluster['id'], prototype_id=get_random_service(client)['id'])
         with allure.step('Try to create config when integer bigger than boundary'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
@@ -220,7 +225,7 @@ class TestClusterServiceConfig:
                                     "required-key": "value"}
         with allure.step('Create service on the cluster'):
             cluster_svc = client.cluster.service.create(
-                cluster_id=cluster['id'], prototype_id=utils.get_random_service(client)['id'])
+                cluster_id=cluster['id'], prototype_id=get_random_service(client)['id'])
         with allure.step('Try to create config when integer less than boundary'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
@@ -237,7 +242,7 @@ class TestClusterServiceConfig:
                                         "float-key": 50.5, "required-key": "value"}
         with allure.step('Create service on the cluster'):
             cluster_svc = client.cluster.service.create(
-                cluster_id=cluster['id'], prototype_id=utils.get_random_service(client)['id'])
+                cluster_id=cluster['id'], prototype_id=get_random_service(client)['id'])
         with allure.step('Try to create config when float bigger than boundary'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
@@ -254,7 +259,7 @@ class TestClusterServiceConfig:
                                       "float-key": 3.3, "required-key": "value"}
         with allure.step('Create service on the cluster'):
             cluster_svc = client.cluster.service.create(
-                cluster_id=cluster['id'], prototype_id=utils.get_random_service(client)['id'])
+                cluster_id=cluster['id'], prototype_id=get_random_service(client)['id'])
         with allure.step('Try to create config when float less than boundary'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
@@ -268,7 +273,7 @@ class TestClusterServiceConfig:
         config_wo_required_param = {"ssh-key": "TItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAA"}
         with allure.step('Create service on the cluster'):
             cluster_svc = client.cluster.service.create(
-                cluster_id=cluster['id'], prototype_id=utils.get_random_service(client)['id'])
+                cluster_id=cluster['id'], prototype_id=get_random_service(client)['id'])
         with allure.step('Try to create config when config doesnt have all params'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
@@ -285,7 +290,7 @@ class TestClusterServiceConfig:
                                    "required-key": "value"}
         with allure.step('Create service on the cluster'):
             cluster_svc = client.cluster.service.create(
-                cluster_id=cluster['id'], prototype_id=utils.get_random_service(client)['id'])
+                cluster_id=cluster['id'], prototype_id=get_random_service(client)['id'])
         with allure.step('Try to create config with unknown subkey'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
@@ -299,7 +304,7 @@ class TestClusterServiceConfig:
         config_w_unknown_param = {"name": "foo"}
         with allure.step('Create service on the cluster'):
             cluster_svc = client.cluster.service.create(
-                cluster_id=cluster['id'], prototype_id=utils.get_random_service(client)['id'])
+                cluster_id=cluster['id'], prototype_id=get_random_service(client)['id'])
         with allure.step('Try to create config with unknown parameter'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
@@ -315,7 +320,7 @@ class TestClusterServiceConfig:
                                                     "dataDir": "/zookeeper", "port": "http"}}
         with allure.step('Create service on the cluster'):
             cluster_svc = client.cluster.service.create(
-                cluster_id=cluster['id'], prototype_id=utils.get_random_service(client)['id'])
+                cluster_id=cluster['id'], prototype_id=get_random_service(client)['id'])
         with allure.step('Try to create config where param shouldn\'t have any subkeys'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
@@ -331,7 +336,7 @@ class TestClusterServiceConfig:
                               "port": {"foo": "bar"}}, "required-key": "value"}
         with allure.step('Create service on the cluster'):
             cluster_svc = client.cluster.service.create(
-                cluster_id=cluster['id'], prototype_id=utils.get_random_service(client)['id'])
+                cluster_id=cluster['id'], prototype_id=get_random_service(client)['id'])
         with allure.step('Try to create config where in flat param we put a dictionary'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
@@ -350,7 +355,7 @@ class TestClusterServiceConfig:
                                   fqdn=utils.random_string())
         steps.add_host_to_cluster(client, host, cluster)
         service = steps.create_random_service(client, cluster['id'])
-        component = utils.get_random_cluster_service_component(client, cluster, service)
+        component = get_random_cluster_service_component(client, cluster, service)
         steps.create_hostcomponent_in_cluster(client, cluster, host, service, component)
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             client.cluster.host.delete(host_id=host['id'], cluster_id=cluster['id'])
@@ -415,7 +420,7 @@ class TestClusterConfig:
         cluster = steps.create_cluster(client)
         config = client.cluster.config.current.list(cluster_id=cluster['id'])
         if config:
-            config_json = utils.ordereddict_to_dict(config)
+            config_json = utils.ordered_dict_to_dict(config)
         schema = json.load(open(SCHEMAS + '/config_item_schema.json'))
         assert validate(config_json, schema) is None
         steps.delete_all_data(client)
@@ -524,15 +529,15 @@ class TestClusterConfig:
     def test_check_that_file_field_put_correct_data_in_file_inside_docker(self, client):
         cluster = steps.create_cluster(client)
         test_data = "lorem ipsum"
-        config_data = utils.ordereddict_to_dict(
+        config_data = utils.ordered_dict_to_dict(
             client.cluster.config.current.list(cluster_id=cluster['id'])['config'])
         config_data['input_file'] = test_data
         config_data['required'] = random.randint(0, 99)
         client.cluster.config.history.create(cluster_id=cluster['id'], config=config_data)
         action = client.cluster.action.run.create(
-            action_id=utils.get_action_by_name(client, cluster, 'check-file-type')['id'],
+            action_id=get_action_by_name(client, cluster, 'check-file-type')['id'],
             cluster_id=cluster['id']
         )
-        utils.wait_until(client, action)
+        wait_until(client, action)
         expected = client.task.read(task_id=action['id'])
         assert expected['status'] == 'success'

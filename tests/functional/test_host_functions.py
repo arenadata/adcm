@@ -25,6 +25,7 @@ from jsonschema import validate
 # pylint: disable=E0401, W0601, W0611, W0621, W0212
 from tests.library import errorcodes as err
 from tests.library import steps
+from tests.library.utils import get_random_service, get_random_host_prototype
 
 SCHEMAS = os.path.join(os.path.dirname(__file__), "schemas/")
 
@@ -127,7 +128,7 @@ class TestHost:
             assert str(e.value) == "{'prototype_id': 'This parameter is required.'}"
 
     def test_shouldnt_create_host_wo_provider(self, client):
-        proto = utils.get_random_host_prototype(client)
+        proto = get_random_host_prototype(client)
         with pytest.raises(coreapi.exceptions.ParameterError) as e:
             client.host.create(prototype_id=proto['id'], fqdn=utils.random_string())
         assert str(e.value) == "{'provider_id': 'This parameter is required.'}"
@@ -222,7 +223,7 @@ class TestHost:
 
     def test_get_hostcomponent_list(self, client):  # invalid case, random component takes in circle
         cluster = steps.create_cluster(client)
-        service = steps.read_service(client, utils.get_random_service(client)['id'])
+        service = steps.read_service(client, get_random_service(client)['id'])
         cluster_svc = client.cluster.service.create(cluster_id=cluster['id'],
                                                     prototype_id=service['id'])
         components = client.cluster.service.component.list(cluster_id=cluster['id'],
