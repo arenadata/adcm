@@ -251,34 +251,63 @@ def re_check_actions():
                 err('INVALID_ACTION_DEFINITION', msg.format(item['component'], sp[0].name, ref))
 
 
+def check_component_requires(comp):
+    if not comp.requires:
+        return
+    ref = 'in requires of component "{}" of {}'.format(comp.name, proto_ref(comp.prototype))
+    req_list = comp.requires
+    for i, item in enumerate(req_list):
+        if 'service' in item:
+            try:
+                service = StagePrototype.objects.get(name=item['service'], type='service')
+            except StagePrototype.DoesNotExist:
+                msg = 'Unknown service "{}" {}'
+                err('COMPONENT_CONSTRAINT_ERROR', msg.format(item['service'], ref))
+        else:
+            service = comp.prototype
+            req_list[i]['service'] = comp.prototype.name
+        try:
+            req_comp = StagePrototype.objects.get(
+                name=item['component'], type='component', parent=service
+            )
+        except StagePrototype.DoesNotExist:
+            msg = 'Unknown component "{}" {}'
+            err('COMPONENT_CONSTRAINT_ERROR', msg.format(item['component'], ref))
+        if comp == req_comp:
+            msg = 'Component can not require themself {}'
+            err('COMPONENT_CONSTRAINT_ERROR', msg.format(ref))
+    comp.requires = req_list
+    comp.save()
+
+
+def check_bound_component(comp):
+    if not comp.bound_to:
+        return
+    ref = 'in "bound_to" of component "{}" of {}'.format(comp.name, proto_ref(comp.parent))
+    bind = comp.bound_to
+    try:
+        service = StagePrototype.objects.get(name=bind['service'], type='service')
+    except StagePrototype.DoesNotExist:
+        msg = 'Unknown service "{}" {}'
+        err('COMPONENT_CONSTRAINT_ERROR', msg.format(bind['service'], ref))
+
+    try:
+        bind_comp = StagePrototype.objects.get(
+            name=bind['component'], type='component', parent=service
+        )
+    except StagePrototype.DoesNotExist:
+        msg = 'Unknown component "{}" {}'
+        err('COMPONENT_CONSTRAINT_ERROR', msg.format(bind['component'], ref))
+
+    if comp == bind_comp:
+        msg = 'Component can not require themself {}'
+        err('COMPONENT_CONSTRAINT_ERROR', msg.format(ref))
+
+
 def re_check_components():
     for comp in StagePrototype.objects.filter(type='component'):
-        if not comp.requires:
-            continue
-        ref = 'in requires of component "{}" of {}'.format(comp.name, proto_ref(comp.prototype))
-        req_list = comp.requires
-        for i, item in enumerate(req_list):
-            if 'service' in item:
-                try:
-                    service = StagePrototype.objects.get(name=item['service'], type='service')
-                except StagePrototype.DoesNotExist:
-                    msg = 'Unknown service "{}" {}'
-                    err('COMPONENT_CONSTRAINT_ERROR', msg.format(item['service'], ref))
-            else:
-                service = comp.prototype
-                req_list[i]['service'] = comp.prototype.name
-            try:
-                req_comp = StagePrototype.objects.get(
-                    name=item['component'], type='component', parent=service
-                )
-            except StagePrototype.DoesNotExist:
-                msg = 'Unknown component "{}" {}'
-                err('COMPONENT_CONSTRAINT_ERROR', msg.format(item['component'], ref))
-            if comp == req_comp:
-                msg = 'Component can not require themself {}'
-                err('COMPONENT_CONSTRAINT_ERROR', msg.format(ref))
-        comp.requires = req_list
-        comp.save()
+        check_component_requires(comp)
+        check_bound_component(comp)
 
 
 def re_check_config():
@@ -394,7 +423,7 @@ def copy_stage_component(stage_components, stage_proto, prototype, bundle):
     componets = []
     for c in stage_components:
         comp = copy_obj(c, Prototype, (
-            'type', 'path', 'name', 'version', 'required', 'monitoring',
+            'type', 'path', 'name', 'version', 'required', 'monitoring', 'bound_to',
             'constraint', 'requires', 'display_name', 'description', 'adcm_min_version'
         ))
         comp.bundle = bundle
@@ -488,7 +517,7 @@ def update_bundle_from_stage(bundle):   # pylint: disable=too-many-locals,too-ma
             p.adcm_min_version = sp.adcm_min_version
         except Prototype.DoesNotExist:
             p = copy_obj(sp, Prototype, (
-                'type', 'path', 'name', 'version', 'required', 'shared', 'monitoring',
+                'type', 'path', 'name', 'version', 'required', 'shared', 'monitoring', 'bound_to',
                 'constraint', 'requires', 'display_name', 'description', 'adcm_min_version'
             ))
             p.bundle = bundle
