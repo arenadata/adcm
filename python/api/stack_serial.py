@@ -101,17 +101,6 @@ class PrototypeShort(serializers.ModelSerializer):
         fields = ('name',)
 
 
-class ComponentSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField()
-    display_name = serializers.CharField(required=False)
-    description = serializers.CharField(required=False)
-    params = serializers.JSONField(required=False)
-    constraint = serializers.JSONField(required=False)
-    requires = serializers.JSONField(required=False)
-    monitoring = serializers.CharField(read_only=True)
-
-
 class ExportSerializer(serializers.Serializer):
     name = serializers.CharField(read_only=True)
 
@@ -131,6 +120,7 @@ class ImportSerializer(serializers.Serializer):
 class ComponentTypeSerializer(PrototypeSerializer):
     constraint = serializers.JSONField(required=False)
     requires = serializers.JSONField(required=False)
+    bound_to = serializers.JSONField(required=False)
     monitoring = serializers.CharField(read_only=True)
     url = hlink('component-type-details', 'id', 'prototype_id')
 
