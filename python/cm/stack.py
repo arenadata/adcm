@@ -235,6 +235,23 @@ def check_component_requires(proto, name, conf):
         check_extra_keys(item, ('service', 'component'), f'requires of component "{name}" of {ref}')
 
 
+def check_bound_component(proto, name, conf):
+    if not isinstance(conf, dict):
+        return
+    if 'bound_to' not in conf:
+        return
+    bind = conf['bound_to']
+    ref = proto_ref(proto)
+    if not isinstance(bind, dict):
+        msg = 'bound_to of component "{}" in {} should be a map'
+        err('INVALID_COMPONENT_DEFINITION', msg.format(name, ref))
+    check_extra_keys(bind, ('service', 'component'), f'bound_to of component "{name}" of {ref}')
+    msg = 'Component "{}" has no mandatory "{}" key in bound_to statment ({})'
+    for item in ('service', 'component'):
+        if item not in bind:
+            err('INVALID_COMPONENT_DEFINITION', msg.format(name, item, ref))
+
+
 def save_components(proto, conf, bundle_hash):
     ref = proto_ref(proto)
     if not in_dict(conf, 'components'):
@@ -251,7 +268,7 @@ def save_components(proto, conf, bundle_hash):
         validate_name(comp_name, err_msg)
         allow = (
             'display_name', 'description', 'params', 'constraint', 'requires', 'monitoring',
-            'actions', 'config',
+            'bound_to', 'actions', 'config',
         )
         check_extra_keys(cc, allow, 'component "{}" of {}'.format(comp_name, ref))
         component = StagePrototype(
@@ -268,8 +285,11 @@ def save_components(proto, conf, bundle_hash):
         fix_display_name(cc, component)
         check_component_constraint_definition(proto, comp_name, cc)
         check_component_requires(proto, comp_name, cc)
+        check_bound_component(proto, comp_name, cc)
+        dict_to_obj(cc, 'params', component)
         dict_to_obj(cc, 'constraint', component)
         dict_to_obj(cc, 'requires', component)
+        dict_to_obj(cc, 'bound_to', component)
         component.save()
         save_actions(component, cc, bundle_hash)
         save_prototype_config(component, cc, bundle_hash)
