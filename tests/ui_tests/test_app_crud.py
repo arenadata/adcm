@@ -17,7 +17,7 @@ import time
 
 import pytest
 from adcm_pytest_plugin import utils
-from adcm_pytest_plugin.docker_utils import DockerWrapper
+from adcm_pytest_plugin.docker import DockerWrapper
 from selenium.common.exceptions import TimeoutException
 
 # pylint: disable=W0611, W0621

@@ -17,7 +17,7 @@ import allure
 import coreapi
 import pytest
 from adcm_pytest_plugin import utils
-from adcm_pytest_plugin.docker_utils import DockerWrapper
+from adcm_pytest_plugin.docker import DockerWrapper
 from jsonschema import validate
 
 # pylint: disable=E0401, W0601, W0611, W0621

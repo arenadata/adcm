@@ -13,7 +13,7 @@ import allure
 import coreapi
 import pytest
 from adcm_pytest_plugin import utils
-from adcm_pytest_plugin.docker_utils import DockerWrapper
+from adcm_pytest_plugin.docker import DockerWrapper
 
 # pylint: disable=E0401, E0611, W0611, W0621
 from tests.library import errorcodes as err

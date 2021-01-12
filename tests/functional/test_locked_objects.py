@@ -14,7 +14,7 @@ from time import sleep
 import coreapi
 import pytest
 from adcm_pytest_plugin import utils
-from adcm_pytest_plugin.docker_utils import DockerWrapper
+from adcm_pytest_plugin.docker import DockerWrapper
 
 # pylint: disable=W0611, W0621
 from tests.library import steps

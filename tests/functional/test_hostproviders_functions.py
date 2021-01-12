@@ -16,7 +16,7 @@ import random
 import allure
 import pytest
 from adcm_pytest_plugin import utils
-from adcm_pytest_plugin.docker_utils import DockerWrapper
+from adcm_pytest_plugin.docker import DockerWrapper
 from coreapi import exceptions
 from jsonschema import validate
 
