@@ -13,7 +13,7 @@ import json
 import random
 import time
 
-from adcm_pytest_plugin import docker_utils, utils
+from adcm_pytest_plugin import utils
 
 # pylint: disable=W0611, W0621
 from tests.library import steps
@@ -44,7 +44,7 @@ def test_check_inventories_file(adcm, client):
         cluster_id=cluster['id'],
         action_id=random.choice(client.cluster.action.list(cluster_id=cluster['id']))['id'])
     time.sleep(5)
-    text = docker_utils.get_file_from_container(adcm, '/adcm/data/run/1/', 'inventory.json')
+    text = utils.get_file_from_container(adcm, '/adcm/data/run/1/', 'inventory.json')
     inventory = json.loads(text.read().decode('utf8'))
     template = open(utils.get_data_dir(__file__, 'cluster-inventory.json'), 'rb')
     expected = json.loads(template.read().decode('utf8'))
