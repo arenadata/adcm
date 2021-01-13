@@ -1,0 +1,26 @@
+---
+
+- type: cluster
+  name: some_name
+  version: 1
+
+  actions:
+    first:
+      type: job
+      script: ansible/init.yaml
+      script_type: ansible
+
+- type: service
+  name: service_1
+  version: 1.0
+  components:
+    component_1_1:
+      bound_to:
+       service: service_2
+       component: component_2_1
+
+- type: service
+  name: service_2
+  version: 2.0
+  components:
+    component_2_1:

@@ -1,0 +1,8 @@
+positive: True
+hc_map:
+  first_host:
+    - service_1.component_1_1
+    - service_2.component_2_1
+  second_host:
+    - service_1.component_1_1
+    - service_2.component_2_1
