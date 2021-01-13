@@ -20,6 +20,7 @@ from adcm_pytest_plugin.docker import DockerWrapper
 # pylint: disable=W0611, W0621
 from tests.library import steps
 from tests.library.errorcodes import TASK_ERROR, UPGRADE_ERROR
+from tests.library.utils import get_action_by_name, wait_until
 
 
 @pytest.fixture(scope="function")
@@ -110,8 +111,9 @@ def test_when_component_hasnt_constraint_then_cluster_doesnt_have_issues(client)
     steps.upload_bundle(client, bundledir)
     cluster = steps.create_cluster(client)
     steps.create_random_service(client, cluster['id'])
-    action = utils.get_action_by_name(client, cluster, 'lock-cluster')
-    utils.wait_until(client,
-                     task=client.cluster.action.run.create(cluster_id=cluster['id'],
-                                                           action_id=action['id']))
+    action = get_action_by_name(client, cluster, 'lock-cluster')
+    wait_until(
+        client,
+        task=client.cluster.action.run.create(cluster_id=cluster['id'], action_id=action['id'])
+    )
     assert client.cluster.read(cluster_id=cluster['id'])['state'] == 'always-locked'

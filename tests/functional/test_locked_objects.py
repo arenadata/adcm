@@ -19,6 +19,7 @@ from adcm_pytest_plugin.docker import DockerWrapper
 # pylint: disable=W0611, W0621
 from tests.library import steps
 from tests.library.errorcodes import TASK_ERROR
+from tests.library.utils import get_action_by_name, filter_action_by_name, wait_until
 
 
 @pytest.fixture(scope="function")
@@ -64,15 +65,15 @@ def host(client):
 def test_cluster_must_be_locked_when_action_running(client, prepared_cluster):
     cluster = prepared_cluster
     client.cluster.action.run.create(
-        action_id=utils.get_action_by_name(client, cluster, 'lock-cluster')['id'],
+        action_id=get_action_by_name(client, cluster, 'lock-cluster')['id'],
         cluster_id=cluster['id'])
     assert client.cluster.read(cluster_id=cluster['id'])['state'] == 'locked'
 
 
 def test_run_new_action_on_locked_cluster_must_throws_exception(client, prepared_cluster):
     cluster = prepared_cluster
-    lock_action = utils.get_action_by_name(client, cluster, 'lock-cluster')
-    install_action = utils.get_action_by_name(client, cluster, 'install')
+    lock_action = get_action_by_name(client, cluster, 'lock-cluster')
+    install_action = get_action_by_name(client, cluster, 'install')
     client.cluster.action.run.create(
         action_id=lock_action['id'],
         cluster_id=cluster['id'])
@@ -89,7 +90,7 @@ def test_service_in_cluster_must_be_locked_when_cluster_action_running(client, p
     service = client.cluster.service.create(cluster_id=cluster['id'],
                                             prototype_id=client.stack.service.list()[0]['id'])
     client.cluster.action.run.create(
-        action_id=utils.get_action_by_name(client, cluster, 'lock-cluster')['id'],
+        action_id=get_action_by_name(client, cluster, 'lock-cluster')['id'],
         cluster_id=cluster['id'])
     assert client.cluster.service.read(cluster_id=cluster['id'],
                                        service_id=service['id'])['state'] == 'locked'
@@ -99,7 +100,7 @@ def test_host_in_cluster_must_be_locked_when_cluster_action_running(client, prep
     cluster = prepared_cluster
     client.cluster.host.create(cluster_id=cluster['id'], host_id=host['id'])
     client.cluster.action.run.create(
-        action_id=utils.get_action_by_name(client, cluster, 'lock-cluster')['id'],
+        action_id=get_action_by_name(client, cluster, 'lock-cluster')['id'],
         cluster_id=cluster['id'])
     assert client.cluster.host.read(cluster_id=cluster['id'],
                                     host_id=host['id'])['state'] == 'locked'
@@ -107,15 +108,18 @@ def test_host_in_cluster_must_be_locked_when_cluster_action_running(client, prep
 
 def test_host_must_be_locked_when_host_action_running(client, host):
     client.host.action.run.create(
-        action_id=utils.filter_action_by_name(client.host.action.list(host_id=host['id']),
-                                              'action-locker')[0]['id'], host_id=host['id'])
+        action_id=filter_action_by_name(
+            client.host.action.list(host_id=host['id']), 'action-locker'
+        )[0]['id'],
+        host_id=host['id']
+    )
     assert client.host.read(host_id=host['id'])['state'] == 'locked'
 
 
 def test_cluster_must_be_locked_when_located_host_action_running(client, prepared_cluster, host):
     client.cluster.host.create(cluster_id=prepared_cluster['id'], host_id=host['id'])
     client.host.action.run.create(
-        action_id=utils.filter_action_by_name(
+        action_id=filter_action_by_name(
             client.host.action.list(host_id=host['id']), 'action-locker')[0]['id'],
         host_id=host['id'])
     assert client.cluster.host.read(cluster_id=prepared_cluster['id'],
@@ -128,7 +132,7 @@ def test_cluster_service_locked_when_located_host_action_running(client, prepare
     service = client.cluster.service.create(cluster_id=prepared_cluster['id'],
                                             prototype_id=client.stack.service.list()[0]['id'])
     client.host.action.run.create(
-        action_id=utils.filter_action_by_name(
+        action_id=filter_action_by_name(
             client.host.action.list(host_id=host['id']), 'action-locker')[0]['id'],
         host_id=host['id'])
     assert client.cluster.host.read(cluster_id=prepared_cluster['id'],
@@ -143,7 +147,7 @@ def test_run_service_action_locked_all_objects_in_cluster(client, prepared_clust
     service = client.cluster.service.create(cluster_id=prepared_cluster['id'],
                                             prototype_id=client.stack.service.list()[0]['id'])
     client.cluster.service.action.run.create(
-        action_id=utils.filter_action_by_name(
+        action_id=filter_action_by_name(
             client.cluster.service.action.list(cluster_id=prepared_cluster['id'],
                                                service_id=service['id']),
             'service-lock')[0]['id'],
@@ -159,20 +163,20 @@ def test_run_service_action_locked_all_objects_in_cluster(client, prepared_clust
 
 def test_cluster_should_be_unlocked_when_ansible_task_killed(client, prepared_cluster):
     task = client.cluster.action.run.create(
-        action_id=utils.get_action_by_name(client, prepared_cluster, 'lock-terminate')['id'],
+        action_id=get_action_by_name(client, prepared_cluster, 'lock-terminate')['id'],
         cluster_id=prepared_cluster['id'])
     assert client.cluster.read(cluster_id=prepared_cluster['id'])['state'] == 'locked'
-    utils.wait_until(client, task)
+    wait_until(client, task)
     assert client.cluster.read(cluster_id=prepared_cluster['id'])['state'] == 'terminate_failed'
 
 
 def test_host_should_be_unlocked_when_ansible_task_killed(client, prepared_cluster, host):
     client.cluster.host.create(cluster_id=prepared_cluster['id'], host_id=host['id'])
     task = client.cluster.action.run.create(
-        action_id=utils.get_action_by_name(client, prepared_cluster, 'lock-terminate')['id'],
+        action_id=get_action_by_name(client, prepared_cluster, 'lock-terminate')['id'],
         cluster_id=prepared_cluster['id'])
     assert client.host.read(host_id=host['id'])['state'] == 'locked'
-    utils.wait_until(client, task)
+    wait_until(client, task)
     assert client.host.read(host_id=host['id'])['state'] == 'created'
 
 
@@ -180,22 +184,22 @@ def test_service_should_be_unlocked_when_ansible_task_killed(client, prepared_cl
     service = client.cluster.service.create(cluster_id=prepared_cluster['id'],
                                             prototype_id=client.stack.service.list()[0]['id'])
     task = client.cluster.action.run.create(
-        action_id=utils.get_action_by_name(client, prepared_cluster, 'lock-terminate')['id'],
+        action_id=get_action_by_name(client, prepared_cluster, 'lock-terminate')['id'],
         cluster_id=prepared_cluster['id'])
     assert client.cluster.service.read(cluster_id=prepared_cluster['id'],
                                        service_id=service['id'])['state'] == 'locked'
-    utils.wait_until(client, task)
+    wait_until(client, task)
     assert client.cluster.service.read(cluster_id=prepared_cluster['id'],
                                        service_id=service['id'])['state'] == 'created'
 
 
 def test_hostprovider_must_be_unlocked_when_his_task_finished(client, hostprovider):
-    action_id = utils.filter_action_by_name(
+    action_id = filter_action_by_name(
         client.provider.action.list(provider_id=hostprovider['id']), 'action-locker')[0]['id']
     task = client.provider.action.run.create(
         action_id=action_id,
         provider_id=hostprovider['id']
     )
     assert client.provider.read(provider_id=hostprovider['id'])['state'] == 'locked'
-    utils.wait_until(client, task)
+    wait_until(client, task)
     assert client.provider.read(provider_id=hostprovider['id'])['state'] == 'created'

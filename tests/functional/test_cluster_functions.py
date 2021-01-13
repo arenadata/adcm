@@ -23,6 +23,7 @@ from adcm_pytest_plugin import utils
 # pylint: disable=E0401, W0601, W0611, W0621, W0212
 from tests.library import errorcodes as err
 from tests.library import steps
+from tests.library.utils import get_random_service, get_random_cluster_prototype
 
 
 @pytest.fixture(scope="module")
@@ -116,7 +117,7 @@ class TestCluster:
         steps.delete_all_data(client)
 
     def test_shouldnt_create_cluster_wo_name(self, client):
-        prototype = utils.get_random_cluster_prototype(client)
+        prototype = get_random_cluster_prototype(client)
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             client.cluster.create(prototype_id=prototype['id'], name='')
         assert e.value.error.title == '400 Bad Request'
@@ -376,7 +377,7 @@ class TestClusterService:
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.service.create(
                     cluster_id=cluster['id'],
-                    prototype_id=(utils.get_random_service(client)['id'] * -1))
+                    prototype_id=(get_random_service(client)['id'] * -1))
             err.PROTOTYPE_NOT_FOUND.equal(e, 'prototype doesn\'t exist')
         steps.delete_all_data(client)
 
