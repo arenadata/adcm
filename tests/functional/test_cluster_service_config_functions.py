@@ -420,7 +420,7 @@ class TestClusterConfig:
         cluster = steps.create_cluster(client)
         config = client.cluster.config.current.list(cluster_id=cluster['id'])
         if config:
-            config_json = utils.ordered_dict_to_dict(config)
+            config_json = utils.ordereddict_to_dict(config)
         schema = json.load(open(SCHEMAS + '/config_item_schema.json'))
         assert validate(config_json, schema) is None
         steps.delete_all_data(client)
@@ -529,7 +529,7 @@ class TestClusterConfig:
     def test_check_that_file_field_put_correct_data_in_file_inside_docker(self, client):
         cluster = steps.create_cluster(client)
         test_data = "lorem ipsum"
-        config_data = utils.ordered_dict_to_dict(
+        config_data = utils.ordereddict_to_dict(
             client.cluster.config.current.list(cluster_id=cluster['id'])['config'])
         config_data['input_file'] = test_data
         config_data['required'] = random.randint(0, 99)
