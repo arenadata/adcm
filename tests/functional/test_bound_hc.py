@@ -63,8 +63,7 @@ def test_binded_hc(sdk_client_fs: ADCMClient, case_path):
     provider = provider_bundle.provider_prototype().provider_create(random_string())
 
     # Upload custom cluster bundle and create it in ADCM
-    bundle_path = case_path.split("/cases")[0]
-    cluster_bundle = sdk_client_fs.upload_from_fs(bundle_path)
+    cluster_bundle = sdk_client_fs.upload_from_fs(case_path.split("/cases")[0])
     created_cluster = cluster_bundle.cluster_prototype().cluster_create(random_string())
 
     # Parse case description from YAML file and set host-component map
@@ -86,6 +85,3 @@ def test_binded_hc(sdk_client_fs: ADCMClient, case_path):
             created_cluster.hostcomponent_set(*hostcomponent_list)
     else:
         created_cluster.hostcomponent_set(*hostcomponent_list)
-
-
-
