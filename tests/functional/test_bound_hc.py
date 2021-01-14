@@ -13,6 +13,8 @@ import os
 import pytest
 import yaml
 
+import allure
+
 from adcm_client.base import ObjectNotFound
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import random_string, get_data_dir, get_data_subdirs_as_parameters
@@ -55,6 +57,7 @@ def get_cases_paths() -> CasesPathsForParametrize:
 cases_paths_param = get_cases_paths()
 
 
+@allure.link(url="https://arenadata.atlassian.net/browse/ADCM-1535", name="Test cases")
 @pytest.mark.parametrize("case_path", cases_paths_param.cases_paths, ids=cases_paths_param.ids)
 def test_binded_hc(sdk_client_fs: ADCMClient, case_path):
     """
@@ -72,6 +75,8 @@ def test_binded_hc(sdk_client_fs: ADCMClient, case_path):
     # Parse case description from YAML file and set host-component map
     with open(case_path) as file:
         case_template = yaml.safe_load(file)
+
+    allure.dynamic.description(case_template["description"])
 
     hostcomponent_list = []
     for host in case_template["hc_map"].keys():

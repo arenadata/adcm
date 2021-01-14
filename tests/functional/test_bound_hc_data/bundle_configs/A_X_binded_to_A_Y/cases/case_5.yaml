@@ -1,3 +1,4 @@
+description: Attempt to save HC map with A.X and A.Y on first and second hosts - should succeed
 positive: True
 hc_map:
   first_host:
