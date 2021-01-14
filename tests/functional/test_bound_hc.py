@@ -19,6 +19,9 @@ from adcm_pytest_plugin.utils import random_string, get_data_dir, get_data_subdi
 from coreapi.exceptions import ErrorMessage
 
 
+CASES_PATH = "/cases"
+
+
 def _get_or_add_service(cluster, service_name):
     """
     Add service if it wasn't added before and return it
@@ -43,8 +46,8 @@ def get_cases_paths() -> CasesPathsForParametrize:
     cases_paths = []
     ids = []
     for i, bundle_path in enumerate(bundles_paths):
-        for b in os.listdir(bundle_path + "/cases"):
-            cases_paths.append("{}/{}".format(bundle_path + "/cases", b))
+        for b in os.listdir(bundle_path + CASES_PATH):
+            cases_paths.append("{}/{}".format(bundle_path + CASES_PATH, b))
             ids.append(f"{bundles_ids[i]}_{b.strip('.yaml')}")
     return CasesPathsForParametrize(cases_paths, ids)
 
@@ -63,7 +66,7 @@ def test_binded_hc(sdk_client_fs: ADCMClient, case_path):
     provider = provider_bundle.provider_prototype().provider_create(random_string())
 
     # Upload custom cluster bundle and create it in ADCM
-    cluster_bundle = sdk_client_fs.upload_from_fs(case_path.split("/cases")[0])
+    cluster_bundle = sdk_client_fs.upload_from_fs(case_path.split(CASES_PATH)[0])
     created_cluster = cluster_bundle.cluster_prototype().cluster_create(random_string())
 
     # Parse case description from YAML file and set host-component map
