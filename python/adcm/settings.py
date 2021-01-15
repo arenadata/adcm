@@ -90,8 +90,6 @@ INSTALLED_APPS = [
 ]
 
 
-
-
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -251,9 +249,9 @@ LOGGING = {
             'propagate': True,
         },
         'adwp': {
-             'handlers': ['adwp_file'],
-             'level': 'DEBUG',
-             'propagate': True,
-         },
+            'handlers': ['adwp_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
     },
 }
