@@ -1,4 +1,5 @@
 # ansible==2.8.3
+--extra-index-url https://ci.arenadata.io/artifactory/api/pypi/python-packages/simple
 git+https://github.com/arenadata/ansible.git@v2.8.8-p4
 coreapi
 django
@@ -22,3 +23,4 @@ apache-libcloud
 jmespath
 lxml
 pycrypto
+adwp-rbac
