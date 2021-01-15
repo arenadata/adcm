@@ -10,13 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-- name: Assert ansible fork count is 5
-  hosts: localhost
-  connection: local
-  gather_facts: no
+- type: provider
+  name: provider_name
+  version: 1.4
+  description: "That is description"
 
-  tasks:
-  - name: Assert ansible fork count
-    debug:
-      msg: "Comparison"
-    failed_when: ansible_forks != 5
+- type: host
+  name: host_name
+  version: 1.0
+  description: "That is description"
