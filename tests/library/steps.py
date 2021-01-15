@@ -16,6 +16,14 @@ import tempfile
 import allure
 from adcm_pytest_plugin import utils
 
+from .utils import (
+    get_host_by_fqdn,
+    get_random_service,
+    get_service_id_by_name,
+    get_random_host_prototype,
+    get_random_cluster_prototype
+)
+
 
 def _pack_bundle(bundledir):
     tempdir = tempfile.mkdtemp(prefix="test")
@@ -64,13 +72,13 @@ def wipe_data(client):
 
 @allure.step('Create cluster')
 def create_cluster(client):
-    prototype = utils.get_random_cluster_prototype(client)
+    prototype = get_random_cluster_prototype(client)
     return client.cluster.create(prototype_id=prototype['id'], name=utils.random_string())
 
 
 @allure.step('Create host {1}')
 def create_host_w_default_provider(client, fqdn):
-    proto = utils.get_random_host_prototype(client)
+    proto = get_random_host_prototype(client)
     provider = client.provider.create(prototype_id=client.stack.provider.list()[0]['id'],
                                       name=utils.random_string())
     return client.host.create(prototype_id=proto['id'], provider_id=provider['id'], fqdn=fqdn)
@@ -98,13 +106,13 @@ def partial_update_cluster(client, cluster, name, desc=None):
 
 @allure.step('Create service {1} in cluster {0}')
 def create_service_by_name(client, cluster_id, service_name):
-    service_id = utils.get_service_id_by_name(client, service_name)
+    service_id = get_service_id_by_name(client, service_name)
     return client.cluster.service.create(cluster_id=cluster_id, prototype_id=service_id)
 
 
 @allure.step('Create random service in cluster {0}')
 def create_random_service(client, cluster_id):
-    service = utils.get_random_service(client)['name']
+    service = get_random_service(client)['name']
     return create_service_by_name(client, cluster_id, service)
 
 
@@ -125,7 +133,7 @@ def read_host(client, identifier):
 
 @allure.step('Delete host {0}')
 def delete_host(client, fqdn):
-    host_id = utils.get_host_id_by_fqdn(client, fqdn)['id']
+    host_id = get_host_by_fqdn(client, fqdn)['id']
     return client.host.delete(host_id=host_id)
 
 

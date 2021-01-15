@@ -17,8 +17,7 @@ from rest_framework import status
 from rest_framework.response import Response
 
 import api.serializers
-from api.serializers import check_obj
-from api.api_views import PageViewAdd, DetailViewRO, GenericAPIPermView, update
+from api.api_views import PageViewAdd, DetailViewRO, GenericAPIPermView, update, check_obj
 
 from cm.models import UserProfile, DummyData
 from cm.errors import AdcmApiEx

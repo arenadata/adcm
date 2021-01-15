@@ -55,7 +55,7 @@ from ansible.plugins.action import ActionBase
 sys.path.append('/adcm/python')
 import adcm.init_django
 import cm.api
-from cm.ansible_plugin import get_context_id
+from cm.ansible_plugin import get_object_id_from_context
 from cm.errors import AdcmEx
 from cm.logger import log
 
@@ -68,7 +68,7 @@ class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
         super().run(tmp, task_vars)
         msg = 'You can add host only in host provider context'
-        provider_id = get_context_id(task_vars, 'provider', 'provider_id', msg)
+        provider_id = get_object_id_from_context(task_vars, 'provider_id', 'provider', err_msg=msg)
 
         if 'fqdn' not in self._task.args:
             raise AnsibleError("fqdn is mandatory args of adcm_add_host")

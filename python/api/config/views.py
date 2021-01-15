@@ -13,12 +13,29 @@
 from django.db import models
 from rest_framework.response import Response
 
-from api.api_views import ListView, GenericAPIPermView, create, update
-from api.serializers import check_obj, get_config_version
+from api.api_views import ListView, GenericAPIPermView, create, update, check_obj
+
 from cm.adcm_config import ui_config
 from cm.errors import AdcmApiEx
-from cm.models import ADCM, Cluster, HostProvider, Host, ClusterObject, ConfigLog, ObjectConfig
+from cm.models import (
+    ADCM, Cluster, HostProvider, Host, ClusterObject, ServiceComponent, ConfigLog, ObjectConfig
+)
+
 from . import serializers
+
+
+def get_config_version(objconf, version):
+    if version == 'previous':
+        ver = objconf.previous
+    elif version == 'current':
+        ver = objconf.current
+    else:
+        ver = version
+    try:
+        cl = ConfigLog.objects.get(obj_ref=objconf, id=ver)
+    except ConfigLog.DoesNotExist:
+        raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist") from None
+    return cl
 
 
 def get_objects_for_config(object_type):
@@ -30,6 +47,8 @@ def get_objects_for_config(object_type):
         return HostProvider.objects.all()
     elif object_type == 'service':
         return ClusterObject.objects.all()
+    elif object_type == 'component':
+        return ServiceComponent.objects.all()
     elif object_type == 'host':
         return Host.objects.all()
     else:
@@ -48,6 +67,7 @@ def get_obj(objects, object_type, object_id):
             'provider': 'PROVIDER_NOT_FOUND',
             'host': 'HOST_NOT_FOUND',
             'service': 'SERVICE_NOT_FOUND',
+            'component': 'COMPONENT_NOT_FOUND',
         }
         raise AdcmApiEx(errors[object_type]) from None
 
@@ -55,6 +75,8 @@ def get_obj(objects, object_type, object_id):
         object_type = 'hostprovider'
     if object_type == 'service':
         object_type = 'clusterobject'
+    if object_type == 'component':
+        object_type = 'servicecomponent'
     oc = check_obj(ObjectConfig, {object_type: obj}, 'CONFIG_NOT_FOUND')
     cl = ConfigLog.objects.get(obj_ref=oc, id=oc.current)
     return obj, oc, cl
@@ -79,7 +101,7 @@ class ConfigView(ListView):
         self.object_type = object_type
         obj, _, _ = get_obj(self.get_queryset(), object_type, object_id)
         serializer = self.serializer_class(
-            self.get_queryset().get(id=obj.id), context={'request': request})
+            self.get_queryset().get(id=obj.id), context={'request': request, 'object': obj})
         return Response(serializer.data)
 
 
@@ -96,20 +118,18 @@ class ConfigHistoryView(ListView):
         self.object_type = object_type
         obj, _, _ = get_obj(self.get_queryset(), object_type, object_id)
         cl = ConfigLog.objects.filter(obj_ref=obj.config).order_by('-id')
-        # Variables object_type and object_id are needed to correctly build the hyperlink
-        # in the serializer
-        for c in cl:
-            c.object_type = object_type
-            c.object_id = object_id
-
-        serializer = self.serializer_class(cl, many=True, context={'request': request})
+        serializer = self.serializer_class(
+            cl, many=True, context={'request': request, 'object': obj}
+        )
         return Response(serializer.data)
 
     def post(self, request, *args, **kwargs):
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
         self.object_type = object_type
         obj, _, cl = get_obj(self.get_queryset(), object_type, object_id)
-        serializer = self.update_serializer(cl, data=request.data, context={'request': request})
+        serializer = self.update_serializer(
+            cl, data=request.data, context={'request': request, 'object': obj}
+        )
         return create(serializer, ui=bool(self.for_ui(request)), obj=obj)
 
 
