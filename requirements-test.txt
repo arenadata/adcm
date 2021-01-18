@@ -1,6 +1,6 @@
 --extra-index-url https://ci.arenadata.io/artifactory/api/pypi/python-packages/simple
 adcm-client
-adcm_pytest_plugin >= 1.19.2
+adcm_pytest_plugin>=2.3.6, <3.0.0
 # Docker IP binding is changed in https://github.com/arenadata/adcm_pytest_plugin/pull/50
 -r ./requirements.txt
 allure-pytest

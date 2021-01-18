@@ -254,24 +254,57 @@ def check_hc(cluster):
             return False
     try:
         check_component_requires(shc_list)
+        check_bound_components(shc_list)
     except AdcmEx:
         return False
     return True
 
 
 def check_component_requires(shc_list):
+    def get_components_with_requires():
+        return [i for i in shc_list if i[2].prototype.requires]
+
     def check_component_req(service, component):
         for shc in shc_list:
             if shc[0].prototype.name == service and shc[2].prototype.name == component:
                 return True
         return False
 
-    for shc in [i for i in shc_list if i[2].prototype.requires]:
+    for shc in get_components_with_requires():
         for r in shc[2].prototype.requires:
             if not check_component_req(r['service'], r['component']):
                 ref = f'component "{shc[2].component.name}" of service "{shc[0].prototype.name}"'
                 msg = 'no required component "{}" of service "{}" for {}'
                 err('COMPONENT_CONSTRAINT_ERROR', msg.format(r['component'], r['service'], ref))
+
+
+def check_bound_components(shc_list):
+    def get_components_bound_to():
+        return [i for i in shc_list if i[2].prototype.bound_to]
+
+    def component_on_host(component, host):
+        return [i for i in shc_list if i[1] == host and i[2].prototype == component]
+
+    def bound_host_components(service, comp):
+        return [
+            i for i in shc_list if i[0].prototype.name == service and i[2].prototype.name == comp
+        ]
+
+    def check_bound_component(component):
+        service = component.bound_to['service']
+        comp_name = component.bound_to['component']
+        ref = f'component "{comp_name}" of service "{service}"'
+        bound_hc = bound_host_components(service, comp_name)
+        if not bound_hc:
+            msg = f'bound service "{service}", component "{comp_name}" not in hc for {ref}'
+            err('COMPONENT_CONSTRAINT_ERROR', msg)
+        for shc in bound_hc:
+            if not component_on_host(component, shc[1]):
+                msg = 'No bound component "{}" on host "{}" for {}'
+                err('COMPONENT_CONSTRAINT_ERROR', msg.format(component.name, shc[1].fqdn, ref))
+
+    for shc in get_components_bound_to():
+        check_bound_component(shc[2].prototype)
 
 
 def get_obj_config(obj):

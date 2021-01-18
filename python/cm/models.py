@@ -112,6 +112,7 @@ class Prototype(models.Model):
     shared = models.BooleanField(default=False)
     constraint = JSONField(default=[0, '+'])
     requires = JSONField(default=[])
+    bound_to = JSONField(default={})
     adcm_min_version = models.CharField(max_length=80, default=None, null=True)
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
     description = models.TextField(blank=True)
@@ -287,6 +288,10 @@ class ServiceComponent(models.Model):
     @property
     def requires(self):
         return self.prototype.requires
+
+    @property
+    def bound_to(self):
+        return self.prototype.bound_to
 
     @property
     def monitoring(self):
@@ -546,6 +551,7 @@ class StagePrototype(models.Model):
     shared = models.BooleanField(default=False)
     constraint = JSONField(default=[0, '+'])
     requires = JSONField(default=[])
+    bound_to = JSONField(default={})
     adcm_min_version = models.CharField(max_length=80, default=None, null=True)
     description = models.TextField(blank=True)
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
