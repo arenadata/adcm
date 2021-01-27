@@ -12,7 +12,6 @@
 # limitations under the License.
 
 import os
-import sys
 import shutil
 import tarfile
 import argparse
@@ -51,8 +50,8 @@ def check_bundle(bundle_file, use_directory=False):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("bundle_file", type=str, help="bundle file name (bundle.tar)")
+    parser = argparse.ArgumentParser(description='Check ADCM bundle file')
+    parser.add_argument("bundle_file", type=str, help="ADCM bundle file name (bundle.tgz)")
     parser.add_argument("-d", "--dir", action="store_true",
                     help="use bundle_file as bundle directory name")
     args = parser.parse_args()
