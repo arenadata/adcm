@@ -13,6 +13,7 @@ jinja2
 markdown
 mitogen
 pyyaml
+ruyaml
 toml
 uwsgi
 version_utils
