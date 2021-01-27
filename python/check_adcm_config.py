@@ -12,8 +12,8 @@
 # limitations under the License.
 
 import os
-import sys
 import ruyaml
+import argparse
 
 import cm.config
 import cm.checker
@@ -46,7 +46,7 @@ def check_config(data_file, schema_file):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print("\nUsage:\n{} config.yaml\n".format(os.path.basename(sys.argv[0])))
-    else:
-        check_config(sys.argv[1], os.path.join(cm.config.CODE_DIR, 'cm', 'adcm_schema.yaml'))
+    parser = argparse.ArgumentParser(description='Check ADCM config file')
+    parser.add_argument("config_file", type=str, help="ADCM config file name (config.yaml)")
+    args = parser.parse_args()
+    check_config(args.config_file, os.path.join(cm.config.CODE_DIR, 'cm', 'adcm_schema.yaml'))

@@ -329,6 +329,7 @@ config_list_group:
     <<: *config_list_items
     subs: config_list_sub_list
     activatable: boolean
+    active: boolean
   required_items:
     - name
     - type
