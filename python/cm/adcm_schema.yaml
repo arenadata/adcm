@@ -42,9 +42,16 @@ service_object:
   items:
     <<: *common_object_items
     import: import_dict
+    export: export
     components: components_dict
     required: boolean
     monitoring: monitoring
+
+export:
+  match: one_of
+  variants:
+    - string
+    - list_of_string
 
 monitoring:
   match: set
@@ -58,6 +65,7 @@ cluster_object:
     <<: *common_object_items
     upgrade: upgrade_list
     import: import_dict
+    export: export
 
 host_object:
   <<: *common_object

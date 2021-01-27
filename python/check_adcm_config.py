@@ -19,9 +19,13 @@ import cm.config
 import cm.checker
 
 
-def check(data_file, schema_file):
+def check_config(data_file, schema_file):
     rules = ruyaml.round_trip_load(open(schema_file))
-    data = ruyaml.round_trip_load(open(data_file), version="1.1")
+    try:
+        data = ruyaml.round_trip_load(open(data_file), version="1.1")
+    except ruyaml.constructor.DuplicateKeyError as e:
+        print(f'Config file "{data_file}" Duplicate Keys Error:\n{str(e)}')
+        return
 
     try:
         cm.checker.check(data, rules)
@@ -45,4 +49,4 @@ if __name__ == '__main__':
     if len(sys.argv) < 2:
         print("\nUsage:\n{} config.yaml\n".format(os.path.basename(sys.argv[0])))
     else:
-        check(sys.argv[1], os.path.join(cm.config.CODE_DIR, 'cm', 'adcm_schema.yaml'))
+        check_config(sys.argv[1], os.path.join(cm.config.CODE_DIR, 'cm', 'adcm_schema.yaml'))
