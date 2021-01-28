@@ -1,7 +1,7 @@
 # Set number of threads
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 ADCMBASE_IMAGE ?= arenadata/adcmbase
-ADCMBASE_TAG ?= 20200812154141
+ADCMBASE_TAG ?= 20210127175453
 SELENOID_HOST ?= 10.92.2.65
 SELENOID_PORT ?= 4444
 
