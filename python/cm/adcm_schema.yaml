@@ -18,6 +18,7 @@ object:
     service: service_object
     host: host_object
     provider: provider_object
+    adcm: adcm_object
 
 common_object: &common_object
   match: dict
@@ -47,18 +48,6 @@ service_object:
     required: boolean
     monitoring: monitoring
 
-export:
-  match: one_of
-  variants:
-    - string
-    - list_of_string
-
-monitoring:
-  match: set
-  variants:
-    - active
-    - passive
-
 cluster_object:
   <<: *common_object
   items:
@@ -77,6 +66,24 @@ provider_object:
   items:
     <<: *common_object_items
     upgrade: upgrade_list
+
+adcm_object:
+  <<: *common_object
+  items:
+    <<: *common_object_items
+    upgrade: upgrade_list
+
+export:
+  match: one_of
+  variants:
+    - string
+    - list_of_string
+
+monitoring:
+  match: set
+  variants:
+    - active
+    - passive
 
 components_dict:
   match: dict
