@@ -89,11 +89,13 @@ class TestHost:
         host = hp.host_create(utils.random_string())
         host_status_before = host.status
         host_fqdn_before = host.fqdn
-        host.reread()
-        host_status_after = host.status
-        host_fqdn_after = host.fqdn
-        assert host_fqdn_before == host_fqdn_after
-        assert host_status_before == host_status_after
+        with allure.step('Reread host'):
+            host.reread()
+            host_status_after = host.status
+            host_fqdn_after = host.fqdn
+        with allure.step('Check states and fqdn'):
+            assert host_fqdn_before == host_fqdn_after
+            assert host_status_before == host_status_after
 
     def test_shouldnt_create_duplicate_host(self, sdk_client_fs: ADCMClient):
         """We have restriction for create duplicated hosts (wuth the same fqdn).
@@ -108,30 +110,38 @@ class TestHost:
         hp.host_create("duplicate")
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             hp.host_create('duplicate')
-        err.HOST_CONFLICT.equal(e, 'duplicate host')
+        with allure.step('Check host conflict'):
+            err.HOST_CONFLICT.equal(e, 'duplicate host')
 
     def test_shouldnt_create_host_with_unknown_prototype(self, client):
-        provider_id = client.provider.create(prototype_id=client.stack.provider.list()[0]['id'],
-                                             name=utils.random_string())['id']
-        with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-            client.host.create(prototype_id=random.randint(100, 500),
-                               provider_id=provider_id,
-                               fqdn=utils.random_string())
-        err.PROTOTYPE_NOT_FOUND.equal(e, 'prototype doesn\'t exist')
+        with allure.step('Create provider'):
+            provider_id = client.provider.create(prototype_id=client.stack.provider.list()[0]['id'],
+                                                 name=utils.random_string())['id']
+        with allure.step('Create host'):
+            with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
+                client.host.create(prototype_id=random.randint(100, 500),
+                                   provider_id=provider_id,
+                                   fqdn=utils.random_string())
+        with allure.step('Check PROTOTYPE_NOT_FOUND error'):
+            err.PROTOTYPE_NOT_FOUND.equal(e, 'prototype doesn\'t exist')
 
     def test_shouldnt_create_host_wo_prototype(self, client):
-        provider = client.provider.create(prototype_id=client.stack.provider.list()[0]['id'],
-                                          name=utils.random_string())
+        with allure.step('Create provider'):
+            provider = client.provider.create(prototype_id=client.stack.provider.list()[0]['id'],
+                                              name=utils.random_string())
         with allure.step('Try to create host without prototype'):
             with pytest.raises(coreapi.exceptions.ParameterError) as e:
                 client.host.create(provider_id=provider['id'], fqdn=utils.random_string())
+        with allure.step('Check prototype_id error'):
             assert str(e.value) == "{'prototype_id': 'This parameter is required.'}"
 
     def test_shouldnt_create_host_wo_provider(self, client):
-        proto = get_random_host_prototype(client)
-        with pytest.raises(coreapi.exceptions.ParameterError) as e:
-            client.host.create(prototype_id=proto['id'], fqdn=utils.random_string())
-        assert str(e.value) == "{'provider_id': 'This parameter is required.'}"
+        with allure.step('Create prototype'):
+            proto = get_random_host_prototype(client)
+            with pytest.raises(coreapi.exceptions.ParameterError) as e:
+                client.host.create(prototype_id=proto['id'], fqdn=utils.random_string())
+        with allure.step('Check provider_id error'):
+            assert str(e.value) == "{'provider_id': 'This parameter is required.'}"
 
     def test_create_host_with_max_length_plus_1(self, sdk_client_fs: ADCMClient):
         """We cannot create host with name more then max length
@@ -140,7 +150,8 @@ class TestHost:
         hp = bundle.provider_create(utils.random_string())
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             hp.host_create(utils.random_string(257))
-        err.LONG_NAME.equal(e, 'Host name is too long. Max length is 256')
+        with allure.step('Check LONG_NAME error'):
+            err.LONG_NAME.equal(e, 'Host name is too long. Max length is 256')
 
     def test_shouldnt_create_host_with_wrong_name(self, sdk_client_fs: ADCMClient):
         """Check  that host name cannot contain special characters
@@ -149,7 +160,9 @@ class TestHost:
         hp = bundle.provider_create(utils.random_string())
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             hp.host_create(utils.random_string() + utils.random_special_chars())
-        err.WRONG_NAME.equal(e, 'Host name is incorrect. Only latin characters, digits, dots (.)')
+        with allure.step('Check WRONG_NAME error'):
+            err.WRONG_NAME.equal(e, 'Host name is incorrect. '
+                                    'Only latin characters, digits, dots (.)')
 
     def test_get_host_list(self, sdk_client_fs: ADCMClient):
         """Create multiple hosts and check that all hosts was created
@@ -179,18 +192,22 @@ class TestHost:
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider_simple'))
         hp = bundle.provider_create(utils.random_string())
         host = hp.host_create("deletion_host")
-        deletion_result = host.delete()
-        assert deletion_result is None
+        with allure.step('delete host'):
+            deletion_result = host.delete()
+        with allure.step('Check that host is deleted'):
+            assert deletion_result is None
 
     def test_should_return_correct_error_when_read_deleted(self, sdk_client_fs: ADCMClient):
         """Check that we have 409 error if host not found"""
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider_simple'))
         hp = bundle.provider_create(utils.random_string())
         host = hp.host_create(utils.random_string())
-        host.delete()
+        with allure.step('delete host'):
+            host.delete()
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             host.reread()
-        err.HOST_NOT_FOUND.equal(e)
+        with allure.step('Check HOST_NOT_FOUND'):
+            err.HOST_NOT_FOUND.equal(e)
 
     def test_should_return_correct_error_when_delete_nonexist_host(
             self, sdk_client_fs: ADCMClient):
@@ -199,10 +216,13 @@ class TestHost:
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider_simple'))
         hp = bundle.provider_create(utils.random_string())
         host = hp.host_create(utils.random_string())
-        host.delete()
-        with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
+        with allure.step('delete host'):
             host.delete()
-        err.HOST_NOT_FOUND.equal(e, 'host doesn\'t exist')
+        with allure.step('delete host second time'):
+            with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
+                host.delete()
+        with allure.step('Check HOST_NOT_FOUND'):
+            err.HOST_NOT_FOUND.equal(e, 'host doesn\'t exist')
 
     # *** Basic tests for hostcomponent ***
     def test_create_hostcomponent(self, sdk_client_fs: ADCMClient):
@@ -218,8 +238,9 @@ class TestHost:
         service = cluster.service_add(name="ZOOKEEPER")
         component_list = service.component_list()
         component = service.component(name='ZOOKEEPER_CLIENT')
-        assert component.component_id == component_list[0].component_id
-        assert component.name == component_list[0].name
+        with allure.step('Check component id and name'):
+            assert component.component_id == component_list[0].component_id
+            assert component.name == component_list[0].name
 
     def test_get_hostcomponent_list(self, client):  # invalid case, random component takes in circle
         cluster = steps.create_cluster(client)
