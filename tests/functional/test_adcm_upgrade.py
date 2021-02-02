@@ -101,7 +101,8 @@ def test_upgrade_adcm(old_adcm, volume, image, adcm_credentials):
                      volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}}
                      ) as latest_adcm_client:
         with allure.step('Check cluster'):
-            assert len(latest_adcm_client.cluster_list()) == 1, "There is no clusters. Expecting one"
+            assert len(latest_adcm_client.cluster_list()) == 1, \
+                "There is no clusters. Expecting one"
             cluster = latest_adcm_client.cluster_list()[0]
             assert cluster.name == cluster_name, "Unexpected cluster name"
 
@@ -140,7 +141,8 @@ def test_pass_in_cluster_config_encryption_after_upgrade(old_adcm, volume, image
                      volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}}
                      ) as latest_adcm_client:
         with allure.step('Check cluster'):
-            assert len(latest_adcm_client.cluster_list()) == 1, "There is no clusters. Expecting one"
+            assert len(latest_adcm_client.cluster_list()) == 1, \
+                "There is no clusters. Expecting one"
             cluster = latest_adcm_client.cluster_list()[0]
             assert cluster.action(name="check-password").run().wait() == "success"
 
@@ -180,7 +182,8 @@ def test_pass_in_service_config_encryption_after_upgrade(old_adcm, volume, image
                      volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}}
                      ) as latest_adcm_client:
         with allure.step('Check cluster'):
-            assert len(latest_adcm_client.cluster_list()) == 1, "There is no clusters. Expecting one"
+            assert len(latest_adcm_client.cluster_list()) == 1, \
+                "There is no clusters. Expecting one"
             cluster = latest_adcm_client.cluster_list()[0]
             assert len(cluster.service_list()) == 1, "There is no services. Expecting one"
             service = cluster.service_list()[0]
