@@ -10,49 +10,47 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
--
+- type: cluster
+  name: ADH
+  version: 1.5
 
-    type: cluster
-    name: ADH
-    version: 1.5
+  config:
+    required:
+      type: integer
+      required: true
+    str-key:
+      default: value
+      type: string
+      required: false
 
-    config:
-        required:
-            type: integer
-            required: true
-        str-key:
-            default: value
-            type: string
-            required: false
+    int_key:
+      type: integer
+      required: false
 
-        int_key:
-            type: integer
-            required: false
+    fkey:
+      type: float
+      required: false
 
-        fkey:
-            type: float
-            required: false
+    bool:
+      type: boolean
+      required: false
+    option:
+      type: option
+      option:
+        http: 80
+        https: 443
+        ftp: 21
+      required: FALSE
 
-        bool:
-            type: boolean
-            required : false
-        option:
-            type: option
-            option:
-                http: 80
-                https: 443
-                ftp: 21
-            required: FALSE
+    textarea:
+      type: text
+      required: false
+      default: loren ipsum
 
-        textarea:
-            type: text
-            required: false
-            default: loren ipsum
+    password_phrase:
+      type: password
+      required: false
 
-        password_phrase:
-            type: password
-            required: false
-
-        input_file:
-            type: file
-            required: false
+    input_file:
+      type: file
+      required: false

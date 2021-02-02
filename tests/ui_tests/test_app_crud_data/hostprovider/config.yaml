@@ -16,7 +16,7 @@
   upgrade:
       - name: *version
         versions: { min: 0.1, max_strict: *version }
-        description: yopta upgrade
+        description: some upgrade
         states: { available: any }
       - name: new_upgrade
         versions:

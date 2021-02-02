@@ -13,38 +13,22 @@
 - type: provider
   name: SampleProvider
   description: "A sample provider for testing interaction between an old hosts bundles and new functionality with delegation a part of logic to host provider"
-  version: &provider_version 0.01
-
   config:
-      credentials:
-          ansible_host:
-              display_name: "Hostname"
-              type: string
-              required: false
-              read_only: any
-              description: "Name of the host to connect to"
--
-    type: host
-    name: ssh_new
-    version: '2.1'
-    upgrade:
-        -
-            versions:
-                min: 1.0
-                max_strict: 2.0
-                max: 2.1
-            description: Use this upgrade and wish U happy new bundle version
-            name: To version 2(ssh_new)
-            states:
-                available: [created, initiated]
-                on_success: upgradable
-
-    config:
-        ssh-key:
-            type: string
-            default: 1A2B
-        int-key:
-            type: integer
-            default: 50
-            required: false
-            display_name: super integer key
+    credentials:
+      ansible_host:
+        display_name: "Hostname"
+        type: string
+        required: false
+        read_only: any
+        description: "Name of the host to connect to"
+  version: '2.1'
+  upgrade:
+    - versions:
+        min: 1.0
+        max_strict: 2.0
+        max: 2.1
+      description: Use this upgrade and wish U happy new bundle version
+      name: To version 2(ssh_new)
+      states:
+        available: [ created, initiated ]
+        on_success: upgradable
