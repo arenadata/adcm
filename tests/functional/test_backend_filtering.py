@@ -22,6 +22,7 @@ from adcm_client.objects import (Action, ADCMClient, Bundle,  # ActionList,
                                  ProviderPrototypeList, Task, TaskList)
 from adcm_pytest_plugin.utils import get_data_dir, get_subdirs_iter
 from delayed_assert import assert_expectations, expect
+from pytest_lazyfixture import lazy_fixture
 
 
 @pytest.fixture
@@ -183,8 +184,7 @@ def test_coreapi_schema(sdk_client_fs: ADCMClient, TestedClass):
             result[f.name] = True
         return result
 
-    swith allure.step('Get ADCM API schema'):\
-        chema_obj = sdk_client_fs._api.schema
+    schema_obj = sdk_client_fs._api.schema
     with allure.step(f'Get {TestedClass.__name__} schema objects'):
         for p in TestedClass.PATH:
             assert p in schema_obj.data
