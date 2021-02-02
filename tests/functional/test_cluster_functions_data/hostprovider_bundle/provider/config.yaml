@@ -19,29 +19,29 @@
   version: "1.01"
   config:
     required:
-        type: integer
-        required: yes
-        default: 40
+      type: integer
+      required: yes
+      default: 40
     str-key:
-        default: value
-        type: string
-        required: false
+      default: value
+      type: string
+      required: false
     int_key:
-        type: integer
-        required: NO
-        default:
+      type: integer
+      required: NO
+      default: 1
     fkey:
-        type: float
-        required: false
-        default: 1
+      type: float
+      required: false
+      default: 1
     bool:
-        type: boolean
-        required : no
-        default: false
+      type: boolean
+      required: no
+      default: false
     option:
-        type: option
-        option:
-            http: 8080
-            https: 4043
-            ftp: my.host
-        required: FALSE
+      type: option
+      option:
+        http: 8080
+        https: 4043
+        ftp: my.host
+      required: FALSE

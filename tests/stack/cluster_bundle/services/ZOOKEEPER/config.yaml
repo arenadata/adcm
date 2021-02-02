@@ -9,49 +9,49 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-name: ZOOKEEPER
-type: service
-description: ZooKeeper
-version: '1.2'
+- name: ZOOKEEPER
+  type: service
+  description: ZooKeeper
+  version: '1.2'
 
-actions:
+  actions:
     start:
-        type: job
-        params:
-            folder: stacks/ADH/1.0/services/ZOOKEEPER/package
-            packages: [zookeeper]
-            script: scripts/zookeeper_server.py
-        log_files: [remote]
-        script: services/zoo/start.yaml
-        script_type: ansible
+      type: job
+      params:
+        folder: stacks/ADH/1.0/services/ZOOKEEPER/package
+        packages: [ zookeeper ]
+        script: scripts/zookeeper_server.py
+      log_files: [ remote ]
+      script: services/zoo/start.yaml
+      script_type: ansible
     stop:
-        type: job
-        log_files: [remote]
-        script: services/zoo/stop.yaml
-        script_type: ansible
+      type: job
+      log_files: [ remote ]
+      script: services/zoo/stop.yaml
+      script_type: ansible
 
-components:
+  components:
     ZOOKEEPER_CLIENT:
-        params:
-            folder: stacks/ADH/1.0/services/ZOOKEEPER/package
-            packages: [zookeeper]
-            script: scripts/zookeeper_client.py
+      params:
+        folder: stacks/ADH/1.0/services/ZOOKEEPER/package
+        packages: [ zookeeper ]
+        script: scripts/zookeeper_client.py
     ZOOKEEPER_SERVER:
-        params:
-            folder: stacks/ADH/1.0/services/ZOOKEEPER/package
-            packages: [zookeeper]
-            script: scripts/zookeeper_server.py
+      params:
+        folder: stacks/ADH/1.0/services/ZOOKEEPER/package
+        packages: [ zookeeper ]
+        script: scripts/zookeeper_server.py
 
-config:
-    ssh-key: {default: TItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAA, type: string, required: false}
-    integer-key: {default: 24, max: 48, min: 2, type: integer, required: false}
-    float-key: {default: 4.4, max: 50.0, min: 4.0, type: float, required: false}
+  config:
+    ssh-key: { default: TItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAA, type: string, required: false }
+    integer-key: { default: 24, max: 48, min: 2, type: integer, required: false }
+    float-key: { default: 4.4, max: 50.0, min: 4.0, type: float, required: false }
     zoo.cfg:
-        autopurge.purgeInterval: {default: 24, max: 48, min: 2, type: integer}
-        dataDir: {default: /hadoop/zookeeper, type: string}
-        port:
-            required: false
-            default: 80
-            option: {http: 80, https: 443}
-            type: option
-    required-key: {default: value, type: string}
+      autopurge.purgeInterval: { default: 24, max: 48, min: 2, type: integer }
+      dataDir: { default: /hadoop/zookeeper, type: string }
+      port:
+        required: false
+        default: 80
+        option: { http: 80, https: 443 }
+        type: option
+    required-key: { default: value, type: string }

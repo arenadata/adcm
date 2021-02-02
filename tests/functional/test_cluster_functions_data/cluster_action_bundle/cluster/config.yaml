@@ -10,22 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
--
+- type: cluster
+  name: ADH16
+  version: 1.6
 
-    type: cluster
-    name: ADH16
-    version: 1.6
-
-    actions:
-        check-file-type:
-            type: job
-            script: cluster/check_data_in_file.yaml
-            script_type: ansible
-            states:
-                available: [created]
-                on_success: all_installed
-                on_fail: cluster_install_fail
-    config:
-        required:
-            type: integer
-            required: true
+  actions:
+    check-file-type:
+      type: job
+      script: cluster/check_data_in_file.yaml
+      script_type: ansible
+      states:
+        available: [ created ]
+        on_success: all_installed
+        on_fail: cluster_install_fail
+  config:
+    required:
+      type: integer
+      required: true

@@ -1,0 +1,5 @@
+
+---
+- type: cluster
+  name: "7"
+  version: ver7

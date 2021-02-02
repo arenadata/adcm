@@ -26,7 +26,7 @@ from delayed_assert import assert_expectations, expect
 
 @pytest.fixture(scope="module")
 def cluster_bundles(sdk_client_ms: ADCMClient):
-    for path in get_subdirs_iter(__file__, "cluster_bandles"):
+    for path in get_subdirs_iter(__file__, "cluster_bundles"):
         sdk_client_ms.upload_from_fs(path)
     return sdk_client_ms
 

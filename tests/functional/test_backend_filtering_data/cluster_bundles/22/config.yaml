@@ -1,0 +1,5 @@
+
+---
+- type: cluster
+  name: "22"
+  version: ver22
