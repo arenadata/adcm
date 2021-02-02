@@ -1,5 +1,5 @@
 
 ---
 - type: cluster
-  name: 6
+  name: "6"
   version: ver6

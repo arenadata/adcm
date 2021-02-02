@@ -12,9 +12,7 @@
 ---
 - type: provider
   name: sample hostprovider
-  version: 1.0
-
-  config:
+  version: &version 1.0
 
   actions:
     install:
@@ -26,16 +24,16 @@
         on_success: installed
         on_fail: created
 
-- type: host
-  name: host_with_issue
-  description: host has issues and should not run any action while issues didn't fix
-  version: &version 1.0
-
   upgrade:
     - name: Upgrade to v. *version
       versions: { min: 0.5, max_strict: *version }
       description: Host bundle upgrade
       states: { available: any }
+
+- type: host
+  name: host_with_issue
+  description: host has issues and should not run any action while issues didn't fix
+  version: 1.0
 
   config:
     required_param:

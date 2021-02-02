@@ -57,9 +57,9 @@ cases_paths_param = get_cases_paths()
 
 @allure.link(url="https://arenadata.atlassian.net/browse/ADCM-1535", name="Test cases")
 @pytest.mark.parametrize("case_path", cases_paths_param.cases_paths, ids=cases_paths_param.ids)
-def test_binded_hc(sdk_client_fs: ADCMClient, case_path):
+def test_bound_hc(sdk_client_fs: ADCMClient, case_path):
     """
-    Tests for binded components on hosts
+    Tests for bound components on hosts
     https://arenadata.atlassian.net/browse/ADCM-1535
     """
     with allure.step('Upload custom provider bundle and create it in ADCM'):
