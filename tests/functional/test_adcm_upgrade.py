@@ -24,9 +24,7 @@ from adcm_pytest_plugin.docker_utils import DockerWrapper, get_initialized_adcm_
 
 
 def old_adcm_images():
-    # TODO Change oldest version after https://arenadata.atlassian.net/browse/ADCM-1430
-    # return parametrized_by_adcm_version(adcm_min_version="2019.01.30")[0]
-    return parametrized_by_adcm_version(adcm_min_version="2019.03.18")[0]
+    return parametrized_by_adcm_version(adcm_min_version="2019.10.08")[0]
 
 
 @contextmanager
