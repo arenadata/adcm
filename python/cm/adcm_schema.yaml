@@ -99,8 +99,10 @@ component_dict:
   match: dict
   items:
     display_name: string
+    description: string
     monitoring: string
     constraint: constraint_list
+    bound_to: bound_dict
     params: json
     requires: comp_req_list
 
@@ -125,6 +127,15 @@ constraint_list_item:
   variants:
     - integer
     - string
+
+bound_dict:
+  match: dict
+  items:
+    service: string
+    component: string
+  required:
+    - service
+    - component
 
 version_rule:
   match: one_of
