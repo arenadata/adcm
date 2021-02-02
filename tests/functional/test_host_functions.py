@@ -272,14 +272,16 @@ class TestHostConfig:
         config = {"str-key": "{1bbb}", "required": 158, "option": 8080, "sub": {"sub1": 2},
                   "credentials": {"sample_string": "txt", "read_only_initiated": {}}}
         i = 0
-        while i < random.randint(0, 10):
-            client.host.config.history.create(host_id=host['id'],
-                                              description=utils.random_string(),
-                                              config=config)
-            i += 1
-        history = client.host.config.history.list(host_id=host['id'])
-        for conf in history:
-            assert ('host/{0}/config/'.format(host['id']) in conf['url']) is True
+        with allure.step('Create host history'):
+            while i < random.randint(0, 10):
+                client.host.config.history.create(host_id=host['id'],
+                                                  description=utils.random_string(),
+                                                  config=config)
+                i += 1
+            history = client.host.config.history.list(host_id=host['id'])
+        with allure.step('Check host history'):
+            for conf in history:
+                assert ('host/{0}/config/'.format(host['id']) in conf['url']) is True
         steps.delete_all_data(client)
 
     def test_get_default_host_config(self, client):
@@ -291,7 +293,8 @@ class TestHostConfig:
         if config:
             config_json = json.loads(json.dumps(config))
         schema = json.load(open(SCHEMAS + '/config_item_schema.json'))
-        assert validate(config_json, schema) is None
+        with allure.step('Check config'):
+            assert validate(config_json, schema) is None
         steps.delete_all_data(client)
 
     def test_get_config_from_nonexistant_host(self, sdk_client_fs: ADCMClient):
@@ -303,6 +306,7 @@ class TestHostConfig:
         with allure.step('Get host config from a non existant host'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 hp.host(host_id=random.randint(100, 500))
+        with allure.step('Check error host doesn\'t exist'):
             err.HOST_NOT_FOUND.equal(e, 'host doesn\'t exist')
 
     def test_shouldnt_create_host_config_when_config_not_json_string(self, client):
@@ -313,6 +317,7 @@ class TestHostConfig:
         with allure.step('Try to create the host config from non-json string'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.host.config.history.create(host_id=host['id'], config=config)
+        with allure.step('Check error config should not be just one string'):
             err.JSON_ERROR.equal(e, 'config should not be just one string')
 
     def test_shouldnt_create_host_config_when_config_is_number(self, client):
@@ -323,7 +328,8 @@ class TestHostConfig:
         with allure.step('Try to create the host configuration with a number'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.host.config.history.create(host_id=host['id'], config=config)
-                err.JSON_ERROR.equal(e, 'should not be just one int or float')
+        with allure.step('Check error should not be just one int or float'):
+            err.JSON_ERROR.equal(e, 'should not be just one int or float')
 
     @pytest.mark.parametrize("config, error", host_bad_configs)
     def test_change_host_config_negative(self, host, config, error):
@@ -335,7 +341,8 @@ class TestHostConfig:
         with allure.step('Try to create config when parameter is not integer'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 host.config_set(config)
-                err.CONFIG_VALUE_ERROR.equal(e, error)
+        with allure.step(f'Check error {error}'):
+            err.CONFIG_VALUE_ERROR.equal(e, error)
 
     def test_should_create_host_config_when_parameter_is_integer_and_not_float(
             self, sdk_client_fs: ADCMClient):

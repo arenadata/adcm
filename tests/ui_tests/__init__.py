@@ -9,3 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+import pytest
+
+pytestmark = [
+    pytest.mark.allure_label("Unit", label_type="layer"),
+    pytest.mark.allure_label("Unit tests", label_type="parentSuite"),
+    pytest.mark.allure_label("models", label_type="suite"),
+]

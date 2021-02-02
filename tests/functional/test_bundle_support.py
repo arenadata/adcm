@@ -163,7 +163,7 @@ def test_run_parametrized_action_must_be_runned(client):
             action_id=filter_action_by_name(
                 client.cluster.action.list(cluster_id=cluster['id']),
                 'install')[0]['id'],
-            cluster_id=cluster['id'], config={"param": "bluuuuuuuuuuuuuuh"})
+            cluster_id=cluster['id'], config={"param": "test test test test test"})
         wait_until(client, action)
     with allure.step('Check if state is success'):
         assert client.job.read(job_id=client.job.list()[0]['id'])['status'] == 'success'
@@ -193,7 +193,7 @@ state_cases = [
 
 @pytest.mark.parametrize("entity, state, case", state_cases)
 def test_load_should_fail_when(client, entity, state, case):
-    with allure.step(f'Upload {client} bundle'):
+    with allure.step(f'Upload {entity} bundle with {case}'):
         bundle = utils.get_data_dir(__file__, 'states', entity, state, case)
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             steps.upload_bundle(client, bundle)
