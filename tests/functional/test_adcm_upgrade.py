@@ -11,15 +11,16 @@
 # limitations under the License.
 # pylint: disable=W0621,R0914
 
-from contextlib import contextmanager
-
 import allure
 import pytest
-from adcm_client.objects import ADCMClient
-from adcm_pytest_plugin.docker import DockerWrapper
-from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
-from adcm_pytest_plugin.utils import get_data_dir, random_string, get_initialized_adcm_image
+
+from contextlib import contextmanager
 from docker.errors import NotFound
+
+from adcm_client.objects import ADCMClient
+from adcm_pytest_plugin.utils import get_data_dir, random_string
+from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
+from adcm_pytest_plugin.docker_utils import DockerWrapper, get_initialized_adcm_image
 
 
 def old_adcm_images():

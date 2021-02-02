@@ -25,7 +25,6 @@ from jinja2 import Template
 
 # pylint: disable=W0611, W0621
 from tests.library import errorcodes as err
-from tests.library import steps
 
 DATADIR = utils.get_data_dir(__file__)
 TEMPLATE = DATADIR + '/template.yaml'

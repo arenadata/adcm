@@ -11,11 +11,12 @@
 # limitations under the License.
 import coreapi
 import pytest
-from adcm_pytest_plugin import utils
 # pylint: disable=W0611, W0621
 from adcm_client.objects import ADCMClient
+from adcm_pytest_plugin import utils
+
 from tests.library.errorcodes import (
-    INVALID_UPGRADE_DEFINITION, INVALID_VERSION_DEFINITION,
+    INVALID_VERSION_DEFINITION,
     UPGRADE_ERROR, UPGRADE_NOT_FOUND
 )
 import allure

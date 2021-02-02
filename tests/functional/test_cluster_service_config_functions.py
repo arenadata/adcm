@@ -17,7 +17,7 @@ import allure
 import coreapi
 import pytest
 from adcm_pytest_plugin import utils
-from adcm_pytest_plugin.docker import DockerWrapper
+from adcm_pytest_plugin.docker_utils import DockerWrapper
 from jsonschema import validate
 
 # pylint: disable=E0401, W0601, W0611, W0621
@@ -451,7 +451,7 @@ class TestClusterConfig:
         cluster = steps.create_cluster(client)
         config = client.cluster.config.current.list(cluster_id=cluster['id'])
         if config:
-            config_json = utils.ordereddict_to_dict(config)
+            config_json = utils.ordered_dict_to_dict(config)
         with allure.step('Load schema'):
             schema = json.load(open(SCHEMAS + '/config_item_schema.json'))
         with allure.step('Check schema'):
@@ -577,7 +577,7 @@ class TestClusterConfig:
         cluster = steps.create_cluster(client)
         test_data = "lorem ipsum"
         with allure.step('Create config data'):
-            config_data = utils.ordereddict_to_dict(
+            config_data = utils.ordered_dict_to_dict(
                 client.cluster.config.current.list(cluster_id=cluster['id'])['config'])
             config_data['input_file'] = test_data
             config_data['required'] = random.randint(0, 99)
