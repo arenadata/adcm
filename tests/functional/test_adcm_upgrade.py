@@ -24,9 +24,7 @@ from adcm_pytest_plugin.docker_utils import DockerWrapper, get_initialized_adcm_
 
 
 def old_adcm_images():
-    # TODO Change oldest version after https://arenadata.atlassian.net/browse/ADCM-1430
-    # return parametrized_by_adcm_version(adcm_min_version="2019.01.30")[0]
-    return parametrized_by_adcm_version(adcm_min_version="2019.03.18")[0]
+    return parametrized_by_adcm_version(adcm_min_version="2019.10.08")[0]
 
 
 @contextmanager
@@ -100,7 +98,7 @@ def test_upgrade_adcm(old_adcm, volume, image, adcm_credentials):
                      adcm_tag=latest_tag,
                      volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}}
                      ) as latest_adcm_client:
-        with allure.step('Check cluster'):
+        with allure.step('Check that cluster is present'):
             assert len(latest_adcm_client.cluster_list()) == 1, \
                 "There is no clusters. Expecting one"
             cluster = latest_adcm_client.cluster_list()[0]
@@ -140,7 +138,7 @@ def test_pass_in_cluster_config_encryption_after_upgrade(old_adcm, volume, image
                      adcm_tag=latest_tag,
                      volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}}
                      ) as latest_adcm_client:
-        with allure.step('Check cluster'):
+        with allure.step('Check that cluster is present'):
             assert len(latest_adcm_client.cluster_list()) == 1, \
                 "There is no clusters. Expecting one"
             cluster = latest_adcm_client.cluster_list()[0]
