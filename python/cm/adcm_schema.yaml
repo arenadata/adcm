@@ -284,7 +284,7 @@ config_dict_sub_structure:
   <<: *config_dict_sub_common
   items:
     <<: *config_dict_sub_items
-    default: string
+    default: json
     yspec: string
   required_items:
     - yspec
@@ -444,19 +444,10 @@ import_dict:
 import_dict_item:
   match: dict
   items:
-    versions: import_dict_versions_dict
+    versions: version_dict
     required: boolean
   required_items:
     - versions
-
-import_dict_versions_dict:
-  match: dict
-  items:
-    min: version_rule
-    max: version_rule
-  required_items:
-    - min
-    - max
 
 # Actions
 actions_dict:
@@ -477,7 +468,10 @@ common_action: &common_action
     display_name: string
     description: string
     params: json
+    ui_options: json
+    button: string
     allow_to_terminate: boolean
+    partial_execution: boolean
     states: action_states_dict
     log_files: action_logfiles_list
     hc_acl: action_hc_acl_list
