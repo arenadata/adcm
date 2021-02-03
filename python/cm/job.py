@@ -102,6 +102,9 @@ def prepare_task(action, obj, selector, conf, attr, spec, old_hc, delta, host_ma
                  hosts, event):
     lock_objects(obj, event)
 
+    if not attr:
+        attr = {}
+
     if host_map:
         api.save_hc(cluster, host_map)
 
