@@ -110,7 +110,7 @@ def run_ansible(job_id):
         if 'ansible_tags' in conf['job']['params']:
             cmd.append('--tags=' + conf['job']['params']['ansible_tags'])
     if 'verbose' in conf['job'] and conf['job']['verbose']:
-        cmd.append('-vvv')
+        cmd.append('-vvvv')
 
     proc = subprocess.Popen(cmd, env=env_configuration(conf), stdout=out_file, stderr=err_file)
     log.info("job #%s run cmd: %s", job_id, ' '.join(cmd))
