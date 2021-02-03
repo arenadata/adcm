@@ -59,8 +59,7 @@ def test_all_fields(sdk_client_fs: ADCMClient, name, group_msg,
         'expected_title': 'Name of group check.',
         'content_title': 'Check',
     }
-    bundle_dir = utils.get_data_dir(__file__, name)
-    bundle = sdk_client_fs.upload_from_fs(bundle_dir)
+    bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, name))
     cluster = bundle.cluster_create(utils.random_string())
     task = cluster.action_run(name=params['action'])
     task.wait()
@@ -70,8 +69,7 @@ def test_all_fields(sdk_client_fs: ADCMClient, name, group_msg,
                       state_expected=params['expected_state'])
     with allure.step('Check all fields after action execution'):
         logs = job.log_list()
-        log = job.log(job_id=job.id, log_id=logs[2].id)
-        content = log.content[0]
+        content = job.log(job_id=job.id, log_id=logs[2].id).content[0]
         assert content['message'] == group_msg,\
             f'Expected message {group_msg}. ' \
             f'Current message {content["message"]}'
