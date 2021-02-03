@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=W0611, W0621, W0404, W0212, C1801
+import allure
 import pytest
-from pytest_lazyfixture import lazy_fixture
 from adcm_client.base import ResponseTooLong
 from adcm_client.objects import (Action, ADCMClient, Bundle,  # ActionList,
                                  BundleList, Cluster, ClusterList,
@@ -22,6 +22,7 @@ from adcm_client.objects import (Action, ADCMClient, Bundle,  # ActionList,
                                  ProviderPrototypeList, Task, TaskList)
 from adcm_pytest_plugin.utils import get_data_dir, get_subdirs_iter
 from delayed_assert import assert_expectations, expect
+from pytest_lazyfixture import lazy_fixture
 
 
 @pytest.fixture
@@ -184,21 +185,20 @@ def test_coreapi_schema(sdk_client_fs: ADCMClient, TestedClass):
         return result
 
     schema_obj = sdk_client_fs._api.schema
-    for p in TestedClass.PATH:
-        assert p in schema_obj.data
-        schema_obj = schema_obj[p]
-
-    params = get_params(schema_obj.links['list'])
-    # from pprint import pprint
-    # pprint(params)
-    for f in TestedClass.FILTERS:
-        expect(
-            f in params,
-            "Filter {} should be acceptable for coreapi in class {}".format(
-                f, TestedClass.__name__
+    with allure.step(f'Get {TestedClass.__name__} schema objects'):
+        for p in TestedClass.PATH:
+            assert p in schema_obj.data
+            schema_obj = schema_obj[p]
+        params = get_params(schema_obj.links['list'])
+    with allure.step(f'Check if filters are acceptable for coreapi {TestedClass.__name__}'):
+        for f in TestedClass.FILTERS:
+            expect(
+                f in params,
+                "Filter {} should be acceptable for coreapi in class {}".format(
+                    f, TestedClass.__name__
+                )
             )
-        )
-    assert_expectations()
+        assert_expectations()
 
 
 @pytest.mark.parametrize(
@@ -248,8 +248,10 @@ def test_paging_fail(sdk_client, TestedClass):
     * Call listing api over objects.*List classes
     * Expecting to have ResponseTooLong error
     """
-    with pytest.raises(ResponseTooLong):
-        TestedClass(sdk_client._api)
+    with allure.step(f'Prepare a lot of objects: {TestedClass.__name__} '
+                     f'in ADCM and check ResponseTooLong error'):
+        with pytest.raises(ResponseTooLong):
+            TestedClass(sdk_client._api)
 
 
 @pytest.mark.parametrize(
@@ -414,12 +416,17 @@ def test_filter(sdk_client: ADCMClient, TestedClass, TestedListClass, search_arg
       as search args
     * Check that we found what we need
     """
-    lo = TestedListClass(sdk_client._api, **search_args)
-    for k, v in expected_args.items():
-        assert getattr(lo[0], k) == v
-    o = TestedClass(sdk_client._api, **search_args)
-    for k, v in expected_args.items():
-        assert getattr(o, k) == v
+    with allure.step('Create a lot of objects in ADCM'):
+        lo = TestedListClass(sdk_client._api, **search_args)
+    with allure.step('Inspect first (and only) element of list'):
+        for k, v in expected_args.items():
+            assert getattr(lo[0], k) == v
+    with allure.step('Create single object over class call (like Cluster or Bundle) '
+                     'with tested filter as search args'):
+        o = TestedClass(sdk_client._api, **search_args)
+    with allure.step('Check created object'):
+        for k, v in expected_args.items():
+            assert getattr(o, k) == v
 
 
 @pytest.fixture
@@ -542,9 +549,13 @@ def test_actions_name_filter(TestedParentClass, search_args, expected_args):
     * Call action() with tested filter as search args
     * Check that we found what we need
     """
-    lo = TestedParentClass.action_list(**search_args)
-    for k, v in expected_args.items():
-        assert getattr(lo[0], k) == v
-    o = TestedParentClass.action(**search_args)
-    for k, v in expected_args.items():
-        assert getattr(o, k) == v
+    with allure.step(f'Create {TestedParentClass} with a lot of actions'):
+        lo = TestedParentClass.action_list(**search_args)
+    with allure.step('Inspect first (and only) element of list'):
+        for k, v in expected_args.items():
+            assert getattr(lo[0], k) == v
+    with allure.step('Call action() with tested filter as search args'):
+        o = TestedParentClass.action(**search_args)
+    with allure.step('Check action name'):
+        for k, v in expected_args.items():
+            assert getattr(o, k) == v
