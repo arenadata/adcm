@@ -35,6 +35,7 @@ def _pack_bundle(bundledir):
     return tarfilename
 
 
+@allure.step('Upload bundle "{1}"')
 def upload_bundle(client, bundledir):
     try:
         if os.path.isdir(bundledir):
