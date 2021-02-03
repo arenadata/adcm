@@ -19,7 +19,7 @@ def test_field_validation(sdk_client_fs: ADCMClient, missed_field):
     cluster = bundle.cluster_create(utils.random_string())
     task = cluster.action_run(name='adcm_check')
     task.wait()
-    with allure.step('Check if job status is failed'):
+    with allure.step('Check if job status is failed, action name: adcm_check'):
         assert task.status == 'failed', \
             "Current job status {}. Expected: failed".format(task.status)
     with allure.step('Check if logs count not equal 2'):
@@ -40,7 +40,7 @@ def test_all_fields(sdk_client_fs: ADCMClient, name, group_msg,
     cluster = bundle.cluster_create(utils.random_string())
     task = cluster.action_run(name='adcm_check')
     task.wait()
-    with allure.step('Check if job status is success'):
+    with allure.step('Check if job status is success, action name: adcm_check'):
         job = task.job()
         assert job.status == 'success', \
             "Current job status {}. Expected: success".format(job.status)
@@ -72,7 +72,7 @@ def test_message_with_other_field(sdk_client_fs: ADCMClient, name):
     cluster = bundle.cluster_create(utils.random_string())
     task = cluster.action_run(name='adcm_check')
     task.wait()
-    with allure.step('Check if job status is success'):
+    with allure.step('Check if job status is success, action name: adcm_check'):
         job = task.job()
         logs = job.log_list()
         log = job.log(job_id=job.id, log_id=logs[2].id)
@@ -93,7 +93,7 @@ def test_success_and_fail_msg_on_success(sdk_client_fs: ADCMClient):
     cluster = bundle.cluster_create(utils.random_string())
     task = cluster.action_run(name='adcm_check')
     task.wait()
-    with allure.step('Check if job status is success.'):
+    with allure.step('Check if job status is success, action name: adcm_check'):
         job = task.job()
         assert job.status == 'success', \
             "Current job status {}. Expected: success".format(job.status)
@@ -115,7 +115,7 @@ def test_success_and_fail_msg_on_fail(sdk_client_fs: ADCMClient):
     cluster = bundle.cluster_create(utils.random_string())
     task = cluster.action_run(name='adcm_check')
     task.wait()
-    with allure.step('Check if job status is success.'):
+    with allure.step('Check if job status is success, action name: adcm_check'):
         job = task.job()
         assert job.status == 'success', \
             "Current job status {}. Expected: success".format(job.status)
@@ -247,7 +247,7 @@ def test_multiple_tasks_action_with_log_files_check(sdk_client_fs: ADCMClient):
     cluster = bundle.cluster_create(utils.random_string())
     task = cluster.action_run(name='check_sample')
     task.wait()
-    with allure.step('Check if job status is success.'):
+    with allure.step('Check if job status is success, action name: check_sample'):
         job = task.job()
         assert job.status == 'success', \
             "Current job status {}. Expected: success".format(job.status)
@@ -266,7 +266,7 @@ def test_result_no(sdk_client_fs: ADCMClient):
     cluster = bundle.cluster_create(utils.random_string())
     task = cluster.action_run(name='adcm_check')
     task.wait()
-    with allure.step('Check if job status is success.'):
+    with allure.step('Check if job status is success, action name: adcm_check'):
         job = task.job()
         assert job.status == 'success', \
             "Current job status {}. Expected: success".format(job.status)
