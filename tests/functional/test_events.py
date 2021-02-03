@@ -13,6 +13,7 @@ import json
 import os
 import re
 
+import allure
 import pytest
 import websocket
 # pylint: disable=redefined-outer-name
@@ -150,26 +151,30 @@ svc_actions = [
 
 @pytest.mark.parametrize('adcm_object, event_type, obj_type', create_adcm_obj)
 def test_event_when_create_(obj_type, adcm_object, event_type, sdk_client_fs, ws):
-    obj = adcm_object(sdk_client_fs)
-    assert_events(
-        ws,
-        repr_template(event_type, obj_type, obj.id)
-    )
+    with allure.step(f'Create {obj_type}'):
+        obj = adcm_object(sdk_client_fs)
+    with allure.step(f'Check created {obj_type}'):
+        assert_events(
+            ws,
+            repr_template(event_type, obj_type, obj.id)
+        )
 
 
 def test_event_when_create_host(sdk_client_fs, ws):
     obj = host(sdk_client_fs, fqdn=utils.random_string())
-    assert_events(ws, repr_template('create', 'host', obj.id, 'provider', str(obj.provider_id)))
+    with allure.step('Check created host'):
+        assert_events(ws, repr_template('create', 'host', obj.id, 'provider', str(obj.provider_id)))
 
 
 def test_event_when_host_added_to_cluster(sdk_client_fs, ws):
     cl = cluster(sdk_client_fs)
     hst = host(sdk_client_fs)
     cl.host_add(hst)
-    assert_events(
-        ws,
-        repr_template('add', 'host', hst.host_id, 'cluster', str(cl.cluster_id))
-    )
+    with allure.step('Check host'):
+        assert_events(
+            ws,
+            repr_template('add', 'host', hst.host_id, 'cluster', str(cl.cluster_id))
+        )
 
 
 def test_event_when_add_service(sdk_client_fs, ws):
@@ -181,17 +186,19 @@ def test_event_when_add_service(sdk_client_fs, ws):
 def test_events_when_cluster_action_(case, action_name, expected, ws, cluster_with_svc_and_host):
     cluster, _, _ = cluster_with_svc_and_host
     job = cluster.action_run(name=action_name)
-    assert_events(
-        ws,
-        *expected(cluster, job)
-    )
+    with allure.step('Check job'):
+        assert_events(
+            ws,
+            *expected(cluster, job)
+        )
 
 
 @pytest.mark.parametrize('case, action_name, expected', svc_actions)
 def test_events_when_service_(case, action_name, expected, ws, cluster_with_svc_and_host):
     _, zookeeper, _ = cluster_with_svc_and_host
     job = zookeeper.action_run(name=action_name)
-    assert_events(
-        ws,
-        *expected(zookeeper, job)
-    )
+    with allure.step('Check job'):
+        assert_events(
+            ws,
+            *expected(zookeeper, job)
+        )
