@@ -10,11 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=W0611, W0621
+import allure
 import coreapi
 import pytest
-
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import get_data_dir
+
 from tests.library import errorcodes as err
 
 
@@ -37,7 +38,8 @@ def test_delete_host_with_components(cluster):
     """
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         cluster[0].host_delete(cluster[1])
-    err.HOST_CONFLICT.equal(e)
+    with allure.step('Check host conflict'):
+        err.HOST_CONFLICT.equal(e)
 
 
 def test_delete_service_with_components(cluster):
@@ -46,4 +48,5 @@ def test_delete_service_with_components(cluster):
     service = cluster[2]
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         service.delete()
-    err.SERVICE_CONFLICT.equal(e)
+    with allure.step('Check service conflict'):
+        err.SERVICE_CONFLICT.equal(e)
