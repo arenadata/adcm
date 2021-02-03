@@ -10,13 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-- name: Do nothing playbook
-  hosts: localhost 
+- name: Assert ansible fork count is 5
+  hosts: localhost
   connection: local
   gather_facts: no
 
   tasks:
-    - pause:
-        seconds: 5
-    - debug:
-        msg: "Unstucked now"
+  - name: Assert ansible fork count
+    debug:
+      msg: "Comparison"
+    failed_when: ansible_forks != 5

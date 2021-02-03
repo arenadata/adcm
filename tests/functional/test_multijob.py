@@ -10,10 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=W0611, W0621, W0404, W0212, C1801
-import pytest
 from adcm_client.objects import ADCMClient
-from adcm_pytest_plugin.utils import get_data_dir, parametrize_by_data_subdirs,\
-    fixture_parametrized_by_data_subdirs
+from adcm_pytest_plugin.utils import get_data_dir, fixture_parametrized_by_data_subdirs
 
 
 @fixture_parametrized_by_data_subdirs(__file__, 'cluster_and_service', scope='module')
