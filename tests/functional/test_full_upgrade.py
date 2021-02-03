@@ -12,6 +12,7 @@
 # pylint: disable=W0611, W0621
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import get_data_dir
+import allure
 
 
 def test_full_upgrade_hostprovider_first(sdk_client_fs: ADCMClient):
@@ -38,10 +39,11 @@ def test_full_upgrade_hostprovider_first(sdk_client_fs: ADCMClient):
     service.reread()
     hostprovider.reread()
     host.reread()
-    assert cluster.prototype().version == '1.6'
-    assert service.prototype().version == '3.4.11'
-    assert hostprovider.prototype().version == '2.0'
-    assert host.prototype().version == '00.10'
+    with allure.step('Check cluster, service, hostprovider, host were upgraded'):
+        assert cluster.prototype().version == '1.6'
+        assert service.prototype().version == '3.4.11'
+        assert hostprovider.prototype().version == '2.0'
+        assert host.prototype().version == '00.10'
 
 
 def test_full_upgrade_cluster_first(sdk_client_fs: ADCMClient):
@@ -68,7 +70,8 @@ def test_full_upgrade_cluster_first(sdk_client_fs: ADCMClient):
     service.reread()
     hostprovider.reread()
     host.reread()
-    assert cluster.prototype().version == '1.6'
-    assert service.prototype().version == '3.4.11'
-    assert hostprovider.prototype().version == '2.0'
-    assert host.prototype().version == '00.10'
+    with allure.step('Check cluster, service, hostprovider, host were upgraded'):
+        assert cluster.prototype().version == '1.6'
+        assert service.prototype().version == '3.4.11'
+        assert hostprovider.prototype().version == '2.0'
+        assert host.prototype().version == '00.10'

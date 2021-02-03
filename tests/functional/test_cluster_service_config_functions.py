@@ -60,16 +60,19 @@ class TestClusterServiceConfig:
         cfg_json = {"ssh-key": "TItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAA",
                     "zoo.cfg": {"autopurge.purgeInterval": 30, "dataDir": "/dev/0", "port": 80},
                     "required-key": "value"}
-        cluster_svc = client.cluster.service.create(
-            cluster_id=cluster['id'], prototype_id=get_random_service(client)['id'])
-        config = client.cluster.service.config.history.create(cluster_id=cluster['id'],
-                                                              service_id=cluster_svc['id'],
-                                                              description='simple desc',
-                                                              config=cfg_json)
-        expected = client.cluster.service.config.history.read(cluster_id=cluster['id'],
-                                                              service_id=cluster_svc['id'],
-                                                              version=config['id'])
-        assert config == expected
+        with allure.step('Create service'):
+            cluster_svc = client.cluster.service.create(
+                cluster_id=cluster['id'], prototype_id=get_random_service(client)['id'])
+        with allure.step('Create config'):
+            config = client.cluster.service.config.history.create(cluster_id=cluster['id'],
+                                                                  service_id=cluster_svc['id'],
+                                                                  description='simple desc',
+                                                                  config=cfg_json)
+        with allure.step('Check created config'):
+            expected = client.cluster.service.config.history.read(cluster_id=cluster['id'],
+                                                                  service_id=cluster_svc['id'],
+                                                                  version=config['id'])
+            assert config == expected
         steps.delete_all_data(client)
 
     def test_shouldnt_create_service_config_when_config_not_json(self, client):
@@ -82,6 +85,7 @@ class TestClusterServiceConfig:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
                                                              service_id=cluster_svc['id'],
                                                              config=utils.random_string())
+        with allure.step('Check error that config should not be just one string'):
             err.JSON_ERROR.equal(e, 'config should not be just one string')
         steps.delete_all_data(client)
 
@@ -95,6 +99,7 @@ class TestClusterServiceConfig:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
                                                              service_id=cluster_svc['id'],
                                                              config=random.randint(0, 9))
+        with allure.step('Check error that config should not be just one int or float'):
             err.JSON_ERROR.equal(e, 'should not be just one int or float')
         steps.delete_all_data(client)
 
@@ -111,6 +116,7 @@ class TestClusterServiceConfig:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
                                                              service_id=cluster_svc['id'],
                                                              config=config_wo_required_sub)
+        with allure.step('Check error about no required subkey'):
             err.CONFIG_KEY_ERROR.equal(e, 'There is no required subkey')
         steps.delete_all_data(client)
 
@@ -127,6 +133,7 @@ class TestClusterServiceConfig:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
                                                              service_id=cluster_svc['id'],
                                                              config=config_wo_required_key)
+        with allure.step('Check error about no required key'):
             err.CONFIG_KEY_ERROR.equal(e, 'There is no required key')
         steps.delete_all_data(client)
 
@@ -144,6 +151,7 @@ class TestClusterServiceConfig:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
                                                              service_id=cluster_svc['id'],
                                                              config=config_w_illegal_param)
+        with allure.step('Check error that parameter is not integer'):
             err.CONFIG_VALUE_ERROR.equal(e, 'should be integer')
         steps.delete_all_data(client)
 
@@ -161,6 +169,7 @@ class TestClusterServiceConfig:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
                                                              service_id=cluster_svc['id'],
                                                              config=config_w_illegal_param)
+        with allure.step('Check error that parameter is not float'):
             err.CONFIG_VALUE_ERROR.equal(e, 'should be float')
         steps.delete_all_data(client)
 
@@ -178,6 +187,7 @@ class TestClusterServiceConfig:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
                                                              service_id=cluster_svc['id'],
                                                              config=config_w_illegal_param)
+        with allure.step('Check error that parameter is not string'):
             err.CONFIG_VALUE_ERROR.equal(e, 'should be string')
         steps.delete_all_data(client)
 
@@ -195,6 +205,7 @@ class TestClusterServiceConfig:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
                                                              service_id=cluster_svc['id'],
                                                              config=config_w_illegal_param)
+        with allure.step('Check CONFIG_VALUE_ERROR'):
             assert e.value.error.title == '400 Bad Request'
             assert e.value.error['code'] == 'CONFIG_VALUE_ERROR'
             assert ('not in option list' in e.value.error['desc']) is True
@@ -214,6 +225,7 @@ class TestClusterServiceConfig:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
                                                              service_id=cluster_svc['id'],
                                                              config=config_int_bigger_boundary)
+        with allure.step('Check error that integer bigger than boundary'):
             err.CONFIG_VALUE_ERROR.equal(e, 'Value', 'should be less than')
         steps.delete_all_data(client)
 
@@ -231,6 +243,7 @@ class TestClusterServiceConfig:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
                                                              service_id=cluster_svc['id'],
                                                              config=config_int_less_boundary)
+        with allure.step('Check error that integer less than boundary'):
             err.CONFIG_VALUE_ERROR.equal(e, 'Value', 'should be more than')
         steps.delete_all_data(client)
 
@@ -248,6 +261,7 @@ class TestClusterServiceConfig:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
                                                              service_id=cluster_svc['id'],
                                                              config=config_float_bigger_boundary)
+        with allure.step('Check error that float bigger than boundary'):
             err.CONFIG_VALUE_ERROR.equal(e, 'Value', 'should be less than')
         steps.delete_all_data(client)
 
@@ -265,6 +279,7 @@ class TestClusterServiceConfig:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
                                                              service_id=cluster_svc['id'],
                                                              config=config_float_less_boundary)
+        with allure.step('Check error that float less than boundary'):
             err.CONFIG_VALUE_ERROR.equal(e, 'Value', 'should be more than')
         steps.delete_all_data(client)
 
@@ -279,6 +294,7 @@ class TestClusterServiceConfig:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
                                                              service_id=cluster_svc['id'],
                                                              config=config_wo_required_param)
+        with allure.step('Check error about params'):
             err.CONFIG_KEY_ERROR.equal(e)
         steps.delete_all_data(client)
 
@@ -296,6 +312,7 @@ class TestClusterServiceConfig:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
                                                              service_id=cluster_svc['id'],
                                                              config=config_w_unknown_subkey)
+        with allure.step('Check error about unknown subkey'):
             err.CONFIG_KEY_ERROR.equal(e, 'There is unknown subkey')
         steps.delete_all_data(client)
 
@@ -310,6 +327,7 @@ class TestClusterServiceConfig:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
                                                              service_id=cluster_svc['id'],
                                                              config=config_w_unknown_param)
+        with allure.step('Check error about unknown key'):
             err.CONFIG_KEY_ERROR.equal(e, 'There is unknown key')
         steps.delete_all_data(client)
 
@@ -326,6 +344,7 @@ class TestClusterServiceConfig:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
                                                              service_id=cluster_svc['id'],
                                                              config=config_shouldnt_have_subkeys)
+        with allure.step('Check error about unknown subkey'):
             err.CONFIG_KEY_ERROR.equal(e, 'input config should not have any subkeys')
         steps.delete_all_data(client)
 
@@ -342,24 +361,31 @@ class TestClusterServiceConfig:
                 client.cluster.service.config.history.create(cluster_id=cluster['id'],
                                                              service_id=cluster_svc['id'],
                                                              config=config)
+        with allure.step('Check error about flat param'):
             err.CONFIG_VALUE_ERROR.equal(e, 'should be flat')
         steps.delete_all_data(client)
 
     def test_when_delete_host_all_children_cannot_be_deleted(self, client):
         # Should be faild if random service has not components
         cluster = steps.create_cluster(client)
-        provider = client.provider.create(prototype_id=client.stack.provider.list()[0]['id'],
-                                          name=utils.random_string())
-        host = client.host.create(prototype_id=client.stack.host.list()[0]['id'],
-                                  provider_id=provider['id'],
-                                  fqdn=utils.random_string())
+        with allure.step('Create provider'):
+            provider = client.provider.create(prototype_id=client.stack.provider.list()[0]['id'],
+                                              name=utils.random_string())
+        with allure.step('Create host'):
+            host = client.host.create(prototype_id=client.stack.host.list()[0]['id'],
+                                      provider_id=provider['id'],
+                                      fqdn=utils.random_string())
         steps.add_host_to_cluster(client, host, cluster)
-        service = steps.create_random_service(client, cluster['id'])
-        component = get_random_cluster_service_component(client, cluster, service)
-        steps.create_hostcomponent_in_cluster(client, cluster, host, service, component)
+        with allure.step('Create random service'):
+            service = steps.create_random_service(client, cluster['id'])
+        with allure.step('Create random service component'):
+            component = get_random_cluster_service_component(client, cluster, service)
+        with allure.step('Create hostcomponent'):
+            steps.create_hostcomponent_in_cluster(client, cluster, host, service, component)
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             client.cluster.host.delete(host_id=host['id'], cluster_id=cluster['id'])
-        err.HOST_CONFLICT.equal(e)
+        with allure.step('Check host conflict'):
+            err.HOST_CONFLICT.equal(e)
 
     def test_should_throws_exception_when_havent_previous_config(self, client):
         cluster = steps.create_cluster(client)
@@ -368,6 +394,7 @@ class TestClusterServiceConfig:
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.service.config.previous.list(cluster_id=cluster['id'],
                                                             service_id=service['id'])
+        with allure.step('Check error that config version doesn\'t exist'):
             err.CONFIG_NOT_FOUND.equal(e, 'config version doesn\'t exist')
         steps.delete_all_data(client)
 
@@ -388,8 +415,9 @@ class TestClusterServiceConfigHistory:
             i += 1
         history = client.cluster.service.config.history.list(cluster_id=cluster['id'],
                                                              service_id=service['id'])
-        for conf in history:
-            assert ('cluster/{0}/service/'.format(cluster['id']) in conf['url']) is True
+        with allure.step('Check config history'):
+            for conf in history:
+                assert ('cluster/{0}/service/'.format(cluster['id']) in conf['url']) is True
         steps.delete_all_data(client)
 
     def test_get_config_from_nonexistant_cluster_service(self, client):
@@ -397,7 +425,8 @@ class TestClusterServiceConfigHistory:
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             client.cluster.service.config.list(cluster_id=cluster['id'],
                                                service_id=random.randint(100, 500))
-        err.SERVICE_NOT_FOUND.equal(e, "service doesn\'t exist")
+        with allure.step('Check error that service doesn\'t exist'):
+            err.SERVICE_NOT_FOUND.equal(e, "service doesn\'t exist")
         steps.delete_all_data(client)
 
 
@@ -406,14 +435,16 @@ class TestClusterConfig:
         cluster = steps.create_cluster(client)
         config_str = {"required": 10, "int_key": 50, "bool": False, "str-key": "eulav"}
         i = 0
-        while i < random.randint(0, 10):
-            client.cluster.config.history.create(cluster_id=cluster['id'],
-                                                 description=utils.random_string(),
-                                                 config=config_str)
-            i += 1
-        history = client.cluster.config.history.list(cluster_id=cluster['id'])
-        for conf in history:
-            assert ('api/v1/cluster/{0}/config/'.format(cluster['id']) in conf['url']) is True
+        with allure.step('Create config history'):
+            while i < random.randint(0, 10):
+                client.cluster.config.history.create(cluster_id=cluster['id'],
+                                                     description=utils.random_string(),
+                                                     config=config_str)
+                i += 1
+            history = client.cluster.config.history.list(cluster_id=cluster['id'])
+        with allure.step('Check config history'):
+            for conf in history:
+                assert ('api/v1/cluster/{0}/config/'.format(cluster['id']) in conf['url']) is True
         steps.delete_all_data(client)
 
     def test_read_default_cluster_config(self, client):
@@ -421,27 +452,34 @@ class TestClusterConfig:
         config = client.cluster.config.current.list(cluster_id=cluster['id'])
         if config:
             config_json = utils.ordered_dict_to_dict(config)
-        schema = json.load(open(SCHEMAS + '/config_item_schema.json'))
-        assert validate(config_json, schema) is None
+        with allure.step('Load schema'):
+            schema = json.load(open(SCHEMAS + '/config_item_schema.json'))
+        with allure.step('Check schema'):
+            assert validate(config_json, schema) is None
         steps.delete_all_data(client)
 
     def test_create_new_config_version_with_one_req_parameter(self, client):
         cluster = steps.create_cluster(client)
         cfg = {"required": random.randint(0, 9)}
-        new_config = client.cluster.config.history.create(cluster_id=cluster['id'], config=cfg)
-        expected = client.cluster.config.history.read(cluster_id=cluster['id'],
-                                                      version=new_config['id'])
-        assert new_config == expected
+        with allure.step('Create new config'):
+            new_config = client.cluster.config.history.create(cluster_id=cluster['id'], config=cfg)
+        with allure.step('Create config history'):
+            expected = client.cluster.config.history.read(cluster_id=cluster['id'],
+                                                          version=new_config['id'])
+        with allure.step('Check new config'):
+            assert new_config == expected
         steps.delete_all_data(client)
 
     def test_create_new_config_version_with_other_parameters(self, client):
         cluster = steps.create_cluster(client)
         cfg = {"required": 99, "str-key": utils.random_string()}
-        new_config = client.cluster.config.history.create(cluster_id=cluster['id'], config=cfg)
-        expected = client.cluster.config.history.read(cluster_id=cluster['id'],
-                                                      version=new_config['id'])
-
-        assert new_config == expected
+        with allure.step('Create new config'):
+            new_config = client.cluster.config.history.create(cluster_id=cluster['id'], config=cfg)
+        with allure.step('Create config history'):
+            expected = client.cluster.config.history.read(cluster_id=cluster['id'],
+                                                          version=new_config['id'])
+        with allure.step('Check new config'):
+            assert new_config == expected
         steps.delete_all_data(client)
 
     def test_shouldnt_create_cluster_config_when_config_not_json(self, client):
@@ -450,6 +488,7 @@ class TestClusterConfig:
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.config.history.create(cluster_id=cluster['id'],
                                                      config=utils.random_string())
+        with allure.step('Check that config should not be just one string'):
             err.JSON_ERROR.equal(e, 'config should not be just one string')
         steps.delete_all_data(client)
 
@@ -459,6 +498,7 @@ class TestClusterConfig:
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.config.history.create(cluster_id=cluster['id'],
                                                      config=random.randint(0, 9))
+        with allure.step('Check that config should not be just one int or float'):
             err.JSON_ERROR.equal(e, 'config should not be just one int or float')
         steps.delete_all_data(client)
 
@@ -469,6 +509,7 @@ class TestClusterConfig:
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.config.history.create(cluster_id=cluster['id'],
                                                      config=config_wo_required_key)
+        with allure.step('Check that no required key'):
             err.CONFIG_KEY_ERROR.equal(e, 'There is no required key')
         steps.delete_all_data(client)
 
@@ -479,6 +520,7 @@ class TestClusterConfig:
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.config.history.create(cluster_id=cluster['id'],
                                                      config=config_key_not_in_list)
+        with allure.step('Check that not in option list'):
             err.CONFIG_VALUE_ERROR.equal(e, 'Value', 'not in option list')
         steps.delete_all_data(client)
 
@@ -489,6 +531,7 @@ class TestClusterConfig:
         with allure.step('Try to create config with unknown key'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.config.history.create(cluster_id=cluster['id'], config=config)
+        with allure.step('Check that unknown key'):
             err.CONFIG_KEY_ERROR.equal(e, 'There is unknown key')
         steps.delete_all_data(client)
 
@@ -501,6 +544,7 @@ class TestClusterConfig:
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.config.history.create(cluster_id=cluster['id'],
                                                      config=config_with_deep_depth)
+        with allure.step('Check that input config should not have any subkeys'):
             err.CONFIG_KEY_ERROR.equal(e, 'input config should not have any subkeys')
         steps.delete_all_data(client)
 
@@ -509,6 +553,7 @@ class TestClusterConfig:
         with allure.step('Get cluster config from non existant cluster'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.config.list(cluster_id=random.randint(100, 500))
+        with allure.step('Check that cluster doesn\'t exist'):
             err.CLUSTER_NOT_FOUND.equal(e, 'cluster doesn\'t exist')
         steps.delete_all_data(client)
 
@@ -520,24 +565,30 @@ class TestClusterConfig:
 
     @pytest.mark.parametrize("datatype, name", check_types)
     def test_verify_that_supported_type_is(self, client, datatype, name):
-        stack = client.stack.cluster.read(prototype_id=client.stack.cluster.list()[0]['id'])
-        for item in stack['config']:
-            if item['name'] == name:
-                assert item['type'] == datatype
+        with allure.step('Create stack'):
+            stack = client.stack.cluster.read(prototype_id=client.stack.cluster.list()[0]['id'])
+        with allure.step('Check stack config'):
+            for item in stack['config']:
+                if item['name'] == name:
+                    assert item['type'] == datatype
         steps.delete_all_data(client)
 
     def test_check_that_file_field_put_correct_data_in_file_inside_docker(self, client):
         cluster = steps.create_cluster(client)
         test_data = "lorem ipsum"
-        config_data = utils.ordered_dict_to_dict(
-            client.cluster.config.current.list(cluster_id=cluster['id'])['config'])
-        config_data['input_file'] = test_data
-        config_data['required'] = random.randint(0, 99)
-        client.cluster.config.history.create(cluster_id=cluster['id'], config=config_data)
-        action = client.cluster.action.run.create(
-            action_id=get_action_by_name(client, cluster, 'check-file-type')['id'],
-            cluster_id=cluster['id']
-        )
-        wait_until(client, action)
-        expected = client.task.read(task_id=action['id'])
-        assert expected['status'] == 'success'
+        with allure.step('Create config data'):
+            config_data = utils.ordered_dict_to_dict(
+                client.cluster.config.current.list(cluster_id=cluster['id'])['config'])
+            config_data['input_file'] = test_data
+            config_data['required'] = random.randint(0, 99)
+        with allure.step('Create config history'):
+            client.cluster.config.history.create(cluster_id=cluster['id'], config=config_data)
+        with allure.step('Check file type'):
+            action = client.cluster.action.run.create(
+                action_id=get_action_by_name(client, cluster, 'check-file-type')['id'],
+                cluster_id=cluster['id']
+            )
+            wait_until(client, action)
+        with allure.step('Check that state is success'):
+            expected = client.task.read(task_id=action['id'])
+            assert expected['status'] == 'success'
