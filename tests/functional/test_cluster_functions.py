@@ -58,78 +58,87 @@ class TestCluster:
     def test_create_cluster_wo_description(self, sdk_client_fs: ADCMClient):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_simple'))
         actual = bundle.cluster_create(utils.random_string())
-        cluster_list = bundle.cluster_list()
-        if cluster_list:
-            for cluster in cluster_list:
-                cluster_id = cluster.id
-                proto_id = cluster.prototype_id
-            actual.reread()
-            assert actual.id == cluster_id
-            assert actual.prototype_id == proto_id
+        with allure.step('Check cluster list without description'):
+            cluster_list = bundle.cluster_list()
+            if cluster_list:
+                for cluster in cluster_list:
+                    cluster_id = cluster.id
+                    proto_id = cluster.prototype_id
+                actual.reread()
+                assert actual.id == cluster_id
+                assert actual.prototype_id == proto_id
 
     def test_create_cluster_with_description(self, sdk_client_fs: ADCMClient):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_simple'))
         actual = bundle.cluster_create(utils.random_string(), "description")
-        cluster_list = bundle.cluster_list()
-        cluster = None
-        cluster_id = None
-        proto_id = None
-        if cluster_list:
-            for cluster in cluster_list:
-                cluster_id = cluster.id
-                proto_id = cluster.prototype_id
-            actual.reread()
-            assert actual.id == cluster_id
-            assert actual.prototype_id == proto_id
-            assert cluster.description == 'description'
+        with allure.step('Check cluster list with description'):
+            cluster_list = bundle.cluster_list()
+            cluster = None
+            cluster_id = None
+            proto_id = None
+            if cluster_list:
+                for cluster in cluster_list:
+                    cluster_id = cluster.id
+                    proto_id = cluster.prototype_id
+                actual.reread()
+                assert actual.id == cluster_id
+                assert actual.prototype_id == proto_id
+                assert cluster.description == 'description'
 
     def test_shouldnt_create_duplicate_cluster(self, sdk_client_fs: ADCMClient):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_simple'))
         bundle.cluster_create("duplicate")
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             bundle.cluster_create("duplicate")
-        err.CLUSTER_CONFLICT.equal(e, 'duplicate cluster')
+        with allure.step('Check error: duplicate cluster'):
+            err.CLUSTER_CONFLICT.equal(e, 'duplicate cluster')
 
     def test_shouldnt_create_cluster_wo_proto(self, client):
         with pytest.raises(coreapi.exceptions.ParameterError) as e:
             client.cluster.create(name=utils.random_string())
-        assert str(e.value) == "{'prototype_id': 'This parameter is required.'}"
+        with allure.step('Check error about required parameter prototype_id'):
+            assert str(e.value) == "{'prototype_id': 'This parameter is required.'}"
         steps.delete_all_data(client)
 
     def test_shouldnt_create_cluster_w_blank_prototype(self, client):
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             client.cluster.create(prototype_id='', name=utils.random_string())
-        assert e.value.error.title == '400 Bad Request'
-        assert e.value.error['prototype_id'][0] == 'A valid integer is required.'
+        with allure.step('Check error about valid integer'):
+            assert e.value.error.title == '400 Bad Request'
+            assert e.value.error['prototype_id'][0] == 'A valid integer is required.'
         steps.delete_all_data(client)
 
     def test_shouldnt_create_cluster_when_proto_is_string(self, client):
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             client.cluster.create(prototype_id=utils.random_string(), name=utils.random_string())
-        assert e.value.error.title == '400 Bad Request'
-        assert e.value.error['prototype_id'][0] == 'A valid integer is required.'
+        with allure.step('Check error about valid integer'):
+            assert e.value.error.title == '400 Bad Request'
+            assert e.value.error['prototype_id'][0] == 'A valid integer is required.'
         steps.delete_all_data(client)
 
     def test_shouldnt_create_cluster_if_proto_not_find(self, client):
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             client.cluster.create(prototype_id=random.randint(900, 950), name=utils.random_string())
-        err.PROTOTYPE_NOT_FOUND.equal(e, 'prototype doesn\'t exist')
+        with allure.step('Check error about prototype doesn\'t exist'):
+            err.PROTOTYPE_NOT_FOUND.equal(e, 'prototype doesn\'t exist')
         steps.delete_all_data(client)
 
     def test_shouldnt_create_cluster_wo_name(self, client):
         prototype = get_random_cluster_prototype(client)
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             client.cluster.create(prototype_id=prototype['id'], name='')
-        assert e.value.error.title == '400 Bad Request'
-        assert e.value.error['name'] == ['This field may not be blank.']
+        with allure.step('Check error about blank field'):
+            assert e.value.error.title == '400 Bad Request'
+            assert e.value.error['name'] == ['This field may not be blank.']
         steps.delete_all_data(client)
 
     def test_shoulndt_create_cluster_when_desc_is_null(self, sdk_client_fs: ADCMClient):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_simple'))
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             bundle.cluster_create(name=utils.random_string(), description='')
-        assert e.value.error.title == '400 Bad Request'
-        assert e.value.error['description'] == ["This field may not be blank."]
+        with allure.step('Check error about blank field'):
+            assert e.value.error.title == '400 Bad Request'
+            assert e.value.error['description'] == ["This field may not be blank."]
 
     def test_get_cluster_list(self, sdk_client_fs: ADCMClient):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_simple'))
@@ -141,7 +150,8 @@ class TestCluster:
             expectedlist.append(name)
         for cluster in bundle.cluster_list():
             actuallist.append(cluster.name)
-        assert all([a == b for a, b in zip(actuallist, expectedlist)])
+        with allure.step('Check cluster list'):
+            assert all([a == b for a, b in zip(actuallist, expectedlist)])
 
     def test_get_cluster_info(self, client):
         actual = steps.create_cluster(client)
@@ -151,7 +161,8 @@ class TestCluster:
         assert 'status' in expected
         del actual['status']
         del expected['status']
-        assert actual == expected
+        with allure.step('Check cluster info'):
+            assert actual == expected
         steps.delete_all_data(client)
 
     def test_partial_update_cluster_name(self, client):
@@ -186,7 +197,8 @@ class TestCluster:
         cluster_two = steps.create_cluster(client)
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             steps.partial_update_cluster(client, cluster_two, name)
-        err.CLUSTER_CONFLICT.equal(e, 'cluster with name', 'already exists')
+        with allure.step('Check error that cluster already exists'):
+            err.CLUSTER_CONFLICT.equal(e, 'cluster with name', 'already exists')
         steps.delete_all_data(client)
 
     def test_delete_cluster(self, sdk_client_fs: ADCMClient):
@@ -204,7 +216,8 @@ class TestCluster:
         cluster.delete()
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             cluster.delete()
-        err.CLUSTER_NOT_FOUND.equal(e, 'cluster doesn\'t exist')
+        with allure.step('Check error that cluster doesn\'t exist'):
+            err.CLUSTER_NOT_FOUND.equal(e, 'cluster doesn\'t exist')
 
     def test_correct_error_when_user_try_to_read_nonexist_cluster(self, sdk_client_fs: ADCMClient):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_simple'))
@@ -213,12 +226,14 @@ class TestCluster:
         with allure.step('Try to get unknown cluster'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 cluster.reread()
+        with allure.step('Check error that cluster doesn\'t exist'):
             err.CLUSTER_NOT_FOUND.equal(e, 'cluster doesn\'t exist')
 
     def test_correct_error_when_user_try_to_get_incorrect_cluster(self, client):
         with allure.step('Try to get unknown cluster'):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.read(cluster_id=random.randint(500, 999))
+        with allure.step('Check error that cluster doesn\'t exist'):
             err.CLUSTER_NOT_FOUND.equal(e, 'cluster doesn\'t exist')
         steps.delete_all_data(client)
 
@@ -227,6 +242,7 @@ class TestCluster:
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.create(prototype_id=random.randint(100, 500),
                                       name=utils.random_string())
+        with allure.step('Check error that cluster doesn\'t exist'):
             err.PROTOTYPE_NOT_FOUND.equal(e, 'prototype doesn\'t exist')
         steps.delete_all_data(client)
 
@@ -236,7 +252,8 @@ class TestCluster:
         cluster.config_set({"required": 10})
         cluster.service_add(name="ZOOKEEPER")
         result = cluster.action_run()
-        assert result.status == 'running'
+        with allure.step('Check if status is running'):
+            assert result.status == 'running'
 
 
 class TestClusterHost:
@@ -313,6 +330,7 @@ class TestClusterHost:
             cluster.host_add(host)
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 cluster.host_add(host)
+        with allure.step('Check error about duplicate host in cluster'):
             err.HOST_CONFLICT.equal(e, 'duplicate host in cluster')
 
     def test_add_unknown_host_to_cluster(self, client):
@@ -321,6 +339,7 @@ class TestClusterHost:
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.host.create(cluster_id=cluster['id'],
                                            host_id=random.randint(900, 950))
+        with allure.step('Check error host doesn\'t exist'):
             err.HOST_NOT_FOUND.equal(e, 'host doesn\'t exist')
         steps.delete_all_data(client)
 
@@ -334,7 +353,8 @@ class TestClusterHost:
         cluster_one.host_add(host)
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             cluster_two.host_add(host)
-        err.FOREIGN_HOST.equal(e, 'Host', 'belong to cluster #' + str(cluster_one.id))
+        with allure.step('Check error host belong to cluster'):
+            err.FOREIGN_HOST.equal(e, 'Host', 'belong to cluster #' + str(cluster_one.id))
 
     def test_host_along_to_cluster_shouldnt_deleted(self, sdk_client_fs: ADCMClient):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_simple'))
@@ -345,7 +365,8 @@ class TestClusterHost:
         cluster.host_add(host)
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             host.delete()
-        err.HOST_CONFLICT.equal(e, 'Host', 'belong to cluster')
+        with allure.step('Check error host belong to cluster'):
+            err.HOST_CONFLICT.equal(e, 'Host', 'belong to cluster')
 
 
 class TestClusterService:
@@ -378,6 +399,7 @@ class TestClusterService:
                 client.cluster.service.create(
                     cluster_id=cluster['id'],
                     prototype_id=(get_random_service(client)['id'] * -1))
+        with allure.step('Check error prototype doesn\'t exist'):
             err.PROTOTYPE_NOT_FOUND.equal(e, 'prototype doesn\'t exist')
         steps.delete_all_data(client)
 
@@ -387,6 +409,7 @@ class TestClusterService:
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 client.cluster.service.create(cluster_id=cluster['id'],
                                               prototype_id=utils.random_string())
+        with allure.step('Check error about valid integer'):
             assert e.value.error.title == '400 Bad Request'
             assert e.value.error['prototype_id'][0] == 'A valid integer is required.'
         steps.delete_all_data(client)
@@ -397,7 +420,8 @@ class TestClusterService:
         cluster.service_add(name="ZOOKEEPER")
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             cluster.service_add(name="ZOOKEEPER")
-        err.SERVICE_CONFLICT.equal(e, 'service already exists in specified cluster')
+        with allure.step('Check error that service already exists in specified cluster'):
+            err.SERVICE_CONFLICT.equal(e, 'service already exists in specified cluster')
 
     @pytest.mark.skip(reason="Task is non production right now")
     def test_that_task_generator_function_with_the_only_one_reqiured_parameter(self, client):
@@ -412,6 +436,7 @@ class TestClusterService:
                 client.cluster.service.action.run.create(cluster_id=cluster['id'],
                                                          service_id=service['id'],
                                                          action_id=action[0]['id'])
+        with allure.step('Check error about positional arguments'):
             err.TASK_GENERATOR_ERROR.equal(
                 e, 'task_generator() takes 1 positional argument but 2 were given')
         steps.delete_all_data(client)
@@ -422,4 +447,5 @@ class TestClusterService:
         cluster.config_set({"required": 10})
         cluster.service_add(name="ZOOKEEPER")
         task = cluster.action_run(name='check-file-type')
-        assert task.status == 'running'
+        with allure.step('Check if status is running'):
+            assert task.status == 'running'
