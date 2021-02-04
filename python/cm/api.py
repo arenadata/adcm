@@ -957,13 +957,13 @@ def change_hc(job_id, cluster_id, operations):   # pylint: disable=too-many-bran
                 hc.append(item)
             else:
                 msg = 'There is already component "{}" on host "{}"'
-                err('COMPONENT_CONFLICT', msg.format(component.component.name, host.fqdn))
+                err('COMPONENT_CONFLICT', msg.format(component.prototype.name, host.fqdn))
         elif op['action'] == 'remove':
             if item in hc:
                 hc.remove(item)
             else:
                 msg = 'There is no component "{}" on host "{}"'
-                err('COMPONENT_CONFLICT', msg.format(component.component.name, host.fqdn))
+                err('COMPONENT_CONFLICT', msg.format(component.prototype.name, host.fqdn))
         else:
             err('INVALID_INPUT', 'unknown hc action "{}"'.format(op['action']))
 
