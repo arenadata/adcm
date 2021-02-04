@@ -41,12 +41,13 @@ def get_config_files(path):
     return conf_list
 
 
-def check_bundle(bundle_file, use_directory=False):
+def check_bundle(bundle_file, use_directory=False, verbose=False):
     if not use_directory:
         untar(bundle_file)
-    print(f'Bundle "{bundle_file}"')
+    if verbose:
+        print(f'Bundle "{bundle_file}"')
     for conf_file in get_config_files(TMP_DIR):
-        check_config(conf_file, os.path.join(cm.config.CODE_DIR, 'cm', 'adcm_schema.yaml'))
+        check_config(conf_file, os.path.join(cm.config.CODE_DIR, 'cm', 'adcm_schema.yaml'), verbose)
 
 
 if __name__ == '__main__':
@@ -55,5 +56,8 @@ if __name__ == '__main__':
     parser.add_argument(
         "-d", "--dir", action="store_true", help="use bundle_file as bundle directory name"
     )
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="print OK result"
+    )
     args = parser.parse_args()
-    check_bundle(args.bundle_file, args.dir)
+    check_bundle(args.bundle_file, args.dir, args.verbose)

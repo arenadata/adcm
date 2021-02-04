@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import os
+import sys
 import ruyaml
 import argparse
 
@@ -19,21 +20,26 @@ import cm.config
 import cm.checker
 
 
-def check_config(data_file, schema_file):
+def check_config(data_file, schema_file, print_ok=True):
     rules = ruyaml.round_trip_load(open(schema_file))
     try:
         data = ruyaml.round_trip_load(open(data_file), version="1.1")
     except ruyaml.constructor.DuplicateKeyError as e:
-        print(f'Config file "{data_file}" Duplicate Keys Error:\n{str(e)}')
-        return
+        print(f'Config file "{data_file}" Duplicate Keys Error:')
+        print(f'{e.context}\n{e.context_mark}\n{e.problem}\n{e.problem_mark}')
+        return 1
 
     try:
         cm.checker.check(data, rules)
-        print(f'Config file "{data_file}" is OK')
+        if print_ok:
+            print(f'Config file "{data_file}" is OK')
+        return 0
     except cm.checker.DataError as e:
         print(f'File "{data_file}", error: {e}')
+        return 1
     except cm.checker.SchemaError as e:
         print(f'File "{schema_file}" error: {e}')
+        return 1
     except cm.checker.FormatError as e:
         print(f'Data File "{data_file}" Errors:')
         print(f'\tline {e.line}: {e.message}')
@@ -43,10 +49,12 @@ def check_config(data_file, schema_file):
                     continue
                 print(f'\tline {ee.line}: {ee.message}')
         print(f'Schema File "{schema_file}" line {rules[e.rule].lc.line}, Rule: "{e.rule}"')
+        return 1
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Check ADCM config file')
     parser.add_argument("config_file", type=str, help="ADCM config file name (config.yaml)")
     args = parser.parse_args()
-    check_config(args.config_file, os.path.join(cm.config.CODE_DIR, 'cm', 'adcm_schema.yaml'))
+    r = check_config(args.config_file, os.path.join(cm.config.CODE_DIR, 'cm', 'adcm_schema.yaml'))
+    sys.exit(r)
