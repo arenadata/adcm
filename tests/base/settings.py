@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=wildcard-import,unused-wildcard-import,import-error,
-# flake8: noqa
-from adcm.settings import *
+from os.path import dirname
+import os
 
 DEBUG = True
 
