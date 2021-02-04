@@ -66,7 +66,8 @@ def run_python_script(base_dir, py_script, command, json_config, out_file, err_f
             LOG_LEVEL,
             TMP_DIR
         ], stdout=out_file, stderr=err_file, env=add_path(ROOT_DIR))
-    except:				# pylint: disable=bare-except
+    # pylint: disable=bare-except
+    except:    # noqa E722
         log.error("exception runnung python script")
         res = 42
 

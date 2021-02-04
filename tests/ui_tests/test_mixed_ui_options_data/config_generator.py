@@ -5,7 +5,8 @@ DATA = [(g_i, g_a, f_g, f_i) for g_i in [
     'true', 'false'] for f_g in [
     'true', 'false'] for f_i in [
     'true', 'false']]
-TYPES = ("string", "password", "integer", "text", 'boolean', 'float', 'option', 'list', 'map', 'json', 'file')
+TYPES = ("string", "password", "integer", "text", 'boolean',
+         'float', 'option', 'list', 'map', 'json', 'file')
 TEMPLATE_STRING = """
 - type: cluster
   name: group_advanced_{0}_invisible_{1}_field_advanced_{2}_invisible_{3}

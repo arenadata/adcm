@@ -54,8 +54,8 @@ def test_bundle_test_list(sdk_client_fs: ADCMClient):
     assert len(type1) == 2
     assert type1[0].name == "cluster_type_1"
     assert type1[1].name == "cluster_type_1"
-    assert ((type1[0].version == "1.4" and type1[1].version == "1.5") or
-            (type1[0].version == "1.5" and type1[1].version == "1.4"))
+    assert ((type1[0].version == "1.4" and type1[1].version == "1.5") or (
+            type1[0].version == "1.5" and type1[1].version == "1.4"))
 
 
 def _assert_attrs(obj):

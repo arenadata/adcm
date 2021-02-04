@@ -175,7 +175,8 @@ class TestStatusAPI(unittest.TestCase):
         r1 = self.api_post('/host/1/component/7/', {'status': 0})
         self.assertEqual(r1.status_code, 200)
 
-    def check_event(self, ev, event, obj_type, obj_id, det_type, det_val, det_id=None):   # pylint: disable=too-many-arguments
+    def check_event(self, ev, event, obj_type, obj_id, det_type, det_val, det_id=None):
+        # pylint: disable=too-many-arguments
         self.assertEqual(ev['event'], event)
         self.assertEqual(ev['object']['type'], obj_type)
         self.assertEqual(ev['object']['id'], obj_id)

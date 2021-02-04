@@ -7,7 +7,9 @@ DATA = [(g_i, g_a, f_g, f_i, act) for g_i in [
     'true', 'false'] for act in [
     'true', 'false'
 ]]
-TYPES = ("string", "password", "integer", "text", 'boolean', 'float', 'option', 'list', 'map', 'json', 'file')
+TYPES = ("string", "password", "integer", "text",
+         'boolean', 'float', 'option', 'list', 'map',
+         'json', 'file')
 TEMPLATE_STRING = """
 - type: cluster
   name: group_advanced_{0}_invisible_{1}_field_advanced_{2}_invisible_{3}_activatable_{5}_{4}
@@ -272,8 +274,11 @@ TEMPLATES = {"string": TEMPLATE_STRING, "password": TEMPLATE_PASSWORD, "integer"
 
 for t in TYPES:
     for config in DATA:
-        d_name = "group_advanced_{}_invisible_{}_field_advanced_{}_invisible_{}_activiatable_{}/{}".format(
-            config[0], config[1], config[2], config[3], config[4], t)
+        d_name = f"group_advanced_{config[0]}" \
+                 f"_invisible_{config[1]}" \
+                 f"_field_advanced_{config[2]}" \
+                 f"_invisible_{config[3]}" \
+                 f"_activiatable_{config[4]}/{t}"
         os.makedirs(d_name)
         tmpl = ''
         with open("{}/config.yaml".format(d_name), "w+") as f:

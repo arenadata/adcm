@@ -1,8 +1,11 @@
 import os
 
-DATA = [("invisible", "true", "advanced", "true"), ("invisible", "false", "advanced", "false"),
-        ("invisible", "false", "advanced", "true"), ('invisible', "true", "advanced", "false")]
-TYPES = ("string", "password", "integer", "text", 'boolean', 'float', 'option', 'list', 'map', 'json', 'file')
+DATA = [("invisible", "true", "advanced", "true"),
+        ("invisible", "false", "advanced", "false"),
+        ("invisible", "false", "advanced", "true"),
+        ('invisible', "true", "advanced", "false")]
+TYPES = ("string", "password", "integer", "text", 'boolean',
+         'float', 'option', 'list', 'map', 'json', 'file')
 template_textboxes = """
 - type: cluster
   name: {0}_{1}_{2}_{3}_{4}
@@ -277,8 +280,10 @@ template_option = """
         on_success: installed
         on_fail: created
 """
-TEMPLATES = {"string": template_textboxes, "password": template_password, "integer": template_numbers,
-             "text": template_text, 'boolean': template_boolean, 'float': template_numbers,
+TEMPLATES = {"string": template_textboxes, "password": template_password,
+             "integer": template_numbers,
+             "text": template_text, 'boolean': template_boolean,
+             'float': template_numbers,
              'option': template_option, 'list': template_list, 'map': template_map,
              'json': template_json, 'file': template_file}
 INSTALL = """

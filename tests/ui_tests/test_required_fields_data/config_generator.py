@@ -1,7 +1,8 @@
 import os
 
 
-TYPES = ("string", "password", "integer", "text", 'boolean', 'float', 'option', 'list', 'map', 'json', 'file')
+TYPES = ("string", "password", "integer", "text", 'boolean',
+         'float', 'option', 'list', 'map', 'json', 'file')
 template = """
 - type: cluster
   name: {0}_required_{1}
