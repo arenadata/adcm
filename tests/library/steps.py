@@ -25,7 +25,7 @@ from .utils import (
 )
 
 
-@allure.step('Pack bundle')
+@allure.step('Pack bundle form {bundledir}')
 def _pack_bundle(bundledir):
     tempdir = tempfile.mkdtemp(prefix="test")
     tarfilename = os.path.join(tempdir, os.path.basename(bundledir) + '.tar')
