@@ -32,7 +32,7 @@ common_object: &common_object
     license: string
     adcm_min_version: version_rule
     config: config_obj
-    actions: actions_dict
+    actions: actions
   required_items: &common_object_required_items
     - type
     - name
@@ -185,7 +185,7 @@ any_or_list:
 literally_any_string:
   match: set
   variants:
-   - any
+    - any
 
 # Config block of object could be in two forms: dict or list
 config_obj:
@@ -328,6 +328,7 @@ config_list_object:
     list: config_list_list
     map: config_list_map
     structure: config_list_structure
+    variant: config_list_variant
     json: config_list_json
     option: config_list_option
 
@@ -371,6 +372,7 @@ config_sub_list_object:
     list: config_list_list
     map: config_list_map
     structure: config_list_structure
+    variant: config_list_variant
     json: config_list_json
     option: config_list_option
 
@@ -418,10 +420,37 @@ config_list_structure:
   <<: *config_list_common
   items:
     <<: *config_list_items
-    default: string
+    default: json
     yspec: string
   required_items:
     - yspec
+
+config_list_variant:
+  <<: *config_list_common
+  items:
+    <<: *config_list_items
+    default: string
+    source: variant_source
+  required_items:
+    - source
+
+variant_source:
+  match: dict
+  items:
+    type: variant_types
+    strict: boolean
+    name: string
+    args: json
+    value: json
+  required_items:
+    - type
+
+variant_types:
+  match: set
+  variants:
+    - inline
+    - config
+    - builtin
 
 config_list_json:
   <<: *config_list_common
@@ -450,6 +479,12 @@ import_dict_item:
     - versions
 
 # Actions
+actions:
+  match: one_of
+  variants:
+    - none
+    - actions_dict
+
 actions_dict:
   match: dict
   default_item: action_item
