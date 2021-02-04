@@ -32,9 +32,9 @@ def test_field_validation(sdk_client_fs: ADCMClient, missed_field):
     cluster = bundle.cluster_create(utils.random_string())
     task = cluster.action_run(name=params['action'])
     task.wait()
-    steps.check_state(action_name=params['action'],
-                      state_current=task.status,
-                      state_expected=params['expected_state'])
+    steps.check_action_state(action_name=params['action'],
+                             state_current=task.status,
+                             state_expected=params['expected_state'])
     with allure.step(f'Check if logs count is equal {params["logs_amount"]}'):
         job = task.job()
         logs = job.log_list()
@@ -64,9 +64,9 @@ def test_all_fields(sdk_client_fs: ADCMClient, name, group_msg,
     task = cluster.action_run(name=params['action'])
     task.wait()
     job = task.job()
-    steps.check_state(action_name=params['action'],
-                      state_current=job.status,
-                      state_expected=params['expected_state'])
+    steps.check_action_state(action_name=params['action'],
+                             state_current=job.status,
+                             state_expected=params['expected_state'])
     with allure.step('Check all fields after action execution'):
         logs = job.log_list()
         content = job.log(job_id=job.id, log_id=logs[2].id).content[0]
@@ -110,9 +110,9 @@ def test_message_with_other_field(sdk_client_fs: ADCMClient, name):
     job = task.job()
     logs = job.log_list()
     log = job.log(job_id=job.id, log_id=logs[2].id)
-    steps.check_state(action_name=params['action'],
-                      state_current=job.status,
-                      state_expected=params['expected_state'])
+    steps.check_action_state(action_name=params['action'],
+                             state_current=job.status,
+                             state_expected=params['expected_state'])
     with allure.step(f'Check if content message is {name}'):
         content = log.content[0]
         assert content['message'] == name,\
@@ -135,9 +135,9 @@ def test_success_and_fail_msg_on_success(sdk_client_fs: ADCMClient):
     task = cluster.action_run(name=params['action'])
     task.wait()
     job = task.job()
-    steps.check_state(action_name=params['action'],
-                      state_current=job.status,
-                      state_expected=params['expected_state'])
+    steps.check_action_state(action_name=params['action'],
+                             state_current=job.status,
+                             state_expected=params['expected_state'])
     with allure.step('Check if success and fail message are '
                      'in their own fields.'):
         logs = job.log_list()
@@ -165,9 +165,9 @@ def test_success_and_fail_msg_on_fail(sdk_client_fs: ADCMClient):
     task = cluster.action_run(name=params['action'])
     task.wait()
     job = task.job()
-    steps.check_state(action_name=params['action'],
-                      state_current=job.status,
-                      state_expected=params['expected_state'])
+    steps.check_action_state(action_name=params['action'],
+                             state_current=job.status,
+                             state_expected=params['expected_state'])
     with allure.step('Check if success and fail message are '
                      'in their own fields'):
         logs = job.log_list()
@@ -330,9 +330,9 @@ def test_multiple_tasks_action_with_log_files_check(sdk_client_fs: ADCMClient):
     task = cluster.action_run(name=params['action'])
     task.wait()
     job = task.job()
-    steps.check_state(action_name=params['action'],
-                      state_current=job.status,
-                      state_expected=params['expected_state'])
+    steps.check_action_state(action_name=params['action'],
+                             state_current=job.status,
+                             state_expected=params['expected_state'])
     with allure.step('Check if result is True'):
         logs = job.log_list()
         log = job.log(job_id=job.id, log_id=logs[2].id)
@@ -354,9 +354,9 @@ def test_result_no(sdk_client_fs: ADCMClient):
     task = cluster.action_run(name=params['action'])
     task.wait()
     job = task.job()
-    steps.check_state(action_name=params['action'],
-                      state_current=job.status,
-                      state_expected=params['expected_state'])
+    steps.check_action_state(action_name=params['action'],
+                             state_current=job.status,
+                             state_expected=params['expected_state'])
     with allure.step('Check if result is False'):
         logs = job.log_list()
         log = job.log(job_id=job.id, log_id=logs[2].id)

@@ -161,7 +161,8 @@ def create_hostcomponent_in_cluster(client, cluster, host, service, component):
 
 
 @allure.step('Check if action {action_name} state is {state_expected}')
-def check_state(action_name, state_current, state_expected):
+def check_action_state(action_name: str, state_current: str,
+                       state_expected: str) -> None:
     assert state_current == state_expected, \
         f'Current action {action_name} status {state_current}. ' \
         f'Expected: {state_expected}'
