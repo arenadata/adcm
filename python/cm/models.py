@@ -483,6 +483,7 @@ class TaskLog(models.Model):
     attr = JSONField(default={})
     hostcomponentmap = JSONField(null=True, default=None)
     hosts = JSONField(null=True, default=None)
+    verbose = models.BooleanField(default=False)
     start_date = models.DateTimeField()
     finish_date = models.DateTimeField()
 
