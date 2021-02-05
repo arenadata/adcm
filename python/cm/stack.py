@@ -127,6 +127,9 @@ def check_adcm_config(conf_file):
             data = ruyaml.round_trip_load(fd, version="1.1")
     except ruyaml.parser.ParserError as e:
         err('STACK_LOAD_ERROR', f'YAML decode error: {e}')
+    except ruyaml.constructor.DuplicateKeyError as e:
+        msg = f'{e.context}\n{e.context_mark}\n{e.problem}\n{e.problem_mark}'
+        err('STACK_LOAD_ERROR', f'Duplicate Keys error: {msg}')
     try:
         cm.checker.check(data, rules)
     except cm.checker.FormatError as e:

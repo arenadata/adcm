@@ -152,7 +152,7 @@ upgrade_list:
 upgrade_obj:
   match: dict
   items:
-    name: string
+    name: version_rule
     description: string
     versions: version_dict
     states: states_dict
