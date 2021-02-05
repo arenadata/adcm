@@ -23,21 +23,17 @@ from tests.library.errorcodes import TASK_ERROR, UPGRADE_ERROR
 from tests.library.utils import get_action_by_name, wait_until
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def adcm(image, request, adcm_credentials):
     repo, tag = image
     dw = DockerWrapper()
     adcm = dw.run_adcm(image=repo, tag=tag, pull=False)
     adcm.api.auth(**adcm_credentials)
-
-    def fin():
-        adcm.stop()
-
-    request.addfinalizer(fin)
-    return adcm
+    yield adcm
+    adcm.stop()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def client(adcm):
     return adcm.api.objects
 

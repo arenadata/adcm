@@ -59,7 +59,7 @@ def adcm_client(adcm_repo, adcm_credentials, adcm_tag, volumes, init=False):
             dw.client.images.remove(f'{repo}:{tag}', force=True)
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture()
 def volume(request):
     """
     Create Docker volume and remove it after test
@@ -67,14 +67,9 @@ def volume(request):
     dw = DockerWrapper()
     with allure.step("Create docker volume"):
         vol = dw.client.volumes.create()
-
-    @allure.step("Remove docker volume")
-    def fin():
+    yield vol
+    with allure.step("Remove docker volume"):
         vol.remove(force=True)
-
-    request.addfinalizer(fin)
-
-    return vol
 
 
 @pytest.mark.parametrize("old_adcm", old_adcm_images(), ids=repr)

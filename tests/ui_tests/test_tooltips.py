@@ -13,7 +13,7 @@ NO_TOOLTIP_FIELDS = ['string_required_by_default_without_type',
                      'string_read_only_any_without_type']
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture()
 def service(sdk_client_fs):
     bundle = sdk_client_fs.upload_from_fs(DATADIR)
     cluster = bundle.cluster_create(name='tooltips')

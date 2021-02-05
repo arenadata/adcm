@@ -10,7 +10,7 @@ DATADIR = get_data_dir(__file__)
 BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture()
 def ui_hell_fs(sdk_client_fs):
     bundle = sdk_client_fs.upload_from_fs(DATADIR)
     cluster = bundle.cluster_create(name='my cluster')

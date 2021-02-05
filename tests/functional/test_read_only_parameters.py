@@ -41,7 +41,7 @@ def cluster_config(cluster_sdk):
     return cluster_sdk.config()
 
 
-@pytest.mark.parametrize("key, input_value, expected, action, group, check_exception",
+@pytest.mark.parametrize(('key', 'input_value', 'expected', 'action', 'group', 'check_exception'),
                          TEST_DATA, ids=TEST_IDS)
 def test_readonly_variable(key, input_value, expected, action, group, check_exception, cluster_sdk):
     current_config = cluster_sdk.config()
@@ -52,8 +52,8 @@ def test_readonly_variable(key, input_value, expected, action, group, check_exce
     if action:
         cluster_sdk.action(name=action).run().wait()
     if check_exception:
+        cluster_sdk.config_set(current_config)
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-            cluster_sdk.config_set(current_config)
             CONFIG_VALUE_ERROR.equal(e, 'config key ', 'is read only')
     else:
         cluster_sdk.config_set(current_config)

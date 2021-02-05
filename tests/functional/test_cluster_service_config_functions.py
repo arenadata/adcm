@@ -39,12 +39,8 @@ def adcm(image, request, adcm_credentials):
     dw = DockerWrapper()
     adcm = dw.run_adcm(image=repo, tag=tag, pull=False)
     adcm.api.auth(**adcm_credentials)
-
-    def fin():
-        adcm.stop()
-
-    request.addfinalizer(fin)
-    return adcm
+    yield adcm
+    adcm.stop()
 
 
 @pytest.fixture(scope="module")
@@ -563,7 +559,7 @@ class TestClusterConfig:
         ('password', 'password_phrase'),
     ]
 
-    @pytest.mark.parametrize("datatype, name", check_types)
+    @pytest.mark.parametrize(('datatype', 'name'), check_types)
     def test_verify_that_supported_type_is(self, client, datatype, name):
         with allure.step('Create stack'):
             stack = client.stack.cluster.read(prototype_id=client.stack.cluster.list()[0]['id'])

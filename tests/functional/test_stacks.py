@@ -26,7 +26,7 @@ from tests.library import errorcodes, steps
 SCHEMAS = utils.get_data_dir(__file__, "schemas/")
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def client(sdk_client_fs: ADCMClient):
     return sdk_client_fs.adcm()._api.objects
 

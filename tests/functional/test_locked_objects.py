@@ -22,26 +22,22 @@ from tests.library.errorcodes import TASK_ERROR
 from tests.library.utils import get_action_by_name, filter_action_by_name, wait_until
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def adcm(image, request, adcm_credentials):
     repo, tag = image
     dw = DockerWrapper()
     adcm = dw.run_adcm(image=repo, tag=tag, pull=False)
     adcm.api.auth(**adcm_credentials)
-
-    def fin():
-        adcm.stop()
-
-    request.addfinalizer(fin)
-    return adcm
+    yield adcm
+    adcm.stop()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def client(adcm):
     return adcm.api.objects
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def prepared_cluster(client):
     bundle = utils.get_data_dir(__file__, 'locked_when_action_running')
     steps.upload_bundle(client, bundle)
@@ -49,7 +45,7 @@ def prepared_cluster(client):
                                  name=utils.random_string())
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture()
 def hostprovider(client):
     steps.upload_bundle(client, utils.get_data_dir(__file__, 'host_bundle_on_any_level'))
     return steps.create_hostprovider(client)

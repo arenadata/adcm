@@ -370,7 +370,7 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs, login_to
         assert not fields, "Config fields presented, expected no"
 
 
-@pytest.mark.parametrize("config_dict,expected_results", group_configs)
+@pytest.mark.parametrize(('config_dict', 'expected_results'), group_configs)
 def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, expected_results,
                              app_fs, login_to_adcm):
     """Test for configuration fields with groups. Before start test actions

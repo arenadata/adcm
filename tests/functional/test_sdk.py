@@ -175,7 +175,7 @@ def test_cluster_service(sdk_client_fs: ADCMClient):
     service.action(name="install").run().wait()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def cluster_with_service(sdk_client_fs: ADCMClient):
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__) + "/cluster_with_service")
     cluster = bundle.cluster_create(name="sample cluster")

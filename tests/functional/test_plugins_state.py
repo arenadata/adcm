@@ -48,7 +48,7 @@ def assert_cluster_service_states(bundle: Bundle, statemap: dict):
     assert_expectations()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def cluster_bundle(sdk_client_fs: ADCMClient):
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster"))
     for name in ('first', 'second', 'third'):
@@ -154,7 +154,7 @@ INITIAL_HOST_STATE = {
 }
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def host_bundle(sdk_client_fs: ADCMClient):
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "hostprovider"))
     for name in INITIAL_HOST_STATE:

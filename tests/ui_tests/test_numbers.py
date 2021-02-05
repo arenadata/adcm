@@ -38,7 +38,7 @@ def test_number_validation(sdk_client_fs: ADCMClient, path, app_fs, login_to_adc
                                      "Field [numbers_test] value cannot be greater than")
 
 
-@pytest.mark.parametrize("number_type, value", RANGE_VALUES)
+@pytest.mark.parametrize(('number_type', 'value'), RANGE_VALUES)
 def test_number_in_range_values(sdk_client_fs: ADCMClient, value, app_fs, number_type,
                                 login_to_adcm):
     """Check that save button active for number fields in min-max range

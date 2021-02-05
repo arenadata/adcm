@@ -60,11 +60,8 @@ def data(sdk_client_ms: ADCMClient, request):
     save_conf(render(conf, request.param), out_dir)
     bundle = sdk_client_ms.upload_from_fs(out_dir)
     cluster = bundle.cluster_create(name=request.param)
-
-    def fin():
-        shutil.rmtree(out_dir)
-    request.addfinalizer(fin)
     yield cluster, request.param
+    shutil.rmtree(out_dir)
 
 
 def test_null_value_shouldnt_be_for_required(data, val=None):

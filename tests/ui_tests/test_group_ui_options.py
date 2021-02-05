@@ -23,7 +23,7 @@ INVISIBLE_GROUPS = ["invisible_advanced_activatable_active_group",
                     "advanced_invisible_group"]
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture()
 def service(sdk_client_fs):
     bundle = sdk_client_fs.upload_from_fs(DATADIR)
     cluster = bundle.cluster_create(name='group_ui_options_test')
@@ -96,7 +96,7 @@ def test_save_groups(group_elements, ui_config, sdk_client_fs: ADCMClient):
         assert group in config.keys(), config
 
 
-@pytest.mark.parametrize("config_name, activatable", ACTIVATABLE_GROUPS,
+@pytest.mark.parametrize(('config_name', 'activatable'), ACTIVATABLE_GROUPS,
                          ids=["Active True", "Active False"])
 def test_activatable_group_status(config_name, activatable, ui_config):
     """Check activatable group status after config creation

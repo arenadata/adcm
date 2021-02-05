@@ -30,7 +30,7 @@ BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
 pytestmark = pytest.mark.skip(reason="It is flaky. Just skip this")
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def adcm(image, request, adcm_credentials):
     repo, tag = image
     dw = DockerWrapper()
@@ -40,12 +40,8 @@ def adcm(image, request, adcm_credentials):
     provider_bundle = os.path.join(DATADIR, 'hostprovider')
     steps.upload_bundle(adcm.api.objects, cluster_bundle)
     steps.upload_bundle(adcm.api.objects, provider_bundle)
-
-    def fin():
-        adcm.stop()
-
-    request.addfinalizer(fin)
-    return adcm
+    yield adcm
+    adcm.stop()
 
 
 @pytest.fixture()
@@ -53,8 +49,8 @@ def app(adcm, request):
     app = ADCMTest()
     app.attache_adcm(adcm)
     app.base_page()
-    request.addfinalizer(app.destroy)
-    return app
+    yield app
+    app.destroy()
 
 
 @pytest.fixture()
@@ -74,8 +70,7 @@ def host(app):
 
 @pytest.fixture()
 def data():
-    yield {'name': utils.random_string(),
-           'description': utils.random_string()}
+    return {'name': utils.random_string(), 'description': utils.random_string()}
 
 
 def test_run_app(app, adcm_credentials):
