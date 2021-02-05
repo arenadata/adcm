@@ -54,8 +54,7 @@ def save_object_definition(path, fname, conf, obj_list, bundle_hash, adcm=False)
         return err('INVALID_OBJECT_DEFINITION', msg.format(fname))
 
     if 'type' not in conf:
-        msg = 'No type in object definition: {}'
-        return err('INVALID_OBJECT_DEFINITION', msg.format(fname))
+        return err('INVALID_OBJECT_DEFINITION', f'No type in object definition: {fname}')
 
     def_type = conf['type']
     if def_type not in (proto_type for (proto_type, _) in PROTO_TYPE):
@@ -269,8 +268,7 @@ def save_components(proto, conf, bundle_hash):
         log.warning('%s has unexpected "components" key', ref)
         return
     if not isinstance(conf['components'], dict):
-        msg = 'Components definition should be a map ({})'
-        err('INVALID_COMPONENT_DEFINITION', msg.format(ref))
+        err('INVALID_COMPONENT_DEFINITION', f'Components definition should be a map ({ref})')
     for comp_name in conf['components']:
         cc = conf['components'][comp_name]
         err_msg = 'Component name "{}" of {}'.format(comp_name, ref)
@@ -405,7 +403,7 @@ def save_export(proto, conf):
     elif isinstance(conf['export'], list):
         export = conf['export']
     else:
-        err('INVALID_OBJECT_DEFINITION', '{} export should be string or array type'.format(ref))
+        err('INVALID_OBJECT_DEFINITION', f'{ref} export should be string or array type')
 
     msg = '{} does not has "{}" config group'
     for key in export:
