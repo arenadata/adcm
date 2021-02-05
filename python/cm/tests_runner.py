@@ -41,6 +41,7 @@ class PreparationData:
                 'selector': {'cluster': task_id},
                 'status': 'success',
                 'config': '',
+                'verbose': False,
                 'hostcomponentmap': '',
                 'start_date': timezone.now(),
                 'finish_date': timezone.now()
