@@ -21,6 +21,8 @@ import { BehaviorSubject } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
 import { DialogComponent } from '../dialog.component';
+import { StatusData } from '@app/components/status-column/status-column.component';
+import { ICluster } from '@app/models/cluster';
 
 enum Direction {
   '' = '',
@@ -152,19 +154,13 @@ export class ListComponent implements OnInit {
     this.isAllSelected() ? this.selection.clear() : this.data.data.forEach((row) => this.selection.select(row));
   }
 
-  getClusterData(row: any) {
-    const { id, hostcomponent } = row.cluster || row;
-    const { action } = row;
-    return { id, hostcomponent, action };
-  }
-
   stopPropagation($e: MouseEvent) {
     $e.stopPropagation();
     return $e;
   }
 
-  notIssue(issue: Issue): boolean {
-    return !isIssue(issue);
+  gotoStatus(data: StatusData<ICluster>) {
+    this.clickCell(data.event, data.action, data.row);
   }
 
   clickCell($e: MouseEvent, cmd: string, row: any, item?: any) {

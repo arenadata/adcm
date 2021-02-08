@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Directive, Host, Input, OnDestroy, OnInit } from '@angular/core';
+import { Directive, Host, Input, OnDestroy, OnInit, Output, EventEmitter } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { ParamMap } from '@angular/router';
 import { EventMessage, SocketState } from '@app/core/store';
@@ -39,6 +39,8 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
   constructor(@Host() private parent: ListComponent, private service: ListService, protected store: Store<SocketState>) {
     super(store);
   }
+
+  @Output() reload = new EventEmitter();
 
   ngOnInit(): void {
     this.parent.type = this.typeName;
@@ -122,7 +124,10 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
 
   refresh(id?: number) {
     if (id) this.parent.current = { id };
-    this.service.getList(this.listParams, this.typeName).subscribe((list) => (this.parent.dataSource = list));
+    this.service.getList(this.listParams, this.typeName).subscribe((list) => {
+      this.reload.emit(list);
+      this.parent.dataSource = list;
+    });
   }
 
   listEvents(event: EmmitRow) {

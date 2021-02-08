@@ -41,6 +41,8 @@ import { HostComponentsMapModule } from './host-components-map/host-components-m
 import { MaterialModule } from './material.module';
 import { BreakRowPipe, TagEscPipe } from './pipes';
 import { StuffModule } from './stuff.module';
+import { StatusColumnComponent } from '@app/components/status-column/status-column.component';
+import { ActionsColumnComponent } from '@app/components/actions-column/actions-column.component';
 
 @NgModule({
   imports: [
@@ -76,6 +78,8 @@ import { StuffModule } from './stuff.module';
     ActionMasterComponent,
     ActionMasterConfigComponent,
     ActionCardComponent,
+    StatusColumnComponent,
+    ActionsColumnComponent,
   ],
   // entryComponents: [DialogComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent, ActionMasterComponent],
   exports: [
@@ -103,6 +107,8 @@ import { StuffModule } from './stuff.module';
     ImportComponent,
     ExportComponent,
     ActionCardComponent,
+    StatusColumnComponent,
+    ActionsColumnComponent,
   ],
 })
 export class SharedModule {}

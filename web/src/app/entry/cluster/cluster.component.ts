@@ -11,6 +11,11 @@
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
 import { ClusterService } from '@app/core';
+import { BehaviorSubject } from 'rxjs';
+import { IColumn, IListResult } from '@adwp-ui/widgets';
+import { ICluster } from '../../models/cluster';
+import { StatusColumnComponent } from '../../components/status-column/status-column.component';
+import { ActionsColumnComponent } from '../../components/actions-column/actions-column.component';
 
 @Component({
   selector: 'app-cluster-host',
@@ -38,12 +43,60 @@ export class ServicesComponent {}
       <app-crumbs [navigation]="[{ url: '/cluster', title: 'clusters' }]"></app-crumbs>
       <app-add-button [name]="typeName" (added)="list.current = $event">Create {{ typeName }}</app-add-button>
     </mat-toolbar>
-    <app-list #list appActionHandler [appBaseList]="typeName"></app-list>
+    <app-list #list appActionHandler [appBaseList]="typeName" (reload)="reload($event)"></app-list>
+
+    <br>
+    <br>
+
+    <adwp-list [columns]="columns" [dataSource]="data$ | async"></adwp-list>
   `,
   styles: [':host { flex: 1; }'],
 })
 export class ClusterListComponent {
+
   typeName = 'cluster';
+
+  data$: BehaviorSubject<IListResult<ICluster>> = new BehaviorSubject(null);
+
+  columns = [
+    {
+      label: 'Name',
+      sort: 'name',
+      value: (row) => row.name,
+    },
+    {
+      label: 'Bundle',
+      sort: 'prototype_name',
+      value: (row) => [row.prototype_name, row.prototype_version, row.edition].join(' '),
+    },
+    {
+      label: 'Description',
+      sort: 'description',
+      value: (row) => row.description,
+    },
+    {
+      label: 'State',
+      sort: 'state',
+      value: (row) => row.state,
+    },
+    {
+      label: 'Status',
+      sort: 'status',
+      type: 'component',
+      component: StatusColumnComponent,
+    },
+    {
+      label: 'Actions',
+      type: 'component',
+      component: ActionsColumnComponent,
+    }
+  ] as IColumn<ICluster>;
+
+  reload(data: IListResult<ICluster>) {
+    console.log(data);
+    this.data$.next(data);
+  }
+
 }
 
 @Component({

@@ -12,6 +12,8 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
+import { AdwpListModule, AdwpUiWidgetsModule } from '@adwp-ui/widgets';
+
 import { SharedModule, DetailComponent, MainInfoComponent, ConfigComponent, StatusComponent, ImportComponent } from '@app/shared';
 
 import { ClusterListComponent, HcmapComponent, HostComponent, ServicesComponent } from './cluster.component';
@@ -72,13 +74,18 @@ const clusterRoutes: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forChild(clusterRoutes)],
+  imports: [
+    RouterModule.forChild(clusterRoutes),
+    AdwpListModule.forRoot({
+      itemsPerPage: [2, 10, 25, 50, 100],
+    }),
+  ],
   exports: [RouterModule],
 })
 export class ClusterRoutingModule {}
 
 @NgModule({
-  imports: [CommonModule, SharedModule, RouterModule, ClusterRoutingModule],
+  imports: [CommonModule, SharedModule, RouterModule, ClusterRoutingModule, AdwpUiWidgetsModule],
   declarations: [ClusterListComponent, ServicesComponent, HostComponent, HcmapComponent],
 })
 export class ClusterModule {}

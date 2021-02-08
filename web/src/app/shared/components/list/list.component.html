@@ -131,13 +131,7 @@
   <ng-container matColumnDef="actions">
     <mat-header-cell *matHeaderCellDef class="control">Actions</mat-header-cell>
     <mat-cell *matCellDef="let row" class="control">
-      <button [appForTest]="'row_actions'" mat-icon-button color="warn" *ngIf="!notIssue(row.issue); else actions"
-        [appTooltip]="row" appTooltipComponent="issue">
-        <mat-icon>priority_hight</mat-icon>
-      </button>
-      <ng-template #actions>
-        <app-action-list (click)="$event.stopPropagation()" [actionLink]="row.action" [cluster]="getClusterData(row)"></app-action-list>
-      </ng-template>
+      <app-actions-column [row]="row"></app-actions-column>
     </mat-cell>
   </ng-container>
 
@@ -217,17 +211,7 @@
   <ng-container matColumnDef="status">
     <mat-header-cell *matHeaderCellDef class="control">Status</mat-header-cell>
     <mat-cell *matCellDef="let row" class="control">
-      <span *ngIf="row.status && row.status.length; else icons" [class]="row.status">{{ row.status }}</span>
-      <ng-template #icons>
-        <button *ngIf="row.status === 0" [appForTest]="'row_status'" mat-icon-button color="accent"
-          (click)="clickCell($event, 'status', row)">
-          <mat-icon>check_circle_outline</mat-icon>
-        </button>
-        <button *ngIf="row.status !== 0" [appForTest]="'row_status'" mat-icon-button color="warn" [appTooltip]="row"
-          [appTooltipComponent]="'status'" [appTooltipPosition]="'left'" (click)="clickCell($event, 'status', row)">
-          <mat-icon>error_outline</mat-icon>
-        </button>
-      </ng-template>
+      <app-status-column [row]="row" (onClick)="gotoStatus($event)"></app-status-column>
     </mat-cell>
   </ng-container>
 </mat-table>

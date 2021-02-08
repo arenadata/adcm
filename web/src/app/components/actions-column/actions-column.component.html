@@ -1,0 +1,7 @@
+<button [appForTest]="'row_actions'" mat-icon-button color="warn" *ngIf="!notIssue(row.issue); else actions"
+        [appTooltip]="row" appTooltipComponent="issue">
+  <mat-icon>priority_hight</mat-icon>
+</button>
+<ng-template #actions>
+  <app-action-list (click)="$event.stopPropagation()" [actionLink]="row.action" [cluster]="getClusterData(row)"></app-action-list>
+</ng-template>
