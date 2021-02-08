@@ -126,6 +126,8 @@ def check_adcm_config(conf_file):
             data = ruyaml.round_trip_load(fd, version="1.1")
     except ruyaml.parser.ParserError as e:
         err('STACK_LOAD_ERROR', f'YAML decode error: {e}')
+    except ruyaml.scanner.ScannerError as e:
+        err('STACK_LOAD_ERROR', f'YAML decode error: {e}')
     except ruyaml.constructor.DuplicateKeyError as e:
         msg = f'{e.context}\n{e.context_mark}\n{e.problem}\n{e.problem_mark}'
         err('STACK_LOAD_ERROR', f'Duplicate Keys error: {msg}')
@@ -933,8 +935,7 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
                     sc.subname = subname
                     sc.save()
     else:
-        msg = 'Config definition of {} should be a map or an array'
-        err('INVALID_CONFIG_DEFINITION', msg.format(ref))
+        err('INVALID_CONFIG_DEFINITION', f'Config definition of {ref} should be a map or an array')
 
 
 def check_key(context, context_name, param, param_name, key, conf):
@@ -957,9 +958,8 @@ def validate_name(value, name):
         ' dots (.), dashes (-), and underscores (_) are allowed.'
     if p.fullmatch(value) is None:
         err("WRONG_NAME", msg1.format(name))
-    msg2 = "{} is too long. Max length is {}"
     if len(value) > MAX_NAME_LENGTH:
-        raise err("LONG_NAME", msg2.format(name, MAX_NAME_LENGTH))
+        raise err("LONG_NAME", f'{name} is too long. Max length is {MAX_NAME_LENGTH}')
     return value
 
 
