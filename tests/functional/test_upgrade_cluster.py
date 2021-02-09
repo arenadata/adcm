@@ -1,14 +1,3 @@
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 # pylint: disable=W0611, W0621
 import allure
 import coreapi
@@ -50,7 +39,7 @@ def test_check_prototype(sdk_client_fs: ADCMClient):
     :param sdk_client_fs:
     :return:
     """
-    with allure.step('Create cluster'):
+    with allure.step('Create test cluster'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
         sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster'))
         cluster = bundle.cluster_create("test")
@@ -77,7 +66,7 @@ def test_check_config(sdk_client_fs: ADCMClient):
     """Check default service and cluster config fields after upgrade
     :return:
     """
-    with allure.step('Create cluster'):
+    with allure.step('Create upgradable cluster'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
         sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster'))
         cluster = bundle.cluster_create("test")
@@ -104,7 +93,7 @@ def test_with_new_default_values(sdk_client_fs: ADCMClient):
     """Upgrade cluster with new default fields. Old and new config values should be presented
     :return:
     """
-    with allure.step('Create cluster'):
+    with allure.step('Create upgradable cluster with new default values'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
         upgr_bundle = sdk_client_fs.upload_from_fs(get_data_dir(
             __file__, 'upgradable_cluster_new_default_values'))
@@ -130,7 +119,7 @@ def test_with_new_default_variables(sdk_client_fs: ADCMClient):
     """Upgrade cluster with new default fields. Old and new config variables should be presented
     :return:
     """
-    with allure.step('Create cluster'):
+    with allure.step('Create upgradable cluster new default variables'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
         upgr_bundle = sdk_client_fs.upload_from_fs(get_data_dir(
             __file__, 'upgradable_cluster_new_default_variables'))
@@ -155,7 +144,7 @@ def test_with_new_default_variables(sdk_client_fs: ADCMClient):
 def test_decrase_config(sdk_client_fs: ADCMClient):
     """Upgrade cluster with config without old values in config. Deleted lines not presented
     """
-    with allure.step('Create cluster'):
+    with allure.step('Create upgradable cluster with decrase variables'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
         sdk_client_fs.upload_from_fs(get_data_dir(
             __file__, 'upgradable_cluster_decrase_variables'))
@@ -185,7 +174,7 @@ def test_changed_variable_type(sdk_client_fs: ADCMClient):
     :param sdk_client_fs:
     :return:
     """
-    with allure.step('Create cluster'):
+    with allure.step('Create upgradable cluster with change variable type'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
         sdk_client_fs.upload_from_fs(get_data_dir(
             __file__, 'upgradable_cluster_change_variable_type'))
@@ -213,7 +202,7 @@ def test_multiple_upgrade_bundles(sdk_client_fs: ADCMClient):
 
     :return:
     """
-    with allure.step('Create cluster'):
+    with allure.step('Create upgradable cluster for multiple upgrade'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
         sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster'))
         cluster = bundle.cluster_create("test")
@@ -231,7 +220,7 @@ def test_multiple_upgrade_bundles(sdk_client_fs: ADCMClient):
 def test_change_config(sdk_client_fs: ADCMClient):
     """Upgrade cluster with other config
     """
-    with allure.step('Create cluster'):
+    with allure.step('Create upgradable cluster with new change values'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
         sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster_new_change_values'))
         cluster = bundle.cluster_create("test")

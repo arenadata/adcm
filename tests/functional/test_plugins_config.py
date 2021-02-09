@@ -140,9 +140,8 @@ def keys_clusters_services():
 
 
 def test_cluster_config(cluster_bundle: Bundle, keys_clusters):
-    with allure.step('Check expected cluster config'):
-        expected_state = copy.deepcopy(INITIAL_CLUSTERS_CONFIG)
-        assert_cluster_config(cluster_bundle, expected_state)
+    expected_state = copy.deepcopy(INITIAL_CLUSTERS_CONFIG)
+    assert_cluster_config(cluster_bundle, expected_state)
     with allure.step('Check cluster keys'):
         for key, cname in keys_clusters:
             cluster = cluster_bundle.cluster(name=cname)
@@ -152,9 +151,8 @@ def test_cluster_config(cluster_bundle: Bundle, keys_clusters):
 
 
 def test_cluster_config_from_service(cluster_bundle: Bundle, keys_clusters_services):
-    with allure.step('Check expected cluster config'):
-        expected_state = copy.deepcopy(INITIAL_CLUSTERS_CONFIG)
-        assert_cluster_config(cluster_bundle, expected_state)
+    expected_state = copy.deepcopy(INITIAL_CLUSTERS_CONFIG)
+    assert_cluster_config(cluster_bundle, expected_state)
     with allure.step('Check services keys'):
         for key, cname, sname in keys_clusters_services:
             cluster = cluster_bundle.cluster(name=cname)
@@ -165,9 +163,8 @@ def test_cluster_config_from_service(cluster_bundle: Bundle, keys_clusters_servi
 
 
 def test_service_config_from_cluster_by_name(cluster_bundle: Bundle, keys_clusters_services):
-    with allure.step('Check expected cluster config'):
-        expected_state = copy.deepcopy(INITIAL_CLUSTERS_CONFIG)
-        assert_cluster_config(cluster_bundle, expected_state)
+    expected_state = copy.deepcopy(INITIAL_CLUSTERS_CONFIG)
+    assert_cluster_config(cluster_bundle, expected_state)
     with allure.step('Check service config from cluster by name'):
         for key, cname, sname in keys_clusters_services:
             cluster = cluster_bundle.cluster(name=cname)
@@ -177,9 +174,8 @@ def test_service_config_from_cluster_by_name(cluster_bundle: Bundle, keys_cluste
 
 
 def test_service_config_from_service_by_name(cluster_bundle: Bundle, keys_clusters_services):
-    with allure.step('Check expected cluster config'):
-        expected_state = copy.deepcopy(INITIAL_CLUSTERS_CONFIG)
-        assert_cluster_config(cluster_bundle, expected_state)
+    expected_state = copy.deepcopy(INITIAL_CLUSTERS_CONFIG)
+    assert_cluster_config(cluster_bundle, expected_state)
     with allure.step('Check service config from service by name'):
         for key, cname, sname in keys_clusters_services:
             service = cluster_bundle.cluster(name=cname).service(name=sname)
@@ -189,9 +185,8 @@ def test_service_config_from_service_by_name(cluster_bundle: Bundle, keys_cluste
 
 
 def test_another_service_from_service_by_name(cluster_bundle: Bundle, keys_clusters_services):
-    with allure.step('Check expected cluster config'):
-        expected_state = copy.deepcopy(INITIAL_CLUSTERS_CONFIG)
-        assert_cluster_config(cluster_bundle, expected_state)
+    expected_state = copy.deepcopy(INITIAL_CLUSTERS_CONFIG)
+    assert_cluster_config(cluster_bundle, expected_state)
     with allure.step('Check another service from service by name'):
         for key, cname, sname in keys_clusters_services:
             if sname == "Second":
@@ -203,9 +198,8 @@ def test_another_service_from_service_by_name(cluster_bundle: Bundle, keys_clust
 
 
 def test_service_config(cluster_bundle: Bundle, keys_clusters_services):
-    with allure.step('Check expected cluster config'):
-        expected_state = copy.deepcopy(INITIAL_CLUSTERS_CONFIG)
-        assert_cluster_config(cluster_bundle, expected_state)
+    expected_state = copy.deepcopy(INITIAL_CLUSTERS_CONFIG)
+    assert_cluster_config(cluster_bundle, expected_state)
     with allure.step('Check service keys'):
         for key, cname, sname in keys_clusters_services:
             cluster = cluster_bundle.cluster(name=cname)
@@ -290,9 +284,8 @@ def provider_bundle(sdk_client_fs: ADCMClient):
 
 
 def test_provider_config(provider_bundle: Bundle):
-    with allure.step('Check expected cluster config'):
-        expected_state = copy.deepcopy(INITIAL_PROVIDERS_CONFIG)
-        assert_provider_config(provider_bundle, expected_state)
+    expected_state = copy.deepcopy(INITIAL_PROVIDERS_CONFIG)
+    assert_provider_config(provider_bundle, expected_state)
     with allure.step('Check provider config'):
         for key, pname in sparse_matrix(KEYS, PROVIDERS):
             provider = provider_bundle.provider(name=pname)
@@ -303,9 +296,8 @@ def test_provider_config(provider_bundle: Bundle):
 
 
 def test_host_config(provider_bundle: Bundle):
-    with allure.step('Check expected cluster config'):
-        expected_state = copy.deepcopy(INITIAL_PROVIDERS_CONFIG)
-        assert_provider_config(provider_bundle, expected_state)
+    expected_state = copy.deepcopy(INITIAL_PROVIDERS_CONFIG)
+    assert_provider_config(provider_bundle, expected_state)
     with allure.step('Check host config'):
         for key, pname, host_idx in sparse_matrix(KEYS, PROVIDERS, [0, 1]):
             provider = provider_bundle.provider(name=pname)
@@ -317,9 +309,8 @@ def test_host_config(provider_bundle: Bundle):
 
 
 def test_host_config_from_provider(provider_bundle: Bundle):
-    with allure.step('Check expected cluster config'):
-        expected_state = copy.deepcopy(INITIAL_PROVIDERS_CONFIG)
-        assert_provider_config(provider_bundle, expected_state)
+    expected_state = copy.deepcopy(INITIAL_PROVIDERS_CONFIG)
+    assert_provider_config(provider_bundle, expected_state)
     with allure.step('Check host config from provider'):
         for key, pname, host_idx in sparse_matrix(KEYS, PROVIDERS, [0, 1]):
             provider = provider_bundle.provider(name=pname)

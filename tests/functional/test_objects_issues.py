@@ -1,16 +1,3 @@
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-# Created by a1wen at 01.02.19
 import allure
 import coreapi
 import pytest
@@ -39,52 +26,52 @@ def client(adcm):
 
 
 def test_action_shouldnt_be_run_while_cluster_has_an_issue(client):
-    with allure.step('Create cluster'):
+    with allure.step('Create default cluster and get id'):
         bundle = utils.get_data_dir(__file__, "cluster")
         steps.upload_bundle(client, bundle)
         cluster_id = steps.create_cluster(client)['id']
-    with allure.step('Run action'):
+    with allure.step(f'Run action with error for cluster {cluster_id}'):
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             client.cluster.action.run.create(
                 cluster_id=cluster_id,
                 action_id=client.cluster.action.list(cluster_id=cluster_id)[0]['id'])
-    with allure.step('Check if action has issues'):
+    with allure.step('Check if cluster action has issues'):
         TASK_ERROR.equal(e, 'action has issues')
 
 
 def test_action_shouldnt_be_run_while_host_has_an_issue(client):
-    with allure.step('Create host'):
+    with allure.step('Create default host and get id'):
         bundle = utils.get_data_dir(__file__, "host")
         steps.upload_bundle(client, bundle)
         provider_id = steps.create_hostprovider(client)['id']
         host_id = client.host.create(prototype_id=client.stack.host.list()[0]['id'],
                                      provider_id=provider_id,
                                      fqdn=utils.random_string())['id']
-    with allure.step('Run action'):
+    with allure.step(f'Run action with error for host {host_id}'):
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             client.host.action.run.create(
                 host_id=host_id,
                 action_id=client.host.action.list(host_id=host_id)[0]['id'])
-    with allure.step('Check if action has issues'):
+    with allure.step('Check if host action has issues'):
         TASK_ERROR.equal(e, 'action has issues')
 
 
 def test_action_shouldnt_be_run_while_hostprovider_has_an_issue(client):
-    with allure.step('Create hostprovider'):
+    with allure.step('Create default hostprovider and get id'):
         bundle = utils.get_data_dir(__file__, "provider")
         steps.upload_bundle(client, bundle)
         provider_id = steps.create_hostprovider(client)['id']
-    with allure.step('Run action'):
+    with allure.step(f'Run action with error for provider {provider_id}'):
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             client.provider.action.run.create(
                 provider_id=provider_id,
                 action_id=client.provider.action.list(provider_id=provider_id)[0]['id'])
-    with allure.step('Check if action has issues'):
+    with allure.step('Check if provider action has issues'):
         TASK_ERROR.equal(e, 'action has issues')
 
 
 def test_when_cluster_has_issue_than_upgrade_locked(client):
-    with allure.step('Create cluster'):
+    with allure.step('Create cluster and upload new one bundle'):
         bundledir = utils.get_data_dir(__file__, "cluster")
         upgrade_bundle = utils.get_data_dir(__file__, "upgrade", "cluster")
         steps.upload_bundle(client, bundledir)
@@ -118,7 +105,7 @@ def test_when_hostprovider_has_issue_than_upgrade_locked(client):
 
 @allure.link('https://jira.arenadata.io/browse/ADCM-487')
 def test_when_component_hasnt_constraint_then_cluster_doesnt_have_issues(client):
-    with allure.step('Create cluster'):
+    with allure.step('Create cluster (component hasnt constraint)'):
         bundledir = utils.get_data_dir(__file__, "cluster_component_hasnt_constraint")
         steps.upload_bundle(client, bundledir)
         cluster = steps.create_cluster(client)

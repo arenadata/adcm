@@ -61,7 +61,7 @@ def _assert_attrs(obj) -> object:
 
 
 def test_cluster_attrs(sdk_client_fs: ADCMClient):
-    with allure.step('Create cluster'):
+    with allure.step('Create sample cluster'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__) + "/cluster")
         cluster1 = bundle.cluster_prototype().cluster_create(name="sample cluster")
     with allure.step('Check cluster attributes'):
@@ -78,20 +78,20 @@ def test_cluster_crud(sdk_client_fs: ADCMClient):
         assert cluster1.name == "sample cluster"
         assert cluster2.cluster_id == 2
         assert cluster2.name == "sample cluster 2"
-    with allure.step('Check cluster list'):
+    with allure.step('Check cluster list len=2 and names'):
         cl = bundle.cluster_list()
         assert len(cl) == 2
         assert cl[0].name != cl[1].name
         assert len(bundle.cluster_list(name="sample cluster")) == 1
     with allure.step('Delete first cluster'):
         cluster1.delete()
-    with allure.step('Check cluster list'):
+    with allure.step('Check cluster list len=1 and names'):
         cl = bundle.cluster_list()
         assert len(cl) == 1
         assert cl[0].description == cluster2.description
     with allure.step('Delete second cluster'):
         cluster2.delete()
-    with allure.step('Check cluster list'):
+    with allure.step('Check cluster list empty'):
         assert bundle.cluster_list() == []
 
 
@@ -128,7 +128,7 @@ def test_cluster_action(sdk_client_fs: ADCMClient):
 
 
 def test_cluster_config(sdk_client_fs: ADCMClient):
-    with allure.step('Create cluster'):
+    with allure.step('Create cluster and get config'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__) + "/cluster")
         cluster = bundle.cluster_create(name="sample cluster")
         conf1 = cluster.config()
@@ -143,7 +143,7 @@ def test_cluster_config(sdk_client_fs: ADCMClient):
 
 
 def test_cluster_full_config(sdk_client_fs: ADCMClient):
-    with allure.step('Create cluster'):
+    with allure.step('Create cluster with activatable, get and check conf1'):
         bundle = sdk_client_fs.upload_from_fs(
             get_data_dir(__file__) + "/cluster_with_activatable")
         cluster = bundle.cluster_create(name="sample cluster")
@@ -159,7 +159,7 @@ def test_cluster_full_config(sdk_client_fs: ADCMClient):
 
 
 def test_cluster_config_attrs(sdk_client_fs: ADCMClient):
-    with allure.step('Create cluster'):
+    with allure.step('Create cluster with activatable, get and check conf3'):
         bundle = sdk_client_fs.upload_from_fs(
             get_data_dir(__file__) + "/cluster_with_activatable")
         cluster = bundle.cluster_create(name="sample cluster")
@@ -173,7 +173,7 @@ def test_cluster_config_attrs(sdk_client_fs: ADCMClient):
 
 
 def test_cluster_set_diff(sdk_client_fs: ADCMClient):
-    with allure.step('Create cluster'):
+    with allure.step('Create new cluster'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__) + "/cluster")
         cluster = bundle.cluster_create(name="sample cluster")
     with allure.step('Set cluster diff'):
@@ -184,7 +184,7 @@ def test_cluster_set_diff(sdk_client_fs: ADCMClient):
 
 
 def test_cluster_service(sdk_client_fs: ADCMClient):
-    with allure.step('Create cluster'):
+    with allure.step('Create cluster with service'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__) + "/cluster_with_service")
         cluster = bundle.cluster_create(name="sample cluster")
     with allure.step('Create service'):
@@ -204,7 +204,7 @@ def cluster_with_service(sdk_client_fs: ADCMClient):
 
 
 def test_hostcomponent(sdk_client_fs: ADCMClient, cluster_with_service):
-    with allure.step('Create provider'):
+    with allure.step('Create default provider'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__) + "/provider")
         provider = bundle.provider_prototype().provider_create(name="azaza")
     with allure.step('Create and add three hosts'):
@@ -227,11 +227,11 @@ def test_hostcomponent(sdk_client_fs: ADCMClient, cluster_with_service):
 
 
 def test_cluster_service_not_found(sdk_client_fs: ADCMClient):
-    with allure.step('Create cluster'):
+    with allure.step('Create cluster with service with error'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__) + "/cluster_with_service")
         cluster = bundle.cluster_create(name="sample cluster")
-    with pytest.raises(ObjectNotFound):
-        cluster.service(name="ahaha_service")
+        with pytest.raises(ObjectNotFound):
+            cluster.service(name="ahaha_service")
     with allure.step('Add service'):
         cluster.service_add(name="ahaha_service")
     with allure.step('Check service'):
@@ -239,7 +239,7 @@ def test_cluster_service_not_found(sdk_client_fs: ADCMClient):
 
 
 def test_action_fail(sdk_client_fs: ADCMClient):
-    with allure.step('Create cluster'):
+    with allure.step('Create cluster with fail'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__) + "/cluster_with_fail")
         cluster = bundle.cluster_create(name="sample cluster")
     with allure.step('Check action fail'):
@@ -248,26 +248,26 @@ def test_action_fail(sdk_client_fs: ADCMClient):
 
 
 def test_cluster_upgrade(sdk_client_fs: ADCMClient):
-    with allure.step('Create cluster'):
+    with allure.step('Create cluster with upgrade'):
         for i in range(1, 4):
             sdk_client_fs.upload_from_fs(get_data_dir(__file__) + "/cluster_upgrade" + str(i))
             cluster = sdk_client_fs.bundle(name='cluster',
                                            version="1.4").cluster_create(name="azaza")
-    with allure.step('Check upgrade list'):
+    with allure.step('Check upgrade list len=2'):
         assert len(cluster.upgrade_list()) == 2
     with allure.step('Upgrade cluster'):
         _assert_attrs(cluster.upgrade(name="2"))
         cluster.upgrade(name="2").do()
-    with allure.step('Check upgrade list'):
+    with allure.step('Check upgrade list len=1'):
         assert len(cluster.upgrade_list()) == 1
     with allure.step('Upgrade cluster'):
         cluster.upgrade(name="3").do()
-    with allure.step('Check upgrade list'):
+    with allure.step('Check upgrade list empty'):
         assert len(cluster.upgrade_list()) == 0
 
 
 def test_paging_on_hosts(sdk_client_fs: ADCMClient):
-    with allure.step('Create provider'):
+    with allure.step('Create def provider'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__) + "/provider")
         provider = bundle.provider_prototype().provider_create(name="azaza")
     with allure.step('Create host'):
@@ -297,14 +297,14 @@ def test_adcm_config_url(sdk_client_fs: ADCMClient):
         sdk_client_fs.adcm().config_set_diff({"global": {"adcm_url": sdk_client_fs.url}})
     with allure.step('Set config'):
         conf = sdk_client_fs.adcm().config()
-    with allure.step('Check adcm url'):
+    with allure.step('Check adcm config url'):
         assert conf["global"]["adcm_url"] == sdk_client_fs.url
 
 
 def test_adcm_config_url_guess(sdk_client_fs: ADCMClient):
     with allure.step('Set config'):
         conf = sdk_client_fs.adcm().config()
-    with allure.step('Check adcm url'):
+    with allure.step('Check adcm config url guess'):
         assert conf["global"]["adcm_url"] == sdk_client_fs.url
 
 
@@ -313,6 +313,6 @@ def test_adcm_config_url_no_guess(sdk_client_fs: ADCMClient):
         sdk_client_fs.adcm().config_set_diff({"global": {"adcm_url": "azaza"}})
     with allure.step('Set adcm url'):
         sdk_client_fs.guess_adcm_url()
-    with allure.step('Check adcm url'):
+    with allure.step('Check adcm config url no guess'):
         conf = sdk_client_fs.adcm().config()
         assert conf["global"]["adcm_url"] == "azaza"

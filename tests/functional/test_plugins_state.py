@@ -61,72 +61,61 @@ def cluster_bundle(sdk_client_fs: ADCMClient):
 
 
 def test_change_service_state_by_name(cluster_bundle: Bundle):
-    with allure.step('Check expected cluster service states'):
-        expected_state = copy.deepcopy(INITIAL_CLUSTERS_STATE)
-        assert_cluster_service_states(cluster_bundle, expected_state)
+    expected_state = copy.deepcopy(INITIAL_CLUSTERS_STATE)
+    assert_cluster_service_states(cluster_bundle, expected_state)
     with allure.step('Run action: set first service'):
         cluster_bundle.cluster(name='first').action(name='set_first_service').run().try_wait()
-    with allure.step('Check service state'):
-        expected_state['first']['services']['First'] = 'bimba!'
-        assert_cluster_service_states(cluster_bundle, expected_state)
+    expected_state['first']['services']['First'] = 'bimba!'
+    assert_cluster_service_states(cluster_bundle, expected_state)
     with allure.step('Run action: set second service'):
         cluster_bundle.cluster(name='third').action(name='set_second_service').run().try_wait()
-    with allure.step('Check service state'):
-        expected_state['third']['services']['Second'] = 'state2'
-        assert_cluster_service_states(cluster_bundle, expected_state)
+    expected_state['third']['services']['Second'] = 'state2'
+    assert_cluster_service_states(cluster_bundle, expected_state)
 
 
 def test_change_service_state_by_name_from_service(cluster_bundle: Bundle):
-    with allure.step('Check expected cluster service states'):
-        expected_state = copy.deepcopy(INITIAL_CLUSTERS_STATE)
-        assert_cluster_service_states(cluster_bundle, expected_state)
+    expected_state = copy.deepcopy(INITIAL_CLUSTERS_STATE)
+    assert_cluster_service_states(cluster_bundle, expected_state)
     with allure.step('Run action: set second service'):
         second = cluster_bundle.cluster(name='first').service(name='Second')
         second.action(name='set_second_service').run().try_wait()
-    with allure.step('Check service state'):
-        expected_state['first']['services']['Second'] = 'state2'
-        assert_cluster_service_states(cluster_bundle, expected_state)
+    expected_state['first']['services']['Second'] = 'state2'
+    assert_cluster_service_states(cluster_bundle, expected_state)
 
 
 def test_change_service_state_by_name_from_another_service(cluster_bundle: Bundle):
-    with allure.step('Check expected cluster service states'):
-        expected_state = copy.deepcopy(INITIAL_CLUSTERS_STATE)
-        assert_cluster_service_states(cluster_bundle, expected_state)
+    expected_state = copy.deepcopy(INITIAL_CLUSTERS_STATE)
+    assert_cluster_service_states(cluster_bundle, expected_state)
     with allure.step('Run action: set first service'):
         second = cluster_bundle.cluster(name='first').service(name='Second')
         result = second.action(name='set_first_service').run().wait()
-    with allure.step('Check service state'):
+    with allure.step('Check job state'):
         assert result == "failed", "Job expected to be failed"
-        assert_cluster_service_states(cluster_bundle, expected_state)
+    assert_cluster_service_states(cluster_bundle, expected_state)
 
 
 def test_change_service_state(cluster_bundle: Bundle):
-    with allure.step('Check expected cluster service states'):
-        expected_state = copy.deepcopy(INITIAL_CLUSTERS_STATE)
-        assert_cluster_service_states(cluster_bundle, expected_state)
+    expected_state = copy.deepcopy(INITIAL_CLUSTERS_STATE)
+    assert_cluster_service_states(cluster_bundle, expected_state)
     with allure.step('Run first service action: set service'):
         second = cluster_bundle.cluster(name='second')
         third = cluster_bundle.cluster(name='third')
         second.service(name='First').action(name='set_service').run().try_wait()
-    with allure.step('Check service state'):
-        expected_state['second']['services']['First'] = 'statex'
-        assert_cluster_service_states(cluster_bundle, expected_state)
+    expected_state['second']['services']['First'] = 'statex'
+    assert_cluster_service_states(cluster_bundle, expected_state)
     with allure.step('Run second service action: set service'):
         second.service(name='Second').action(name='set_service').run().try_wait()
-    with allure.step('Check service state'):
-        expected_state['second']['services']['Second'] = 'statex'
-        assert_cluster_service_states(cluster_bundle, expected_state)
+    expected_state['second']['services']['Second'] = 'statex'
+    assert_cluster_service_states(cluster_bundle, expected_state)
     with allure.step('Run third service action: set service'):
         third.service(name='Second').action(name='set_service').run().try_wait()
-    with allure.step('Check service state'):
-        expected_state['third']['services']['Second'] = 'statex'
-        assert_cluster_service_states(cluster_bundle, expected_state)
+    expected_state['third']['services']['Second'] = 'statex'
+    assert_cluster_service_states(cluster_bundle, expected_state)
 
 
 def test_change_cluster_state(cluster_bundle: Bundle):
-    with allure.step('Check expected cluster service states'):
-        expected_state = copy.deepcopy(INITIAL_CLUSTERS_STATE)
-        assert_cluster_service_states(cluster_bundle, expected_state)
+    expected_state = copy.deepcopy(INITIAL_CLUSTERS_STATE)
+    assert_cluster_service_states(cluster_bundle, expected_state)
     first = cluster_bundle.cluster(name='first')
     second = cluster_bundle.cluster(name='second')
     third = cluster_bundle.cluster(name='third')
@@ -137,14 +126,12 @@ def test_change_cluster_state(cluster_bundle: Bundle):
         assert_cluster_service_states(cluster_bundle, expected_state)
     with allure.step('Run first service action: set cluster'):
         first.service(name='First').action(name='set_cluster').run().try_wait()
-    with allure.step('Check service state'):
-        expected_state['first']['state'] = 'statey'
-        assert_cluster_service_states(cluster_bundle, expected_state)
+    expected_state['first']['state'] = 'statey'
+    assert_cluster_service_states(cluster_bundle, expected_state)
     with allure.step('Run second service action: set cluster'):
         third.service(name='Second').action(name='set_cluster').run().try_wait()
-    with allure.step('Check service state'):
-        expected_state['third']['state'] = 'statey'
-        assert_cluster_service_states(cluster_bundle, expected_state)
+    expected_state['third']['state'] = 'statey'
+    assert_cluster_service_states(cluster_bundle, expected_state)
 
 
 INITIAL_HOST_STATE = {
@@ -177,6 +164,7 @@ def host_bundle(sdk_client_fs: ADCMClient):
     return bundle
 
 
+@allure.step('Check host state')
 def assert_provider_host_states(bundle: Bundle, statemap: dict):
     for pname, pv in statemap.items():
         pstate = bundle.provider(name=pname).state
@@ -194,47 +182,39 @@ def assert_provider_host_states(bundle: Bundle, statemap: dict):
 
 
 def test_change_host_state(host_bundle: Bundle):
-    with allure.step('Check expected cluster service states'):
-        expected_state = copy.deepcopy(INITIAL_HOST_STATE)
-        assert_provider_host_states(host_bundle, expected_state)
+    expected_state = copy.deepcopy(INITIAL_HOST_STATE)
+    assert_provider_host_states(host_bundle, expected_state)
     first = host_bundle.provider(name='first')
     second = host_bundle.provider(name='second')
     with allure.step('Run first host action: set host'):
         first.host(fqdn='first_host1').action(name='set_host').run().try_wait()
-    with allure.step('Check host state'):
-        expected_state['first']['hosts']['first_host1'] = 'statez'
-        assert_provider_host_states(host_bundle, expected_state)
+    expected_state['first']['hosts']['first_host1'] = 'statez'
+    assert_provider_host_states(host_bundle, expected_state)
     with allure.step('Run second host action: set host'):
         second.host(fqdn='second_host1').action(name='set_host').run().try_wait()
-    with allure.step('Check host state'):
-        expected_state['second']['hosts']['second_host1'] = 'statez'
-        assert_provider_host_states(host_bundle, expected_state)
+    expected_state['second']['hosts']['second_host1'] = 'statez'
+    assert_provider_host_states(host_bundle, expected_state)
     with allure.step('Change second host'):
         second.host(fqdn='second_host3').action(name='set_host').run().try_wait()
-    with allure.step('Check host state'):
-        expected_state['second']['hosts']['second_host3'] = 'statez'
-        assert_provider_host_states(host_bundle, expected_state)
+    expected_state['second']['hosts']['second_host3'] = 'statez'
+    assert_provider_host_states(host_bundle, expected_state)
 
 
 def test_change_provider_state(host_bundle: Bundle):
-    with allure.step('Check expected cluster service states'):
-        expected_state = copy.deepcopy(INITIAL_HOST_STATE)
-        assert_provider_host_states(host_bundle, expected_state)
+    expected_state = copy.deepcopy(INITIAL_HOST_STATE)
+    assert_provider_host_states(host_bundle, expected_state)
     with allure.step('Run second host action: set state'):
         second = host_bundle.provider(name='second')
         second.action(name='set_state').run().try_wait()
-    with allure.step('Check host state'):
-        expected_state['second']['state'] = 'pstatex'
-        assert_provider_host_states(host_bundle, expected_state)
+    expected_state['second']['state'] = 'pstatex'
+    assert_provider_host_states(host_bundle, expected_state)
 
 
 def test_change_host_from_provider_state(host_bundle: Bundle):
-    with allure.step('Check expected cluster service states'):
-        expected_state = copy.deepcopy(INITIAL_HOST_STATE)
-        assert_provider_host_states(host_bundle, expected_state)
+    expected_state = copy.deepcopy(INITIAL_HOST_STATE)
+    assert_provider_host_states(host_bundle, expected_state)
     with allure.step('Run second host action: set host state'):
         second = host_bundle.provider(name='second')
         second.action(name='set_host_state').run(config={"fqdn": "second_host2"}).try_wait()
-    with allure.step('Check host state'):
-        expected_state['second']['hosts']['second_host2'] = 'stateq'
-        assert_provider_host_states(host_bundle, expected_state)
+    expected_state['second']['hosts']['second_host2'] = 'stateq'
+    assert_provider_host_states(host_bundle, expected_state)

@@ -1,14 +1,3 @@
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 # pylint: disable=W0611, W0621
 import allure
 import coreapi
@@ -19,6 +8,12 @@ from adcm_pytest_plugin.utils import get_data_dir, parametrize_by_data_subdirs
 from tests.library import errorcodes as err
 
 
+@allure.step('Bind service and cluster')
+def bind_service_and_cluster(cluster_import, service, cluster):
+    cluster_import.bind(service)
+    cluster_import.bind(cluster)
+
+
 def test_upgrade_cluster_with_import(sdk_client_fs: ADCMClient):
     """Scenario:
     1. Create cluster for upgrade with exports
@@ -27,7 +22,7 @@ def test_upgrade_cluster_with_import(sdk_client_fs: ADCMClient):
     4. Upgrade cluster
     5. Check that cluster was upgraded
     """
-    with allure.step('Create cluster for upgrade with exports'):
+    with allure.step('Create cluster with exports'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(
             __file__, 'upgrade_cluster_with_export'))
         cluster = bundle.cluster_create("test")
@@ -38,9 +33,7 @@ def test_upgrade_cluster_with_import(sdk_client_fs: ADCMClient):
         bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(
             __file__, 'upgradable_cluster_with_import'))
         cluster_import = bundle_import.cluster_create("cluster_import")
-    with allure.step('Bind service and cluster'):
-        cluster_import.bind(service)
-        cluster_import.bind(cluster)
+    bind_service_and_cluster(cluster_import, service, cluster)
     with allure.step('Upgrade cluster'):
         upgr = cluster.upgrade(name='upgrade to 1.6')
         upgr.do()
@@ -75,10 +68,8 @@ def test_upgrade_cluster_with_export(sdk_client_fs: ADCMClient):
             __file__, 'upgrade_cluster_with_import'))
         sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster_with_import'))
         cluster_import = bundle_import.cluster_create("cluster_import")
-    with allure.step('Bind service and cluster'):
-        cluster_import.bind(service)
-        cluster_import.bind(cluster)
-    with allure.step('Upgrade cluster with import'):
+    bind_service_and_cluster(cluster_import, service, cluster)
+    with allure.step('Upgrade cluster with import to 1.6'):
         upgr = cluster_import.upgrade(name='upgrade to 1.6')
         id_before = cluster_import.prototype_id
         upgr.do()
@@ -101,7 +92,7 @@ def test_incorrect_import_strict_version(sdk_client_fs: ADCMClient, path):
     7. Check that cluster was not upgraded because incorrect version for service
     in cluster with import
     """
-    with allure.step('Create cluster for upgrade with exports'):
+    with allure.step('Create cluster for upgrade with exports for strict test'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(
             __file__, 'upgrade_cluster_with_export_for_strict_test'))
         sdk_client_fs.upload_from_fs(path)
@@ -111,10 +102,8 @@ def test_incorrect_import_strict_version(sdk_client_fs: ADCMClient, path):
         bundle_import_correct = sdk_client_fs.upload_from_fs(
             get_data_dir(__file__, 'cluster_with_correct_import'))
         cluster_import = bundle_import_correct.cluster_create("cluster_import")
-    with allure.step('Bind service and cluster'):
-        cluster_import.bind(service)
-        cluster_import.bind(cluster)
-    with allure.step('Upgrade cluster with import'):
+    bind_service_and_cluster(cluster_import, service, cluster)
+    with allure.step('Upgrade cluster with import with error'):
         upgr = cluster_import.upgrade(name='upgrade to 1.6')
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             upgr.do()
@@ -135,7 +124,7 @@ def test_incorrect_import_version(sdk_client_fs: ADCMClient, path):
     in cluster with import
     """
     with allure.step('Create cluster for upgrade with exports and '
-                     'cluster with import and incorrect version'):
+                     'cluster with correct import'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgrade_cluster_with_export'))
         sdk_client_fs.upload_from_fs(path)
         bundle_import_correct = sdk_client_fs.upload_from_fs(
@@ -143,10 +132,8 @@ def test_incorrect_import_version(sdk_client_fs: ADCMClient, path):
         cluster = bundle.cluster_create("test")
         service = cluster.service_add(name="hadoop")
         cluster_import = bundle_import_correct.cluster_create("cluster_import")
-    with allure.step('Bind service and cluster'):
-        cluster_import.bind(service)
-        cluster_import.bind(cluster)
-    with allure.step('Upgrade cluster with import'):
+    bind_service_and_cluster(cluster_import, service, cluster)
+    with allure.step('Upgrade cluster with import to 1.6 with error'):
         upgr = cluster_import.upgrade(name='upgrade to 1.6')
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             upgr.do()
@@ -196,9 +183,7 @@ def test_upgrade_cluster_with_new_configuration_variables(sdk_client_fs: ADCMCli
         cluster_config_before = cluster.config()
         service_config_before = service.config()
         cluster_import = bundle_import.cluster_create("cluster_import")
-    with allure.step('Bind service and cluster'):
-        cluster_import.bind(service)
-        cluster_import.bind(cluster)
+    bind_service_and_cluster(cluster_import, service, cluster)
     with allure.step('Upgrade cluster with export'):
         upgr = cluster.upgrade(name='upgrade to 1.6')
         upgr.do()
