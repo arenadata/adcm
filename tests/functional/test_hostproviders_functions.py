@@ -28,21 +28,17 @@ BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
 SCHEMAS = os.path.join(os.path.dirname(__file__), "schemas/")
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def adcm(image, request, adcm_credentials):
     repo, tag = image
     dw = DockerWrapper()
     adcm = dw.run_adcm(image=repo, tag=tag, pull=False)
     adcm.api.auth(**adcm_credentials)
-
-    def fin():
-        adcm.stop()
-
-    request.addfinalizer(fin)
-    return adcm
+    yield adcm
+    adcm.stop()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def client(adcm):
     return adcm.api.objects
 
