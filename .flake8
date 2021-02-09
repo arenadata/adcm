@@ -1,9 +1,8 @@
 [flake8]
 
-max-line-length=100
-
 ignore =
-    I801
+    I801,
+    E501,
 
 exclude =
     .pytest_cache,
