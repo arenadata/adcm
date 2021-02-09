@@ -340,7 +340,7 @@
       new-text-area:
           type: text
           required: false
-          default: bluuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuhhhh, ma brotha kill himself xD
+          default: test test test test test test test test test test test test test
       new-password:
           type: password
           required: false

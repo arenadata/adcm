@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Directive, HostListener, Input } from '@angular/core';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { IAction } from '@app/core/types';
 
 import { DialogComponent } from '../dialog.component';
@@ -35,11 +35,11 @@ export class ActionsDirective {
   @HostListener('click')
   onClick() {
     this.dialog.closeAll();
-    const dialogModel = this.prepare();
+    const dialogModel: MatDialogConfig = this.prepare();
     this.dialog.open(DialogComponent, dialogModel);
   }
 
-  prepare() {
+  prepare(): MatDialogConfig {
     const maxWidth = '1400px';
     const model = this.inputData;
 
@@ -57,7 +57,7 @@ export class ActionsDirective {
       data: {
         title,
         model,
-        component
+        component,
       }
     };
   }
