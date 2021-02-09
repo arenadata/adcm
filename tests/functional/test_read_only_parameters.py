@@ -10,13 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import allure
 import coreapi
 import pytest
-
 # pylint: disable=W0611, W0621
 from adcm_pytest_plugin import utils
-from tests.library.errorcodes import CONFIG_VALUE_ERROR
 
+from tests.library.errorcodes import CONFIG_VALUE_ERROR
 
 TEST_DATA = [("read-only-when-runned", False, True, "run", False, True),
              ("writable-when-installed", "bluhbluh", "bluhbluh", "install", False, False),
@@ -41,24 +41,26 @@ def cluster_config(cluster_sdk):
     return cluster_sdk.config()
 
 
-@pytest.mark.parametrize("key, input_value, expected, action, group, check_exception",
+@pytest.mark.parametrize(('key', 'input_value', 'expected', 'action', 'group', 'check_exception'),
                          TEST_DATA, ids=TEST_IDS)
 def test_readonly_variable(key, input_value, expected, action, group, check_exception, cluster_sdk):
-    current_config = cluster_sdk.config()
-    if group:
-        current_config['group'][key] = input_value
-    else:
-        current_config[key] = input_value
-    if action:
-        cluster_sdk.action(name=action).run().wait()
-    if check_exception:
-        with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-            cluster_sdk.config_set(current_config)
+    with allure.step('Set config'):
+        current_config = cluster_sdk.config()
+        if group:
+            current_config['group'][key] = input_value
+        else:
+            current_config[key] = input_value
+        if action:
+            cluster_sdk.action(name=action).run().wait()
+        if check_exception:
+            with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
+                cluster_sdk.config_set(current_config)
             CONFIG_VALUE_ERROR.equal(e, 'config key ', 'is read only')
-    else:
-        cluster_sdk.config_set(current_config)
-    config_after_update = cluster_sdk.config()
-    if group:
-        assert config_after_update['group'][key] == expected
-    else:
-        assert config_after_update[key] == expected
+        else:
+            cluster_sdk.config_set(current_config)
+    with allure.step('Check config after update'):
+        config_after_update = cluster_sdk.config()
+        if group:
+            assert config_after_update['group'][key] == expected
+        else:
+            assert config_after_update[key] == expected

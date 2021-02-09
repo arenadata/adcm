@@ -44,7 +44,7 @@ def test_field_validation(sdk_client_fs: ADCMClient, missed_field):
             f'current log count {current_len}'
 
 
-@pytest.mark.parametrize(['name', 'group_msg', 'task_msg', 'group_result', 'task_result'],
+@pytest.mark.parametrize(('name', 'group_msg', 'task_msg', 'group_result', 'task_result'),
                          ALL_FIELDS_DATA)
 def test_all_fields(sdk_client_fs: ADCMClient, name, group_msg,
                     task_msg, group_result, task_result):

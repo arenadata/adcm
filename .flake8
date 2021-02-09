@@ -1,0 +1,13 @@
+[flake8]
+
+max-line-length=100
+
+ignore =
+    I801
+
+exclude =
+    .pytest_cache,
+    venv,
+    .dockerignore,
+    .gitignore,
+    .npmcheckignore,
