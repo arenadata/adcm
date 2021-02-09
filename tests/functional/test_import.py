@@ -29,7 +29,7 @@ def test_service_import_negative(sdk_client_fs: ADCMClient, path):
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         cluster_import.bind(service)
     with allure.step('Expect backend error because incorrect version for import'):
-        err.BIND_ERROR.equal(e)
+        assert err.BIND_ERROR == e
 
 
 @parametrize_by_data_subdirs(__file__, "cluster_import_check_negative")
