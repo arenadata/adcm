@@ -17,6 +17,7 @@ import json
 import yaml
 import ruyaml
 import hashlib
+import warnings
 import yspec.checker
 
 from rest_framework import status
@@ -118,6 +119,7 @@ def get_config_files(path, bundle_hash):
 
 
 def check_adcm_config(conf_file):
+    warnings.simplefilter('error', ruyaml.error.ReusedAnchorWarning)
     schema_file = os.path.join(config.CODE_DIR, 'cm', 'adcm_schema.yaml')
     with open(schema_file) as fd:
         rules = ruyaml.round_trip_load(fd)
@@ -125,7 +127,9 @@ def check_adcm_config(conf_file):
         with open(conf_file) as fd:
             data = ruyaml.round_trip_load(fd, version="1.1")
     except (ruyaml.parser.ParserError, ruyaml.scanner.ScannerError, NotImplementedError) as e:
-        err('STACK_LOAD_ERROR', f'YAML decode error: {e}')
+        err('STACK_LOAD_ERROR', f'YAML decode "{conf_file}" error: {e}')
+    except ruyaml.error.ReusedAnchorWarning as e:
+        err('STACK_LOAD_ERROR', f'YAML decode "{conf_file}" error: {e}')
     except ruyaml.constructor.DuplicateKeyError as e:
         msg = f'{e.context}\n{e.context_mark}\n{e.problem}\n{e.problem_mark}'
         err('STACK_LOAD_ERROR', f'Duplicate Keys error: {msg}')
@@ -148,14 +152,10 @@ def read_definition(conf_file, conf_type):
         with open(conf_file) as fd:
             try:
                 conf = yaml.safe_load(fd)
-            except yaml.parser.ParserError as e:
-                err('STACK_LOAD_ERROR', 'YAML decode "{}" error: {}'.format(conf_file, e))
-            except yaml.composer.ComposerError as e:
-                err('STACK_LOAD_ERROR', 'YAML decode "{}" error: {}'.format(conf_file, e))
-            except yaml.constructor.ConstructorError as e:
-                err('STACK_LOAD_ERROR', 'YAML decode "{}" error: {}'.format(conf_file, e))
-            except yaml.scanner.ScannerError as e:
-                err('STACK_LOAD_ERROR', 'YAML decode "{}" error: {}'.format(conf_file, e))
+            except (yaml.parser.ParserError, yaml.composer.ComposerError) as e:
+                err('STACK_LOAD_ERROR', f'YAML decode "{conf_file}" error: {e}')
+            except (yaml.constructor.ConstructorError, yaml.scanner.ScannerError) as e:
+                err('STACK_LOAD_ERROR', f'YAML decode "{conf_file}" error: {e}')
         log.info('Read config file: "%s"', conf_file)
         return conf
     log.warning('Can not open config file: "%s"', conf_file)
