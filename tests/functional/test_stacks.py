@@ -298,10 +298,9 @@ def test_check_cluster_bundle_versions_as_a_string(sdk_client_fs: ADCMClient):
     stack_dir = utils.get_data_dir(__file__, 'cluster_service_versions_as_a_string')
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step('Check bundle versions'):
-        assert isinstance(random.choice(
-            sdk_client_fs.service_prototype_list()).version, str) is True
-        assert isinstance(random.choice(
-            sdk_client_fs.cluster_prototype_list()).version, str) is True
+        prototype = random.choice(sdk_client_fs.service_prototype_list())
+        assert isinstance(prototype.version, str) is True
+        assert isinstance(prototype.version, str) is True
 
 
 def test_check_host_bundle_versions_as_a_string(sdk_client_fs: ADCMClient):

@@ -48,7 +48,7 @@ def test_check_prototype(sdk_client_fs: ADCMClient):
         serv_id_before = service.id
         cluster_proto_before = cluster.prototype()
         service_proto_before = service.prototype()
-    with allure.step('Upgrade cluster'):
+    with allure.step('Upgrade test cluster to 1.6'):
         upgr = cluster.upgrade(name='upgrade to 1.6')
         upgr.do()
     with allure.step('Check prototype'):
@@ -73,7 +73,7 @@ def test_check_config(sdk_client_fs: ADCMClient):
         service = cluster.service_add(name="zookeeper")
         cluster_config_before = cluster.config()
         service_config_before = service.config()
-    with allure.step('Upgrade cluster'):
+    with allure.step('Upgrade cluster to 1.6'):
         upgr = cluster.upgrade(name='upgrade to 1.6')
         upgr.do()
     with allure.step('Check config'):
@@ -101,7 +101,7 @@ def test_with_new_default_values(sdk_client_fs: ADCMClient):
         upgr_service_prototype = upgr_bundle.service_prototype().config
         cluster = bundle.cluster_create("test")
         service = cluster.service_add(name="zookeeper")
-    with allure.step('Upgrade cluster with new default fields'):
+    with allure.step('Upgrade cluster with new default fields to 1.6'):
         upgr = cluster.upgrade(name='upgrade to 1.6')
         upgr.do()
     with allure.step('Check old and new config'):
@@ -127,7 +127,7 @@ def test_with_new_default_variables(sdk_client_fs: ADCMClient):
         upgr_service_prototype = upgr_bundle.service_prototype().config
         cluster = bundle.cluster_create("test")
         service = cluster.service_add(name="zookeeper")
-    with allure.step('Upgrade cluster with new default fields'):
+    with allure.step('Upgrade cluster with new default variables to 1.6'):
         upgr = cluster.upgrade(name='upgrade to 1.6')
         upgr.do()
     with allure.step('Check old and new config'):
@@ -152,7 +152,7 @@ def test_decrase_config(sdk_client_fs: ADCMClient):
         service = cluster.service_add(name="zookeeper")
         cluster_config_before = cluster.config()
         service_config_before = service.config()
-    with allure.step('Upgrade cluster with config without old values in config'):
+    with allure.step('Upgrade cluster with config without old values in config to 1.6'):
         upgr = cluster.upgrade(name='upgrade to 1.6')
         upgr.do()
     with allure.step('Check that deleted lines not presented'):
@@ -182,7 +182,7 @@ def test_changed_variable_type(sdk_client_fs: ADCMClient):
         service = cluster.service_add(name="zookeeper")
         cluster_config_before = cluster.config()
         service_config_before = service.config()
-    with allure.step('Upgrade cluster'):
+    with allure.step('Upgrade cluster with change variable type to 1.6'):
         upgr = cluster.upgrade(name='upgrade to 1.6')
         upgr.do()
     with allure.step('Check changed variable type'):
@@ -206,13 +206,14 @@ def test_multiple_upgrade_bundles(sdk_client_fs: ADCMClient):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
         sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster'))
         cluster = bundle.cluster_create("test")
-    with allure.step('Upgrade cluster multiple time from version to another'):
+    with allure.step('Upgrade cluster multiple time from version to another to 1.6'):
         upgr = cluster.upgrade(name='upgrade to 1.6')
         upgr.do()
-    with allure.step('Check upgraded cluster'):
+    with allure.step('Upgrade second time cluster to 2'):
         cluster.reread()
         upgr = cluster.upgrade(name='upgrade 2')
         upgr.do()
+    with allure.step('Check upgraded cluster'):
         cluster.reread()
         assert cluster.state == 'upgradated'
 
@@ -235,7 +236,7 @@ def test_change_config(sdk_client_fs: ADCMClient):
         service_config_before['int_key_service'] = 333
         cluster.config_set(cluster_config_before)
         service.config_set(service_config_before)
-    with allure.step('Upgrade cluster'):
+    with allure.step('Upgrade cluster with new change values to 1.6'):
         upgr = cluster.upgrade(name='upgrade to 1.6')
         upgr.do()
     with allure.step('Check upgraded cluster and service'):
@@ -260,7 +261,7 @@ def test_cannot_upgrade_with_state(sdk_client_fs: ADCMClient):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
         sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster_unsupported_state'))
         cluster = bundle.cluster_create("test")
-    with allure.step('Upgrade cluster'):
+    with allure.step('Upgrade cluster to 1.6 and then to 2'):
         upgr = cluster.upgrade(name='upgrade to 1.6')
         upgr.do()
         cluster.reread()
