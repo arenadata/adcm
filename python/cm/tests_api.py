@@ -96,9 +96,11 @@ class TestApi(TestCase):
         cluster_object = models.ClusterObject.objects.create(
             prototype=self.prototype, cluster=self.cluster)
         host = models.Host.objects.create(prototype=self.prototype, cluster=self.cluster)
-        component = models.Component.objects.create(prototype=self.prototype)
+        component = models.Prototype.objects.create(
+            parent=self.prototype, type='component', bundle_id=self.bundle.id, name='node'
+        )
         service_component = models.ServiceComponent.objects.create(
-            cluster=self.cluster, service=cluster_object, component=component)
+            cluster=self.cluster, service=cluster_object, prototype=component)
 
         models.HostComponent.objects.create(
             cluster=self.cluster, host=host, service=cluster_object, component=service_component)

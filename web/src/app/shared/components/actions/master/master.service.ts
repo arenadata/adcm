@@ -17,6 +17,7 @@ import { ConfigFieldsComponent } from '@app/shared/configuration/fields/fields.c
 import { ServiceHostComponent } from '@app/shared/host-components-map/services2hosts/service-host.component';
 import { Post } from '@app/shared/host-components-map/types';
 import { IConfigAttr } from '@app/shared/configuration/types';
+import { IOutput } from '@app/shared/configuration/field.service';
 
 export interface IValue {
   config?: ConfigFieldsComponent;
@@ -30,6 +31,13 @@ export enum whatShow {
   stepper = 'stepper',
 }
 
+export interface IMasterData {
+  attr: IConfigAttr;
+  config: IOutput;
+  hc: Post[];
+  verbose?: boolean;
+}
+
 @Injectable()
 export class MasterService {
   constructor(private api: ApiService, private configService: FieldService) {}
@@ -40,7 +48,7 @@ export class MasterService {
     return config ? (hm ? whatShow.stepper : whatShow.config) : hm ? whatShow.hostMap : whatShow.none;
   }
 
-  parseData(v: IValue) {
+  parseData(v: IValue): IMasterData {
     const getData = (attr: IConfigAttr, c: ConfigFieldsComponent, h: ServiceHostComponent) => {
       const config = c ? this.configService.parseValue(c.form.value, c.rawConfig.config) : undefined;
       const hc = h?.statePost.data;

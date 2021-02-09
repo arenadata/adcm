@@ -18,15 +18,13 @@ from contextlib import contextmanager
 from docker.errors import NotFound
 
 from adcm_client.objects import ADCMClient
-from adcm_pytest_plugin.utils import (get_data_dir, random_string, get_initialized_adcm_image)
+from adcm_pytest_plugin.utils import get_data_dir, random_string
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
-from adcm_pytest_plugin.docker import DockerWrapper
+from adcm_pytest_plugin.docker_utils import DockerWrapper, get_initialized_adcm_image
 
 
 def old_adcm_images():
-    # TODO Change oldest version after https://arenadata.atlassian.net/browse/ADCM-1430
-    # return parametrized_by_adcm_version(adcm_min_version="2019.01.30")[0]
-    return parametrized_by_adcm_version(adcm_min_version="2019.03.18")[0]
+    return parametrized_by_adcm_version(adcm_min_version="2019.10.08")[0]
 
 
 @contextmanager
@@ -81,7 +79,8 @@ def volume(request):
 
 @pytest.mark.parametrize("old_adcm", old_adcm_images(), ids=repr)
 def test_upgrade_adcm(old_adcm, volume, image, adcm_credentials):
-    old_repo, old_tag = old_adcm
+    with allure.step(f'Get old adcm repo {old_adcm}'):
+        old_repo, old_tag = old_adcm
     with adcm_client(adcm_repo=old_repo,
                      adcm_credentials=adcm_credentials,
                      adcm_tag=old_tag,
@@ -92,21 +91,24 @@ def test_upgrade_adcm(old_adcm, volume, image, adcm_credentials):
         bundle.cluster_prototype().cluster_create(
             name=cluster_name
         )
-
-    latest_repo, latest_tag = image
+    with allure.step(f'Get latest adcm repo {image}'):
+        latest_repo, latest_tag = image
     with adcm_client(adcm_repo=latest_repo,
                      adcm_credentials=adcm_credentials,
                      adcm_tag=latest_tag,
                      volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}}
                      ) as latest_adcm_client:
-        assert len(latest_adcm_client.cluster_list()) == 1, "There is no clusters. Expecting one"
-        cluster = latest_adcm_client.cluster_list()[0]
-        assert cluster.name == cluster_name, "Unexpected cluster name"
+        with allure.step('Check that cluster is present'):
+            assert len(latest_adcm_client.cluster_list()) == 1, \
+                "There is no clusters. Expecting one"
+            cluster = latest_adcm_client.cluster_list()[0]
+            assert cluster.name == cluster_name, "Unexpected cluster name"
 
 
 @pytest.mark.parametrize("old_adcm", old_adcm_images(), ids=repr)
 def test_pass_in_cluster_config_encryption_after_upgrade(old_adcm, volume, image, adcm_credentials):
-    old_repo, old_tag = old_adcm
+    with allure.step(f'Get old adcm repo {old_adcm}'):
+        old_repo, old_tag = old_adcm
     with adcm_client(adcm_repo=old_repo,
                      adcm_credentials=adcm_credentials,
                      adcm_tag=old_tag,
@@ -129,21 +131,24 @@ def test_pass_in_cluster_config_encryption_after_upgrade(old_adcm, volume, image
         cluster_config = cluster.config()
         cluster_config["password"] = "q1w2e3r4"
         cluster.config_set(cluster_config)
-
-    latest_repo, latest_tag = image
+    with allure.step(f'Get latest adcm repo {image}'):
+        latest_repo, latest_tag = image
     with adcm_client(adcm_repo=latest_repo,
                      adcm_credentials=adcm_credentials,
                      adcm_tag=latest_tag,
                      volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}}
                      ) as latest_adcm_client:
-        assert len(latest_adcm_client.cluster_list()) == 1, "There is no clusters. Expecting one"
-        cluster = latest_adcm_client.cluster_list()[0]
-        assert cluster.action(name="check-password").run().wait() == "success"
+        with allure.step('Check that cluster is present'):
+            assert len(latest_adcm_client.cluster_list()) == 1, \
+                "There is no clusters. Expecting one"
+            cluster = latest_adcm_client.cluster_list()[0]
+            assert cluster.action(name="check-password").run().wait() == "success"
 
 
 @pytest.mark.parametrize("old_adcm", old_adcm_images(), ids=repr)
 def test_pass_in_service_config_encryption_after_upgrade(old_adcm, volume, image, adcm_credentials):
-    old_repo, old_tag = old_adcm
+    with allure.step(f'Get old adcm repo {old_adcm}'):
+        old_repo, old_tag = old_adcm
     with adcm_client(adcm_repo=old_repo,
                      adcm_credentials=adcm_credentials,
                      adcm_tag=old_tag,
@@ -167,15 +172,17 @@ def test_pass_in_service_config_encryption_after_upgrade(old_adcm, volume, image
         service_config = service.config()
         service_config["password"] = "q1w2e3r4"
         service.config_set(service_config)
-
-    latest_repo, latest_tag = image
+    with allure.step(f'Get latest adcm repo {image}'):
+        latest_repo, latest_tag = image
     with adcm_client(adcm_repo=latest_repo,
                      adcm_credentials=adcm_credentials,
                      adcm_tag=latest_tag,
                      volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}}
                      ) as latest_adcm_client:
-        assert len(latest_adcm_client.cluster_list()) == 1, "There is no clusters. Expecting one"
-        cluster = latest_adcm_client.cluster_list()[0]
-        assert len(cluster.service_list()) == 1, "There is no services. Expecting one"
-        service = cluster.service_list()[0]
-        assert service.action(name="check-password").run().wait() == "success"
+        with allure.step('Check cluster'):
+            assert len(latest_adcm_client.cluster_list()) == 1, \
+                "There is no clusters. Expecting one"
+            cluster = latest_adcm_client.cluster_list()[0]
+            assert len(cluster.service_list()) == 1, "There is no services. Expecting one"
+            service = cluster.service_list()[0]
+            assert service.action(name="check-password").run().wait() == "success"

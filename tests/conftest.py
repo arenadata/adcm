@@ -117,11 +117,11 @@ def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
                 allure.attach(web_driver.driver.current_url, name='Current URL',
                               attachment_type=allure.attachment_type.TEXT)
                 allure.attach.file(console_logs, name="console_log",
-                                   attachment_type=allure.attachment_type.JSON)
+                                   attachment_type=allure.attachment_type.TEXT)
                 allure.attach.file(network_console_logs, name="network_log",
-                                   attachment_type=allure.attachment_type.JSON)
+                                   attachment_type=allure.attachment_type.TEXT)
                 allure.attach.file(events_json, name="all_events_log",
-                                   attachment_type=allure.attachment_type.JSON)
+                                   attachment_type=allure.attachment_type.TEXT)
     except AttributeError:
         # rep_setup and rep_call attributes are generated in runtime and can be absent
         pass

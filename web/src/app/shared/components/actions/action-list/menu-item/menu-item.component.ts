@@ -30,7 +30,7 @@ import { MatMenu } from '@angular/material/menu';
             <span>{{ a.display_name }}</span>
           </button>
           <app-menu-item #inner [items]="a.children" [cluster]="cluster"></app-menu-item>
-        </ng-template> 
+        </ng-template>
         </ng-container>
       </ng-template>
   </mat-menu>`,
