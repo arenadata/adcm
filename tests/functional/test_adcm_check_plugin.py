@@ -373,3 +373,18 @@ def test_result_no(sdk_client_fs: ADCMClient):
         content = log.content[0]
         assert not content['result'], \
             f'Result is {content["result"]}, Expected False'
+
+
+@pytest.mark.parametrize("verbose_state", [True, False],
+                         ids=['verbose_state_true', 'verbose_state_false'])
+def test_check_verbose_option_of_action_run(sdk_client_fs: ADCMClient, verbose_state):
+    bundle_dir = utils.get_data_dir(__file__, "all_fields")
+    bundle = sdk_client_fs.upload_from_fs(bundle_dir)
+    cluster = bundle.cluster_create(utils.random_string())
+    task = cluster.action(name="adcm_check").run(verbose=verbose_state)
+    with allure.step(f'Check if verbosity is {verbose_state}'):
+        task.wait()
+        job = task.job()
+        logs = job.log_list()
+        log = job.log(job_id=job.id, log_id=logs[0].id)
+        assert ('verbosity: 4' in log.content) is verbose_state
