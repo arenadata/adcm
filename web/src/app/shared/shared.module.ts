@@ -43,6 +43,7 @@ import { BreakRowPipe, TagEscPipe } from './pipes';
 import { StuffModule } from './stuff.module';
 import { StatusColumnComponent } from '@app/components/status-column/status-column.component';
 import { ActionsColumnComponent } from '@app/components/actions-column/actions-column.component';
+import { StateColumnComponent } from '@app/components/state-column/state-column.component';
 
 @NgModule({
   imports: [
@@ -80,6 +81,7 @@ import { ActionsColumnComponent } from '@app/components/actions-column/actions-c
     ActionCardComponent,
     StatusColumnComponent,
     ActionsColumnComponent,
+    StateColumnComponent,
   ],
   // entryComponents: [DialogComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent, ActionMasterComponent],
   exports: [
@@ -109,6 +111,7 @@ import { ActionsColumnComponent } from '@app/components/actions-column/actions-c
     ActionCardComponent,
     StatusColumnComponent,
     ActionsColumnComponent,
+    StateColumnComponent,
   ],
 })
 export class SharedModule {}

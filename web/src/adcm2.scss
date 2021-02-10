@@ -1,0 +1,10 @@
+mat-header-cell.list-control, mat-cell.list-control {
+  flex-grow: 0;
+  flex-basis: 60px;
+  text-align: center;
+}
+
+.width100 {
+  flex-grow: 0;
+  flex-basis: 100px;
+}

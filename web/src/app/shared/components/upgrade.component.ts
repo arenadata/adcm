@@ -61,13 +61,13 @@ interface Upgrade {
 })
 export class UpgradeComponent extends BaseDirective {
   list$: Observable<Upgrade[]>;
-  row: UpgradeItem = { upgradable: false, upgrade: '', issue: null };
+  pRow: UpgradeItem = { upgradable: false, upgrade: '', issue: null };
 
   @Input() xPosition = 'before';
 
   @Input()
-  set dataRow(row: UpgradeItem) {
-    this.row = row;
+  set row(row: UpgradeItem) {
+    this.pRow = row;
     if (row.upgrade) {
       this.list$ = this.api.get(`${row.upgrade}?ordering=-name`).pipe(filter((list: Upgrade[]) => !!list.length));
     }
@@ -81,7 +81,7 @@ export class UpgradeComponent extends BaseDirective {
   }
 
   checkIssue() {
-    return this.row.upgradable && !isIssue(this.row.issue);
+    return this.pRow.upgradable && !isIssue(this.pRow.issue);
   }
 
   runUpgrade(item: Upgrade) {

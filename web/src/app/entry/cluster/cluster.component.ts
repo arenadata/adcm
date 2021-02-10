@@ -13,9 +13,12 @@ import { Component, OnInit } from '@angular/core';
 import { ClusterService } from '@app/core';
 import { BehaviorSubject } from 'rxjs';
 import { IColumn, IListResult } from '@adwp-ui/widgets';
+
 import { ICluster } from '../../models/cluster';
 import { StatusColumnComponent } from '../../components/status-column/status-column.component';
 import { ActionsColumnComponent } from '../../components/actions-column/actions-column.component';
+import { StateColumnComponent } from '../../components/state-column/state-column.component';
+import { UpgradeComponent } from '../../shared';
 
 @Component({
   selector: 'app-cluster-host',
@@ -50,7 +53,9 @@ export class ServicesComponent {}
 
     <adwp-list [columns]="columns" [dataSource]="data$ | async"></adwp-list>
   `,
-  styles: [':host { flex: 1; }'],
+  styles: [`
+    :host { flex: 1; }
+  `],
 })
 export class ClusterListComponent {
 
@@ -62,12 +67,12 @@ export class ClusterListComponent {
     {
       label: 'Name',
       sort: 'name',
-      value: (row) => row.name,
+      value: (row) => row.display_name || row.name,
     },
     {
       label: 'Bundle',
-      sort: 'prototype_name',
-      value: (row) => [row.prototype_name, row.prototype_version, row.edition].join(' '),
+      sort: 'prototype_version',
+      value: (row) => [row.prototype_display_name || row.prototype_name, row.prototype_version, row.edition].join(' '),
     },
     {
       label: 'Description',
@@ -77,19 +82,62 @@ export class ClusterListComponent {
     {
       label: 'State',
       sort: 'state',
-      value: (row) => row.state,
+      type: 'component',
+      className: 'width100',
+      headerClassName: 'width100',
+      component: StateColumnComponent,
     },
     {
       label: 'Status',
       sort: 'status',
       type: 'component',
+      className: 'list-control',
+      headerClassName: 'list-control',
       component: StatusColumnComponent,
     },
     {
       label: 'Actions',
       type: 'component',
+      className: 'list-control',
+      headerClassName: 'list-control',
       component: ActionsColumnComponent,
-    }
+    },
+    {
+      label: 'Import',
+      type: 'buttons',
+      className: 'list-control',
+      headerClassName: 'list-control',
+      buttons: [{
+        icon: 'import_export',
+        callback: (row) => console.log(row),
+      }]
+    },
+    {
+      label: 'Upgrade',
+      type: 'component',
+      className: 'list-control',
+      headerClassName: 'list-control',
+      component: UpgradeComponent,
+    },
+    {
+      label: 'Config',
+      type: 'buttons',
+      className: 'list-control',
+      headerClassName: 'list-control',
+      buttons: [{
+        icon: 'settings',
+        callback: (row) => console.log(row),
+      }]
+    },
+    {
+      type: 'buttons',
+      className: 'list-control',
+      headerClassName: 'list-control',
+      buttons: [{
+        icon: 'delete',
+        callback: (row) => console.log(row),
+      }]
+    },
   ] as IColumn<ICluster>;
 
   reload(data: IListResult<ICluster>) {

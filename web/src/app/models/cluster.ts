@@ -1,7 +1,7 @@
 import { IAction } from './action';
-import { Entity } from '@adwp-ui/widgets';
+import { AdcmEntity } from '@app/models/entity';
 
-export interface ICluster extends Entity {
+export interface ICluster extends AdcmEntity {
   action: string;
   actions: IAction[];
   bind: string;
