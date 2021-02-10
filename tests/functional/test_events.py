@@ -149,7 +149,7 @@ svc_actions = [
 ]
 
 
-@pytest.mark.parametrize('adcm_object, event_type, obj_type', create_adcm_obj)
+@pytest.mark.parametrize(('adcm_object', 'event_type', 'obj_type'), create_adcm_obj)
 def test_event_when_create_(obj_type, adcm_object, event_type, sdk_client_fs, ws):
     with allure.step(f'Create {obj_type}'):
         obj = adcm_object(sdk_client_fs)
@@ -182,7 +182,7 @@ def test_event_when_add_service(sdk_client_fs, ws):
     assert_events(ws, repr_template('add', 'service', obj.id, 'cluster', str(obj.cluster_id)))
 
 
-@pytest.mark.parametrize('case, action_name, expected', cluster_actions)
+@pytest.mark.parametrize(('case', 'action_name', 'expected'), cluster_actions)
 def test_events_when_cluster_action_(case, action_name, expected, ws, cluster_with_svc_and_host):
     cluster, _, _ = cluster_with_svc_and_host
     job = cluster.action_run(name=action_name)
@@ -193,7 +193,7 @@ def test_events_when_cluster_action_(case, action_name, expected, ws, cluster_wi
         )
 
 
-@pytest.mark.parametrize('case, action_name, expected', svc_actions)
+@pytest.mark.parametrize(('case', 'action_name', 'expected'), svc_actions)
 def test_events_when_service_(case, action_name, expected, ws, cluster_with_svc_and_host):
     _, zookeeper, _ = cluster_with_svc_and_host
     job = zookeeper.action_run(name=action_name)

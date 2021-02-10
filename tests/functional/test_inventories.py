@@ -12,7 +12,7 @@
 import json
 import random
 import time
-
+import allure
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.docker_utils import get_file_from_container
 
@@ -40,13 +40,16 @@ def prepare(client):
 def test_check_inventories_file(adcm, client):
     bundledir = utils.get_data_dir(__file__, 'cluster_inventory_tests')
     steps.upload_bundle(client, bundledir)
-    cluster = prepare(client)
-    client.cluster.action.run.create(
-        cluster_id=cluster['id'],
-        action_id=random.choice(client.cluster.action.list(cluster_id=cluster['id']))['id'])
-    time.sleep(5)
-    text = get_file_from_container(adcm, '/adcm/data/run/1/', 'inventory.json')
-    inventory = json.loads(text.read().decode('utf8'))
-    template = open(utils.get_data_dir(__file__, 'cluster-inventory.json'), 'rb')
-    expected = json.loads(template.read().decode('utf8'))
-    assert inventory == expected
+    with allure.step('Create cluster'):
+        cluster = prepare(client)
+        client.cluster.action.run.create(
+            cluster_id=cluster['id'],
+            action_id=random.choice(client.cluster.action.list(cluster_id=cluster['id']))['id'])
+        time.sleep(5)
+    with allure.step('Get inventory file from container'):
+        text = get_file_from_container(adcm, '/adcm/data/run/1/', 'inventory.json')
+        inventory = json.loads(text.read().decode('utf8'))
+    with allure.step('Check inventory file'):
+        template = open(utils.get_data_dir(__file__, 'cluster-inventory.json'), 'rb')
+        expected = json.loads(template.read().decode('utf8'))
+        assert inventory == expected
