@@ -194,7 +194,7 @@ def test_load_should_fail_when(client, entity, state, case):
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             steps.upload_bundle(client, bundle)
     with allure.step(f'Check if state is {state}'):
-        err.INVALID_ACTION_DEFINITION.equal(e, state, entity, 'should be string')
+        err.INVALID_OBJECT_DEFINITION.equal(e, state, "should be a <class 'str'>")
 
 
 @allure.link('https://jira.arenadata.io/browse/ADCM-580')
@@ -204,4 +204,4 @@ def test_provider_bundle_shouldnt_load_when_has_export_section(client):
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             steps.upload_bundle(client, bundle)
     with allure.step('Check error'):
-        err.INVALID_OBJECT_DEFINITION.equal(e, 'Only cluster or service can have export section')
+        err.INVALID_OBJECT_DEFINITION.equal(e, 'Map key "export" is not allowed here')

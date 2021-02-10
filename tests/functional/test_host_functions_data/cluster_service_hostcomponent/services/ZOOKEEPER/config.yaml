@@ -9,19 +9,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-name: ZOOKEEPER
-type: service
-description: ZooKeeper
-version: '1.2'
+- name: ZOOKEEPER
+  type: service
+  description: ZooKeeper
+  version: '1.2'
 
-components:
+  components:
     ZOOKEEPER_CLIENT:
-        params:
-            folder: stacks/ADH/1.0/services/ZOOKEEPER/package
-            packages: [zookeeper]
-            script: scripts/zookeeper_client.py
+      params:
+        folder: stacks/ADH/1.0/services/ZOOKEEPER/package
+        packages: [ zookeeper ]
+        script: scripts/zookeeper_client.py
     ZOOKEEPER_SERVER:
-        params:
-            folder: stacks/ADH/1.0/services/ZOOKEEPER/package
-            packages: [zookeeper]
-            script: scripts/zookeeper_server.py
+      params:
+        folder: stacks/ADH/1.0/services/ZOOKEEPER/package
+        packages: [ zookeeper ]
+        script: scripts/zookeeper_server.py

@@ -13,7 +13,6 @@
   type: cluster
   name: ADH
   version: 1.4  
-  actions:
   config:
      key: {}
 

@@ -284,7 +284,6 @@
   version: 1
 
   actions:
-    <<: *service_actions
-    <<: *cluster_actions
+    <<: [*service_actions, *cluster_actions]
 
   config: *config
