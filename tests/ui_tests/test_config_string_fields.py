@@ -1,6 +1,6 @@
 import os
 import time
-
+from adcm_pytest_plugin import utils
 import pytest
 from adcm_pytest_plugin.utils import get_data_dir
 
@@ -30,7 +30,7 @@ REQUIRED_FIELDS = ['string_required_by_default_group', 'string_required_by_optio
                    'string_required_True_activatable_true']
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture()
 def service(sdk_client_fs):
     bundle = sdk_client_fs.upload_from_fs(DATADIR)
     cluster = bundle.cluster_create(name='my cluster')
@@ -100,3 +100,11 @@ def test_save_configuration(ui_config):
     """Check that we can click save configuration if no errors on page
     """
     assert ui_config.save_button_status()
+
+
+def test_check_verbose_checkbox_of_action_run_form(sdk_client_fs, app_fs, login_to_adcm):
+    bundle_dir = utils.get_data_dir(__file__, "nothing_happens")
+    bundle = sdk_client_fs.upload_from_fs(bundle_dir)
+    cluster = bundle.cluster_create(utils.random_string())
+    task = cluster.action(name="test_action").run(verbose=True)
+    ui_config = Configuration(app_fs.driver, f"{app_fs.adcm.url}/cluster/{cluster.cluster_id}/config")
