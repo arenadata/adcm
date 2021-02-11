@@ -849,8 +849,7 @@
         required: no
         ui_options:
           invisible: true
-    <<: *group_of_visible
-    <<: *group_on_invisible
+    <<: [*group_of_visible, *group_on_invisible]
 
 
 - type: service

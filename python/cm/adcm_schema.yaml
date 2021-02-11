@@ -32,7 +32,7 @@ common_object: &common_object
     license: string
     adcm_min_version: version_rule
     config: config_obj
-    actions: actions
+    actions: actions_dict
   required_items: &common_object_required_items
     - type
     - name
@@ -479,12 +479,6 @@ import_dict_item:
     - versions
 
 # Actions
-actions:
-  match: one_of
-  variants:
-    - none
-    - actions_dict
-
 actions_dict:
   match: dict
   default_item: action_item
