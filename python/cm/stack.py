@@ -126,6 +126,7 @@ def check_adcm_config(conf_file):
     try:
         with open(conf_file) as fd:
             data = ruyaml.round_trip_load(fd, version="1.1")
+        return data
     except (ruyaml.parser.ParserError, ruyaml.scanner.ScannerError, NotImplementedError) as e:
         err('STACK_LOAD_ERROR', f'YAML decode "{conf_file}" error: {e}')
     except ruyaml.error.ReusedAnchorWarning as e:
@@ -143,19 +144,12 @@ def check_adcm_config(conf_file):
                     continue
                 args += f'line {ee.line}: {ee}\n'
         err('INVALID_OBJECT_DEFINITION', f'"{conf_file}" line {e.line} error: {e}', args)
-    return data
+    return {}
 
 
 def read_definition(conf_file, conf_type):
     if os.path.isfile(conf_file):
-        check_adcm_config(conf_file)
-        with open(conf_file) as fd:
-            try:
-                conf = yaml.safe_load(fd)
-            except (yaml.parser.ParserError, yaml.composer.ComposerError) as e:
-                err('STACK_LOAD_ERROR', f'YAML decode "{conf_file}" error: {e}')
-            except (yaml.constructor.ConstructorError, yaml.scanner.ScannerError) as e:
-                err('STACK_LOAD_ERROR', f'YAML decode "{conf_file}" error: {e}')
+        conf = check_adcm_config(conf_file)
         log.info('Read config file: "%s"', conf_file)
         return conf
     log.warning('Can not open config file: "%s"', conf_file)
