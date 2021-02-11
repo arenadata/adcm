@@ -262,8 +262,12 @@ class LogStorageSerializer(serializers.Serializer):
             if content is None:
                 path_file = os.path.join(
                     config.RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}')
-                with open(path_file, 'r') as f:
-                    content = f.read()
+                try:
+                    with open(path_file, 'r') as f:
+                        content = f.read()
+                except FileNotFoundError:
+                    msg = f'File "{obj.name}-{obj.type}.{obj.format}" not found'
+                    raise AdcmApiEx('LOG_NOT_FOUND', msg) from None
         elif obj.type == 'check':
             if content is None:
                 content = cm.job.get_check_log(obj.job_id)
