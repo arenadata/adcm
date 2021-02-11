@@ -126,7 +126,6 @@ def check_adcm_config(conf_file):
     try:
         with open(conf_file) as fd:
             data = ruyaml.round_trip_load(fd, version="1.1")
-        return data
     except (ruyaml.parser.ParserError, ruyaml.scanner.ScannerError, NotImplementedError) as e:
         err('STACK_LOAD_ERROR', f'YAML decode "{conf_file}" error: {e}')
     except ruyaml.error.ReusedAnchorWarning as e:
@@ -136,6 +135,7 @@ def check_adcm_config(conf_file):
         err('STACK_LOAD_ERROR', f'Duplicate Keys error: {msg}')
     try:
         cm.checker.check(data, rules)
+        return data
     except cm.checker.FormatError as e:
         args = ''
         if e.errors:
@@ -144,7 +144,6 @@ def check_adcm_config(conf_file):
                     continue
                 args += f'line {ee.line}: {ee}\n'
         err('INVALID_OBJECT_DEFINITION', f'"{conf_file}" line {e.line} error: {e}', args)
-    return {}
 
 
 def read_definition(conf_file, conf_type):
