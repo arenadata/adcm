@@ -218,6 +218,7 @@ config_dict_sub:
     float: config_dict_sub_float
     string: config_dict_sub_string
     password: config_dict_sub_string
+    secrettext: config_dict_sub_string
     text: config_dict_sub_string
     file: config_dict_sub_string
     list: config_dict_sub_list
@@ -323,6 +324,7 @@ config_list_object:
     float: config_list_float
     string: config_list_string
     password: config_list_string
+    secrettext: config_list_string
     text: config_list_string
     file: config_list_string
     list: config_list_list
@@ -367,6 +369,7 @@ config_sub_list_object:
     float: config_list_float
     string: config_list_string
     password: config_list_string
+    secrettext: config_list_string
     text: config_list_string
     file: config_list_string
     list: config_list_list

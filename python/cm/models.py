@@ -368,6 +368,7 @@ CONFIG_FIELD_TYPE = (
     ('string', 'string'),
     ('text', 'text'),
     ('password', 'password'),
+    ('secrettext', 'secrettext'),
     ('json', 'json'),
     ('integer', 'integer'),
     ('float', 'float'),
