@@ -168,15 +168,15 @@
     json:
       type: json
       default:
-        - x: "y"
-        - y: "z"
+        - "x": "y"
+        - "y": "z"
       required: no
 
     map:
       type: map
       default:
         "one": "two"
-        two: "three"
+        "two": "three"
       required: no
 
     list:
