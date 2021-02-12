@@ -7,6 +7,7 @@ from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
 
 from tests.ui_tests.app.actions_page import ActionPage
+# pylint: disable=W0621
 
 
 @allure.step('Create cluster')
@@ -35,7 +36,8 @@ def wait_for_task(cluster, interval=1, timeout=30):
 
 def test_check_verbose_checkbox_of_action_run_form_is_displayed(action_page):
     with allure.step('Check if verbose checkbox is displayed in popup from Action page'):
-        assert action_page.check_verbose_chbx_displayed(), 'Verbose checkbox doesnt displayed in popup'
+        assert action_page.check_verbose_chbx_displayed(), \
+            'Verbose checkbox doesnt displayed in popup'
 
 
 @pytest.mark.parametrize("verbose_state",
