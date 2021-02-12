@@ -135,6 +135,7 @@ def check_adcm_config(conf_file):
         err('STACK_LOAD_ERROR', f'Duplicate Keys error: {msg}')
     try:
         cm.checker.check(data, rules)
+        return data
     except cm.checker.FormatError as e:
         args = ''
         if e.errors:
@@ -143,19 +144,11 @@ def check_adcm_config(conf_file):
                     continue
                 args += f'line {ee.line}: {ee}\n'
         err('INVALID_OBJECT_DEFINITION', f'"{conf_file}" line {e.line} error: {e}', args)
-    return data
 
 
 def read_definition(conf_file, conf_type):
     if os.path.isfile(conf_file):
-        check_adcm_config(conf_file)
-        with open(conf_file) as fd:
-            try:
-                conf = yaml.safe_load(fd)
-            except (yaml.parser.ParserError, yaml.composer.ComposerError) as e:
-                err('STACK_LOAD_ERROR', f'YAML decode "{conf_file}" error: {e}')
-            except (yaml.constructor.ConstructorError, yaml.scanner.ScannerError) as e:
-                err('STACK_LOAD_ERROR', f'YAML decode "{conf_file}" error: {e}')
+        conf = check_adcm_config(conf_file)
         log.info('Read config file: "%s"', conf_file)
         return conf
     log.warning('Can not open config file: "%s"', conf_file)

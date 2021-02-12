@@ -28,7 +28,7 @@ def check_config(data_file, schema_file, print_ok=True):
         print(f'Config file "{data_file}" Duplicate Keys Error:')
         print(f'{e.context}\n{e.context_mark}\n{e.problem}\n{e.problem_mark}')
         return 1
-    except ruyaml.parser.ParserError as e:
+    except (ruyaml.parser.ParserError, ruyaml.scanner.ScannerError, NotImplementedError) as e:
         print(f'Config file "{data_file}" YAML Parser Error:')
         print(f'{e}')
         return 1
