@@ -1,6 +1,7 @@
 from tests.ui_tests.app.locators import ActionPageLocators
 from tests.ui_tests.app.pages import BasePage
 import allure
+# pylint: disable=C0301
 
 
 class ActionPage(BasePage):

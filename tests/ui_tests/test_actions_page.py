@@ -8,7 +8,7 @@ from adcm_pytest_plugin import utils
 
 from tests.ui_tests.app.actions_page import ActionPage
 
-# pylint: disable=W0621
+# pylint: disable=W0621,C0301
 
 
 @allure.step("Upload bundle and create cluster")
