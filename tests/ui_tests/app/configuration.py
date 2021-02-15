@@ -1,12 +1,14 @@
 import json
+
 import allure
 from retrying import retry
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException,\
+from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException, \
     TimeoutException
-from tests.ui_tests.app.pages import BasePage
-from tests.ui_tests.app.locators import Common, ConfigurationLocators
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.remote.webelement import WebElement
+
+from tests.ui_tests.app.locators import Common, ConfigurationLocators
+from tests.ui_tests.app.pages import BasePage
 
 
 def retry_on_exception(exc):
@@ -222,7 +224,8 @@ class Configuration(BasePage):
 
     @allure.step('Click advanced')
     def click_advanced(self):
-        return self._click_element(Common.mat_checkbox, name="Advanced")
+        if not self.advanced:
+            self._click_element(Common.mat_checkbox, name="Advanced")
 
     @allure.step('Click advanced')
     def get_form_field_text(self, form_field_element):
@@ -321,3 +324,11 @@ class Configuration(BasePage):
         if element.is_enabled():
             return True
         return True
+
+    @allure.step('Check that fields and group are invisible')
+    def check_that_fields_and_group_are_invisible(self):
+        fields = self.get_field_groups()
+        for field in fields:
+            assert not field.is_displayed(), field.get_attribute("class")
+        group_names = self.get_group_elements()
+        assert not group_names, group_names
