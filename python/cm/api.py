@@ -30,7 +30,7 @@ from cm.errors import AdcmEx, AdcmApiEx
 from cm.errors import raise_AdcmEx as err
 from cm.status_api import Event
 from cm.models import (
-    Cluster, Prototype, Component, Host, HostComponent, ADCM, ClusterObject,
+    Cluster, Prototype, Host, HostComponent, ADCM, ClusterObject,
     ServiceComponent, ConfigLog, HostProvider, PrototypeImport, PrototypeExport,
     ClusterBind, Action, JobLog, DummyData, Role,
 )
@@ -318,8 +318,10 @@ def add_service_to_cluster(cluster, proto):
 
 
 def add_components_to_service(cluster, service):
-    for comp in Component.objects.filter(prototype=service.prototype):
-        sc = ServiceComponent(cluster=cluster, service=service, component=comp)
+    for comp in Prototype.objects.filter(type='component', parent=service.prototype):
+        spec, _, conf, attr = get_prototype_config(comp)
+        obj_conf = init_object_config(spec, conf, attr)
+        sc = ServiceComponent(cluster=cluster, service=service, prototype=comp, config=obj_conf)
         sc.save()
 
 
@@ -418,6 +420,9 @@ def update_obj_config(obj_conf, conf, attr, desc=''):
     elif hasattr(obj_conf, 'clusterobject'):
         obj = obj_conf.clusterobject
         proto = obj_conf.clusterobject.prototype
+    elif hasattr(obj_conf, 'servicecomponent'):
+        obj = obj_conf.servicecomponent
+        proto = obj_conf.servicecomponent.prototype
     elif hasattr(obj_conf, 'cluster'):
         obj = obj_conf.cluster
         proto = obj_conf.cluster.prototype
@@ -522,6 +527,7 @@ def check_hc(cluster, hc_in):   # pylint: disable=too-many-branches
         cm.issue.check_component_constraint(service, [i for i in host_comp_list if i[0] == service])
 
     cm.issue.check_component_requires(host_comp_list)
+    cm.issue.check_bound_components(host_comp_list)
     return host_comp_list
 
 
@@ -931,7 +937,7 @@ def change_hc(job_id, cluster_id, operations):   # pylint: disable=too-many-bran
             err('SERVICE_NOT_FOUND', msg.format(op['service'], cluster.id))
         try:
             component = ServiceComponent.objects.get(
-                cluster=cluster, service=service, component__name=op['component']
+                cluster=cluster, service=service, prototype__name=op['component']
             )
         except ServiceComponent.DoesNotExist:
             msg = 'component "{}" does not exist in service "{}"'
@@ -951,13 +957,13 @@ def change_hc(job_id, cluster_id, operations):   # pylint: disable=too-many-bran
                 hc.append(item)
             else:
                 msg = 'There is already component "{}" on host "{}"'
-                err('COMPONENT_CONFLICT', msg.format(component.component.name, host.fqdn))
+                err('COMPONENT_CONFLICT', msg.format(component.prototype.name, host.fqdn))
         elif op['action'] == 'remove':
             if item in hc:
                 hc.remove(item)
             else:
                 msg = 'There is no component "{}" on host "{}"'
-                err('COMPONENT_CONFLICT', msg.format(component.component.name, host.fqdn))
+                err('COMPONENT_CONFLICT', msg.format(component.prototype.name, host.fqdn))
         else:
             err('INVALID_INPUT', 'unknown hc action "{}"'.format(op['action']))
 

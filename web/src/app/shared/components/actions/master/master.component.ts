@@ -16,7 +16,7 @@ import { DynamicComponent, DynamicEvent } from '@app/shared/directives/dynamic.d
 import { BaseDirective } from '../../../directives/base.directive';
 import { ActionParameters } from '../actions.directive';
 
-import { IValue, MasterService, whatShow } from './master.service';
+import { IMasterData, IValue, MasterService, whatShow } from './master.service';
 
 @Component({
   selector: 'app-master',
@@ -31,6 +31,12 @@ import { IValue, MasterService, whatShow } from './master.service';
           background: rgba(255, 255, 255, 0.04) !important;
         }
       }
+
+      .controls-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
     `,
   ],
   providers: [MasterService],
@@ -40,6 +46,8 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
   model: ActionParameters;
   action: IAction;
   show: whatShow;
+
+  verbose = false;
 
   @ViewChild('runBtn', { read: ElementRef }) runBtn: ElementRef;
 
@@ -61,7 +69,10 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
   }
 
   run(value: IValue = {}) {
-    const data = this.service.parseData(value);
+    const data: IMasterData = this.service.parseData(value);
+    if (data) {
+      data.verbose = this.verbose;
+    }
     this.service
       .send(this.action.run, data)
       .pipe(this.takeUntil())

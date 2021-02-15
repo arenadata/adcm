@@ -223,9 +223,11 @@ class TestJob(TestCase):
         cluster = models.Cluster.objects.create(prototype=prototype)
         cluster_object = models.ClusterObject.objects.create(prototype=prototype, cluster=cluster)
         host = models.Host.objects.create(prototype=prototype, cluster=cluster)
-        component = models.Component.objects.create(prototype=prototype)
+        component = models.Prototype.objects.create(
+            parent=prototype, type='component', bundle=bundle
+        )
         service_component = models.ServiceComponent.objects.create(
-            cluster=cluster, service=cluster_object, component=component)
+            cluster=cluster, service=cluster_object, prototype=component)
         hostcomponentmap = [
             {
                 'host_id': host.id,
@@ -315,11 +317,11 @@ class TestJob(TestCase):
         job = models.JobLog.objects.create(
             action_id=action.id, start_date=timezone.now(), finish_date=timezone.now())
 
-        job_module.prepare_job(action, None, {'cluster': 1}, job.id, cluster, '', {}, None)
+        job_module.prepare_job(action, None, {'cluster': 1}, job.id, cluster, '', {}, None, False)
 
         mock_prepare_job_inventory.assert_called_once_with({'cluster': 1}, job.id, {}, None)
         mock_prepare_job_config.assert_called_once_with(action, None, {'cluster': 1},
-                                                        job.id, cluster, '')
+                                                        job.id, cluster, '', False)
         mock_prepare_ansible_config.assert_called_once_with(job.id, action, None)
 
     @patch('cm.job.get_obj_config')
@@ -443,7 +445,7 @@ class TestJob(TestCase):
                 prototype.save()
 
                 job_module.prepare_job_config(
-                    action, sub_action, selector, job.id, obj, conf)
+                    action, sub_action, selector, job.id, obj, conf, False)
 
                 job_config = {
                     'adcm': {
@@ -465,6 +467,7 @@ class TestJob(TestCase):
                         'job_name': '',
                         'command': '',
                         'script': '',
+                        'verbose': False,
                         'playbook': mock_dump.call_args[0][0]['job']['playbook'],
                         'params': {
                             'ansible_tags': 'create_users'
@@ -527,9 +530,11 @@ class TestJob(TestCase):
         cluster = models.Cluster.objects.create(prototype=prototype)
         cluster_object = models.ClusterObject.objects.create(prototype=prototype, cluster=cluster)
         host = models.Host.objects.create(prototype=prototype, cluster=cluster)
-        component = models.Component.objects.create(prototype=prototype)
+        component = models.Prototype.objects.create(
+            parent=prototype, type='component', bundle=bundle
+        )
         service_component = models.ServiceComponent.objects.create(
-            cluster=cluster, service=cluster_object, component=component)
+            cluster=cluster, service=cluster_object, prototype=component)
         action = models.Action.objects.create(
             prototype=prototype,
             hostcomponentmap=[{'service': '', 'component': '', 'action': ''}])
@@ -559,4 +564,4 @@ class TestJob(TestCase):
             cluster, new_hc, action.hostcomponentmap, old_hc)
         mock_prepare_job.assert_called_once_with(
             action, sub_action, selector, job.id, cluster,
-            task.config, delta, None)
+            task.config, delta, None, False)

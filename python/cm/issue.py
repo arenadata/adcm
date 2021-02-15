@@ -15,7 +15,7 @@ import cm.status_api
 from cm.errors import AdcmEx
 from cm.errors import raise_AdcmEx as err
 from cm.adcm_config import proto_ref, obj_ref, get_prototype_config
-from cm.models import ConfigLog, Host, ClusterObject, Prototype, Component, HostComponent
+from cm.models import ConfigLog, Host, ClusterObject, Prototype, HostComponent
 from cm.models import PrototypeImport, ClusterBind
 
 
@@ -39,6 +39,7 @@ def check_issue(obj):
     disp = {
         'cluster': check_cluster_issue,
         'service': check_service_issue,
+        'component': check_obj_issue,
         'provider': check_obj_issue,
         'host': check_obj_issue,
         'adcm': check_adcm_issue,
@@ -91,6 +92,14 @@ def get_issue(obj):   # pylint: disable=too-many-branches
         cluster_iss = cook_issue(obj.cluster)
         if cluster_iss:
             issue['cluster'] = [cluster_iss]
+
+    elif obj.prototype.type == 'component':
+        cluster_iss = cook_issue(obj.cluster)
+        if cluster_iss:
+            issue['cluster'] = [cluster_iss]
+        service_iss = cook_issue(obj.service)
+        if service_iss:
+            issue['service'] = [service_iss]
 
     elif obj.prototype.type == 'host':
         if obj.cluster:
@@ -231,7 +240,7 @@ def check_hc(cluster):
 
     if not shc_list:
         for co in ClusterObject.objects.filter(cluster=cluster):
-            for comp in Component.objects.filter(prototype=co.prototype):
+            for comp in Prototype.objects.filter(parent=co.prototype, type='component'):
                 const = comp.constraint
                 if len(const) == 2 and const[0] == 0 and const[1] == '+':
                     continue
@@ -245,24 +254,57 @@ def check_hc(cluster):
             return False
     try:
         check_component_requires(shc_list)
+        check_bound_components(shc_list)
     except AdcmEx:
         return False
     return True
 
 
 def check_component_requires(shc_list):
+    def get_components_with_requires():
+        return [i for i in shc_list if i[2].prototype.requires]
+
     def check_component_req(service, component):
         for shc in shc_list:
-            if shc[0].prototype.name == service and shc[2].component.name == component:
+            if shc[0].prototype.name == service and shc[2].prototype.name == component:
                 return True
         return False
 
-    for shc in [i for i in shc_list if i[2].component.requires]:
-        for r in shc[2].component.requires:
+    for shc in get_components_with_requires():
+        for r in shc[2].prototype.requires:
             if not check_component_req(r['service'], r['component']):
                 ref = f'component "{shc[2].component.name}" of service "{shc[0].prototype.name}"'
                 msg = 'no required component "{}" of service "{}" for {}'
                 err('COMPONENT_CONSTRAINT_ERROR', msg.format(r['component'], r['service'], ref))
+
+
+def check_bound_components(shc_list):
+    def get_components_bound_to():
+        return [i for i in shc_list if i[2].prototype.bound_to]
+
+    def component_on_host(component, host):
+        return [i for i in shc_list if i[1] == host and i[2].prototype == component]
+
+    def bound_host_components(service, comp):
+        return [
+            i for i in shc_list if i[0].prototype.name == service and i[2].prototype.name == comp
+        ]
+
+    def check_bound_component(component):
+        service = component.bound_to['service']
+        comp_name = component.bound_to['component']
+        ref = f'component "{comp_name}" of service "{service}"'
+        bound_hc = bound_host_components(service, comp_name)
+        if not bound_hc:
+            msg = f'bound service "{service}", component "{comp_name}" not in hc for {ref}'
+            err('COMPONENT_CONSTRAINT_ERROR', msg)
+        for shc in bound_hc:
+            if not component_on_host(component, shc[1]):
+                msg = 'No bound component "{}" on host "{}" for {}'
+                err('COMPONENT_CONSTRAINT_ERROR', msg.format(component.name, shc[1].fqdn, ref))
+
+    for shc in get_components_bound_to():
+        check_bound_component(shc[2].prototype)
 
 
 def get_obj_config(obj):
@@ -300,7 +342,7 @@ def check_component_constraint(service, hc_in):
     def check(comp, const):
         count = 0
         for (_, _, c) in hc_in:
-            if comp.name == c.component.name:
+            if comp.name == c.prototype.name:
                 count += 1
 
         if isinstance(const[0], int):
@@ -319,5 +361,5 @@ def check_component_constraint(service, hc_in):
         elif const[0] == 'odd':
             check_odd(count, const[0], comp)
 
-    for c in Component.objects.filter(prototype=service.prototype):
+    for c in Prototype.objects.filter(parent=service.prototype, type='component'):
         check(c, c.constraint)

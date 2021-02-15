@@ -14,11 +14,12 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 import { DynamicComponent, DynamicDirective, DynamicEvent } from '../directives/dynamic.directive';
 import { ChannelService, keyChannelStrim } from '@app/core';
+import { ActionParameters } from '@app/shared/components/actions/actions.directive';
 
 export interface DialogData {
   title: string;
   component: Type<DynamicComponent>;
-  model?: any;
+  model?: ActionParameters | any;
   event?: EventEmitter<any>;
   text?: string;
   controls?: any[] | any;
