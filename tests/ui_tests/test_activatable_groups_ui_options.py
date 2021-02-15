@@ -14,29 +14,31 @@ def _check_that_field_is_invisible_if_group_active_or_not(sdk_client: ADCMClient
     _, config = prepare_cluster_and_get_config(sdk_client, path, app)
 
     group_name = path.split("/")[-1]
-    group_active = config.group_is_active_by_name(group_name)
-    assert not group_active
-    fields = config.get_field_groups()
-    for field in fields:
-        assert not field.is_displayed(), field.get_attribute("class")
-    group_names = config.get_group_elements()
-    assert len(group_names) == 1
-    assert group_names[0].text == group_name
-    assert group_names, group_names
-    if not config.advanced:
-        config.click_advanced()
-    assert config.advanced
-    config.activate_group_by_name(
-        group_name)
-    group_active = config.group_is_active_by_name(group_name)
-    assert group_active
-    group_names = config.get_group_elements()
-    assert group_names, group_names
-    assert len(group_names) == 1
-    assert group_names[0].text == group_name
-    fields = config.get_field_groups()
-    for field in fields:
-        assert not field.is_displayed(), field.get_attribute("class")
+    with allure.step('Check that field is visible if group is not active'):
+        group_active = config.group_is_active_by_name(group_name)
+        assert not group_active
+        fields = config.get_field_groups()
+        for field in fields:
+            assert not field.is_displayed(), field.get_attribute("class")
+        group_names = config.get_group_elements()
+        assert len(group_names) == 1
+        assert group_names[0].text == group_name
+        assert group_names, group_names
+        if not config.advanced:
+            config.click_advanced()
+        assert config.advanced
+    with allure.step('Check that field is invisible if group is active'):
+        config.activate_group_by_name(
+            group_name)
+        group_active = config.group_is_active_by_name(group_name)
+        assert group_active
+        group_names = config.get_group_elements()
+        assert group_names, group_names
+        assert len(group_names) == 1
+        assert group_names[0].text == group_name
+        fields = config.get_field_groups()
+        for field in fields:
+            assert not field.is_displayed(), field.get_attribute("class")
 
 
 @allure.step('Check that field invisible if activatable group active and not')
@@ -45,31 +47,32 @@ def _check_that_field_invisible_if_activatable_group_active_and_not(
     """Check that field invisible if activatable group active and not."""
 
     _, config = prepare_cluster_and_get_config(sdk_client, path, app)
-
     group_name = path.split("/")[-1]
-    group_active = config.group_is_active_by_name(group_name)
-    assert group_active
-    fields = config.get_field_groups()
-    for field in fields:
-        assert not field.is_displayed(), field.get_attribute("class")
-    group_names = config.get_group_elements()
-    assert len(group_names) == 1
-    assert group_names[0].text == group_name
-    assert group_names, group_names
-    if not config.advanced:
-        config.click_advanced()
-    assert config.advanced
-    config.activate_group_by_name(
-        group_name)
-    group_active = config.group_is_active_by_name(group_name)
-    assert group_active
-    group_names = config.get_group_elements()
-    assert group_names, group_names
-    assert len(group_names) == 1
-    assert group_names[0].text == group_name
-    fields = config.get_field_groups()
-    for field in fields:
-        assert not field.is_displayed(), field.get_attribute("class")
+    with allure.step('Check that field is visible if activatable group is not active'):
+        group_active = config.group_is_active_by_name(group_name)
+        assert group_active
+        fields = config.get_field_groups()
+        for field in fields:
+            assert not field.is_displayed(), field.get_attribute("class")
+        group_names = config.get_group_elements()
+        assert len(group_names) == 1
+        assert group_names[0].text == group_name
+        assert group_names, group_names
+        if not config.advanced:
+            config.click_advanced()
+        assert config.advanced
+    with allure.step('Check that field invisible if activatable group active'):
+        config.activate_group_by_name(
+            group_name)
+        group_active = config.group_is_active_by_name(group_name)
+        assert group_active
+        group_names = config.get_group_elements()
+        assert group_names, group_names
+        assert len(group_names) == 1
+        assert group_names[0].text == group_name
+        fields = config.get_field_groups()
+        for field in fields:
+            assert not field.is_displayed(), field.get_attribute("class")
 
 
 @allure.step('Check that all fields and groups invisible')

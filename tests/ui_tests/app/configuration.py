@@ -163,6 +163,7 @@ class Configuration(BasePage):
         return self.driver.find_elements(*ConfigurationLocators.field_group)
 
     @retry(retry_on_exception=retry_on_exception, stop_max_delay=10 * 1000)
+    @allure.step('Get save button status')
     def save_button_status(self):
         self._wait_element(ConfigurationLocators.config_save_button)
         button = self.driver.find_element(*ConfigurationLocators.config_save_button)
@@ -173,9 +174,11 @@ class Configuration(BasePage):
             result = True
         return result
 
+    @allure.step('Get app fields')
     def get_app_fields(self):
         return self.driver.find_elements(*ConfigurationLocators.app_field)
 
+    @allure.step('Find element by name: {name}')
     def _get_group_element_by_name(self, name):
         self._wait_element_present(Common.mat_expansion_panel)
         config_groups = self.driver.find_elements(*Common.mat_expansion_panel)
@@ -184,61 +187,56 @@ class Configuration(BasePage):
                 return group
         return False
 
+    @allure.step('Check if mat slide toggle is checked')
     def group_is_active_by_element(self, group_element):
-        """
-
-        :param group_element:
-        :return:
-        """
         toogle = group_element.find_element(*Common.mat_slide_toggle)
         if 'mat-checked' in toogle.get_attribute("class"):
             return True
         return False
 
     @staticmethod
+    @allure.step('Check if field is read-only')
     def field_is_ro(field_element):
         if "read-only" in field_element.get_attribute("class"):
             return True
         return False
 
+    @allure.step('Check if mat slide toggle is checked')
     def group_is_active_by_name(self, group_name):
-        """Get group status
-        :param group_name:
-        :return:
-        """
         group = self._get_group_element_by_name(group_name)
         toogle = group.find_element(*Common.mat_slide_toggle)
         if 'mat-checked' in toogle.get_attribute("class"):
             return True
         return False
 
+    @allure.step('Activate group by name: {group_name}')
     def activate_group_by_name(self, group_name):
-        """
-
-        :param group_name:
-        :return:
-        """
         group = self._get_group_element_by_name(group_name)
         toogle = group.find_element(*Common.mat_slide_toggle)
         if 'mat-checked' not in toogle.get_attribute("class"):
             toogle.click()
 
+    @allure.step('Save configuration')
     def save_configuration(self):
         self._getelement(ConfigurationLocators.config_save_button).click()
 
+    @allure.step('Click advanced')
     def click_advanced(self):
         return self._click_element(Common.mat_checkbox, name="Advanced")
 
+    @allure.step('Click advanced')
     def get_form_field_text(self, form_field_element):
         self._wait_element_present_in_sublement(form_field_element, Common.mat_form_field)
         form_field = form_field_element.find_elements(*Common.mat_form_field)[0]
         return form_field.get_attribute("textContent").strip()
 
+    @allure.step('Get form field')
     def get_form_field(self, field_element):
         self._wait_element_present_in_sublement(field_element, Common.mat_form_field)
         return field_element.find_elements(*Common.mat_form_field)[0]
 
     @property
+    @allure.step('Check if advanced')
     def advanced(self):
         self._wait_element(Common.mat_checkbox)
         buttons = self.driver.find_elements(*Common.mat_checkbox)
@@ -248,6 +246,7 @@ class Configuration(BasePage):
         return None
 
     @staticmethod
+    @allure.step('Get tooltip element for field')
     def _get_tooltip_el_for_field(field):
         try:
             return field.find_element(*Common.info_icon)
@@ -255,12 +254,14 @@ class Configuration(BasePage):
             return False
 
     @staticmethod
+    @allure.step('Check tooltip for field')
     def check_tooltip_for_field(field):
         try:
             return field.find_element(*Common.info_icon)
         except NoSuchElementException:
             return False
 
+    @allure.step('Get tooltip text for element')
     def get_tooltip_text_for_element(self, element):
         tooltip_icon = self._get_tooltip_el_for_field(element)
         # Hack for firefox because of move_to_element does not scroll to the element
@@ -271,22 +272,27 @@ class Configuration(BasePage):
         action.move_to_element(tooltip_icon).perform()
         return self.driver.find_element(*Common.tooltip).text
 
+    @allure.step('Get textboxes')
     def get_textboxes(self):
         return self.driver.find_elements(*ConfigurationLocators.app_fields_text_boxes)
 
+    @allure.step('Get password elements')
     def get_password_elements(self):
         return self.driver.find_elements(*ConfigurationLocators.app_fields_password)
 
+    @allure.step('Get display names')
     def get_display_names(self):
         self._wait_element_present(Common.display_names, timer=15)
         return {name.text for name in self.driver.find_elements(*Common.display_names)}
 
+    @allure.step('Set search field: {search_pattern}')
     def set_search_field(self, search_pattern):
         self._wait_element(ConfigurationLocators.search_field)
         element = self.driver.find_element(*ConfigurationLocators.search_field)
         self.clear_element(element)
         self._set_field_value(ConfigurationLocators.search_field, search_pattern)
 
+    @allure.step('Get group elements')
     def get_group_elements(self):
         try:
             self._wait_element_present(Common.display_names)
@@ -295,17 +301,14 @@ class Configuration(BasePage):
         return self.driver.find_elements(*Common.display_names)
 
     @staticmethod
+    @allure.step('Check that field have read-only attribute')
     def read_only_element(element):
-        """Check that field have read-only attribute
-
-        :param element:
-        :return:
-        """
         if 'read-only' in element.get_attribute("class"):
             return True
         return False
 
     @staticmethod
+    @allure.step('Check if element is editable')
     def editable_element(element):
         el_class = element.get_attribute("class")
         el_readonly_attr = element.get_attribute("readonly")
