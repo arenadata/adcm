@@ -30,7 +30,7 @@ REQUIRED_FIELDS = ['string_required_by_default_group', 'string_required_by_optio
                    'string_required_True_activatable_true']
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture()
 def service(sdk_client_fs):
     bundle = sdk_client_fs.upload_from_fs(DATADIR)
     cluster = bundle.cluster_create(name='my cluster')
