@@ -1,11 +1,12 @@
 import json
-
+import allure
 from retrying import retry
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException,\
     TimeoutException
 from tests.ui_tests.app.pages import BasePage
 from tests.ui_tests.app.locators import Common, ConfigurationLocators
+from selenium.webdriver.remote.webelement import WebElement
 
 
 def retry_on_exception(exc):
@@ -15,9 +16,8 @@ def retry_on_exception(exc):
 
 # pylint: disable=R0904
 class Configuration(BasePage):
-    """
-    Class for configuration page
-    """
+    """Class for configuration page."""
+
     def __init__(self, driver, url=None):
         super().__init__(driver)
         if url:
@@ -26,23 +26,13 @@ class Configuration(BasePage):
         # 30 seconds timeout here is caused by possible long load of config page
         self._wait_element_present(ConfigurationLocators.load_marker, 30)
 
+    @allure.step('Check that we can edit field or not')
     def assert_field_editable(self, field, editable=True):
-        """Check that we can edit specific field or not
-        :param field:
-        :param editable:
-        :return:
-        """
         field_editable = self.editable_element(field)
         assert field_editable == editable
 
+    @allure.step('Check that field content equal expected value: {expected_value}')
     def assert_field_content_equal(self, field_type, field, expected_value):
-        """Check that field content equal expected value
-
-        :param field_type:
-        :param field:
-        :param expected_value:
-        :return:
-        """
         current_value = self.get_field_value_by_type(field, field_type)
         if field_type == 'password':
             # In case of password we have no raw password in API after writing.
@@ -61,12 +51,8 @@ class Configuration(BasePage):
                 err_message = "Default value wrong. Current value {}".format(current_value)
                 assert current_value == expected_value, err_message
 
+    @allure.step('Check that frontend errors presented on screen and error type in text')
     def assert_alerts_presented(self, field_type):
-        """Check that frontend errors presented on screen and error type in text
-
-        :param field_type:
-        :return:
-        """
         errors = self.get_frontend_errors()
         assert errors
         if field_type == 'password':
@@ -75,80 +61,49 @@ class Configuration(BasePage):
             error_texts = [error.text for error in errors]
             assert error_text in error_texts
 
+    @allure.step('Check that group active or not')
     def assert_group_status(self, group_element, status=True):
-        """Check that group active or not
-        :param group_element:
-        :param status:
-        :return:
-        """
         if status:
             assert self.group_is_active_by_element(group_element)
         else:
             assert not self.group_is_active_by_element(group_element)
 
-    def assert_form_field_text_equal(self, form_field_element, expected_text):
-        """Check that mat form field text have expected value
-
-        :param form_field_element: WebElement
-        :param expected_text: element text as string
-        :return:
-        """
+    @allure.step('Check that mat form field text have expected value: {expected_text}')
+    def assert_form_field_text_equal(self, form_field_element: WebElement, expected_text: str):
         field_text = self.get_form_field_text(form_field_element)
         err_msg = "Actual field text: {}. Expected field text: {}".format(
             field_text, expected_text)
         assert field_text == expected_text, err_msg
 
-    def assert_form_field_text_in(self, form_field_element, expected_text):
-        """Check that expected text in form field
-
-        :param form_field_element: WebElement
-        :param expected_text: element text as string
-        :return:
-        """
+    @allure.step('Check that expected text in form field: {expected_text}')
+    def assert_form_field_text_in(self, form_field_element: WebElement, expected_text: str):
         field_text = self.get_form_field_text(form_field_element)
         err_msg = "Actual field text: {}. Expected part of text: {}".format(
             field_text, expected_text)
         assert expected_text in field_text, err_msg
 
-    def assert_text_in_form_field_element(self, element, expected_text):
-        """Check that expected text in form field
-
-        :param element: WebElement
-        :param expected_text: element text as string
-        :return:
-        """
+    @allure.step('Check that expected text in form field: {expected_text}')
+    def assert_text_in_form_field_element(self, element: WebElement, expected_text: str):
         result = self._wait_text_element_in_element(element,
                                                     Common.mat_form_field,
                                                     text=expected_text)
         err_msg = "Expected text not presented: {}.".format(expected_text)
         assert result, err_msg
 
+    @allure.step('Get key value for map field')
     def get_map_key(self, item_element):
-        """Get key value for map field
-
-        :param item_element:
-        :return:
-        """
         form_field = item_element.find_element(*ConfigurationLocators.map_key_field)
         inp = form_field.find_element(*Common.mat_input_element)
         return inp.get_attribute("value")
 
+    @allure.step('Get value for map field')
     def get_map_value(self, item_element):
-        """Get value for map field
-
-        :param item_element:
-        :return:
-        """
         form_field = item_element.find_element(*ConfigurationLocators.map_value_field)
         inp = form_field.find_element(*Common.mat_input_element)
         return inp.get_attribute("value")
 
+    @allure.step('Get map field values')
     def get_map_field_config(self, map_field):
-        """Get map field values
-
-        :param map_field:
-        :return: dict
-        """
         items = map_field.find_elements(*Common.item)
         result = {}
         for item in items:
@@ -157,14 +112,8 @@ class Configuration(BasePage):
             result[_key] = _value
         return result
 
-    def get_field_value_by_type(self, field_element, field_type):
-        """Return field value from element by field type
-
-        :param field_element: WebElement
-        :param field_type: string with type
-        :return: field value, for numeric fields string will be converted
-        to field type.
-        """
+    @allure.step('Get field value from element by field type')
+    def get_field_value_by_type(self, field_element: WebElement, field_type: str):
         if field_type == 'boolean':
             element_with_value = field_element.find_element(*Common.mat_checkbox_class)
             current_value = self.get_checkbox_element_status(element_with_value)
@@ -190,12 +139,8 @@ class Configuration(BasePage):
         return current_value
 
     @staticmethod
-    def get_structure_values(field):
-        """Get structure values for field
-
-        :param field:
-        :return: list of dicts
-        """
+    @allure.step('Get structure values for field')
+    def get_structure_values(field) -> list:
         schemes = field.find_elements(*ConfigurationLocators.app_root_scheme)[1:]
         config = []
         for scheme in schemes:
@@ -209,9 +154,11 @@ class Configuration(BasePage):
         return config
 
     @staticmethod
+    @allure.step('Get field value')
     def get_field_value(input_field):
         return input_field.get_attribute("value")
 
+    @allure.step('Get field groups')
     def get_field_groups(self):
         return self.driver.find_elements(*ConfigurationLocators.field_group)
 

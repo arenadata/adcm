@@ -4,11 +4,13 @@ from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import parametrize_by_data_subdirs
 
 from .utils import prepare_cluster_and_get_config
+import allure
 
 
+@allure.step('Check that field is invisible if group is active or not')
 def _check_that_field_is_invisible_if_group_active_or_not(sdk_client: ADCMClient, path, app):
-    """Check that field is invisible if group is active or not
-    """
+    """Check that field is invisible if group is active or not."""
+
     _, config = prepare_cluster_and_get_config(sdk_client, path, app)
 
     group_name = path.split("/")[-1]
@@ -37,10 +39,11 @@ def _check_that_field_is_invisible_if_group_active_or_not(sdk_client: ADCMClient
         assert not field.is_displayed(), field.get_attribute("class")
 
 
+@allure.step('Check that field invisible if activatable group active and not')
 def _check_that_field_invisible_if_activatable_group_active_and_not(
         sdk_client: ADCMClient, path, app):
-    """Check that field invisible if activatable group active and not
-    """
+    """Check that field invisible if activatable group active and not."""
+
     _, config = prepare_cluster_and_get_config(sdk_client, path, app)
 
     group_name = path.split("/")[-1]
@@ -69,10 +72,11 @@ def _check_that_field_invisible_if_activatable_group_active_and_not(
         assert not field.is_displayed(), field.get_attribute("class")
 
 
+@allure.step('Check that all fields and groups invisible')
 def _check_that_all_fields_and_groups_invisible(
         sdk_client: ADCMClient, path, app):
-    """Check that all fields and groups invisible.
-    """
+    """Check that all fields and groups invisible."""
+
     _, config = prepare_cluster_and_get_config(sdk_client, path, app)
 
     fields = config.get_field_groups()
@@ -90,10 +94,11 @@ def _check_that_all_fields_and_groups_invisible(
         assert not field.is_displayed(), field.get_attribute("class")
 
 
+@allure.step('Check that field is visible if advanced and activatable true')
 def _check_that_all_field_is_visible_if_advanced_and_activatable_true(
         sdk_client: ADCMClient, path, app):
-    """Field visible if advanced and activatable true
-    """
+    """Field visible if advanced and activatable true"""
+
     _, config = prepare_cluster_and_get_config(sdk_client, path, app)
 
     group_name = path.split("/")[-1]
@@ -118,10 +123,11 @@ def _check_that_all_field_is_visible_if_advanced_and_activatable_true(
         assert field.is_displayed(), field.get_attribute("class")
 
 
+@allure.step('Check that field invisible')
 def _check_that_all_field_is_invisible(
         sdk_client: ADCMClient, path, app):
-    """Check that field invisible
-    """
+    """Check that field invisible."""
+
     _, config = prepare_cluster_and_get_config(sdk_client, path, app)
 
     group_name = path.split("/")[-1]
@@ -149,8 +155,8 @@ def _check_that_all_field_is_invisible(
     "group_advanced_false_invisible_false_field_advanced_false_invisible_false_activiatable_false")
 def test_group_advanced_false_invisible_false_field_advanced_false_invisible_false_active_false(
         sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm):
-    """Check that group not active and field is invisible until group is not active.
-    """
+    """Check that group not active and field is invisible until group is not active."""
+
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
 
     group_name = path.split("/")[-1]
