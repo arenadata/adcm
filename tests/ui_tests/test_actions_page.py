@@ -21,7 +21,7 @@ def cluster(sdk_client_fs: ADCMClient):
 
 @allure.step("Open ADCM tab Action")
 @pytest.fixture()
-def action_page(app_fs, login_to_adcm, cluster):
+def cluster_action_page(app_fs, login_to_adcm, cluster):
     return ActionPage(app_fs.driver, url=app_fs.adcm.url, cluster_id=cluster.cluster_id)
 
 
