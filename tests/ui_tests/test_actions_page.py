@@ -48,8 +48,8 @@ def test_check_verbose_checkbox_of_action_run_form_is_displayed(action_page):
 
 
 @pytest.mark.parametrize("verbose_state", [True, False], ids=["verbose_state_true", "verbose_state_false"])
-def test_check_verbose_info_of_action_run_form(action_page, cluster, verbose_state):
-    action_page.run_action(is_verbose=verbose_state)
+def test_check_verbose_info_of_action_run_form(cluster_action_page, cluster, verbose_state):
+    cluster_action_page.run_action(is_verbose=verbose_state)
     job = wait_for_job_creation(cluster)
     log = job.log(job_id=job.id, log_id=job.log_list()[0].id)
     check_verbosity(log, verbose_state)
