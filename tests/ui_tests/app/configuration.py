@@ -2,15 +2,22 @@ import json
 
 from retrying import retry
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException,\
-    TimeoutException
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    StaleElementReferenceException,
+    TimeoutException,
+)
 from tests.ui_tests.app.pages import BasePage
 from tests.ui_tests.app.locators import Common, ConfigurationLocators
 
 
 def retry_on_exception(exc):
-    return any((isinstance(exc, StaleElementReferenceException),
-                isinstance(exc, NoSuchElementException)))
+    return any(
+        (
+            isinstance(exc, StaleElementReferenceException),
+            isinstance(exc, NoSuchElementException),
+        )
+    )
 
 
 # pylint: disable=R0904
@@ -18,6 +25,7 @@ class Configuration(BasePage):
     """
     Class for configuration page
     """
+
     def __init__(self, driver, url=None):
         super().__init__(driver)
         if url:
@@ -44,21 +52,25 @@ class Configuration(BasePage):
         :return:
         """
         current_value = self.get_field_value_by_type(field, field_type)
-        if field_type == 'password':
+        if field_type == "password":
             # In case of password we have no raw password in API after writing.
             if expected_value is not None and expected_value != "":
                 assert current_value is not None, "Password field expected to be filled"
             else:
-                assert current_value is None or current_value == "", "Password have to be empty"
+                assert (
+                    current_value is None or current_value == ""
+                ), "Password have to be empty"
         else:
-            if field_type == 'file':
-                expected_value = 'test'
-            if field_type == 'map':
+            if field_type == "file":
+                expected_value = "test"
+            if field_type == "map":
                 map_config = self.get_map_field_config(field)
                 assert set(map_config.keys()) == set(map_config.keys())
                 assert set(map_config.values()) == set(map_config.values())
             else:
-                err_message = "Default value wrong. Current value {}".format(current_value)
+                err_message = "Default value wrong. Current value {}".format(
+                    current_value
+                )
                 assert current_value == expected_value, err_message
 
     def assert_alerts_presented(self, field_type):
@@ -69,7 +81,7 @@ class Configuration(BasePage):
         """
         errors = self.get_frontend_errors()
         assert errors
-        if field_type == 'password':
+        if field_type == "password":
             assert len(errors) == 2
             error_text = "Field [{}] is required!".format(field_type)
             error_texts = [error.text for error in errors]
@@ -95,7 +107,8 @@ class Configuration(BasePage):
         """
         field_text = self.get_form_field_text(form_field_element)
         err_msg = "Actual field text: {}. Expected field text: {}".format(
-            field_text, expected_text)
+            field_text, expected_text
+        )
         assert field_text == expected_text, err_msg
 
     def assert_form_field_text_in(self, form_field_element, expected_text):
@@ -107,7 +120,8 @@ class Configuration(BasePage):
         """
         field_text = self.get_form_field_text(form_field_element)
         err_msg = "Actual field text: {}. Expected part of text: {}".format(
-            field_text, expected_text)
+            field_text, expected_text
+        )
         assert expected_text in field_text, err_msg
 
     def assert_text_in_form_field_element(self, element, expected_text):
@@ -117,9 +131,9 @@ class Configuration(BasePage):
         :param expected_text: element text as string
         :return:
         """
-        result = self._wait_text_element_in_element(element,
-                                                    Common.mat_form_field,
-                                                    text=expected_text)
+        result = self._wait_text_element_in_element(
+            element, Common.mat_form_field, text=expected_text
+        )
         err_msg = "Expected text not presented: {}.".format(expected_text)
         assert result, err_msg
 
@@ -165,27 +179,27 @@ class Configuration(BasePage):
         :return: field value, for numeric fields string will be converted
         to field type.
         """
-        if field_type == 'boolean':
+        if field_type == "boolean":
             element_with_value = field_element.find_element(*Common.mat_checkbox_class)
             current_value = self.get_checkbox_element_status(element_with_value)
-        elif field_type == 'option':
+        elif field_type == "option":
             element_with_value = field_element.find_element(*Common.mat_select)
             current_value = self.get_field_value(element_with_value)
-        elif field_type == 'list':
+        elif field_type == "list":
             elements_with_value = field_element.find_elements(*Common.mat_input_element)
             current_value = [
                 self.get_field_value(element) for element in elements_with_value
             ]
-        elif field_type == 'structure':
+        elif field_type == "structure":
             return self.get_structure_values(field_element)
         else:
             element_with_value = field_element.find_element(*Common.mat_input_element)
             current_value = self.get_field_value(element_with_value)
-        if field_type == 'integer':
+        if field_type == "integer":
             current_value = int(current_value)
-        elif field_type == 'float':
+        elif field_type == "float":
             current_value = float(current_value)
-        elif field_type == 'json':
+        elif field_type == "json":
             current_value = json.loads(current_value)
         return current_value
 
@@ -220,7 +234,7 @@ class Configuration(BasePage):
         self._wait_element(ConfigurationLocators.config_save_button)
         button = self.driver.find_element(*ConfigurationLocators.config_save_button)
         class_el = button.get_attribute("disabled")
-        if class_el == 'true':
+        if class_el == "true":
             result = False
         else:
             result = True
@@ -244,7 +258,7 @@ class Configuration(BasePage):
         :return:
         """
         toogle = group_element.find_element(*Common.mat_slide_toggle)
-        if 'mat-checked' in toogle.get_attribute("class"):
+        if "mat-checked" in toogle.get_attribute("class"):
             return True
         return False
 
@@ -261,7 +275,7 @@ class Configuration(BasePage):
         """
         group = self._get_group_element_by_name(group_name)
         toogle = group.find_element(*Common.mat_slide_toggle)
-        if 'mat-checked' in toogle.get_attribute("class"):
+        if "mat-checked" in toogle.get_attribute("class"):
             return True
         return False
 
@@ -273,7 +287,7 @@ class Configuration(BasePage):
         """
         group = self._get_group_element_by_name(group_name)
         toogle = group.find_element(*Common.mat_slide_toggle)
-        if 'mat-checked' not in toogle.get_attribute("class"):
+        if "mat-checked" not in toogle.get_attribute("class"):
             toogle.click()
 
     def save_configuration(self):
@@ -283,7 +297,9 @@ class Configuration(BasePage):
         return self._click_element(Common.mat_checkbox, name="Advanced")
 
     def get_form_field_text(self, form_field_element):
-        self._wait_element_present_in_sublement(form_field_element, Common.mat_form_field)
+        self._wait_element_present_in_sublement(
+            form_field_element, Common.mat_form_field
+        )
         form_field = form_field_element.find_elements(*Common.mat_form_field)[0]
         return form_field.get_attribute("textContent").strip()
 
@@ -296,7 +312,7 @@ class Configuration(BasePage):
         self._wait_element(Common.mat_checkbox)
         buttons = self.driver.find_elements(*Common.mat_checkbox)
         for button in buttons:
-            if button.get_attribute("textContent").strip() == 'Advanced':
+            if button.get_attribute("textContent").strip() == "Advanced":
                 return "checked" in button.get_attribute("class")
         return None
 
@@ -318,8 +334,8 @@ class Configuration(BasePage):
         tooltip_icon = self._get_tooltip_el_for_field(element)
         # Hack for firefox because of move_to_element does not scroll to the element
         # https://github.com/mozilla/geckodriver/issues/776
-        if self.driver.capabilities['browserName'] == 'firefox':
-            self.driver.execute_script('arguments[0].scrollIntoView(true)', element)
+        if self.driver.capabilities["browserName"] == "firefox":
+            self.driver.execute_script("arguments[0].scrollIntoView(true)", element)
         action = ActionChains(self.driver)
         action.move_to_element(tooltip_icon).perform()
         return self.driver.find_element(*Common.tooltip).text
@@ -354,7 +370,7 @@ class Configuration(BasePage):
         :param element:
         :return:
         """
-        if 'read-only' in element.get_attribute("class"):
+        if "read-only" in element.get_attribute("class"):
             return True
         return False
 
@@ -364,9 +380,9 @@ class Configuration(BasePage):
         el_readonly_attr = element.get_attribute("readonly")
         if "field-disabled" in el_class:
             return False
-        elif 'read-only' in el_class:
+        elif "read-only" in el_class:
             return False
-        elif el_readonly_attr == 'true':
+        elif el_readonly_attr == "true":
             return False
         if element.is_enabled():
             return True

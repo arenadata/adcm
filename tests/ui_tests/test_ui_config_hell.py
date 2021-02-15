@@ -10,11 +10,11 @@ DATADIR = get_data_dir(__file__)
 BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def ui_hell_fs(sdk_client_fs):
     bundle = sdk_client_fs.upload_from_fs(DATADIR)
-    cluster = bundle.cluster_create(name='my cluster')
-    cluster.service_add(name='ui_config_hell')
+    cluster = bundle.cluster_create(name="my cluster")
+    cluster.service_add(name="ui_config_hell")
     service = cluster.service(name="ui_config_hell")
     return service
 
@@ -22,16 +22,18 @@ def ui_hell_fs(sdk_client_fs):
 @pytest.fixture()
 def prototype_display_names(ui_hell_fs):
     display_header_name = ui_hell_fs.display_name
-    display_names = {config['display_name'] for config in ui_hell_fs.prototype().config}
+    display_names = {config["display_name"] for config in ui_hell_fs.prototype().config}
     return display_header_name, display_names
 
 
 @pytest.fixture()
 def ui_display_names(login_to_adcm, app_fs, ui_hell_fs):
-    ui_config = Configuration(app_fs.driver,
-                              "{}/cluster/{}/service/{}/config".format(app_fs.adcm.url,
-                                                                       ui_hell_fs.cluster_id,
-                                                                       ui_hell_fs.service_id))
+    ui_config = Configuration(
+        app_fs.driver,
+        "{}/cluster/{}/service/{}/config".format(
+            app_fs.adcm.url, ui_hell_fs.cluster_id, ui_hell_fs.service_id
+        ),
+    )
     return ui_config.get_display_names()
 
 

@@ -38,7 +38,7 @@ def wait_for_job_creation(cluster, interval=1, timeout=30):
         except ObjectNotFound:
             pass
         time.sleep(interval)
-    raise WaitTimeout(f'Job has not been created for {timeout} seconds')
+    raise WaitTimeout(f"Job has not been created for {timeout} seconds")
 
 
 @allure.step("Check if verbosity is {verbose_state}")
@@ -47,14 +47,20 @@ def check_verbosity(log, verbose_state):
 
 
 def test_check_verbose_checkbox_of_action_run_form_is_displayed(cluster_action_page):
-    with allure.step("Check if verbose checkbox is displayed in popup from Action page"):
-        assert (cluster_action_page.check_verbose_chbx_displayed()), \
-            "Verbose checkbox is not displayed in the popup"
+    with allure.step(
+        "Check if verbose checkbox is displayed in popup from Action page"
+    ):
+        assert (
+            cluster_action_page.check_verbose_chbx_displayed()
+        ), "Verbose checkbox is not displayed in the popup"
 
 
 @pytest.mark.parametrize(
-    "verbose_state", [True, False], ids=["verbose_state_true", "verbose_state_false"])
-def test_check_verbose_info_of_action_run_form(cluster_action_page, cluster, verbose_state):
+    "verbose_state", [True, False], ids=["verbose_state_true", "verbose_state_false"]
+)
+def test_check_verbose_info_of_action_run_form(
+    cluster_action_page, cluster, verbose_state
+):
     cluster_action_page.run_action(is_verbose=verbose_state)
     job = wait_for_job_creation(cluster)
     log = job.log(job_id=job.id, log_id=job.log_list()[0].id)

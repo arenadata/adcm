@@ -24,10 +24,10 @@ from jinja2 import Template
 from tests.library import errorcodes as err
 
 DATADIR = utils.get_data_dir(__file__)
-TEMPLATE = DATADIR + '/template.yaml'
+TEMPLATE = DATADIR + "/template.yaml"
 
 
-@allure.step('Read template file')
+@allure.step("Read template file")
 def read_conf(template_file_name):
     try:
         with open(template_file_name) as file:
@@ -37,19 +37,28 @@ def read_conf(template_file_name):
     return data
 
 
-@allure.step('Load template file')
+@allure.step("Load template file")
 def render(template, context):
     tmpl = Template(template)
     return yaml.load(tmpl.render(config_type=context))
 
 
-@allure.step('Save template')
-def save_conf(rendered_template, out_dir, out_file_name='/config.yaml'):
-    with open(out_dir + out_file_name, 'w') as out:
+@allure.step("Save template")
+def save_conf(rendered_template, out_dir, out_file_name="/config.yaml"):
+    with open(out_dir + out_file_name, "w") as out:
         out.write(yaml.dump(rendered_template, default_flow_style=False))
 
 
-types_list = ['integer', 'float', 'string', 'boolean', 'password', 'text', 'json', 'file']
+types_list = [
+    "integer",
+    "float",
+    "string",
+    "boolean",
+    "password",
+    "text",
+    "json",
+    "file",
+]
 # , 'float', 'string', 'boolean', 'password', 'text', 'json', 'file', option need refactor
 
 
@@ -65,10 +74,10 @@ def data(sdk_client_ms: ADCMClient, request):
 
 
 def test_null_value_shouldnt_be_for_required(data, val=None):
-    with allure.step('Set configuration to cluster'):
+    with allure.step("Set configuration to cluster"):
         cluster, case = data
         conf = {"required": val, "following": val}
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             cluster.config_set(conf)
-    with allure.step('Check error in case ' + case):
+    with allure.step("Check error in case " + case):
         err.CONFIG_VALUE_ERROR.equal(e, 'Value of config key "required/" is required')

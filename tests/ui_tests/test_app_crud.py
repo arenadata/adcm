@@ -36,8 +36,8 @@ def adcm(image, request, adcm_credentials):
     dw = DockerWrapper()
     adcm = dw.run_adcm(image=repo, tag=tag, pull=False)
     adcm.api.auth(**adcm_credentials)
-    cluster_bundle = os.path.join(DATADIR, 'cluster_bundle')
-    provider_bundle = os.path.join(DATADIR, 'hostprovider')
+    cluster_bundle = os.path.join(DATADIR, "cluster_bundle")
+    provider_bundle = os.path.join(DATADIR, "hostprovider")
     steps.upload_bundle(adcm.api.objects, cluster_bundle)
     steps.upload_bundle(adcm.api.objects, provider_bundle)
 
@@ -74,20 +74,19 @@ def host(app):
 
 @pytest.fixture()
 def data():
-    yield {'name': utils.random_string(),
-           'description': utils.random_string()}
+    yield {"name": utils.random_string(), "description": utils.random_string()}
 
 
 def test_run_app(app, adcm_credentials):
-    app.contains_url('/login')
+    app.contains_url("/login")
     app.ui.session.login(**adcm_credentials)
-    assert app.contains_url('/admin')
+    assert app.contains_url("/admin")
 
 
 def test_cluster_creation(app, data, adcm_credentials):
     app.ui.session.login(**adcm_credentials)
     app.ui.clusters.add_new_cluster(**data)
-    app.ui.clusters.list_element_contains(data['name'])
+    app.ui.clusters.list_element_contains(data["name"])
 
 
 def test_delete_first_cluster(app, data, adcm_credentials):
@@ -100,14 +99,14 @@ def test_delete_first_cluster(app, data, adcm_credentials):
 def test_provider_creation(app, data, adcm_credentials):
     app.ui.session.login(**adcm_credentials)
     app.ui.providers.add_new_provider(**data)
-    app.ui.providers.list_element_contains(data['name'])
+    app.ui.providers.list_element_contains(data["name"])
 
 
 def test_delete_first_provider(app, data, adcm_credentials):
     app.ui.session.login(**adcm_credentials)
     app.ui.providers.add_new_provider(**data)
     try:
-        app.ui.providers.list_element_contains(data['name'])
+        app.ui.providers.list_element_contains(data["name"])
     except TimeoutException:
         pytest.xfail("Flaky test")
     app.ui.providers.delete_first_provider()
@@ -120,20 +119,22 @@ provider = data
 def test_host_creation(app, provider, data, adcm_credentials):
     app.ui.session.login(**adcm_credentials)
     app.ui.providers.add_new_provider(**provider)
-    app.ui.hosts.add_new_host(data['name'])
-    app.ui.hosts.list_element_contains(data['name'])
+    app.ui.hosts.add_new_host(data["name"])
+    app.ui.hosts.list_element_contains(data["name"])
 
 
-def test_host_creation_from_cluster_details(app, cluster, hostprovider, data, adcm_credentials):
+def test_host_creation_from_cluster_details(
+    app, cluster, hostprovider, data, adcm_credentials
+):
     app.ui.session.login(**adcm_credentials)
-    app.ui.clusters.details.create_host_from_cluster(hostprovider, data['name'])
-    app.ui.clusters.details.host_tab.list_element_contains(data['name'])
+    app.ui.clusters.details.create_host_from_cluster(hostprovider, data["name"])
+    app.ui.clusters.details.host_tab.list_element_contains(data["name"])
 
 
 def test_host_deletion(app, provider, data, adcm_credentials):
     app.ui.session.login(**adcm_credentials)
     app.ui.providers.add_new_provider(**provider)
-    app.ui.hosts.add_new_host(data['name'])
+    app.ui.hosts.add_new_host(data["name"])
     try:
         app.ui.hosts.delete_first_host()
     except TimeoutException:
@@ -143,11 +144,11 @@ def test_host_deletion(app, provider, data, adcm_credentials):
 def test_deletion_provider_while_it_has_host(app, provider, data, adcm_credentials):
     app.ui.session.login(**adcm_credentials)
     app.ui.providers.add_new_provider(**provider)
-    app.ui.hosts.add_new_host(data['name'])
+    app.ui.hosts.add_new_host(data["name"])
     time.sleep(10)
     try:
         app.ui.providers.delete_first_provider()
-        error = app.ui.providers.check_error('PROVIDER_CONFLICT')
+        error = app.ui.providers.check_error("PROVIDER_CONFLICT")
         assert error[0], error[1]
     except (AssertionError, TimeoutException):
         pytest.xfail("Flaky test")
@@ -160,7 +161,7 @@ def test_addition_host_to_cluster(app, cluster, host, adcm_credentials):
 
 
 def test_cluster_action_must_be_run(app, cluster, adcm_credentials):
-    action = 'install'
+    action = "install"
     app.ui.session.login(**adcm_credentials)
     app.ui.clusters.details.run_action_by_name(action)
     app.ui.jobs.check_task(action)

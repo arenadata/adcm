@@ -44,73 +44,84 @@ def client(adcm):
 
 
 def test_load_host_provider(client):
-    steps.upload_bundle(client, BUNDLES + 'hostprovider_bundle')
-    with allure.step('Check bundle list'):
+    steps.upload_bundle(client, BUNDLES + "hostprovider_bundle")
+    with allure.step("Check bundle list"):
         assert client.stack.bundle.list() is not None
 
 
 def test_validate_provider_prototype(client):
-    steps.upload_bundle(client, BUNDLES + 'hostprovider_bundle')
-    with allure.step('Load provider prototype'):
+    steps.upload_bundle(client, BUNDLES + "hostprovider_bundle")
+    with allure.step("Load provider prototype"):
         provider_prototype = json.loads(json.dumps(client.stack.provider.list()[0]))
-        schema = json.load(
-            open(SCHEMAS + '/stack_list_item_schema.json')
-        )
-    with allure.step('Check provider prototype'):
+        schema = json.load(open(SCHEMAS + "/stack_list_item_schema.json"))
+    with allure.step("Check provider prototype"):
         assert validate(provider_prototype, schema) is None
 
 
 def test_should_create_provider_wo_description(client):
-    steps.upload_bundle(client, BUNDLES + 'hostprovider_bundle')
-    with allure.step('Create provider'):
-        client.provider.create(prototype_id=client.stack.provider.list()[0]['id'],
-                               name=utils.random_string())
-    with allure.step('Check provider list'):
+    steps.upload_bundle(client, BUNDLES + "hostprovider_bundle")
+    with allure.step("Create provider"):
+        client.provider.create(
+            prototype_id=client.stack.provider.list()[0]["id"],
+            name=utils.random_string(),
+        )
+    with allure.step("Check provider list"):
         assert client.provider.list() is not None
 
 
 def test_should_create_provider_w_description(client):
-    steps.upload_bundle(client, BUNDLES + 'hostprovider_bundle')
-    with allure.step('Create provider'):
+    steps.upload_bundle(client, BUNDLES + "hostprovider_bundle")
+    with allure.step("Create provider"):
         description = utils.random_string()
-        provider = client.provider.create(prototype_id=client.stack.provider.list()[0]['id'],
-                                          name=utils.random_string(),
-                                          description=description)
-    with allure.step('Check provider with description'):
-        assert provider['description'] == description
+        provider = client.provider.create(
+            prototype_id=client.stack.provider.list()[0]["id"],
+            name=utils.random_string(),
+            description=description,
+        )
+    with allure.step("Check provider with description"):
+        assert provider["description"] == description
 
 
 def test_get_provider_config(client):
-    steps.upload_bundle(client, BUNDLES + 'hostprovider_bundle')
-    with allure.step('Create provider'):
-        provider = client.provider.create(prototype_id=client.stack.provider.list()[0]['id'],
-                                          name=utils.random_string())
-    with allure.step('Check provider config'):
-        assert client.provider.config.current.list(provider_id=provider['id'])['config'] is not None
+    steps.upload_bundle(client, BUNDLES + "hostprovider_bundle")
+    with allure.step("Create provider"):
+        provider = client.provider.create(
+            prototype_id=client.stack.provider.list()[0]["id"],
+            name=utils.random_string(),
+        )
+    with allure.step("Check provider config"):
+        assert (
+            client.provider.config.current.list(provider_id=provider["id"])["config"]
+            is not None
+        )
 
 
-@allure.link('https://jira.arenadata.io/browse/ADCM-472')
+@allure.link("https://jira.arenadata.io/browse/ADCM-472")
 def test_provider_shouldnt_be_deleted_when_it_has_host(client):
-    steps.upload_bundle(client, BUNDLES + 'hostprovider_bundle')
-    with allure.step('Create provider'):
+    steps.upload_bundle(client, BUNDLES + "hostprovider_bundle")
+    with allure.step("Create provider"):
         provider = steps.create_hostprovider(client)
-    with allure.step('Create host'):
-        client.host.create(prototype_id=client.stack.host.list()[0]['id'],
-                           provider_id=provider['id'],
-                           fqdn=utils.random_string())
-    with allure.step('Delete provider'):
+    with allure.step("Create host"):
+        client.host.create(
+            prototype_id=client.stack.host.list()[0]["id"],
+            provider_id=provider["id"],
+            fqdn=utils.random_string(),
+        )
+    with allure.step("Delete provider"):
         with pytest.raises(exceptions.ErrorMessage) as e:
-            client.provider.delete(provider_id=provider['id'])
-    with allure.step('Check error'):
-        errorcodes.PROVIDER_CONFLICT.equal(e, 'There is host ', ' of host provider ')
+            client.provider.delete(provider_id=provider["id"])
+    with allure.step("Check error"):
+        errorcodes.PROVIDER_CONFLICT.equal(e, "There is host ", " of host provider ")
 
 
 def test_shouldnt_create_host_with_unknown_prototype(client):
-    steps.upload_bundle(client, BUNDLES + 'hostprovider_bundle')
-    with allure.step('Create host'):
+    steps.upload_bundle(client, BUNDLES + "hostprovider_bundle")
+    with allure.step("Create host"):
         with pytest.raises(exceptions.ErrorMessage) as e:
-            client.host.create(prototype_id=client.stack.host.list()[0]['id'],
-                               provider_id=random.randint(100, 500),
-                               fqdn=utils.random_string())
-    with allure.step('Check error provider doesnt exist'):
+            client.host.create(
+                prototype_id=client.stack.host.list()[0]["id"],
+                provider_id=random.randint(100, 500),
+                fqdn=utils.random_string(),
+            )
+    with allure.step("Check error provider doesnt exist"):
         errorcodes.PROVIDER_NOT_FOUND.equal(e, "provider doesn't exist")

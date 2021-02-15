@@ -1,17 +1,18 @@
 import os
 
 
-VARIABLES = [("less-equal", "2.2", "3.0", 'max', 'min', "2.1"),
-             ("less-equal", "2.2", "3.0", 'max', 'min_strict', "2.2"),
-             ("greater-equal", "2.2", "3.0", 'max', 'min', "3.1"),
-             ("greater-equal", "2.2", "3.0", 'max_strict', 'min', "3.0"),
-             ("equal", "2.2", "3.0", 'max_strict', 'min_strict', "2.2"),
-             ("equal", "2.2", "3.0", 'max_strict', 'min', "3.0"),
-             ("less", "2.2", "3.0", 'max', 'min', "2.1"),
-             ("less", "2.2", "3.0", 'max', 'min_strict', "2.2"),
-             ("greater", "2.2", "3.0", 'max', 'min', "3.1"),
-             ("greater", "2.2", "3.0", 'max_strict', 'min_strict', "3.0")
-             ]
+VARIABLES = [
+    ("less-equal", "2.2", "3.0", "max", "min", "2.1"),
+    ("less-equal", "2.2", "3.0", "max", "min_strict", "2.2"),
+    ("greater-equal", "2.2", "3.0", "max", "min", "3.1"),
+    ("greater-equal", "2.2", "3.0", "max_strict", "min", "3.0"),
+    ("equal", "2.2", "3.0", "max_strict", "min_strict", "2.2"),
+    ("equal", "2.2", "3.0", "max_strict", "min", "3.0"),
+    ("less", "2.2", "3.0", "max", "min", "2.1"),
+    ("less", "2.2", "3.0", "max", "min_strict", "2.2"),
+    ("greater", "2.2", "3.0", "max", "min", "3.1"),
+    ("greater", "2.2", "3.0", "max_strict", "min_strict", "3.0"),
+]
 
 TEMPLATE_EXPORT_CLUSTER = """
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -192,23 +193,31 @@ TEMPLATE_CLUSTER = """
 """
 
 for variable in VARIABLES:
-    d_name = "service_import_check_negative/{}_{}_{}".format(variable[0], variable[3], variable[4])
+    d_name = "service_import_check_negative/{}_{}_{}".format(
+        variable[0], variable[3], variable[4]
+    )
     export_dir = d_name + "/export"
     import_dir = d_name + "/import"
     for d in d_name, export_dir, import_dir:
         os.makedirs(d)
     with open("{}/import/config.yaml".format(d_name), "w+") as f:
-        f.write(TEMPLATE_SERVICE.format(variable[1], variable[2], variable[3], variable[4]))
+        f.write(
+            TEMPLATE_SERVICE.format(variable[1], variable[2], variable[3], variable[4])
+        )
     with open("{}/export/config.yaml".format(d_name), "w+") as f:
         f.write(TEMPLATE_EXPORT_SERVICE.format(variable[5]))
 
 for variable in VARIABLES:
-    d_name = "cluster_import_check_negative/{}_{}_{}".format(variable[0], variable[3], variable[4])
+    d_name = "cluster_import_check_negative/{}_{}_{}".format(
+        variable[0], variable[3], variable[4]
+    )
     export_dir = d_name + "/export"
     import_dir = d_name + "/import"
     for d in d_name, export_dir, import_dir:
         os.makedirs(d)
     with open("{}/import/config.yaml".format(d_name), "w+") as f:
-        f.write(TEMPLATE_CLUSTER.format(variable[1], variable[2], variable[3], variable[4]))
+        f.write(
+            TEMPLATE_CLUSTER.format(variable[1], variable[2], variable[3], variable[4])
+        )
     with open("{}/export/config.yaml".format(d_name), "w+") as f:
         f.write(TEMPLATE_EXPORT_CLUSTER.format(variable[5]))

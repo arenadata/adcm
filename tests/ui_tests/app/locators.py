@@ -42,19 +42,19 @@ class Common:
     profile = bys.by_class("profile")
 
     # List elements common elements
-    rows = bys.by_class('mat-row')
+    rows = bys.by_class("mat-row")
     del_btn = "//span[contains(., 'delete')]/parent::button"
     list_text = bys.by_class("mat-list-text")
 
     # Dialog form common elements
-    dialog = bys.by_class('mat-dialog-container')
+    dialog = bys.by_class("mat-dialog-container")
     dialog_yes = bys.by_xpath("//span[contains(text(),'Yes')]/parent::button")
     dialog_run = bys.by_xpath("//span[contains(text(),'Run')]/parent::button")
     dialog_no = bys.by_xpath("//span[contains(text(),'No')]/parent::button")
 
     # Error dialog elemetns
-    error = bys.by_class('snack-bar-error')
-    hide_err = ''
+    error = bys.by_class("snack-bar-error")
+    hide_err = ""
 
     # Action elements
     action = bys.by_xpath("//*[@adcm_test='action_btn']")
@@ -137,16 +137,16 @@ class ConfigurationLocators:
     app_conf_form = bys.by_tag("app-config-form")
     field_group = bys.by_class("field-group")
     group_title = bys.by_tag("mat-panel-title")
-    map_key_field = bys.by_class('key-field')
-    map_value_field = bys.by_class('value-field')
-    load_marker = bys.by_class('load_complete')
+    map_key_field = bys.by_class("key-field")
+    map_value_field = bys.by_class("value-field")
+    load_marker = bys.by_class("load_complete")
 
 
 class ActionPageLocators:
     """Action page elements locators"""
 
-    action_run_button = bys.by_xpath('//mat-card//button')
-    run_action_popup = bys.by_class('cdk-overlay-pane')
+    action_run_button = bys.by_xpath("//mat-card//button")
+    run_action_popup = bys.by_class("cdk-overlay-pane")
 
     class ActionRunPopup:
         """Action run popup elements locators"""

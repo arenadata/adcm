@@ -1,11 +1,12 @@
 import os
 
 
-VARIABLES = [("2.2", "3.0", 'max', 'min', "2.5"),
-             ("2.2", "3.0", 'max', 'min_strict', "3.0"),
-             ("2.2", "3.0", 'max_strict', 'min_strict', "2.5"),
-             ("2.2", "3.0", 'max_strict', 'min', "2.2"),
-             ]
+VARIABLES = [
+    ("2.2", "3.0", "max", "min", "2.5"),
+    ("2.2", "3.0", "max", "min_strict", "3.0"),
+    ("2.2", "3.0", "max_strict", "min_strict", "2.5"),
+    ("2.2", "3.0", "max_strict", "min", "2.2"),
+]
 
 TEMPLATE_EXPORT_CLUSTER = """
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -214,7 +215,9 @@ for variable in VARIABLES:
     for d in d_name, export_dir, import_dir:
         os.makedirs(d)
     with open("{}/import/config.yaml".format(d_name), "w+") as f:
-        f.write(TEMPLATE_SERVICE.format(variable[0], variable[1], variable[2], variable[3]))
+        f.write(
+            TEMPLATE_SERVICE.format(variable[0], variable[1], variable[2], variable[3])
+        )
     with open("{}/export/config.yaml".format(d_name), "w+") as f:
         f.write(TEMPLATE_EXPORT_SERVICE.format(variable[4]))
 
@@ -225,6 +228,8 @@ for variable in VARIABLES:
     for d in d_name, export_dir, import_dir:
         os.makedirs(d)
     with open("{}/import/config.yaml".format(d_name), "w+") as f:
-        f.write(TEMPLATE_CLUSTER.format(variable[0], variable[1], variable[2], variable[3]))
+        f.write(
+            TEMPLATE_CLUSTER.format(variable[0], variable[1], variable[2], variable[3])
+        )
     with open("{}/export/config.yaml".format(d_name), "w+") as f:
         f.write(TEMPLATE_EXPORT_CLUSTER.format(variable[4]))

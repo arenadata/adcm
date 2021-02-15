@@ -13,8 +13,12 @@
 # Created by a1wen at 05.03.19
 from retrying import retry
 from selenium.webdriver.common.keys import Keys
-from selenium.common.exceptions import TimeoutException, InvalidElementStateException,\
-    NoSuchElementException, StaleElementReferenceException
+from selenium.common.exceptions import (
+    TimeoutException,
+    InvalidElementStateException,
+    NoSuchElementException,
+    StaleElementReferenceException,
+)
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
@@ -42,6 +46,7 @@ class BasePage:
     ignored_exceptions = (NoSuchElementException, StaleElementReferenceException)
 
     """That is base page object for all ADCM's pages"""
+
     def __init__(self, driver):
         self.driver = driver
 
@@ -87,8 +92,7 @@ class BasePage:
         return f(get_elements(locator, name, parent_element))
 
     def _wait_element(self, locator: tuple, **kwargs):
-        """see _elements
-        """
+        """see _elements"""
 
         def wait(elements):
             _ = elements
@@ -96,17 +100,17 @@ class BasePage:
         self._elements(locator, wait, **kwargs)
 
     def _get_adcm_test_element(self, element_name):
-        return self._getelement(bys.by_xpath("//*[@adcm_test='{}']".format(element_name)))
+        return self._getelement(
+            bys.by_xpath("//*[@adcm_test='{}']".format(element_name))
+        )
 
     def _getelement(self, locator: tuple, timer=10):
-        return WDW(self.driver,
-                   timer,
-                   ignored_exceptions=self.ignored_exceptions
-                   ).until(EC.presence_of_element_located(locator))
+        return WDW(
+            self.driver, timer, ignored_exceptions=self.ignored_exceptions
+        ).until(EC.presence_of_element_located(locator))
 
     def _click_element(self, locator: tuple, **kwargs):
-        """see _elements
-        """
+        """see _elements"""
 
         idx = kwargs["idx"] if "idx" in kwargs else 0
 
@@ -119,7 +123,9 @@ class BasePage:
         self._elements(locator, click, **kwargs)
 
     def _getelements(self, locator: tuple, timer=20):
-        return WDW(self.driver, timer).until(EC.presence_of_all_elements_located(locator))
+        return WDW(self.driver, timer).until(
+            EC.presence_of_all_elements_located(locator)
+        )
 
     def _click_element_in_list(self, element_name):
         for el in self._getelements(Common.list_text):
@@ -195,8 +201,9 @@ class BasePage:
 
     def _click_with_offset(self, element: tuple, x_offset, y_offset):
         actions = ActionChains(self.driver)
-        actions.move_to_element_with_offset(self._getelement(element),
-                                            x_offset, y_offset).click().perform()
+        actions.move_to_element_with_offset(
+            self._getelement(element), x_offset, y_offset
+        ).click().perform()
 
     def _contains_url(self, url: str, timer=5):
         WDW(self.driver, timer).until(EC.url_contains(url))
@@ -261,8 +268,10 @@ class Ui(BasePage):
 
 class ListPage(BasePage):
     """Basic methods under the lists pages"""
+
     _inactive_tabs = bys.by_xpath(
-        "//a[@class='mat-list-item ng-star-inserted']//div[@class='mat-list-item-content']")
+        "//a[@class='mat-list-item ng-star-inserted']//div[@class='mat-list-item-content']"
+    )
 
     def _press_add(self):
         self._click_element(Common.add_btn)
@@ -291,7 +300,7 @@ class ListPage(BasePage):
         return self._getelements(Common.rows)
 
     def _get_option_by_name(self, name):
-        opt = ''
+        opt = ""
         sleep(2)
         for _ in self._getelements(Common.options):
             if name in _.text:
@@ -313,7 +322,7 @@ class ListPage(BasePage):
 
     def delete_row(self, row_number):
         """Deleting specified row by his number
-            :param: """
+        :param:"""
         rows = self.get_rows()
         _del = rows[row_number].find_element_by_xpath(Common.del_btn)
         _del.click()
@@ -328,7 +337,7 @@ class ListPage(BasePage):
             self._getelement(Common.dialog_yes).click()
 
     def list_element_contains(self, expected_name):
-        row = ''
+        row = ""
         for _ in self.get_rows():
             if expected_name in _.text:
                 row = _
@@ -349,8 +358,8 @@ class Details(BasePage):
 
 
 class LoginPage(BasePage):
-    login_locator = bys.by_id('login')
-    passwd_locator = bys.by_id('password')
+    login_locator = bys.by_id("login")
+    passwd_locator = bys.by_id("password")
     login_form_locator = bys.by_xpath("//*[@formcontrolname='login']")
     _logout = ()
     _user = ()
@@ -389,7 +398,6 @@ class LoginPage(BasePage):
 
 
 class ClustersList(ListPage):
-
     def add_new_cluster(self, name=None, description=None):
         return self._form(name=name, description=description)
 
@@ -417,8 +425,10 @@ class ClustersList(ListPage):
 
 class ClusterDetails(Details, ListPage):
 
-    _host = bys.by_class('add-host2cluster')
-    _add_host_icon = bys.by_xpath("//*[@mattooltip='Host will be added to the cluster']")
+    _host = bys.by_class("add-host2cluster")
+    _add_host_icon = bys.by_xpath(
+        "//*[@mattooltip='Host will be added to the cluster']"
+    )
 
     @property
     def host_tab(self):
@@ -436,7 +446,7 @@ class ClusterDetails(Details, ListPage):
 
     def click_hosts_tab(self):
         for tab in self._getelements(self._inactive_tabs):
-            if tab.text.strip() == 'Hosts':
+            if tab.text.strip() == "Hosts":
                 tab.click()
                 break
 
@@ -476,7 +486,6 @@ class ClusterDetails(Details, ListPage):
 
 
 class ProvidersList(ListPage):
-
     def add_new_provider(self, name=None, description=None):
         self._press_add()
         self._wait_add_form()
@@ -492,7 +501,6 @@ class ProvidersList(ListPage):
 
 
 class HostsList(ListPage):
-
     def add_new_host(self, fqdn=None, description=None):
         self._press_add()
         self._wait_add_form()
@@ -508,7 +516,6 @@ class HostsList(ListPage):
 
 
 class SettingsPage(ListPage):
-
     def save(self):
         self._press_save()
 
@@ -538,9 +545,15 @@ class ServiceList(ListPage):
         return False
 
     def service_list(self):
-        return [{service.text.split("\n")[0]: {"version": service.text.split("\n")[1],
-                                               "status": service.text.split("\n")[2]}
-                 } for service in self._getelements(Common.rows)]
+        return [
+            {
+                service.text.split("\n")[0]: {
+                    "version": service.text.split("\n")[1],
+                    "status": service.text.split("\n")[2],
+                }
+            }
+            for service in self._getelements(Common.rows)
+        ]
 
     def open_service_config(self, service_name):
         for service in self._getelements(Common.rows):

@@ -12,13 +12,13 @@
 
 # Created by a1wen at 01.03.19
 
-CLUSTERS = '/cluster'
-PROVIDERS = '/provider'
-HOSTS = '/host'
-JOBS = '/job'
-BUNDLES = '/bundle'
-SETTINGS = '/settings'
-USERS = '/user'
-LOGIN = '/login'
-PROFILE = '/profile'
-APP = '/app'
+CLUSTERS = "/cluster"
+PROVIDERS = "/provider"
+HOSTS = "/host"
+JOBS = "/job"
+BUNDLES = "/bundle"
+SETTINGS = "/settings"
+USERS = "/user"
+LOGIN = "/login"
+PROFILE = "/profile"
+APP = "/app"

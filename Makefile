@@ -60,6 +60,8 @@ ng_tests: ## Run Angular tests
 linters : ## Run linters
 	docker pull ci.arenadata.io/pr-builder:3-x64
 	docker run -i --rm -v $(CURDIR)/:/source -w /source ci.arenadata.io/pr-builder:3-x64 /linters.sh shellcheck pylint pep8
+	docker run -i --rm -v $(CURDIR)/:/source -w /source ci.arenadata.io/pr-builder:3-x64 /linters.sh -f ./tests/functional black
+	docker run -i --rm -v $(CURDIR)/:/source -w /source ci.arenadata.io/pr-builder:3-x64 /linters.sh -f ./tests/ui_tests black
 
 npm_check: ## Run npm-check
 	docker pull ci.arenadata.io/functest:3.8.6.slim.buster-x64

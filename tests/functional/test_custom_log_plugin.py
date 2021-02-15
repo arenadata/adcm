@@ -15,121 +15,122 @@ import pytest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
 
-FORMAT_STORAGE = ["json_path", "json_content", 'txt_path', "txt_content"]
-FIELD = ['name', 'format', 'storage_type']
+FORMAT_STORAGE = ["json_path", "json_content", "txt_path", "txt_content"]
+FIELD = ["name", "format", "storage_type"]
 
 
 @pytest.mark.parametrize("bundle", FIELD)
 def test_required_fields(sdk_client_fs: ADCMClient, bundle):
-    """Task should be failed if required field not presented
-    """
+    """Task should be failed if required field not presented"""
     stack_dir = utils.get_data_dir(__file__, "required_fields", "no_{}".format(bundle))
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())
-    task = cluster.action_run(name='custom_log')
+    task = cluster.action_run(name="custom_log")
     task.wait()
-    with allure.step('Check job state'):
-        assert task.status == 'failed', "Current job status {}. " \
-                                        "Expected: failed".format(task.status)
-    with allure.step('Check if logs are equal 2'):
+    with allure.step("Check job state"):
+        assert (
+            task.status == "failed"
+        ), "Current job status {}. " "Expected: failed".format(task.status)
+    with allure.step("Check if logs are equal 2"):
         job = task.job()
         logs = job.log_list()
-        assert len(logs) == 2, "Logs count not equal 2, current log count {}".format(len(logs))
+        assert len(logs) == 2, "Logs count not equal 2, current log count {}".format(
+            len(logs)
+        )
 
 
 @pytest.mark.parametrize("bundle", FORMAT_STORAGE)
 def test_different_storage_types_with_format(sdk_client_fs: ADCMClient, bundle):
-    """Check different combinations of storage and format
-    """
+    """Check different combinations of storage and format"""
     log_format = bundle.split("_")[0]
     stack_dir = utils.get_data_dir(__file__, bundle)
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())
-    task = cluster.action_run(name='custom_log')
+    task = cluster.action_run(name="custom_log")
     task.wait()
-    with allure.step('Check if logs are equal 3, job state and logs'):
+    with allure.step("Check if logs are equal 3, job state and logs"):
         job = task.job()
         logs = job.log_list()
         log = job.log(job_id=job.id, log_id=logs[2].id)
         assert len(logs) == 3, "Logs count {}. Expected 3".format(len(logs))
-        assert job.status == 'success', "Current job status {}. " \
-                                        "Expected: success".format(job.status)
-        err_msg = "Expected log format {}. Actual log format {}".format(log_format, log.format)
+        assert (
+            job.status == "success"
+        ), "Current job status {}. " "Expected: success".format(job.status)
+        err_msg = "Expected log format {}. Actual log format {}".format(
+            log_format, log.format
+        )
         assert log.format == log_format, err_msg
-        assert log.type == 'custom'
+        assert log.type == "custom"
 
 
 def test_path_and_content(sdk_client_fs: ADCMClient):
-    """If path and content presented we need to get path, not content
-    """
+    """If path and content presented we need to get path, not content"""
     stack_dir = utils.get_data_dir(__file__, "path_and_content")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())
-    task = cluster.action_run(name='custom_log')
+    task = cluster.action_run(name="custom_log")
     task.wait()
-    with allure.step('Check logs content and format'):
+    with allure.step("Check logs content and format"):
         job = task.job()
         logs = job.log_list()
         log = job.log(job_id=job.id, log_id=logs[2].id)
         assert log.content == '{\n    "key": "value"\n}'
-        assert log.format == 'json'
+        assert log.format == "json"
 
 
-@pytest.mark.parametrize("bundle", ['equal_pathes', 'equal_names', 'equal_pathes_and_names'])
+@pytest.mark.parametrize(
+    "bundle", ["equal_pathes", "equal_names", "equal_pathes_and_names"]
+)
 def test_multiple_tasks(sdk_client_fs: ADCMClient, bundle):
-    """Check situation when we have multiple tasks
-    """
+    """Check situation when we have multiple tasks"""
     stack_dir = utils.get_data_dir(__file__, bundle)
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())
-    task = cluster.action_run(name='custom_log')
+    task = cluster.action_run(name="custom_log")
     task.wait()
-    with allure.step('Check 4 logs entries'):
+    with allure.step("Check 4 logs entries"):
         job = task.job()
         logs = job.log_list()
         assert len(logs) == 4, "Expected 4 logs entries, because 2 tasks in playbook"
 
 
 def test_check_text_file_content(sdk_client_fs: ADCMClient):
-    """Check that text content from file correct
-    """
+    """Check that text content from file correct"""
     stack_dir = utils.get_data_dir(__file__, "txt_path")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())
-    task = cluster.action_run(name='custom_log')
+    task = cluster.action_run(name="custom_log")
     task.wait()
-    with allure.step('Check logs content and format'):
+    with allure.step("Check logs content and format"):
         job = task.job()
         logs = job.log_list()
         log = job.log(job_id=job.id, log_id=logs[2].id)
-        assert log.content == 'Hello world!\n'
-        assert log.format == 'txt'
+        assert log.content == "Hello world!\n"
+        assert log.format == "txt"
 
 
 def test_check_text_content(sdk_client_fs: ADCMClient):
-    """Check that text content correct
-    """
+    """Check that text content correct"""
     stack_dir = utils.get_data_dir(__file__, "txt_content")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())
-    task = cluster.action_run(name='custom_log')
+    task = cluster.action_run(name="custom_log")
     task.wait()
-    with allure.step('Check logs content'):
+    with allure.step("Check logs content"):
         job = task.job()
         logs = job.log_list()
         log = job.log(job_id=job.id, log_id=logs[2].id)
-        assert log.content == 'shalala'
+        assert log.content == "shalala"
 
 
 def test_check_json_content(sdk_client_fs: ADCMClient):
-    """Check that json content correct
-    """
+    """Check that json content correct"""
     stack_dir = utils.get_data_dir(__file__, "json_content")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())
-    task = cluster.action_run(name='custom_log')
+    task = cluster.action_run(name="custom_log")
     task.wait()
-    with allure.step('Check logs content'):
+    with allure.step("Check logs content"):
         job = task.job()
         logs = job.log_list()
         log = job.log(job_id=job.id, log_id=logs[2].id)
@@ -137,14 +138,13 @@ def test_check_json_content(sdk_client_fs: ADCMClient):
 
 
 def test_incorrect_syntax_for_fields(sdk_client_fs: ADCMClient):
-    """Check if we have not json in content
-    """
+    """Check if we have not json in content"""
     stack_dir = utils.get_data_dir(__file__, "syntax_for_fields")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())
-    task = cluster.action_run(name='custom_log')
+    task = cluster.action_run(name="custom_log")
     task.wait()
-    with allure.step('Check logs content'):
+    with allure.step("Check logs content"):
         job = task.job()
         logs = job.log_list()
         log = job.log(job_id=job.id, log_id=logs[2].id)

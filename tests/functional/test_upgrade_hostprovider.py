@@ -19,9 +19,9 @@ from adcm_pytest_plugin.utils import get_data_dir
 from tests.library.errorcodes import UPGRADE_ERROR
 
 
-@allure.step('Create host')
+@allure.step("Create host")
 def create_host(hostprovider):
-    return hostprovider.host_create('localhost')
+    return hostprovider.host_create("localhost")
 
 
 # pylint: disable=too-many-locals
@@ -34,16 +34,18 @@ def test_upgrade_with_two_hostproviders(sdk_client_fs: ADCMClient):
     4. Upgrade first hostprovider
     5. Check that only first hostprovider and hosts was upgraded
     """
-    with allure.step('Create two hostproviders from one bundle. Upload upgradable bundle'):
-        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
-        sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_hostprovider'))
+    with allure.step(
+        "Create two hostproviders from one bundle. Upload upgradable bundle"
+    ):
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "hostprovider"))
+        sdk_client_fs.upload_from_fs(get_data_dir(__file__, "upgradable_hostprovider"))
         hostprovider_first = bundle.provider_create("hp_first")
         hostprovider_first_proto_before = hostprovider_first.prototype()
         hostprovider_first_id_before = hostprovider_first.id
         hostprovider_second = bundle.provider_create("hp_second")
         hostprovider_second_proto_before = hostprovider_second.prototype()
         hostprovider_second_id_before = hostprovider_second.id
-    with allure.step('Create host for each hostprovider'):
+    with allure.step("Create host for each hostprovider"):
         hp1_host1 = hostprovider_first.host_create(fqdn="localhost")
         hp1_host1_id_before = hp1_host1.id
         hp1_host1_proto_before = hp1_host1.prototype()
@@ -54,10 +56,10 @@ def test_upgrade_with_two_hostproviders(sdk_client_fs: ADCMClient):
         hp2_host1_id_before = hp2_host1.id
         hp2_host2 = hostprovider_second.host_create(fqdn="hp2-localhost2")
         hp2_host3 = hostprovider_second.host_create(fqdn="hp2-localhost3")
-    with allure.step('Upgrade first hostprovider'):
-        upgr = hostprovider_first.upgrade(name='upgrade to 2.0')
+    with allure.step("Upgrade first hostprovider"):
+        upgr = hostprovider_first.upgrade(name="upgrade to 2.0")
         upgr.do()
-    with allure.step('Check that only first hostprovider and hosts was upgraded'):
+    with allure.step("Check that only first hostprovider and hosts was upgraded"):
         hostprovider_first.reread()
         hostprovider_second.reread()
         hp1_host1.reread()
@@ -70,10 +72,10 @@ def test_upgrade_with_two_hostproviders(sdk_client_fs: ADCMClient):
         hp1_host_proto_after = hp1_host1.prototype()
         hp_second_proto_after = hostprovider_second.prototype()
         hp2_host1_proto_after = hp2_host1.prototype()
-        assert hostprovider_first.prototype().version == '2.0'
-        assert hp1_host1.prototype().version == '00.10'
-        assert hostprovider_second.prototype().version == '1.0'
-        assert hp2_host1.prototype().version == '00.09'
+        assert hostprovider_first.prototype().version == "2.0"
+        assert hp1_host1.prototype().version == "00.10"
+        assert hostprovider_second.prototype().version == "1.0"
+        assert hp2_host1.prototype().version == "00.09"
         assert hostprovider_first_id_before == hostprovider_first.id
         assert hp1_host1_id_before == hp1_host1.id
         assert hostprovider_first_proto_before.id != hp_first_proto_after.id
@@ -90,19 +92,19 @@ def test_check_prototype(sdk_client_fs: ADCMClient):
     :param sdk_client_fs:
     :return:
     """
-    with allure.step('Create upgradable hostprovider and get id'):
-        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
-        sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_hostprovider'))
+    with allure.step("Create upgradable hostprovider and get id"):
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "hostprovider"))
+        sdk_client_fs.upload_from_fs(get_data_dir(__file__, "upgradable_hostprovider"))
         hostprovider = bundle.provider_create("test")
         host = hostprovider.host_create(fqdn="localhost")
         hostprovider_proto_before = hostprovider.prototype()
         hp_id_before = hostprovider.id
         host_proto_before = host.prototype()
         ht_id_before = host.id
-    with allure.step('Upgrade hostprovider to 2.0'):
-        upgr = hostprovider.upgrade(name='upgrade to 2.0')
+    with allure.step("Upgrade hostprovider to 2.0"):
+        upgr = hostprovider.upgrade(name="upgrade to 2.0")
         upgr.do()
-    with allure.step('Check prototype for provider and host after upgrade'):
+    with allure.step("Check prototype for provider and host after upgrade"):
         hostprovider.reread()
         host.reread()
         hostprovider_proto_after = hostprovider.prototype()
@@ -117,26 +119,29 @@ def test_check_config(sdk_client_fs: ADCMClient):
     """Check default host and hostprovider config fields after upgrade
     :return:
     """
-    with allure.step('Create hostprovider'):
-        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
-        sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_hostprovider'))
+    with allure.step("Create hostprovider"):
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "hostprovider"))
+        sdk_client_fs.upload_from_fs(get_data_dir(__file__, "upgradable_hostprovider"))
         hostprovider = bundle.provider_create("test")
-    with allure.step('Create default host'):
+    with allure.step("Create default host"):
         host = hostprovider.host_create(fqdn="localhost")
         hostprovider_config_before = hostprovider.config()
         host_config_before = host.config()
-    with allure.step('Upgrade hostprovider with host to 2.0'):
-        upgr = hostprovider.upgrade(name='upgrade to 2.0')
+    with allure.step("Upgrade hostprovider with host to 2.0"):
+        upgr = hostprovider.upgrade(name="upgrade to 2.0")
         upgr.do()
-    with allure.step('Check default host and hostprovider config fields after upgrade'):
+    with allure.step("Check default host and hostprovider config fields after upgrade"):
         hostprovider.reread()
         host.reread()
         hostprovider_config_after = hostprovider.config()
         host_config_after = host.config()
-        assert hostprovider.prototype().version == '2.0'
-        assert host.prototype().version == '00.10'
+        assert hostprovider.prototype().version == "2.0"
+        assert host.prototype().version == "00.10"
         for variable in hostprovider_config_before:
-            assert hostprovider_config_before[variable] == hostprovider_config_after[variable]
+            assert (
+                hostprovider_config_before[variable]
+                == hostprovider_config_after[variable]
+            )
         for variable in host_config_before:
             assert host_config_before[variable] == host_config_after[variable]
 
@@ -145,23 +150,23 @@ def test_with_new_default_values(sdk_client_fs: ADCMClient):
     """Upgrade hostprovider with new default fields. Old and new config values should be presented
     :return:
     """
-    with allure.step('Create upgradable hostprovider with new default values'):
-        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
+    with allure.step("Create upgradable hostprovider with new default values"):
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "hostprovider"))
         upgr_bundle = sdk_client_fs.upload_from_fs(
-            get_data_dir(__file__,
-                         'upgradable_hostprovider_new_default_values'))
+            get_data_dir(__file__, "upgradable_hostprovider_new_default_values")
+        )
         upgr_hostprovider_prototype = upgr_bundle.provider_prototype().config
         hostprovider = bundle.provider_create("test")
     host = create_host(hostprovider)
-    with allure.step('Upgrade hostprovider with new default fields'):
-        upgr = hostprovider.upgrade(name='upgrade to 2.0')
+    with allure.step("Upgrade hostprovider with new default fields"):
+        upgr = hostprovider.upgrade(name="upgrade to 2.0")
         upgr.do()
-    with allure.step('Check that old and new config values should be presented'):
+    with allure.step("Check that old and new config values should be presented"):
         hostprovider.reread()
         host.reread()
         hostprovider_config_after = hostprovider.config()
         for variable in upgr_hostprovider_prototype:
-            assert variable['value'] == hostprovider_config_after[variable['name']]
+            assert variable["value"] == hostprovider_config_after[variable["name"]]
 
 
 def test_with_new_default_variables(sdk_client_fs: ADCMClient):
@@ -169,39 +174,40 @@ def test_with_new_default_variables(sdk_client_fs: ADCMClient):
      Old and new config variables should be presented
     :return:
     """
-    with allure.step('Create upgradable hostprovider new default variables'):
-        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
-        upgr_bundle = sdk_client_fs.upload_from_fs(get_data_dir(
-            __file__, 'upgradable_hostprovider_new_default_variables'))
+    with allure.step("Create upgradable hostprovider new default variables"):
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "hostprovider"))
+        upgr_bundle = sdk_client_fs.upload_from_fs(
+            get_data_dir(__file__, "upgradable_hostprovider_new_default_variables")
+        )
         upgr_hostprovider_prototype = upgr_bundle.provider_prototype().config
         hostprovider = bundle.provider_create("test")
     host = create_host(hostprovider)
-    with allure.step('Upgrade hostprovider with new default fields'):
-        upgr = hostprovider.upgrade(name='upgrade to 2.0')
+    with allure.step("Upgrade hostprovider with new default fields"):
+        upgr = hostprovider.upgrade(name="upgrade to 2.0")
         upgr.do()
-    with allure.step('Check that old and new config values should be presented'):
+    with allure.step("Check that old and new config values should be presented"):
         hostprovider.reread()
         host.reread()
         hostprovider_config_after = hostprovider.config()
         for variable in upgr_hostprovider_prototype:
-            assert variable['name'] in hostprovider_config_after.keys()
+            assert variable["name"] in hostprovider_config_after.keys()
 
 
 def test_decrase_config(sdk_client_fs: ADCMClient):
-    """Upgrade cluster with config without old values in config. Deleted lines not presented
-    """
-    with allure.step('Create upgradable hostprovider with decrase variables'):
-        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
-        sdk_client_fs.upload_from_fs(get_data_dir(
-            __file__, 'upgradable_hostprovider_decrase_variables'))
+    """Upgrade cluster with config without old values in config. Deleted lines not presented"""
+    with allure.step("Create upgradable hostprovider with decrase variables"):
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "hostprovider"))
+        sdk_client_fs.upload_from_fs(
+            get_data_dir(__file__, "upgradable_hostprovider_decrase_variables")
+        )
         hostprovider = bundle.provider_create("test")
     host = create_host(hostprovider)
     hostprovider_config_before = hostprovider.config()
     host_config_before = host.config()
-    with allure.step('Upgrade hostprovider with config without old values in config'):
-        upgr = hostprovider.upgrade(name='upgrade to 2.0')
+    with allure.step("Upgrade hostprovider with config without old values in config"):
+        upgr = hostprovider.upgrade(name="upgrade to 2.0")
         upgr.do()
-    with allure.step('Check that deleted lines not presented'):
+    with allure.step("Check that deleted lines not presented"):
         hostprovider.reread()
         host.reread()
         hostprovider_config_after = hostprovider.config()
@@ -220,27 +226,33 @@ def test_changed_variable_type(sdk_client_fs: ADCMClient):
     :param sdk_client_fs:
     :return:
     """
-    with allure.step('Create upgradable hostprovider with change variable type'):
-        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
-        sdk_client_fs.upload_from_fs(get_data_dir(
-            __file__, 'upgradable_hostprovider_change_variable_type'))
+    with allure.step("Create upgradable hostprovider with change variable type"):
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "hostprovider"))
+        sdk_client_fs.upload_from_fs(
+            get_data_dir(__file__, "upgradable_hostprovider_change_variable_type")
+        )
         hostprovider = bundle.provider_create("test")
     host = create_host(hostprovider)
     hostprovider_config_before = hostprovider.config()
     host_config_before = host.config()
-    with allure.step('Upgrade hostprovider with changed config variable type for upgrade'):
-        upgr = hostprovider.upgrade(name='upgrade to 2.0')
+    with allure.step(
+        "Upgrade hostprovider with changed config variable type for upgrade"
+    ):
+        upgr = hostprovider.upgrade(name="upgrade to 2.0")
         upgr.do()
-    with allure.step('Check changed config variable type'):
+    with allure.step("Check changed config variable type"):
         hostprovider.reread()
         host.reread()
         hostprovider_config_after = hostprovider.config()
         host_config_after = host.config()
-        assert isinstance(hostprovider_config_after['required'], str)
-        assert isinstance(hostprovider_config_after['int_key'], str)
-        assert isinstance(host_config_after['str_param'], int)
-        assert int(hostprovider_config_after['required']) == hostprovider_config_before['required']
-        assert host_config_after['str_param'] == int(host_config_before['str_param'])
+        assert isinstance(hostprovider_config_after["required"], str)
+        assert isinstance(hostprovider_config_after["int_key"], str)
+        assert isinstance(host_config_after["str_param"], int)
+        assert (
+            int(hostprovider_config_after["required"])
+            == hostprovider_config_before["required"]
+        )
+        assert host_config_after["str_param"] == int(host_config_before["str_param"])
 
 
 def test_multiple_upgrade_bundles(sdk_client_fs: ADCMClient):
@@ -248,48 +260,50 @@ def test_multiple_upgrade_bundles(sdk_client_fs: ADCMClient):
 
     :return:
     """
-    with allure.step('Create upgradable hostprovider'):
-        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
-        sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_hostprovider'))
+    with allure.step("Create upgradable hostprovider"):
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "hostprovider"))
+        sdk_client_fs.upload_from_fs(get_data_dir(__file__, "upgradable_hostprovider"))
         hostprovider = bundle.provider_create("test")
-    with allure.step('First upgrade hostprovider to 2.0'):
-        upgr = hostprovider.upgrade(name='upgrade to 2.0')
+    with allure.step("First upgrade hostprovider to 2.0"):
+        upgr = hostprovider.upgrade(name="upgrade to 2.0")
         upgr.do()
         hostprovider.reread()
-    with allure.step('Second upgrade hostprovider to 2'):
-        upgr = hostprovider.upgrade(name='upgrade 2')
+    with allure.step("Second upgrade hostprovider to 2"):
+        upgr = hostprovider.upgrade(name="upgrade 2")
         upgr.do()
-    with allure.step('Check hostprovider state'):
+    with allure.step("Check hostprovider state"):
         hostprovider.reread()
-        assert hostprovider.state == 'ver2.4'
+        assert hostprovider.state == "ver2.4"
 
 
 def test_change_config(sdk_client_fs: ADCMClient):
-    """Upgrade hostprovider with other config
-    """
-    with allure.step('Create upgradable hostprovider with new change values'):
-        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
-        sdk_client_fs.upload_from_fs(get_data_dir(
-            __file__, 'upgradable_hostprovider_new_change_values'))
+    """Upgrade hostprovider with other config"""
+    with allure.step("Create upgradable hostprovider with new change values"):
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "hostprovider"))
+        sdk_client_fs.upload_from_fs(
+            get_data_dir(__file__, "upgradable_hostprovider_new_change_values")
+        )
         hostprovider = bundle.provider_create("test")
     host = create_host(hostprovider)
     hostprovider_config_before = hostprovider.config()
     host_config_before = host.config()
-    hostprovider_config_before['required'] = 25
-    hostprovider_config_before['str-key'] = "new_value"
-    host_config_before['str_param'] = "str_param_new"
-    with allure.step('Set config'):
+    hostprovider_config_before["required"] = 25
+    hostprovider_config_before["str-key"] = "new_value"
+    host_config_before["str_param"] = "str_param_new"
+    with allure.step("Set config"):
         hostprovider.config_set(hostprovider_config_before)
         host.config_set(host_config_before)
-    with allure.step('Upgrade hostprovider with other config'):
-        upgr = hostprovider.upgrade(name='upgrade to 2.0')
+    with allure.step("Upgrade hostprovider with other config"):
+        upgr = hostprovider.upgrade(name="upgrade to 2.0")
         upgr.do()
-    with allure.step('Check hostprovider config'):
+    with allure.step("Check hostprovider config"):
         hostprovider.reread()
         host.reread()
         hostprovider_config_after = hostprovider.config()
         host_config_after = host.config()
-        assert len(hostprovider_config_before.keys()) == len(hostprovider_config_after.keys())
+        assert len(hostprovider_config_before.keys()) == len(
+            hostprovider_config_after.keys()
+        )
         for key in hostprovider_config_before:
             assert hostprovider_config_before[key] == hostprovider_config_after[key]
         for key in host_config_before:
@@ -302,17 +316,18 @@ def test_cannot_upgrade_with_state(sdk_client_fs: ADCMClient):
     :param sdk_client_fs:
     :return:
     """
-    with allure.step('Create hostprovider with unsupported state'):
-        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
-        sdk_client_fs.upload_from_fs(get_data_dir(
-            __file__, 'upgradable_hostprovider_unsupported_state'))
+    with allure.step("Create hostprovider with unsupported state"):
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "hostprovider"))
+        sdk_client_fs.upload_from_fs(
+            get_data_dir(__file__, "upgradable_hostprovider_unsupported_state")
+        )
         hostprovider = bundle.provider_create("test")
-    with allure.step('Upgrade hostprovider from unsupported state'):
-        upgr = hostprovider.upgrade(name='upgrade to 2.0')
+    with allure.step("Upgrade hostprovider from unsupported state"):
+        upgr = hostprovider.upgrade(name="upgrade to 2.0")
         upgr.do()
         hostprovider.reread()
-        upgr = hostprovider.upgrade(name='upgrade 2')
+        upgr = hostprovider.upgrade(name="upgrade 2")
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             upgr.do()
-    with allure.step('Check error: provider state is not in available states list'):
-        UPGRADE_ERROR.equal(e, 'provider state', 'is not in available states list')
+    with allure.step("Check error: provider state is not in available states list"):
+        UPGRADE_ERROR.equal(e, "provider state", "is not in available states list")

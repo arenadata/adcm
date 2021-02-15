@@ -1,19 +1,27 @@
 import os
 
-SERVICE_VERSIONS = (("service-less-equal", "2.2", "3.0"),
-                    ("service-greater-equal", "1.5", "2.2"),
-                    ("service-equal", "2.2", '2.2'),
-                    ('service-less', '2.3', '2.4'),
-                    ("service-greater", '1', '2'))
+SERVICE_VERSIONS = (
+    ("service-less-equal", "2.2", "3.0"),
+    ("service-greater-equal", "1.5", "2.2"),
+    ("service-equal", "2.2", "2.2"),
+    ("service-less", "2.3", "2.4"),
+    ("service-greater", "1", "2"),
+)
 
-CLUSTER_VERSIONS = (("cluster-less-equal", "1.6", "2.0"),
-                    ("cluster-greater-equal", "0.9", "1.6"),
-                    ("cluster-equal", "1.6", '1.6'),
-                    ('cluster-less', '1.7', '2.4'),
-                    ("cluster-greater", '0.5', '0.9'))
+CLUSTER_VERSIONS = (
+    ("cluster-less-equal", "1.6", "2.0"),
+    ("cluster-greater-equal", "0.9", "1.6"),
+    ("cluster-equal", "1.6", "1.6"),
+    ("cluster-less", "1.7", "2.4"),
+    ("cluster-greater", "0.5", "0.9"),
+)
 
-VARIABLES = [('max', 'min'), ('max_strict', 'min_strict'),
-             ('max_strict', 'min'), ('max', 'min_strict')]
+VARIABLES = [
+    ("max", "min"),
+    ("max_strict", "min_strict"),
+    ("max_strict", "min"),
+    ("max", "min_strict"),
+]
 
 TEMPLATE_SERVICE = """
 -
@@ -81,7 +89,9 @@ TEMPLATE_CLUSTER = """
 
 for t in SERVICE_VERSIONS:
     for variable in VARIABLES:
-        d_name = "cluster_import_service_check_{}_{}/{}".format(variable[0], variable[1], t[0])
+        d_name = "cluster_import_service_check_{}_{}/{}".format(
+            variable[0], variable[1], t[0]
+        )
         os.makedirs(d_name)
         with open("{}/config.yaml".format(d_name), "w+") as f:
             f.write(TEMPLATE_CLUSTER.format(variable[0], variable[1], t[1], t[2]))

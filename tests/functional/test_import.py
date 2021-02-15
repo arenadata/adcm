@@ -28,18 +28,18 @@ def test_service_import_negative(sdk_client_fs: ADCMClient, path):
     3. Bind service from cluster with export to cluster with import
     4. Expect backend error because incorrect version for import
     """
-    with allure.step('Create cluster with def export'):
-        bundle = sdk_client_fs.upload_from_fs(path + '/export')
+    with allure.step("Create cluster with def export"):
+        bundle = sdk_client_fs.upload_from_fs(path + "/export")
         cluster = bundle.cluster_create("test")
         service = cluster.service_add(name="hadoop")
-    with allure.step('Create cluster with def import'):
-        bundle_import = sdk_client_fs.upload_from_fs(path + '/import')
+    with allure.step("Create cluster with def import"):
+        bundle_import = sdk_client_fs.upload_from_fs(path + "/import")
         cluster_import = bundle_import.cluster_create("cluster_import")
-    with allure.step('Bind service from cluster with export to cluster with import'):
+    with allure.step("Bind service from cluster with export to cluster with import"):
         cluster_import.bind(cluster)
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         cluster_import.bind(service)
-    with allure.step('Expect backend error because incorrect version for import'):
+    with allure.step("Expect backend error because incorrect version for import"):
         err.BIND_ERROR.equal(e)
 
 
@@ -52,45 +52,43 @@ def test_cluster_import_negative(sdk_client_fs: ADCMClient, path):
     3. Bind cluster from cluster with export to cluster with import
     4. Expect backend error because incorrect version for import
     """
-    with allure.step('Create cluster with export and add service'):
-        bundle = sdk_client_fs.upload_from_fs(path + '/export')
+    with allure.step("Create cluster with export and add service"):
+        bundle = sdk_client_fs.upload_from_fs(path + "/export")
         cluster = bundle.cluster_create("test")
         service = cluster.service_add(name="hadoop")
-    with allure.step('Create default cluster with import'):
-        bundle_import = sdk_client_fs.upload_from_fs(path + '/import')
+    with allure.step("Create default cluster with import"):
+        bundle_import = sdk_client_fs.upload_from_fs(path + "/import")
         cluster_import = bundle_import.cluster_create("cluster_import")
-    with allure.step('Bind cluster from cluster with export to cluster with import'):
+    with allure.step("Bind cluster from cluster with export to cluster with import"):
         cluster_import.bind(service)
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         cluster_import.bind(cluster)
-    with allure.step('Check error because incorrect version for import'):
+    with allure.step("Check error because incorrect version for import"):
         err.BIND_ERROR.equal(e)
 
 
 @parametrize_by_data_subdirs(__file__, "service_import")
 def test_service_import(sdk_client_fs: ADCMClient, path):
-    """Import service test
-    """
-    with allure.step('Create cluster with export and service test'):
-        bundle = sdk_client_fs.upload_from_fs(path + '/export')
+    """Import service test"""
+    with allure.step("Create cluster with export and service test"):
+        bundle = sdk_client_fs.upload_from_fs(path + "/export")
         cluster = bundle.cluster_create("test")
         service = cluster.service_add(name="hadoop")
-    with allure.step('Create cluster with import'):
-        bundle_import = sdk_client_fs.upload_from_fs(path + '/import')
+    with allure.step("Create cluster with import"):
+        bundle_import = sdk_client_fs.upload_from_fs(path + "/import")
         cluster_import = bundle_import.cluster_create("cluster_import")
-    with allure.step('Bind service from cluster with export to cluster with import'):
+    with allure.step("Bind service from cluster with export to cluster with import"):
         cluster_import.bind(service)
 
 
 @parametrize_by_data_subdirs(__file__, "cluster_import")
 def test_cluster_import(sdk_client_fs: ADCMClient, path):
-    """Import cluster test
-    """
-    with allure.step('Create test cluster with export'):
-        bundle = sdk_client_fs.upload_from_fs(path + '/export')
+    """Import cluster test"""
+    with allure.step("Create test cluster with export"):
+        bundle = sdk_client_fs.upload_from_fs(path + "/export")
         cluster = bundle.cluster_create("test")
-    with allure.step('Create cluster with import'):
-        bundle_import = sdk_client_fs.upload_from_fs(path + '/import')
+    with allure.step("Create cluster with import"):
+        bundle_import = sdk_client_fs.upload_from_fs(path + "/import")
         cluster_import = bundle_import.cluster_create("cluster_import")
-    with allure.step('Bind cluster from cluster with export to cluster with import'):
+    with allure.step("Bind cluster from cluster with export to cluster with import"):
         cluster_import.bind(cluster)
