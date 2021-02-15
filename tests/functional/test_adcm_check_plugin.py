@@ -14,7 +14,7 @@ import allure
 import pytest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
-
+from tests.ui_tests.test_actions_page import check_verbosity
 from tests.library import steps
 from tests.library.consts import States, MessageStates
 
@@ -375,8 +375,7 @@ def test_result_no(sdk_client_fs: ADCMClient):
             f'Result is {content["result"]}, Expected False'
 
 
-@pytest.mark.parametrize("verbose_state", [True, False],
-                         ids=['verbose_state_true', 'verbose_state_false'])
+@pytest.mark.parametrize("verbose_state", [True, False], ids=["verbose_state_true", "verbose_state_false"])
 def test_check_verbose_option_of_action_run(sdk_client_fs: ADCMClient, verbose_state):
     bundle_dir = utils.get_data_dir(__file__, "all_fields")
     bundle = sdk_client_fs.upload_from_fs(bundle_dir)
@@ -385,6 +384,5 @@ def test_check_verbose_option_of_action_run(sdk_client_fs: ADCMClient, verbose_s
     with allure.step(f'Check if verbosity is {verbose_state}'):
         task.wait()
         job = task.job()
-        logs = job.log_list()
-        log = job.log(job_id=job.id, log_id=logs[0].id)
-        assert ('verbosity: 4' in log.content) is verbose_state
+        log = job.log(job_id=job.id, log_id=job.log_list()[0].id)
+        check_verbosity(log, verbose_state)
