@@ -1,10 +1,10 @@
 # pylint: disable=W0611, W0621, C0302, R0914
 
+import allure
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import parametrize_by_data_subdirs
 
 from .utils import prepare_cluster_and_get_config
-import allure
 
 
 @allure.step('Check that field is invisible if group is active or not')
@@ -24,7 +24,8 @@ def _check_that_field_is_invisible_if_group_active_or_not(sdk_client: ADCMClient
         assert len(group_names) == 1
         assert group_names[0].text == group_name
         assert group_names, group_names
-        config.click_advanced()
+        if not config.advanced:
+            config.click_advanced()
         assert config.advanced
     with allure.step('Check that field is invisible if group is active'):
         config.activate_group_by_name(group_name)
@@ -56,7 +57,8 @@ def _check_that_field_invisible_if_activatable_group_active_and_not(
         assert len(group_names) == 1
         assert group_names[0].text == group_name
         assert group_names, group_names
-    config.click_advanced()
+    if not config.advanced:
+        config.click_advanced()
     assert config.advanced
     with allure.step('Check that field invisible if activatable group active'):
         config.activate_group_by_name(group_name)
@@ -84,7 +86,8 @@ def _check_that_all_fields_and_groups_invisible(
             assert not field.is_displayed(), field.get_attribute("class")
         group_names = config.get_group_elements()
         assert not group_names, group_names
-        config.click_advanced()
+        if not config.advanced:
+            config.click_advanced()
         assert config.advanced
         fields = config.get_field_groups()
         group_names = config.get_group_elements()
@@ -102,7 +105,8 @@ def _check_that_all_field_is_visible_if_advanced_and_activatable_true(
     group_name = path.split("/")[-1]
     with allure.step('Check that field is visible if advanced and activatable'):
         config.check_that_fields_and_group_are_invisible()
-        config.click_advanced()
+        if not config.advanced:
+            config.click_advanced()
         assert config.advanced
         config.activate_group_by_name(group_name)
         group_active = config.group_is_active_by_name(group_name)
@@ -125,7 +129,8 @@ def _check_that_all_field_is_invisible(
     group_name = path.split("/")[-1]
     with allure.step('Check that field invisible'):
         config.check_that_fields_and_group_are_invisible()
-        config.click_advanced()
+        if not config.advanced:
+            config.click_advanced()
         assert config.advanced
         group_active = config.group_is_active_by_name(group_name)
         assert group_active
@@ -157,7 +162,8 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_fal
         assert len(group_names) == 1
         assert group_names[0].text == group_name
         assert group_names, group_names
-        config.click_advanced()
+        if not config.advanced:
+            config.click_advanced()
         assert config.advanced
     config.activate_group_by_name(group_name)
     group_active = config.group_is_active_by_name(group_name)
@@ -191,7 +197,8 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_fal
         assert len(group_names) == 1
         assert group_names[0].text == group_name
         assert group_names, group_names
-        config.click_advanced()
+        if not config.advanced:
+            config.click_advanced()
         assert config.advanced
     config.activate_group_by_name(group_name)
     group_active = config.group_is_active_by_name(group_name)
@@ -245,7 +252,8 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_fals
         assert len(group_names) == 1
         assert group_names[0].text == group_name
         assert group_names, group_names
-    config.click_advanced()
+    if not config.advanced:
+        config.click_advanced()
     assert config.advanced
     config.activate_group_by_name(group_name)
     group_active = config.group_is_active_by_name(group_name)
@@ -279,7 +287,8 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_fals
         assert len(group_names) == 1
         assert group_names[0].text == group_name
         assert group_names, group_names
-    config.click_advanced()
+    if not config.advanced:
+        config.click_advanced()
     assert config.advanced
     config.activate_group_by_name(group_name)
     group_active = config.group_is_active_by_name(group_name)
@@ -424,7 +433,8 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     group_name = path.split("/")[-1]
     config.check_that_fields_and_group_are_invisible()
-    config.click_advanced()
+    if not config.advanced:
+        config.click_advanced()
     assert config.advanced
     group_active = config.group_is_active_by_name(group_name)
     assert not group_active
@@ -461,7 +471,8 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_false
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     group_name = path.split("/")[-1]
     config.check_that_fields_and_group_are_invisible()
-    config.click_advanced()
+    if not config.advanced:
+        config.click_advanced()
     assert config.advanced
     group_active = config.group_is_active_by_name(group_name)
     assert not group_active
@@ -488,7 +499,8 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_false
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     group_name = path.split("/")[-1]
     config.check_that_fields_and_group_are_invisible()
-    config.click_advanced()
+    if not config.advanced:
+        config.click_advanced()
     assert config.advanced
     group_active = config.group_is_active_by_name(group_name)
     assert group_active
@@ -512,7 +524,8 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true_
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     group_name = path.split("/")[-1]
     config.check_that_fields_and_group_are_invisible()
-    config.click_advanced()
+    if not config.advanced:
+        config.click_advanced()
     assert config.advanced
     config.activate_group_by_name(group_name)
     group_active = config.group_is_active_by_name(group_name)

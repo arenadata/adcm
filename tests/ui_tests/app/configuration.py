@@ -224,8 +224,7 @@ class Configuration(BasePage):
 
     @allure.step('Click advanced')
     def click_advanced(self):
-        if not self.advanced:
-            self._click_element(Common.mat_checkbox, name="Advanced")
+        self._click_element(Common.mat_checkbox, name="Advanced")
 
     @allure.step('Click advanced')
     def get_form_field_text(self, form_field_element):
