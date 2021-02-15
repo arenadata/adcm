@@ -29,7 +29,6 @@ import {
 } from './components';
 import { ActionCardComponent } from './components/actions/action-card/action-card.component';
 import { ActionMasterConfigComponent } from './components/actions/master/action-master-config.component';
-import { BaseListDirective } from './components/list/base-list.directive';
 import { ListComponent } from './components/list/list.component';
 import { MultiSortDirective } from './components/list/multi-sort.directive';
 import { SimpleTextComponent } from './components/tooltip';
@@ -41,9 +40,9 @@ import { HostComponentsMapModule } from './host-components-map/host-components-m
 import { MaterialModule } from './material.module';
 import { BreakRowPipe, TagEscPipe } from './pipes';
 import { StuffModule } from './stuff.module';
-import { StatusColumnComponent } from '@app/components/status-column/status-column.component';
-import { ActionsColumnComponent } from '@app/components/actions-column/actions-column.component';
-import { StateColumnComponent } from '@app/components/state-column/state-column.component';
+import { StatusColumnComponent } from '@app/components/columns/status-column/status-column.component';
+import { ActionsColumnComponent } from '@app/components/columns/actions-column/actions-column.component';
+import { StateColumnComponent } from '@app/components/columns/state-column/state-column.component';
 
 @NgModule({
   imports: [
@@ -69,7 +68,6 @@ import { StateColumnComponent } from '@app/components/state-column/state-column.
     TagEscPipe,
     IssueInfoComponent,
     SimpleTextComponent,
-    BaseListDirective,
     StatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
@@ -102,7 +100,6 @@ import { StateColumnComponent } from '@app/components/state-column/state-column.
     ButtonSpinnerComponent,
     UpgradeComponent,
     TagEscPipe,
-    BaseListDirective,
     StatusComponent,
     StatusInfoComponent,
     MainInfoComponent,

@@ -16,7 +16,10 @@ import { AdwpListModule, AdwpUiWidgetsModule } from '@adwp-ui/widgets';
 
 import { SharedModule, DetailComponent, MainInfoComponent, ConfigComponent, StatusComponent, ImportComponent } from '@app/shared';
 
-import { ClusterListComponent, HcmapComponent, HostComponent, ServicesComponent } from './cluster.component';
+import { ClusterListComponent } from './cluster.component';
+import { HcmapComponent } from '@app/components/cluster/hcmap/hcmap.component';
+import { HostComponent } from '@app/components/cluster/host/host.component';
+import { ServicesComponent } from '@app/components/cluster/services/services.component';
 import { AuthGuard } from '@app/core';
 import { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';
 

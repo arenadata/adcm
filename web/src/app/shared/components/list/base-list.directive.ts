@@ -9,74 +9,104 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Directive, Host, Input, OnDestroy, OnInit, Output, EventEmitter } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { ParamMap } from '@angular/router';
-import { EventMessage, SocketState } from '@app/core/store';
+import { clearMessages, EventMessage, getMessage, SocketState } from '@app/core/store';
 import { Bundle, Cluster, EmmitRow, Entities, Host as AdcmHost, TypeName } from '@app/core/types';
-import { Store } from '@ngrx/store';
+import { select, Store } from '@ngrx/store';
 import { filter, mergeMap, switchMap, tap } from 'rxjs/operators';
 
-import { SocketListenerDirective } from '../../directives/socketListener.directive';
 import { DialogComponent } from '../dialog.component';
-import { ListComponent } from '../list/list.component';
+import { ListResult } from '../list/list.component';
 import { ListService } from './list.service';
+import { ListDirective } from '@app/abstract-directives/list.directive';
+import { Observable, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 interface IRowHost extends AdcmHost {
   clusters: Partial<Cluster>[];
   page: number;
 }
 
-@Directive({
-  selector: '[appBaseList]',
-})
-export class BaseListDirective extends SocketListenerDirective implements OnInit, OnDestroy {
+export class BaseListDirective {
+
+  socket$: Observable<any>;
+  destroy$ = new Subject();
+
   row: Entities;
   listParams: ParamMap;
   limit = 10;
+  typeName: TypeName;
 
-  @Input('appBaseList') typeName: TypeName;
-  constructor(@Host() private parent: ListComponent, private service: ListService, protected store: Store<SocketState>) {
-    super(store);
+  reload: (result: ListResult<Entities>) => void;
+
+  constructor(
+    private parent: ListDirective,
+    private service: ListService,
+    protected store: Store<SocketState>,
+  ) {}
+
+  takeUntil<T>() {
+    return takeUntil<T>(this.destroy$);
   }
 
-  @Output() reload = new EventEmitter();
+  startListenSocket(): void {
+    this.socket$.pipe(tap(m => this.socketListener(m))).subscribe();
+  }
 
-  ngOnInit(): void {
-    this.parent.type = this.typeName;
+  initSocket() {
+    this.socket$ = this.store.pipe(this.takeUntil(), select(getMessage), filter(m => !!m && !!m.object));
+  }
+
+  initColumns() {
     this.parent.columns = this.service.initInstance(this.typeName).columns;
-    this.parent.listItemEvt.pipe(this.takeUntil()).subscribe({ next: (event: EmmitRow) => this.listEvents(event) });
+  }
 
+  initListItemEvent() {
+    this.parent.listItemEvt.pipe(this.takeUntil()).subscribe({ next: (event: EmmitRow) => this.listEvents(event) });
+  }
+
+  routeListener(limit: number, page: number, ordering: string, params: ParamMap) {
+    this.parent.paginator.pageSize = limit;
+    if (page === 0) {
+      this.parent.paginator.firstPage();
+    } else {
+      this.parent.paginator.pageIndex = page;
+    }
+    if (ordering && !this.parent.sort.active) {
+      this.parent.sort.direction = ordering[0] === '-' ? 'desc' : 'asc';
+      this.parent.sort.active = ordering[0] === '-' ? ordering.substr(1) : ordering;
+      this.parent.sortParam = ordering;
+    }
+
+    this.listParams = params;
+    this.refresh();
+  }
+
+  initRouteListener() {
     this.parent.route.paramMap
       .pipe(
         this.takeUntil(),
         filter((p) => this.checkParam(p))
       )
-      .subscribe((p) => {
-        this.parent.paginator.pageSize = +p.get('limit') || 10;
-        const page = +p.get('page');
-        if (page === 0) {
-          this.parent.paginator.firstPage();
-        } else {
-          this.parent.paginator.pageIndex = page;
-        }
-        const ordering = p.get('ordering');
-        if (ordering && !this.parent.sort.active) {
-          this.parent.sort.direction = ordering[0] === '-' ? 'desc' : 'asc';
-          this.parent.sort.active = ordering[0] === '-' ? ordering.substr(1) : ordering;
-          this.parent.sortParam = ordering;
-        }
-
-        this.listParams = p;
-        this.refresh();
-      });
-
-    super.startListenSocket();
+      .subscribe((p) => this.routeListener(+p.get('limit') || 10, +p.get('page'), p.get('ordering'), p));
   }
 
-  ngOnDestroy() {
-    super.ngOnDestroy();
+  init(): void {
+    this.initSocket();
+    this.initColumns();
+    this.initListItemEvent();
+    this.initRouteListener();
+    this.startListenSocket();
+  }
+
+  destroy() {
     this.parent.listItemEvt.complete();
+
+    this.destroy$.next();
+    this.destroy$.complete();
+
+    this.store.dispatch(clearMessages());
   }
 
   checkParam(p: ParamMap): boolean {
@@ -125,7 +155,9 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
   refresh(id?: number) {
     if (id) this.parent.current = { id };
     this.service.getList(this.listParams, this.typeName).subscribe((list) => {
-      this.reload.emit(list);
+      if (this.reload) {
+        this.reload(list);
+      }
       this.parent.dataSource = list;
     });
   }
@@ -136,6 +168,7 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
 
     this.row = event.row;
     const { cmd, item } = event;
+    console.log(event);
 
     if (['title', 'status', 'config', 'import'].includes(cmd)) {
       nav(cmd === 'title' ? [] : [cmd]);

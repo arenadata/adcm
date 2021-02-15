@@ -10,60 +10,53 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
-import { ClusterService } from '@app/core';
 import { BehaviorSubject } from 'rxjs';
-import { IColumn, IListResult } from '@adwp-ui/widgets';
+import { IColumn, IListResult, Paging, RowEventData } from '@adwp-ui/widgets';
+import { Sort } from '@angular/material/sort';
+import { PageEvent } from '@angular/material/paginator';
 
-import { ICluster } from '../../models/cluster';
-import { StatusColumnComponent } from '../../components/status-column/status-column.component';
-import { ActionsColumnComponent } from '../../components/actions-column/actions-column.component';
-import { StateColumnComponent } from '../../components/state-column/state-column.component';
-import { UpgradeComponent } from '../../shared';
-
-@Component({
-  selector: 'app-cluster-host',
-  template: `
-    <app-add-button [name]="'host2cluster'" class="add-button">Add hosts</app-add-button>
-    <app-list class="main" [appBaseList]="'host2cluster'"></app-list>
-  `,
-  styles: [':host { flex: 1; }', '.add-button {position:fixed; right: 20px;top:120px;}'],
-})
-export class HostComponent {}
-
-@Component({
-  selector: 'app-services',
-  template: `
-    <app-add-button [name]="'service'" class="add-button">Add services</app-add-button>
-    <app-list class="main" [appBaseList]="'service2cluster'" appActionHandler></app-list>
-  `,
-  styles: [':host { flex: 1; }', '.add-button {position:fixed; right: 20px;top:120px;}'],
-})
-export class ServicesComponent {}
+import { ICluster } from '@app/models/cluster';
+import { StatusColumnComponent } from '@app/components/columns/status-column/status-column.component';
+import { ActionsColumnComponent } from '@app/components/columns/actions-column/actions-column.component';
+import { StateColumnComponent } from '@app/components/columns/state-column/state-column.component';
+import { UpgradeComponent } from '@app/shared';
+import { ListDirective } from '@app/abstract-directives/list.directive';
+import { Entities, TypeName } from '../../core/types';
+import { AdwpBaseListDirective } from '../../abstract-directives/adwp-base-list.directive';
 
 @Component({
   template: `
     <mat-toolbar class="toolbar">
       <app-crumbs [navigation]="[{ url: '/cluster', title: 'clusters' }]"></app-crumbs>
-      <app-add-button [name]="typeName" (added)="list.current = $event">Create {{ typeName }}</app-add-button>
+      <app-add-button [name]="type" (added)="list.current = $event">Create {{ type }}</app-add-button>
     </mat-toolbar>
-    <app-list #list appActionHandler [appBaseList]="typeName" (reload)="reload($event)"></app-list>
+    <app-list #list [type]="type"></app-list>
 
     <br>
     <br>
 
-    <adwp-list [columns]="columns" [dataSource]="data$ | async"></adwp-list>
+    <adwp-list
+      [columns]="listColumns"
+      [dataSource]="data$ | async"
+      [paging]="paging | async"
+      [sort]="sorting | async"
+      (clickRow)="clickRow($event)"
+      (auxclickRow)="auxclickRow($event)"
+      (changePaging)="onChangePaging($event)"
+      (changeSort)="onChangeSort($event)"
+    ></adwp-list>
   `,
   styles: [`
     :host { flex: 1; }
   `],
 })
-export class ClusterListComponent {
+export class ClusterListComponent extends ListDirective implements OnInit {
 
-  typeName = 'cluster';
+  type: TypeName = 'cluster';
 
   data$: BehaviorSubject<IListResult<ICluster>> = new BehaviorSubject(null);
 
-  columns = [
+  listColumns = [
     {
       label: 'Name',
       sort: 'name',
@@ -109,7 +102,7 @@ export class ClusterListComponent {
       headerClassName: 'list-control',
       buttons: [{
         icon: 'import_export',
-        callback: (row) => console.log(row),
+        callback: (row) => this.baseListDirective.listEvents({ cmd: 'import', row }),
       }]
     },
     {
@@ -126,7 +119,7 @@ export class ClusterListComponent {
       headerClassName: 'list-control',
       buttons: [{
         icon: 'settings',
-        callback: (row) => console.log(row),
+        callback: (row) => this.baseListDirective.listEvents({ cmd: 'config', row }),
       }]
     },
     {
@@ -135,28 +128,53 @@ export class ClusterListComponent {
       headerClassName: 'list-control',
       buttons: [{
         icon: 'delete',
-        callback: (row) => console.log(row),
+        callback: (row, event) => this.delete(event, row),
       }]
     },
   ] as IColumn<ICluster>;
 
-  reload(data: IListResult<ICluster>) {
-    console.log(data);
-    this.data$.next(data);
-  }
-
-}
-
-@Component({
-  template: ` <app-service-host [cluster]="cluster"></app-service-host> `,
-  styles: [':host { flex: 1; }'],
-})
-export class HcmapComponent implements OnInit {
-  cluster: { id: number; hostcomponent: string };
-  constructor(private service: ClusterService) {}
+  paging: BehaviorSubject<Paging> = new BehaviorSubject<Paging>(null);
+  sorting: BehaviorSubject<Sort> = new BehaviorSubject<Sort>(null);
 
   ngOnInit() {
-    const { id, hostcomponent } = { ...this.service.Cluster };
-    this.cluster = { id, hostcomponent };
+    this.baseListDirective = new AdwpBaseListDirective(this, this.service, this.store);
+    this.baseListDirective.typeName = this.type;
+    this.baseListDirective.reload = this.reload.bind(this);
+    (this.baseListDirective as AdwpBaseListDirective).paging = this.paging;
+    (this.baseListDirective as AdwpBaseListDirective).sorting = this.sorting;
+    this.baseListDirective.init();
   }
+
+  reload(data: IListResult<Entities>) {
+    this.data$.next(data as any);
+  }
+
+  clickRow(data: RowEventData) {
+    this.clickCell(data.event, 'title', data.row);
+  }
+
+  auxclickRow(data: RowEventData) {
+    this.clickCell(data.event, 'new-tab', data.row);
+  }
+
+  changeCount(count: number) {
+    console.log('Change count', count);
+  }
+
+  onChangePaging(paging: Paging): void {
+    this.paging.next(paging);
+
+    const pageEvent = new PageEvent();
+    pageEvent.pageIndex = paging.pageIndex - 1;
+    pageEvent.length = this.data$.value.count;
+    pageEvent.pageSize = paging.pageSize;
+
+    this.pageHandler(pageEvent);
+  }
+
+  onChangeSort(sort: Sort): void {
+    this.sorting.next(sort);
+  }
+
 }
+

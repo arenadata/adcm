@@ -19,7 +19,7 @@ import { ClusterService, StackService } from '@app/core';
       <app-crumbs [navigation]="[{ url: '/bundle', title: 'bundles' }]"></app-crumbs>
       <app-button-uploader #uploadBtn [color]="'accent'" [label]="'Upload bundles'" (output)="upload($event)"></app-button-uploader>
     </mat-toolbar>
-    <app-list #list [appBaseList]="typeName"></app-list>
+    <app-list #list [type]="typeName"></app-list>
   `,
   styles: [':host { flex: 1; }'],
 })

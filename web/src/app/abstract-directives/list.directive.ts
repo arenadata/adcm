@@ -1,0 +1,135 @@
+import { Directive, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { filter } from 'rxjs/operators';
+import { Store } from '@ngrx/store';
+import { ActivatedRoute, Router } from '@angular/router';
+import { MatPaginator, PageEvent } from '@angular/material/paginator';
+import { MatSort, Sort } from '@angular/material/sort';
+import { MatTableDataSource } from '@angular/material/table';
+import { MatDialog } from '@angular/material/dialog';
+
+import { EmmitRow, TypeName } from '@app/core/types';
+import { BaseListDirective } from '@app/shared/components/list/base-list.directive';
+import { SocketState } from '@app/core/store';
+import { ListService } from '@app/shared/components/list/list.service';
+import { DialogComponent } from '@app/shared';
+
+enum Direction {
+  '' = '',
+  'asc' = '',
+  'desc' = '-',
+}
+
+@Directive({
+  selector: '[appAbstractList]',
+})
+export abstract class ListDirective implements OnInit, OnDestroy {
+
+  @Input() type: TypeName;
+
+  baseListDirective: BaseListDirective;
+
+  current: any = {};
+
+  @Input()
+  columns: Array<string>;
+
+  @Output()
+  listItemEvt = new EventEmitter<EmmitRow>();
+
+  paginator: MatPaginator;
+
+  sort: MatSort;
+
+  data: MatTableDataSource<any> = new MatTableDataSource([]);
+
+  @Output() pageEvent = new EventEmitter<PageEvent>();
+
+  addToSorting = false;
+
+  @Input()
+  set dataSource(data: { results: any; count: number }) {
+    if (data) {
+      const list = data.results;
+      this.data = new MatTableDataSource<any>(list);
+      this.changeCount(data.count);
+      this.listItemEvt.emit({ cmd: 'onLoad', row: list[0] });
+    }
+  }
+
+  sortParam = '';
+
+  constructor(
+    protected service: ListService,
+    protected store: Store<SocketState>,
+    public route: ActivatedRoute,
+    public router: Router,
+    public dialog: MatDialog,
+  ) {}
+
+  changeCount(count: number) {
+    this.paginator.length = count;
+  }
+
+  clickCell($e: MouseEvent, cmd?: string, row?: any, item?: any) {
+    if ($e && $e.stopPropagation) $e.stopPropagation();
+    this.current = row;
+    this.listItemEvt.emit({ cmd, row, item });
+  }
+
+  ngOnInit() {
+    this.baseListDirective = new BaseListDirective(this, this.service, this.store);
+    this.baseListDirective.typeName = this.type;
+    this.baseListDirective.init();
+  }
+
+  ngOnDestroy() {
+    this.baseListDirective.destroy();
+  }
+
+  delete($event: MouseEvent, row: any) {
+    $event.stopPropagation();
+    this.dialog
+      .open(DialogComponent, {
+        data: {
+          title: `Deleting  "${row.name || row.fqdn}"`,
+          text: 'Are you sure?',
+          controls: ['Yes', 'No'],
+        },
+      })
+      .beforeClosed()
+      .pipe(filter((yes) => yes))
+      .subscribe(() => this.listItemEvt.emit({ cmd: 'delete', row }));
+  }
+
+  getSortParam(a: Sort) {
+    const penis: { [key: string]: string[] } = {
+      prototype_version: ['prototype_display_name', 'prototype_version'],
+    };
+
+    const dumb = penis[a.active] ? penis[a.active] : [a.active],
+      active = dumb.map((b: string) => `${Direction[a.direction]}${b}`).join(',');
+
+    const current = this.sortParam;
+    if (current && this.addToSorting) {
+      const result = current
+        .split(',')
+        .filter((b) => dumb.every((d) => d !== b.replace('-', '')))
+        .join(',');
+      return [result, a.direction ? active : ''].filter((e) => e).join(',');
+    }
+
+    return a.direction ? active : '';
+  }
+
+  pageHandler(pageEvent: PageEvent) {
+    console.log(this.sort);
+    this.pageEvent.emit(pageEvent);
+    localStorage.setItem('limit', String(pageEvent.pageSize));
+    const f = this.route.snapshot.paramMap.get('filter') || '';
+    const ordering = this.getSortParam(this.sort);
+    this.router.navigate(['./', { page: pageEvent.pageIndex, limit: pageEvent.pageSize, filter: f, ordering }], {
+      relativeTo: this.route,
+    });
+  }
+
+}
