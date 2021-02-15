@@ -26,7 +26,7 @@ from cm.logger import log
 from cm.errors import raise_AdcmEx as err
 import cm.config as config
 import cm.checker
-from cm.adcm_config import VARIANT_FUNCTIONS
+from cm.variant import VARIANT_FUNCTIONS
 from cm.adcm_config import proto_ref, check_config_type, type_is_complex, read_bundle_file
 from cm.models import StagePrototype, StageAction, StagePrototypeConfig
 from cm.models import ACTION_TYPE, SCRIPT_TYPE, CONFIG_FIELD_TYPE, PROTO_TYPE

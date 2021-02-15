@@ -118,6 +118,7 @@ ERRORS = {
     'CONFIG_KEY_ERROR': ("error in json config", rfs.HTTP_400_BAD_REQUEST, ERR),
     'CONFIG_VALUE_ERROR': ("error in json config", rfs.HTTP_400_BAD_REQUEST, ERR),
     'ATTRIBUTE_ERROR': ("error in attribute config", rfs.HTTP_400_BAD_REQUEST, ERR),
+    'CONFIG_VARIANT_ERROR': ("error in config variant type", rfs.HTTP_400_BAD_REQUEST, ERR),
 
     'TOO_LONG': ("response is too long", rfs.HTTP_400_BAD_REQUEST, WARN),
     'NOT_IMPLEMENTED': ("not implemented yet", rfs.HTTP_501_NOT_IMPLEMENTED, ERR),
