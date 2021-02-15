@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=W0611, W0621, C0301
+# pylint: disable=W0611, W0621
 import allure
 import pytest
 from adcm_client.objects import ADCMClient
@@ -375,7 +375,9 @@ def test_result_no(sdk_client_fs: ADCMClient):
             f'Result is {content["result"]}, Expected False'
 
 
-@pytest.mark.parametrize("verbose_state", [True, False], ids=["verbose_state_true", "verbose_state_false"])
+@pytest.mark.parametrize(
+    "verbose_state", [True, False], ids=["verbose_state_true", "verbose_state_false"]
+)
 def test_check_verbose_option_of_action_run(sdk_client_fs: ADCMClient, verbose_state):
     bundle_dir = utils.get_data_dir(__file__, "all_fields")
     bundle = sdk_client_fs.upload_from_fs(bundle_dir)

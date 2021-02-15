@@ -2,7 +2,10 @@ import time
 
 import allure
 import pytest
-from adcm_client.base import ObjectNotFound
+from adcm_client.base import (
+    ObjectNotFound,
+    WaitTimeout,
+)
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
 
@@ -35,6 +38,7 @@ def wait_for_job_creation(cluster, interval=1, timeout=30):
         except ObjectNotFound:
             pass
         time.sleep(interval)
+    raise WaitTimeout(f'Job has not been created for {timeout} seconds')
 
 
 @allure.step("Check if verbosity is {verbose_state}")
