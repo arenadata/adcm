@@ -33,7 +33,7 @@ class Configuration(BasePage):
         field_editable = self.editable_element(field)
         assert field_editable == editable
 
-    @allure.step('Check that field content equal expected value: {expected_value}')
+    @allure.step('Check that field content is equal to expected value: {expected_value}')
     def assert_field_content_equal(self, field_type, field, expected_value):
         current_value = self.get_field_value_by_type(field, field_type)
         if field_type == 'password':
@@ -92,19 +92,16 @@ class Configuration(BasePage):
         err_msg = "Expected text not presented: {}.".format(expected_text)
         assert result, err_msg
 
-    @allure.step('Get key value for map field')
     def get_map_key(self, item_element):
         form_field = item_element.find_element(*ConfigurationLocators.map_key_field)
         inp = form_field.find_element(*Common.mat_input_element)
         return inp.get_attribute("value")
 
-    @allure.step('Get value for map field')
     def get_map_value(self, item_element):
         form_field = item_element.find_element(*ConfigurationLocators.map_value_field)
         inp = form_field.find_element(*Common.mat_input_element)
         return inp.get_attribute("value")
 
-    @allure.step('Get map field values')
     def get_map_field_config(self, map_field):
         items = map_field.find_elements(*Common.item)
         result = {}
@@ -114,7 +111,6 @@ class Configuration(BasePage):
             result[_key] = _value
         return result
 
-    @allure.step('Get field value from element by field type')
     def get_field_value_by_type(self, field_element: WebElement, field_type: str):
         if field_type == 'boolean':
             element_with_value = field_element.find_element(*Common.mat_checkbox_class)
@@ -141,7 +137,6 @@ class Configuration(BasePage):
         return current_value
 
     @staticmethod
-    @allure.step('Get structure values for field')
     def get_structure_values(field) -> list:
         schemes = field.find_elements(*ConfigurationLocators.app_root_scheme)[1:]
         config = []
@@ -156,11 +151,9 @@ class Configuration(BasePage):
         return config
 
     @staticmethod
-    @allure.step('Get field value')
     def get_field_value(input_field):
         return input_field.get_attribute("value")
 
-    @allure.step('Get field groups')
     def get_field_groups(self):
         return self.driver.find_elements(*ConfigurationLocators.field_group)
 
