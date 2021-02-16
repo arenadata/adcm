@@ -13,57 +13,124 @@
 from django.test import TestCase
 
 from cm.api import add_host, add_host_to_cluster, add_host_provider
-from cm.variant import variant_host
+from cm.variant import get_variant,variant_host
 from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject, ServiceComponent, HostComponent
 from cm.models import Bundle, Prototype
 
 
+def cook_cluster():
+    b = Bundle.objects.create(name="ADH", version="1.0")
+    proto = Prototype.objects.create(type="cluster", name="ADH", bundle=b)
+    return Cluster.objects.create(prototype=proto)
+
+
+def cook_provider():
+    b = Bundle.objects.create(name="SSH", version="1.0")
+    pp = Prototype.objects.create(type="provider", bundle=b)
+    provider = add_host_provider(pp, 'SSHone')
+    host_proto = Prototype.objects.create(bundle=b, type='host')
+    return (provider, host_proto)
+
+
+def cook_service(cluster):
+    proto = Prototype.objects.create(type="service", name="UBER", bundle=cluster.prototype.bundle)
+    return ClusterObject.objects.create(cluster=cluster, prototype=proto)
+
+
+def cook_component(cluster, service, name):
+    proto = Prototype.objects.create(
+        type="component", name=name, bundle=cluster.prototype.bundle, parent=service.prototype
+    )
+    return ServiceComponent.objects.create(cluster=cluster, service=service, prototype=proto)
+
+
+
+class TestVariantInline(TestCase):
+    def test_inline(self):
+        limits = {"source": {"type": "inline", "value": [1, 2, 3]}}
+        self.assertEqual(get_variant(None, None, limits), [1, 2, 3])
+
+
+class TestVariantBuiltIn(TestCase):
+    add_hc = HostComponent.objects.create
+
+    def test_host_in_cluster_no_host(self):
+        cls = cook_cluster()
+        limits = {"source": {"type": "builtin", "name": "host_in_cluster"}}
+        self.assertEqual(get_variant(cls, None, limits), [])
+
+    def test_host_in_cluster(self):
+        cls = cook_cluster()
+        provider, hp = cook_provider()
+        h1 = add_host(hp, provider, 'h10')
+        limits = {"source": {"type": "builtin", "name": "host_in_cluster"}}
+        self.assertEqual(get_variant(cls, None, limits), [])
+        add_host_to_cluster(cls, h1)
+        self.assertEqual(get_variant(cls, None, limits), ['h10'])
+
+    def test_host_in_cluster_service(self):
+        cls = cook_cluster()
+        service = cook_service(cls)
+        comp1 = cook_component(cls, service, 'Server')
+        provider, hp = cook_provider()
+        h1 = add_host(hp, provider, 'h10')
+        h2 = add_host(hp, provider, 'h11')
+        limits = {"source": {"type": "builtin", "name": "host_in_cluster"}}
+        self.assertEqual(get_variant(cls, None, limits), [])
+        add_host_to_cluster(cls, h1)
+        add_host_to_cluster(cls, h2)
+        self.assertEqual(get_variant(cls, None, limits), ['h10', 'h11'])
+        limits['source']['args'] = {'service': 'QWE'}
+        self.assertEqual(get_variant(cls, None, limits), [])
+        self.add_hc(cluster=cls, service=service, component=comp1, host=h2)
+        self.assertEqual(get_variant(cls, None, limits), [])
+        limits['source']['args']['service'] = 'UBER'
+        self.assertEqual(get_variant(cls, None, limits), ['h11'])
+
+
+    def test_host_in_cluster_component(self):
+        cls = cook_cluster()
+        service = cook_service(cls)
+        comp1 = cook_component(cls, service, 'Server')
+        comp2 = cook_component(cls, service, 'Node')
+        provider, hp = cook_provider()
+        h1 = add_host(hp, provider, 'h10')
+        h2 = add_host(hp, provider, 'h11')
+        h3 = add_host(hp, provider, 'h12')
+        limits = {"source": {"type": "builtin", "name": "host_in_cluster"}}
+        add_host_to_cluster(cls, h1)
+        add_host_to_cluster(cls, h2)
+        add_host_to_cluster(cls, h3)
+        self.assertEqual(get_variant(cls, None, limits), ['h10', 'h11', 'h12'])
+        limits['source']['args'] = {'service': 'UBER', 'component': 'QWE'}
+        self.assertEqual(get_variant(cls, None, limits), [])
+        self.add_hc(cluster=cls, service=service, component=comp1, host=h1)
+        self.add_hc(cluster=cls, service=service, component=comp2, host=h2)
+        self.assertEqual(get_variant(cls, None, limits), [])
+        limits['source']['args']['component'] = 'Node'
+        self.assertEqual(get_variant(cls, None, limits), ['h11'])
+
+
 class TestVariantHost(TestCase):
     add_hc = HostComponent.objects.create
 
-    def cook_cluster(self):
-        b = Bundle.objects.create(name="ADH", version="1.0")
-        proto = Prototype.objects.create(type="cluster", name="ADH", bundle=b)
-        return Cluster.objects.create(prototype=proto)
-
-    def cook_provider(self):
-        b = Bundle.objects.create(name="SSH", version="1.0")
-        pp = Prototype.objects.create(type="provider", bundle=b)
-        provider = add_host_provider(pp, 'SSHone')
-        host_proto = Prototype.objects.create(bundle=b, type='host')
-        return (provider, host_proto)
-
-    def cook_service(self, cluster):
-        proto = Prototype.objects.create(
-            type="service", name="UBER", bundle=cluster.prototype.bundle
-        )
-        return ClusterObject.objects.create(cluster=cluster, prototype=proto)
-
-    def cook_component(self, cluster, service, name):
-        proto = Prototype.objects.create(
-            type="component", name=name, bundle=cluster.prototype.bundle, parent=service.prototype
-        )
-        return ServiceComponent.objects.create(
-            cluster=cluster, service=service, prototype=proto
-        )
-
     def test_no_host_in_cluster(self):
-        cls = self.cook_cluster()
+        cls = cook_cluster()
         hosts = variant_host(cls, {'in_cluster': None})
         self.assertEqual(hosts, [])
 
     def test_host_in_cluster(self):
-        cls = self.cook_cluster()
-        provider, hp = self.cook_provider()
+        cls = cook_cluster()
+        provider, hp = cook_provider()
         h1 = add_host(hp, provider, 'h10')
         add_host_to_cluster(cls, h1)
         hosts = variant_host(cls, {'in_cluster': []})
         self.assertEqual(hosts, ['h10'])
 
     def test_tuple(self):
-        cls = self.cook_cluster()
-        self.cook_service(cls)
+        cls = cook_cluster()
+        cook_service(cls)
         try:
             variant_host(cls, {'in_service': 123})
         except AdcmEx as e:
@@ -106,10 +173,10 @@ class TestVariantHost(TestCase):
         self.assertEqual(hosts, [])
 
     def test_host_in_service(self):
-        cls = self.cook_cluster()
-        service = self.cook_service(cls)
-        comp = self.cook_component(cls, service, 'Server')
-        provider, hp = self.cook_provider()
+        cls = cook_cluster()
+        service = cook_service(cls)
+        comp = cook_component(cls, service, 'Server')
+        provider, hp = cook_provider()
         h1 = add_host(hp, provider, 'h10')
         add_host_to_cluster(cls, h1)
         self.add_hc(cluster=cls, service=service, component=comp, host=h1)
@@ -126,11 +193,11 @@ class TestVariantHost(TestCase):
         self.assertEqual(hosts, ['h10'])
 
     def test_host_in_component(self):
-        cls = self.cook_cluster()
-        service = self.cook_service(cls)
-        comp1 = self.cook_component(cls, service, 'Server')
-        comp2 = self.cook_component(cls, service, 'Node')
-        provider, hp = self.cook_provider()
+        cls = cook_cluster()
+        service = cook_service(cls)
+        comp1 = cook_component(cls, service, 'Server')
+        comp2 = cook_component(cls, service, 'Node')
+        provider, hp = cook_provider()
         h1 = add_host(hp, provider, 'h10')
         h2 = add_host(hp, provider, 'h11')
         add_host_to_cluster(cls, h1)
@@ -159,11 +226,11 @@ class TestVariantHost(TestCase):
         self.assertEqual(hosts, ['h11'])
 
     def test_host_and(self):
-        cls = self.cook_cluster()
-        service = self.cook_service(cls)
-        comp1 = self.cook_component(cls, service, 'Server')
-        comp2 = self.cook_component(cls, service, 'Node')
-        provider, hp = self.cook_provider()
+        cls = cook_cluster()
+        service = cook_service(cls)
+        comp1 = cook_component(cls, service, 'Server')
+        comp2 = cook_component(cls, service, 'Node')
+        provider, hp = cook_provider()
         h1 = add_host(hp, provider, 'h10')
         h2 = add_host(hp, provider, 'h11')
         h3 = add_host(hp, provider, 'h12')
@@ -198,12 +265,12 @@ class TestVariantHost(TestCase):
         self.assertEqual(hosts, {'h11', 'h12'})
 
     def test_host_or(self):
-        cls = self.cook_cluster()
-        service = self.cook_service(cls)
-        comp1 = self.cook_component(cls, service, 'Server')
-        comp2 = self.cook_component(cls, service, 'Node')
-        comp3 = self.cook_component(cls, service, 'Secondary')
-        provider, hp = self.cook_provider()
+        cls = cook_cluster()
+        service = cook_service(cls)
+        comp1 = cook_component(cls, service, 'Server')
+        comp2 = cook_component(cls, service, 'Node')
+        comp3 = cook_component(cls, service, 'Secondary')
+        provider, hp = cook_provider()
         h1 = add_host(hp, provider, 'h10')
         h2 = add_host(hp, provider, 'h11')
         h3 = add_host(hp, provider, 'h12')

@@ -190,7 +190,7 @@ def variant_host_in_cluster(obj, args=None):
         if 'component' in args:
             try:
                 comp = ServiceComponent.objects.get(
-                    cluster=cluster, service=service, component__name=args['component']
+                    cluster=cluster, service=service, prototype__name=args['component']
                 )
             except ServiceComponent.DoesNotExist:
                 return []
