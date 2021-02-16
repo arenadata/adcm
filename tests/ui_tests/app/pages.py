@@ -140,6 +140,9 @@ class BasePage:
         WDW(self.driver, timer).until(EC.presence_of_element_located(locator))
         return self.driver.find_element(*locator)
 
+    def _wait_element_hide(self, locator: tuple, timer=5):
+        WDW(self.driver, timer).until(EC.invisibility_of_element_located(locator))
+
     def _wait_element_present_in_sublement(self, subel, locator: tuple, timer=5):
         WDW(subel, timer).until(EC.presence_of_element_located(locator))
         return subel.find_element(*locator)
