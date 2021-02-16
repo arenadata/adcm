@@ -16,6 +16,7 @@ import { MatPaginator } from '@angular/material/paginator';
 import { MatSort, MatSortHeader, Sort } from '@angular/material/sort';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
+import { Event } from '@adwp-ui/widgets';
 
 import { StatusData } from '@app/components/columns/status-column/status-column.component';
 import { ICluster } from '@app/models/cluster';
@@ -38,6 +39,8 @@ export interface ListResult<T> {
   styleUrls: ['./list.component.scss'],
 })
 export class ListComponent extends ListDirective implements OnInit, OnDestroy {
+  Event = Event;
+
   selection = new SelectionModel(true, []);
 
   clustersSubj = new BehaviorSubject<{ id: number; title: string }[]>([]);
@@ -67,26 +70,7 @@ export class ListComponent extends ListDirective implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.sort.sortChange.subscribe((a: Sort) => {
-      const _filter = this.route.snapshot.paramMap.get('filter') || '',
-        { pageIndex, pageSize } = this.paginator,
-        ordering = this.getSortParam(a);
-
-      this.router.navigate(
-        [
-          './',
-          {
-            page: pageIndex,
-            limit: pageSize,
-            filter: _filter,
-            ordering,
-          },
-        ],
-        { relativeTo: this.route }
-      );
-
-      this.sortParam = ordering;
-    });
+    this.sort.sortChange.subscribe((sort: Sort) => this.changeSorting(sort));
 
     super.ngOnInit();
   }
@@ -105,11 +89,6 @@ export class ListComponent extends ListDirective implements OnInit, OnDestroy {
   /** Selects all rows if they are not all selected; otherwise clear selection. */
   masterToggle() {
     this.isAllSelected() ? this.selection.clear() : this.data.data.forEach((row) => this.selection.select(row));
-  }
-
-  stopPropagation($e: MouseEvent) {
-    $e.stopPropagation();
-    return $e;
   }
 
   gotoStatus(data: StatusData<ICluster>) {

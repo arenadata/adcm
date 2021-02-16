@@ -40,6 +40,7 @@ import { AdwpBaseListDirective } from '../../abstract-directives/adwp-base-list.
       [dataSource]="data$ | async"
       [paging]="paging | async"
       [sort]="sorting | async"
+      [defaultSort]="defaultSort"
       (clickRow)="clickRow($event)"
       (auxclickRow)="auxclickRow($event)"
       (changePaging)="onChangePaging($event)"
@@ -55,6 +56,8 @@ export class ClusterListComponent extends ListDirective implements OnInit {
   type: TypeName = 'cluster';
 
   data$: BehaviorSubject<IListResult<ICluster>> = new BehaviorSubject(null);
+
+  defaultSort: Sort = { active: 'id', direction: 'desc' };
 
   listColumns = [
     {
@@ -161,19 +164,33 @@ export class ClusterListComponent extends ListDirective implements OnInit {
     console.log('Change count', count);
   }
 
+  getPageIndex(): number {
+    return this.paging.value.pageIndex - 1;
+  }
+
+  getPageSize(): number {
+    return this.paging.value.pageSize;
+  }
+
   onChangePaging(paging: Paging): void {
     this.paging.next(paging);
 
     const pageEvent = new PageEvent();
-    pageEvent.pageIndex = paging.pageIndex - 1;
+    pageEvent.pageIndex = this.getPageIndex();
     pageEvent.length = this.data$.value.count;
-    pageEvent.pageSize = paging.pageSize;
+    pageEvent.pageSize = this.getPageSize();
 
     this.pageHandler(pageEvent);
   }
 
   onChangeSort(sort: Sort): void {
     this.sorting.next(sort);
+    console.log('current', sort);
+    this.changeSorting(sort);
+  }
+
+  getSort(): Sort {
+    return this.sorting.value;
   }
 
 }

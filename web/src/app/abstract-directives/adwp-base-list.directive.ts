@@ -1,6 +1,6 @@
 import { BaseListDirective } from '../shared/components/list/base-list.directive';
 import { BehaviorSubject } from 'rxjs';
-import { Paging } from '../../../../../adwp_ui/dist/widgets';
+import { Paging } from '@adwp-ui/widgets';
 import { Sort } from '@angular/material/sort';
 import { ParamMap } from '@angular/router';
 

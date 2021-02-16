@@ -1,4 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
+import { Event } from '@adwp-ui/widgets';
 
 import { isIssue, Issue } from '@app/core/types';
 
@@ -8,6 +9,8 @@ import { isIssue, Issue } from '@app/core/types';
   styleUrls: ['./actions-column.component.scss']
 })
 export class ActionsColumnComponent<T> implements OnInit {
+
+  Event = Event;
 
   @Input() row: T;
 

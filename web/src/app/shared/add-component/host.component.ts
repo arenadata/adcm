@@ -15,6 +15,7 @@ import { openClose } from '@app/core/animations';
 import { clearEmptyField, Cluster, Host, Provider } from '@app/core/types';
 import { BehaviorSubject } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
+import { Event } from '@adwp-ui/widgets';
 
 import { ActionsDirective } from '../components/actions/actions.directive';
 import { AddService } from './add.service';
@@ -120,8 +121,8 @@ export class HostComponent extends BaseFormDirective implements OnInit {
     return fi.invalid && (fi.dirty || fi.touched);
   }
 
-  showHostproviderForm(e: Event) {
-    e.stopPropagation();
+  showHostproviderForm(e: MouseEvent) {
+    Event.stopPropagation(e);
     this.expanded = !this.expanded;
     this.form.get('provider_id').setValue('');
   }

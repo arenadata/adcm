@@ -6,6 +6,7 @@ import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort, Sort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatDialog } from '@angular/material/dialog';
+import { Event } from '@adwp-ui/widgets';
 
 import { EmmitRow, TypeName } from '@app/core/types';
 import { BaseListDirective } from '@app/shared/components/list/base-list.directive';
@@ -71,7 +72,7 @@ export abstract class ListDirective implements OnInit, OnDestroy {
   }
 
   clickCell($e: MouseEvent, cmd?: string, row?: any, item?: any) {
-    if ($e && $e.stopPropagation) $e.stopPropagation();
+    Event.stopPropagation($e);
     this.current = row;
     this.listItemEvt.emit({ cmd, row, item });
   }
@@ -87,7 +88,7 @@ export abstract class ListDirective implements OnInit, OnDestroy {
   }
 
   delete($event: MouseEvent, row: any) {
-    $event.stopPropagation();
+    Event.stopPropagation($event);
     this.dialog
       .open(DialogComponent, {
         data: {
@@ -101,7 +102,38 @@ export abstract class ListDirective implements OnInit, OnDestroy {
       .subscribe(() => this.listItemEvt.emit({ cmd: 'delete', row }));
   }
 
+  getPageIndex(): number {
+    return this.paginator.pageIndex;
+  }
+
+  getPageSize(): number {
+    return this.paginator.pageSize;
+  }
+
+  changeSorting(sort: Sort) {
+    const _filter = this.route.snapshot.paramMap.get('filter') || '';
+    const pageIndex = this.getPageIndex();
+    const pageSize = this.getPageSize();
+    const ordering = this.getSortParam(sort);
+
+    this.router.navigate(
+      [
+        './',
+        {
+          page: pageIndex,
+          limit: pageSize,
+          filter: _filter,
+          ordering,
+        },
+      ],
+      { relativeTo: this.route }
+    );
+
+    this.sortParam = ordering;
+  }
+
   getSortParam(a: Sort) {
+    console.log('sort', a);
     const penis: { [key: string]: string[] } = {
       prototype_version: ['prototype_display_name', 'prototype_version'],
     };
@@ -121,12 +153,16 @@ export abstract class ListDirective implements OnInit, OnDestroy {
     return a.direction ? active : '';
   }
 
+  getSort(): Sort {
+    return this.sort;
+  }
+
   pageHandler(pageEvent: PageEvent) {
     console.log(this.sort);
     this.pageEvent.emit(pageEvent);
     localStorage.setItem('limit', String(pageEvent.pageSize));
     const f = this.route.snapshot.paramMap.get('filter') || '';
-    const ordering = this.getSortParam(this.sort);
+    const ordering = this.getSortParam(this.getSort());
     this.router.navigate(['./', { page: pageEvent.pageIndex, limit: pageEvent.pageSize, filter: f, ordering }], {
       relativeTo: this.route,
     });
