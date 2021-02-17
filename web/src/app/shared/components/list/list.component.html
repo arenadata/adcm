@@ -15,7 +15,7 @@
         [indeterminate]="selection.hasValue() && !isAllSelected()"></mat-checkbox>
     </mat-header-cell>
     <mat-cell *matCellDef="let row" style="flex: 0 0 50px;">
-      <mat-checkbox (click)="Event.stopPropagation($event)" (change)="$event ? selection.toggle(row) : null"
+      <mat-checkbox (click)="EventHelper.stopPropagation($event)" (change)="$event ? selection.toggle(row) : null"
         [checked]="selection.isSelected(row)"></mat-checkbox>
     </mat-cell>
   </ng-container>
@@ -195,7 +195,7 @@
       <a *ngIf="row.cluster_id; else clusterlist" [routerLink]="['/cluster', row.cluster_id]">{{ row.cluster_name }}</a>
       <ng-template #clusterlist>
         <mat-select appInfinityScroll (topScrollPoint)="clickCell($event, 'getNextPageCluster', row)"
-          placeholder="Assign to cluster" class="select-in-cell" (click)="Event.stopPropagation($event)"
+          placeholder="Assign to cluster" class="select-in-cell" (click)="EventHelper.stopPropagation($event)"
           (openedChange)="clickCell($event, 'getClusters', row)"
           (valueChange)="clickCell($event, 'addCluster', row, clusters.value)" #clusters>
           <mat-option>...</mat-option>

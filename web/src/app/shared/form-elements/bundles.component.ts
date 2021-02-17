@@ -14,7 +14,7 @@ import { FormControl } from '@angular/forms';
 import { Prototype, StackBase } from '@app/core/types';
 import { of } from 'rxjs';
 import { filter, map, switchMap } from 'rxjs/operators';
-import { Event } from '@adwp-ui/widgets';
+import { EventHelper } from '@adwp-ui/widgets';
 
 import { AddService } from '../add-component/add.service';
 import { ButtonUploaderComponent } from './button-uploader.component';
@@ -43,7 +43,7 @@ import { InputComponent } from './input.component';
         [color]="'accent'"
         [asIcon]="true"
         [label]="'Upload bundles'"
-        (click)="Event.stopPropagation($event)"
+        (click)="EventHelper.stopPropagation($event)"
         (output)="upload($event)"
       ></app-button-uploader>
     </div>
@@ -51,7 +51,7 @@ import { InputComponent } from './input.component';
   styles: ['.row { align-items: center;display:flex; }', 'mat-form-field {flex: 1}'],
 })
 export class BundlesComponent extends InputComponent implements OnInit {
-  Event = Event;
+  EventHelper = EventHelper;
 
   @Input() typeName: 'cluster' | 'provider';
   @ViewChild('uploadBtn', { static: true }) uploadBtn: ButtonUploaderComponent;

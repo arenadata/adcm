@@ -1,5 +1,5 @@
-import { Component, Input, OnInit } from '@angular/core';
-import { Event } from '@adwp-ui/widgets';
+import { Component, Input } from '@angular/core';
+import { EventHelper } from '@adwp-ui/widgets';
 
 import { isIssue, Issue } from '@app/core/types';
 
@@ -8,16 +8,11 @@ import { isIssue, Issue } from '@app/core/types';
   templateUrl: './actions-column.component.html',
   styleUrls: ['./actions-column.component.scss']
 })
-export class ActionsColumnComponent<T> implements OnInit {
+export class ActionsColumnComponent<T> {
 
-  Event = Event;
+  EventHelper = EventHelper;
 
   @Input() row: T;
-
-  constructor() { }
-
-  ngOnInit(): void {
-  }
 
   notIssue(issue: Issue): boolean {
     return !isIssue(issue);

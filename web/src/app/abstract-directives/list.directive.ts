@@ -6,13 +6,15 @@ import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort, Sort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatDialog } from '@angular/material/dialog';
-import { Event } from '@adwp-ui/widgets';
+import { EventHelper } from '@adwp-ui/widgets';
 
 import { EmmitRow, TypeName } from '@app/core/types';
 import { BaseListDirective } from '@app/shared/components/list/base-list.directive';
 import { SocketState } from '@app/core/store';
 import { ListService } from '@app/shared/components/list/list.service';
 import { DialogComponent } from '@app/shared';
+import { StatusData } from '@app/components/columns/status-column/status-column.component';
+import { ICluster } from '@app/models/cluster';
 
 enum Direction {
   '' = '',
@@ -72,7 +74,7 @@ export abstract class ListDirective implements OnInit, OnDestroy {
   }
 
   clickCell($e: MouseEvent, cmd?: string, row?: any, item?: any) {
-    Event.stopPropagation($e);
+    EventHelper.stopPropagation($e);
     this.current = row;
     this.listItemEvt.emit({ cmd, row, item });
   }
@@ -88,7 +90,7 @@ export abstract class ListDirective implements OnInit, OnDestroy {
   }
 
   delete($event: MouseEvent, row: any) {
-    Event.stopPropagation($event);
+    EventHelper.stopPropagation($event);
     this.dialog
       .open(DialogComponent, {
         data: {
@@ -166,6 +168,10 @@ export abstract class ListDirective implements OnInit, OnDestroy {
     this.router.navigate(['./', { page: pageEvent.pageIndex, limit: pageEvent.pageSize, filter: f, ordering }], {
       relativeTo: this.route,
     });
+  }
+
+  gotoStatus(data: StatusData<ICluster>) {
+    this.clickCell(data.event, data.action, data.row);
   }
 
 }

@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Directive, ElementRef, HostListener, Input } from '@angular/core';
-import { Event } from '@adwp-ui/widgets';
+import { EventHelper } from '@adwp-ui/widgets';
 
 import { ApiBase } from '@app/core/types/api';
 import { ComponentName, PositionType, TooltipService } from '../tooltip/tooltip.service';
@@ -34,7 +34,7 @@ export class TooltipDirective {
   constructor(private el: ElementRef, private tooltip: TooltipService) {}
 
   @HostListener('mouseenter', ['$event']) menter(e: MouseEvent) {
-    Event.stopPropagation(e);
+    EventHelper.stopPropagation(e);
     const options = {
       content: this.appTooltip,
       componentName: this.appTooltipComponent,

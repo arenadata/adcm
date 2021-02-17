@@ -17,10 +17,7 @@ export class StatusColumnComponent<T> {
 
   @Output() onClick = new EventEmitter<StatusData<T>>();
 
-  constructor() { }
-
   clickCell(event: MouseEvent, action: string, row: T): void {
-    console.log(event, action, row);
     this.onClick.emit({ event, action, row });
   }
 

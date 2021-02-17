@@ -11,7 +11,7 @@
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { IColumn, IListResult, Paging, RowEventData } from '@adwp-ui/widgets';
+import { IColumns, IListResult, Paging, RowEventData, EventHelper } from '@adwp-ui/widgets';
 import { Sort } from '@angular/material/sort';
 import { PageEvent } from '@angular/material/paginator';
 
@@ -90,6 +90,12 @@ export class ClusterListComponent extends ListDirective implements OnInit {
       className: 'list-control',
       headerClassName: 'list-control',
       component: StatusColumnComponent,
+      componentEvents: {
+        onClick: (data) => {
+          EventHelper.stopPropagation(data.event);
+          this.gotoStatus(data);
+        },
+      }
     },
     {
       label: 'Actions',
@@ -134,7 +140,7 @@ export class ClusterListComponent extends ListDirective implements OnInit {
         callback: (row, event) => this.delete(event, row),
       }]
     },
-  ] as IColumn<ICluster>;
+  ] as IColumns<ICluster>;
 
   paging: BehaviorSubject<Paging> = new BehaviorSubject<Paging>(null);
   sorting: BehaviorSubject<Sort> = new BehaviorSubject<Sort>(null);

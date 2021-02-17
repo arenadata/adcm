@@ -16,10 +16,8 @@ import { MatPaginator } from '@angular/material/paginator';
 import { MatSort, MatSortHeader, Sort } from '@angular/material/sort';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
-import { Event } from '@adwp-ui/widgets';
+import { EventHelper } from '@adwp-ui/widgets';
 
-import { StatusData } from '@app/components/columns/status-column/status-column.component';
-import { ICluster } from '@app/models/cluster';
 import { ListDirective } from '@app/abstract-directives/list.directive';
 import { ListService } from '@app/shared/components/list/list.service';
 import { Store } from '@ngrx/store';
@@ -39,7 +37,7 @@ export interface ListResult<T> {
   styleUrls: ['./list.component.scss'],
 })
 export class ListComponent extends ListDirective implements OnInit, OnDestroy {
-  Event = Event;
+  EventHelper = EventHelper;
 
   selection = new SelectionModel(true, []);
 
@@ -89,10 +87,6 @@ export class ListComponent extends ListDirective implements OnInit, OnDestroy {
   /** Selects all rows if they are not all selected; otherwise clear selection. */
   masterToggle() {
     this.isAllSelected() ? this.selection.clear() : this.data.data.forEach((row) => this.selection.select(row));
-  }
-
-  gotoStatus(data: StatusData<ICluster>) {
-    this.clickCell(data.event, data.action, data.row);
   }
 
 }
