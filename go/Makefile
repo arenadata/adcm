@@ -13,4 +13,4 @@ lint:
 	cd $(ADCM); golangci-lint run
 
 build:
-	cd $(ADCM); go build -o ../bin/runstatus runstatus.go
+	cd $(ADCM); go mod download github.com/bouk/httprouter && go build -o ../bin/runstatus runstatus.go
