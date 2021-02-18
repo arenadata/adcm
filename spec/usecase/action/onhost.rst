@@ -47,7 +47,13 @@ Flow of Events
 #. :term:`End User` goes to installed Cluster "Hosts" page
 #. :term:`End User` see actions available for a host
 #. :term:`End User` choose action provided by :term:`Bundle Developer`
-#. Action executes.
+#. Action executes:
+
+   #. ADCM creates inventory with right context execution context (cluster/service/component)
+   #. ADCM adds "target" group to inventory with the host choosed by :term:`End User`
+
+.. note:: Take a note, that ADCM doesn't restrict :term:`Bundle Developer` with operation on one the host chossed by :term:`End User` only.
+          ADCM just merely pass the ask to playbook over special group in inventory. It is :term:`Bundle Developer` responsibility to care about locality.
 
 User Interface
 --------------
