@@ -6,7 +6,7 @@ import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort, Sort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatDialog } from '@angular/material/dialog';
-import { EventHelper } from '@adwp-ui/widgets';
+import { BaseDirective, EventHelper } from '@adwp-ui/widgets';
 
 import { EmmitRow, TypeName } from '@app/core/types';
 import { BaseListDirective } from '@app/shared/components/list/base-list.directive';
@@ -25,7 +25,7 @@ enum Direction {
 @Directive({
   selector: '[appAbstractList]',
 })
-export abstract class ListDirective implements OnInit, OnDestroy {
+export abstract class ListDirective extends BaseDirective implements OnInit, OnDestroy {
 
   @Input() type: TypeName;
 
@@ -67,7 +67,9 @@ export abstract class ListDirective implements OnInit, OnDestroy {
     public route: ActivatedRoute,
     public router: Router,
     public dialog: MatDialog,
-  ) {}
+  ) {
+    super();
+  }
 
   changeCount(count: number) {
     this.paginator.length = count;
@@ -135,7 +137,6 @@ export abstract class ListDirective implements OnInit, OnDestroy {
   }
 
   getSortParam(a: Sort) {
-    console.log('sort', a);
     const penis: { [key: string]: string[] } = {
       prototype_version: ['prototype_display_name', 'prototype_version'],
     };
@@ -160,7 +161,6 @@ export abstract class ListDirective implements OnInit, OnDestroy {
   }
 
   pageHandler(pageEvent: PageEvent) {
-    console.log(this.sort);
     this.pageEvent.emit(pageEvent);
     localStorage.setItem('limit', String(pageEvent.pageSize));
     const f = this.route.snapshot.paramMap.get('filter') || '';

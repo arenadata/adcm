@@ -168,7 +168,6 @@ export class BaseListDirective {
 
     this.row = event.row;
     const { cmd, item } = event;
-    console.log(event);
 
     if (['title', 'status', 'config', 'import'].includes(cmd)) {
       nav(cmd === 'title' ? [] : [cmd]);

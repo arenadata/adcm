@@ -9,9 +9,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit } from '@angular/core';
+import { Component, ComponentRef, OnInit } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { IColumns, IListResult, Paging, RowEventData, EventHelper } from '@adwp-ui/widgets';
+import { IColumns, IListResult, Paging, RowEventData } from '@adwp-ui/widgets';
 import { Sort } from '@angular/material/sort';
 import { PageEvent } from '@angular/material/paginator';
 
@@ -41,6 +41,7 @@ import { AdwpBaseListDirective } from '../../abstract-directives/adwp-base-list.
       [paging]="paging | async"
       [sort]="sorting | async"
       [defaultSort]="defaultSort"
+      [currentId]="current ? current.id : undefined"
       (clickRow)="clickRow($event)"
       (auxclickRow)="auxclickRow($event)"
       (changePaging)="onChangePaging($event)"
@@ -90,11 +91,10 @@ export class ClusterListComponent extends ListDirective implements OnInit {
       className: 'list-control',
       headerClassName: 'list-control',
       component: StatusColumnComponent,
-      componentEvents: {
-        onClick: (data) => {
-          EventHelper.stopPropagation(data.event);
-          this.gotoStatus(data);
-        },
+      instanceTaken: (componentRef: ComponentRef<StatusColumnComponent<ICluster>>) => {
+        componentRef.instance.onClick
+          .pipe(this.takeUntil())
+          .subscribe((data) => this.gotoStatus(data));
       }
     },
     {
@@ -166,9 +166,7 @@ export class ClusterListComponent extends ListDirective implements OnInit {
     this.clickCell(data.event, 'new-tab', data.row);
   }
 
-  changeCount(count: number) {
-    console.log('Change count', count);
-  }
+  changeCount(count: number) {}
 
   getPageIndex(): number {
     return this.paging.value.pageIndex - 1;
@@ -191,7 +189,6 @@ export class ClusterListComponent extends ListDirective implements OnInit {
 
   onChangeSort(sort: Sort): void {
     this.sorting.next(sort);
-    console.log('current', sort);
     this.changeSorting(sort);
   }
 
