@@ -189,15 +189,14 @@ Cluster Action on Host
           constraint: [0,+]
 
 2. :term:`End User` installs cluster from this :term:`Bundle`
-3. :term:`End User` adds service
-4. :term:`End User` adds hosts
-5. :term:`End User` sees the action "Restart Application" on the host
-6. :term:`End User` runs the action
+3. :term:`End User` adds hosts
+4. :term:`End User` sees the action "Restart Application" on the host
+5. :term:`End User` runs the action
 
 Exceptions
 ~~~~~~~~~~
 
-5. Cluster "My Supper Cluster" is not in state "somestate"
+4. Cluster "My Supper Cluster" is not in state "somestate"
 
    a. :term:`End User` sees no action "Restart Application"
    b. The End
