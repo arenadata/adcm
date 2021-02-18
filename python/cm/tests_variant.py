@@ -13,7 +13,7 @@
 from django.test import TestCase
 
 from cm.api import add_host, add_host_to_cluster, add_host_provider
-from cm.variant import get_variant,variant_host
+from cm.variant import get_variant, variant_host, var_host_solver, VARIANT_HOST_FUNC
 from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject, ServiceComponent, HostComponent
 from cm.models import Bundle, Prototype
@@ -115,9 +115,73 @@ class TestVariantBuiltIn(TestCase):
 class TestVariantHost(TestCase):
     add_hc = HostComponent.objects.create
 
+    def test_solver(self):
+        cls = cook_cluster()
+        try:
+            self.assertEqual(variant_host(cls, {'any': 'dict'}), {'any': 'dict'})
+        except AdcmEx as e:
+            self.assertEqual(e.msg, 'no "predicate" key in variant host function arguments')
+        try:
+            self.assertEqual(variant_host(cls, {}), {})
+        except AdcmEx as e:
+            self.assertEqual(e.msg, 'no "predicate" key in variant host function arguments')
+        try:
+            self.assertEqual(variant_host(cls, []), [])
+        except AdcmEx as e:
+            self.assertEqual(e.msg, 'arguments of variant host function should be a map')
+        try:
+            variant_host(cls, 42)
+        except AdcmEx as e:
+            self.assertEqual(e.msg, 'arguments of variant host function should be a map')
+        try:
+            variant_host(cls, 'qwe')
+        except AdcmEx as e:
+            self.assertEqual(e.msg, 'arguments of variant host function should be a map')
+        try:
+            variant_host(cls, {'predicate': 'qwe'})
+        except AdcmEx as e:
+            self.assertEqual(e.msg, 'no "qwe" in list of host functions')
+        try:
+            variant_host(cls, {'predicate': 'inline_list'})
+        except AdcmEx as e:
+            self.assertEqual(e.msg, 'no "args" key in solver args')
+        try:
+            var_host_solver(cls, VARIANT_HOST_FUNC, [{"qwe": 1}])
+        except AdcmEx as e:
+            self.assertEqual(e.msg, 'no "predicate" key in solver args')
+        try:
+            var_host_solver(cls, VARIANT_HOST_FUNC, [{"predicate": 'qwe'}])
+        except AdcmEx as e:
+            self.assertEqual(e.msg, 'no "args" key in solver args')
+        try:
+            var_host_solver(cls, VARIANT_HOST_FUNC, [{"predicate": 'qwe', 'args': {}}])
+        except AdcmEx as e:
+            self.assertEqual(e.msg, 'no "qwe" in list of host functions')
+
+        args = {'predicate': 'inline_list', 'args': {'list': [1, 2, 3]}}
+        self.assertEqual(variant_host(cls, args), [1, 2, 3])
+        args = {'predicate': 'and', 'args': [
+            {'predicate': 'inline_list', 'args': {'list': [1, 2, 3]}},
+            {'predicate': 'inline_list', 'args': {'list': [2, 3, 4]}},
+        ]}
+        self.assertEqual(variant_host(cls, args), [2, 3])
+        args = {'predicate': 'or', 'args': [
+            {'predicate': 'inline_list', 'args': {'list': [1, 2, 3]}},
+            {'predicate': 'inline_list', 'args': {'list': [2, 3, 4]}},
+        ]}
+        self.assertEqual(variant_host(cls, args), [1, 2, 3, 4])
+        args = {'predicate': 'or', 'args': [
+            {'predicate': 'inline_list', 'args': {'list': [1, 2, 3]}},
+        ]}
+        self.assertEqual(variant_host(cls, args), [1, 2, 3])
+
     def test_no_host_in_cluster(self):
         cls = cook_cluster()
-        hosts = variant_host(cls, {'in_cluster': None})
+        hosts = variant_host(cls, {'predicate': 'in_cluster', 'args': None})
+        self.assertEqual(hosts, [])
+        hosts = variant_host(cls, {'predicate': 'in_cluster', 'args': []})
+        self.assertEqual(hosts, [])
+        hosts = variant_host(cls, {'predicate': 'in_cluster', 'args': {}})
         self.assertEqual(hosts, [])
 
     def test_host_in_cluster(self):
@@ -125,52 +189,8 @@ class TestVariantHost(TestCase):
         provider, hp = cook_provider()
         h1 = add_host(hp, provider, 'h10')
         add_host_to_cluster(cls, h1)
-        hosts = variant_host(cls, {'in_cluster': []})
+        hosts = variant_host(cls, {'predicate': 'in_cluster', 'args': []})
         self.assertEqual(hosts, ['h10'])
-
-    def test_tuple(self):
-        cls = cook_cluster()
-        cook_service(cls)
-        try:
-            variant_host(cls, {'in_service': 123})
-        except AdcmEx as e:
-            self.assertEqual(e.msg, 'arguments of "in_service" predicate should be a list')
-        try:
-            variant_host(cls, {'in_service': {}})
-        except AdcmEx as e:
-            self.assertEqual(e.msg, 'arguments of "in_service" predicate should be a list')
-        try:
-            variant_host(cls, {'in_service': [123]})
-        except AdcmEx as e:
-            self.assertEqual(e.msg, 'tuple item of predicate "in_service" shoud be a map')
-        try:
-            variant_host(cls, {'in_service': [{}]})
-        except AdcmEx as e:
-            self.assertEqual(e.msg, 'no "tuple" key in predicate "in_service" arguments')
-        try:
-            variant_host(cls, {'in_service': [{'tuple': 123}]})
-        except AdcmEx as e:
-            self.assertEqual(e.msg, 'value of tuple of predicate "in_service" shoud be a list')
-        try:
-            variant_host(cls, {'in_service': [{'tuple': []}]})
-        except AdcmEx as e:
-            self.assertEqual(e.msg, 'wrong number of items in tuple for predicate "in_service"')
-        try:
-            variant_host(cls, {'in_service': [{'tuple': [1]}]})
-        except AdcmEx as e:
-            self.assertEqual(e.msg, 'wrong number of items in tuple for predicate "in_service"')
-        try:
-            variant_host(cls, {'in_service': [{'tuple': [1, 2, 3]}]})
-        except AdcmEx as e:
-            self.assertEqual(e.msg, 'wrong number of items in tuple for predicate "in_service"')
-        try:
-            variant_host(cls, {'in_service': [{'tuple': [1, 2]}]})
-        except AdcmEx as e:
-            self.assertEqual(e.msg, 'no "service" tuple for predicate "in_service"')
-        hosts = variant_host(
-            cls, {'in_service': [{'tuple': ['service', 'UBER']}]}
-        )
-        self.assertEqual(hosts, [])
 
     def test_host_in_service(self):
         cls = cook_cluster()
@@ -181,14 +201,14 @@ class TestVariantHost(TestCase):
         add_host_to_cluster(cls, h1)
         self.add_hc(cluster=cls, service=service, component=comp, host=h1)
         try:
-            variant_host(cls, {'in_service': [{'tuple': [1, 2]}]})
+            variant_host(cls, {'predicate': 'in_service', 'args': {}})
         except AdcmEx as e:
             self.assertEqual(e.msg, 'no "service" tuple for predicate "in_service"')
         try:
-            variant_host(cls, {'in_service': [{'tuple': ['service', 'qwe']}]})
+            variant_host(cls, {'predicate': 'in_service', 'args': {'service': 'qwe'}})
         except AdcmEx as e:
             self.assertEqual(e.msg, 'service "qwe" is not found')
-        args = {'in_service': [{'tuple': ['service', 'UBER']}]}
+        args = {'predicate': 'in_service', 'args': {'service': 'UBER'}}
         hosts = variant_host(cls, args)
         self.assertEqual(hosts, ['h10'])
 
@@ -205,23 +225,33 @@ class TestVariantHost(TestCase):
         self.add_hc(cluster=cls, service=service, component=comp1, host=h1)
         self.add_hc(cluster=cls, service=service, component=comp2, host=h2)
         try:
-            variant_host(cls, {'in_component': [{'tuple': [1, 2]}]})
+            variant_host(cls, {'predicate': 'in_component'})
+        except AdcmEx as e:
+            self.assertEqual(e.msg, 'no "args" key in solver args')
+        try:
+            variant_host(cls, {'predicate': 'in_component', 'args': 123})
+        except AdcmEx as e:
+            self.assertEqual(e.msg, 'arguments of solver should be a list or a map')
+        try:
+            variant_host(cls, {'predicate': 'in_component', 'args': []})
         except AdcmEx as e:
             self.assertEqual(e.msg, 'no "service" tuple for predicate "in_component"')
         try:
-            variant_host(cls, {'in_component': [{'tuple': ['service', 'qwe']}]})
+            variant_host(cls, {'predicate': 'in_component', 'args': {'service': 'qwe'}})
         except AdcmEx as e:
             self.assertEqual(e.msg, 'no "component" tuple for predicate "in_component"')
         try:
-            args = {'in_component': [{'tuple': ['service', 'x']}, {'tuple': ['component', 'z']}]}
+            args = {'predicate': 'in_component', 'args': {'service': 'qwe', 'component': 'asd'}}
             variant_host(cls, args)
         except AdcmEx as e:
-            self.assertEqual(e.msg, 'service "x" is not found')
+            self.assertEqual(e.msg, 'service "qwe" is not found')
         try:
-            args = {'in_component': [{'tuple': ['service', 'UBER']}, {'tuple': ['component', 'z']}]}
+            args = {'predicate': 'in_component', 'args': {'service': 'UBER', 'component': 'asd'}}
+            variant_host(cls, args)
         except AdcmEx as e:
-            self.assertEqual(e.msg, 'service "x" is not found')
-        args = {'in_component': [{'tuple': ['service', 'UBER']}, {'tuple': ['component', 'Node']}]}
+            self.assertEqual(e.msg, 'component "asd" is not found')
+
+        args = {'predicate': 'in_component', 'args': {'service': 'UBER', 'component': 'Node'}}
         hosts = variant_host(cls, args)
         self.assertEqual(hosts, ['h11'])
 
@@ -241,28 +271,26 @@ class TestVariantHost(TestCase):
         self.add_hc(cluster=cls, service=service, component=comp2, host=h2)
         self.add_hc(cluster=cls, service=service, component=comp2, host=h3)
         try:
-            variant_host(cls, {'and': 123})
+            variant_host(cls, {'predicate': 'and', 'args': 123})
         except AdcmEx as e:
-            self.assertEqual(e.msg, 'arguments of "and" predicate should be a list')
+            self.assertEqual(e.msg, 'arguments of solver should be a list or a map')
         try:
-            variant_host(cls, {'and': [123]})
+            variant_host(cls, {'predicate': 'and', 'args': [123]})
         except AdcmEx as e:
-            self.assertEqual(e.msg, 'arguments of process_args should be a map')
+            self.assertEqual(e.msg, 'predicte item should be a map')
         try:
-            variant_host(cls, {'and': [{"qwe": 123}]})
+            args = {'predicate': 'and', 'args': [{'predicate': 'qwe', 'args': 123}]}
+            variant_host(cls, args)
         except AdcmEx as e:
             self.assertEqual(e.msg, 'no "qwe" in list of host functions')
-        self.assertEqual(variant_host(cls, {'and': []}), [])
+        self.assertEqual(variant_host(cls, {'predicate': 'and', 'args': []}), [])
         args = {
-            'and': [
-                {'in_service': [{'tuple': ['service', 'UBER']}]},
-                {'in_component': [
-                    {'tuple': ['service', 'UBER']},
-                    {'tuple': ['component', 'Node']}
-                ]},
+            'predicate': 'and', 'args': [
+                {'predicate': 'in_service', 'args': {'service': 'UBER'}},
+                {'predicate': 'in_component', 'args': {'service': 'UBER', 'component': 'Node'}},
         ]}
         hosts = variant_host(cls, args)
-        self.assertEqual(hosts, {'h11', 'h12'})
+        self.assertEqual(hosts, ['h11', 'h12'])
 
     def test_host_or(self):
         cls = cook_cluster()
@@ -281,28 +309,37 @@ class TestVariantHost(TestCase):
         self.add_hc(cluster=cls, service=service, component=comp2, host=h2)
         self.add_hc(cluster=cls, service=service, component=comp3, host=h3)
         try:
-            variant_host(cls, {'or': 123})
+            variant_host(cls, {'predicate': 'or', 'args': 123})
         except AdcmEx as e:
-            self.assertEqual(e.msg, 'arguments of "or" predicate should be a list')
+            self.assertEqual(e.msg, 'arguments of solver should be a list or a map')
         try:
-            variant_host(cls, {'or': [123]})
+            variant_host(cls, {'predicate': 'or', 'args': [123]})
         except AdcmEx as e:
-            self.assertEqual(e.msg, 'arguments of process_args should be a map')
+            self.assertEqual(e.msg, 'predicte item should be a map')
         try:
-            variant_host(cls, {'or': [{"qwe": 123}]})
+            variant_host(cls, {'predicate': 'or', 'args': [{"qwe": 123}]})
+        except AdcmEx as e:
+            self.assertEqual(e.msg, 'no "predicate" key in solver args')
+        try:
+            variant_host(cls, {'predicate': 'or', 'args': [{'predicate': 'qwe'}]})
+        except AdcmEx as e:
+            self.assertEqual(e.msg, 'no "args" key in solver args')
+        try:
+            args = {'predicate': 'or', 'args': [{'predicate': 'qwe', 'args': 123}]}
+            variant_host(cls, args)
         except AdcmEx as e:
             self.assertEqual(e.msg, 'no "qwe" in list of host functions')
-        self.assertEqual(variant_host(cls, {'or': []}), [])
+        self.assertEqual(variant_host(cls, {'predicate': 'or', 'args': []}), [])
         args = {
-            'or': [
-                {'in_component': [
-                    {'tuple': ['service', 'UBER']},
-                    {'tuple': ['component', 'Server']}
-                ]},
-                {'in_component': [
-                    {'tuple': ['service', 'UBER']},
-                    {'tuple': ['component', 'Secondary']}
-                ]},
-        ]}
+            'predicate': 'or', 'args': [
+                {'predicate': 'in_component', 'args': {
+                    'service': 'UBER',
+                    'component': 'Server',
+                }},
+                {'predicate': 'in_component', 'args': {
+                    'service': 'UBER',
+                    'component': 'Secondary',
+                }},
+            ]}
         hosts = variant_host(cls, args)
-        self.assertEqual(hosts, {'h10', 'h12'})
+        self.assertEqual(hosts, ['h10', 'h12'])
