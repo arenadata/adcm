@@ -15,17 +15,17 @@
 # pylint: disable=E0401, E0611, W0611, W0621
 
 import os
+
+import allure
+from adcm_client.wrappers.docker import ADCM
 from selenium import webdriver
 from selenium.webdriver import (ChromeOptions, FirefoxOptions)
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
-from selenium.webdriver.common.keys import Keys
 
 from tests.library import steps
 from tests.ui_tests.app.pages import Ui, ClustersList
-from tests.ui_tests.app.helpers import urls
-
-from adcm_client.wrappers.docker import ADCM
 
 
 class ADCMTest:
@@ -69,14 +69,12 @@ class ADCMTest:
         self.driver.implicitly_wait(1)
         self.ui = Ui(self.driver)
 
+    @allure.step('Attache ADCM')
     def attache_adcm(self, adcm: ADCM):
         self.adcm = adcm
         self._client = adcm.api.objects
 
-    def navigate_to(self, page: urls):
-        self.driver.get(page)
-        # return ?Page()
-
+    @allure.step('Get Clusters List')
     def clusters_page(self):
         return ClustersList(self)
 
@@ -95,19 +93,24 @@ class ADCMTest:
             return WDW(self.driver, timer).until(condition(el))
         return get_element(locator)
 
+    @allure.step('Wait for element displayed')
     def wait_element_present(self, locator: tuple):
         return self.wait_for(EC.presence_of_element_located, locator)
 
+    @allure.step('Wait for contains url: {url}')
     def contains_url(self, url: str, timer=5):
         return WDW(self.driver, timer).until(EC.url_contains(url))
 
+    @allure.step('Open base page')
     def base_page(self):
         self.driver.get(self.adcm.url)
 
+    @allure.step('Open new tab')
     def new_tab(self):
         body = self.driver.find_element_by_tag_name("body")
         body.send_keys(Keys.CONTROL + 't')
 
+    @allure.step('Close tab')
     def close_tab(self):
         body = self.driver.find_element_by_tag_name("body")
         body.send_keys(Keys.CONTROL + 'w')
