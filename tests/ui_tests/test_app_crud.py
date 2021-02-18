@@ -15,6 +15,7 @@
 import os
 import time
 
+import allure
 import pytest
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.docker_utils import DockerWrapper
@@ -30,8 +31,9 @@ BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
 pytestmark = pytest.mark.skip(reason="It is flaky. Just skip this")
 
 
-@pytest.fixture(scope="function")
-def adcm(image, request, adcm_credentials):
+@pytest.fixture()
+@allure.step('Create cluster and provider')
+def adcm(image, adcm_credentials):
     repo, tag = image
     dw = DockerWrapper()
     adcm = dw.run_adcm(image=repo, tag=tag, pull=False)
@@ -40,12 +42,8 @@ def adcm(image, request, adcm_credentials):
     provider_bundle = os.path.join(DATADIR, 'hostprovider')
     steps.upload_bundle(adcm.api.objects, cluster_bundle)
     steps.upload_bundle(adcm.api.objects, provider_bundle)
-
-    def fin():
-        adcm.stop()
-
-    request.addfinalizer(fin)
-    return adcm
+    yield adcm
+    adcm.stop()
 
 
 @pytest.fixture()
@@ -58,30 +56,33 @@ def app(adcm, request):
 
 
 @pytest.fixture()
+@allure.step('Create cluster')
 def cluster(app):
     return app.create_cluster()
 
 
 @pytest.fixture()
+@allure.step('Create hostprovider')
 def hostprovider(app):
     return app.create_provider()
 
 
 @pytest.fixture()
+@allure.step('Create host')
 def host(app):
     return app.create_host(utils.random_string())
 
 
 @pytest.fixture()
 def data():
-    yield {'name': utils.random_string(),
-           'description': utils.random_string()}
+    return {'name': utils.random_string(), 'description': utils.random_string()}
 
 
 def test_run_app(app, adcm_credentials):
     app.contains_url('/login')
     app.ui.session.login(**adcm_credentials)
-    assert app.contains_url('/admin')
+    with allure.step('Check that login successful'):
+        assert app.contains_url('/admin')
 
 
 def test_cluster_creation(app, data, adcm_credentials):
