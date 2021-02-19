@@ -27,7 +27,7 @@ from django.db import transaction
 from django.utils import timezone
 
 import cm.config as config
-from cm import api, issue, inventory, adcm_config
+from cm import api, issue, inventory, adcm_config, variant
 from cm.adcm_config import obj_ref, process_file_type
 from cm.errors import raise_AdcmEx as err
 from cm.inventory import get_obj_config, process_config_and_attr
@@ -330,7 +330,7 @@ def check_action_config(action, obj, conf, attr):
         cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
         obj_conf = cl.config
     adcm_config.check_attr(proto, attr, flat_spec)
-    adcm_config.process_variant(obj, spec, obj_conf)
+    variant.process_variant(obj, spec, obj_conf)
     new_conf = adcm_config.check_config_spec(proto, action, spec, flat_spec, conf, None, attr)
     return new_conf, spec
 
