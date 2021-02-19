@@ -49,15 +49,21 @@
 </ng-template>
 
 <ng-template #controls let-value="value">
-  <div class="controls">
-    <ng-container *ngIf="model.actions.length > 1">
-      <button mat-raised-button color="primary" (click)="action = null">Back</button>
-      <span [style.flex]="1"></span>
-    </ng-container>
+  <div class="controls-container">
 
-    <button mat-raised-button (click)="cancel()" color="primary" tabindex="-1">Cancel</button>
-    <button mat-raised-button #runBtn (click)="run(value)" color="accent" [disabled]="isDisabled(value)" tabindex="1">
-      Run
-    </button>
+    <mat-checkbox [(ngModel)]="verbose">Verbose</mat-checkbox>
+
+    <div class="controls">
+      <ng-container *ngIf="model.actions.length > 1">
+        <button mat-raised-button color="primary" (click)="action = null">Back</button>
+        <span [style.flex]="1"></span>
+      </ng-container>
+
+      <button mat-raised-button (click)="cancel()" color="primary" tabindex="-1">Cancel</button>
+      <button mat-raised-button #runBtn (click)="run(value)" color="accent" [disabled]="isDisabled(value)" tabindex="1">
+        Run
+      </button>
+    </div>
+
   </div>
 </ng-template>

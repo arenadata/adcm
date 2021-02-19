@@ -40,7 +40,7 @@ from cm.models import (
 from cm.status_api import Event, post_event
 
 
-def start_task(action_id, selector, conf, attr, hc, hosts):   # pylint: disable=too-many-locals
+def start_task(action_id, selector, conf, attr, hc, hosts, verbose):   # pylint: disable=too-many-locals
     try:
         action = Action.objects.get(id=action_id)
     except Action.DoesNotExist:
@@ -58,7 +58,8 @@ def start_task(action_id, selector, conf, attr, hc, hosts):   # pylint: disable=
 
     event = Event()
     task = prepare_task(
-        action, obj, selector, act_conf, attr, spec, old_hc, delta, host_map, cluster, hosts, event
+        action, obj, selector, act_conf, attr, spec, old_hc, delta, host_map, cluster, hosts,
+        event, verbose
     )
     event.send_state()
     run_task(task, event)
@@ -98,17 +99,24 @@ def check_action_hosts(action, cluster, provider, hosts):
 
 
 @transaction.atomic
-def prepare_task(action, obj, selector, conf, attr, spec, old_hc, delta, host_map, cluster,
-                 hosts, event):
+def prepare_task(action, obj, selector, conf, attr, spec, old_hc, delta, host_map, cluster,   # pylint: disable=too-many-locals
+                 hosts, event, verbose):
     lock_objects(obj, event)
+
+    if not attr:
+        attr = {}
 
     if host_map:
         api.save_hc(cluster, host_map)
 
     if action.type == 'task':
-        task = create_task(action, selector, obj, conf, attr, old_hc, delta, hosts, event)
+        task = create_task(
+            action, selector, obj, conf, attr, old_hc, delta, hosts, event, verbose
+        )
     else:
-        task = create_one_job_task(action, selector, obj, conf, attr, old_hc, hosts, event)
+        task = create_one_job_task(
+            action, selector, obj, conf, attr, old_hc, hosts, event, verbose
+        )
         _job = create_job(action, None, selector, event, task.id)
 
     if conf:
@@ -515,7 +523,7 @@ def get_old_hc(saved_hc):
         service = ClusterObject.objects.get(id=hc['service_id'])
         comp = ServiceComponent.objects.get(id=hc['component_id'])
         host = Host.objects.get(id=hc['host_id'])
-        key = cook_comp_key(service.prototype.name, comp.component.name)
+        key = cook_comp_key(service.prototype.name, comp.prototype.name)
         add_to_dict(old_hc, key, host.fqdn, host)
     return old_hc
 
@@ -538,11 +546,11 @@ def re_prepare_job(task, job):
         new_hc = get_new_hc(cluster)
         old_hc = get_old_hc(task.hostcomponentmap)
         delta = cook_delta(cluster, new_hc, action.hostcomponentmap, old_hc)
-    prepare_job(action, sub_action, selector, job.id, obj, conf, delta, hosts)
+    prepare_job(action, sub_action, selector, job.id, obj, conf, delta, hosts, task.verbose)
 
 
-def prepare_job(action, sub_action, selector, job_id, obj, conf, delta, hosts):
-    prepare_job_config(action, sub_action, selector, job_id, obj, conf)
+def prepare_job(action, sub_action, selector, job_id, obj, conf, delta, hosts, verbose):
+    prepare_job_config(action, sub_action, selector, job_id, obj, conf, verbose)
     inventory.prepare_job_inventory(selector, job_id, delta, hosts)
     prepare_ansible_config(job_id, action, sub_action)
 
@@ -570,7 +578,7 @@ def prepare_context(selector):
     return context
 
 
-def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
+def prepare_job_config(action, sub_action, selector, job_id, obj, conf, verbose):
     job_conf = {
         'adcm': {'config': get_adcm_config()},
         'context': prepare_context(selector),
@@ -587,6 +595,7 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
             'job_name': action.name,
             'command': action.name,
             'script': action.script,
+            'verbose': verbose,
             'playbook': cook_script(action, sub_action)
         },
     }
@@ -636,14 +645,14 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
     fd.close()
 
 
-def create_task(action, selector, obj, conf, attr, hc, delta, hosts, event):
-    task = create_one_job_task(action, selector, obj, conf, attr, hc, hosts, event)
+def create_task(action, selector, obj, conf, attr, hc, delta, hosts, event, verbose):
+    task = create_one_job_task(action, selector, obj, conf, attr, hc, hosts, event, verbose)
     for sub in SubAction.objects.filter(action=action):
         _job = create_job(action, sub, selector, event, task.id)
     return task
 
 
-def create_one_job_task(action, selector, obj, conf, attr, hc, hosts, event):
+def create_one_job_task(action, selector, obj, conf, attr, hc, hosts, event, verbose):
     task = TaskLog(
         action_id=action.id,
         object_id=obj.id,
@@ -652,6 +661,7 @@ def create_one_job_task(action, selector, obj, conf, attr, hc, hosts, event):
         attr=attr,
         hostcomponentmap=hc,
         hosts=hosts,
+        verbose=verbose,
         start_date=timezone.now(),
         finish_date=timezone.now(),
         status=config.Job.CREATED,

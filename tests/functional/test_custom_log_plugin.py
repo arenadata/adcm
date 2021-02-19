@@ -1,4 +1,16 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 # pylint: disable=W0611, W0621
+import allure
 import pytest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
@@ -16,10 +28,13 @@ def test_required_fields(sdk_client_fs: ADCMClient, bundle):
     cluster = bundle.cluster_create(utils.random_string())
     task = cluster.action_run(name='custom_log')
     task.wait()
-    assert task.status == 'failed', "Current job status {}. Expected: failed".format(task.status)
-    job = task.job()
-    logs = job.log_list()
-    assert len(logs) == 2, "Logs count not equal 2, current log count {}".format(len(logs))
+    with allure.step('Check job state'):
+        assert task.status == 'failed', "Current job status {}. " \
+                                        "Expected: failed".format(task.status)
+    with allure.step('Check if logs are equal 2'):
+        job = task.job()
+        logs = job.log_list()
+        assert len(logs) == 2, "Logs count not equal 2, current log count {}".format(len(logs))
 
 
 @pytest.mark.parametrize("bundle", FORMAT_STORAGE)
@@ -32,14 +47,16 @@ def test_different_storage_types_with_format(sdk_client_fs: ADCMClient, bundle):
     cluster = bundle.cluster_create(utils.random_string())
     task = cluster.action_run(name='custom_log')
     task.wait()
-    job = task.job()
-    logs = job.log_list()
-    log = job.log(job_id=job.id, log_id=logs[2].id)
-    assert len(logs) == 3, "Logs count {}. Expected 3".format(len(logs))
-    assert job.status == 'success', "Current job status {}. Expected: success".format(job.status)
-    err_msg = "Expected log format {}. Actual log format {}".format(log_format, log.format)
-    assert log.format == log_format, err_msg
-    assert log.type == 'custom'
+    with allure.step('Check if logs are equal 3, job state and logs'):
+        job = task.job()
+        logs = job.log_list()
+        log = job.log(job_id=job.id, log_id=logs[2].id)
+        assert len(logs) == 3, "Logs count {}. Expected 3".format(len(logs))
+        assert job.status == 'success', "Current job status {}. " \
+                                        "Expected: success".format(job.status)
+        err_msg = "Expected log format {}. Actual log format {}".format(log_format, log.format)
+        assert log.format == log_format, err_msg
+        assert log.type == 'custom'
 
 
 def test_path_and_content(sdk_client_fs: ADCMClient):
@@ -50,11 +67,12 @@ def test_path_and_content(sdk_client_fs: ADCMClient):
     cluster = bundle.cluster_create(utils.random_string())
     task = cluster.action_run(name='custom_log')
     task.wait()
-    job = task.job()
-    logs = job.log_list()
-    log = job.log(job_id=job.id, log_id=logs[2].id)
-    assert log.content == '{\n    "key": "value"\n}'
-    assert log.format == 'json'
+    with allure.step('Check logs content and format'):
+        job = task.job()
+        logs = job.log_list()
+        log = job.log(job_id=job.id, log_id=logs[2].id)
+        assert log.content == '{\n    "key": "value"\n}'
+        assert log.format == 'json'
 
 
 @pytest.mark.parametrize("bundle", ['equal_pathes', 'equal_names', 'equal_pathes_and_names'])
@@ -66,9 +84,10 @@ def test_multiple_tasks(sdk_client_fs: ADCMClient, bundle):
     cluster = bundle.cluster_create(utils.random_string())
     task = cluster.action_run(name='custom_log')
     task.wait()
-    job = task.job()
-    logs = job.log_list()
-    assert len(logs) == 4, "Expected 4 logs entries, because 2 tasks in playbook"
+    with allure.step('Check 4 logs entries'):
+        job = task.job()
+        logs = job.log_list()
+        assert len(logs) == 4, "Expected 4 logs entries, because 2 tasks in playbook"
 
 
 def test_check_text_file_content(sdk_client_fs: ADCMClient):
@@ -79,11 +98,12 @@ def test_check_text_file_content(sdk_client_fs: ADCMClient):
     cluster = bundle.cluster_create(utils.random_string())
     task = cluster.action_run(name='custom_log')
     task.wait()
-    job = task.job()
-    logs = job.log_list()
-    log = job.log(job_id=job.id, log_id=logs[2].id)
-    assert log.content == 'Hello world!\n'
-    assert log.format == 'txt'
+    with allure.step('Check logs content and format'):
+        job = task.job()
+        logs = job.log_list()
+        log = job.log(job_id=job.id, log_id=logs[2].id)
+        assert log.content == 'Hello world!\n'
+        assert log.format == 'txt'
 
 
 def test_check_text_content(sdk_client_fs: ADCMClient):
@@ -94,10 +114,11 @@ def test_check_text_content(sdk_client_fs: ADCMClient):
     cluster = bundle.cluster_create(utils.random_string())
     task = cluster.action_run(name='custom_log')
     task.wait()
-    job = task.job()
-    logs = job.log_list()
-    log = job.log(job_id=job.id, log_id=logs[2].id)
-    assert log.content == 'shalala'
+    with allure.step('Check logs content'):
+        job = task.job()
+        logs = job.log_list()
+        log = job.log(job_id=job.id, log_id=logs[2].id)
+        assert log.content == 'shalala'
 
 
 def test_check_json_content(sdk_client_fs: ADCMClient):
@@ -108,10 +129,11 @@ def test_check_json_content(sdk_client_fs: ADCMClient):
     cluster = bundle.cluster_create(utils.random_string())
     task = cluster.action_run(name='custom_log')
     task.wait()
-    job = task.job()
-    logs = job.log_list()
-    log = job.log(job_id=job.id, log_id=logs[2].id)
-    assert log.content == '{\n    "hello": "world"\n}'
+    with allure.step('Check logs content'):
+        job = task.job()
+        logs = job.log_list()
+        log = job.log(job_id=job.id, log_id=logs[2].id)
+        assert log.content == '{\n    "hello": "world"\n}'
 
 
 def test_incorrect_syntax_for_fields(sdk_client_fs: ADCMClient):
@@ -122,7 +144,8 @@ def test_incorrect_syntax_for_fields(sdk_client_fs: ADCMClient):
     cluster = bundle.cluster_create(utils.random_string())
     task = cluster.action_run(name='custom_log')
     task.wait()
-    job = task.job()
-    logs = job.log_list()
-    log = job.log(job_id=job.id, log_id=logs[2].id)
-    assert log.content == '{1: "world"}'
+    with allure.step('Check logs content'):
+        job = task.job()
+        logs = job.log_list()
+        log = job.log(job_id=job.id, log_id=logs[2].id)
+        assert log.content == '{1: "world"}'

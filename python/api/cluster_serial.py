@@ -215,13 +215,13 @@ class StatusSerializer(serializers.Serializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data['component'] = instance.component.component.name
-        data['component_display_name'] = instance.component.component.display_name
+        data['component'] = instance.component.prototype.name
+        data['component_display_name'] = instance.component.prototype.display_name
         data['host'] = instance.host.fqdn
         data['service_name'] = instance.service.prototype.name
         data['service_display_name'] = instance.service.prototype.display_name
         data['service_version'] = instance.service.prototype.version
-        data['monitoring'] = instance.component.component.monitoring
+        data['monitoring'] = instance.component.prototype.monitoring
         status = cm.status_api.get_hc_status(instance.host_id, instance.component_id)
         data['status'] = status
         return data
@@ -435,7 +435,7 @@ class HCComponentSerializer(ServiceComponentDetailSerializer):
                     }
                 if comp.name in comp_list[comp.name]['components']:
                     return
-                comp_list[comp.parent.name]['components'][comp.name] = comp
+                comp_list[comp.name]['components'][comp.name] = comp
                 if comp.requires:
                     process_requires(comp.requires)
 
