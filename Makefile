@@ -23,7 +23,7 @@ describe: ## Create .version file with output of describe
 	./gues_version.sh
 
 buildss: ## Build status server
-	@docker run -i --rm -v $(CURDIR)/go:/code -w /code  golang:alpine sh -c "apk --update add make git; make; rm -f /code/adcm/go.sum"
+	@docker run -i --rm -v $(CURDIR)/go:/code -w /code  golang:1.15-alpine sh -c "apk --update add make git && make && rm -f /code/adcm/go.sum"
 
 buildjs: ## Build client side js/html/css in directory wwwroot
 	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:12-alpine ./build.sh

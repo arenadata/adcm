@@ -435,7 +435,7 @@ class HCComponentSerializer(ServiceComponentDetailSerializer):
                     }
                 if comp.name in comp_list[comp.name]['components']:
                     return
-                comp_list[comp.parent.name]['components'][comp.name] = comp
+                comp_list[comp.name]['components'][comp.name] = comp
                 if comp.requires:
                     process_requires(comp.requires)
 
