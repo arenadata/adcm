@@ -45,7 +45,6 @@ def cook_component(cluster, service, name):
     return ServiceComponent.objects.create(cluster=cluster, service=service, prototype=proto)
 
 
-
 class TestVariantInline(TestCase):
     def test_inline(self):
         limits = {"source": {"type": "inline", "value": [1, 2, 3]}}
@@ -87,7 +86,6 @@ class TestVariantBuiltIn(TestCase):
         self.assertEqual(get_variant(cls, None, limits), [])
         limits['source']['args']['service'] = 'UBER'
         self.assertEqual(get_variant(cls, None, limits), ['h11'])
-
 
     def test_host_in_cluster_component(self):
         cls = cook_cluster()
@@ -284,10 +282,9 @@ class TestVariantHost(TestCase):
         except AdcmEx as e:
             self.assertEqual(e.msg, 'no "qwe" in list of host functions')
         self.assertEqual(variant_host(cls, {'predicate': 'and', 'args': []}), [])
-        args = {
-            'predicate': 'and', 'args': [
-                {'predicate': 'in_service', 'args': {'service': 'UBER'}},
-                {'predicate': 'in_component', 'args': {'service': 'UBER', 'component': 'Node'}},
+        args = {'predicate': 'and', 'args': [
+            {'predicate': 'in_service', 'args': {'service': 'UBER'}},
+            {'predicate': 'in_component', 'args': {'service': 'UBER', 'component': 'Node'}},
         ]}
         hosts = variant_host(cls, args)
         self.assertEqual(hosts, ['h11', 'h12'])
@@ -343,3 +340,32 @@ class TestVariantHost(TestCase):
             ]}
         hosts = variant_host(cls, args)
         self.assertEqual(hosts, ['h10', 'h12'])
+
+    def test_host_in_hc(self):
+        cls = cook_cluster()
+        self.assertEqual(variant_host(cls, {'predicate': 'in_hc', 'args': None}), [])
+        service = cook_service(cls)
+        comp1 = cook_component(cls, service, 'Server')
+        provider, hp = cook_provider()
+        h1 = add_host(hp, provider, 'h10')
+        h2 = add_host(hp, provider, 'h11')
+        add_host_to_cluster(cls, h1)
+        add_host_to_cluster(cls, h2)
+        self.assertEqual(variant_host(cls, {'predicate': 'in_hc', 'args': None}), [])
+        self.add_hc(cluster=cls, service=service, component=comp1, host=h2)
+        self.assertEqual(variant_host(cls, {'predicate': 'in_hc', 'args': None}), ['h11'])
+
+    def test_host_not_in_hc(self):
+        cls = cook_cluster()
+        self.assertEqual(variant_host(cls, {'predicate': 'not_in_hc', 'args': None}), [])
+        service = cook_service(cls)
+        comp1 = cook_component(cls, service, 'Server')
+        provider, hp = cook_provider()
+        h1 = add_host(hp, provider, 'h10')
+        h2 = add_host(hp, provider, 'h11')
+        add_host_to_cluster(cls, h1)
+        add_host_to_cluster(cls, h2)
+        hosts = variant_host(cls, {'predicate': 'not_in_hc', 'args': None})
+        self.assertEqual(hosts, ['h10', 'h11'])
+        self.add_hc(cluster=cls, service=service, component=comp1, host=h2)
+        self.assertEqual(variant_host(cls, {'predicate': 'not_in_hc', 'args': None}), ['h10'])

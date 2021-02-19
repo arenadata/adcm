@@ -116,11 +116,29 @@ def var_host_in_component(cluster, args):
     return out
 
 
+def var_host_in_hc(cluster, args):
+    out = []
+    for hc in HostComponent.objects.filter(cluster=cluster).order_by('host__fqdn'):
+        out.append(hc.host.fqdn)
+    return out
+
+
+def var_host_not_in_hc(cluster, args):
+    out = []
+    for host in Host.objects.filter(cluster=cluster).order_by('fqdn'):
+        if HostComponent.objects.filter(cluster=cluster, host=host):
+            continue
+        out.append(host.fqdn)
+    return out
+
+
 def var_host_not_in_component(cluster, args):
     return []
 
+
 def var_host_inline_list(cluster, args):
     return args['list']
+
 
 VARIANT_HOST_FUNC = {
     'and': var_host_and,
@@ -129,6 +147,8 @@ VARIANT_HOST_FUNC = {
     'in_service': var_host_in_service,
     'in_component': var_host_in_component,
     'not_in_component': var_host_not_in_component,
+    'in_hc': var_host_in_hc,
+    'not_in_hc': var_host_not_in_hc,
     'inline_list': var_host_inline_list,
 }
 
@@ -144,7 +164,7 @@ def var_host_solver(cluster, func_map, args):
     if args is None:
         return None
     if isinstance(args, dict):
-        if not 'predicate' in args:
+        if 'predicate' not in args:
             log.debug('QQ solver res1: %s', args)
             return args
         else:
