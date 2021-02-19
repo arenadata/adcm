@@ -693,11 +693,6 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
         if not isinstance(conf['args'], dict):
             msg = 'Config key "{}/{}" of {} "source:args" field should be a map'
             err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
-        allowed_keys = ('service', 'component')
-        check_extra_keys(conf['args'], allowed_keys, f'{ref} config key "{name}/{subname}"')
-        if 'component' in conf['args'] and 'service' not in conf['args']:
-            msg = 'There is no "service" field in source:args config key "{}/{}" of {}'
-            err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
         return conf['args']
 
     def check_variant(conf, name, subname):   # pylint: disable=too-many-branches

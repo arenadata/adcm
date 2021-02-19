@@ -117,7 +117,6 @@ def var_host_in_component(cluster, args):
 
 
 def var_host_not_in_component(cluster, args):
-    log.debug('QQ not_in_component %s', args)
     return []
 
 def var_host_inline_list(cluster, args):
@@ -243,7 +242,6 @@ def get_builtin_variant(obj, func_name, args):
         return VARIANT_FUNCTIONS[func_name](obj, args)
     except AdcmEx as e:
         if e.code == 'CONFIG_VARIANT_ERROR':
-            log.warning('variant builtin error: %s', e)
             return []
         raise e
 
