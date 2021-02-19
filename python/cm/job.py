@@ -523,7 +523,7 @@ def get_old_hc(saved_hc):
         service = ClusterObject.objects.get(id=hc['service_id'])
         comp = ServiceComponent.objects.get(id=hc['component_id'])
         host = Host.objects.get(id=hc['host_id'])
-        key = cook_comp_key(service.prototype.name, comp.component.name)
+        key = cook_comp_key(service.prototype.name, comp.prototype.name)
         add_to_dict(old_hc, key, host.fqdn, host)
     return old_hc
 
