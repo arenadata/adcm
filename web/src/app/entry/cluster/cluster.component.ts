@@ -9,20 +9,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, ComponentRef, OnInit } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
-import { IColumns, IListResult, Paging, RowEventData } from '@adwp-ui/widgets';
-import { Sort } from '@angular/material/sort';
-import { PageEvent } from '@angular/material/paginator';
+import { Component, OnInit } from '@angular/core';
+import { IColumns } from '@adwp-ui/widgets';
 
 import { ICluster } from '@app/models/cluster';
-import { StatusColumnComponent } from '@app/components/columns/status-column/status-column.component';
-import { ActionsColumnComponent } from '@app/components/columns/actions-column/actions-column.component';
-import { StateColumnComponent } from '@app/components/columns/state-column/state-column.component';
 import { UpgradeComponent } from '@app/shared';
-import { ListDirective } from '@app/abstract-directives/list.directive';
-import { Entities, TypeName } from '../../core/types';
-import { AdwpBaseListDirective } from '../../abstract-directives/adwp-base-list.directive';
+import { TypeName } from '@app/core/types';
+import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
+import { ListFactory } from '../../factories/list-factory';
 
 @Component({
   template: `
@@ -52,20 +46,12 @@ import { AdwpBaseListDirective } from '../../abstract-directives/adwp-base-list.
     :host { flex: 1; }
   `],
 })
-export class ClusterListComponent extends ListDirective implements OnInit {
+export class ClusterListComponent extends AdwpListDirective<ICluster> implements OnInit {
 
   type: TypeName = 'cluster';
 
-  data$: BehaviorSubject<IListResult<ICluster>> = new BehaviorSubject(null);
-
-  defaultSort: Sort = { active: 'id', direction: 'desc' };
-
   listColumns = [
-    {
-      label: 'Name',
-      sort: 'name',
-      value: (row) => row.display_name || row.name,
-    },
+    ListFactory.nameColumn(),
     {
       label: 'Bundle',
       sort: 'prototype_version',
@@ -76,44 +62,10 @@ export class ClusterListComponent extends ListDirective implements OnInit {
       sort: 'description',
       value: (row) => row.description,
     },
-    {
-      label: 'State',
-      sort: 'state',
-      type: 'component',
-      className: 'width100',
-      headerClassName: 'width100',
-      component: StateColumnComponent,
-    },
-    {
-      label: 'Status',
-      sort: 'status',
-      type: 'component',
-      className: 'list-control',
-      headerClassName: 'list-control',
-      component: StatusColumnComponent,
-      instanceTaken: (componentRef: ComponentRef<StatusColumnComponent<ICluster>>) => {
-        componentRef.instance.onClick
-          .pipe(this.takeUntil())
-          .subscribe((data) => this.gotoStatus(data));
-      }
-    },
-    {
-      label: 'Actions',
-      type: 'component',
-      className: 'list-control',
-      headerClassName: 'list-control',
-      component: ActionsColumnComponent,
-    },
-    {
-      label: 'Import',
-      type: 'buttons',
-      className: 'list-control',
-      headerClassName: 'list-control',
-      buttons: [{
-        icon: 'import_export',
-        callback: (row) => this.baseListDirective.listEvents({ cmd: 'import', row }),
-      }]
-    },
+    ListFactory.stateColumn(),
+    ListFactory.statusColumn(this.takeUntil.bind(this), this.gotoStatus.bind(this)),
+    ListFactory.actionsColumn(),
+    ListFactory.importColumn(this),
     {
       label: 'Upgrade',
       type: 'component',
@@ -121,16 +73,7 @@ export class ClusterListComponent extends ListDirective implements OnInit {
       headerClassName: 'list-control',
       component: UpgradeComponent,
     },
-    {
-      label: 'Config',
-      type: 'buttons',
-      className: 'list-control',
-      headerClassName: 'list-control',
-      buttons: [{
-        icon: 'settings',
-        callback: (row) => this.baseListDirective.listEvents({ cmd: 'config', row }),
-      }]
-    },
+    ListFactory.configColumn(this),
     {
       type: 'buttons',
       className: 'list-control',
@@ -141,60 +84,6 @@ export class ClusterListComponent extends ListDirective implements OnInit {
       }]
     },
   ] as IColumns<ICluster>;
-
-  paging: BehaviorSubject<Paging> = new BehaviorSubject<Paging>(null);
-  sorting: BehaviorSubject<Sort> = new BehaviorSubject<Sort>(null);
-
-  ngOnInit() {
-    this.baseListDirective = new AdwpBaseListDirective(this, this.service, this.store);
-    this.baseListDirective.typeName = this.type;
-    this.baseListDirective.reload = this.reload.bind(this);
-    (this.baseListDirective as AdwpBaseListDirective).paging = this.paging;
-    (this.baseListDirective as AdwpBaseListDirective).sorting = this.sorting;
-    this.baseListDirective.init();
-  }
-
-  reload(data: IListResult<Entities>) {
-    this.data$.next(data as any);
-  }
-
-  clickRow(data: RowEventData) {
-    this.clickCell(data.event, 'title', data.row);
-  }
-
-  auxclickRow(data: RowEventData) {
-    this.clickCell(data.event, 'new-tab', data.row);
-  }
-
-  changeCount(count: number) {}
-
-  getPageIndex(): number {
-    return this.paging.value.pageIndex - 1;
-  }
-
-  getPageSize(): number {
-    return this.paging.value.pageSize;
-  }
-
-  onChangePaging(paging: Paging): void {
-    this.paging.next(paging);
-
-    const pageEvent = new PageEvent();
-    pageEvent.pageIndex = this.getPageIndex();
-    pageEvent.length = this.data$.value.count;
-    pageEvent.pageSize = this.getPageSize();
-
-    this.pageHandler(pageEvent);
-  }
-
-  onChangeSort(sort: Sort): void {
-    this.sorting.next(sort);
-    this.changeSorting(sort);
-  }
-
-  getSort(): Sort {
-    return this.sorting.value;
-  }
 
 }
 
