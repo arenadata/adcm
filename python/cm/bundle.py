@@ -254,7 +254,7 @@ def re_check_actions():
 def check_component_requires(comp):
     if not comp.requires:
         return
-    ref = 'in requires of component "{}" of {}'.format(comp.name, proto_ref(comp.prototype))
+    ref = 'in requires of component "{}" of {}'.format(comp.name, proto_ref(comp.parent))
     req_list = comp.requires
     for i, item in enumerate(req_list):
         if 'service' in item:
