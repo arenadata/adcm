@@ -1,3 +1,5 @@
+# pylint: disable=W0621
+
 import allure
 import pytest
 from adcm_client.objects import ADCMClient, Service, Host
