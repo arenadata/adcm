@@ -47,7 +47,6 @@ unittests: ## Run unittests
 	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/tests/base $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /bin/sh -e ./run_test.sh
 
 pytest: ## Run functional tests
-	poweroff
 	sudo poweroff
 
 ng_tests: ## Run Angular tests
@@ -55,7 +54,6 @@ ng_tests: ## Run Angular tests
 	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web/src ci.arenadata.io/functest:3.8.6.slim.buster-x64 /bin/sh -c "export CHROME_BIN=/usr/bin/google-chrome; npm install && ng test --watch=false"
 
 linters : ## Run linters
-	reboot
 	sudo reboot
 
 npm_check: ## Run npm-check
