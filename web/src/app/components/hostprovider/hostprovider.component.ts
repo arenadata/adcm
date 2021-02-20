@@ -12,16 +12,16 @@
 import { Component } from '@angular/core';
 import { IColumns } from '@adwp-ui/widgets';
 
-import { ICluster } from '@app/models/cluster';
-import { UpgradeComponent } from '@app/shared';
 import { TypeName } from '@app/core/types';
 import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
-import { ListFactory } from '../../factories/list-factory';
+import { ListFactory } from '@app/factories/list-factory';
+import { UpgradeComponent } from '@app/shared';
 
 @Component({
+  selector: 'app-hostprovider',
   template: `
     <mat-toolbar class="toolbar">
-      <app-crumbs [navigation]="[{ url: '/cluster', title: 'clusters' }]"></app-crumbs>
+      <app-crumbs [navigation]="[{ url: '/provider', title: 'providers' }]"></app-crumbs>
       <app-add-button [name]="type" (added)="list.current = $event">Create {{ type }}</app-add-button>
     </mat-toolbar>
     <app-list #list [type]="type"></app-list>
@@ -42,30 +42,20 @@ import { ListFactory } from '../../factories/list-factory';
       (changeSort)="onChangeSort($event)"
     ></adwp-list>
   `,
-  styles: [`
-    :host { flex: 1; }
-  `],
+  styles: [':host { flex: 1; }'],
 })
-export class ClusterListComponent extends AdwpListDirective<ICluster> {
+export class HostproviderComponent extends AdwpListDirective<any> {
 
-  type: TypeName = 'cluster';
+  type: TypeName = 'provider';
 
   listColumns = [
     ListFactory.nameColumn(),
     ListFactory.bundleColumn(),
-    {
-      label: 'Description',
-      sort: 'description',
-      value: (row) => row.description,
-    },
     ListFactory.stateColumn(),
-    ListFactory.statusColumn(this.takeUntil.bind(this), this.gotoStatus.bind(this)),
     ListFactory.actionsColumn(),
-    ListFactory.importColumn(this),
     ListFactory.updateColumn(),
     ListFactory.configColumn(this),
     ListFactory.deleteColumn(this),
-  ] as IColumns<ICluster>;
+  ] as IColumns<any>;
 
 }
-

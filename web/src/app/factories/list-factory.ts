@@ -6,6 +6,7 @@ import { StateColumnComponent } from '@app/components/columns/state-column/state
 import { StatusColumnComponent } from '@app/components/columns/status-column/status-column.component';
 import { ActionsColumnComponent } from '@app/components/columns/actions-column/actions-column.component';
 import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
+import { UpgradeComponent } from '@app/shared';
 
 export class ListFactory {
 
@@ -79,6 +80,36 @@ export class ListFactory {
       buttons: [{
         icon: 'settings',
         callback: (row) => listDirective.baseListDirective.listEvents({ cmd: 'config', row }),
+      }]
+    };
+  }
+
+  static bundleColumn(): IValueColumn<any> {
+    return {
+      label: 'Bundle',
+      sort: 'prototype_version',
+      value: (row) => [row.prototype_display_name || row.prototype_name, row.prototype_version, row.edition].join(' '),
+    };
+  }
+
+  static updateColumn(): IComponentColumn<any> {
+    return {
+      label: 'Upgrade',
+      type: 'component',
+      className: 'list-control',
+      headerClassName: 'list-control',
+      component: UpgradeComponent,
+    };
+  }
+
+  static deleteColumn<T>(listDirective: AdwpListDirective<T>): IButtonsColumn<T> {
+    return {
+      type: 'buttons',
+      className: 'list-control',
+      headerClassName: 'list-control',
+      buttons: [{
+        icon: 'delete',
+        callback: (row, event) => listDirective.delete(event, row),
       }]
     };
   }

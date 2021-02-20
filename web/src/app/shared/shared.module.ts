@@ -13,6 +13,7 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { AdwpListModule } from '@adwp-ui/widgets';
 
 import { AddingModule } from './add-component/adding.module';
 import {
@@ -57,6 +58,9 @@ import { StateColumnComponent } from '@app/components/columns/state-column/state
     AddingModule,
     HostComponentsMapModule,
     DetailsModule,
+    AdwpListModule.forRoot({
+      itemsPerPage: [2, 10, 25, 50, 100],
+    }),
   ],
   declarations: [
     DialogComponent,
@@ -109,6 +113,7 @@ import { StateColumnComponent } from '@app/components/columns/state-column/state
     StatusColumnComponent,
     ActionsColumnComponent,
     StateColumnComponent,
+    AdwpListModule,
   ],
 })
 export class SharedModule {}
