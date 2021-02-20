@@ -1,0 +1,7 @@
+- type: provider
+  name: test_provider_wo_switch
+  version: 1p
+
+  config:
+    - name: test_property
+      type: string
