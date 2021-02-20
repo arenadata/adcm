@@ -1,0 +1,11 @@
+- type: cluster
+  name: test_cluster_wo_switch
+  version: 1c
+
+- type: service
+  name: test_service
+  version: 1s
+
+  config:
+    - name: test_property
+      type: string

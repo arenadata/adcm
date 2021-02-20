@@ -1,0 +1,15 @@
+- type: cluster
+  name: test_cluster_w_switch
+  version: 1cw
+
+- type: service
+  name: test_service
+  version: 1sw
+
+  config:
+    - name: test_group
+      type: group
+      activatable: True
+      subs:
+        - name: test_property
+          type: string
