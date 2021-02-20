@@ -9,3 +9,7 @@
       subs:
         - name: test_property
           type: string
+
+- type: host
+  name: test_host_w_switch
+  version: 1h
