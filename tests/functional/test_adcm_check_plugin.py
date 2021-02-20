@@ -18,6 +18,7 @@ from tests.ui_tests.test_actions_page import check_verbosity
 from tests.library import steps
 from tests.library.consts import States, MessageStates
 
+
 NO_FIELD = ['no_title', 'no_result', 'no_msg',
             'only_success', 'only_fail', 'bad_result']
 ALL_FIELDS_DATA = [("all_fields", "Group success",
