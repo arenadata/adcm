@@ -1,7 +1,7 @@
 Actions on Cluster's Host
 #########################
 
-This spec is part of changes introduced in story ADCM-1508.
+This spec is part of changes introduced in story :issue:`ADCM-1508`.
 
 Main Use Case
 =============
@@ -114,7 +114,7 @@ Exceptions
 Service Action on Host
 ^^^^^^^^^^^^^^^^^^^^^^
 
-1. :term:`Bundle Developer` adds action to a component like follows
+1. :term:`Bundle Developer` adds action to a service like follows
 
 .. code-block:: yaml
 
@@ -133,7 +133,6 @@ Service Action on Host
      components:
         mycomponent:
           constraint: [0,+]
-     components:
         mycomponent2:
           constraint: [0,+]
 
@@ -162,7 +161,7 @@ Exceptions
 Cluster Action on Host
 ^^^^^^^^^^^^^^^^^^^^^^
 
-1. :term:`Bundle Developer` adds action to a component like follows
+1. :term:`Bundle Developer` adds action to a cluster like follows
 
 .. code-block:: yaml
 
@@ -184,7 +183,6 @@ Cluster Action on Host
      components:
         mycomponent:
           constraint: [0,+]
-     components:
         mycomponent2:
           constraint: [0,+]
 
