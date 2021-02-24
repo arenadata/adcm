@@ -6,3 +6,4 @@ ADCM Specs
    :caption: Contents:
 
    usecase/index.rst
+   system/index.rst
