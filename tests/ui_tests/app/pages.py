@@ -10,19 +10,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from time import sleep
+
+import allure
 # Created by a1wen at 05.03.19
 from retrying import retry
-from selenium.webdriver.common.keys import Keys
-from selenium.common.exceptions import TimeoutException, InvalidElementStateException,\
+from selenium.common.exceptions import TimeoutException, InvalidElementStateException, \
     NoSuchElementException, StaleElementReferenceException
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
-from selenium.webdriver.common.action_chains import ActionChains
-from tests.ui_tests.app.locators import Menu, Common, Cluster, Provider, Host, Service
-from tests.ui_tests.app.helpers import bys
+
 from cm.errors import ERRORS
-from time import sleep
+from tests.ui_tests.app.helpers import bys
+from tests.ui_tests.app.locators import Menu, Common, Cluster, Provider, Host, Service
 
 
 def ui_retry(func):
@@ -52,6 +55,7 @@ class BasePage:
         self._contains_url(url_path, timer=timeout)
 
     @ui_retry
+    @allure.step('Find elements')
     def _elements(self, locator: tuple, f, **kwargs):
         """Find elements
         :param locator: locator
@@ -128,6 +132,7 @@ class BasePage:
                 return True
         return False
 
+    @allure.step('Get errors')
     def get_frontend_errors(self):
         return self._getelements(Common.mat_error)
 
@@ -154,12 +159,14 @@ class BasePage:
             field.send_keys(value)
 
     @staticmethod
+    @allure.step('Set element value')
     def set_element_value(element, value):
         if element.is_displayed():
             element.clear()
             element.send_keys(value)
         return element
 
+    @allure.step('Set element value in input')
     def set_element_value_in_input(self, element, value):
         self._wait_element_present_in_sublement(element, Common.mat_input_element)
         input_element = element.find_element(*Common.mat_input_element)
@@ -167,6 +174,7 @@ class BasePage:
         return element
 
     @staticmethod
+    @allure.step('Get checkbox element status')
     def get_checkbox_element_status(element):
         """Get checkbox element status, checked or not
         :param element: WebElement
@@ -174,11 +182,13 @@ class BasePage:
         """
         return "mat-checkbox-checked" in element.get_attribute("class")
 
+    @allure.step('Clear element')
     def clear_element(self, element):
         element.send_keys(Keys.CONTROL + "a")
         element.send_keys(Keys.BACK_SPACE)
         return element
 
+    @allure.step('Clear input element')
     def clear_input_element(self, element):
         self._wait_element_present_in_sublement(element, Common.mat_input_element)
         input_element = element.find_element(*Common.mat_input_element)
@@ -190,6 +200,7 @@ class BasePage:
             e = self._getelement(Common.error).text
         return bool(error in e), e
 
+    @allure.step('Check error')
     def check_error(self, error: ERRORS):
         return self._error_handler(error)
 
@@ -210,17 +221,6 @@ class BasePage:
             return self._click_element(locator)
         else:
             raise InvalidElementStateException
-
-    # def _wait_for_menu_element_generator(self, classname):
-    #     def func(args):
-    #         return WDW(args[0].driver, 5).until(
-    #             EC.visibility_of_element_located(classname))
-    #     return func
-    #
-    # def register(self):
-    #     for k, v in self._menu.items():
-    #         f = self._wait_for_menu_element_generator(v)
-    #         setattr(self, k, f.__get__((self, Menu)))
 
 
 class Ui(BasePage):
@@ -311,6 +311,7 @@ class ListPage(BasePage):
         approve.is_displayed()
         self._getelement(Common.dialog_yes).click()
 
+    @allure.step('Delete specified row by his number: {row_number}')
     def delete_row(self, row_number):
         """Deleting specified row by his number
             :param: """
@@ -318,6 +319,7 @@ class ListPage(BasePage):
         _del = rows[row_number].find_element_by_xpath(Common.del_btn)
         _del.click()
 
+    @allure.step('Delete all rows')
     def delete_all_rows(self):
         rows = self.get_rows()
         for row in rows:
@@ -327,6 +329,7 @@ class ListPage(BasePage):
             approve.is_displayed()
             self._getelement(Common.dialog_yes).click()
 
+    @allure.step('Check if list element contains {expected_name}')
     def list_element_contains(self, expected_name):
         row = ''
         for _ in self.get_rows():
@@ -336,6 +339,7 @@ class ListPage(BasePage):
                 row = None
         return bool(row)
 
+    @allure.step('Check if list is empty')
     def list_is_empty(self):
         try:
             self._getelements(Common.rows)
@@ -362,6 +366,7 @@ class LoginPage(BasePage):
         self._login = None
         self._password = None
 
+    @allure.step('Login with {username}: {password}')
     def login(self, username, password):
         self._login = self._wait_element_present(LoginPage.login_locator)
         self._password = self._wait_element_present(LoginPage.passwd_locator)
@@ -373,6 +378,7 @@ class LoginPage(BasePage):
         self._wait_login_element(Common.profile)
         self._wait_login_element(Common.socket)
 
+    @allure.step('Logout')
     def logout(self):
         self._getelement(self._user).click()
         self._getelement(self._logout).click()
@@ -390,6 +396,7 @@ class LoginPage(BasePage):
 
 class ClustersList(ListPage):
 
+    @allure.step('Add new cluster')
     def add_new_cluster(self, name=None, description=None):
         return self._form(name=name, description=description)
 
@@ -403,9 +410,11 @@ class ClustersList(ListPage):
         self._press_save()
         sleep(1)
 
+    @allure.step('Delete first cluster')
     def delete_first_cluster(self):
         return self._delete_first_element()
 
+    @allure.step('Delete all clusters')
     def delete_all_clusters(self):
         return self.delete_all_rows()
 
@@ -434,24 +443,29 @@ class ClusterDetails(Details, ListPage):
         # self._getelement(self._host).click()
         self._getelement(self._add_host_icon).click()
 
+    @allure.step('Click hosts tab')
     def click_hosts_tab(self):
         for tab in self._getelements(self._inactive_tabs):
             if tab.text.strip() == 'Hosts':
                 tab.click()
                 break
 
+    @allure.step('Click services tab')
     def click_services_tab(self):
         return self._click_tab("Services")
 
+    @allure.step('Click add button')
     def click_add_button(self):
         self._press_add()
         self._add_host_to_cluster()
         self.close_form()
 
+    @allure.step('Add host in cluster')
     def add_host_in_cluster(self):
         self.click_hosts_tab()
         self.click_add_button()
 
+    @allure.step('Create host from cluster')
     def create_host_from_cluster(self, provider_name, fqdn):
         self.host_tab  # pylint: disable=W0104
         self._press_add()
@@ -466,6 +480,7 @@ class ClusterDetails(Details, ListPage):
         self._wait_add_form()
         return self._getelement(Common.dialog_run).click()
 
+    @allure.step('Run action by name: {action_name}')
     def run_action_by_name(self, action_name):
         actions = self._getelements(Common.action)
         for action in actions:
@@ -477,6 +492,7 @@ class ClusterDetails(Details, ListPage):
 
 class ProvidersList(ListPage):
 
+    @allure.step('Add new provider')
     def add_new_provider(self, name=None, description=None):
         self._press_add()
         self._wait_add_form()
@@ -487,12 +503,14 @@ class ProvidersList(ListPage):
         self._press_save()
         sleep(1)
 
+    @allure.step('Delete first provider')
     def delete_first_provider(self):
         return self._delete_first_element()
 
 
 class HostsList(ListPage):
 
+    @allure.step('Add new host')
     def add_new_host(self, fqdn=None, description=None):
         self._press_add()
         self._wait_add_form()
@@ -503,6 +521,7 @@ class HostsList(ListPage):
         self._press_save()
         sleep(1)
 
+    @allure.step('Delete first host')
     def delete_first_host(self):
         return self._delete_first_element()
 
@@ -514,6 +533,7 @@ class SettingsPage(ListPage):
 
 
 class JobsList(ListPage):
+    @allure.step('Check task: {action_name}')
     def check_task(self, action_name):
         """We just check upper task in the list because in UI last runned task must be
         always at the top."""
@@ -521,6 +541,8 @@ class JobsList(ListPage):
 
 
 class ServiceList(ListPage):
+
+    @allure.step('Add service: {service_name}')
     def add_service(self, service_name):
         self._press_add()
         self._wait_add_form()
@@ -530,6 +552,7 @@ class ServiceList(ListPage):
         self._press_cancel()
         return False
 
+    @allure.step('Open service: {service_name}')
     def open_service(self, service_name):
         for service in self._getelements(Common.rows):
             if service_name in service.text:
@@ -537,11 +560,13 @@ class ServiceList(ListPage):
                 return True
         return False
 
+    @allure.step('Get service list')
     def service_list(self):
         return [{service.text.split("\n")[0]: {"version": service.text.split("\n")[1],
                                                "status": service.text.split("\n")[2]}
                  } for service in self._getelements(Common.rows)]
 
+    @allure.step('Open service config: {service_name}')
     def open_service_config(self, service_name):
         for service in self._getelements(Common.rows):
             if service_name in service.text:

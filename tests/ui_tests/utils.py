@@ -2,8 +2,10 @@ from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import random_string
 
 from tests.ui_tests.app.configuration import Configuration
+import allure
 
 
+@allure.step('Prepare cluster and get config')
 def prepare_cluster_and_get_config(sdk_client: ADCMClient, path, app):
     bundle = sdk_client.upload_from_fs(path)
     cluster_name = "_".join(path.split("/")[-1:] + [random_string()])
