@@ -1,7 +1,0 @@
-- type: cluster
-  name: test_cluster_w_switch
-  version: 1cw
-
-  config:
-    - name: test_property
-      type: string
