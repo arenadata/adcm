@@ -30,6 +30,14 @@ class ActionDetailURL(serializers.HyperlinkedIdentityField):
         return reverse(view_name, kwargs=kwargs, request=request, format=format)
 
 
+class HostActionDetailURL(serializers.HyperlinkedIdentityField):
+    def get_url(self, obj, view_name, request, format):
+        objects = self.context.get('objects')
+        kwargs = get_api_url_kwargs(objects[obj.prototype.type], request)
+        kwargs['action_id'] = obj.id
+        return reverse(view_name, kwargs=kwargs, request=request, format=format)
+
+
 class StackActionSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     prototype_id = serializers.IntegerField()
@@ -46,10 +54,11 @@ class StackActionSerializer(serializers.Serializer):
     hostcomponentmap = serializers.JSONField(required=False)
     allow_to_terminate = serializers.BooleanField(read_only=True)
     partial_execution = serializers.BooleanField(read_only=True)
+    host_action = serializers.BooleanField(read_only=True)
 
 
 class ActionSerializer(StackActionSerializer):
-    url = ActionDetailURL(read_only=True, view_name='object-action-details')
+    url = HostActionDetailURL(read_only=True, view_name='object-action-details')
 
 
 class ActionShort(serializers.Serializer):
@@ -100,4 +109,4 @@ class StackActionDetailSerializer(StackActionSerializer):
 
 
 class ActionDetailSerializer(StackActionDetailSerializer):
-    run = ActionDetailURL(read_only=True, view_name='run-task')
+    run = HostActionDetailURL(read_only=True, view_name='run-task')
