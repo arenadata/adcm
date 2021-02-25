@@ -151,7 +151,7 @@ class TestCluster:
         for cluster in bundle.cluster_list():
             actuallist.append(cluster.name)
         with allure.step('Check cluster list'):
-            assert all([a == b for a, b in zip(actuallist, expectedlist)])
+            assert all(a == b for (a, b) in zip(actuallist, expectedlist))
 
     def test_get_cluster_info(self, client):
         actual = steps.create_cluster(client)
