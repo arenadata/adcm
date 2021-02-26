@@ -11,6 +11,7 @@
 # limitations under the License.
 
 # pylint: disable=too-many-arguments, too-many-branches, too-many-nested-blocks
+# pylint: disable=inconsistent-return-statements
 
 import json
 import os
@@ -819,7 +820,7 @@ def get_log(job):
 
 def log_group_check(group, fail_msg, success_msg):
     logs = CheckLog.objects.filter(group=group).values('result')
-    result = all([log['result'] for log in logs])
+    result = all(log['result'] for log in logs)
 
     if result:
         msg = success_msg
