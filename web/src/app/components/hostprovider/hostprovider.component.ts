@@ -15,7 +15,6 @@ import { IColumns } from '@adwp-ui/widgets';
 import { TypeName } from '@app/core/types';
 import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
 import { ListFactory } from '@app/factories/list-factory';
-import { UpgradeComponent } from '@app/shared';
 
 @Component({
   selector: 'app-hostprovider',

@@ -28,6 +28,7 @@ export type TypeName =
   'stats' |
   'hostcomponent' |
   'service2cluster' |
+  'host2cluster' |
   'component';
 export type Entities = Cluster | Service | Host | Provider | Job | Task | Bundle;
 

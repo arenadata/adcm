@@ -18,6 +18,7 @@ import { ConfigComponent, DetailComponent, MainInfoComponent, SharedModule, Stat
 import { ListEntryComponent } from './list.component';
 import { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';
 import { HostproviderComponent } from '@app/components/hostprovider/hostprovider.component';
+import { HostListComponent } from '@app/components/host-list/host-list.component';
 
 const entryRouter = [
   {
@@ -38,7 +39,7 @@ const entryRouter = [
   },
   {
     path: 'host',
-    component: ListEntryComponent,
+    component: HostListComponent,
     canActivate: [AuthGuard],
   },
   {
@@ -81,6 +82,6 @@ const entryRouter = [
 
 @NgModule({
   imports: [CommonModule, SharedModule, RouterModule.forChild(entryRouter)],
-  declarations: [ListEntryComponent, HostproviderComponent],
+  declarations: [ListEntryComponent, HostproviderComponent, HostListComponent],
 })
 export class EntryModule {}

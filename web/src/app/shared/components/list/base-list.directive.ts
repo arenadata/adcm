@@ -22,6 +22,7 @@ import { ListService } from './list.service';
 import { ListDirective } from '@app/abstract-directives/list.directive';
 import { Observable, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { Sort } from '@angular/material/sort';
 
 interface IRowHost extends AdcmHost {
   clusters: Partial<Cluster>[];
@@ -64,6 +65,18 @@ export class BaseListDirective {
 
   initListItemEvent() {
     this.parent.listItemEvt.pipe(this.takeUntil()).subscribe({ next: (event: EmmitRow) => this.listEvents(event) });
+  }
+
+  calcSort(ordering: string): Sort {
+    let sort: Sort;
+    if (ordering) {
+      sort = {
+        direction: ordering[0] === '-' ? 'desc' : 'asc',
+        active: ordering[0] === '-' ? ordering.substr(1) : ordering,
+      };
+    }
+
+    return sort;
   }
 
   routeListener(limit: number, page: number, ordering: string, params: ParamMap) {

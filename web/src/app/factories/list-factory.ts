@@ -1,4 +1,4 @@
-import { IComponentColumn, IValueColumn, IButtonsColumn } from '@adwp-ui/widgets';
+import { IComponentColumn, IValueColumn, IButtonsColumn, ILinkColumn } from '@adwp-ui/widgets';
 import { ComponentRef } from '@angular/core';
 import { MonoTypeOperatorFunction } from 'rxjs';
 
@@ -10,11 +10,28 @@ import { UpgradeComponent } from '@app/shared';
 
 export class ListFactory {
 
-  static nameColumn(): IValueColumn<any> {
+  static nameColumn(sort: string = 'name'): IValueColumn<any> {
     return {
       label: 'Name',
-      sort: 'name',
+      sort,
       value: (row) => row.display_name || row.name,
+    };
+  }
+
+  static fqdnColumn(): IValueColumn<any> {
+    return {
+      label: 'FQDN',
+      sort: 'fqdn',
+      className: 'width30pr',
+      headerClassName: 'width30pr',
+      value: row => row.fqdn,
+    };
+  }
+
+  static descriptionColumn(): IValueColumn<any> {
+    return {
+      label: 'Description',
+      value: (row) => row.description,
     };
   }
 
@@ -111,6 +128,16 @@ export class ListFactory {
         icon: 'delete',
         callback: (row, event) => listDirective.delete(event, row),
       }]
+    };
+  }
+
+  static providerColumn(): ILinkColumn<any> {
+    return {
+      type: 'link',
+      label: 'Provider',
+      sort: 'provider_name',
+      value: row => row.provider_name,
+      url: row => `/provider/${row.provider_id}`,
     };
   }
 

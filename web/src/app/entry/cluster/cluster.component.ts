@@ -13,21 +13,16 @@ import { Component } from '@angular/core';
 import { IColumns } from '@adwp-ui/widgets';
 
 import { ICluster } from '@app/models/cluster';
-import { UpgradeComponent } from '@app/shared';
 import { TypeName } from '@app/core/types';
 import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
-import { ListFactory } from '../../factories/list-factory';
+import { ListFactory } from '@app/factories/list-factory';
 
 @Component({
   template: `
     <mat-toolbar class="toolbar">
       <app-crumbs [navigation]="[{ url: '/cluster', title: 'clusters' }]"></app-crumbs>
-      <app-add-button [name]="type" (added)="list.current = $event">Create {{ type }}</app-add-button>
+      <app-add-button [name]="type" (added)="current = $event">Create {{ type }}</app-add-button>
     </mat-toolbar>
-    <app-list #list [type]="type"></app-list>
-
-    <br>
-    <br>
 
     <adwp-list
       [columns]="listColumns"
@@ -53,11 +48,7 @@ export class ClusterListComponent extends AdwpListDirective<ICluster> {
   listColumns = [
     ListFactory.nameColumn(),
     ListFactory.bundleColumn(),
-    {
-      label: 'Description',
-      sort: 'description',
-      value: (row) => row.description,
-    },
+    ListFactory.descriptionColumn(),
     ListFactory.stateColumn(),
     ListFactory.statusColumn(this.takeUntil.bind(this), this.gotoStatus.bind(this)),
     ListFactory.actionsColumn(),

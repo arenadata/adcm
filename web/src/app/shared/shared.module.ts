@@ -44,6 +44,7 @@ import { StuffModule } from './stuff.module';
 import { StatusColumnComponent } from '@app/components/columns/status-column/status-column.component';
 import { ActionsColumnComponent } from '@app/components/columns/actions-column/actions-column.component';
 import { StateColumnComponent } from '@app/components/columns/state-column/state-column.component';
+import { EditionColumnComponent } from '@app/components/columns/edition-column/edition-column.component';
 
 @NgModule({
   imports: [
@@ -84,6 +85,7 @@ import { StateColumnComponent } from '@app/components/columns/state-column/state
     StatusColumnComponent,
     ActionsColumnComponent,
     StateColumnComponent,
+    EditionColumnComponent,
   ],
   // entryComponents: [DialogComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent, ActionMasterComponent],
   exports: [
@@ -113,6 +115,7 @@ import { StateColumnComponent } from '@app/components/columns/state-column/state
     StatusColumnComponent,
     ActionsColumnComponent,
     StateColumnComponent,
+    EditionColumnComponent,
     AdwpListModule,
   ],
 })

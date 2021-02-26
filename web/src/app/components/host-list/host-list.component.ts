@@ -3,17 +3,16 @@ import { IColumns } from '@adwp-ui/widgets';
 
 import { TypeName } from '@app/core/types';
 import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
+import { IHost } from '@app/models/host';
 import { ListFactory } from '@app/factories/list-factory';
-import { IClusterService } from '@app/models/cluster-service';
 
 @Component({
-  selector: 'app-services',
+  selector: 'app-host-list',
   template: `
-    <app-add-button [name]="'service'" class="add-button">Add services</app-add-button>
-    <app-list class="main" [type]="type"></app-list>
-
-    <br>
-    <br>
+    <mat-toolbar class="toolbar">
+      <app-crumbs [navigation]="[{ url: '/host', title: 'hosts' }]"></app-crumbs>
+      <app-add-button [name]="type" (added)="current = $event">Create {{ type }}</app-add-button>
+    </mat-toolbar>
 
     <adwp-list
       [columns]="listColumns"
@@ -28,23 +27,27 @@ import { IClusterService } from '@app/models/cluster-service';
       (changeSort)="onChangeSort($event)"
     ></adwp-list>
   `,
-  styles: [':host { flex: 1; }', '.add-button {position:fixed; right: 20px;top:120px;}'],
+  styles: [':host { flex: 1; }'],
 })
-export class ServicesComponent extends AdwpListDirective<IClusterService> {
+export class HostListComponent extends AdwpListDirective<IHost> {
 
-  type: TypeName = 'service2cluster';
+  type: TypeName = 'host';
 
   listColumns = [
-    ListFactory.nameColumn('display_name'),
+    ListFactory.fqdnColumn(),
+    ListFactory.providerColumn(),
     {
-      label: 'Version',
-      value: (row) => row.version,
+      type: 'link',
+      label: 'Cluster',
+      sort: 'cluster_name',
+      value: (row) => row.cluster_name,
+      url: (row) => `/cluster/${row.cluster_id}`,
     },
     ListFactory.stateColumn(),
     ListFactory.statusColumn(this.takeUntil.bind(this), this.gotoStatus.bind(this)),
     ListFactory.actionsColumn(),
-    ListFactory.importColumn(this),
     ListFactory.configColumn(this),
-  ] as IColumns<IClusterService>;
+    ListFactory.deleteColumn(this),
+  ] as IColumns<IHost>;
 
 }

@@ -141,19 +141,23 @@ export abstract class ListDirective extends BaseDirective implements OnInit, OnD
       prototype_version: ['prototype_display_name', 'prototype_version'],
     };
 
-    const dumb = penis[a.active] ? penis[a.active] : [a.active],
-      active = dumb.map((b: string) => `${Direction[a.direction]}${b}`).join(',');
+    if (a) {
+      const dumb = penis[a.active] ? penis[a.active] : [a.active],
+        active = dumb.map((b: string) => `${Direction[a.direction]}${b}`).join(',');
 
-    const current = this.sortParam;
-    if (current && this.addToSorting) {
-      const result = current
-        .split(',')
-        .filter((b) => dumb.every((d) => d !== b.replace('-', '')))
-        .join(',');
-      return [result, a.direction ? active : ''].filter((e) => e).join(',');
+      const current = this.sortParam;
+      if (current && this.addToSorting) {
+        const result = current
+          .split(',')
+          .filter((b) => dumb.every((d) => d !== b.replace('-', '')))
+          .join(',');
+        return [result, a.direction ? active : ''].filter((e) => e).join(',');
+      }
+
+      return a.direction ? active : '';
+    } else {
+      return '';
     }
-
-    return a.direction ? active : '';
   }
 
   getSort(): Sort {
