@@ -11,6 +11,7 @@
 # limitations under the License.
 
 # pylint: disable=too-many-arguments, too-many-branches, too-many-nested-blocks
+# pylint: disable=inconsistent-return-statements
 
 import json
 import os
