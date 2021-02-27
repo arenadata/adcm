@@ -11,6 +11,7 @@ Actions on Cluster's Host
    onhost/cluster_on_host.rst
    onhost/service_on_host.rst
    onhost/component_on_host.rst
+   onhost/target.rst
 
 This spec is part of changes introduced in story :issue:`ADCM-1620`.
 
@@ -20,11 +21,12 @@ Main idea of this case is execution of some actions defined in cluster bundle on
 “Used” Use Cases
 ----------------
 
-List of child cases which is a detalisation of this one:
+List of child cases which is a direct detalisation of this one:
 
 * :ref:`action_onhost_cluster`
 * :ref:`action_onhost_service`
 * :ref:`action_onhost_component`
+* :ref:`action_onhost_target`
 
 
 Actors
