@@ -24,3 +24,10 @@ Objects
    Bundle
         A pack of special format created by :term:`Bundle Developer` and distributed to an :term:`End User`
 
+Terms
+=====
+
+.. glossary::
+
+   On Host Action
+        Is an action provided in :term:`Product` :term:`Bundle`, but show and executed on Host, included to the Cluster. See :ref:`action_onhost` for more information

@@ -12,6 +12,7 @@ Actions on Cluster's Host
    onhost/service_on_host.rst
    onhost/component_on_host.rst
    onhost/target.rst
+   onhost/on_host_list.rst
 
 This spec is part of changes introduced in story :issue:`ADCM-1620`.
 
@@ -26,6 +27,10 @@ List of child cases which is a direct detalisation of this one:
 * :ref:`action_onhost_cluster`
 * :ref:`action_onhost_service`
 * :ref:`action_onhost_component`
+
+Additional cases which is explisity define one paticular subfeature:
+
+* :ref:`action_onhost_api_host_only`
 * :ref:`action_onhost_target`
 
 
