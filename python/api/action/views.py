@@ -69,13 +69,23 @@ def get_obj(**kwargs):
     return obj, action_id
 
 
-def get_selector(obj):
+def get_selector(obj, action):
     selector = {obj.prototype.type: obj.id}
     if obj.prototype.type == 'service':
         selector['cluster'] = obj.cluster.id
     if obj.prototype.type == 'component':
         selector['cluster'] = obj.cluster.id
         selector['component'] = obj.service.id
+    if isinstance(obj, Host) and action.host_action:
+        try:
+            hc = HostComponent.objects.get(host_id=obj.id)
+            selector.update(
+                {f'{action.prototype.type}': getattr(hc, f'{action.prototype.type}_id')})
+            selector['cluster'] = hc.cluster_id
+        except HostComponent.DoesNotExist:
+            if obj.cluster is not None:
+                selector['cluster'] = obj.cluster.id
+
     return selector
 
 
@@ -90,24 +100,32 @@ class ActionList(ListView):
         """
         List all actions of a specified object
         """
-        try:
-            hc = HostComponent.objects.get(host_id=kwargs['host_id'])
-            cluster, _ = get_obj(object_type='cluster', cluster_id=hc.cluster_id)
-            service, _ = get_obj(object_type='service', service_id=hc.service_id)
-            component, _ = get_obj(object_type='component', component_id=hc.component_id)
-            actions = []
-            for obj in [cluster, service, component]:
-                actions.extend(filter_actions(obj, self.filter_queryset(
-                    self.get_queryset().filter(prototype=obj.prototype, host_action=True))))
-            host, _ = get_obj(object_type='host', host_id=hc.host_id)
-            actions.extend(filter_actions(host, self.filter_queryset(
+        if kwargs['object_type'] == 'host':
+            host, _ = get_obj(object_type='host', host_id=kwargs['host_id'])
+            actions = filter_actions(host, self.filter_queryset(
                 self.get_queryset().filter(prototype=host.prototype)
-            )))
-            objects = {'cluster': cluster, 'service': service, 'component': component, 'host': host}
-        except (HostComponent.DoesNotExist, KeyError):
+            ))
+            objects = {'host': host}
+            try:
+                hc = HostComponent.objects.get(host_id=kwargs['host_id'])
+                cluster, _ = get_obj(object_type='cluster', cluster_id=hc.cluster_id)
+                service, _ = get_obj(object_type='service', service_id=hc.service_id)
+                component, _ = get_obj(object_type='component', component_id=hc.component_id)
+                for obj in [cluster, service, component]:
+                    actions.extend(filter_actions(obj, self.filter_queryset(
+                        self.get_queryset().filter(prototype=obj.prototype, host_action=True))))
+
+                objects.update({'cluster': cluster, 'service': service, 'component': component})
+            except HostComponent.DoesNotExist:
+                if host.cluster is not None:
+                    actions.extend(filter_actions(host.cluster, self.filter_queryset(
+                        self.get_queryset().filter(
+                            prototype=host.cluster.prototype, host_action=True))))
+                    objects.update({'cluster': host.cluster})
+        else:
             obj, _ = get_obj(**kwargs)
             actions = filter_actions(obj, self.filter_queryset(
-                self.get_queryset().filter(prototype=obj.prototype)
+                self.get_queryset().filter(prototype=obj.prototype, host_action=False)
             ))
             objects = {obj.prototype.type: obj}
         serializer_class = self.select_serializer(request)
@@ -141,9 +159,7 @@ class RunTask(GenericAPIPermView):
         Ran specified action
         """
         obj, action_id = get_obj(**kwargs)
-        selector = get_selector(obj)
-        action = check_obj(
-            Action, {'prototype': obj.prototype, 'id': action_id}, 'ACTION_NOT_FOUND'
-        )
+        action = check_obj(Action, {'id': action_id}, 'ACTION_NOT_FOUND')
+        selector = get_selector(obj, action)
         serializer = self.serializer_class(data=request.data, context={'request': request})
         return create(serializer, action_id=action.id, selector=selector)

@@ -551,7 +551,7 @@ def re_prepare_job(task, job):
 
 def prepare_job(action, sub_action, selector, job_id, obj, conf, delta, hosts, verbose):
     prepare_job_config(action, sub_action, selector, job_id, obj, conf, verbose)
-    inventory.prepare_job_inventory(selector, job_id, delta, hosts)
+    inventory.prepare_job_inventory(selector, job_id, action, delta, hosts)
     prepare_ansible_config(job_id, action, sub_action)
 
 

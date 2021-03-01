@@ -33,7 +33,10 @@ class ActionDetailURL(serializers.HyperlinkedIdentityField):
 class HostActionDetailURL(serializers.HyperlinkedIdentityField):
     def get_url(self, obj, view_name, request, format):
         objects = self.context.get('objects')
-        kwargs = get_api_url_kwargs(objects[obj.prototype.type], request)
+        if obj.host_action:
+            kwargs = get_api_url_kwargs(objects['host'], request)
+        else:
+            kwargs = get_api_url_kwargs(objects[obj.prototype.type], request)
         kwargs['action_id'] = obj.id
         return reverse(view_name, kwargs=kwargs, request=request, format=format)
 
