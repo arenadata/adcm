@@ -1,4 +1,5 @@
 # pylint: disable=W0621
+import itertools
 import os
 import shutil
 
@@ -9,7 +10,6 @@ from adcm_client.objects import ADCMClient, Service, Host, Cluster, Bundle, Prov
 from adcm_pytest_plugin.utils import random_string, get_data_dir
 
 from tests.ui_tests.app.configuration import Configuration
-from tests.ui_tests.app.locators import Common
 from tests.ui_tests.utils import (
     ClusterDefinition,
     ProviderDefinition,
@@ -27,6 +27,13 @@ PROVIDER_NAME = "provider"
 HOST_NAME = "host"
 PROPERTY_NAME = "property"
 
+CONFIG_DATA = {
+    "string": "some_string_value",
+    "text": "_".join("some_string_value" * 17),
+    "integer": 42,
+    "boolean": True,
+}
+
 CONFIG_USE_GROUP = "CONFIG_USE_GROUP"
 CONFIG_USE_ADVANCED = "CONFIG_USE_ADVANCED"
 
@@ -37,10 +44,8 @@ def _generate_bundle_config(bundle_type, entity_type, prop_types):
     params = []
     ids = []
 
-    for mask in range(2 ** len(CONFIG_OPTS)):  # generates all combinations
-        selected_opts = [
-            CONFIG_OPTS[i] for i in range(len(CONFIG_OPTS)) if mask >> i & 1
-        ]
+    for mask in itertools.product([True, False], repeat=len(CONFIG_OPTS)):
+        selected_opts = [opt for (i, opt) in enumerate(CONFIG_OPTS) if mask[i]]
 
         # bundle
         bundle_proto = []
@@ -183,33 +188,20 @@ def host_config_page(app_fs, host: Host, login_to_adcm) -> Configuration:
     )
 
 
-def _get_field_input(field):
-    return field.find_element(*Common.mat_input_element)
-
-
-def _get_field_checkbox(field):
-    return field.find_element(*Common.mat_checkbox)
-
-
 def _get_test_value(value_type):
-    return (
-        "some_string_value" if value_type == "string"
-        else "some_string_value" * 17 if value_type == "text"
-        else 42 if value_type == "integer"
-        else True if value_type == "boolean"
-        else None
-    )
+    return CONFIG_DATA[value_type] if value_type in CONFIG_DATA else None
 
 
 def _update_config_property(config_page: Configuration, field, field_type: str):
     if field_type in ["string", "text", "integer"]:
-        field_input = _get_field_input(field)
+        field_input = config_page.get_field_input(field)
         field_input.send_keys(_get_test_value(field_type))
     if field_type == "boolean":
-        _get_field_checkbox(field).click()
+        config_page.get_field_checkbox(field).click()
     if field_type == "structure":
         nested_field = config_page.get_form_field(field)
-        field_input = _get_field_input(nested_field)
+        field_input = config_page.get_field_input(nested_field)
+        # hardcoded field value, see struct_conf.yaml
         field_input.send_keys(_get_test_value("string"))
 
     assert config_page.save_button_status()
@@ -223,7 +215,9 @@ def _test_save_configuration_button(
     if group_name:
         config_page.activate_group_by_name(group_name)
 
-    assert len(config_page.get_app_fields()) == len(prop_types), "Unexpected count of fields"
+    assert len(config_page.get_app_fields()) == len(
+        prop_types
+    ), "Unexpected count of fields"
     with allure.step("Update config properties"):
         for field_type, field in zip(prop_types, config_page.get_app_fields()):
             _update_config_property(config_page, field, field_type)
@@ -231,6 +225,8 @@ def _test_save_configuration_button(
     config_page.save_configuration()
     config_page.refresh()
 
+    if use_advanced:
+        config_page.click_advanced()
     if group_name:
         group = config_page.get_group_by_name(group_name)
         config_page.assert_group_status(group)
@@ -240,7 +236,9 @@ def _test_save_configuration_button(
             value_to_check = _get_test_value(field_type)
             if field_type == "boolean":
                 assert (
-                    config_page.get_checkbox_element_status(_get_field_checkbox(field))
+                    config_page.get_checkbox_element_status(
+                        config_page.get_field_checkbox(field)
+                    )
                     == value_to_check
                 )
             else:
@@ -248,7 +246,7 @@ def _test_save_configuration_button(
                     # workaround
                     field_type = "string"
                     field = config_page.get_form_field(field)
-                    value_to_check = _get_test_value("string")
+                    value_to_check = _get_test_value(field_type)
                 config_page.assert_field_content_equal(
                     field_type, field, value_to_check
                 )

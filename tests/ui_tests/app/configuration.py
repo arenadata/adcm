@@ -25,6 +25,9 @@ class Configuration(BasePage):
         self.url = url
         if self.url:
             self.get(self.url, "config")
+        self._wait_for_page_loaded()
+
+    def _wait_for_page_loaded(self):
         self._wait_element_present(ConfigurationLocators.app_conf_form, 15)
         # 30 seconds timeout here is caused by possible long load of config page
         self._wait_element_present(ConfigurationLocators.load_marker, 30)
@@ -154,6 +157,14 @@ class Configuration(BasePage):
     @staticmethod
     def get_field_value(input_field):
         return input_field.get_attribute("value")
+
+    @staticmethod
+    def get_field_input(field):
+        return field.find_element(*Common.mat_input_element)
+
+    @staticmethod
+    def get_field_checkbox(field):
+        return field.find_element(*Common.mat_checkbox)
 
     def get_field_groups(self):
         return self.driver.find_elements(*ConfigurationLocators.field_group)
@@ -332,4 +343,5 @@ class Configuration(BasePage):
 
     @allure.step('Refresh configuration')
     def refresh(self):
-        self.__init__(self.driver, self.url)
+        self.driver.refresh()
+        self._wait_for_page_loaded()
