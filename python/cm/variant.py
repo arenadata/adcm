@@ -69,19 +69,45 @@ def var_host_or(cluster, args):
     return sorted(list(set.union(*[set(a) for a in args])))
 
 
-def var_host_in_service(cluster, args):
-    out = []
-    func = 'in_service'
+def var_host_get_service(cluster, args, func):
     if 'service' not in args:
-        err('CONFIG_VARIANT_ERROR', f'no "service" tuple for predicate "{func}"')
+        err('CONFIG_VARIANT_ERROR', f'no "service" argument for predicate "{func}"')
     try:
         service = ClusterObject.objects.get(cluster=cluster, prototype__name=args['service'])
     except ClusterObject.DoesNotExist:
         err('CONFIG_VARIANT_ERROR', 'service "{}" is not found'.format(args['service']))
+    return service
+
+
+def var_host_get_component(cluster, args, service, func):
+    if 'component' not in args:
+        err('CONFIG_VARIANT_ERROR', f'no "component" argument for predicate "{func}"')
+    try:
+        comp = ServiceComponent.objects.get(
+            cluster=cluster, service=service, prototype__name=args['component']
+        )
+    except ServiceComponent.DoesNotExist:
+        err('CONFIG_VARIANT_ERROR', 'component "{}" is not found'.format(args['component']))
+    return comp
+
+
+def var_host_in_service(cluster, args):
+    out = []
+    service = var_host_get_service(cluster, args, 'in_service')
     for hc in HostComponent.objects \
             .filter(cluster=cluster, service=service) \
             .order_by('host__fqdn'):
         out.append(hc.host.fqdn)
+    return out
+
+
+def var_host_not_in_service(cluster, args):
+    out = []
+    service = var_host_get_service(cluster, args, 'not_in_service')
+    for host in Host.objects.filter(cluster=cluster).order_by('fqdn'):
+        if HostComponent.objects.filter(cluster=cluster, service=service, host=host):
+            continue
+        out.append(host.fqdn)
     return out
 
 
@@ -94,25 +120,23 @@ def var_host_in_cluster(cluster, args):
 
 def var_host_in_component(cluster, args):
     out = []
-    func = 'in_component'
-    if 'service' not in args:
-        err('CONFIG_VARIANT_ERROR', f'no "service" tuple for predicate "{func}"')
-    if 'component' not in args:
-        err('CONFIG_VARIANT_ERROR', f'no "component" tuple for predicate "{func}"')
-    try:
-        service = ClusterObject.objects.get(cluster=cluster, prototype__name=args['service'])
-    except ClusterObject.DoesNotExist:
-        err('CONFIG_VARIANT_ERROR', 'service "{}" is not found'.format(args['service']))
-    try:
-        comp = ServiceComponent.objects.get(
-            cluster=cluster, service=service, prototype__name=args['component']
-        )
-    except ServiceComponent.DoesNotExist:
-        err('CONFIG_VARIANT_ERROR', 'component "{}" is not found'.format(args['component']))
+    service = var_host_get_service(cluster, args, 'in_component')
+    comp = var_host_get_component(cluster, args, service, 'in_component')
     for hc in HostComponent.objects \
             .filter(cluster=cluster, service=service, component=comp) \
             .order_by('host__fqdn'):
         out.append(hc.host.fqdn)
+    return out
+
+
+def var_host_not_in_component(cluster, args):
+    out = []
+    service = var_host_get_service(cluster, args, 'not_in_component')
+    comp = var_host_get_component(cluster, args, service, 'not_in_component')
+    for host in Host.objects.filter(cluster=cluster).order_by('fqdn'):
+        if HostComponent.objects.filter(cluster=cluster, component=comp, host=host):
+            continue
+        out.append(host.fqdn)
     return out
 
 
@@ -132,10 +156,6 @@ def var_host_not_in_hc(cluster, args):
     return out
 
 
-def var_host_not_in_component(cluster, args):
-    return []
-
-
 def var_host_inline_list(cluster, args):
     return args['list']
 
@@ -145,11 +165,12 @@ VARIANT_HOST_FUNC = {
     'or': var_host_or,
     'in_cluster': var_host_in_cluster,
     'in_service': var_host_in_service,
+    'not_in_service': var_host_not_in_service,
     'in_component': var_host_in_component,
     'not_in_component': var_host_not_in_component,
     'in_hc': var_host_in_hc,
     'not_in_hc': var_host_not_in_hc,
-    'inline_list': var_host_inline_list,
+    'inline_list': var_host_inline_list,   # just for logic functions (and, or) test purpose
 }
 
 
