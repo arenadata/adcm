@@ -45,6 +45,7 @@ import { StatusColumnComponent } from '@app/components/columns/status-column/sta
 import { ActionsColumnComponent } from '@app/components/columns/actions-column/actions-column.component';
 import { StateColumnComponent } from '@app/components/columns/state-column/state-column.component';
 import { EditionColumnComponent } from '@app/components/columns/edition-column/edition-column.component';
+import { ClusterColumnComponent } from '@app/components/columns/cluster-column/cluster-column.component';
 
 @NgModule({
   imports: [
@@ -60,7 +61,7 @@ import { EditionColumnComponent } from '@app/components/columns/edition-column/e
     HostComponentsMapModule,
     DetailsModule,
     AdwpListModule.forRoot({
-      itemsPerPage: [2, 10, 25, 50, 100],
+      itemsPerPage: [10, 25, 50, 100],
     }),
   ],
   declarations: [
@@ -86,6 +87,7 @@ import { EditionColumnComponent } from '@app/components/columns/edition-column/e
     ActionsColumnComponent,
     StateColumnComponent,
     EditionColumnComponent,
+    ClusterColumnComponent,
   ],
   // entryComponents: [DialogComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent, ActionMasterComponent],
   exports: [
@@ -116,6 +118,7 @@ import { EditionColumnComponent } from '@app/components/columns/edition-column/e
     ActionsColumnComponent,
     StateColumnComponent,
     EditionColumnComponent,
+    ClusterColumnComponent,
     AdwpListModule,
   ],
 })

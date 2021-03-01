@@ -21,12 +21,8 @@ import { ListFactory } from '@app/factories/list-factory';
   template: `
     <mat-toolbar class="toolbar">
       <app-crumbs [navigation]="[{ url: '/provider', title: 'providers' }]"></app-crumbs>
-      <app-add-button [name]="type" (added)="list.current = $event">Create {{ type }}</app-add-button>
+      <app-add-button [name]="type" (added)="current = $event">Create {{ type }}</app-add-button>
     </mat-toolbar>
-    <app-list #list [type]="type"></app-list>
-
-    <br>
-    <br>
 
     <adwp-list
       [columns]="listColumns"

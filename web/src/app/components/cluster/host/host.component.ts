@@ -10,10 +10,6 @@ import { ListFactory } from '@app/factories/list-factory';
   selector: 'app-cluster-host',
   template: `
     <app-add-button [name]="type" class="add-button">Add hosts</app-add-button>
-    <app-list class="main" [type]="type"></app-list>
-
-    <br>
-    <br>
 
     <adwp-list
       [columns]="listColumns"

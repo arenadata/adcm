@@ -15,6 +15,7 @@ import { ListService } from '@app/shared/components/list/list.service';
 import { DialogComponent } from '@app/shared';
 import { StatusData } from '@app/components/columns/status-column/status-column.component';
 import { ICluster } from '@app/models/cluster';
+import { ApiService } from '@app/core/api';
 
 enum Direction {
   '' = '',
@@ -67,6 +68,7 @@ export abstract class ListDirective extends BaseDirective implements OnInit, OnD
     public route: ActivatedRoute,
     public router: Router,
     public dialog: MatDialog,
+    protected api: ApiService,
   ) {
     super();
   }
@@ -82,7 +84,7 @@ export abstract class ListDirective extends BaseDirective implements OnInit, OnD
   }
 
   ngOnInit() {
-    this.baseListDirective = new BaseListDirective(this, this.service, this.store);
+    this.baseListDirective = new BaseListDirective(this, this.service, this.store, this.api);
     this.baseListDirective.typeName = this.type;
     this.baseListDirective.init();
   }

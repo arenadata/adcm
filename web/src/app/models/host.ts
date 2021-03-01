@@ -8,6 +8,7 @@ export interface IHost extends Entity {
   cluster_id?: number;
   cluster_url?: string;
   cluster_name?: string;
+  clusters: any[];
   config: string;
   fqdn: string;
   host_id: number;

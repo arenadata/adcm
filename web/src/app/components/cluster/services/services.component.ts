@@ -10,10 +10,6 @@ import { IClusterService } from '@app/models/cluster-service';
   selector: 'app-services',
   template: `
     <app-add-button [name]="'service'" class="add-button">Add services</app-add-button>
-    <app-list class="main" [type]="type"></app-list>
-
-    <br>
-    <br>
 
     <adwp-list
       [columns]="listColumns"

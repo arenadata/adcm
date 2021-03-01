@@ -1,10 +1,12 @@
-import { Component } from '@angular/core';
+import { Component, ComponentRef } from '@angular/core';
 import { IColumns } from '@adwp-ui/widgets';
 
 import { TypeName } from '@app/core/types';
 import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
 import { IHost } from '@app/models/host';
 import { ListFactory } from '@app/factories/list-factory';
+import { AddClusterEventData, ClusterColumnComponent } from '@app/components/columns/cluster-column/cluster-column.component';
+import { UniversalAdcmEventData } from '@app/models/universal-adcm-event-data';
 
 @Component({
   selector: 'app-host-list',
@@ -37,11 +39,32 @@ export class HostListComponent extends AdwpListDirective<IHost> {
     ListFactory.fqdnColumn(),
     ListFactory.providerColumn(),
     {
-      type: 'link',
+      type: 'component',
       label: 'Cluster',
       sort: 'cluster_name',
-      value: (row) => row.cluster_name,
-      url: (row) => `/cluster/${row.cluster_id}`,
+      component: ClusterColumnComponent,
+      instanceTaken: (componentRef: ComponentRef<ClusterColumnComponent>) => {
+        componentRef.instance
+          .onGetNextPageCluster
+          .pipe(this.takeUntil())
+          .subscribe((data: UniversalAdcmEventData<IHost>) => {
+            this.clickCell(data.event, data.action, data.row);
+          });
+
+        componentRef.instance
+          .onGetClusters
+          .pipe(this.takeUntil())
+          .subscribe((data: UniversalAdcmEventData<IHost>) => {
+            this.clickCell(data.event, data.action, data.row);
+          });
+
+        componentRef.instance
+          .onAddCluster
+          .pipe(this.takeUntil())
+          .subscribe((data: AddClusterEventData) => {
+            this.clickCell(data.event, data.action, data.row, data.cluster);
+          });
+      }
     },
     ListFactory.stateColumn(),
     ListFactory.statusColumn(this.takeUntil.bind(this), this.gotoStatus.bind(this)),

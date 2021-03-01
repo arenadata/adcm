@@ -23,6 +23,7 @@ import { TypeName } from '@app/core/types';
 import { IBundle } from '@app/models/bundle';
 import { ListFactory } from '../../factories/list-factory';
 import { EditionColumnComponent } from '../../components/columns/edition-column/edition-column.component';
+import { ApiService } from '../../core/api';
 
 @Component({
   selector: 'app-stack',
@@ -31,10 +32,6 @@ import { EditionColumnComponent } from '../../components/columns/edition-column/
       <app-crumbs [navigation]="[{ url: '/bundle', title: 'bundles' }]"></app-crumbs>
       <app-button-uploader #uploadBtn [color]="'accent'" [label]="'Upload bundles'" (output)="upload($event)"></app-button-uploader>
     </mat-toolbar>
-    <app-list #list [type]="type"></app-list>
-
-    <br>
-    <br>
 
     <adwp-list
       [columns]="listColumns"
@@ -88,8 +85,9 @@ export class StackComponent extends AdwpListDirective<IBundle> {
     public route: ActivatedRoute,
     public router: Router,
     public dialog: MatDialog,
+    protected api: ApiService,
   ) {
-    super(service, store, route, router, dialog);
+    super(service, store, route, router, dialog, api);
   }
 
   upload(data: FormData[]) {

@@ -23,6 +23,7 @@ import { ListService } from '@app/shared/components/list/list.service';
 import { Store } from '@ngrx/store';
 import { SocketState } from '@app/core/store';
 import set = Reflect.set;
+import { ApiService } from '@app/core/api';
 
 export interface ListResult<T> {
   count: number;
@@ -63,8 +64,9 @@ export class ListComponent extends ListDirective implements OnInit, OnDestroy {
     public dialog: MatDialog,
     public route: ActivatedRoute,
     public router: Router,
+    protected api: ApiService,
   ) {
-    super(service, store, route, router, dialog);
+    super(service, store, route, router, dialog, api);
   }
 
   ngOnInit(): void {
