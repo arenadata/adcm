@@ -14,218 +14,180 @@ from time import sleep
 import allure
 import coreapi
 import pytest
+from adcm_client.objects import Provider, Cluster, Host, ADCMClient
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.docker_utils import DockerWrapper
 
 # pylint: disable=W0611, W0621
+from adcm_pytest_plugin.utils import random_string
+
 from tests.library import steps
 from tests.library.errorcodes import TASK_ERROR
 from tests.library.utils import get_action_by_name, filter_action_by_name, wait_until
 
 
 @pytest.fixture()
-def adcm(image, request, adcm_credentials):
-    repo, tag = image
-    dw = DockerWrapper()
-    adcm = dw.run_adcm(image=repo, tag=tag, pull=False)
-    adcm.api.auth(**adcm_credentials)
-    yield adcm
-    adcm.stop()
+def prepared_cluster(sdk_client_fs: ADCMClient) -> Cluster:
+    uploaded_bundle = sdk_client_fs.upload_from_fs(
+        utils.get_data_dir(__file__, 'locked_when_action_running')
+    )
+    return uploaded_bundle.cluster_prototype().cluster_create(name=random_string())
 
 
 @pytest.fixture()
-def client(adcm):
-    return adcm.api.objects
+def hostprovider(sdk_client_fs: ADCMClient) -> Provider:
+    provider_bundle = sdk_client_fs.upload_from_fs(
+        utils.get_data_dir(__file__, 'host_bundle_on_any_level')
+    )
+    return provider_bundle.provider_prototype().provider_create(random_string())
 
 
 @pytest.fixture()
-def prepared_cluster(client):
-    bundle = utils.get_data_dir(__file__, 'locked_when_action_running')
-    steps.upload_bundle(client, bundle)
-    return client.cluster.create(prototype_id=client.stack.cluster.list()[0]['id'],
-                                 name=utils.random_string())
+def host(hostprovider: Provider) -> Host:
+    return hostprovider.host_create(random_string())
 
 
-@pytest.fixture()
-def hostprovider(client):
-    steps.upload_bundle(client, utils.get_data_dir(__file__, 'host_bundle_on_any_level'))
-    return steps.create_hostprovider(client)
-
-
-@pytest.fixture()
-def host(client):
-    host_bundle = utils.get_data_dir(__file__, 'host_bundle_on_any_level')
-    steps.upload_bundle(client, host_bundle)
-    return steps.create_host_w_default_provider(client, 'localhost')
-
-
-def test_cluster_must_be_locked_when_action_running(client, prepared_cluster):
+def test_cluster_must_be_locked_when_action_running(prepared_cluster: Cluster):
     with allure.step('Run action: lock cluster'):
-        cluster = prepared_cluster
-        client.cluster.action.run.create(
-            action_id=get_action_by_name(client, cluster, 'lock-cluster')['id'],
-            cluster_id=cluster['id'])
+        prepared_cluster.action_run(name="lock-cluster")
     with allure.step('Check if cluster is locked'):
-        assert client.cluster.read(cluster_id=cluster['id'])['state'] == 'locked'
+        prepared_cluster.reread()
+        assert prepared_cluster.state == "locked", "Cluster not locked"
 
 
-def test_run_new_action_on_locked_cluster_must_throws_exception(client, prepared_cluster):
+def test_run_new_action_on_locked_cluster_must_throws_exception(prepared_cluster: Cluster):
     with allure.step('Run first action: lock cluster'):
-        cluster = prepared_cluster
-        lock_action = get_action_by_name(client, cluster, 'lock-cluster')
-        install_action = get_action_by_name(client, cluster, 'install')
-        client.cluster.action.run.create(
-            action_id=lock_action['id'],
-            cluster_id=cluster['id'])
-    with allure.step('Run second action: install'):
-        with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-            client.cluster.action.run.create(
-                action_id=install_action['id'],
-                cluster_id=cluster['id'])
-    with allure.step('Check error that object is locked'):
-        TASK_ERROR.equal(e)
-        assert "object is locked" in e.value.error['desc']
+        prepared_cluster.action_run(name="lock-cluster")
+    with allure.step('Check that Cluster is locked'):
+        assert prepared_cluster.action_list() == [], "Cluster action list not empty. Cluster not locked"
 
 
-def test_service_in_cluster_must_be_locked_when_cluster_action_running(client, prepared_cluster):
-    with allure.step('Create service and run action: lock cluster'):
-        cluster = prepared_cluster
-        service = client.cluster.service.create(cluster_id=cluster['id'],
-                                                prototype_id=client.stack.service.list()[0]['id'])
-        client.cluster.action.run.create(
-            action_id=get_action_by_name(client, cluster, 'lock-cluster')['id'],
-            cluster_id=cluster['id'])
+def test_service_in_cluster_must_be_locked_when_cluster_action_running(prepared_cluster: Cluster):
+    with allure.step('Add service and run action: lock cluster'):
+        added_service = prepared_cluster.service_add(name="bookkeeper")
+        prepared_cluster.action_run(name="lock-cluster")
     with allure.step('Check if service is locked'):
-        assert client.cluster.service.read(cluster_id=cluster['id'],
-                                           service_id=service['id'])['state'] == 'locked'
+        added_service.reread()
+        assert added_service.state == 'locked', "Service not locked"
 
 
-def test_host_in_cluster_must_be_locked_when_cluster_action_running(client, prepared_cluster, host):
-    with allure.step('Create  host and run action: lock cluster'):
-        cluster = prepared_cluster
-        client.cluster.host.create(cluster_id=cluster['id'], host_id=host['id'])
-        client.cluster.action.run.create(
-            action_id=get_action_by_name(client, cluster, 'lock-cluster')['id'],
-            cluster_id=cluster['id'])
+def test_host_in_cluster_must_be_locked_when_cluster_action_running(prepared_cluster: Cluster, host: Host):
+    with allure.step('Add host and run action: lock cluster'):
+        prepared_cluster.host_add(host)
+        prepared_cluster.action_run(name="lock-cluster")
     with allure.step('Check if host is locked'):
-        assert client.cluster.host.read(cluster_id=cluster['id'],
-                                        host_id=host['id'])['state'] == 'locked'
+        prepared_cluster.reread()
+        assert prepared_cluster.state == "locked", "Cluster not locked"
 
 
-def test_host_must_be_locked_when_host_action_running(client, host):
+def test_host_must_be_locked_when_host_action_running(host):
     with allure.step('Run host action: action locker'):
-        client.host.action.run.create(
-            action_id=filter_action_by_name(
-                client.host.action.list(host_id=host['id']), 'action-locker'
-            )[0]['id'],
-            host_id=host['id']
-        )
+        host.action_run(name="action-locker")
     with allure.step('Check if host is locked'):
-        assert client.host.read(host_id=host['id'])['state'] == 'locked'
+        host.reread()
+        assert host.state == 'locked', "Host not locked"
 
 
-def test_cluster_must_be_locked_when_located_host_action_running(client, prepared_cluster, host):
-    with allure.step('Create host and run action: action locker'):
-        client.cluster.host.create(cluster_id=prepared_cluster['id'], host_id=host['id'])
-        client.host.action.run.create(
-            action_id=filter_action_by_name(
-                client.host.action.list(host_id=host['id']), 'action-locker')[0]['id'],
-            host_id=host['id'])
+def test_cluster_must_be_locked_when_located_host_action_running(prepared_cluster: Cluster, host: Host):
+    with allure.step('Add host and run action: action locker'):
+        prepared_cluster.host_add(host)
+        host.action_run(name="action-locker")
     with allure.step('Check if host and cluster are locked'):
-        assert client.cluster.host.read(cluster_id=prepared_cluster['id'],
-                                        host_id=host['id'])['state'] == 'locked'
-        assert client.cluster.read(cluster_id=prepared_cluster['id'])['state'] == 'locked'
+        prepared_cluster.reread()
+        host.reread()
+        assert prepared_cluster.state == 'locked', "Cluster not locked"
+        assert host.state == 'locked', "Host not locked"
 
 
-def test_cluster_service_locked_when_located_host_action_running(client, prepared_cluster, host):
-    with allure.step('Create host and service'):
-        client.cluster.host.create(cluster_id=prepared_cluster['id'], host_id=host['id'])
-        service = client.cluster.service.create(cluster_id=prepared_cluster['id'],
-                                                prototype_id=client.stack.service.list()[0]['id'])
+def test_cluster_service_locked_when_located_host_action_running(prepared_cluster: Cluster, host: Host):
+    with allure.step('Add host and service'):
+        prepared_cluster.host_add(host)
+        added_service = prepared_cluster.service_add(name="bookkeeper")
     with allure.step('Run action: action locker'):
-        client.host.action.run.create(
-            action_id=filter_action_by_name(
-                client.host.action.list(host_id=host['id']), 'action-locker')[0]['id'],
-            host_id=host['id'])
+        host.action_run(name="action-locker")
     with allure.step('Check if host, cluster and service are locked'):
-        assert client.cluster.host.read(cluster_id=prepared_cluster['id'],
-                                        host_id=host['id'])['state'] == 'locked'
-        assert client.cluster.read(cluster_id=prepared_cluster['id'])['state'] == 'locked'
-        assert client.cluster.service.read(cluster_id=prepared_cluster['id'],
-                                           service_id=service['id'])['state'] == 'locked'
+        prepared_cluster.reread()
+        host.reread()
+        added_service.reread()
+        assert prepared_cluster.state == 'locked', "Cluster not locked"
+        assert host.state == 'locked', "Host not locked"
+        assert added_service.state == 'locked', "Service not locked"
 
 
-def test_run_service_action_locked_all_objects_in_cluster(client, prepared_cluster, host):
-    with allure.step('Create host and service'):
-        client.cluster.host.create(cluster_id=prepared_cluster['id'], host_id=host['id'])
-        service = client.cluster.service.create(cluster_id=prepared_cluster['id'],
-                                                prototype_id=client.stack.service.list()[0]['id'])
+def test_run_service_action_locked_all_objects_in_cluster(prepared_cluster: Cluster, host: Host):
+    with allure.step('Add host and service'):
+        prepared_cluster.host_add(host)
+        added_service = prepared_cluster.service_add(name="bookkeeper")
     with allure.step('Run action: service lock'):
-        client.cluster.service.action.run.create(
-            action_id=filter_action_by_name(
-                client.cluster.service.action.list(cluster_id=prepared_cluster['id'],
-                                                   service_id=service['id']),
-                'service-lock')[0]['id'],
-            cluster_id=prepared_cluster['id'],
-            service_id=service['id'])
-        sleep(1)
+        added_service.action_run(name="service-lock")
     with allure.step('Check if host, cluster and service are locked'):
-        assert client.cluster.service.read(cluster_id=prepared_cluster['id'],
-                                           service_id=service['id'])['state'] == 'locked'
-        assert client.cluster.read(cluster_id=prepared_cluster['id'])['state'] == 'locked'
-        assert client.cluster.host.read(cluster_id=prepared_cluster['id'],
-                                        host_id=host['id'])['state'] == 'locked'
+        prepared_cluster.reread()
+        host.reread()
+        added_service.reread()
+        assert prepared_cluster.state == 'locked', "Cluster not locked"
+        assert host.state == 'locked', "Host not locked"
+        assert added_service.state == 'locked', "Service not locked"
 
 
-def test_cluster_should_be_unlocked_when_ansible_task_killed(client, prepared_cluster):
+def test_cluster_should_be_unlocked_when_ansible_task_killed(prepared_cluster: Cluster):
     with allure.step('Run cluster action: lock terminate'):
-        task = client.cluster.action.run.create(
-            action_id=get_action_by_name(client, prepared_cluster, 'lock-terminate')['id'],
-            cluster_id=prepared_cluster['id'])
+        task = prepared_cluster.action_run(name="lock-terminate")
     with allure.step('Check if cluster is locked and then terminate_failed'):
-        assert client.cluster.read(cluster_id=prepared_cluster['id'])['state'] == 'locked'
-        wait_until(client, task)
-        assert client.cluster.read(cluster_id=prepared_cluster['id'])['state'] == 'terminate_failed'
+        prepared_cluster.reread()
+        assert prepared_cluster.state == 'locked', "Cluster not locked"
+        task.wait()
+        prepared_cluster.reread()
+        assert prepared_cluster.state == 'terminate_failed'
 
 
-def test_host_should_be_unlocked_when_ansible_task_killed(client, prepared_cluster, host):
-    with allure.step('Create host'):
-        client.cluster.host.create(cluster_id=prepared_cluster['id'], host_id=host['id'])
+def test_host_should_be_unlocked_when_ansible_task_killed(prepared_cluster: Cluster, host: Host):
+    with allure.step('Add host'):
+        prepared_cluster.host_add(host)
     with allure.step('Run action: lock terminate'):
-        task = client.cluster.action.run.create(
-            action_id=get_action_by_name(client, prepared_cluster, 'lock-terminate')['id'],
-            cluster_id=prepared_cluster['id'])
+        task = prepared_cluster.action_run(name="lock-terminate")
+
     with allure.step('Check if host is locked and then created'):
-        assert client.host.read(host_id=host['id'])['state'] == 'locked'
-        wait_until(client, task)
-        assert client.host.read(host_id=host['id'])['state'] == 'created'
+        host.reread()
+        assert host.state == 'locked', "Host not locked"
+        task.wait()
+        host.reread()
+        assert host.state == 'created'
 
 
-def test_service_should_be_unlocked_when_ansible_task_killed(client, prepared_cluster):
-    with allure.step('Create service'):
-        service = client.cluster.service.create(cluster_id=prepared_cluster['id'],
-                                                prototype_id=client.stack.service.list()[0]['id'])
+def test_service_should_be_unlocked_when_ansible_task_killed(prepared_cluster: Cluster):
+    with allure.step('Add service'):
+        added_service = prepared_cluster.service_add(name="bookkeeper")
     with allure.step('Run action: lock-terminate'):
-        task = client.cluster.action.run.create(
-            action_id=get_action_by_name(client, prepared_cluster, 'lock-terminate')['id'],
-            cluster_id=prepared_cluster['id'])
+        task = prepared_cluster.action_run(name="lock-terminate")
     with allure.step('Check if service is locked and then created'):
-        assert client.cluster.service.read(cluster_id=prepared_cluster['id'],
-                                           service_id=service['id'])['state'] == 'locked'
-        wait_until(client, task)
-        assert client.cluster.service.read(cluster_id=prepared_cluster['id'],
-                                           service_id=service['id'])['state'] == 'created'
+        added_service.reread()
+        assert added_service.state == 'locked', "Service not locked"
+        task.wait()
+        added_service.reread()
+        assert added_service.state == 'created'
 
 
-def test_hostprovider_must_be_unlocked_when_his_task_finished(client, hostprovider):
+def test_hostprovider_must_be_unlocked_when_his_task_finished(hostprovider: Provider):
     with allure.step('Run action: action locker and create hostprovider'):
-        action_id = filter_action_by_name(
-            client.provider.action.list(provider_id=hostprovider['id']), 'action-locker')[0]['id']
-        task = client.provider.action.run.create(
-            action_id=action_id,
-            provider_id=hostprovider['id']
-        )
+        task = hostprovider.action_run(name="action-locker")
     with allure.step('Check if provider is locked and then created'):
-        assert client.provider.read(provider_id=hostprovider['id'])['state'] == 'locked'
-        wait_until(client, task)
-        assert client.provider.read(provider_id=hostprovider['id'])['state'] == 'created'
+        hostprovider.reread()
+        assert hostprovider.state == 'locked', "Provider not locked"
+        task.wait()
+        hostprovider.reread()
+        assert hostprovider.state == 'created'
+
+
+def test_host_and_hostprovider_must_be_unlocked_when_his_task_finished(hostprovider: Provider, host: Host):
+    with allure.step('Run action: action locker and create hostprovider'):
+        task = hostprovider.action_run(name="action-locker")
+    with allure.step('Check if provider and host is locked and then created'):
+        hostprovider.reread()
+        host.reread()
+        assert hostprovider.state == 'locked', "Provider not locked"
+        assert hostprovider.state == 'locked', "Host not locked"
+        task.wait()
+        hostprovider.reread()
+        host.reread()
+        assert hostprovider.state == 'created'
+        assert host.state == 'created'
