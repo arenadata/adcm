@@ -40,9 +40,9 @@ def host(hostprovider: Provider) -> Host:
 
 
 def test_cluster_must_be_locked_when_action_running(prepared_cluster: Cluster):
-    with allure.step("Run action: lock cluster"):
+    with allure.step("Run action: lock-cluster for cluster"):
         prepared_cluster.action_run(name="lock-cluster")
-    with allure.step("Check if cluster is locked"):
+    with allure.step("Check if cluster state is 'locked'"):
         prepared_cluster.reread()
         assert prepared_cluster.state == "locked"
 
@@ -50,9 +50,9 @@ def test_cluster_must_be_locked_when_action_running(prepared_cluster: Cluster):
 def test_run_new_action_on_locked_cluster_must_throws_exception(
     prepared_cluster: Cluster,
 ):
-    with allure.step("Run first action: lock cluster"):
+    with allure.step("Run action: lock-cluster for cluster"):
         prepared_cluster.action_run(name="lock-cluster")
-    with allure.step("Check that Cluster is locked"):
+    with allure.step("Check that cluster state is 'locked'"):
         assert (
             prepared_cluster.action_list() == []
         ), "Cluster action list not empty. Cluster not locked"
@@ -61,10 +61,10 @@ def test_run_new_action_on_locked_cluster_must_throws_exception(
 def test_service_in_cluster_must_be_locked_when_cluster_action_running(
     prepared_cluster: Cluster,
 ):
-    with allure.step("Add service and run action: lock cluster"):
+    with allure.step("Add service and run action: lock-cluster for cluster"):
         added_service = prepared_cluster.service_add(name="bookkeeper")
         prepared_cluster.action_run(name="lock-cluster")
-    with allure.step("Check if service is locked"):
+    with allure.step("Check if service state is 'locked'"):
         added_service.reread()
         assert added_service.state == "locked"
 
@@ -72,18 +72,18 @@ def test_service_in_cluster_must_be_locked_when_cluster_action_running(
 def test_host_in_cluster_must_be_locked_when_cluster_action_running(
     prepared_cluster: Cluster, host: Host
 ):
-    with allure.step("Add host and run action: lock cluster"):
+    with allure.step("Add host and run action: lock-cluster for cluster"):
         prepared_cluster.host_add(host)
         prepared_cluster.action_run(name="lock-cluster")
-    with allure.step("Check if host is locked"):
+    with allure.step("Check if host state is 'locked'"):
         prepared_cluster.reread()
         assert prepared_cluster.state == "locked"
 
 
 def test_host_must_be_locked_when_host_action_running(host):
-    with allure.step("Run host action: action locker"):
+    with allure.step("Run host action: action-locker"):
         host.action_run(name="action-locker")
-    with allure.step("Check if host is locked"):
+    with allure.step("Check if host state is 'locked'"):
         host.reread()
         assert host.state == "locked"
 
@@ -91,10 +91,10 @@ def test_host_must_be_locked_when_host_action_running(host):
 def test_cluster_must_be_locked_when_located_host_action_running(
     prepared_cluster: Cluster, host: Host
 ):
-    with allure.step("Add host and run action: action locker"):
+    with allure.step("Add host and run action: action-locker"):
         prepared_cluster.host_add(host)
         host.action_run(name="action-locker")
-    with allure.step("Check if host and cluster are locked"):
+    with allure.step("Check if host and cluster states are 'locked'"):
         prepared_cluster.reread()
         host.reread()
         assert prepared_cluster.state == "locked"
@@ -107,9 +107,9 @@ def test_cluster_service_locked_when_located_host_action_running(
     with allure.step("Add host and service"):
         prepared_cluster.host_add(host)
         added_service = prepared_cluster.service_add(name="bookkeeper")
-    with allure.step("Run action: action locker"):
+    with allure.step("Run action: action-locker for host"):
         host.action_run(name="action-locker")
-    with allure.step("Check if host, cluster and service are locked"):
+    with allure.step("Check if host, cluster and service states are 'locked'"):
         prepared_cluster.reread()
         host.reread()
         added_service.reread()
@@ -124,9 +124,9 @@ def test_run_service_action_locked_all_objects_in_cluster(
     with allure.step("Add host and service"):
         prepared_cluster.host_add(host)
         added_service = prepared_cluster.service_add(name="bookkeeper")
-    with allure.step("Run action: service lock"):
+    with allure.step("Run action: service-lock for service"):
         added_service.action_run(name="service-lock")
-    with allure.step("Check if host, cluster and service are locked"):
+    with allure.step("Check if host, cluster and service states are 'locked'"):
         prepared_cluster.reread()
         host.reread()
         added_service.reread()
@@ -136,9 +136,9 @@ def test_run_service_action_locked_all_objects_in_cluster(
 
 
 def test_cluster_should_be_unlocked_when_ansible_task_killed(prepared_cluster: Cluster):
-    with allure.step("Run cluster action: lock terminate"):
+    with allure.step("Run cluster action: lock-terminate for cluster"):
         task = prepared_cluster.action_run(name="lock-terminate")
-    with allure.step("Check if cluster is locked and then terminate_failed"):
+    with allure.step("Check if cluster state is 'locked' and then 'terminate_failed'"):
         prepared_cluster.reread()
         assert prepared_cluster.state == "locked"
         task.wait()
@@ -151,10 +151,10 @@ def test_host_should_be_unlocked_when_ansible_task_killed(
 ):
     with allure.step("Add host"):
         prepared_cluster.host_add(host)
-    with allure.step("Run action: lock terminate"):
+    with allure.step("Run action: lock-terminate for cluster"):
         task = prepared_cluster.action_run(name="lock-terminate")
 
-    with allure.step("Check if host is locked and then created"):
+    with allure.step("Check if host state is 'locked' and then is 'created'"):
         host.reread()
         assert host.state == "locked"
         task.wait()
@@ -165,9 +165,9 @@ def test_host_should_be_unlocked_when_ansible_task_killed(
 def test_service_should_be_unlocked_when_ansible_task_killed(prepared_cluster: Cluster):
     with allure.step("Add service"):
         added_service = prepared_cluster.service_add(name="bookkeeper")
-    with allure.step("Run action: lock-terminate"):
+    with allure.step("Run action: lock-terminate for cluster"):
         task = prepared_cluster.action_run(name="lock-terminate")
-    with allure.step("Check if service is locked and then created"):
+    with allure.step("Check if service state is 'locked' and then is 'created'"):
         added_service.reread()
         assert added_service.state == "locked"
         task.wait()
@@ -176,9 +176,9 @@ def test_service_should_be_unlocked_when_ansible_task_killed(prepared_cluster: C
 
 
 def test_hostprovider_must_be_unlocked_when_his_task_finished(hostprovider: Provider):
-    with allure.step("Run action: action locker and create hostprovider"):
+    with allure.step("Run action: action-locker for hostprovider"):
         task = hostprovider.action_run(name="action-locker")
-    with allure.step("Check if provider is locked and then created"):
+    with allure.step("Check if provider state is 'locked' and then is 'created'"):
         hostprovider.reread()
         assert hostprovider.state == "locked"
         task.wait()
@@ -189,13 +189,13 @@ def test_hostprovider_must_be_unlocked_when_his_task_finished(hostprovider: Prov
 def test_host_and_hostprovider_must_be_unlocked_when_his_task_finished(
     hostprovider: Provider, host: Host
 ):
-    with allure.step("Run action: action locker and create hostprovider"):
+    with allure.step("Run action: action-locker for hostprovider"):
         task = hostprovider.action_run(name="action-locker")
-    with allure.step("Check if provider and host is locked and then created"):
+    with allure.step("Check if provider state is 'locked' and then is 'created'"):
         hostprovider.reread()
         host.reread()
         assert hostprovider.state == "locked"
-        assert hostprovider.state == "locked"
+        assert host.state == "locked"
         task.wait()
         hostprovider.reread()
         host.reread()
