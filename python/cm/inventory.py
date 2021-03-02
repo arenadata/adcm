@@ -208,7 +208,7 @@ def get_target_host(host_id):
     groups = {
         'target': {
             'hosts': get_hosts([host]),
-            'vars': get_provider_config(host.provider.id)
+            'vars': get_cluster_config(host.cluster.id)
         }
     }
     return groups

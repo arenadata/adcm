@@ -145,7 +145,10 @@ class ActionDetail(GenericAPIPermView):
         """
         obj, action_id = get_obj(**kwargs)
         action = check_obj(Action, {'id': action_id}, 'ACTION_NOT_FOUND')
-        objects = {action.prototype.type: obj}
+        if isinstance(obj, Host) and action.host_action:
+            objects = {'host': obj}
+        else:
+            objects = {action.prototype.type: obj}
         serializer = self.serializer_class(action, context={'request': request, 'objects': objects})
         return Response(serializer.data)
 

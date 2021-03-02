@@ -569,7 +569,7 @@ def prepare_context(selector):
     if 'provider' in selector:
         context['type'] = 'provider'
         context['provider_id'] = selector['provider']
-    if 'host' in selector:
+    if 'host' in selector and 'type' not in context:
         context['type'] = 'host'
         context['host_id'] = selector['host']
     if 'adcm' in selector:
