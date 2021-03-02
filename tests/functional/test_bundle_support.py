@@ -21,21 +21,17 @@ from tests.library import steps
 from tests.library.utils import wait_until, filter_action_by_name
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def adcm(image, request, adcm_credentials):
     repo, tag = image
     dw = DockerWrapper()
     adcm = dw.run_adcm(image=repo, tag=tag, pull=False)
     adcm.api.auth(**adcm_credentials)
-
-    def fin():
-        adcm.stop()
-
-    request.addfinalizer(fin)
-    return adcm
+    yield adcm
+    adcm.stop()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def client(adcm):
     return adcm.api.objects
 
@@ -97,7 +93,7 @@ cluster_fields = [
 ]
 
 
-@pytest.mark.parametrize("cluster_bundle, state", cluster_fields)
+@pytest.mark.parametrize(('cluster_bundle', 'state'), cluster_fields)
 def test_check_cluster_state_after_run_action_when_empty(cluster_bundle, state, client):
     with allure.step(f'Upload cluster bundle: {cluster_bundle}'):
         bundle = utils.get_data_dir(__file__, "empty_states", cluster_bundle)
@@ -121,7 +117,7 @@ host_fields = [
 ]
 
 
-@pytest.mark.parametrize("host_bundle, state", host_fields)
+@pytest.mark.parametrize(('host_bundle', 'state'), host_fields)
 def test_check_host_state_after_run_action_when_empty(host_bundle, state, client):
     with allure.step(f'Upload cluster bundle: {host_bundle}'):
         bundle = utils.get_data_dir(__file__, "empty_states", host_bundle)
@@ -191,7 +187,7 @@ state_cases = [
 ]
 
 
-@pytest.mark.parametrize("entity, state, case", state_cases)
+@pytest.mark.parametrize(('entity', 'state', 'case'), state_cases)
 def test_load_should_fail_when(client, entity, state, case):
     with allure.step(f'Upload {entity} bundle with {case}'):
         bundle = utils.get_data_dir(__file__, 'states', entity, state, case)

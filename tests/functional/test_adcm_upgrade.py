@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=W0621,R0914
-
 import allure
 import pytest
 
@@ -59,7 +58,7 @@ def adcm_client(adcm_repo, adcm_credentials, adcm_tag, volumes, init=False):
             dw.client.images.remove(f'{repo}:{tag}', force=True)
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture()
 def volume(request):
     """
     Create Docker volume and remove it after test
@@ -67,14 +66,8 @@ def volume(request):
     dw = DockerWrapper()
     with allure.step("Create docker volume"):
         vol = dw.client.volumes.create()
-
-    @allure.step("Remove docker volume")
-    def fin():
-        vol.remove(force=True)
-
-    request.addfinalizer(fin)
-
-    return vol
+    yield vol
+    vol.remove(force=True)
 
 
 @pytest.mark.parametrize("old_adcm", old_adcm_images(), ids=repr)

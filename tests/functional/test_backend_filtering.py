@@ -25,58 +25,58 @@ from delayed_assert import assert_expectations, expect
 from pytest_lazyfixture import lazy_fixture
 
 
-@pytest.fixture
+@pytest.fixture()
 def cluster_bundles(sdk_client_fs: ADCMClient):
     for path in get_subdirs_iter(__file__, "cluster_bundles"):
         sdk_client_fs.upload_from_fs(path)
     return sdk_client_fs
 
 
-@pytest.fixture
+@pytest.fixture()
 def one_cluster_prototype(cluster_bundles: ADCMClient):
     return cluster_bundles.bundle(name="4").cluster_prototype()
 
 
-@pytest.fixture
+@pytest.fixture()
 def one_cluster_prototype_name_attr(one_cluster_prototype: ClusterPrototype):
     return {'name': one_cluster_prototype.name}
 
 
-@pytest.fixture
+@pytest.fixture()
 def one_cluster_prototype_bundle_id_attr(one_cluster_prototype: ClusterPrototype):
     return {'bundle_id': one_cluster_prototype.bundle_id}
 
 
-@pytest.fixture
+@pytest.fixture()
 def clusters(cluster_bundles: ADCMClient):
     for i in range(51):
         cluster_bundles.bundle(name='14').cluster_create(name=str(i))
     return cluster_bundles
 
 
-@pytest.fixture
+@pytest.fixture()
 def one_cluster(cluster_bundles: ADCMClient):
     return cluster_bundles.bundle(name='42').cluster_create(name="I am a Cluster")
 
 
-@pytest.fixture
+@pytest.fixture()
 def one_cluster_name_attr(one_cluster: Cluster):
     return {'name': one_cluster.name}
 
 
-@pytest.fixture
+@pytest.fixture()
 def one_cluster_prototype_id_attr(one_cluster: Cluster):
     return {'prototype_id': one_cluster.prototype_id}
 
 
-@pytest.fixture
+@pytest.fixture()
 def provider_bundles(sdk_client_fs: ADCMClient):
     for path in get_subdirs_iter(__file__, "provider_bundles"):
         sdk_client_fs.upload_from_fs(path)
     return sdk_client_fs
 
 
-@pytest.fixture
+@pytest.fixture()
 def providers(provider_bundles: ADCMClient):
     bundle = provider_bundles.bundle(name='provider18')
     for i in range(51):
@@ -84,50 +84,50 @@ def providers(provider_bundles: ADCMClient):
     return provider_bundles
 
 
-@pytest.fixture
+@pytest.fixture()
 def one_provider(provider_bundles: ADCMClient):
     return provider_bundles.bundle(name='provider15').provider_create(name="I am a Provider")
 
 
-@pytest.fixture
+@pytest.fixture()
 def one_provider_name_attr(one_provider: Provider):
     return {'name': one_provider.name}
 
 
-@pytest.fixture
+@pytest.fixture()
 def one_provider_prototype_id_attr(one_provider: Provider):
     return {'prototype_id': one_provider.prototype_id}
 
 
-@pytest.fixture
+@pytest.fixture()
 def provider_bundle_id(one_provider: Provider):
     return {'bundle_id': one_provider.bundle_id}
 
 
-@pytest.fixture
+@pytest.fixture()
 def hosts(provider_bundles: ADCMClient, one_provider):
     for i in range(51):
         one_provider.host_create(fqdn=str(i))
     return provider_bundles
 
 
-@pytest.fixture
+@pytest.fixture()
 def one_host(provider_bundles: ADCMClient):
     provider = provider_bundles.bundle(name='provider42').provider_create(name="For one Host")
     return provider.host_create(fqdn='host.host.host')
 
 
-@pytest.fixture
+@pytest.fixture()
 def one_host_fqdn_attr(one_host: Host):
     return {'fqdn': one_host.fqdn}
 
 
-@pytest.fixture
+@pytest.fixture()
 def one_host_prototype_id_attr(one_host: Host):
     return {'prototype_id': one_host.prototype_id}
 
 
-@pytest.fixture
+@pytest.fixture()
 def one_host_provider_id_attr(one_host: Host):
     return {'provider_id': one_host.provider_id}
 
@@ -202,7 +202,7 @@ def test_coreapi_schema(sdk_client_fs: ADCMClient, TestedClass):
 
 
 @pytest.mark.parametrize(
-    "sdk_client,TestedClass",
+    ('sdk_client', 'TestedClass'),
     [
         pytest.param(
             lazy_fixture('cluster_bundles'),
@@ -255,7 +255,7 @@ def test_paging_fail(sdk_client, TestedClass):
 
 
 @pytest.mark.parametrize(
-    "sdk_client,TestedClass,TestedListClass,search_args,expected_args",
+    ('sdk_client', 'TestedClass', 'TestedListClass', 'search_args', 'expected_args'),
     [
         pytest.param(
             lazy_fixture('cluster_bundles'),
@@ -429,39 +429,39 @@ def test_filter(sdk_client: ADCMClient, TestedClass, TestedListClass, search_arg
             assert getattr(o, k) == v
 
 
-@pytest.fixture
+@pytest.fixture()
 def cluster_with_actions(sdk_client_fs: ADCMClient):
     b = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_with_actions'))
     return b.cluster_create(name="cluster_with_actions")
 
 
-@pytest.fixture
+@pytest.fixture()
 def service_with_actions(cluster_with_actions: Cluster):
     return cluster_with_actions.service_add(name='service_with_actions')
 
 
-@pytest.fixture
+@pytest.fixture()
 def provider_with_actions(sdk_client_fs: ADCMClient):
     b = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'provider_with_actions'))
     return b.provider_create(name="provider_with_actions")
 
 
-@pytest.fixture
+@pytest.fixture()
 def host_with_actions(provider_with_actions: Provider):
     return provider_with_actions.host_create(fqdn='host.with.actions')
 
 
-@pytest.fixture
+@pytest.fixture()
 def host_ok_action(host_with_actions: Host):
     return host_with_actions.action(name="ok42")
 
 
-@pytest.fixture
+@pytest.fixture()
 def host_fail_action(host_with_actions: Host):
     return host_with_actions.action(name="fail50")
 
 
-@pytest.fixture
+@pytest.fixture()
 def host_with_jobs(host_with_actions: Host, host_fail_action, host_ok_action):
     for _ in range(51):
         host_fail_action.run().wait()
@@ -469,17 +469,17 @@ def host_with_jobs(host_with_actions: Host, host_fail_action, host_ok_action):
     return host_with_actions
 
 
-@pytest.fixture
+@pytest.fixture()
 def task_action_id_attr(host_ok_action: Action):
     return {'action_id': host_ok_action.action_id}
 
 
-@pytest.fixture
+@pytest.fixture()
 def task_status_attr(host_ok_action: Action):
     return {'status': 'success'}
 
 
-@pytest.fixture
+@pytest.fixture()
 def job_task_id_attr(host_ok_action: Action):
     return {'task_id': host_ok_action.task().task_id}
 
@@ -516,7 +516,7 @@ def job_task_id_attr(host_ok_action: Action):
 #         pprint(TestedParentClass.action_list())
 
 @pytest.mark.parametrize(
-    "TestedParentClass,search_args,expected_args",
+    ('TestedParentClass', 'search_args', 'expected_args'),
     [
         pytest.param(
             lazy_fixture('cluster_with_actions'),
