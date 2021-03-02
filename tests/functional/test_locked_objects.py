@@ -48,7 +48,7 @@ def _check_locked_object(obj: Union[Cluster, Service, Provider, Host]):
     obj.reread()
     assert obj.state == "locked"
     assert (
-            obj.action_list() == []
+        obj.action_list() == []
     ), f"{obj.__class__.__name__} action list not empty. {obj.__class__.__name__} not locked"
 
 
