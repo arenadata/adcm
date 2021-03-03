@@ -240,6 +240,7 @@ urlpatterns = [
     path(CLUSTER + SERVICE + 'config/', include('api.config.urls'), {'object_type': 'service'}),
 
     path('service/', include('api.service.urls')),
+    path('component/', include('api.component.urls')),
 
     path('adcm/', views.AdcmList.as_view(), name='adcm'),
     path('adcm/<int:adcm_id>/', views.AdcmDetail.as_view(), name='adcm-details'),

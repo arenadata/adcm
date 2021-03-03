@@ -100,8 +100,9 @@ def get_api_url_kwargs(obj, request):
         if 'cluster' in request.path:
             kwargs['cluster_id'] = obj.cluster.id
     elif obj_type == 'component':
-        kwargs['service_id'] = obj.service.id
-        kwargs['cluster_id'] = obj.cluster.id
+        if 'cluster' in request.path:
+            kwargs['service_id'] = obj.service.id
+            kwargs['cluster_id'] = obj.cluster.id
     return kwargs
 
 
@@ -280,13 +281,13 @@ class PageView(GenericAPIView, InterfaceView):
         msg = 'Response is too long, use paginated request'
         raise AdcmApiEx('TOO_LONG', msg=msg, args=self.get_paged_link())
 
-    def get(self, request):
+    def get(self, request, *args, **kwargs):
         obj = self.filter_queryset(self.get_queryset())
         return self.get_page(obj, request)
 
 
 class PageViewAdd(PageView):
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         serializer_class = self.select_serializer(request)
         serializer = serializer_class(data=request.data, context={'request': request})
         return create(serializer)
