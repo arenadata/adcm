@@ -42,12 +42,13 @@ class ComponentSerializer(serializers.Serializer):
 
 
 class ComponentDetailSerializer(ComponentSerializer):
-    prototype_id = serializers.IntegerField(read_only=True)
-    description = serializers.CharField(read_only=True)
+    constraint = serializers.JSONField(read_only=True)
+    requires = serializers.JSONField(read_only=True)
+    bound_to = serializers.JSONField(read_only=True)
     bundle_id = serializers.IntegerField(read_only=True)
-    issue = serializers.SerializerMethodField()
-    status = serializers.SerializerMethodField()
     monitoring = serializers.CharField(read_only=True)
+    status = serializers.SerializerMethodField()
+    issue = serializers.SerializerMethodField()
     action = CommonAPIURL(read_only=True, view_name='object-action')
     config = CommonAPIURL(read_only=True, view_name='object-config')
     prototype = serializers.HyperlinkedIdentityField(

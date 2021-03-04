@@ -390,10 +390,18 @@ class ServiceComponentDetailSerializer(ServiceComponentSerializer):
     constraint = serializers.JSONField(read_only=True)
     requires = serializers.JSONField(read_only=True)
     bound_to = serializers.JSONField(read_only=True)
+    bundle_id = serializers.IntegerField(read_only=True)
     monitoring = serializers.CharField(read_only=True)
     status = serializers.SerializerMethodField()
+    issue = serializers.SerializerMethodField()
     config = CommonAPIURL(view_name='object-config')
     action = CommonAPIURL(view_name='object-action')
+    prototype = serializers.HyperlinkedIdentityField(
+        view_name='component-type-details', lookup_field='prototype_id',
+        lookup_url_kwarg='prototype_id')
+
+    def get_issue(self, obj):
+        return cm.issue.get_issue(obj)
 
     def get_status(self, obj):
         return cm.status_api.get_component_status(obj.id)

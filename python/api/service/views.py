@@ -76,7 +76,7 @@ class ServiceDetailView(DetailViewRO):
 class ServiceComponentListView(PageView):
     queryset = ServiceComponent.objects.all()
     serializer_class = serializers.ServiceComponentSerializer
-    serializer_class_ui = serializers.ServiceComponentDetailSerializer
+    serializer_class_ui = serializers.ServiceComponentUISerializer
     ordering_fields = ('component__display_name', )
 
     def get(self, request, *args, **kwargs):
