@@ -431,7 +431,7 @@ class ClusterServiceDetail(DetailViewRO):
 class ServiceComponentList(PageView):
     queryset = ServiceComponent.objects.all()
     serializer_class = api.cluster_serial.ServiceComponentSerializer
-    serializer_class_ui = api.cluster_serial.ServiceComponentDetailSerializer
+    serializer_class_ui = api.cluster_serial.ServiceComponentUISerializer
     ordering_fields = ('component__display_name',)
 
     def get(self, request, cluster_id, service_id):   # pylint: disable=arguments-differ

@@ -31,7 +31,8 @@ class ComponentObjectUrlField(serializers.HyperlinkedIdentityField):
 
 class ComponentSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
-    cluster_id = serializers.IntegerField(required=True)
+    cluster_id = serializers.IntegerField(read_only=True)
+    service_id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
     display_name = serializers.CharField(read_only=True)
     description = serializers.CharField(read_only=True)
@@ -62,10 +63,7 @@ class ComponentDetailSerializer(ComponentSerializer):
 
 class ComponentUISerializer(ComponentDetailSerializer):
     actions = serializers.SerializerMethodField()
-    name = serializers.CharField(read_only=True)
     version = serializers.SerializerMethodField()
-    action = CommonAPIURL(view_name='object-action')
-    config = CommonAPIURL(view_name='object-config')
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
