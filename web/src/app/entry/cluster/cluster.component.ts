@@ -50,7 +50,7 @@ export class ClusterListComponent extends AdwpListDirective<ICluster> {
     ListFactory.bundleColumn(),
     ListFactory.descriptionColumn(),
     ListFactory.stateColumn(),
-    ListFactory.statusColumn(this.takeUntil.bind(this), this.gotoStatus.bind(this)),
+    ListFactory.statusColumn(this),
     ListFactory.actionsColumn(),
     ListFactory.importColumn(this),
     ListFactory.updateColumn(),

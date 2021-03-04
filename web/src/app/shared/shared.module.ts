@@ -46,6 +46,7 @@ import { ActionsColumnComponent } from '@app/components/columns/actions-column/a
 import { StateColumnComponent } from '@app/components/columns/state-column/state-column.component';
 import { EditionColumnComponent } from '@app/components/columns/edition-column/edition-column.component';
 import { ClusterColumnComponent } from '@app/components/columns/cluster-column/cluster-column.component';
+import { ServiceComponentsComponent } from '@app/components/service-components.component';
 
 @NgModule({
   imports: [
@@ -88,6 +89,7 @@ import { ClusterColumnComponent } from '@app/components/columns/cluster-column/c
     StateColumnComponent,
     EditionColumnComponent,
     ClusterColumnComponent,
+    ServiceComponentsComponent,
   ],
   // entryComponents: [DialogComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent, ActionMasterComponent],
   exports: [
@@ -119,6 +121,7 @@ import { ClusterColumnComponent } from '@app/components/columns/cluster-column/c
     StateColumnComponent,
     EditionColumnComponent,
     ClusterColumnComponent,
+    ServiceComponentsComponent,
     AdwpListModule,
   ],
 })

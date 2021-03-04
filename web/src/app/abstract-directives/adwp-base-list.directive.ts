@@ -11,6 +11,7 @@ export class AdwpBaseListDirective extends BaseListDirective {
   sorting: BehaviorSubject<Sort> = new BehaviorSubject<Sort>(null);
 
   routeListener(limit: number, page: number, ordering: string, params: ParamMap) {
+    console.log('routeListener');
     this.paging.next({ pageIndex: page + 1, pageSize: limit });
     if (ordering) {
       const direction = ordering[0] === '-' ? 'desc' : 'asc';

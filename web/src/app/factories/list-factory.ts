@@ -1,9 +1,8 @@
 import { IComponentColumn, IValueColumn, IButtonsColumn, ILinkColumn } from '@adwp-ui/widgets';
 import { ComponentRef } from '@angular/core';
-import { MonoTypeOperatorFunction } from 'rxjs';
 
 import { StateColumnComponent } from '@app/components/columns/state-column/state-column.component';
-import { StatusColumnComponent } from '@app/components/columns/status-column/status-column.component';
+import { StatusColumnComponent, StatusData } from '@app/components/columns/status-column/status-column.component';
 import { ActionsColumnComponent } from '@app/components/columns/actions-column/actions-column.component';
 import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
 import { UpgradeComponent } from '@app/shared';
@@ -46,10 +45,7 @@ export class ListFactory {
     };
   }
 
-  static statusColumn<T>(
-    takeUntil: () => MonoTypeOperatorFunction<any>,
-    onClickCallback: (data: any) => void,
-  ): IComponentColumn<T> {
+  static statusColumn<T>(listDirective: AdwpListDirective<T>): IComponentColumn<T> {
     return {
       label: 'Status',
       sort: 'status',
@@ -59,8 +55,8 @@ export class ListFactory {
       component: StatusColumnComponent,
       instanceTaken: (componentRef: ComponentRef<StatusColumnComponent<T>>) => {
         componentRef.instance.onClick
-          .pipe(takeUntil())
-          .subscribe((data) => onClickCallback(data));
+          .pipe(listDirective.takeUntil())
+          .subscribe((data: StatusData<any>) => listDirective.gotoStatus(data));
       }
     };
   }
