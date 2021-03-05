@@ -131,7 +131,7 @@ def test_upgrade_cluster_without_old_config(sdk_client_fs: ADCMClient):
         assert cluster.prototype().version == '2-config'
 
 
-@pytest.mark.parametrize("boundary, expected", [
+@pytest.mark.parametrize(('boundary', 'expected'), [
     ("min_cluster", "can not be used simultaneously"),
     ("max_cluster", "should be present"),
     ("min_hostprovider", "can not be used simultaneously"),

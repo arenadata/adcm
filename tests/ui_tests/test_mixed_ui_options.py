@@ -1,4 +1,5 @@
 # pylint: disable=W0611, W0621
+import allure
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import parametrize_by_data_subdirs
 
@@ -6,12 +7,10 @@ from .app.configuration import Configuration
 from .utils import prepare_cluster_and_get_config
 
 
+@allure.step("Check invisible and advanced for groups false for fields true")
 def _check_invisible_and_advanced_for_groups_false_for_fields_true(
         sdk_client: ADCMClient, path, app):
-    """Invisible and advanced for groups false for fields true
-    """
     _, config = prepare_cluster_and_get_config(sdk_client, path, app)
-
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -27,12 +26,10 @@ def _check_invisible_and_advanced_for_groups_false_for_fields_true(
         assert not field.is_displayed(), field.get_attribute("class")
 
 
+@allure.step("Check invisible and advanced for groups true for fields false."
+             " In this case no elements presented on page")
 def _check_all_groups_and_fields_invisible(
         sdk_client: ADCMClient, path, app):
-    """Invisible and advanced for groups true for fields false.
-     In this case no elements presented on page
-    """
-
     _, config = prepare_cluster_and_get_config(sdk_client, path, app)
 
     fields = config.get_field_groups()
@@ -50,13 +47,10 @@ def _check_all_groups_and_fields_invisible(
         assert not field.is_displayed(), field.get_attribute("class")
 
 
+@allure.step("Check that fields and groups visible only if advanced enabled")
 def _check_groups_and_fields_visible_if_advanced_enabled(
         sdk_client: ADCMClient, path, app):
-    """Fields and groups visible only if advanced enabled.
-    """
-
     _, config = prepare_cluster_and_get_config(sdk_client, path, app)
-
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -96,28 +90,27 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm):
     for group in groups:
         assert group.is_displayed(), group.get_attribute("class")
     group_names = config.get_group_elements()
-    assert len(group_names) == 1
-    assert group_names[0].text == cluster_name
-    assert group_names, group_names
+    with allure.step('Check that 1 field and 1 group is visible'):
+        assert len(group_names) == 1
+        assert group_names[0].text == cluster_name
+        assert group_names, group_names
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
     group_names = config.get_group_elements()
-    assert group_names, group_names
-    assert len(group_names) == 1
-    assert group_names[0].text == cluster_name
-    groups = config.get_field_groups()
-    for group in groups:
-        assert group.is_displayed(), group.get_attribute("class")
+    with allure.step('Check that 1 field and 1 group is visible'):
+        assert group_names, group_names
+        assert len(group_names) == 1
+        assert group_names[0].text == cluster_name
+        groups = config.get_field_groups()
+        for group in groups:
+            assert group.is_displayed(), group.get_attribute("class")
 
 
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_true_invisible_true_field_advanced_true_invisible_true")
 def test_all_true(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm):
-    """Check group and field ui options when advanced and invisible is true"""
-
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
-
     groups = config.get_field_groups()
     for group in groups:
         assert not group.is_displayed(), group.get_attribute("class")
@@ -126,18 +119,19 @@ def test_all_true(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm):
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
-    groups = config.get_field_groups()
-    group_names = config.get_group_elements()
-    assert not group_names
-    for group in groups:
-        assert not group.is_displayed(), group.get_attribute("class")
+    with allure.step('Check group and field ui options when advanced and invisible is true'):
+        groups = config.get_field_groups()
+        group_names = config.get_group_elements()
+        assert not group_names
+        for group in groups:
+            assert not group.is_displayed(), group.get_attribute("class")
 
 
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_false_invisible_false_field_advanced_true_invisible_true")
 def test_groups_false_fields_true(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm):
-    """Invisible and advanced for groups false for fields true
-    """
+    """Invisible and advanced for groups false for fields true."""
+
     _check_invisible_and_advanced_for_groups_false_for_fields_true(sdk_client_fs, path, app_fs)
 
 
@@ -180,11 +174,7 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_tru
     __file__, "group_advanced_false_invisible_false_field_advanced_true_invisible_false")
 def test_group_advanced_false_invisible_false_field_advanced_true_invisible_false(
         sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm):
-    """Groups is visible always, field only if advanced enabled.
-    """
-
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
-
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -193,11 +183,12 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_fals
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
-    fields = config.get_field_groups()
-    group_names = config.get_group_elements()
-    assert group_names
-    for field in fields:
-        assert field.is_displayed(), field.get_attribute("class")
+    with allure.step('Check groups are visible always, field only if advanced enabled'):
+        fields = config.get_field_groups()
+        group_names = config.get_group_elements()
+        assert group_names
+        for field in fields:
+            assert field.is_displayed(), field.get_attribute("class")
 
 
 @parametrize_by_data_subdirs(
@@ -243,11 +234,7 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_fals
     __file__, "group_advanced_true_invisible_false_field_advanced_false_invisible_true")
 def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true(
         sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm):
-    """Only group is visible if advanced enabled
-    """
-
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
-
     fields = config.get_field_groups()
     for field in fields:
         assert not field.is_displayed(), field.get_attribute("class")
@@ -256,20 +243,18 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
-    fields = config.get_field_groups()
-    group_names = config.get_group_elements()
-    assert group_names
-    for field in fields:
-        assert not field.is_displayed(), field.get_attribute("class")
+    with allure.step('Check that only group is visible if advanced enabled'):
+        fields = config.get_field_groups()
+        group_names = config.get_group_elements()
+        assert group_names
+        for field in fields:
+            assert not field.is_displayed(), field.get_attribute("class")
 
 
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_true_invisible_false_field_advanced_true_invisible_true")
 def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true(
         sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm):
-    """Group is visible with advanced option and field is invisible
-    """
-
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
 
     fields = config.get_field_groups()
@@ -280,11 +265,12 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true(
     if not config.advanced:
         config.click_advanced()
     assert config.advanced
-    fields = config.get_field_groups()
-    group_names = config.get_group_elements()
-    assert group_names
-    for field in fields:
-        assert not field.is_displayed(), field.get_attribute("class")
+    with allure.step('Check that group is visible with advanced option and field is invisible'):
+        fields = config.get_field_groups()
+        group_names = config.get_group_elements()
+        assert group_names
+        for field in fields:
+            assert not field.is_displayed(), field.get_attribute("class")
 
 
 @parametrize_by_data_subdirs(

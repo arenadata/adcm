@@ -1,16 +1,15 @@
 # pylint: disable=W0611, W0621, R1702, R0914, R0912, R0915
 
-import allure
 import os
-import pytest
 import tempfile
-import yaml
 
+import allure
+import pytest
+import yaml
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import random_string
 
 from .utils import prepare_cluster_and_get_config
-
 
 PAIR = (True, False)
 UI_OPTIONS_PAIRS = ((False, False), (False, True), (True, False))
@@ -54,10 +53,8 @@ class ListWithoutRepr(list):
         return '<%s instance at %#x>' % (self.__class__.__name__, id(self))
 
 
-def generate_group_data():
-    """Generate data set for groups
-    :return: list with data
-    """
+@allure.step('Generate data set for groups')
+def generate_group_data() -> list:
     group_data = []
     for required, default, ro in FIELDS:
         for activatable in PAIR:
@@ -92,12 +89,8 @@ def generate_group_data():
     return group_data
 
 
-def generate_group_expected_result(group_config):
-    """Generate expected result for groups
-
-    :param group_config:
-    :return: dict with expected result
-    """
+@allure.step('Generate expected result for groups')
+def generate_group_expected_result(group_config) -> dict:
     expected_result = {'group_visible': not group_config['ui_options']['invisible'],
                        'editable': not group_config['read_only'],
                        "content": group_config['default']}
@@ -136,24 +129,15 @@ def generate_group_expected_result(group_config):
     return expected_result
 
 
-def validate_config(field_required, default_presented, field_ro):
-    """
-
-    :param field_required:
-    :param default_presented:
-    :param field_ro:
-    :return:
-    """
+@allure.step('Validate config')
+def validate_config(field_required, default_presented, field_ro) -> bool:
     if (field_required and not default_presented) or field_ro:
         return False
     return True
 
 
-def generate_config_data():
-    """Generate data set for configs without groups
-
-    :return: list
-    """
+@allure.step('Generate data set for configs without groups')
+def generate_config_data() -> list:
     data = []
     for default, required, ro in FIELDS:
         for ui_options in UI_OPTIONS_PAIRS:
@@ -163,12 +147,8 @@ def generate_config_data():
     return data
 
 
-def generate_config_expected_result(config):
-    """Generate expected result for config
-
-    :param config:
-    :return: dict with expected result
-    """
+@allure.step('Generate expected result for config')
+def generate_config_expected_result(config) -> dict:
     expected_result = {'visible': not config['ui_options']['invisible'],
                        'editable': not config['read_only'],
                        "content": config['default']}
@@ -189,12 +169,8 @@ def generate_config_expected_result(config):
     return expected_result
 
 
-def generate_group_configs(group_config_data):
-    """Generate ADCM config dictionaries for groups
-
-    :param group_config_data:
-    :return:
-    """
+@allure.step('Generate ADCM config dictionaries for groups')
+def generate_group_configs(group_config_data) -> list:
     group_configs = []
     for _type in TYPES:
         for data in group_config_data:
@@ -228,12 +204,8 @@ def generate_group_configs(group_config_data):
     return group_configs
 
 
-def generate_configs(config_data):
-    """Generate ADCM config dictionaries for fields
-
-    :param config_data:
-    :return:
-    """
+@allure.step('Generate ADCM config dictionaries for fields')
+def generate_configs(config_data) -> list:
     configs = []
     for _type in TYPES:
         for data in config_data:
@@ -266,6 +238,7 @@ group_configs_data = generate_group_data()
 group_configs = generate_group_configs(group_configs_data)
 
 
+@allure.step('Prepare config')
 def prepare_config(config):
     read_only = bool('read_only' in config[0][0]['config'][0].keys())
     default = bool('default' in config[0][0]['config'][0].keys())
@@ -291,6 +264,7 @@ def prepare_config(config):
     return config[0][0], config[1], d_name
 
 
+@allure.step('Prepare group config')
 def prepare_group_config(config):
     if "activatable" in config[0]['config'][0].keys():
         activatable = True
@@ -349,28 +323,30 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs, login_to
     _, ui_config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
 
     fields = ui_config.get_app_fields()
-    save_err_mess = "Correct status for save button {}".format([expected['save']])
-    assert expected['save'] == ui_config.save_button_status(), save_err_mess
-    if expected['visible']:
-        if expected['visible_advanced']:
+    with allure.step('Check save button status'):
+        save_err_mess = "Correct status for save button {}".format([expected['save']])
+        assert expected['save'] == ui_config.save_button_status(), save_err_mess
+    with allure.step('Check field configuration'):
+        if expected['visible']:
+            if expected['visible_advanced']:
+                assert not fields, "Config fields presented, expected no"
+                if not ui_config.advanced:
+                    ui_config.click_advanced()
+                assert ui_config.advanced, 'Advanced button not clicked'
+            fields = ui_config.get_app_fields()
+            assert fields, 'No config fields, expected yes'
+            for field in fields:
+                ui_config.assert_field_editable(field, expected['editable'])
+            if expected['content']:
+                ui_config.assert_field_content_equal(field_type, fields[0],
+                                                     config['config'][0]['default'])
+            if expected['alerts']:
+                ui_config.assert_alerts_presented(field_type)
+        else:
             assert not fields, "Config fields presented, expected no"
-            if not ui_config.advanced:
-                ui_config.click_advanced()
-            assert ui_config.advanced, 'Advanced button not clicked'
-        fields = ui_config.get_app_fields()
-        assert fields, 'No config fields, expected yes'
-        for field in fields:
-            ui_config.assert_field_editable(field, expected['editable'])
-        if expected['content']:
-            ui_config.assert_field_content_equal(field_type, fields[0],
-                                                 config['config'][0]['default'])
-        if expected['alerts']:
-            ui_config.assert_alerts_presented(field_type)
-    else:
-        assert not fields, "Config fields presented, expected no"
 
 
-@pytest.mark.parametrize("config_dict,expected_results", group_configs)
+@pytest.mark.parametrize(("config_dict", "expected_results"), group_configs)
 def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, expected_results,
                              app_fs, login_to_adcm):
     """Test for configuration fields with groups. Before start test actions
@@ -402,46 +378,48 @@ def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, expected_re
 
     groups = ui_config.get_group_elements()
     fields = ui_config.get_app_fields()
-    save_err_mess = "Correct status for save button {}".format([expected['save']])
-    assert expected['save'] == ui_config.save_button_status(), save_err_mess
-    if expected['group_visible'] and not expected['field_visible']:
-        if expected['group_visible_advanced']:
-            assert not groups, 'Groups presented, expected no'
-            assert not fields, 'Fields presented, expected no'
-            if not ui_config.advanced:
-                ui_config.click_advanced()
-            assert ui_config.advanced, 'Advanced button not clicked'
-        groups = ui_config.get_group_elements()
-        fields = ui_config.get_app_fields()
-        assert groups, "Groups not presented, expected yes"
-        for field in fields:
-            assert not field.is_displayed()
-        if "activatable" in config['config'][0].keys():
-            ui_config.assert_group_status(groups[0], config['config'][0]['active'])
+    with allure.step('Check save button status'):
+        save_err_mess = "Correct status for save button {}".format([expected['save']])
+        assert expected['save'] == ui_config.save_button_status(), save_err_mess
+    with allure.step('Check configuration'):
+        if expected['group_visible'] and not expected['field_visible']:
+            if expected['group_visible_advanced']:
+                assert not groups, 'Groups presented, expected no'
+                assert not fields, 'Fields presented, expected no'
+                if not ui_config.advanced:
+                    ui_config.click_advanced()
+                assert ui_config.advanced, 'Advanced button not clicked'
+            groups = ui_config.get_group_elements()
+            fields = ui_config.get_app_fields()
+            assert groups, "Groups not presented, expected yes"
+            for field in fields:
+                assert not field.is_displayed()
+            if "activatable" in config['config'][0].keys():
+                ui_config.assert_group_status(groups[0], config['config'][0]['active'])
 
-    if expected['group_visible'] and expected['field_visible']:
-        if expected['field_visible_advanced'] or expected['group_visible_advanced']:
-            assert not fields, 'Fields presented, expected no'
+        if expected['group_visible'] and expected['field_visible']:
+            if expected['field_visible_advanced'] or expected['group_visible_advanced']:
+                assert not fields, 'Fields presented, expected no'
+                if not ui_config.advanced:
+                    ui_config.click_advanced()
+                assert ui_config.advanced, 'Advanced button not clicked'
+            groups = ui_config.get_group_elements()
+            fields = ui_config.get_app_fields()
+            assert groups, "Groups not presented, expected yes"
+            assert fields, "Fields not presented, expected yes"
+            for field in fields:
+                ui_config.assert_field_editable(field, expected['editable'])
+            if expected['content']:
+                default_value = config['config'][0]['subs'][0]['default']
+                ui_config.assert_field_content_equal(field_type, fields[0], default_value)
+            if expected['alerts']:
+                ui_config.assert_alerts_presented(field_type)
+            if "activatable" in config['config'][0].keys():
+                ui_config.assert_group_status(groups[0], config['config'][0]['active'])
+        if not expected['group_visible']:
+            assert not groups, 'Groups presented, expected no'
             if not ui_config.advanced:
                 ui_config.click_advanced()
             assert ui_config.advanced, 'Advanced button not clicked'
-        groups = ui_config.get_group_elements()
-        fields = ui_config.get_app_fields()
-        assert groups, "Groups not presented, expected yes"
-        assert fields, "Fields not presented, expected yes"
-        for field in fields:
-            ui_config.assert_field_editable(field, expected['editable'])
-        if expected['content']:
-            default_value = config['config'][0]['subs'][0]['default']
-            ui_config.assert_field_content_equal(field_type, fields[0], default_value)
-        if expected['alerts']:
-            ui_config.assert_alerts_presented(field_type)
-        if "activatable" in config['config'][0].keys():
-            ui_config.assert_group_status(groups[0], config['config'][0]['active'])
-    if not expected['group_visible']:
-        assert not groups, 'Groups presented, expected no'
-        if not ui_config.advanced:
-            ui_config.click_advanced()
-        assert ui_config.advanced, 'Advanced button not clicked'
-        groups = ui_config.get_group_elements()
-        assert not groups, "Groups presented, expected no"
+            groups = ui_config.get_group_elements()
+            assert not groups, "Groups presented, expected no"
