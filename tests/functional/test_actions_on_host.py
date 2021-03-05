@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=redefined-outer-name
-from typing import TypeVar
+from typing import Union
 
 import allure
 import pytest
@@ -19,6 +19,17 @@ from adcm_client.objects import Cluster, Provider, Host, Service
 from adcm_pytest_plugin.steps.actions import run_host_action_and_assert_result, \
     run_cluster_action_and_assert_result, run_service_action_and_assert_result
 from adcm_pytest_plugin.utils import get_data_dir
+
+ACTION_ON_HOST = "action_on_host"
+ACTION_ON_HOST_MULTIJOB = "action_on_host_multijob"
+ACTION_ON_HOST_STATE_REQUIRED = "action_on_host_state_installed"
+FIRST_SERVICE = "Dummy service"
+SECOND_SERVICE = "Second service"
+FIRST_COMPONENT = "first"
+SECOND_COMPONENT = "second"
+SWITCH_SERVICE_STATE = "switch_service_state"
+SWITCH_CLUSTER_STATE = "switch_cluster_state"
+SWITCH_HOST_STATE = "switch_host_state"
 
 
 @allure.title("Create cluster")
@@ -45,7 +56,7 @@ def provider(sdk_client_fs) -> Provider:
 
 class TestClusterActionsOnHost:
 
-    @pytest.mark.parametrize("action_name", ["action_on_host", "action_on_host_multijob"])
+    @pytest.mark.parametrize("action_name", [ACTION_ON_HOST, ACTION_ON_HOST_MULTIJOB])
     def test_availability(self, cluster: Cluster, provider: Provider, action_name):
         """
         Test that cluster host action is available on cluster host and is absent on cluster
@@ -62,38 +73,36 @@ class TestClusterActionsOnHost:
         """
         Test that cluster host action is available on specify cluster state
         """
-        action_name = "action_on_host_state_installed"
         host = provider.host_create("host_in_cluster")
         cluster.host_add(host)
-        action_in_object_is_absent(action_name, host)
-        run_cluster_action_and_assert_result(cluster, "switch_cluster_state")
-        action_in_object_is_present(action_name, host)
-        run_host_action_and_assert_result(host, action_name)
+        action_in_object_is_absent(ACTION_ON_HOST_STATE_REQUIRED, host)
+        run_cluster_action_and_assert_result(cluster, SWITCH_CLUSTER_STATE)
+        action_in_object_is_present(ACTION_ON_HOST_STATE_REQUIRED, host)
+        run_host_action_and_assert_result(host, ACTION_ON_HOST_STATE_REQUIRED)
 
     def test_availability_at_host_state(self, cluster: Cluster, provider: Provider):
         """
         Test that cluster host action isn't available on specify host state
         """
-        action_name = "action_on_host_state_installed"
         host = provider.host_create("host_in_cluster")
         cluster.host_add(host)
-        action_in_object_is_absent(action_name, host)
-        run_host_action_and_assert_result(host, "switch_host_state")
-        action_in_object_is_absent(action_name, host)
-        run_cluster_action_and_assert_result(cluster, "switch_cluster_state")
-        action_in_object_is_present(action_name, host)
-        run_host_action_and_assert_result(host, action_name)
+        action_in_object_is_absent(ACTION_ON_HOST_STATE_REQUIRED, host)
+        run_host_action_and_assert_result(host, SWITCH_HOST_STATE)
+        action_in_object_is_absent(ACTION_ON_HOST_STATE_REQUIRED, host)
+        run_cluster_action_and_assert_result(cluster, SWITCH_CLUSTER_STATE)
+        action_in_object_is_present(ACTION_ON_HOST_STATE_REQUIRED, host)
+        run_host_action_and_assert_result(host, ACTION_ON_HOST_STATE_REQUIRED)
 
 
 class TestServiceActionOnHost:
 
-    @pytest.mark.parametrize("action_name", ["action_on_host", "action_on_host_multijob"])
+    @pytest.mark.parametrize("action_name", [ACTION_ON_HOST, ACTION_ON_HOST_MULTIJOB])
     def test_availability(self, cluster_with_service: Cluster, provider: Provider, action_name):
         """
         Test that service host action is available on a service host and is absent on cluster
         """
-        service = cluster_with_service.service_add(name="Dummy service")
-        second_service = cluster_with_service.service_add(name="Second service")
+        service = cluster_with_service.service_add(name=FIRST_SERVICE)
+        second_service = cluster_with_service.service_add(name=SECOND_SERVICE)
         host_with_two_components = provider.host_create("host_with_two_components")
         host_with_one_component = provider.host_create("host_with_one_component")
         host_without_component = provider.host_create("host_without_component")
@@ -103,11 +112,11 @@ class TestServiceActionOnHost:
                      host_without_component, host_with_different_services]:
             cluster_with_service.host_add(host)
         cluster_with_service.hostcomponent_set(
-            (host_with_two_components, service.component(name="first")),
-            (host_with_two_components, service.component(name="second")),
-            (host_with_one_component, service.component(name="first")),
-            (host_with_different_services, service.component(name="first")),
-            (host_with_different_services, second_service.component(name="first")),
+            (host_with_two_components, service.component(name=FIRST_COMPONENT)),
+            (host_with_two_components, service.component(name=SECOND_COMPONENT)),
+            (host_with_one_component, service.component(name=FIRST_COMPONENT)),
+            (host_with_different_services, service.component(name=SECOND_COMPONENT)),
+            (host_with_different_services, second_service.component(name=FIRST_COMPONENT)),
         )
 
         action_in_object_is_present(action_name, host_with_one_component)
@@ -125,38 +134,36 @@ class TestServiceActionOnHost:
         """
         Test that service host action is available on specify service state
         """
-        action_name = "action_on_host_state_installed"
-        service = cluster_with_service.service_add(name="Dummy service")
+        service = cluster_with_service.service_add(name=FIRST_SERVICE)
         host = provider.host_create("host_in_cluster")
         cluster_with_service.host_add(host)
-        cluster_with_service.hostcomponent_set((host, service.component(name="first")))
+        cluster_with_service.hostcomponent_set((host, service.component(name=FIRST_COMPONENT)))
 
-        action_in_object_is_absent(action_name, host)
-        run_cluster_action_and_assert_result(cluster_with_service, "switch_cluster_state")
-        action_in_object_is_absent(action_name, host)
-        run_service_action_and_assert_result(service, "switch_service_state")
-        action_in_object_is_present(action_name, host)
-        run_host_action_and_assert_result(host, action_name)
+        action_in_object_is_absent(ACTION_ON_HOST_STATE_REQUIRED, host)
+        run_cluster_action_and_assert_result(cluster_with_service, SWITCH_CLUSTER_STATE)
+        action_in_object_is_absent(ACTION_ON_HOST_STATE_REQUIRED, host)
+        run_service_action_and_assert_result(service, SWITCH_SERVICE_STATE)
+        action_in_object_is_present(ACTION_ON_HOST_STATE_REQUIRED, host)
+        run_host_action_and_assert_result(host, ACTION_ON_HOST_STATE_REQUIRED)
 
     def test_availability_at_host_state(self, cluster_with_service: Cluster, provider: Provider):
         """
         Test that service host action isn't available on specify host state
         """
-        action_name = "action_on_host_state_installed"
-        service = cluster_with_service.service_add(name="Dummy service")
+        service = cluster_with_service.service_add(name=FIRST_SERVICE)
         host = provider.host_create("host_in_cluster")
         cluster_with_service.host_add(host)
-        cluster_with_service.hostcomponent_set((host, service.component(name="first")))
+        cluster_with_service.hostcomponent_set((host, service.component(name=FIRST_COMPONENT)))
 
-        action_in_object_is_absent(action_name, host)
-        run_host_action_and_assert_result(host, "switch_host_state")
-        action_in_object_is_absent(action_name, host)
-        run_service_action_and_assert_result(service, "switch_service_state")
-        action_in_object_is_present(action_name, host)
-        run_host_action_and_assert_result(host, action_name)
+        action_in_object_is_absent(ACTION_ON_HOST_STATE_REQUIRED, host)
+        run_host_action_and_assert_result(host, SWITCH_HOST_STATE)
+        action_in_object_is_absent(ACTION_ON_HOST_STATE_REQUIRED, host)
+        run_service_action_and_assert_result(service, SWITCH_SERVICE_STATE)
+        action_in_object_is_present(ACTION_ON_HOST_STATE_REQUIRED, host)
+        run_host_action_and_assert_result(host, ACTION_ON_HOST_STATE_REQUIRED)
 
 
-ObjTypes = TypeVar("ObjTypes", Cluster, Host, Service)
+ObjTypes = Union[Cluster, Host, Service]
 
 
 def action_in_object_is_present(action: str, obj: ObjTypes):
