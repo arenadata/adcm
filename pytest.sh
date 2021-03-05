@@ -20,7 +20,7 @@ find . -name "__pycache__" -type d -delete
 { # try
     pytest tests/ui_tests tests/functional -s -v -n auto --maxfail 30 \
     --showlocals --alluredir ./allure-results/ --durations=20 \
-    --reruns 2 --remote-executor-host "$SELENOID_HOST" --timeout=360 &&
+    --reruns 2 --remote-executor-host "$SELENOID_HOST" --timeout=360 "$@" &&
     chmod -R o+xw allure-results
 } || { # catch
     chmod -R o+xw allure-results

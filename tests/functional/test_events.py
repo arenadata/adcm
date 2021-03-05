@@ -60,18 +60,20 @@ def assert_events(ws, *expected_events):
 
 @pytest.fixture()
 def ws(sdk_client_fs: ADCMClient, max_conn=10):
+    last_error = None
     while max_conn:
         try:
             ws_conn = websocket.create_connection(
                 url="ws://" + prep_url(sdk_client_fs.url) + "/ws/event/",
                 subprotocols=["adcm", sdk_client_fs.api_token()],
                 timeout=15)
-        except websocket.WebSocketBadStatusException:
-            pass
+        except websocket.WebSocketBadStatusException as error:
+            last_error = error
         else:
             return ws_conn
         max_conn -= 1
-        break
+    raise ValueError(f"Could not create websocket connection in {max_conn} attempts. "
+                     f"Last error is:\n{last_error}")
 
 
 @pytest.fixture()
@@ -149,7 +151,7 @@ svc_actions = [
 ]
 
 
-@pytest.mark.parametrize('adcm_object, event_type, obj_type', create_adcm_obj)
+@pytest.mark.parametrize(('adcm_object', 'event_type', 'obj_type'), create_adcm_obj)
 def test_event_when_create_(obj_type, adcm_object, event_type, sdk_client_fs, ws):
     with allure.step(f'Create {obj_type}'):
         obj = adcm_object(sdk_client_fs)
@@ -182,7 +184,7 @@ def test_event_when_add_service(sdk_client_fs, ws):
     assert_events(ws, repr_template('add', 'service', obj.id, 'cluster', str(obj.cluster_id)))
 
 
-@pytest.mark.parametrize('case, action_name, expected', cluster_actions)
+@pytest.mark.parametrize(('case', 'action_name', 'expected'), cluster_actions)
 def test_events_when_cluster_action_(case, action_name, expected, ws, cluster_with_svc_and_host):
     cluster, _, _ = cluster_with_svc_and_host
     job = cluster.action_run(name=action_name)
@@ -193,7 +195,7 @@ def test_events_when_cluster_action_(case, action_name, expected, ws, cluster_wi
         )
 
 
-@pytest.mark.parametrize('case, action_name, expected', svc_actions)
+@pytest.mark.parametrize(('case', 'action_name', 'expected'), svc_actions)
 def test_events_when_service_(case, action_name, expected, ws, cluster_with_svc_and_host):
     _, zookeeper, _ = cluster_with_svc_and_host
     job = zookeeper.action_run(name=action_name)

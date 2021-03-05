@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=W0621
+from typing import Optional
 
 import allure
 import json
@@ -18,6 +19,9 @@ import pytest
 import sys
 import tempfile
 
+from _pytest.python import Function
+from allure_commons.model2 import TestResult, Parameter
+from allure_pytest.listener import AllureListener
 from selenium.common.exceptions import WebDriverException
 
 from adcm_client.wrappers.docker import ADCM
@@ -63,6 +67,43 @@ def pytest_generate_tests(metafunc):
             browsers.append('Firefox')
 
         metafunc.parametrize('browser', browsers, scope='session')
+
+
+@pytest.hookimpl(hookwrapper=True, tryfirst=True)
+def pytest_runtest_setup(item: Function):
+    """
+    Pytest hook that overrides test parameters
+    In case of adss tests, parameters in allure report don't make sense unlike test ID
+    So, we remove all parameters in allure report but add one parameter with test ID
+    """
+    yield
+    _override_allure_test_parameters(item)
+
+
+def _override_allure_test_parameters(item: Function):
+    """
+    Overrides all pytest parameters in allure report with test ID
+    """
+    listener = _get_listener_by_item_if_present(item)
+    if listener:
+        test_result: TestResult = listener.allure_logger.get_test(None)
+        test_result.parameters = [Parameter(name="ID", value=item.callspec.id)]
+
+
+def _get_listener_by_item_if_present(item: Function) -> Optional[AllureListener]:
+    """
+    Find AllureListener instance in pytest pluginmanager
+    """
+    if hasattr(item, "callspec"):
+        listener: AllureListener = next(
+            filter(
+                lambda x: isinstance(x, AllureListener),
+                item.config.pluginmanager._name2plugin.values(),  # pylint: disable=protected-access
+            ),
+            None,
+        )
+        return listener
+    return None
 
 
 @pytest.fixture(scope="session")

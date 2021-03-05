@@ -379,6 +379,7 @@ class ServiceComponentSerializer(serializers.Serializer):
     prototype_id = serializers.SerializerMethodField()
     display_name = serializers.CharField(read_only=True)
     description = serializers.CharField(read_only=True)
+    state = serializers.CharField(read_only=True)
     url = MyUrlField(read_only=True, view_name='cluster-service-component-details')
 
     def get_prototype_id(self, obj):
@@ -435,7 +436,7 @@ class HCComponentSerializer(ServiceComponentDetailSerializer):
                     }
                 if comp.name in comp_list[comp.name]['components']:
                     return
-                comp_list[comp.parent.name]['components'][comp.name] = comp
+                comp_list[comp.name]['components'][comp.name] = comp
                 if comp.requires:
                     process_requires(comp.requires)
 

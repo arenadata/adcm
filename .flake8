@@ -1,0 +1,12 @@
+[flake8]
+
+ignore =
+    I801,
+    E501,
+
+exclude =
+    .pytest_cache,
+    venv,
+    .dockerignore,
+    .gitignore,
+    .npmcheckignore,

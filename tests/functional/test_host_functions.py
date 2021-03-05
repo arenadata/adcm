@@ -331,7 +331,7 @@ class TestHostConfig:
         with allure.step('Check error should not be just one int or float'):
             err.JSON_ERROR.equal(e, 'should not be just one int or float')
 
-    @pytest.mark.parametrize("config, error", host_bad_configs)
+    @pytest.mark.parametrize(('config', 'error'), host_bad_configs)
     def test_change_host_config_negative(self, host, config, error):
         """Check that we have error if try to update host config with bad configuration
         :param host: host object

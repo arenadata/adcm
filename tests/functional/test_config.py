@@ -59,7 +59,7 @@ def assert_config_value_error(entity, sent_data):
 
 
 def assert_action_has_issues(entity):
-    with pytest.raises(ActionHasIssues) as error:
+    with pytest.raises(ActionHasIssues):
         entity.action_run(name='job').wait()
 
 
