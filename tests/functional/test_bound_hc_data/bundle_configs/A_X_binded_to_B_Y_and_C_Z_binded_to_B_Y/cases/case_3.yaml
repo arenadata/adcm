@@ -1,5 +1,0 @@
-description: Attempt to save HC map with only C.Z on 1 host - should fail
-positive: False
-hc_map:
-  first_host:
-    - service_3.component_3_1

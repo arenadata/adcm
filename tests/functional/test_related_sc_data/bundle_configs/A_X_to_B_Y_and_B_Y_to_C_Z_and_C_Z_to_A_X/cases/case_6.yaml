@@ -1,0 +1,7 @@
+description: Attempt to save HC map with B.Y and C.Z on 1 host
+bound_to_raise_exception:
+requires_raise_exception:
+hc_map:
+  first_host:
+    - service_2.component_2_1
+    - service_3.component_3_1
