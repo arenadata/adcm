@@ -1,10 +1,10 @@
-<span *ngIf="row.status && row.status.length; else icons" [class]="row.status">{{ row.status }}</span>
+<span *ngIf="row?.status && row?.status?.length; else icons" [class]="row?.status">{{ row?.status }}</span>
 <ng-template #icons>
-  <button *ngIf="row.status === 0" [appForTest]="'row_status'" mat-icon-button color="accent"
+  <button *ngIf="row?.status === 0" [appForTest]="'row_status'" mat-icon-button color="accent"
           (click)="clickCell($event, 'status', row)">
     <mat-icon>check_circle_outline</mat-icon>
   </button>
-  <button *ngIf="row.status !== 0" [appForTest]="'row_status'" mat-icon-button color="warn" [appTooltip]="row"
+  <button *ngIf="row?.status !== 0" [appForTest]="'row_status'" mat-icon-button color="warn" [appTooltip]="row"
           [appTooltipComponent]="'status'" [appTooltipPosition]="'left'" (click)="clickCell($event, 'status', row)">
     <mat-icon>error_outline</mat-icon>
   </button>
