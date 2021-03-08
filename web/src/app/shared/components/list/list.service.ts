@@ -93,13 +93,13 @@ export class ListService {
       .pipe(map((res) => res.results.map((a) => ({ id: a.id, title: a.name }))));
   }
 
-  addClusterToHost(cluster_id: number, row: Host) {
-    this.api
+  addClusterToHost(cluster_id: number, row: Host): Observable<Host> {
+    return this.api
       .post<Host>(`${environment.apiRoot}cluster/${cluster_id}/host/`, { host_id: row.id })
-      .subscribe((host) => {
+      .pipe(tap((host) => {
         row.cluster_id = host.cluster_id;
         row.cluster_name = host.cluster;
-      });
+      }));
   }
 
   checkItem<T>(item: Entities) {

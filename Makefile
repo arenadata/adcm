@@ -53,18 +53,23 @@ pytest: ## Run functional tests
 	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" \
 	ci.arenadata.io/functest:3.8.6.slim.buster-x64 /bin/sh -e ./pytest.sh
 
+pytest_release: ## Run functional tests on release
+	docker pull ci.arenadata.io/functest:3.8.6.slim.buster.firefox-x64
+	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host -v $(CURDIR)/:/adcm -w /adcm/ \
+	-e BUILD_TAG=${BUILD_TAG} -e ADCM_TAG=$(subst /,_,$(BRANCH_NAME)) -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
+	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" \
+	ci.arenadata.io/functest:3.8.6.slim.buster.firefox-x64 /bin/sh -e ./pytest.sh --firefox
+
 ng_tests: ## Run Angular tests
 	docker pull ci.arenadata.io/functest:3.8.6.slim.buster-x64
-	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web/src ci.arenadata.io/functest:3.8.6.slim.buster-x64 /bin/sh -c "export CHROME_BIN=/usr/bin/google-chrome; npm install && ng test --watch=false"
+	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web ci.arenadata.io/functest:3.8.6.slim.buster-x64 ./ng_test.sh
 
 linters : ## Run linters
 	docker pull ci.arenadata.io/pr-builder:3-x64
 	docker run -i --rm -v $(CURDIR)/:/source -w /source ci.arenadata.io/pr-builder:3-x64 /linters.sh shellcheck pylint pep8
 
 npm_check: ## Run npm-check
-	docker pull ci.arenadata.io/functest:3.8.6.slim.buster-x64
-	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web/src ci.arenadata.io/functest:3.8.6.slim.buster-x64 \
-	/bin/bash -c 'npm i --production && { ignore=`cat ../../.npmcheckignore | grep -v "#"`\; npm-check --production --skip-unused --ignore $$ignore || true; } && npm audit'
+	docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:12-alpine ./npm_check.sh
 
 django_tests : ## Run django tests.
 	docker pull $(ADCMBASE_IMAGE):$(ADCMBASE_TAG)

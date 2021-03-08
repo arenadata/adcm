@@ -25,6 +25,7 @@ import { EntryModule } from './entry/entry.module';
 import { MainModule } from './main/main.module';
 import { SharedModule } from './shared/shared.module';
 import { LogComponent } from './ws-logs/log.component';
+import { AdwpUiWidgetsModule } from '@adwp-ui/widgets';
 
 //registerLocaleData(localeRu, 'ru');
 
@@ -42,6 +43,8 @@ import { LogComponent } from './ws-logs/log.component';
     EffectsModule.forRoot(StoreEffects),
     // StoreRouterConnectingModule.forRoot(),
     !environment.production ? StoreDevtoolsModule.instrument() : [],
+
+    AdwpUiWidgetsModule,
   ],
   bootstrap: [AppComponent],
   providers: [

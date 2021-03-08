@@ -9,72 +9,125 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Directive, Host, Input, OnDestroy, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { ParamMap } from '@angular/router';
-import { EventMessage, SocketState } from '@app/core/store';
+import { clearMessages, EventMessage, getMessage, SocketState } from '@app/core/store';
 import { Bundle, Cluster, EmmitRow, Entities, Host as AdcmHost, TypeName } from '@app/core/types';
-import { Store } from '@ngrx/store';
+import { select, Store } from '@ngrx/store';
 import { filter, mergeMap, switchMap, tap } from 'rxjs/operators';
+import { IListResult } from '@adwp-ui/widgets';
+import { takeUntil } from 'rxjs/operators';
+import { Sort } from '@angular/material/sort';
+import { Observable, Subject } from 'rxjs';
 
-import { SocketListenerDirective } from '../../directives/socketListener.directive';
-import { DialogComponent } from '../dialog.component';
-import { ListComponent } from '../list/list.component';
+import { DialogComponent } from '@app/shared';
+import { ListResult } from '../list/list.component';
 import { ListService } from './list.service';
+import { ListDirective } from '@app/abstract-directives/list.directive';
+import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
+import { IHost } from '@app/models/host';
+import { ApiService } from '@app/core/api';
+import { ICluster } from '@app/models/cluster';
 
 interface IRowHost extends AdcmHost {
   clusters: Partial<Cluster>[];
   page: number;
 }
 
-@Directive({
-  selector: '[appBaseList]',
-})
-export class BaseListDirective extends SocketListenerDirective implements OnInit, OnDestroy {
+export class BaseListDirective {
+
+  socket$: Observable<any>;
+  destroy$ = new Subject();
+
   row: Entities;
   listParams: ParamMap;
   limit = 10;
+  typeName: TypeName;
 
-  @Input('appBaseList') typeName: TypeName;
-  constructor(@Host() private parent: ListComponent, private service: ListService, protected store: Store<SocketState>) {
-    super(store);
+  reload: (result: ListResult<Entities>) => void;
+
+  constructor(
+    private parent: ListDirective,
+    private service: ListService,
+    protected store: Store<SocketState>,
+    private api: ApiService,
+  ) {}
+
+  takeUntil<T>() {
+    return takeUntil<T>(this.destroy$);
   }
 
-  ngOnInit(): void {
-    this.parent.type = this.typeName;
-    this.parent.columns = this.service.initInstance(this.typeName).columns;
-    this.parent.listItemEvt.pipe(this.takeUntil()).subscribe({ next: (event: EmmitRow) => this.listEvents(event) });
+  startListenSocket(): void {
+    this.socket$.pipe(tap(m => this.socketListener(m))).subscribe();
+  }
 
+  initSocket() {
+    this.socket$ = this.store.pipe(this.takeUntil(), select(getMessage), filter(m => !!m && !!m.object));
+  }
+
+  initColumns() {
+    this.parent.columns = this.service.initInstance(this.typeName).columns;
+  }
+
+  initListItemEvent() {
+    this.parent.listItemEvt
+      .pipe(this.takeUntil())
+      .subscribe({ next: (event: EmmitRow) => this.listEvents(event) });
+  }
+
+  calcSort(ordering: string): Sort {
+    let sort: Sort;
+    if (ordering) {
+      sort = {
+        direction: ordering[0] === '-' ? 'desc' : 'asc',
+        active: ordering[0] === '-' ? ordering.substr(1) : ordering,
+      };
+    }
+
+    return sort;
+  }
+
+  routeListener(limit: number, page: number, ordering: string, params: ParamMap) {
+    this.parent.paginator.pageSize = limit;
+    if (page === 0) {
+      this.parent.paginator.firstPage();
+    } else {
+      this.parent.paginator.pageIndex = page;
+    }
+    if (ordering && !this.parent.sort.active) {
+      this.parent.sort.direction = ordering[0] === '-' ? 'desc' : 'asc';
+      this.parent.sort.active = ordering[0] === '-' ? ordering.substr(1) : ordering;
+      this.parent.sortParam = ordering;
+    }
+
+    this.listParams = params;
+    this.refresh();
+  }
+
+  initRouteListener() {
     this.parent.route.paramMap
       .pipe(
         this.takeUntil(),
         filter((p) => this.checkParam(p))
       )
-      .subscribe((p) => {
-        this.parent.paginator.pageSize = +p.get('limit') || 10;
-        const page = +p.get('page');
-        if (page === 0) {
-          this.parent.paginator.firstPage();
-        } else {
-          this.parent.paginator.pageIndex = page;
-        }
-        const ordering = p.get('ordering');
-        if (ordering && !this.parent.sort.active) {
-          this.parent.sort.direction = ordering[0] === '-' ? 'desc' : 'asc';
-          this.parent.sort.active = ordering[0] === '-' ? ordering.substr(1) : ordering;
-          this.parent.sortParam = ordering;
-        }
-
-        this.listParams = p;
-        this.refresh();
-      });
-
-    super.startListenSocket();
+      .subscribe((p) => this.routeListener(+p.get('limit') || 10, +p.get('page'), p.get('ordering'), p));
   }
 
-  ngOnDestroy() {
-    super.ngOnDestroy();
+  init(): void {
+    this.initSocket();
+    this.initColumns();
+    this.initListItemEvent();
+    this.initRouteListener();
+    this.startListenSocket();
+  }
+
+  destroy() {
     this.parent.listItemEvt.complete();
+
+    this.destroy$.next();
+    this.destroy$.complete();
+
+    this.store.dispatch(clearMessages());
   }
 
   checkParam(p: ParamMap): boolean {
@@ -122,7 +175,12 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
 
   refresh(id?: number) {
     if (id) this.parent.current = { id };
-    this.service.getList(this.listParams, this.typeName).subscribe((list) => (this.parent.dataSource = list));
+    this.service.getList(this.listParams, this.typeName).subscribe((list) => {
+      if (this.reload) {
+        this.reload(list);
+      }
+      this.parent.dataSource = list;
+    });
   }
 
   listEvents(event: EmmitRow) {
@@ -151,7 +209,24 @@ export class BaseListDirective extends SocketListenerDirective implements OnInit
   // }
 
   addCluster(id: number) {
-    if (id) this.service.addClusterToHost(id, this.row as AdcmHost);
+    if (id) {
+      this.service.addClusterToHost(id, this.row as AdcmHost)
+        .subscribe((host) => {
+          if ((this.parent as AdwpListDirective<IHost>)?.data$?.value?.results) {
+            this.api.getOne('cluster', host.cluster_id).subscribe((cluster: ICluster) => {
+              const tableData = Object.assign({}, (this.parent as AdwpListDirective<IHost>).data$.value);
+              const index = tableData.results.findIndex(item => item.id === host.id);
+              const row = Object.assign({}, tableData.results[index]);
+
+              row.cluster_id = cluster.id;
+              row.cluster_name = cluster.name;
+
+              tableData.results.splice(index, 1, row);
+              (this.parent as AdwpListDirective<IHost>).reload(tableData as IListResult<any>);
+            });
+          }
+        });
+    }
   }
 
   license() {

@@ -14,7 +14,22 @@ import { IComponent } from './host-component';
 import { Issue } from './issue';
 import { Job, Task } from './task-job';
 
-export type TypeName = 'bundle' | 'cluster' | 'host' | 'provider' | 'service' | 'job' | 'task' | 'user' | 'profile' | 'adcm' | 'stats' | 'hostcomponent' | 'component';
+export type TypeName =
+  'bundle' |
+  'cluster' |
+  'host' |
+  'provider' |
+  'service' |
+  'job' |
+  'task' |
+  'user' |
+  'profile' |
+  'adcm' |
+  'stats' |
+  'hostcomponent' |
+  'service2cluster' |
+  'host2cluster' |
+  'component';
 export type Entities = Cluster | Service | Host | Provider | Job | Task | Bundle;
 
 /**

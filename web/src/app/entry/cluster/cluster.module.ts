@@ -12,9 +12,13 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
+
 import { SharedModule, DetailComponent, MainInfoComponent, ConfigComponent, StatusComponent, ImportComponent } from '@app/shared';
 
-import { ClusterListComponent, HcmapComponent, HostComponent, ServicesComponent } from './cluster.component';
+import { ClusterListComponent } from './cluster.component';
+import { HcmapComponent } from '@app/components/cluster/hcmap/hcmap.component';
+import { HostComponent } from '@app/components/cluster/host/host.component';
+import { ServicesComponent } from '@app/components/cluster/services/services.component';
 import { AuthGuard } from '@app/core';
 import { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';
 
@@ -72,7 +76,9 @@ const clusterRoutes: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forChild(clusterRoutes)],
+  imports: [
+    RouterModule.forChild(clusterRoutes),
+  ],
   exports: [RouterModule],
 })
 export class ClusterRoutingModule {}
