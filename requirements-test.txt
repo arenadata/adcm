@@ -1,5 +1,5 @@
 --extra-index-url https://ci.arenadata.io/artifactory/api/pypi/python-packages/simple
-adcm-client==adcm_client-2021.3.4.15rc59
+adcm-client==2021.3.4.15rc59
 adcm_pytest_plugin>=3.0.0
 # Docker IP binding is changed in https://github.com/arenadata/adcm_pytest_plugin/pull/50
 -r ./requirements.txt
