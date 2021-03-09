@@ -15,17 +15,16 @@
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
-from api.api_views import filter_actions, CommonAPIURL
+from api.api_views import hlink, filter_actions, get_api_url_kwargs, CommonAPIURL
 from api.action.serializers import ActionShort
 
 from cm import issue
 from cm import status_api
 from cm.models import Action
 
-
 class ComponentObjectUrlField(serializers.HyperlinkedIdentityField):
     def get_url(self, obj, view_name, request, format):
-        kwargs = {'component_id': obj.id}
+        kwargs = get_api_url_kwargs(obj, request, True)
         return reverse(view_name, kwargs=kwargs, request=request, format=format)
 
 
@@ -51,9 +50,7 @@ class ComponentDetailSerializer(ComponentSerializer):
     issue = serializers.SerializerMethodField()
     action = CommonAPIURL(read_only=True, view_name='object-action')
     config = CommonAPIURL(read_only=True, view_name='object-config')
-    prototype = serializers.HyperlinkedIdentityField(
-        view_name='component-type-details', lookup_field='prototype_id',
-        lookup_url_kwarg='prototype_id')
+    prototype = hlink('component-type-details', 'prototype_id', 'prototype_id')
 
     def get_issue(self, obj):
         return issue.get_issue(obj)

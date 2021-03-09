@@ -87,12 +87,13 @@ def get_upgradable_func(self, obj):
     return bool(cm.upgrade.get_upgrade(obj))
 
 
-def get_api_url_kwargs(obj, request):
+def get_api_url_kwargs(obj, request, no_obj_type=False):
     obj_type = obj.prototype.type
     kwargs = {
-        'object_type': obj_type,
         f'{obj_type}_id': obj.id,
     }
+    if not no_obj_type:
+        kwargs['object_type'] = obj_type
     if obj_type == 'service':
         if 'cluster' in request.path:
             kwargs['cluster_id'] = obj.cluster.id
@@ -103,6 +104,8 @@ def get_api_url_kwargs(obj, request):
         if 'cluster' in request.path:
             kwargs['service_id'] = obj.service.id
             kwargs['cluster_id'] = obj.cluster.id
+        elif 'service' in request.path:
+            kwargs['service_id'] = obj.service.id
     return kwargs
 
 

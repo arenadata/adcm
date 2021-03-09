@@ -428,45 +428,6 @@ class ClusterServiceDetail(DetailViewRO):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ServiceComponentList(PageView):
-    queryset = ServiceComponent.objects.all()
-    serializer_class = api.cluster_serial.ServiceComponentSerializer
-    serializer_class_ui = api.cluster_serial.ServiceComponentUISerializer
-    ordering_fields = ('component__display_name',)
-
-    def get(self, request, cluster_id, service_id):   # pylint: disable=arguments-differ
-        """
-        Show componets of service in a specified cluster
-        """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        co = check_obj(
-            ClusterObject, {'cluster': cluster, 'id': service_id}, 'SERVICE_NOT_FOUND'
-        )
-        obj = self.filter_queryset(self.get_queryset().filter(cluster=cluster, service=co))
-        return self.get_page(obj, request)
-
-
-class ServiceComponentDetail(GenericAPIPermView):
-    queryset = ServiceComponent.objects.all()
-    serializer_class = api.cluster_serial.ServiceComponentDetailSerializer
-
-    def get(self, request, cluster_id, service_id, component_id):
-        """
-        Show specified componet of service in a specified cluster
-        """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        co = check_obj(
-            ClusterObject, {'cluster': cluster, 'id': service_id}, 'SERVICE_NOT_FOUND'
-        )
-        obj = check_obj(
-            ServiceComponent,
-            {'cluster': cluster, 'service': co, 'id': component_id},
-            'COMPONENT_NOT_FOUND'
-        )
-        serializer = self.serializer_class(obj, context={'request': request})
-        return Response(serializer.data)
-
-
 class StatusList(GenericAPIPermView):
     queryset = HostComponent.objects.all()
     serializer_class = api.cluster_serial.StatusSerializer

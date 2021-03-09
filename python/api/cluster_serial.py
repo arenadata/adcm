@@ -24,6 +24,7 @@ from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
 from api.api_views import check_obj, hlink, filter_actions, get_upgradable_func
 from api.api_views import UrlField, CommonAPIURL
 from api.action.serializers import ActionShort
+from api.component.serializers import ComponentDetailSerializer, ComponentUISerializer
 
 
 def get_cluster_id(obj):
@@ -332,7 +333,7 @@ class ClusterServiceDetailSerializer(ClusterServiceSerializer):
     monitoring = serializers.CharField(read_only=True)
     config = CommonAPIURL(view_name='object-config')
     action = CommonAPIURL(view_name='object-action')
-    component = ClusterServiceUrlField(read_only=True, view_name='cluster-service-component')
+    component = ClusterServiceUrlField(read_only=True, view_name='component')
     imports = ClusterServiceUrlField(read_only=True, view_name='cluster-service-import')
     bind = ClusterServiceUrlField(read_only=True, view_name='cluster-service-bind')
     prototype = hlink('service-type-details', 'prototype_id', 'prototype_id')
@@ -362,68 +363,10 @@ class ClusterServiceUISerializer(ClusterServiceDetailSerializer):
 
     def get_components(self, obj):
         comps = ServiceComponent.objects.filter(service=obj, cluster=obj.cluster)
-        return ServiceComponentDetailSerializer(comps, many=True, context=self.context).data
+        return ComponentUISerializer(comps, many=True, context=self.context).data
 
 
-class ServiceComponentSerializer(serializers.Serializer):
-    class MyUrlField(UrlField):
-        def get_kwargs(self, obj):
-            return {
-                'cluster_id': obj.cluster.id,
-                'service_id': obj.service.id,
-                'component_id': obj.id,
-            }
-
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField(read_only=True)
-    prototype_id = serializers.SerializerMethodField()
-    display_name = serializers.CharField(read_only=True)
-    description = serializers.CharField(read_only=True)
-    state = serializers.CharField(read_only=True)
-    url = MyUrlField(read_only=True, view_name='cluster-service-component-details')
-
-    def get_prototype_id(self, obj):
-        return obj.prototype.id
-
-
-class ServiceComponentDetailSerializer(ServiceComponentSerializer):
-    constraint = serializers.JSONField(read_only=True)
-    requires = serializers.JSONField(read_only=True)
-    bound_to = serializers.JSONField(read_only=True)
-    bundle_id = serializers.IntegerField(read_only=True)
-    monitoring = serializers.CharField(read_only=True)
-    status = serializers.SerializerMethodField()
-    issue = serializers.SerializerMethodField()
-    config = CommonAPIURL(view_name='object-config')
-    action = CommonAPIURL(view_name='object-action')
-    prototype = serializers.HyperlinkedIdentityField(
-        view_name='component-type-details', lookup_field='prototype_id',
-        lookup_url_kwarg='prototype_id')
-
-    def get_issue(self, obj):
-        return cm.issue.get_issue(obj)
-
-    def get_status(self, obj):
-        return cm.status_api.get_component_status(obj.id)
-
-
-class ServiceComponentUISerializer(ServiceComponentDetailSerializer):
-    actions = serializers.SerializerMethodField()
-    version = serializers.SerializerMethodField()
-
-    def get_actions(self, obj):
-        act_set = Action.objects.filter(prototype=obj.prototype)
-        self.context['object'] = obj
-        self.context['component_id'] = obj.id
-        actions = filter_actions(obj, act_set)
-        acts = ActionShort(actions, many=True, context=self.context)
-        return acts.data
-
-    def get_version(self, obj):
-        return obj.prototype.version
-
-
-class HCComponentSerializer(ServiceComponentDetailSerializer):
+class HCComponentSerializer(ComponentDetailSerializer):
     service_id = serializers.IntegerField(read_only=True)
     service_name = serializers.SerializerMethodField()
     service_display_name = serializers.SerializerMethodField()

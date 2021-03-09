@@ -15,14 +15,14 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from api.api_views import (
-    PageView, create, check_obj, DetailViewRO, ListView, GenericAPIPermView, DetailViewDelete
+    PageView, create, check_obj, DetailViewRO, ListView, DetailViewDelete
 )
 from api.stack_serial import ImportSerializer
 from api.cluster_serial import BindSerializer
 
 from cm.api import delete_service, get_import, unbind
 from cm.errors import AdcmEx, AdcmApiEx
-from cm.models import ClusterObject, ServiceComponent, Prototype, ClusterBind
+from cm.models import ClusterObject, Prototype, ClusterBind
 from . import serializers
 
 
@@ -71,36 +71,6 @@ class ServiceDetailView(DetailViewRO):
         except AdcmEx as error:
             raise AdcmApiEx(error.code, error.msg, error.http_code) from error
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class ServiceComponentListView(PageView):
-    queryset = ServiceComponent.objects.all()
-    serializer_class = serializers.ServiceComponentSerializer
-    serializer_class_ui = serializers.ServiceComponentUISerializer
-    ordering_fields = ('component__display_name', )
-
-    def get(self, request, *args, **kwargs):
-        """
-        Show components of service
-        """
-        service = check_obj(ClusterObject, {'id': kwargs['service_id']}, 'SERVICE_NOT_FOUND')
-        components = self.filter_queryset(self.get_queryset().filter(service=service))
-        return self.get_page(components, request)
-
-
-class ServiceComponentDetailView(GenericAPIPermView):
-    queryset = ServiceComponent.objects.all()
-    serializer_class = serializers.ServiceComponentDetailSerializer
-
-    def get(self, request, service_id, component_id):
-        """
-        Show specified component of service
-        """
-        service = check_obj(ClusterObject, {'id': service_id}, 'SERVICE_NOT_FOUND')
-        service_component = check_obj(
-            ServiceComponent, {'id': component_id, 'service': service}, 'COMPONENT_NOT_FOUND')
-        serializer = self.serializer_class(service_component, context={'request': request})
-        return Response(serializer.data)
 
 
 class ServiceImportView(ListView):

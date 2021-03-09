@@ -13,7 +13,7 @@
 from rest_framework.response import Response
 
 from api.api_views import PageView, check_obj, DetailViewRO
-from cm.models import ServiceComponent
+from cm.models import ServiceComponent, ClusterObject, Cluster
 from . import serializers
 
 
@@ -28,7 +28,17 @@ class ComponentListView(PageView):
         """
         List all components
         """
-        return self.get_page(self.filter_queryset(self.get_queryset()), request)
+        queryset = self.get_queryset()
+        if 'cluster_id' in kwargs:
+            cluster = check_obj(Cluster, kwargs['cluster_id'], 'CLUSTER_NOT_FOUND')
+            co = check_obj(
+                ClusterObject, {'cluster': cluster, 'id': kwargs['service_id']}, 'SERVICE_NOT_FOUND'
+            )
+            queryset = self.get_queryset().filter(cluster=cluster, service=co)
+        elif 'service_id' in kwargs:
+            co = check_obj(ClusterObject, {'id': kwargs['service_id']}, 'SERVICE_NOT_FOUND')
+            queryset = self.get_queryset().filter(service=co)
+        return self.get_page(self.filter_queryset(queryset), request)
 
 
 class ComponentDetailView(DetailViewRO):
@@ -40,7 +50,7 @@ class ComponentDetailView(DetailViewRO):
         """
         Show component
         """
-        service = check_obj(ServiceComponent, {'id': kwargs['component_id']}, 'COMPONENT_NOT_FOUND')
+        component = check_obj(ServiceComponent, {'id': kwargs['component_id']}, 'COMPONENT_NOT_FOUND')
         serial_class = self.select_serializer(request)
-        serializer = serial_class(service, context={'request': request})
+        serializer = serial_class(component, context={'request': request})
         return Response(serializer.data)
