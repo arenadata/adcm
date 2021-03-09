@@ -379,6 +379,7 @@ class ServiceComponentSerializer(serializers.Serializer):
     prototype_id = serializers.SerializerMethodField()
     display_name = serializers.CharField(read_only=True)
     description = serializers.CharField(read_only=True)
+    state = serializers.CharField(read_only=True)
     url = MyUrlField(read_only=True, view_name='cluster-service-component-details')
 
     def get_prototype_id(self, obj):
@@ -389,13 +390,37 @@ class ServiceComponentDetailSerializer(ServiceComponentSerializer):
     constraint = serializers.JSONField(read_only=True)
     requires = serializers.JSONField(read_only=True)
     bound_to = serializers.JSONField(read_only=True)
+    bundle_id = serializers.IntegerField(read_only=True)
     monitoring = serializers.CharField(read_only=True)
     status = serializers.SerializerMethodField()
+    issue = serializers.SerializerMethodField()
     config = CommonAPIURL(view_name='object-config')
     action = CommonAPIURL(view_name='object-action')
+    prototype = serializers.HyperlinkedIdentityField(
+        view_name='component-type-details', lookup_field='prototype_id',
+        lookup_url_kwarg='prototype_id')
+
+    def get_issue(self, obj):
+        return cm.issue.get_issue(obj)
 
     def get_status(self, obj):
         return cm.status_api.get_component_status(obj.id)
+
+
+class ServiceComponentUISerializer(ServiceComponentDetailSerializer):
+    actions = serializers.SerializerMethodField()
+    version = serializers.SerializerMethodField()
+
+    def get_actions(self, obj):
+        act_set = Action.objects.filter(prototype=obj.prototype)
+        self.context['object'] = obj
+        self.context['component_id'] = obj.id
+        actions = filter_actions(obj, act_set)
+        acts = ActionShort(actions, many=True, context=self.context)
+        return acts.data
+
+    def get_version(self, obj):
+        return obj.prototype.version
 
 
 class HCComponentSerializer(ServiceComponentDetailSerializer):
@@ -435,7 +460,7 @@ class HCComponentSerializer(ServiceComponentDetailSerializer):
                     }
                 if comp.name in comp_list[comp.name]['components']:
                     return
-                comp_list[comp.parent.name]['components'][comp.name] = comp
+                comp_list[comp.name]['components'][comp.name] = comp
                 if comp.requires:
                     process_requires(comp.requires)
 

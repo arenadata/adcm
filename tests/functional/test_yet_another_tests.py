@@ -9,11 +9,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import allure
 import coreapi
 import pytest
-
 # pylint: disable=W0611, W0621
 from adcm_pytest_plugin import utils
+
 from tests.library import steps
 from tests.library.errorcodes import BUNDLE_ERROR, INVALID_OBJECT_DEFINITION
 
@@ -21,17 +22,21 @@ testcases = ["cluster", "host"]
 
 
 @pytest.mark.parametrize('testcase', testcases)
-def test_handle_unknown_words_in_bundle(client, testcase):
-    dir_name = 'unknown_words_in_' + testcase
-    bundledir = utils.get_data_dir(__file__, dir_name)
-    with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-        steps.upload_bundle(client, bundledir)
-    INVALID_OBJECT_DEFINITION.equal(e, 'Not allowed key', 'in ' + testcase)
+def test_handle_unknown_words_in_bundle(sdk_client_ms, testcase):
+    with allure.step('Try to upload bundle with unknown words'):
+        dir_name = 'unknown_words_in_' + testcase
+        bundledir = utils.get_data_dir(__file__, dir_name)
+        with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
+            sdk_client_ms.upload_from_fs(bundledir)
+    with allure.step('Check error: Not allowed key'):
+        INVALID_OBJECT_DEFINITION.equal(e, 'Not allowed key', 'in ' + testcase)
 
 
-def test_shouldnt_load_same_bundle_twice(client):
-    bundledir = utils.get_data_dir(__file__, 'bundle_directory_exist')
-    steps.upload_bundle(client, bundledir)
-    with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-        steps.upload_bundle(client, bundledir)
-    BUNDLE_ERROR.equal(e, 'bundle directory', 'already exists')
+def test_shouldnt_load_same_bundle_twice(sdk_client_ms):
+    with allure.step('Try to upload same bundle twice'):
+        bundledir = utils.get_data_dir(__file__, 'bundle_directory_exist')
+        sdk_client_ms.upload_from_fs(bundledir)
+        with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
+            sdk_client_ms.upload_from_fs(bundledir)
+    with allure.step('Check error: bundle directory already exists'):
+        BUNDLE_ERROR.equal(e, 'bundle directory', 'already exists')
