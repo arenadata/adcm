@@ -50,7 +50,9 @@ class ComponentDetailView(DetailViewRO):
         """
         Show component
         """
-        component = check_obj(ServiceComponent, {'id': kwargs['component_id']}, 'COMPONENT_NOT_FOUND')
+        component = check_obj(
+            ServiceComponent, {'id': kwargs['component_id']}, 'COMPONENT_NOT_FOUND'
+        )
         serial_class = self.select_serializer(request)
         serializer = serial_class(component, context={'request': request})
         return Response(serializer.data)

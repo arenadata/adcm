@@ -20,7 +20,7 @@ import cm.api
 import cm.bundle
 import cm.status_api
 from cm.errors import AdcmApiEx, AdcmEx
-from cm.models import Cluster, Host, HostComponent, Prototype, ServiceComponent
+from cm.models import Cluster, Host, HostComponent, Prototype
 from cm.models import ClusterObject, Upgrade, ClusterBind
 from cm.logger import log   # pylint: disable=unused-import
 
