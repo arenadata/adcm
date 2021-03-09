@@ -14,10 +14,12 @@
 
 import os
 from contextlib import contextmanager
+from typing import List
 
 import allure
 import pytest
 import yaml
+from _pytest.mark import ParameterSet
 from adcm_client.base import ObjectNotFound
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import random_string, get_data_dir, get_data_subdirs_as_parameters
@@ -36,22 +38,23 @@ def _get_or_add_service(cluster, service_name):
         return cluster.service_add(name=service_name)
 
 
-def get_cases_paths() -> dict:
+def get_cases_paths() -> List[ParameterSet]:
     """
     Get cases path for parametrize test
     """
     bundles_paths, bundles_ids = get_data_subdirs_as_parameters(__file__, "bundle_configs")
-    cases_paths = []
-    ids = []
+    params = []
     for i, bundle_path in enumerate(bundles_paths):
         for b in os.listdir(bundle_path + CASES_PATH):
-            cases_paths.append("{}/{}".format(bundle_path + CASES_PATH, b))
-            ids.append(f"{bundles_ids[i]}_{b.strip('.yaml')}")
-    return {"argvalues": cases_paths, "ids": ids}
+            params.append(
+                pytest.param("{}/{}".format(bundle_path + CASES_PATH, b),
+                             id=f"{bundles_ids[i]}_{b.strip('.yaml')}")
+            )
+    return params
 
 
 @pytest.mark.parametrize("relation_type", ["bound_to", "requires"])
-@pytest.mark.parametrize("case_path", **get_cases_paths())
+@pytest.mark.parametrize("case_path", get_cases_paths())
 def test_related_sc(sdk_client_fs: ADCMClient, relation_type, case_path):
     """
     Tests for related components on hosts
