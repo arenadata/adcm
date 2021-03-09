@@ -15,9 +15,10 @@ from typing import Union
 import allure
 import pytest
 from adcm_client.base import ObjectNotFound
-from adcm_client.objects import Cluster, Provider, Host, Service
+from adcm_client.objects import Cluster, Provider, Host, Service, Component
 from adcm_pytest_plugin.steps.actions import run_host_action_and_assert_result, \
-    run_cluster_action_and_assert_result, run_service_action_and_assert_result
+    run_cluster_action_and_assert_result, run_service_action_and_assert_result, \
+    run_component_action_and_assert_result
 from adcm_pytest_plugin.utils import get_data_dir
 
 ACTION_ON_HOST = "action_on_host"
@@ -30,20 +31,29 @@ SECOND_COMPONENT = "second"
 SWITCH_SERVICE_STATE = "switch_service_state"
 SWITCH_CLUSTER_STATE = "switch_cluster_state"
 SWITCH_HOST_STATE = "switch_host_state"
+SWITCH_COMPONENT_STATE = "switch_component_state"
 
 
 @allure.title("Create cluster")
 @pytest.fixture()
 def cluster(sdk_client_fs) -> Cluster:
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster"))
-    return bundle.cluster_prototype().cluster_create(name="Some cluster")
+    return bundle.cluster_prototype().cluster_create(name="Cluster")
 
 
-@allure.title("Create cluster with service")
+@allure.title("Create a cluster with service")
 @pytest.fixture()
 def cluster_with_service(sdk_client_fs) -> Cluster:
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_with_service"))
-    cluster = bundle.cluster_prototype().cluster_create(name="Some cluster")
+    cluster = bundle.cluster_prototype().cluster_create(name="Cluster with services")
+    return cluster
+
+
+@allure.title("Create a cluster with service and components")
+@pytest.fixture()
+def cluster_with_components(sdk_client_fs) -> Cluster:
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_with_components"))
+    cluster = bundle.cluster_prototype().cluster_create(name="Cluster with components")
     return cluster
 
 
@@ -163,7 +173,69 @@ class TestServiceActionOnHost:
         run_host_action_and_assert_result(host, ACTION_ON_HOST_STATE_REQUIRED)
 
 
-ObjTypes = Union[Cluster, Host, Service]
+class TestComponentActionOnHost:
+
+    @pytest.mark.parametrize("action_name", [ACTION_ON_HOST, ACTION_ON_HOST_MULTIJOB])
+    def test_availability(self, cluster_with_components: Cluster, provider: Provider, action_name):
+        """
+        Test that component host action is available on a component host
+        """
+        service = cluster_with_components.service_add(FIRST_SERVICE)
+        component_with_action = service.component(name=FIRST_COMPONENT)
+        component_without_action = service.component(name=SECOND_COMPONENT)
+
+        host_single_component = provider.host_create("host_with_single_component")
+        host_two_components = provider.host_create("host_with_two_components")
+        host_component_without_action = provider.host_create("host_component_without_action")
+        host_without_components = provider.host_create("host_without_components")
+        host_outside_cluster = provider.host_create("host_outside_cluster")
+        for host in [host_single_component, host_two_components,
+                     host_component_without_action, host_without_components]:
+            cluster_with_components.host_add(host)
+        cluster_with_components.hostcomponent_set(
+            (host_single_component, component_with_action),
+            (host_two_components, component_with_action),
+            (host_two_components, component_without_action),
+            (host_component_without_action, component_without_action),
+        )
+        action_in_object_is_present(action_name, host_single_component)
+        action_in_object_is_present(action_name, host_two_components)
+        action_in_object_is_absent(action_name, host_component_without_action)
+        action_in_object_is_absent(action_name, host_without_components)
+        action_in_object_is_absent(action_name, host_outside_cluster)
+        action_in_object_is_absent(action_name, cluster_with_components)
+        action_in_object_is_absent(action_name, service)
+        action_in_object_is_absent(action_name, component_with_action)
+        action_in_object_is_absent(action_name, component_without_action)
+        run_host_action_and_assert_result(host_single_component, action_name)
+        run_host_action_and_assert_result(host_two_components, action_name)
+
+    def test_availability_at_state(self, cluster_with_components: Cluster, provider: Provider):
+        """
+        Test that component host action is available on specify service state
+        """
+        service = cluster_with_components.service_add(FIRST_SERVICE)
+        component = service.component(name=FIRST_COMPONENT)
+        adjacent_component = service.component(name=SECOND_COMPONENT)
+        host = provider.host_create("host_in_cluster")
+        cluster_with_components.host_add(host)
+        cluster_with_components.hostcomponent_set((host, component))
+
+        action_in_object_is_absent(ACTION_ON_HOST_STATE_REQUIRED, host)
+        run_cluster_action_and_assert_result(cluster_with_components, SWITCH_CLUSTER_STATE)
+        action_in_object_is_absent(ACTION_ON_HOST_STATE_REQUIRED, host)
+        run_service_action_and_assert_result(service, SWITCH_SERVICE_STATE)
+        action_in_object_is_absent(ACTION_ON_HOST_STATE_REQUIRED, host)
+        run_host_action_and_assert_result(host, SWITCH_HOST_STATE)
+        action_in_object_is_absent(ACTION_ON_HOST_STATE_REQUIRED, host)
+        run_component_action_and_assert_result(adjacent_component, SWITCH_COMPONENT_STATE)
+        action_in_object_is_absent(ACTION_ON_HOST_STATE_REQUIRED, host)
+        run_component_action_and_assert_result(component, SWITCH_COMPONENT_STATE)
+        action_in_object_is_present(ACTION_ON_HOST_STATE_REQUIRED, host)
+        run_host_action_and_assert_result(host, ACTION_ON_HOST_STATE_REQUIRED)
+
+
+ObjTypes = Union[Cluster, Host, Service, Component]
 
 
 def action_in_object_is_present(action: str, obj: ObjTypes):
