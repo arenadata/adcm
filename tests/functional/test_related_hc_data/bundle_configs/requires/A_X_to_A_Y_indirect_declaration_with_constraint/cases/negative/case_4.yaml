@@ -1,5 +1,5 @@
-description: Attempt to save HC map with A.X and A.Y on first host and A.Y on second host - should succeed
-positive: True
+description: Attempt to save HC map with A.X and A.Y on first host and A.Y on second host - should fail
+positive: False
 hc_map:
   first_host:
     - service_1.component_1_1
