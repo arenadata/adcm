@@ -1,6 +1,0 @@
-description: Attempt to save HC map with only C.Z on 1 host
-bound_to_raise_exception:
-requires_raise_exception:
-hc_map:
-  first_host:
-    - service_3.component_3_1
