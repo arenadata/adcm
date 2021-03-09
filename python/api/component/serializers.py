@@ -22,6 +22,7 @@ from cm import issue
 from cm import status_api
 from cm.models import Action
 
+
 class ComponentObjectUrlField(serializers.HyperlinkedIdentityField):
     def get_url(self, obj, view_name, request, format):
         kwargs = get_api_url_kwargs(obj, request, True)
