@@ -29,6 +29,7 @@ export type TypeName =
   'hostcomponent' |
   'service2cluster' |
   'host2cluster' |
+  'servicecomponent' |
   'component';
 export type Entities = Cluster | Service | Host | Provider | Job | Task | Bundle;
 
@@ -93,6 +94,7 @@ export interface Service extends ApiBase {
   status: number;
   hostcomponent: string;
   display_name: string;
+  cluster_id?: number;
 }
 
 export interface Bundle extends ApiBase {

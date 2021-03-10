@@ -37,7 +37,7 @@ export class ServicesComponent extends AdwpListDirective<IClusterService> {
       value: (row) => row.version,
     },
     ListFactory.stateColumn(),
-    ListFactory.statusColumn(this.takeUntil.bind(this), this.gotoStatus.bind(this)),
+    ListFactory.statusColumn(this),
     ListFactory.actionsColumn(),
     ListFactory.importColumn(this),
     ListFactory.configColumn(this),

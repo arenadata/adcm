@@ -74,13 +74,20 @@ const all = [
 
 const [main, config, m_status, m_import, actions] = all;
 
+const components = {
+  id: 8,
+  title: 'Components',
+  url: 'component',
+};
+
 export const Config = {
   menu: {
     cluster: all.sort((a, b) => a.id - b.id),
-    service: [main, config, m_status, m_import, actions],
+    service: [main, config, m_status, m_import, actions, components],
     host: [main, config, m_status, actions],
     provider: [main, config, actions],
     bundle: [main],
+    servicecomponent: [main, config, m_status, actions],
   },
 };
 
