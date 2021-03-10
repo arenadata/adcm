@@ -264,8 +264,8 @@ def check_component_requires(comp):
                 msg = 'Unknown service "{}" {}'
                 err('COMPONENT_CONSTRAINT_ERROR', msg.format(item['service'], ref))
         else:
-            service = comp.prototype
-            req_list[i]['service'] = comp.prototype.name
+            service = comp.parent
+            req_list[i]['service'] = comp.parent.name
         try:
             req_comp = StagePrototype.objects.get(
                 name=item['component'], type='component', parent=service
