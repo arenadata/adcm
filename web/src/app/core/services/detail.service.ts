@@ -16,8 +16,10 @@ import { Bundle, Cluster, Entities, Host, IAction, IImport, Job, LogFile, Provid
 import { environment } from '@env/environment';
 import { BehaviorSubject, EMPTY, forkJoin, Observable, of } from 'rxjs';
 import { filter, map, switchMap, tap } from 'rxjs/operators';
+import { IServiceComponent } from '@app/models/service-component';
+import { ServiceComponentService } from '@app/services/service-component.service';
 
-const EntitiNames: TypeName[] = ['host', 'service', 'cluster', 'provider', 'job', 'task', 'bundle'];
+const EntitiNames: TypeName[] = ['servicecomponent', 'host', 'service', 'cluster', 'provider', 'job', 'task', 'bundle'];
 
 export interface WorkerInstance {
   current: Entities;
@@ -49,7 +51,10 @@ export class ClusterService {
     return this.worker ? this.worker.current : null;
   }
 
-  constructor(private api: ApiService) {}
+  constructor(
+    private api: ApiService,
+    private serviceComponentService: ServiceComponentService,
+  ) {}
 
   clearWorker() {
     this.worker = null;
@@ -88,17 +93,35 @@ export class ClusterService {
   }
 
   getContext(param: ParamMap): Observable<WorkerInstance> {
+    console.log('getContext', param);
     const typeName = EntitiNames.find((a) => param.keys.some((b) => a === b));
+    console.log('typeName', typeName);
     const id = +param.get(typeName);
     const cluster$ = param.has('cluster') ? this.api.getOne<Cluster>('cluster', +param.get('cluster')) : of(null);
 
     return cluster$
       .pipe(
         tap((cluster) => (this.Cluster = cluster)),
-        switchMap((cluster) => (cluster && typeName !== 'cluster' ? this.api.get<Entities>(`${cluster[typeName]}${id}/`) : this[`one_${typeName}`](id)))
+        switchMap((cluster) => {
+          console.log('switchMap', 'cluster', cluster);
+
+          if (cluster && typeName === 'servicecomponent') {
+            console.log('servicecomponent');
+            const clusterId = +param.get('cluster');
+            const serviceId = +param.get('service');
+            return this.serviceComponentService.get(clusterId, serviceId, id);
+          } else if (cluster && typeName !== 'cluster') {
+            console.log('typeName !== \'cluster\'');
+            return this.api.get<Entities>(`${cluster[typeName]}${id}/`);
+          } else {
+            console.log('cluster');
+            return this[`one_${typeName}`](id);
+          }
+        })
       )
       .pipe(
         map((a: Entities) => {
+          console.log('map!!!');
           a.typeName = typeName;
           this.worker.current = { ...a, name: a.display_name || a.name || (a as Host).fqdn };
           this.workerSubject.next(this.worker);

@@ -13,7 +13,7 @@ import { Injectable } from '@angular/core';
 import { ParamMap, Params, convertToParamMap } from '@angular/router';
 import { ApiService } from '@app/core/api';
 import { ClusterService } from '@app/core/services';
-import { Bundle, Cluster, Entities, Host, IAction, TypeName } from '@app/core/types';
+import { Bundle, Cluster, Entities, Host, IAction, Service, TypeName } from '@app/core/types';
 import { environment } from '@env/environment';
 import { switchMap, tap, map } from 'rxjs/operators';
 import { Observable } from 'rxjs';
@@ -59,6 +59,11 @@ export class ListService {
       } else localStorage.setItem('list:param', JSON.stringify({ [typeName]: param }));
     }
 
+    if (typeName === 'servicecomponent') {
+      console.log('ParamMap', p);
+      console.log('Current', this.detail.Current);
+    }
+
     switch (typeName) {
       case 'host2cluster':
         return this.detail.getHosts(p);
@@ -66,6 +71,8 @@ export class ListService {
         return this.detail.getServices(p);
       case 'bundle':
         return this.api.getList<Bundle>(`${environment.apiRoot}stack/bundle/`, p);
+      case 'servicecomponent':
+        return this.api.getList(`${environment.apiRoot}cluster/${(this.detail.Current as Service).cluster_id}/service/${this.detail.Current.id}/component`, p);
       default:
         return this.api.root.pipe(switchMap((root) => this.api.getList<Entities>(root[this.current.typeName], p)));
     }
@@ -93,13 +100,13 @@ export class ListService {
       .pipe(map((res) => res.results.map((a) => ({ id: a.id, title: a.name }))));
   }
 
-  addClusterToHost(cluster_id: number, row: Host) {
-    this.api
+  addClusterToHost(cluster_id: number, row: Host): Observable<Host> {
+    return this.api
       .post<Host>(`${environment.apiRoot}cluster/${cluster_id}/host/`, { host_id: row.id })
-      .subscribe((host) => {
+      .pipe(tap((host) => {
         row.cluster_id = host.cluster_id;
         row.cluster_name = host.cluster;
-      });
+      }));
   }
 
   checkItem<T>(item: Entities) {

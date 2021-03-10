@@ -203,7 +203,18 @@ def get_host(host_id):
     return groups
 
 
-def prepare_job_inventory(selector, job_id, delta, action_host=None):
+def get_target_host(host_id):
+    host = Host.objects.get(id=host_id)
+    groups = {
+        'target': {
+            'hosts': get_hosts([host]),
+            'vars': get_cluster_config(host.cluster.id)
+        }
+    }
+    return groups
+
+
+def prepare_job_inventory(selector, job_id, action, delta, action_host=None):
     log.info('prepare inventory for job #%s, selector: %s', job_id, selector)
     fd = open(os.path.join(config.RUN_DIR, f'{job_id}/inventory.json'), 'w')
     inv = {'all': {'children': {}}}
@@ -212,6 +223,8 @@ def prepare_job_inventory(selector, job_id, delta, action_host=None):
         inv['all']['children'].update(get_host_groups(selector['cluster'], delta, action_host))
     if 'host' in selector:
         inv['all']['children'].update(get_host(selector['host']))
+        if action.host_action:
+            inv['all']['children'].update(get_target_host(selector['host']))
     if 'provider' in selector:
         inv['all']['children'].update(get_provider_hosts(selector['provider'], action_host))
         inv['all']['vars'] = get_provider_config(selector['provider'])
