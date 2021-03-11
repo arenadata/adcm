@@ -21,7 +21,7 @@ class ComponentListView(PageView):
     queryset = ServiceComponent.objects.all()
     serializer_class = serializers.ComponentSerializer
     serializer_class_ui = serializers.ComponentUISerializer
-    filterset_fields = ('cluster_id', )
+    filterset_fields = ('cluster_id', 'service_id')
     ordering_fields = ('state', 'prototype__display_name', 'prototype__version_order')
 
     def get(self, request, *args, **kwargs):
