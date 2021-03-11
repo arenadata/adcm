@@ -23,7 +23,7 @@ describe: ## Create .version file with output of describe
 	./gues_version.sh
 
 buildss: ## Build status server
-	@docker run -i --rm -v $(CURDIR)/go:/code -w /code  golang:alpine sh -c "apk --update add make git; make; rm -f /code/adcm/go.sum"
+	@docker run -i --rm -v $(CURDIR)/go:/code -w /code  golang:1.15-alpine sh -c "apk --update add make git && make && rm -f /code/adcm/go.sum"
 
 buildjs: ## Build client side js/html/css in directory wwwroot
 	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:12-alpine ./build.sh
@@ -52,6 +52,13 @@ pytest: ## Run functional tests
 	-e BUILD_TAG=${BUILD_TAG} -e ADCM_TAG=$(subst /,_,$(BRANCH_NAME)) -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
 	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" \
 	ci.arenadata.io/functest:3.8.6.slim.buster-x64 /bin/sh -e ./pytest.sh
+
+pytest_release: ## Run functional tests on release
+	docker pull ci.arenadata.io/functest:3.8.6.slim.buster.firefox-x64
+	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host -v $(CURDIR)/:/adcm -w /adcm/ \
+	-e BUILD_TAG=${BUILD_TAG} -e ADCM_TAG=$(subst /,_,$(BRANCH_NAME)) -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
+	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" \
+	ci.arenadata.io/functest:3.8.6.slim.buster.firefox-x64 /bin/sh -e ./pytest.sh --firefox
 
 ng_tests: ## Run Angular tests
 	docker pull ci.arenadata.io/functest:3.8.6.slim.buster-x64

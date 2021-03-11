@@ -1,4 +1,3 @@
-#!/bin/sh
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,18 +10,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+- type: cluster
+  name: test_cluster
+  version: 1.5
+  actions:
+    test_action:
+      type: job
+      script: test_run.yaml
+      script_type: ansible
+      states:
+          available: any
 
-pip3 install -U pip
-pip3 install -r requirements-test.txt
-
-find . -name "*.pyc" -type f -delete
-find . -name "__pycache__" -type d -delete
-{ # try
-    pytest tests/functional tests/ui_tests -s -v -n auto --maxfail 30 \
-    --showlocals --alluredir ./allure-results/ --durations=20 \
-    --reruns 2 --remote-executor-host "$SELENOID_HOST" --timeout=360 "$@" &&
-    chmod -R o+xw allure-results
-} || { # catch
-    chmod -R o+xw allure-results
-    exit 1
-}
+- type: service
+  name: test_service
+  description: Test service
+  version: '1.2'
+  actions:
+    test_action:
+      type: job
+      script: test_run.yaml
+      script_type: ansible
+      states:
+          available: any

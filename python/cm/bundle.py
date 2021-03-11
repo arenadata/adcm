@@ -254,7 +254,7 @@ def re_check_actions():
 def check_component_requires(comp):
     if not comp.requires:
         return
-    ref = 'in requires of component "{}" of {}'.format(comp.name, proto_ref(comp.prototype))
+    ref = 'in requires of component "{}" of {}'.format(comp.name, proto_ref(comp.parent))
     req_list = comp.requires
     for i, item in enumerate(req_list):
         if 'service' in item:
@@ -264,8 +264,8 @@ def check_component_requires(comp):
                 msg = 'Unknown service "{}" {}'
                 err('COMPONENT_CONSTRAINT_ERROR', msg.format(item['service'], ref))
         else:
-            service = comp.prototype
-            req_list[i]['service'] = comp.prototype.name
+            service = comp.parent
+            req_list[i]['service'] = comp.parent.name
         try:
             req_comp = StagePrototype.objects.get(
                 name=item['component'], type='component', parent=service

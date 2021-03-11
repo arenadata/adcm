@@ -22,21 +22,21 @@ testcases = ["cluster", "host"]
 
 
 @pytest.mark.parametrize('testcase', testcases)
-def test_handle_unknown_words_in_bundle(client, testcase):
+def test_handle_unknown_words_in_bundle(sdk_client_ms, testcase):
     with allure.step('Try to upload bundle with unknown words'):
         dir_name = 'unknown_words_in_' + testcase
         bundledir = utils.get_data_dir(__file__, dir_name)
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-            steps.upload_bundle(client, bundledir)
+            sdk_client_ms.upload_from_fs(bundledir)
     with allure.step('Check error: Not allowed key'):
         INVALID_OBJECT_DEFINITION.equal(e, 'Map key "confi" is not allowed here')
 
 
-def test_shouldnt_load_same_bundle_twice(client):
+def test_shouldnt_load_same_bundle_twice(sdk_client_ms):
     with allure.step('Try to upload same bundle twice'):
         bundledir = utils.get_data_dir(__file__, 'bundle_directory_exist')
-        steps.upload_bundle(client, bundledir)
+        sdk_client_ms.upload_from_fs(bundledir)
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-            steps.upload_bundle(client, bundledir)
+            sdk_client_ms.upload_from_fs(bundledir)
     with allure.step('Check error: bundle directory already exists'):
         BUNDLE_ERROR.equal(e, 'bundle directory', 'already exists')
