@@ -35,7 +35,12 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
   current: IDetails;
   currentName = '';
 
-  constructor(socket: Store<SocketState>, private route: ActivatedRoute, private service: ClusterService, private channel: ChannelService) {
+  constructor(
+    socket: Store<SocketState>,
+    private route: ActivatedRoute,
+    private service: ClusterService,
+    private channel: ChannelService,
+  ) {
     super(socket);
   }
 
@@ -61,7 +66,21 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
   }
 
   run(w: WorkerInstance) {
-    const { id, name, typeName, action, actions, issue, status, prototype_name, prototype_display_name, prototype_version, bundle_id, state } = w.current;
+    console.log('WorkerInstance', w);
+    const {
+      id,
+      name,
+      typeName,
+      action,
+      actions,
+      issue,
+      status,
+      prototype_name,
+      prototype_display_name,
+      prototype_version,
+      bundle_id,
+      state,
+    } = w.current;
     const { upgradable, upgrade, hostcomponent } = w.current as Cluster;
     const { log_files, objects } = w.current as Job;
     const { provider_id } = w.current as Host;
