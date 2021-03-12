@@ -59,11 +59,6 @@ export class ListService {
       } else localStorage.setItem('list:param', JSON.stringify({ [typeName]: param }));
     }
 
-    if (typeName === 'servicecomponent') {
-      console.log('ParamMap', p);
-      console.log('Current', this.detail.Current);
-    }
-
     switch (typeName) {
       case 'host2cluster':
         return this.detail.getHosts(p);

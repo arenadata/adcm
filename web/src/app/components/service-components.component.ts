@@ -57,7 +57,6 @@ export class ServiceComponentsComponent extends AdwpListDirective<any> implement
   }
 
   ngOnInit() {
-    console.log(this.details.Current);
     super.ngOnInit();
   }
 

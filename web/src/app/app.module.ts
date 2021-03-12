@@ -30,7 +30,10 @@ import { AdwpUiWidgetsModule } from '@adwp-ui/widgets';
 //registerLocaleData(localeRu, 'ru');
 
 @NgModule({
-  declarations: [AppComponent, LogComponent],
+  declarations: [
+    AppComponent,
+    LogComponent,
+  ],
   imports: [
     BrowserModule,
     BrowserAnimationsModule,

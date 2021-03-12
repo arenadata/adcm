@@ -105,7 +105,6 @@ export class BaseListDirective {
   }
 
   initRouteListener() {
-    console.log('initRouteListener');
     this.parent.route.paramMap
       .pipe(
         this.takeUntil(),
@@ -115,7 +114,6 @@ export class BaseListDirective {
   }
 
   init(): void {
-    console.log('init');
     this.initSocket();
     this.initColumns();
     this.initListItemEvent();
@@ -176,7 +174,6 @@ export class BaseListDirective {
   }
 
   refresh(id?: number) {
-    console.log('refresh');
     if (id) this.parent.current = { id };
     this.service.getList(this.listParams, this.typeName).subscribe((list: IListResult<Entities>) => {
       if (this.reload) {

@@ -42,7 +42,6 @@ import { MaterialModule } from './material.module';
 import { BreakRowPipe, TagEscPipe } from './pipes';
 import { StuffModule } from './stuff.module';
 import { StatusColumnComponent } from '@app/components/columns/status-column/status-column.component';
-import { ActionsColumnComponent } from '@app/components/columns/actions-column/actions-column.component';
 import { StateColumnComponent } from '@app/components/columns/state-column/state-column.component';
 import { EditionColumnComponent } from '@app/components/columns/edition-column/edition-column.component';
 import { ClusterColumnComponent } from '@app/components/columns/cluster-column/cluster-column.component';
@@ -85,7 +84,6 @@ import { ServiceComponentsComponent } from '@app/components/service-components.c
     ActionMasterConfigComponent,
     ActionCardComponent,
     StatusColumnComponent,
-    ActionsColumnComponent,
     StateColumnComponent,
     EditionColumnComponent,
     ClusterColumnComponent,
@@ -117,7 +115,6 @@ import { ServiceComponentsComponent } from '@app/components/service-components.c
     ExportComponent,
     ActionCardComponent,
     StatusColumnComponent,
-    ActionsColumnComponent,
     StateColumnComponent,
     EditionColumnComponent,
     ClusterColumnComponent,

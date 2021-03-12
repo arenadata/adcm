@@ -12,7 +12,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ChannelService, ClusterService, keyChannelStrim, WorkerInstance } from '@app/core';
-import { EventMessage, SocketState } from '@app/core/store';
+import { EventMessage, getNavigationPath, SocketState } from '@app/core/store';
 import { Cluster, Host, IAction, Issue, Job, isIssue } from '@app/core/types';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
@@ -20,6 +20,7 @@ import { switchMap, tap } from 'rxjs/operators';
 
 import { SocketListenerDirective } from '../directives/socketListener.directive';
 import { IDetails } from './navigation.service';
+import { AdcmEntity } from '@app/models/entity';
 
 @Component({
   selector: 'app-detail',
@@ -35,11 +36,14 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
   current: IDetails;
   currentName = '';
 
+  navigationPath: Observable<AdcmEntity[]> = this.store.select(getNavigationPath).pipe(this.takeUntil());
+
   constructor(
     socket: Store<SocketState>,
     private route: ActivatedRoute,
     private service: ClusterService,
     private channel: ChannelService,
+    private store: Store,
   ) {
     super(socket);
   }
@@ -66,7 +70,6 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
   }
 
   run(w: WorkerInstance) {
-    console.log('WorkerInstance', w);
     const {
       id,
       name,
