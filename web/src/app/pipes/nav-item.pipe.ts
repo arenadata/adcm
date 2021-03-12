@@ -40,7 +40,7 @@ export class NavItemPipe implements PipeTransform {
   }
 
   transform(path: AdcmTypedEntity[]): IStyledNavItem[] {
-    return path.reduce((acc, item, index) => {
+    return path?.reduce((acc, item, index) => {
       return [
         ...acc,
         {

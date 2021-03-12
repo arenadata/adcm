@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { NavigationComponent } from './navigation.component';
+import { NavItemPipe } from '@app/pipes/nav-item.pipe';
 
 describe('NavigationComponent', () => {
   let component: NavigationComponent;
@@ -8,7 +9,10 @@ describe('NavigationComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ NavigationComponent ]
+      declarations: [
+        NavigationComponent,
+        NavItemPipe,
+      ]
     })
     .compileComponents();
   });

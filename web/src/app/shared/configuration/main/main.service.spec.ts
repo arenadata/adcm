@@ -14,13 +14,19 @@ import { TestBed } from '@angular/core/testing';
 import { MainService } from './main.service';
 import { FieldService } from '../field.service';
 import { ApiService } from '@app/core/api';
+import { Store } from '@ngrx/store';
 
 describe('MainService', () => {
   let service: MainService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [MainService, { provide: ApiService, useValue: {} }, { provide: FieldService, useValue: {} }],
+      providers: [
+        MainService,
+        { provide: ApiService, useValue: {} },
+        { provide: FieldService, useValue: {} },
+        { provide: Store, useValue: {} },
+      ],
     });
     service = TestBed.inject(MainService);
   });
