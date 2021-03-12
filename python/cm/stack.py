@@ -144,6 +144,7 @@ def check_adcm_config(conf_file):
                     continue
                 args += f'line {ee.line}: {ee}\n'
         err('INVALID_OBJECT_DEFINITION', f'"{conf_file}" line {e.line} error: {e}', args)
+        return {}
 
 
 def read_definition(conf_file, conf_type):
