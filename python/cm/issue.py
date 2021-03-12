@@ -273,7 +273,7 @@ def check_component_requires(shc_list):
     for shc in get_components_with_requires():
         for r in shc[2].prototype.requires:
             if not check_component_req(r['service'], r['component']):
-                ref = f'component "{shc[2].component.name}" of service "{shc[0].prototype.name}"'
+                ref = f'component "{shc[2].prototype.name}" of service "{shc[0].prototype.name}"'
                 msg = 'no required component "{}" of service "{}" for {}'
                 err('COMPONENT_CONSTRAINT_ERROR', msg.format(r['component'], r['service'], ref))
 

@@ -19,6 +19,7 @@ from rest_framework.reverse import reverse
 from api.api_views import check_obj, filter_actions, CommonAPIURL
 from api.cluster_serial import BindSerializer
 from api.action.serializers import ActionShort
+from api.component.serializers import ComponentUISerializer
 
 from cm import issue
 from cm import status_api
@@ -81,7 +82,7 @@ class ServiceDetailSerializer(ServiceSerializer):
     monitoring = serializers.CharField(read_only=True)
     action = CommonAPIURL(read_only=True, view_name='object-action')
     config = CommonAPIURL(read_only=True, view_name='object-config')
-    component = ServiceObjectUrlField(read_only=True, view_name='service-component')
+    component = ServiceObjectUrlField(read_only=True, view_name='component')
     imports = ServiceObjectUrlField(read_only=True, view_name='service-import')
     bind = ServiceObjectUrlField(read_only=True, view_name='service-bind')
     prototype = serializers.HyperlinkedIdentityField(
@@ -93,31 +94,6 @@ class ServiceDetailSerializer(ServiceSerializer):
 
     def get_status(self, obj):
         return status_api.get_service_status(obj.cluster.id, obj.id)
-
-
-class ServiceComponentSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField(read_only=True)
-    prototype_id = serializers.SerializerMethodField()
-    display_name = serializers.CharField(read_only=True)
-    description = serializers.CharField(read_only=True)
-    url = ServiceComponentDetailsUrlField(read_only=True, view_name='service-component-details')
-
-    def get_prototype_id(self, obj):
-        return obj.prototype.id
-
-
-class ServiceComponentDetailSerializer(ServiceComponentSerializer):
-    constraint = serializers.JSONField(read_only=True)
-    requires = serializers.JSONField(read_only=True)
-    bound_to = serializers.JSONField(read_only=True)
-    monitoring = serializers.CharField(read_only=True)
-    status = serializers.SerializerMethodField()
-    config = CommonAPIURL(view_name='object-config')
-    action = CommonAPIURL(view_name='object-action')
-
-    def get_status(self, obj):
-        return status_api.get_component_status(obj.id)
 
 
 class ServiceUISerializer(ServiceDetailSerializer):
@@ -138,7 +114,7 @@ class ServiceUISerializer(ServiceDetailSerializer):
 
     def get_components(self, obj):
         comps = ServiceComponent.objects.filter(service=obj, cluster=obj.cluster)
-        return ServiceComponentDetailSerializer(comps, many=True, context=self.context).data
+        return ComponentUISerializer(comps, many=True, context=self.context).data
 
     def get_version(self, obj):
         return obj.prototype.version
