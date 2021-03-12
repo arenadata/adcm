@@ -110,8 +110,11 @@ class ServiceComponentSerializer(serializers.Serializer):
 class ServiceComponentDetailSerializer(ServiceComponentSerializer):
     constraint = serializers.JSONField(read_only=True)
     requires = serializers.JSONField(read_only=True)
+    bound_to = serializers.JSONField(read_only=True)
     monitoring = serializers.CharField(read_only=True)
     status = serializers.SerializerMethodField()
+    config = CommonAPIURL(view_name='object-config')
+    action = CommonAPIURL(view_name='object-action')
 
     def get_status(self, obj):
         return status_api.get_component_status(obj.id)

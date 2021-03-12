@@ -18,8 +18,10 @@ from api.api_views import (
 )
 from api.job_serial import RunTaskSerializer
 from cm.errors import AdcmApiEx
-from cm.models import ADCM, Cluster, HostProvider, Host, ClusterObject, ServiceComponent
-from cm.models import Action, TaskLog
+from cm.models import (
+    ADCM, Cluster, HostProvider, Host, ClusterObject, ServiceComponent, Action, TaskLog,
+    HostComponent
+)
 from . import serializers
 
 
@@ -67,13 +69,23 @@ def get_obj(**kwargs):
     return obj, action_id
 
 
-def get_selector(obj):
+def get_selector(obj, action):
     selector = {obj.prototype.type: obj.id}
     if obj.prototype.type == 'service':
         selector['cluster'] = obj.cluster.id
     if obj.prototype.type == 'component':
         selector['cluster'] = obj.cluster.id
         selector['component'] = obj.service.id
+    if isinstance(obj, Host) and action.host_action:
+        try:
+            hc = HostComponent.objects.get(host_id=obj.id)
+            selector.update(
+                {f'{action.prototype.type}': getattr(hc, f'{action.prototype.type}_id')})
+            selector['cluster'] = hc.cluster_id
+        except HostComponent.DoesNotExist:
+            if obj.cluster is not None:
+                selector['cluster'] = obj.cluster.id
+
     return selector
 
 
@@ -88,13 +100,37 @@ class ActionList(ListView):
         """
         List all actions of a specified object
         """
-        obj, _ = get_obj(**kwargs)
-        actions = filter_actions(obj, self.filter_queryset(
-            self.get_queryset().filter(prototype=obj.prototype)
-        ))
+        if kwargs['object_type'] == 'host':
+            host, _ = get_obj(object_type='host', host_id=kwargs['host_id'])
+            actions = filter_actions(host, self.filter_queryset(
+                self.get_queryset().filter(prototype=host.prototype)
+            ))
+            objects = {'host': host}
+            try:
+                hc = HostComponent.objects.get(host_id=kwargs['host_id'])
+                cluster, _ = get_obj(object_type='cluster', cluster_id=hc.cluster_id)
+                service, _ = get_obj(object_type='service', service_id=hc.service_id)
+                component, _ = get_obj(object_type='component', component_id=hc.component_id)
+                for obj in [cluster, service, component]:
+                    actions.extend(filter_actions(obj, self.filter_queryset(
+                        self.get_queryset().filter(prototype=obj.prototype, host_action=True))))
+
+                objects.update({'cluster': cluster, 'service': service, 'component': component})
+            except HostComponent.DoesNotExist:
+                if host.cluster is not None:
+                    actions.extend(filter_actions(host.cluster, self.filter_queryset(
+                        self.get_queryset().filter(
+                            prototype=host.cluster.prototype, host_action=True))))
+                    objects.update({'cluster': host.cluster})
+        else:
+            obj, _ = get_obj(**kwargs)
+            actions = filter_actions(obj, self.filter_queryset(
+                self.get_queryset().filter(prototype=obj.prototype, host_action=False)
+            ))
+            objects = {obj.prototype.type: obj}
         serializer_class = self.select_serializer(request)
         serializer = serializer_class(
-            actions, many=True, context={'request': request, 'object': obj}
+            actions, many=True, context={'request': request, 'objects': objects}
         )
         return Response(serializer.data)
 
@@ -108,10 +144,12 @@ class ActionDetail(GenericAPIPermView):
         Show specified action
         """
         obj, action_id = get_obj(**kwargs)
-        action = check_obj(
-            Action, {'prototype': obj.prototype, 'id': action_id}, 'ACTION_NOT_FOUND'
-        )
-        serializer = self.serializer_class(action, context={'request': request, 'object': obj})
+        action = check_obj(Action, {'id': action_id}, 'ACTION_NOT_FOUND')
+        if isinstance(obj, Host) and action.host_action:
+            objects = {'host': obj}
+        else:
+            objects = {action.prototype.type: obj}
+        serializer = self.serializer_class(action, context={'request': request, 'objects': objects})
         return Response(serializer.data)
 
 
@@ -124,9 +162,7 @@ class RunTask(GenericAPIPermView):
         Ran specified action
         """
         obj, action_id = get_obj(**kwargs)
-        selector = get_selector(obj)
-        action = check_obj(
-            Action, {'prototype': obj.prototype, 'id': action_id}, 'ACTION_NOT_FOUND'
-        )
+        action = check_obj(Action, {'id': action_id}, 'ACTION_NOT_FOUND')
+        selector = get_selector(obj, action)
         serializer = self.serializer_class(data=request.data, context={'request': request})
         return create(serializer, action_id=action.id, selector=selector)

@@ -21,8 +21,12 @@ urlpatterns = [
         path('', views.ServiceDetailView.as_view(), name='service-details'),
         path('component/', include([
             path('', views.ServiceComponentListView.as_view(), name='service-component'),
-            path('<int:component_id>/', views.ServiceComponentDetailView.as_view(),
-                 name='service-component-details'),
+            path('<int:component_id>/', include([
+                path('', views.ServiceComponentDetailView.as_view(),
+                     name='service-component-details'),
+                path('config/', include('api.config.urls'), {'object_type': 'component'}),
+                path('action/', include('api.action.urls'), {'object_type': 'component'})
+            ])),
         ])),
         path('import/', views.ServiceImportView.as_view(), name='service-import'),
         path('bind/', include([
