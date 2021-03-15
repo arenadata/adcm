@@ -11,18 +11,16 @@
 # limitations under the License.
 import json
 import os
-import random
 
 import allure
 import pytest
 from adcm_pytest_plugin import utils
-from adcm_pytest_plugin.docker_utils import DockerWrapper
 from coreapi import exceptions
 from jsonschema import validate
 
 
-# pylint: disable=E0401, W0611, W0621
-from tests.library import errorcodes, steps
+# pylint: disable=E0401, W0611, W0621, W0212
+from tests.library import errorcodes
 
 BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
 SCHEMAS = os.path.join(os.path.dirname(__file__), "schemas/")
@@ -34,15 +32,16 @@ def test_load_host_provider(sdk_client_fs):
         assert len(sdk_client_fs.bundle_list()) == 1
 
 
-@pytest.mark.skip(reason="is not compatible with new adcm_client objects")
-def test_validate_provider_prototype(client):
-    steps.upload_bundle(client, BUNDLES + 'hostprovider_bundle')
-    with allure.step('Load provider prototype'):
-        provider_prototype = json.loads(json.dumps(client.stack.provider.list()[0]))
+def test_validate_provider_prototype(sdk_client_fs):
+    bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
+    with allure.step("Load provider prototype"):
+        provider_prototype = json.loads(
+            json.dumps(bundle.provider_prototype()._data)
+        )
         schema = json.load(
             open(SCHEMAS + '/stack_list_item_schema.json')
         )
-    with allure.step('Check provider prototype'):
+    with allure.step("Check provider prototype"):
         assert validate(provider_prototype, schema) is None
 
 
@@ -83,13 +82,18 @@ def test_provider_shouldnt_be_deleted_when_it_has_host(sdk_client_fs):
         errorcodes.PROVIDER_CONFLICT.equal(e, "There is host ", " of host provider ")
 
 
-@pytest.mark.skip("is not compatible with new adcm_client objects")
-def test_shouldnt_create_host_with_unknown_prototype(client):
-    steps.upload_bundle(client, BUNDLES + 'hostprovider_bundle')
-    with allure.step('Create host'):
+def test_shouldnt_create_host_with_unknown_prototype(sdk_client_fs):
+    bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
+    with allure.step("Create host"):
         with pytest.raises(exceptions.ErrorMessage) as e:
-            client.host.create(prototype_id=client.stack.host.list()[0]['id'],
-                               provider_id=random.randint(100, 500),
-                               fqdn=utils.random_string())
-    with allure.step('Check error provider doesnt exist'):
+            provider = bundle.provider_prototype().provider_create(
+                name=utils.random_string()
+            )
+            provider.delete()
+            # Using lack of auto refresh of object as workaround.
+            # If adcm_client object behaviour will be changed, test may fall.
+            provider.host_create(
+                fqdn=utils.random_string()
+            )
+    with allure.step("Check error provider doesnt exist"):
         errorcodes.PROVIDER_NOT_FOUND.equal(e, "provider doesn't exist")
