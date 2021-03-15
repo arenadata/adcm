@@ -19,8 +19,7 @@ from tests.library import errorcodes as err
 from tests.library import steps
 
 
-# Is not compatible with the latest packing routine
-@pytest.mark.skip()
+@pytest.mark.skip(reason="is not compatible with the latest packing routine")
 def test_bundle_should_have_any_cluster_definition(client):
     with allure.step('Upload cluster bundle with no definition'):
         bundle = utils.get_data_dir(__file__, "bundle_wo_cluster_definition")
