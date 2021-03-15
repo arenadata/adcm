@@ -79,7 +79,7 @@ def test_check_cluster_state_after_run_action_when_empty(cluster_bundle, state, 
     bundle_path = utils.get_data_dir(__file__, "empty_states", cluster_bundle)
     bundle = sdk_client_fs.upload_from_fs(bundle_path)
     cluster = bundle.cluster_prototype().cluster_create(
-                                        name=utils.random_string())
+        name=utils.random_string())
     cluster.action(name="install").run().wait()
     with allure.step(f"Check if cluster is in state {state}"):
         cluster.reread()
@@ -115,7 +115,7 @@ def test_run_parametrized_action_must_be_runned(sdk_client_fs):
     bundle_path = utils.get_data_dir(__file__, "run_parametrized_action")
     bundle = sdk_client_fs.upload_from_fs(bundle_path)
     cluster = bundle.cluster_prototype().cluster_create(
-                                        name=utils.random_string())
+        name=utils.random_string())
     task = cluster.action(name="install").run(config={
         "param": "test test test test test"
     })
