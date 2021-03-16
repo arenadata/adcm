@@ -285,6 +285,7 @@ def do_upgrade(obj, upgrade):
                     co = ClusterObject.objects.get(cluster=obj, prototype__name=p.name)
                     switch_service(co, p)
                     switch_components(obj, co, p)
+                    cm.issue.save_issue(co)
                 except ClusterObject.DoesNotExist:
                     # co.delete() ?!
                     pass
