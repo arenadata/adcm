@@ -60,8 +60,6 @@
   description: Arenadata Nothing
   version: 1.0
 
-  config:
-
   confi:
         bluh:
             type: string

@@ -19,7 +19,7 @@
         re-start-zookeper:
             type: job
             script: stack/job.py
-            script_type: task_generator
+            script_type: ansible
             params:
                 qwe: 31
     config:

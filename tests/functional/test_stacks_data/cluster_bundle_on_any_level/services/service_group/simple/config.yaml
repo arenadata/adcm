@@ -19,7 +19,7 @@
         install:
             type: job
             script: stack/extcode/job.py
-            script_type: task_generator
+            script_type: ansible
             params:
                 aaa: 31
                 bbb: place your text here

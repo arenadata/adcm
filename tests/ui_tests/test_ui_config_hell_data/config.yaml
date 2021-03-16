@@ -30,7 +30,6 @@
         default: qwerty1234
         required: false
     svc-ro-created:
-      display_name:
       type: string
       default: bluh
       required: false
@@ -849,8 +848,7 @@
         required: no
         ui_options:
           invisible: true
-    <<: *group_of_visible
-    <<: *group_on_invisible
+    <<: [*group_of_visible, *group_on_invisible]
 
 
 - type: service

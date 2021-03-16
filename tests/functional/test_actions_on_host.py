@@ -57,6 +57,14 @@ def cluster_with_components(sdk_client_fs) -> Cluster:
     return cluster
 
 
+@allure.title("Create a cluster with target group action")
+@pytest.fixture()
+def cluster_with_target_group_action(sdk_client_fs) -> Cluster:
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_target_group"))
+    cluster = bundle.cluster_prototype().cluster_create(name="Target group test")
+    return cluster
+
+
 @allure.title("Create provider")
 @pytest.fixture()
 def provider(sdk_client_fs) -> Provider:
@@ -233,6 +241,21 @@ class TestComponentActionOnHost:
         run_component_action_and_assert_result(component, SWITCH_COMPONENT_STATE)
         action_in_object_is_present(ACTION_ON_HOST_STATE_REQUIRED, host)
         run_host_action_and_assert_result(host, ACTION_ON_HOST_STATE_REQUIRED)
+
+
+def test_target_group_in_inventory(cluster_with_target_group_action: Cluster, provider: Provider,
+                                   sdk_client_fs):
+    """
+    Test that target group action has inventory_hostname info
+    """
+    hostname = "host_in_cluster"
+    host = provider.host_create(hostname)
+    cluster_with_target_group_action.host_add(host)
+    action_in_object_is_present(ACTION_ON_HOST, host)
+    run_host_action_and_assert_result(host, ACTION_ON_HOST)
+    with allure.step("Assert that hostname in job log is present"):
+        assert f"We are on host: {hostname}" in sdk_client_fs.job().log(type="stdout").content, \
+            "No hostname info in the job log"
 
 
 ObjTypes = Union[Cluster, Host, Service, Component]
