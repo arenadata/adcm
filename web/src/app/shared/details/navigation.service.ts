@@ -11,8 +11,9 @@
 // limitations under the License.
 import { Injectable } from '@angular/core';
 import { ApiBase, Cluster, isIssue, Issue, Job, TypeName, IAction, LogFile, JobObject } from '@app/core/types';
+import { AdcmTypedEntity } from '@app/models/entity';
 
-const ISSUE_MESSAGE = 'Something is wrong with your cluster configuration, please review it.';
+export const ISSUE_MESSAGE = 'Something is wrong with your cluster configuration, please review it.';
 
 export interface IDetails {
   parent?: Cluster;
@@ -61,6 +62,11 @@ export interface INavItem {
   action?: () => void;
 }
 
+export interface IStyledNavItem {
+  class?: string;
+  entity?: AdcmTypedEntity;
+}
+
 const all = [
   { id: 0, title: 'Main', url: 'main' },
   { id: 4, title: 'Configuration', url: 'config' },
@@ -74,13 +80,20 @@ const all = [
 
 const [main, config, m_status, m_import, actions] = all;
 
+const components = {
+  id: 8,
+  title: 'Components',
+  url: 'component',
+};
+
 export const Config = {
   menu: {
     cluster: all.sort((a, b) => a.id - b.id),
-    service: [main, config, m_status, m_import, actions],
+    service: [main, components, config, m_status, m_import, actions],
     host: [main, config, m_status, actions],
     provider: [main, config, actions],
     bundle: [main],
+    servicecomponent: [main, config, m_status, actions],
   },
 };
 

@@ -16,8 +16,12 @@ import { Bundle, Cluster, Entities, Host, IAction, IImport, Job, LogFile, Provid
 import { environment } from '@env/environment';
 import { BehaviorSubject, EMPTY, forkJoin, Observable, of } from 'rxjs';
 import { filter, map, switchMap, tap } from 'rxjs/operators';
+import { ServiceComponentService } from '@app/services/service-component.service';
+import { AdcmEntity, AdcmTypedEntity } from '@app/models/entity';
+import { Store } from '@ngrx/store';
+import { setPathOfRoute } from '@app/store/navigation/navigation.store';
 
-const EntitiNames: TypeName[] = ['host', 'service', 'cluster', 'provider', 'job', 'task', 'bundle'];
+export const EntitiNames: TypeName[] = ['servicecomponent', 'host', 'service', 'cluster', 'provider', 'job', 'task', 'bundle'];
 
 export interface WorkerInstance {
   current: Entities;
@@ -49,7 +53,11 @@ export class ClusterService {
     return this.worker ? this.worker.current : null;
   }
 
-  constructor(private api: ApiService) {}
+  constructor(
+    protected api: ApiService,
+    protected serviceComponentService: ServiceComponentService,
+    protected store: Store,
+  ) {}
 
   clearWorker() {
     this.worker = null;
@@ -87,7 +95,33 @@ export class ClusterService {
     return this.api.get<Bundle>(`${environment.apiRoot}stack/bundle/${id}/`);
   }
 
+  entityGetter(currentParam: TypeName, params: ParamMap): Observable<AdcmTypedEntity> {
+    const entityToTypedEntity = (getter: Observable<AdcmEntity>, typeName: TypeName) => getter.pipe(
+      map(entity => ({
+        ...entity,
+        typeName,
+      } as AdcmTypedEntity))
+    );
+    if (EntitiNames.includes(currentParam)) {
+      if (currentParam === 'servicecomponent') {
+        const clusterId = +params.get('cluster');
+        const serviceId = +params.get('service');
+        return entityToTypedEntity(
+          this.serviceComponentService.get(clusterId, serviceId, +params.get(currentParam)),
+          currentParam,
+        );
+      } else {
+        return entityToTypedEntity(
+          this.api.getOne<any>(currentParam, +params.get(currentParam)),
+          currentParam,
+        );
+      }
+    }
+  }
+
   getContext(param: ParamMap): Observable<WorkerInstance> {
+    this.store.dispatch(setPathOfRoute({ params: param }));
+
     const typeName = EntitiNames.find((a) => param.keys.some((b) => a === b));
     const id = +param.get(typeName);
     const cluster$ = param.has('cluster') ? this.api.getOne<Cluster>('cluster', +param.get('cluster')) : of(null);
@@ -95,7 +129,17 @@ export class ClusterService {
     return cluster$
       .pipe(
         tap((cluster) => (this.Cluster = cluster)),
-        switchMap((cluster) => (cluster && typeName !== 'cluster' ? this.api.get<Entities>(`${cluster[typeName]}${id}/`) : this[`one_${typeName}`](id)))
+        switchMap((cluster) => {
+          if (cluster && typeName === 'servicecomponent') {
+            const clusterId = +param.get('cluster');
+            const serviceId = +param.get('service');
+            return this.serviceComponentService.get(clusterId, serviceId, id);
+          } else if (cluster && typeName !== 'cluster') {
+            return this.api.get<Entities>(`${cluster[typeName]}${id}/`);
+          } else {
+            return this[`one_${typeName}`](id);
+          }
+        })
       )
       .pipe(
         map((a: Entities) => {

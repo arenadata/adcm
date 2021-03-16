@@ -9,53 +9,54 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit } from '@angular/core';
-import { ClusterService } from '@app/core';
+import { Component } from '@angular/core';
+import { IColumns } from '@adwp-ui/widgets';
 
-@Component({
-  selector: 'app-cluster-host',
-  template: `
-    <app-add-button [name]="'host2cluster'" class="add-button">Add hosts</app-add-button>
-    <app-list class="main" [appBaseList]="'host2cluster'"></app-list>
-  `,
-  styles: [':host { flex: 1; }', '.add-button {position:fixed; right: 20px;top:120px;}'],
-})
-export class HostComponent {}
-
-@Component({
-  selector: 'app-services',
-  template: `
-    <app-add-button [name]="'service'" class="add-button">Add services</app-add-button>
-    <app-list class="main" [appBaseList]="'service2cluster'" appActionHandler></app-list>
-  `,
-  styles: [':host { flex: 1; }', '.add-button {position:fixed; right: 20px;top:120px;}'],
-})
-export class ServicesComponent {}
+import { ICluster } from '@app/models/cluster';
+import { TypeName } from '@app/core/types';
+import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
+import { ListFactory } from '@app/factories/list-factory';
 
 @Component({
   template: `
     <mat-toolbar class="toolbar">
       <app-crumbs [navigation]="[{ url: '/cluster', title: 'clusters' }]"></app-crumbs>
-      <app-add-button [name]="typeName" (added)="list.current = $event">Create {{ typeName }}</app-add-button>
+      <app-add-button [name]="type" (added)="current = $event">Create {{ type }}</app-add-button>
     </mat-toolbar>
-    <app-list #list appActionHandler [appBaseList]="typeName"></app-list>
+
+    <adwp-list
+      [columns]="listColumns"
+      [dataSource]="data$ | async"
+      [paging]="paging | async"
+      [sort]="sorting | async"
+      [defaultSort]="defaultSort"
+      [currentId]="current ? current.id : undefined"
+      (clickRow)="clickRow($event)"
+      (auxclickRow)="auxclickRow($event)"
+      (changePaging)="onChangePaging($event)"
+      (changeSort)="onChangeSort($event)"
+    ></adwp-list>
   `,
-  styles: [':host { flex: 1; }'],
+  styles: [`
+    :host { flex: 1; }
+  `],
 })
-export class ClusterListComponent {
-  typeName = 'cluster';
+export class ClusterListComponent extends AdwpListDirective<ICluster> {
+
+  type: TypeName = 'cluster';
+
+  listColumns = [
+    ListFactory.nameColumn(),
+    ListFactory.bundleColumn(),
+    ListFactory.descriptionColumn(),
+    ListFactory.stateColumn(),
+    ListFactory.statusColumn(this),
+    ListFactory.actionsColumn(),
+    ListFactory.importColumn(this),
+    ListFactory.updateColumn(),
+    ListFactory.configColumn(this),
+    ListFactory.deleteColumn(this),
+  ] as IColumns<ICluster>;
+
 }
 
-@Component({
-  template: ` <app-service-host [cluster]="cluster"></app-service-host> `,
-  styles: [':host { flex: 1; }'],
-})
-export class HcmapComponent implements OnInit {
-  cluster: { id: number; hostcomponent: string };
-  constructor(private service: ClusterService) {}
-
-  ngOnInit() {
-    const { id, hostcomponent } = { ...this.service.Cluster };
-    this.cluster = { id, hostcomponent };
-  }
-}

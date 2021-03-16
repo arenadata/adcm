@@ -552,7 +552,7 @@ def re_prepare_job(task, job):
 
 def prepare_job(action, sub_action, selector, job_id, obj, conf, delta, hosts, verbose):
     prepare_job_config(action, sub_action, selector, job_id, obj, conf, verbose)
-    inventory.prepare_job_inventory(selector, job_id, delta, hosts)
+    inventory.prepare_job_inventory(selector, job_id, action, delta, hosts)
     prepare_ansible_config(job_id, action, sub_action)
 
 
@@ -570,7 +570,7 @@ def prepare_context(selector):
     if 'provider' in selector:
         context['type'] = 'provider'
         context['provider_id'] = selector['provider']
-    if 'host' in selector:
+    if 'host' in selector and 'type' not in context:
         context['type'] = 'host'
         context['host_id'] = selector['host']
     if 'adcm' in selector:

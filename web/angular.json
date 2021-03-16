@@ -11,6 +11,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
+            "preserveSymlinks": true,
             "aot": true,
             "outputPath": "dist",
             "index": "src/index.html",
@@ -22,7 +23,8 @@
             ],
             "styles": [
               "src/adcm-theme.scss",
-              "src/styles.scss"
+              "src/styles.scss",
+              "src/adcm2.scss"
             ],
             "scripts": []
           },
@@ -71,6 +73,7 @@
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
+            "preserveSymlinks": true,
             "main": "src/test.ts",
             "karmaConfig": "./karma.conf.js",
             "polyfills": "src/polyfills.ts",
@@ -78,7 +81,8 @@
             "scripts": [],
             "styles": [
               "src/adcm-theme.scss",
-              "src/styles.scss"
+              "src/styles.scss",
+              "src/adcm2.scss"
             ],
             "assets": [
               "src/assets"
