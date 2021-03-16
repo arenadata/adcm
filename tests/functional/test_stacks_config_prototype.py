@@ -21,6 +21,7 @@ from adcm_pytest_plugin import utils
 
 # pylint: disable=W0611, W0621, W0212
 
+
 @allure.step('Load default stack')
 def load_default_stack(client):
     client.stack.load.update()
