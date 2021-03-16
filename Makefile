@@ -1,7 +1,12 @@
 # Set number of threads
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
-ADCMBASE_IMAGE ?= arenadata/adcmbase
-ADCMBASE_TAG ?= 20200812154141
+
+ADCMBASE_IMAGE ?= hub.arenadata.io/adcm/base
+ADCMBASE_TAG ?= 20210316232846
+
+APP_IMAGE ?= hub.adsw.io/adcm/adcm
+APP_TAG ?= $(subst /,_,$(BRANCH_NAME))
+
 SELENOID_HOST ?= 10.92.2.65
 SELENOID_PORT ?= 4444
 
@@ -29,11 +34,16 @@ buildjs: ## Build client side js/html/css in directory wwwroot
 	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:12-alpine ./build.sh
 
 buildbase: ## Build base image for ADCM's container. That is alpine with all packages.
-	@docker build --pull=true -f Dockerfile_base --no-cache=true -t $(ADCMBASE_IMAGE):$$(date '+%Y%m%d%H%M%S') -t $(ADCMBASE_IMAGE):latest .
+	cd assemble/base && docker build --pull=true --no-cache=true \
+	-t $(ADCMBASE_IMAGE):$$(date '+%Y%m%d%H%M%S') -t $(ADCMBASE_IMAGE):latest \
+	.
 
 build: describe buildss buildjs ## Build final docker image and all depended targets except baseimage.
-	@docker build --no-cache=true --pull=true -t hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME)) .
-
+	@docker build --no-cache=true \
+	-f assemble/app/Dockerfile \
+	-t $(APP_IMAGE):$(APP_TAG) \
+	--build-arg  ADCMBASE_IMAGE=$(ADCMBASE_IMAGE) --build-arg  ADCMBASE_TAG=$(ADCMBASE_TAG) \
+	.
 
 ##################################################
 #                 T E S T S

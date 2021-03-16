@@ -1,0 +1,24 @@
+# ansible==2.8.3
+git+https://github.com/arenadata/ansible.git@v2.8.8-p4
+coreapi
+django
+django-cors-headers
+django-filter
+django-rest-swagger
+djangorestframework
+django-background-tasks
+social-auth-app-django
+git+git://github.com/arenadata/django-generate-secret-key.git
+jinja2
+markdown
+mitogen
+pyyaml
+toml
+uwsgi
+version_utils
+yspec
+# Custom bundle libs
+apache-libcloud
+jmespath
+lxml
+pycrypto
