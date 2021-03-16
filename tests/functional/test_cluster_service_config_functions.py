@@ -12,7 +12,6 @@
 
 import json
 import os
-import random
 from typing import Tuple, Any
 
 import allure
@@ -96,7 +95,7 @@ class TestClusterServiceConfig:
             id="non_json_string",
         ),
         pytest.param(
-            random.randint(0, 9),
+            42,
             (err.JSON_ERROR, "should not be just one int or float"),
             id="plain_int",
         ),
@@ -380,7 +379,7 @@ class TestClusterConfig:
             assert validate(config_json, schema) is None
 
     def test_create_new_config_version_with_one_req_parameter(self, cluster: Cluster):
-        cfg = {"required": random.randint(0, 9)}
+        cfg = {"required": 42}
         expected = cluster.config_set(cfg)
         with allure.step("Check new config"):
             assert cluster.config() == expected
@@ -398,7 +397,7 @@ class TestClusterConfig:
             id="non_json",
         ),
         pytest.param(
-            random.randint(0, 9),
+            42,
             (err.JSON_ERROR, "config should not be just one int or float"),
             id="plain_int",
         ),
@@ -471,7 +470,7 @@ class TestClusterConfig:
         with allure.step("Create config data"):
             config_data = utils.ordered_dict_to_dict(cluster.config())
             config_data["input_file"] = test_data
-            config_data["required"] = random.randint(0, 99)
+            config_data["required"] = 42
         with allure.step("Create config history"):
             cluster.config_set(config_data)
         with allure.step("Check file type"):

@@ -11,7 +11,6 @@
 # limitations under the License.
 
 import json
-import random
 from typing import Tuple, List
 
 import allure
@@ -172,19 +171,16 @@ def test_check_cluster_bundle_versions_as_a_string(sdk_client_fs: ADCMClient):
     stack_dir = utils.get_data_dir(__file__, "cluster_service_versions_as_a_string")
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Check bundle versions"):
-        prototype = random.choice(sdk_client_fs.service_prototype_list())
-        assert isinstance(prototype.version, str) is True
-        assert isinstance(prototype.version, str) is True
+        prototype = sdk_client_fs.service_prototype()
+        assert isinstance(prototype.version, str)
 
 
 def test_check_host_bundle_versions_as_a_string(sdk_client_fs: ADCMClient):
     stack_dir = utils.get_data_dir(__file__, "host_version_as_a_string")
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Check host versions"):
-        assert (
-            isinstance(random.choice(sdk_client_fs.host_prototype_list()).version, str)
-            is True
-        )
+        prototype = sdk_client_fs.host_prototype()
+        assert isinstance(prototype.version, str)
 
 
 def test_cluster_bundle_can_be_on_any_level(sdk_client_fs: ADCMClient):
