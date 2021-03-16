@@ -105,6 +105,7 @@ component_dict:
     bound_to: bound_dict
     params: json
     requires: comp_req_list
+    actions: actions_dict
 
 comp_req_list:
   match: list
@@ -501,6 +502,7 @@ common_action: &common_action
     button: string
     allow_to_terminate: boolean
     partial_execution: boolean
+    host_action: boolean
     states: action_states_dict
     log_files: action_logfiles_list
     hc_acl: action_hc_acl_list
