@@ -79,7 +79,7 @@ class LoadBundle(GenericAPIPermView):
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
+            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds) from e
 
 
 class BundleList(PageView):

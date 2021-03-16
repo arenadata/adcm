@@ -55,7 +55,7 @@ def test_service_wo_name(sdk_client_fs: ADCMClient):
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step('Check error: no name in service definition'):
-        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'No name in service definition:')
+        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'There is no required key "name" in map.')
 
 
 def test_service_wo_version(sdk_client_fs: ADCMClient):
@@ -63,7 +63,7 @@ def test_service_wo_version(sdk_client_fs: ADCMClient):
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step('Check error: no version in service'):
-        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'No version in service')
+        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'There is no required key "version" in map.')
 
 
 def test_service_wo_actions(client):
@@ -101,7 +101,7 @@ def test_service_wo_type(sdk_client_fs: ADCMClient):
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step('Check error: No type in object definition'):
-        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'No type in object definition:')
+        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'There is no key "type" in map.')
 
 
 def test_service_unknown_type(sdk_client_fs: ADCMClient):
@@ -109,7 +109,7 @@ def test_service_unknown_type(sdk_client_fs: ADCMClient):
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step('Check error: Unknown type'):
-        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'Unknown type')
+        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'Value "unknown" is not allowed')
 
 
 def test_yaml_parser_error(client):
@@ -120,20 +120,12 @@ def test_yaml_parser_error(client):
         errorcodes.STACK_LOAD_ERROR.equal(e, 'YAML decode')
 
 
-def test_toml_parser_error(client):
-    stack_dir = utils.get_data_dir(__file__, 'toml_parser_error')
-    with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-        steps.upload_bundle(client, stack_dir)
-    with allure.step('Check error: TOML decode'):
-        errorcodes.STACK_LOAD_ERROR.equal(e, 'TOML decode')
-
-
 def test_stack_hasnt_script_mandatory_key(sdk_client_fs: ADCMClient):
     stack_dir = utils.get_data_dir(__file__, 'script_mandatory_key')
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step('Check error: has no mandatory'):
-        errorcodes.DEFINITION_KEY_ERROR.equal(e, 'has no mandatory \"script\"')
+        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'There is no required key "script" in map.')
 
 
 def test_stack_hasnt_scripttype_mandatory_key(sdk_client_fs: ADCMClient):
@@ -141,7 +133,8 @@ def test_stack_hasnt_scripttype_mandatory_key(sdk_client_fs: ADCMClient):
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step('Check error: has no mandatory'):
-        errorcodes.DEFINITION_KEY_ERROR.equal(e, 'has no mandatory \"script_type\"')
+        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'There is no '
+                                                      'required key "script_type" in map.')
 
 
 def test_playbook_path(sdk_client_fs: ADCMClient):
@@ -160,12 +153,12 @@ def test_empty_default_config_value(sdk_client_fs: ADCMClient):
 
 def test_load_stack_w_empty_config_field(client):
     stack_dir = utils.get_data_dir(__file__, 'empty_config_field')
-    steps.upload_bundle(client, stack_dir)
-    with allure.step('Get cluster list'):
-        cluster_proto = client.stack.cluster.list()[0]
-        schema = json.load(open(SCHEMAS + '/stack_list_item_schema.json'))
-    with allure.step('Check cluster'):
-        assert validate(cluster_proto, schema) is None
+
+    with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
+        steps.upload_bundle(client, stack_dir)
+    with allure.step("Check error: config field should not be empty"):
+        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'None of the variants '
+                                                      'for rule "config_obj" match')
 
 
 def test_yaml_decode_duplicate_anchor(client):
@@ -189,7 +182,7 @@ def test_shouldn_load_config_with_wrong_name(sdk_client_fs: ADCMClient):
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step('Check error: Config key is incorrect'):
-        errorcodes.WRONG_NAME.equal(e, 'Config key', ' is incorrect')
+        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'There is no key "type" in map')
 
 
 def test_load_stack_with_lost_whitespace(client):
@@ -213,7 +206,7 @@ def test_load_stack_wo_type_in_config_key(sdk_client_fs: ADCMClient):
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step('Check error: No type in config key'):
-        errorcodes.INVALID_CONFIG_DEFINITION.equal(e, 'No type in config key')
+        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'There is no key "type" in map.')
 
 
 def test_when_config_has_incorrect_option_definition(client):
@@ -221,7 +214,8 @@ def test_when_config_has_incorrect_option_definition(client):
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         steps.upload_bundle(client, stack_dir)
     with allure.step('Check error: found unhashable key'):
-        errorcodes.STACK_LOAD_ERROR.equal(e, 'found unhashable key')
+        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, "Value of map key \"required\" "
+                                                      "should be a <class 'bool'>")
 
 
 def test_when_config_has_two_identical_service_proto(sdk_client_fs: ADCMClient):
@@ -461,8 +455,8 @@ def test_load_bundle_with_undefined_config_parameter(sdk_client_fs: ADCMClient):
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step('Check error: should be a map'):
-        errorcodes.INVALID_CONFIG_DEFINITION.equal(e, 'Config definition of cluster',
-                                                   'should be a map')
+        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'None of the variants '
+                                                      'for rule "config_dict_obj" match')
 
 
 def test_when_import_has_unknown_config_parameter_shouldnt_be_loaded(sdk_client_fs: ADCMClient):

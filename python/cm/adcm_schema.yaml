@@ -1,0 +1,651 @@
+---
+# Main config.yaml object should be a list of Objects
+root:
+  match: list
+  item: object
+
+###############################################################################
+#                             O B J E C T S
+###############################################################################
+# There are a number of object types: cluster, provider, host and service
+# All of them has the same struture but with small difference
+
+object:
+  match: dict_key_selection
+  selector: type
+  variants:
+    cluster: cluster_object
+    service: service_object
+    host: host_object
+    provider: provider_object
+    adcm: adcm_object
+
+common_object: &common_object
+  match: dict
+  items: &common_object_items
+    type: string
+    name: string
+    version: version_rule
+    display_name: string
+    description: string
+    edition: string
+    license: string
+    adcm_min_version: version_rule
+    config: config_obj
+    actions: actions_dict
+  required_items: &common_object_required_items
+    - type
+    - name
+    - version
+
+service_object:
+  <<: *common_object
+  items:
+    <<: *common_object_items
+    import: import_dict
+    export: export
+    components: components_dict
+    required: boolean
+    monitoring: monitoring
+
+cluster_object:
+  <<: *common_object
+  items:
+    <<: *common_object_items
+    upgrade: upgrade_list
+    import: import_dict
+    export: export
+
+host_object:
+  <<: *common_object
+  items:
+    <<: *common_object_items
+
+provider_object:
+  <<: *common_object
+  items:
+    <<: *common_object_items
+    upgrade: upgrade_list
+
+adcm_object:
+  <<: *common_object
+  items:
+    <<: *common_object_items
+    upgrade: upgrade_list
+
+export:
+  match: one_of
+  variants:
+    - string
+    - list_of_string
+
+monitoring:
+  match: set
+  variants:
+    - active
+    - passive
+
+components_dict:
+  match: dict
+  default_item: component_item
+
+component_item:
+  match: one_of
+  variants:
+    - none
+    - component_dict
+
+component_dict:
+  match: dict
+  items:
+    display_name: string
+    description: string
+    monitoring: string
+    constraint: constraint_list
+    bound_to: bound_dict
+    params: json
+    requires: comp_req_list
+
+comp_req_list:
+  match: list
+  item: comp_req_item
+
+comp_req_item:
+  match: dict
+  items:
+    service: string
+    component: string
+  required:
+    - component
+
+constraint_list:
+  match: list
+  item: constraint_list_item
+
+constraint_list_item:
+  match: one_of
+  variants:
+    - integer
+    - string
+
+bound_dict:
+  match: dict
+  items:
+    service: string
+    component: string
+  required:
+    - service
+    - component
+
+version_rule:
+  match: one_of
+  variants:
+    - integer
+    - string
+    - float
+
+# Upgrade Block
+upgrade_list:
+  match: list
+  item: upgrade_obj
+
+upgrade_obj:
+  match: dict
+  items:
+    name: version_rule
+    description: string
+    versions: version_dict
+    states: states_dict
+    from_edition: any_or_list
+  required_items:
+    - name
+    - versions
+
+version_dict:
+  match: dict
+  items:
+    min: version_rule
+    max: version_rule
+    min_strict: version_rule
+    max_strict: version_rule
+
+states_dict:
+  match: dict
+  items:
+    available: available_state
+    on_success: string
+    on_fail: string
+
+any_or_list:
+  match: one_of
+  variants:
+    - list_of_string
+    - literally_any_string
+
+literally_any_string:
+  match: set
+  variants:
+    - any
+
+# Config block of object could be in two forms: dict or list
+config_obj:
+  match: one_of
+  variants:
+    - config_dict
+    - config_list
+
+## Config dict rules
+config_dict:
+  match: dict
+  default_item: config_dict_obj
+
+config_dict_obj:
+  match: one_of
+  variants:
+    - config_dict_sub
+    - config_dict_group
+
+config_dict_group:
+  match: dict
+  default_item: config_dict_sub
+
+config_dict_sub:
+  match: dict_key_selection
+  selector: type
+  variants:
+    boolean: config_dict_sub_boolean
+    integer: config_dict_sub_integer
+    float: config_dict_sub_float
+    string: config_dict_sub_string
+    password: config_dict_sub_string
+    text: config_dict_sub_string
+    file: config_dict_sub_string
+    list: config_dict_sub_list
+    map: config_dict_sub_map
+    structure: config_dict_sub_structure
+    json: config_dict_sub_json
+    option: config_dict_sub_option
+
+## Common fields for config of dict type
+config_dict_sub_common: &config_dict_sub_common
+  match: dict
+  items: &config_dict_sub_items
+    type: string
+    read_only: config_dict_read_only
+    writable: config_dict_read_only
+    required: boolean
+    display_name: string
+    description: string_or_none
+    ui_options: json
+  required_items: &config_dict_sub_required
+    - type
+
+config_dict_sub_boolean:
+  <<: *config_dict_sub_common
+  items:
+    <<: *config_dict_sub_items
+    default: boolean
+
+config_dict_sub_integer:
+  <<: *config_dict_sub_common
+  items:
+    <<: *config_dict_sub_items
+    min: integer
+    max: integer
+    default: integer
+
+config_dict_sub_float:
+  <<: *config_dict_sub_common
+  items:
+    <<: *config_dict_sub_items
+    min: number
+    max: number
+    default: number
+
+config_dict_sub_string:
+  <<: *config_dict_sub_common
+  items:
+    <<: *config_dict_sub_items
+    default: string
+
+config_dict_sub_list:
+  <<: *config_dict_sub_common
+  items:
+    <<: *config_dict_sub_items
+    default: list_of_string
+
+config_dict_sub_map:
+  <<: *config_dict_sub_common
+  items:
+    <<: *config_dict_sub_items
+    default: map_string_string
+
+config_dict_sub_structure:
+  <<: *config_dict_sub_common
+  items:
+    <<: *config_dict_sub_items
+    default: json
+    yspec: string
+  required_items:
+    - yspec
+
+config_dict_sub_json:
+  <<: *config_dict_sub_common
+  items:
+    <<: *config_dict_sub_items
+    default: json
+
+config_dict_sub_option:
+  <<: *config_dict_sub_common
+  items:
+    <<: *config_dict_sub_items
+    option: map_string_any
+    default: base_type
+
+config_dict_read_only:
+  match: one_of
+  variants:
+    - string
+    - list_of_string
+
+## Config list rules
+config_list:
+  match: list
+  item: config_list_object
+
+config_list_object:
+  match: dict_key_selection
+  selector: type
+  variants:
+    group: config_list_group
+    boolean: config_list_boolean
+    integer: config_list_integer
+    float: config_list_float
+    string: config_list_string
+    password: config_list_string
+    text: config_list_string
+    file: config_list_string
+    list: config_list_list
+    map: config_list_map
+    structure: config_list_structure
+    variant: config_list_variant
+    json: config_list_json
+    option: config_list_option
+
+## Common fields for config of list type
+config_list_common: &config_list_common
+  match: dict
+  items: &config_list_items
+    <<: *config_dict_sub_items
+    name: string
+  required_items: &config_list_required
+   - type
+   - name
+
+config_list_group:
+  match: dict
+  items:
+    <<: *config_list_items
+    subs: config_list_sub_list
+    activatable: boolean
+    active: boolean
+  required_items:
+    - name
+    - type
+    - subs
+
+config_list_sub_list:
+  match: list
+  item: config_sub_list_object
+
+config_sub_list_object:
+  match: dict_key_selection
+  selector: type
+  variants:
+    boolean: config_list_boolean
+    integer: config_list_integer
+    float: config_list_float
+    string: config_list_string
+    password: config_list_string
+    text: config_list_string
+    file: config_list_string
+    list: config_list_list
+    map: config_list_map
+    structure: config_list_structure
+    variant: config_list_variant
+    json: config_list_json
+    option: config_list_option
+
+config_list_boolean:
+  <<: *config_list_common
+  items:
+    <<: *config_list_items
+    default: boolean
+
+config_list_string:
+  <<: *config_list_common
+  items:
+    <<: *config_list_items
+    default: string
+
+config_list_integer:
+  <<: *config_list_common
+  items:
+    <<: *config_list_items
+    min: integer
+    max: integer
+    default: integer
+
+config_list_float:
+  <<: *config_list_common
+  items:
+    <<: *config_list_items
+    min: number
+    max: number
+    default: number
+
+config_list_list:
+  <<: *config_list_common
+  items:
+    <<: *config_list_items
+    default: list_of_string
+
+config_list_map:
+  <<: *config_list_common
+  items:
+    <<: *config_list_items
+    default: map_string_string
+
+config_list_structure:
+  <<: *config_list_common
+  items:
+    <<: *config_list_items
+    default: json
+    yspec: string
+  required_items:
+    - yspec
+
+config_list_variant:
+  <<: *config_list_common
+  items:
+    <<: *config_list_items
+    default: string
+    source: variant_source
+  required_items:
+    - source
+
+variant_source:
+  match: dict
+  items:
+    type: variant_types
+    strict: boolean
+    name: string
+    args: json
+    value: json
+  required_items:
+    - type
+
+variant_types:
+  match: set
+  variants:
+    - inline
+    - config
+    - builtin
+
+config_list_json:
+  <<: *config_list_common
+  items:
+    <<: *config_list_items
+    default: json
+
+config_list_option:
+  <<: *config_list_common
+  items:
+    <<: *config_list_items
+    option: map_string_any
+    default: base_type
+
+# Imports
+import_dict:
+  match: dict
+  default_item: import_dict_item
+
+import_dict_item:
+  match: dict
+  items:
+    versions: version_dict
+    required: boolean
+  required_items:
+    - versions
+
+# Actions
+actions_dict:
+  match: dict
+  default_item: action_item
+
+action_item:
+  match: dict_key_selection
+  selector: type
+  variants:
+    job: action_job_dict
+    task: action_task_dict
+
+common_action: &common_action
+  match: dict
+  items: &common_action_items
+    type: string
+    display_name: string
+    description: string
+    params: json
+    ui_options: json
+    button: string
+    allow_to_terminate: boolean
+    partial_execution: boolean
+    states: action_states_dict
+    log_files: action_logfiles_list
+    hc_acl: action_hc_acl_list
+    config: config_obj
+
+## Task action
+action_task_dict:
+  match: dict
+  items:
+    <<: *common_action_items
+    scripts: task_list
+  required_items:
+    - type
+    - scripts
+
+task_list:
+  match: list
+  item: task_action
+
+task_action:
+  match: dict
+  items:
+    name: string
+    script: string
+    script_type: action_script_type
+    display_name: string
+    params: json
+    on_fail: string
+  required_items:
+    - name
+    - script
+    - script_type
+
+## Job action
+action_job_dict:
+  match: dict
+  items:
+    <<: *common_action_items
+    script_type: action_script_type
+    script: string
+  required_items:
+    - type
+    - script_type
+    - script
+
+action_hc_acl_list:
+  match: list
+  item: action_hc_acl_dict
+
+action_hc_acl_dict:
+  match: dict
+  items:
+    service: string
+    component: string
+    action: hc_acl_action
+  required_items:
+    - component
+    - action
+
+hc_acl_action:
+  match: set
+  variants:
+    - add
+    - remove
+
+action_script_type:
+  match: set
+  variants:
+    - ansible
+
+action_logfiles_list:
+  match: list
+  item: string
+
+action_states_dict:
+  match: dict
+  items:
+    on_success: string
+    on_fail: string
+    available: available_state
+
+available_state:
+  match: one_of
+  variants:
+    - available_list
+    - string
+
+available_list:
+  match: list
+  item: string
+
+# Common types
+list_of_string:
+  match: list
+  item: string
+
+list_of_any:
+  match: list
+  item: base_type
+
+map_string_string:
+  match: dict
+  default_item: string
+
+map_string_any:
+  match: dict
+  default_item: base_type
+
+boolean:
+  match: bool
+
+string:
+  match: string
+
+integer:
+  match: int
+
+float:
+  match: float
+
+none:
+  match: none
+
+json:
+  match: any
+
+string_or_none:
+  match: one_of
+  variants:
+    - string
+    - none
+
+number:
+  match: one_of
+  variants:
+    - integer
+    - float
+
+base_type:
+  match: one_of
+  variants:
+    - boolean
+    - string
+    - integer
+    - float
+
+dict:
+  match: dict

@@ -47,8 +47,6 @@
   description: Arenadata Nothing
   version: 1.0
 
-  config:
-
   actions:
     install:
       type: job

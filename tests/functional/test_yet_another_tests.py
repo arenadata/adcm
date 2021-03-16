@@ -29,7 +29,7 @@ def test_handle_unknown_words_in_bundle(sdk_client_ms, testcase):
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             sdk_client_ms.upload_from_fs(bundledir)
     with allure.step('Check error: Not allowed key'):
-        INVALID_OBJECT_DEFINITION.equal(e, 'Not allowed key', 'in ' + testcase)
+        INVALID_OBJECT_DEFINITION.equal(e, 'Map key "confi" is not allowed here')
 
 
 def test_shouldnt_load_same_bundle_twice(sdk_client_ms):

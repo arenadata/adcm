@@ -12,8 +12,6 @@
 -   type: cluster
     name: sample
     version: '0.001'
-    import:
-    upgrade:
 
     actions:
         install:
