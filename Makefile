@@ -32,7 +32,7 @@ buildbase: ## Build base image for ADCM's container. That is alpine with all pac
 	@docker build --pull=true -f Dockerfile_base --no-cache=true -t $(ADCMBASE_IMAGE):$$(date '+%Y%m%d%H%M%S') -t $(ADCMBASE_IMAGE):latest .
 
 build: describe buildss buildjs ## Build final docker image and all depended targets except baseimage.
-	@docker build --no-cache=true --pull=true -t ci.arenadata.io/adcm:$(subst /,_,$(BRANCH_NAME)) .
+	@docker build --no-cache=true --pull=true -t hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME)) .
 
 
 ##################################################
