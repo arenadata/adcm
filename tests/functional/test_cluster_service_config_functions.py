@@ -84,7 +84,7 @@ class TestClusterServiceConfig:
         }
         _, cluster_svc = cluster_with_service
         with allure.step("Create config"):
-            _set_config(cluster_svc, cfg_json)
+            cluster_svc.config_set(cfg_json)
         with allure.step("Check created config"):
             assert cluster_svc.config() == cfg_json
 
