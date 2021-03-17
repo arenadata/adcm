@@ -179,13 +179,29 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         self.assertEqual(r1.status_code, 400)
         self.assertEqual(r1.json()['name'], ['This field is required.'])
 
+        r1 = self.api_post('/cluster/', {'name': ''})
+        self.assertEqual(r1.status_code, 400)
+        self.assertEqual(r1.json()['name'], ['This field may not be blank.'])
+
         r1 = self.api_post('/cluster/', {'name': cluster})
         self.assertEqual(r1.status_code, 400)
         self.assertEqual(r1.json()['prototype_id'], ['This field is required.'])
 
+        r1 = self.api_post('/cluster/', {'name': cluster, 'prototype_id': ''})
+        self.assertEqual(r1.status_code, 400)
+        self.assertEqual(r1.json()['prototype_id'], ['A valid integer is required.'])
+
+        r1 = self.api_post('/cluster/', {'name': cluster, 'prototype_id': 'some-string'})
+        self.assertEqual(r1.status_code, 400)
+        self.assertEqual(r1.json()['prototype_id'], ['A valid integer is required.'])
+
         r1 = self.api_post('/cluster/', {'name': cluster, 'prototype_id': 100500})
         self.assertEqual(r1.status_code, 404)
         self.assertEqual(r1.json()['code'], 'PROTOTYPE_NOT_FOUND')
+
+        r1 = self.api_post('/cluster/', {'name': cluster, 'prototype_id': proto_id, 'description': ''})
+        self.assertEqual(r1.status_code, 400)
+        self.assertEqual(r1.json()['description'], ['This field may not be blank.'])
 
         r1 = self.api_post('/cluster/', {'name': cluster, 'prototype_id': proto_id})
         self.assertEqual(r1.status_code, 201)
@@ -194,6 +210,10 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         r2 = self.api_get('/cluster/' + str(cluster_id) + '/')
         self.assertEqual(r2.status_code, 200)
         self.assertEqual(r2.json()['name'], cluster)
+
+        r1 = self.api_post('/cluster/', {'name': cluster, 'prototype_id': proto_id})
+        self.assertEqual(r1.status_code, 409)
+        self.assertEqual(r1.json()['code'], 'CLUSTER_CONFLICT')
 
         r1 = self.api_put('/cluster/' + str(cluster_id) + '/', {})
         self.assertEqual(r1.status_code, 405)
@@ -208,6 +228,10 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         self.assertEqual(r1.status_code, 204)
 
         r1 = self.api_get('/cluster/' + str(cluster_id) + '/')
+        self.assertEqual(r1.status_code, 404)
+        self.assertEqual(r1.json()['code'], 'CLUSTER_NOT_FOUND')
+
+        r1 = self.api_delete('/cluster/' + str(cluster_id) + '/')
         self.assertEqual(r1.status_code, 404)
         self.assertEqual(r1.json()['code'], 'CLUSTER_NOT_FOUND')
 
@@ -289,6 +313,10 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         r1 = self.api_post('/cluster/' + str(cluster_id2) + '/host/', {'host_id': host_id})
         self.assertEqual(r1.status_code, 409)
         self.assertEqual(r1.json()['code'], 'FOREIGN_HOST')
+
+        r1 = self.api_post('/cluster/' + str(cluster_id) + '/host/', {'host_id': host_id})
+        self.assertEqual(r1.status_code, 409)
+        self.assertEqual(r1.json()['code'], 'HOST_CONFLICT')
 
         r1 = self.api_delete('/cluster/' + str(cluster_id) + '/host/' + str(host_id) + '/')
         self.assertEqual(r1.status_code, 204)
