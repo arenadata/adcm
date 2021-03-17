@@ -96,32 +96,31 @@ class ActionList(ListView):
     filterset_class = ActionFilter
     filterset_fields = ('name', 'button', 'button_is_null')
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=too-many-locals
         """
         List all actions of a specified object
         """
         if kwargs['object_type'] == 'host':
             host, _ = get_obj(object_type='host', host_id=kwargs['host_id'])
-            actions = filter_actions(host, self.filter_queryset(
+            actions = set(filter_actions(host, self.filter_queryset(
                 self.get_queryset().filter(prototype=host.prototype)
-            ))
+            )))
             objects = {'host': host}
-            try:
-                hc = HostComponent.objects.get(host_id=kwargs['host_id'])
-                cluster, _ = get_obj(object_type='cluster', cluster_id=hc.cluster_id)
-                service, _ = get_obj(object_type='service', service_id=hc.service_id)
-                component, _ = get_obj(object_type='component', component_id=hc.component_id)
-                for obj in [cluster, service, component]:
-                    actions.extend(filter_actions(obj, self.filter_queryset(
-                        self.get_queryset().filter(prototype=obj.prototype, host_action=True))))
-
-                objects.update({'cluster': cluster, 'service': service, 'component': component})
-            except HostComponent.DoesNotExist:
+            hcs = HostComponent.objects.filter(host_id=kwargs['host_id'])
+            if hcs:
+                for hc in hcs:
+                    cluster, _ = get_obj(object_type='cluster', cluster_id=hc.cluster_id)
+                    service, _ = get_obj(object_type='service', service_id=hc.service_id)
+                    component, _ = get_obj(object_type='component', component_id=hc.component_id)
+                    for obj in [cluster, service, component]:
+                        actions.update(filter_actions(obj, self.filter_queryset(
+                            self.get_queryset().filter(
+                                prototype=obj.prototype, host_action=True))))
+            else:
                 if host.cluster is not None:
-                    actions.extend(filter_actions(host.cluster, self.filter_queryset(
+                    actions.update(filter_actions(host.cluster, self.filter_queryset(
                         self.get_queryset().filter(
                             prototype=host.cluster.prototype, host_action=True))))
-                    objects.update({'cluster': host.cluster})
         else:
             obj, _ = get_obj(**kwargs)
             actions = filter_actions(obj, self.filter_queryset(
