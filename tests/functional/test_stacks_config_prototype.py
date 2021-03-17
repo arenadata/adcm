@@ -16,10 +16,10 @@ import os
 
 import allure
 import pytest
-from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
 
 # pylint: disable=redefined-outer-name, protected-access
+from adcm_pytest_plugin.docker_utils import ADCM
 
 
 @allure.step('Load default stack')
@@ -29,8 +29,8 @@ def load_default_stack(client):
 
 
 @pytest.fixture()
-def client(sdk_client_fs: ADCMClient):
-    return sdk_client_fs.adcm()._api.objects
+def client(adcm_fs: ADCM):
+    return adcm_fs.api.objects
 
 
 @pytest.mark.skip(reason="no way of currently testing this")
