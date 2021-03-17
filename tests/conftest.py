@@ -196,7 +196,6 @@ def _pack_bundle(stack_dir, archive_dir):
     with tarfile.open(archive_name, "w") as tar:
         for sub in os.listdir(stack_dir):
             tar.add(os.path.join(stack_dir, sub), arcname=sub)
-        tar.close()
     return archive_name
 
 
