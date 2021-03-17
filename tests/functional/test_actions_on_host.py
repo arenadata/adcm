@@ -188,7 +188,7 @@ class TestComponentActionOnHost:
         """
         Test that component host action is available on a component host
         """
-        service = cluster_with_components.service_add(FIRST_SERVICE)
+        service = cluster_with_components.service_add(name=FIRST_SERVICE)
         component_with_action = service.component(name=FIRST_COMPONENT)
         component_without_action = service.component(name=SECOND_COMPONENT)
 
@@ -222,7 +222,7 @@ class TestComponentActionOnHost:
         """
         Test that component host action is available on specify service state
         """
-        service = cluster_with_components.service_add(FIRST_SERVICE)
+        service = cluster_with_components.service_add(name=FIRST_SERVICE)
         component = service.component(name=FIRST_COMPONENT)
         adjacent_component = service.component(name=SECOND_COMPONENT)
         host = provider.host_create("host_in_cluster")
