@@ -19,7 +19,7 @@ from coreapi import exceptions
 from jsonschema import validate
 
 
-# pylint: disable=E0401, W0611, W0621, W0212
+# pylint: disable=E0401, W0611, W0621, protected-access
 from tests.library import errorcodes
 
 BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")

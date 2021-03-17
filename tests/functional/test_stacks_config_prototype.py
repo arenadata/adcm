@@ -19,7 +19,7 @@ import pytest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
 
-# pylint: disable=W0611, W0621, W0212
+# pylint: disable=redefined-outer-name, protected-access
 
 
 @allure.step('Load default stack')
