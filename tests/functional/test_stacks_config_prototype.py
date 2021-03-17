@@ -18,7 +18,7 @@ import allure
 import pytest
 from adcm_pytest_plugin import utils
 
-# pylint: disable=redefined-outer-name, protected-access
+# pylint: disable=redefined-outer-name
 from adcm_pytest_plugin.docker_utils import ADCM
 
 
