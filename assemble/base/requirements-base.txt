@@ -17,6 +17,7 @@ ruyaml
 toml
 uwsgi
 version_utils
+ruyaml
 yspec
 # Custom bundle libs
 apache-libcloud
