@@ -35,9 +35,7 @@ def test_load_host_provider(sdk_client_fs):
 def test_validate_provider_prototype(sdk_client_fs):
     bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
     with allure.step("Load provider prototype"):
-        provider_prototype = json.loads(
-            json.dumps(bundle.provider_prototype()._data)
-        )
+        provider_prototype = bundle.provider_prototype()._data
         schema = json.load(
             open(SCHEMAS + '/stack_list_item_schema.json')
         )
