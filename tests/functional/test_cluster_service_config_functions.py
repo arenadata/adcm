@@ -291,6 +291,9 @@ class TestClusterServiceConfig:
         _, cluster_svc = cluster_with_service
         adcm_error, expected_msg = expected_error
         with allure.step("Try to set invalid config"):
+            allure.attach(
+                json.dumps(service_config), "config.json", allure.attachment_type.JSON
+            )
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 _set_config(cluster_svc, service_config)
         with allure.step("Check error"):
@@ -305,8 +308,9 @@ class TestClusterServiceConfig:
         with allure.step("Create hostcomponent"):
             component = service.component()
             cluster.hostcomponent_set((host, component))
-        with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-            host.delete()
+        with allure.step(f"Removing host id={host.id}"):
+            with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
+                host.delete()
         with allure.step("Check host conflict"):
             err.HOST_CONFLICT.equal(e)
 
@@ -349,7 +353,8 @@ class TestClusterServiceConfigHistory:
         self, cluster_with_service: Tuple[Cluster, Service]
     ):
         _, service = cluster_with_service
-        service.delete()
+        with allure.step(f"Removing service id={service.id}"):
+            service.delete()
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             service.config()
         with allure.step("Check error that service doesn't exist"):
@@ -434,6 +439,9 @@ class TestClusterConfig:
     ):
         adcm_error, expected_msg = expected_error
         with allure.step("Try to set invalid config"):
+            allure.attach(
+                json.dumps(cluster_config), "config.json", allure.attachment_type.JSON
+            )
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 _set_config(cluster, cluster_config)
         with allure.step("Check error"):
@@ -441,8 +449,9 @@ class TestClusterConfig:
 
     def test_get_nonexistant_cluster_config(self, cluster: Cluster):
         # we try to get a nonexistant cluster config, test should raise exception
-        cluster.delete()
-        with allure.step("Get cluster config from non existant cluster"):
+        with allure.step(f"Removing cluster id={cluster.id}"):
+            cluster.delete()
+        with allure.step("Get cluster config from non existent cluster"):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 cluster.config()
         with allure.step("Check that cluster doesn't exist"):
