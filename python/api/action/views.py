@@ -77,15 +77,14 @@ def get_selector(obj, action):
         selector['cluster'] = obj.cluster.id
         selector['component'] = obj.service.id
     if isinstance(obj, Host) and action.host_action:
-        try:
-            hc = HostComponent.objects.get(host_id=obj.id)
-            selector.update(
-                {f'{action.prototype.type}': getattr(hc, f'{action.prototype.type}_id')})
-            selector['cluster'] = hc.cluster_id
-        except HostComponent.DoesNotExist:
-            if obj.cluster is not None:
-                selector['cluster'] = obj.cluster.id
-
+        if action.prototype.type == 'component':
+            component = ServiceComponent.objects.get(prototype=action.prototype)
+            selector['component'] = component.id
+        if action.prototype.type == 'service':
+            service = ClusterObject.objects.get(prototype=action.prototype)
+            selector['service'] = service.id
+        if obj.cluster is not None:
+            selector['cluster'] = obj.cluster.id
     return selector
 
 
