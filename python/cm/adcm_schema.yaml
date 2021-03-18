@@ -45,6 +45,7 @@ service_object:
     import: import_dict
     export: export
     components: components_dict
+    shared: boolean
     required: boolean
     monitoring: monitoring
 
@@ -85,6 +86,7 @@ monitoring:
     - active
     - passive
 
+# Components
 components_dict:
   match: dict
   default_item: component_item
@@ -100,12 +102,11 @@ component_dict:
   items:
     display_name: string
     description: string
-    monitoring: string
+    monitoring: monitoring
     constraint: constraint_list
     bound_to: bound_dict
     params: json
     requires: comp_req_list
-    actions: actions_dict
 
 comp_req_list:
   match: list
@@ -116,7 +117,7 @@ comp_req_item:
   items:
     service: string
     component: string
-  required:
+  required_items:
     - component
 
 constraint_list:
@@ -127,14 +128,20 @@ constraint_list_item:
   match: one_of
   variants:
     - integer
-    - string
+    - constraint_variants
+
+constraint_variants:
+  match: set
+  variants:
+    - "+"
+    - odd
 
 bound_dict:
   match: dict
   items:
     service: string
     component: string
-  required:
+  required_items:
     - service
     - component
 
@@ -173,7 +180,7 @@ version_dict:
 states_dict:
   match: dict
   items:
-    available: available_state
+    available: any_or_list
     on_success: string
     on_fail: string
 
@@ -476,6 +483,8 @@ import_dict_item:
   items:
     versions: version_dict
     required: boolean
+    multibind: boolean
+    default: list_of_string
   required_items:
     - versions
 
@@ -502,9 +511,7 @@ common_action: &common_action
     button: string
     allow_to_terminate: boolean
     partial_execution: boolean
-    host_action: boolean
     states: action_states_dict
-    log_files: action_logfiles_list
     hc_acl: action_hc_acl_list
     config: config_obj
 
@@ -573,26 +580,14 @@ action_script_type:
   variants:
     - ansible
 
-action_logfiles_list:
-  match: list
-  item: string
-
 action_states_dict:
   match: dict
   items:
     on_success: string
     on_fail: string
-    available: available_state
-
-available_state:
-  match: one_of
-  variants:
-    - available_list
-    - string
-
-available_list:
-  match: list
-  item: string
+    available: any_or_list
+  required_items:
+    - available
 
 # Common types
 list_of_string:

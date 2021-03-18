@@ -50,22 +50,10 @@ def cook_obj_id(conf):
 
 
 def save_object_definition(path, fname, conf, obj_list, bundle_hash, adcm=False):
-    if not isinstance(conf, dict):
-        msg = 'Object definition should be a map ({})'
-        return err('INVALID_OBJECT_DEFINITION', msg.format(fname))
-
-    if 'type' not in conf:
-        return err('INVALID_OBJECT_DEFINITION', f'No type in object definition: {fname}')
-
     def_type = conf['type']
-    if def_type not in (proto_type for (proto_type, _) in PROTO_TYPE):
-        msg = 'Unknown type "{}" in object definition: {}'
-        return err('INVALID_OBJECT_DEFINITION', msg.format(def_type, fname))
-
     if def_type == 'adcm' and not adcm:
         msg = 'Invalid type "{}" in object definition: {}'
         return err('INVALID_OBJECT_DEFINITION', msg.format(def_type, fname))
-
     check_object_definition(fname, conf, def_type, obj_list)
     obj = save_prototype(path, conf, def_type, bundle_hash)
     log.info('Save definition of %s "%s" %s to stage', def_type, conf['name'], conf['version'])
@@ -74,20 +62,9 @@ def save_object_definition(path, fname, conf, obj_list, bundle_hash, adcm=False)
 
 
 def check_object_definition(fname, conf, def_type, obj_list):
-    if 'name' not in conf:
-        err('INVALID_OBJECT_DEFINITION', f'No name in {def_type} definition: {fname}')
-    if 'version' not in conf:
-        msg = 'No version in {} "{}" definition: {}'
-        err('INVALID_OBJECT_DEFINITION', msg.format(def_type, conf['name'], fname))
     ref = '{} "{}" {}'.format(def_type, conf['name'], conf['version'])
     if cook_obj_id(conf) in obj_list:
         err('INVALID_OBJECT_DEFINITION', f'Duplicate definition of {ref} (file {fname})')
-    allow = (
-        'type', 'name', 'version', 'display_name', 'description', 'actions', 'components',
-        'config', 'upgrade', 'export', 'import', 'required', 'shared', 'monitoring',
-        'adcm_min_version', 'edition', 'license',
-    )
-    check_extra_keys(conf, allow, ref)
 
 
 def check_extra_keys(conf, acceptable, ref):
@@ -159,8 +136,6 @@ def read_definition(conf_file, conf_type):
 def get_license_hash(proto, conf, bundle_hash):
     if 'license' not in conf:
         return None
-    if not isinstance(conf['license'], str):
-        err('INVALID_OBJECT_DEFINITION', 'license should be a string ({proto_ref(proto)})')
     body = read_bundle_file(proto, conf['license'], bundle_hash, 'license file')
     sha1 = hashlib.sha256()
     sha1.update(body.encode('utf-8'))
@@ -192,86 +167,22 @@ def save_prototype(path, conf, def_type, bundle_hash):
     return proto
 
 
-def check_component_constraint_definition(proto, name, conf):
-    if not isinstance(conf, dict):
-        return
+def check_component_constraint(proto, name, conf):
     if 'constraint' not in conf:
         return
-    const = conf['constraint']
     ref = proto_ref(proto)
-
-    def check_item(item):
-        if isinstance(item, int):
-            return
-        elif item == '+':
-            return
-        elif item == 'odd':
-            return
-        else:
-            msg = 'constraint item of component "{}" in {} should be only digit or "+" or "odd"'
-            err('INVALID_COMPONENT_DEFINITION', msg.format(name, ref))
-
-    if not isinstance(const, list):
-        msg = 'constraint of component "{}" in {} should be array'
-        err('INVALID_COMPONENT_DEFINITION', msg.format(name, ref))
-    if len(const) > 2:
+    if len(conf['constraint']) > 2:
         msg = 'constraint of component "{}" in {} should have only 1 or 2 elements'
         err('INVALID_COMPONENT_DEFINITION', msg.format(name, ref))
-
-    check_item(const[0])
-    if len(const) > 1:
-        check_item(const[1])
-
-
-def check_component_requires(proto, name, conf):
-    if not isinstance(conf, dict):
-        return
-    if 'requires' not in conf:
-        return
-    req = conf['requires']
-    ref = proto_ref(proto)
-    if not isinstance(req, list):
-        msg = 'requires of component "{}" in {} should be array'
-        err('INVALID_COMPONENT_DEFINITION', msg.format(name, ref))
-    for item in req:
-        check_extra_keys(item, ('service', 'component'), f'requires of component "{name}" of {ref}')
-
-
-def check_bound_component(proto, name, conf):
-    if not isinstance(conf, dict):
-        return
-    if 'bound_to' not in conf:
-        return
-    bind = conf['bound_to']
-    ref = proto_ref(proto)
-    if not isinstance(bind, dict):
-        msg = 'bound_to of component "{}" in {} should be a map'
-        err('INVALID_COMPONENT_DEFINITION', msg.format(name, ref))
-    check_extra_keys(bind, ('service', 'component'), f'bound_to of component "{name}" of {ref}')
-    msg = 'Component "{}" has no mandatory "{}" key in bound_to statment ({})'
-    for item in ('service', 'component'):
-        if item not in bind:
-            err('INVALID_COMPONENT_DEFINITION', msg.format(name, item, ref))
 
 
 def save_components(proto, conf, bundle_hash):
     ref = proto_ref(proto)
     if not in_dict(conf, 'components'):
         return
-    if proto.type != 'service':
-        log.warning('%s has unexpected "components" key', ref)
-        return
-    if not isinstance(conf['components'], dict):
-        err('INVALID_COMPONENT_DEFINITION', f'Components definition should be a map ({ref})')
     for comp_name in conf['components']:
         cc = conf['components'][comp_name]
-        err_msg = 'Component name "{}" of {}'.format(comp_name, ref)
-        validate_name(comp_name, err_msg)
-        allow = (
-            'display_name', 'description', 'params', 'constraint', 'requires', 'monitoring',
-            'bound_to', 'actions', 'config',
-        )
-        check_extra_keys(cc, allow, 'component "{}" of {}'.format(comp_name, ref))
+        validate_name(comp_name, f'Component name "{comp_name}" of {ref}')
         component = StagePrototype(
             type='component',
             parent=proto,
@@ -284,9 +195,7 @@ def save_components(proto, conf, bundle_hash):
         dict_to_obj(cc, 'display_name', component)
         dict_to_obj(cc, 'monitoring', component)
         fix_display_name(cc, component)
-        check_component_constraint_definition(proto, comp_name, cc)
-        check_component_requires(proto, comp_name, cc)
-        check_bound_component(proto, comp_name, cc)
+        check_component_constraint(proto, comp_name, cc)
         dict_to_obj(cc, 'params', component)
         dict_to_obj(cc, 'constraint', component)
         dict_to_obj(cc, 'requires', component)
@@ -297,24 +206,12 @@ def save_components(proto, conf, bundle_hash):
 
 
 def check_upgrade(proto, conf):
-    check_key(proto.type, proto.name, '', 'upgrade', 'name', conf)
     check_versions(proto, conf, f"upgrade \"{conf['name']}\"")
 
 
 def check_versions(proto, conf, label):
     ref = proto_ref(proto)
     msg = '{} has no mandatory \"versions\" key ({})'
-    if not conf:
-        err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
-    if 'versions' not in conf:
-        err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
-    if not isinstance(conf['versions'], dict):
-        err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
-    check_extra_keys(
-        conf['versions'],
-        ('min', 'max', 'min_strict', 'max_strict'),
-        '{} versions of {}'.format(label, proto_ref(proto))
-    )
     if 'min' in conf['versions'] and 'min_strict' in conf['versions']:
         msg = 'min and min_strict can not be used simultaneously in versions of {} ({})'
         err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
@@ -349,37 +246,22 @@ def set_version(obj, conf):
         obj.max_strict = True
 
 
-def check_upgrade_edition(proto, conf):
-    if 'from_edition' not in conf:
-        return
-    if isinstance(conf['from_edition'], str) and conf['from_edition'] == 'any':
-        return
-    if not isinstance(conf['from_edition'], list):
-        msg = 'from_edition upgrade filed of {} should be array, not string'
-        err('INVALID_UPGRADE_DEFINITION', msg.format(proto_ref(proto)))
-
-
 def save_upgrade(proto, conf):
     ref = proto_ref(proto)
     if not in_dict(conf, 'upgrade'):
         return
-    if not isinstance(conf['upgrade'], list):
-        err('INVALID_UPGRADE_DEFINITION', f'Upgrade definition of {ref} should be an array')
     for item in conf['upgrade']:
         allow = ('versions', 'from_edition', 'states', 'name', 'description')
-        check_extra_keys(item, allow, 'upgrade of {}'.format(ref))
-        check_upgrade(proto, item)
+        check_versions(proto, item, f"upgrade \"{conf['name']}\"")
         upg = StageUpgrade(name=item['name'])
         set_version(upg, item)
         dict_to_obj(item, 'description', upg)
         if 'states' in item:
-            check_upgrade_states(proto, item)
             dict_to_obj(item['states'], 'available', upg)
             if 'available' in item['states']:
                 upg.state_available = item['states']['available']
             if 'on_success' in item['states']:
                 upg.state_on_success = item['states']['on_success']
-        check_upgrade_edition(proto, item)
         if in_dict(item, 'from_edition'):
             upg.from_edition = item['from_edition']
         upg.save()
@@ -389,16 +271,10 @@ def save_export(proto, conf):
     ref = proto_ref(proto)
     if not in_dict(conf, 'export'):
         return
-    if proto.type not in ('cluster', 'service'):
-        msg = 'Only cluster or service can have export section ({})'
-        err('INVALID_OBJECT_DEFINITION', msg.format(ref))
     if isinstance(conf['export'], str):
         export = [conf['export']]
     elif isinstance(conf['export'], list):
         export = conf['export']
-    else:
-        err('INVALID_OBJECT_DEFINITION', f'{ref} export should be string or array type')
-
     msg = '{} does not has "{}" config group'
     for key in export:
         try:
@@ -422,8 +298,6 @@ def check_default_import(proto, conf):
     ref = proto_ref(proto)
     if 'default' not in conf:
         return
-    if not isinstance(conf['default'], list):
-        err('INVALID_OBJECT_DEFINITION', f'Import deafult section should be an array ({ref})')
     groups = get_config_groups(proto)
     for key in conf['default']:
         if key not in groups:
@@ -435,13 +309,7 @@ def save_import(proto, conf):
     ref = proto_ref(proto)
     if not in_dict(conf, 'import'):
         return
-    if proto.type not in ('cluster', 'service'):
-        err('INVALID_OBJECT_DEFINITION', 'Only cluster or service can has an import section')
-    if not isinstance(conf['import'], dict):
-        err('INVALID_OBJECT_DEFINITION', '{} import should be object type'.format(ref))
-    allowed_keys = ('versions', 'default', 'required', 'multibind')
     for key in conf['import']:
-        check_extra_keys(conf['import'][key], allowed_keys, ref + ' import')
         check_versions(proto, conf['import'][key], f'import "{key}"')
         if 'default' in conf['import'][key] and 'required' in conf['import'][key]:
             msg = 'Import can\'t have default and be required in the same time ({})'
@@ -458,48 +326,18 @@ def save_import(proto, conf):
 def check_action_hc(proto, conf, name):
     if 'hc_acl' not in conf:
         return
-    ref = proto_ref(proto)
-    if not isinstance(conf['hc_acl'], list):
-        msg = 'hc_acl of action "{}" in {} should be array'
-        err('INVALID_ACTION_DEFINITION', msg.format(name, ref))
-    allow = ('service', 'component', 'action')
     for idx, item in enumerate(conf['hc_acl']):
-        if not isinstance(item, dict):
-            msg = 'hc_acl entry of action "{}" in {} should be a map'
-            err('INVALID_ACTION_DEFINITION', msg.format(name, ref))
-        check_extra_keys(item, allow, f'hc_acl of action "{name}" in {ref}')
         if 'service' not in item:
             if proto.type == 'service':
                 item['service'] = proto.name
                 conf['hc_acl'][idx]['service'] = proto.name
-        for key in allow:
-            if key not in item:
-                msg = 'hc_acl of action "{}" in {} doesn\'t has required key "{}"'
-                err('INVALID_ACTION_DEFINITION', msg.format(name, ref, key))
-        if item['action'] not in ('add', 'remove'):
-            msg = 'hc_acl of action "{}" in {} action value "{}" is not "add" or "remove"'
-            err('INVALID_ACTION_DEFINITION', msg.format(name, ref, item['action']))
-
-
-def check_sub_action(proto, sub_config, action):
-    label = 'sub action of action'
-    ref = '{} "{}" in {}'.format(label, action.name, proto_ref(proto))
-    check_key(proto.type, proto.name, label, action.name, 'name', sub_config)
-    check_key(proto.type, proto.name, label, action.name, 'script', sub_config)
-    check_key(proto.type, proto.name, label, action.name, 'script_type', sub_config)
-    allow = ('name', 'display_name', 'script', 'script_type', 'on_fail', 'params')
-    check_extra_keys(sub_config, allow, ref)
 
 
 def save_sub_actions(proto, conf, action):
     ref = proto_ref(proto)
     if action.type != 'task':
         return
-    if not isinstance(conf['scripts'], list):
-        msg = 'scripts entry of action "{}" in {} should be a list'
-        err('INVALID_ACTION_DEFINITION', msg.format(action.name, ref))
     for sub in conf['scripts']:
-        check_sub_action(proto, sub, action)
         sub_action = StageSubAction(
             action=action,
             script=sub['script'],
@@ -536,11 +374,9 @@ def save_actions(proto, conf, bundle_hash):
         dict_to_obj(ac, 'params', action)
         dict_to_obj(ac, 'log_files', action)
         fix_display_name(ac, action)
-
         check_action_hc(proto, ac, action_name)
         dict_to_obj(ac, 'hc_acl', action, 'hostcomponentmap')
-
-        if check_action_states(proto, action_name, ac):
+        if 'states' in ac:
             if 'on_success' in ac['states'] and ac['states']['on_success']:
                 action.state_on_success = ac['states']['on_success']
             if 'on_fail' in ac['states'] and ac['states']['on_fail']:
@@ -551,82 +387,9 @@ def save_actions(proto, conf, bundle_hash):
         save_prototype_config(proto, ac, bundle_hash, action)
 
 
-def check_action_states(proto, action, ac):
-    if 'states' not in ac:
-        return False
-    ref = 'action "{}" of {}'.format(action, proto_ref(proto))
-    check_extra_keys(ac['states'], ('available', 'on_success', 'on_fail'), ref)
-    check_key(proto.type, proto, 'states of action', action, 'available', ac['states'])
-
-    if 'on_success' in ac['states']:
-        if not isinstance(ac['states']['on_success'], str):
-            msg = 'states:on_success of {} should be string'
-            err('INVALID_ACTION_DEFINITION', msg.format(ref))
-
-    if 'on_fail' in ac['states']:
-        if not isinstance(ac['states']['on_fail'], str):
-            msg = 'states:on_fail of {} should be string'
-            err('INVALID_ACTION_DEFINITION', msg.format(ref))
-
-    if isinstance(ac['states']['available'], str) and ac['states']['available'] == 'any':
-        return True
-    if not isinstance(ac['states']['available'], list):
-        msg = 'states:available of {} should be array, not string'
-        err('INVALID_ACTION_DEFINITION', msg.format(ref))
-    return True
-
-
-def check_upgrade_states(proto, ac):
-    if 'states' not in ac:
-        return False
-    ref = 'upgrade states of {}'.format(proto_ref(proto))
-    check_extra_keys(ac['states'], ('available', 'on_success'), ref)
-
-    if 'on_success' in ac['states']:
-        if not isinstance(ac['states']['on_success'], str):
-            msg = 'states:on_success of {} should be string'
-            err('INVALID_ACTION_DEFINITION', msg.format(ref))
-
-    if 'available' not in ac['states']:
-        return True
-    if isinstance(ac['states']['available'], str) and ac['states']['available'] == 'any':
-        return True
-    if not isinstance(ac['states']['available'], list):
-        msg = 'states:available of upgrade in {} "{}" should be array, not string'
-        err('INVALID_UPGRADE_DEFINITION', msg.format(proto.type, proto.name))
-    return True
-
-
 def check_action(proto, action, act_config):
-    ref = 'action "{}" in {} "{}" {}'.format(action, proto.type, proto.name, proto.version)
     err_msg = 'Action name "{}" of {} "{}" {}'.format(action, proto.type, proto.name, proto.version)
     validate_name(action, err_msg)
-
-    check_key(proto.type, proto.name, 'action', action, 'type', act_config)
-    action_type = act_config['type']
-    if action_type == 'job':
-        check_key(proto.type, proto.name, 'action', action, 'script', act_config)
-        check_key(proto.type, proto.name, 'action', action, 'script_type', act_config)
-    elif action_type == 'task':
-        check_key(proto.type, proto.name, 'action', action, 'scripts', act_config)
-    else:
-        err('WRONG_ACTION_TYPE', '{} has unknown type "{}"'.format(ref, action_type))
-
-    if 'button' in act_config:
-        if not isinstance(act_config['button'], str):
-            err('INVALID_ACTION_DEFINITION', 'button of {} should be string'.format(ref))
-
-    if (action_type, action_type) not in ACTION_TYPE:
-        err('WRONG_ACTION_TYPE', '{} has unknown type "{}"'.format(ref, action_type))
-    if 'script_type' in act_config:
-        script_type = act_config['script_type']
-        if (script_type, script_type) not in SCRIPT_TYPE:
-            err('WRONG_ACTION_TYPE', '{} has unknown script_type "{}"'.format(ref, script_type))
-    allow = (
-        'type', 'script', 'script_type', 'scripts', 'states', 'params', 'config',
-        'log_files', 'hc_acl', 'button', 'display_name', 'host_action'
-    )
-    check_extra_keys(act_config, allow, ref)
 
 
 def is_group(conf):
