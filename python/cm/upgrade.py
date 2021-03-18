@@ -256,6 +256,23 @@ def get_upgrade(obj, order=None):
         return res
 
 
+def re_count_issue(obj, upgrade):
+    """Re-count of issues from the bottom up"""
+    if obj.prototype.type == 'cluster':
+        for proto in Prototype.objects.filter(bundle=upgrade.bundle, type='service'):
+            for co in ClusterObject.objects.filter(cluster=obj, prototype=proto):
+                for comp in Prototype.objects.filter(parent=proto, type='component'):
+                    for sc in ServiceComponent.objects.filter(
+                            cluster=obj, service=co, prototype=comp):
+                        cm.issue.save_issue(sc)
+                cm.issue.save_issue(co)
+    elif obj.prototype.type == 'provider':
+        for proto in Prototype.objects.filter(bundle=upgrade.bundle, type='host'):
+            for host in Host.objects.filter(provider=obj, prototype=proto):
+                cm.issue.save_issue(host)
+    cm.issue.save_issue(obj)
+
+
 def do_upgrade(obj, upgrade):
     old_proto = obj.prototype
     check_license(obj.prototype.bundle)
@@ -285,7 +302,6 @@ def do_upgrade(obj, upgrade):
                     co = ClusterObject.objects.get(cluster=obj, prototype__name=p.name)
                     switch_service(co, p)
                     switch_components(obj, co, p)
-                    cm.issue.save_issue(co)
                 except ClusterObject.DoesNotExist:
                     # co.delete() ?!
                     pass
@@ -294,7 +310,7 @@ def do_upgrade(obj, upgrade):
             for p in Prototype.objects.filter(bundle=upgrade.bundle, type='host'):
                 for host in Host.objects.filter(provider=obj, prototype__name=p.name):
                     switch_service(host, p)
-        cm.issue.save_issue(obj)
+        re_count_issue(obj, upgrade)
 
     log.info('upgrade %s OK to version %s', obj_ref(obj), obj.prototype.version)
     cm.status_api.post_event(
