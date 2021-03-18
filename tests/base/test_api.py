@@ -169,7 +169,7 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         r1 = self.api_get('/schema/')
         self.assertEqual(r1.status_code, 200)
 
-    def test_cluster(self):
+    def test_cluster(self):  # pylint: disable=too-many-statements
         cluster = 'test_cluster'
         r1 = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
         self.assertEqual(r1.status_code, 200)
@@ -199,7 +199,11 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         self.assertEqual(r1.status_code, 404)
         self.assertEqual(r1.json()['code'], 'PROTOTYPE_NOT_FOUND')
 
-        r1 = self.api_post('/cluster/', {'name': cluster, 'prototype_id': proto_id, 'description': ''})
+        r1 = self.api_post('/cluster/', {
+            'name': cluster,
+            'prototype_id': proto_id,
+            'description': ''
+        })
         self.assertEqual(r1.status_code, 400)
         self.assertEqual(r1.json()['description'], ['This field may not be blank.'])
 
