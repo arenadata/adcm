@@ -637,6 +637,7 @@ common_action: &common_action
     allow_to_terminate: boolean
     partial_execution: boolean
     host_action: boolean
+    log_files: list_of_string
     states: action_states_dict
     hc_acl: action_hc_acl_list
     config: config_obj
