@@ -256,15 +256,16 @@ def get_upgrade(obj, order=None):
         return res
 
 
-def re_count_issue(obj, upgrade):
-    """Re-count of issues from the bottom up"""
+def recount_issues(obj, upgrade):
+    """
+    Recount of issues from the bottom up for all related objects component-service-cluster
+    or host-provider, or for cluster or provider objects
+    """
     if obj.prototype.type == 'cluster':
         for proto in Prototype.objects.filter(bundle=upgrade.bundle, type='service'):
             for co in ClusterObject.objects.filter(cluster=obj, prototype=proto):
-                for comp in Prototype.objects.filter(parent=proto, type='component'):
-                    for sc in ServiceComponent.objects.filter(
-                            cluster=obj, service=co, prototype=comp):
-                        cm.issue.save_issue(sc)
+                for sc in ServiceComponent.objects.filter(cluster=obj, service=co):
+                    cm.issue.save_issue(sc)
                 cm.issue.save_issue(co)
     elif obj.prototype.type == 'provider':
         for proto in Prototype.objects.filter(bundle=upgrade.bundle, type='host'):
@@ -310,7 +311,7 @@ def do_upgrade(obj, upgrade):
             for p in Prototype.objects.filter(bundle=upgrade.bundle, type='host'):
                 for host in Host.objects.filter(provider=obj, prototype__name=p.name):
                     switch_service(host, p)
-        re_count_issue(obj, upgrade)
+        recount_issues(obj, upgrade)
 
     log.info('upgrade %s OK to version %s', obj_ref(obj), obj.prototype.version)
     cm.status_api.post_event(
