@@ -212,33 +212,6 @@ class TestClusterService:
         with allure.step("Check expected and actual value"):
             assert actual == expected
 
-    def test_should_not_create_service_w_id_eq_negative_number(
-        self, sdk_client_fs: ADCMClient, cluster: Cluster
-    ):
-        with allure.step("Try to create service with id as a negative number"):
-            with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-                prototype = sdk_client_fs.service_prototype()
-                _create_service(cluster, prototype.id * -1)
-        with allure.step("Check error prototype doesn't exist"):
-            err.PROTOTYPE_NOT_FOUND.equal(e, "prototype doesn't exist")
-
-    def test_should_not_create_service_w_id_as_string(self, cluster: Cluster):
-        with allure.step("Try to create service with id as a random string"):
-            with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-                _create_service(cluster, utils.random_string())
-        with allure.step("Check error about valid integer"):
-            assert e.value.error.title == "400 Bad Request"
-            assert e.value.error["prototype_id"][0] == "A valid integer is required."
-
-    def test_should_not_add_two_identical_service_in_cluster(self, cluster: Cluster):
-        cluster.service_add(name="ZOOKEEPER")
-        with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-            cluster.service_add(name="ZOOKEEPER")
-        with allure.step(
-            "Check error that service already exists in specified cluster"
-        ):
-            err.SERVICE_CONFLICT.equal(e, "service already exists in specified cluster")
-
     @pytest.mark.parametrize(
         "cluster_bundle",
         [

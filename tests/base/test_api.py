@@ -361,6 +361,51 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         r1 = self.api_delete('/stack/bundle/' + str(bundle_id) + '/')
         self.assertEqual(r1.status_code, 204)
 
+    def test_cluster_service(self):
+        r1 = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
+        self.assertEqual(r1.status_code, 200)
+
+        service_proto_id = self.get_service_proto_id()
+        bundle_id, cluster_proto_id = self.get_cluster_proto_id()
+
+        cluster = 'test_cluster'
+        r1 = self.api_post('/cluster/', {'name': cluster, 'prototype_id': cluster_proto_id})
+        self.assertEqual(r1.status_code, 201)
+        cluster_id = r1.json()['id']
+
+        r1 = self.api_post('/cluster/' + str(cluster_id) + '/service/', {
+            'prototype_id': 'some-string',
+        })
+        self.assertEqual(r1.status_code, 400)
+        self.assertEqual(r1.json()['prototype_id'], ['A valid integer is required.'])
+
+        r1 = self.api_post('/cluster/' + str(cluster_id) + '/service/', {
+            'prototype_id': - service_proto_id,
+        })
+        self.assertEqual(r1.status_code, 404)
+        self.assertEqual(r1.json()['code'], 'PROTOTYPE_NOT_FOUND')
+
+        r1 = self.api_post('/cluster/' + str(cluster_id) + '/service/', {
+            'prototype_id': service_proto_id,
+        })
+        self.assertEqual(r1.status_code, 201)
+        service_id = r1.json()['id']
+
+        r1 = self.api_post('/cluster/' + str(cluster_id) + '/service/', {
+            'prototype_id': service_proto_id,
+        })
+        self.assertEqual(r1.status_code, 409)
+        self.assertEqual(r1.json()['code'], 'SERVICE_CONFLICT')
+
+        r1 = self.api_delete('/cluster/' + str(cluster_id) + '/service/' + str(service_id) + '/')
+        self.assertEqual(r1.status_code, 204)
+
+        r1 = self.api_delete('/cluster/' + str(cluster_id) + '/')
+        self.assertEqual(r1.status_code, 204)
+
+        r1 = self.api_delete('/stack/bundle/' + str(bundle_id) + '/')
+        self.assertEqual(r1.status_code, 204)
+
     def test_hostcomponent(self):   # pylint: disable=too-many-statements,too-many-locals
         r1 = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
         self.assertEqual(r1.status_code, 200)
