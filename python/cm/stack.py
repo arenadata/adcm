@@ -26,10 +26,8 @@ from cm.logger import log
 from cm.errors import raise_AdcmEx as err
 import cm.config as config
 import cm.checker
-from cm.adcm_config import VARIANT_FUNCTIONS
 from cm.adcm_config import proto_ref, check_config_type, type_is_complex, read_bundle_file
 from cm.models import StagePrototype, StageAction, StagePrototypeConfig
-from cm.models import ACTION_TYPE, SCRIPT_TYPE, CONFIG_FIELD_TYPE, PROTO_TYPE
 from cm.models import StagePrototypeExport, StagePrototypeImport, StageUpgrade, StageSubAction
 
 
@@ -65,14 +63,6 @@ def check_object_definition(fname, conf, def_type, obj_list):
     ref = '{} "{}" {}'.format(def_type, conf['name'], conf['version'])
     if cook_obj_id(conf) in obj_list:
         err('INVALID_OBJECT_DEFINITION', f'Duplicate definition of {ref} (file {fname})')
-
-
-def check_extra_keys(conf, acceptable, ref):
-    if not isinstance(conf, dict):
-        return
-    for key in conf.keys():
-        if key not in acceptable:
-            err('INVALID_OBJECT_DEFINITION', f'Not allowed key "{key}" in {ref} definition')
 
 
 def get_config_files(path, bundle_hash):
@@ -170,10 +160,9 @@ def save_prototype(path, conf, def_type, bundle_hash):
 def check_component_constraint(proto, name, conf):
     if 'constraint' not in conf:
         return
-    ref = proto_ref(proto)
     if len(conf['constraint']) > 2:
         msg = 'constraint of component "{}" in {} should have only 1 or 2 elements'
-        err('INVALID_COMPONENT_DEFINITION', msg.format(name, ref))
+        err('INVALID_COMPONENT_DEFINITION', msg.format(name, proto_ref(proto)))
 
 
 def save_components(proto, conf, bundle_hash):
@@ -247,11 +236,9 @@ def set_version(obj, conf):
 
 
 def save_upgrade(proto, conf):
-    ref = proto_ref(proto)
     if not in_dict(conf, 'upgrade'):
         return
     for item in conf['upgrade']:
-        allow = ('versions', 'from_edition', 'states', 'name', 'description')
         check_versions(proto, item, f"upgrade \"{conf['name']}\"")
         upg = StageUpgrade(name=item['name'])
         set_version(upg, item)
@@ -334,7 +321,6 @@ def check_action_hc(proto, conf, name):
 
 
 def save_sub_actions(proto, conf, action):
-    ref = proto_ref(proto)
     if action.type != 'task':
         return
     for sub in conf['scripts']:
@@ -399,12 +385,6 @@ def is_group(conf):
 
 
 def get_yspec(proto, ref, bundle_hash, conf, name, subname):
-    if 'yspec' not in conf:
-        msg = 'Config key "{}/{}" of {} has no mandatory yspec key'
-        err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
-    if not isinstance(conf['yspec'], str):
-        msg = 'Config key "{}/{}" of {} yspec field should be string'
-        err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
     msg = 'yspec file of config key "{}/{}":'.format(name, subname)
     yspec_body = read_bundle_file(proto, conf['yspec'], bundle_hash, msg)
     try:
@@ -419,149 +399,47 @@ def get_yspec(proto, ref, bundle_hash, conf, name, subname):
     return schema
 
 
-def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pylint: disable=too-many-locals,too-many-statements,too-many-branches
+def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pylint: disable=too-many-statements,too-many-locals
     if not in_dict(proto_conf, 'config'):
         return
     conf_dict = proto_conf['config']
     ref = proto_ref(proto)
 
-    def check_type(param_type, name, subname):
-        if (param_type, param_type) in CONFIG_FIELD_TYPE:
-            return 1
-        else:
-            msg = 'Unknown config type: "{}" for config key "{}/{}" of {}'
-            return err('CONFIG_TYPE_ERROR', msg.format(param_type, name, subname, ref))
-
-    def check_options(conf, name, subname):
-        if not in_dict(conf, 'option'):
-            msg = 'Config key "{}/{}" of {} has no mandatory option key'
-            err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
-        if not isinstance(conf['option'], dict):
-            msg = 'Config key "{}/{}" of {} option field should be map'
-            err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
-        for (label, value) in conf['option'].items():
-            if value is None:
-                msg = 'Option "{}" value should not be empty (config key "{}/{}" of {})'
-                err('CONFIG_TYPE_ERROR', msg.format(label, name, subname, ref))
-            if isinstance(value, list):
-                msg = 'Option "{}" value "{}" should be flat (config key "{}/{}" of {})'
-                err('CONFIG_TYPE_ERROR', msg.format(label, value, name, subname, ref))
-            if isinstance(value, dict):
-                msg = 'Option "{}" value "{}" should be flat (config key "{}/{}" of {})'
-                err('CONFIG_TYPE_ERROR', msg.format(label, value, name, subname, ref))
-        return True
-
-    def check_variant_args(conf, name, subname):
-        if 'args' not in conf:
-            return None
-        if not isinstance(conf['args'], dict):
-            msg = 'Config key "{}/{}" of {} "source:args" field should be a map'
-            err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
-        allowed_keys = ('service', 'component')
-        check_extra_keys(conf['args'], allowed_keys, f'{ref} config key "{name}/{subname}"')
-        if 'component' in conf['args'] and 'service' not in conf['args']:
-            msg = 'There is no "service" field in source:args config key "{}/{}" of {}'
-            err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
-        return conf['args']
-
-    def check_variant(conf, name, subname):   # pylint: disable=too-many-branches
-        if not in_dict(conf, 'source'):
-            msg = 'Config key "{}/{}" of {} has no mandatory "source" key'
-            err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
-        if not isinstance(conf['source'], dict):
-            msg = 'Config key "{}/{}" of {} "source" field should be a map'
-            err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
-        if not in_dict(conf['source'], 'type'):
-            msg = 'Config key "{}/{}" of {} has no mandatory source:type statment'
-            err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
-        allowed_keys = ('type', 'name', 'value', 'strict', 'args')
-        check_extra_keys(conf['source'], allowed_keys, f'{ref} config key "{name}/{subname}"')
+    def check_variant(conf, name, subname):
         vtype = conf['source']['type']
-        if vtype not in ('inline', 'config', 'builtin'):
-            msg = 'Config key "{}/{}" of {} has unknown source type "{}"'
-            err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref, vtype))
         source = {'type': vtype, 'args': None}
         if 'strict' in conf['source']:
-            if not isinstance(conf['source']['strict'], bool):
-                msg = 'Config key "{}/{}" of {} "source:strict" field should be boolean'
-                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
             source['strict'] = conf['source']['strict']
         else:
             source['strict'] = True
         if vtype == 'inline':
-            if not in_dict(conf['source'], 'value'):
-                msg = 'Config key "{}/{}" of {} has no mandatory source:value statment'
-                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
             source['value'] = conf['source']['value']
-            if not isinstance(source['value'], list):
-                msg = 'Config key "{}/{}" of {} source value should be an array'
-                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
         elif vtype in ('config', 'builtin'):
-            if not in_dict(conf['source'], 'name'):
-                msg = 'Config key "{}/{}" of {} has no mandatory source:name statment'
-                err('CONFIG_TYPE_ERROR', msg.format(name, subname, ref))
             source['name'] = conf['source']['name']
         if vtype == 'builtin':
-            if conf['source']['name'] not in VARIANT_FUNCTIONS:
-                msg = 'Config key "{}/{}" of {} has unknown builtin function "{}"'
-                err(
-                    'CONFIG_TYPE_ERROR',
-                    msg.format(name, subname, ref, conf['source']['name']),
-                    list(VARIANT_FUNCTIONS.keys())
-                )
-            source['args'] = check_variant_args(conf['source'], name, subname)
+            if 'args' in conf['source']:
+                source['args'] = conf['source']['args']
         return source
 
-    def check_limit(conf_type, value, name, subname, label):
-        if conf_type == 'integer':
-            if not isinstance(value, int):
-                msg = '{} ("{}") should be integer (config key "{}/{}" of {})'
-                err('CONFIG_TYPE_ERROR', msg.format(label, value, name, subname, ref))
-        if conf_type == 'float':
-            if not isinstance(value, (int, float)):
-                msg = '{} ("{}") should be float (config key "{}/{}" of {})'
-                err('CONFIG_TYPE_ERROR', msg.format(label, value, name, subname, ref))
-
-    def check_wr(label, conf, name, subname):
-        if label not in conf:
-            return False
-        if isinstance(conf[label], str) and conf[label] == 'any':
-            return True
-        if not isinstance(conf[label], list):
-            msg = '"{}" should be array, not string (config key "{}/{}" of {})'
-            err('INVALID_CONFIG_DEFINITION', msg.format(label, name, subname, ref))
-        return True
-
-    def process_limits(conf, name, subname):   # pylint: disable=too-many-branches
-        def valudate_bool(value, label, name):
-            if not isinstance(value, bool):
-                msg = 'config group "{}" {} field ("{}") is not boolean ({})'
-                err('CONFIG_TYPE_ERROR', msg.format(name, label, value, ref))
-
+    def process_limits(conf, name, subname):
         opt = {}
         if conf['type'] == 'option':
-            if check_options(conf, name, subname):
-                opt = {'option': conf['option']}
-        if conf['type'] == 'variant':
+            opt = {'option': conf['option']}
+        elif conf['type'] == 'variant':
             opt['source'] = check_variant(conf, name, subname)
         elif conf['type'] == 'integer' or conf['type'] == 'float':
             if 'min' in conf:
-                check_limit(conf['type'], conf['min'], name, subname, 'min')
                 opt['min'] = conf['min']
             if 'max' in conf:
-                check_limit(conf['type'], conf['max'], name, subname, 'max')
                 opt['max'] = conf['max']
         elif conf['type'] == 'structure':
             opt['yspec'] = get_yspec(proto, ref, bundle_hash, conf, name, subname)
         elif is_group(conf):
             if 'activatable' in conf:
-                valudate_bool(conf['activatable'], 'activatable', name)
                 opt['activatable'] = conf['activatable']
+                opt['active'] = False
                 if 'active' in conf:
-                    valudate_bool(conf['active'], 'active', name)
                     opt['active'] = conf['active']
-                else:
-                    opt['active'] = False
 
         if 'read_only' in conf and 'writable' in conf:
             key_ref = '(config key "{}/{}" of {})'.format(name, subname, ref)
@@ -570,41 +448,11 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
 
         for label in ('read_only', 'writable'):
             if label in conf:
-                if check_wr(label, conf, name, subname):
-                    opt[label] = conf[label]
+                opt[label] = conf[label]
 
         return opt
 
-    def valudate_boolean(value, name, subname):
-        if not isinstance(value, bool):
-            msg = 'config key "{}/{}" required parameter ("{}") is not boolean ({})'
-            return err('CONFIG_TYPE_ERROR', msg.format(name, subname, value, ref))
-        return value
-
-    def cook_conf(obj, conf, name, subname):   # pylint: disable=too-many-branches
-        if not in_dict(conf, 'type'):
-            msg = 'No type in config key "{}/{}" of {}'
-            err('INVALID_CONFIG_DEFINITION', msg.format(name, subname, ref))
-        check_type(conf['type'], name, subname)
-        if subname:
-            if is_group(conf):
-                msg = 'Only group can have type "group" (config key "{}/{}" of {})'
-                err('INVALID_CONFIG_DEFINITION', msg.format(name, subname, ref))
-        else:
-            if 'subs' in conf and conf['type'] != 'group':
-                msg = 'Group "{}" shoud have type "group" of {})'
-                err('INVALID_CONFIG_DEFINITION', msg.format(name, ref))
-        if is_group(conf):
-            allow = (
-                'type', 'description', 'display_name', 'required', 'ui_options',
-                'name', 'subs', 'activatable', 'active'
-            )
-        else:
-            allow = (
-                'type', 'description', 'display_name', 'default', 'required', 'name', 'yspec',
-                'option', 'source', 'limits', 'max', 'min', 'read_only', 'writable', 'ui_options'
-            )
-        check_extra_keys(conf, allow, 'config key "{}/{}" of {}'.format(name, subname, ref))
+    def cook_conf(obj, conf, name, subname):
         sc = StagePrototypeConfig(
             prototype=obj,
             action=action,
@@ -613,33 +461,25 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
         )
         dict_to_obj(conf, 'description', sc)
         dict_to_obj(conf, 'display_name', sc)
+        dict_to_obj(conf, 'required', sc)
+        dict_to_obj(conf, 'ui_options', sc)
+        conf['limits'] = process_limits(conf, name, subname)
+        dict_to_obj(conf, 'limits', sc)
         if 'display_name' not in conf:
             if subname:
                 sc.display_name = subname
             else:
                 sc.display_name = name
-        conf['limits'] = process_limits(conf, name, subname)
-        dict_to_obj(conf, 'limits', sc)
-        if 'ui_options' in conf:
-            if not isinstance(conf['ui_options'], dict):
-                msg = 'ui_options of config key "{}/{}" of {} should be a map'
-                err('INVALID_CONFIG_DEFINITION', msg.format(name, subname, ref))
-        dict_to_obj(conf, 'ui_options', sc)
         if 'default' in conf:
             check_config_type(proto, name, subname, conf, conf['default'], bundle_hash)
         if type_is_complex(conf['type']):
             dict_json_to_obj(conf, 'default', sc)
         else:
             dict_to_obj(conf, 'default', sc)
-        if 'required' in conf:
-            sc.required = valudate_boolean(conf['required'], name, subname)
         return sc
 
     if isinstance(conf_dict, dict):
         for (name, conf) in conf_dict.items():
-            if not isinstance(conf, dict):
-                msg = 'Config definition of {}, key "{}" should be a map'
-                err('INVALID_CONFIG_DEFINITION', msg.format(ref, name))
             if 'type' in conf:
                 validate_name(name, 'Config key "{}" of {}'.format(name, ref))
                 sc = cook_conf(proto, conf, name, '')
@@ -658,30 +498,12 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
                     sc.save()
     elif isinstance(conf_dict, list):
         for conf in conf_dict:
-            if not isinstance(conf, dict):
-                msg = 'Config definition of {} items should be a map'
-                err('INVALID_CONFIG_DEFINITION', msg.format(ref))
-            if 'name' not in conf:
-                msg = 'Config definition of {} should have a name required parameter'
-                err('INVALID_CONFIG_DEFINITION', msg.format(ref))
             name = conf['name']
             validate_name(name, 'Config key "{}" of {}'.format(name, ref))
             sc = cook_conf(proto, conf, name, '')
             sc.save()
             if is_group(conf):
-                if 'subs' not in conf:
-                    msg = 'Config definition of {}, group "{}" shoud have "subs" required section)'
-                    err('INVALID_CONFIG_DEFINITION', msg.format(ref, name))
-                if not isinstance(conf['subs'], list):
-                    msg = 'Config definition of {}, group "{}" subs section should be an array'
-                    err('INVALID_CONFIG_DEFINITION', msg.format(ref, name))
                 for subconf in conf['subs']:
-                    if not isinstance(subconf, dict):
-                        msg = 'Config definition of {} sub items of item "{}" should be a map'
-                        err('INVALID_CONFIG_DEFINITION', msg.format(ref, name))
-                    if 'name' not in subconf:
-                        msg = 'Config definition of {}, group "{}" subs items should have a name'
-                        err('INVALID_CONFIG_DEFINITION', msg.format(ref, name))
                     subname = subconf['name']
                     err_msg = 'Config key "{}/{}" of {}'.format(name, subname, ref)
                     validate_name(name, err_msg)
@@ -689,20 +511,6 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
                     sc = cook_conf(proto, subconf, name, subname)
                     sc.subname = subname
                     sc.save()
-    else:
-        err('INVALID_CONFIG_DEFINITION', f'Config definition of {ref} should be a map or an array')
-
-
-def check_key(context, context_name, param, param_name, key, conf):
-    msg = '{} "{}" in {} "{}" has no mandatory "{}" key'.format(
-        param, param_name, context, context_name, key
-    )
-    if not conf:
-        err('DEFINITION_KEY_ERROR', msg)
-    if key not in conf:
-        err('DEFINITION_KEY_ERROR', msg)
-    if not conf[key]:
-        err('DEFINITION_KEY_ERROR', msg)
 
 
 def validate_name(value, name):

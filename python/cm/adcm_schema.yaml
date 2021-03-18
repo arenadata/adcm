@@ -44,8 +44,8 @@ service_object:
     <<: *common_object_items
     import: import_dict
     export: export
-    components: components_dict
     shared: boolean
+    components: components_dict
     required: boolean
     monitoring: monitoring
 
@@ -107,6 +107,8 @@ component_dict:
     bound_to: bound_dict
     params: json
     requires: comp_req_list
+    config: config_obj
+    actions: actions_dict
 
 comp_req_list:
   match: list
@@ -184,17 +186,6 @@ states_dict:
     on_success: string
     on_fail: string
 
-any_or_list:
-  match: one_of
-  variants:
-    - list_of_string
-    - literally_any_string
-
-literally_any_string:
-  match: set
-  variants:
-    - any
-
 # Config block of object could be in two forms: dict or list
 config_obj:
   match: one_of
@@ -233,14 +224,15 @@ config_dict_sub:
     structure: config_dict_sub_structure
     json: config_dict_sub_json
     option: config_dict_sub_option
+    variant: config_dict_sub_variant
 
 ## Common fields for config of dict type
 config_dict_sub_common: &config_dict_sub_common
   match: dict
   items: &config_dict_sub_items
     type: string
-    read_only: config_dict_read_only
-    writable: config_dict_read_only
+    read_only: any_or_list
+    writable: any_or_list
     required: boolean
     display_name: string
     description: string_or_none
@@ -309,12 +301,15 @@ config_dict_sub_option:
     <<: *config_dict_sub_items
     option: map_string_any
     default: base_type
+  required_items:
+    - option
 
-config_dict_read_only:
-  match: one_of
-  variants:
-    - string
-    - list_of_string
+config_dict_sub_variant:
+  <<: *config_dict_sub_common
+  items:
+    <<: *config_dict_sub_items
+    source: variant_source
+    default: string
 
 ## Config list rules
 config_list:
@@ -418,6 +413,21 @@ config_list_list:
     <<: *config_list_items
     default: list_of_string
 
+config_list_json:
+  <<: *config_list_common
+  items:
+    <<: *config_list_items
+    default: json
+
+config_list_option:
+  <<: *config_list_common
+  items:
+    <<: *config_list_items
+    option: map_string_any
+    default: base_type
+  required_items:
+    - option
+
 config_list_map:
   <<: *config_list_common
   items:
@@ -433,6 +443,7 @@ config_list_structure:
   required_items:
     - yspec
 
+### Variant config type
 config_list_variant:
   <<: *config_list_common
   items:
@@ -442,36 +453,150 @@ config_list_variant:
   required_items:
     - source
 
+variant_common:
+  match: dict
+  items: &varinat_items
+    type: string
+    strict: boolean
+
 variant_source:
+  match: dict_key_selection
+  selector: type
+  variants:
+    inline: variant_inline
+    config: variant_config
+    builtin: variant_builtin
+
+variant_inline:
   match: dict
   items:
-    type: variant_types
-    strict: boolean
-    name: string
-    args: json
-    value: json
+    <<: *varinat_items
+    value: list_of_string
   required_items:
-    - type
+    - value
 
-variant_types:
+variant_builtin:
+  match: dict_key_selection
+  selector: name
+  variants:
+    host: var_func_host
+    host_in_cluster: var_func_host_in_cluster
+    host_not_in_clusters: var_builtin_func
+    service_in_cluster: var_builtin_func
+    service_to_add: var_builtin_func
+
+var_builtin_func:
+  match: dict
+  items:
+    <<: *varinat_items
+    name: string
+
+var_func_host_in_cluster:
+  match: dict
+  items:
+    <<: *varinat_items
+    name: string
+    args: var_func_host_in_cluster_args
+
+var_func_host_in_cluster_args:
+  match: dict
+  items:
+    service: string
+    component: string
+  required_items:
+    - service
+
+#### Variant config type host function solver
+var_func_host:
+  match: dict
+  items:
+    <<: *varinat_items
+    name: string
+    args: vfh_args
+  required_items:
+    - name
+    - args
+
+vfh_args:
+  match: one_of
+  variants:
+    - vfh_predicate_list
+    - vfh_predicate_item
+
+vfh_predicate_list:
+  match: list
+  item: vfh_predicate_item
+
+vfh_predicate_item:
+  match: dict_key_selection
+  selector: predicate
+  variants:
+    and: vfh_predicate_and
+    or: vfh_predicate_and
+    in_cluster: vfh_predicate_in_cluster
+    in_service: vfh_predicate_in_service
+    in_component: vfh_predicate_in_component
+
+vfh_predicate_and:
+  match: dict
+  items:
+    predicate: vfh_predicates
+    args: vfh_predicate_list
+  required_items:
+    - predicate
+    - args
+
+vfh_predicate_in_cluster:
+  match: dict
+  items:
+    predicate: vfh_predicates
+    args: none
+  required_items:
+    - predicate
+    - args
+
+vfh_predicate_in_service:
+  match: dict
+  items:
+    predicate: vfh_predicates
+    args: vfh_in_service_args
+  required_items:
+    - predicate
+    - args
+
+vfh_in_service_args:
+  match: dict
+  items:
+    service: string
+  required_items:
+    - service
+
+vfh_predicate_in_component:
+  match: dict
+  items:
+    predicate: vfh_predicates
+    args: vfh_in_component_args
+  required_items:
+    - predicate
+    - args
+
+vfh_in_component_args:
+  match: dict
+  items:
+    service: string
+    component: string
+  required_items:
+    - service
+    - component
+
+vfh_predicates:
   match: set
   variants:
-    - inline
-    - config
-    - builtin
-
-config_list_json:
-  <<: *config_list_common
-  items:
-    <<: *config_list_items
-    default: json
-
-config_list_option:
-  <<: *config_list_common
-  items:
-    <<: *config_list_items
-    option: map_string_any
-    default: base_type
+    - and
+    - or
+    - in_service
+    - in_component
+    - in_cluster
 
 # Imports
 import_dict:
@@ -621,6 +746,9 @@ float:
 none:
   match: none
 
+dict:
+  match: dict
+
 json:
   match: any
 
@@ -629,6 +757,17 @@ string_or_none:
   variants:
     - string
     - none
+
+any_or_list:
+  match: one_of
+  variants:
+    - list_of_string
+    - literally_any_string
+
+literally_any_string:
+  match: set
+  variants:
+    - any
 
 number:
   match: one_of
@@ -643,6 +782,3 @@ base_type:
     - string
     - integer
     - float
-
-dict:
-  match: dict
