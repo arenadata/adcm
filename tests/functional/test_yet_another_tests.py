@@ -20,6 +20,7 @@ from tests.library.errorcodes import BUNDLE_ERROR, INVALID_OBJECT_DEFINITION
 
 testcases = ["cluster", "host"]
 
+
 @pytest.mark.parametrize('testcase', testcases)
 def test_handle_unknown_words_in_bundle(sdk_client_fs, testcase):
     with allure.step('Try to upload bundle with unknown words'):
