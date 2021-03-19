@@ -9,40 +9,40 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-name: ZOOKEEPER
-type: service
-description: AllKeeper
-version: 'new_version'
+- name: ZOOKEEPER
+  type: service
+  description: AllKeeper
+  version: 'new_version'
 
-actions:
+  actions:
     install:
-        type: job
-        script: cook.py
-        script_type: task_generator
+      type: job
+      script: cook.py
+      script_type: ansible
     start:
-        type: job
-        log_files: [remote]
-        script: services/zooyaml/start.yaml
-        script_type: ansible
+      type: job
+      log_files: [ remote ]
+      script: services/zooyaml/start.yaml
+      script_type: ansible
     stop:
-        type: job
-        log_files: [remote]
-        script: services/zooyaml/stop.yaml
-        script_type: ansible
+      type: job
+      log_files: [ remote ]
+      script: services/zooyaml/stop.yaml
+      script_type: ansible
 
-components:
+  components:
     ZOOKEEPER_CLIENT:
 
-config:
-    ssh-key: {default: TItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAA, type: string, required: no}
-    integer-key: {default: 24, max: 48, min: 2, type: integer, required: no}
-    float-key: {default: 2.4, type: float}
+  config:
+    ssh-key: { default: TItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAA, type: string, required: no }
+    integer-key: { default: 24, max: 48, min: 2, type: integer, required: no }
+    float-key: { default: 2.4, type: float }
     zoo.cfg:
-        autopurge.purgeInterval: {default: 24, max: 48, min: 2, type: integer}
-        dataDir: {default: /hadoop/zookeeper, type: string}
-        port:
-            required: no
-            default: 80
-            option: {http: 80, https: 443}
-            type: option
-    required-key: {default: value, type: string}
+      autopurge.purgeInterval: { default: 24, max: 48, min: 2, type: integer }
+      dataDir: { default: /hadoop/zookeeper, type: string }
+      port:
+        required: no
+        default: 80
+        option: { http: 80, https: 443 }
+        type: option
+    required-key: { default: value, type: string }

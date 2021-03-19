@@ -22,7 +22,7 @@ import { filter } from 'rxjs/operators';
   template: `
     <mat-toolbar class="toolbar"><app-crumbs [navigation]="[{ path: '/task', name: 'jobs' }]"></app-crumbs></mat-toolbar>
     <div class="container-entry">
-      <app-list #list class="main" [appBaseList]="'job'"></app-list>
+      <app-list #list class="main" [type]="'job'"></app-list>
     </div>
   `,
 })

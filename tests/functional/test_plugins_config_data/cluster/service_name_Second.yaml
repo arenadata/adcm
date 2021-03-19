@@ -11,11 +11,11 @@
       yyyy
     new_string: &new_string "double new"
     new_json: &new_json
-      - x: "new"
-      - y: "z"
+      - "x": "new"
+      - "y": "z"
     new_map: &new_map
       "one": "two"
-      two: "new"
+      "two": "new"
     new_list: &new_list
       - "one"
       - "new"

@@ -14,7 +14,23 @@ import { IComponent } from './host-component';
 import { Issue } from './issue';
 import { Job, Task } from './task-job';
 
-export type TypeName = 'bundle' | 'cluster' | 'host' | 'provider' | 'service' | 'job' | 'task' | 'user' | 'profile' | 'adcm' | 'stats' | 'hostcomponent' | 'component';
+export type TypeName =
+  'bundle' |
+  'cluster' |
+  'host' |
+  'provider' |
+  'service' |
+  'job' |
+  'task' |
+  'user' |
+  'profile' |
+  'adcm' |
+  'stats' |
+  'hostcomponent' |
+  'service2cluster' |
+  'host2cluster' |
+  'servicecomponent' |
+  'component';
 export type Entities = Cluster | Service | Host | Provider | Job | Task | Bundle;
 
 /**
@@ -78,6 +94,7 @@ export interface Service extends ApiBase {
   status: number;
   hostcomponent: string;
   display_name: string;
+  cluster_id?: number;
 }
 
 export interface Bundle extends ApiBase {

@@ -200,26 +200,7 @@ urlpatterns = [
         name='cluster-service-details'
     ),
     path(CLUSTER + SERVICE + 'action/', include('api.action.urls'), {'object_type': 'service'}),
-    path(
-        CLUSTER + SERVICE + 'component/',
-        cluster_views.ServiceComponentList.as_view(),
-        name='cluster-service-component'
-    ),
-    path(
-        CLUSTER + SERVICE + 'component/<int:component_id>/',
-        cluster_views.ServiceComponentDetail.as_view(),
-        name='cluster-service-component-details'
-    ),
-    path(
-        CLUSTER + SERVICE + 'component/<int:component_id>/config/',
-        include('api.config.urls'),
-        {'object_type': 'component'}
-    ),
-    path(
-        CLUSTER + SERVICE + 'component/<int:component_id>/action/',
-        include('api.action.urls'),
-        {'object_type': 'component'}
-    ),
+    path(CLUSTER + SERVICE + 'component/', include('api.component.urls')),
     path(
         CLUSTER + SERVICE + 'import/',
         cluster_views.ClusterServiceImport.as_view(),
@@ -240,6 +221,7 @@ urlpatterns = [
     path(CLUSTER + SERVICE + 'config/', include('api.config.urls'), {'object_type': 'service'}),
 
     path('service/', include('api.service.urls')),
+    path('component/', include('api.component.urls')),
 
     path('adcm/', views.AdcmList.as_view(), name='adcm'),
     path('adcm/<int:adcm_id>/', views.AdcmDetail.as_view(), name='adcm-details'),

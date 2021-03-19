@@ -23,7 +23,7 @@
         install:
             type: job
             script: cook.py
-            script_type: task_generator
+            script_type: ansible
         start:
             type: job
             script_type: ansible

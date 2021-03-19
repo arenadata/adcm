@@ -6,7 +6,7 @@ cd "$cur" || exit 1
 TMPL="
 ---
 - type: cluster
-  name: %s
+  name: \"%s\"
   version: ver%s
 "
 
