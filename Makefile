@@ -70,7 +70,7 @@ pytest_release: ## Run functional tests on release
 	-e BUILD_TAG=${BUILD_TAG} -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
 	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" \
 	ci.arenadata.io/functest:3.8.6.slim.buster.firefox-x64 /bin/sh -e \
-	./pytest.sh --firefox --adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))'
+	./pytest.sh --adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))'
 
 ng_tests: ## Run Angular tests
 	docker pull ci.arenadata.io/functest:3.8.6.slim.buster-x64
