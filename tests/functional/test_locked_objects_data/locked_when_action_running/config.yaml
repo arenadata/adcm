@@ -36,7 +36,7 @@
         default: qwerty1234
         required: false
     svc-ro-created:
-      display_name:
+      display_name: some display name
       type: string
       default: bluh
       required: false
