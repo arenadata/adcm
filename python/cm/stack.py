@@ -158,6 +158,8 @@ def save_prototype(path, conf, def_type, bundle_hash):
 
 
 def check_component_constraint(proto, name, conf):
+    if not conf:
+        return
     if 'constraint' not in conf:
         return
     if len(conf['constraint']) > 2:
