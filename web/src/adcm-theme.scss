@@ -91,7 +91,7 @@ a.active .mat-list-item-content {
   color: mat-color($mat-green, A400);
 }
 
-.mat-nav-list a:not(.top) {
+.mat-nav-list a:not(.top, .issue) {
   color: mat-color($mat-blue-grey, 200) !important;
 
   &:hover {

@@ -1,12 +1,15 @@
-import { Entity } from '@adwp-ui/widgets';
+import { AdcmEntity } from '@app/models/entity';
 
-export interface IIssue extends Entity {
-  issue?: IIssue;
-  config: boolean;
-  required_import?: boolean;
-  name?: string;
+export type IssueType = 'cluster' | 'service' | 'service-component';
+
+export interface IssueEntity extends AdcmEntity {
+  issue: IIssues;
 }
 
 export interface IIssues {
-  [key: string]: IIssue[];
+  config: boolean;
+  required_import?: boolean;
+  host_component: false;
+  cluster?: IssueEntity[];
+  service?: IssueEntity[];
 }

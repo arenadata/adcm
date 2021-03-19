@@ -1,7 +1,7 @@
 import { IAction } from './action';
-import { AdcmEntity } from '@app/models/entity';
+import { IssueEntity } from '@app/models/issue';
 
-export interface ICluster extends AdcmEntity {
+export interface ICluster extends IssueEntity {
   action: string;
   actions: IAction[];
   bind: string;
@@ -12,7 +12,6 @@ export interface ICluster extends AdcmEntity {
   host: string;
   hostcomponent: string;
   imports: string;
-  issue: any;
   license: string;
   name: string;
   prototype: string;
