@@ -623,8 +623,8 @@ def check_action(proto, action, act_config):
         if (script_type, script_type) not in SCRIPT_TYPE:
             err('WRONG_ACTION_TYPE', '{} has unknown script_type "{}"'.format(ref, script_type))
     allow = (
-        'type', 'script', 'script_type', 'scripts', 'states', 'params', 'config',
-        'log_files', 'hc_acl', 'button', 'display_name', 'host_action'
+        'type', 'script', 'script_type', 'scripts', 'states', 'params', 'config', 'ui_options',
+        'log_files', 'hc_acl', 'button', 'display_name', 'allow_to_terminate', 'host_action'
     )
     check_extra_keys(act_config, allow, ref)
 
