@@ -31,7 +31,6 @@
     name: simple ssh
     version: .01
 
-    actions:
     config:
         ansible_user:
             default: root

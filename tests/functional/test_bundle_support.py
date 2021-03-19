@@ -173,7 +173,7 @@ def test_load_should_fail_when(sdk_client_fs: ADCMClient, entity, state, case):
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             sdk_client_fs.upload_from_fs(bundle_path)
     with allure.step(f"Check if state is {state}"):
-        err.INVALID_ACTION_DEFINITION.equal(e, state, entity, "should be string")
+        err.INVALID_OBJECT_DEFINITION.equal(e, state, "should be a <class 'str'>")
 
 
 @allure.link("https://jira.arenadata.io/browse/ADCM-580")
@@ -184,6 +184,4 @@ def test_provider_bundle_shouldnt_load_when_has_export_section(
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(bundle_path)
     with allure.step("Check error"):
-        err.INVALID_OBJECT_DEFINITION.equal(
-            e, "Only cluster or service can have export section"
-        )
+        err.INVALID_OBJECT_DEFINITION.equal(e, 'Map key "export" is not allowed here')

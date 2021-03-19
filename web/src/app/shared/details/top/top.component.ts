@@ -18,11 +18,11 @@ import { IDetails, INavItem, NavigationService } from '../navigation.service';
 @Component({
   selector: 'app-details-top',
   template: `
-    <app-crumbs [navigation]="items"></app-crumbs>
-    <app-upgrade *ngIf="upgradable" [dataRow]="upgrade" xPosition="after"></app-upgrade>
-    <div [style.flex]="1"></div>
-    <app-action-list *ngIf="actionFlag" [asButton]="true" [actionLink]="actionLink" [actions]="actions" [state]="state" [disabled]="disabled" [cluster]="cluster"></app-action-list>
-    <!-- <app-actions [source]="actions || []" [isIssue]="eIssue" [cluster]="cluster"></app-actions> -->
+      <app-crumbs [navigation]="items"></app-crumbs>
+      <app-upgrade *ngIf="upgradable" [row]="upgrade" xPosition="after"></app-upgrade>
+      <div [style.flex]="1"></div>
+      <app-action-list *ngIf="actionFlag" [asButton]="true" [actionLink]="actionLink" [actions]="actions" [state]="state" [disabled]="disabled" [cluster]="cluster"></app-action-list>
+      <!-- <app-actions [source]="actions || []" [isIssue]="eIssue" [cluster]="cluster"></app-actions> -->
   `,
   styles: [':host {display: flex;width: 100%;padding-right: 10px;}', 'app-action-list {display: block; margin-top: 2px;}'],
 })
