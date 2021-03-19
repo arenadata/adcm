@@ -475,6 +475,14 @@ variant_inline:
   required_items:
     - value
 
+variant_config:
+  match: dict
+  items:
+    <<: *varinat_items
+    name: string
+  required_items:
+    - name
+
 variant_builtin:
   match: dict_key_selection
   selector: name
