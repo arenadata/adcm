@@ -218,6 +218,8 @@ class TestComponentActionOnHost:
         run_host_action_and_assert_result(host_single_component, action_name)
         run_host_action_and_assert_result(host_two_components, action_name)
 
+    @pytest.skip("Component state change BUG")
+    @allure.issue(name="Component state change BUG", url="https://arenadata.atlassian.net/browse/ADCM-1656")
     def test_availability_at_state(self, cluster_with_components: Cluster, provider: Provider):
         """
         Test that component host action is available on specify service state
