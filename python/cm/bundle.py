@@ -254,7 +254,7 @@ def re_check_actions():
 def check_component_requires(comp):
     if not comp.requires:
         return
-    ref = 'in requires of component "{}" of {}'.format(comp.name, proto_ref(comp.prototype))
+    ref = 'in requires of component "{}" of {}'.format(comp.name, proto_ref(comp.parent))
     req_list = comp.requires
     for i, item in enumerate(req_list):
         if 'service' in item:
@@ -264,8 +264,8 @@ def check_component_requires(comp):
                 msg = 'Unknown service "{}" {}'
                 err('COMPONENT_CONSTRAINT_ERROR', msg.format(item['service'], ref))
         else:
-            service = comp.prototype
-            req_list[i]['service'] = comp.prototype.name
+            service = comp.parent
+            req_list[i]['service'] = comp.parent.name
         try:
             req_comp = StagePrototype.objects.get(
                 name=item['component'], type='component', parent=service
@@ -396,7 +396,7 @@ def copy_stage_actons(stage_actions, prototype):
         ('name', 'type', 'script', 'script_type', 'state_on_success',
          'state_on_fail', 'state_available', 'params', 'log_files',
          'hostcomponentmap', 'button', 'display_name', 'description', 'ui_options',
-         'allow_to_terminate', 'partial_execution')
+         'allow_to_terminate', 'partial_execution', 'host_action')
     )
     Action.objects.bulk_create(actions)
 
@@ -529,14 +529,14 @@ def update_bundle_from_stage(bundle):   # pylint: disable=too-many-locals,too-ma
                     'type', 'script', 'script_type', 'state_on_success',
                     'state_on_fail', 'state_available', 'params', 'log_files',
                     'hostcomponentmap', 'button', 'display_name', 'description', 'ui_options',
-                    'allow_to_terminate', 'partial_execution'
+                    'allow_to_terminate', 'partial_execution', 'host_action'
                 ))
             except Action.DoesNotExist:
                 action = copy_obj(saction, Action, (
                     'name', 'type', 'script', 'script_type', 'state_on_success',
                     'state_on_fail', 'state_available', 'params', 'log_files',
                     'hostcomponentmap', 'button', 'display_name', 'description', 'ui_options',
-                    'allow_to_terminate', 'partial_execution'
+                    'allow_to_terminate', 'partial_execution', 'host_action'
                 ))
                 action.prototype = p
             action.save()

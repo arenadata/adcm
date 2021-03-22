@@ -319,7 +319,7 @@ class TestJob(TestCase):
 
         job_module.prepare_job(action, None, {'cluster': 1}, job.id, cluster, '', {}, None, False)
 
-        mock_prepare_job_inventory.assert_called_once_with({'cluster': 1}, job.id, {}, None)
+        mock_prepare_job_inventory.assert_called_once_with({'cluster': 1}, job.id, action, {}, None)
         mock_prepare_job_config.assert_called_once_with(action, None, {'cluster': 1},
                                                         job.id, cluster, '', False)
         mock_prepare_ansible_config.assert_called_once_with(job.id, action, None)

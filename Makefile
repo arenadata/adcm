@@ -1,7 +1,12 @@
 # Set number of threads
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
-ADCMBASE_IMAGE ?= arenadata/adcmbase
-ADCMBASE_TAG ?= 20210127175453
+
+ADCMBASE_IMAGE ?= hub.arenadata.io/adcm/base
+ADCMBASE_TAG ?= 20210317134752
+
+APP_IMAGE ?= hub.adsw.io/adcm/adcm
+APP_TAG ?= $(subst /,_,$(BRANCH_NAME))
+
 SELENOID_HOST ?= 10.92.2.65
 SELENOID_PORT ?= 4444
 
@@ -23,17 +28,22 @@ describe: ## Create .version file with output of describe
 	./gues_version.sh
 
 buildss: ## Build status server
-	@docker run -i --rm -v $(CURDIR)/go:/code -w /code  golang:alpine sh -c "apk --update add make git; make; rm -f /code/adcm/go.sum"
+	@docker run -i --rm -v $(CURDIR)/go:/code -w /code  golang:1.15-alpine sh -c "apk --update add make git && make && rm -f /code/adcm/go.sum"
 
 buildjs: ## Build client side js/html/css in directory wwwroot
 	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:12-alpine ./build.sh
 
 buildbase: ## Build base image for ADCM's container. That is alpine with all packages.
-	@docker build --pull=true -f Dockerfile_base --no-cache=true -t $(ADCMBASE_IMAGE):$$(date '+%Y%m%d%H%M%S') -t $(ADCMBASE_IMAGE):latest .
+	cd assemble/base && docker build --pull=true --no-cache=true \
+	-t $(ADCMBASE_IMAGE):$$(date '+%Y%m%d%H%M%S') -t $(ADCMBASE_IMAGE):latest \
+	.
 
 build: describe buildss buildjs ## Build final docker image and all depended targets except baseimage.
-	@docker build --no-cache=true --pull=true -t ci.arenadata.io/adcm:$(subst /,_,$(BRANCH_NAME)) .
-
+	@docker build --no-cache=true \
+	-f assemble/app/Dockerfile \
+	-t $(APP_IMAGE):$(APP_TAG) \
+	--build-arg  ADCMBASE_IMAGE=$(ADCMBASE_IMAGE) --build-arg  ADCMBASE_TAG=$(ADCMBASE_TAG) \
+	.
 
 ##################################################
 #                 T E S T S
@@ -49,22 +59,29 @@ unittests: ## Run unittests
 pytest: ## Run functional tests
 	docker pull ci.arenadata.io/functest:3.8.6.slim.buster-x64
 	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host -v $(CURDIR)/:/adcm -w /adcm/ \
-	-e BUILD_TAG=${BUILD_TAG} -e ADCM_TAG=$(subst /,_,$(BRANCH_NAME)) -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
+	-e BUILD_TAG=${BUILD_TAG} -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
 	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" \
-	ci.arenadata.io/functest:3.8.6.slim.buster-x64 /bin/sh -e ./pytest.sh
+	ci.arenadata.io/functest:3.8.6.slim.buster-x64 /bin/sh -e \
+	./pytest.sh --adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))'
+
+pytest_release: ## Run functional tests on release
+	docker pull ci.arenadata.io/functest:3.8.6.slim.buster.firefox-x64
+	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host -v $(CURDIR)/:/adcm -w /adcm/ \
+	-e BUILD_TAG=${BUILD_TAG} -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
+	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" \
+	ci.arenadata.io/functest:3.8.6.slim.buster.firefox-x64 /bin/sh -e \
+	./pytest.sh --firefox --adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))'
 
 ng_tests: ## Run Angular tests
 	docker pull ci.arenadata.io/functest:3.8.6.slim.buster-x64
-	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web/src ci.arenadata.io/functest:3.8.6.slim.buster-x64 /bin/sh -c "export CHROME_BIN=/usr/bin/google-chrome; npm install && ng test --watch=false"
+	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web ci.arenadata.io/functest:3.8.6.slim.buster-x64 ./ng_test.sh
 
 linters : ## Run linters
 	docker pull ci.arenadata.io/pr-builder:3-x64
 	docker run -i --rm -v $(CURDIR)/:/source -w /source ci.arenadata.io/pr-builder:3-x64 /linters.sh shellcheck pylint pep8
 
 npm_check: ## Run npm-check
-	docker pull ci.arenadata.io/functest:3.8.6.slim.buster-x64
-	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web/src ci.arenadata.io/functest:3.8.6.slim.buster-x64 \
-	/bin/bash -c 'npm i --production && { ignore=`cat ../../.npmcheckignore | grep -v "#"`\; npm-check --production --skip-unused --ignore $$ignore || true; } && npm audit'
+	docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:12-alpine ./npm_check.sh
 
 django_tests : ## Run django tests.
 	docker pull $(ADCMBASE_IMAGE):$(ADCMBASE_TAG)

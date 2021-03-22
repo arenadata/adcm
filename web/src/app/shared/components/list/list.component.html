@@ -15,7 +15,7 @@
         [indeterminate]="selection.hasValue() && !isAllSelected()"></mat-checkbox>
     </mat-header-cell>
     <mat-cell *matCellDef="let row" style="flex: 0 0 50px;">
-      <mat-checkbox (click)="$event.stopPropagation()" (change)="$event ? selection.toggle(row) : null"
+      <mat-checkbox (click)="EventHelper.stopPropagation($event)" (change)="$event ? selection.toggle(row) : null"
         [checked]="selection.isSelected(row)"></mat-checkbox>
     </mat-cell>
   </ng-container>
@@ -113,8 +113,7 @@
   <ng-container matColumnDef="state">
     <mat-header-cell *matHeaderCellDef mat-sort-header class="width100">State</mat-header-cell>
     <mat-cell *matCellDef="let row" class="width100">
-      <mat-icon class="icon-locked running" *ngIf="row.state === 'locked'; else title">autorenew</mat-icon>
-      <ng-template #title>{{ row.state }}</ng-template>
+      <app-state-column [row]="row"></app-state-column>
     </mat-cell>
   </ng-container>
 
@@ -131,13 +130,7 @@
   <ng-container matColumnDef="actions">
     <mat-header-cell *matHeaderCellDef class="control">Actions</mat-header-cell>
     <mat-cell *matCellDef="let row" class="control">
-      <button [appForTest]="'row_actions'" mat-icon-button color="warn" *ngIf="!notIssue(row.issue); else actions"
-        [appTooltip]="row" appTooltipComponent="issue">
-        <mat-icon>priority_hight</mat-icon>
-      </button>
-      <ng-template #actions>
-        <app-action-list (click)="$event.stopPropagation()" [actionLink]="row.action" [cluster]="getClusterData(row)"></app-action-list>
-      </ng-template>
+      <app-actions-column [row]="row"></app-actions-column>
     </mat-cell>
   </ng-container>
 
@@ -163,7 +156,7 @@
   <ng-container matColumnDef="upgrade">
     <mat-header-cell *matHeaderCellDef class="control">Upgrade</mat-header-cell>
     <mat-cell *matCellDef="let row" class="control">
-      <app-upgrade [dataRow]="row"></app-upgrade>
+      <app-upgrade [row]="row"></app-upgrade>
     </mat-cell>
   </ng-container>
 
@@ -202,7 +195,7 @@
       <a *ngIf="row.cluster_id; else clusterlist" [routerLink]="['/cluster', row.cluster_id]">{{ row.cluster_name }}</a>
       <ng-template #clusterlist>
         <mat-select appInfinityScroll (topScrollPoint)="clickCell($event, 'getNextPageCluster', row)"
-          placeholder="Assign to cluster" class="select-in-cell" (click)="stopPropagation($event)"
+          placeholder="Assign to cluster" class="select-in-cell" (click)="EventHelper.stopPropagation($event)"
           (openedChange)="clickCell($event, 'getClusters', row)"
           (valueChange)="clickCell($event, 'addCluster', row, clusters.value)" #clusters>
           <mat-option>...</mat-option>
@@ -217,17 +210,7 @@
   <ng-container matColumnDef="status">
     <mat-header-cell *matHeaderCellDef class="control">Status</mat-header-cell>
     <mat-cell *matCellDef="let row" class="control">
-      <span *ngIf="row.status && row.status.length; else icons" [class]="row.status">{{ row.status }}</span>
-      <ng-template #icons>
-        <button *ngIf="row.status === 0" [appForTest]="'row_status'" mat-icon-button color="accent"
-          (click)="clickCell($event, 'status', row)">
-          <mat-icon>check_circle_outline</mat-icon>
-        </button>
-        <button *ngIf="row.status !== 0" [appForTest]="'row_status'" mat-icon-button color="warn" [appTooltip]="row"
-          [appTooltipComponent]="'status'" [appTooltipPosition]="'left'" (click)="clickCell($event, 'status', row)">
-          <mat-icon>error_outline</mat-icon>
-        </button>
-      </ng-template>
+      <app-status-column [row]="row" (onClick)="gotoStatus($event)"></app-status-column>
     </mat-cell>
   </ng-container>
 </mat-table>

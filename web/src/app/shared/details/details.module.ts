@@ -25,11 +25,41 @@ import { LeftComponent } from './left/left.component';
 import { NavigationService } from './navigation.service';
 import { SubtitleComponent } from './subtitle.component';
 import { TopComponent } from './top/top.component';
+import { NavigationComponent } from '@app/components/navigation/navigation.component';
+import { ActionsColumnComponent } from '@app/components/columns/actions-column/actions-column.component';
+
+import { NavItemPipe } from '@app/pipes/nav-item.pipe';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @NgModule({
-  imports: [CommonModule, RouterModule, StuffModule, MatCardModule, MatToolbarModule, MatSidenavModule, MatListModule, MatIconModule, MatButtonModule],
-  exports: [DetailComponent],
-  declarations: [DetailComponent, SubtitleComponent, LeftComponent, TopComponent],
-  providers: [NavigationService],
+  imports: [
+    CommonModule,
+    RouterModule,
+    StuffModule,
+    MatCardModule,
+    MatToolbarModule,
+    MatSidenavModule,
+    MatListModule,
+    MatIconModule,
+    MatButtonModule,
+    MatTooltipModule,
+  ],
+  exports: [
+    DetailComponent,
+    ActionsColumnComponent,
+  ],
+  declarations: [
+    DetailComponent,
+    SubtitleComponent,
+    LeftComponent,
+    TopComponent,
+    NavigationComponent,
+    ActionsColumnComponent,
+
+    NavItemPipe,
+  ],
+  providers: [
+    NavigationService,
+  ],
 })
 export class DetailsModule {}

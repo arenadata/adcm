@@ -335,6 +335,7 @@ class Action(models.Model):
     hostcomponentmap = JSONField(default=[])
     allow_to_terminate = models.BooleanField(default=False)
     partial_execution = models.BooleanField(default=False)
+    host_action = models.BooleanField(default=False)
 
     def __str__(self):
         return "{} {}".format(self.prototype, self.name)
@@ -600,6 +601,7 @@ class StageAction(models.Model):
     hostcomponentmap = JSONField(default=[])
     allow_to_terminate = models.BooleanField(default=False)
     partial_execution = models.BooleanField(default=False)
+    host_action = models.BooleanField(default=False)
 
     def __str__(self):
         return "{}:{}".format(self.prototype, self.name)

@@ -225,7 +225,7 @@ class JobSerializer(JobListSerializer):
     log_dir = serializers.CharField(read_only=True)
     log_files = DataField(read_only=True)
     action_url = hlink('action-details', 'action_id', 'action_id')
-    task_url = hlink('task-details', 'id', 'task_id')
+    task_url = hlink('task-details', 'task_id', 'task_id')
 
     def get_action(self, obj):
         return get_job_action(obj)
@@ -255,15 +255,23 @@ class LogStorageSerializer(serializers.Serializer):
     format = serializers.CharField(read_only=True)
     content = serializers.SerializerMethodField()
 
+    def _get_ansible_content(self, obj):
+        path_file = os.path.join(
+            config.RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}')
+        try:
+            with open(path_file, 'r') as f:
+                content = f.read()
+        except FileNotFoundError:
+            msg = f'File "{obj.name}-{obj.type}.{obj.format}" not found'
+            raise AdcmApiEx('LOG_NOT_FOUND', msg) from None
+        return content
+
     def get_content(self, obj):
         content = obj.body
 
         if obj.type in ['stdout', 'stderr']:
             if content is None:
-                path_file = os.path.join(
-                    config.RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}')
-                with open(path_file, 'r') as f:
-                    content = f.read()
+                content = self._get_ansible_content(obj)
         elif obj.type == 'check':
             if content is None:
                 content = cm.job.get_check_log(obj.job_id)

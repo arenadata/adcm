@@ -11,6 +11,7 @@
 # limitations under the License.
 
 # pylint: disable=too-many-arguments, too-many-branches, too-many-nested-blocks
+# pylint: disable=inconsistent-return-statements
 
 import json
 import os
@@ -523,7 +524,7 @@ def get_old_hc(saved_hc):
         service = ClusterObject.objects.get(id=hc['service_id'])
         comp = ServiceComponent.objects.get(id=hc['component_id'])
         host = Host.objects.get(id=hc['host_id'])
-        key = cook_comp_key(service.prototype.name, comp.component.name)
+        key = cook_comp_key(service.prototype.name, comp.prototype.name)
         add_to_dict(old_hc, key, host.fqdn, host)
     return old_hc
 
@@ -551,7 +552,7 @@ def re_prepare_job(task, job):
 
 def prepare_job(action, sub_action, selector, job_id, obj, conf, delta, hosts, verbose):
     prepare_job_config(action, sub_action, selector, job_id, obj, conf, verbose)
-    inventory.prepare_job_inventory(selector, job_id, delta, hosts)
+    inventory.prepare_job_inventory(selector, job_id, action, delta, hosts)
     prepare_ansible_config(job_id, action, sub_action)
 
 
@@ -569,7 +570,7 @@ def prepare_context(selector):
     if 'provider' in selector:
         context['type'] = 'provider'
         context['provider_id'] = selector['provider']
-    if 'host' in selector:
+    if 'host' in selector and 'type' not in context:
         context['type'] = 'host'
         context['host_id'] = selector['host']
     if 'adcm' in selector:
@@ -819,7 +820,7 @@ def get_log(job):
 
 def log_group_check(group, fail_msg, success_msg):
     logs = CheckLog.objects.filter(group=group).values('result')
-    result = all([log['result'] for log in logs])
+    result = all(log['result'] for log in logs)
 
     if result:
         msg = success_msg
@@ -977,7 +978,8 @@ def prepare_ansible_config(job_id, action, sub_action):
         config_parser['defaults']['strategy_plugins'] = os.path.join(
             config.PYTHON_SITE_PACKAGES, 'ansible_mitogen/plugins/strategy')
         config_parser['defaults']['host_key_checking'] = 'False'
-
+    forks = adcm_conf['ansible_settings']['forks']
+    config_parser['defaults']['forks'] = str(forks)
     params = action.params
     if sub_action:
         params = sub_action.params

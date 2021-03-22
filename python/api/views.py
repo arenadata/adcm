@@ -49,6 +49,7 @@ class APIRoot(routers.APIRootView):
         'provider': 'provider',
         'host': 'host',
         'service': 'service',
+        'component': 'component',
         'job': 'job',
         'stack': 'stack',
         'stats': 'stats',
@@ -83,9 +84,7 @@ class GetAuthToken(GenericAPIView):
 
         HTTP header for authorization:
 
-        ```
-        Authorization: Token XXXXX
-        ```
+        ```Authorization: Token XXXXX```
         """
         serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)

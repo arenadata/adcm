@@ -60,18 +60,20 @@ def assert_events(ws, *expected_events):
 
 @pytest.fixture()
 def ws(sdk_client_fs: ADCMClient, max_conn=10):
+    last_error = None
     while max_conn:
         try:
             ws_conn = websocket.create_connection(
                 url="ws://" + prep_url(sdk_client_fs.url) + "/ws/event/",
                 subprotocols=["adcm", sdk_client_fs.api_token()],
                 timeout=15)
-        except websocket.WebSocketBadStatusException:
-            pass
+        except websocket.WebSocketBadStatusException as error:
+            last_error = error
         else:
             return ws_conn
         max_conn -= 1
-        break
+    raise ValueError(f"Could not create websocket connection in {max_conn} attempts. "
+                     f"Last error is:\n{last_error}")
 
 
 @pytest.fixture()
