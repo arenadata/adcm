@@ -69,11 +69,6 @@ def _create_service(cluster_: Cluster, prototype_id):
     )
 
 
-def _patch_cluster(cluster_: Cluster, **kwargs):
-    """Call partial_update endpoint (does not implemented in adcm_client)"""
-    cluster_._subcall("partial_update", **kwargs)
-
-
 class TestCluster:
     def test_get_cluster_list(self, cluster_bundle: Bundle):
         actual, expected = [], []
@@ -92,30 +87,6 @@ class TestCluster:
         with allure.step("Check created cluster"):
             assert cluster.name == name
             assert cluster.description == description
-
-    def test_patch_cluster_name_and_desc(self, cluster: Cluster):
-        name, description = utils.random_string_list(2)
-        with allure.step("Patching cluster"):
-            _patch_cluster(cluster, name=name, description=description)
-        with allure.step("Check patched cluster"):
-            cluster.reread()
-            assert cluster.name == name
-            assert cluster.description == description
-
-    def test_patch_cluster_with_duplicated_name(self, cluster_bundle: Bundle):
-        name, another_name = utils.random_string_list(2)
-        original_cluster = cluster_bundle.cluster_create(name=name)
-        cluster_to_patch = cluster_bundle.cluster_create(name=another_name)
-        with allure.step("Patching cluster with the name of already existed cluster"):
-            with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-                _patch_cluster(cluster_to_patch, name=name)
-        with allure.step("Check that cluster conflict error raised"):
-            err.CLUSTER_CONFLICT.equal(e)
-        with allure.step("Check that clusters keep unmodified"):
-            original_cluster.reread()
-            cluster_to_patch.reread()
-            assert original_cluster.name == name
-            assert cluster_to_patch.name == another_name
 
     @pytest.mark.parametrize(
         "cluster_bundle",

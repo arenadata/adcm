@@ -223,11 +223,6 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         self.assertEqual(r1.status_code, 405)
         self.assertEqual(r1.json()['detail'], 'Method "PUT" not allowed.')
 
-        cluster2 = 'тестовый кластер'
-        r1 = self.api_patch('/cluster/' + str(cluster_id) + '/', {'name': cluster2})
-        self.assertEqual(r1.status_code, 200)
-        self.assertEqual(r1.json()['name'], cluster2)
-
         r1 = self.api_delete('/cluster/' + str(cluster_id) + '/')
         self.assertEqual(r1.status_code, 204)
 
@@ -238,6 +233,46 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         r1 = self.api_delete('/cluster/' + str(cluster_id) + '/')
         self.assertEqual(r1.status_code, 404)
         self.assertEqual(r1.json()['code'], 'CLUSTER_NOT_FOUND')
+
+        r1 = self.api_delete('/stack/bundle/' + str(bundle_id) + '/')
+        self.assertEqual(r1.status_code, 204)
+
+    def test_cluster_patching(self):
+        name = 'test_cluster'
+        r1 = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
+        self.assertEqual(r1.status_code, 200)
+        bundle_id, proto_id = self.get_cluster_proto_id()
+
+        r1 = self.api_post('/cluster/', {'name': name, 'prototype_id': proto_id})
+        self.assertEqual(r1.status_code, 201)
+        cluster_id = r1.json()['id']
+
+        patched_name = 'patched_cluster'
+        r1 = self.api_patch('/cluster/' + str(cluster_id) + '/', {'name': patched_name})
+        self.assertEqual(r1.status_code, 200)
+        self.assertEqual(r1.json()['name'], patched_name)
+
+        description = 'cluster_description'
+        r1 = self.api_patch('/cluster/' + str(cluster_id) + '/', {
+            'name': patched_name,
+            'description': description
+        })
+        self.assertEqual(r1.status_code, 200)
+        self.assertEqual(r1.json()['description'], description)
+
+        r1 = self.api_post('/cluster/', {'name': name, 'prototype_id': proto_id})
+        self.assertEqual(r1.status_code, 201)
+        second_cluster_id = r1.json()['id']
+
+        r1 = self.api_patch('/cluster/' + str(second_cluster_id) + '/', {'name': patched_name})
+        self.assertEqual(r1.status_code, 409)
+        self.assertEqual(r1.json()['code'], 'CLUSTER_CONFLICT')
+
+        r1 = self.api_delete('/cluster/' + str(cluster_id) + '/')
+        self.assertEqual(r1.status_code, 204)
+
+        r1 = self.api_delete('/cluster/' + str(second_cluster_id) + '/')
+        self.assertEqual(r1.status_code, 204)
 
         r1 = self.api_delete('/stack/bundle/' + str(bundle_id) + '/')
         self.assertEqual(r1.status_code, 204)
