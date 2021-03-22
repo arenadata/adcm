@@ -144,6 +144,7 @@ def check_adcm_config(conf_file):
                     continue
                 args += f'line {ee.line}: {ee}\n'
         err('INVALID_OBJECT_DEFINITION', f'"{conf_file}" line {e.line} error: {e}', args)
+        return {}
 
 
 def read_definition(conf_file, conf_type):
@@ -530,6 +531,7 @@ def save_actions(proto, conf, bundle_hash):
         dict_to_obj(ac, 'description', action)
         dict_to_obj(ac, 'allow_to_terminate', action)
         dict_to_obj(ac, 'partial_execution', action)
+        dict_to_obj(ac, 'host_action', action)
         dict_to_obj(ac, 'ui_options', action)
         dict_to_obj(ac, 'params', action)
         dict_to_obj(ac, 'log_files', action)
@@ -621,9 +623,8 @@ def check_action(proto, action, act_config):
         if (script_type, script_type) not in SCRIPT_TYPE:
             err('WRONG_ACTION_TYPE', '{} has unknown script_type "{}"'.format(ref, script_type))
     allow = (
-        'type', 'script', 'script_type', 'scripts', 'states', 'params', 'config',
-        'log_files', 'hc_acl', 'button', 'display_name', 'description', 'ui_options',
-        'allow_to_terminate', 'partial_execution'
+        'type', 'script', 'script_type', 'scripts', 'states', 'params', 'config', 'ui_options',
+        'log_files', 'hc_acl', 'button', 'display_name', 'allow_to_terminate', 'host_action'
     )
     check_extra_keys(act_config, allow, ref)
 

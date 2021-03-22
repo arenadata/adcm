@@ -44,6 +44,7 @@ service_object:
     <<: *common_object_items
     import: import_dict
     export: export
+    shared: boolean
     components: components_dict
     required: boolean
     monitoring: monitoring
@@ -85,7 +86,7 @@ monitoring:
     - active
     - passive
 
-## Components
+# Components
 components_dict:
   match: dict
   default_item: component_item
@@ -101,7 +102,7 @@ component_dict:
   items:
     display_name: string
     description: string
-    monitoring: string
+    monitoring: monitoring
     constraint: constraint_list
     bound_to: bound_dict
     params: json
@@ -118,7 +119,7 @@ comp_req_item:
   items:
     service: string
     component: string
-  required:
+  required_items:
     - component
 
 constraint_list:
@@ -129,14 +130,20 @@ constraint_list_item:
   match: one_of
   variants:
     - integer
-    - string
+    - constraint_variants
+
+constraint_variants:
+  match: set
+  variants:
+    - "+"
+    - odd
 
 bound_dict:
   match: dict
   items:
     service: string
     component: string
-  required:
+  required_items:
     - service
     - component
 
@@ -175,20 +182,9 @@ version_dict:
 states_dict:
   match: dict
   items:
-    available: available_state
+    available: any_or_list
     on_success: string
     on_fail: string
-
-any_or_list:
-  match: one_of
-  variants:
-    - list_of_string
-    - literally_any_string
-
-literally_any_string:
-  match: set
-  variants:
-    - any
 
 # Config block of object could be in two forms: dict or list
 config_obj:
@@ -235,8 +231,8 @@ config_dict_sub_common: &config_dict_sub_common
   match: dict
   items: &config_dict_sub_items
     type: string
-    read_only: config_dict_read_only
-    writable: config_dict_read_only
+    read_only: any_or_list
+    writable: any_or_list
     required: boolean
     display_name: string
     description: string_or_none
@@ -305,6 +301,8 @@ config_dict_sub_option:
     <<: *config_dict_sub_items
     option: map_string_any
     default: base_type
+  required_items:
+    - option
 
 config_dict_sub_variant:
   <<: *config_dict_sub_common
@@ -312,12 +310,6 @@ config_dict_sub_variant:
     <<: *config_dict_sub_items
     source: variant_source
     default: string
-
-config_dict_read_only:
-  match: one_of
-  variants:
-    - string
-    - list_of_string
 
 ## Config list rules
 config_list:
@@ -421,12 +413,6 @@ config_list_list:
     <<: *config_list_items
     default: list_of_string
 
-config_list_map:
-  <<: *config_list_common
-  items:
-    <<: *config_list_items
-    default: map_string_string
-
 config_list_json:
   <<: *config_list_common
   items:
@@ -439,6 +425,14 @@ config_list_option:
     <<: *config_list_items
     option: map_string_any
     default: base_type
+  required_items:
+    - option
+
+config_list_map:
+  <<: *config_list_common
+  items:
+    <<: *config_list_items
+    default: map_string_string
 
 config_list_structure:
   <<: *config_list_common
@@ -622,6 +616,8 @@ import_dict_item:
   items:
     versions: version_dict
     required: boolean
+    multibind: boolean
+    default: list_of_string
   required_items:
     - versions
 
@@ -648,8 +644,9 @@ common_action: &common_action
     button: string
     allow_to_terminate: boolean
     partial_execution: boolean
+    host_action: boolean
+    log_files: list_of_string
     states: action_states_dict
-    log_files: action_logfiles_list
     hc_acl: action_hc_acl_list
     config: config_obj
 
@@ -718,26 +715,14 @@ action_script_type:
   variants:
     - ansible
 
-action_logfiles_list:
-  match: list
-  item: string
-
 action_states_dict:
   match: dict
   items:
     on_success: string
     on_fail: string
-    available: available_state
-
-available_state:
-  match: one_of
-  variants:
-    - available_list
-    - string
-
-available_list:
-  match: list
-  item: string
+    available: any_or_list
+  required_items:
+    - available
 
 # Common types
 list_of_string:
@@ -771,6 +756,9 @@ float:
 none:
   match: none
 
+dict:
+  match: dict
+
 json:
   match: any
 
@@ -779,6 +767,17 @@ string_or_none:
   variants:
     - string
     - none
+
+any_or_list:
+  match: one_of
+  variants:
+    - list_of_string
+    - literally_any_string
+
+literally_any_string:
+  match: set
+  variants:
+    - any
 
 number:
   match: one_of
@@ -793,6 +792,3 @@ base_type:
     - string
     - integer
     - float
-
-dict:
-  match: dict

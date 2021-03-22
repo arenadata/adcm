@@ -22,8 +22,12 @@ class Configuration(BasePage):
 
     def __init__(self, driver, url=None):
         super().__init__(driver)
-        if url:
-            self.get(url, "config")
+        self.url = url
+        if self.url:
+            self.get(self.url, "config")
+        self._wait_for_page_loaded()
+
+    def _wait_for_page_loaded(self):
         self._wait_element_present(ConfigurationLocators.app_conf_form, 15)
         # 30 seconds timeout here is caused by possible long load of config page
         self._wait_element_present(ConfigurationLocators.load_marker, 30)
@@ -154,6 +158,14 @@ class Configuration(BasePage):
     def get_field_value(input_field):
         return input_field.get_attribute("value")
 
+    @staticmethod
+    def get_field_input(field):
+        return field.find_element(*Common.mat_input_element)
+
+    @staticmethod
+    def get_field_checkbox(field):
+        return field.find_element(*Common.mat_checkbox)
+
     def get_field_groups(self):
         return self.driver.find_elements(*ConfigurationLocators.field_group)
 
@@ -211,6 +223,10 @@ class Configuration(BasePage):
         if 'mat-checked' not in toogle.get_attribute("class"):
             toogle.click()
 
+    @allure.step('Get group by name: {group_name}')
+    def get_group_by_name(self, group_name):
+        return self._get_group_element_by_name(group_name)
+
     @allure.step('Save configuration')
     def save_configuration(self):
         self._getelement(ConfigurationLocators.config_save_button).click()
@@ -219,7 +235,7 @@ class Configuration(BasePage):
     def click_advanced(self):
         self._click_element(Common.mat_checkbox, name="Advanced")
 
-    @allure.step('Click advanced')
+    @allure.step('Get form field text')
     def get_form_field_text(self, form_field_element):
         self._wait_element_present_in_sublement(form_field_element, Common.mat_form_field)
         form_field = form_field_element.find_elements(*Common.mat_form_field)[0]
@@ -324,3 +340,8 @@ class Configuration(BasePage):
             assert not field.is_displayed(), field.get_attribute("class")
         group_names = self.get_group_elements()
         assert not group_names, group_names
+
+    @allure.step('Refresh configuration')
+    def refresh(self):
+        self.driver.refresh()
+        self._wait_for_page_loaded()

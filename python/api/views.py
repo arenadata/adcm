@@ -49,6 +49,7 @@ class APIRoot(routers.APIRootView):
         'provider': 'provider',
         'host': 'host',
         'service': 'service',
+        'component': 'component',
         'job': 'job',
         'stack': 'stack',
         'stats': 'stats',
