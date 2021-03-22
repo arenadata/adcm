@@ -74,6 +74,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
     "sphinx.ext.githubpages",
+    "sphinx.ext.extlinks",
     "sphinx_markdown_tables",
     # "sphinxpapyrus.docxbuilder",
 ]
@@ -340,6 +341,10 @@ epub_exclude_files = ["search.html"]
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {"https://docs.python.org/": None}
+
+extlinks = {
+    'issue': ('https://arenadata.atlassian.net/browse/%s', '')
+}
 
 
 def setup(app):

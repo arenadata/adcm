@@ -13,7 +13,6 @@
     type: cluster
     name: ADH
     version: 1.5
-    actions:
     config:
         required:
             type: integer

@@ -9,24 +9,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
--
-    type: cluster
-    name: ADH
-    version: 1.5
-    config:
-        required:
-            type: integer
-            required: true
-            default: 15
-        str-key:
-            default: value
-            type: string
-            required: false
+- type: cluster
+  name: ADH
+  version: 1.5
+  config:
+    required:
+      type: integer
+      required: true
+      default: 15
+    str-key:
+      default: value
+      type: string
+      required: false
 
-        int_key:
-            type: integer
-            required: false
-            default: 150
+    int_key:
+      type: integer
+      required: false
+      default: 150
 
 
 - type: service
@@ -47,4 +46,4 @@
     master:
       display_name: "Master Node"
       description: "This node control all data nodes (see below)"
-      constraint: [1,2]
+      constraint: [ 1,2 ]

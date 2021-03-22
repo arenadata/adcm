@@ -23,7 +23,7 @@
         install:
             type: job
             script: stack/extcode/cook.py
-            script_type: task_generator
+            script_type: ansible
     components:
         ZOOKEEPER_CLIENT:
     config:
@@ -40,7 +40,7 @@
         install:
             type: job
             script: stack/extcode/cook.py
-            script_type: task_generator
+            script_type: ansible
     components:
         ZOOKEEPER_CLIENT:
     config:

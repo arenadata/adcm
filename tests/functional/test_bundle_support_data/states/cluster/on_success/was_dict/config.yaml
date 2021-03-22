@@ -10,28 +10,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
--
-    type: cluster
-    name: stringify_states
-    version: 1.0
-    actions:
-        install:
-            type: job
-            script: ansible/install.yaml
-            script_type: ansible
-            states:
-                available:
-                    - created
-                on_success: {failed}
-            params:
-                qwe: 42
-    upgrade:
-    config:
-        group1:
-            boooooooooool:
-                type: boolean
-                required: false
-        str-key:
-            default: value
-            type: string
-            required: false
+- type: cluster
+  name: stringify_states
+  version: 1.0
+  actions:
+    install:
+      type: job
+      script: ansible/install.yaml
+      script_type: ansible
+      states:
+        available:
+          - created
+        on_success: { failed }
+      params:
+        qwe: 42
+  upgrade:
+  config:
+    group1:
+      boooooooooool:
+        type: boolean
+        required: false
+    str-key:
+      default: value
+      type: string
+      required: false

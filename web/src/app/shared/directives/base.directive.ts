@@ -11,7 +11,7 @@
 // limitations under the License.
 import { Directive, OnDestroy } from '@angular/core';
 import { EventMessage } from '@app/core/store';
-import { Subject } from 'rxjs';
+import { MonoTypeOperatorFunction, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 @Directive({
@@ -25,7 +25,7 @@ export class BaseDirective implements OnDestroy {
     this.destroy$.complete();
   }
 
-  takeUntil<T>() {
+  takeUntil<T>(): MonoTypeOperatorFunction<T> {
     return takeUntil<T>(this.destroy$);
   }
 }
