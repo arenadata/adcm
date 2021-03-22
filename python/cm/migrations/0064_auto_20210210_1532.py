@@ -25,11 +25,49 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='prototypeconfig',
             name='type',
-            field=models.CharField(choices=[('string', 'string'), ('text', 'text'), ('password', 'password'), ('secrettext', 'secrettext'), ('json', 'json'), ('integer', 'integer'), ('float', 'float'), ('option', 'option'), ('variant', 'variant'), ('boolean', 'boolean'), ('file', 'file'), ('list', 'list'), ('map', 'map'), ('structure', 'structure'), ('group', 'group')], max_length=16),
+            field=models.CharField(
+                choices=[
+                    ('string', 'string'),
+                    ('text', 'text'),
+                    ('password', 'password'),
+                    ('secrettext', 'secrettext'),
+                    ('json', 'json'),
+                    ('integer', 'integer'),
+                    ('float', 'float'),
+                    ('option', 'option'),
+                    ('variant', 'variant'),
+                    ('boolean', 'boolean'),
+                    ('file', 'file'),
+                    ('list', 'list'),
+                    ('map', 'map'),
+                    ('structure', 'structure'),
+                    ('group', 'group')
+                ],
+                max_length=16
+            ),
         ),
         migrations.AlterField(
             model_name='stageprototypeconfig',
             name='type',
-            field=models.CharField(choices=[('string', 'string'), ('text', 'text'), ('password', 'password'), ('secrettext', 'secrettext'), ('json', 'json'), ('integer', 'integer'), ('float', 'float'), ('option', 'option'), ('variant', 'variant'), ('boolean', 'boolean'), ('file', 'file'), ('list', 'list'), ('map', 'map'), ('structure', 'structure'), ('group', 'group')], max_length=16),
+            field=models.CharField(
+                choices=[
+                    ('string', 'string'),
+                    ('text', 'text'),
+                    ('password', 'password'),
+                    ('secrettext', 'secrettext'),
+                    ('json', 'json'),
+                    ('integer', 'integer'),
+                    ('float', 'float'),
+                    ('option', 'option'),
+                    ('variant', 'variant'),
+                    ('boolean', 'boolean'),
+                    ('file', 'file'),
+                    ('list', 'list'),
+                    ('map', 'map'),
+                    ('structure', 'structure'),
+                    ('group', 'group')
+                ],
+                max_length=16
+            ),
         ),
     ]
