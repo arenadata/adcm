@@ -230,7 +230,6 @@ class TestVariantHost(TestCase):
         hosts = variant_host(cls, args)
         self.assertEqual(hosts, ['h10', 'h11'])
 
-
     def test_host_in_component(self):
         cls = cook_cluster()
         service = cook_service(cls)
@@ -303,7 +302,6 @@ class TestVariantHost(TestCase):
         self.assertEqual(variant_host(cls, args), ['h11', 'h12', 'h13'])
         args = {'predicate': 'not_in_component', 'args': {'service': 'Gett', 'component': 'Server'}}
         self.assertEqual(variant_host(cls, args), ['h10', 'h11', 'h13'])
-
 
     def test_host_and(self):
         cls = cook_cluster()
