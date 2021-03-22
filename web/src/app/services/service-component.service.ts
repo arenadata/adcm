@@ -14,12 +14,10 @@ export class ServiceComponentService {
   ) {}
 
   get(
-    clusterId: number,
-    serviceId: number,
     id: number,
     params: { [key: string]: string } = {},
   ): Observable<IServiceComponent> {
-    return this.api.get(`api/v1/cluster/${clusterId}/service/${serviceId}/component/${id}`, params);
+    return this.api.get(`api/v1/component/${id}`, params);
   }
 
 }

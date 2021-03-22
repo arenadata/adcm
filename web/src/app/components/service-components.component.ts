@@ -4,7 +4,6 @@ import { Store } from '@ngrx/store';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 
-import { ClusterService } from '@app/core';
 import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
 import { ListService } from '@app/shared/components/list/list.service';
 import { SocketState } from '@app/core/store';
@@ -40,7 +39,7 @@ export class ServiceComponentsComponent extends AdwpListDirective<any> implement
     ListFactory.nameColumn('display_name'),
     ListFactory.stateColumn(),
     ListFactory.statusColumn(this),
-    ListFactory.actionsColumn(),
+    ListFactory.actionsButton('servicecomponent'),
     ListFactory.configColumn(this),
   ] as IColumns<any>;
 
@@ -51,7 +50,6 @@ export class ServiceComponentsComponent extends AdwpListDirective<any> implement
     public router: Router,
     public dialog: MatDialog,
     protected api: ApiService,
-    private details: ClusterService,
   ) {
     super(service, store, route, router, dialog, api);
   }

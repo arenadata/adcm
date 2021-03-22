@@ -4,6 +4,7 @@ import { Observable, of } from 'rxjs';
 
 import { ServiceService } from '@app/services/service.service';
 import { IssueType } from '@app/models/issue';
+import { ServiceComponentService } from '@app/services/service-component.service';
 
 @Pipe({
   name: 'issuePath'
@@ -12,6 +13,7 @@ export class IssuePathPipe implements PipeTransform {
 
   constructor(
     private serviceService: ServiceService,
+    private serviceComponentService: ServiceComponentService,
   ) {}
 
   transform(issueName: string, issueType: IssueType, id: number): Observable<string> {
@@ -25,7 +27,12 @@ export class IssuePathPipe implements PipeTransform {
         .pipe(map(
           service => `/cluster/${service.cluster_id}/${issueType}/${id}/${issue}`,
         ));
-    } else {
+    } else if (issueType === 'servicecomponent') {
+      return this.serviceComponentService.get(id)
+        .pipe(map(
+          component => `/cluster/${component.cluster_id}/service/${component.service_id}/component/${id}/${issue}`,
+        ));
+    } {
       return of(`/${issueType}/${id}/${issue}`);
     }
   }
