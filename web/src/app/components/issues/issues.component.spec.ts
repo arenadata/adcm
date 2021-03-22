@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { IssuesComponent } from './issues.component';
+import { KeysPipe } from '@app/pipes/keys.pipe';
 
 describe('IssuesComponent', () => {
   let component: IssuesComponent;
@@ -8,7 +9,10 @@ describe('IssuesComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ IssuesComponent ]
+      declarations: [
+        IssuesComponent,
+        KeysPipe,
+      ]
     })
     .compileComponents();
   });
