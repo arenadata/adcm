@@ -62,13 +62,6 @@ def _check_hosts(actual: Host, expected: Host):
         assert getattr(actual, prop) == getattr(expected, prop)
 
 
-def _create_service(cluster_: Cluster, prototype_id):
-    """Workaround to create service without retrieving prototype"""
-    cluster_._subcall(
-        "service", "create", prototype_id=prototype_id, cluster_id=cluster_.id
-    )
-
-
 class TestCluster:
     def test_get_cluster_list(self, cluster_bundle: Bundle):
         actual, expected = [], []
