@@ -16,12 +16,14 @@ import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort, MatSortHeader } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
+import { Store } from '@ngrx/store';
+import { filter, switchMap } from 'rxjs/operators';
+
 import { ApiService } from '@app/core/api';
 import { EventMessage, SocketState } from '@app/core/store';
 import { JobStatus, Task, JobObject } from '@app/core/types';
-import { DialogComponent, SocketListenerDirective } from '@app/shared';
-import { Store } from '@ngrx/store';
-import { filter, switchMap } from 'rxjs/operators';
+import { SocketListenerDirective } from '@app/shared/directives';
+import { DialogComponent } from '@app/shared/components';
 
 @Component({
   selector: 'app-tasks',

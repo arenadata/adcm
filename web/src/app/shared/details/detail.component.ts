@@ -11,14 +11,15 @@
 // limitations under the License.
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ChannelService, ClusterService, keyChannelStrim, WorkerInstance } from '@app/core';
-import { EventMessage, getNavigationPath, SocketState } from '@app/core/store';
-import { Cluster, Host, IAction, Issue, Job, isIssue } from '@app/core/types';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 import { switchMap, tap } from 'rxjs/operators';
 
-import { SocketListenerDirective } from '../directives/socketListener.directive';
+import { ChannelService, keyChannelStrim } from '@app/core';
+import { WorkerInstance, ClusterService } from '@app/core/services/cluster.service';
+import { EventMessage, getNavigationPath, SocketState } from '@app/core/store';
+import { Cluster, Host, IAction, Issue, Job, isIssue } from '@app/core/types';
+import { SocketListenerDirective } from '@app/shared/directives/socketListener.directive';
 import { IDetails } from './navigation.service';
 import { AdcmEntity } from '@app/models/entity';
 

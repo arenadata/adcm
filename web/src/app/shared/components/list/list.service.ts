@@ -11,12 +11,13 @@
 // limitations under the License.
 import { Injectable } from '@angular/core';
 import { ParamMap, Params, convertToParamMap } from '@angular/router';
-import { ApiService } from '@app/core/api';
-import { ClusterService } from '@app/core/services';
-import { Bundle, Cluster, Entities, Host, IAction, Service, TypeName } from '@app/core/types';
-import { environment } from '@env/environment';
 import { switchMap, tap, map } from 'rxjs/operators';
 import { Observable } from 'rxjs';
+
+import { environment } from '@env/environment';
+import { ApiService } from '@app/core/api';
+import { ClusterService } from '@app/core/services/cluster.service';
+import { Bundle, Cluster, Entities, Host, IAction, Service, TypeName } from '@app/core/types';
 
 const COLUMNS_SET = {
   cluster: ['name', 'prototype_version', 'description', 'state', 'status', 'actions', 'import', 'upgrade', 'config', 'controls'],

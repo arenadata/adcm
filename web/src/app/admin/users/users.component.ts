@@ -11,12 +11,12 @@
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
 import { FormControl, FormGroup, NgModel, Validators } from '@angular/forms';
-import { MatDialog } from '@angular/material/dialog';
-import { Router } from '@angular/router';
-import { AuthService } from '@app/core';
-import { DialogComponent } from '@app/shared';
 import { map } from 'rxjs/operators';
+import { Router } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
 
+import { AuthService } from '@app/core';
+import { DialogComponent } from '@app/shared/components';
 import { User, UsersService } from './users.service';
 
 @Component({
