@@ -14,8 +14,8 @@ import allure
 import pytest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
+
 from tests.ui_tests.test_actions_page import check_verbosity
-from tests.library import steps
 from tests.library.consts import States, MessageStates
 
 NO_FIELD = ['no_title', 'no_result', 'no_msg',
@@ -24,6 +24,15 @@ ALL_FIELDS_DATA = [("all_fields", "Group success",
                     "Task success", True, True),
                    ("all_fields_fail", "Group fail",
                     "Task fail", False, False)]
+
+
+@allure.step("Check if action {action_name} state is {state_expected}")
+def check_action_state(action_name: str, state_current: str,
+                       state_expected: str) -> None:
+    assert state_current == state_expected, (
+        f"Current action {action_name} status {state_current}. "
+        f"Expected: {state_expected}"
+    )
 
 
 @pytest.mark.parametrize("missed_field", NO_FIELD)
@@ -43,9 +52,9 @@ def test_field_validation(sdk_client_fs: ADCMClient, missed_field):
     cluster = bundle.cluster_create(utils.random_string())
     task = cluster.action_run(name=params['action'])
     task.wait()
-    steps.check_action_state(action_name=params['action'],
-                             state_current=task.status,
-                             state_expected=params['expected_state'])
+    check_action_state(action_name=params['action'],
+                       state_current=task.status,
+                       state_expected=params['expected_state'])
     with allure.step(f'Check if logs count is equal {params["logs_amount"]}'):
         job = task.job()
         logs = job.log_list()
@@ -74,17 +83,17 @@ def test_all_fields(sdk_client_fs: ADCMClient, name, group_msg,
     task = cluster.action_run(name=params['action'])
     task.wait()
     job = task.job()
-    steps.check_action_state(action_name=params['action'],
-                             state_current=job.status,
-                             state_expected=params['expected_state'])
+    check_action_state(action_name=params['action'],
+                       state_current=job.status,
+                       state_expected=params['expected_state'])
     with allure.step('Check all fields after action execution'):
         logs = job.log_list()
         content = job.log(job_id=job.id, log_id=logs[2].id).content[0]
-        assert content['message'] == group_msg,\
+        assert content['message'] == group_msg, \
             f'Expected message {group_msg}. ' \
             f'Current message {content["message"]}'
         assert content['result'] is group_result
-        assert content['title'] == params['expected_title'],\
+        assert content['title'] == params['expected_title'], \
             f'Expected title {params["expected_title"]}. ' \
             f'Current title {content["title"]}'
         content_title = content['content'][0]['title']
@@ -120,12 +129,12 @@ def test_message_with_other_field(sdk_client_fs: ADCMClient, name):
     job = task.job()
     logs = job.log_list()
     log = job.log(job_id=job.id, log_id=logs[2].id)
-    steps.check_action_state(action_name=params['action'],
-                             state_current=job.status,
-                             state_expected=params['expected_state'])
+    check_action_state(action_name=params['action'],
+                       state_current=job.status,
+                       state_expected=params['expected_state'])
     with allure.step(f'Check if content message is {name}'):
         content = log.content[0]
-        assert content['message'] == name,\
+        assert content['message'] == name, \
             f'Expected content message {name}. ' \
             f'Current {content["message"]}'
 
@@ -145,17 +154,17 @@ def test_success_and_fail_msg_on_success(sdk_client_fs: ADCMClient):
     task = cluster.action_run(name=params['action'])
     task.wait()
     job = task.job()
-    steps.check_action_state(action_name=params['action'],
-                             state_current=job.status,
-                             state_expected=params['expected_state'])
+    check_action_state(action_name=params['action'],
+                       state_current=job.status,
+                       state_expected=params['expected_state'])
     with allure.step('Check if success and fail message are '
                      'in their own fields.'):
         logs = job.log_list()
         log = job.log(job_id=job.id, log_id=logs[2].id)
         content = log.content[0]
-        assert content['result'],\
+        assert content['result'], \
             f'Result is {content["result"]} expected True'
-        assert content['message'] == params['expected_message'],\
+        assert content['message'] == params['expected_message'], \
             f'Expected message: {params["expected_message"]}. ' \
             f'Current message {content["message"]}'
 
@@ -175,17 +184,17 @@ def test_success_and_fail_msg_on_fail(sdk_client_fs: ADCMClient):
     task = cluster.action_run(name=params['action'])
     task.wait()
     job = task.job()
-    steps.check_action_state(action_name=params['action'],
-                             state_current=job.status,
-                             state_expected=params['expected_state'])
+    check_action_state(action_name=params['action'],
+                       state_current=job.status,
+                       state_expected=params['expected_state'])
     with allure.step('Check if success and fail message are '
                      'in their own fields'):
         logs = job.log_list()
         log = job.log(job_id=job.id, log_id=logs[2].id)
         content = log.content[0]
-        assert not content['result'],\
+        assert not content['result'], \
             f'Result is {content["result"]} expected True'
-        assert content['message'] == params['expected_message'],\
+        assert content['message'] == params['expected_message'], \
             f'Expected message: {params["expected_message"]}. ' \
             f'Current message {content["message"]}'
 
@@ -225,7 +234,7 @@ def test_multiple_tasks(sdk_client_fs: ADCMClient):
             assert result[1] == log_entry['title'], \
                 f"Expected title {result[1]}. " \
                 f"Actual title {log_entry['title']}"
-            assert result[2] is log_entry['result'],\
+            assert result[2] is log_entry['result'], \
                 f"Expected result {result[2]}. " \
                 f"Actual result {log_entry['result']}"
 
@@ -264,13 +273,13 @@ def test_multiple_group_tasks(sdk_client_fs: ADCMClient):
     with allure.step("Check log's messages, titles and results."):
         for result in expected_result_groups:
             log_entry = log.content[expected_result_groups.index(result)]
-            assert result[0] == log_entry['message'],\
+            assert result[0] == log_entry['message'], \
                 f"Expected message {result[0]}. " \
                 f"Actual message {log_entry['message']}"
-            assert result[1] == log_entry['title'],\
+            assert result[1] == log_entry['title'], \
                 f"Expected title {result[1]}. " \
                 f"Actual title {log_entry['title']}"
-            assert result[2] is log_entry['result'],\
+            assert result[2] is log_entry['result'], \
                 f"Expected result {result[2]}. " \
                 f"Actual result {log_entry['result']}"
     with allure.step('Check group content'):
@@ -278,24 +287,24 @@ def test_multiple_group_tasks(sdk_client_fs: ADCMClient):
         group2 = log.content[1]
         for result in group1_expected:
             log_entry = group1[group1_expected.index(result)]
-            assert result[0] == log_entry['title'],\
+            assert result[0] == log_entry['title'], \
                 f"Expected title {result[0]}. " \
                 f"Actual message {log_entry['title']}"
-            assert result[1] == log_entry['message'],\
+            assert result[1] == log_entry['message'], \
                 f"Expected message {result[1]}. " \
                 f"Actual message {log_entry['message']}"
-            assert result[2] is log_entry['result'],\
+            assert result[2] is log_entry['result'], \
                 f"Expected result {result[2]}. " \
                 f"Actual result {log_entry['result']}"
         for result in group2_expected:
             log_entry = group2['content'][group2_expected.index(result)]
-            assert result[0] == log_entry['title'],\
+            assert result[0] == log_entry['title'], \
                 f"Expected title {result[0]}. " \
                 f"Actual message {log_entry['title']}"
-            assert result[1] == log_entry['message'],\
+            assert result[1] == log_entry['message'], \
                 f"Expected message {result[1]}. " \
                 f"Actual message {log_entry['message']}"
-            assert result[2] is log_entry['result'],\
+            assert result[2] is log_entry['result'], \
                 f"Expected result {result[2]}. " \
                 f"Actual result {log_entry['result']}"
 
@@ -321,7 +330,7 @@ def test_multiple_group_tasks_without_group_title(sdk_client_fs: ADCMClient):
         assert len(log.content) == params['logs_amount'], log.content
     with allure.step('Check title and result in log content'):
         for log_entry in log.content:
-            assert log_entry['title'] == 'Check log 1',\
+            assert log_entry['title'] == 'Check log 1', \
                 f"Expected title 'Check log 1'. " \
                 f"Current title {log_entry['title']}"
             assert log_entry['result'], "Result is False, Expected True"
@@ -340,14 +349,14 @@ def test_multiple_tasks_action_with_log_files_check(sdk_client_fs: ADCMClient):
     task = cluster.action_run(name=params['action'])
     task.wait()
     job = task.job()
-    steps.check_action_state(action_name=params['action'],
-                             state_current=job.status,
-                             state_expected=params['expected_state'])
+    check_action_state(action_name=params['action'],
+                       state_current=job.status,
+                       state_expected=params['expected_state'])
     with allure.step('Check if result is True'):
         logs = job.log_list()
         log = job.log(job_id=job.id, log_id=logs[2].id)
         content = log.content[0]
-        assert content['result'],\
+        assert content['result'], \
             f'Result is {content["result"]}, Expected True'
 
 
@@ -364,9 +373,9 @@ def test_result_no(sdk_client_fs: ADCMClient):
     task = cluster.action_run(name=params['action'])
     task.wait()
     job = task.job()
-    steps.check_action_state(action_name=params['action'],
-                             state_current=job.status,
-                             state_expected=params['expected_state'])
+    check_action_state(action_name=params['action'],
+                       state_current=job.status,
+                       state_expected=params['expected_state'])
     with allure.step('Check if result is False'):
         logs = job.log_list()
         log = job.log(job_id=job.id, log_id=logs[2].id)
