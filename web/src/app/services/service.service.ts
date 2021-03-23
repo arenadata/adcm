@@ -2,12 +2,12 @@ import { Injectable } from '@angular/core';
 
 import { ApiService } from '../core/api';
 import { Observable } from 'rxjs';
-import { IServiceComponent } from '../models/service-component';
+import { IClusterService } from '@app/models/cluster-service';
 
 @Injectable({
   providedIn: 'root',
 })
-export class ServiceComponentService {
+export class ServiceService {
 
   constructor(
     private api: ApiService,
@@ -16,8 +16,8 @@ export class ServiceComponentService {
   get(
     id: number,
     params: { [key: string]: string } = {},
-  ): Observable<IServiceComponent> {
-    return this.api.get(`api/v1/component/${id}`, params);
+  ): Observable<IClusterService> {
+    return this.api.get(`api/v1/service/${id}/`, params);
   }
 
 }
