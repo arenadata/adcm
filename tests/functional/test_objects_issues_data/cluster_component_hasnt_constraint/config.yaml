@@ -12,7 +12,7 @@
 ---
 - type: service
   name: bookkeeper
-  version: &bookkeeper_version 1.0.10
+  version: 1.0.10
 
   config:
     client_port:
@@ -36,7 +36,7 @@
         default: qwerty1234
         required: false
     svc-ro-created:
-      display_name:
+      display_name: some display name
       type: string
       default: bluh
       required: false

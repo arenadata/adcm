@@ -62,7 +62,7 @@
     int_key:
         type: integer
         required: NO
-        default:
+        default: 1
     fkey:
         type: float
         required: false

@@ -15,14 +15,17 @@ import re
 
 import json
 import yaml
-import toml
+import ruyaml
 import hashlib
+import warnings
 import yspec.checker
 
 from rest_framework import status
 
 from cm.logger import log
 from cm.errors import raise_AdcmEx as err
+import cm.config as config
+import cm.checker
 from cm.adcm_config import VARIANT_FUNCTIONS
 from cm.adcm_config import proto_ref, check_config_type, type_is_complex, read_bundle_file
 from cm.models import StagePrototype, StageAction, StagePrototypeConfig
@@ -52,8 +55,7 @@ def save_object_definition(path, fname, conf, obj_list, bundle_hash, adcm=False)
         return err('INVALID_OBJECT_DEFINITION', msg.format(fname))
 
     if 'type' not in conf:
-        msg = 'No type in object definition: {}'
-        return err('INVALID_OBJECT_DEFINITION', msg.format(fname))
+        return err('INVALID_OBJECT_DEFINITION', f'No type in object definition: {fname}')
 
     def_type = conf['type']
     if def_type not in (proto_type for (proto_type, _) in PROTO_TYPE):
@@ -73,15 +75,13 @@ def save_object_definition(path, fname, conf, obj_list, bundle_hash, adcm=False)
 
 def check_object_definition(fname, conf, def_type, obj_list):
     if 'name' not in conf:
-        msg = 'No name in {} definition: {}'
-        err('INVALID_OBJECT_DEFINITION', msg.format(def_type, fname))
+        err('INVALID_OBJECT_DEFINITION', f'No name in {def_type} definition: {fname}')
     if 'version' not in conf:
         msg = 'No version in {} "{}" definition: {}'
         err('INVALID_OBJECT_DEFINITION', msg.format(def_type, conf['name'], fname))
     ref = '{} "{}" {}'.format(def_type, conf['name'], conf['version'])
     if cook_obj_id(conf) in obj_list:
-        msg = 'Duplicate definition of {} (file {})'
-        err('INVALID_OBJECT_DEFINITION', msg.format(ref, fname))
+        err('INVALID_OBJECT_DEFINITION', f'Duplicate definition of {ref} (file {fname})')
     allow = (
         'type', 'name', 'version', 'display_name', 'description', 'actions', 'components',
         'config', 'upgrade', 'export', 'import', 'required', 'shared', 'monitoring',
@@ -95,8 +95,7 @@ def check_extra_keys(conf, acceptable, ref):
         return
     for key in conf.keys():
         if key not in acceptable:
-            msg = 'Not allowed key "{}" in {} definition'
-            err('INVALID_OBJECT_DEFINITION', msg.format(key, ref))
+            err('INVALID_OBJECT_DEFINITION', f'Not allowed key "{key}" in {ref} definition')
 
 
 def get_config_files(path, bundle_hash):
@@ -104,15 +103,9 @@ def get_config_files(path, bundle_hash):
     conf_types = [
         ('config.yaml', 'yaml'),
         ('config.yml', 'yaml'),
-        ('config.toml', 'toml'),
-        ('config.json', 'json'),
     ]
     if not os.path.isdir(path):
-        return err(
-            'STACK_LOAD_ERROR',
-            'no directory: {}'.format(path),
-            status.HTTP_404_NOT_FOUND
-        )
+        return err('STACK_LOAD_ERROR', f'no directory: {path}', status.HTTP_404_NOT_FOUND)
     for root, _, files in os.walk(path):
         for conf_file, conf_type in conf_types:
             if conf_file in files:
@@ -121,32 +114,42 @@ def get_config_files(path, bundle_hash):
                 conf_list.append((path, root + '/' + conf_file, conf_type))
                 break
     if not conf_list:
-        msg = 'no config files in stack directory "{}"'
-        return err('STACK_LOAD_ERROR', msg.format(path))
+        return err('STACK_LOAD_ERROR', f'no config files in stack directory "{path}"')
     return conf_list
 
 
-def read_definition(conf_file, conf_type):
-    parsers = {
-        'toml': toml.load,
-        'yaml': yaml.safe_load,
-        'json': json.load
-    }
-    fn = parsers[conf_type]
-    if os.path.isfile(conf_file):
+def check_adcm_config(conf_file):
+    warnings.simplefilter('error', ruyaml.error.ReusedAnchorWarning)
+    schema_file = os.path.join(config.CODE_DIR, 'cm', 'adcm_schema.yaml')
+    with open(schema_file) as fd:
+        rules = ruyaml.round_trip_load(fd)
+    try:
         with open(conf_file) as fd:
-            try:
-                conf = fn(fd)
-            except (toml.TomlDecodeError, IndexError) as e:
-                err('STACK_LOAD_ERROR', 'TOML decode "{}" error: {}'.format(conf_file, e))
-            except yaml.parser.ParserError as e:
-                err('STACK_LOAD_ERROR', 'YAML decode "{}" error: {}'.format(conf_file, e))
-            except yaml.composer.ComposerError as e:
-                err('STACK_LOAD_ERROR', 'YAML decode "{}" error: {}'.format(conf_file, e))
-            except yaml.constructor.ConstructorError as e:
-                err('STACK_LOAD_ERROR', 'YAML decode "{}" error: {}'.format(conf_file, e))
-            except yaml.scanner.ScannerError as e:
-                err('STACK_LOAD_ERROR', 'YAML decode "{}" error: {}'.format(conf_file, e))
+            data = ruyaml.round_trip_load(fd, version="1.1")
+    except (ruyaml.parser.ParserError, ruyaml.scanner.ScannerError, NotImplementedError) as e:
+        err('STACK_LOAD_ERROR', f'YAML decode "{conf_file}" error: {e}')
+    except ruyaml.error.ReusedAnchorWarning as e:
+        err('STACK_LOAD_ERROR', f'YAML decode "{conf_file}" error: {e}')
+    except ruyaml.constructor.DuplicateKeyError as e:
+        msg = f'{e.context}\n{e.context_mark}\n{e.problem}\n{e.problem_mark}'
+        err('STACK_LOAD_ERROR', f'Duplicate Keys error: {msg}')
+    try:
+        cm.checker.check(data, rules)
+        return data
+    except cm.checker.FormatError as e:
+        args = ''
+        if e.errors:
+            for ee in e.errors:
+                if 'Input data for' in ee.message:
+                    continue
+                args += f'line {ee.line}: {ee}\n'
+        err('INVALID_OBJECT_DEFINITION', f'"{conf_file}" line {e.line} error: {e}', args)
+        return {}
+
+
+def read_definition(conf_file, conf_type):
+    if os.path.isfile(conf_file):
+        conf = check_adcm_config(conf_file)
         log.info('Read config file: "%s"', conf_file)
         return conf
     log.warning('Can not open config file: "%s"', conf_file)
@@ -157,9 +160,8 @@ def get_license_hash(proto, conf, bundle_hash):
     if 'license' not in conf:
         return None
     if not isinstance(conf['license'], str):
-        err('INVALID_OBJECT_DEFINITION', 'license should be a string ({})'.format(proto_ref(proto)))
-    msg = 'license file'
-    body = read_bundle_file(proto, conf['license'], bundle_hash, msg)
+        err('INVALID_OBJECT_DEFINITION', 'license should be a string ({proto_ref(proto)})')
+    body = read_bundle_file(proto, conf['license'], bundle_hash, 'license file')
     sha1 = hashlib.sha256()
     sha1.update(body.encode('utf-8'))
     return sha1.hexdigest()
@@ -260,8 +262,7 @@ def save_components(proto, conf, bundle_hash):
         log.warning('%s has unexpected "components" key', ref)
         return
     if not isinstance(conf['components'], dict):
-        msg = 'Components definition should be a map ({})'
-        err('INVALID_COMPONENT_DEFINITION', msg.format(ref))
+        err('INVALID_COMPONENT_DEFINITION', f'Components definition should be a map ({ref})')
     for comp_name in conf['components']:
         cc = conf['components'][comp_name]
         err_msg = 'Component name "{}" of {}'.format(comp_name, ref)
@@ -363,8 +364,7 @@ def save_upgrade(proto, conf):
     if not in_dict(conf, 'upgrade'):
         return
     if not isinstance(conf['upgrade'], list):
-        msg = 'Upgrade definition of {} should be an array'
-        err('INVALID_UPGRADE_DEFINITION', msg.format(ref))
+        err('INVALID_UPGRADE_DEFINITION', f'Upgrade definition of {ref} should be an array')
     for item in conf['upgrade']:
         allow = ('versions', 'from_edition', 'states', 'name', 'description')
         check_extra_keys(item, allow, 'upgrade of {}'.format(ref))
@@ -397,7 +397,7 @@ def save_export(proto, conf):
     elif isinstance(conf['export'], list):
         export = conf['export']
     else:
-        err('INVALID_OBJECT_DEFINITION', '{} export should be string or array type'.format(ref))
+        err('INVALID_OBJECT_DEFINITION', f'{ref} export should be string or array type')
 
     msg = '{} does not has "{}" config group'
     for key in export:
@@ -423,8 +423,7 @@ def check_default_import(proto, conf):
     if 'default' not in conf:
         return
     if not isinstance(conf['default'], list):
-        msg = 'Import deafult section should be an array ({})'
-        err('INVALID_OBJECT_DEFINITION', msg.format(ref))
+        err('INVALID_OBJECT_DEFINITION', f'Import deafult section should be an array ({ref})')
     groups = get_config_groups(proto)
     for key in conf['default']:
         if key not in groups:
@@ -468,7 +467,7 @@ def check_action_hc(proto, conf, name):
         if not isinstance(item, dict):
             msg = 'hc_acl entry of action "{}" in {} should be a map'
             err('INVALID_ACTION_DEFINITION', msg.format(name, ref))
-        check_extra_keys(item, allow, 'hc_acl of action "{}" in {}'.format(name, ref))
+        check_extra_keys(item, allow, f'hc_acl of action "{name}" in {ref}')
         if 'service' not in item:
             if proto.type == 'service':
                 item['service'] = proto.name
@@ -624,8 +623,8 @@ def check_action(proto, action, act_config):
         if (script_type, script_type) not in SCRIPT_TYPE:
             err('WRONG_ACTION_TYPE', '{} has unknown script_type "{}"'.format(ref, script_type))
     allow = (
-        'type', 'script', 'script_type', 'scripts', 'states', 'params', 'config',
-        'log_files', 'hc_acl', 'button', 'display_name', 'host_action'
+        'type', 'script', 'script_type', 'scripts', 'states', 'params', 'config', 'ui_options',
+        'log_files', 'hc_acl', 'button', 'display_name', 'allow_to_terminate', 'host_action'
     )
     check_extra_keys(act_config, allow, ref)
 
@@ -928,8 +927,7 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
                     sc.subname = subname
                     sc.save()
     else:
-        msg = 'Config definition of {} should be a map or an array'
-        err('INVALID_CONFIG_DEFINITION', msg.format(ref))
+        err('INVALID_CONFIG_DEFINITION', f'Config definition of {ref} should be a map or an array')
 
 
 def check_key(context, context_name, param, param_name, key, conf):
@@ -952,9 +950,8 @@ def validate_name(value, name):
         ' dots (.), dashes (-), and underscores (_) are allowed.'
     if p.fullmatch(value) is None:
         err("WRONG_NAME", msg1.format(name))
-    msg2 = "{} is too long. Max length is {}"
     if len(value) > MAX_NAME_LENGTH:
-        raise err("LONG_NAME", msg2.format(name, MAX_NAME_LENGTH))
+        raise err("LONG_NAME", f'{name} is too long. Max length is {MAX_NAME_LENGTH}')
     return value
 
 

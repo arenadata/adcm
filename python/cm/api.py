@@ -323,6 +323,7 @@ def add_components_to_service(cluster, service):
         obj_conf = init_object_config(spec, conf, attr)
         sc = ServiceComponent(cluster=cluster, service=service, prototype=comp, config=obj_conf)
         sc.save()
+        cm.issue.save_issue(sc)
 
 
 def add_user_role(user, role):
