@@ -237,9 +237,17 @@ def unlock_obj(obj, event):
 
 
 def lock_objects(obj, event):
-    if isinstance(obj, ClusterObject):
+    if isinstance(obj, ServiceComponent):
+        lock_obj(obj, event)
+        lock_obj(obj.service, event)
+        lock_obj(obj.cluster, event)
+        for host in Host.objects.filter(cluster=obj.cluster):
+            lock_obj(host, event)
+    elif isinstance(obj, ClusterObject):
         lock_obj(obj, event)
         lock_obj(obj.cluster, event)
+        for sc in ServiceComponent.objects.filter(service=obj):
+            lock_obj(sc, event)
         for host in Host.objects.filter(cluster=obj.cluster):
             lock_obj(host, event)
     elif isinstance(obj, Host):
@@ -248,6 +256,8 @@ def lock_objects(obj, event):
             lock_obj(obj.cluster, event)
             for service in ClusterObject.objects.filter(cluster=obj.cluster):
                 lock_obj(service, event)
+            for sc in ServiceComponent.objects.filter(cluster=obj.cluster):
+                lock_obj(sc, event)
     elif isinstance(obj, HostProvider):
         lock_obj(obj, event)
         for host in Host.objects.filter(provider=obj):
@@ -258,6 +268,8 @@ def lock_objects(obj, event):
         lock_obj(obj, event)
         for service in ClusterObject.objects.filter(cluster=obj):
             lock_obj(service, event)
+        for sc in ServiceComponent.objects.filter(cluster=obj):
+            lock_obj(sc, event)
         for host in Host.objects.filter(cluster=obj):
             lock_obj(host, event)
     else:
@@ -275,9 +287,17 @@ def unlock_deleted_objects(job, event):
 
 
 def unlock_objects(obj, event, job=None):
-    if isinstance(obj, ClusterObject):
+    if isinstance(obj, ServiceComponent):
+        unlock_obj(obj, event)
+        unlock_obj(obj.service, event)
+        unlock_obj(obj.cluster, event)
+        for host in Host.objects.filter(cluster=obj.cluster):
+            unlock_obj(host, event)
+    elif isinstance(obj, ClusterObject):
         unlock_obj(obj, event)
         unlock_obj(obj.cluster, event)
+        for sc in ServiceComponent.objects.filter(service=obj):
+            unlock_obj(sc, event)
         for host in Host.objects.filter(cluster=obj.cluster):
             unlock_obj(host, event)
     elif isinstance(obj, Host):
@@ -286,6 +306,8 @@ def unlock_objects(obj, event, job=None):
             unlock_obj(obj.cluster, event)
             for service in ClusterObject.objects.filter(cluster=obj.cluster):
                 unlock_obj(service, event)
+            for sc in ServiceComponent.objects.filter(cluster=obj.cluster):
+                unlock_obj(sc, event)
     elif isinstance(obj, HostProvider):
         unlock_obj(obj, event)
         for host in Host.objects.filter(provider=obj):
@@ -296,6 +318,8 @@ def unlock_objects(obj, event, job=None):
         unlock_obj(obj, event)
         for service in ClusterObject.objects.filter(cluster=obj):
             unlock_obj(service, event)
+        for sc in ServiceComponent.objects.filter(cluster=obj):
+            unlock_obj(sc, event)
         for host in Host.objects.filter(cluster=obj):
             unlock_obj(host, event)
     elif obj is None:
@@ -310,6 +334,8 @@ def unlock_all(event):
     for obj in HostProvider.objects.filter(state=config.Job.LOCKED):
         unlock_objects(obj, event)
     for obj in ClusterObject.objects.filter(state=config.Job.LOCKED):
+        unlock_objects(obj, event)
+    for obj in ServiceComponent.objects.filter(state=config.Job.LOCKED):
         unlock_objects(obj, event)
     for obj in Host.objects.filter(state=config.Job.LOCKED):
         unlock_objects(obj, event)
@@ -711,7 +737,9 @@ def get_task_obj(context, obj_id):
         except model.DoesNotExist:
             return None
 
-    if context == 'service':
+    if context == 'component':
+        obj = get_obj_safe(ServiceComponent, obj_id)
+    elif context == 'service':
         obj = get_obj_safe(ClusterObject, obj_id)
     elif context == 'host':
         obj = get_obj_safe(Host, obj_id)
