@@ -20,6 +20,7 @@ from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.utils import random_string
 from adcm_pytest_plugin.steps.asserts import assert_state
 
+
 @pytest.fixture()
 def prepared_cluster(sdk_client_fs: ADCMClient) -> Cluster:
     uploaded_bundle = sdk_client_fs.upload_from_fs(
