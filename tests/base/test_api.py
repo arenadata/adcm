@@ -170,28 +170,6 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         r1 = self.api_get('/schema/')
         self.assertEqual(r1.status_code, 200)
 
-    def test_config(self):
-        cluster = 'test_cluster'
-        r1 = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
-        self.assertEqual(r1.status_code, 200)
-        bundle_id, proto_id = self.get_cluster_proto_id()
-
-        r1 = self.api_post('/cluster/', {'name': cluster, 'prototype_id': proto_id})
-        self.assertEqual(r1.status_code, 201)
-        cluster_id = r1.json()['id']
-
-        r1 = self.api_post('/cluster/' + str(cluster_id) + '/config/history', {
-            'config': 'not-a-valid-json'
-        })
-        self.assertEqual(r1.status_code, 400)
-        self.assertEqual(r1.json()['desc'], "config should not be just one string")
-
-        r1 = self.api_post('/cluster/' + str(cluster_id) + '/config/history', {
-            'config': 42
-        })
-        self.assertEqual(r1.status_code, 400)
-        self.assertEqual(r1.json()['desc'], "should not be just one int or float")
-
     def test_cluster(self):  # pylint: disable=too-many-statements
         cluster = 'test_cluster'
         r1 = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
@@ -300,7 +278,7 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         r1 = self.api_delete('/stack/bundle/' + str(bundle_id) + '/')
         self.assertEqual(r1.status_code, 204)
 
-    def test_host(self):
+    def test_host(self):  # pylint: disable=too-many-statements
         host = 'test.server.net'
 
         r1 = self.api_post('/stack/load/', {'bundle_file': self.ssh_bundle})
@@ -695,7 +673,7 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         r1 = self.api_delete('/stack/bundle/' + str(adh_bundle_id) + '/')
         r1 = self.api_delete('/stack/bundle/' + str(ssh_bundle_id) + '/')
 
-    def test_config(self):
+    def test_config(self):  # pylint: disable=too-many-statements
         r1 = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
         self.assertEqual(r1.status_code, 200)
         adh_bundle_id, proto_id = self.get_cluster_proto_id()
@@ -730,6 +708,11 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         r1 = self.api_post(zurl + 'config/history/', {'config': 'qwe'})
         self.assertEqual(r1.status_code, 400)
         self.assertEqual(r1.json()['code'], 'JSON_ERROR')
+        self.assertEqual(r1.json()['desc'], "config should not be just one string")
+
+        r1 = self.api_post(zurl + 'config/history/', {'config': 42})
+        self.assertEqual(r1.status_code, 400)
+        self.assertEqual(r1.json()['desc'], "config should not be just one int or float")
 
         c1['zoo.cfg']['autopurge.purgeInterval'] = 42
         c1['zoo.cfg']['port'] = 80
