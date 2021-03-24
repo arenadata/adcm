@@ -170,6 +170,28 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         r1 = self.api_get('/schema/')
         self.assertEqual(r1.status_code, 200)
 
+    def test_config(self):
+        cluster = 'test_cluster'
+        r1 = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
+        self.assertEqual(r1.status_code, 200)
+        bundle_id, proto_id = self.get_cluster_proto_id()
+
+        r1 = self.api_post('/cluster/', {'name': cluster, 'prototype_id': proto_id})
+        self.assertEqual(r1.status_code, 201)
+        cluster_id = r1.json()['id']
+
+        r1 = self.api_post('/cluster/' + str(cluster_id) + '/config/history', {
+            'config': 'not-a-valid-json'
+        })
+        self.assertEqual(r1.status_code, 400)
+        self.assertEqual(r1.json()['desc'], "config should not be just one string")
+
+        r1 = self.api_post('/cluster/' + str(cluster_id) + '/config/history', {
+            'config': 42
+        })
+        self.assertEqual(r1.status_code, 400)
+        self.assertEqual(r1.json()['desc'], "should not be just one int or float")
+
     def test_cluster(self):  # pylint: disable=too-many-statements
         cluster = 'test_cluster'
         r1 = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
