@@ -24,13 +24,12 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
 
-from tests.library import steps
 from tests.ui_tests.app.pages import Ui, ClustersList
 
 
 class ADCMTest:
 
-    __slots__ = ('opts', 'capabilities', 'driver', 'ui', 'adcm', '_client', 'selenoid')
+    __slots__ = ('opts', 'capabilities', 'driver', 'ui', 'adcm', 'selenoid')
 
     def __init__(self, browser='Chrome'):
         self.opts = FirefoxOptions() if browser == 'Firefox' else ChromeOptions()
@@ -51,7 +50,6 @@ class ADCMTest:
         self.driver = None
         self.ui = None
         self.adcm = None
-        self._client = None
 
     def create_driver(self):
         if self.selenoid['host']:
@@ -72,21 +70,10 @@ class ADCMTest:
     @allure.step('Attache ADCM')
     def attache_adcm(self, adcm: ADCM):
         self.adcm = adcm
-        self._client = adcm.api.objects
 
     @allure.step('Get Clusters List')
     def clusters_page(self):
         return ClustersList(self)
-
-    def create_cluster(self):
-        return steps.create_cluster(self._client)['name']
-
-    def create_host(self, fqdn):
-        steps.create_host_w_default_provider(self._client, fqdn)
-        return fqdn
-
-    def create_provider(self):
-        return steps.create_hostprovider(self._client)['name']
 
     def wait_for(self, condition: EC, locator: tuple, timer=5):
         def get_element(el):
