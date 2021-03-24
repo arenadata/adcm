@@ -24,7 +24,7 @@ pytestmark = pytest.mark.skip(reason="ADCM-961 That test group should be moved t
 def schema():
     filename = get_data_dir(__file__) + "/schema.yaml"
     with open(filename, 'r') as f:
-        return yaml.load(f)
+        return yaml.safe_load(f)
 
 
 def test_bundle_upload(sdk_client_fs: ADCMClient):
