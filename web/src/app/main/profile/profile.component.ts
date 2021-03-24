@@ -12,10 +12,11 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { getProfileSelector, ProfileService, ProfileState } from '@app/core/store';
-import { BaseDirective } from '@app/shared';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
+
+import { getProfileSelector, ProfileService, ProfileState } from '@app/core/store';
+import { BaseDirective } from '@app/shared/directives';
 
 @Component({
   selector: 'app-profile',

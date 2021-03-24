@@ -13,7 +13,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { ApiService } from '@app/core/api';
 import { Cluster } from '@app/core/types';
-import { MaterialModule } from '@app/shared';
+import { MaterialModule } from '@app/shared/material.module';
 import { StuffModule } from '@app/shared/stuff.module';
 
 import { IDetails, NavigationService } from '../navigation.service';

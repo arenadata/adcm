@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { StatusColumnComponent } from './status-column.component';
+import { MatIconModule } from '@angular/material/icon';
 
 describe('StatusColumnComponent', () => {
   let component: StatusColumnComponent<any>;
@@ -8,7 +9,12 @@ describe('StatusColumnComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ StatusColumnComponent ]
+      declarations: [
+        StatusColumnComponent,
+      ],
+      imports: [
+        MatIconModule,
+      ]
     })
     .compileComponents();
   });

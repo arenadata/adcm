@@ -5,7 +5,7 @@ import { StateColumnComponent } from '@app/components/columns/state-column/state
 import { StatusColumnComponent, StatusData } from '@app/components/columns/status-column/status-column.component';
 import { ActionsColumnComponent } from '@app/components/columns/actions-column/actions-column.component';
 import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
-import { UpgradeComponent } from '@app/shared';
+import { UpgradeComponent } from '@app/shared/components';
 import { ActionsButtonComponent } from '@app/components/actions-button/actions-button.component';
 import { IssueType } from '@app/models/issue';
 

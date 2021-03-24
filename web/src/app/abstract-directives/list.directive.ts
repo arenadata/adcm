@@ -12,7 +12,7 @@ import { EmmitRow, TypeName } from '@app/core/types';
 import { BaseListDirective } from '@app/shared/components/list/base-list.directive';
 import { SocketState } from '@app/core/store';
 import { ListService } from '@app/shared/components/list/list.service';
-import { DialogComponent } from '@app/shared';
+import { DialogComponent } from '@app/shared/components';
 import { StatusData } from '@app/components/columns/status-column/status-column.component';
 import { ICluster } from '@app/models/cluster';
 import { ApiService } from '@app/core/api';
@@ -84,7 +84,7 @@ export abstract class ListDirective extends BaseDirective implements OnInit, OnD
   }
 
   ngOnInit() {
-    this.baseListDirective = new BaseListDirective(this, this.service, this.store, this.api);
+    this.baseListDirective = new BaseListDirective(this, this.service, this.store);
     this.baseListDirective.typeName = this.type;
     this.baseListDirective.init();
   }

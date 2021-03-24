@@ -12,16 +12,15 @@
 import { Injectable } from '@angular/core';
 import { ParamMap } from '@angular/router';
 import { ApiService } from '@app/core/api';
-import { Bundle, Cluster, Entities, Host, IAction, IImport, Job, LogFile, Provider, Service, TypeName } from '@app/core/types';
-import { environment } from '@env/environment';
 import { BehaviorSubject, EMPTY, forkJoin, Observable, of } from 'rxjs';
 import { filter, map, switchMap, tap } from 'rxjs/operators';
-import { ServiceComponentService } from '@app/services/service-component.service';
-import { AdcmEntity, AdcmTypedEntity } from '@app/models/entity';
 import { Store } from '@ngrx/store';
-import { setPathOfRoute } from '@app/store/navigation/navigation.store';
 
-export const EntitiNames: TypeName[] = ['servicecomponent', 'host', 'service', 'cluster', 'provider', 'job', 'task', 'bundle'];
+import { Bundle, Cluster, Entities, Host, IAction, IImport, Job, LogFile, Provider, Service } from '@app/core/types';
+import { environment } from '@env/environment';
+import { ServiceComponentService } from '@app/services/service-component.service';
+import { setPathOfRoute } from '@app/store/navigation/navigation.store';
+import { EntityNames } from '@app/models/entity-names';
 
 export interface WorkerInstance {
   current: Entities;
@@ -95,32 +94,10 @@ export class ClusterService {
     return this.api.get<Bundle>(`${environment.apiRoot}stack/bundle/${id}/`);
   }
 
-  entityGetter(currentParam: TypeName, params: ParamMap): Observable<AdcmTypedEntity> {
-    const entityToTypedEntity = (getter: Observable<AdcmEntity>, typeName: TypeName) => getter.pipe(
-      map(entity => ({
-        ...entity,
-        typeName,
-      } as AdcmTypedEntity))
-    );
-    if (EntitiNames.includes(currentParam)) {
-      if (currentParam === 'servicecomponent') {
-        return entityToTypedEntity(
-          this.serviceComponentService.get(+params.get(currentParam)),
-          currentParam,
-        );
-      } else {
-        return entityToTypedEntity(
-          this.api.getOne<any>(currentParam, +params.get(currentParam)),
-          currentParam,
-        );
-      }
-    }
-  }
-
   getContext(param: ParamMap): Observable<WorkerInstance> {
     this.store.dispatch(setPathOfRoute({ params: param }));
 
-    const typeName = EntitiNames.find((a) => param.keys.some((b) => a === b));
+    const typeName = EntityNames.find((a) => param.keys.some((b) => a === b));
     const id = +param.get(typeName);
     const cluster$ = param.has('cluster') ? this.api.getOne<Cluster>('cluster', +param.get('cluster')) : of(null);
 

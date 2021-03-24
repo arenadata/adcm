@@ -13,7 +13,10 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-import { SharedModule, DetailComponent, MainInfoComponent, ConfigComponent, StatusComponent, ImportComponent } from '@app/shared';
+import { DetailComponent } from '@app/shared/details/detail.component';
+import { ConfigComponent } from '@app/shared/configuration/main/main.component';
+import { MainInfoComponent, StatusComponent, ImportComponent } from '@app/shared/components';
+import { SharedModule } from '@app/shared/shared.module';
 
 import { ClusterListComponent } from './cluster.component';
 import { HcmapComponent } from '@app/components/cluster/hcmap/hcmap.component';
