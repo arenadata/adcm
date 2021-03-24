@@ -255,7 +255,7 @@ def test_action_fail(sdk_client_fs: ADCMClient):
         cluster = bundle.cluster_create(name="sample cluster")
     with allure.step('Check action fail'):
         with pytest.raises(TaskFailed):
-            cluster.action_run(name="fail").try_wait()
+            cluster.action(name="fail").run().try_wait()
 
 
 def test_cluster_upgrade(sdk_client_fs: ADCMClient):

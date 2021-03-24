@@ -60,7 +60,7 @@ def assert_config_value_error(entity, sent_data):
 
 def assert_action_has_issues(entity):
     with pytest.raises(ActionHasIssues):
-        entity.action_run(name='job').wait()
+        entity.action(name='job').run().wait()
 
 
 def assert_list_type(*args):
@@ -82,11 +82,11 @@ def assert_list_type(*args):
             if sent_value_type == 'null_value' and not is_default:
                 assert_action_has_issues(entity)
             else:
-                action_status = entity.action_run(name='job').wait()
+                action_status = entity.action(name='job').run().wait()
                 assert action_status == 'success'
     else:
         assert entity.config_set(sent_data) == sent_data
-        action_status = entity.action_run(name='job').wait()
+        action_status = entity.action(name='job').run().wait()
         assert action_status == 'success'
 
 
@@ -108,11 +108,11 @@ def assert_map_type(*args):
             if sent_value_type == 'null_value' and not is_default:
                 assert_action_has_issues(entity)
             else:
-                action_status = entity.action_run(name='job').wait()
+                action_status = entity.action(name='job').run().wait()
                 assert action_status == 'success'
     else:
         assert entity.config_set(sent_data) == sent_data
-        action_status = entity.action_run(name='job').wait()
+        action_status = entity.action(name='job').run().wait()
         assert action_status == 'success'
 
 
@@ -130,7 +130,7 @@ def assert_string_type(*args):
             else:
                 assert entity.config_set(sent_data) == sent_data
 
-            action_status = entity.action_run(name='job').wait()
+            action_status = entity.action(name='job').run().wait()
             assert action_status == 'success'
         else:
             if sent_value_type in ['empty_value', 'null_value']:
@@ -144,12 +144,12 @@ def assert_string_type(*args):
                 if sent_value_type in ['empty_value', 'null_value']:
                     assert_action_has_issues(entity)
                 else:
-                    action_status = entity.action_run(name='job').wait()
+                    action_status = entity.action(name='job').run().wait()
                     assert action_status == 'success'
     else:
         assert entity.config_set(sent_data) == sent_data
 
-        action_status = entity.action_run(name='job').wait()
+        action_status = entity.action(name='job').run().wait()
         assert action_status == 'success'
 
 
@@ -168,7 +168,7 @@ def assert_password_type(*args):
                 assert entity.config_set(
                     sent_data)['password'].startswith('$ANSIBLE_VAULT;1.1;AES256')
 
-            action_status = entity.action_run(name='job').wait()
+            action_status = entity.action(name='job').run().wait()
             assert action_status == 'success'
         else:
             if sent_value_type in ['empty_value', 'null_value']:
@@ -183,7 +183,7 @@ def assert_password_type(*args):
                 if sent_value_type in ['empty_value', 'null_value']:
                     assert_action_has_issues(entity)
                 else:
-                    action_status = entity.action_run(name='job').wait()
+                    action_status = entity.action(name='job').run().wait()
                     assert action_status == 'success'
     else:
         if sent_value_type == 'correct_value':
@@ -191,7 +191,7 @@ def assert_password_type(*args):
         else:
             assert entity.config_set(sent_data) == sent_data
 
-        action_status = entity.action_run(name='job').wait()
+        action_status = entity.action(name='job').run().wait()
         assert action_status == 'success'
 
 
@@ -209,7 +209,7 @@ def assert_text_type(*args):
             else:
                 assert entity.config_set(sent_data) == sent_data
 
-            action_status = entity.action_run(name='job').wait()
+            action_status = entity.action(name='job').run().wait()
             assert action_status == 'success'
         else:
             if sent_value_type in ['empty_value', 'null_value']:
@@ -223,12 +223,12 @@ def assert_text_type(*args):
                 if sent_value_type in ['empty_value', 'null_value']:
                     assert_action_has_issues(entity)
                 else:
-                    action_status = entity.action_run(name='job').wait()
+                    action_status = entity.action(name='job').run().wait()
                     assert action_status == 'success'
     else:
         assert entity.config_set(sent_data) == sent_data
 
-        action_status = entity.action_run(name='job').wait()
+        action_status = entity.action(name='job').run().wait()
         assert action_status == 'success'
 
 
@@ -247,7 +247,7 @@ def assert_file_type(*args):
         assert entity.config_set(sent_data) == sent_data
 
     if is_default:
-        action_status = entity.action_run(name='job').wait()
+        action_status = entity.action(name='job').run().wait()
         assert action_status == 'success'
     else:
         if is_required and isinstance(entity, Cluster):
@@ -256,7 +256,7 @@ def assert_file_type(*args):
             if is_required and sent_value_type in ['empty_value', 'null_value']:
                 assert_action_has_issues(entity)
             else:
-                action_status = entity.action_run(name='job').wait()
+                action_status = entity.action(name='job').run().wait()
                 assert action_status == 'success'
 
 
@@ -271,7 +271,7 @@ def assert_structure_type(*args):
         if is_required:
             if is_default:
                 assert_config_value_error(entity, sent_data)
-                action_status = entity.action_run(name='job').wait()
+                action_status = entity.action(name='job').run().wait()
                 assert action_status == 'success'
             else:
                 assert_config_value_error(entity, sent_data)
@@ -282,7 +282,7 @@ def assert_structure_type(*args):
         assert_action_has_issues(entity)
     else:
         assert entity.config_set(sent_data) == sent_data
-        action_status = entity.action_run(name='job').wait()
+        action_status = entity.action(name='job').run().wait()
         assert action_status == 'success'
 
 
@@ -304,7 +304,7 @@ def assert_boolean_type(*args):
         if sent_value_type == 'null_value':
             assert_action_has_issues(entity)
     else:
-        action_status = entity.action_run(name='job').wait()
+        action_status = entity.action(name='job').run().wait()
         assert action_status == 'success'
 
 
@@ -326,7 +326,7 @@ def assert_integer_type(*args):
         if sent_value_type == 'null_value':
             assert_action_has_issues(entity)
     else:
-        action_status = entity.action_run(name='job').wait()
+        action_status = entity.action(name='job').run().wait()
         assert action_status == 'success'
 
 
@@ -348,7 +348,7 @@ def assert_float_type(*args):
         if sent_value_type == 'null_value':
             assert_action_has_issues(entity)
     else:
-        action_status = entity.action_run(name='job').wait()
+        action_status = entity.action(name='job').run().wait()
         assert action_status == 'success'
 
 
@@ -370,7 +370,7 @@ def assert_option_type(*args):
         if sent_value_type == 'null_value':
             assert_action_has_issues(entity)
     else:
-        action_status = entity.action_run(name='job').wait()
+        action_status = entity.action(name='job').run().wait()
         assert action_status == 'success'
 
 

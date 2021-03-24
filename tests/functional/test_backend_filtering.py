@@ -454,23 +454,31 @@ def host_with_actions(provider_with_actions: Provider):
 
 
 @pytest.fixture()
-def hosts_with_actions(provider_with_actions: Provider):
-    hosts = []
-    for _ in range(10):
-        hosts.append(provider_with_actions.host_create(fqdn='host.with.actions'))
+def host_ok_action(host_with_actions: Host):
+    return host_with_actions.action(name="ok42")
+
+
+@pytest.fixture()
+def hosts_with_actions(host_with_actions: Host, provider_with_actions: Provider):
+    hosts = [host_with_actions]
+    for i in range(9):
+        hosts.append(provider_with_actions.host_create(fqdn=f'host.with.actions.{i}'))
     return hosts
 
 
 @pytest.fixture()
-def hosts_with_jobs(hosts_with_actions: List):
+def hosts_with_jobs(hosts_with_actions: List, host_ok_action: Action):
+    """
+    Run multiple actions on hosts. Return first host.
+    """
     for _ in range(6):
         actions = []
         for host in hosts_with_actions:
             actions.append(host.action(name="fail50").run())
         for action in actions:
             action.wait()
-    hosts_with_actions[0].action(name="ok42").run().try_wait()
-    return hosts_with_actions
+    host_ok_action.run().try_wait()
+    return hosts_with_actions[0]
 
 
 @pytest.fixture()

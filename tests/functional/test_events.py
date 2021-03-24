@@ -113,7 +113,7 @@ def service(sdk_client_fs, name='zookeeper'):
 
 
 def cluster_action_run(sdk_client_fs, name):
-    return cluster(sdk_client_fs).action_run(name=name)
+    return cluster(sdk_client_fs).action(name=name).run()
 
 
 def expected_success_task(obj, job):
@@ -187,7 +187,7 @@ def test_event_when_add_service(sdk_client_fs, ws):
 @pytest.mark.parametrize(('case', 'action_name', 'expected'), cluster_actions)
 def test_events_when_cluster_action_(case, action_name, expected, ws, cluster_with_svc_and_host):
     cluster, _, _ = cluster_with_svc_and_host
-    job = cluster.action_run(name=action_name)
+    job = cluster.action(name=action_name).run()
     with allure.step('Check job'):
         assert_events(
             ws,
@@ -198,7 +198,7 @@ def test_events_when_cluster_action_(case, action_name, expected, ws, cluster_wi
 @pytest.mark.parametrize(('case', 'action_name', 'expected'), svc_actions)
 def test_events_when_service_(case, action_name, expected, ws, cluster_with_svc_and_host):
     _, zookeeper, _ = cluster_with_svc_and_host
-    job = zookeeper.action_run(name=action_name)
+    job = zookeeper.action(name=action_name).run()
     with allure.step('Check job'):
         assert_events(
             ws,
