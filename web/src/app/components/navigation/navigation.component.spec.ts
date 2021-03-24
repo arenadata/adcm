@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatListModule } from '@angular/material/list';
+import { MatIconModule } from '@angular/material/icon';
 
 import { NavigationComponent } from './navigation.component';
 import { NavItemPipe } from '@app/pipes/nav-item.pipe';
@@ -12,7 +14,11 @@ describe('NavigationComponent', () => {
       declarations: [
         NavigationComponent,
         NavItemPipe,
-      ]
+      ],
+      imports: [
+        MatListModule,
+        MatIconModule,
+      ],
     })
     .compileComponents();
   });
