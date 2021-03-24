@@ -5,11 +5,15 @@ import {
   ComponentRef,
   Input,
   ComponentFactory,
-  ComponentFactoryResolver, AfterViewInit, Type, HostListener,
+  ComponentFactoryResolver,
+  AfterViewInit,
+  Type,
+  HostListener,
 } from '@angular/core';
+import { EventHelper } from '@adwp-ui/widgets';
+
 import { PopoverContentDirective } from '@app/abstract-directives/popover-content.directive';
 import { PopoverInput } from '@app/directives/popover.directive';
-import { EventHelper } from '@adwp-ui/widgets';
 
 @Component({
   selector: 'app-popover',
