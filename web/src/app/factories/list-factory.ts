@@ -6,6 +6,8 @@ import { StatusColumnComponent, StatusData } from '@app/components/columns/statu
 import { ActionsColumnComponent } from '@app/components/columns/actions-column/actions-column.component';
 import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
 import { UpgradeComponent } from '@app/shared';
+import { ActionsButtonComponent } from '@app/components/actions-button/actions-button.component';
+import { IssueType } from '@app/models/issue';
 
 export class ListFactory {
 
@@ -68,6 +70,19 @@ export class ListFactory {
       className: 'list-control',
       headerClassName: 'list-control',
       component: ActionsColumnComponent,
+    };
+  }
+
+  static actionsButton<T>(type: IssueType): IComponentColumn<T> {
+    return {
+      label: 'Actions',
+      type: 'component',
+      className: 'list-control',
+      headerClassName: 'list-control',
+      component: ActionsButtonComponent,
+      instanceTaken: (componentRef: ComponentRef<ActionsButtonComponent<T>>) => {
+        componentRef.instance.issueType = type;
+      }
     };
   }
 

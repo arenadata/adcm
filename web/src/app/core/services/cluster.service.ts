@@ -104,10 +104,8 @@ export class ClusterService {
     );
     if (EntitiNames.includes(currentParam)) {
       if (currentParam === 'servicecomponent') {
-        const clusterId = +params.get('cluster');
-        const serviceId = +params.get('service');
         return entityToTypedEntity(
-          this.serviceComponentService.get(clusterId, serviceId, +params.get(currentParam)),
+          this.serviceComponentService.get(+params.get(currentParam)),
           currentParam,
         );
       } else {
@@ -131,9 +129,7 @@ export class ClusterService {
         tap((cluster) => (this.Cluster = cluster)),
         switchMap((cluster) => {
           if (cluster && typeName === 'servicecomponent') {
-            const clusterId = +param.get('cluster');
-            const serviceId = +param.get('service');
-            return this.serviceComponentService.get(clusterId, serviceId, id);
+            return this.serviceComponentService.get(id);
           } else if (cluster && typeName !== 'cluster') {
             return this.api.get<Entities>(`${cluster[typeName]}${id}/`);
           } else {

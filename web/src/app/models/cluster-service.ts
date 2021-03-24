@@ -1,8 +1,7 @@
 import { IComponent } from './component';
-import { AdcmEntity } from './entity';
-import { IIssues } from './issue';
+import { IssueEntity } from './issue';
 
-export interface IClusterService extends AdcmEntity {
+export interface IClusterService extends IssueEntity {
   action: string;
   actions: any[];
   bind: string;
@@ -13,7 +12,6 @@ export interface IClusterService extends AdcmEntity {
   config: string;
   description: string;
   imports: string;
-  issue: IIssues;
   monitoring: string;
   prototype: string;
   prototype_id: number;
