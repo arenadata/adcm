@@ -56,11 +56,6 @@ def provider(provider_bundle: Bundle) -> Provider:
     return provider_bundle.provider_create(name=utils.random_string())
 
 
-def _set_config(obj: BaseAPIObject, data: Any):
-    """Workaround to set config directly"""
-    return obj._subcall("config", "history", "create", config=data)
-
-
 def _get_prev_config(obj: BaseAPIObject, full=False):
     """Copy of config() method"""
     history_entry = obj._subcall("config", "previous", "list")
@@ -89,16 +84,6 @@ class TestClusterServiceConfig:
             assert cluster_svc.config() == cfg_json
 
     INVALID_SERVICE_CONFIGS = [
-        pytest.param(
-            utils.random_string(),
-            (err.JSON_ERROR, "config should not be just one string"),
-            id="non_json_string",
-        ),
-        pytest.param(
-            42,
-            (err.JSON_ERROR, "should not be just one int or float"),
-            id="plain_int",
-        ),
         pytest.param(
             {
                 "ssh-key": "TItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAA",
@@ -295,7 +280,7 @@ class TestClusterServiceConfig:
                 json.dumps(service_config), "config.json", allure.attachment_type.JSON
             )
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-                _set_config(cluster_svc, service_config)
+                cluster_svc.config_set(service_config)
         with allure.step("Check error"):
             adcm_error.equal(e, expected_msg)
 
@@ -397,16 +382,6 @@ class TestClusterConfig:
 
     INVALID_CLUSTER_CONFIGS = [
         pytest.param(
-            utils.random_string(),
-            (err.JSON_ERROR, "config should not be just one string"),
-            id="non_json",
-        ),
-        pytest.param(
-            42,
-            (err.JSON_ERROR, "config should not be just one int or float"),
-            id="plain_int",
-        ),
-        pytest.param(
             {"str-key": "value"},
             (err.CONFIG_KEY_ERROR, "There is no required key"),
             id="without_required_key",
@@ -443,7 +418,7 @@ class TestClusterConfig:
                 json.dumps(cluster_config), "config.json", allure.attachment_type.JSON
             )
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-                _set_config(cluster, cluster_config)
+                cluster.config_set(cluster_config)
         with allure.step("Check error"):
             adcm_error.equal(e, expected_msg)
 
