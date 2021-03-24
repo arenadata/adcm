@@ -13,6 +13,7 @@
 
 import os
 import json
+import string
 import time
 import unittest
 import requests
@@ -277,7 +278,7 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         r1 = self.api_delete('/stack/bundle/' + str(bundle_id) + '/')
         self.assertEqual(r1.status_code, 204)
 
-    def test_host(self):
+    def test_host(self):  # pylint: disable=too-many-statements
         host = 'test.server.net'
 
         r1 = self.api_post('/stack/load/', {'bundle_file': self.ssh_bundle})
@@ -297,8 +298,38 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         self.assertEqual(r1.status_code, 201)
         provider_id = r1.json()['id']
 
+        r1 = self.api_post('/host/', {'fqdn': host, 'prototype_id': 42, 'provider_id': provider_id})
+        self.assertEqual(r1.status_code, 404)
+        self.assertEqual(r1.json()['code'], 'PROTOTYPE_NOT_FOUND')
+
+        r1 = self.api_post('/host/', {'fqdn': host, 'provider_id': provider_id})
+        self.assertEqual(r1.status_code, 400)
+        self.assertEqual(r1.json()['prototype_id'], ['This field is required.'])
+
+        r1 = self.api_post('/host/', {'fqdn': host, 'prototype_id': host_proto})
+        self.assertEqual(r1.status_code, 400)
+        self.assertEqual(r1.json()['provider_id'], ['This field is required.'])
+
         r1 = self.api_post('/host/', {
-            'fqdn': host, 'prototype_id': host_proto, 'provider_id': provider_id
+            'fqdn': 'x' + 'deadbeef' * 32,  # 257 chars
+            'prototype_id': host_proto,
+            'provider_id': provider_id
+        })
+        self.assertEqual(r1.status_code, 400)
+        self.assertEqual(r1.json()['desc'], 'Host name is too long. Max length is 256')
+
+        r1 = self.api_post('/host/', {
+            'fqdn': 'x' + string.punctuation,
+            'prototype_id': host_proto,
+            'provider_id': provider_id
+        })
+        self.assertEqual(r1.status_code, 400)
+        self.assertEqual(r1.json()['code'], 'WRONG_NAME')
+
+        r1 = self.api_post('/host/', {
+            'fqdn': host,
+            'prototype_id': host_proto,
+            'provider_id': provider_id
         })
         self.assertEqual(r1.status_code, 201)
         host_id = r1.json()['id']
@@ -319,6 +350,15 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
 
         r1 = self.api_delete('/host/' + str(host_id) + '/')
         self.assertEqual(r1.status_code, 204)
+
+        r1 = self.api_get('/host/' + str(host_id) + '/')
+        self.assertEqual(r1.status_code, 404)
+        self.assertEqual(r1.json()['code'], 'HOST_NOT_FOUND')
+
+        r1 = self.api_delete('/host/' + str(host_id) + '/')
+        self.assertEqual(r1.status_code, 404)
+        self.assertEqual(r1.json()['code'], 'HOST_NOT_FOUND')
+
         r1 = self.api_delete('/stack/bundle/' + str(ssh_bundle_id) + '/')
         self.assertEqual(r1.status_code, 204)
 
