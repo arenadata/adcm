@@ -13,7 +13,10 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { AuthGuard } from '@app/core';
-import { ConfigComponent, DetailComponent, MainInfoComponent, SharedModule, StatusComponent } from '@app/shared';
+import { DetailComponent } from '@app/shared/details/detail.component';
+import { ConfigComponent } from '@app/shared/configuration/main/main.component';
+import { MainInfoComponent, StatusComponent } from '@app/shared/components';
+import { SharedModule } from '@app/shared/shared.module';
 
 import { ListEntryComponent } from './list.component';
 import { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';

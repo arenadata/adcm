@@ -10,9 +10,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, DoCheck, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
-import { JobStatus } from '@app/core/types/task-job';
-import { BaseDirective } from '@app/shared';
 import { interval, Subscription } from 'rxjs';
+
+import { JobStatus } from '@app/core/types/task-job';
+import { BaseDirective } from '@app/shared/directives';
 
 @Component({
   selector: 'app-log-text',

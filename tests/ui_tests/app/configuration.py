@@ -1,19 +1,13 @@
 import json
 
 import allure
-from retrying import retry
-from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException, \
+from selenium.common.exceptions import NoSuchElementException, \
     TimeoutException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.remote.webelement import WebElement
 
 from tests.ui_tests.app.locators import Common, ConfigurationLocators
 from tests.ui_tests.app.pages import BasePage
-
-
-def retry_on_exception(exc):
-    return any((isinstance(exc, StaleElementReferenceException),
-                isinstance(exc, NoSuchElementException)))
 
 
 # pylint: disable=R0904
@@ -169,7 +163,6 @@ class Configuration(BasePage):
     def get_field_groups(self):
         return self.driver.find_elements(*ConfigurationLocators.field_group)
 
-    @retry(retry_on_exception=retry_on_exception, stop_max_delay=10 * 1000)
     @allure.step('Get save button status')
     def save_button_status(self):
         self._wait_element(ConfigurationLocators.config_save_button)

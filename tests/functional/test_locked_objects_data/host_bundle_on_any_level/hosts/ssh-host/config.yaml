@@ -33,6 +33,15 @@
                 on_success: created
                 on_fail: failed
                 available: any
+        action-locker-fast:
+            type: job
+            log_files: [ remote ]
+            script: hosts/ssh-host/ansible/locker-fast.yaml
+            script_type: ansible
+            states:
+                on_success: created
+                on_fail: failed
+                available: any
     config:
         ansible_user:
             default: root

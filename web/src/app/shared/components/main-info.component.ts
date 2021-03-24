@@ -11,7 +11,8 @@
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { ClusterService } from '@app/core';
+
+import { ClusterService } from '@app/core/services/cluster.service';
 
 @Component({
   selector: 'app-main-info',

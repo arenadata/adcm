@@ -12,7 +12,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
-import { ClusterService } from '@app/core';
+import { ClusterService } from '@app/core/services/cluster.service';
 import { ApiService } from '@app/core/api';
 import { EventMessage, getMessage, SocketState } from '@app/core/store';
 import { Job, LogFile } from '@app/core/types';

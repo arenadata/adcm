@@ -11,12 +11,12 @@
 // limitations under the License.
 import { animate, state, style, transition, trigger } from '@angular/animations';
 import { Injectable } from '@angular/core';
-import { ApiService } from '@app/core/api';
-import { ClusterService } from '@app/core/services';
-import { getRandomColor, isObject } from '@app/core/types';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
+import { ApiService } from '@app/core/api';
+import { ClusterService } from '@app/core/services/cluster.service';
+import { getRandomColor, isObject } from '@app/core/types';
 import { FieldService, IOutput, TFormOptions } from '../field.service';
 import { CompareConfig, IConfig, IFieldOptions, IFieldStack } from '../types';
 

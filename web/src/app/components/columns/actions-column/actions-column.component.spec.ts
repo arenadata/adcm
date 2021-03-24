@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatIconModule } from '@angular/material/icon';
 
 import { ActionsColumnComponent } from './actions-column.component';
 
@@ -8,7 +9,12 @@ describe('ActionsColumnComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ ActionsColumnComponent ]
+      declarations: [
+        ActionsColumnComponent,
+      ],
+      imports: [
+        MatIconModule,
+      ]
     })
     .compileComponents();
   });
