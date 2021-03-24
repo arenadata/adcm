@@ -40,8 +40,6 @@
   name: host sample
   version: 1.0
 
-  config:
-
   actions:
     install:
       type: job

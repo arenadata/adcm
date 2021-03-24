@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=W0621
+import tarfile
 from typing import Optional
 
 import allure
@@ -188,3 +189,19 @@ def login_to_adcm(app_fs, adcm_credentials):
     app_fs.driver.get(app_fs.adcm.url)
     login = LoginPage(app_fs.driver)
     login.login(**adcm_credentials)
+
+
+def _pack_bundle(stack_dir, archive_dir):
+    archive_name = os.path.join(archive_dir, os.path.basename(stack_dir) + ".tar")
+    with tarfile.open(archive_name, "w") as tar:
+        for sub in os.listdir(stack_dir):
+            tar.add(os.path.join(stack_dir, sub), arcname=sub)
+    return archive_name
+
+
+@pytest.fixture()
+def bundle_archive(request, tmp_path):
+    """
+    Prepare tar file from dir without using bundle packer
+    """
+    return _pack_bundle(request.param, tmp_path)

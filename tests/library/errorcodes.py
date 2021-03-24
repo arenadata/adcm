@@ -18,24 +18,24 @@ class ADCMError():
         self.code = code
 
     def equal(self, e, *args):
+        title = e.value.error.title
+        code = e.value.error.get("code", "")
+        desc = e.value.error.get("desc", "")
+        error_args = e.value.error.get("args", "")
         expect(
-            e.value.error.title == self.title,
-            'Expected title is "{}", actual is "{}"'.format(
-                self.title, e.value.error.title
-            )
+            title == self.title,
+            f'Expected title is "{self.title}", actual is "{title}"'
         )
         expect(
-            e.value.error['code'] == self.code,
-            'Expected error code is "{}", actual is "{}"'.format(
-                self.code, e.value.error['code']
-            )
+            code == self.code,
+            f'Expected error code is "{self.code}", actual is "{code}"'
         )
         for i in args:
             expect(
-                i in e.value.error['desc'],
-                'Expected part of desc is "{}", actual desc is "{}"'.format(
-                    i, e.value.error['desc']
-                )
+                i in desc or i in error_args,
+                f'Expected part of desc or args is "{i}", '
+                f'actual desc is: \n"{desc}", '
+                f'\nargs is: \n"{error_args or None}"'
             )
         assert_expectations()
 

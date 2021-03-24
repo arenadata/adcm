@@ -13,13 +13,11 @@
 -   type: provider
     name: sample_provider
     version: 0.1.0
-    config:
 -
     type: host
     name: simple ssh
     version: .01
 
-    actions:
     config:
         ansible_user:
             default: root
