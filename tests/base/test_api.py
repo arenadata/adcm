@@ -300,7 +300,7 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         r1 = self.api_delete('/stack/bundle/' + str(bundle_id) + '/')
         self.assertEqual(r1.status_code, 204)
 
-    def test_host(self):  # pylint: disable=too-many-statements
+    def test_host(self):
         host = 'test.server.net'
 
         r1 = self.api_post('/stack/load/', {'bundle_file': self.ssh_bundle})
