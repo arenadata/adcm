@@ -17,9 +17,9 @@ import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
 import { map, switchMap, tap } from 'rxjs/operators';
 
-import { SocketListenerDirective } from '../../directives/socketListener.directive';
+import { SocketListenerDirective } from '@app/shared/directives/socketListener.directive';
 import { StatusInfo, StatusService } from './status.service';
-import { ClusterService } from '@app/core';
+import { ClusterService } from '@app/core/services/cluster.service';
 
 @Component({
   selector: 'app-status',

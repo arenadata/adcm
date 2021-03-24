@@ -8,15 +8,16 @@ import {
   props,
 } from '@ngrx/store';
 import { ParamMap } from '@angular/router';
-
-import { AdcmTypedEntity } from '../../models/entity';
 import { Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { filter, map, switchMap, tap } from 'rxjs/operators';
+import { filter, map, switchMap } from 'rxjs/operators';
 import { Observable, zip } from 'rxjs';
-import { ClusterService } from '@app/core';
-import { TypeName } from '@app/core/types';
 
+import { AdcmEntity, AdcmTypedEntity } from '@app/models/entity';
+import { TypeName } from '@app/core/types';
+import { ApiService } from '@app/core/api';
+import { ServiceComponentService } from '@app/services/service-component.service';
+import { EntityNames } from '@app/models/entity-names';
 
 export const setPath = createAction('[Navigation] Set path', props<{ path: AdcmTypedEntity[] }>());
 export const setPathOfRoute = createAction('[Navigation] Set path', props<{ params: ParamMap }>());
@@ -54,7 +55,7 @@ export class NavigationEffects {
         filter(action => !!action.params),
         switchMap(action => {
           const getters: Observable<AdcmTypedEntity>[] = action.params.keys.reduce((acc, param) => {
-            const getter = this.detailService.entityGetter(param as TypeName, action.params);
+            const getter = this.entityGetter(param as TypeName, action.params);
             if (getter) {
               acc.push(getter);
             }
@@ -71,7 +72,30 @@ export class NavigationEffects {
 
   constructor(
     private actions$: Actions,
-    private detailService: ClusterService,
+    private api: ApiService,
+    private serviceComponentService: ServiceComponentService,
   ) {}
+
+  entityGetter(currentParam: TypeName, params: ParamMap): Observable<AdcmTypedEntity> {
+    const entityToTypedEntity = (getter: Observable<AdcmEntity>, typeName: TypeName) => getter.pipe(
+      map(entity => ({
+        ...entity,
+        typeName,
+      } as AdcmTypedEntity))
+    );
+    if (EntityNames.includes(currentParam)) {
+      if (currentParam === 'servicecomponent') {
+        return entityToTypedEntity(
+          this.serviceComponentService.get(+params.get(currentParam)),
+          currentParam,
+        );
+      } else {
+        return entityToTypedEntity(
+          this.api.getOne<any>(currentParam, +params.get(currentParam)),
+          currentParam,
+        );
+      }
+    }
+  }
 
 }

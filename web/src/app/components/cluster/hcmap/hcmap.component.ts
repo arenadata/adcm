@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { ClusterService } from '../../../core';
+
+import { ClusterService } from '@app/core/services/cluster.service';
 
 @Component({
   template: ` <app-service-host [cluster]="cluster"></app-service-host> `,

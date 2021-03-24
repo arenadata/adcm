@@ -11,11 +11,12 @@
 // limitations under the License.
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ClusterService } from '@app/core';
-import { Job } from '@app/core/types';
-import { BaseDirective } from '@app/shared';
-import { ListComponent } from '@app/shared/components/list/list.component';
 import { filter } from 'rxjs/operators';
+
+import { ClusterService } from '@app/core/services/cluster.service';
+import { Job } from '@app/core/types';
+import { BaseDirective } from '@app/shared/directives';
+import { ListComponent } from '@app/shared/components/list/list.component';
 
 @Component({
   selector: 'app-job',
