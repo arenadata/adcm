@@ -15,15 +15,16 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { IColumns } from '@adwp-ui/widgets';
 
-import { ClusterService, StackService } from '@app/core';
+import { StackService } from '@app/core';
+import { ClusterService } from '@app/core/services/cluster.service';
 import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
 import { ListService } from '@app/shared/components/list/list.service';
 import { SocketState } from '@app/core/store';
 import { TypeName } from '@app/core/types';
 import { IBundle } from '@app/models/bundle';
-import { ListFactory } from '../../factories/list-factory';
-import { EditionColumnComponent } from '../../components/columns/edition-column/edition-column.component';
-import { ApiService } from '../../core/api';
+import { ListFactory } from '@app/factories/list-factory';
+import { EditionColumnComponent } from '@app/components/columns/edition-column/edition-column.component';
+import { ApiService } from '@app/core/api';
 
 @Component({
   selector: 'app-stack',

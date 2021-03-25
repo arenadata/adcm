@@ -11,7 +11,6 @@
 // limitations under the License.
 export * from './preloader.service';
 export * from './config.service';
-export * from './cluster.service';
 export * from './stack.service';
 export * from './channel.service';
 export * from './app/app.service';

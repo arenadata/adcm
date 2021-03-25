@@ -11,14 +11,15 @@
 // limitations under the License.
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { AuthService } from '@app/core';
-import { authLogin, authLogout, AuthState, getAuthState } from '@app/core/auth/auth.store';
-import { clearProfile } from '@app/core/store';
-import { BaseDirective } from '@app/shared';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { FormGroup, FormControl, Validators } from '@angular/forms';
+
+import { AuthService } from '@app/core';
+import { authLogin, authLogout, AuthState, getAuthState } from '@app/core/auth/auth.store';
+import { clearProfile } from '@app/core/store';
+import { BaseDirective } from '@app/shared/directives';
 
 @Component({
   selector: 'app-login',
