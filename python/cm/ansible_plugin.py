@@ -41,7 +41,7 @@ MSG_NO_SERVICE_CONTEXT = (
     " Service state can be changed in service's actions only or in cluster's actions but"
     " with using service_name arg. Bad Dobby!"
 )
-MSG_MANDATORY_ARGS = "Type, key and value are mandatory. Bad Dobby!"
+MSG_MANDATORY_ARGS = "Arguments {} are mandatory. Bad Dobby!"
 MSG_NO_ROUTE = "Incorrect combination of args. Bad Dobby!"
 MSG_WRONG_SERVICE = "Do not try to change one service from another."
 
@@ -91,7 +91,7 @@ class ContextActionModule(ActionBase):
     def _check_mandatory(self):
         for arg in self._MANDATORY_ARGS:
             if arg not in self._task.args:
-                raise AnsibleError(MSG_MANDATORY_ARGS)
+                raise AnsibleError(MSG_MANDATORY_ARGS.format(self._MANDATORY_ARGS))
 
     def _get_job_var(self, task_vars, name):
         try:
@@ -163,6 +163,12 @@ class ContextActionModule(ActionBase):
             res = self._do_provider(
                 task_vars,
                 {'provider_id': self._get_job_var(task_vars, 'provider_id')}
+            )
+        elif obj_type == "component":
+            check_context_type(task_vars, 'component')
+            res = self._do_component(
+                task_vars,
+                {'component_id': self._get_job_var(task_vars, 'component_id')}
             )
         else:
             raise AnsibleError(MSG_NO_ROUTE)

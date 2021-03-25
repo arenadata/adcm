@@ -868,6 +868,15 @@ def set_host_state(host_id, state):
     return push_obj(host, state)
 
 
+def set_component_state(component_id, state):
+    try:
+        host = ServiceComponent.objects.get(id=component_id)
+    except ServiceComponent.DoesNotExist:
+        msg = 'Component # {} does not exist'
+        err('COMPONENT_NOT_FOUND', msg.format(component_id))
+    return push_obj(host, state)
+
+
 def set_provider_state(provider_id, state, event):
     try:
         provider = HostProvider.objects.get(id=provider_id)

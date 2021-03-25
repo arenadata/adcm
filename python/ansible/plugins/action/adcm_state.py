@@ -24,7 +24,8 @@ from cm.api import (
     set_host_state,
     set_service_state,
     set_service_state_by_id,
-    set_provider_state
+    set_provider_state,
+    set_component_state
 )
 from cm.status_api import Event
 
@@ -144,5 +145,14 @@ class ActionModule(ContextActionModule):
             event
         )
         event.send_state()
+        res['state'] = self._task.args["state"]
+        return res
+
+    def _do_component(self, task_vars, context):
+        res = self._wrap_call(
+            set_component_state,
+            context['component_id'],
+            self._task.args["state"],
+        )
         res['state'] = self._task.args["state"]
         return res
