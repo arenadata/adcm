@@ -31,8 +31,8 @@ def get_cluster(obj):
 def variant_service_in_cluster(obj, args=None):
     out = []
     cluster = get_cluster(obj)
-    if not cluster:
-        return []
+    if cluster is None:
+        return out
 
     for co in ClusterObject.objects.filter(cluster=cluster).order_by('prototype__name'):
         out.append(co.prototype.name)
@@ -42,8 +42,8 @@ def variant_service_in_cluster(obj, args=None):
 def variant_service_to_add(obj, args=None):
     out = []
     cluster = get_cluster(obj)
-    if not cluster:
-        return []
+    if cluster is None:
+        return out
 
     for proto in Prototype.objects \
             .filter(bundle=cluster.prototype.bundle, type='service') \
@@ -227,8 +227,8 @@ def variant_host(obj, args=None):
 def variant_host_in_cluster(obj, args=None):
     out = []
     cluster = get_cluster(obj)
-    if not cluster:
-        return []
+    if cluster is None:
+        return out
 
     if args and 'service' in args:
         try:
