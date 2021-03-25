@@ -3,9 +3,8 @@ import { Observable } from 'rxjs';
 import { BaseDirective } from '@adwp-ui/widgets';
 
 import { AdcmTypedEntity } from '@app/models/entity';
-import { ISSUE_MESSAGE } from '@app/shared/details/navigation.service';
-import { Cluster, IAction } from '@app/core/types';
-import { IIssue } from '@app/models/issue';
+import { IAction } from '@app/core/types';
+import { IIssues } from '@app/models/issue';
 
 @Component({
   selector: 'app-navigation',
@@ -16,27 +15,11 @@ import { IIssue } from '@app/models/issue';
       <ng-container *ngFor="let item of path | async | navItem; last as isLast">
         <span [ngClass]="item.class">
           <a routerLink="{{ item.url }}">{{ item.title | uppercase }}</a>
-          <mat-icon
-            *ngIf="isIssue(item.entity?.issue); else aggregate"
-            [matTooltip]="ISSUE_MESSAGE"
-            color="warn">
-            priority_hight
-          </mat-icon>
-          <ng-template #aggregate><span class="aggregate"></span></ng-template>
+          <app-actions-button [row]="item?.entity" [issueType]="item?.entity?.typeName"></app-actions-button>
         </span>
         <span *ngIf="!isLast">&nbsp;/&nbsp;</span>
       </ng-container>
     </mat-nav-list>
-
-    <app-action-list
-      *ngIf="actionFlag"
-      [asButton]="true"
-      [actionLink]="actionLink"
-      [actions]="actions"
-      [state]="state"
-      [disabled]="disabled"
-      [cluster]="cluster"
-    ></app-action-list>
   `,
   styles: [`
     :host {
@@ -81,9 +64,6 @@ import { IIssue } from '@app/models/issue';
 })
 export class NavigationComponent extends BaseDirective {
 
-  Object = Object;
-  ISSUE_MESSAGE = ISSUE_MESSAGE;
-
   actionFlag = false;
   actionLink: string;
   actions: IAction[] = [];
@@ -91,8 +71,10 @@ export class NavigationComponent extends BaseDirective {
   disabled: boolean;
   cluster: { id: number; hostcomponent: string };
 
-  ownPath: Observable<AdcmTypedEntity[]>;
-  isIssue = (issue: IIssue): boolean => !!(issue && Object.keys(issue).length);
+  private ownPath: Observable<AdcmTypedEntity[]>;
+
+  isIssue = (issue: IIssues): boolean => !!(issue && Object.keys(issue).length);
+
   @Input() set path(path: Observable<AdcmTypedEntity[]>) {
     this.ownPath = path;
     this.ownPath.pipe(this.takeUntil()).subscribe((lPath) => {
