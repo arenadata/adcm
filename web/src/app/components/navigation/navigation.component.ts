@@ -56,10 +56,6 @@ import { IIssues } from '@app/models/issue';
       line-height: 24px;
     }
 
-    .aggregate {
-      width: 7px;
-    }
-
   `],
 })
 export class NavigationComponent extends BaseDirective {
