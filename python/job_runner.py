@@ -11,11 +11,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=unused-import
+
 import json
 import os
 import subprocess
 import sys
 
+import adcm.init_django  # DO NOT DELETE !!!
 import cm.config as config
 import cm.job
 import cm.lock
