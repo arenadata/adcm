@@ -10,13 +10,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
-import { ClusterService } from '@app/core';
-import { EventMessage, SocketState } from '@app/core/store';
-import { Cluster, Entities, isIssue } from '@app/core/types';
-import { SocketListenerDirective } from '@app/shared/directives';
 import { Store } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
 
+import { ClusterService } from '@app/core/services/cluster.service';
+import { EventMessage, SocketState } from '@app/core/store';
+import { Cluster, Entities, isIssue } from '@app/core/types';
+import { SocketListenerDirective } from '@app/shared/directives';
 import { ActionsService } from '../actions.service';
 
 @Component({

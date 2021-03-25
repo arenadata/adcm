@@ -11,12 +11,13 @@
 // limitations under the License.
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ClusterService } from '@app/core';
-import { EventMessage, SocketState } from '@app/core/store';
-import { Job, JobStatus, LogFile } from '@app/core/types';
-import { SocketListenerDirective } from '@app/shared';
 import { Store } from '@ngrx/store';
 import { Subject } from 'rxjs';
+
+import { ClusterService } from '@app/core/services/cluster.service';
+import { EventMessage, SocketState } from '@app/core/store';
+import { Job, JobStatus, LogFile } from '@app/core/types';
+import { SocketListenerDirective } from '@app/shared/directives';
 
 import { TextComponent } from './text.component';
 

@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatIconModule } from '@angular/material/icon';
 
 import { StateColumnComponent } from './state-column.component';
 
@@ -8,7 +9,12 @@ describe('StateColumnComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ StateColumnComponent ]
+      declarations: [
+        StateColumnComponent,
+      ],
+      imports: [
+        MatIconModule,
+      ],
     })
     .compileComponents();
   });
