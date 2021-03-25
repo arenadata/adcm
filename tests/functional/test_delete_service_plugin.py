@@ -20,7 +20,7 @@ def test_delete_service_plugin(sdk_client_fs: ADCMClient):
     bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, "cluster"))
     cluster = bundle.cluster_create(utils.random_string())
     service = cluster.service_add(name="service")
-    task = service.action_run(name='remove_service')
+    task = service.action(name='remove_service').run()
     task.wait()
     with allure.step(f'Check that job state is {task.status}'):
         assert task.status == 'success', "Current job status {}. " \
@@ -37,7 +37,7 @@ def test_delete_service_with_import(sdk_client_fs: ADCMClient):
     cluster_import = bundle_import.cluster_create("cluster_import")
     service = cluster.service_add(name="hadoop")
     cluster_import.bind(service)
-    task = service.action_run(name='remove_service')
+    task = service.action(name='remove_service').run()
     task.wait()
     with allure.step(f'Check that job state is {task.status}'):
         assert task.status == 'success', "Current job status {}. " \
@@ -56,14 +56,14 @@ def test_delete_service_with_export(sdk_client_fs: ADCMClient):
     service = cluster.service_add(name="hadoop")
     import_service = cluster_import.service_add(name='hadoop')
     import_service.bind(service)
-    task = service.action_run(name='remove_service')
+    task = service.action(name='remove_service').run()
     task.wait()
     with allure.step(f'Check that job state is {task.status}'):
         assert task.status == 'success', "Current job status {}. " \
                                          "Expected: success".format(task.status)
         assert not cluster.service_list()
         assert cluster_import.service_list()
-    task = import_service.action_run(name='remove_service')
+    task = import_service.action(name='remove_service').run()
     task.wait()
     with allure.step(f'Check that job state is {task.status}'):
         assert task.status == 'success', "Current job status {}. " \
@@ -87,7 +87,7 @@ def test_delete_service_with_host(sdk_client_fs: ADCMClient):
     component = service.component(name="ZOOKEEPER_SERVER")
     cluster.hostcomponent_set((host, component))
     assert cluster.service_list()
-    task = service.action_run(name='remove_service')
+    task = service.action(name='remove_service').run()
     task.wait()
     with allure.step(f'Check that job state is {task.status}'):
         assert task.status == 'success', "Current job status {}. " \

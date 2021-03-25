@@ -26,7 +26,7 @@ def test_required_fields(sdk_client_fs: ADCMClient, bundle):
     stack_dir = utils.get_data_dir(__file__, "required_fields", "no_{}".format(bundle))
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())
-    task = cluster.action_run(name='custom_log')
+    task = cluster.action(name='custom_log').run()
     task.wait()
     with allure.step('Check job state'):
         assert task.status == 'failed', "Current job status {}. " \
@@ -45,7 +45,7 @@ def test_different_storage_types_with_format(sdk_client_fs: ADCMClient, bundle):
     stack_dir = utils.get_data_dir(__file__, bundle)
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())
-    task = cluster.action_run(name='custom_log')
+    task = cluster.action(name='custom_log').run()
     task.wait()
     with allure.step('Check if logs are equal 3, job state and logs'):
         job = task.job()
@@ -65,7 +65,7 @@ def test_path_and_content(sdk_client_fs: ADCMClient):
     stack_dir = utils.get_data_dir(__file__, "path_and_content")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())
-    task = cluster.action_run(name='custom_log')
+    task = cluster.action(name='custom_log').run()
     task.wait()
     with allure.step('Check logs content and format'):
         job = task.job()
@@ -82,7 +82,7 @@ def test_multiple_tasks(sdk_client_fs: ADCMClient, bundle):
     stack_dir = utils.get_data_dir(__file__, bundle)
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())
-    task = cluster.action_run(name='custom_log')
+    task = cluster.action(name='custom_log').run()
     task.wait()
     with allure.step('Check 4 logs entries'):
         job = task.job()
@@ -96,7 +96,7 @@ def test_check_text_file_content(sdk_client_fs: ADCMClient):
     stack_dir = utils.get_data_dir(__file__, "txt_path")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())
-    task = cluster.action_run(name='custom_log')
+    task = cluster.action(name='custom_log').run()
     task.wait()
     with allure.step('Check logs content and format'):
         job = task.job()
@@ -112,7 +112,7 @@ def test_check_text_content(sdk_client_fs: ADCMClient):
     stack_dir = utils.get_data_dir(__file__, "txt_content")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())
-    task = cluster.action_run(name='custom_log')
+    task = cluster.action(name='custom_log').run()
     task.wait()
     with allure.step('Check logs content'):
         job = task.job()
@@ -127,7 +127,7 @@ def test_check_json_content(sdk_client_fs: ADCMClient):
     stack_dir = utils.get_data_dir(__file__, "json_content")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())
-    task = cluster.action_run(name='custom_log')
+    task = cluster.action(name='custom_log').run()
     task.wait()
     with allure.step('Check logs content'):
         job = task.job()
@@ -142,7 +142,7 @@ def test_incorrect_syntax_for_fields(sdk_client_fs: ADCMClient):
     stack_dir = utils.get_data_dir(__file__, "syntax_for_fields")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())
-    task = cluster.action_run(name='custom_log')
+    task = cluster.action(name='custom_log').run()
     task.wait()
     with allure.step('Check logs content'):
         job = task.job()
