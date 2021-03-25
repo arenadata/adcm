@@ -138,7 +138,7 @@ class TestJobRunner(TestCase):
         _mock_open.assert_called_once_with(file_name)
         self.assertDictEqual(conf, {})
 
-    @patch('cm.job.set_job_status')
+    @patch('cm.lock.set_job_status')
     def test_set_job_status(self, mock_set_job_status):
         mock_set_job_status.return_value = None
         code = job_runner.set_job_status(1, 0, 1, None)
@@ -157,7 +157,7 @@ class TestJobRunner(TestCase):
     # pylint: disable=too-many-locals
     # pylint: disable=too-many-arguments
     @patch('job_runner.Event')
-    @patch('cm.job.set_job_status')
+    @patch('cm.lock.set_job_status')
     @patch('sys.exit')
     @patch('job_runner.set_job_status')
     @patch('subprocess.Popen')
