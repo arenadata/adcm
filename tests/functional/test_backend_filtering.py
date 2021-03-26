@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=W0611, W0621, W0404, W0212, C1801
+from typing import List
+
 import allure
 import pytest
 from adcm_client.base import ResponseTooLong
@@ -233,11 +235,11 @@ def test_coreapi_schema(sdk_client_fs: ADCMClient, TestedClass):
             HostList,
             id="Host"),
         pytest.param(
-            lazy_fixture('host_with_jobs'),
+            lazy_fixture('hosts_with_jobs'),
             TaskList,
             id="Task"),
         pytest.param(
-            lazy_fixture('host_with_jobs'),
+            lazy_fixture('hosts_with_jobs'),
             JobList,
             id="Job"),
     ],
@@ -370,35 +372,35 @@ def test_paging_fail(sdk_client, TestedClass):
             lazy_fixture('one_host_fqdn_attr'),
             id="Host Prototype Id Filter"),
         pytest.param(
-            lazy_fixture('host_with_jobs'),
+            lazy_fixture('hosts_with_jobs'),
             Task,
             TaskList,
             lazy_fixture('task_action_id_attr'),
             lazy_fixture('task_action_id_attr'),
             id="Task Action Id Filter"),
         pytest.param(
-            lazy_fixture('host_with_jobs'),
+            lazy_fixture('hosts_with_jobs'),
             Task,
             TaskList,
             lazy_fixture('task_status_attr'),
             lazy_fixture('task_status_attr'),
             id="Task Status Filter"),
         pytest.param(
-            lazy_fixture('host_with_jobs'),
+            lazy_fixture('hosts_with_jobs'),
             Job,
             JobList,
             lazy_fixture('task_status_attr'),
             lazy_fixture('task_status_attr'),
             id="Job Action Id Filter"),
         pytest.param(
-            lazy_fixture('host_with_jobs'),
+            lazy_fixture('hosts_with_jobs'),
             Job,
             JobList,
             lazy_fixture('task_status_attr'),
             lazy_fixture('task_status_attr'),
             id="Job Status Filter"),
         pytest.param(
-            lazy_fixture('host_with_jobs'),
+            lazy_fixture('hosts_with_jobs'),
             Job,
             JobList,
             lazy_fixture('job_task_id_attr'),
@@ -457,16 +459,26 @@ def host_ok_action(host_with_actions: Host):
 
 
 @pytest.fixture()
-def host_fail_action(host_with_actions: Host):
-    return host_with_actions.action(name="fail50")
+def hosts_with_actions(host_with_actions: Host, provider_with_actions: Provider):
+    hosts = [host_with_actions]
+    for i in range(9):
+        hosts.append(provider_with_actions.host_create(fqdn=f'host.with.actions.{i}'))
+    return hosts
 
 
 @pytest.fixture()
-def host_with_jobs(host_with_actions: Host, host_fail_action, host_ok_action):
-    for _ in range(51):
-        host_fail_action.run().wait()
+def hosts_with_jobs(hosts_with_actions: List, host_ok_action: Action):
+    """
+    Run multiple actions on hosts. Return first host.
+    """
+    for _ in range(6):
+        actions = []
+        for host in hosts_with_actions:
+            actions.append(host.action(name="fail50").run())
+        for action in actions:
+            action.wait()
     host_ok_action.run().try_wait()
-    return host_with_actions
+    return hosts_with_actions[0]
 
 
 @pytest.fixture()

@@ -129,7 +129,7 @@ def test_run_service_action_locked_all_objects_in_cluster(
         prepared_cluster.host_add(host)
         added_service = prepared_cluster.service_add(name="bookkeeper")
     with allure.step("Run action: service-lock for service"):
-        added_service.action_run(name="service-lock")
+        added_service.action(name="service-lock").run()
     with allure.step("Check if host, cluster and service states are 'locked'"):
         _check_locked_object(prepared_cluster)
         _check_locked_object(host)

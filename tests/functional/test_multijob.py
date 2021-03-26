@@ -25,14 +25,14 @@ def cluster(sdk_client_ms: ADCMClient, request):
 
 def test_cluster_state_after_multijob(sdk_client_ms: ADCMClient, cluster):
     with allure.step('Run action: multi'):
-        cluster.action_run(name="multi").wait()
+        cluster.action(name="multi").run().wait()
     with allure.step('Check cluster state'):
         assert sdk_client_ms.cluster(name=cluster.name).state == cluster.name
 
 
 def test_service_state_after_multijob(sdk_client_ms: ADCMClient, cluster):
     with allure.step('Run action: multi'):
-        cluster.service(name='multi').action_run(name="multi").wait()
+        cluster.service(name='multi').action(name="multi").run().wait()
     with allure.step('Check service state'):
         assert cluster.service(name='multi').state == cluster.name
 
@@ -49,7 +49,7 @@ def test_cluster_service_state_locked(sdk_client_ms: ADCMClient):
         assert bundle.cluster(name=bundle.name).service(name='multi').state == 'created'
         assert bundle.cluster(name=bundle.name).service(name='stab').state == 'created'
     with allure.step('Run cluster action: multi'):
-        task = cluster.action_run(name='multi')
+        task = cluster.action(name='multi').run()
     with allure.step('Check services states: locked and then created'):
         assert bundle.cluster(name=bundle.name).state == 'locked'
         assert bundle.cluster(name=bundle.name).service(name='multi').state == 'locked'
@@ -59,7 +59,7 @@ def test_cluster_service_state_locked(sdk_client_ms: ADCMClient):
         assert bundle.cluster(name=bundle.name).service(name='multi').state == 'created'
         assert bundle.cluster(name=bundle.name).service(name='stab').state == 'created'
     with allure.step('Run service action: multi'):
-        task = cluster.service(name='multi').action_run(name='multi')
+        task = cluster.service(name='multi').action(name='multi').run()
     with allure.step('Check services states: locked and created'):
         assert bundle.cluster(name=bundle.name).state == 'locked'
         assert bundle.cluster(name=bundle.name).service(name='multi').state == 'locked'
@@ -80,13 +80,13 @@ def provider(sdk_client_ms: ADCMClient, request):
 
 def test_provider_state_after_multijob(sdk_client_ms: ADCMClient, provider):
     with allure.step('Run provider action: multi'):
-        provider.action_run(name="multi").wait()
+        provider.action(name="multi").run().wait()
     with allure.step('Check provider state'):
         assert sdk_client_ms.provider(name=provider.name).state == provider.name
 
 
 def test_host_state_after_multijob(sdk_client_ms: ADCMClient, provider):
     with allure.step('Run host action: multi'):
-        provider.host(fqdn=provider.name).action_run(name="multi").wait()
+        provider.host(fqdn=provider.name).action(name="multi").run().wait()
     with allure.step('Check host state'):
         assert provider.host(fqdn=provider.name).state == provider.name

@@ -117,7 +117,7 @@ def set_task_status(task_id, status):
 def set_obj_state(obj_type, obj_id, state):
     if obj_type == 'adcm':
         return None
-    if obj_type not in ('cluster', 'service', 'host', 'provider'):
+    if obj_type not in ('cluster', 'service', 'host', 'provider', 'component'):
         log.error('Unknown object type: "%s"', obj_type)
         return None
     return post_event('change_state', obj_type, obj_id, 'state', state)

@@ -218,7 +218,7 @@ class TestComponentActionOnHost:
         run_host_action_and_assert_result(host_single_component, action_name)
         run_host_action_and_assert_result(host_two_components, action_name)
 
-    @pytest.mark.skip("Component state change BUG")
+    @pytest.mark.xfail(reason="Component state change BUG")
     @allure.issue(
         name="Component state change BUG", url="https://arenadata.atlassian.net/browse/ADCM-1656"
     )
