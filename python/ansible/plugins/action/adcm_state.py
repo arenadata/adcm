@@ -161,7 +161,6 @@ class ActionModule(ContextActionModule):
         res['state'] = self._task.args['state']
         return res
 
-
     def _do_component(self, task_vars, context):
         res = self._wrap_call(
             set_component_state,
