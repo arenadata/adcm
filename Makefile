@@ -59,6 +59,7 @@ unittests: ## Run unittests
 pytest: ## Run functional tests
 	docker pull ci.arenadata.io/functest:3.8.6.slim.buster-x64
 	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host -v $(CURDIR)/:/adcm -w /adcm/ \
+	--sysctl net.ipv4.tcp_tw_reuse=1 --sysctl net.core.somaxconn=65535 \
 	-e BUILD_TAG=${BUILD_TAG} -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
 	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" \
 	ci.arenadata.io/functest:3.8.6.slim.buster-x64 /bin/sh -e \
@@ -67,6 +68,7 @@ pytest: ## Run functional tests
 pytest_release: ## Run functional tests on release
 	docker pull ci.arenadata.io/functest:3.8.6.slim.buster.firefox-x64
 	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host -v $(CURDIR)/:/adcm -w /adcm/ \
+	--sysctl net.ipv4.tcp_tw_reuse=1 --sysctl net.core.somaxconn=65535 \
 	-e BUILD_TAG=${BUILD_TAG} -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
 	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" \
 	ci.arenadata.io/functest:3.8.6.slim.buster.firefox-x64 /bin/sh -e \
