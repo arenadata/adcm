@@ -832,7 +832,6 @@ def check_multi_bind(actual_import, cluster, service, export_cluster, export_ser
 
 def push_obj(obj, state):
     stack = obj.stack
-
     if not stack:
         stack = [state]
     else:
@@ -870,11 +869,31 @@ def set_host_state(host_id, state):
 
 def set_component_state(component_id, state):
     try:
-        host = ServiceComponent.objects.get(id=component_id)
+        comp = ServiceComponent.objects.get(id=component_id)
     except ServiceComponent.DoesNotExist:
         msg = 'Component # {} does not exist'
         err('COMPONENT_NOT_FOUND', msg.format(component_id))
-    return push_obj(host, state)
+    return push_obj(comp, state)
+
+
+def set_component_state_by_name(cluster_id, service_id, component_name, service_name, state):
+    try:
+        if service_id:
+            comp = ServiceComponent.objects.get(
+                cluster_id=cluster_id,
+                service_id=service_id,
+                prototype__name=component_name
+            )
+        else:
+            comp = ServiceComponent.objects.get(
+                cluster_id=cluster_id,
+                service__prototype__name=service_name,
+                prototype__name=component_name
+            )
+    except ServiceComponent.DoesNotExist:
+        msg = 'Component # {} does not found'
+        err('COMPONENT_NOT_FOUND', msg.format(component_name))
+    return push_obj(comp, state)
 
 
 def set_provider_state(provider_id, state, event):
