@@ -77,7 +77,7 @@ def get_default(c, proto=None):   # pylint: disable=too-many-branches
         value = c.default
     elif c.type == 'text':
         value = c.default
-    elif c.type == 'password':
+    elif c.type in ('password', 'secrettext'):
         if c.default:
             value = ansible_encrypt_and_format(c.default)
     elif type_is_complex(c.type):
@@ -387,11 +387,11 @@ def process_password(spec, conf):
 
     for key in conf:
         if 'type' in spec[key]:
-            if spec[key]['type'] == 'password' and conf[key]:
+            if spec[key]['type'] in ('password', 'secrettext') and conf[key]:
                 conf[key] = update_password(conf[key])
         else:
             for subkey in conf[key]:
-                if spec[key][subkey]['type'] == 'password' and conf[key][subkey]:
+                if spec[key][subkey]['type'] in ('password', 'secrettext') and conf[key][subkey]:
                     conf[key][subkey] = update_password(conf[key][subkey])
     return conf
 
@@ -405,7 +405,7 @@ def process_config(obj, spec, old_conf):   # pylint: disable=too-many-branches
             if conf[key] is not None:
                 if spec[key]['type'] == 'file':
                     conf[key] = cook_file_type_name(obj, key, '')
-                elif spec[key]['type'] == 'password':
+                elif spec[key]['type'] in ('password', 'secrettext'):
                     if config.ANSIBLE_VAULT_HEADER in conf[key]:
                         conf[key] = {'__ansible_vault': conf[key]}
         elif conf[key]:
@@ -413,7 +413,7 @@ def process_config(obj, spec, old_conf):   # pylint: disable=too-many-branches
                 if conf[key][subkey] is not None:
                     if spec[key][subkey]['type'] == 'file':
                         conf[key][subkey] = cook_file_type_name(obj, key, subkey)
-                    elif spec[key][subkey]['type'] == 'password':
+                    elif spec[key][subkey]['type'] in ('password', 'secrettext'):
                         if config.ANSIBLE_VAULT_HEADER in conf[key][subkey]:
                             conf[key][subkey] = {'__ansible_vault': conf[key][subkey]}
     return conf
@@ -797,7 +797,7 @@ def check_config_type(proto, key, subkey, spec, value, default=False, inactive=F
         for k, v in value.items():
             check_str(k, v)
 
-    if spec['type'] in ('string', 'password', 'text'):
+    if spec['type'] in ('string', 'password', 'text', 'secrettext'):
         if not isinstance(value, str):
             err('CONFIG_VALUE_ERROR', tmpl2.format("should be string"))
         if 'required' in spec and spec['required'] and value == '':
