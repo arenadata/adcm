@@ -16,7 +16,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0063_tasklog_verbose'),
+        ('cm', '0064_auto_20210210_1532'),
     ]
 
     operations = [
