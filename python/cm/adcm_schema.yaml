@@ -624,7 +624,7 @@ import_dict_item:
   required_items:
     - versions
 
-# Actions
+# Actions. Actions could be in two forms: job or task
 actions_dict:
   match: dict
   default_item: action_item
