@@ -11,16 +11,15 @@ import {
 import { ParamMap } from '@angular/router';
 import { Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { filter, map, switchMap, tap, withLatestFrom } from 'rxjs/operators';
-import { Observable, zip } from 'rxjs';
-import { of } from 'rxjs/internal/observable/of';
+import { filter, map, mergeMap, switchMap, tap, withLatestFrom } from 'rxjs/operators';
+import { Observable, zip, of } from 'rxjs';
 
 import { AdcmEntity, AdcmTypedEntity } from '@app/models/entity';
 import { TypeName } from '@app/core/types';
 import { ApiService } from '@app/core/api';
 import { ServiceComponentService } from '@app/services/service-component.service';
 import { EntityNames } from '@app/models/entity-names';
-import { socketResponse } from '@app/core/store';
+import { socketResponse } from '@app/core/store/sockets/socket.reducer';
 
 export const setPath = createAction('[Navigation] Set path', props<{ path: AdcmTypedEntity[] }>());
 export const setPathOfRoute = createAction('[Navigation] Set path', props<{ params: ParamMap }>());
@@ -80,8 +79,7 @@ export class NavigationEffects {
         item => item.typeName === this.getEventEntityType(action.message.object.type) && action.message.object.id === item.id
       )
     ),
-    tap(([action, path]) => console.log(action, path)),
-    switchMap(([action, path]) => {
+    mergeMap(([action, path]) => {
       const getters: Observable<AdcmTypedEntity>[] = path.reduce((acc, entity) => {
         if (entity.typeName === this.getEventEntityType(action.message.object.type)) {
           const getter = this.entityGetter(entity.typeName, action.message.object.id);

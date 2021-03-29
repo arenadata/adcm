@@ -4,7 +4,7 @@ import { Sort } from '@angular/material/sort';
 import { ParamMap } from '@angular/router';
 
 import { BaseListDirective } from '@app/shared/components/list/base-list.directive';
-import { Host as AdcmHost } from '@app/core/types';
+import { Host as AdcmHost, TypeName } from '@app/core/types';
 import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
 import { IHost } from '@app/models/host';
 import { ICluster } from '@app/models/cluster';
@@ -27,6 +27,14 @@ export class AdwpBaseListDirective extends BaseListDirective {
     private api: ApiService,
   ) {
     super(parent, service, store);
+  }
+
+  checkType(typeName: string, referenceTypeName: TypeName): boolean {
+    if (referenceTypeName === 'servicecomponent') {
+      return typeName === 'component';
+    }
+
+    return (referenceTypeName ? referenceTypeName.split('2')[0] : referenceTypeName) === typeName;
   }
 
   routeListener(limit: number, page: number, ordering: string, params: ParamMap) {
