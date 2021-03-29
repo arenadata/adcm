@@ -878,7 +878,7 @@ def set_component_state(component_id, state):
 
 def set_component_state_by_name(cluster_id, service_id, component_name, service_name, state):
     try:
-        if service_id:
+        if service_id is not None:
             comp = ServiceComponent.objects.get(
                 cluster_id=cluster_id,
                 service_id=service_id,
