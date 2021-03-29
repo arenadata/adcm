@@ -22,13 +22,14 @@ from django.db.migrations.executor import MigrationExecutor
 from django.db.utils import OperationalError
 from ansible.parsing.vault import VaultSecret, VaultAES256
 
+import cm.variant
 import cm.config as config
 from cm.errors import AdcmApiEx, AdcmEx
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
 from cm.models import (
-    Cluster, Prototype, Host, HostProvider, ADCM, ClusterObject, ServiceComponent,
-    PrototypeConfig, ObjectConfig, ConfigLog, HostComponent
+    Cluster, Prototype, Host, HostProvider, ADCM, ClusterObject,
+    PrototypeConfig, ObjectConfig, ConfigLog
 )
 
 
@@ -77,7 +78,7 @@ def get_default(c, proto=None):   # pylint: disable=too-many-branches
         value = c.default
     elif c.type == 'text':
         value = c.default
-    elif c.type == 'password':
+    elif c.type in ('password', 'secrettext'):
         if c.default:
             value = ansible_encrypt_and_format(c.default)
     elif type_is_complex(c.type):
@@ -387,11 +388,11 @@ def process_password(spec, conf):
 
     for key in conf:
         if 'type' in spec[key]:
-            if spec[key]['type'] == 'password' and conf[key]:
+            if spec[key]['type'] in ('password', 'secrettext') and conf[key]:
                 conf[key] = update_password(conf[key])
         else:
             for subkey in conf[key]:
-                if spec[key][subkey]['type'] == 'password' and conf[key][subkey]:
+                if spec[key][subkey]['type'] in ('password', 'secrettext') and conf[key][subkey]:
                     conf[key][subkey] = update_password(conf[key][subkey])
     return conf
 
@@ -405,7 +406,7 @@ def process_config(obj, spec, old_conf):   # pylint: disable=too-many-branches
             if conf[key] is not None:
                 if spec[key]['type'] == 'file':
                     conf[key] = cook_file_type_name(obj, key, '')
-                elif spec[key]['type'] == 'password':
+                elif spec[key]['type'] in ('password', 'secrettext'):
                     if config.ANSIBLE_VAULT_HEADER in conf[key]:
                         conf[key] = {'__ansible_vault': conf[key]}
         elif conf[key]:
@@ -413,7 +414,7 @@ def process_config(obj, spec, old_conf):   # pylint: disable=too-many-branches
                 if conf[key][subkey] is not None:
                     if spec[key][subkey]['type'] == 'file':
                         conf[key][subkey] = cook_file_type_name(obj, key, subkey)
-                    elif spec[key][subkey]['type'] == 'password':
+                    elif spec[key][subkey]['type'] in ('password', 'secrettext'):
                         if config.ANSIBLE_VAULT_HEADER in conf[key][subkey]:
                             conf[key][subkey] = {'__ansible_vault': conf[key][subkey]}
     return conf
@@ -425,132 +426,6 @@ def group_is_activatable(spec):
     if 'activatable' in spec.limits:
         return spec.limits['activatable']
     return False
-
-
-def get_cluster(obj):
-    if obj.prototype.type == 'service':
-        cluster = obj.cluster
-    elif obj.prototype.type == 'host':
-        cluster = obj.cluster
-    elif obj.prototype.type == 'cluster':
-        cluster = obj
-    else:
-        return None
-    return cluster
-
-
-def variant_service_in_cluster(obj, args=None):
-    out = []
-    cluster = get_cluster(obj)
-    if not cluster:
-        return []
-
-    for co in ClusterObject.objects.filter(cluster=cluster).order_by('prototype__name'):
-        out.append(co.prototype.name)
-    return out
-
-
-def variant_service_to_add(obj, args=None):
-    out = []
-    cluster = get_cluster(obj)
-    if not cluster:
-        return []
-
-    for proto in Prototype.objects \
-            .filter(bundle=cluster.prototype.bundle, type='service') \
-            .exclude(id__in=ClusterObject.objects.filter(cluster=cluster).values('prototype')) \
-            .order_by('name'):
-        out.append(proto.name)
-    return out
-
-
-def variant_host_in_cluster(obj, args=None):
-    out = []
-    cluster = get_cluster(obj)
-    if not cluster:
-        return []
-
-    if args and 'service' in args:
-        try:
-            service = ClusterObject.objects.get(cluster=cluster, prototype__name=args['service'])
-        except ClusterObject.DoesNotExist:
-            return []
-        if 'component' in args:
-            try:
-                comp = ServiceComponent.objects.get(
-                    cluster=cluster, service=service, component__name=args['component']
-                )
-            except ServiceComponent.DoesNotExist:
-                return []
-            for hc in HostComponent.objects \
-                    .filter(cluster=cluster, service=service, component=comp) \
-                    .order_by('host__fqdn'):
-                out.append(hc.host.fqdn)
-            return out
-        else:
-            for hc in HostComponent.objects \
-                    .filter(cluster=cluster, service=service) \
-                    .order_by('host__fqdn'):
-                out.append(hc.host.fqdn)
-            return out
-
-    for host in Host.objects.filter(cluster=cluster).order_by('fqdn'):
-        out.append(host.fqdn)
-    return out
-
-
-def variant_host_not_in_clusters(obj, args=None):
-    out = []
-    for host in Host.objects.filter(cluster=None).order_by('fqdn'):
-        out.append(host.fqdn)
-    return out
-
-
-VARIANT_FUNCTIONS = {
-    'host_in_cluster': variant_host_in_cluster,
-    'host_not_in_clusters': variant_host_not_in_clusters,
-    'service_in_cluster': variant_service_in_cluster,
-    'service_to_add': variant_service_to_add,
-}
-
-
-def get_builtin_variant(obj, func_name, args):
-    if func_name not in VARIANT_FUNCTIONS:
-        log.warning('unknown variant builtin function: %s', func_name)
-        return None
-    return VARIANT_FUNCTIONS[func_name](obj, args)
-
-
-def get_variant(obj, conf, limits):
-    value = None
-    source = limits['source']
-    if source['type'] == 'config':
-        skey = source['name'].split('/')
-        if len(skey) == 1:
-            value = conf[skey[0]]
-        else:
-            value = conf[skey[0]][skey[1]]
-    elif source['type'] == 'builtin':
-        value = get_builtin_variant(obj, source['name'], source.get('args', None))
-    elif source['type'] == 'inline':
-        value = source['value']
-    return value
-
-
-def process_variant(obj, spec, conf):
-    def set_variant(spec):
-        limits = spec['limits']
-        limits['source']['value'] = get_variant(obj, conf, limits)
-        return limits
-
-    for key in spec:
-        if 'type' in spec[key]:
-            if spec[key]['type'] == 'variant':
-                spec[key]['limits'] = set_variant(spec[key])
-        else:
-            for subkey in spec[key]:
-                if spec[key][subkey]['type'] == 'variant':
-                    spec[key][subkey]['limits'] = set_variant(spec[key][subkey])
 
 
 def ui_config(obj, cl):
@@ -570,7 +445,7 @@ def ui_config(obj, cl):
         item['read_only'] = bool(config_is_ro(obj, key, spec[key].limits))
         item['activatable'] = bool(group_is_activatable(spec[key]))
         if item['type'] == 'variant':
-            item['limits']['source']['value'] = get_variant(obj, obj_conf, limits)
+            item['limits']['source']['value'] = cm.variant.get_variant(obj, obj_conf, limits)
         item['default'] = get_default(spec[key])
         if key in flat_conf:
             item['value'] = flat_conf[key]
@@ -588,7 +463,7 @@ def get_action_variant(obj, conf):
     for c in conf:
         if c.type != 'variant':
             continue
-        c.limits['source']['value'] = get_variant(obj, obj_conf, c.limits)
+        c.limits['source']['value'] = cm.variant.get_variant(obj, obj_conf, c.limits)
 
 
 def config_is_ro(obj, key, limits):
@@ -643,7 +518,7 @@ def restore_read_only(obj, spec, conf, old_conf):
 def check_json_config(proto, obj, new_conf, old_conf=None, attr=None):
     spec, flat_spec, _, _ = get_prototype_config(proto)
     check_attr(proto, attr, flat_spec)
-    process_variant(obj, spec, new_conf)
+    cm.variant.process_variant(obj, spec, new_conf)
     return check_config_spec(proto, obj, spec, flat_spec, new_conf, old_conf, attr)
 
 
@@ -797,7 +672,7 @@ def check_config_type(proto, key, subkey, spec, value, default=False, inactive=F
         for k, v in value.items():
             check_str(k, v)
 
-    if spec['type'] in ('string', 'password', 'text'):
+    if spec['type'] in ('string', 'password', 'text', 'secrettext'):
         if not isinstance(value, str):
             err('CONFIG_VALUE_ERROR', tmpl2.format("should be string"))
         if 'required' in spec and spec['required'] and value == '':

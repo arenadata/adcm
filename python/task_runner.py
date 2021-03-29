@@ -23,7 +23,7 @@ import time
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 
-import adcm.init_django
+import adcm.init_django  # DO NOT DELETE !!!
 import cm.config as config
 import cm.job
 from cm.logger import log

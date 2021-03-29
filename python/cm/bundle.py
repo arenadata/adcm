@@ -264,8 +264,8 @@ def check_component_requires(comp):
                 msg = 'Unknown service "{}" {}'
                 err('COMPONENT_CONSTRAINT_ERROR', msg.format(item['service'], ref))
         else:
-            service = comp.prototype
-            req_list[i]['service'] = comp.prototype.name
+            service = comp.parent
+            req_list[i]['service'] = comp.parent.name
         try:
             req_comp = StagePrototype.objects.get(
                 name=item['component'], type='component', parent=service
@@ -310,6 +310,42 @@ def re_check_components():
         check_bound_component(comp)
 
 
+def check_variant_host(args, ref):
+    # log.debug('check_variant_host args: %s', args)
+    def check_predicate(predicate, args):
+        if predicate == 'in_service':
+            # log.debug('check in_service %s', args)
+            try:
+                StagePrototype.objects.get(type='service', name=args['service'])
+            except StagePrototype.DoesNotExist:
+                msg = 'Service "{}" {} does not exists'
+                err('INVALID_CONFIG_DEFINITION', msg.format(args['service'], ref))
+        elif predicate == 'in_component':
+            # log.debug('check in_component %s', args)
+            try:
+                service = StagePrototype.objects.get(type='service', name=args['service'])
+            except StagePrototype.DoesNotExist:
+                msg = 'Service "{}" {} does not exists'
+                err('INVALID_CONFIG_DEFINITION', msg.format(args['service'], ref))
+            try:
+                StagePrototype.objects.get(type='component', name=args['component'], parent=service)
+            except StagePrototype.DoesNotExist:
+                msg = 'Component "{}" {} does not exists'
+                err('INVALID_CONFIG_DEFINITION', msg.format(args['component'], ref))
+
+    if args is None:
+        return
+    if isinstance(args, dict):
+        if 'predicate' not in args:
+            return
+        check_predicate(args['predicate'], args['args'])
+        check_variant_host(args['args'], ref)
+    if isinstance(args, list):
+        for i in args:
+            check_predicate(i['predicate'], i['args'])
+            check_variant_host(i['args'], ref)
+
+
 def re_check_config():
     for c in StagePrototypeConfig.objects.filter(type='variant'):
         ref = proto_ref(c.prototype)
@@ -333,17 +369,20 @@ def re_check_config():
         elif lim['source']['type'] == 'builtin':
             if not lim['source']['args']:
                 continue
+            if lim['source']['name'] == 'host':
+                msg = f'in source:args of {ref} config "{c.name}/{c.subname}"'
+                check_variant_host(lim['source']['args'], msg)
             if 'service' in lim['source']['args']:
                 service = lim['source']['args']['service']
                 try:
-                    StagePrototype.objects.get(type='service', name=service)
+                    sp_service = StagePrototype.objects.get(type='service', name=service)
                 except StagePrototype.DoesNotExist:
                     msg = 'Service "{}" in source:args of {} config "{}/{}" does not exists'
                     err('INVALID_CONFIG_DEFINITION', msg.format(service, ref, c.name, c.subname))
             if 'component' in lim['source']['args']:
                 comp = lim['source']['args']['component']
                 try:
-                    StagePrototype.objects.get(type='component', name=comp, parent=c.prototype)
+                    StagePrototype.objects.get(type='component', name=comp, parent=sp_service)
                 except StagePrototype.DoesNotExist:
                     msg = 'Component "{}" in source:args of {} config "{}/{}" does not exists'
                     err('INVALID_CONFIG_DEFINITION', msg.format(comp, ref, c.name, c.subname))

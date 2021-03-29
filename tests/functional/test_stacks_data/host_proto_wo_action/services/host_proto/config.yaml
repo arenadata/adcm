@@ -13,8 +13,7 @@
 - type: provider
   name: sample_provider
   version: 0.1.0
-  config:
-    
+
 - type: host
   name: host1
   version: 1.0

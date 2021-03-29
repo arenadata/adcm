@@ -11,5 +11,5 @@
 # limitations under the License.
 - type: cluster
   name: restgrid
-  version:  &version 1-noconfig
+  version: &version 1-noconfig
   description: Rest to Ignite interface

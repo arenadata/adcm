@@ -22,7 +22,7 @@ from cm.logger import log
 from cm.models import UserProfile, DummyData, CheckLog, GroupCheckLog
 from cm.bundle import load_adcm
 from cm.config import SECRETS_FILE
-from cm.job import unlock_all
+from cm.lock import unlock_all
 from cm.status_api import Event
 
 

@@ -25,7 +25,7 @@ def test_check_inventories_file(adcm_ms, sdk_client_ms):
         cluster_name = random_string()
         cluster = cluster_bundle.cluster_prototype().cluster_create(cluster_name)
         cluster.service_add(name="zookeeper")
-        cluster.action_run(name="install").try_wait()
+        cluster.action(name="install").run().try_wait()
     with allure.step('Get inventory file from container'):
         text = get_file_from_container(adcm_ms, '/adcm/data/run/1/', 'inventory.json')
         inventory = json.loads(text.read().decode('utf8'))
