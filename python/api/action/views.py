@@ -75,7 +75,7 @@ def get_selector(obj, action):
         selector['cluster'] = obj.cluster.id
     if obj.prototype.type == 'component':
         selector['cluster'] = obj.cluster.id
-        selector['component'] = obj.service.id
+        selector['service'] = obj.service.id
     if isinstance(obj, Host) and action.host_action:
         if action.prototype.type == 'component':
             component = ServiceComponent.objects.get(prototype=action.prototype)
