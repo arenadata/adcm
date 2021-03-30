@@ -43,7 +43,8 @@ export class ActionCardComponent extends SocketListenerDirective implements OnIn
   }
 
   socketListener(m: EventMessage) {
-    if (this.details.Current?.typeName === m.object.type && this.details.Current?.id === m.object.id && (m.event === 'change_state' || m.event === 'clear_issue')) {
+    const type = m.object.type === 'component' ? 'servicecomponent' : m.object.type;
+    if (this.details.Current?.typeName === type && this.details.Current?.id === m.object.id && (m.event === 'change_state' || m.event === 'clear_issue')) {
       this.actions$ = this.service.getActions(this.details.Current.action);
     }
   }
