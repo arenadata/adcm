@@ -41,9 +41,10 @@ MSG_NO_SERVICE_CONTEXT = (
     " Service state can be changed in service's actions only or in cluster's actions but"
     " with using service_name arg. Bad Dobby!"
 )
-MSG_MANDATORY_ARGS = "Type, key and value are mandatory. Bad Dobby!"
+MSG_MANDATORY_ARGS = "Arguments {} are mandatory. Bad Dobby!"
 MSG_NO_ROUTE = "Incorrect combination of args. Bad Dobby!"
 MSG_WRONG_SERVICE = "Do not try to change one service from another."
+MSG_NO_SERVICE_NAME = "You must specify service name in arguments."
 
 
 def check_context_type(task_vars, *context_type, err_msg=None):
@@ -91,7 +92,7 @@ class ContextActionModule(ActionBase):
     def _check_mandatory(self):
         for arg in self._MANDATORY_ARGS:
             if arg not in self._task.args:
-                raise AnsibleError(MSG_MANDATORY_ARGS)
+                raise AnsibleError(MSG_MANDATORY_ARGS.format(self._MANDATORY_ARGS))
 
     def _get_job_var(self, task_vars, name):
         try:
@@ -111,7 +112,13 @@ class ContextActionModule(ActionBase):
     def _do_host(self, task_vars, context):
         raise NotImplementedError
 
-    def run(self, tmp=None, task_vars=None):
+    def _do_component(self, task_vars, context):
+        raise NotImplementedError
+
+    def _do_component_by_name(self, task_vars, context):
+        raise NotImplementedError
+
+    def run(self, tmp=None, task_vars=None):   # pylint: disable=too-many-branches
         self._check_mandatory()
         obj_type = self._task.args["type"]
 
@@ -163,6 +170,32 @@ class ContextActionModule(ActionBase):
             res = self._do_provider(
                 task_vars,
                 {'provider_id': self._get_job_var(task_vars, 'provider_id')}
+            )
+        elif obj_type == "component" and "component_name" in self._task.args:
+            check_context_type(task_vars, 'cluster', 'service', 'component')
+            context = task_vars['context']
+            if context['type'] == 'component':
+                res = self._do_component(
+                    task_vars,
+                    {'component_id': self._get_job_var(task_vars, 'component_id')}
+                )
+            else:
+                check_context_type(task_vars, 'cluster', 'service')
+                if context['type'] != 'service':
+                    if 'service_name' not in self._task.args:
+                        raise AnsibleError(MSG_NO_SERVICE_NAME)
+                res = self._do_component_by_name(
+                    task_vars,
+                    {
+                        'cluster_id': self._get_job_var(task_vars, 'cluster_id'),
+                        'service_id': task_vars['job'].get('service_id', None),
+                    }
+                )
+        elif obj_type == "component":
+            check_context_type(task_vars, 'component')
+            res = self._do_component(
+                task_vars,
+                {'component_id': self._get_job_var(task_vars, 'component_id')}
             )
         else:
             raise AnsibleError(MSG_NO_ROUTE)
