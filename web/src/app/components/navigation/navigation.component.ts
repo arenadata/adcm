@@ -38,7 +38,6 @@ import { IIssues } from '@app/models/issue';
     }
 
     mat-nav-list a {
-
       display: flex;
       align-items: center;
       line-height: normal;
