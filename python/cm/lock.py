@@ -66,7 +66,7 @@ def unlock_obj(obj, event):
     except IndexError:
         log.warning('empty stack in %s for unlock', obj_ref(obj))
         return
-    log.debug('unlock %s, stack: %s', obj_ref(obj), stack)
+    log.debug('unlock %s, stack: %s, state: %s', obj_ref(obj), stack, state)
     obj.stack = stack
     api.set_object_state(obj, state, event)
 
