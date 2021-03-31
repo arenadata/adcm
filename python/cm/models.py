@@ -14,10 +14,11 @@ from __future__ import unicode_literals
 
 import json
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import User, Group, Permission
 from django.db import models
 
-from cm.errors import AdcmEx
+from cm.errors import AdcmEx, AdcmApiEx
 
 PROTO_TYPE = (
     ('adcm', 'adcm'),
@@ -34,6 +35,26 @@ LICENSE_STATE = (
     ('accepted', 'accepted'),
     ('unaccepted', 'unaccepted'),
 )
+
+
+class ADCMManager(models.Manager):
+    def get(self, *args, **kwargs):
+        try:
+            return super().get(*args, **kwargs)
+        except ObjectDoesNotExist:
+            if not hasattr(self.model, '__error_code__'):
+                raise AdcmApiEx('NO_MODEL_ERROR_CODE', f'model: {self.model.__name__}')
+            msg = '{} {} does not exist'.format(self.model.__name__, kwargs)
+            raise AdcmApiEx(self.model.__error_code__, msg)
+
+
+class ADCMModel(models.Model):
+    objects = models.Manager()
+    obj = ADCMManager()
+
+    class Meta:
+        abstract = True
+
 
 
 class JSONField(models.Field):
@@ -64,7 +85,7 @@ class JSONField(models.Field):
         return self.value_from_object(obj)
 
 
-class Bundle(models.Model):
+class Bundle(ADCMModel):
     name = models.CharField(max_length=160)
     version = models.CharField(max_length=80)
     version_order = models.PositiveIntegerField(default=0)
@@ -76,11 +97,13 @@ class Bundle(models.Model):
     description = models.TextField(blank=True)
     date = models.DateTimeField(auto_now=True)
 
+    __error_code__ = 'BUNDLE_NOT_FOUND'
+
     class Meta:
         unique_together = (('name', 'version', 'edition'),)
 
 
-class Upgrade(models.Model):
+class Upgrade(ADCMModel):
     bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE)
     name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
@@ -99,7 +122,7 @@ MONITORING_TYPE = (
 )
 
 
-class Prototype(models.Model):
+class Prototype(ADCMModel):
     bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE)
     type = models.CharField(max_length=16, choices=PROTO_TYPE)
     parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
@@ -117,6 +140,8 @@ class Prototype(models.Model):
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
     description = models.TextField(blank=True)
 
+    __error_code__ = 'PROTOTYPE_NOT_FOUND'
+
     def __str__(self):
         return str(self.name)
 
@@ -124,12 +149,12 @@ class Prototype(models.Model):
         unique_together = (('bundle', 'type', 'parent', 'name', 'version'),)
 
 
-class ObjectConfig(models.Model):
+class ObjectConfig(ADCMModel):
     current = models.PositiveIntegerField()
     previous = models.PositiveIntegerField()
 
 
-class ConfigLog(models.Model):
+class ConfigLog(ADCMModel):
     obj_ref = models.ForeignKey(ObjectConfig, on_delete=models.CASCADE)
     config = JSONField(default={})
     attr = JSONField(default={})
@@ -137,7 +162,7 @@ class ConfigLog(models.Model):
     description = models.TextField(blank=True)
 
 
-class ADCM(models.Model):
+class ADCM(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
@@ -150,7 +175,7 @@ class ADCM(models.Model):
         return self.prototype.bundle_id
 
 
-class Cluster(models.Model):
+class Cluster(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     name = models.CharField(max_length=80, unique=True)
     description = models.TextField(blank=True)
@@ -158,6 +183,8 @@ class Cluster(models.Model):
     state = models.CharField(max_length=64, default='created')
     stack = JSONField(default=[])
     issue = JSONField(default={})
+
+    __error_code__ = 'CLUSTER_NOT_FOUND'
 
     @property
     def bundle_id(self):
@@ -175,7 +202,7 @@ class Cluster(models.Model):
         return str(self.name)
 
 
-class HostProvider(models.Model):
+class HostProvider(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     name = models.CharField(max_length=80, unique=True)
     description = models.TextField(blank=True)
@@ -183,6 +210,8 @@ class HostProvider(models.Model):
     state = models.CharField(max_length=64, default='created')
     stack = JSONField(default=[])
     issue = JSONField(default={})
+
+    __error_code__ = 'PROVIDER_NOT_FOUND'
 
     @property
     def bundle_id(self):
@@ -200,7 +229,7 @@ class HostProvider(models.Model):
         return str(self.name)
 
 
-class Host(models.Model):
+class Host(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     fqdn = models.CharField(max_length=160, unique=True)
     description = models.TextField(blank=True)
@@ -210,6 +239,8 @@ class Host(models.Model):
     state = models.CharField(max_length=64, default='created')
     stack = JSONField(default=[])
     issue = JSONField(default={})
+
+    __error_code__ = 'HOST_NOT_FOUND'
 
     @property
     def bundle_id(self):
@@ -223,7 +254,7 @@ class Host(models.Model):
         return "{}".format(self.fqdn)
 
 
-class ClusterObject(models.Model):
+class ClusterObject(ADCMModel):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     service = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
@@ -231,6 +262,8 @@ class ClusterObject(models.Model):
     state = models.CharField(max_length=64, default='created')
     stack = JSONField(default=[])
     issue = JSONField(default={})
+
+    __error_code__ = 'CLUSTER_SERVICE_NOT_FOUND'
 
     @property
     def bundle_id(self):
@@ -260,7 +293,7 @@ class ClusterObject(models.Model):
         unique_together = (('cluster', 'prototype'),)
 
 
-class ServiceComponent(models.Model):
+class ServiceComponent(ADCMModel):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE, null=True, default=None)
@@ -312,7 +345,7 @@ SCRIPT_TYPE = (
 )
 
 
-class Action(models.Model):
+class Action(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
@@ -344,7 +377,7 @@ class Action(models.Model):
         unique_together = (('prototype', 'name'),)
 
 
-class SubAction(models.Model):
+class SubAction(ADCMModel):
     action = models.ForeignKey(Action, on_delete=models.CASCADE)
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
@@ -354,7 +387,7 @@ class SubAction(models.Model):
     params = JSONField(default={})
 
 
-class HostComponent(models.Model):
+class HostComponent(ADCMModel):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     host = models.ForeignKey(Host, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
@@ -384,7 +417,7 @@ CONFIG_FIELD_TYPE = (
 )
 
 
-class PrototypeConfig(models.Model):
+class PrototypeConfig(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     action = models.ForeignKey(Action, on_delete=models.CASCADE, null=True, default=None)
     name = models.CharField(max_length=160)
@@ -401,7 +434,7 @@ class PrototypeConfig(models.Model):
         unique_together = (('prototype', 'action', 'name', 'subname'),)
 
 
-class PrototypeExport(models.Model):
+class PrototypeExport(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     name = models.CharField(max_length=160)
 
@@ -409,7 +442,7 @@ class PrototypeExport(models.Model):
         unique_together = (('prototype', 'name'),)
 
 
-class PrototypeImport(models.Model):
+class PrototypeImport(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     name = models.CharField(max_length=160)
     min_version = models.CharField(max_length=80)
@@ -424,7 +457,7 @@ class PrototypeImport(models.Model):
         unique_together = (('prototype', 'name'),)
 
 
-class ClusterBind(models.Model):
+class ClusterBind(ADCMModel):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE, null=True, default=None)
     source_cluster = models.ForeignKey(
@@ -450,12 +483,12 @@ JOB_STATUS = (
 )
 
 
-class UserProfile(models.Model):
+class UserProfile(ADCMModel):
     login = models.CharField(max_length=32, unique=True)
     profile = JSONField(default='')
 
 
-class Role(models.Model):
+class Role(ADCMModel):
     name = models.CharField(max_length=32, unique=True)
     description = models.TextField(blank=True)
     permissions = models.ManyToManyField(Permission, blank=True)
@@ -463,7 +496,7 @@ class Role(models.Model):
     group = models.ManyToManyField(Group, blank=True)
 
 
-class JobLog(models.Model):
+class JobLog(ADCMModel):
     task_id = models.PositiveIntegerField(default=0)
     action_id = models.PositiveIntegerField()
     sub_action_id = models.PositiveIntegerField(default=0)
@@ -475,7 +508,7 @@ class JobLog(models.Model):
     finish_date = models.DateTimeField(db_index=True)
 
 
-class TaskLog(models.Model):
+class TaskLog(ADCMModel):
     action_id = models.PositiveIntegerField()
     object_id = models.PositiveIntegerField()
     pid = models.PositiveIntegerField(blank=True, default=0)
@@ -490,7 +523,7 @@ class TaskLog(models.Model):
     finish_date = models.DateTimeField()
 
 
-class GroupCheckLog(models.Model):
+class GroupCheckLog(ADCMModel):
     job_id = models.PositiveIntegerField(default=0)
     title = models.TextField()
     message = models.TextField(blank=True, null=True)
@@ -503,7 +536,7 @@ class GroupCheckLog(models.Model):
         ]
 
 
-class CheckLog(models.Model):
+class CheckLog(ADCMModel):
     group = models.ForeignKey(GroupCheckLog, blank=True, null=True, on_delete=models.CASCADE)
     job_id = models.PositiveIntegerField(default=0)
     title = models.TextField()
@@ -524,7 +557,7 @@ FORMAT_TYPE = (
 )
 
 
-class LogStorage(models.Model):
+class LogStorage(ADCMModel):
     job = models.ForeignKey(JobLog, on_delete=models.CASCADE)
     name = models.TextField(default='')
     body = models.TextField(blank=True, null=True)
@@ -540,7 +573,7 @@ class LogStorage(models.Model):
 
 # Stage: Temporary tables to load bundle
 
-class StagePrototype(models.Model):
+class StagePrototype(ADCMModel):
     type = models.CharField(max_length=16, choices=PROTO_TYPE)
     parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
     name = models.CharField(max_length=160)
@@ -566,7 +599,7 @@ class StagePrototype(models.Model):
         unique_together = (('type', 'parent', 'name', 'version'),)
 
 
-class StageUpgrade(models.Model):
+class StageUpgrade(ADCMModel):
     name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
     min_version = models.CharField(max_length=80)
@@ -578,7 +611,7 @@ class StageUpgrade(models.Model):
     state_on_success = models.CharField(max_length=64, blank=True)
 
 
-class StageAction(models.Model):
+class StageAction(ADCMModel):
     prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
@@ -610,7 +643,7 @@ class StageAction(models.Model):
         unique_together = (('prototype', 'name'),)
 
 
-class StageSubAction(models.Model):
+class StageSubAction(ADCMModel):
     action = models.ForeignKey(StageAction, on_delete=models.CASCADE)
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
@@ -620,7 +653,7 @@ class StageSubAction(models.Model):
     params = JSONField(default={})
 
 
-class StagePrototypeConfig(models.Model):
+class StagePrototypeConfig(ADCMModel):
     prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
     action = models.ForeignKey(StageAction, on_delete=models.CASCADE, null=True, default=None)
     name = models.CharField(max_length=160)
@@ -637,7 +670,7 @@ class StagePrototypeConfig(models.Model):
         unique_together = (('prototype', 'action', 'name', 'subname'),)
 
 
-class StagePrototypeExport(models.Model):
+class StagePrototypeExport(ADCMModel):
     prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
     name = models.CharField(max_length=160)
 
@@ -645,7 +678,7 @@ class StagePrototypeExport(models.Model):
         unique_together = (('prototype', 'name'),)
 
 
-class StagePrototypeImport(models.Model):
+class StagePrototypeImport(ADCMModel):
     prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
     name = models.CharField(max_length=160)
     min_version = models.CharField(max_length=80)
@@ -660,5 +693,5 @@ class StagePrototypeImport(models.Model):
         unique_together = (('prototype', 'name'),)
 
 
-class DummyData(models.Model):
+class DummyData(ADCMModel):
     date = models.DateTimeField(auto_now=True)

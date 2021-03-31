@@ -109,7 +109,7 @@ class ClusterHostList(PageView):
         """
         List all hosts of a specified cluster
         """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
+        cluster = Cluster.obj.get(id=cluster_id)
         obj = self.filter_queryset(self.get_queryset().filter(cluster=cluster))
         return self.get_page(obj, request, {'cluster_id': cluster_id})
 
@@ -130,8 +130,8 @@ class ClusterHostDetail(ListView):
             raise AdcmApiEx('FOREIGN_HOST', msg)
 
     def get_obj(self, cluster_id, host_id):
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        host = check_obj(Host, host_id, 'HOST_NOT_FOUND')
+        cluster = Cluster.obj.get(id=cluster_id)
+        host = Host.obj.get(id=host_id)
         self.check_host(cluster, host)
         return host
 

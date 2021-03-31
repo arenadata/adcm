@@ -39,10 +39,7 @@ def check_obj(model, req, error):
         kw = req
     else:
         kw = {'id': req}
-    try:
-        return model.objects.get(**kw)
-    except ObjectDoesNotExist:
-        raise AdcmApiEx(error) from None
+    return model.obj.get(**kw)
 
 
 def hlink(view, lookup, lookup_url):

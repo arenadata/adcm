@@ -23,6 +23,10 @@ ERRORS = {
     'AUTH_ERROR': ("authenticate error", rfs.HTTP_409_CONFLICT, ERR),
     'STACK_LOAD_ERROR': ("stack loading error", rfs.HTTP_409_CONFLICT, ERR),
 
+    'NO_MODEL_ERROR_CODE': (
+        "django model doesn't has __error_code__ attribute", rfs.HTTP_404_NOT_FOUND, ERR
+    ),
+
     'ADCM_NOT_FOUND': ("adcm object doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),
     'BUNDLE_NOT_FOUND': ("bundle doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),
     'CLUSTER_NOT_FOUND': ("cluster doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),
