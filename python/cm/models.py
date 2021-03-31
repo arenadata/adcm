@@ -43,9 +43,9 @@ class ADCMManager(models.Manager):
             return super().get(*args, **kwargs)
         except ObjectDoesNotExist:
             if not hasattr(self.model, '__error_code__'):
-                raise AdcmApiEx('NO_MODEL_ERROR_CODE', f'model: {self.model.__name__}')
+                raise AdcmApiEx('NO_MODEL_ERROR_CODE', f'model: {self.model.__name__}') from None
             msg = '{} {} does not exist'.format(self.model.__name__, kwargs)
-            raise AdcmApiEx(self.model.__error_code__, msg)
+            raise AdcmApiEx(self.model.__error_code__, msg) from None
 
 
 class ADCMModel(models.Model):
