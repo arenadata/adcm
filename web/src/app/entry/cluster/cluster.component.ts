@@ -38,7 +38,10 @@ import { ListFactory } from '@app/factories/list-factory';
     ></adwp-list>
   `,
   styles: [`
-    :host { flex: 1; }
+    :host {
+      flex: 1;
+      max-width: 100%;
+    }
   `],
 })
 export class ClusterListComponent extends AdwpListDirective<ICluster> {
