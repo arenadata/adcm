@@ -23,7 +23,7 @@ import { IIssues } from '@app/models/issue';
   `,
   styles: [`
     :host {
-      font-size: 0.8em;
+      font-size: 14px;
       margin-left: 8px;
       width: 100%;
       display: flex;
@@ -53,11 +53,7 @@ import { IIssues } from '@app/models/issue';
     }
 
     .mat-nav-list .entity a {
-      line-height: 24px;
-    }
-
-    .aggregate {
-      width: 7px;
+      line-height: normal;
     }
 
   `],
