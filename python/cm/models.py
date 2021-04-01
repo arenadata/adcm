@@ -114,7 +114,7 @@ class Upgrade(ADCMModel):
     state_available = JSONField(default=[])
     state_on_success = models.CharField(max_length=64, blank=True)
 
-    __error_code__ = 'BUNDLE_NOT_FOUND'
+    __error_code__ = 'UPGRADE_NOT_FOUND'
 
 
 MONITORING_TYPE = (
