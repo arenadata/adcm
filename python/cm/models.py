@@ -56,7 +56,6 @@ class ADCMModel(models.Model):
         abstract = True
 
 
-
 class JSONField(models.Field):
     def db_type(self, connection):
         return 'text'
