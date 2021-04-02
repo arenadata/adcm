@@ -72,7 +72,7 @@ def test_that_check_nonexistent_cluster_upgrade(sdk_client_fs: ADCMClient, clust
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         upgr.do(upgrade_id=5555, cluster_id=cluster.id)
     with allure.step('Check if upgrade is not found'):
-        UPGRADE_NOT_FOUND.equal(e, 'upgrade is not found')
+        UPGRADE_NOT_FOUND.equal(e, 'Upgrade', 'does not exist')
 
 
 def test_that_check_nonexistent_hostprovider_upgrade(sdk_client_fs: ADCMClient, host_bundles):
@@ -84,7 +84,7 @@ def test_that_check_nonexistent_hostprovider_upgrade(sdk_client_fs: ADCMClient, 
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         upgr.do(upgrade_id=5555, provider_id=hostprovider.id)
     with allure.step('Check if upgrade is not found'):
-        UPGRADE_NOT_FOUND.equal(e, 'upgrade is not found')
+        UPGRADE_NOT_FOUND.equal(e, 'Upgrade', 'does not exist')
 
 
 def test_a_hostprovider_bundle_upgrade_will_ends_successfully(sdk_client_fs: ADCMClient,
