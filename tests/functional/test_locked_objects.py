@@ -63,11 +63,11 @@ class TestClusterLock:
         Test that cluster locked when action running and unlocked when action ends
         """
         cluster.host_add(host)
-        assert_state(cluster, "created")
+        is_free(cluster)
         task = _lock_obj(cluster)
-        _check_that_object_is_locked(cluster)
+        is_locked(cluster)
         task.wait()
-        assert_state(cluster, "created")
+        is_free(cluster)
 
     def test_down_lock(self, complete_cluster, host, sdk_client_fs):
         """
@@ -78,18 +78,18 @@ class TestClusterLock:
         """
         task = _lock_obj(complete_cluster)
         for service in complete_cluster.service_list():
-            _check_that_object_is_locked(service)
+            is_locked(service)
             for component in service.component_list():
-                _check_that_object_is_locked(component)
+                is_locked(component)
         for hc in complete_cluster.hostcomponent():
-            _check_that_object_is_locked(sdk_client_fs.host(id=hc["host_id"]))
+            is_locked(sdk_client_fs.host(id=hc["host_id"]))
         task.wait()
         for service in complete_cluster.service_list():
-            assert_state(service, "created")
+            is_free(service)
             for component in service.component_list():
-                assert_state(component, "created")
+                is_free(component)
         for hc in complete_cluster.hostcomponent():
-            assert_state(sdk_client_fs.host(id=hc["host_id"]), "created")
+            is_free(sdk_client_fs.host(id=hc["host_id"]))
 
     def test_no_horizontal_lock(self, cluster: Cluster):
         """
@@ -97,7 +97,7 @@ class TestClusterLock:
         """
         second_cluster = cluster.prototype().cluster_create(name=random_string())
         _lock_obj(cluster)
-        assert_state(second_cluster, "created")
+        is_free(second_cluster)
 
 
 class TestServiceLock:
@@ -107,11 +107,11 @@ class TestServiceLock:
         """
         cluster.host_add(host)
         service = cluster.service_add(name="dummy")
-        assert_state(service, "created")
+        is_free(service)
         task = _lock_obj(service)
-        _check_that_object_is_locked(service)
+        is_locked(service)
         task.wait()
-        assert_state(service, "created")
+        is_free(service)
 
     def test_up_lock(self, complete_cluster):
         """
@@ -119,9 +119,9 @@ class TestServiceLock:
             - Cluster
         """
         task = _lock_obj(complete_cluster.service(name="dummy"))
-        _check_that_object_is_locked(complete_cluster)
+        is_locked(complete_cluster)
         task.wait()
-        assert_state(complete_cluster, "created")
+        is_free(complete_cluster)
 
     def test_down_lock(self, complete_cluster, host):
         """
@@ -132,12 +132,12 @@ class TestServiceLock:
         service = complete_cluster.service(name="dummy")
         task = _lock_obj(service)
         for component in service.component_list():
-            _check_that_object_is_locked(component)
-        _check_that_object_is_locked(host)
+            is_locked(component)
+        is_locked(host)
         task.wait()
         for component in service.component_list():
-            assert_state(component, "created")
-        assert_state(host, "created")
+            is_free(component)
+        is_free(host)
 
     def test_no_horizontal_lock(self, complete_cluster):
         """
@@ -145,7 +145,7 @@ class TestServiceLock:
         """
         second_service = complete_cluster.service_add(name="second")
         _lock_obj(complete_cluster.service(name="dummy"))
-        assert_state(second_service, "created")
+        is_free(second_service)
 
 
 class TestComponentLock:
@@ -156,10 +156,10 @@ class TestComponentLock:
         service = complete_cluster.service(name="dummy")
         component = service.component(name="dummy")
 
-        assert_state(component, "created")
+        is_free(component)
         task = _lock_obj(component)
         task.wait()
-        assert_state(service, "created")
+        is_free(service)
 
     def test_up_lock(self, complete_cluster):
         """
@@ -169,11 +169,11 @@ class TestComponentLock:
         """
         service = complete_cluster.service(name="dummy")
         task = _lock_obj(service.component(name="dummy"))
-        _check_that_object_is_locked(service)
-        _check_that_object_is_locked(complete_cluster)
+        is_locked(service)
+        is_locked(complete_cluster)
         task.wait()
-        assert_state(service, "created")
-        assert_state(complete_cluster, "created")
+        is_free(service)
+        is_free(complete_cluster)
 
     def test_down_lock(self, complete_cluster, host):
         """
@@ -181,9 +181,9 @@ class TestComponentLock:
             - Host
         """
         task = _lock_obj(complete_cluster.service(name="dummy").component(name="dummy"))
-        _check_that_object_is_locked(host)
+        is_locked(host)
         task.wait()
-        assert_state(host, "created")
+        is_free(host)
 
     def test_no_horizontal_lock(self, complete_cluster):
         """
@@ -191,7 +191,7 @@ class TestComponentLock:
         """
         service = complete_cluster.service(name="dummy")
         _lock_obj(service.component(name="dummy"))
-        assert_state(service.component(name="second"), "created")
+        is_free(service.component(name="second"))
 
 
 class TestHostLock:
@@ -199,11 +199,11 @@ class TestHostLock:
         """
         Test that host locked when action running and unlocked when action ends
         """
-        assert_state(host, "created")
+        is_free(host)
         task = _lock_obj(host)
-        _check_that_object_is_locked(host)
+        is_locked(host)
         task.wait()
-        assert_state(host, "created")
+        is_free(host)
 
     def test_up_lock(self, complete_cluster, host_provider, host):
         """
@@ -215,13 +215,13 @@ class TestHostLock:
         service = complete_cluster.service(name="dummy")
         component = service.component(name="dummy")
         task = _lock_obj(host)
-        _check_that_object_is_locked(component)
-        _check_that_object_is_locked(service)
-        _check_that_object_is_locked(complete_cluster)
+        is_locked(component)
+        is_locked(service)
+        is_locked(complete_cluster)
         task.wait()
-        assert_state(component, "created")
-        assert_state(service, "created")
-        assert_state(complete_cluster, "created")
+        is_free(component)
+        is_free(service)
+        is_free(complete_cluster)
 
     def test_no_horizontal_lock(self, host_provider, host):
         """
@@ -229,7 +229,7 @@ class TestHostLock:
         """
         second_host = host_provider.host_create(fqdn=random_string())
         _lock_obj(host)
-        assert_state(second_host, "created")
+        is_free(second_host)
 
 
 class TestHostProviderLock:
@@ -237,11 +237,11 @@ class TestHostProviderLock:
         """
         Test that host provider locked when action running and unlocked when action ends
         """
-        assert_state(host_provider, "created")
+        is_free(host_provider)
         task = _lock_obj(host_provider)
-        _check_that_object_is_locked(host_provider)
+        is_locked(host_provider)
         task.wait()
-        assert_state(host_provider, "created")
+        is_free(host_provider)
 
     def test_down_lock(self, host_provider, host):
         """
@@ -249,9 +249,9 @@ class TestHostProviderLock:
             - Host
         """
         task = _lock_obj(host_provider)
-        _check_that_object_is_locked(host)
+        is_locked(host)
         task.wait()
-        assert_state(host, "created")
+        is_free(host)
 
     def test_no_horizontal_lock(self, host_provider):
         """
@@ -261,13 +261,13 @@ class TestHostProviderLock:
             name=random_string()
         )
         _lock_obj(host_provider)
-        assert_state(second_provider, "created")
+        is_free(second_provider)
 
 
 def test_cluster_should_be_unlocked_when_ansible_task_killed(cluster: Cluster):
     with allure.step("Run cluster action: lock-terminate for cluster"):
         task = cluster.action(name="lock-terminate").run()
-    _check_that_object_is_locked(cluster)
+    is_locked(cluster)
     task.wait()
     assert_state(cluster, "terminate_failed")
 
@@ -278,18 +278,18 @@ def test_host_should_be_unlocked_when_ansible_task_killed(
     with allure.step("Run action: lock-terminate for cluster"):
         task = complete_cluster.action(name="lock-terminate").run()
 
-    _check_that_object_is_locked(host)
+    is_locked(host)
     task.wait()
-    assert_state(host, "created")
+    is_free(host)
 
 
 def test_service_should_be_unlocked_when_ansible_task_killed(complete_cluster: Cluster):
     service = complete_cluster.service(name="dummy")
     with allure.step("Run action: lock-terminate for cluster"):
         task = complete_cluster.action(name="lock-terminate").run()
-    _check_that_object_is_locked(service)
+    is_locked(service)
     task.wait()
-    assert_state(service, "created")
+    is_free(service)
 
 
 def _lock_obj(obj) -> Task:
@@ -300,7 +300,7 @@ def _lock_obj(obj) -> Task:
         return obj.action(name="lock").run()
 
 
-def _check_that_object_is_locked(
+def is_locked(
     obj: Union[Cluster, Service, Component, Provider, Host]
 ):
     """
@@ -308,8 +308,19 @@ def _check_that_object_is_locked(
     """
 
     with allure.step(f"Assert that {obj.__class__.__name__} is locked"):
-        obj.reread()
         assert_state(obj=obj, state="locked")
         assert (
             obj.action_list() == []
         ), f"{obj.__class__.__name__} action list isn't empty. {obj.__class__.__name__} not locked"
+
+
+def is_free(
+        obj: Union[Cluster, Service, Component, Provider, Host]
+):
+    """
+    Assert that object state is 'created' and action list isn't empty
+    """
+    with allure.step(f"Assert that {obj.__class__.__name__} is free"):
+        assert_state(obj, state="created")
+        assert obj.action_list(), f"{obj.__class__.__name__} action list is empty. " \
+                                  f"Actions should be available for unlocked objects"

@@ -37,6 +37,7 @@
           states:
             available: any
     second:
+      actions: *actions
 
   actions: *actions
 
@@ -45,6 +46,8 @@
   version: 1.0.10
   components:
     dummy:
+      actions: *actions
+  actions: *actions
 
 - type: cluster
   name: locking
