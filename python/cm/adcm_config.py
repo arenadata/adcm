@@ -23,6 +23,7 @@ from django.db.utils import OperationalError
 from ansible.parsing.vault import VaultSecret, VaultAES256
 
 import cm.variant
+import cm.ansible_plugin
 import cm.config as config
 from cm.errors import AdcmApiEx, AdcmEx
 from cm.errors import raise_AdcmEx as err
@@ -812,6 +813,18 @@ def set_service_config_by_id(cluster_id, service_id, keys, value):
     except ClusterObject.DoesNotExist:
         msg = 'service # {} does not exist in cluster # {}'
         err('OBJECT_NOT_FOUND', msg.format(service_id, cluster_id))
+    return set_object_config(obj, keys, value)
+
+
+def set_component_config_by_name(cluster_id, service_id, component_name, service_name, keys, value):
+    obj = cm.ansible_plugin.get_component_by_name(
+        cluster_id, service_id, component_name, service_name
+    )
+    return set_object_config(obj, keys, value)
+
+
+def set_component_config(component_id, keys, value):
+    obj = cm.ansible_plugin.get_component(component_id)
     return set_object_config(obj, keys, value)
 
 

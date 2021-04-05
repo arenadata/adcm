@@ -18,6 +18,7 @@ import { IIssues } from '@app/models/issue';
             <a routerLink="{{ item.url }}" [title]="item.title | uppercase">{{ item.title | uppercase }}</a>
           </div>
           <app-actions-button [row]="item?.entity" [issueType]="item?.entity?.typeName"></app-actions-button>
+          <app-upgrade *ngIf="item?.entity?.typeName === 'cluster'" [row]="item?.entity"></app-upgrade>
         </span>
         <span *ngIf="!isLast">&nbsp;/&nbsp;</span>
       </ng-container>
@@ -84,6 +85,10 @@ import { IIssues } from '@app/models/issue';
       text-overflow: ellipsis;
       overflow: hidden;
       display: block;
+    }
+
+    .mat-nav-list app-upgrade {
+      margin-left: -8px;
     }
 
   `],
