@@ -162,6 +162,8 @@ class ConfigLog(ADCMModel):
     date = models.DateTimeField(auto_now=True)
     description = models.TextField(blank=True)
 
+    __error_code__ = 'CONFIG_NOT_FOUND'
+
 
 class ADCM(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
