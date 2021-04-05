@@ -29,12 +29,12 @@ from adcm.settings import REST_FRAMEWORK
 
 import cm.upgrade
 import cm.config as config
+from cm.errors import AdcmEx
 from cm.models import Action, ConfigLog, PrototypeConfig
-from cm.errors import AdcmApiEx
 from cm.logger import log
 
 
-def check_obj(model, req, error):
+def check_obj(model, req, error=None):
     if isinstance(req, dict):
         kw = req
     else:
@@ -263,7 +263,7 @@ class PageView(GenericAPIView, InterfaceView):
                 qp = ','.join([f'{k}={v}' for k, v in request.query_params.items()
                                if k in ['fields', 'distinct']])
                 msg = f'Bad query params: {qp}'
-                raise AdcmApiEx('BAD_QUERY_PARAMS', msg=msg) from None
+                raise AdcmEx('BAD_QUERY_PARAMS', msg=msg) from None
 
         page = self.paginate_queryset(obj)
         if self.is_paged(request):
@@ -279,7 +279,7 @@ class PageView(GenericAPIView, InterfaceView):
             return Response(obj)
 
         msg = 'Response is too long, use paginated request'
-        raise AdcmApiEx('TOO_LONG', msg=msg, args=self.get_paged_link())
+        raise AdcmEx('TOO_LONG', msg=msg, args=self.get_paged_link())
 
     def get(self, request, *args, **kwargs):
         obj = self.filter_queryset(self.get_queryset())
@@ -318,7 +318,7 @@ class DetailViewRO(GenericAPIView, InterfaceView):
         try:
             return self.get_queryset().get(**kw_req)
         except ObjectDoesNotExist:
-            raise AdcmApiEx(self.error_code) from None
+            raise AdcmEx(self.error_code) from None
 
     def get_object(self):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field

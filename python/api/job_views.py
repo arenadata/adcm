@@ -25,7 +25,7 @@ from api.job_serial import (
     JobSerializer, JobListSerializer, LogStorageSerializer, LogStorageListSerializer, LogSerializer
 )
 from api.job_serial import TaskSerializer, TaskListSerializer, TaskPostSerializer
-from cm.errors import AdcmEx, AdcmApiEx
+from cm.errors import AdcmEx
 from cm.job import get_log, restart_task, cancel_task
 from cm.models import JobLog, TaskLog, LogStorage
 
@@ -93,49 +93,44 @@ class LogStorageView(GenericAPIView):
     serializer_class = LogStorageSerializer
 
     def get(self, request, job_id, log_id):
+        job = JobLog.obj.get(id=job_id)
         try:
-            job = JobLog.objects.get(id=job_id)
-            try:
-                log_storage = LogStorage.objects.get(id=log_id, job=job)
-            except LogStorage.DoesNotExist:
-                raise AdcmApiEx(
-                    'LOG_NOT_FOUND', f'log {log_id} not found for job {job_id}') from None
-            serializer = self.serializer_class(log_storage, context={'request': request})
-            return Response(serializer.data)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
+            log_storage = LogStorage.objects.get(id=log_id, job=job)
+        except LogStorage.DoesNotExist:
+            raise AdcmEx(
+                'LOG_NOT_FOUND', f'log {log_id} not found for job {job_id}'
+            ) from None
+        serializer = self.serializer_class(log_storage, context={'request': request})
+        return Response(serializer.data)
 
 
 def download_log_file(request, job_id, log_id):
-    try:
-        job = JobLog.objects.get(id=job_id)
-        log_storage = LogStorage.objects.get(id=log_id, job=job)
+    job = JobLog.objects.get(id=job_id)
+    log_storage = LogStorage.objects.get(id=log_id, job=job)
 
-        if log_storage.type in ['stdout', 'stderr']:
-            filename = f'{job.id}-{log_storage.name}-{log_storage.type}.{log_storage.format}'
-        else:
-            filename = f'{job.id}-{log_storage.name}.{log_storage.format}'
-        filename = re.sub(r'\s+', '_', filename)
-        if log_storage.format == 'txt':
-            mime_type = 'text/plain'
-        else:
-            mime_type = 'application/json'
+    if log_storage.type in ['stdout', 'stderr']:
+        filename = f'{job.id}-{log_storage.name}-{log_storage.type}.{log_storage.format}'
+    else:
+        filename = f'{job.id}-{log_storage.name}.{log_storage.format}'
+    filename = re.sub(r'\s+', '_', filename)
+    if log_storage.format == 'txt':
+        mime_type = 'text/plain'
+    else:
+        mime_type = 'application/json'
 
-        if log_storage.body is None:
-            body = ''
-            length = 0
-        else:
-            body = log_storage.body
-            length = len(body)
+    if log_storage.body is None:
+        body = ''
+        length = 0
+    else:
+        body = log_storage.body
+        length = len(body)
 
-        response = HttpResponse(body)
-        response['Content-Type'] = mime_type
-        response['Content-Length'] = length
-        response['Content-Encoding'] = 'UTF-8'
-        response['Content-Disposition'] = f'attachment; filename={filename}'
-        return response
-    except AdcmEx as e:
-        raise AdcmApiEx(e.code, e.msg, e.http_code) from e
+    response = HttpResponse(body)
+    response['Content-Type'] = mime_type
+    response['Content-Length'] = length
+    response['Content-Encoding'] = 'UTF-8'
+    response['Content-Disposition'] = f'attachment; filename={filename}'
+    return response
 
 
 class LogFile(GenericAPIView):
@@ -153,11 +148,8 @@ class LogFile(GenericAPIView):
             tag = 'ansible'
 
         ls = LogStorage.objects.get(job_id=job_id, name=tag, type=_type, format=log_type)
-        try:
-            serializer = self.serializer_class(ls, context={'request': request})
-            return Response(serializer.data)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
+        serializer = self.serializer_class(ls, context={'request': request})
+        return Response(serializer.data)
 
 
 class Task(PageView):
@@ -204,10 +196,7 @@ class TaskReStart(GenericAPIView):
 
     def put(self, request, task_id):
         task = check_obj(TaskLog, task_id, 'TASK_NOT_FOUND')
-        try:
-            restart_task(task)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
+        restart_task(task)
         return Response(status=status.HTTP_200_OK)
 
 
@@ -217,8 +206,5 @@ class TaskCancel(GenericAPIView):
 
     def put(self, request, task_id):
         task = check_obj(TaskLog, task_id, 'TASK_NOT_FOUND')
-        try:
-            cancel_task(task)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
+        cancel_task(task)
         return Response(status=status.HTTP_200_OK)

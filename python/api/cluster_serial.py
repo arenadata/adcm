@@ -16,9 +16,8 @@ from rest_framework import serializers
 import cm.api
 import cm.job
 import cm.status_api
-from cm.api import safe_api
 from cm.logger import log   # pylint: disable=unused-import
-from cm.errors import AdcmApiEx, AdcmEx
+from cm.errors import AdcmEx
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
 
 from api.api_views import check_obj, hlink, filter_actions, get_upgradable_func
@@ -55,12 +54,8 @@ class ClusterSerializer(serializers.Serializer):
                 validated_data.get('name'),
                 validated_data.get('description', ''),
             )
-        except Prototype.DoesNotExist:
-            raise AdcmApiEx('PROTOTYPE_NOT_FOUND') from None
         except IntegrityError:
-            raise AdcmApiEx("CLUSTER_CONFLICT") from None
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
+            raise AdcmEx("CLUSTER_CONFLICT") from None
 
     def update(self, instance, validated_data):
         instance.name = validated_data.get('name', instance.name)
@@ -69,7 +64,7 @@ class ClusterSerializer(serializers.Serializer):
             instance.save()
         except IntegrityError:
             msg = 'cluster with name "{}" already exists'.format(instance.name)
-            raise AdcmApiEx("CLUSTER_CONFLICT", msg) from None
+            raise AdcmEx("CLUSTER_CONFLICT", msg) from None
         return instance
 
 
@@ -163,10 +158,7 @@ class ClusterHostAddSerializer(ClusterHostDetailSerializer):
     def create(self, validated_data):
         cluster = check_obj(Cluster, validated_data.get('cluster_id'), "CLUSTER_NOT_FOUND")
         host = check_obj(Host, validated_data.get('id'), "HOST_NOT_FOUND")
-        try:
-            cm.api.add_host_to_cluster(cluster, host)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
+        cm.api.add_host_to_cluster(cluster, host)
         return host
 
 
@@ -276,19 +268,19 @@ class HostComponentSaveSerializer(serializers.Serializer):
 
     def validate_hc(self, hc):
         if not hc:
-            raise AdcmApiEx('INVALID_INPUT', 'hc field is required')
+            raise AdcmEx('INVALID_INPUT', 'hc field is required')
         if not isinstance(hc, list):
-            raise AdcmApiEx('INVALID_INPUT', 'hc field should be a list')
+            raise AdcmEx('INVALID_INPUT', 'hc field should be a list')
         for item in hc:
             for key in ('component_id', 'host_id', 'service_id'):
                 if key not in item:
                     msg = '"{}" sub-field is required'
-                    raise AdcmApiEx('INVALID_INPUT', msg.format(key))
+                    raise AdcmEx('INVALID_INPUT', msg.format(key))
         return hc
 
     def create(self, validated_data):
         hc = validated_data.get('hc')
-        return safe_api(cm.api.add_hc, (self.context.get('cluster'), hc))
+        return cm.api.add_hc(self.context.get('cluster'), hc)
 
 
 class ClusterServiceUrlField(UrlField):
@@ -318,9 +310,7 @@ class ClusterServiceSerializer(serializers.Serializer):
                 validated_data.get('prototype_id'),
             )
         except IntegrityError:
-            raise AdcmApiEx('SERVICE_CONFLICT') from None
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
+            raise AdcmEx('SERVICE_CONFLICT') from None
 
 
 class ClusterServiceDetailSerializer(ClusterServiceSerializer):
@@ -501,15 +491,12 @@ class DoBindSerializer(serializers.Serializer):
         export_cluster = check_obj(
             Cluster, validated_data.get('export_cluster_id'), "CLUSTER_NOT_FOUND"
         )
-        try:
-            return cm.api.bind(
-                validated_data.get('cluster'),
-                None,
-                export_cluster,
-                validated_data.get('export_service_id', 0)
-            )
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
+        return cm.api.bind(
+            validated_data.get('cluster'),
+            None,
+            export_cluster,
+            validated_data.get('export_service_id', 0)
+        )
 
 
 class DoServiceBindSerializer(serializers.Serializer):
@@ -521,28 +508,20 @@ class DoServiceBindSerializer(serializers.Serializer):
     export_cluster_prototype_name = serializers.CharField(read_only=True)
 
     def create(self, validated_data):
-        export_cluster = check_obj(
-            Cluster, validated_data.get('export_cluster_id'), "CLUSTER_NOT_FOUND"
+        export_cluster = check_obj(Cluster, validated_data.get('export_cluster_id'))
+        return cm.api.bind(
+            validated_data.get('cluster'),
+            validated_data.get('service'),
+            export_cluster,
+            validated_data.get('export_service_id')
         )
-        try:
-            return cm.api.bind(
-                validated_data.get('cluster'),
-                validated_data.get('service'),
-                export_cluster,
-                validated_data.get('export_service_id')
-            )
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
 
 class PostImportSerializer(serializers.Serializer):
     bind = serializers.JSONField()
 
     def create(self, validated_data):
-        try:
-            bind = validated_data.get('bind')
-            cluster = self.context.get('cluster')
-            service = self.context.get('service')
-            return cm.api.multi_bind(cluster, service, bind)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds) from e
+        bind = validated_data.get('bind')
+        cluster = self.context.get('cluster')
+        service = self.context.get('service')
+        return cm.api.multi_bind(cluster, service, bind)

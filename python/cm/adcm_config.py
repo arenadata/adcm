@@ -25,7 +25,7 @@ from ansible.parsing.vault import VaultSecret, VaultAES256
 import cm.variant
 import cm.ansible_plugin
 import cm.config as config
-from cm.errors import AdcmApiEx, AdcmEx
+from cm.errors import AdcmEx
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
 from cm.models import (
@@ -291,10 +291,7 @@ def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-local
 
 
 def restore_cluster_config(obj_conf, version, desc=''):
-    try:
-        cl = ConfigLog.objects.get(obj_ref=obj_conf, id=version)
-    except ConfigLog.DoesNotExist:
-        raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist") from None
+    cl = ConfigLog.obj.get(obj_ref=obj_conf, id=version)
     obj_conf.previous = obj_conf.current
     obj_conf.current = version
     obj_conf.save()

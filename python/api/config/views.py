@@ -15,8 +15,8 @@ from rest_framework.response import Response
 
 from api.api_views import ListView, GenericAPIPermView, create, update, check_obj
 
+from cm.errors import AdcmEx
 from cm.adcm_config import ui_config
-from cm.errors import AdcmApiEx
 from cm.models import (
     ADCM, Cluster, HostProvider, Host, ClusterObject, ServiceComponent, ConfigLog, ObjectConfig
 )
@@ -31,10 +31,7 @@ def get_config_version(objconf, version):
         ver = objconf.current
     else:
         ver = version
-    try:
-        cl = ConfigLog.objects.get(obj_ref=objconf, id=ver)
-    except ConfigLog.DoesNotExist:
-        raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist") from None
+    cl = ConfigLog.objects.get(obj_ref=objconf, id=ver)
     return cl
 
 
@@ -69,7 +66,7 @@ def get_obj(objects, object_type, object_id):
             'service': 'SERVICE_NOT_FOUND',
             'component': 'COMPONENT_NOT_FOUND',
         }
-        raise AdcmApiEx(errors[object_type]) from None
+        raise AdcmEx(errors[object_type]) from None
 
     if object_type == 'provider':
         object_type = 'hostprovider'

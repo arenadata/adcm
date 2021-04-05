@@ -17,7 +17,7 @@ from api.api_views import (
     ListView, GenericAPIPermView, ActionFilter, create, check_obj, filter_actions
 )
 from api.job_serial import RunTaskSerializer
-from cm.errors import AdcmApiEx
+from cm.errors import AdcmEx
 from cm.models import (
     ADCM, Cluster, HostProvider, Host, ClusterObject, ServiceComponent, Action, TaskLog,
     HostComponent
@@ -65,7 +65,7 @@ def get_obj(**kwargs):
             'service': 'SERVICE_NOT_FOUND',
             'component': 'COMPONENT_NOT_FOUND',
         }
-        raise AdcmApiEx(errors[object_type]) from None
+        raise AdcmEx(errors[object_type]) from None
     return obj, action_id
 
 

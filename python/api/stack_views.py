@@ -18,7 +18,6 @@ from rest_framework.authentication import TokenAuthentication, SessionAuthentica
 
 import cm.api
 import cm.bundle
-from cm.errors import AdcmEx, AdcmApiEx
 from cm.models import Bundle, Prototype, Action
 from cm.models import PrototypeConfig, Upgrade, PrototypeExport
 from cm.models import PrototypeImport
@@ -70,16 +69,13 @@ class LoadBundle(GenericAPIPermView):
         post:
         Load bundle
         """
-        try:
-            serializer = self.serializer_class(data=request.data, context={'request': request})
-            if serializer.is_valid():
-                bundle = cm.bundle.load_bundle(serializer.validated_data.get('bundle_file'))
-                srl = api.stack_serial.BundleSerializer(bundle, context={'request': request})
-                return Response(srl.data)
-            else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds) from e
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            bundle = cm.bundle.load_bundle(serializer.validated_data.get('bundle_file'))
+            srl = api.stack_serial.BundleSerializer(bundle, context={'request': request})
+            return Response(srl.data)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class BundleList(PageView):
@@ -109,10 +105,7 @@ class BundleDetail(DetailViewRO):
 
     def delete(self, request, bundle_id):
         bundle = check_obj(Bundle, bundle_id, 'BUNDLE_NOT_FOUND')
-        try:
-            cm.bundle.delete_bundle(bundle)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
+        cm.bundle.delete_bundle(bundle)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -125,12 +118,9 @@ class BundleUpdate(GenericAPIPermView):
         update bundle
         """
         bundle = check_obj(Bundle, bundle_id, 'BUNDLE_NOT_FOUND')
-        try:
-            cm.bundle.update_bundle(bundle)
-            serializer = self.serializer_class(bundle, context={'request': request})
-            return Response(serializer.data)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds) from e
+        cm.bundle.update_bundle(bundle)
+        serializer = self.serializer_class(bundle, context={'request': request})
+        return Response(serializer.data)
 
 
 class BundleLicense(GenericAPIPermView):
@@ -140,12 +130,9 @@ class BundleLicense(GenericAPIPermView):
 
     def get(self, request, bundle_id):
         bundle = check_obj(Bundle, bundle_id, 'BUNDLE_NOT_FOUND')
-        try:
-            body = cm.api.get_license(bundle)
-            url = reverse('accept-license', kwargs={'bundle_id': bundle.id}, request=request)
-            return Response({'license': bundle.license, 'accept': url, 'text': body})
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds) from e
+        body = cm.api.get_license(bundle)
+        url = reverse('accept-license', kwargs={'bundle_id': bundle.id}, request=request)
+        return Response({'license': bundle.license, 'accept': url, 'text': body})
 
 
 class AcceptLicense(GenericAPIPermView):
@@ -154,11 +141,8 @@ class AcceptLicense(GenericAPIPermView):
 
     def put(self, request, bundle_id):
         bundle = check_obj(Bundle, bundle_id, 'BUNDLE_NOT_FOUND')
-        try:
-            cm.api.accept_license(bundle)
-            return Response(status=status.HTTP_200_OK)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds) from e
+        cm.api.accept_license(bundle)
+        return Response(status=status.HTTP_200_OK)
 
 
 class PrototypeList(PageView):

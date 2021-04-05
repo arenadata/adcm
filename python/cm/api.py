@@ -27,7 +27,7 @@ from cm.adcm_config import (
     proto_ref, obj_ref, prepare_social_auth, process_file_type, read_bundle_file,
     get_prototype_config, init_object_config, save_obj_config, check_json_config
 )
-from cm.errors import AdcmEx, AdcmApiEx
+from cm.errors import AdcmEx
 from cm.errors import raise_AdcmEx as err
 from cm.status_api import Event
 from cm.models import (
@@ -41,13 +41,6 @@ def check_proto_type(proto, check_type):
     if proto.type != check_type:
         msg = 'Prototype type should be {}, not {}'
         err('OBJ_TYPE_ERROR', msg.format(check_type, proto.type))
-
-
-def safe_api(func, args):
-    try:
-        return func(*args)
-    except AdcmEx as e:
-        raise AdcmApiEx(e.code, e.msg, e.http_code) from e
 
 
 def add_cluster(proto, name, desc=''):

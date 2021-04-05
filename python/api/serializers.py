@@ -21,8 +21,7 @@ import cm.job
 import cm.stack
 import cm.status_api
 import cm.adcm_config
-from cm.api import safe_api
-from cm.errors import AdcmApiEx, AdcmEx
+from cm.errors import AdcmEx
 from cm.models import Action, Prototype, UserProfile, Upgrade, HostProvider, Role
 
 from api.api_views import check_obj, hlink, filter_actions, get_upgradable_func
@@ -37,7 +36,7 @@ class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):
             password=attrs.get('password')
         )
         if not user:
-            raise AdcmApiEx('AUTH_ERROR', 'Wrong user or password')
+            raise AdcmEx('AUTH_ERROR', 'Wrong user or password')
         attrs['user'] = user
         return attrs
 
@@ -80,7 +79,7 @@ class GroupSerializer(serializers.Serializer):
         try:
             return Group.objects.create(name=validated_data.get('name'))
         except IntegrityError:
-            raise AdcmApiEx("GROUP_CONFLICT", 'group already exists') from None
+            raise AdcmEx("GROUP_CONFLICT", 'group already exists') from None
 
 
 class GroupDetailSerializer(GroupSerializer):
@@ -108,7 +107,7 @@ class UserSerializer(serializers.Serializer):
             UserProfile.objects.create(login=validated_data.get('username'))
             return user
         except IntegrityError:
-            raise AdcmApiEx("USER_CONFLICT", 'user already exists') from None
+            raise AdcmEx("USER_CONFLICT", 'user already exists') from None
 
 
 class UserDetailSerializer(UserSerializer):
@@ -132,7 +131,7 @@ class AddUserRoleSerializer(serializers.Serializer):
 
     def update(self, user, validated_data):   # pylint: disable=arguments-differ
         role = check_obj(Role, {'id': validated_data.get('role_id')}, 'ROLE_NOT_FOUND')
-        return safe_api(cm.api.add_user_role, (user, role))
+        return cm.api.add_user_role(user, role)
 
 
 class AddGroupRoleSerializer(serializers.Serializer):
@@ -141,7 +140,7 @@ class AddGroupRoleSerializer(serializers.Serializer):
 
     def update(self, group, validated_data):   # pylint: disable=arguments-differ
         role = check_obj(Role, {'id': validated_data.get('role_id')}, 'ROLE_NOT_FOUND')
-        return safe_api(cm.api.add_group_role, (group, role))
+        return cm.api.add_group_role(group, role)
 
 
 class UserPasswdSerializer(serializers.Serializer):
@@ -171,7 +170,7 @@ class ProfileDetailSerializer(serializers.Serializer):
 
     def validate_profile(self, raw):
         if isinstance(raw, str):
-            raise AdcmApiEx('JSON_ERROR', 'profile should not be just one string')
+            raise AdcmEx('JSON_ERROR', 'profile should not be just one string')
         return raw
 
     def update(self, instance, validated_data):
@@ -179,7 +178,7 @@ class ProfileDetailSerializer(serializers.Serializer):
         try:
             instance.save()
         except IntegrityError:
-            raise AdcmApiEx("USER_CONFLICT") from None
+            raise AdcmEx("USER_CONFLICT") from None
         return instance
 
 
@@ -192,7 +191,7 @@ class ProfileSerializer(ProfileDetailSerializer):
         try:
             return UserProfile.objects.create(**validated_data)
         except IntegrityError:
-            raise AdcmApiEx("USER_CONFLICT") from None
+            raise AdcmEx("USER_CONFLICT") from None
 
 
 class EmptySerializer(serializers.Serializer):
@@ -238,12 +237,8 @@ class ProviderSerializer(serializers.Serializer):
                 validated_data.get('name'),
                 validated_data.get('description', '')
             )
-        except Prototype.DoesNotExist:
-            raise AdcmApiEx('PROTOTYPE_NOT_FOUND') from None
         except IntegrityError:
-            raise AdcmApiEx("PROVIDER_CONFLICT") from None
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
+            raise AdcmEx("PROVIDER_CONFLICT") from None
 
 
 class ProviderDetailSerializer(ProviderSerializer):
@@ -310,10 +305,7 @@ class HostSerializer(serializers.Serializer):
         return provider
 
     def validate_fqdn(self, name):
-        try:
-            return cm.stack.validate_name(name, 'Host name')
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
+        return cm.stack.validate_name(name, 'Host name')
 
     def create(self, validated_data):
         try:
@@ -323,12 +315,8 @@ class HostSerializer(serializers.Serializer):
                 validated_data.get('fqdn'),
                 validated_data.get('description', '')
             )
-        except Prototype.DoesNotExist:
-            raise AdcmApiEx('PROTOTYPE_NOT_FOUND') from None
         except IntegrityError:
-            raise AdcmApiEx("HOST_CONFLICT", "duplicate host") from None
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
+            raise AdcmEx("HOST_CONFLICT", "duplicate host") from None
 
     def update(self, instance, validated_data):
         instance.cluster_id = validated_data.get('cluster_id')
@@ -399,17 +387,11 @@ class ProviderHostSerializer(serializers.Serializer):
     url = hlink('host-details', 'id', 'host_id')
 
     def validate_fqdn(self, name):
-        try:
-            return cm.stack.validate_name(name, 'Host name')
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
+        return cm.stack.validate_name(name, 'Host name')
 
     def create(self, validated_data):
         provider = validated_data.get('provider')
-        try:
-            proto = Prototype.objects.get(bundle=provider.prototype.bundle, type='host')
-        except Prototype.DoesNotExist:
-            raise AdcmApiEx('PROTOTYPE_NOT_FOUND') from None
+        proto = Prototype.obj.get(bundle=provider.prototype.bundle, type='host')
         try:
             return cm.api.add_host(
                 proto,
@@ -418,9 +400,7 @@ class ProviderHostSerializer(serializers.Serializer):
                 validated_data.get('description', '')
             )
         except IntegrityError:
-            raise AdcmApiEx("HOST_CONFLICT", "duplicate host") from None
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
+            raise AdcmEx("HOST_CONFLICT", "duplicate host") from None
 
 
 class ActionSerializer(serializers.Serializer):
@@ -491,11 +471,8 @@ class DoUpgradeSerializer(serializers.Serializer):
     upgradable = serializers.BooleanField(read_only=True)
 
     def create(self, validated_data):
-        try:
-            upgrade = check_obj(Upgrade, validated_data.get('upgrade_id'), 'UPGRADE_NOT_FOUND')
-            return cm.upgrade.do_upgrade(validated_data.get('obj'), upgrade)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
+        upgrade = check_obj(Upgrade, validated_data.get('upgrade_id'), 'UPGRADE_NOT_FOUND')
+        return cm.upgrade.do_upgrade(validated_data.get('obj'), upgrade)
 
 
 class StatsSerializer(serializers.Serializer):
