@@ -181,12 +181,12 @@ def fix_ordering(field, view):
         fix = fix.replace('cluster_', 'cluster__')
     if view.__class__.__name__ not in ('BundleList',):
         fix = fix.replace('version', 'version_order')
-    if view.__class__.__name__ == 'ClusterServiceList':
+    if view.__class__.__name__ in ['ClusterServiceList', 'ServiceListView']:
         if 'display_name' in fix:
             fix = fix.replace('display_name', 'prototype__display_name')
-    elif view.__class__.__name__ == 'ServiceComponentList':
+    elif view.__class__.__name__ == 'ComponentListView':
         if 'display_name' in fix:
-            fix = fix.replace('display_name', 'component__display_name')
+            fix = fix.replace('display_name', 'prototype__display_name')
     return fix
 
 
