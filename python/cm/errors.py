@@ -155,6 +155,7 @@ class AdcmEx(APIException):
             err_http_code = http_code
         self.msg = err_msg
         self.level = level
+        self.code = err_code
         self.status_code = err_http_code
         detail = {
             'code': err_code,
