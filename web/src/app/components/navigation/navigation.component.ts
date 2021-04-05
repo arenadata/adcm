@@ -13,9 +13,12 @@ import { IIssues } from '@app/models/issue';
       <a routerLink="/admin"><mat-icon>apps</mat-icon></a>
       <span>&nbsp;/&nbsp;</span>
       <ng-container *ngFor="let item of path | async | navItem; last as isLast">
-        <span [ngClass]="item.class">
-          <a routerLink="{{ item.url }}">{{ item.title | uppercase }}</a>
+        <span [ngClass]="isLast ? [item.class, 'last'] : [item.class]">
+          <div class="link">
+            <a routerLink="{{ item.url }}" [title]="item.title | uppercase">{{ item.title | uppercase }}</a>
+          </div>
           <app-actions-button [row]="item?.entity" [issueType]="item?.entity?.typeName"></app-actions-button>
+          <app-upgrade *ngIf="item?.entity?.typeName === 'cluster'" [row]="item?.entity"></app-upgrade>
         </span>
         <span *ngIf="!isLast">&nbsp;/&nbsp;</span>
       </ng-container>
@@ -23,7 +26,7 @@ import { IIssues } from '@app/models/issue';
   `,
   styles: [`
     :host {
-      font-size: 0.8em;
+      font-size: 14px;
       margin-left: 8px;
       width: 100%;
       display: flex;
@@ -35,6 +38,15 @@ import { IIssues } from '@app/models/issue';
       padding-top: 0;
       display: flex;
       align-items: center;
+      max-width: 100%;
+      overflow: hidden;
+      flex-flow: row nowrap;
+      justify-content: flex-start;
+    }
+
+    mat-nav-list > * {
+      display: block;
+      box-sizing: border-box;
     }
 
     mat-nav-list a {
@@ -50,14 +62,33 @@ import { IIssues } from '@app/models/issue';
       display: flex;
       align-items: center;
       justify-content: space-around;
+      flex: 0 1 auto;
+      overflow: hidden;
+
+    }
+
+    .mat-nav-list .entity.last {
+      flex: 0 0 auto;
+    }
+
+    .mat-nav-list .entity * {
+      flex: 0 0 auto;
+    }
+
+    .mat-nav-list .entity .link {
+      flex: 0 1 auto;
+      overflow: hidden;
     }
 
     .mat-nav-list .entity a {
-      line-height: 24px;
+      line-height: normal;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      display: block;
     }
 
-    .aggregate {
-      width: 7px;
+    .mat-nav-list app-upgrade {
+      margin-left: -8px;
     }
 
   `],

@@ -137,7 +137,8 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
       return;
     }
 
-    if (this.Current?.typeName === m.object.type && this.Current?.id === m.object.id) {
+    const type = m.object.type === 'component' ? 'servicecomponent' : m.object.type;
+    if (this.Current?.typeName === type && this.Current?.id === m.object.id) {
       if (this.service.Current.typeName === 'job' && (m.event === 'change_job_status' || m.event === 'add_job_log')) {
         this.reset();
         return;
@@ -153,6 +154,6 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
     }
 
     // parent
-    if (this.service.Cluster?.id === m.object.id && this.Current?.typeName !== 'cluster' && m.object.type === 'cluster' && m.event === 'clear_issue') this.issue = {};
+    if (this.service.Cluster?.id === m.object.id && this.Current?.typeName !== 'cluster' && type === 'cluster' && m.event === 'clear_issue') this.issue = {};
   }
 }

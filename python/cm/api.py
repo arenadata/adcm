@@ -20,6 +20,7 @@ import cm.errors
 import cm.issue
 import cm.config as config
 import cm.status_api
+import cm.ansible_plugin
 from cm.logger import log   # pylint: disable=unused-import
 from cm.upgrade import check_license, version_in
 from cm.adcm_config import (
@@ -868,31 +869,14 @@ def set_host_state(host_id, state):
 
 
 def set_component_state(component_id, state):
-    try:
-        comp = ServiceComponent.objects.get(id=component_id)
-    except ServiceComponent.DoesNotExist:
-        msg = 'Component # {} does not exist'
-        err('COMPONENT_NOT_FOUND', msg.format(component_id))
+    comp = cm.ansible_plugin.get_component(component_id)
     return push_obj(comp, state)
 
 
 def set_component_state_by_name(cluster_id, service_id, component_name, service_name, state):
-    try:
-        if service_id is not None:
-            comp = ServiceComponent.objects.get(
-                cluster_id=cluster_id,
-                service_id=service_id,
-                prototype__name=component_name
-            )
-        else:
-            comp = ServiceComponent.objects.get(
-                cluster_id=cluster_id,
-                service__prototype__name=service_name,
-                prototype__name=component_name
-            )
-    except ServiceComponent.DoesNotExist:
-        msg = 'Component # {} does not found'
-        err('COMPONENT_NOT_FOUND', msg.format(component_name))
+    comp = cm.ansible_plugin.get_component_by_name(
+        cluster_id, service_id, component_name, service_name
+    )
     return push_obj(comp, state)
 
 

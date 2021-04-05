@@ -137,9 +137,12 @@ export class BaseListDirective {
     return true;
   }
 
+  checkType(typeName: string, referenceTypeName: TypeName): boolean {
+    return (referenceTypeName ? referenceTypeName.split('2')[0] : referenceTypeName) === typeName;
+  }
+
   socketListener(m: EventMessage): void {
     const stype = (x: string) => `${m.object.type}${m.object.details.type ? `2${m.object.details.type}` : ''}` === x;
-    const ctype = (name: string) => (name ? name.split('2')[0] : name) === m.object.type;
 
     const checkUpgradable = () => (m.event === 'create' || m.event === 'delete') && m.object.type === 'bundle' && this.typeName === 'cluster';
     const changeList = () => stype(this.typeName) && (m.event === 'create' || m.event === 'delete' || m.event === 'add' || m.event === 'remove');
@@ -159,7 +162,7 @@ export class BaseListDirective {
 
       if (m.event === 'add' && stype('host2cluster')) rewriteRow(row);
 
-      if (ctype(this.typeName)) {
+      if (this.checkType(m.object.type, this.typeName)) {
         if (m.event === 'change_state') row.state = m.object.details.value;
         if (m.event === 'change_status') row.status = +m.object.details.value;
         if (m.event === 'change_job_status') row.status = m.object.details.value;
