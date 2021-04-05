@@ -105,8 +105,8 @@ class LogStorageView(GenericAPIView):
 
 
 def download_log_file(request, job_id, log_id):
-    job = JobLog.objects.get(id=job_id)
-    log_storage = LogStorage.objects.get(id=log_id, job=job)
+    job = JobLog.obj.get(id=job_id)
+    log_storage = LogStorage.obj.get(id=log_id, job=job)
 
     if log_storage.type in ['stdout', 'stderr']:
         filename = f'{job.id}-{log_storage.name}-{log_storage.type}.{log_storage.format}'
@@ -147,7 +147,7 @@ class LogFile(GenericAPIView):
             _type = 'check'
             tag = 'ansible'
 
-        ls = LogStorage.objects.get(job_id=job_id, name=tag, type=_type, format=log_type)
+        ls = LogStorage.obj.get(job_id=job_id, name=tag, type=_type, format=log_type)
         serializer = self.serializer_class(ls, context={'request': request})
         return Response(serializer.data)
 

@@ -379,7 +379,7 @@ class HCComponentSerializer(ComponentDetailSerializer):
 
         def process_requires(req_list):
             for c in req_list:
-                comp = Prototype.objects.get(
+                comp = Prototype.obj.get(
                     type='component',
                     name=c['component'],
                     parent__name=c['service'],

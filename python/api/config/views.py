@@ -31,7 +31,7 @@ def get_config_version(objconf, version):
         ver = objconf.current
     else:
         ver = version
-    cl = ConfigLog.objects.get(obj_ref=objconf, id=ver)
+    cl = ConfigLog.obj.get(obj_ref=objconf, id=ver)
     return cl
 
 
@@ -75,7 +75,7 @@ def get_obj(objects, object_type, object_id):
     if object_type == 'component':
         object_type = 'servicecomponent'
     oc = check_obj(ObjectConfig, {object_type: obj}, 'CONFIG_NOT_FOUND')
-    cl = ConfigLog.objects.get(obj_ref=oc, id=oc.current)
+    cl = ConfigLog.obj.get(obj_ref=oc, id=oc.current)
     return obj, oc, cl
 
 

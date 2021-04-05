@@ -78,10 +78,10 @@ def get_selector(obj, action):
         selector['service'] = obj.service.id
     if isinstance(obj, Host) and action.host_action:
         if action.prototype.type == 'component':
-            component = ServiceComponent.objects.get(prototype=action.prototype)
+            component = ServiceComponent.obj.get(prototype=action.prototype)
             selector['component'] = component.id
         if action.prototype.type == 'service':
-            service = ClusterObject.objects.get(prototype=action.prototype)
+            service = ClusterObject.obj.get(prototype=action.prototype)
             selector['service'] = service.id
         if obj.cluster is not None:
             selector['cluster'] = obj.cluster.id
