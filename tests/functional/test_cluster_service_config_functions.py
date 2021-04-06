@@ -307,7 +307,7 @@ class TestClusterServiceConfig:
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 _get_prev_config(service)
         with allure.step("Check error that config version doesn't exist"):
-            err.CONFIG_NOT_FOUND.equal(e, "ConfigLog", "doesn't exist")
+            err.CONFIG_NOT_FOUND.equal(e, "ConfigLog", "does not exist")
 
 
 class TestClusterServiceConfigHistory:
