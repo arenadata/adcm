@@ -83,7 +83,7 @@ value:
 
 class ActionModule(ContextActionModule):
 
-    _VALID_ARGS = frozenset(('type', 'key', 'value', 'service_name', 'host_id'))
+    _VALID_ARGS = frozenset(('type', 'key', 'value', 'service_name', 'component_name', 'host_id'))
     _MANDATORY_ARGS = ('type', 'key', 'value')
 
     def _do_cluster(self, task_vars, context):
@@ -147,4 +147,27 @@ class ActionModule(ContextActionModule):
             self._task.args["value"]
         )
         res['value'] = self._task.args["value"]
+        return res
+
+    def _do_component_by_name(self, task_vars, context):
+        res = self._wrap_call(
+            cm.adcm_config.set_component_config_by_name,
+            context['cluster_id'],
+            context['service_id'],
+            self._task.args['component_name'],
+            self._task.args.get('service_name', None),
+            self._task.args['key'],
+            self._task.args['value']
+        )
+        res['value'] = self._task.args['value']
+        return res
+
+    def _do_component(self, task_vars, context):
+        res = self._wrap_call(
+            cm.adcm_config.set_component_config,
+            context['component_id'],
+            self._task.args['key'],
+            self._task.args['value']
+        )
+        res['value'] = self._task.args['value']
         return res
