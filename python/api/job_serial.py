@@ -78,11 +78,8 @@ def get_job_objects(obj):
 
 
 def get_job_object_type(obj):
-    try:
-        action = Action.objects.get(id=obj.action_id)
-        return action.prototype.type
-    except Action.DoesNotExist:
-        return None
+    action = Action.obj.get(id=obj.action_id)
+    return action.prototype.type
 
 
 class DataField(serializers.CharField):

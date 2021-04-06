@@ -202,7 +202,7 @@ class Cluster(ADCMModel):
         return self.prototype.bundle.license
 
     def __str__(self):
-        return str(self.name)
+        return f'{self.name} ({self.id})'
 
 
 class HostProvider(ADCMModel):
@@ -305,6 +305,8 @@ class ServiceComponent(ADCMModel):
     stack = JSONField(default=[])
     issue = JSONField(default={})
 
+    __error_code__ = 'COMPONENT_NOT_FOUND'
+
     @property
     def name(self):
         return self.prototype.name
@@ -372,6 +374,8 @@ class Action(ADCMModel):
     allow_to_terminate = models.BooleanField(default=False)
     partial_execution = models.BooleanField(default=False)
     host_action = models.BooleanField(default=False)
+
+    __error_code__ = 'ACTION_NOT_FOUND'
 
     def __str__(self):
         return "{} {}".format(self.prototype, self.name)
@@ -510,6 +514,8 @@ class JobLog(ADCMModel):
     start_date = models.DateTimeField()
     finish_date = models.DateTimeField(db_index=True)
 
+    __error_code__ = 'JOB_NOT_FOUND'
+
 
 class TaskLog(ADCMModel):
     action_id = models.PositiveIntegerField()
@@ -594,6 +600,8 @@ class StagePrototype(ADCMModel):
     adcm_min_version = models.CharField(max_length=80, default=None, null=True)
     description = models.TextField(blank=True)
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
+
+    __error_code__ = 'PROTOTYPE_NOT_FOUND'
 
     def __str__(self):
         return str(self.name)

@@ -93,10 +93,7 @@ def add_provider_host(provider_id, fqdn, desc=''):
 
     This is intended for use in adcm_add_host ansible plugin only
     """
-    try:
-        provider = HostProvider.objects.get(id=provider_id)
-    except HostProvider.DoesNotExist:
-        err('PROVIDER_NOT_FOUND', 'Host Provider with id #{} is not found'.format(provider_id))
+    provider = HostProvider.obj.get(id=provider_id)
     proto = Prototype.objects.get(bundle=provider.prototype.bundle, type='host')
     return add_host(proto, provider, fqdn, desc, lock=True)
 
@@ -144,22 +141,13 @@ def add_host_to_cluster(cluster, host):
 
 
 def get_cluster_and_host(cluster_id, fqdn, host_id):
-    try:
-        cluster = Cluster.objects.get(id=cluster_id)
-    except Cluster.DoesNotExist:
-        err('CLUSTER_NOT_FOUND', f'Cluster with id #{cluster_id} is not found')
+    cluster = Cluster.obj.get(id=cluster_id)
     if fqdn:
-        try:
-            host = Host.objects.get(fqdn=fqdn)
-        except Host.DoesNotExist:
-            err('HOST_NOT_FOUND', f'Host "{fqdn}" is not found')
+        host = Host.obj.get(fqdn=fqdn)
     elif host_id:
         if not isinstance(host_id, int):
             err('HOST_NOT_FOUND', f'host_id must be integer (got "{host_id}")')
-        try:
-            host = Host.objects.get(id=host_id)
-        except Host.DoesNotExist:
-            err('HOST_NOT_FOUND', f'Host with id #{host_id} is not found')
+        host = Host.obj.get(id=host_id)
     else:
         err('HOST_NOT_FOUND', 'fqdn or host_id is mandatory args')
     return (cluster, host)
@@ -204,10 +192,7 @@ def delete_host_by_id(host_id):
 
     This is intended for use in adcm_delete_host ansible plugin only
     """
-    try:
-        host = Host.objects.get(id=host_id)
-    except Host.DoesNotExist:
-        err('HOST_NOT_FOUND', 'Host with id #{} is not found'.format(host_id))
+    host = Host.obj.get(id=host_id)
     delete_host(host)
 
 
@@ -217,10 +202,7 @@ def delete_service_by_id(service_id):
 
     This is intended for use in adcm_delete_service ansible plugin only
     """
-    try:
-        service = ClusterObject.objects.get(id=service_id)
-    except ClusterObject.DoesNotExist:
-        err('SERVICE_NOT_FOUND', 'Service with id #{} is not found'.format(service_id))
+    service = ClusterObject.obj.get(id=service_id)
     service.delete()
     cm.status_api.post_event('delete', 'service', service_id)
     cm.status_api.load_service_map()
@@ -232,11 +214,7 @@ def delete_service_by_name(service_name, cluster_id):
 
     This is intended for use in adcm_delete_service ansible plugin only
     """
-    try:
-        service = ClusterObject.objects.get(cluster__id=cluster_id, prototype__name=service_name)
-    except ClusterObject.DoesNotExist:
-        msg = 'Service with name "{}" not found in cluster #{}'
-        err('SERVICE_NOT_FOUND', msg.format(service_name, cluster_id))
+    service = ClusterObject.obj.get(cluster__id=cluster_id, prototype__name=service_name)
     service_id = service.id
     service.delete()
     cm.status_api.post_event('delete', 'service', service_id)
@@ -493,23 +471,9 @@ def check_hc(cluster, hc_in):   # pylint: disable=too-many-branches
 
     host_comp_list = []
     for item in hc_in:
-        try:
-            host = Host.objects.get(id=item['host_id'])
-        except Host.DoesNotExist:
-            msg = 'No host #{}'.format(item['host_id'])
-            raise AdcmEx('HOST_NOT_FOUND', msg) from None
-        try:
-            service = ClusterObject.objects.get(id=item['service_id'], cluster=cluster)
-        except ClusterObject.DoesNotExist:
-            msg = 'No service #{} in {}'.format(item['service_id'], obj_ref(cluster))
-            raise AdcmEx('SERVICE_NOT_FOUND', msg) from None
-        try:
-            comp = ServiceComponent.objects.get(
-                id=item['component_id'], cluster=cluster, service=service
-            )
-        except ServiceComponent.DoesNotExist:
-            msg = 'No component #{} in {} '.format(item['component_id'], obj_ref(service))
-            raise AdcmEx('COMPONENT_NOT_FOUND', msg) from None
+        host = Host.obj.get(id=item['host_id'])
+        service = ClusterObject.obj.get(id=item['service_id'], cluster=cluster)
+        comp = ServiceComponent.obj.get(id=item['component_id'], cluster=cluster, service=service)
         if not host.cluster:
             msg = 'host #{} {} does not belong to any cluster'.format(host.id, host.fqdn)
             raise AdcmEx("FOREIGN_HOST", msg)
@@ -659,10 +623,7 @@ def get_bind_obj(cluster, service):
 
 def multi_bind(cluster, service, bind_list):   # pylint: disable=too-many-locals,too-many-statements
     def get_pi(import_id, import_obj):
-        try:
-            pi = PrototypeImport.objects.get(id=import_id)
-        except PrototypeImport.DoesNotExist:
-            err('BIND_ERROR', 'Import with id #{} does not found'.format(import_id))
+        pi = PrototypeImport.obj.get(id=import_id)
         if pi.prototype != import_obj.prototype:
             msg = 'Import #{} does not belong to {}'
             err('BIND_ERROR', msg.format(import_id, obj_ref(import_obj)))
@@ -671,11 +632,7 @@ def multi_bind(cluster, service, bind_list):   # pylint: disable=too-many-locals
     def get_export_service(b, export_cluster):
         export_co = None
         if 'service_id' in b['export_id']:
-            try:
-                export_co = ClusterObject.objects.get(id=b['export_id']['service_id'])
-            except ClusterObject.DoesNotExist:
-                msg = 'export service with id #{} not found'
-                err('BIND_ERROR', msg.format(b['export_id']['service_id']))
+            export_co = ClusterObject.obj.get(id=b['export_id']['service_id'])
             if export_co.cluster != export_cluster:
                 msg = 'export {} is not belong to {}'
                 err('BIND_ERROR', msg.format(obj_ref(export_co), obj_ref(export_cluster)))
@@ -696,11 +653,7 @@ def multi_bind(cluster, service, bind_list):   # pylint: disable=too-many-locals
     new_bind = {}
     for b in bind_list:
         pi = get_pi(b['import_id'], import_obj)
-        try:
-            export_cluster = Cluster.objects.get(id=b['export_id']['cluster_id'])
-        except Cluster.DoesNotExist:
-            msg = 'export cluster with id #{} not found'
-            err('BIND_ERROR', msg.format(b['export_id']['cluster_id']))
+        export_cluster = Cluster.obj.get(id=b['export_id']['cluster_id'])
         export_obj = export_cluster
         export_co = get_export_service(b, export_cluster)
         if export_co:
@@ -758,13 +711,9 @@ def bind(cluster, service, export_cluster, export_service_id):   # pylint: disab
     '''
     export_service = None
     if export_service_id:
-        try:
-            export_service = ClusterObject.objects.get(cluster=export_cluster, id=export_service_id)
-            if not PrototypeExport.objects.filter(prototype=export_service.prototype):
-                err('BIND_ERROR', '{} do not have exports'.format(obj_ref(export_service)))
-        except ClusterObject.DoesNotExist:
-            msg = 'service #{} does not exists or does not belong to cluster # {}'
-            err('SERVICE_NOT_FOUND', msg.format(export_service_id, export_cluster.id))
+        export_service = ClusterObject.obj.get(cluster=export_cluster, id=export_service_id)
+        if not PrototypeExport.objects.filter(prototype=export_service.prototype):
+            err('BIND_ERROR', '{} do not have exports'.format(obj_ref(export_service)))
         name = export_service.prototype.name
     else:
         if not PrototypeExport.objects.filter(prototype=export_cluster.prototype):
@@ -776,9 +725,7 @@ def bind(cluster, service, export_cluster, export_service_id):   # pylint: disab
         import_obj = service
 
     try:
-        pi = PrototypeImport.objects.get(prototype=import_obj.prototype, name=name)
-    except PrototypeImport.DoesNotExist:
-        err('BIND_ERROR', '{} does not have appropriate import'.format(obj_ref(import_obj)))
+        pi = PrototypeImport.obj.get(prototype=import_obj.prototype, name=name)
     except MultipleObjectsReturned:
         err('BIND_ERROR', 'Old api does not support multi bind. Go to /api/v1/.../import/')
 
@@ -844,20 +791,12 @@ def set_object_state(obj, state, event):
 
 
 def set_cluster_state(cluster_id, state):
-    try:
-        cluster = Cluster.objects.get(id=cluster_id)
-    except Cluster.DoesNotExist:
-        msg = 'Cluster # {} does not exist'
-        err('CLUSTER_NOT_FOUND', msg.format(cluster_id))
+    cluster = Cluster.obj.get(id=cluster_id)
     return push_obj(cluster, state)
 
 
 def set_host_state(host_id, state):
-    try:
-        host = Host.objects.get(id=host_id)
-    except Host.DoesNotExist:
-        msg = 'Host # {} does not exist'
-        err('HOST_NOT_FOUND', msg.format(host_id))
+    host = Host.obj.get(id=host_id)
     return push_obj(host, state)
 
 
@@ -874,11 +813,7 @@ def set_component_state_by_name(cluster_id, service_id, component_name, service_
 
 
 def set_provider_state(provider_id, state, event):
-    try:
-        provider = HostProvider.objects.get(id=provider_id)
-    except HostProvider.DoesNotExist:
-        msg = 'Host Provider # {} does not exist'
-        err('PROVIDER_NOT_FOUND', msg.format(provider_id))
+    provider = HostProvider.obj.get(id=provider_id)
     if provider.state == config.Job.LOCKED:
         return push_obj(provider, state)
     else:
@@ -886,36 +821,20 @@ def set_provider_state(provider_id, state, event):
 
 
 def set_service_state(cluster_id, service_name, state):
-    try:
-        cluster = Cluster.objects.get(id=cluster_id)
-    except Cluster.DoesNotExist:
-        msg = 'Cluster # {} does not exist'
-        err('CLUSTER_NOT_FOUND', msg.format(cluster_id))
-    try:
-        proto = Prototype.objects.get(
+    cluster = Cluster.obj.get(id=cluster_id)
+    proto = Prototype.obj.get(
             type='service',
             name=service_name,
             bundle=cluster.prototype.bundle
-        )
-    except Prototype.DoesNotExist:
-        msg = 'Service "{}" does not exist'
-        err('SERVICE_NOT_FOUND', msg.format(service_name))
-    try:
-        obj = ClusterObject.objects.get(cluster=cluster, prototype=proto)
-    except ClusterObject.DoesNotExist:
-        msg = '{} does not exist in cluster # {}'
-        err('OBJECT_NOT_FOUND', msg.format(proto_ref(proto), cluster.id))
+    )
+    obj = ClusterObject.obj.get(cluster=cluster, prototype=proto)
     return push_obj(obj, state)
 
 
 def set_service_state_by_id(cluster_id, service_id, state):
-    try:
-        obj = ClusterObject.objects.get(
-            id=service_id, cluster__id=cluster_id, prototype__type='service'
-        )
-    except ClusterObject.DoesNotExist:
-        msg = 'service # {} does not exist in cluster # {}'
-        err('OBJECT_NOT_FOUND', msg.format(service_id, cluster_id))
+    obj = ClusterObject.obj.get(
+        id=service_id, cluster__id=cluster_id, prototype__type='service'
+    )
     return push_obj(obj, state)
 
 
@@ -928,31 +847,14 @@ def change_hc(job_id, cluster_id, operations):   # pylint: disable=too-many-bran
     if action.hostcomponentmap:
         err('ACTION_ERROR', 'You can not change hc in plugin for action with hc_acl')
 
-    try:
-        cluster = Cluster.objects.get(id=cluster_id)
-    except Cluster.DoesNotExist:
-        msg = 'Cluster # {} does not exist'
-        err('CLUSTER_NOT_FOUND', msg.format(cluster_id))
-
+    cluster = Cluster.obj.get(id=cluster_id)
     hc = get_hc(cluster)
     for op in operations:
-        try:
-            service = ClusterObject.objects.get(cluster=cluster, prototype__name=op['service'])
-        except ClusterObject.DoesNotExist:
-            msg = 'service "{}" does not exist in cluster #{}'
-            err('SERVICE_NOT_FOUND', msg.format(op['service'], cluster.id))
-        try:
-            component = ServiceComponent.objects.get(
-                cluster=cluster, service=service, prototype__name=op['component']
-            )
-        except ServiceComponent.DoesNotExist:
-            msg = 'component "{}" does not exist in service "{}"'
-            err('SERVICE_NOT_FOUND', msg.format(op['component'], service.prototype.name))
-        try:
-            host = Host.objects.get(cluster=cluster, fqdn=op['host'])
-        except Host.DoesNotExist:
-            msg = 'host "{}" does not exist in cluster #{}'
-            err('HOST_NOT_FOUND', msg.format(op['host'], cluster.id))
+        service = ClusterObject.obj.get(cluster=cluster, prototype__name=op['service'])
+        component = ServiceComponent.obj.get(
+            cluster=cluster, service=service, prototype__name=op['component']
+        )
+        host = Host.obj.get(cluster=cluster, fqdn=op['host'])
         item = {
             'host_id': host.id,
             'service_id': service.id,

@@ -66,7 +66,7 @@ class TestHC(TestCase):
             (hc_list, _) = cm.job.check_hostcomponentmap(cluster, action, hc)
             self.assertNotEqual(hc_list, None)
         except AdcmEx as e:
-            self.assertEqual(e.code, 'SERVICE_NOT_FOUND')
+            self.assertEqual(e.code, 'CLUSTER_SERVICE_NOT_FOUND')
 
         try:
             action = Action(name="run", hostcomponentmap="qwe")
