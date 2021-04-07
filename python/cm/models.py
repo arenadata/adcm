@@ -37,6 +37,25 @@ LICENSE_STATE = (
 )
 
 
+def get_model_by_type(object_type):
+    if object_type == 'adcm':
+        return ADCM
+    if object_type == 'cluster':
+        return Cluster
+    elif object_type == 'provider':
+        return HostProvider
+    elif object_type == 'service':
+        return ClusterObject
+    elif object_type == 'component':
+        return ServiceComponent
+    elif object_type == 'host':
+        return Host
+    else:
+        # This function should return a Model, this is necessary for the correct
+        # construction of the schema.
+        return Cluster
+
+
 class ADCMManager(models.Manager):
     def get(self, *args, **kwargs):
         try:
@@ -153,6 +172,8 @@ class Prototype(ADCMModel):
 class ObjectConfig(ADCMModel):
     current = models.PositiveIntegerField()
     previous = models.PositiveIntegerField()
+
+    __error_code__ = 'CONFIG_NOT_FOUND'
 
 
 class ConfigLog(ADCMModel):

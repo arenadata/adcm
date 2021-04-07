@@ -10,16 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.db import models
 from rest_framework.response import Response
 
 from api.api_views import ListView, GenericAPIPermView, create, update, check_obj
 
-from cm.errors import AdcmEx
 from cm.adcm_config import ui_config
-from cm.models import (
-    ADCM, Cluster, HostProvider, Host, ClusterObject, ServiceComponent, ConfigLog, ObjectConfig
-)
+from cm.models import get_model_by_type, ConfigLog, ObjectConfig
 
 from . import serializers
 
@@ -35,39 +31,9 @@ def get_config_version(objconf, version):
     return cl
 
 
-def get_objects_for_config(object_type):
-    if object_type == 'adcm':
-        return ADCM.objects.all()
-    if object_type == 'cluster':
-        return Cluster.objects.all()
-    elif object_type == 'provider':
-        return HostProvider.objects.all()
-    elif object_type == 'service':
-        return ClusterObject.objects.all()
-    elif object_type == 'component':
-        return ServiceComponent.objects.all()
-    elif object_type == 'host':
-        return Host.objects.all()
-    else:
-        # This function should return a QuerySet, this is necessary for the correct
-        # construction of the schema.
-        return Cluster.objects.all()
-
-
-def get_obj(objects, object_type, object_id):
-    try:
-        obj = objects.get(id=object_id)
-    except models.ObjectDoesNotExist:
-        errors = {
-            'adcm': 'ADCM_NOT_FOUND',
-            'cluster': 'CLUSTER_NOT_FOUND',
-            'provider': 'PROVIDER_NOT_FOUND',
-            'host': 'HOST_NOT_FOUND',
-            'service': 'SERVICE_NOT_FOUND',
-            'component': 'COMPONENT_NOT_FOUND',
-        }
-        raise AdcmEx(errors[object_type]) from None
-
+def get_obj(object_type, object_id):
+    model = get_model_by_type(object_type)
+    obj = model.obj.get(id=object_id)
     if object_type == 'provider':
         object_type = 'hostprovider'
     if object_type == 'service':
@@ -86,17 +52,19 @@ def get_object_type_id_version(**kwargs):
     return object_type, object_id, version
 
 
+def get_queryset(self):
+    return get_model_by_type(self.object_type).objects.all()
+
+
 class ConfigView(ListView):
     serializer_class = serializers.HistoryCurrentPreviousConfigSerializer
+    get_queryset = get_queryset
     object_type = None
-
-    def get_queryset(self):
-        return get_objects_for_config(self.object_type)
 
     def get(self, request, *args, **kwargs):
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
         self.object_type = object_type
-        obj, _, _ = get_obj(self.get_queryset(), object_type, object_id)
+        obj, _, _ = get_obj(object_type, object_id)
         serializer = self.serializer_class(
             self.get_queryset().get(id=obj.id), context={'request': request, 'object': obj})
         return Response(serializer.data)
@@ -105,15 +73,13 @@ class ConfigView(ListView):
 class ConfigHistoryView(ListView):
     serializer_class = serializers.ConfigHistorySerializer
     update_serializer = serializers.ObjectConfigUpdateSerializer
+    get_queryset = get_queryset
     object_type = None
-
-    def get_queryset(self):
-        return get_objects_for_config(self.object_type)
 
     def get(self, request, *args, **kwargs):
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
         self.object_type = object_type
-        obj, _, _ = get_obj(self.get_queryset(), object_type, object_id)
+        obj, _, _ = get_obj(object_type, object_id)
         cl = ConfigLog.objects.filter(obj_ref=obj.config).order_by('-id')
         serializer = self.serializer_class(
             cl, many=True, context={'request': request, 'object': obj}
@@ -123,7 +89,7 @@ class ConfigHistoryView(ListView):
     def post(self, request, *args, **kwargs):
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
         self.object_type = object_type
-        obj, _, cl = get_obj(self.get_queryset(), object_type, object_id)
+        obj, _, cl = get_obj(object_type, object_id)
         serializer = self.update_serializer(
             cl, data=request.data, context={'request': request, 'object': obj}
         )
@@ -132,15 +98,13 @@ class ConfigHistoryView(ListView):
 
 class ConfigVersionView(ListView):
     serializer_class = serializers.ObjectConfigSerializer
+    get_queryset = get_queryset
     object_type = None
-
-    def get_queryset(self):
-        return get_objects_for_config(self.object_type)
 
     def get(self, request, *args, **kwargs):
         object_type, object_id, version = get_object_type_id_version(**kwargs)
         self.object_type = object_type
-        obj, oc, _ = get_obj(self.get_queryset(), object_type, object_id)
+        obj, oc, _ = get_obj(object_type, object_id)
         cl = get_config_version(oc, version)
         if self.for_ui(request):
             cl.config = ui_config(obj, cl)
@@ -150,15 +114,13 @@ class ConfigVersionView(ListView):
 
 class ConfigHistoryRestoreView(GenericAPIPermView):
     serializer_class = serializers.ObjectConfigRestoreSerializer
+    get_queryset = get_queryset
     object_type = None
-
-    def get_queryset(self):
-        return get_objects_for_config(self.object_type)
 
     def patch(self, request, *args, **kwargs):
         object_type, object_id, version = get_object_type_id_version(**kwargs)
         self.object_type = object_type
-        _, oc, _ = get_obj(self.get_queryset(), object_type, object_id)
+        _, oc, _ = get_obj(object_type, object_id)
         cl = get_config_version(oc, version)
         serializer = self.serializer_class(cl, data=request.data, context={'request': request})
         return update(serializer)
