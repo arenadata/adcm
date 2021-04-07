@@ -823,9 +823,9 @@ def set_provider_state(provider_id, state, event):
 def set_service_state(cluster_id, service_name, state):
     cluster = Cluster.obj.get(id=cluster_id)
     proto = Prototype.obj.get(
-            type='service',
-            name=service_name,
-            bundle=cluster.prototype.bundle
+        type='service',
+        name=service_name,
+        bundle=cluster.prototype.bundle
     )
     obj = ClusterObject.obj.get(cluster=cluster, prototype=proto)
     return push_obj(obj, state)
