@@ -67,6 +67,7 @@ def get_affected_cluster_hierarchy(obj) -> list:
         result.append(obj)
 
     elif obj.prototype.type == 'host':
+        # host itself is added in `get_affected_host_hierarchy`
         result.append(obj.cluster)
 
     return result
@@ -84,6 +85,7 @@ def get_affected_host_hierarchy(obj) -> list:
         result.append(obj)
 
     elif obj.prototype.type == 'cluster':
+        # cluster itself is added in `get_affected_cluster_hierarchy`
         result.extend(Host.objects.filter(cluster=obj))
 
     return result
