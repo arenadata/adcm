@@ -10,18 +10,91 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.logger import log   # pylint: disable=unused-import
+from collections import defaultdict
+from itertools import chain
+
 import cm.status_api
-from cm.errors import AdcmEx
-from cm.errors import raise_AdcmEx as err
 from cm.adcm_config import proto_ref, obj_ref, get_prototype_config
-from cm.models import ConfigLog, Host, ClusterObject, Prototype, HostComponent
-from cm.models import PrototypeImport, ClusterBind
+from cm.errors import AdcmEx, raise_AdcmEx as err
+from cm.logger import log
+from cm.models import (
+    ClusterBind,
+    ClusterObject,
+    ConfigLog,
+    Host,
+    HostComponent,
+    Prototype,
+    PrototypeImport,
+    ServiceComponent,
+)
+
+
+def update_hierarchy_issues(obj):
+    """
+    Cluster issue affects cluster's services and their components; also affects its hosts;
+    ClusterService issue affects its cluster and its components;
+    ServiceComponent issue affects its service and cluster of service;
+
+    HostProvider issue affects its hosts;
+    Host issue affects its cluster and its provider.
+
+    objects with unknown prototype are ignored
+    """
+    for item in chain(
+            get_affected_cluster_hierarchy(obj),
+            get_affected_host_hierarchy(obj)
+    ):
+        save_issue(item)
+
+
+def get_affected_cluster_hierarchy(obj) -> list:
+    result = []
+
+    if obj.prototype.type == 'cluster':
+        result.append(obj)
+        for co in ClusterObject.objects.filter(cluster=obj):
+            result.append(co)
+            result.extend(ServiceComponent.objects.filter(cluster=obj, service=co))
+
+    elif obj.prototype.type == 'service':
+        result.append(obj.cluster)
+        result.append(obj)
+        result.extend(ServiceComponent.objects.filter(service=obj))
+
+    elif obj.prototype.type == 'component':
+        result.append(obj.service.cluster)
+        result.append(obj.service)
+        result.append(obj)
+
+    elif obj.prototype.type == 'host':
+        # host itself is added in `get_affected_host_hierarchy`
+        result.append(obj.cluster)
+
+    return result
+
+
+def get_affected_host_hierarchy(obj) -> list:
+    result = []
+
+    if obj.prototype.type == 'provider':
+        result.append(obj)
+        result.extend(Host.objects.filter(provider=obj))
+
+    elif obj.prototype.type == 'host':
+        result.append(obj.provider)
+        result.append(obj)
+
+    elif obj.prototype.type == 'cluster':
+        # cluster itself is added in `get_affected_cluster_hierarchy`
+        result.extend(Host.objects.filter(cluster=obj))
+
+    return result
 
 
 def save_issue(obj):
-    if obj.prototype.type == 'adcm':
+    if not obj or obj.prototype.type == 'adcm':
         return
+
     obj.issue = check_issue(obj)
     obj.save()
     report_issue(obj)
@@ -36,46 +109,40 @@ def report_issue(obj):
 
 
 def check_issue(obj):
-    disp = {
+    type_check_map = {
         'cluster': check_cluster_issue,
         'service': check_service_issue,
-        'component': check_obj_issue,
-        'provider': check_obj_issue,
-        'host': check_obj_issue,
-        'adcm': check_adcm_issue,
+        'component': check_config_issue,
+        'provider': check_config_issue,
+        'host': check_config_issue,
+        'adcm': lambda x: {},
     }
-    if obj.prototype.type not in disp:
+    if obj.prototype.type not in type_check_map:
         err('NOT_IMPLEMENTED', 'unknown object type')
-    issue = disp[obj.prototype.type](obj)
+    issue = {k: v for k, v in type_check_map[obj.prototype.type](obj).items() if v is False}
     log.debug('%s issue: %s', obj_ref(obj), issue)
     return issue
 
 
 def issue_to_bool(issue):
     if isinstance(issue, dict):
-        for key in issue:
-            if not issue_to_bool(issue[key]):
-                return False
+        return all(map(issue_to_bool, issue.values()))
     elif isinstance(issue, list):
-        for val in issue:
-            if not issue_to_bool(val):
-                return False
-    elif not issue:
-        return False
-    return True
+        return all(map(issue_to_bool, issue))
+    else:
+        return bool(issue)
 
 
 def get_issue(obj):   # pylint: disable=too-many-branches
-    issue = obj.issue
+    issue = defaultdict(list)
+    issue.update(obj.issue)
+
     if obj.prototype.type == 'cluster':
-        issue['service'] = []
         for co in ClusterObject.objects.filter(cluster=obj):
             service_iss = cook_issue(co, name_obj=co.prototype)
             if service_iss:
                 issue['service'].append(service_iss)
-        if not issue['service']:
-            del issue['service']
-        issue['host'] = []
+
         for host in Host.objects.filter(cluster=obj):
             host_iss = cook_issue(host, 'fqdn')
             provider_iss = cook_issue(host.provider)
@@ -85,8 +152,6 @@ def get_issue(obj):   # pylint: disable=too-many-branches
                 issue['host'].append(host_iss)
             elif provider_iss:
                 issue['host'].append(cook_issue(host, 'fqdn', iss={'provider': [provider_iss]}))
-        if not issue['host']:
-            del issue['host']
 
     elif obj.prototype.type == 'service':
         cluster_iss = cook_issue(obj.cluster)
@@ -114,52 +179,35 @@ def get_issue(obj):   # pylint: disable=too-many-branches
 
 
 def cook_issue(obj, name='name', name_obj=None, iss=None):
-    if not name_obj:
-        name_obj = obj
-    if not iss:
-        if obj:
-            iss = obj.issue
-        else:
-            iss = {}
-    if iss:
-        return {
-            'id': obj.id,
-            'name': getattr(name_obj, name),
-            'issue': iss,
-        }
-    return None
+    result = {
+        'id': getattr(obj, 'id', None),
+        'name': getattr(name_obj or obj, name, None),
+        'issue': iss or getattr(obj, 'issue', {})
+    }
+    return result if all(result.values()) else {}
 
 
 def check_cluster_issue(cluster):
-    issue = {}
-    if not check_config(cluster):
-        issue['config'] = False
-    if not check_required_services(cluster):
-        issue['required_service'] = False
-    if not check_required_import(cluster):
-        issue['required_import'] = False
-    if not check_hc(cluster):
-        issue['host_component'] = False
-    return issue
+    return {
+        'config': check_config(cluster),
+        'required_service': check_required_services(cluster),
+        'required_import': check_required_import(cluster),
+        'host_component': check_hc(cluster),
+    }
 
 
 def check_service_issue(service):
-    issue = {}
-    if not check_config(service):
-        issue['config'] = False
-    if not check_required_import(service.cluster, service):
-        issue['required_import'] = False
-    return issue
+    return {
+        'config': check_config(service),
+        'required_import': check_required_import(service.cluster, service)
+    }
 
 
-def check_obj_issue(obj):
-    if not check_config(obj):
-        return {'config': False}
-    return {}
+def check_config_issue(obj):
+    return {'config': check_config(obj)}
 
 
-def check_adcm_issue(obj):
-    return {}
+# Below this line goes business logic for issue checking
 
 
 def check_config(obj):   # pylint: disable=too-many-branches

@@ -59,7 +59,7 @@ def add_cluster(proto, name, desc=''):
         cluster = Cluster(prototype=proto, name=name, config=obj_conf, description=desc)
         cluster.save()
         process_file_type(cluster, spec, conf)
-        cm.issue.save_issue(cluster)
+        cm.issue.update_hierarchy_issues(cluster)
     cm.status_api.post_event('create', 'cluster', cluster.id)
     cm.status_api.load_service_map()
     return cluster
@@ -87,7 +87,7 @@ def add_host(proto, provider, fqdn, desc='', lock=False):
             host.stack = ['created']
             set_object_state(host, config.Job.LOCKED, event)
         process_file_type(host, spec, conf)
-        cm.issue.save_issue(host)
+        cm.issue.update_hierarchy_issues(host)
     event.send_state()
     cm.status_api.post_event('create', 'host', host.id, 'provider', str(provider.id))
     cm.status_api.load_service_map()
@@ -117,7 +117,7 @@ def add_host_provider(proto, name, desc=''):
         provider = HostProvider(prototype=proto, name=name, config=obj_conf, description=desc)
         provider.save()
         process_file_type(provider, spec, conf)
-        cm.issue.save_issue(provider)
+        cm.issue.update_hierarchy_issues(provider)
     cm.status_api.post_event('create', 'provider', provider.id)
     return provider
 
@@ -142,8 +142,7 @@ def add_host_to_cluster(cluster, host):
     with transaction.atomic():
         host.cluster = cluster
         host.save()
-        cm.issue.save_issue(host)
-        cm.issue.save_issue(cluster)
+        cm.issue.update_hierarchy_issues(host)
     cm.status_api.post_event('add', 'host', host.id, 'cluster', str(cluster.id))
     cm.status_api.load_service_map()
     log.info('host #%s %s is added to cluster #%s %s', host.id, host.fqdn, cluster.id, cluster.name)
@@ -276,7 +275,7 @@ def remove_host_from_cluster(host):
     with transaction.atomic():
         host.cluster = None
         host.save()
-        cm.issue.save_issue(cluster)
+        cm.issue.update_hierarchy_issues(cluster)
     cm.status_api.post_event('remove', 'host', host.id, 'cluster', str(cluster.id))
     cm.status_api.load_service_map()
     return host
@@ -291,7 +290,7 @@ def unbind(cbind):
     with transaction.atomic():
         DummyData.objects.filter(id=1).update(date=timezone.now())
         cbind.delete()
-        cm.issue.save_issue(cbind.cluster)
+        cm.issue.update_hierarchy_issues(cbind.cluster)
     cm.status_api.post_event('delete', 'bind', cbind_id, 'cluster', str(cbind_cluster_id))
 
 
@@ -311,8 +310,7 @@ def add_service_to_cluster(cluster, proto):
         cs.save()
         add_components_to_service(cluster, cs)
         process_file_type(cs, spec, conf)
-        cm.issue.save_issue(cs)
-        cm.issue.save_issue(cluster)
+        cm.issue.update_hierarchy_issues(cs)
     cm.status_api.post_event('add', 'service', cs.id, 'cluster', str(cluster.id))
     cm.status_api.load_service_map()
     return cs
@@ -324,7 +322,7 @@ def add_components_to_service(cluster, service):
         obj_conf = init_object_config(spec, conf, attr)
         sc = ServiceComponent(cluster=cluster, service=service, prototype=comp, config=obj_conf)
         sc.save()
-        cm.issue.save_issue(sc)
+        cm.issue.update_hierarchy_issues(sc)
 
 
 def add_user_role(user, role):
@@ -443,7 +441,7 @@ def update_obj_config(obj_conf, conf, attr, desc=''):
     new_conf = check_json_config(proto, obj, conf, old_conf.config, attr)
     with transaction.atomic():
         cl = save_obj_config(obj_conf, new_conf, attr, desc)
-        cm.issue.save_issue(obj)
+        cm.issue.update_hierarchy_issues(obj)
     if hasattr(obj_conf, 'adcm'):
         prepare_social_auth(new_conf)
     cm.status_api.post_event('change_config', proto.type, obj.id, 'version', str(cl.id))
@@ -546,7 +544,7 @@ def save_hc(cluster, host_comp_list):
         hc.save()
         result.append(hc)
     cm.status_api.post_event('change_hostcomponentmap', 'cluster', cluster.id)
-    cm.issue.save_issue(cluster)
+    cm.issue.update_hierarchy_issues(cluster)
     cm.status_api.load_service_map()
     return result
 
@@ -750,9 +748,7 @@ def multi_bind(cluster, service, bind_list):   # pylint: disable=too-many-locals
             old_bind[key].delete()
             log.info('unbind %s from %s', obj_ref(export_obj), obj_ref(import_obj))
 
-        cm.issue.save_issue(cluster)
-        if service:
-            cm.issue.save_issue(service)
+        cm.issue.update_hierarchy_issues(cluster)
 
     return get_import(cluster, service)
 
