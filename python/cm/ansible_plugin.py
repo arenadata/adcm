@@ -15,7 +15,6 @@ from ansible.plugins.action import ActionBase
 from ansible.utils.vars import merge_hash
 
 import cm
-from cm.errors import raise_AdcmEx as err
 from cm.models import ServiceComponent
 
 
@@ -211,29 +210,20 @@ class ContextActionModule(ActionBase):
 
 
 def get_component_by_name(cluster_id, service_id, component_name, service_name):
-    try:
-        if service_id is not None:
-            comp = ServiceComponent.objects.get(
-                cluster_id=cluster_id,
-                service_id=service_id,
-                prototype__name=component_name
-            )
-        else:
-            comp = ServiceComponent.objects.get(
-                cluster_id=cluster_id,
-                service__prototype__name=service_name,
-                prototype__name=component_name
-            )
-    except ServiceComponent.DoesNotExist:
-        msg = 'Component # {} does not found'
-        err('COMPONENT_NOT_FOUND', msg.format(component_name))
+    if service_id is not None:
+        comp = ServiceComponent.obj.get(
+            cluster_id=cluster_id,
+            service_id=service_id,
+            prototype__name=component_name
+        )
+    else:
+        comp = ServiceComponent.obj.get(
+            cluster_id=cluster_id,
+            service__prototype__name=service_name,
+            prototype__name=component_name
+        )
     return comp
 
 
 def get_component(component_id):
-    try:
-        comp = ServiceComponent.objects.get(id=component_id)
-    except ServiceComponent.DoesNotExist:
-        msg = 'Component # {} does not exist'
-        err('COMPONENT_NOT_FOUND', msg.format(component_id))
-    return comp
+    return ServiceComponent.obj.get(id=component_id)

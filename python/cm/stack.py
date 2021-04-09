@@ -267,10 +267,7 @@ def save_export(proto, conf):
         export = conf['export']
     msg = '{} does not has "{}" config group'
     for key in export:
-        try:
-            if not StagePrototypeConfig.objects.filter(prototype=proto, name=key):
-                err('INVALID_OBJECT_DEFINITION', msg.format(ref, key))
-        except StagePrototypeConfig.DoesNotExist:
+        if not StagePrototypeConfig.objects.filter(prototype=proto, name=key):
             err('INVALID_OBJECT_DEFINITION', msg.format(ref, key))
         se = StagePrototypeExport(prototype=proto, name=key)
         se.save()

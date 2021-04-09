@@ -22,7 +22,7 @@ import cm.job
 import cm.stack
 import cm.status_api
 import cm.config as config
-from cm.errors import AdcmEx, AdcmApiEx
+from cm.errors import AdcmEx
 from cm.models import (
     Action, SubAction, JobLog, HostProvider, Host, Cluster, ClusterObject, ServiceComponent
 )
@@ -78,11 +78,8 @@ def get_job_objects(obj):
 
 
 def get_job_object_type(obj):
-    try:
-        action = Action.objects.get(id=obj.action_id)
-        return action.prototype.type
-    except Action.DoesNotExist:
-        return None
+    action = Action.obj.get(id=obj.action_id)
+    return action.prototype.type
 
 
 class DataField(serializers.CharField):
@@ -179,20 +176,17 @@ class TaskSerializer(TaskListSerializer):
 
 class RunTaskSerializer(TaskSerializer):
     def create(self, validated_data):
-        try:
-            obj = cm.job.start_task(
-                validated_data.get('action_id'),
-                validated_data.get('selector'),
-                validated_data.get('config', {}),
-                validated_data.get('attr', {}),
-                validated_data.get('hc', []),
-                validated_data.get('hosts', []),
-                validated_data.get('verbose', False)
-            )
-            obj.jobs = JobLog.objects.filter(task_id=obj.id)
-            return obj
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds) from e
+        obj = cm.job.start_task(
+            validated_data.get('action_id'),
+            validated_data.get('selector'),
+            validated_data.get('config', {}),
+            validated_data.get('attr', {}),
+            validated_data.get('hc', []),
+            validated_data.get('hosts', []),
+            validated_data.get('verbose', False)
+        )
+        obj.jobs = JobLog.objects.filter(task_id=obj.id)
+        return obj
 
 
 class TaskPostSerializer(RunTaskSerializer):
@@ -201,7 +195,7 @@ class TaskPostSerializer(RunTaskSerializer):
 
     def validate_selector(self, selector):
         if not isinstance(selector, dict):
-            raise AdcmApiEx('JSON_ERROR', 'selector should be a map')
+            raise AdcmEx('JSON_ERROR', 'selector should be a map')
         return selector
 
 
@@ -263,7 +257,7 @@ class LogStorageSerializer(serializers.Serializer):
                 content = f.read()
         except FileNotFoundError:
             msg = f'File "{obj.name}-{obj.type}.{obj.format}" not found'
-            raise AdcmApiEx('LOG_NOT_FOUND', msg) from None
+            raise AdcmEx('LOG_NOT_FOUND', msg) from None
         return content
 
     def get_content(self, obj):

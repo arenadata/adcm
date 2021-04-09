@@ -258,21 +258,11 @@ def check_component_requires(comp):
     req_list = comp.requires
     for i, item in enumerate(req_list):
         if 'service' in item:
-            try:
-                service = StagePrototype.objects.get(name=item['service'], type='service')
-            except StagePrototype.DoesNotExist:
-                msg = 'Unknown service "{}" {}'
-                err('COMPONENT_CONSTRAINT_ERROR', msg.format(item['service'], ref))
+            service = StagePrototype.obj.get(name=item['service'], type='service')
         else:
             service = comp.parent
             req_list[i]['service'] = comp.parent.name
-        try:
-            req_comp = StagePrototype.objects.get(
-                name=item['component'], type='component', parent=service
-            )
-        except StagePrototype.DoesNotExist:
-            msg = 'Unknown component "{}" {}'
-            err('COMPONENT_CONSTRAINT_ERROR', msg.format(item['component'], ref))
+        req_comp = StagePrototype.obj.get(name=item['component'], type='component', parent=service)
         if comp == req_comp:
             msg = 'Component can not require themself {}'
             err('COMPONENT_CONSTRAINT_ERROR', msg.format(ref))
@@ -285,20 +275,8 @@ def check_bound_component(comp):
         return
     ref = 'in "bound_to" of component "{}" of {}'.format(comp.name, proto_ref(comp.parent))
     bind = comp.bound_to
-    try:
-        service = StagePrototype.objects.get(name=bind['service'], type='service')
-    except StagePrototype.DoesNotExist:
-        msg = 'Unknown service "{}" {}'
-        err('COMPONENT_CONSTRAINT_ERROR', msg.format(bind['service'], ref))
-
-    try:
-        bind_comp = StagePrototype.objects.get(
-            name=bind['component'], type='component', parent=service
-        )
-    except StagePrototype.DoesNotExist:
-        msg = 'Unknown component "{}" {}'
-        err('COMPONENT_CONSTRAINT_ERROR', msg.format(bind['component'], ref))
-
+    service = StagePrototype.obj.get(name=bind['service'], type='service')
+    bind_comp = StagePrototype.obj.get(name=bind['component'], type='component', parent=service)
     if comp == bind_comp:
         msg = 'Component can not require themself {}'
         err('COMPONENT_CONSTRAINT_ERROR', msg.format(ref))
@@ -315,23 +293,11 @@ def check_variant_host(args, ref):
     def check_predicate(predicate, args):
         if predicate == 'in_service':
             # log.debug('check in_service %s', args)
-            try:
-                StagePrototype.objects.get(type='service', name=args['service'])
-            except StagePrototype.DoesNotExist:
-                msg = 'Service "{}" {} does not exists'
-                err('INVALID_CONFIG_DEFINITION', msg.format(args['service'], ref))
+            StagePrototype.obj.get(type='service', name=args['service'])
         elif predicate == 'in_component':
             # log.debug('check in_component %s', args)
-            try:
-                service = StagePrototype.objects.get(type='service', name=args['service'])
-            except StagePrototype.DoesNotExist:
-                msg = 'Service "{}" {} does not exists'
-                err('INVALID_CONFIG_DEFINITION', msg.format(args['service'], ref))
-            try:
-                StagePrototype.objects.get(type='component', name=args['component'], parent=service)
-            except StagePrototype.DoesNotExist:
-                msg = 'Component "{}" {} does not exists'
-                err('INVALID_CONFIG_DEFINITION', msg.format(args['component'], ref))
+            service = StagePrototype.obj.get(type='service', name=args['service'])
+            StagePrototype.obj.get(type='component', name=args['component'], parent=service)
 
     if args is None:
         return

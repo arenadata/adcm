@@ -25,7 +25,7 @@ from ansible.parsing.vault import VaultSecret, VaultAES256
 import cm.variant
 import cm.ansible_plugin
 import cm.config as config
-from cm.errors import AdcmApiEx, AdcmEx
+from cm.errors import AdcmEx
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
 from cm.models import (
@@ -291,10 +291,7 @@ def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-local
 
 
 def restore_cluster_config(obj_conf, version, desc=''):
-    try:
-        cl = ConfigLog.objects.get(obj_ref=obj_conf, id=version)
-    except ConfigLog.DoesNotExist:
-        raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist") from None
+    cl = ConfigLog.obj.get(obj_ref=obj_conf, id=version)
     obj_conf.previous = obj_conf.current
     obj_conf.current = version
     obj_conf.save()
@@ -758,61 +755,33 @@ def replace_object_config(obj, key, subkey, value):
 
 
 def set_cluster_config(cluster_id, keys, value):
-    try:
-        cluster = Cluster.objects.get(id=cluster_id)
-    except Cluster.DoesNotExist:
-        msg = 'Cluster # {} does not exist'
-        err('CLUSTER_NOT_FOUND', msg.format(cluster_id))
+    cluster = Cluster.obj.get(id=cluster_id)
     return set_object_config(cluster, keys, value)
 
 
 def set_host_config(host_id, keys, value):
-    try:
-        host = Host.objects.get(id=host_id)
-    except Host.DoesNotExist:
-        msg = 'Host # {} does not exist'
-        err('HOST_NOT_FOUND', msg.format(host_id))
+    host = Host.obj.get(id=host_id)
     return set_object_config(host, keys, value)
 
 
 def set_provider_config(provider_id, keys, value):
-    try:
-        provider = HostProvider.objects.get(id=provider_id)
-    except HostProvider.DoesNotExist:
-        msg = 'Host # {} does not exist'
-        err('PROVIDER_NOT_FOUND', msg.format(provider_id))
+    provider = HostProvider.obj.get(id=provider_id)
     return set_object_config(provider, keys, value)
 
 
 def set_service_config(cluster_id, service_name, keys, value):
-    try:
-        cluster = Cluster.objects.get(id=cluster_id)
-    except Cluster.DoesNotExist:
-        msg = 'Cluster # {} does not exist'
-        err('CLUSTER_NOT_FOUND', msg.format(cluster_id))
-    try:
-        proto = Prototype.objects.get(
-            type='service', name=service_name, bundle=cluster.prototype.bundle
-        )
-    except Prototype.DoesNotExist:
-        msg = 'Service "{}" does not exist'
-        err('SERVICE_NOT_FOUND', msg.format(service_name))
-    try:
-        obj = ClusterObject.objects.get(cluster=cluster, prototype=proto)
-    except ClusterObject.DoesNotExist:
-        msg = '{} does not exist in cluster # {}'
-        err('OBJECT_NOT_FOUND', msg.format(proto_ref(proto), cluster.id))
+    cluster = Cluster.obj.get(id=cluster_id)
+    proto = Prototype.obj.get(
+        type='service', name=service_name, bundle=cluster.prototype.bundle
+    )
+    obj = ClusterObject.obj.get(cluster=cluster, prototype=proto)
     return set_object_config(obj, keys, value)
 
 
 def set_service_config_by_id(cluster_id, service_id, keys, value):
-    try:
-        obj = ClusterObject.objects.get(
-            id=service_id, cluster__id=cluster_id, prototype__type='service'
-        )
-    except ClusterObject.DoesNotExist:
-        msg = 'service # {} does not exist in cluster # {}'
-        err('OBJECT_NOT_FOUND', msg.format(service_id, cluster_id))
+    obj = ClusterObject.obj.get(
+        id=service_id, cluster__id=cluster_id, prototype__type='service'
+    )
     return set_object_config(obj, keys, value)
 
 
@@ -830,18 +799,14 @@ def set_component_config(component_id, keys, value):
 
 def set_object_config(obj, keys, value):
     proto = obj.prototype
-    try:
-        spl = keys.split('/')
-        key = spl[0]
-        if len(spl) == 1:
-            subkey = ''
-        else:
-            subkey = spl[1]
-        pconf = PrototypeConfig.objects.get(prototype=proto, action=None, name=key, subname=subkey)
-    except PrototypeConfig.DoesNotExist:
-        msg = '{} does not has config key "{}/{}"'
-        err('CONFIG_NOT_FOUND', msg.format(proto_ref(proto), key, subkey))
+    spl = keys.split('/')
+    key = spl[0]
+    if len(spl) == 1:
+        subkey = ''
+    else:
+        subkey = spl[1]
 
+    pconf = PrototypeConfig.obj.get(prototype=proto, action=None, name=key, subname=subkey)
     if pconf.type == 'group':
         msg = 'You can not update config group "{}" for {}'
         err('CONFIG_VALUE_ERROR', msg.format(key, obj_ref(obj)))

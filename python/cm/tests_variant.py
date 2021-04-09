@@ -22,7 +22,7 @@ from cm.models import Bundle, Prototype
 def cook_cluster():
     b = Bundle.objects.create(name="ADH", version="1.0")
     proto = Prototype.objects.create(type="cluster", name="ADH", bundle=b)
-    return Cluster.objects.create(prototype=proto)
+    return Cluster.objects.create(prototype=proto, name='Blue Tiber')
 
 
 def cook_provider():
@@ -194,7 +194,8 @@ class TestVariantHost(TestCase):
         self.assertEqual(e.exception.msg, 'no "service" argument for predicate "in_service"')
         with self.assertRaises(AdcmEx) as e:
             variant_host(cls, {'predicate': 'in_service', 'args': {'service': 'qwe'}})
-        self.assertEqual(e.exception.msg, 'service "qwe" is not found')
+        self.assertTrue('ClusterObject {' in e.exception.msg)
+        self.assertTrue('} does not exist' in e.exception.msg)
 
         args = {'predicate': 'in_service', 'args': {'service': 'UBER'}}
         hosts = variant_host(cls, args)
@@ -221,7 +222,8 @@ class TestVariantHost(TestCase):
         self.assertEqual(e.exception.msg, 'no "service" argument for predicate "not_in_service"')
         with self.assertRaises(AdcmEx) as e:
             variant_host(cls, {'predicate': 'not_in_service', 'args': {'service': 'qwe'}})
-        self.assertEqual(e.exception.msg, 'service "qwe" is not found')
+        self.assertTrue('ClusterObject {' in e.exception.msg)
+        self.assertTrue('} does not exist' in e.exception.msg)
 
         args = {'predicate': 'not_in_service', 'args': {'service': 'UBER'}}
         hosts = variant_host(cls, args)
@@ -253,11 +255,13 @@ class TestVariantHost(TestCase):
         self.assertEqual(e.exception.msg, 'no "service" argument for predicate "in_component"')
         with self.assertRaises(AdcmEx) as e:
             variant_host(cls, {'predicate': 'in_component', 'args': {'service': 'qwe'}})
-        self.assertEqual(e.exception.msg, 'service "qwe" is not found')
+        self.assertTrue('ClusterObject {' in e.exception.msg)
+        self.assertTrue('} does not exist' in e.exception.msg)
         with self.assertRaises(AdcmEx) as e:
             args = {'predicate': 'in_component', 'args': {'service': 'UBER', 'component': 'asd'}}
             variant_host(cls, args)
-        self.assertEqual(e.exception.msg, 'component "asd" is not found')
+        self.assertTrue('ServiceComponent {' in e.exception.msg)
+        self.assertTrue('} does not exist' in e.exception.msg)
 
         args = {'predicate': 'in_component', 'args': {'service': 'UBER', 'component': 'Node'}}
         hosts = variant_host(cls, args)
@@ -288,13 +292,15 @@ class TestVariantHost(TestCase):
         self.assertEqual(e.exception.msg, 'no "service" argument for predicate "not_in_component"')
         with self.assertRaises(AdcmEx) as e:
             variant_host(cls, {'predicate': 'not_in_component', 'args': {'service': 'qwe'}})
-        self.assertEqual(e.exception.msg, 'service "qwe" is not found')
+        self.assertTrue('ClusterObject {' in e.exception.msg)
+        self.assertTrue('} does not exist' in e.exception.msg)
         with self.assertRaises(AdcmEx) as e:
             args = {
                 'predicate': 'not_in_component', 'args': {'service': 'UBER', 'component': 'asd'}
             }
             variant_host(cls, args)
-        self.assertEqual(e.exception.msg, 'component "asd" is not found')
+        self.assertTrue('ServiceComponent {' in e.exception.msg)
+        self.assertTrue('} does not exist' in e.exception.msg)
 
         args = {'predicate': 'not_in_component', 'args': {'service': 'UBER', 'component': 'Node'}}
         self.assertEqual(variant_host(cls, args), ['h10', 'h12', 'h13'])
