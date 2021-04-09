@@ -57,6 +57,28 @@ def get_model_by_type(object_type):
 
 
 class ADCMManager(models.Manager):
+    """
+    Custom model manager catch ObjectDoesNotExist error and re-raise it as custom
+    AdcmEx exception. AdcmEx is derived from DRF APIException, so it handled gracefully
+    by DRF and is reported out as nicely formated error instead of ugly exception.
+
+    Using ADCMManager can shorten you code significaly. Insted of
+
+    try:
+        cluster = Cluster.objects.get(id=id)
+    except Cluster.DoesNotExist:
+        raise AdcmEx(f'Cluster {id} is not found')
+
+    You can just write
+
+    cluster = Cluster.obj.get(id=id)
+
+    and DRF magic do the rest.
+
+    Please pay attention, to use ADCMManager you need reffer to "obj" model attribute,
+    not "objects". "objects" attribute is reffered to standard Django model manager,
+    so if you need familiar behavior you can use it as usual.
+    """
     def get(self, *args, **kwargs):
         try:
             return super().get(*args, **kwargs)
