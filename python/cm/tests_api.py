@@ -90,9 +90,9 @@ class TestApi(TestCase):
             self.cluster.prototype.type, self.cluster.id, 'created')
 
     @patch('cm.status_api.load_service_map')
-    @patch('cm.issue.save_issue')
+    @patch('cm.issue.update_hierarchy_issues')
     @patch('cm.status_api.post_event')
-    def test_save_hc(self, mock_post_event, mock_save_issue, mock_load_service_map):
+    def test_save_hc(self, mock_post_event, mock_update_issues, mock_load_service_map):
         cluster_object = models.ClusterObject.objects.create(
             prototype=self.prototype, cluster=self.cluster)
         host = models.Host.objects.create(prototype=self.prototype, cluster=self.cluster)
@@ -111,5 +111,5 @@ class TestApi(TestCase):
         self.assertListEqual(hc_list, [models.HostComponent.objects.get(id=2)])
         mock_post_event.assert_called_once_with(
             'change_hostcomponentmap', 'cluster', self.cluster.id)
-        mock_save_issue.assert_called_once_with(self.cluster)
+        mock_update_issues.assert_called_once_with(self.cluster)
         mock_load_service_map.assert_called_once()
