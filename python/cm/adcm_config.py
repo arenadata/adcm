@@ -16,16 +16,13 @@ import json
 import os
 
 import yspec.checker
-from django.conf import settings
-from django.db import DEFAULT_DB_ALIAS, connections
-from django.db.migrations.executor import MigrationExecutor
-from django.db.utils import OperationalError
 from ansible.parsing.vault import VaultSecret, VaultAES256
+from django.conf import settings
+from django.db.utils import OperationalError
 
-import cm.variant
 import cm.ansible_plugin
 import cm.config as config
-from cm.errors import AdcmEx
+import cm.variant
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
 from cm.models import (
