@@ -44,11 +44,11 @@ import { Job } from '@app/core/types';
       <tr mat-row *matRowDef="let row; columns: displayColumns"></tr>
     </table>
   `,
-  styleUrls: ['./task.component.scss']
+  styleUrls: ['./tasks.component.scss']
 })
 export class InnerComponent {
   displayColumns = ['job_name', 'start_date_job', 'finish_date_job', 'status_job'];
-  
+
   @Input() dataSource: Job[];
 
   iconDisplay = {

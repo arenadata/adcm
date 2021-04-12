@@ -85,5 +85,11 @@
     </table>
 
     <mat-paginator [pageSizeOptions]="[10, 25, 50, 100]" (page)="pageHandler($event)"></mat-paginator>
+
+    <adwp-list
+      [columns]="listColumns"
+      [dataSource]="data$ | async"
+    ></adwp-list>
+
   </div>
 </div>

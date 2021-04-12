@@ -18,6 +18,9 @@ import { SharedModule } from '@app/shared/shared.module';
 import { HoverDirective } from './hover.directive';
 import { TasksComponent } from './tasks.component';
 import { InnerComponent } from './inner.component';
+import { TaskObjectsComponent } from '../../components/columns/task-objects/task-objects.component';
+import { ObjectLinkColumnPipe } from '../../pipes/object-link-column.pipe';
+import { TaskStatusColumnComponent } from '../../components/columns/task-status-column/task-status-column.component';
 
 const routes: Routes = [
   {
@@ -35,6 +38,13 @@ export class TaskRoutingModule {}
 
 @NgModule({
   imports: [CommonModule, TaskRoutingModule, SharedModule],
-  declarations: [TasksComponent, HoverDirective, InnerComponent]
+  declarations: [
+    TasksComponent,
+    HoverDirective,
+    InnerComponent,
+    TaskObjectsComponent,
+    ObjectLinkColumnPipe,
+    TaskStatusColumnComponent,
+  ],
 })
 export class TaskModule {}

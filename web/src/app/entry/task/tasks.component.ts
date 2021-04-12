@@ -18,17 +18,22 @@ import { MatTableDataSource } from '@angular/material/table';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { filter, switchMap } from 'rxjs/operators';
+import { BehaviorSubject } from 'rxjs';
+import { IColumns, IListResult } from '@adwp-ui/widgets';
+import { DateHelper } from '@app/helpers/date-helper';
 
 import { ApiService } from '@app/core/api';
 import { EventMessage, SocketState } from '@app/core/store';
-import { JobStatus, Task, JobObject } from '@app/core/types';
+import { JobStatus, Task, JobObject, TaskRaw, Job } from '@app/core/types';
 import { SocketListenerDirective } from '@app/shared/directives';
 import { DialogComponent } from '@app/shared/components';
+import { TaskObjectsComponent } from '../../components/columns/task-objects/task-objects.component';
+import { TaskStatusColumnComponent } from '../../components/columns/task-status-column/task-status-column.component';
 
 @Component({
   selector: 'app-tasks',
-  templateUrl: './task.component.html',
-  styleUrls: ['./task.component.scss'],
+  templateUrl: './tasks.component.html',
+  styleUrls: ['./tasks.component.scss'],
   animations: [
     trigger('jobsExpand', [
       state('collapsed', style({ height: '0px', minHeight: '0' })),
@@ -38,6 +43,43 @@ import { DialogComponent } from '@app/shared/components';
   ],
 })
 export class TasksComponent extends SocketListenerDirective implements OnInit {
+
+  /* BEGIN: My editions */
+  listColumns = [
+    {
+      label: '#',
+      value: (row) => row.id,
+    },
+    {
+      type: 'link',
+      label: 'Action name',
+      value: row => row.action?.display_name || 'unknown',
+      url: row => `/job/${row.jobs[0].id}`,
+    },
+    {
+      type: 'component',
+      label: 'Objects',
+      component: TaskObjectsComponent,
+    },
+    {
+      label: 'Start date',
+      value: row => DateHelper.short(row.start_date),
+    },
+    {
+      label: 'Finish date',
+      value: row => row.status === 'success' || row.status === 'failed' ? DateHelper.short(row.finish_date) : '',
+    },
+    {
+      type: 'component',
+      label: 'Status',
+      component: TaskStatusColumnComponent,
+      className: 'parent-end center',
+    }
+  ] as IColumns<Task>;
+
+  data$: BehaviorSubject<IListResult<Task>> = new BehaviorSubject(null);
+  /* END: My editions */
+
   isDisabled = false;
 
   dataSource = new MatTableDataSource<Task>([]);
@@ -156,6 +198,7 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
 
   refresh() {
     this.api.root.pipe(switchMap((root) => this.api.getList<Task>(root.task, this.paramMap))).subscribe((data) => {
+      this.data$.next(data as IListResult<Task>);
       this.dataSource.data = data.results.map((a) => ({ ...a, objects: this.buildLink(a.objects) }));
       this.paginator.length = data.count;
       this.dataCount = data.count;
