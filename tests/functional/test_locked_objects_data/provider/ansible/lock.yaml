@@ -10,14 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-- name: Locker action for host
+- name: Lock action
   hosts: all
   connection: local
   gather_facts: no
 
   tasks:
-    - name: emulation locked object for 500 sec
+    - name: emulation locked object for {{ job.config.duration }} sec
       pause:
-        seconds: 500
+        seconds: "{{ job.config.duration }}"
     - debug:
         msg: "Unstucked now"

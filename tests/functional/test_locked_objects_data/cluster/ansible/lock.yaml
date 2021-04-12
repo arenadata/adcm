@@ -10,13 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-- name: Do nothing playbook
-  hosts: all 
+- name: Lock action
+  hosts: all
   connection: local
   gather_facts: no
 
   tasks:
-    - pause:
-        seconds: 500
+    - name: emulation locked object for {{ job.config.duration }} sec
+      pause:
+        seconds: "{{ job.config.duration }}"
     - debug:
         msg: "Unstucked now"
