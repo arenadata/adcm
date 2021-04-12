@@ -307,7 +307,7 @@ class TestClusterServiceConfig:
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 _get_prev_config(service)
         with allure.step("Check error that config version doesn't exist"):
-            err.CONFIG_NOT_FOUND.equal(e, "config version doesn't exist")
+            err.CONFIG_NOT_FOUND.equal(e, "ConfigLog", "does not exist")
 
 
 class TestClusterServiceConfigHistory:
@@ -343,7 +343,7 @@ class TestClusterServiceConfigHistory:
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             service.config()
         with allure.step("Check error that service doesn't exist"):
-            err.SERVICE_NOT_FOUND.equal(e, "service doesn't exist")
+            err.CLUSTER_SERVICE_NOT_FOUND.equal(e, "ClusterObject", "does not exist")
 
 
 class TestClusterConfig:
@@ -430,7 +430,7 @@ class TestClusterConfig:
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 cluster.config()
         with allure.step("Check that cluster doesn't exist"):
-            err.CLUSTER_NOT_FOUND.equal(e, "cluster doesn't exist")
+            err.CLUSTER_NOT_FOUND.equal(e, "Cluster", "does not exist")
 
     check_types = [
         ("file", "input_file"),

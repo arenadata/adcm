@@ -570,7 +570,7 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
             {'service_id': service_id, 'host_id': host_id, 'component_id': comp_id}
         ]})
         self.assertEqual(r1.status_code, 404)
-        self.assertEqual(r1.json()['code'], "SERVICE_NOT_FOUND")
+        self.assertEqual(r1.json()['code'], "CLUSTER_SERVICE_NOT_FOUND")
 
         r1 = self.api_post(
             '/cluster/' + str(cluster_id2) + '/service/', {'prototype_id': service_proto_id}

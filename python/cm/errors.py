@@ -23,6 +23,10 @@ ERRORS = {
     'AUTH_ERROR': ("authenticate error", rfs.HTTP_409_CONFLICT, ERR),
     'STACK_LOAD_ERROR': ("stack loading error", rfs.HTTP_409_CONFLICT, ERR),
 
+    'NO_MODEL_ERROR_CODE': (
+        "django model doesn't has __error_code__ attribute", rfs.HTTP_404_NOT_FOUND, ERR
+    ),
+
     'ADCM_NOT_FOUND': ("adcm object doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),
     'BUNDLE_NOT_FOUND': ("bundle doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),
     'CLUSTER_NOT_FOUND': ("cluster doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),
@@ -142,7 +146,7 @@ def get_error(code):
         return ('UNKNOWN_ERROR', msg, rfs.HTTP_501_NOT_IMPLEMENTED, CRIT)
 
 
-class AdcmEx(Exception):
+class AdcmEx(APIException):
     def __init__(self, code, msg='', http_code='', args=''):
         (err_code, err_msg, err_http_code, level) = get_error(code)
         if msg != '':
@@ -150,23 +154,8 @@ class AdcmEx(Exception):
         if http_code != '':
             err_http_code = http_code
         self.msg = err_msg
-        self.code = err_code
-        self.http_code = err_http_code
         self.level = level
-        self.adds = args
-        super().__init__(err_msg)
-
-    def __str__(self):
-        return self.msg
-
-
-class AdcmApiEx(APIException):
-    def __init__(self, code, msg='', http_code='', args=''):
-        (err_code, err_msg, err_http_code, level) = get_error(code)
-        if msg != '':
-            err_msg = msg
-        if http_code != '':
-            err_http_code = http_code
+        self.code = err_code
         self.status_code = err_http_code
         detail = {
             'code': err_code,
@@ -178,6 +167,9 @@ class AdcmApiEx(APIException):
         elif args:
             detail['args'] = args
         super().__init__(detail, err_http_code)
+
+    def __str__(self):
+        return self.msg
 
 
 def raise_AdcmEx(code, msg='', args=''):

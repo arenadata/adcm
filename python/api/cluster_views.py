@@ -19,7 +19,7 @@ import cm.job
 import cm.api
 import cm.bundle
 import cm.status_api
-from cm.errors import AdcmApiEx, AdcmEx
+from cm.errors import AdcmEx
 from cm.models import Cluster, Host, HostComponent, Prototype
 from cm.models import ClusterObject, Upgrade, ClusterBind
 from cm.logger import log   # pylint: disable=unused-import
@@ -35,16 +35,14 @@ from api.api_views import DetailViewRO, DetailViewDelete
 def get_obj_conf(cluster_id, service_id):
     cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
     if service_id:
-        co = check_obj(
-            ClusterObject, {'cluster': cluster, 'id': service_id}, 'SERVICE_NOT_FOUND'
-        )
+        co = check_obj(ClusterObject, {'cluster': cluster, 'id': service_id})
         obj = co
     else:
         obj = cluster
     if not obj:
-        raise AdcmApiEx('CONFIG_NOT_FOUND', "this object has no config")
+        raise AdcmEx('CONFIG_NOT_FOUND', "this object has no config")
     if not obj.config:
-        raise AdcmApiEx('CONFIG_NOT_FOUND', "this object has no config")
+        raise AdcmEx('CONFIG_NOT_FOUND', "this object has no config")
     return obj
 
 
@@ -109,7 +107,7 @@ class ClusterHostList(PageView):
         """
         List all hosts of a specified cluster
         """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
+        cluster = Cluster.obj.get(id=cluster_id)
         obj = self.filter_queryset(self.get_queryset().filter(cluster=cluster))
         return self.get_page(obj, request, {'cluster_id': cluster_id})
 
@@ -127,11 +125,11 @@ class ClusterHostDetail(ListView):
     def check_host(self, cluster, host):
         if host.cluster != cluster:
             msg = "Host #{} doesn't belong to cluster #{}".format(host.id, cluster.id)
-            raise AdcmApiEx('FOREIGN_HOST', msg)
+            raise AdcmEx('FOREIGN_HOST', msg)
 
     def get_obj(self, cluster_id, host_id):
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        host = check_obj(Host, host_id, 'HOST_NOT_FOUND')
+        cluster = Cluster.obj.get(id=cluster_id)
+        host = Host.obj.get(id=host_id)
         self.check_host(cluster, host)
         return host
 
@@ -149,10 +147,7 @@ class ClusterHostDetail(ListView):
         Remove host from cluster
         """
         host = self.get_obj(cluster_id, host_id)
-        try:
-            cm.api.remove_host_from_cluster(host)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
+        cm.api.remove_host_from_cluster(host)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -421,10 +416,7 @@ class ClusterServiceDetail(DetailViewRO):
         service = check_obj(
             ClusterObject, {'id': service_id, 'cluster': cluster}, 'SERVICE_NOT_FOUND'
         )
-        try:
-            cm.api.delete_service(service)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
+        cm.api.delete_service(service)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

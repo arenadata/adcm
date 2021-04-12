@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.db import models
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -21,7 +20,6 @@ from api.stack_serial import ImportSerializer
 from api.cluster_serial import BindSerializer
 
 from cm.api import delete_service, get_import, unbind
-from cm.errors import AdcmEx, AdcmApiEx
 from cm.models import ClusterObject, Prototype, ClusterBind
 from . import serializers
 
@@ -66,10 +64,7 @@ class ServiceDetailView(DetailViewRO):
         Remove service from cluster
         """
         service = check_obj(ClusterObject, {'id': kwargs['service_id']}, 'SERVICE_NOT_FOUND')
-        try:
-            delete_service(service)
-        except AdcmEx as error:
-            raise AdcmApiEx(error.code, error.msg, error.http_code) from error
+        delete_service(service)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -84,19 +79,12 @@ class ServiceImportView(ListView):
         """
 
         service = check_obj(ClusterObject, {'id': kwargs['service_id']}, 'SERVICE_NOT_FOUND')
-        try:
-            cluster = service.cluster
-        except models.ObjectDoesNotExist:
-            raise AdcmApiEx('CLUSTER_NOT_FOUND') from None
-
+        cluster = service.cluster
         return Response(get_import(cluster, service))
 
     def post(self, request, service_id):
         service = check_obj(ClusterObject, {'id': service_id}, 'SERVICE_NOT_FOUND')
-        try:
-            cluster = service.cluster
-        except models.ObjectDoesNotExist:
-            raise AdcmApiEx('CLUSTER_NOT_FOUND') from None
+        cluster = service.cluster
         serializer = self.post_serializer_class(
             data=request.data,
             context={'request': request, 'cluster': cluster, 'service': service})
@@ -130,10 +118,7 @@ class ServiceBindView(ListView):
         Bind two services
         """
         service = check_obj(ClusterObject, {'id': service_id}, 'SERVICE_NOT_FOUND')
-        try:
-            cluster = service.cluster
-        except models.ObjectDoesNotExist:
-            raise AdcmApiEx('CLUSTER_NOT_FOUND') from None
+        cluster = service.cluster
         serializer = self.get_serializer_class()(data=request.data, context={'request': request})
         return create(serializer, cluster=cluster, service=service)
 
@@ -144,10 +129,7 @@ class ServiceBindDetailView(DetailViewDelete):
 
     def get_obj(self, service_id, bind_id):
         service = check_obj(ClusterObject, service_id, 'SERVICE_NOT_FOUND')
-        try:
-            cluster = service.cluster
-        except models.ObjectDoesNotExist:
-            AdcmApiEx('CLUSTER_NOT_FOUND')
+        cluster = service.cluster
         return check_obj(ClusterBind, {'cluster': cluster, 'id': bind_id}, 'BIND_NOT_FOUND')
 
     def get(self, request, *args, **kwargs):

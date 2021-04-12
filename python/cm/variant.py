@@ -72,23 +72,15 @@ def var_host_or(cluster, args):
 def var_host_get_service(cluster, args, func):
     if 'service' not in args:
         err('CONFIG_VARIANT_ERROR', f'no "service" argument for predicate "{func}"')
-    try:
-        service = ClusterObject.objects.get(cluster=cluster, prototype__name=args['service'])
-    except ClusterObject.DoesNotExist:
-        err('CONFIG_VARIANT_ERROR', 'service "{}" is not found'.format(args['service']))
-    return service
+    return ClusterObject.obj.get(cluster=cluster, prototype__name=args['service'])
 
 
 def var_host_get_component(cluster, args, service, func):
     if 'component' not in args:
         err('CONFIG_VARIANT_ERROR', f'no "component" argument for predicate "{func}"')
-    try:
-        comp = ServiceComponent.objects.get(
-            cluster=cluster, service=service, prototype__name=args['component']
-        )
-    except ServiceComponent.DoesNotExist:
-        err('CONFIG_VARIANT_ERROR', 'component "{}" is not found'.format(args['component']))
-    return comp
+    return ServiceComponent.obj.get(
+        cluster=cluster, service=service, prototype__name=args['component']
+    )
 
 
 def var_host_in_service(cluster, args):

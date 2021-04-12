@@ -20,9 +20,7 @@ import api.serializers
 from api.api_views import PageView, PageViewAdd, DetailViewRO, GenericAPIPermView, update, check_obj
 
 import cm.api
-from cm.api import safe_api
 from cm.models import Role, UserProfile, DummyData
-from cm.errors import AdcmApiEx
 
 
 @transaction.atomic
@@ -129,7 +127,7 @@ class ChangeUserRole(GenericAPIPermView):
         serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         role = check_obj(Role, {'id': serializer.data['role_id']}, 'ROLE_NOT_FOUND')
-        safe_api(cm.api.remove_user_role, (user, role))
+        cm.api.remove_user_role(user, role)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -187,7 +185,7 @@ class ChangeGroupRole(GenericAPIPermView):
         serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         role = check_obj(Role, {'id': serializer.data['role_id']}, 'ROLE_NOT_FOUND')
-        safe_api(cm.api.remove_group_role, (group, role))
+        cm.api.remove_group_role(group, role)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -243,12 +241,9 @@ class ProfileDetail(DetailViewRO):
         try:
             up = UserProfile.objects.get(login=login)
         except UserProfile.DoesNotExist:
-            try:
-                user = User.objects.get(username=login)
-                up = UserProfile.objects.create(login=user.username)
-                up.save()
-            except User.DoesNotExist:
-                raise AdcmApiEx('USER_NOT_FOUND') from None
+            user = User.obj.get(username=login)
+            up = UserProfile.objects.create(login=user.username)
+            up.save()
         return up
 
     def patch(self, request, *args, **kwargs):

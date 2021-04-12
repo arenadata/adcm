@@ -43,11 +43,7 @@ from cm.status_api import Event, post_event
 
 
 def start_task(action_id, selector, conf, attr, hc, hosts, verbose):   # pylint: disable=too-many-locals
-    try:
-        action = Action.objects.get(id=action_id)
-    except Action.DoesNotExist:
-        err('ACTION_NOT_FOUND')
-
+    action = Action.obj.get(id=action_id)
     obj, cluster, provider = check_task(action, selector, conf)
     act_conf, spec = check_action_config(action, obj, conf, attr)
     host_map, delta = check_hostcomponentmap(cluster, action, hc)
@@ -90,10 +86,7 @@ def check_action_hosts(action, cluster, provider, hosts):
     for host_id in hosts:
         if not isinstance(host_id, int):
             err('TASK_ERROR', f'host id should be integer ({host_id})')
-        try:
-            host = Host.objects.get(id=host_id)
-        except Host.DoesNotExist:
-            err('TASK_ERROR', f'Can not find host with id #{host_id}')
+        host = Host.obj.get(id=host_id)
         if cluster and host.cluster != cluster:
             err('TASK_ERROR', f'host #{host_id} does not belong to cluster #{cluster.id}')
         if provider and host.provider != provider:
@@ -308,70 +301,49 @@ def check_selector(selector, key):
 
 
 def check_service_task(cluster_id, action):
+    cluster = Cluster.obj.get(id=cluster_id)
     try:
-        cluster = Cluster.objects.get(id=cluster_id)
-        try:
-            service = ClusterObject.objects.get(cluster=cluster, prototype=action.prototype)
-            return service
-        except ClusterObject.DoesNotExist:
-            msg = (f'service #{action.prototype.id} for action '
-                   f'"{action.name}" is not installed in cluster #{cluster.id}')
-            err('CLUSTER_SERVICE_NOT_FOUND', msg)
-    except Cluster.DoesNotExist:
-        err('CLUSTER_NOT_FOUND')
+        service = ClusterObject.objects.get(cluster=cluster, prototype=action.prototype)
+        return service
+    except ClusterObject.DoesNotExist:
+        msg = (f'service #{action.prototype.id} for action '
+               f'"{action.name}" is not installed in cluster #{cluster.id}')
+        err('CLUSTER_SERVICE_NOT_FOUND', msg)
 
 
 def check_component_task(cluster_id, action):
+    cluster = Cluster.obj.get(id=cluster_id)
     try:
-        cluster = Cluster.objects.get(id=cluster_id)
-        try:
-            component = ServiceComponent.objects.get(cluster=cluster, prototype=action.prototype)
-            return component
-        except ServiceComponent.DoesNotExist:
-            msg = (f'component #{action.prototype.id} for action '
-                   f'"{action.name}" is not installed in cluster #{cluster.id}')
-            err('COMPONENT_NOT_FOUND', msg)
-    except Cluster.DoesNotExist:
-        err('CLUSTER_NOT_FOUND')
+        component = ServiceComponent.objects.get(cluster=cluster, prototype=action.prototype)
+        return component
+    except ServiceComponent.DoesNotExist:
+        msg = (f'component #{action.prototype.id} for action '
+               f'"{action.name}" is not installed in cluster #{cluster.id}')
+        err('COMPONENT_NOT_FOUND', msg)
 
 
 def check_cluster(cluster_id):
-    try:
-        cluster = Cluster.objects.get(id=cluster_id)
-        return cluster
-    except Cluster.DoesNotExist:
-        err('CLUSTER_NOT_FOUND')
+    return Cluster.obj.get(id=cluster_id)
 
 
 def check_provider(provider_id):
-    try:
-        provider = HostProvider.objects.get(id=provider_id)
-        return provider
-    except HostProvider.DoesNotExist:
-        err('PROVIDER_NOT_FOUND')
+    return HostProvider.obj.get(id=provider_id)
 
 
 def check_adcm(adcm_id):
-    try:
-        adcm = ADCM.objects.get(id=adcm_id)
-        return adcm
-    except ADCM.DoesNotExist:
-        err('ADCM_NOT_FOUND')
+    return ADCM.obj.get(id=adcm_id)
 
 
 def check_host(host_id, selector):
-    try:
-        host = Host.objects.get(id=host_id)
-        if 'cluster' in selector:
-            if not host.cluster:
-                msg = f'Host #{host_id} does not belong to any cluster'
-                err('HOST_NOT_FOUND', msg)
-            if host.cluster.id != selector['cluster']:
-                msg = f'Host #{host_id} does not belong to cluster #{selector["cluster"]}'
-                err('HOST_NOT_FOUND', msg)
-        return host
-    except Host.DoesNotExist:
-        err('HOST_NOT_FOUND')
+    host = Host.obj.get(id=host_id)
+    if 'cluster' in selector:
+        if not host.cluster:
+            msg = f'Host #{host_id} does not belong to any cluster'
+            err('HOST_NOT_FOUND', msg)
+        if host.cluster.id != selector['cluster']:
+            msg = f'Host #{host_id} does not belong to cluster #{selector["cluster"]}'
+            err('HOST_NOT_FOUND', msg)
+    return host
 
 
 def get_bundle_root(action):
@@ -391,11 +363,8 @@ def cook_script(action, sub_action):
 
 
 def get_adcm_config():
-    try:
-        adcm = ADCM.objects.get()
-        return get_obj_config(adcm)
-    except ADCM.DoesNotExist:
-        return {}
+    adcm = ADCM.obj.get()
+    return get_obj_config(adcm)
 
 
 def get_new_hc(cluster):
@@ -712,12 +681,9 @@ def log_group_check(group, fail_msg, success_msg):
 
 
 def log_check(job_id, group_data, check_data):
-    try:
-        job = JobLog.objects.get(id=job_id)
-        if job.status != config.Job.RUNNING:
-            err('JOB_NOT_FOUND', f'job #{job.id} has status "{job.status}", not "running"')
-    except JobLog.DoesNotExist:
-        err('JOB_NOT_FOUND', f'no job with id #{job_id}')
+    job = JobLog.obj.get(id=job_id)
+    if job.status != config.Job.RUNNING:
+        err('JOB_NOT_FOUND', f'job #{job.id} has status "{job.status}", not "running"')
 
     group_title = group_data.pop('title')
 
@@ -776,16 +742,13 @@ def finish_check(job_id):
 
 
 def log_custom(job_id, name, log_format, body):
-    try:
-        job = JobLog.objects.get(id=job_id)
-        l1 = LogStorage.objects.create(
-            job=job, name=name, type='custom', format=log_format, body=body
-        )
-        post_event('add_job_log', 'job', job_id, {
-            'id': l1.id, 'type': l1.type, 'name': l1.name, 'format': l1.format,
-        })
-    except JobLog.DoesNotExist:
-        err('JOB_NOT_FOUND', f'no job with id #{job_id}')
+    job = JobLog.obj.get(id=job_id)
+    l1 = LogStorage.objects.create(
+        job=job, name=name, type='custom', format=log_format, body=body
+    )
+    post_event('add_job_log', 'job', job_id, {
+        'id': l1.id, 'type': l1.type, 'name': l1.name, 'format': l1.format,
+    })
 
 
 def check_all_status():

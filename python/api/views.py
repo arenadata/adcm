@@ -28,7 +28,6 @@ import cm.config as config
 import cm.job
 import cm.stack
 import cm.status_api
-from cm.errors import AdcmEx, AdcmApiEx
 from cm.models import HostProvider, Host, ADCM, JobLog, TaskLog, Upgrade
 from adcm.settings import ADCM_VERSION
 from api.api_views import (
@@ -176,10 +175,7 @@ class ProviderDetail(DetailViewDelete):
         Remove host provider
         """
         provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        try:
-            cm.api.delete_host_provider(provider)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
+        cm.api.delete_host_provider(provider)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -261,10 +257,7 @@ class HostDetail(DetailViewDelete):
         Remove host (and all corresponding host services:components)
         """
         host = check_obj(Host, host_id, 'HOST_NOT_FOUND')
-        try:
-            cm.api.delete_host(host)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
+        cm.api.delete_host(host)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
