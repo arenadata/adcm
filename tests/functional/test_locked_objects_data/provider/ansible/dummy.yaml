@@ -10,14 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-- name: Locker action for host
+- name: Dummy action
   hosts: all
   connection: local
   gather_facts: no
 
   tasks:
-    - name: emulation locked object for 500 sec
-      pause:
-        seconds: 5
+    - name: Do nothing
     - debug:
-        msg: "Unstucked now"
+        msg: "Nothing done"
