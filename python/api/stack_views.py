@@ -207,11 +207,11 @@ class ServiceProtoActionList(GenericAPIPermView):
     queryset = Action.objects.filter(prototype__type='service')
     serializer_class = api.serializers.ActionSerializer
 
-    def get(self, request, service_id):
+    def get(self, request, prototype_id):
         """
         List all actions of a specified service
         """
-        obj = self.get_queryset().filter(prototype_id=service_id)
+        obj = self.get_queryset().filter(prototype_id=prototype_id)
         serializer = self.serializer_class(obj, many=True, context={'request': request})
         return Response(serializer.data)
 

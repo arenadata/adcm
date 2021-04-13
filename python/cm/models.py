@@ -521,6 +521,8 @@ class ClusterBind(ADCMModel):
         default=None
     )
 
+    __error_code__ = 'BIND_NOT_FOUND'
+
     class Meta:
         unique_together = (('cluster', 'service', 'source_cluster', 'source_service'),)
 

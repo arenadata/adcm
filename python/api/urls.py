@@ -27,7 +27,6 @@ schema_view = get_schema_view(title='ArenaData Chapel API')
 CLUSTER = 'cluster/<int:cluster_id>/'
 PROVIDER = 'provider/<int:provider_id>/'
 HOST = 'host/<int:host_id>/'
-SERVICE = 'service/<int:service_id>/'
 
 
 urlpatterns = [
@@ -102,7 +101,7 @@ urlpatterns = [
         name='service-type-details'
     ),
     path(
-        'stack/' + SERVICE + 'action/',
+        'stack/service/<int:prototype_id>/action/',
         stack_views.ServiceProtoActionList.as_view(),
         name='service-actions'
     ),
@@ -171,10 +170,6 @@ urlpatterns = [
     path(
         CLUSTER + HOST, cluster_views.ClusterHostDetail.as_view(), name='cluster-host-details'
     ),
-    path(
-        CLUSTER + 'service/', cluster_views.ClusterServiceList.as_view(), name='cluster-service'
-    ),
-
     path(CLUSTER + HOST + 'config/', include('api.config.urls'), {'object_type': 'host'}),
     path(CLUSTER + HOST + 'action/', include('api.action.urls'), {'object_type': 'host'}),
 
@@ -194,31 +189,8 @@ urlpatterns = [
         cluster_views.HostComponentDetail.as_view(),
         name='host-component-details'
     ),
-    path(
-        CLUSTER + SERVICE,
-        cluster_views.ClusterServiceDetail.as_view(),
-        name='cluster-service-details'
-    ),
-    path(CLUSTER + SERVICE + 'action/', include('api.action.urls'), {'object_type': 'service'}),
-    path(CLUSTER + SERVICE + 'component/', include('api.component.urls')),
-    path(
-        CLUSTER + SERVICE + 'import/',
-        cluster_views.ClusterServiceImport.as_view(),
-        name='cluster-service-import'
-    ),
-    path(
-        CLUSTER + SERVICE + 'bind/',
-        cluster_views.ClusterServiceBind.as_view(),
-        name='cluster-service-bind'
-    ),
-    path(
-        CLUSTER + SERVICE + 'bind/<int:bind_id>/',
-        cluster_views.ClusterServiceBindDetail.as_view(),
-        name='cluster-service-bind-details'
-    ),
-
+    path(CLUSTER + 'service/', include('api.service.urls')),
     path(CLUSTER + 'config/', include('api.config.urls'), {'object_type': 'cluster'}),
-    path(CLUSTER + SERVICE + 'config/', include('api.config.urls'), {'object_type': 'service'}),
 
     path('service/', include('api.service.urls')),
     path('component/', include('api.component.urls')),

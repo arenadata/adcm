@@ -20,14 +20,22 @@ from api.stack_serial import ImportSerializer
 from api.cluster_serial import BindSerializer
 
 from cm.api import delete_service, get_import, unbind
-from cm.models import ClusterObject, Prototype, ClusterBind
+from cm.models import Cluster, ClusterObject, Prototype, ClusterBind
 from . import serializers
+
+
+def check_service(kwargs):
+    service = check_obj(ClusterObject, kwargs['service_id'])
+    if 'cluster_id' in kwargs:
+        check_obj(Cluster, kwargs['cluster_id'])
+    return service
 
 
 class ServiceListView(PageView):
     queryset = ClusterObject.objects.all()
     serializer_class = serializers.ServiceSerializer
     serializer_class_ui = serializers.ServiceUISerializer
+    serializer_class_cluster = serializers.ClusterServiceSerializer
     filterset_fields = ('cluster_id', )
     ordering_fields = ('state', 'prototype__display_name', 'prototype__version_order')
 
@@ -41,7 +49,12 @@ class ServiceListView(PageView):
         """
         Add service to cluster
         """
-        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer_class = self.serializer_class
+        if 'cluster_id' in kwargs:
+            serializer_class = self.serializer_class_cluster
+        serializer = serializer_class(data=request.data, context={
+            'request': request, 'cluster_id': kwargs.get('cluster_id', None)}
+        )
         return create(serializer)
 
 
@@ -54,7 +67,7 @@ class ServiceDetailView(DetailViewRO):
         """
         Show service
         """
-        service = check_obj(ClusterObject, {'id': kwargs['service_id']}, 'SERVICE_NOT_FOUND')
+        service = check_service(kwargs)
         serial_class = self.select_serializer(request)
         serializer = serial_class(service, context={'request': request})
         return Response(serializer.data)
@@ -63,7 +76,7 @@ class ServiceDetailView(DetailViewRO):
         """
         Remove service from cluster
         """
-        service = check_obj(ClusterObject, {'id': kwargs['service_id']}, 'SERVICE_NOT_FOUND')
+        service = check_service(kwargs)
         delete_service(service)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -77,13 +90,12 @@ class ServiceImportView(ListView):
         """
         List all imports available for specified service
         """
-
-        service = check_obj(ClusterObject, {'id': kwargs['service_id']}, 'SERVICE_NOT_FOUND')
+        service = check_service(kwargs)
         cluster = service.cluster
         return Response(get_import(cluster, service))
 
-    def post(self, request, service_id):
-        service = check_obj(ClusterObject, {'id': service_id}, 'SERVICE_NOT_FOUND')
+    def post(self, request, **kwargs):
+        service = check_service(kwargs)
         cluster = service.cluster
         serializer = self.post_serializer_class(
             data=request.data,
@@ -108,16 +120,16 @@ class ServiceBindView(ListView):
         """
         List all binds of service
         """
-        service = check_obj(ClusterObject, {'id': kwargs['service_id']}, 'SERVICE_NOT_FOUND')
+        service = check_service(kwargs)
         binds = self.get_queryset().filter(service=service)
         serializer = self.get_serializer_class()(binds, many=True, context={'request': request})
         return Response(serializer.data)
 
-    def post(self, request, service_id):
+    def post(self, request, **kwargs):
         """
         Bind two services
         """
-        service = check_obj(ClusterObject, {'id': service_id}, 'SERVICE_NOT_FOUND')
+        service = check_service(kwargs)
         cluster = service.cluster
         serializer = self.get_serializer_class()(data=request.data, context={'request': request})
         return create(serializer, cluster=cluster, service=service)
@@ -127,16 +139,16 @@ class ServiceBindDetailView(DetailViewDelete):
     queryset = ClusterBind.objects.all()
     serializer_class = BindSerializer
 
-    def get_obj(self, service_id, bind_id):
-        service = check_obj(ClusterObject, service_id, 'SERVICE_NOT_FOUND')
+    def get_obj(self, kwargs, bind_id):
+        service = check_service(kwargs)
         cluster = service.cluster
-        return check_obj(ClusterBind, {'cluster': cluster, 'id': bind_id}, 'BIND_NOT_FOUND')
+        return check_obj(ClusterBind, {'cluster': cluster, 'id': bind_id})
 
     def get(self, request, *args, **kwargs):
         """
         Show specified bind of service
         """
-        bind = self.get_obj(kwargs['service_id'], kwargs['bind_id'])
+        bind = self.get_obj(kwargs, kwargs['bind_id'])
         serializer = self.serializer_class(bind, context={'request': request})
         return Response(serializer.data)
 
@@ -144,6 +156,6 @@ class ServiceBindDetailView(DetailViewDelete):
         """
         Unbind specified bind of service
         """
-        bind = self.get_obj(kwargs['service_id'], kwargs['bind_id'])
+        bind = self.get_obj(kwargs, kwargs['bind_id'])
         unbind(bind)
         return Response(status=status.HTTP_204_NO_CONTENT)
