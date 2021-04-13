@@ -43,7 +43,11 @@ class ServiceListView(PageView):
         """
         List all services
         """
-        return self.get_page(self.filter_queryset(self.get_queryset()), request)
+        queryset = self.get_queryset()
+        if 'cluster_id' in kwargs:
+            cluster = check_obj(Cluster, kwargs['cluster_id'])
+            queryset = self.get_queryset().filter(cluster=cluster)
+        return self.get_page(self.filter_queryset(queryset), request)
 
     def post(self, request, *args, **kwargs):
         """
