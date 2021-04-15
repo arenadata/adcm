@@ -224,29 +224,27 @@ class ClusterBindList(ListView):
         return create(serializer, cluster=cluster)
 
 
-class ClusterServiceBindDetail(DetailViewDelete):
+class ClusterBindDetail(DetailViewDelete):
     queryset = ClusterBind.objects.all()
     serializer_class = api.cluster_serial.BindSerializer
 
-    def get_obj(self, cluster_id, service_id, bind_id):
+    def get_obj(self, cluster_id, bind_id):
         cluster = check_obj(Cluster, cluster_id)
-        if service_id:
-            check_obj(ClusterObject, {'cluster': cluster, 'id': service_id})
         return check_obj(ClusterBind, {'cluster': cluster, 'id': bind_id})
 
-    def get(self, request, cluster_id, bind_id, service_id=None):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id, bind_id):   # pylint: disable=arguments-differ
         """
-        Show specified bind of specified service in cluster
+        Show specified bind of specified cluster
         """
-        obj = self.get_obj(cluster_id, service_id, bind_id)
+        obj = self.get_obj(cluster_id, bind_id)
         serializer = self.serializer_class(obj, context={'request': request})
         return Response(serializer.data)
 
-    def delete(self, request, cluster_id, bind_id, service_id=None):   # pylint: disable=arguments-differ
+    def delete(self, request, cluster_id, bind_id):   # pylint: disable=arguments-differ
         """
-        Unbind specified bind of specified service in cluster
+        Unbind specified bind of specified cluster
         """
-        bind = self.get_obj(cluster_id, service_id, bind_id)
+        bind = self.get_obj(cluster_id, bind_id)
         cm.api.unbind(bind)
         return Response(status=status.HTTP_204_NO_CONTENT)
 

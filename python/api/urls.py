@@ -149,7 +149,7 @@ urlpatterns = [
     path(CLUSTER + 'bind/', cluster_views.ClusterBindList.as_view(), name='cluster-bind'),
     path(
         CLUSTER + 'bind/<int:bind_id>/',
-        cluster_views.ClusterServiceBindDetail.as_view(),
+        cluster_views.ClusterBindDetail.as_view(),
         name='cluster-bind-details'
     ),
     path(
