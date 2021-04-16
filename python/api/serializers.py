@@ -282,34 +282,6 @@ class ProviderUISerializer(ProviderDetailSerializer):
         return obj.prototype.display_name
 
 
-class ActionSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    prototype_id = serializers.IntegerField()
-    name = serializers.CharField()
-    type = serializers.CharField()
-    display_name = serializers.CharField(required=False)
-    description = serializers.CharField(required=False)
-    ui_options = serializers.JSONField(required=False)
-    button = serializers.CharField(required=False)
-    script = serializers.CharField()
-    script_type = serializers.CharField()
-    state_on_success = serializers.CharField()
-    state_on_fail = serializers.CharField()
-    hostcomponentmap = serializers.JSONField(required=False)
-    allow_to_terminate = serializers.BooleanField(read_only=True)
-    partial_execution = serializers.BooleanField(read_only=True)
-    host_action = serializers.BooleanField(read_only=True)
-
-
-class SubActionSerializer(serializers.Serializer):
-    name = serializers.CharField()
-    display_name = serializers.CharField(required=False)
-    script = serializers.CharField()
-    script_type = serializers.CharField()
-    state_on_fail = serializers.CharField(required=False)
-    params = serializers.JSONField(required=False)
-
-
 class UpgradeSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(required=False)

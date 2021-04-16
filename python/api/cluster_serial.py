@@ -24,6 +24,7 @@ from api.api_views import check_obj, hlink, filter_actions, get_upgradable_func
 from api.api_views import UrlField, CommonAPIURL, ServiceURL
 from api.action.serializers import ActionShort
 from api.component.serializers import ComponentDetailSerializer
+from api.host.serializers import HostSerializer
 
 
 def get_cluster_id(obj):
@@ -172,7 +173,7 @@ class HostComponentUISerializer(serializers.Serializer):
 
     def get_host(self, obj):
         hosts = Host.objects.filter(cluster=self.context.get('cluster'))
-        return ClusterHostSerializer(hosts, many=True, context=self.context).data
+        return HostSerializer(hosts, many=True, context=self.context).data
 
     def get_component(self, obj):
         comps = ServiceComponent.objects.filter(cluster=self.context.get('cluster'))
