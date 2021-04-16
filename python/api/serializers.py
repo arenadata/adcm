@@ -22,10 +22,10 @@ import cm.stack
 import cm.status_api
 import cm.adcm_config
 from cm.errors import AdcmEx
-from cm.models import Action, Prototype, UserProfile, Upgrade, HostProvider, Role
+from cm.models import Action, Prototype, UserProfile, Upgrade, Role
 
 from api.api_views import check_obj, hlink, filter_actions, get_upgradable_func
-from api.api_views import UrlField, CommonAPIURL
+from api.api_views import UrlField, CommonAPIURL, ServiceURL
 from api.action.serializers import ActionShort
 
 
@@ -250,7 +250,8 @@ class ProviderDetailSerializer(ProviderSerializer):
     config = CommonAPIURL(view_name='object-config')
     action = CommonAPIURL(view_name='object-action')
     upgrade = hlink('provider-upgrade', 'id', 'provider_id')
-    host = hlink('provider-host', 'id', 'provider_id')
+    #host = hlink('provider-host', 'id', 'provider_id')
+    host = ServiceURL(read_only=True, view_name='host')
 
     def get_issue(self, obj):
         return cm.issue.get_issue(obj)
@@ -279,128 +280,6 @@ class ProviderUISerializer(ProviderDetailSerializer):
 
     def get_prototype_display_name(self, obj):
         return obj.prototype.display_name
-
-
-class HostSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    cluster_id = serializers.IntegerField(read_only=True)
-    prototype_id = serializers.IntegerField(help_text='id of host type')
-    provider_id = serializers.IntegerField()
-    fqdn = serializers.CharField(help_text='fully qualified domain name')
-    description = serializers.CharField(required=False)
-    state = serializers.CharField(read_only=True)
-    url = hlink('host-details', 'id', 'host_id')
-
-    def get_issue(self, obj):
-        return cm.issue.get_issue(obj)
-
-    def validate_prototype_id(self, prototype_id):
-        proto = check_obj(
-            Prototype, {'id': prototype_id, 'type': 'host'}, "PROTOTYPE_NOT_FOUND"
-        )
-        return proto
-
-    def validate_provider_id(self, provider_id):
-        provider = check_obj(HostProvider, provider_id, "PROVIDER_NOT_FOUND")
-        return provider
-
-    def validate_fqdn(self, name):
-        return cm.stack.validate_name(name, 'Host name')
-
-    def create(self, validated_data):
-        try:
-            return cm.api.add_host(
-                validated_data.get('prototype_id'),
-                validated_data.get('provider_id'),
-                validated_data.get('fqdn'),
-                validated_data.get('description', '')
-            )
-        except IntegrityError:
-            raise AdcmEx("HOST_CONFLICT", "duplicate host") from None
-
-    def update(self, instance, validated_data):
-        instance.cluster_id = validated_data.get('cluster_id')
-        instance.save()
-        return instance
-
-
-class HostDetailSerializer(HostSerializer):
-    # stack = serializers.JSONField(read_only=True)
-    issue = serializers.SerializerMethodField()
-    bundle_id = serializers.IntegerField(read_only=True)
-    status = serializers.SerializerMethodField()
-    config = CommonAPIURL(view_name='object-config')
-    action = CommonAPIURL(view_name='object-action')
-    prototype = hlink('host-type-details', 'prototype_id', 'prototype_id')
-
-    def get_issue(self, obj):
-        return cm.issue.get_issue(obj)
-
-    def get_status(self, obj):
-        return cm.status_api.get_host_status(obj.id)
-
-
-class HostUISerializer(HostDetailSerializer):
-    actions = serializers.SerializerMethodField()
-    cluster_name = serializers.SerializerMethodField()
-    prototype_version = serializers.SerializerMethodField()
-    prototype_name = serializers.SerializerMethodField()
-    prototype_display_name = serializers.SerializerMethodField()
-    provider_name = serializers.SerializerMethodField()
-
-    def get_actions(self, obj):
-        act_set = Action.objects.filter(prototype=obj.prototype)
-        self.context['object'] = obj
-        self.context['host_id'] = obj.id
-        actions = ActionShort(filter_actions(obj, act_set), many=True, context=self.context)
-        return actions.data
-
-    def get_cluster_name(self, obj):
-        if obj.cluster:
-            return obj.cluster.name
-        return None
-
-    def get_prototype_version(self, obj):
-        return obj.prototype.version
-
-    def get_prototype_name(self, obj):
-        return obj.prototype.name
-
-    def get_prototype_display_name(self, obj):
-        return obj.prototype.display_name
-
-    def get_provider_name(self, obj):
-        if obj.provider:
-            return obj.provider.name
-        return None
-
-
-class ProviderHostSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    cluster_id = serializers.IntegerField(read_only=True)
-    prototype_id = serializers.IntegerField(required=False, read_only=True)
-    provider_id = serializers.IntegerField(required=False, read_only=True)
-    fqdn = serializers.CharField(help_text='fully qualified domain name')
-    description = serializers.CharField(required=False)
-    state = serializers.CharField(read_only=True)
-    # stack = serializers.JSONField(read_only=True)
-    url = hlink('host-details', 'id', 'host_id')
-
-    def validate_fqdn(self, name):
-        return cm.stack.validate_name(name, 'Host name')
-
-    def create(self, validated_data):
-        provider = validated_data.get('provider')
-        proto = Prototype.obj.get(bundle=provider.prototype.bundle, type='host')
-        try:
-            return cm.api.add_host(
-                proto,
-                self.context.get('provider'),
-                validated_data.get('fqdn'),
-                validated_data.get('description', '')
-            )
-        except IntegrityError:
-            raise AdcmEx("HOST_CONFLICT", "duplicate host") from None
 
 
 class ActionSerializer(serializers.Serializer):

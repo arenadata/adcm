@@ -26,7 +26,6 @@ schema_view = get_schema_view(title='ArenaData Chapel API')
 
 CLUSTER = 'cluster/<int:cluster_id>/'
 PROVIDER = 'provider/<int:provider_id>/'
-HOST = 'host/<int:host_id>/'
 
 
 urlpatterns = [
@@ -143,7 +142,6 @@ urlpatterns = [
 
     path('cluster/', cluster_views.ClusterList.as_view(), name='cluster'),
     path(CLUSTER, cluster_views.ClusterDetail.as_view(), name='cluster-details'),
-    path(CLUSTER + 'host/', cluster_views.ClusterHostList.as_view(), name='cluster-host'),
     path(CLUSTER + 'import/', cluster_views.ClusterImport.as_view(), name='cluster-import'),
     path(CLUSTER + 'upgrade/', cluster_views.ClusterUpgrade.as_view(), name='cluster-upgrade'),
     path(CLUSTER + 'bind/', cluster_views.ClusterBindList.as_view(), name='cluster-bind'),
@@ -167,12 +165,6 @@ urlpatterns = [
         cluster_views.DoClusterUpgrade.as_view(),
         name='do-cluster-upgrade'
     ),
-    path(
-        CLUSTER + HOST, cluster_views.ClusterHostDetail.as_view(), name='cluster-host-details'
-    ),
-    path(CLUSTER + HOST + 'config/', include('api.config.urls'), {'object_type': 'host'}),
-    path(CLUSTER + HOST + 'action/', include('api.action.urls'), {'object_type': 'host'}),
-
     path(CLUSTER + 'action/', include('api.action.urls'), {'object_type': 'cluster'}),
     path(
         CLUSTER + 'status/',
@@ -190,6 +182,7 @@ urlpatterns = [
         name='host-component-details'
     ),
     path(CLUSTER + 'service/', include('api.service.urls')),
+    path(CLUSTER + 'host/', include('api.host.urls')),
     path(CLUSTER + 'config/', include('api.config.urls'), {'object_type': 'cluster'}),
 
     path('service/', include('api.service.urls')),
@@ -202,7 +195,7 @@ urlpatterns = [
 
     path('provider/', views.ProviderList.as_view(), name='provider'),
     path(PROVIDER, views.ProviderDetail.as_view(), name='provider-details'),
-    path(PROVIDER + 'host/', views.ProviderHostList.as_view(), name='provider-host'),
+    path(PROVIDER + 'host/', include('api.host.urls')),
     path(PROVIDER + 'action/', include('api.action.urls'), {'object_type': 'provider'}),
 
     path(PROVIDER + 'upgrade/', views.ProviderUpgrade.as_view(), name='provider-upgrade'),
@@ -218,11 +211,7 @@ urlpatterns = [
     ),
     path(PROVIDER + 'config/', include('api.config.urls'), {'object_type': 'provider'}),
 
-    path('host/', views.HostList.as_view(), name='host'),
-    path(HOST, views.HostDetail.as_view(), name='host-details'),
-
-    path(HOST + 'action/', include('api.action.urls'), {'object_type': 'host'}),
-    path(HOST + 'config/', include('api.config.urls'), {'object_type': 'host'}),
+    path('host/', include('api.host.urls')),
 
     path('task/', job_views.Task.as_view(), name='task'),
     path('task/<int:task_id>/', job_views.TaskDetail.as_view(), name='task-details'),

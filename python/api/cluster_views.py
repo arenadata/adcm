@@ -20,7 +20,7 @@ import cm.api
 import cm.bundle
 import cm.status_api
 from cm.errors import AdcmEx
-from cm.models import Cluster, Host, HostComponent, Prototype
+from cm.models import Cluster, HostComponent, Prototype
 from cm.models import ClusterObject, Upgrade, ClusterBind
 from cm.logger import log   # pylint: disable=unused-import
 
@@ -89,64 +89,6 @@ class ClusterDetail(DetailViewDelete):
         """
         cluster = self.get_object()
         cm.api.delete_cluster(cluster)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class ClusterHostList(PageView):
-    queryset = Host.objects.all()
-    serializer_class = api.cluster_serial.ClusterHostSerializer
-    post_serializer = api.cluster_serial.ClusterHostAddSerializer
-    serializer_class_ui = api.cluster_serial.ClusterHostUISerializer
-    filterset_fields = ('fqdn', 'prototype_id', 'provider_id')
-    ordering_fields = (
-        'fqdn', 'state', 'provider__name', 'prototype__display_name', 'prototype__version_order'
-    )
-
-    def get(self, request, cluster_id):   # pylint: disable=arguments-differ
-        """
-        List all hosts of a specified cluster
-        """
-        cluster = Cluster.obj.get(id=cluster_id)
-        obj = self.filter_queryset(self.get_queryset().filter(cluster=cluster))
-        return self.get_page(obj, request, {'cluster_id': cluster_id})
-
-    def post(self, request, cluster_id):
-        check_obj(Cluster, cluster_id)
-        serializer = self.post_serializer(data=request.data, context={'request': request})
-        return create(serializer, cluster_id=cluster_id)
-
-
-class ClusterHostDetail(ListView):
-    queryset = Host.objects.all()
-    serializer_class = api.cluster_serial.ClusterHostDetailSerializer
-    serializer_class_ui = api.cluster_serial.ClusterHostUISerializer
-
-    def check_host(self, cluster, host):
-        if host.cluster != cluster:
-            msg = "Host #{} doesn't belong to cluster #{}".format(host.id, cluster.id)
-            raise AdcmEx('FOREIGN_HOST', msg)
-
-    def get_obj(self, cluster_id, host_id):
-        cluster = Cluster.obj.get(id=cluster_id)
-        host = Host.obj.get(id=host_id)
-        self.check_host(cluster, host)
-        return host
-
-    def get(self, request, cluster_id, host_id):   # pylint: disable=arguments-differ
-        """
-        Show host of cluster
-        """
-        obj = self.get_obj(cluster_id, host_id)
-        serializer_class = self.select_serializer(request)
-        serializer = serializer_class(obj, context={'request': request, 'cluster_id': cluster_id})
-        return Response(serializer.data)
-
-    def delete(self, request, cluster_id, host_id):
-        """
-        Remove host from cluster
-        """
-        host = self.get_obj(cluster_id, host_id)
-        cm.api.remove_host_from_cluster(host)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

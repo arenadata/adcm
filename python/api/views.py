@@ -14,7 +14,6 @@
 
 import rest_framework
 import django.contrib.auth
-from django_filters import rest_framework as drf_filters
 
 from rest_framework import routers, status
 from rest_framework.authtoken.models import Token
@@ -28,7 +27,7 @@ import cm.config as config
 import cm.job
 import cm.stack
 import cm.status_api
-from cm.models import HostProvider, Host, ADCM, JobLog, TaskLog, Upgrade
+from cm.models import HostProvider, ADCM, JobLog, TaskLog, Upgrade
 from adcm.settings import ADCM_VERSION
 from api.api_views import (
     DetailViewRO, DetailViewDelete, ListView,
@@ -176,88 +175,6 @@ class ProviderDetail(DetailViewDelete):
         """
         provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
         cm.api.delete_host_provider(provider)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class ProviderHostList(PageView):
-    """
-    post:
-    Create new host
-    """
-    queryset = Host.objects.all()
-    serializer_class = api.serializers.ProviderHostSerializer
-    serializer_class_ui = api.serializers.HostUISerializer
-    filterset_fields = ('fqdn', 'cluster_id')
-    ordering_fields = (
-        'fqdn', 'state', 'prototype__display_name', 'prototype__version_order'
-    )
-
-    def get(self, request, provider_id):   # pylint: disable=arguments-differ
-        """
-        List all hosts of specified host provider
-        """
-        provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        obj = self.filter_queryset(self.get_queryset().filter(provider=provider))
-        return self.get_page(obj, request)
-
-    def post(self, request, provider_id):
-        provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        serializer_class = self.select_serializer(request)
-        serializer = serializer_class(
-            data=request.data, context={'request': request, 'provider': provider}
-        )
-        return create(serializer, provider=provider)
-
-
-class HostFilter(drf_filters.FilterSet):
-    cluster_is_null = drf_filters.BooleanFilter(field_name='cluster_id', lookup_expr='isnull')
-    provider_is_null = drf_filters.BooleanFilter(field_name='provider_id', lookup_expr='isnull')
-
-    class Meta:
-        model = Host
-        fields = ['cluster_id', 'prototype_id', 'provider_id', 'fqdn']
-
-
-class HostList(PageViewAdd):
-    """
-    get:
-    List all hosts
-
-    post:
-    Create new host
-    """
-    queryset = Host.objects.all()
-    serializer_class = api.serializers.HostSerializer
-    serializer_class_ui = api.serializers.HostUISerializer
-    serializer_class_post = api.serializers.HostDetailSerializer
-    filterset_class = HostFilter
-    filterset_fields = (
-        'cluster_id', 'prototype_id', 'provider_id', 'fqdn', 'cluster_is_null', 'provider_is_null'
-    )   # just for documentation
-    ordering_fields = (
-        'fqdn', 'state', 'provider__name', 'cluster__name',
-        'prototype__display_name', 'prototype__version_order',
-    )
-
-
-class HostDetail(DetailViewDelete):
-    """
-    get:
-    Show host
-    """
-    queryset = Host.objects.all()
-    serializer_class = api.serializers.HostDetailSerializer
-    serializer_class_ui = api.serializers.HostUISerializer
-    lookup_field = 'id'
-    lookup_url_kwarg = 'host_id'
-    error_code = 'HOST_NOT_FOUND'
-
-    def delete(self, request, host_id):   # pylint: disable=arguments-differ
-        """
-        Remove host (and all corresponding host services:components)
-        """
-        host = check_obj(Host, host_id, 'HOST_NOT_FOUND')
-        cm.api.delete_host(host)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
