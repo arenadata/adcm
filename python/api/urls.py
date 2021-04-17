@@ -144,11 +144,11 @@ urlpatterns = [
                     path('', ClusterUpgradeDetail.as_view(), name='cluster-upgrade-details'),
                     path('do/', DoClusterUpgrade.as_view(), name='do-cluster-upgrade'),
                 ])),
-           ])),
-           path('hostcomponent/', include([
-               path('', cluster_views.HostComponentList.as_view(), name='host-component'),
-               path('<int:hs_id>/', HostComponentDetail.as_view(), name='host-component-details'),
-           ])),
+            ])),
+            path('hostcomponent/', include([
+                path('', cluster_views.HostComponentList.as_view(), name='host-component'),
+                path('<int:hs_id>/', HostComponentDetail.as_view(), name='host-component-details'),
+            ])),
         ])),
     ])),
 
