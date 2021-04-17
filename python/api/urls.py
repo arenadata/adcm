@@ -17,15 +17,20 @@ from rest_framework_swagger.views import get_swagger_view
 from rest_framework.schemas import get_schema_view
 
 from api import views, user_views, stack_views, cluster_views, docs, job_views
-
+from api.views import ProviderUpgradeDetail
+from api.stack_views import (
+    ClusterTypeDetail, ComponentTypeDetail, ServiceProtoActionList, ProviderTypeDetail,
+    ProtoActionDetail
+)
+from api.cluster_views import (
+    HostComponentDetail, ClusterUpgradeDetail, ClusterBindDetail, DoClusterUpgrade, ClusterBundle
+)
 
 register_converter(views.NameConverter, 'name')
 swagger_view = get_swagger_view(title='ArenaData Chapel API')
 schema_view = get_schema_view(title='ArenaData Chapel API')
 
-
-CLUSTER = 'cluster/<int:cluster_id>/'
-PROVIDER = 'provider/<int:provider_id>/'
+PROTOTYPE_ID = '<int:prototype_id>/'
 
 
 urlpatterns = [
@@ -33,205 +38,179 @@ urlpatterns = [
     path('token/', views.GetAuthToken.as_view(), name='token'),
     path('logout/', views.LogOut.as_view(), name='logout'),
 
-    path('user/', user_views.UserList.as_view(), name='user-list'),
-    path('user/<name:username>/', user_views.UserDetail.as_view(), name='user-details'),
-    path(
-        'user/<name:username>/role/', user_views.ChangeUserRole.as_view(), name='change-user-role'
-    ),
-    path('user/<name:username>/group/', user_views.AddUser2Group.as_view(), name='add-user-group'),
-    path('user/<name:username>/password/', user_views.UserPasswd.as_view(), name='user-passwd'),
+    path('user/', include([
+        path('', user_views.UserList.as_view(), name='user-list'),
+        path('<name:username>/', include([
+            path('', user_views.UserDetail.as_view(), name='user-details'),
+            path('role/', user_views.ChangeUserRole.as_view(), name='change-user-role'),
+            path('group/', user_views.AddUser2Group.as_view(), name='add-user-group'),
+            path('password/', user_views.UserPasswd.as_view(), name='user-passwd'),
+        ])),
+    ])),
 
-    path('group/', user_views.GroupList.as_view(), name='group-list'),
-    path('group/<name:name>/', user_views.GroupDetail.as_view(), name='group-details'),
-    path('group/<name:name>/role/', user_views.ChangeGroupRole.as_view(), name='change-group-role'),
+    path('group/', include([
+        path('', user_views.GroupList.as_view(), name='group-list'),
+        path('<name:name>/', include([
+            path('', user_views.GroupDetail.as_view(), name='group-details'),
+            path('role/', user_views.ChangeGroupRole.as_view(), name='change-group-role'),
+        ])),
+    ])),
 
-    path('profile/', user_views.ProfileList.as_view(), name='profile-list'),
-    path('profile/<name:username>/', user_views.ProfileDetail.as_view(), name='profile-details'),
-    path(
-        'profile/<name:username>/password/', user_views.UserPasswd.as_view(), name='profile-passwd'
-    ),
+    path('profile/', include([
+        path('', user_views.ProfileList.as_view(), name='profile-list'),
+        path('<name:username>/', include([
+            path('', user_views.ProfileDetail.as_view(), name='profile-details'),
+            path('password/', user_views.UserPasswd.as_view(), name='profile-passwd'),
+        ])),
+    ])),
 
-    path('role/', user_views.RoleList.as_view(), name='role-list'),
-    path('role/<int:role_id>/', user_views.RoleDetail.as_view(), name='role-details'),
+    path('role/', include([
+        path('', user_views.RoleList.as_view(), name='role-list'),
+        path('<int:role_id>/', user_views.RoleDetail.as_view(), name='role-details'),
+    ])),
 
-    path('stats/', views.Stats.as_view(), name='stats'),
-    path('stats/task/<int:task_id>/', views.TaskStats.as_view(), name='task-stats'),
-    path('stats/job/<int:job_id>/', views.JobStats.as_view(), name='job-stats'),
+    path('stats/', include([
+        path('', views.Stats.as_view(), name='stats'),
+        path('task/<int:task_id>/', views.TaskStats.as_view(), name='task-stats'),
+        path('job/<int:job_id>/', views.JobStats.as_view(), name='job-stats'),
+    ])),
 
-    path('stack/', stack_views.Stack.as_view(), name='stack'),
-    path('stack/upload/', stack_views.UploadBundle.as_view(), name='upload-bundle'),
-    path('stack/load/', stack_views.LoadBundle.as_view(), name='load-bundle'),
-    path(
-        'stack/load/servicemap/',
-        stack_views.LoadServiceMap.as_view(),
-        name='load-servicemap'
-    ),
-    path('stack/bundle/', stack_views.BundleList.as_view(), name='bundle'),
-    path(
-        'stack/bundle/<int:bundle_id>/',
-        stack_views.BundleDetail.as_view(),
-        name='bundle-details'
-    ),
-    path(
-        'stack/bundle/<int:bundle_id>/update/',
-        stack_views.BundleUpdate.as_view(),
-        name='bundle-update'
-    ),
-    path(
-        'stack/bundle/<int:bundle_id>/license/',
-        stack_views.BundleLicense.as_view(),
-        name='bundle-license'
-    ),
-    path(
-        'stack/bundle/<int:bundle_id>/license/accept/',
-        stack_views.AcceptLicense.as_view(),
-        name='accept-license'
-    ),
-    path(
-        'stack/action/<int:action_id>/',
-        stack_views.ProtoActionDetail.as_view(),
-        name='action-details'
-    ),
-    path('stack/prototype/', stack_views.PrototypeList.as_view(), name='prototype'),
-    path('stack/service/', stack_views.ServiceList.as_view(), name='service-type'),
-    path(
-        'stack/service/<int:prototype_id>/',
-        stack_views.ServiceDetail.as_view(),
-        name='service-type-details'
-    ),
-    path(
-        'stack/service/<int:prototype_id>/action/',
-        stack_views.ServiceProtoActionList.as_view(),
-        name='service-actions'
-    ),
-    path('stack/component/', stack_views.ComponentList.as_view(), name='component-type'),
-    path(
-        'stack/component/<int:prototype_id>/',
-        stack_views.ComponentTypeDetail.as_view(),
-        name='component-type-details'
-    ),
-    path('stack/provider/', stack_views.ProviderTypeList.as_view(), name='provider-type'),
-    path(
-        'stack/provider/<int:prototype_id>/',
-        stack_views.ProviderTypeDetail.as_view(),
-        name='provider-type-details'
-    ),
-    path('stack/host/', stack_views.HostTypeList.as_view(), name='host-type'),
-    path(
-        'stack/host/<int:prototype_id>/',
-        stack_views.HostTypeDetail.as_view(),
-        name='host-type-details'
-    ),
-    path('stack/cluster/', stack_views.ClusterTypeList.as_view(), name='cluster-type'),
-    path(
-        'stack/cluster/<int:prototype_id>/',
-        stack_views.ClusterTypeDetail.as_view(),
-        name='cluster-type-details'
-    ),
-    path('stack/adcm/', stack_views.AdcmTypeList.as_view(), name='adcm-type'),
-    path(
-        'stack/adcm/<int:prototype_id>/',
-        stack_views.AdcmTypeDetail.as_view(),
-        name='adcm-type-details'
-    ),
-    path(
-        'stack/prototype/<int:prototype_id>/',
-        stack_views.PrototypeDetail.as_view(),
-        name='prototype-details'
-    ),
+    path('stack/', include([
+        path('', stack_views.Stack.as_view(), name='stack'),
+        path('upload/', stack_views.UploadBundle.as_view(), name='upload-bundle'),
+        path('load/', stack_views.LoadBundle.as_view(), name='load-bundle'),
+        path('load/servicemap/', stack_views.LoadServiceMap.as_view(), name='load-servicemap'),
+        path('bundle/', include([
+            path('', stack_views.BundleList.as_view(), name='bundle'),
+            path('<int:bundle_id>/', include([
+                path('', stack_views.BundleDetail.as_view(), name='bundle-details'),
+                path('update/', stack_views.BundleUpdate.as_view(), name='bundle-update'),
+                path('license/', stack_views.BundleLicense.as_view(), name='bundle-license'),
+                path('license/accept/', stack_views.AcceptLicense.as_view(), name='accept-license'),
+            ])),
+        ])),
+        path('action/<int:action_id>/', ProtoActionDetail.as_view(), name='action-details'),
+        path('prototype/', include([
+            path('', stack_views.PrototypeList.as_view(), name='prototype'),
+            path(PROTOTYPE_ID, stack_views.PrototypeDetail.as_view(), name='prototype-details')
+        ])),
+        path('service/', include([
+            path('', stack_views.ServiceList.as_view(), name='service-type'),
+            path(PROTOTYPE_ID, include([
+                path('', stack_views.ServiceDetail.as_view(), name='service-type-details'),
+                path('action/', ServiceProtoActionList.as_view(), name='service-actions'),
+            ])),
+        ])),
+        path('component/', include([
+            path('', stack_views.ComponentList.as_view(), name='component-type'),
+            path(PROTOTYPE_ID, ComponentTypeDetail.as_view(), name='component-type-details'),
+        ])),
+        path('provider/', include([
+            path('', stack_views.ProviderTypeList.as_view(), name='provider-type'),
+            path(PROTOTYPE_ID, ProviderTypeDetail.as_view(), name='provider-type-details'),
+        ])),
+        path('host/', include([
+            path('', stack_views.HostTypeList.as_view(), name='host-type'),
+            path(PROTOTYPE_ID, stack_views.HostTypeDetail.as_view(), name='host-type-details'),
+        ])),
+        path('cluster/', include([
+            path('', stack_views.ClusterTypeList.as_view(), name='cluster-type'),
+            path(PROTOTYPE_ID, ClusterTypeDetail.as_view(), name='cluster-type-details'),
+        ])),
+        path('adcm/', include([
+            path('', stack_views.AdcmTypeList.as_view(), name='adcm-type'),
+            path(PROTOTYPE_ID, stack_views.AdcmTypeDetail.as_view(), name='adcm-type-details'),
+        ])),
+    ])),
 
-    path('cluster/', cluster_views.ClusterList.as_view(), name='cluster'),
-    path(CLUSTER, cluster_views.ClusterDetail.as_view(), name='cluster-details'),
-    path(CLUSTER + 'import/', cluster_views.ClusterImport.as_view(), name='cluster-import'),
-    path(CLUSTER + 'upgrade/', cluster_views.ClusterUpgrade.as_view(), name='cluster-upgrade'),
-    path(CLUSTER + 'bind/', cluster_views.ClusterBindList.as_view(), name='cluster-bind'),
-    path(
-        CLUSTER + 'bind/<int:bind_id>/',
-        cluster_views.ClusterBindDetail.as_view(),
-        name='cluster-bind-details'
-    ),
-    path(
-        CLUSTER + 'serviceprototype/',
-        cluster_views.ClusterBundle.as_view(),
-        name='cluster-service-prototype'
-    ),
-    path(
-        CLUSTER + 'upgrade/<int:upgrade_id>/',
-        cluster_views.ClusterUpgradeDetail.as_view(),
-        name='cluster-upgrade-details'
-    ),
-    path(
-        CLUSTER + 'upgrade/<int:upgrade_id>/do/',
-        cluster_views.DoClusterUpgrade.as_view(),
-        name='do-cluster-upgrade'
-    ),
-    path(CLUSTER + 'action/', include('api.action.urls'), {'object_type': 'cluster'}),
-    path(
-        CLUSTER + 'status/',
-        cluster_views.StatusList.as_view(),
-        name='cluster-status'
-    ),
-    path(
-        CLUSTER + 'hostcomponent/',
-        cluster_views.HostComponentList.as_view(),
-        name='host-component'
-    ),
-    path(
-        CLUSTER + 'hostcomponent/<int:hs_id>/',
-        cluster_views.HostComponentDetail.as_view(),
-        name='host-component-details'
-    ),
-    path(CLUSTER + 'service/', include('api.service.urls')),
-    path(CLUSTER + 'host/', include('api.host.urls')),
-    path(CLUSTER + 'config/', include('api.config.urls'), {'object_type': 'cluster'}),
+    path('cluster/', include([
+        path('', cluster_views.ClusterList.as_view(), name='cluster'),
+        path('<int:cluster_id>/', include([
+            path('', cluster_views.ClusterDetail.as_view(), name='cluster-details'),
+            path('import/', cluster_views.ClusterImport.as_view(), name='cluster-import'),
+            path('status/', cluster_views.StatusList.as_view(), name='cluster-status'),
+            path('serviceprototype/', ClusterBundle.as_view(), name='cluster-service-prototype'),
+            path('service/', include('api.service.urls')),
+            path('host/', include('api.host.urls')),
+            path('action/', include('api.action.urls'), {'object_type': 'cluster'}),
+            path('config/', include('api.config.urls'), {'object_type': 'cluster'}),
+            path('bind/', include([
+                path('', cluster_views.ClusterBindList.as_view(), name='cluster-bind'),
+                path('<int:bind_id>/', ClusterBindDetail.as_view(), name='cluster-bind-details'),
+            ])),
+            path('upgrade/', include([
+                path('', cluster_views.ClusterUpgrade.as_view(), name='cluster-upgrade'),
+                path('<int:upgrade_id>/', include([
+                    path('', ClusterUpgradeDetail.as_view(), name='cluster-upgrade-details'),
+                    path('do/', DoClusterUpgrade.as_view(), name='do-cluster-upgrade'),
+                ])),
+           ])),
+           path('hostcomponent/', include([
+               path('', cluster_views.HostComponentList.as_view(), name='host-component'),
+               path('<int:hs_id>/', HostComponentDetail.as_view(), name='host-component-details'),
+           ])),
+        ])),
+    ])),
 
     path('service/', include('api.service.urls')),
     path('component/', include('api.component.urls')),
 
-    path('adcm/', views.AdcmList.as_view(), name='adcm'),
-    path('adcm/<int:adcm_id>/', views.AdcmDetail.as_view(), name='adcm-details'),
-    path('adcm/<int:adcm_id>/config/', include('api.config.urls'), {'object_type': 'adcm'}),
-    path('adcm/<int:adcm_id>/action/', include('api.action.urls'), {'object_type': 'adcm'}),
+    path('adcm/', include([
+        path('', views.AdcmList.as_view(), name='adcm'),
+        path('<int:adcm_id>/', include([
+            path('', views.AdcmDetail.as_view(), name='adcm-details'),
+            path('config/', include('api.config.urls'), {'object_type': 'adcm'}),
+            path('action/', include('api.action.urls'), {'object_type': 'adcm'}),
+        ])),
+    ])),
 
-    path('provider/', views.ProviderList.as_view(), name='provider'),
-    path(PROVIDER, views.ProviderDetail.as_view(), name='provider-details'),
-    path(PROVIDER + 'host/', include('api.host.urls')),
-    path(PROVIDER + 'action/', include('api.action.urls'), {'object_type': 'provider'}),
-
-    path(PROVIDER + 'upgrade/', views.ProviderUpgrade.as_view(), name='provider-upgrade'),
-    path(
-        PROVIDER + 'upgrade/<int:upgrade_id>/',
-        views.ProviderUpgradeDetail.as_view(),
-        name='provider-upgrade-details'
-    ),
-    path(
-        PROVIDER + 'upgrade/<int:upgrade_id>/do/',
-        views.DoProviderUpgrade.as_view(),
-        name='do-provider-upgrade'
-    ),
-    path(PROVIDER + 'config/', include('api.config.urls'), {'object_type': 'provider'}),
+    path('provider/', include([
+        path('', views.ProviderList.as_view(), name='provider'),
+        path('<int:provider_id>/', include([
+            path('', views.ProviderDetail.as_view(), name='provider-details'),
+            path('host/', include('api.host.urls')),
+            path('action/', include('api.action.urls'), {'object_type': 'provider'}),
+            path('config/', include('api.config.urls'), {'object_type': 'provider'}),
+            path('upgrade/', include([
+                path('', views.ProviderUpgrade.as_view(), name='provider-upgrade'),
+                path('<int:upgrade_id>/', include([
+                    path('', ProviderUpgradeDetail.as_view(), name='provider-upgrade-details'),
+                    path('do/', views.DoProviderUpgrade.as_view(), name='do-provider-upgrade'),
+                ])),
+            ])),
+        ])),
+    ])),
 
     path('host/', include('api.host.urls')),
 
-    path('task/', job_views.Task.as_view(), name='task'),
-    path('task/<int:task_id>/', job_views.TaskDetail.as_view(), name='task-details'),
-    path('task/<int:task_id>/restart/', job_views.TaskReStart.as_view(), name='task-restart'),
-    path('task/<int:task_id>/cancel/', job_views.TaskCancel.as_view(), name='task-cancel'),
+    path('task/', include([
+        path('', job_views.Task.as_view(), name='task'),
+        path('<int:task_id>/', include([
+            path('', job_views.TaskDetail.as_view(), name='task-details'),
+            path('restart/', job_views.TaskReStart.as_view(), name='task-restart'),
+            path('cancel/', job_views.TaskCancel.as_view(), name='task-cancel'),
+        ])),
+    ])),
 
-    path('job/', job_views.JobList.as_view(), name='job'),
-    path('job/<int:job_id>/', job_views.JobDetail.as_view(), name='job-details'),
-    path('job/<int:job_id>/log/', job_views.LogStorageListView.as_view(), name='log-list'),
-    path('job/<int:job_id>/log/<int:log_id>/',
-         job_views.LogStorageView.as_view(),
-         name='log-storage'),
-    path('job/<int:job_id>/log/<int:log_id>/download/',
-         job_views.download_log_file,
-         name='download-log'),
-    path(
-        'job/<int:job_id>/log/<name:tag>/<name:level>/<name:log_type>/',
-        job_views.LogFile.as_view(),
-        name='log-file'
-    ),
+    path('job/', include([
+        path('', job_views.JobList.as_view(), name='job'),
+        path('<int:job_id>/', include([
+            path('', job_views.JobDetail.as_view(), name='job-details'),
+            path('log/', include([
+                path('', job_views.LogStorageListView.as_view(), name='log-list'),
+                path('<int:log_id>/', include([
+                    path('', job_views.LogStorageView.as_view(), name='log-storage'),
+                    path('download/', job_views.download_log_file, name='download-log'),
+                ])),
+                path(
+                    '<name:tag>/<name:level>/<name:log_type>/',
+                    job_views.LogFile.as_view(),
+                    name='log-file'
+                ),
+            ])),
+        ])),
+    ])),
+
     # path('docs/', include_docs_urls(title='ArenaData Chapel API')),
     path('swagger/', swagger_view),
     path('schema/', schema_view),

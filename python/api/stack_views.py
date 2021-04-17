@@ -28,9 +28,10 @@ import api.stack_serial
 from api.api_views import ListView, DetailViewRO, PageView, GenericAPIPermView, check_obj
 from api.action.serializers import StackActionSerializer
 
+
 class CsrfOffSessionAuthentication(SessionAuthentication):
     def enforce_csrf(self, request):
-        return  #
+        return
 
 
 class Stack(GenericAPIPermView):

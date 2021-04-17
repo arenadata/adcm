@@ -250,7 +250,6 @@ class ProviderDetailSerializer(ProviderSerializer):
     config = CommonAPIURL(view_name='object-config')
     action = CommonAPIURL(view_name='object-action')
     upgrade = hlink('provider-upgrade', 'id', 'provider_id')
-    #host = hlink('provider-host', 'id', 'provider_id')
     host = ServiceURL(read_only=True, view_name='host')
 
     def get_issue(self, obj):

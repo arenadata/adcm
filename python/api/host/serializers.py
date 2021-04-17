@@ -19,6 +19,7 @@ from cm.models import Cluster, Host, HostProvider, Prototype, Action
 from api.api_views import hlink, check_obj, filter_actions, CommonAPIURL, ServiceURL
 from api.action.serializers import ActionShort
 
+
 class HostSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     cluster_id = serializers.IntegerField(read_only=True)
@@ -27,7 +28,6 @@ class HostSerializer(serializers.Serializer):
     fqdn = serializers.CharField(help_text='fully qualified domain name')
     description = serializers.CharField(required=False)
     state = serializers.CharField(read_only=True)
-    #url = hlink('host-details', 'id', 'host_id')
     url = ServiceURL(read_only=True, view_name='host-details')
 
     def get_issue(self, obj):
