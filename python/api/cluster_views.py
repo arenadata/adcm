@@ -28,12 +28,11 @@ import api.serializers
 import api.cluster_serial
 import api.stack_serial
 from api.api_views import create, update, check_obj, GenericAPIPermView
-from api.api_views import ListView, PageView, PageViewAdd, InterfaceView
-from api.api_views import DetailViewRO, DetailViewDelete
+from api.api_views import ListView, PageView, PageViewAdd, InterfaceView, DetailViewDelete
 
 
 def get_obj_conf(cluster_id, service_id):
-    cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
+    cluster = check_obj(Cluster, cluster_id)
     if service_id:
         co = check_obj(ClusterObject, {'cluster': cluster, 'id': service_id})
         obj = co
@@ -112,7 +111,7 @@ class ClusterHostList(PageView):
         return self.get_page(obj, request, {'cluster_id': cluster_id})
 
     def post(self, request, cluster_id):
-        check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
+        check_obj(Cluster, cluster_id)
         serializer = self.post_serializer(data=request.data, context={'request': request})
         return create(serializer, cluster_id=cluster_id)
 
@@ -160,7 +159,7 @@ class ClusterBundle(ListView):
         """
         List all services of specified cluster of bundle
         """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
+        cluster = check_obj(Cluster, cluster_id)
         bundle = self.get_queryset().filter(bundle=cluster.prototype.bundle)
         shared = self.get_queryset().filter(shared=True).exclude(bundle=cluster.prototype.bundle)
         serializer_class = self.select_serializer(request)
@@ -179,7 +178,7 @@ class ClusterImport(ListView):
         """
         List all imports avaliable for specified cluster
         """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
+        cluster = check_obj(Cluster, cluster_id)
         res = cm.api.get_import(cluster)
         return Response(res)
 
@@ -187,42 +186,9 @@ class ClusterImport(ListView):
         """
         Update bind for cluster
         """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
+        cluster = check_obj(Cluster, cluster_id)
         serializer = self.post_serializer(data=request.data, context={
             'request': request, 'cluster': cluster
-        })
-        if serializer.is_valid():
-            res = serializer.create(serializer.validated_data)
-            return Response(res, status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class ClusterServiceImport(ListView):
-    queryset = Prototype.objects.all()
-    serializer_class = api.stack_serial.ImportSerializer
-    post_serializer = api.cluster_serial.PostImportSerializer
-
-    def get(self, request, cluster_id, service_id):   # pylint: disable=arguments-differ
-        """
-        List all imports avaliable for specified service in cluster
-        """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        service = check_obj(
-            ClusterObject, {'cluster': cluster, 'id': service_id}, 'SERVICE_NOT_FOUND'
-        )
-        res = cm.api.get_import(cluster, service)
-        return Response(res)
-
-    def post(self, request, cluster_id, service_id):   # pylint: disable=arguments-differ
-        """
-        Update bind for service in cluster
-        """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        service = check_obj(
-            ClusterObject, {'cluster': cluster, 'id': service_id}, 'SERVICE_NOT_FOUND'
-        )
-        serializer = self.post_serializer(data=request.data, context={
-            'request': request, 'cluster': cluster, 'service': service
         })
         if serializer.is_valid():
             res = serializer.create(serializer.validated_data)
@@ -244,7 +210,7 @@ class ClusterBindList(ListView):
         """
         List all binds of specified cluster
         """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
+        cluster = check_obj(Cluster, cluster_id)
         obj = self.get_queryset().filter(cluster=cluster, service=None)
         serializer = self.get_serializer_class()(obj, many=True, context={'request': request})
         return Response(serializer.data)
@@ -253,70 +219,32 @@ class ClusterBindList(ListView):
         """
         Bind two clusters
         """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
+        cluster = check_obj(Cluster, cluster_id)
         serializer = self.get_serializer_class()(data=request.data, context={'request': request})
         return create(serializer, cluster=cluster)
 
 
-class ClusterServiceBind(ListView):
-    queryset = ClusterBind.objects.all()
-    serializer_class = api.cluster_serial.ServiceBindSerializer
-
-    def get_serializer_class(self):
-        if self.request and self.request.method == 'POST':
-            return api.cluster_serial.DoServiceBindSerializer
-        else:
-            return api.cluster_serial.ServiceBindSerializer
-
-    def get(self, request, cluster_id, service_id):   # pylint: disable=arguments-differ
-        """
-        List all binds of specified service in cluster
-        """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        service = check_obj(
-            ClusterObject, {'cluster': cluster, 'id': service_id}, 'SERVICE_NOT_FOUND'
-        )
-        obj = self.get_queryset().filter(cluster=cluster, service=service)
-        serializer = self.get_serializer_class()(obj, many=True, context={'request': request})
-        return Response(serializer.data)
-
-    def post(self, request, cluster_id, service_id):
-        """
-        Bind two services
-        """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        service = check_obj(
-            ClusterObject, {'cluster': cluster, 'id': service_id}, 'SERVICE_NOT_FOUND'
-        )
-        serializer = self.get_serializer_class()(data=request.data, context={'request': request})
-        return create(serializer, cluster=cluster, service=service)
-
-
-class ClusterServiceBindDetail(DetailViewDelete):
+class ClusterBindDetail(DetailViewDelete):
     queryset = ClusterBind.objects.all()
     serializer_class = api.cluster_serial.BindSerializer
 
-    def get_obj(self, cluster_id, service_id, bind_id):
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        if service_id:
-            check_obj(
-                ClusterObject, {'cluster': cluster, 'id': service_id}, 'SERVICE_NOT_FOUND'
-            )
-        return check_obj(ClusterBind, {'cluster': cluster, 'id': bind_id}, 'BIND_NOT_FOUND')
+    def get_obj(self, cluster_id, bind_id):
+        cluster = check_obj(Cluster, cluster_id)
+        return check_obj(ClusterBind, {'cluster': cluster, 'id': bind_id})
 
-    def get(self, request, cluster_id, bind_id, service_id=None):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id, bind_id):   # pylint: disable=arguments-differ
         """
-        Show specified bind of specified service in cluster
+        Show specified bind of specified cluster
         """
-        obj = self.get_obj(cluster_id, service_id, bind_id)
+        obj = self.get_obj(cluster_id, bind_id)
         serializer = self.serializer_class(obj, context={'request': request})
         return Response(serializer.data)
 
-    def delete(self, request, cluster_id, bind_id, service_id=None):   # pylint: disable=arguments-differ
+    def delete(self, request, cluster_id, bind_id):   # pylint: disable=arguments-differ
         """
-        Unbind specified bind of specified service in cluster
+        Unbind specified bind of specified cluster
         """
-        bind = self.get_obj(cluster_id, service_id, bind_id)
+        bind = self.get_obj(cluster_id, bind_id)
         cm.api.unbind(bind)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -329,7 +257,7 @@ class ClusterUpgrade(PageView):
         """
         List all avaliable upgrades for specified cluster
         """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
+        cluster = check_obj(Cluster, cluster_id)
         obj = cm.upgrade.get_upgrade(cluster, self.get_ordering(request, self.queryset, self))
         serializer = self.serializer_class(obj, many=True, context={
             'cluster_id': cluster.id, 'request': request
@@ -345,7 +273,7 @@ class ClusterUpgradeDetail(ListView):
         """
         List all avaliable upgrades for specified cluster
         """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
+        cluster = check_obj(Cluster, cluster_id)
         obj = self.get_queryset().get(id=upgrade_id)
         serializer = self.serializer_class(obj, context={
             'cluster_id': cluster.id, 'request': request
@@ -361,63 +289,9 @@ class DoClusterUpgrade(GenericAPIPermView):
         """
         Do upgrade specified cluster
         """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
+        cluster = check_obj(Cluster, cluster_id)
         serializer = self.serializer_class(data=request.data, context={'request': request})
         return create(serializer, upgrade_id=int(upgrade_id), obj=cluster)
-
-
-class ClusterServiceList(PageView):
-    queryset = ClusterObject.objects.all()
-    serializer_class = api.cluster_serial.ClusterServiceSerializer
-    serializer_class_ui = api.cluster_serial.ClusterServiceUISerializer
-    ordering_fields = ('state', 'prototype__display_name', 'prototype__version_order')
-
-    def get(self, request, cluster_id):   # pylint: disable=arguments-differ
-        """
-        List all services of a specified cluster
-        """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        obj = self.filter_queryset(self.get_queryset().filter(cluster=cluster))
-        return self.get_page(obj, request, {'cluster_id': cluster_id})
-
-    def post(self, request, cluster_id):
-        """
-        Add service to specified cluster
-        """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        serializer = self.serializer_class(data=request.data, context={
-            'request': request, 'cluster': cluster,
-        })
-        return create(serializer, id=cluster_id)
-
-
-class ClusterServiceDetail(DetailViewRO):
-    queryset = ClusterObject.objects.all()
-    serializer_class = api.cluster_serial.ClusterServiceDetailSerializer
-    serializer_class_ui = api.cluster_serial.ClusterServiceUISerializer
-
-    def get(self, request, cluster_id, service_id):   # pylint: disable=arguments-differ
-        """
-        Show service in a specified cluster
-        """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        service = check_obj(
-            ClusterObject, {'id': service_id, 'cluster': cluster}, 'SERVICE_NOT_FOUND'
-        )
-        serial_class = self.select_serializer(request)
-        serializer = serial_class(service, context={'request': request, 'cluster_id': cluster_id})
-        return Response(serializer.data)
-
-    def delete(self, request, cluster_id, service_id):
-        """
-        Remove service from cluster
-        """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
-        service = check_obj(
-            ClusterObject, {'id': service_id, 'cluster': cluster}, 'SERVICE_NOT_FOUND'
-        )
-        cm.api.delete_service(service)
-        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class StatusList(GenericAPIPermView):
@@ -428,7 +302,7 @@ class StatusList(GenericAPIPermView):
         """
         Show all hosts and components in a specified cluster
         """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
+        cluster = check_obj(Cluster, cluster_id)
         obj = self.get_queryset().filter(cluster=cluster)
         serializer = self.serializer_class(obj, many=True, context={'request': request})
         return Response(serializer.data)
@@ -448,7 +322,7 @@ class HostComponentList(GenericAPIPermView, InterfaceView):
         """
         Show host <-> component map in a specified cluster
         """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
+        cluster = check_obj(Cluster, cluster_id)
         hc = self.get_queryset().filter(cluster=cluster)
         serializer_class = self.select_serializer(request)
         if self.for_ui(request):
@@ -463,7 +337,7 @@ class HostComponentList(GenericAPIPermView, InterfaceView):
         """
         Create new mapping service:component <-> host in a specified cluster.
         """
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
+        cluster = check_obj(Cluster, cluster_id)
         save_serializer = self.get_serializer_class()
         serializer = save_serializer(data=request.data, context={
             'request': request, 'cluster': cluster,
@@ -482,7 +356,7 @@ class HostComponentDetail(GenericAPIPermView):
     serializer_class = api.cluster_serial.HostComponentSerializer
 
     def get_obj(self, cluster_id, hs_id):
-        cluster = check_obj(Cluster, cluster_id, 'CLUSTER_NOT_FOUND')
+        cluster = check_obj(Cluster, cluster_id)
         return check_obj(
             HostComponent,
             {'id': hs_id, 'cluster': cluster},
