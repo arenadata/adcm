@@ -12,15 +12,28 @@
 
 from django.db import transaction
 from django.utils import timezone
+from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import User, Group
 from rest_framework import status
 from rest_framework.response import Response
 
 import api.serializers
-from api.api_views import PageView, PageViewAdd, DetailViewRO, GenericAPIPermView, update, check_obj
+from api.api_views import PageView, PageViewAdd, DetailViewRO, GenericAPIPermView, update
 
 import cm.api
+from cm.errors import AdcmEx
 from cm.models import Role, UserProfile, DummyData
+
+
+def check_obj(model, req, error=None):
+    if isinstance(req, dict):
+        kw = req
+    else:
+        kw = {'id': req}
+    try:
+        return model.objects.get(**kw)
+    except ObjectDoesNotExist:
+        raise AdcmEx(error) from None
 
 
 @transaction.atomic
