@@ -17,7 +17,7 @@ from rest_framework import status
 import cm
 from cm.errors import AdcmEx
 from cm.models import Cluster, HostProvider, Host
-from api.api_views import PageViewAdd, DetailViewDelete, create, check_obj
+from api.api_views import PageView, DetailViewDelete, create, check_obj
 from . import serializers
 
 
@@ -30,7 +30,7 @@ class HostFilter(drf_filters.FilterSet):
         fields = ['cluster_id', 'prototype_id', 'provider_id', 'fqdn']
 
 
-class HostList(PageViewAdd):
+class HostList(PageView):
     """
     get:
     List all hosts
@@ -41,7 +41,6 @@ class HostList(PageViewAdd):
     queryset = Host.objects.all()
     serializer_class = serializers.HostSerializer
     serializer_class_ui = serializers.HostUISerializer
-    serializer_class_post = serializers.HostDetailSerializer
     filterset_class = HostFilter
     filterset_fields = (
         'cluster_id', 'prototype_id', 'provider_id', 'fqdn', 'cluster_is_null', 'provider_is_null'
@@ -53,13 +52,13 @@ class HostList(PageViewAdd):
 
     def get(self, request, *args, **kwargs):
         """
-        List all services
+        List all hosts
         """
         queryset = self.get_queryset()
-        if 'cluster_id' in kwargs:
+        if 'cluster_id' in kwargs:   # List cluster hosts
             cluster = check_obj(Cluster, kwargs['cluster_id'])
             queryset = self.get_queryset().filter(cluster=cluster)
-        if 'provider_id' in kwargs:
+        if 'provider_id' in kwargs:  # List provider hosts
             provider = check_obj(HostProvider, kwargs['provider_id'])
             queryset = self.get_queryset().filter(provider=provider)
         return self.get_page(self.filter_queryset(queryset), request)
@@ -68,19 +67,20 @@ class HostList(PageViewAdd):
         """
         Create host
         """
-        serializer_class = self.serializer_class_post
-        if 'cluster_id' in kwargs:
-            # Add host to cluster
-            serializer_class = serializers.ClusterHostAddSerializer
-        if 'provider_id' in kwargs:
-            # Create provider host
-            serializer_class = serializers.ProvideHostAddSerializer
-        serializer = serializer_class(data=request.data, context={
+        serializer = self.serializer_class(data=request.data, context={
             'request': request,
             'cluster_id': kwargs.get('cluster_id', None),
             'provider_id': kwargs.get('provider_id', None)
         })
         return create(serializer)
+
+
+class HostListProvider(HostList):
+    serializer_class = serializers.ProvideHostSerializer
+
+
+class HostListCluster(HostList):
+    serializer_class = serializers.ClusterHostSerializer
 
 
 def check_host(host, cluster):
@@ -112,7 +112,7 @@ class HostDetail(DetailViewDelete):
 
     def delete(self, request, host_id, **kwargs):   # pylint: disable=arguments-differ
         """
-        Remove host
+        Delete host
         """
         host = check_obj(Host, host_id, 'HOST_NOT_FOUND')
         if 'cluster_id' in kwargs:
@@ -121,6 +121,6 @@ class HostDetail(DetailViewDelete):
             check_host(host, cluster)
             cm.api.remove_host_from_cluster(host)
         else:
-            # Remove host (and all corresponding host services:components)
+            # Delete host (and all corresponding host services:components)
             cm.api.delete_host(host)
         return Response(status=status.HTTP_204_NO_CONTENT)

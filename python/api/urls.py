@@ -26,6 +26,7 @@ from api.cluster_views import (
     HostComponentDetail, ClusterUpgradeDetail, ClusterBindDetail, DoClusterUpgrade, ClusterBundle
 )
 
+
 register_converter(views.NameConverter, 'name')
 swagger_view = get_swagger_view(title='ArenaData Chapel API')
 schema_view = get_schema_view(title='ArenaData Chapel API')
@@ -131,7 +132,7 @@ urlpatterns = [
             path('status/', cluster_views.StatusList.as_view(), name='cluster-status'),
             path('serviceprototype/', ClusterBundle.as_view(), name='cluster-service-prototype'),
             path('service/', include('api.service.urls')),
-            path('host/', include('api.host.urls')),
+            path('host/', include('api.host.cluster_urls')),
             path('action/', include('api.action.urls'), {'object_type': 'cluster'}),
             path('config/', include('api.config.urls'), {'object_type': 'cluster'}),
             path('bind/', include([
@@ -168,7 +169,7 @@ urlpatterns = [
         path('', views.ProviderList.as_view(), name='provider'),
         path('<int:provider_id>/', include([
             path('', views.ProviderDetail.as_view(), name='provider-details'),
-            path('host/', include('api.host.urls')),
+            path('host/', include('api.host.provider_urls')),
             path('action/', include('api.action.urls'), {'object_type': 'provider'}),
             path('config/', include('api.config.urls'), {'object_type': 'provider'}),
             path('upgrade/', include([

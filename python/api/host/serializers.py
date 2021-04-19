@@ -70,7 +70,7 @@ class HostDetailSerializer(HostSerializer):
         return cm.status_api.get_host_status(obj.id)
 
 
-class ClusterHostAddSerializer(HostDetailSerializer):
+class ClusterHostSerializer(HostSerializer):
     host_id = serializers.IntegerField(source='id')
     prototype_id = serializers.IntegerField(read_only=True)
     provider_id = serializers.IntegerField(read_only=True)
@@ -83,7 +83,7 @@ class ClusterHostAddSerializer(HostDetailSerializer):
         return host
 
 
-class ProvideHostAddSerializer(HostDetailSerializer):
+class ProvideHostSerializer(HostSerializer):
     prototype_id = serializers.IntegerField(read_only=True)
     provider_id = serializers.IntegerField(read_only=True)
 

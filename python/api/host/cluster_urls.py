@@ -16,6 +16,6 @@ from . import views
 
 
 urlpatterns = [
-    path('', views.HostList.as_view(), name='host'),
+    path('', views.HostListCluster.as_view(), name='host'),
     path('', include('api.host.host_urls')),
 ]

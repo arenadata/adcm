@@ -16,6 +16,9 @@ from . import views
 
 
 urlpatterns = [
-    path('', views.HostList.as_view(), name='host'),
-    path('', include('api.host.host_urls')),
+    path('<int:host_id>/', include([
+        path('', views.HostDetail.as_view(), name='host-details'),
+        path('config/', include('api.config.urls'), {'object_type': 'host'}),
+        path('action/', include('api.action.urls'), {'object_type': 'host'}),
+    ])),
 ]
