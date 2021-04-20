@@ -16,7 +16,7 @@ from django.db.utils import IntegrityError
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
-from api.api_views import check_obj, filter_actions, CommonAPIURL, ServiceURL
+from api.api_views import check_obj, filter_actions, CommonAPIURL, ObjectURL
 from api.cluster_serial import BindSerializer
 from api.action.serializers import ActionShort
 from api.component.serializers import ComponentUISerializer
@@ -35,7 +35,7 @@ class ServiceSerializer(serializers.Serializer):
     display_name = serializers.CharField(read_only=True)
     state = serializers.CharField(read_only=True)
     prototype_id = serializers.IntegerField(required=True, help_text='id of service prototype')
-    url = ServiceURL(read_only=True, view_name='service-details')
+    url = ObjectURL(read_only=True, view_name='service-details')
 
     def validate_prototype_id(self, prototype_id):
         prototype = check_obj(
@@ -71,9 +71,9 @@ class ServiceDetailSerializer(ServiceSerializer):
     monitoring = serializers.CharField(read_only=True)
     action = CommonAPIURL(read_only=True, view_name='object-action')
     config = CommonAPIURL(read_only=True, view_name='object-config')
-    component = ServiceURL(read_only=True, view_name='component')
-    imports = ServiceURL(read_only=True, view_name='service-import')
-    bind = ServiceURL(read_only=True, view_name='service-bind')
+    component = ObjectURL(read_only=True, view_name='component')
+    imports = ObjectURL(read_only=True, view_name='service-import')
+    bind = ObjectURL(read_only=True, view_name='service-bind')
     prototype = serializers.HyperlinkedIdentityField(
         view_name='service-type-details', lookup_field='prototype_id',
         lookup_url_kwarg='prototype_id')

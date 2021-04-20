@@ -25,7 +25,7 @@ from cm.errors import AdcmEx
 from cm.models import Action, Prototype, UserProfile, Upgrade, Role
 
 from api.api_views import check_obj, hlink, filter_actions, get_upgradable_func
-from api.api_views import UrlField, CommonAPIURL, ServiceURL
+from api.api_views import UrlField, CommonAPIURL, ObjectURL
 from api.action.serializers import ActionShort
 
 
@@ -250,7 +250,7 @@ class ProviderDetailSerializer(ProviderSerializer):
     config = CommonAPIURL(view_name='object-config')
     action = CommonAPIURL(view_name='object-action')
     upgrade = hlink('provider-upgrade', 'id', 'provider_id')
-    host = ServiceURL(read_only=True, view_name='host')
+    host = ObjectURL(read_only=True, view_name='host')
 
     def get_issue(self, obj):
         return cm.issue.get_issue(obj)

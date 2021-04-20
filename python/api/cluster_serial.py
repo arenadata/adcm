@@ -21,7 +21,7 @@ from cm.errors import AdcmEx
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
 
 from api.api_views import check_obj, hlink, filter_actions, get_upgradable_func
-from api.api_views import UrlField, CommonAPIURL, ServiceURL
+from api.api_views import UrlField, CommonAPIURL, ObjectURL
 from api.action.serializers import ActionShort
 from api.component.serializers import ComponentDetailSerializer
 from api.host.serializers import HostSerializer
@@ -73,8 +73,8 @@ class ClusterDetailSerializer(ClusterSerializer):
     edition = serializers.CharField(read_only=True)
     license = serializers.CharField(read_only=True)
     action = CommonAPIURL(view_name='object-action')
-    service = ServiceURL(view_name='service')
-    host = ServiceURL(view_name='host')
+    service = ObjectURL(view_name='service')
+    host = ObjectURL(view_name='host')
     hostcomponent = hlink('host-component', 'id', 'cluster_id')
     status = serializers.SerializerMethodField()
     status_url = hlink('cluster-status', 'id', 'cluster_id')
