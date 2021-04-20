@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=too-many-locals
+
 import json
 
 from django.core.management.base import BaseCommand
@@ -68,14 +70,10 @@ def get_cluster(cluster_id):
         'stack',
         'issue',
         'prototype',
-        'prototype__name',
-        'prototype__type',
-        'prototype__version',
-        'prototype__bundle',
-        'prototype__parent',
     )
     cluster = get_object(models.Cluster, cluster_id, fields)
     cluster['config'] = get_config(cluster['config'])
+    cluster['bundle_hash'] = get_bundle_hash(cluster.pop('prototype'))
     return cluster
 
 
@@ -83,11 +81,6 @@ def get_provider(provider_id):
     fields = (
         'id',
         'prototype',
-        'prototype__name',
-        'prototype__type',
-        'prototype__version',
-        'prototype__bundle',
-        'prototype__parent',
         'name',
         'description',
         'config',
@@ -97,6 +90,7 @@ def get_provider(provider_id):
     )
     provider = get_object(models.HostProvider, provider_id, fields)
     provider['config'] = get_config(provider['config'])
+    provider['bundle_hash'] = get_bundle_hash(provider.pop('prototype'))
     return provider
 
 
@@ -104,11 +98,6 @@ def get_host(host_id):
     fields = (
         'id',
         'prototype',
-        'prototype__name',
-        'prototype__type',
-        'prototype__version',
-        'prototype__bundle',
-        'prototype__parent',
         'fqdn',
         'description',
         'provider',
@@ -120,6 +109,7 @@ def get_host(host_id):
     )
     host = get_object(models.Host, host_id, fields)
     host['config'] = get_config(host['config'])
+    host['bundle_hash'] = get_bundle_hash(host.pop('prototype'))
     return host
 
 
@@ -127,11 +117,6 @@ def get_service(service_id):
     fields = (
         'id',
         'prototype',
-        'prototype__name',
-        'prototype__type',
-        'prototype__version',
-        'prototype__bundle',
-        'prototype__parent',
         # 'service',  # ???
         'config',
         'state',
@@ -140,6 +125,7 @@ def get_service(service_id):
     )
     service = get_object(models.ClusterObject, service_id, fields)
     service['config'] = get_config(service['config'])
+    service['bundle_hash'] = get_bundle_hash(service.pop('prototype'))
     return service
 
 
@@ -147,11 +133,6 @@ def get_component(component_id):
     fields = (
         'id',
         'prototype',
-        'prototype__name',
-        'prototype__type',
-        'prototype__version',
-        'prototype__bundle',
-        'prototype__parent',
         'service',
         'config',
         'state',
@@ -160,6 +141,7 @@ def get_component(component_id):
     )
     component = get_object(models.ServiceComponent, component_id, fields)
     component['config'] = get_config(component['config'])
+    component['bundle_hash'] = get_bundle_hash(component.pop('prototype'))
     return component
 
 
@@ -193,11 +175,6 @@ class Command(BaseCommand):
         cluster = get_cluster(cluster_id)
 
         data = {
-            'bundle_hash': {
-                'cluster': get_bundle_hash(cluster['prototype']),
-                'providers': [],
-            },
-
             'cluster': cluster,
             'hosts': [],
             'providers': [],
@@ -218,7 +195,6 @@ class Command(BaseCommand):
         for provider_obj in models.HostProvider.objects.filter(id__in=provider_ids):
             provider = get_provider(provider_obj.id)
             data['providers'].append(provider)
-            data['bundle_hash']['providers'].append(get_bundle_hash(provider['prototype']))
 
         for service_obj in models.ClusterObject.objects.filter(cluster_id=cluster['id']):
             service = get_service(service_obj.id)
