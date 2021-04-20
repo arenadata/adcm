@@ -15,7 +15,7 @@ from django.urls import path, include, register_converter
 from rest_framework_swagger.views import get_swagger_view
 from rest_framework.schemas import get_schema_view
 
-from api import views, user_views, docs, job_views
+from api import views, user_views, docs
 
 
 register_converter(views.NameConverter, 'name')
@@ -81,33 +81,8 @@ urlpatterns = [
         ])),
     ])),
 
-    path('task/', include([
-        path('', job_views.Task.as_view(), name='task'),
-        path('<int:task_id>/', include([
-            path('', job_views.TaskDetail.as_view(), name='task-details'),
-            path('restart/', job_views.TaskReStart.as_view(), name='task-restart'),
-            path('cancel/', job_views.TaskCancel.as_view(), name='task-cancel'),
-        ])),
-    ])),
-
-    path('job/', include([
-        path('', job_views.JobList.as_view(), name='job'),
-        path('<int:job_id>/', include([
-            path('', job_views.JobDetail.as_view(), name='job-details'),
-            path('log/', include([
-                path('', job_views.LogStorageListView.as_view(), name='log-list'),
-                path('<int:log_id>/', include([
-                    path('', job_views.LogStorageView.as_view(), name='log-storage'),
-                    path('download/', job_views.download_log_file, name='download-log'),
-                ])),
-                path(
-                    '<name:tag>/<name:level>/<name:log_type>/',
-                    job_views.LogFile.as_view(),
-                    name='log-file'
-                ),
-            ])),
-        ])),
-    ])),
+    path('task/', include('api.job.task_urls')),
+    path('job/', include('api.job.urls')),
 
     # path('docs/', include_docs_urls(title='ArenaData Chapel API')),
     path('swagger/', swagger_view),
