@@ -21,7 +21,6 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
 import api.serializers
-import api.cluster_views
 import cm.api
 import cm.config as config
 import cm.job

@@ -16,14 +16,11 @@ from django.conf.urls import include
 from rest_framework_swagger.views import get_swagger_view
 from rest_framework.schemas import get_schema_view
 
-from api import views, user_views, stack_views, cluster_views, docs, job_views
+from api import views, user_views, stack_views, docs, job_views
 from api.views import ProviderUpgradeDetail
 from api.stack_views import (
     ClusterTypeDetail, ComponentTypeDetail, ServiceProtoActionList, ProviderTypeDetail,
     ProtoActionDetail
-)
-from api.cluster_views import (
-    HostComponentDetail, ClusterUpgradeDetail, ClusterBindDetail, DoClusterUpgrade, ClusterBundle
 )
 
 
@@ -124,35 +121,7 @@ urlpatterns = [
         ])),
     ])),
 
-    path('cluster/', include([
-        path('', cluster_views.ClusterList.as_view(), name='cluster'),
-        path('<int:cluster_id>/', include([
-            path('', cluster_views.ClusterDetail.as_view(), name='cluster-details'),
-            path('import/', cluster_views.ClusterImport.as_view(), name='cluster-import'),
-            path('status/', cluster_views.StatusList.as_view(), name='cluster-status'),
-            path('serviceprototype/', ClusterBundle.as_view(), name='cluster-service-prototype'),
-            path('service/', include('api.service.urls')),
-            path('host/', include('api.host.cluster_urls')),
-            path('action/', include('api.action.urls'), {'object_type': 'cluster'}),
-            path('config/', include('api.config.urls'), {'object_type': 'cluster'}),
-            path('bind/', include([
-                path('', cluster_views.ClusterBindList.as_view(), name='cluster-bind'),
-                path('<int:bind_id>/', ClusterBindDetail.as_view(), name='cluster-bind-details'),
-            ])),
-            path('upgrade/', include([
-                path('', cluster_views.ClusterUpgrade.as_view(), name='cluster-upgrade'),
-                path('<int:upgrade_id>/', include([
-                    path('', ClusterUpgradeDetail.as_view(), name='cluster-upgrade-details'),
-                    path('do/', DoClusterUpgrade.as_view(), name='do-cluster-upgrade'),
-                ])),
-            ])),
-            path('hostcomponent/', include([
-                path('', cluster_views.HostComponentList.as_view(), name='host-component'),
-                path('<int:hs_id>/', HostComponentDetail.as_view(), name='host-component-details'),
-            ])),
-        ])),
-    ])),
-
+    path('cluster/', include('api.cluster.urls')),
     path('service/', include('api.service.urls')),
     path('component/', include('api.component.urls')),
 

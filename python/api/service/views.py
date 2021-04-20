@@ -17,7 +17,7 @@ from api.api_views import (
     PageView, create, check_obj, DetailViewRO, ListView, DetailViewDelete
 )
 from api.stack_serial import ImportSerializer
-from api.cluster_serial import BindSerializer
+from api.cluster.serializers import BindSerializer
 
 from cm.api import delete_service, get_import, unbind
 from cm.models import Cluster, ClusterObject, Prototype, ClusterBind

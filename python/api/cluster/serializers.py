@@ -152,7 +152,7 @@ class HostComponentSerializer(serializers.Serializer):
     component = serializers.CharField(help_text='component name')
     component_id = serializers.IntegerField(read_only=True, help_text='component id')
     state = serializers.CharField(read_only=True, required=False)
-    url = MyUrlField(read_only=True, view_name='host-component-details')
+    url = MyUrlField(read_only=True, view_name='host-comp-details')
     host_url = hlink('host-details', 'host_id', 'host_id')
 
     def to_representation(self, instance):
