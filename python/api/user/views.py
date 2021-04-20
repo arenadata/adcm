@@ -17,12 +17,12 @@ from django.contrib.auth.models import User, Group
 from rest_framework import status
 from rest_framework.response import Response
 
-import api.serializers
 from api.api_views import PageView, PageViewAdd, DetailViewRO, GenericAPIPermView, update
 
 import cm.api
 from cm.errors import AdcmEx
 from cm.models import Role, UserProfile, DummyData
+from . import serializers
 
 
 def check_obj(model, req, error=None):
@@ -58,13 +58,13 @@ class UserList(PageViewAdd):
     Create new user
     """
     queryset = User.objects.all()
-    serializer_class = api.serializers.UserSerializer
+    serializer_class = serializers.UserSerializer
     ordering_fields = ('username',)
 
 
 class UserDetail(GenericAPIPermView):
     queryset = User.objects.all()
-    serializer_class = api.serializers.UserDetailSerializer
+    serializer_class = serializers.UserDetailSerializer
 
     def get(self, request, username):
         """
@@ -83,7 +83,7 @@ class UserDetail(GenericAPIPermView):
 
 class UserPasswd(GenericAPIPermView):
     queryset = User.objects.all()
-    serializer_class = api.serializers.UserPasswdSerializer
+    serializer_class = serializers.UserPasswdSerializer
 
     def patch(self, request, username):
         """
@@ -96,7 +96,7 @@ class UserPasswd(GenericAPIPermView):
 
 class AddUser2Group(GenericAPIPermView):
     queryset = User.objects.all()
-    serializer_class = api.serializers.AddUser2GroupSerializer
+    serializer_class = serializers.AddUser2GroupSerializer
 
     def post(self, request, username):
         """
@@ -122,7 +122,7 @@ class AddUser2Group(GenericAPIPermView):
 
 class ChangeUserRole(GenericAPIPermView):
     queryset = User.objects.all()
-    serializer_class = api.serializers.AddUserRoleSerializer
+    serializer_class = serializers.AddUserRoleSerializer
 
     def post(self, request, username):
         """
@@ -153,13 +153,13 @@ class GroupList(PageViewAdd):
     Create new user group
     """
     queryset = Group.objects.all()
-    serializer_class = api.serializers.GroupSerializer
+    serializer_class = serializers.GroupSerializer
     ordering_fields = ('name',)
 
 
 class GroupDetail(GenericAPIPermView):
     queryset = Group.objects.all()
-    serializer_class = api.serializers.GroupDetailSerializer
+    serializer_class = serializers.GroupDetailSerializer
 
     def get(self, request, name):
         """
@@ -180,7 +180,7 @@ class GroupDetail(GenericAPIPermView):
 
 class ChangeGroupRole(GenericAPIPermView):
     queryset = User.objects.all()
-    serializer_class = api.serializers.AddGroupRoleSerializer
+    serializer_class = serializers.AddGroupRoleSerializer
 
     def post(self, request, name):
         """
@@ -208,13 +208,13 @@ class RoleList(PageView):
     List all existing roles
     """
     queryset = Role.objects.all()
-    serializer_class = api.serializers.RoleSerializer
+    serializer_class = serializers.RoleSerializer
     ordering_fields = ('name',)
 
 
 class RoleDetail(PageView):
     queryset = Role.objects.all()
-    serializer_class = api.serializers.RoleDetailSerializer
+    serializer_class = serializers.RoleDetailSerializer
 
     def get(self, request, role_id):   # pylint: disable=arguments-differ
         """
@@ -234,7 +234,7 @@ class ProfileList(PageViewAdd):
     Create new user profile
     """
     queryset = UserProfile.objects.all()
-    serializer_class = api.serializers.ProfileSerializer
+    serializer_class = serializers.ProfileSerializer
     ordering_fields = ('username',)
 
 
@@ -244,7 +244,7 @@ class ProfileDetail(DetailViewRO):
     Show user profile
     """
     queryset = UserProfile.objects.all()
-    serializer_class = api.serializers.ProfileDetailSerializer
+    serializer_class = serializers.ProfileDetailSerializer
     lookup_field = 'login'
     lookup_url_kwarg = 'username'
     error_code = 'USER_NOT_FOUND'

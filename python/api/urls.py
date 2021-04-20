@@ -15,7 +15,7 @@ from django.urls import path, include, register_converter
 from rest_framework_swagger.views import get_swagger_view
 from rest_framework.schemas import get_schema_view
 
-from api import views, user_views, docs
+from api import views, docs
 
 
 register_converter(views.NameConverter, 'name')
@@ -28,36 +28,10 @@ urlpatterns = [
     path('token/', views.GetAuthToken.as_view(), name='token'),
     path('logout/', views.LogOut.as_view(), name='logout'),
 
-    path('user/', include([
-        path('', user_views.UserList.as_view(), name='user-list'),
-        path('<name:username>/', include([
-            path('', user_views.UserDetail.as_view(), name='user-details'),
-            path('role/', user_views.ChangeUserRole.as_view(), name='change-user-role'),
-            path('group/', user_views.AddUser2Group.as_view(), name='add-user-group'),
-            path('password/', user_views.UserPasswd.as_view(), name='user-passwd'),
-        ])),
-    ])),
-
-    path('group/', include([
-        path('', user_views.GroupList.as_view(), name='group-list'),
-        path('<name:name>/', include([
-            path('', user_views.GroupDetail.as_view(), name='group-details'),
-            path('role/', user_views.ChangeGroupRole.as_view(), name='change-group-role'),
-        ])),
-    ])),
-
-    path('profile/', include([
-        path('', user_views.ProfileList.as_view(), name='profile-list'),
-        path('<name:username>/', include([
-            path('', user_views.ProfileDetail.as_view(), name='profile-details'),
-            path('password/', user_views.UserPasswd.as_view(), name='profile-passwd'),
-        ])),
-    ])),
-
-    path('role/', include([
-        path('', user_views.RoleList.as_view(), name='role-list'),
-        path('<int:role_id>/', user_views.RoleDetail.as_view(), name='role-details'),
-    ])),
+    path('user/', include('api.user.urls')),
+    path('group/', include('api.user.group_urls')),
+    path('role/', include('api.user.role_urls')),
+    path('profile/', include('api.user.profile_urls')),
 
     path('stats/', include([
         path('', views.Stats.as_view(), name='stats'),
