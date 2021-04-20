@@ -26,12 +26,9 @@ import cm.config as config
 import cm.job
 import cm.stack
 import cm.status_api
-from cm.models import HostProvider, ADCM, JobLog, TaskLog, Upgrade
+from cm.models import ADCM, JobLog, TaskLog
 from adcm.settings import ADCM_VERSION
-from api.api_views import (
-    DetailViewRO, DetailViewDelete, ListView,
-    PageView, PageViewAdd, GenericAPIPermView, create, check_obj
-)
+from api.api_views import DetailViewRO, ListView, GenericAPIPermView
 
 
 class APIRoot(routers.APIRootView):
@@ -140,43 +137,6 @@ class AdcmDetail(DetailViewRO):
     error_code = 'ADCM_NOT_FOUND'
 
 
-class ProviderList(PageViewAdd):
-    """
-    get:
-    List all host providers
-
-    post:
-    Create new host provider
-    """
-    queryset = HostProvider.objects.all()
-    serializer_class = api.serializers.ProviderSerializer
-    serializer_class_ui = api.serializers.ProviderUISerializer
-    serializer_class_post = api.serializers.ProviderDetailSerializer
-    filterset_fields = ('name', 'prototype_id')
-    ordering_fields = ('name', 'state', 'prototype__display_name', 'prototype__version_order')
-
-
-class ProviderDetail(DetailViewDelete):
-    """
-    get:
-    Show host provider
-    """
-    queryset = HostProvider.objects.all()
-    serializer_class = api.serializers.ProviderDetailSerializer
-    serializer_class_ui = api.serializers.ProviderUISerializer
-    lookup_field = 'id'
-    lookup_url_kwarg = 'provider_id'
-    error_code = 'PROVIDER_NOT_FOUND'
-
-    def delete(self, request, provider_id):   # pylint: disable=arguments-differ
-        """
-        Remove host provider
-        """
-        provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        cm.api.delete_host_provider(provider)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
 class Stats(GenericAPIPermView):
     queryset = JobLog.objects.all()
     serializer_class = api.serializers.StatsSerializer
@@ -222,48 +182,3 @@ class TaskStats(GenericAPIPermView):
             config.Job.RUNNING: tasks.filter(status=config.Job.RUNNING).count(),
         }
         return Response(data)
-
-
-class ProviderUpgrade(PageView):
-    queryset = Upgrade.objects.all()
-    serializer_class = api.serializers.UpgradeProviderSerializer
-
-    def get(self, request, provider_id):   # pylint: disable=arguments-differ
-        """
-        List all avaliable upgrades for specified host provider
-        """
-        provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        obj = cm.upgrade.get_upgrade(provider, self.get_ordering(request, self.queryset, self))
-        serializer = self.serializer_class(obj, many=True, context={
-            'provider_id': provider.id, 'request': request
-        })
-        return Response(serializer.data)
-
-
-class ProviderUpgradeDetail(ListView):
-    queryset = Upgrade.objects.all()
-    serializer_class = api.serializers.UpgradeProviderSerializer
-
-    def get(self, request, provider_id, upgrade_id):   # pylint: disable=arguments-differ
-        """
-        List all avaliable upgrades for specified host provider
-        """
-        provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        obj = self.get_queryset().get(id=upgrade_id)
-        serializer = self.serializer_class(obj, context={
-            'provider_id': provider.id, 'request': request
-        })
-        return Response(serializer.data)
-
-
-class DoProviderUpgrade(GenericAPIPermView):
-    queryset = Upgrade.objects.all()
-    serializer_class = api.serializers.DoUpgradeSerializer
-
-    def post(self, request, provider_id, upgrade_id):
-        """
-        Do upgrade specified host provider
-        """
-        provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        serializer = self.serializer_class(data=request.data, context={'request': request})
-        return create(serializer, upgrade_id=int(upgrade_id), obj=provider)

@@ -16,7 +16,6 @@ from rest_framework_swagger.views import get_swagger_view
 from rest_framework.schemas import get_schema_view
 
 from api import views, user_views, docs, job_views
-from api.views import ProviderUpgradeDetail
 
 
 register_converter(views.NameConverter, 'name')
@@ -70,6 +69,8 @@ urlpatterns = [
     path('cluster/', include('api.cluster.urls')),
     path('service/', include('api.service.urls')),
     path('component/', include('api.component.urls')),
+    path('provider/', include('api.provider.urls')),
+    path('host/', include('api.host.urls')),
 
     path('adcm/', include([
         path('', views.AdcmList.as_view(), name='adcm'),
@@ -79,25 +80,6 @@ urlpatterns = [
             path('action/', include('api.action.urls'), {'object_type': 'adcm'}),
         ])),
     ])),
-
-    path('provider/', include([
-        path('', views.ProviderList.as_view(), name='provider'),
-        path('<int:provider_id>/', include([
-            path('', views.ProviderDetail.as_view(), name='provider-details'),
-            path('host/', include('api.host.provider_urls')),
-            path('action/', include('api.action.urls'), {'object_type': 'provider'}),
-            path('config/', include('api.config.urls'), {'object_type': 'provider'}),
-            path('upgrade/', include([
-                path('', views.ProviderUpgrade.as_view(), name='provider-upgrade'),
-                path('<int:upgrade_id>/', include([
-                    path('', ProviderUpgradeDetail.as_view(), name='provider-upgrade-details'),
-                    path('do/', views.DoProviderUpgrade.as_view(), name='do-provider-upgrade'),
-                ])),
-            ])),
-        ])),
-    ])),
-
-    path('host/', include('api.host.urls')),
 
     path('task/', include([
         path('', job_views.Task.as_view(), name='task'),
