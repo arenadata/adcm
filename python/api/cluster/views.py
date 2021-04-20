@@ -93,8 +93,8 @@ class ClusterDetail(DetailViewDelete):
 
 class ClusterBundle(ListView):
     queryset = Prototype.objects.filter(type='service')
-    serializer_class = api.stack_serial.ServiceSerializer
-    serializer_class_ui = api.stack_serial.BundleServiceUISerializer
+    serializer_class = api.stack.serializers.ServiceSerializer
+    serializer_class_ui = api.stack.serializers.BundleServiceUISerializer
 
     def get(self, request, cluster_id):   # pylint: disable=arguments-differ
         """
@@ -112,7 +112,7 @@ class ClusterBundle(ListView):
 
 class ClusterImport(ListView):
     queryset = Prototype.objects.all()
-    serializer_class = api.stack_serial.ImportSerializer
+    serializer_class = api.stack.serializers.ImportSerializer
     post_serializer = serializers.PostImportSerializer
 
     def get(self, request, cluster_id):   # pylint: disable=arguments-differ

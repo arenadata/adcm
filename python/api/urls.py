@@ -10,25 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import path, register_converter
-from django.conf.urls import include
+from django.urls import path, include, register_converter
 
 from rest_framework_swagger.views import get_swagger_view
 from rest_framework.schemas import get_schema_view
 
-from api import views, user_views, stack_views, docs, job_views
+from api import views, user_views, docs, job_views
 from api.views import ProviderUpgradeDetail
-from api.stack_views import (
-    ClusterTypeDetail, ComponentTypeDetail, ServiceProtoActionList, ProviderTypeDetail,
-    ProtoActionDetail
-)
 
 
 register_converter(views.NameConverter, 'name')
 swagger_view = get_swagger_view(title='ArenaData Chapel API')
 schema_view = get_schema_view(title='ArenaData Chapel API')
-
-PROTOTYPE_ID = '<int:prototype_id>/'
 
 
 urlpatterns = [
@@ -73,54 +66,7 @@ urlpatterns = [
         path('job/<int:job_id>/', views.JobStats.as_view(), name='job-stats'),
     ])),
 
-    path('stack/', include([
-        path('', stack_views.Stack.as_view(), name='stack'),
-        path('upload/', stack_views.UploadBundle.as_view(), name='upload-bundle'),
-        path('load/', stack_views.LoadBundle.as_view(), name='load-bundle'),
-        path('load/servicemap/', stack_views.LoadServiceMap.as_view(), name='load-servicemap'),
-        path('bundle/', include([
-            path('', stack_views.BundleList.as_view(), name='bundle'),
-            path('<int:bundle_id>/', include([
-                path('', stack_views.BundleDetail.as_view(), name='bundle-details'),
-                path('update/', stack_views.BundleUpdate.as_view(), name='bundle-update'),
-                path('license/', stack_views.BundleLicense.as_view(), name='bundle-license'),
-                path('license/accept/', stack_views.AcceptLicense.as_view(), name='accept-license'),
-            ])),
-        ])),
-        path('action/<int:action_id>/', ProtoActionDetail.as_view(), name='action-details'),
-        path('prototype/', include([
-            path('', stack_views.PrototypeList.as_view(), name='prototype'),
-            path(PROTOTYPE_ID, stack_views.PrototypeDetail.as_view(), name='prototype-details')
-        ])),
-        path('service/', include([
-            path('', stack_views.ServiceList.as_view(), name='service-type'),
-            path(PROTOTYPE_ID, include([
-                path('', stack_views.ServiceDetail.as_view(), name='service-type-details'),
-                path('action/', ServiceProtoActionList.as_view(), name='service-actions'),
-            ])),
-        ])),
-        path('component/', include([
-            path('', stack_views.ComponentList.as_view(), name='component-type'),
-            path(PROTOTYPE_ID, ComponentTypeDetail.as_view(), name='component-type-details'),
-        ])),
-        path('provider/', include([
-            path('', stack_views.ProviderTypeList.as_view(), name='provider-type'),
-            path(PROTOTYPE_ID, ProviderTypeDetail.as_view(), name='provider-type-details'),
-        ])),
-        path('host/', include([
-            path('', stack_views.HostTypeList.as_view(), name='host-type'),
-            path(PROTOTYPE_ID, stack_views.HostTypeDetail.as_view(), name='host-type-details'),
-        ])),
-        path('cluster/', include([
-            path('', stack_views.ClusterTypeList.as_view(), name='cluster-type'),
-            path(PROTOTYPE_ID, ClusterTypeDetail.as_view(), name='cluster-type-details'),
-        ])),
-        path('adcm/', include([
-            path('', stack_views.AdcmTypeList.as_view(), name='adcm-type'),
-            path(PROTOTYPE_ID, stack_views.AdcmTypeDetail.as_view(), name='adcm-type-details'),
-        ])),
-    ])),
-
+    path('stack/', include('api.stack.urls')),
     path('cluster/', include('api.cluster.urls')),
     path('service/', include('api.service.urls')),
     path('component/', include('api.component.urls')),
