@@ -17,7 +17,7 @@ from rest_framework import serializers
 from rest_framework.reverse import reverse
 
 from api.api_views import check_obj, filter_actions, CommonAPIURL, ObjectURL
-from api.cluster_serial import BindSerializer
+from api.cluster.serializers import BindSerializer
 from api.action.serializers import ActionShort
 from api.component.serializers import ComponentUISerializer
 

@@ -25,10 +25,9 @@ from cm.models import ClusterObject, Upgrade, ClusterBind
 from cm.logger import log   # pylint: disable=unused-import
 
 import api.serializers
-import api.cluster_serial
-import api.stack_serial
 from api.api_views import create, update, check_obj, GenericAPIPermView
 from api.api_views import ListView, PageView, PageViewAdd, InterfaceView, DetailViewDelete
+from . import serializers
 
 
 def get_obj_conf(cluster_id, service_id):
@@ -54,9 +53,9 @@ class ClusterList(PageViewAdd):
     Create new cluster
     """
     queryset = Cluster.objects.all()
-    serializer_class = api.cluster_serial.ClusterSerializer
-    serializer_class_ui = api.cluster_serial.ClusterUISerializer
-    serializer_class_post = api.cluster_serial.ClusterDetailSerializer
+    serializer_class = serializers.ClusterSerializer
+    serializer_class_ui = serializers.ClusterUISerializer
+    serializer_class_post = serializers.ClusterDetailSerializer
     filterset_fields = ('name', 'prototype_id')
     ordering_fields = ('name', 'state', 'prototype__display_name', 'prototype__version_order')
 
@@ -67,8 +66,8 @@ class ClusterDetail(DetailViewDelete):
     Show cluster
     """
     queryset = Cluster.objects.all()
-    serializer_class = api.cluster_serial.ClusterDetailSerializer
-    serializer_class_ui = api.cluster_serial.ClusterUISerializer
+    serializer_class = serializers.ClusterDetailSerializer
+    serializer_class_ui = serializers.ClusterUISerializer
     lookup_field = 'id'
     lookup_url_kwarg = 'cluster_id'
     error_code = 'CLUSTER_NOT_FOUND'
@@ -94,8 +93,8 @@ class ClusterDetail(DetailViewDelete):
 
 class ClusterBundle(ListView):
     queryset = Prototype.objects.filter(type='service')
-    serializer_class = api.stack_serial.ServiceSerializer
-    serializer_class_ui = api.stack_serial.BundleServiceUISerializer
+    serializer_class = api.stack.serializers.ServiceSerializer
+    serializer_class_ui = api.stack.serializers.BundleServiceUISerializer
 
     def get(self, request, cluster_id):   # pylint: disable=arguments-differ
         """
@@ -113,8 +112,8 @@ class ClusterBundle(ListView):
 
 class ClusterImport(ListView):
     queryset = Prototype.objects.all()
-    serializer_class = api.stack_serial.ImportSerializer
-    post_serializer = api.cluster_serial.PostImportSerializer
+    serializer_class = api.stack.serializers.ImportSerializer
+    post_serializer = serializers.PostImportSerializer
 
     def get(self, request, cluster_id):   # pylint: disable=arguments-differ
         """
@@ -140,13 +139,13 @@ class ClusterImport(ListView):
 
 class ClusterBindList(ListView):
     queryset = ClusterBind.objects.all()
-    serializer_class = api.cluster_serial.ClusterBindSerializer
+    serializer_class = serializers.ClusterBindSerializer
 
     def get_serializer_class(self):
         if self.request and self.request.method == 'POST':
-            return api.cluster_serial.DoBindSerializer
+            return serializers.DoBindSerializer
         else:
-            return api.cluster_serial.ClusterBindSerializer
+            return serializers.ClusterBindSerializer
 
     def get(self, request, cluster_id):   # pylint: disable=arguments-differ
         """
@@ -168,7 +167,7 @@ class ClusterBindList(ListView):
 
 class ClusterBindDetail(DetailViewDelete):
     queryset = ClusterBind.objects.all()
-    serializer_class = api.cluster_serial.BindSerializer
+    serializer_class = serializers.BindSerializer
 
     def get_obj(self, cluster_id, bind_id):
         cluster = check_obj(Cluster, cluster_id)
@@ -238,7 +237,7 @@ class DoClusterUpgrade(GenericAPIPermView):
 
 class StatusList(GenericAPIPermView):
     queryset = HostComponent.objects.all()
-    serializer_class = api.cluster_serial.StatusSerializer
+    serializer_class = serializers.StatusSerializer
 
     def get(self, request, cluster_id):
         """
@@ -252,12 +251,12 @@ class StatusList(GenericAPIPermView):
 
 class HostComponentList(GenericAPIPermView, InterfaceView):
     queryset = HostComponent.objects.all()
-    serializer_class = api.cluster_serial.HostComponentSerializer
-    serializer_class_ui = api.cluster_serial.HostComponentUISerializer
+    serializer_class = serializers.HostComponentSerializer
+    serializer_class_ui = serializers.HostComponentUISerializer
 
     def get_serializer_class(self):
         if self.request and self.request.method == 'POST':
-            return api.cluster_serial.HostComponentSaveSerializer
+            return serializers.HostComponentSaveSerializer
         return self.serializer_class
 
     def get(self, request, cluster_id):
@@ -295,7 +294,7 @@ class HostComponentList(GenericAPIPermView, InterfaceView):
 
 class HostComponentDetail(GenericAPIPermView):
     queryset = HostComponent.objects.all()
-    serializer_class = api.cluster_serial.HostComponentSerializer
+    serializer_class = serializers.HostComponentSerializer
 
     def get_obj(self, cluster_id, hs_id):
         cluster = check_obj(Cluster, cluster_id)

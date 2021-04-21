@@ -21,13 +21,10 @@ from rest_framework.reverse import reverse
 
 import cm.config as config
 from api.api_views import DetailViewRO, create, check_obj, PageView
-from api.job_serial import (
-    JobSerializer, JobListSerializer, LogStorageSerializer, LogStorageListSerializer, LogSerializer
-)
-from api.job_serial import TaskSerializer, TaskListSerializer, TaskPostSerializer
 from cm.errors import AdcmEx
 from cm.job import get_log, restart_task, cancel_task
 from cm.models import JobLog, TaskLog, LogStorage
+from . import serializers
 
 
 class JobList(PageView):
@@ -36,15 +33,15 @@ class JobList(PageView):
     List all jobs
     """
     queryset = JobLog.objects.order_by('-id')
-    serializer_class = JobListSerializer
-    serializer_class_ui = JobSerializer
+    serializer_class = serializers.JobListSerializer
+    serializer_class_ui = serializers.JobSerializer
     filterset_fields = ('action_id', 'task_id', 'pid', 'status', 'start_date', 'finish_date')
     ordering_fields = ('status', 'start_date', 'finish_date')
 
 
 class JobDetail(GenericAPIView):
     queryset = JobLog.objects.all()
-    serializer_class = JobSerializer
+    serializer_class = serializers.JobSerializer
 
     def get(self, request, job_id):
         """
@@ -79,7 +76,7 @@ class JobDetail(GenericAPIView):
 
 class LogStorageListView(PageView):
     queryset = LogStorage.objects.all()
-    serializer_class = LogStorageListSerializer
+    serializer_class = serializers.LogStorageListSerializer
     filterset_fields = ('name', 'type', 'format')
     ordering_fields = ('id', 'name')
 
@@ -90,7 +87,7 @@ class LogStorageListView(PageView):
 
 class LogStorageView(GenericAPIView):
     queryset = LogStorage.objects.all()
-    serializer_class = LogStorageSerializer
+    serializer_class = serializers.LogStorageSerializer
 
     def get(self, request, job_id, log_id):
         job = JobLog.obj.get(id=job_id)
@@ -135,7 +132,7 @@ def download_log_file(request, job_id, log_id):
 
 class LogFile(GenericAPIView):
     queryset = LogStorage.objects.all()
-    serializer_class = LogSerializer
+    serializer_class = serializers.LogSerializer
 
     def get(self, request, job_id, tag, level, log_type):
         """
@@ -158,9 +155,9 @@ class Task(PageView):
     List all tasks
     """
     queryset = TaskLog.objects.order_by('-id')
-    serializer_class = TaskListSerializer
-    serializer_class_ui = TaskSerializer
-    post_serializer = TaskPostSerializer
+    serializer_class = serializers.TaskListSerializer
+    serializer_class_ui = serializers.TaskSerializer
+    post_serializer = serializers.TaskPostSerializer
     filterset_fields = ('action_id', 'pid', 'status', 'start_date', 'finish_date')
     ordering_fields = ('status', 'start_date', 'finish_date')
 
@@ -179,7 +176,7 @@ class TaskDetail(DetailViewRO):
     Show task
     """
     queryset = TaskLog.objects.all()
-    serializer_class = TaskSerializer
+    serializer_class = serializers.TaskSerializer
     lookup_field = 'id'
     lookup_url_kwarg = 'task_id'
     error_code = 'TASK_NOT_FOUND'
@@ -192,7 +189,7 @@ class TaskDetail(DetailViewRO):
 
 class TaskReStart(GenericAPIView):
     queryset = TaskLog.objects.all()
-    serializer_class = TaskSerializer
+    serializer_class = serializers.TaskSerializer
 
     def put(self, request, task_id):
         task = check_obj(TaskLog, task_id, 'TASK_NOT_FOUND')
@@ -202,7 +199,7 @@ class TaskReStart(GenericAPIView):
 
 class TaskCancel(GenericAPIView):
     queryset = TaskLog.objects.all()
-    serializer_class = TaskSerializer
+    serializer_class = serializers.TaskSerializer
 
     def put(self, request, task_id):
         task = check_obj(TaskLog, task_id, 'TASK_NOT_FOUND')

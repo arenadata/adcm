@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from api.api_views import (
     ListView, GenericAPIPermView, ActionFilter, create, check_obj, filter_actions
 )
-from api.job_serial import RunTaskSerializer
+from api.job.serializers import RunTaskSerializer
 from cm.models import (
     Host, ClusterObject, ServiceComponent, Action, TaskLog, HostComponent, get_model_by_type
 )

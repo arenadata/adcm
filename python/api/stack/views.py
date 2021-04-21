@@ -23,10 +23,9 @@ from cm.models import PrototypeConfig, Upgrade, PrototypeExport
 from cm.models import PrototypeImport
 from cm.logger import log   # pylint: disable=unused-import
 
-import api.serializers
-import api.stack_serial
 from api.api_views import ListView, DetailViewRO, PageView, GenericAPIPermView, check_obj
 from api.action.serializers import StackActionSerializer
+from . import serializers
 
 
 class CsrfOffSessionAuthentication(SessionAuthentication):
@@ -36,7 +35,7 @@ class CsrfOffSessionAuthentication(SessionAuthentication):
 
 class Stack(GenericAPIPermView):
     queryset = Prototype.objects.all()
-    serializer_class = api.stack_serial.Stack
+    serializer_class = serializers.Stack
 
     def get(self, request):
         """
@@ -49,7 +48,7 @@ class Stack(GenericAPIPermView):
 
 class UploadBundle(GenericAPIPermView):
     queryset = Bundle.objects.all()
-    serializer_class = api.stack_serial.UploadBundle
+    serializer_class = serializers.UploadBundle
     authentication_classes = (CsrfOffSessionAuthentication, TokenAuthentication)
     parser_classes = (MultiPartParser,)
 
@@ -63,7 +62,7 @@ class UploadBundle(GenericAPIPermView):
 
 class LoadBundle(GenericAPIPermView):
     queryset = Prototype.objects.all()
-    serializer_class = api.stack_serial.LoadBundle
+    serializer_class = serializers.LoadBundle
 
     def post(self, request):
         """
@@ -73,7 +72,7 @@ class LoadBundle(GenericAPIPermView):
         serializer = self.serializer_class(data=request.data, context={'request': request})
         if serializer.is_valid():
             bundle = cm.bundle.load_bundle(serializer.validated_data.get('bundle_file'))
-            srl = api.stack_serial.BundleSerializer(bundle, context={'request': request})
+            srl = serializers.BundleSerializer(bundle, context={'request': request})
             return Response(srl.data)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -85,7 +84,7 @@ class BundleList(PageView):
     List all bundles
     """
     queryset = Bundle.objects.exclude(hash='adcm')
-    serializer_class = api.stack_serial.BundleSerializer
+    serializer_class = serializers.BundleSerializer
     filterset_fields = ('name', 'version')
     ordering_fields = ('name', 'version_order')
 
@@ -99,7 +98,7 @@ class BundleDetail(DetailViewRO):
     Remove bundle
     """
     queryset = Bundle.objects.all()
-    serializer_class = api.stack_serial.BundleSerializer
+    serializer_class = serializers.BundleSerializer
     lookup_field = 'id'
     lookup_url_kwarg = 'bundle_id'
     error_code = 'BUNDLE_NOT_FOUND'
@@ -112,7 +111,7 @@ class BundleDetail(DetailViewRO):
 
 class BundleUpdate(GenericAPIPermView):
     queryset = Bundle.objects.all()
-    serializer_class = api.stack_serial.BundleSerializer
+    serializer_class = serializers.BundleSerializer
 
     def put(self, request, bundle_id):
         """
@@ -127,7 +126,7 @@ class BundleUpdate(GenericAPIPermView):
 class BundleLicense(GenericAPIPermView):
     action = 'retrieve'
     queryset = Bundle.objects.all()
-    serializer_class = api.stack_serial.LicenseSerializer
+    serializer_class = serializers.LicenseSerializer
 
     def get(self, request, bundle_id):
         bundle = check_obj(Bundle, bundle_id, 'BUNDLE_NOT_FOUND')
@@ -138,7 +137,7 @@ class BundleLicense(GenericAPIPermView):
 
 class AcceptLicense(GenericAPIPermView):
     queryset = Bundle.objects.all()
-    serializer_class = api.stack_serial.LicenseSerializer
+    serializer_class = serializers.LicenseSerializer
 
     def put(self, request, bundle_id):
         bundle = check_obj(Bundle, bundle_id, 'BUNDLE_NOT_FOUND')
@@ -152,7 +151,7 @@ class PrototypeList(PageView):
     List all stack prototypes
     """
     queryset = Prototype.objects.all()
-    serializer_class = api.stack_serial.PrototypeSerializer
+    serializer_class = serializers.PrototypeSerializer
     filterset_fields = ('name', 'bundle_id', 'type')
     ordering_fields = ('display_name', 'version_order')
 
@@ -163,7 +162,7 @@ class ServiceList(PageView):
     List all stack services
     """
     queryset = Prototype.objects.filter(type='service')
-    serializer_class = api.stack_serial.ServiceSerializer
+    serializer_class = serializers.ServiceSerializer
     filterset_fields = ('name', 'bundle_id')
     ordering_fields = ('display_name', 'version_order')
 
@@ -174,7 +173,7 @@ class ServiceDetail(DetailViewRO):
     Show stack service
     """
     queryset = Prototype.objects.filter(type='service')
-    serializer_class = api.stack_serial.ServiceDetailSerializer
+    serializer_class = serializers.ServiceDetailSerializer
     lookup_field = 'id'
     lookup_url_kwarg = 'prototype_id'
     error_code = 'SERVICE_NOT_FOUND'
@@ -223,7 +222,7 @@ class ComponentList(PageView):
     List all stack components
     """
     queryset = Prototype.objects.filter(type='component')
-    serializer_class = api.stack_serial.ComponentTypeSerializer
+    serializer_class = serializers.ComponentTypeSerializer
     filterset_fields = ('name', 'bundle_id')
     ordering_fields = ('display_name', 'version_order')
 
@@ -234,7 +233,7 @@ class HostTypeList(PageView):
     List all host types
     """
     queryset = Prototype.objects.filter(type='host')
-    serializer_class = api.stack_serial.HostTypeSerializer
+    serializer_class = serializers.HostTypeSerializer
     filterset_fields = ('name', 'bundle_id')
     ordering_fields = ('display_name', 'version_order')
 
@@ -245,7 +244,7 @@ class ProviderTypeList(PageView):
     List all host providers types
     """
     queryset = Prototype.objects.filter(type='provider')
-    serializer_class = api.stack_serial.ProviderTypeSerializer
+    serializer_class = serializers.ProviderTypeSerializer
     filterset_fields = ('name', 'bundle_id', 'display_name')
     ordering_fields = ('display_name', 'version_order')
 
@@ -256,7 +255,7 @@ class ClusterTypeList(PageView):
     List all cluster types
     """
     queryset = Prototype.objects.filter(type='cluster')
-    serializer_class = api.stack_serial.ClusterTypeSerializer
+    serializer_class = serializers.ClusterTypeSerializer
     filterset_fields = ('name', 'bundle_id', 'display_name')
     ordering_fields = ('display_name', 'version_order')
 
@@ -267,7 +266,7 @@ class AdcmTypeList(ListView):
     List adcm root object prototypes
     """
     queryset = Prototype.objects.filter(type='adcm')
-    serializer_class = api.stack_serial.AdcmTypeSerializer
+    serializer_class = serializers.AdcmTypeSerializer
     filterset_fields = ('bundle_id',)
 
 
@@ -277,7 +276,7 @@ class PrototypeDetail(DetailViewRO):
     Show prototype
     """
     queryset = Prototype.objects.all()
-    serializer_class = api.stack_serial.PrototypeDetailSerializer
+    serializer_class = serializers.PrototypeDetailSerializer
     lookup_field = 'id'
     lookup_url_kwarg = 'prototype_id'
     error_code = 'PROTOTYPE_NOT_FOUND'
@@ -302,7 +301,7 @@ class AdcmTypeDetail(PrototypeDetail):
     Show adcm prototype
     """
     queryset = Prototype.objects.filter(type='adcm')
-    serializer_class = api.stack_serial.AdcmTypeDetailSerializer
+    serializer_class = serializers.AdcmTypeDetailSerializer
 
 
 class ClusterTypeDetail(PrototypeDetail):
@@ -311,7 +310,7 @@ class ClusterTypeDetail(PrototypeDetail):
     Show cluster prototype
     """
     queryset = Prototype.objects.filter(type='cluster')
-    serializer_class = api.stack_serial.ClusterTypeDetailSerializer
+    serializer_class = serializers.ClusterTypeDetailSerializer
 
 
 class ComponentTypeDetail(PrototypeDetail):
@@ -320,7 +319,7 @@ class ComponentTypeDetail(PrototypeDetail):
     Show component prototype
     """
     queryset = Prototype.objects.filter(type='component')
-    serializer_class = api.stack_serial.ComponentTypeDetailSerializer
+    serializer_class = serializers.ComponentTypeDetailSerializer
 
 
 class HostTypeDetail(PrototypeDetail):
@@ -329,7 +328,7 @@ class HostTypeDetail(PrototypeDetail):
     Show host prototype
     """
     queryset = Prototype.objects.filter(type='host')
-    serializer_class = api.stack_serial.HostTypeDetailSerializer
+    serializer_class = serializers.HostTypeDetailSerializer
 
 
 class ProviderTypeDetail(PrototypeDetail):
@@ -338,12 +337,12 @@ class ProviderTypeDetail(PrototypeDetail):
     Show host provider prototype
     """
     queryset = Prototype.objects.filter(type='provider')
-    serializer_class = api.stack_serial.ProviderTypeDetailSerializer
+    serializer_class = serializers.ProviderTypeDetailSerializer
 
 
 class LoadServiceMap(GenericAPIPermView):
     queryset = Prototype.objects.all()
-    serializer_class = api.stack_serial.Stack
+    serializer_class = serializers.Stack
 
     def put(self, request):
         cm.status_api.load_service_map()
