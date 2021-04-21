@@ -21,9 +21,10 @@ from cm.errors import AdcmEx
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
 
 from api.api_views import check_obj, hlink, filter_actions, get_upgradable_func
-from api.api_views import UrlField, CommonAPIURL, ServiceURL
+from api.api_views import UrlField, CommonAPIURL, ObjectURL
 from api.action.serializers import ActionShort
 from api.component.serializers import ComponentDetailSerializer
+from api.host.serializers import HostSerializer
 
 
 def get_cluster_id(obj):
@@ -72,8 +73,8 @@ class ClusterDetailSerializer(ClusterSerializer):
     edition = serializers.CharField(read_only=True)
     license = serializers.CharField(read_only=True)
     action = CommonAPIURL(view_name='object-action')
-    service = ServiceURL(view_name='service')
-    host = hlink('cluster-host', 'id', 'cluster_id')
+    service = ObjectURL(view_name='service')
+    host = ObjectURL(view_name='host')
     hostcomponent = hlink('host-component', 'id', 'cluster_id')
     status = serializers.SerializerMethodField()
     status_url = hlink('cluster-status', 'id', 'cluster_id')
@@ -114,87 +115,6 @@ class ClusterUISerializer(ClusterDetailSerializer):
 
     def get_prototype_display_name(self, obj):
         return obj.prototype.display_name
-
-
-class ClusterHostUrlField(UrlField):
-    def get_kwargs(self, obj):
-        return {'cluster_id': obj.cluster.id, 'host_id': obj.id}
-
-
-class ClusterHostSerializer(serializers.Serializer):
-    state = serializers.CharField(read_only=True)
-    # stack = serializers.JSONField(read_only=True)
-    cluster_id = serializers.IntegerField(read_only=True)
-    fqdn = serializers.CharField(read_only=True)
-    id = serializers.IntegerField(help_text='host id', read_only=True)
-    host_id = serializers.IntegerField(source='id')
-    prototype_id = serializers.IntegerField(read_only=True)
-    provider_id = serializers.IntegerField(read_only=True)
-    url = ClusterHostUrlField(read_only=True, view_name='cluster-host-details')
-
-
-class ClusterHostDetailSerializer(ClusterHostSerializer):
-    issue = serializers.SerializerMethodField()
-    cluster_url = hlink('cluster-details', 'cluster_id', 'cluster_id')
-    status = serializers.SerializerMethodField()
-    monitoring = serializers.CharField(read_only=True)
-    host_url = hlink('host-details', 'id', 'host_id')
-    config = CommonAPIURL(view_name='object-config')
-    action = CommonAPIURL(view_name='object-action')
-
-    def get_issue(self, obj):
-        return cm.issue.get_issue(obj)
-
-    def get_status(self, obj):
-        return cm.status_api.get_host_status(obj.id)
-
-
-class ClusterHostAddSerializer(ClusterHostDetailSerializer):
-    host_id = serializers.IntegerField(source='id')
-
-    def create(self, validated_data):
-        cluster = check_obj(Cluster, validated_data.get('cluster_id'))
-        host = check_obj(Host, validated_data.get('id'))
-        cm.api.add_host_to_cluster(cluster, host)
-        return host
-
-
-class ClusterHostUISerializer(ClusterHostDetailSerializer):
-    actions = serializers.SerializerMethodField()
-    upgradable = serializers.SerializerMethodField()
-    prototype_version = serializers.SerializerMethodField()
-    prototype_name = serializers.SerializerMethodField()
-    prototype_display_name = serializers.SerializerMethodField()
-    provider_name = serializers.SerializerMethodField()
-    get_upgradable = get_upgradable_func
-
-    def get_actions(self, obj):
-        act_set = Action.objects.filter(prototype=obj.prototype)
-        self.context['object'] = obj
-        self.context['host_id'] = obj.id
-        actions = ActionShort(
-            filter_actions(obj, act_set), many=True, context=self.context
-        )
-        return actions.data
-
-    def get_prototype_version(self, obj):
-        return obj.prototype.version
-
-    def get_prototype_name(self, obj):
-        return obj.prototype.name
-
-    def get_prototype_display_name(self, obj):
-        return obj.prototype.display_name
-
-    def get_provider_version(self, obj):
-        if obj.provider:
-            return obj.provider.prototype.version
-        return None
-
-    def get_provider_name(self, obj):
-        if obj.provider:
-            return obj.provider.name
-        return None
 
 
 class StatusSerializer(serializers.Serializer):
@@ -253,7 +173,7 @@ class HostComponentUISerializer(serializers.Serializer):
 
     def get_host(self, obj):
         hosts = Host.objects.filter(cluster=self.context.get('cluster'))
-        return ClusterHostSerializer(hosts, many=True, context=self.context).data
+        return HostSerializer(hosts, many=True, context=self.context).data
 
     def get_component(self, obj):
         comps = ServiceComponent.objects.filter(cluster=self.context.get('cluster'))
