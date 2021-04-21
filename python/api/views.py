@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=duplicate-except,attribute-defined-outside-init
-
 import rest_framework
 import django.contrib.auth
 
@@ -22,13 +20,10 @@ from rest_framework.response import Response
 
 import api.serializers
 import cm.api
-import cm.config as config
 import cm.job
 import cm.stack
 import cm.status_api
-from cm.models import JobLog, TaskLog
 from adcm.settings import ADCM_VERSION
-from api.api_views import GenericAPIPermView
 
 
 class APIRoot(routers.APIRootView):
@@ -113,50 +108,3 @@ class ADCMInfo(GenericAPIView):
             'adcm_version': ADCM_VERSION,
             'google_oauth': cm.api.has_google_oauth()
         })
-
-
-class Stats(GenericAPIPermView):
-    queryset = JobLog.objects.all()
-    serializer_class = api.serializers.StatsSerializer
-
-    def get(self, request):
-        """
-        Statistics
-        """
-        obj = JobLog(id=1)
-        serializer = self.serializer_class(obj, context={'request': request})
-        return Response(serializer.data)
-
-
-class JobStats(GenericAPIPermView):
-    queryset = JobLog.objects.all()
-    serializer_class = api.serializers.EmptySerializer
-
-    def get(self, request, job_id):
-        """
-        Show jobs stats
-        """
-        jobs = self.get_queryset().filter(id__gt=job_id)
-        data = {
-            config.Job.FAILED: jobs.filter(status=config.Job.FAILED).count(),
-            config.Job.SUCCESS: jobs.filter(status=config.Job.SUCCESS).count(),
-            config.Job.RUNNING: jobs.filter(status=config.Job.RUNNING).count(),
-        }
-        return Response(data)
-
-
-class TaskStats(GenericAPIPermView):
-    queryset = TaskLog.objects.all()
-    serializer_class = api.serializers.EmptySerializer
-
-    def get(self, request, task_id):
-        """
-        Show tasks stats
-        """
-        tasks = self.get_queryset().filter(id__gt=task_id)
-        data = {
-            config.Job.FAILED: tasks.filter(status=config.Job.FAILED).count(),
-            config.Job.SUCCESS: tasks.filter(status=config.Job.SUCCESS).count(),
-            config.Job.RUNNING: tasks.filter(status=config.Job.RUNNING).count(),
-        }
-        return Response(data)

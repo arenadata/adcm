@@ -25,6 +25,8 @@ schema_view = get_schema_view(title='ArenaData Chapel API')
 
 urlpatterns = [
     path('info/', views.ADCMInfo.as_view(), name='adcm-info'),
+    path('stats/', include('api.stats.urls')),
+
     path('token/', views.GetAuthToken.as_view(), name='token'),
     path('logout/', views.LogOut.as_view(), name='logout'),
 
@@ -33,19 +35,13 @@ urlpatterns = [
     path('role/', include('api.user.role_urls')),
     path('profile/', include('api.user.profile_urls')),
 
-    path('stats/', include([
-        path('', views.Stats.as_view(), name='stats'),
-        path('task/<int:task_id>/', views.TaskStats.as_view(), name='task-stats'),
-        path('job/<int:job_id>/', views.JobStats.as_view(), name='job-stats'),
-    ])),
-
     path('stack/', include('api.stack.urls')),
+
     path('cluster/', include('api.cluster.urls')),
     path('service/', include('api.service.urls')),
     path('component/', include('api.component.urls')),
     path('provider/', include('api.provider.urls')),
     path('host/', include('api.host.urls')),
-
     path('adcm/', include('api.adcm.urls')),
 
     path('task/', include('api.job.task_urls')),
