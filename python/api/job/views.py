@@ -26,6 +26,7 @@ from cm.job import get_log, restart_task, cancel_task
 from cm.models import JobLog, TaskLog, LogStorage
 from . import serializers
 
+
 class JobList(PageView):
     """
     get:
