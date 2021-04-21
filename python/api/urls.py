@@ -46,14 +46,7 @@ urlpatterns = [
     path('provider/', include('api.provider.urls')),
     path('host/', include('api.host.urls')),
 
-    path('adcm/', include([
-        path('', views.AdcmList.as_view(), name='adcm'),
-        path('<int:adcm_id>/', include([
-            path('', views.AdcmDetail.as_view(), name='adcm-details'),
-            path('config/', include('api.config.urls'), {'object_type': 'adcm'}),
-            path('action/', include('api.action.urls'), {'object_type': 'adcm'}),
-        ])),
-    ])),
+    path('adcm/', include('api.adcm.urls')),
 
     path('task/', include('api.job.task_urls')),
     path('job/', include('api.job.urls')),

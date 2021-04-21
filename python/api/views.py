@@ -26,9 +26,9 @@ import cm.config as config
 import cm.job
 import cm.stack
 import cm.status_api
-from cm.models import ADCM, JobLog, TaskLog
+from cm.models import JobLog, TaskLog
 from adcm.settings import ADCM_VERSION
-from api.api_views import DetailViewRO, ListView, GenericAPIPermView
+from api.api_views import GenericAPIPermView
 
 
 class APIRoot(routers.APIRootView):
@@ -113,28 +113,6 @@ class ADCMInfo(GenericAPIView):
             'adcm_version': ADCM_VERSION,
             'google_oauth': cm.api.has_google_oauth()
         })
-
-
-class AdcmList(ListView):
-    """
-    get:
-    List adcm object
-    """
-    queryset = ADCM.objects.all()
-    serializer_class = api.serializers.AdcmSerializer
-    serializer_class_ui = api.serializers.AdcmDetailSerializer
-
-
-class AdcmDetail(DetailViewRO):
-    """
-    get:
-    Show adcm object
-    """
-    queryset = ADCM.objects.all()
-    serializer_class = api.serializers.AdcmDetailSerializer
-    lookup_field = 'id'
-    lookup_url_kwarg = 'adcm_id'
-    error_code = 'ADCM_NOT_FOUND'
 
 
 class Stats(GenericAPIPermView):

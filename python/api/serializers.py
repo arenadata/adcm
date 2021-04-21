@@ -22,7 +22,7 @@ from cm.errors import AdcmEx
 from cm.models import Upgrade
 
 from api.api_views import check_obj, hlink
-from api.api_views import UrlField, CommonAPIURL
+from api.api_views import UrlField
 
 
 class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):
@@ -41,30 +41,8 @@ class LogOutSerializer(serializers.Serializer):
     pass
 
 
-
-
-
-
 class EmptySerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
-
-
-class AdcmSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField()
-    prototype_id = serializers.IntegerField()
-    state = serializers.CharField(read_only=True)
-    url = hlink('adcm-details', 'id', 'adcm_id')
-
-
-class AdcmDetailSerializer(AdcmSerializer):
-    prototype_version = serializers.SerializerMethodField()
-    bundle_id = serializers.IntegerField(read_only=True)
-    config = CommonAPIURL(view_name='object-config')
-    action = CommonAPIURL(view_name='object-action')
-
-    def get_prototype_version(self, obj):
-        return obj.prototype.version
 
 
 class UpgradeSerializer(serializers.Serializer):
