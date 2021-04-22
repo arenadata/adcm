@@ -20,7 +20,6 @@ import cm.errors
 import cm.issue
 import cm.config as config
 import cm.status_api
-import cm.ansible_plugin
 from cm.logger import log   # pylint: disable=unused-import
 from cm.upgrade import check_license, version_in
 from cm.adcm_config import (
@@ -33,7 +32,7 @@ from cm.status_api import Event
 from cm.models import (
     Cluster, Prototype, Host, HostComponent, ADCM, ClusterObject,
     ServiceComponent, ConfigLog, HostProvider, PrototypeImport, PrototypeExport,
-    ClusterBind, Action, JobLog, DummyData, Role,
+    ClusterBind, DummyData, Role,
 )
 
 
@@ -784,91 +783,3 @@ def set_object_state(obj, state, event):
     event.set_object_state(obj.prototype.type, obj.id, state)
     log.info('set %s state to "%s"', obj_ref(obj), state)
     return obj
-
-
-def set_cluster_state(cluster_id, state):
-    cluster = Cluster.obj.get(id=cluster_id)
-    return push_obj(cluster, state)
-
-
-def set_host_state(host_id, state):
-    host = Host.obj.get(id=host_id)
-    return push_obj(host, state)
-
-
-def set_component_state(component_id, state):
-    comp = cm.ansible_plugin.get_component(component_id)
-    return push_obj(comp, state)
-
-
-def set_component_state_by_name(cluster_id, service_id, component_name, service_name, state):
-    comp = cm.ansible_plugin.get_component_by_name(
-        cluster_id, service_id, component_name, service_name
-    )
-    return push_obj(comp, state)
-
-
-def set_provider_state(provider_id, state, event):
-    provider = HostProvider.obj.get(id=provider_id)
-    if provider.state == config.Job.LOCKED:
-        return push_obj(provider, state)
-    else:
-        return set_object_state(provider, state, event)
-
-
-def set_service_state(cluster_id, service_name, state):
-    cluster = Cluster.obj.get(id=cluster_id)
-    proto = Prototype.obj.get(
-        type='service',
-        name=service_name,
-        bundle=cluster.prototype.bundle
-    )
-    obj = ClusterObject.obj.get(cluster=cluster, prototype=proto)
-    return push_obj(obj, state)
-
-
-def set_service_state_by_id(cluster_id, service_id, state):
-    obj = ClusterObject.obj.get(
-        id=service_id, cluster__id=cluster_id, prototype__type='service'
-    )
-    return push_obj(obj, state)
-
-
-def change_hc(job_id, cluster_id, operations):   # pylint: disable=too-many-branches
-    '''
-    For use in ansible plugin adcm_hc
-    '''
-    job = JobLog.objects.get(id=job_id)
-    action = Action.objects.get(id=job.action_id)
-    if action.hostcomponentmap:
-        err('ACTION_ERROR', 'You can not change hc in plugin for action with hc_acl')
-
-    cluster = Cluster.obj.get(id=cluster_id)
-    hc = get_hc(cluster)
-    for op in operations:
-        service = ClusterObject.obj.get(cluster=cluster, prototype__name=op['service'])
-        component = ServiceComponent.obj.get(
-            cluster=cluster, service=service, prototype__name=op['component']
-        )
-        host = Host.obj.get(cluster=cluster, fqdn=op['host'])
-        item = {
-            'host_id': host.id,
-            'service_id': service.id,
-            'component_id': component.id,
-        }
-        if op['action'] == 'add':
-            if item not in hc:
-                hc.append(item)
-            else:
-                msg = 'There is already component "{}" on host "{}"'
-                err('COMPONENT_CONFLICT', msg.format(component.prototype.name, host.fqdn))
-        elif op['action'] == 'remove':
-            if item in hc:
-                hc.remove(item)
-            else:
-                msg = 'There is no component "{}" on host "{}"'
-                err('COMPONENT_CONFLICT', msg.format(component.prototype.name, host.fqdn))
-        else:
-            err('INVALID_INPUT', 'unknown hc action "{}"'.format(op['action']))
-
-    add_hc(cluster, hc)

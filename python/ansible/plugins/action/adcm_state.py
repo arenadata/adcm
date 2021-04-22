@@ -18,8 +18,8 @@ import sys
 sys.path.append('/adcm/python')
 import adcm.init_django
 
-from cm.ansible_plugin import ContextActionModule
-from cm.api import (
+from cm.ansible_plugin import (
+    ContextActionModule,
     set_cluster_state,
     set_host_state,
     set_service_state,

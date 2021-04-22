@@ -20,15 +20,11 @@ from ansible.parsing.vault import VaultSecret, VaultAES256
 from django.conf import settings
 from django.db.utils import OperationalError
 
-import cm.ansible_plugin
 import cm.config as config
 import cm.variant
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
-from cm.models import (
-    Cluster, Prototype, Host, HostProvider, ADCM, ClusterObject,
-    PrototypeConfig, ObjectConfig, ConfigLog
-)
+from cm.models import ADCM, PrototypeConfig, ObjectConfig, ConfigLog
 
 
 def proto_ref(proto):
@@ -737,49 +733,6 @@ def replace_object_config(obj, key, subkey, value):
     else:
         conf[key] = value
     save_obj_config(obj.config, conf, cl.attr, 'ansible update')
-
-
-def set_cluster_config(cluster_id, keys, value):
-    cluster = Cluster.obj.get(id=cluster_id)
-    return set_object_config(cluster, keys, value)
-
-
-def set_host_config(host_id, keys, value):
-    host = Host.obj.get(id=host_id)
-    return set_object_config(host, keys, value)
-
-
-def set_provider_config(provider_id, keys, value):
-    provider = HostProvider.obj.get(id=provider_id)
-    return set_object_config(provider, keys, value)
-
-
-def set_service_config(cluster_id, service_name, keys, value):
-    cluster = Cluster.obj.get(id=cluster_id)
-    proto = Prototype.obj.get(
-        type='service', name=service_name, bundle=cluster.prototype.bundle
-    )
-    obj = ClusterObject.obj.get(cluster=cluster, prototype=proto)
-    return set_object_config(obj, keys, value)
-
-
-def set_service_config_by_id(cluster_id, service_id, keys, value):
-    obj = ClusterObject.obj.get(
-        id=service_id, cluster__id=cluster_id, prototype__type='service'
-    )
-    return set_object_config(obj, keys, value)
-
-
-def set_component_config_by_name(cluster_id, service_id, component_name, service_name, keys, value):
-    obj = cm.ansible_plugin.get_component_by_name(
-        cluster_id, service_id, component_name, service_name
-    )
-    return set_object_config(obj, keys, value)
-
-
-def set_component_config(component_id, keys, value):
-    obj = cm.ansible_plugin.get_component(component_id)
-    return set_object_config(obj, keys, value)
 
 
 def set_object_config(obj, keys, value):

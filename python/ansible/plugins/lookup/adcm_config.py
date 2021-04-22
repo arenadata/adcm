@@ -25,8 +25,14 @@ except ImportError:
 
 sys.path.append('/adcm/python')
 import adcm.init_django
-import cm.adcm_config
 from cm.logger import log
+from cm.ansible_plugin import (
+    set_service_config,
+    set_service_config_by_id,
+    set_cluster_config,
+    set_provider_config,
+    set_host_config,
+)
 
 
 DOCUMENTATION = """
@@ -77,11 +83,9 @@ class LookupModule(LookupBase):
                 raise AnsibleError('there is no cluster in hostvars')
             cluster = variables['cluster']
             if 'service_name' in kwargs:
-                res = cm.adcm_config.set_service_config(
-                    cluster['id'], kwargs['service_name'], terms[1], terms[2]
-                )
+                res = set_service_config(cluster['id'], kwargs['service_name'], terms[1], terms[2])
             elif 'job' in variables and 'service_id' in variables['job']:
-                res = cm.adcm_config.set_service_config_by_id(
+                res = set_service_config_by_id(
                     cluster['id'], variables['job']['service_id'], terms[1], terms[2]
                 )
             else:
@@ -91,16 +95,16 @@ class LookupModule(LookupBase):
             if 'cluster' not in variables:
                 raise AnsibleError('there is no cluster in hostvars')
             cluster = variables['cluster']
-            res = cm.adcm_config.set_cluster_config(cluster['id'], terms[1], terms[2])
+            res = set_cluster_config(cluster['id'], terms[1], terms[2])
         elif terms[0] == 'provider':
             if 'provider' not in variables:
                 raise AnsibleError('there is no host provider in hostvars')
             provider = variables['provider']
-            res = cm.adcm_config.set_provider_config(provider['id'], terms[1], terms[2])
+            res = set_provider_config(provider['id'], terms[1], terms[2])
         elif terms[0] == 'host':
             if 'adcm_hostid' not in variables:
                 raise AnsibleError('there is no adcm_hostid in hostvars')
-            res = cm.adcm_config.set_host_config(variables['adcm_hostid'], terms[1], terms[2])
+            res = set_host_config(variables['adcm_hostid'], terms[1], terms[2])
         else:
             raise AnsibleError('unknown object type: %s' % terms[0])
 
