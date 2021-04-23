@@ -20,12 +20,33 @@ from cm import models
 
 
 def serialize_datetime_fields(obj, fields=None):
+    """
+    Modifies fields of type datetime to ISO string
+
+    :param obj: Object in dictionary format
+    :type obj: dict
+    :param fields: List of fields in datetime format
+    :type fields: list
+    """
     if fields is not None:
         for field in fields:
             obj[field] = obj[field].isoformat()
 
 
 def get_object(model, object_id, fields, datetime_fields=None):
+    """
+    The object is returned in dictionary format
+
+    :param model: Type object
+    :param object_id: Object ID
+    :type object_id: int
+    :param fields: List of fields
+    :type fields: tuple
+    :param datetime_fields: List of fields in datetime format
+    :type datetime_fields: list
+    :return: Object in dictionary format
+    :rtype: dict
+    """
     obj = model.objects.values(*fields).get(id=object_id)
     serialize_datetime_fields(obj, datetime_fields)
     return obj
@@ -39,12 +60,28 @@ def get_objects(model, fields, filters, datetime_fields=None):
 
 
 def get_bundle_hash(prototype_id):
+    """
+    Returns the hash of the bundle
+
+    :param prototype_id: Object ID
+    :type prototype_id: int
+    :return: The hash of the bundle
+    :rtype: str
+    """
     prototype = models.Prototype.objects.get(id=prototype_id)
     bundle = models.Bundle.objects.get(id=prototype.bundle_id)
     return bundle.hash
 
 
 def get_config(object_config_id):
+    """
+    Returns current and previous config
+
+    :param object_config_id:
+    :type object_config_id: int
+    :return: Current and previous config in dictionary format
+    :rtype: dict
+    """
     fields = ('config', 'attr', 'date', 'description')
     try:
         object_config = models.ObjectConfig.objects.get(id=object_config_id)
@@ -61,6 +98,14 @@ def get_config(object_config_id):
 
 
 def get_cluster(cluster_id):
+    """
+    Returns cluster object in dictionary format
+
+    :param cluster_id: Object ID
+    :type cluster_id: int
+    :return: Cluster object
+    :rtype: dict
+    """
     fields = (
         'id',
         'name',
@@ -78,6 +123,14 @@ def get_cluster(cluster_id):
 
 
 def get_provider(provider_id):
+    """
+    Returns provider object in dictionary format
+
+    :param provider_id: Object ID
+    :type provider_id: int
+    :return: Provider object
+    :rtype: dict
+    """
     fields = (
         'id',
         'prototype',
@@ -95,6 +148,14 @@ def get_provider(provider_id):
 
 
 def get_host(host_id):
+    """
+    Returns host object in dictionary format
+
+    :param host_id: Object ID
+    :type host_id: int
+    :return: Host object
+    :rtype: dict
+    """
     fields = (
         'id',
         'prototype',
@@ -114,10 +175,19 @@ def get_host(host_id):
 
 
 def get_service(service_id):
+    """
+    Returns service object in dictionary format
+
+    :param service_id: Object ID
+    :type service_id: int
+    :return: Service object
+    :rtype: dict
+    """
     fields = (
         'id',
         'prototype',
-        # 'service',  # ???
+        'prototype__name',
+        # 'service',  # TODO: you need to remove the field from the ClusterObject model
         'config',
         'state',
         'stack',
@@ -130,9 +200,18 @@ def get_service(service_id):
 
 
 def get_component(component_id):
+    """
+    Returns component object in dictionary format
+
+    :param component_id: Object ID
+    :type component_id: int
+    :return: Component object
+    :rtype: dict
+    """
     fields = (
         'id',
         'prototype',
+        'prototype__name',
         'service',
         'config',
         'state',
@@ -146,6 +225,14 @@ def get_component(component_id):
 
 
 def get_host_component(host_component_id):
+    """
+    Returns host_component object in dictionary format
+
+    :param host_component_id: Object ID
+    :type host_component_id: int
+    :return: HostComponent object
+    :rtype: dict
+    """
     fields = (
         'cluster',
         'host',
@@ -158,9 +245,18 @@ def get_host_component(host_component_id):
 
 
 class Command(BaseCommand):
+    """
+    Command for dump cluster object to JSON format
+
+    Example:
+        manage.py dumpcluster --cluster_id 1 --output cluster.json
+    """
     help = 'Dump cluster object to JSON format'
 
     def add_arguments(self, parser):
+        """
+        Parsing command line arguments
+        """
         parser.add_argument(
             '-c', '--cluster_id', action='store', dest='cluster_id', required=True,
             type=int, help='Cluster ID'
@@ -170,6 +266,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        """Handler method"""
         cluster_id = options['cluster_id']
         output = options['output']
         cluster = get_cluster(cluster_id)

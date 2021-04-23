@@ -21,30 +21,52 @@ from cm import models
 
 
 def deserializer_datetime_fields(obj, fields=None):
+    """
+    Modifies fields of type ISO string to datetime type
+
+    :param obj: Object in dictionary format
+    :type obj: dict
+    :param fields: List of fields in ISO string format
+    :type fields: list
+    """
     if obj is not None and fields is not None:
         for field in fields:
             obj[field] = datetime.fromisoformat(obj[field])
 
 
-def fix_object(obj, fields):
-    return {k: v for k, v in obj.items() if k not in fields}
+def get_prototype(**kwargs):
+    """
+    Returns prototype object
+
+    :param kwargs: Parameters for finding a prototype
+    :return: Prototype object
+    :rtype: models.Prototype
+    """
+    bundle = models.Bundle.objects.get(hash=kwargs.pop('bundle_hash'))
+    prototype = models.Prototype.objects.get(bundle=bundle, **kwargs)
+    return prototype
 
 
 def create_config(config):
+    """
+    Creating current ConfigLog, previous ConfigLog and ObjectConfig objects
+
+    :param config: ConfigLog object in dictionary format
+    :type config: dict
+    :return: ObjectConfig object
+    :rtype: models.ObjectConfig
+    """
     if config is not None:
         current_config = config['current']
         deserializer_datetime_fields(current_config, ['date'])
         previous_config = config['previous']
         deserializer_datetime_fields(previous_config, ['date'])
 
-        # conf = models.ObjectConfig(current=0, previous=0)  # TEST
         conf = models.ObjectConfig.objects.create(current=0, previous=0)
 
-        # current = models.ConfigLog(obj_ref=conf, **current_config)  # TEST
         current = models.ConfigLog.objects.create(obj_ref=conf, **current_config)
         current_id = current.id
         if previous_config is not None:
-            # previous = models.ConfigLog(obj_ref=conf, **previous_config)  # TEST
             previous = models.ConfigLog.objects.create(obj_ref=conf, **previous_config)
             previous_id = previous.id
         else:
@@ -59,39 +81,53 @@ def create_config(config):
 
 
 def create_cluster(cluster):
-    bundle = models.Bundle.objects.get(hash=cluster.pop('bundle_hash'))
-    prototype = models.Prototype.objects.get(bundle=bundle, type='cluster')
+    """
+    Creating Cluster object
+
+    :param cluster: Cluster object in dictionary format
+    :type cluster: dict
+    :return: Cluster object
+    :rtype: models.Cluster
+    """
+    prototype = get_prototype(bundle_hash=cluster.pop('bundle_hash'), type='cluster')
     ex_id = cluster.pop('id')
     config = create_config(cluster.pop('config'))
-    # cluster = models.Cluster(prototype=prototype, config=config, **cluster)  # TEST
     cluster = models.Cluster.objects.create(prototype=prototype, config=config, **cluster)
     return ex_id, cluster
 
 
 def create_provider(provider):
-    bundle = models.Bundle.objects.get(hash=provider.pop('bundle_hash'))
-    prototype = models.Prototype.objects.get(bundle=bundle, type='provider')
+    """
+    Creating HostProvider object
+
+    :param provider: HostProvider object in dictionary format
+    :type provider: dict
+    :return: HostProvider object
+    :rtype: models.HostProvider
+    """
+    prototype = get_prototype(bundle_hash=provider.pop('bundle_hash'), type='provider')
     ex_id = provider.pop('id')
     config = create_config(provider.pop('config'))
-    # provider = models.HostProvider(prototype=prototype, config=config, **provider)  # TEST
     provider = models.HostProvider.objects.create(prototype=prototype, config=config, **provider)
     return ex_id, provider
 
 
 def create_host(host, cluster):
-    bundle = models.Bundle.objects.get(hash=host.pop('bundle_hash'))
-    prototype = models.Prototype.objects.get(bundle=bundle, type='host')
+    """
+    Creating Host object
+
+    :param host: Host object in dictionary format
+    :type host: dict
+    :param cluster: Cluster object
+    :type cluster: models.Cluster
+    :return: Host object
+    :rtype: models.Host
+    """
+    prototype = get_prototype(bundle_hash=host.pop('bundle_hash'), type='host')
     ex_id = host.pop('id')
     host.pop('provider')
     config = create_config(host.pop('config'))
     provider = models.HostProvider.objects.get(name=host.pop('provider__name'))
-    # host = models.Host(  # TEST
-    #     prototype=prototype,
-    #     provider=provider,
-    #     config=config,
-    #     cluster=cluster,
-    #     **host,
-    # )
     host = models.Host.objects.create(
         prototype=prototype,
         provider=provider,
@@ -103,16 +139,21 @@ def create_host(host, cluster):
 
 
 def create_service(service, cluster):
-    bundle = models.Bundle.objects.get(hash=service.pop('bundle_hash'))
-    prototype = models.Prototype.objects.get(bundle=bundle, type='service')
+    """
+    Creating Service object
+
+    :param service: ClusterObject object in dictionary format
+    :type service: dict
+    :param cluster: Cluster object
+    :type cluster: models.Cluster
+    :return: ClusterObject object
+    :rtype: models.ClusterObject
+    """
+    prototype = get_prototype(
+        bundle_hash=service.pop('bundle_hash'), type='service', name=service.pop('prototype__name')
+    )
     ex_id = service.pop('id')
     config = create_config(service.pop('config'))
-    # service = models.ClusterObject(  # TEST
-    #     prototype=prototype,
-    #     cluster=cluster,
-    #     config=config,
-    #     **service
-    # )
     service = models.ClusterObject.objects.create(
         prototype=prototype,
         cluster=cluster,
@@ -123,17 +164,26 @@ def create_service(service, cluster):
 
 
 def create_component(component, cluster, service):
-    bundle = models.Bundle.objects.get(hash=component.pop('bundle_hash'))
-    prototype = models.Prototype.objects.get(bundle=bundle, type='component')
+    """
+    Creating Component object
+
+    :param component: ServiceComponent object in dictionary format
+    :type component: dict
+    :param cluster: Cluster object
+    :type cluster: models.Cluster
+    :param service: Service object
+    :type service: models.ClusterObject
+    :return: Component object
+    :rtype: models.ServiceComponent
+    """
+    prototype = get_prototype(
+        bundle_hash=component.pop('bundle_hash'),
+        type='component',
+        name=component.pop('prototype__name'),
+        parent=service.prototype
+    )
     ex_id = component.pop('id')
     config = create_config(component.pop('config'))
-    # component = models.ServiceComponent(  # TEST
-    #     prototype=prototype,
-    #     cluster=cluster,
-    #     service=service,
-    #     config=config,
-    #     **component
-    # )
     component = models.ServiceComponent.objects.create(
         prototype=prototype,
         cluster=cluster,
@@ -145,14 +195,23 @@ def create_component(component, cluster, service):
 
 
 def create_host_component(host_component, cluster, host, service, component):
+    """
+    Creating HostComponent object
+
+    :param host_component: HostComponent object in dictionary format
+    :type host_component: dict
+    :param cluster: Cluster object
+    :type cluster: models.Cluster
+    :param host: Host object
+    :type host: models.Host
+    :param service: Service object
+    :type service: models.ClusterObject
+    :param component: Component object
+    :type component: models.ServiceComponent
+    :return: HostComponent object
+    :rtype: models.HostComponent
+    """
     host_component.pop('cluster')
-    # host_component = models.HostComponent(  # TEST
-    #     cluster=cluster,
-    #     host=host,
-    #     service=service,
-    #     component=component,
-    #     **host_component
-    # )
     host_component = models.HostComponent.objects.create(
         cluster=cluster,
         host=host,
@@ -164,12 +223,20 @@ def create_host_component(host_component, cluster, host, service, component):
 
 
 class Command(BaseCommand):
+    """
+    Command for load cluster object from JSON file
+
+    Example:
+        manage.py loadcluster cluster.json
+    """
     help = 'Load cluster object from JSON format'
 
     def add_arguments(self, parser):
+        """Parsing command line arguments"""
         parser.add_argument('file_path', nargs='?')
 
     def handle(self, *args, **options):
+        """Handler method"""
         file_path = options.get('file_path')
         with open(file_path, 'r') as f:
             data = json.load(f)
