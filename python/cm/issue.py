@@ -11,11 +11,11 @@
 # limitations under the License.
 
 from collections import defaultdict
-from itertools import chain
 
 import cm.status_api
 from cm.adcm_config import proto_ref, obj_ref, get_prototype_config
 from cm.errors import AdcmEx, raise_AdcmEx as err
+from cm.hierarchy import Tree
 from cm.logger import log
 from cm.models import (
     ClusterBind,
@@ -25,70 +25,18 @@ from cm.models import (
     HostComponent,
     Prototype,
     PrototypeImport,
-    ServiceComponent,
 )
 
 
 def update_hierarchy_issues(obj):
     """
-    Cluster issue affects cluster's services and their components; also affects its hosts;
-    ClusterService issue affects its cluster and its components;
-    ServiceComponent issue affects its service and cluster of service;
-
-    HostProvider issue affects its hosts;
-    Host issue affects its cluster and its provider.
-
-    objects with unknown prototype are ignored
+    Update issues on all directly connected objects
+    TODO: do not resend issues without changes
+    TODO: fix bug for propagating issue from component to cluster
     """
-    for item in chain(
-            get_affected_cluster_hierarchy(obj),
-            get_affected_host_hierarchy(obj)
-    ):
-        save_issue(item)
-
-
-def get_affected_cluster_hierarchy(obj) -> list:
-    result = []
-
-    if obj.prototype.type == 'cluster':
-        result.append(obj)
-        for co in ClusterObject.objects.filter(cluster=obj):
-            result.append(co)
-            result.extend(ServiceComponent.objects.filter(cluster=obj, service=co))
-
-    elif obj.prototype.type == 'service':
-        result.append(obj.cluster)
-        result.append(obj)
-        result.extend(ServiceComponent.objects.filter(service=obj))
-
-    elif obj.prototype.type == 'component':
-        result.append(obj.service.cluster)
-        result.append(obj.service)
-        result.append(obj)
-
-    elif obj.prototype.type == 'host':
-        # host itself is added in `get_affected_host_hierarchy`
-        result.append(obj.cluster)
-
-    return result
-
-
-def get_affected_host_hierarchy(obj) -> list:
-    result = []
-
-    if obj.prototype.type == 'provider':
-        result.append(obj)
-        result.extend(Host.objects.filter(provider=obj))
-
-    elif obj.prototype.type == 'host':
-        result.append(obj.provider)
-        result.append(obj)
-
-    elif obj.prototype.type == 'cluster':
-        # cluster itself is added in `get_affected_cluster_hierarchy`
-        result.extend(Host.objects.filter(cluster=obj))
-
-    return result
+    tree = Tree(obj)
+    for node in tree.get_directly_affected(tree.built_from):
+        save_issue(node.value)
 
 
 def save_issue(obj):
