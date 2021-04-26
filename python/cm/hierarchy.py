@@ -37,12 +37,14 @@ class Node:
     def __init__(self, value: Optional[ADCMModel]):
         self.children = set()
         if value is None:  # tree virtual root
+            self.id = 0
             self.type = 'root'
             self.value = None
             self.parents = tuple()
         else:
             if not hasattr(value, 'prototype'):
                 raise HierarchyError(f'Type <{type(value)}> is not part of hierarchy')
+            self.id = value.pk
             self.type = value.prototype.type
             self.value = value
             self.parents = set()
@@ -81,7 +83,7 @@ class Node:
     @property
     def key(self) -> Tuple[str, int]:
         """Simple key unique in tree"""
-        return self.type, self.value.pk if self.value else 0
+        return self.type, self.id
 
     def __hash__(self):
         return hash(self.key)

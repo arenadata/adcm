@@ -18,6 +18,7 @@ from cm.errors import AdcmEx, raise_AdcmEx as err
 from cm.hierarchy import Tree
 from cm.logger import log
 from cm.models import (
+    ADCMModel,
     ClusterBind,
     ClusterObject,
     ConfigLog,
@@ -28,35 +29,42 @@ from cm.models import (
 )
 
 
-def update_hierarchy_issues(obj):
-    """
-    Update issues on all directly connected objects
-    TODO: do not resend issues without changes
-    TODO: fix bug for propagating issue from component to cluster
-    """
-    tree = Tree(obj)
-    for node in tree.get_directly_affected(tree.built_from):
-        save_issue(node.value)
+class IssueReporter:
+    """Cache, compare, and report updated issues"""
+
+    def __init__(self, obj: ADCMModel):
+        self.tree = Tree(obj)
+        self._cache = {}
+
+    def update_issues(self):
+        for node in self.tree.get_directly_affected(self.tree.built_from):
+            self._cache[node.key] = aggregate_issues(node.value, self.tree)
+
+            obj = node.value
+            issue = check_for_issue(obj)
+            if obj.issue != issue:
+                obj.issue = issue
+                obj.save()
+
+    def report_changed(self):
+        for node in self.tree.get_directly_affected(self.tree.built_from):
+            new_issue = aggregate_issues(node.value, self.tree)
+            old_issue = self._cache[node.key]
+            if new_issue != old_issue:
+                if issue_to_bool(new_issue):
+                    cm.status_api.post_event('clear_issue', node.type, node.id)
+                else:
+                    cm.status_api.post_event('raise_issue', node.type, node.id, 'issue', new_issue)
 
 
-def save_issue(obj):
-    if not obj or obj.prototype.type == 'adcm':
-        return
-
-    obj.issue = check_issue(obj)
-    obj.save()
-    report_issue(obj)
+def update_hierarchy_issues(obj: ADCMModel):
+    """Update issues on all directly connected objects"""
+    reporter = IssueReporter(obj)
+    reporter.update_issues()
+    reporter.report_changed()
 
 
-def report_issue(obj):
-    issue = get_issue(obj)
-    if issue_to_bool(issue):
-        cm.status_api.post_event('clear_issue', obj.prototype.type, obj.id)
-    else:
-        cm.status_api.post_event('raise_issue', obj.prototype.type, obj.id, 'issue', issue)
-
-
-def check_issue(obj):
+def check_for_issue(obj: ADCMModel):
     type_check_map = {
         'cluster': check_cluster_issue,
         'service': check_service_issue,
@@ -81,58 +89,28 @@ def issue_to_bool(issue):
         return bool(issue)
 
 
-def get_issue(obj):   # pylint: disable=too-many-branches
+def aggregate_issues(obj: ADCMModel, tree: Tree = None) -> dict:
+    """
+    Get own issue extended with issues of all nested objects
+    TODO: unify behavior for hosts (in `Host.serialized_issue`) and providers
+    """
     issue = defaultdict(list)
     issue.update(obj.issue)
 
-    if obj.prototype.type == 'cluster':
-        for co in ClusterObject.objects.filter(cluster=obj):
-            service_iss = cook_issue(co, name_obj=co.prototype)
-            if service_iss:
-                issue['service'].append(service_iss)
+    if obj.prototype.type == 'provider':
+        return issue
 
-        for host in Host.objects.filter(cluster=obj):
-            host_iss = cook_issue(host, 'fqdn')
-            provider_iss = cook_issue(host.provider)
-            if host_iss:
-                if provider_iss:
-                    host_iss['issue']['provider'] = provider_iss
-                issue['host'].append(host_iss)
-            elif provider_iss:
-                issue['host'].append(cook_issue(host, 'fqdn', iss={'provider': [provider_iss]}))
+    tree = tree or Tree(obj)
+    node = tree.get_node(obj)
+    for child in tree.get_directly_affected(node):
+        if obj.prototype.type == 'provider':
+            continue
 
-    elif obj.prototype.type == 'service':
-        cluster_iss = cook_issue(obj.cluster)
-        if cluster_iss:
-            issue['cluster'] = [cluster_iss]
+        child_issue = child.value.serialized_issue
+        if child_issue:
+            issue[child.type].append(child_issue)
 
-    elif obj.prototype.type == 'component':
-        cluster_iss = cook_issue(obj.cluster)
-        if cluster_iss:
-            issue['cluster'] = [cluster_iss]
-        service_iss = cook_issue(obj.service)
-        if service_iss:
-            issue['service'] = [service_iss]
-
-    elif obj.prototype.type == 'host':
-        if obj.cluster:
-            cluster_iss = cook_issue(obj.cluster)
-            if cluster_iss:
-                issue['cluster'] = [cluster_iss]
-        if obj.provider:
-            provider_iss = cook_issue(obj.provider)
-            if provider_iss:
-                issue['provider'] = [provider_iss]
     return issue
-
-
-def cook_issue(obj, name='name', name_obj=None, iss=None):
-    result = {
-        'id': getattr(obj, 'id', None),
-        'name': getattr(name_obj or obj, name, None),
-        'issue': iss or getattr(obj, 'issue', {})
-    }
-    return result if all(result.values()) else {}
 
 
 def check_cluster_issue(cluster):
@@ -153,9 +131,6 @@ def check_service_issue(service):
 
 def check_config_issue(obj):
     return {'config': check_config(obj)}
-
-
-# Below this line goes business logic for issue checking
 
 
 def check_config(obj):   # pylint: disable=too-many-branches
