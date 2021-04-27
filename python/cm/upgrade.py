@@ -293,7 +293,7 @@ def do_upgrade(obj, upgrade):
             for p in Prototype.objects.filter(bundle=upgrade.bundle, type='host'):
                 for host in Host.objects.filter(provider=obj, prototype__name=p.name):
                     switch_service(host, p)
-        cm.issue.save_issue(obj)
+        cm.issue.update_hierarchy_issues(obj)
 
     log.info('upgrade %s OK to version %s', obj_ref(obj), obj.prototype.version)
     cm.status_api.post_event(

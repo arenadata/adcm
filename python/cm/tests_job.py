@@ -17,6 +17,7 @@ from django.utils import timezone
 
 import cm.config as config
 import cm.job as job_module
+import cm.lock as lock_module
 from cm import models
 from cm.logger import log
 
@@ -41,7 +42,7 @@ class TestJob(TestCase):
         pid = 10
         event = Mock()
 
-        job_module. set_job_status(job.id, status, event, pid)
+        lock_module.set_job_status(job.id, status, event, pid)
 
         job = models.JobLog.objects.get(id=job.id)
         self.assertEqual(job.status, status)
@@ -55,7 +56,7 @@ class TestJob(TestCase):
             action_id=1, object_id=1,
             start_date=timezone.now(), finish_date=timezone.now())
 
-        job_module.set_task_status(task, config.Job.RUNNING, event)
+        lock_module.set_task_status(task, config.Job.RUNNING, event)
 
         self.assertEqual(task.status, config.Job.RUNNING)
         event.set_task_status.assert_called_once_with(task.id, config.Job.RUNNING)
@@ -165,12 +166,12 @@ class TestJob(TestCase):
         for obj, check_assert in data:
             with self.subTest(obj=obj):
 
-                job_module.unlock_obj(obj, event)
+                lock_module.unlock_obj(obj, event)
 
                 check_assert()
                 mock_set_object_state.reset_mock()
 
-    @patch('cm.job.unlock_obj')
+    @patch('cm.lock.unlock_obj')
     def test_unlock_objects(self, mock_unlock_obj):
         bundle = models.Bundle.objects.create()
         prototype = models.Prototype.objects.create(bundle=bundle)
@@ -186,7 +187,7 @@ class TestJob(TestCase):
         for obj in data:
             with self.subTest(obj=obj):
 
-                job_module.unlock_objects(obj, event)
+                lock_module.unlock_objects(obj, event)
 
                 if isinstance(obj, models.ClusterObject):
                     mock_unlock_obj.assert_has_calls([
@@ -317,11 +318,11 @@ class TestJob(TestCase):
         job = models.JobLog.objects.create(
             action_id=action.id, start_date=timezone.now(), finish_date=timezone.now())
 
-        job_module.prepare_job(action, None, {'cluster': 1}, job.id, cluster, '', {}, None)
+        job_module.prepare_job(action, None, {'cluster': 1}, job.id, cluster, '', {}, None, False)
 
-        mock_prepare_job_inventory.assert_called_once_with({'cluster': 1}, job.id, {}, None)
+        mock_prepare_job_inventory.assert_called_once_with({'cluster': 1}, job.id, action, {}, None)
         mock_prepare_job_config.assert_called_once_with(action, None, {'cluster': 1},
-                                                        job.id, cluster, '')
+                                                        job.id, cluster, '', False)
         mock_prepare_ansible_config.assert_called_once_with(job.id, action, None)
 
     @patch('cm.job.get_obj_config')
@@ -445,7 +446,7 @@ class TestJob(TestCase):
                 prototype.save()
 
                 job_module.prepare_job_config(
-                    action, sub_action, selector, job.id, obj, conf)
+                    action, sub_action, selector, job.id, obj, conf, False)
 
                 job_config = {
                     'adcm': {
@@ -467,6 +468,7 @@ class TestJob(TestCase):
                         'job_name': '',
                         'command': '',
                         'script': '',
+                        'verbose': False,
                         'playbook': mock_dump.call_args[0][0]['job']['playbook'],
                         'params': {
                             'ansible_tags': 'create_users'
@@ -563,4 +565,4 @@ class TestJob(TestCase):
             cluster, new_hc, action.hostcomponentmap, old_hc)
         mock_prepare_job.assert_called_once_with(
             action, sub_action, selector, job.id, cluster,
-            task.config, delta, None)
+            task.config, delta, None, False)

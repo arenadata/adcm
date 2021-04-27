@@ -9,193 +9,318 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from time import sleep
+# pylint: disable=redefined-outer-name
+from typing import Union
 
-import coreapi
+import allure
 import pytest
+from adcm_client.objects import (
+    Provider,
+    Cluster,
+    Host,
+    ADCMClient,
+    Service,
+    Task,
+    Component,
+)
 from adcm_pytest_plugin import utils
-from adcm_pytest_plugin.docker import DockerWrapper
-
-# pylint: disable=W0611, W0621
-from tests.library import steps
-from tests.library.errorcodes import TASK_ERROR
-
-
-@pytest.fixture(scope="function")
-def adcm(image, request, adcm_credentials):
-    repo, tag = image
-    dw = DockerWrapper()
-    adcm = dw.run_adcm(image=repo, tag=tag, pull=False)
-    adcm.api.auth(**adcm_credentials)
-
-    def fin():
-        adcm.stop()
-
-    request.addfinalizer(fin)
-    return adcm
-
-
-@pytest.fixture(scope="function")
-def client(adcm):
-    return adcm.api.objects
-
-
-@pytest.fixture(scope="function")
-def prepared_cluster(client):
-    bundle = utils.get_data_dir(__file__, 'locked_when_action_running')
-    steps.upload_bundle(client, bundle)
-    return client.cluster.create(prototype_id=client.stack.cluster.list()[0]['id'],
-                                 name=utils.random_string())
-
-
-@pytest.fixture(scope='function')
-def hostprovider(client):
-    steps.upload_bundle(client, utils.get_data_dir(__file__, 'host_bundle_on_any_level'))
-    return steps.create_hostprovider(client)
+from adcm_pytest_plugin.steps.asserts import assert_state
+from adcm_pytest_plugin.utils import random_string
 
 
 @pytest.fixture()
-def host(client):
-    host_bundle = utils.get_data_dir(__file__, 'host_bundle_on_any_level')
-    steps.upload_bundle(client, host_bundle)
-    return steps.create_host_w_default_provider(client, 'localhost')
-
-
-def test_cluster_must_be_locked_when_action_running(client, prepared_cluster):
-    cluster = prepared_cluster
-    client.cluster.action.run.create(
-        action_id=utils.get_action_by_name(client, cluster, 'lock-cluster')['id'],
-        cluster_id=cluster['id'])
-    assert client.cluster.read(cluster_id=cluster['id'])['state'] == 'locked'
-
-
-def test_run_new_action_on_locked_cluster_must_throws_exception(client, prepared_cluster):
-    cluster = prepared_cluster
-    lock_action = utils.get_action_by_name(client, cluster, 'lock-cluster')
-    install_action = utils.get_action_by_name(client, cluster, 'install')
-    client.cluster.action.run.create(
-        action_id=lock_action['id'],
-        cluster_id=cluster['id'])
-    with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-        client.cluster.action.run.create(
-            action_id=install_action['id'],
-            cluster_id=cluster['id'])
-    TASK_ERROR.equal(e)
-    assert "object is locked" in e.value.error['desc']
-
-
-def test_service_in_cluster_must_be_locked_when_cluster_action_running(client, prepared_cluster):
-    cluster = prepared_cluster
-    service = client.cluster.service.create(cluster_id=cluster['id'],
-                                            prototype_id=client.stack.service.list()[0]['id'])
-    client.cluster.action.run.create(
-        action_id=utils.get_action_by_name(client, cluster, 'lock-cluster')['id'],
-        cluster_id=cluster['id'])
-    assert client.cluster.service.read(cluster_id=cluster['id'],
-                                       service_id=service['id'])['state'] == 'locked'
-
-
-def test_host_in_cluster_must_be_locked_when_cluster_action_running(client, prepared_cluster, host):
-    cluster = prepared_cluster
-    client.cluster.host.create(cluster_id=cluster['id'], host_id=host['id'])
-    client.cluster.action.run.create(
-        action_id=utils.get_action_by_name(client, cluster, 'lock-cluster')['id'],
-        cluster_id=cluster['id'])
-    assert client.cluster.host.read(cluster_id=cluster['id'],
-                                    host_id=host['id'])['state'] == 'locked'
-
-
-def test_host_must_be_locked_when_host_action_running(client, host):
-    client.host.action.run.create(
-        action_id=utils.filter_action_by_name(client.host.action.list(host_id=host['id']),
-                                              'action-locker')[0]['id'], host_id=host['id'])
-    assert client.host.read(host_id=host['id'])['state'] == 'locked'
-
-
-def test_cluster_must_be_locked_when_located_host_action_running(client, prepared_cluster, host):
-    client.cluster.host.create(cluster_id=prepared_cluster['id'], host_id=host['id'])
-    client.host.action.run.create(
-        action_id=utils.filter_action_by_name(
-            client.host.action.list(host_id=host['id']), 'action-locker')[0]['id'],
-        host_id=host['id'])
-    assert client.cluster.host.read(cluster_id=prepared_cluster['id'],
-                                    host_id=host['id'])['state'] == 'locked'
-    assert client.cluster.read(cluster_id=prepared_cluster['id'])['state'] == 'locked'
-
-
-def test_cluster_service_locked_when_located_host_action_running(client, prepared_cluster, host):
-    client.cluster.host.create(cluster_id=prepared_cluster['id'], host_id=host['id'])
-    service = client.cluster.service.create(cluster_id=prepared_cluster['id'],
-                                            prototype_id=client.stack.service.list()[0]['id'])
-    client.host.action.run.create(
-        action_id=utils.filter_action_by_name(
-            client.host.action.list(host_id=host['id']), 'action-locker')[0]['id'],
-        host_id=host['id'])
-    assert client.cluster.host.read(cluster_id=prepared_cluster['id'],
-                                    host_id=host['id'])['state'] == 'locked'
-    assert client.cluster.read(cluster_id=prepared_cluster['id'])['state'] == 'locked'
-    assert client.cluster.service.read(cluster_id=prepared_cluster['id'],
-                                       service_id=service['id'])['state'] == 'locked'
-
-
-def test_run_service_action_locked_all_objects_in_cluster(client, prepared_cluster, host):
-    client.cluster.host.create(cluster_id=prepared_cluster['id'], host_id=host['id'])
-    service = client.cluster.service.create(cluster_id=prepared_cluster['id'],
-                                            prototype_id=client.stack.service.list()[0]['id'])
-    client.cluster.service.action.run.create(
-        action_id=utils.filter_action_by_name(
-            client.cluster.service.action.list(cluster_id=prepared_cluster['id'],
-                                               service_id=service['id']),
-            'service-lock')[0]['id'],
-        cluster_id=prepared_cluster['id'],
-        service_id=service['id'])
-    sleep(1)
-    assert client.cluster.service.read(cluster_id=prepared_cluster['id'],
-                                       service_id=service['id'])['state'] == 'locked'
-    assert client.cluster.read(cluster_id=prepared_cluster['id'])['state'] == 'locked'
-    assert client.cluster.host.read(cluster_id=prepared_cluster['id'],
-                                    host_id=host['id'])['state'] == 'locked'
-
-
-def test_cluster_should_be_unlocked_when_ansible_task_killed(client, prepared_cluster):
-    task = client.cluster.action.run.create(
-        action_id=utils.get_action_by_name(client, prepared_cluster, 'lock-terminate')['id'],
-        cluster_id=prepared_cluster['id'])
-    assert client.cluster.read(cluster_id=prepared_cluster['id'])['state'] == 'locked'
-    utils.wait_until(client, task)
-    assert client.cluster.read(cluster_id=prepared_cluster['id'])['state'] == 'terminate_failed'
-
-
-def test_host_should_be_unlocked_when_ansible_task_killed(client, prepared_cluster, host):
-    client.cluster.host.create(cluster_id=prepared_cluster['id'], host_id=host['id'])
-    task = client.cluster.action.run.create(
-        action_id=utils.get_action_by_name(client, prepared_cluster, 'lock-terminate')['id'],
-        cluster_id=prepared_cluster['id'])
-    assert client.host.read(host_id=host['id'])['state'] == 'locked'
-    utils.wait_until(client, task)
-    assert client.host.read(host_id=host['id'])['state'] == 'created'
-
-
-def test_service_should_be_unlocked_when_ansible_task_killed(client, prepared_cluster):
-    service = client.cluster.service.create(cluster_id=prepared_cluster['id'],
-                                            prototype_id=client.stack.service.list()[0]['id'])
-    task = client.cluster.action.run.create(
-        action_id=utils.get_action_by_name(client, prepared_cluster, 'lock-terminate')['id'],
-        cluster_id=prepared_cluster['id'])
-    assert client.cluster.service.read(cluster_id=prepared_cluster['id'],
-                                       service_id=service['id'])['state'] == 'locked'
-    utils.wait_until(client, task)
-    assert client.cluster.service.read(cluster_id=prepared_cluster['id'],
-                                       service_id=service['id'])['state'] == 'created'
-
-
-def test_hostprovider_must_be_unlocked_when_his_task_finished(client, hostprovider):
-    action_id = utils.filter_action_by_name(
-        client.provider.action.list(provider_id=hostprovider['id']), 'action-locker')[0]['id']
-    task = client.provider.action.run.create(
-        action_id=action_id,
-        provider_id=hostprovider['id']
+def cluster(sdk_client_fs: ADCMClient) -> Cluster:
+    uploaded_bundle = sdk_client_fs.upload_from_fs(
+        utils.get_data_dir(__file__, "cluster")
     )
-    assert client.provider.read(provider_id=hostprovider['id'])['state'] == 'locked'
-    utils.wait_until(client, task)
-    assert client.provider.read(provider_id=hostprovider['id'])['state'] == 'created'
+    return uploaded_bundle.cluster_prototype().cluster_create(name=random_string())
+
+
+@pytest.fixture()
+def host_provider(sdk_client_fs: ADCMClient) -> Provider:
+    provider_bundle = sdk_client_fs.upload_from_fs(
+        utils.get_data_dir(__file__, "provider")
+    )
+    return provider_bundle.provider_prototype().provider_create(random_string())
+
+
+@pytest.fixture()
+def host(host_provider: Provider) -> Host:
+    return host_provider.host_create(random_string())
+
+
+@pytest.fixture()
+def complete_cluster(cluster: Cluster, host: Host):
+    cluster.host_add(host)
+    service = cluster.service_add(name="dummy")
+    cluster.hostcomponent_set((host, service.component(name="dummy")))
+    return cluster
+
+
+class TestClusterLock:
+    def test_lock_unlock(self, cluster, host):
+        """
+        Test that cluster locked when action running and unlocked when action ends
+        """
+        cluster.host_add(host)
+        is_free(cluster)
+        task = _lock_obj(cluster)
+        is_locked(cluster)
+        task.wait()
+        is_free(cluster)
+
+    def test_down_lock(self, complete_cluster, host, sdk_client_fs):
+        """
+        Test that cluster lock also locks:
+            - all cluster services
+            - all service components
+            - all hosts with components
+        """
+        task = _lock_obj(complete_cluster)
+        for service in complete_cluster.service_list():
+            is_locked(service)
+            for component in service.component_list():
+                is_locked(component)
+        for hc in complete_cluster.hostcomponent():
+            is_locked(sdk_client_fs.host(id=hc["host_id"]))
+        task.wait()
+        for service in complete_cluster.service_list():
+            is_free(service)
+            for component in service.component_list():
+                is_free(component)
+        for hc in complete_cluster.hostcomponent():
+            is_free(sdk_client_fs.host(id=hc["host_id"]))
+
+    def test_no_horizontal_lock(self, cluster: Cluster):
+        """
+        Test that no horizontal lock when cluster locked
+        """
+        second_cluster = cluster.prototype().cluster_create(name=random_string())
+        _lock_obj(cluster)
+        is_free(second_cluster)
+
+
+class TestServiceLock:
+    def test_lock_unlock(self, cluster, host):
+        """
+        Test that service locked when action running and unlocked when action ends
+        """
+        cluster.host_add(host)
+        service = cluster.service_add(name="dummy")
+        is_free(service)
+        task = _lock_obj(service)
+        is_locked(service)
+        task.wait()
+        is_free(service)
+
+    def test_up_lock(self, complete_cluster):
+        """
+        Test that service lock also locks parent objects:
+            - Cluster
+        """
+        task = _lock_obj(complete_cluster.service(name="dummy"))
+        is_locked(complete_cluster)
+        task.wait()
+        is_free(complete_cluster)
+
+    def test_down_lock(self, complete_cluster, host):
+        """
+        Test that service lock also locks child objects:
+            - Components
+            - Hosts
+        """
+        service = complete_cluster.service(name="dummy")
+        task = _lock_obj(service)
+        for component in service.component_list():
+            is_locked(component)
+        is_locked(host)
+        task.wait()
+        for component in service.component_list():
+            is_free(component)
+        is_free(host)
+
+    def test_no_horizontal_lock(self, complete_cluster):
+        """
+        Test that no horizontal lock when service locked
+        """
+        second_service = complete_cluster.service_add(name="second")
+        _lock_obj(complete_cluster.service(name="dummy"))
+        is_free(second_service)
+
+
+class TestComponentLock:
+    def test_lock_unlock(self, complete_cluster, host):
+        """
+        Test that component locked when action running and unlocked when action ends
+        """
+        service = complete_cluster.service(name="dummy")
+        component = service.component(name="dummy")
+
+        is_free(component)
+        task = _lock_obj(component)
+        task.wait()
+        is_free(service)
+
+    def test_up_lock(self, complete_cluster):
+        """
+        Test that component lock also locks parent objects:
+            - Service
+            - Cluster
+        """
+        service = complete_cluster.service(name="dummy")
+        task = _lock_obj(service.component(name="dummy"))
+        is_locked(service)
+        is_locked(complete_cluster)
+        task.wait()
+        is_free(service)
+        is_free(complete_cluster)
+
+    def test_down_lock(self, complete_cluster, host):
+        """
+        Test that component lock also locks child objects:
+            - Host
+        """
+        task = _lock_obj(complete_cluster.service(name="dummy").component(name="dummy"))
+        is_locked(host)
+        task.wait()
+        is_free(host)
+
+    def test_no_horizontal_lock(self, complete_cluster):
+        """
+        Test that no horizontal lock when component locked
+        """
+        service = complete_cluster.service(name="dummy")
+        _lock_obj(service.component(name="dummy"))
+        is_free(service.component(name="second"))
+
+
+class TestHostLock:
+    def test_lock_unlock(self, host):
+        """
+        Test that host locked when action running and unlocked when action ends
+        """
+        is_free(host)
+        task = _lock_obj(host)
+        is_locked(host)
+        task.wait()
+        is_free(host)
+
+    def test_up_lock(self, complete_cluster, host_provider, host):
+        """
+        Test that host lock also locks parent objects:
+            - Component
+            - Service
+            - Cluster
+        """
+        service = complete_cluster.service(name="dummy")
+        component = service.component(name="dummy")
+        task = _lock_obj(host)
+        is_locked(component)
+        is_locked(service)
+        is_locked(complete_cluster)
+        task.wait()
+        is_free(component)
+        is_free(service)
+        is_free(complete_cluster)
+
+    def test_no_horizontal_lock(self, host_provider, host):
+        """
+        Test that no horizontal lock when host locked
+        """
+        second_host = host_provider.host_create(fqdn=random_string())
+        _lock_obj(host)
+        is_free(second_host)
+
+
+class TestHostProviderLock:
+    def test_lock_unlock(self, host_provider):
+        """
+        Test that host provider locked when action running and unlocked when action ends
+        """
+        is_free(host_provider)
+        task = _lock_obj(host_provider)
+        is_locked(host_provider)
+        task.wait()
+        is_free(host_provider)
+
+    def test_down_lock(self, host_provider, host):
+        """
+        Test that provider lock also locks child objects:
+            - Host
+        """
+        task = _lock_obj(host_provider)
+        is_locked(host)
+        task.wait()
+        is_free(host)
+
+    def test_no_horizontal_lock(self, host_provider):
+        """
+        Test that no horizontal lock when host locked
+        """
+        second_provider = host_provider.prototype().provider_create(
+            name=random_string()
+        )
+        _lock_obj(host_provider)
+        is_free(second_provider)
+
+
+def test_cluster_should_be_unlocked_when_ansible_task_killed(cluster: Cluster):
+    with allure.step("Run cluster action: lock-terminate for cluster"):
+        task = cluster.action(name="lock-terminate").run()
+    is_locked(cluster)
+    task.wait()
+    assert_state(cluster, "terminate_failed")
+
+
+def test_host_should_be_unlocked_when_ansible_task_killed(
+    complete_cluster: Cluster, host: Host
+):
+    with allure.step("Run action: lock-terminate for cluster"):
+        task = complete_cluster.action(name="lock-terminate").run()
+
+    is_locked(host)
+    task.wait()
+    is_free(host)
+
+
+def test_service_should_be_unlocked_when_ansible_task_killed(complete_cluster: Cluster):
+    service = complete_cluster.service(name="dummy")
+    with allure.step("Run action: lock-terminate for cluster"):
+        task = complete_cluster.action(name="lock-terminate").run()
+    is_locked(service)
+    task.wait()
+    is_free(service)
+
+
+def _lock_obj(obj) -> Task:
+    """
+    Run action lock on object
+    """
+    with allure.step(f"Lock {obj.__class__.__name__}"):
+        return obj.action(name="lock").run()
+
+
+def is_locked(
+    obj: Union[Cluster, Service, Component, Provider, Host]
+):
+    """
+    Assert that object state is 'locked' and action list is empty
+    """
+
+    with allure.step(f"Assert that {obj.__class__.__name__} is locked"):
+        assert_state(obj=obj, state="locked")
+        assert (
+            obj.action_list() == []
+        ), f"{obj.__class__.__name__} action list isn't empty. {obj.__class__.__name__} not locked"
+
+
+def is_free(
+        obj: Union[Cluster, Service, Component, Provider, Host]
+):
+    """
+    Assert that object state is 'created' and action list isn't empty
+    """
+    with allure.step(f"Assert that {obj.__class__.__name__} is free"):
+        assert_state(obj, state="created")
+        assert obj.action_list(), f"{obj.__class__.__name__} action list is empty. " \
+                                  f"Actions should be available for unlocked objects"

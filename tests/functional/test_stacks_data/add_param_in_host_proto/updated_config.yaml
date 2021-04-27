@@ -20,7 +20,7 @@
         do-something:
             type: job
             script: job.py
-            script_type: task_generator
+            script_type: ansible
     config:
         required:
             type: integer

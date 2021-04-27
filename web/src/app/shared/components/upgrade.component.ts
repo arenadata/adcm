@@ -15,6 +15,7 @@ import { ApiService } from '@app/core/api';
 import { EmmitRow, Issue, isIssue } from '@app/core/types';
 import { concat, Observable, of } from 'rxjs';
 import { filter, map, switchMap } from 'rxjs/operators';
+import { EventHelper } from '@adwp-ui/widgets';
 
 import { BaseDirective } from '../directives';
 import { DialogComponent } from './dialog.component';
@@ -46,7 +47,7 @@ interface Upgrade {
       color="warn"
       [disabled]="!checkIssue()"
       [matMenuTriggerFor]="menu"
-      (click)="$event.stopPropagation()"
+      (click)="EventHelper.stopPropagation($event)"
     >
       <mat-icon>sync_problem</mat-icon>
     </button>
@@ -60,14 +61,16 @@ interface Upgrade {
   `
 })
 export class UpgradeComponent extends BaseDirective {
+  EventHelper = EventHelper;
+
   list$: Observable<Upgrade[]>;
-  row: UpgradeItem = { upgradable: false, upgrade: '', issue: null };
+  pRow: UpgradeItem = { upgradable: false, upgrade: '', issue: null };
 
   @Input() xPosition = 'before';
 
   @Input()
-  set dataRow(row: UpgradeItem) {
-    this.row = row;
+  set row(row: UpgradeItem) {
+    this.pRow = row;
     if (row.upgrade) {
       this.list$ = this.api.get(`${row.upgrade}?ordering=-name`).pipe(filter((list: Upgrade[]) => !!list.length));
     }
@@ -81,7 +84,7 @@ export class UpgradeComponent extends BaseDirective {
   }
 
   checkIssue() {
-    return this.row.upgradable && !isIssue(this.row.issue);
+    return this.pRow.upgradable && !isIssue(this.pRow.issue);
   }
 
   runUpgrade(item: Upgrade) {

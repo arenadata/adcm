@@ -13,7 +13,7 @@ import { Component, DebugElement } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { SharedModule } from '@app/shared';
+import { SharedModule } from '@app/shared/shared.module';
 
 import { HoverDirective } from './hover.directive';
 
@@ -53,7 +53,7 @@ describe('HoverStatusTaskDirective', () => {
   });
 
   // mousehover
-  it('should change icon `block` by mouseover', () => {    
+  it('should change icon `block` by mouseover', () => {
     a.triggerEventHandler('mouseover', {});
     fixture.detectChanges();
     expect(a.nativeElement.querySelector('mat-icon').innerText).toEqual('block');

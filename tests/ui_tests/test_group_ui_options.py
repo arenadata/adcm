@@ -1,6 +1,7 @@
 import os
 import time
 
+import allure
 import pytest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import get_data_dir
@@ -23,7 +24,8 @@ INVISIBLE_GROUPS = ["invisible_advanced_activatable_active_group",
                     "advanced_invisible_group"]
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture()
+@allure.step('Upload bundle, create cluster and add service')
 def service(sdk_client_fs):
     bundle = sdk_client_fs.upload_from_fs(DATADIR)
     cluster = bundle.cluster_create(name='group_ui_options_test')
@@ -32,6 +34,7 @@ def service(sdk_client_fs):
 
 
 @pytest.fixture()
+@allure.step('Open Configuration page')
 def ui_config(app_fs, login_to_adcm, service):
     return Configuration(app_fs.driver,
                          "{}/cluster/{}/service/{}/config".format(app_fs.adcm.url,
@@ -68,15 +71,11 @@ def activatable_with_not_filled_required_fields(ui_config):
 
 
 def test_groups_count(group_elements):
-    """Check groups count
-    """
-    assert len(group_elements[0]) == group_elements[1], len(group_elements)
+    with allure.step('Check groups count'):
+        assert len(group_elements[0]) == group_elements[1], len(group_elements)
 
 
 def test_save_groups(group_elements, ui_config, sdk_client_fs: ADCMClient):
-    """Click save configuration button and check that configuration was saved
-    """
-
     app_fields = ui_config.get_app_fields()
     for textbox in app_fields:
         if "field_for_group_without_options:" in textbox.text:
@@ -89,14 +88,15 @@ def test_save_groups(group_elements, ui_config, sdk_client_fs: ADCMClient):
     service = sdk_client_fs.cluster(
         name="group_ui_options_test").service(name="group_ui_options_test")
     config = service.config()
-    assert config['group_ui_options_disabled']['field_for_group_without_options'] == 'shalalala', \
-        config['group_ui_options_disabled']['field_for_group_without_options']
-    assert len(config.keys()) == 12
-    for group in INVISIBLE_GROUPS:
-        assert group in config.keys(), config
+    with allure.step('Check that configuration was saved'):
+        assert config['group_ui_options_disabled']['field_for_group_without_options'] == \
+               'shalalala', config['group_ui_options_disabled']['field_for_group_without_options']
+        assert len(config.keys()) == 12
+        for group in INVISIBLE_GROUPS:
+            assert group in config.keys(), config
 
 
-@pytest.mark.parametrize("config_name, activatable", ACTIVATABLE_GROUPS,
+@pytest.mark.parametrize(("config_name", "activatable"), ACTIVATABLE_GROUPS,
                          ids=["Active True", "Active False"])
 def test_activatable_group_status(config_name, activatable, ui_config):
     """Check activatable group status after config creation
@@ -107,16 +107,17 @@ def test_activatable_group_status(config_name, activatable, ui_config):
     group_elements = ui_config.get_group_elements()
     toogle_status = 'No toogle status'
     status_text = ''
-    for group in group_elements:
-        if group.text == config_name:
-            toogle = group.find_element(*Common.mat_slide_toggle)
-            status_text = toogle.get_attribute("class")
-            toogle_status = 'mat-checked' in status_text
-            break
-    assert toogle_status == activatable, status_text
+    with allure.step('Check group status with config'):
+        for group in group_elements:
+            if group.text == config_name:
+                toogle = group.find_element(*Common.mat_slide_toggle)
+                status_text = toogle.get_attribute("class")
+                toogle_status = 'mat-checked' in status_text
+                break
+        assert toogle_status == activatable, status_text
 
 
 def test_activatable_with_not_filled_required_fields(activatable_with_not_filled_required_fields):
-    """Check that can save config if we have disabed activatable group with empty required fields
-    """
-    assert activatable_with_not_filled_required_fields
+    with allure.step('Check that can save config if we have '
+                     'disabed activatable group with empty required fields'):
+        assert activatable_with_not_filled_required_fields

@@ -24,6 +24,8 @@ class Menu:
     jobs = bys.by_class("topmenu_jobs")
     bundles = bys.by_class("topmenu_bundles")
 
+    job_button = bys.by_xpath('//button[@mattooltip="Show success jobs"]')
+
 
 class Common:
     """List page elements locators"""
@@ -115,6 +117,8 @@ class Service:
 
 
 class ConfigurationLocators:
+    """Configuration page elements locators"""
+
     description = bys.by_xpath("//*[@placeholder='Description configuration']")
     search_field = bys.by_id("config_search_input")
     config_save_button = bys.by_class("form_config_button_save")
@@ -136,3 +140,16 @@ class ConfigurationLocators:
     map_key_field = bys.by_class('key-field')
     map_value_field = bys.by_class('value-field')
     load_marker = bys.by_class('load_complete')
+
+
+class ActionPageLocators:
+    """Action page elements locators"""
+
+    action_run_button = bys.by_xpath('//mat-card//button')
+    run_action_popup = bys.by_class('cdk-overlay-pane')
+
+    class ActionRunPopup:
+        """Action run popup elements locators"""
+
+        verbose_chbx = bys.by_xpath('//mat-checkbox[./label/*[text()="Verbose"]]')
+        run_btn = bys.by_xpath('//button[./*[text()=" Run "]]')

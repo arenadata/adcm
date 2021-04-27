@@ -1,0 +1,5 @@
+
+---
+- type: cluster
+  name: "4"
+  version: ver4

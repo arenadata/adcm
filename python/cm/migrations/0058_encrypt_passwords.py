@@ -15,9 +15,6 @@ from django.db import migrations
 from cm.adcm_config import ansible_encrypt_and_format, obj_to_dict
 
 
-from cm.logger import log
-
-
 def get_prototype_config(proto, PrototypeConfig):
     spec = {}
     flist = ('default', 'required', 'type', 'limits')
@@ -73,10 +70,8 @@ def encrypt_passwords(apps, schema_editor):
     ConfigLog = apps.get_model('cm', 'ConfigLog')
     PrototypeConfig = apps.get_model('cm', 'PrototypeConfig')
     for model_name in 'Cluster', 'ClusterObject', 'HostProvider', 'Host', 'ADCM':
-        log.debug('QQ model %s', model_name)
         Model = apps.get_model('cm', model_name)
         for obj in Model.objects.filter(config__isnull=False):
-            log.debug('QQ model %s, obj %s', model_name, obj)
             process_objects(obj, ConfigLog, PrototypeConfig)
 
 

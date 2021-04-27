@@ -13,7 +13,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { ApiService } from '@app/core/api';
 import { getProfileSelector, settingsSave, State } from '@app/core/store';
-import { BaseDirective } from '@app/shared';
+import { BaseDirective } from '@app/shared/directives';
 import { IConfig } from '@app/shared/configuration/types';
 import { select, Store } from '@ngrx/store';
 import { exhaustMap, filter } from 'rxjs/operators';

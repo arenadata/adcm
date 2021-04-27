@@ -11,95 +11,89 @@
 # limitations under the License.
 import json
 import os
-import random
 
 import allure
 import pytest
+from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
-from adcm_pytest_plugin.docker import DockerWrapper
 from coreapi import exceptions
 from jsonschema import validate
 
 
-# pylint: disable=E0401, W0611, W0621
-from tests.library import errorcodes, steps
+# pylint: disable=protected-access
+from tests.library import errorcodes
 
 BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
 SCHEMAS = os.path.join(os.path.dirname(__file__), "schemas/")
 
 
-@pytest.fixture(scope="function")
-def adcm(image, request, adcm_credentials):
-    repo, tag = image
-    dw = DockerWrapper()
-    adcm = dw.run_adcm(image=repo, tag=tag, pull=False)
-    adcm.api.auth(**adcm_credentials)
-
-    def fin():
-        adcm.stop()
-
-    request.addfinalizer(fin)
-    return adcm
+def test_load_host_provider(sdk_client_fs: ADCMClient):
+    sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
+    with allure.step("Check bundle list"):
+        assert len(sdk_client_fs.bundle_list()) == 1
 
 
-@pytest.fixture(scope="function")
-def client(adcm):
-    return adcm.api.objects
+def test_validate_provider_prototype(sdk_client_fs: ADCMClient):
+    bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
+    with allure.step("Load provider prototype"):
+        provider_prototype = bundle.provider_prototype()._data
+        schema = json.load(
+            open(SCHEMAS + '/stack_list_item_schema.json')
+        )
+    with allure.step("Check provider prototype"):
+        assert validate(provider_prototype, schema) is None
 
 
-def test_load_host_provider(client):
-    steps.upload_bundle(client, BUNDLES + 'hostprovider_bundle')
-    assert client.stack.bundle.list() is not None
+def test_should_create_provider_wo_description(sdk_client_fs: ADCMClient):
+    bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
+    bundle.provider_create(name=utils.random_string())
+    with allure.step("Check provider list"):
+        assert len(sdk_client_fs.provider_list()) == 1
 
 
-def test_validate_provider_prototype(client):
-    steps.upload_bundle(client, BUNDLES + 'hostprovider_bundle')
-    provider_prototype = json.loads(json.dumps(client.stack.provider.list()[0]))
-    schema = json.load(
-        open(SCHEMAS + '/stack_list_item_schema.json')
+def test_should_create_provider_w_description(sdk_client_fs: ADCMClient):
+    bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
+    description = utils.random_string(140)
+    provider = bundle.provider_create(
+        name=utils.random_string(),
+        description=description)
+    with allure.step("Check provider with description"):
+        assert provider.description == description
+
+
+def test_get_provider_config(sdk_client_fs: ADCMClient):
+    bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
+    provider = bundle.provider_create(
+        name=utils.random_string())
+    with allure.step("Check provider config"):
+        assert provider.config() is not None
+
+
+@allure.link("https://jira.arenadata.io/browse/ADCM-472")
+def test_provider_shouldnt_be_deleted_when_it_has_host(sdk_client_fs: ADCMClient):
+    bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
+    provider = bundle.provider_create(name=utils.random_string())
+    provider.host_create(fqdn=utils.random_string())
+    with allure.step("Delete provider"):
+        with pytest.raises(exceptions.ErrorMessage) as e:
+            provider.delete()
+    with allure.step("Check error"):
+        errorcodes.PROVIDER_CONFLICT.equal(e, "There is host ", " of host provider ")
+
+
+def test_shouldnt_create_host_with_unknown_prototype(sdk_client_fs):
+    bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
+    provider = bundle.provider_create(
+        name=utils.random_string()
     )
-    assert validate(provider_prototype, schema) is None
-
-
-def test_should_create_provider_wo_description(client):
-    steps.upload_bundle(client, BUNDLES + 'hostprovider_bundle')
-    client.provider.create(prototype_id=client.stack.provider.list()[0]['id'],
-                           name=utils.random_string())
-    assert client.provider.list() is not None
-
-
-def test_should_create_provider_w_description(client):
-    steps.upload_bundle(client, BUNDLES + 'hostprovider_bundle')
-    description = utils.random_string()
-    provider = client.provider.create(prototype_id=client.stack.provider.list()[0]['id'],
-                                      name=utils.random_string(),
-                                      description=description)
-    assert provider['description'] == description
-
-
-def test_get_provider_config(client):
-    steps.upload_bundle(client, BUNDLES + 'hostprovider_bundle')
-    provider = client.provider.create(prototype_id=client.stack.provider.list()[0]['id'],
-                                      name=utils.random_string())
-    assert client.provider.config.current.list(provider_id=provider['id'])['config'] is not None
-
-
-@allure.link('https://jira.arenadata.io/browse/ADCM-472')
-def test_provider_shouldnt_be_deleted_when_it_has_host(client):
-    steps.upload_bundle(client, BUNDLES + 'hostprovider_bundle')
-    provider = steps.create_hostprovider(client)
-    client.host.create(prototype_id=client.stack.host.list()[0]['id'],
-                       provider_id=provider['id'],
-                       fqdn=utils.random_string())
-    with pytest.raises(exceptions.ErrorMessage) as e:
-        client.provider.delete(provider_id=provider['id'])
-    errorcodes.PROVIDER_CONFLICT.equal(e, 'There is host ', ' of host provider ')
-
-
-def test_shouldnt_create_host_with_unknown_prototype(client):
-    steps.upload_bundle(client, BUNDLES + 'hostprovider_bundle')
-    with pytest.raises(exceptions.ErrorMessage) as e:
-        client.host.create(prototype_id=client.stack.host.list()[0]['id'],
-                           provider_id=random.randint(100, 500),
-                           fqdn=utils.random_string())
-    errorcodes.PROVIDER_NOT_FOUND.equal(e, "provider doesn't exist")
+    with allure.step("Delete provider"):
+        provider.delete()
+    with allure.step("Create host"):
+        with pytest.raises(exceptions.ErrorMessage) as e:
+            # Using lack of auto refresh of object as workaround.
+            # If adcm_client object behaviour will be changed, test may fall.
+            provider.host_create(
+                fqdn=utils.random_string()
+            )
+    with allure.step("Check error provider doesnt exist"):
+        errorcodes.PROVIDER_NOT_FOUND.equal(e, "HostProvider", "does not exist")

@@ -29,20 +29,17 @@ from adcm.settings import REST_FRAMEWORK
 
 import cm.upgrade
 import cm.config as config
+from cm.errors import AdcmEx
 from cm.models import Action, ConfigLog, PrototypeConfig
-from cm.errors import AdcmApiEx
 from cm.logger import log
 
 
-def check_obj(model, req, error):
+def check_obj(model, req, error=None):
     if isinstance(req, dict):
         kw = req
     else:
         kw = {'id': req}
-    try:
-        return model.objects.get(**kw)
-    except ObjectDoesNotExist:
-        raise AdcmApiEx(error) from None
+    return model.obj.get(**kw)
 
 
 def hlink(view, lookup, lookup_url):
@@ -87,12 +84,14 @@ def get_upgradable_func(self, obj):
     return bool(cm.upgrade.get_upgrade(obj))
 
 
-def get_api_url_kwargs(obj, request):
+def get_api_url_kwargs(obj, request, no_obj_type=False):
     obj_type = obj.prototype.type
     kwargs = {
-        'object_type': obj_type,
         f'{obj_type}_id': obj.id,
     }
+    # Do not include object_type in kwargs if no_obj_type == True
+    if not no_obj_type:
+        kwargs['object_type'] = obj_type
     if obj_type == 'service':
         if 'cluster' in request.path:
             kwargs['cluster_id'] = obj.cluster.id
@@ -100,14 +99,23 @@ def get_api_url_kwargs(obj, request):
         if 'cluster' in request.path:
             kwargs['cluster_id'] = obj.cluster.id
     elif obj_type == 'component':
-        kwargs['service_id'] = obj.service.id
-        kwargs['cluster_id'] = obj.cluster.id
+        if 'cluster' in request.path:
+            kwargs['service_id'] = obj.service.id
+            kwargs['cluster_id'] = obj.cluster.id
+        elif 'service' in request.path:
+            kwargs['service_id'] = obj.service.id
     return kwargs
 
 
 class CommonAPIURL(serializers.HyperlinkedIdentityField):
     def get_url(self, obj, view_name, request, format):   # pylint: disable=redefined-builtin
         kwargs = get_api_url_kwargs(obj, request)
+        return reverse(view_name, kwargs=kwargs, request=request, format=format)
+
+
+class ObjectURL(serializers.HyperlinkedIdentityField):
+    def get_url(self, obj, view_name, request, format):   # pylint: disable=redefined-builtin
+        kwargs = get_api_url_kwargs(obj, request, True)
         return reverse(view_name, kwargs=kwargs, request=request, format=format)
 
 
@@ -177,12 +185,9 @@ def fix_ordering(field, view):
         fix = fix.replace('cluster_', 'cluster__')
     if view.__class__.__name__ not in ('BundleList',):
         fix = fix.replace('version', 'version_order')
-    if view.__class__.__name__ == 'ClusterServiceList':
+    if view.__class__.__name__ in ['ServiceListView', 'ComponentListView']:
         if 'display_name' in fix:
             fix = fix.replace('display_name', 'prototype__display_name')
-    elif view.__class__.__name__ == 'ServiceComponentList':
-        if 'display_name' in fix:
-            fix = fix.replace('display_name', 'component__display_name')
     return fix
 
 
@@ -262,7 +267,7 @@ class PageView(GenericAPIView, InterfaceView):
                 qp = ','.join([f'{k}={v}' for k, v in request.query_params.items()
                                if k in ['fields', 'distinct']])
                 msg = f'Bad query params: {qp}'
-                raise AdcmApiEx('BAD_QUERY_PARAMS', msg=msg) from None
+                raise AdcmEx('BAD_QUERY_PARAMS', msg=msg) from None
 
         page = self.paginate_queryset(obj)
         if self.is_paged(request):
@@ -278,15 +283,15 @@ class PageView(GenericAPIView, InterfaceView):
             return Response(obj)
 
         msg = 'Response is too long, use paginated request'
-        raise AdcmApiEx('TOO_LONG', msg=msg, args=self.get_paged_link())
+        raise AdcmEx('TOO_LONG', msg=msg, args=self.get_paged_link())
 
-    def get(self, request):
+    def get(self, request, *args, **kwargs):
         obj = self.filter_queryset(self.get_queryset())
         return self.get_page(obj, request)
 
 
 class PageViewAdd(PageView):
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         serializer_class = self.select_serializer(request)
         serializer = serializer_class(data=request.data, context={'request': request})
         return create(serializer)
@@ -317,7 +322,7 @@ class DetailViewRO(GenericAPIView, InterfaceView):
         try:
             return self.get_queryset().get(**kw_req)
         except ObjectDoesNotExist:
-            raise AdcmApiEx(self.error_code) from None
+            raise AdcmEx(self.error_code) from None
 
     def get_object(self):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field

@@ -9,20 +9,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { HttpClientModule } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { NgModule } from '@angular/core';
 
 import { ApiService } from './api/api.service';
 import { AuthGuard } from './auth/auth.guard';
 import { AuthService } from './auth/auth.service';
-import { httpInterseptorProviders, RequestCache, RequestCacheService } from './http-interseptors';
+import { RequestCacheService, RequestCache } from '@app/core/http-interseptors/request-cache.service';
+import { CachingInterseptor } from '@app/core/http-interseptors/caching-interseptor';
+import { AuthInterceptor } from '@app/core/http-interseptors/auth-interseptor';
 
 @NgModule({
   imports: [HttpClientModule],
   providers: [
     ApiService,
     { provide: RequestCache, useClass: RequestCacheService },
-    httpInterseptorProviders,
+    { provide: HTTP_INTERCEPTORS, useClass: CachingInterseptor, multi: true },
+    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
     AuthGuard,
     AuthService
   ],

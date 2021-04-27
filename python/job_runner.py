@@ -11,18 +11,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import sys
+# pylint: disable=unused-import
+
 import json
+import os
 import subprocess
+import sys
 
-import adcm.init_django		# pylint: disable=unused-import
-
-from cm.logger import log
+import adcm.init_django  # DO NOT DELETE !!!
 import cm.config as config
 import cm.job
-from cm.status_api import Event
+import cm.lock
+from cm.logger import log
 from cm.models import LogStorage
+from cm.status_api import Event
 
 
 def open_file(root, tag, job_id):
@@ -40,13 +42,13 @@ def read_config(job_id):
 
 def set_job_status(job_id, ret, pid, event):
     if ret == 0:
-        cm.job.set_job_status(job_id, config.Job.SUCCESS, event, pid)
+        cm.lock.set_job_status(job_id, config.Job.SUCCESS, event, pid)
         return 0
     elif ret == -15:
-        cm.job.set_job_status(job_id, config.Job.ABORTED, event, pid)
+        cm.lock.set_job_status(job_id, config.Job.ABORTED, event, pid)
         return 15
     else:
-        cm.job.set_job_status(job_id, config.Job.FAILED, event, pid)
+        cm.lock.set_job_status(job_id, config.Job.FAILED, event, pid)
         return ret
 
 
@@ -109,10 +111,12 @@ def run_ansible(job_id):
     if 'params' in conf['job']:
         if 'ansible_tags' in conf['job']['params']:
             cmd.append('--tags=' + conf['job']['params']['ansible_tags'])
+    if 'verbose' in conf['job'] and conf['job']['verbose']:
+        cmd.append('-vvvv')
 
     proc = subprocess.Popen(cmd, env=env_configuration(conf), stdout=out_file, stderr=err_file)
     log.info("job #%s run cmd: %s", job_id, ' '.join(cmd))
-    cm.job.set_job_status(job_id, config.Job.RUNNING, event, proc.pid)
+    cm.lock.set_job_status(job_id, config.Job.RUNNING, event, proc.pid)
     event.send_state()
     log.info("run ansible job #%s, pid %s, playbook %s", job_id, proc.pid, playbook)
     ret = proc.wait()

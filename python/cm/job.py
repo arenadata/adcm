@@ -11,6 +11,7 @@
 # limitations under the License.
 
 # pylint: disable=too-many-arguments, too-many-branches, too-many-nested-blocks
+# pylint: disable=inconsistent-return-statements
 
 import json
 import os
@@ -27,10 +28,11 @@ from django.db import transaction
 from django.utils import timezone
 
 import cm.config as config
-from cm import api, issue, inventory, adcm_config
+from cm import api, issue, inventory, adcm_config, variant
 from cm.adcm_config import obj_ref, process_file_type
 from cm.errors import raise_AdcmEx as err
 from cm.inventory import get_obj_config, process_config_and_attr
+from cm.lock import lock_objects, unlock_objects, set_task_status, set_job_status
 from cm.logger import log
 from cm.models import (
     Cluster, Action, SubAction, TaskLog, JobLog, CheckLog, Host, ADCM,
@@ -40,12 +42,8 @@ from cm.models import (
 from cm.status_api import Event, post_event
 
 
-def start_task(action_id, selector, conf, attr, hc, hosts):   # pylint: disable=too-many-locals
-    try:
-        action = Action.objects.get(id=action_id)
-    except Action.DoesNotExist:
-        err('ACTION_NOT_FOUND')
-
+def start_task(action_id, selector, conf, attr, hc, hosts, verbose):   # pylint: disable=too-many-locals
+    action = Action.obj.get(id=action_id)
     obj, cluster, provider = check_task(action, selector, conf)
     act_conf, spec = check_action_config(action, obj, conf, attr)
     host_map, delta = check_hostcomponentmap(cluster, action, hc)
@@ -58,7 +56,8 @@ def start_task(action_id, selector, conf, attr, hc, hosts):   # pylint: disable=
 
     event = Event()
     task = prepare_task(
-        action, obj, selector, act_conf, attr, spec, old_hc, delta, host_map, cluster, hosts, event
+        action, obj, selector, act_conf, attr, spec, old_hc, delta, host_map, cluster, hosts,
+        event, verbose
     )
     event.send_state()
     run_task(task, event)
@@ -87,10 +86,7 @@ def check_action_hosts(action, cluster, provider, hosts):
     for host_id in hosts:
         if not isinstance(host_id, int):
             err('TASK_ERROR', f'host id should be integer ({host_id})')
-        try:
-            host = Host.objects.get(id=host_id)
-        except Host.DoesNotExist:
-            err('TASK_ERROR', f'Can not find host with id #{host_id}')
+        host = Host.obj.get(id=host_id)
         if cluster and host.cluster != cluster:
             err('TASK_ERROR', f'host #{host_id} does not belong to cluster #{cluster.id}')
         if provider and host.provider != provider:
@@ -98,17 +94,24 @@ def check_action_hosts(action, cluster, provider, hosts):
 
 
 @transaction.atomic
-def prepare_task(action, obj, selector, conf, attr, spec, old_hc, delta, host_map, cluster,
-                 hosts, event):
+def prepare_task(action, obj, selector, conf, attr, spec, old_hc, delta, host_map, cluster,   # pylint: disable=too-many-locals
+                 hosts, event, verbose):
     lock_objects(obj, event)
+
+    if not attr:
+        attr = {}
 
     if host_map:
         api.save_hc(cluster, host_map)
 
     if action.type == 'task':
-        task = create_task(action, selector, obj, conf, attr, old_hc, delta, hosts, event)
+        task = create_task(
+            action, selector, obj, conf, attr, old_hc, delta, hosts, event, verbose
+        )
     else:
-        task = create_one_job_task(action, selector, obj, conf, attr, old_hc, hosts, event)
+        task = create_one_job_task(
+            action, selector, obj, conf, attr, old_hc, hosts, event, verbose
+        )
         _job = create_job(action, None, selector, event, task.id)
 
     if conf:
@@ -198,118 +201,6 @@ def check_action_state(action, obj):
     err('TASK_ERROR', 'action is disabled')
 
 
-def lock_obj(obj, event):
-    stack = obj.stack
-
-    if not stack:
-        stack = [obj.state]
-    elif stack[-1] != obj.state:
-        stack.append(obj.state)
-
-    log.debug('lock %s, stack: %s', obj_ref(obj), stack)
-    obj.stack = stack
-    api.set_object_state(obj, config.Job.LOCKED, event)
-
-
-def unlock_obj(obj, event):
-    if obj.stack:
-        stack = obj.stack
-    else:
-        log.warning('no stack in %s for unlock', obj_ref(obj))
-        return
-    try:
-        state = stack.pop()
-    except IndexError:
-        log.warning('empty stack in %s for unlock', obj_ref(obj))
-        return
-    log.debug('unlock %s, stack: %s', obj_ref(obj), stack)
-    obj.stack = stack
-    api.set_object_state(obj, state, event)
-
-
-def lock_objects(obj, event):
-    if isinstance(obj, ClusterObject):
-        lock_obj(obj, event)
-        lock_obj(obj.cluster, event)
-        for host in Host.objects.filter(cluster=obj.cluster):
-            lock_obj(host, event)
-    elif isinstance(obj, Host):
-        lock_obj(obj, event)
-        if obj.cluster:
-            lock_obj(obj.cluster, event)
-            for service in ClusterObject.objects.filter(cluster=obj.cluster):
-                lock_obj(service, event)
-    elif isinstance(obj, HostProvider):
-        lock_obj(obj, event)
-        for host in Host.objects.filter(provider=obj):
-            lock_obj(host, event)
-    elif isinstance(obj, ADCM):
-        lock_obj(obj, event)
-    elif isinstance(obj, Cluster):
-        lock_obj(obj, event)
-        for service in ClusterObject.objects.filter(cluster=obj):
-            lock_obj(service, event)
-        for host in Host.objects.filter(cluster=obj):
-            lock_obj(host, event)
-    else:
-        log.warning('lock_objects: unknown object type: %s', obj)
-
-
-def unlock_deleted_objects(job, event):
-    if not job:
-        log.warning('unlock_deleted_objects: no job')
-        return
-    selector = job.selector
-    if 'cluster' in selector:
-        cluster = Cluster.objects.get(id=selector['cluster'])
-        unlock_objects(cluster, event)
-
-
-def unlock_objects(obj, event, job=None):
-    if isinstance(obj, ClusterObject):
-        unlock_obj(obj, event)
-        unlock_obj(obj.cluster, event)
-        for host in Host.objects.filter(cluster=obj.cluster):
-            unlock_obj(host, event)
-    elif isinstance(obj, Host):
-        unlock_obj(obj, event)
-        if obj.cluster:
-            unlock_obj(obj.cluster, event)
-            for service in ClusterObject.objects.filter(cluster=obj.cluster):
-                unlock_obj(service, event)
-    elif isinstance(obj, HostProvider):
-        unlock_obj(obj, event)
-        for host in Host.objects.filter(provider=obj):
-            unlock_obj(host, event)
-    elif isinstance(obj, ADCM):
-        unlock_obj(obj, event)
-    elif isinstance(obj, Cluster):
-        unlock_obj(obj, event)
-        for service in ClusterObject.objects.filter(cluster=obj):
-            unlock_obj(service, event)
-        for host in Host.objects.filter(cluster=obj):
-            unlock_obj(host, event)
-    elif obj is None:
-        unlock_deleted_objects(job, event)
-    else:
-        log.warning('unlock_objects: unknown object type: %s', obj)
-
-
-def unlock_all(event):
-    for obj in Cluster.objects.filter(state=config.Job.LOCKED):
-        unlock_objects(obj, event)
-    for obj in HostProvider.objects.filter(state=config.Job.LOCKED):
-        unlock_objects(obj, event)
-    for obj in ClusterObject.objects.filter(state=config.Job.LOCKED):
-        unlock_objects(obj, event)
-    for obj in Host.objects.filter(state=config.Job.LOCKED):
-        unlock_objects(obj, event)
-    for task in TaskLog.objects.filter(status=config.Job.RUNNING):
-        set_task_status(task, config.Job.ABORTED, event)
-    for job in JobLog.objects.filter(status=config.Job.RUNNING):
-        set_job_status(job.id, config.Job.ABORTED, event)
-
-
 def check_action_config(action, obj, conf, attr):
     proto = action.prototype
     spec, flat_spec, _, _ = adcm_config.get_prototype_config(proto, action)
@@ -322,7 +213,7 @@ def check_action_config(action, obj, conf, attr):
         cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
         obj_conf = cl.config
     adcm_config.check_attr(proto, attr, flat_spec)
-    adcm_config.process_variant(obj, spec, obj_conf)
+    variant.process_variant(obj, spec, obj_conf)
     new_conf = adcm_config.check_config_spec(proto, action, spec, flat_spec, conf, None, attr)
     return new_conf, spec
 
@@ -410,70 +301,49 @@ def check_selector(selector, key):
 
 
 def check_service_task(cluster_id, action):
+    cluster = Cluster.obj.get(id=cluster_id)
     try:
-        cluster = Cluster.objects.get(id=cluster_id)
-        try:
-            service = ClusterObject.objects.get(cluster=cluster, prototype=action.prototype)
-            return service
-        except ClusterObject.DoesNotExist:
-            msg = (f'service #{action.prototype.id} for action '
-                   f'"{action.name}" is not installed in cluster #{cluster.id}')
-            err('CLUSTER_SERVICE_NOT_FOUND', msg)
-    except Cluster.DoesNotExist:
-        err('CLUSTER_NOT_FOUND')
+        service = ClusterObject.objects.get(cluster=cluster, prototype=action.prototype)
+        return service
+    except ClusterObject.DoesNotExist:
+        msg = (f'service #{action.prototype.id} for action '
+               f'"{action.name}" is not installed in cluster #{cluster.id}')
+        err('CLUSTER_SERVICE_NOT_FOUND', msg)
 
 
 def check_component_task(cluster_id, action):
+    cluster = Cluster.obj.get(id=cluster_id)
     try:
-        cluster = Cluster.objects.get(id=cluster_id)
-        try:
-            component = ServiceComponent.objects.get(cluster=cluster, prototype=action.prototype)
-            return component
-        except ServiceComponent.DoesNotExist:
-            msg = (f'component #{action.prototype.id} for action '
-                   f'"{action.name}" is not installed in cluster #{cluster.id}')
-            err('COMPONENT_NOT_FOUND', msg)
-    except Cluster.DoesNotExist:
-        err('CLUSTER_NOT_FOUND')
+        component = ServiceComponent.objects.get(cluster=cluster, prototype=action.prototype)
+        return component
+    except ServiceComponent.DoesNotExist:
+        msg = (f'component #{action.prototype.id} for action '
+               f'"{action.name}" is not installed in cluster #{cluster.id}')
+        err('COMPONENT_NOT_FOUND', msg)
 
 
 def check_cluster(cluster_id):
-    try:
-        cluster = Cluster.objects.get(id=cluster_id)
-        return cluster
-    except Cluster.DoesNotExist:
-        err('CLUSTER_NOT_FOUND')
+    return Cluster.obj.get(id=cluster_id)
 
 
 def check_provider(provider_id):
-    try:
-        provider = HostProvider.objects.get(id=provider_id)
-        return provider
-    except HostProvider.DoesNotExist:
-        err('PROVIDER_NOT_FOUND')
+    return HostProvider.obj.get(id=provider_id)
 
 
 def check_adcm(adcm_id):
-    try:
-        adcm = ADCM.objects.get(id=adcm_id)
-        return adcm
-    except ADCM.DoesNotExist:
-        err('ADCM_NOT_FOUND')
+    return ADCM.obj.get(id=adcm_id)
 
 
 def check_host(host_id, selector):
-    try:
-        host = Host.objects.get(id=host_id)
-        if 'cluster' in selector:
-            if not host.cluster:
-                msg = f'Host #{host_id} does not belong to any cluster'
-                err('HOST_NOT_FOUND', msg)
-            if host.cluster.id != selector['cluster']:
-                msg = f'Host #{host_id} does not belong to cluster #{selector["cluster"]}'
-                err('HOST_NOT_FOUND', msg)
-        return host
-    except Host.DoesNotExist:
-        err('HOST_NOT_FOUND')
+    host = Host.obj.get(id=host_id)
+    if 'cluster' in selector:
+        if not host.cluster:
+            msg = f'Host #{host_id} does not belong to any cluster'
+            err('HOST_NOT_FOUND', msg)
+        if host.cluster.id != selector['cluster']:
+            msg = f'Host #{host_id} does not belong to cluster #{selector["cluster"]}'
+            err('HOST_NOT_FOUND', msg)
+    return host
 
 
 def get_bundle_root(action):
@@ -493,11 +363,8 @@ def cook_script(action, sub_action):
 
 
 def get_adcm_config():
-    try:
-        adcm = ADCM.objects.get()
-        return get_obj_config(adcm)
-    except ADCM.DoesNotExist:
-        return {}
+    adcm = ADCM.obj.get()
+    return get_obj_config(adcm)
 
 
 def get_new_hc(cluster):
@@ -515,7 +382,7 @@ def get_old_hc(saved_hc):
         service = ClusterObject.objects.get(id=hc['service_id'])
         comp = ServiceComponent.objects.get(id=hc['component_id'])
         host = Host.objects.get(id=hc['host_id'])
-        key = cook_comp_key(service.prototype.name, comp.component.name)
+        key = cook_comp_key(service.prototype.name, comp.prototype.name)
         add_to_dict(old_hc, key, host.fqdn, host)
     return old_hc
 
@@ -538,12 +405,12 @@ def re_prepare_job(task, job):
         new_hc = get_new_hc(cluster)
         old_hc = get_old_hc(task.hostcomponentmap)
         delta = cook_delta(cluster, new_hc, action.hostcomponentmap, old_hc)
-    prepare_job(action, sub_action, selector, job.id, obj, conf, delta, hosts)
+    prepare_job(action, sub_action, selector, job.id, obj, conf, delta, hosts, task.verbose)
 
 
-def prepare_job(action, sub_action, selector, job_id, obj, conf, delta, hosts):
-    prepare_job_config(action, sub_action, selector, job_id, obj, conf)
-    inventory.prepare_job_inventory(selector, job_id, delta, hosts)
+def prepare_job(action, sub_action, selector, job_id, obj, conf, delta, hosts, verbose):
+    prepare_job_config(action, sub_action, selector, job_id, obj, conf, verbose)
+    inventory.prepare_job_inventory(selector, job_id, action, delta, hosts)
     prepare_ansible_config(job_id, action, sub_action)
 
 
@@ -561,7 +428,7 @@ def prepare_context(selector):
     if 'provider' in selector:
         context['type'] = 'provider'
         context['provider_id'] = selector['provider']
-    if 'host' in selector:
+    if 'host' in selector and 'type' not in context:
         context['type'] = 'host'
         context['host_id'] = selector['host']
     if 'adcm' in selector:
@@ -570,7 +437,7 @@ def prepare_context(selector):
     return context
 
 
-def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
+def prepare_job_config(action, sub_action, selector, job_id, obj, conf, verbose):
     job_conf = {
         'adcm': {'config': get_adcm_config()},
         'context': prepare_context(selector),
@@ -587,6 +454,7 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
             'job_name': action.name,
             'command': action.name,
             'script': action.script,
+            'verbose': verbose,
             'playbook': cook_script(action, sub_action)
         },
     }
@@ -636,14 +504,14 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf):
     fd.close()
 
 
-def create_task(action, selector, obj, conf, attr, hc, delta, hosts, event):
-    task = create_one_job_task(action, selector, obj, conf, attr, hc, hosts, event)
+def create_task(action, selector, obj, conf, attr, hc, delta, hosts, event, verbose):
+    task = create_one_job_task(action, selector, obj, conf, attr, hc, hosts, event, verbose)
     for sub in SubAction.objects.filter(action=action):
         _job = create_job(action, sub, selector, event, task.id)
     return task
 
 
-def create_one_job_task(action, selector, obj, conf, attr, hc, hosts, event):
+def create_one_job_task(action, selector, obj, conf, attr, hc, hosts, event, verbose):
     task = TaskLog(
         action_id=action.id,
         object_id=obj.id,
@@ -652,6 +520,7 @@ def create_one_job_task(action, selector, obj, conf, attr, hc, hosts, event):
         attr=attr,
         hostcomponentmap=hc,
         hosts=hosts,
+        verbose=verbose,
         start_date=timezone.now(),
         finish_date=timezone.now(),
         status=config.Job.CREATED,
@@ -681,18 +550,6 @@ def create_job(action, sub_action, selector, event, task_id=0):
     return job
 
 
-def set_job_status(job_id, status, event, pid=0):
-    JobLog.objects.filter(id=job_id).update(status=status, pid=pid, finish_date=timezone.now())
-    event.set_job_status(job_id, status)
-
-
-def set_task_status(task, status, event):
-    task.status = status
-    task.finish_date = timezone.now()
-    task.save()
-    event.set_task_status(task.id, status)
-
-
 def get_task_obj(context, obj_id):
     def get_obj_safe(model, obj_id):
         try:
@@ -700,7 +557,9 @@ def get_task_obj(context, obj_id):
         except model.DoesNotExist:
             return None
 
-    if context == 'service':
+    if context == 'component':
+        obj = get_obj_safe(ServiceComponent, obj_id)
+    elif context == 'service':
         obj = get_obj_safe(ClusterObject, obj_id)
     elif context == 'host':
         obj = get_obj_safe(Host, obj_id)
@@ -809,7 +668,7 @@ def get_log(job):
 
 def log_group_check(group, fail_msg, success_msg):
     logs = CheckLog.objects.filter(group=group).values('result')
-    result = all([log['result'] for log in logs])
+    result = all(log['result'] for log in logs)
 
     if result:
         msg = success_msg
@@ -822,12 +681,9 @@ def log_group_check(group, fail_msg, success_msg):
 
 
 def log_check(job_id, group_data, check_data):
-    try:
-        job = JobLog.objects.get(id=job_id)
-        if job.status != config.Job.RUNNING:
-            err('JOB_NOT_FOUND', f'job #{job.id} has status "{job.status}", not "running"')
-    except JobLog.DoesNotExist:
-        err('JOB_NOT_FOUND', f'no job with id #{job_id}')
+    job = JobLog.obj.get(id=job_id)
+    if job.status != config.Job.RUNNING:
+        err('JOB_NOT_FOUND', f'job #{job.id} has status "{job.status}", not "running"')
 
     group_title = group_data.pop('title')
 
@@ -886,16 +742,13 @@ def finish_check(job_id):
 
 
 def log_custom(job_id, name, log_format, body):
-    try:
-        job = JobLog.objects.get(id=job_id)
-        l1 = LogStorage.objects.create(
-            job=job, name=name, type='custom', format=log_format, body=body
-        )
-        post_event('add_job_log', 'job', job_id, {
-            'id': l1.id, 'type': l1.type, 'name': l1.name, 'format': l1.format,
-        })
-    except JobLog.DoesNotExist:
-        err('JOB_NOT_FOUND', f'no job with id #{job_id}')
+    job = JobLog.obj.get(id=job_id)
+    l1 = LogStorage.objects.create(
+        job=job, name=name, type='custom', format=log_format, body=body
+    )
+    post_event('add_job_log', 'job', job_id, {
+        'id': l1.id, 'type': l1.type, 'name': l1.name, 'format': l1.format,
+    })
 
 
 def check_all_status():
@@ -967,7 +820,8 @@ def prepare_ansible_config(job_id, action, sub_action):
         config_parser['defaults']['strategy_plugins'] = os.path.join(
             config.PYTHON_SITE_PACKAGES, 'ansible_mitogen/plugins/strategy')
         config_parser['defaults']['host_key_checking'] = 'False'
-
+    forks = adcm_conf['ansible_settings']['forks']
+    config_parser['defaults']['forks'] = str(forks)
     params = action.params
     if sub_action:
         params = sub_action.params

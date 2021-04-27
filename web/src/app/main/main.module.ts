@@ -12,7 +12,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-import { SharedModule } from '@app/shared';
+import { SharedModule } from '@app/shared/shared.module';
 import { MainRoutingModule } from '@app/main/routing.module';
 
 import { LoginComponent } from './login/login.component';
@@ -35,6 +35,6 @@ import { PageNotFoundComponent, FatalErrorComponent, GatewayTimeoutComponent } f
     ProgressComponent,
   ],
   exports: [TopComponent, ProgressComponent],
-  
+
 })
 export class MainModule {}

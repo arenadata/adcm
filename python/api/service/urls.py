@@ -19,11 +19,7 @@ urlpatterns = [
     path('', views.ServiceListView.as_view(), name='service'),
     path('<int:service_id>/', include([
         path('', views.ServiceDetailView.as_view(), name='service-details'),
-        path('component/', include([
-            path('', views.ServiceComponentListView.as_view(), name='service-component'),
-            path('<int:component_id>/', views.ServiceComponentDetailView.as_view(),
-                 name='service-component-details'),
-        ])),
+        path('component/', include('api.component.urls')),
         path('import/', views.ServiceImportView.as_view(), name='service-import'),
         path('bind/', include([
             path('', views.ServiceBindView.as_view(), name='service-bind'),

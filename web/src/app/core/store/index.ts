@@ -19,6 +19,7 @@ import { IssueEffect, issueReducer, IssueState } from './issue';
 import { ProfileEffects, profileReducer, ProfileState } from './profile';
 import { SocketEffect } from './sockets/socket.effect';
 import { socketReducer, SocketState } from './sockets/socket.reducer';
+import { NavigationEffects, navigationReducer, NavigationState } from '@app/store/navigation/navigation.store';
 
 export interface State {
   auth: AuthState;
@@ -26,6 +27,7 @@ export interface State {
   api: ApiState;
   profile: ProfileState;
   issue: IssueState;
+  navigation: NavigationState,
 }
 
 export const reducers: ActionReducerMap<State> = {
@@ -34,11 +36,12 @@ export const reducers: ActionReducerMap<State> = {
   api: apiReducer,
   profile: profileReducer,
   issue: issueReducer,
+  navigation: navigationReducer,
 };
 
 export const metaReducers: MetaReducer<State>[] = !environment.production ? [] : [];
 
-export const StoreEffects = [AuthEffects, ApiEffects, ProfileEffects, IssueEffect, SocketEffect];
+export const StoreEffects = [AuthEffects, ApiEffects, ProfileEffects, IssueEffect, SocketEffect, NavigationEffects];
 
 export * from '../api/api.reducer';
 export * from '../auth/auth.store';
@@ -47,3 +50,4 @@ export * from './profile/profile.service';
 export * from './issue';
 export * from './sockets/socket.service';
 export * from './sockets/socket.reducer';
+export * from '@app/store/navigation/navigation.store';

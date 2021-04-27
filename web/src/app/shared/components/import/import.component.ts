@@ -12,10 +12,12 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ValidatorFn } from '@angular/forms';
 import { MatCheckboxChange } from '@angular/material/checkbox';
-import { ChannelService, ClusterService, keyChannelStrim } from '@app/core';
-import { IExport, IImport } from '@app/core/types';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
+
+import { ChannelService, keyChannelStrim } from '@app/core';
+import { ClusterService } from '@app/core/services/cluster.service';
+import { IExport, IImport } from '@app/core/types';
 
 interface IComposite {
   [key: string]: number;

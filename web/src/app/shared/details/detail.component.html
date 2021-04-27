@@ -1,7 +1,20 @@
 <ng-container *ngIf="request$ | async"></ng-container>
 <mat-toolbar>
-  <app-details-top [current]="current" [actions]="actions" [isIssue]="isIssue" [upgradable]="upgradable">
-  </app-details-top>
+
+  <app-navigation
+    *ngIf="['servicecomponent', 'service', 'cluster'].includes(current?.typeName); else notServiceComponent"
+    [path]="navigationPath"
+  ></app-navigation>
+
+  <ng-template #notServiceComponent>
+    <app-details-top
+      [current]="current"
+      [actions]="actions"
+      [isIssue]="isIssue"
+      [upgradable]="upgradable"
+    ></app-details-top>
+  </ng-template>
+
 </mat-toolbar>
 
 <mat-drawer-container [style.flex]="1" autosize>

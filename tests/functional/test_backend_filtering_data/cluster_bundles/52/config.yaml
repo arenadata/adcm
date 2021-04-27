@@ -1,0 +1,5 @@
+
+---
+- type: cluster
+  name: "52"
+  version: ver52

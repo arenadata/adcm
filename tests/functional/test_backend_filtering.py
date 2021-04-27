@@ -10,8 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=W0611, W0621, W0404, W0212, C1801
+from typing import List
+
+import allure
 import pytest
-from pytest_lazyfixture import lazy_fixture
 from adcm_client.base import ResponseTooLong
 from adcm_client.objects import (Action, ADCMClient, Bundle,  # ActionList,
                                  BundleList, Cluster, ClusterList,
@@ -22,60 +24,61 @@ from adcm_client.objects import (Action, ADCMClient, Bundle,  # ActionList,
                                  ProviderPrototypeList, Task, TaskList)
 from adcm_pytest_plugin.utils import get_data_dir, get_subdirs_iter
 from delayed_assert import assert_expectations, expect
+from pytest_lazyfixture import lazy_fixture
 
 
-@pytest.fixture(scope="module")
-def cluster_bundles(sdk_client_ms: ADCMClient):
-    for path in get_subdirs_iter(__file__, "cluster_bandles"):
-        sdk_client_ms.upload_from_fs(path)
-    return sdk_client_ms
+@pytest.fixture()
+def cluster_bundles(sdk_client_fs: ADCMClient):
+    for path in get_subdirs_iter(__file__, "cluster_bundles"):
+        sdk_client_fs.upload_from_fs(path)
+    return sdk_client_fs
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def one_cluster_prototype(cluster_bundles: ADCMClient):
     return cluster_bundles.bundle(name="4").cluster_prototype()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def one_cluster_prototype_name_attr(one_cluster_prototype: ClusterPrototype):
     return {'name': one_cluster_prototype.name}
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def one_cluster_prototype_bundle_id_attr(one_cluster_prototype: ClusterPrototype):
     return {'bundle_id': one_cluster_prototype.bundle_id}
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def clusters(cluster_bundles: ADCMClient):
     for i in range(51):
         cluster_bundles.bundle(name='14').cluster_create(name=str(i))
     return cluster_bundles
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def one_cluster(cluster_bundles: ADCMClient):
     return cluster_bundles.bundle(name='42').cluster_create(name="I am a Cluster")
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def one_cluster_name_attr(one_cluster: Cluster):
     return {'name': one_cluster.name}
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def one_cluster_prototype_id_attr(one_cluster: Cluster):
     return {'prototype_id': one_cluster.prototype_id}
 
 
-@pytest.fixture(scope="module")
-def provider_bundles(sdk_client_ms: ADCMClient):
+@pytest.fixture()
+def provider_bundles(sdk_client_fs: ADCMClient):
     for path in get_subdirs_iter(__file__, "provider_bundles"):
-        sdk_client_ms.upload_from_fs(path)
-    return sdk_client_ms
+        sdk_client_fs.upload_from_fs(path)
+    return sdk_client_fs
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def providers(provider_bundles: ADCMClient):
     bundle = provider_bundles.bundle(name='provider18')
     for i in range(51):
@@ -83,50 +86,50 @@ def providers(provider_bundles: ADCMClient):
     return provider_bundles
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def one_provider(provider_bundles: ADCMClient):
     return provider_bundles.bundle(name='provider15').provider_create(name="I am a Provider")
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def one_provider_name_attr(one_provider: Provider):
     return {'name': one_provider.name}
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def one_provider_prototype_id_attr(one_provider: Provider):
     return {'prototype_id': one_provider.prototype_id}
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def provider_bundle_id(one_provider: Provider):
     return {'bundle_id': one_provider.bundle_id}
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def hosts(provider_bundles: ADCMClient, one_provider):
     for i in range(51):
         one_provider.host_create(fqdn=str(i))
     return provider_bundles
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def one_host(provider_bundles: ADCMClient):
     provider = provider_bundles.bundle(name='provider42').provider_create(name="For one Host")
     return provider.host_create(fqdn='host.host.host')
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def one_host_fqdn_attr(one_host: Host):
     return {'fqdn': one_host.fqdn}
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def one_host_prototype_id_attr(one_host: Host):
     return {'prototype_id': one_host.prototype_id}
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def one_host_provider_id_attr(one_host: Host):
     return {'provider_id': one_host.provider_id}
 
@@ -176,33 +179,32 @@ def one_host_provider_id_attr(one_host: Host):
         ),
     ]
 )
-def test_coreapi_schema(sdk_client_ms: ADCMClient, TestedClass):
+def test_coreapi_schema(sdk_client_fs: ADCMClient, TestedClass):
     def get_params(link):
         result = {}
         for f in link.fields:
             result[f.name] = True
         return result
 
-    schema_obj = sdk_client_ms._api.schema
-    for p in TestedClass.PATH:
-        assert p in schema_obj.data
-        schema_obj = schema_obj[p]
-
-    params = get_params(schema_obj.links['list'])
-    # from pprint import pprint
-    # pprint(params)
-    for f in TestedClass.FILTERS:
-        expect(
-            f in params,
-            "Filter {} should be acceptable for coreapi in class {}".format(
-                f, TestedClass.__name__
+    schema_obj = sdk_client_fs._api.schema
+    with allure.step(f'Get {TestedClass.__name__} schema objects'):
+        for p in TestedClass.PATH:
+            assert p in schema_obj.data
+            schema_obj = schema_obj[p]
+        params = get_params(schema_obj.links['list'])
+    with allure.step(f'Check if filters are acceptable for coreapi {TestedClass.__name__}'):
+        for f in TestedClass.FILTERS:
+            expect(
+                f in params,
+                "Filter {} should be acceptable for coreapi in class {}".format(
+                    f, TestedClass.__name__
+                )
             )
-        )
-    assert_expectations()
+        assert_expectations()
 
 
 @pytest.mark.parametrize(
-    "sdk_client,TestedClass",
+    ('sdk_client', 'TestedClass'),
     [
         pytest.param(
             lazy_fixture('cluster_bundles'),
@@ -233,11 +235,11 @@ def test_coreapi_schema(sdk_client_ms: ADCMClient, TestedClass):
             HostList,
             id="Host"),
         pytest.param(
-            lazy_fixture('host_with_jobs'),
+            lazy_fixture('hosts_with_jobs'),
             TaskList,
             id="Task"),
         pytest.param(
-            lazy_fixture('host_with_jobs'),
+            lazy_fixture('hosts_with_jobs'),
             JobList,
             id="Job"),
     ],
@@ -248,12 +250,14 @@ def test_paging_fail(sdk_client, TestedClass):
     * Call listing api over objects.*List classes
     * Expecting to have ResponseTooLong error
     """
-    with pytest.raises(ResponseTooLong):
-        TestedClass(sdk_client._api)
+    with allure.step(f'Prepare a lot of objects: {TestedClass.__name__} '
+                     f'in ADCM and check ResponseTooLong error'):
+        with pytest.raises(ResponseTooLong):
+            TestedClass(sdk_client._api)
 
 
 @pytest.mark.parametrize(
-    "sdk_client,TestedClass,TestedListClass,search_args,expected_args",
+    ('sdk_client', 'TestedClass', 'TestedListClass', 'search_args', 'expected_args'),
     [
         pytest.param(
             lazy_fixture('cluster_bundles'),
@@ -368,35 +372,35 @@ def test_paging_fail(sdk_client, TestedClass):
             lazy_fixture('one_host_fqdn_attr'),
             id="Host Prototype Id Filter"),
         pytest.param(
-            lazy_fixture('host_with_jobs'),
+            lazy_fixture('hosts_with_jobs'),
             Task,
             TaskList,
             lazy_fixture('task_action_id_attr'),
             lazy_fixture('task_action_id_attr'),
             id="Task Action Id Filter"),
         pytest.param(
-            lazy_fixture('host_with_jobs'),
+            lazy_fixture('hosts_with_jobs'),
             Task,
             TaskList,
             lazy_fixture('task_status_attr'),
             lazy_fixture('task_status_attr'),
             id="Task Status Filter"),
         pytest.param(
-            lazy_fixture('host_with_jobs'),
+            lazy_fixture('hosts_with_jobs'),
             Job,
             JobList,
             lazy_fixture('task_status_attr'),
             lazy_fixture('task_status_attr'),
             id="Job Action Id Filter"),
         pytest.param(
-            lazy_fixture('host_with_jobs'),
+            lazy_fixture('hosts_with_jobs'),
             Job,
             JobList,
             lazy_fixture('task_status_attr'),
             lazy_fixture('task_status_attr'),
             id="Job Status Filter"),
         pytest.param(
-            lazy_fixture('host_with_jobs'),
+            lazy_fixture('hosts_with_jobs'),
             Job,
             JobList,
             lazy_fixture('job_task_id_attr'),
@@ -414,65 +418,80 @@ def test_filter(sdk_client: ADCMClient, TestedClass, TestedListClass, search_arg
       as search args
     * Check that we found what we need
     """
-    lo = TestedListClass(sdk_client._api, **search_args)
-    for k, v in expected_args.items():
-        assert getattr(lo[0], k) == v
-    o = TestedClass(sdk_client._api, **search_args)
-    for k, v in expected_args.items():
-        assert getattr(o, k) == v
+    with allure.step('Create a lot of objects in ADCM'):
+        lo = TestedListClass(sdk_client._api, **search_args)
+    with allure.step('Inspect first (and only) element of list'):
+        for k, v in expected_args.items():
+            assert getattr(lo[0], k) == v
+    with allure.step('Create single object over class call (like Cluster or Bundle) '
+                     'with tested filter as search args'):
+        o = TestedClass(sdk_client._api, **search_args)
+    with allure.step('Check created object'):
+        for k, v in expected_args.items():
+            assert getattr(o, k) == v
 
 
-@pytest.fixture(scope='module')
-def cluster_with_actions(sdk_client_ms: ADCMClient):
-    b = sdk_client_ms.upload_from_fs(get_data_dir(__file__, 'cluster_with_actions'))
+@pytest.fixture()
+def cluster_with_actions(sdk_client_fs: ADCMClient):
+    b = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_with_actions'))
     return b.cluster_create(name="cluster_with_actions")
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture()
 def service_with_actions(cluster_with_actions: Cluster):
     return cluster_with_actions.service_add(name='service_with_actions')
 
 
-@pytest.fixture(scope='module')
-def provider_with_actions(sdk_client_ms: ADCMClient):
-    b = sdk_client_ms.upload_from_fs(get_data_dir(__file__, 'provider_with_actions'))
+@pytest.fixture()
+def provider_with_actions(sdk_client_fs: ADCMClient):
+    b = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'provider_with_actions'))
     return b.provider_create(name="provider_with_actions")
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture()
 def host_with_actions(provider_with_actions: Provider):
     return provider_with_actions.host_create(fqdn='host.with.actions')
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture()
 def host_ok_action(host_with_actions: Host):
     return host_with_actions.action(name="ok42")
 
 
-@pytest.fixture(scope='module')
-def host_fail_action(host_with_actions: Host):
-    return host_with_actions.action(name="fail50")
+@pytest.fixture()
+def hosts_with_actions(host_with_actions: Host, provider_with_actions: Provider):
+    hosts = [host_with_actions]
+    for i in range(9):
+        hosts.append(provider_with_actions.host_create(fqdn=f'host.with.actions.{i}'))
+    return hosts
 
 
-@pytest.fixture(scope='module')
-def host_with_jobs(host_with_actions: Host, host_fail_action, host_ok_action):
-    for _ in range(51):
-        host_fail_action.run().wait()
+@pytest.fixture()
+def hosts_with_jobs(hosts_with_actions: List, host_ok_action: Action):
+    """
+    Run multiple actions on hosts. Return first host.
+    """
+    for _ in range(6):
+        actions = []
+        for host in hosts_with_actions:
+            actions.append(host.action(name="fail50").run())
+        for action in actions:
+            action.wait()
     host_ok_action.run().try_wait()
-    return host_with_actions
+    return hosts_with_actions[0]
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture()
 def task_action_id_attr(host_ok_action: Action):
     return {'action_id': host_ok_action.action_id}
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture()
 def task_status_attr(host_ok_action: Action):
     return {'status': 'success'}
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture()
 def job_task_id_attr(host_ok_action: Action):
     return {'task_id': host_ok_action.task().task_id}
 
@@ -509,7 +528,7 @@ def job_task_id_attr(host_ok_action: Action):
 #         pprint(TestedParentClass.action_list())
 
 @pytest.mark.parametrize(
-    "TestedParentClass,search_args,expected_args",
+    ('TestedParentClass', 'search_args', 'expected_args'),
     [
         pytest.param(
             lazy_fixture('cluster_with_actions'),
@@ -542,9 +561,13 @@ def test_actions_name_filter(TestedParentClass, search_args, expected_args):
     * Call action() with tested filter as search args
     * Check that we found what we need
     """
-    lo = TestedParentClass.action_list(**search_args)
-    for k, v in expected_args.items():
-        assert getattr(lo[0], k) == v
-    o = TestedParentClass.action(**search_args)
-    for k, v in expected_args.items():
-        assert getattr(o, k) == v
+    with allure.step(f'Create {TestedParentClass} with a lot of actions'):
+        lo = TestedParentClass.action_list(**search_args)
+    with allure.step('Inspect first (and only) element of list'):
+        for k, v in expected_args.items():
+            assert getattr(lo[0], k) == v
+    with allure.step('Call action() with tested filter as search args'):
+        o = TestedParentClass.action(**search_args)
+    with allure.step('Check action name'):
+        for k, v in expected_args.items():
+            assert getattr(o, k) == v

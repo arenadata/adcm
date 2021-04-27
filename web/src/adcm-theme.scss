@@ -91,7 +91,7 @@ a.active .mat-list-item-content {
   color: mat-color($mat-green, A400);
 }
 
-.mat-nav-list a:not(.top) {
+.mat-nav-list a:not(.top, .issue) {
   color: mat-color($mat-blue-grey, 200) !important;
 
   &:hover {
@@ -104,3 +104,31 @@ a.active .mat-list-item-content {
   width: auto;
   height: 40px;
 }
+
+// BEGIN: Paginator
+
+@mixin paginator {
+  font-size: 14px;
+  margin: 0 6px;
+  color: #bbb;
+}
+
+.page-button {
+  @include paginator;
+  cursor: pointer;
+}
+
+.page-button:hover {
+  text-decoration: none;
+  color: #ccc;
+}
+
+.page-button.current {
+  color: mat-color($mat-orange, 500);
+}
+
+.page-additional {
+  @include paginator;
+}
+
+// END: Paginator

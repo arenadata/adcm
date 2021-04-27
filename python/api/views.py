@@ -10,11 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=duplicate-except,attribute-defined-outside-init
-
 import rest_framework
 import django.contrib.auth
-from django_filters import rest_framework as drf_filters
 
 from rest_framework import routers, status
 from rest_framework.authtoken.models import Token
@@ -22,19 +19,11 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
 import api.serializers
-import api.cluster_views
 import cm.api
-import cm.config as config
 import cm.job
 import cm.stack
 import cm.status_api
-from cm.errors import AdcmEx, AdcmApiEx
-from cm.models import HostProvider, Host, ADCM, JobLog, TaskLog, Upgrade
 from adcm.settings import ADCM_VERSION
-from api.api_views import (
-    DetailViewRO, DetailViewDelete, ListView,
-    PageView, PageViewAdd, GenericAPIPermView, create, check_obj
-)
 
 
 class APIRoot(routers.APIRootView):
@@ -49,6 +38,7 @@ class APIRoot(routers.APIRootView):
         'provider': 'provider',
         'host': 'host',
         'service': 'service',
+        'component': 'component',
         'job': 'job',
         'stack': 'stack',
         'stats': 'stats',
@@ -83,9 +73,7 @@ class GetAuthToken(GenericAPIView):
 
         HTTP header for authorization:
 
-        ```
-        Authorization: Token XXXXX
-        ```
+        ```Authorization: Token XXXXX```
         """
         serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
@@ -120,242 +108,3 @@ class ADCMInfo(GenericAPIView):
             'adcm_version': ADCM_VERSION,
             'google_oauth': cm.api.has_google_oauth()
         })
-
-
-class AdcmList(ListView):
-    """
-    get:
-    List adcm object
-    """
-    queryset = ADCM.objects.all()
-    serializer_class = api.serializers.AdcmSerializer
-    serializer_class_ui = api.serializers.AdcmDetailSerializer
-
-
-class AdcmDetail(DetailViewRO):
-    """
-    get:
-    Show adcm object
-    """
-    queryset = ADCM.objects.all()
-    serializer_class = api.serializers.AdcmDetailSerializer
-    lookup_field = 'id'
-    lookup_url_kwarg = 'adcm_id'
-    error_code = 'ADCM_NOT_FOUND'
-
-
-class ProviderList(PageViewAdd):
-    """
-    get:
-    List all host providers
-
-    post:
-    Create new host provider
-    """
-    queryset = HostProvider.objects.all()
-    serializer_class = api.serializers.ProviderSerializer
-    serializer_class_ui = api.serializers.ProviderUISerializer
-    serializer_class_post = api.serializers.ProviderDetailSerializer
-    filterset_fields = ('name', 'prototype_id')
-    ordering_fields = ('name', 'state', 'prototype__display_name', 'prototype__version_order')
-
-
-class ProviderDetail(DetailViewDelete):
-    """
-    get:
-    Show host provider
-    """
-    queryset = HostProvider.objects.all()
-    serializer_class = api.serializers.ProviderDetailSerializer
-    serializer_class_ui = api.serializers.ProviderUISerializer
-    lookup_field = 'id'
-    lookup_url_kwarg = 'provider_id'
-    error_code = 'PROVIDER_NOT_FOUND'
-
-    def delete(self, request, provider_id):   # pylint: disable=arguments-differ
-        """
-        Remove host provider
-        """
-        provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        try:
-            cm.api.delete_host_provider(provider)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class ProviderHostList(PageView):
-    """
-    post:
-    Create new host
-    """
-    queryset = Host.objects.all()
-    serializer_class = api.serializers.ProviderHostSerializer
-    serializer_class_ui = api.serializers.HostUISerializer
-    filterset_fields = ('fqdn', 'cluster_id')
-    ordering_fields = (
-        'fqdn', 'state', 'prototype__display_name', 'prototype__version_order'
-    )
-
-    def get(self, request, provider_id):   # pylint: disable=arguments-differ
-        """
-        List all hosts of specified host provider
-        """
-        provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        obj = self.filter_queryset(self.get_queryset().filter(provider=provider))
-        return self.get_page(obj, request)
-
-    def post(self, request, provider_id):
-        provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        serializer_class = self.select_serializer(request)
-        serializer = serializer_class(
-            data=request.data, context={'request': request, 'provider': provider}
-        )
-        return create(serializer, provider=provider)
-
-
-class HostFilter(drf_filters.FilterSet):
-    cluster_is_null = drf_filters.BooleanFilter(field_name='cluster_id', lookup_expr='isnull')
-    provider_is_null = drf_filters.BooleanFilter(field_name='provider_id', lookup_expr='isnull')
-
-    class Meta:
-        model = Host
-        fields = ['cluster_id', 'prototype_id', 'provider_id', 'fqdn']
-
-
-class HostList(PageViewAdd):
-    """
-    get:
-    List all hosts
-
-    post:
-    Create new host
-    """
-    queryset = Host.objects.all()
-    serializer_class = api.serializers.HostSerializer
-    serializer_class_ui = api.serializers.HostUISerializer
-    serializer_class_post = api.serializers.HostDetailSerializer
-    filterset_class = HostFilter
-    filterset_fields = (
-        'cluster_id', 'prototype_id', 'provider_id', 'fqdn', 'cluster_is_null', 'provider_is_null'
-    )   # just for documentation
-    ordering_fields = (
-        'fqdn', 'state', 'provider__name', 'cluster__name',
-        'prototype__display_name', 'prototype__version_order',
-    )
-
-
-class HostDetail(DetailViewDelete):
-    """
-    get:
-    Show host
-    """
-    queryset = Host.objects.all()
-    serializer_class = api.serializers.HostDetailSerializer
-    serializer_class_ui = api.serializers.HostUISerializer
-    lookup_field = 'id'
-    lookup_url_kwarg = 'host_id'
-    error_code = 'HOST_NOT_FOUND'
-
-    def delete(self, request, host_id):   # pylint: disable=arguments-differ
-        """
-        Remove host (and all corresponding host services:components)
-        """
-        host = check_obj(Host, host_id, 'HOST_NOT_FOUND')
-        try:
-            cm.api.delete_host(host)
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class Stats(GenericAPIPermView):
-    queryset = JobLog.objects.all()
-    serializer_class = api.serializers.StatsSerializer
-
-    def get(self, request):
-        """
-        Statistics
-        """
-        obj = JobLog(id=1)
-        serializer = self.serializer_class(obj, context={'request': request})
-        return Response(serializer.data)
-
-
-class JobStats(GenericAPIPermView):
-    queryset = JobLog.objects.all()
-    serializer_class = api.serializers.EmptySerializer
-
-    def get(self, request, job_id):
-        """
-        Show jobs stats
-        """
-        jobs = self.get_queryset().filter(id__gt=job_id)
-        data = {
-            config.Job.FAILED: jobs.filter(status=config.Job.FAILED).count(),
-            config.Job.SUCCESS: jobs.filter(status=config.Job.SUCCESS).count(),
-            config.Job.RUNNING: jobs.filter(status=config.Job.RUNNING).count(),
-        }
-        return Response(data)
-
-
-class TaskStats(GenericAPIPermView):
-    queryset = TaskLog.objects.all()
-    serializer_class = api.serializers.EmptySerializer
-
-    def get(self, request, task_id):
-        """
-        Show tasks stats
-        """
-        tasks = self.get_queryset().filter(id__gt=task_id)
-        data = {
-            config.Job.FAILED: tasks.filter(status=config.Job.FAILED).count(),
-            config.Job.SUCCESS: tasks.filter(status=config.Job.SUCCESS).count(),
-            config.Job.RUNNING: tasks.filter(status=config.Job.RUNNING).count(),
-        }
-        return Response(data)
-
-
-class ProviderUpgrade(PageView):
-    queryset = Upgrade.objects.all()
-    serializer_class = api.serializers.UpgradeProviderSerializer
-
-    def get(self, request, provider_id):   # pylint: disable=arguments-differ
-        """
-        List all avaliable upgrades for specified host provider
-        """
-        provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        obj = cm.upgrade.get_upgrade(provider, self.get_ordering(request, self.queryset, self))
-        serializer = self.serializer_class(obj, many=True, context={
-            'provider_id': provider.id, 'request': request
-        })
-        return Response(serializer.data)
-
-
-class ProviderUpgradeDetail(ListView):
-    queryset = Upgrade.objects.all()
-    serializer_class = api.serializers.UpgradeProviderSerializer
-
-    def get(self, request, provider_id, upgrade_id):   # pylint: disable=arguments-differ
-        """
-        List all avaliable upgrades for specified host provider
-        """
-        provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        obj = self.get_queryset().get(id=upgrade_id)
-        serializer = self.serializer_class(obj, context={
-            'provider_id': provider.id, 'request': request
-        })
-        return Response(serializer.data)
-
-
-class DoProviderUpgrade(GenericAPIPermView):
-    queryset = Upgrade.objects.all()
-    serializer_class = api.serializers.DoUpgradeSerializer
-
-    def post(self, request, provider_id, upgrade_id):
-        """
-        Do upgrade specified host provider
-        """
-        provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        serializer = self.serializer_class(data=request.data, context={'request': request})
-        return create(serializer, upgrade_id=int(upgrade_id), obj=provider)
