@@ -13,7 +13,9 @@
 # pylint: disable=too-many-locals
 
 import json
+import sys
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from cm import models
@@ -59,6 +61,27 @@ def get_objects(model, fields, filters, datetime_fields=None):
     return objects
 
 
+def get_bundle(prototype_id):
+    """
+    Returns bundle object in dictionary format
+
+    :param prototype_id: Prototype object ID
+    :type prototype_id: int
+    :return: Bundle object
+    :rtype: dict
+    """
+    fields = (
+        'name',
+        'version',
+        'edition',
+        'hash',
+        'description'
+    )
+    prototype = models.Prototype.objects.get(id=prototype_id)
+    bundle = get_object(models.Bundle, prototype.bundle_id, fields)
+    return bundle
+
+
 def get_bundle_hash(prototype_id):
     """
     Returns the hash of the bundle
@@ -68,9 +91,8 @@ def get_bundle_hash(prototype_id):
     :return: The hash of the bundle
     :rtype: str
     """
-    prototype = models.Prototype.objects.get(id=prototype_id)
-    bundle = models.Bundle.objects.get(id=prototype.bundle_id)
-    return bundle.hash
+    bundle = get_bundle(prototype_id)
+    return bundle['hash']
 
 
 def get_config(object_config_id):
@@ -118,8 +140,9 @@ def get_cluster(cluster_id):
     )
     cluster = get_object(models.Cluster, cluster_id, fields)
     cluster['config'] = get_config(cluster['config'])
-    cluster['bundle_hash'] = get_bundle_hash(cluster.pop('prototype'))
-    return cluster
+    bundle = get_bundle(cluster.pop('prototype'))
+    cluster['bundle_hash'] = bundle['hash']
+    return cluster, bundle
 
 
 def get_provider(provider_id):
@@ -143,8 +166,9 @@ def get_provider(provider_id):
     )
     provider = get_object(models.HostProvider, provider_id, fields)
     provider['config'] = get_config(provider['config'])
-    provider['bundle_hash'] = get_bundle_hash(provider.pop('prototype'))
-    return provider
+    bundle = get_bundle(provider.pop('prototype'))
+    provider['bundle_hash'] = bundle['hash']
+    return provider, bundle
 
 
 def get_host(host_id):
@@ -244,6 +268,72 @@ def get_host_component(host_component_id):
     return host_component
 
 
+def dump(cluster_id, output):
+    """
+    Saving objects to file in JSON format
+
+    :param cluster_id: Object ID
+    :type cluster_id: int
+    :param output: Path to file
+    :type output: str
+    """
+    cluster, bundle = get_cluster(cluster_id)
+
+    data = {
+        'ADCM_VERSION': settings.ADCM_VERSION,
+        'bundles': {
+            bundle['hash']: bundle,
+        },
+        'cluster': cluster,
+        'hosts': [],
+        'providers': [],
+        'services': [],
+        'components': [],
+        'host_components': [],
+    }
+
+    provider_ids = set()
+
+    for host_obj in models.Host.objects.filter(cluster_id=cluster['id']):
+        host = get_host(host_obj.id)
+        provider_ids.add(host['provider'])
+        data['hosts'].append(host)
+
+    host_ids = [host['id'] for host in data['hosts']]
+
+    for provider_obj in models.HostProvider.objects.filter(id__in=provider_ids):
+        provider, bundle = get_provider(provider_obj.id)
+        data['providers'].append(provider)
+        data['bundles'][bundle['hash']] = bundle
+
+    for service_obj in models.ClusterObject.objects.filter(cluster_id=cluster['id']):
+        service = get_service(service_obj.id)
+        data['services'].append(service)
+
+    service_ids = [service['id'] for service in data['services']]
+
+    for component_obj in models.ServiceComponent.objects.filter(
+            cluster_id=cluster['id'], service_id__in=service_ids):
+        component = get_component(component_obj.id)
+        data['components'].append(component)
+
+    component_ids = [component['id'] for component in data['components']]
+
+    for host_component_obj in models.HostComponent.objects.filter(
+            cluster_id=cluster['id'], host_id__in=host_ids, service_id__in=service_ids,
+            component_id__in=component_ids):
+        host_component = get_host_component(host_component_obj.id)
+        data['host_components'].append(host_component)
+
+    result = json.dumps(data, indent=2)
+
+    if output is not None:
+        with open(output, 'w') as f:
+            f.write(result)
+    else:
+        sys.stdout.write(result)
+
+
 class Command(BaseCommand):
     """
     Command for dump cluster object to JSON format
@@ -269,53 +359,4 @@ class Command(BaseCommand):
         """Handler method"""
         cluster_id = options['cluster_id']
         output = options['output']
-        cluster = get_cluster(cluster_id)
-
-        data = {
-            'cluster': cluster,
-            'hosts': [],
-            'providers': [],
-            'services': [],
-            'components': [],
-            'host_components': [],
-        }
-
-        provider_ids = set()
-
-        for host_obj in models.Host.objects.filter(cluster_id=cluster['id']):
-            host = get_host(host_obj.id)
-            provider_ids.add(host['provider'])
-            data['hosts'].append(host)
-
-        host_ids = [host['id'] for host in data['hosts']]
-
-        for provider_obj in models.HostProvider.objects.filter(id__in=provider_ids):
-            provider = get_provider(provider_obj.id)
-            data['providers'].append(provider)
-
-        for service_obj in models.ClusterObject.objects.filter(cluster_id=cluster['id']):
-            service = get_service(service_obj.id)
-            data['services'].append(service)
-
-        service_ids = [service['id'] for service in data['services']]
-
-        for component_obj in models.ServiceComponent.objects.filter(
-                cluster_id=cluster['id'], service_id__in=service_ids):
-            component = get_component(component_obj.id)
-            data['components'].append(component)
-
-        component_ids = [component['id'] for component in data['components']]
-
-        for host_component_obj in models.HostComponent.objects.filter(
-                cluster_id=cluster['id'], host_id__in=host_ids, service_id__in=service_ids,
-                component_id__in=component_ids):
-            host_component = get_host_component(host_component_obj.id)
-            data['host_components'].append(host_component)
-
-        result = json.dumps(data, indent=2)
-
-        if output:
-            with open(output, 'w') as f:
-                f.write(result)
-        else:
-            self.stdout.write(result)
+        dump(cluster_id, output)

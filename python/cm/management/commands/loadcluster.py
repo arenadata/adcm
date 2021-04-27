@@ -15,9 +15,12 @@
 import json
 from datetime import datetime
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
+from django.db.transaction import atomic
 
 from cm import models
+from cm.errors import AdcmEx
 
 
 def deserializer_datetime_fields(obj, fields=None):
@@ -222,6 +225,76 @@ def create_host_component(host_component, cluster, host, service, component):
     return host_component
 
 
+def check(data):
+    """
+    Checking cluster load
+
+    :param data: Data from file
+    :type data: dict
+    """
+    if settings.ADCM_VERSION != data['ADCM_VERSION']:
+        raise AdcmEx(
+            'DUMP_LOAD_CLUSTER_ERROR',
+            msg=(f'ADCM versions do not match, dump version: {data["ADCM_VERSION"]},'
+                 f' load version: {settings.ADCM_VERSION}'))
+
+    for bundle_hash, bundle in data['bundles'].items():
+        try:
+            models.Bundle.objects.get(hash=bundle_hash)
+        except models.Bundle.DoesNotExist as err:
+            raise AdcmEx(
+                'DUMP_LOAD_CLUSTER_ERROR',
+                msg=f'Bundle "{bundle["name"]} {bundle["version"]}" not found') from err
+
+
+@atomic
+def load(file_path):
+    """
+    Loading and creating objects from JSON file
+
+    :param file_path: Path to JSON file
+    :type file_path: str
+    """
+    try:
+        with open(file_path, 'r') as f:
+            data = json.load(f)
+    except FileNotFoundError as err:
+        raise AdcmEx('DUMP_LOAD_CLUSTER_ERROR') from err
+
+    check(data)
+
+    _, cluster = create_cluster(data['cluster'])
+
+    for provider_data in data['providers']:
+        create_provider(provider_data)
+
+    ex_host_ids = {}
+    for host_data in data['hosts']:
+        ex_host_id, host = create_host(host_data, cluster)
+        ex_host_ids[ex_host_id] = host
+
+    ex_service_ids = {}
+    for service_data in data['services']:
+        ex_service_id, service = create_service(service_data, cluster)
+        ex_service_ids[ex_service_id] = service
+
+    ex_component_ids = {}
+    for component_data in data['components']:
+        ex_component_id, component = create_component(
+            component_data, cluster, ex_service_ids[component_data.pop('service')]
+        )
+        ex_component_ids[ex_component_id] = component
+
+    for host_component_data in data['host_components']:
+        create_host_component(
+            host_component_data,
+            cluster,
+            ex_host_ids[host_component_data.pop('host')],
+            ex_service_ids[host_component_data.pop('service')],
+            ex_component_ids[host_component_data.pop('component')],
+        )
+
+
 class Command(BaseCommand):
     """
     Command for load cluster object from JSON file
@@ -238,36 +311,4 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         """Handler method"""
         file_path = options.get('file_path')
-        with open(file_path, 'r') as f:
-            data = json.load(f)
-
-        _, cluster = create_cluster(data['cluster'])
-
-        for provider_data in data['providers']:
-            create_provider(provider_data)
-
-        ex_host_ids = {}
-        for host_data in data['hosts']:
-            ex_host_id, host = create_host(host_data, cluster)
-            ex_host_ids[ex_host_id] = host
-
-        ex_service_ids = {}
-        for service_data in data['services']:
-            ex_service_id, service = create_service(service_data, cluster)
-            ex_service_ids[ex_service_id] = service
-
-        ex_component_ids = {}
-        for component_data in data['components']:
-            ex_component_id, component = create_component(
-                component_data, cluster, ex_service_ids[component_data.pop('service')]
-            )
-            ex_component_ids[ex_component_id] = component
-
-        for host_component_data in data['host_components']:
-            create_host_component(
-                host_component_data,
-                cluster,
-                ex_host_ids[host_component_data.pop('host')],
-                ex_service_ids[host_component_data.pop('service')],
-                ex_component_ids[host_component_data.pop('component')],
-            )
+        load(file_path)

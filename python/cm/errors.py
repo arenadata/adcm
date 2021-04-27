@@ -129,6 +129,7 @@ ERRORS = {
     'NO_JOBS_RUNNING': ("no jobs running", rfs.HTTP_409_CONFLICT, ERR),
     'BAD_QUERY_PARAMS': ("bad query params", rfs.HTTP_400_BAD_REQUEST),
     'JSON_DB_ERROR': ("Not correct field format", rfs.HTTP_409_CONFLICT, ERR),
+    'DUMP_LOAD_CLUSTER_ERROR': ("Dumping or Loading error", rfs.HTTP_409_CONFLICT),
 }
 
 
