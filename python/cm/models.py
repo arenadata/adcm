@@ -398,6 +398,18 @@ class Action(ADCMModel):
 
     __error_code__ = 'ACTION_NOT_FOUND'
 
+    @property
+    def prototype_name(self):
+        return self.prototype.name
+    
+    @property
+    def prototype_version(self):
+        return self.prototype.version
+    
+    @property
+    def prototype_type(self):
+        return self.prototype.type
+
     def __str__(self):
         return "{} {}".format(self.prototype, self.name)
 
@@ -526,23 +538,10 @@ class Role(ADCMModel):
     group = models.ManyToManyField(Group, blank=True)
 
 
-class JobLog(ADCMModel):
-    task_id = models.PositiveIntegerField(default=0)
-    action_id = models.PositiveIntegerField()
-    sub_action_id = models.PositiveIntegerField(default=0)
-    pid = models.PositiveIntegerField(blank=True, default=0)
-    selector = models.JSONField(default=dict)
-    log_files = models.JSONField(default=list)
-    status = models.CharField(max_length=16, choices=JOB_STATUS)
-    start_date = models.DateTimeField()
-    finish_date = models.DateTimeField(db_index=True)
-
-    __error_code__ = 'JOB_NOT_FOUND'
-
-
 class TaskLog(ADCMModel):
-    action_id = models.PositiveIntegerField()
+    old_action_id = models.PositiveIntegerField()
     object_id = models.PositiveIntegerField()
+    action = models.ForeignKey(Action, on_delete=models.CASCADE, null=True, default=None)
     pid = models.PositiveIntegerField(blank=True, default=0)
     selector = models.JSONField(default=dict)
     status = models.CharField(max_length=16, choices=JOB_STATUS)
@@ -553,6 +552,23 @@ class TaskLog(ADCMModel):
     verbose = models.BooleanField(default=False)
     start_date = models.DateTimeField()
     finish_date = models.DateTimeField()
+
+
+class JobLog(ADCMModel):
+    old_task_id = models.PositiveIntegerField(default=0)
+    old_action_id = models.PositiveIntegerField()
+    old_sub_action_id = models.PositiveIntegerField(default=0)
+    task = models.ForeignKey(TaskLog, on_delete=models.SET_NULL, null=True, default=None)
+    action = models.ForeignKey(Action, on_delete=models.SET_NULL, null=True, default=None)
+    sub_action = models.ForeignKey(SubAction, on_delete=models.SET_NULL, null=True, default=None)
+    pid = models.PositiveIntegerField(blank=True, default=0)
+    selector = models.JSONField(default=dict)
+    log_files = models.JSONField(default=list)
+    status = models.CharField(max_length=16, choices=JOB_STATUS)
+    start_date = models.DateTimeField()
+    finish_date = models.DateTimeField(db_index=True)
+
+    __error_code__ = 'JOB_NOT_FOUND'
 
 
 class GroupCheckLog(ADCMModel):
