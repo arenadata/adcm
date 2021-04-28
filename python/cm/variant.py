@@ -173,12 +173,12 @@ def var_host_solver(cluster, func_map, args):
         if key not in args:
             err('CONFIG_VARIANT_ERROR', f'no "{key}" key in solver args')
 
-    log.debug('QQ solver args: %s', args)
+    # log.debug('solver args: %s', args)
     if args is None:
         return None
     if isinstance(args, dict):
         if 'predicate' not in args:
-            log.debug('QQ solver res1: %s', args)
+            # log.debug('solver res1: %s', args)
             return args
         else:
             predicate = args['predicate']
@@ -186,7 +186,7 @@ def var_host_solver(cluster, func_map, args):
                 err('CONFIG_VARIANT_ERROR', f'no "{predicate}" in list of host functions')
             check_key('args', args)
             res = func_map[predicate](cluster, var_host_solver(cluster, func_map, args['args']))
-            log.debug('QQ solver res2: %s', res)
+            # log.debug('solver res2: %s', res)
             return res
 
     res = []
@@ -200,7 +200,7 @@ def var_host_solver(cluster, func_map, args):
             err('CONFIG_VARIANT_ERROR', f'no "{predicate}" in list of host functions')
         res.append(func_map[predicate](cluster, var_host_solver(cluster, func_map, item['args'])))
 
-    log.debug('QQ solver res3: %s', res)
+    # log.debug('solver res3: %s', res)
     return res
 
 
