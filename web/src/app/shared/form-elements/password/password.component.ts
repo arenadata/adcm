@@ -35,6 +35,7 @@ export class PasswordComponent extends FieldDirective implements OnInit, AfterVi
   dummy = '********';
   isHideDummy = false;
   value: string;
+
   constructor(private service: FieldService, private cd: ChangeDetectorRef) {
     super();
   }
@@ -86,8 +87,8 @@ export class PasswordComponent extends FieldDirective implements OnInit, AfterVi
           debounceTime(100),
           pluck('type'),
           tap((res: 'focus' | 'blur') => {
-            if (res === 'blur' && (this.isValidField() || this.isEmpty())) {
-              if ((this.isValidField() && this.isEmpty()) || this.isEmpty()) {
+            if (res === 'blur' && (this.isValidField() || this.isCleared())) {
+              if ((this.isValidField() && this.isCleared()) || this.isCleared()) {
                 this.control.setValue(this.value);
                 this.ConfirmPasswordField.setValue(this.value);
               }
@@ -98,15 +99,18 @@ export class PasswordComponent extends FieldDirective implements OnInit, AfterVi
         )
         .subscribe();
     } else {
-      fromEvent(this.input.nativeElement, 'blur').pipe(tap(res => {
-        if (this.control.valid || this.value !== '' && this.control.value === '') {
-          if ((this.control.valid && this.value !== '' && this.control.value === '') || this.value !== '' && this.control.value === '') {
-            this.control.setValue(this.value);
-          }
-          this.isHideDummy = false;
-          this.cd.detectChanges();
-        }
-      })).subscribe();
+      fromEvent(this.input.nativeElement, 'blur')
+        .pipe(
+          tap(_ => {
+            if (this.control.valid || this.value !== '' && this.control.value === '') {
+              if ((this.control.valid && this.value !== '' && this.control.value === '') || this.value !== '' && this.control.value === '') {
+                this.control.setValue(this.value);
+              }
+              this.isHideDummy = false;
+              this.cd.detectChanges();
+            }
+          })
+        ).subscribe();
     }
   }
 
@@ -114,7 +118,7 @@ export class PasswordComponent extends FieldDirective implements OnInit, AfterVi
     return this.control.valid && this.ConfirmPasswordField.valid;
   }
 
-  isEmpty(): boolean {
+  isCleared(): boolean {
     return this.value !== '' && this.control.value === '' && this.ConfirmPasswordField.value === '';
   }
 
@@ -135,16 +139,6 @@ export class PasswordComponent extends FieldDirective implements OnInit, AfterVi
 
   get ConfirmPasswordField(): AbstractControl {
     return this.form.controls['confirm_' + this.field.name];
-  }
-
-  inputNewPassword(value: string): void {
-    this.control.setValue(value);
-    console.log(this.control.value);
-    this.confirmPasswordFieldUpdate();
-  }
-
-  inputNewConfirmPassword(value: string): void {
-    this.ConfirmPasswordField.setValue(value);
   }
 
   hasErrorConfirm(name: string) {
