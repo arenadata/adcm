@@ -54,7 +54,7 @@ class ComponentDetailSerializer(ComponentSerializer):
     prototype = hlink('component-type-details', 'prototype_id', 'prototype_id')
 
     def get_issue(self, obj):
-        return issue.get_issue(obj)
+        return issue.aggregate_issues(obj)
 
     def get_status(self, obj):
         return status_api.get_component_status(obj.id)
