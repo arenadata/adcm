@@ -12,10 +12,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import json
-
-from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import User, Group, Permission
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 
 from cm.errors import AdcmEx
@@ -97,34 +95,6 @@ class ADCMModel(models.Model):
         abstract = True
 
 
-class JSONField(models.Field):
-    def db_type(self, connection):
-        return 'text'
-
-    def from_db_value(self, value, expression, connection):
-        if value is not None:
-            try:
-                return json.loads(value)
-            except json.JSONDecodeError:
-                raise AdcmEx(
-                    'JSON_DB_ERROR',
-                    msg=f"Not correct field format '{expression.field.attname}'") from None
-        return value
-
-    def get_prep_value(self, value):
-        if value is not None:
-            return str(json.dumps(value))
-        return value
-
-    def to_python(self, value):
-        if value is not None:
-            return json.loads(value)
-        return value
-
-    def value_to_string(self, obj):
-        return self.value_from_object(obj)
-
-
 class Bundle(ADCMModel):
     name = models.CharField(max_length=160)
     version = models.CharField(max_length=80)
@@ -143,16 +113,20 @@ class Bundle(ADCMModel):
         unique_together = (('name', 'version', 'edition'),)
 
 
+def get_default_from_edition():
+    return ['community']
+
+
 class Upgrade(ADCMModel):
     bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE)
     name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
     min_version = models.CharField(max_length=80)
     max_version = models.CharField(max_length=80)
-    from_edition = JSONField(default=['community'])
+    from_edition = models.JSONField(default=get_default_from_edition)
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
-    state_available = JSONField(default=[])
+    state_available = models.JSONField(default=list)
     state_on_success = models.CharField(max_length=64, blank=True)
 
     __error_code__ = 'UPGRADE_NOT_FOUND'
@@ -162,6 +136,10 @@ MONITORING_TYPE = (
     ('active', 'active'),
     ('passive', 'passive'),
 )
+
+
+def get_default_constraint():
+    return [0, '+']
 
 
 class Prototype(ADCMModel):
@@ -175,9 +153,9 @@ class Prototype(ADCMModel):
     version_order = models.PositiveIntegerField(default=0)
     required = models.BooleanField(default=False)
     shared = models.BooleanField(default=False)
-    constraint = JSONField(default=[0, '+'])
-    requires = JSONField(default=[])
-    bound_to = JSONField(default={})
+    constraint = models.JSONField(default=get_default_constraint)
+    requires = models.JSONField(default=list)
+    bound_to = models.JSONField(default=dict)
     adcm_min_version = models.CharField(max_length=80, default=None, null=True)
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
     description = models.TextField(blank=True)
@@ -200,8 +178,8 @@ class ObjectConfig(ADCMModel):
 
 class ConfigLog(ADCMModel):
     obj_ref = models.ForeignKey(ObjectConfig, on_delete=models.CASCADE)
-    config = JSONField(default={})
-    attr = JSONField(default={})
+    config = models.JSONField(default=dict)
+    attr = models.JSONField(default=dict)
     date = models.DateTimeField(auto_now=True)
     description = models.TextField(blank=True)
 
@@ -213,8 +191,8 @@ class ADCM(ADCMModel):
     name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = JSONField(default=[])
-    issue = JSONField(default={})
+    stack = models.JSONField(default=list)
+    issue = models.JSONField(default=dict)
 
     @property
     def bundle_id(self):
@@ -227,8 +205,8 @@ class Cluster(ADCMModel):
     description = models.TextField(blank=True)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = JSONField(default=[])
-    issue = JSONField(default={})
+    stack = models.JSONField(default=list)
+    issue = models.JSONField(default=dict)
 
     __error_code__ = 'CLUSTER_NOT_FOUND'
 
@@ -254,8 +232,8 @@ class HostProvider(ADCMModel):
     description = models.TextField(blank=True)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = JSONField(default=[])
-    issue = JSONField(default={})
+    stack = models.JSONField(default=list)
+    issue = models.JSONField(default=dict)
 
     __error_code__ = 'PROVIDER_NOT_FOUND'
 
@@ -283,8 +261,8 @@ class Host(ADCMModel):
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = JSONField(default=[])
-    issue = JSONField(default={})
+    stack = models.JSONField(default=list)
+    issue = models.JSONField(default=dict)
 
     __error_code__ = 'HOST_NOT_FOUND'
 
@@ -306,8 +284,8 @@ class ClusterObject(ADCMModel):
     service = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = JSONField(default=[])
-    issue = JSONField(default={})
+    stack = models.JSONField(default=list)
+    issue = models.JSONField(default=dict)
 
     __error_code__ = 'CLUSTER_SERVICE_NOT_FOUND'
 
@@ -345,8 +323,8 @@ class ServiceComponent(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE, null=True, default=None)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = JSONField(default=[])
-    issue = JSONField(default={})
+    stack = models.JSONField(default=list)
+    issue = models.JSONField(default=dict)
 
     __error_code__ = 'COMPONENT_NOT_FOUND'
 
@@ -398,7 +376,7 @@ class Action(ADCMModel):
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
-    ui_options = JSONField(default={})
+    ui_options = models.JSONField(default=dict)
 
     type = models.CharField(max_length=16, choices=ACTION_TYPE)
     button = models.CharField(max_length=64, default=None, null=True)
@@ -408,12 +386,12 @@ class Action(ADCMModel):
 
     state_on_success = models.CharField(max_length=64, blank=True)
     state_on_fail = models.CharField(max_length=64, blank=True)
-    state_available = JSONField(default=[])
+    state_available = models.JSONField(default=list)
 
-    params = JSONField(default={})
-    log_files = JSONField(default=[])
+    params = models.JSONField(default=dict)
+    log_files = models.JSONField(default=list)
 
-    hostcomponentmap = JSONField(default=[])
+    hostcomponentmap = models.JSONField(default=list)
     allow_to_terminate = models.BooleanField(default=False)
     partial_execution = models.BooleanField(default=False)
     host_action = models.BooleanField(default=False)
@@ -434,7 +412,7 @@ class SubAction(ADCMModel):
     script = models.CharField(max_length=160)
     script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
     state_on_fail = models.CharField(max_length=64, blank=True)
-    params = JSONField(default={})
+    params = models.JSONField(default=dict)
 
 
 class HostComponent(ADCMModel):
@@ -476,8 +454,8 @@ class PrototypeConfig(ADCMModel):
     type = models.CharField(max_length=16, choices=CONFIG_FIELD_TYPE)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
-    limits = JSONField(default={})
-    ui_options = JSONField(blank=True, default={})
+    limits = models.JSONField(default=dict)
+    ui_options = models.JSONField(blank=True, default=dict)
     required = models.BooleanField(default=True)
 
     class Meta:
@@ -499,7 +477,7 @@ class PrototypeImport(ADCMModel):
     max_version = models.CharField(max_length=80)
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
-    default = JSONField(null=True, default=None)
+    default = models.JSONField(null=True, default=None)
     required = models.BooleanField(default=False)
     multibind = models.BooleanField(default=False)
 
@@ -521,6 +499,8 @@ class ClusterBind(ADCMModel):
         default=None
     )
 
+    __error_code__ = 'BIND_NOT_FOUND'
+
     class Meta:
         unique_together = (('cluster', 'service', 'source_cluster', 'source_service'),)
 
@@ -535,7 +515,7 @@ JOB_STATUS = (
 
 class UserProfile(ADCMModel):
     login = models.CharField(max_length=32, unique=True)
-    profile = JSONField(default='')
+    profile = models.JSONField(default=str)
 
 
 class Role(ADCMModel):
@@ -551,8 +531,8 @@ class JobLog(ADCMModel):
     action_id = models.PositiveIntegerField()
     sub_action_id = models.PositiveIntegerField(default=0)
     pid = models.PositiveIntegerField(blank=True, default=0)
-    selector = JSONField(default={})
-    log_files = JSONField(default=[])
+    selector = models.JSONField(default=dict)
+    log_files = models.JSONField(default=list)
     status = models.CharField(max_length=16, choices=JOB_STATUS)
     start_date = models.DateTimeField()
     finish_date = models.DateTimeField(db_index=True)
@@ -564,12 +544,12 @@ class TaskLog(ADCMModel):
     action_id = models.PositiveIntegerField()
     object_id = models.PositiveIntegerField()
     pid = models.PositiveIntegerField(blank=True, default=0)
-    selector = JSONField(default={})
+    selector = models.JSONField(default=dict)
     status = models.CharField(max_length=16, choices=JOB_STATUS)
-    config = JSONField(null=True, default=None)
-    attr = JSONField(default={})
-    hostcomponentmap = JSONField(null=True, default=None)
-    hosts = JSONField(null=True, default=None)
+    config = models.JSONField(null=True, default=None)
+    attr = models.JSONField(default=dict)
+    hostcomponentmap = models.JSONField(null=True, default=None)
+    hosts = models.JSONField(null=True, default=None)
     verbose = models.BooleanField(default=False)
     start_date = models.DateTimeField()
     finish_date = models.DateTimeField()
@@ -637,9 +617,9 @@ class StagePrototype(ADCMModel):
     license_hash = models.CharField(max_length=64, default=None, null=True)
     required = models.BooleanField(default=False)
     shared = models.BooleanField(default=False)
-    constraint = JSONField(default=[0, '+'])
-    requires = JSONField(default=[])
-    bound_to = JSONField(default={})
+    constraint = models.JSONField(default=get_default_constraint)
+    requires = models.JSONField(default=list)
+    bound_to = models.JSONField(default=dict)
     adcm_min_version = models.CharField(max_length=80, default=None, null=True)
     description = models.TextField(blank=True)
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
@@ -660,8 +640,8 @@ class StageUpgrade(ADCMModel):
     max_version = models.CharField(max_length=80)
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
-    from_edition = JSONField(default=['community'])
-    state_available = JSONField(default=[])
+    from_edition = models.JSONField(default=get_default_from_edition)
+    state_available = models.JSONField(default=list)
     state_on_success = models.CharField(max_length=64, blank=True)
 
 
@@ -670,7 +650,7 @@ class StageAction(ADCMModel):
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
-    ui_options = JSONField(default={})
+    ui_options = models.JSONField(default=dict)
 
     type = models.CharField(max_length=16, choices=ACTION_TYPE)
     button = models.CharField(max_length=64, default=None, null=True)
@@ -680,12 +660,12 @@ class StageAction(ADCMModel):
 
     state_on_success = models.CharField(max_length=64, blank=True)
     state_on_fail = models.CharField(max_length=64, blank=True)
-    state_available = JSONField(default=[])
+    state_available = models.JSONField(default=list)
 
-    params = JSONField(default={})
-    log_files = JSONField(default=[])
+    params = models.JSONField(default=dict)
+    log_files = models.JSONField(default=list)
 
-    hostcomponentmap = JSONField(default=[])
+    hostcomponentmap = models.JSONField(default=list)
     allow_to_terminate = models.BooleanField(default=False)
     partial_execution = models.BooleanField(default=False)
     host_action = models.BooleanField(default=False)
@@ -704,7 +684,7 @@ class StageSubAction(ADCMModel):
     script = models.CharField(max_length=160)
     script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
     state_on_fail = models.CharField(max_length=64, blank=True)
-    params = JSONField(default={})
+    params = models.JSONField(default=dict)
 
 
 class StagePrototypeConfig(ADCMModel):
@@ -716,8 +696,8 @@ class StagePrototypeConfig(ADCMModel):
     type = models.CharField(max_length=16, choices=CONFIG_FIELD_TYPE)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
-    limits = JSONField(default={})
-    ui_options = JSONField(blank=True, default={})   # JSON
+    limits = models.JSONField(default=dict)
+    ui_options = models.JSONField(blank=True, default=dict)
     required = models.BooleanField(default=True)
 
     class Meta:
@@ -739,7 +719,7 @@ class StagePrototypeImport(ADCMModel):
     max_version = models.CharField(max_length=80)
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
-    default = JSONField(null=True, default=None)
+    default = models.JSONField(null=True, default=None)
     required = models.BooleanField(default=False)
     multibind = models.BooleanField(default=False)
 

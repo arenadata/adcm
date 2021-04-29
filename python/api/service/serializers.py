@@ -16,8 +16,8 @@ from django.db.utils import IntegrityError
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
-from api.api_views import check_obj, filter_actions, CommonAPIURL
-from api.cluster_serial import BindSerializer
+from api.api_views import check_obj, filter_actions, CommonAPIURL, ObjectURL
+from api.cluster.serializers import BindSerializer
 from api.action.serializers import ActionShort
 from api.component.serializers import ComponentUISerializer
 
@@ -28,24 +28,6 @@ from cm.errors import AdcmEx
 from cm.models import Prototype, Action, ServiceComponent, Cluster
 
 
-class ServiceObjectUrlField(serializers.HyperlinkedIdentityField):
-    def get_url(self, obj, view_name, request, format):
-        kwargs = {'service_id': obj.id}
-        return reverse(view_name, kwargs=kwargs, request=request, format=format)
-
-
-class ServiceComponentDetailsUrlField(serializers.HyperlinkedIdentityField):
-    def get_url(self, obj, view_name, request, format):
-        kwargs = {'service_id': obj.service.id, 'component_id': obj.id}
-        return reverse(view_name, kwargs=kwargs, request=request, format=format)
-
-
-class ServiceActionDetailsUrlField(serializers.HyperlinkedIdentityField):
-    def get_url(self, obj, view_name, request, format):
-        kwargs = {'service_id': self.context['service_id'], 'action_id': obj.id}
-        return reverse(view_name, kwargs=kwargs, request=request, format=format)
-
-
 class ServiceSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     cluster_id = serializers.IntegerField(required=True)
@@ -53,7 +35,7 @@ class ServiceSerializer(serializers.Serializer):
     display_name = serializers.CharField(read_only=True)
     state = serializers.CharField(read_only=True)
     prototype_id = serializers.IntegerField(required=True, help_text='id of service prototype')
-    url = ServiceObjectUrlField(read_only=True, view_name='service-details')
+    url = ObjectURL(read_only=True, view_name='service-details')
 
     def validate_prototype_id(self, prototype_id):
         prototype = check_obj(
@@ -69,6 +51,17 @@ class ServiceSerializer(serializers.Serializer):
             raise AdcmEx('SERVICE_CONFLICT') from None
 
 
+class ClusterServiceSerializer(ServiceSerializer):
+    cluster_id = serializers.IntegerField(read_only=True)
+
+    def create(self, validated_data):
+        try:
+            cluster = check_obj(Cluster, self.context.get('cluster_id'))
+            return add_service_to_cluster(cluster, validated_data['prototype_id'])
+        except IntegrityError:
+            raise AdcmEx('SERVICE_CONFLICT') from None
+
+
 class ServiceDetailSerializer(ServiceSerializer):
     prototype_id = serializers.IntegerField(read_only=True)
     description = serializers.CharField(read_only=True)
@@ -78,9 +71,9 @@ class ServiceDetailSerializer(ServiceSerializer):
     monitoring = serializers.CharField(read_only=True)
     action = CommonAPIURL(read_only=True, view_name='object-action')
     config = CommonAPIURL(read_only=True, view_name='object-config')
-    component = ServiceObjectUrlField(read_only=True, view_name='component')
-    imports = ServiceObjectUrlField(read_only=True, view_name='service-import')
-    bind = ServiceObjectUrlField(read_only=True, view_name='service-bind')
+    component = ObjectURL(read_only=True, view_name='component')
+    imports = ObjectURL(read_only=True, view_name='service-import')
+    bind = ObjectURL(read_only=True, view_name='service-bind')
     prototype = serializers.HyperlinkedIdentityField(
         view_name='service-type-details', lookup_field='prototype_id',
         lookup_url_kwarg='prototype_id')
@@ -114,12 +107,6 @@ class ServiceUISerializer(ServiceDetailSerializer):
 
     def get_version(self, obj):
         return obj.prototype.version
-
-
-class ServiceComponentUrlField(serializers.HyperlinkedIdentityField):
-    def get_url(self, obj, view_name, request, format):
-        kwargs = {'service_id': obj.service.id, 'component_id': obj.id}
-        return reverse(view_name, kwargs=kwargs, request=request, format=format)
 
 
 class ImportPostSerializer(serializers.Serializer):

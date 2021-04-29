@@ -19,8 +19,16 @@ import sys
 sys.path.append('/adcm/python')
 
 import adcm.init_django
-from cm.ansible_plugin import ContextActionModule
-import cm.adcm_config
+from cm.ansible_plugin import (
+    ContextActionModule,
+    set_cluster_config,
+    set_service_config,
+    set_service_config_by_id,
+    set_host_config,
+    set_provider_config,
+    set_component_config,
+    set_component_config_by_name,
+)
 
 
 ANSIBLE_METADATA = {'metadata_version': '1.1', 'supported_by': 'Arenadata'}
@@ -88,7 +96,7 @@ class ActionModule(ContextActionModule):
 
     def _do_cluster(self, task_vars, context):
         res = self._wrap_call(
-            cm.adcm_config.set_cluster_config,
+            set_cluster_config,
             context['cluster_id'],
             self._task.args["key"],
             self._task.args["value"]
@@ -98,7 +106,7 @@ class ActionModule(ContextActionModule):
 
     def _do_service_by_name(self, task_vars, context):
         res = self._wrap_call(
-            cm.adcm_config.set_service_config,
+            set_service_config,
             context['cluster_id'],
             self._task.args["service_name"],
             self._task.args["key"],
@@ -109,7 +117,7 @@ class ActionModule(ContextActionModule):
 
     def _do_service(self, task_vars, context):
         res = self._wrap_call(
-            cm.adcm_config.set_service_config_by_id,
+            set_service_config_by_id,
             context['cluster_id'],
             context['service_id'],
             self._task.args["key"],
@@ -120,7 +128,7 @@ class ActionModule(ContextActionModule):
 
     def _do_host(self, task_vars, context):
         res = self._wrap_call(
-            cm.adcm_config.set_host_config,
+            set_host_config,
             context['host_id'],
             self._task.args["key"],
             self._task.args["value"]
@@ -131,7 +139,7 @@ class ActionModule(ContextActionModule):
     def _do_host_from_provider(self, task_vars, context):
         # TODO: Check that host is in provider
         res = self._wrap_call(
-            cm.adcm_config.set_host_config,
+            set_host_config,
             self._task.args['host_id'],
             self._task.args["key"],
             self._task.args["value"]
@@ -141,7 +149,7 @@ class ActionModule(ContextActionModule):
 
     def _do_provider(self, task_vars, context):
         res = self._wrap_call(
-            cm.adcm_config.set_provider_config,
+            set_provider_config,
             context['provider_id'],
             self._task.args["key"],
             self._task.args["value"]
@@ -151,7 +159,7 @@ class ActionModule(ContextActionModule):
 
     def _do_component_by_name(self, task_vars, context):
         res = self._wrap_call(
-            cm.adcm_config.set_component_config_by_name,
+            set_component_config_by_name,
             context['cluster_id'],
             context['service_id'],
             self._task.args['component_name'],
@@ -164,7 +172,7 @@ class ActionModule(ContextActionModule):
 
     def _do_component(self, task_vars, context):
         res = self._wrap_call(
-            cm.adcm_config.set_component_config,
+            set_component_config,
             context['component_id'],
             self._task.args['key'],
             self._task.args['value']

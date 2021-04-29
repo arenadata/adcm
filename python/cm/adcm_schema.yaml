@@ -523,7 +523,7 @@ var_func_host:
   items:
     <<: *varinat_items
     name: string
-    args: vfh_args
+    args: vfh_predicate_item
   required_items:
     - name
     - args

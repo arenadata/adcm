@@ -13,9 +13,9 @@
 from rest_framework.response import Response
 
 from api.api_views import (
-    ListView, GenericAPIPermView, ActionFilter, create, check_obj, filter_actions
+    ListView, DetailViewRO, GenericAPIPermView, ActionFilter, create, check_obj, filter_actions
 )
-from api.job_serial import RunTaskSerializer
+from api.job.serializers import RunTaskSerializer
 from cm.models import (
     Host, ClusterObject, ServiceComponent, Action, TaskLog, HostComponent, get_model_by_type
 )
@@ -100,9 +100,10 @@ class ActionList(ListView):
         return Response(serializer.data)
 
 
-class ActionDetail(GenericAPIPermView):
+class ActionDetail(DetailViewRO):
     queryset = Action.objects.all()
     serializer_class = serializers.ActionDetailSerializer
+    serializer_class_ui = serializers.ActionUISerializer
 
     def get(self, request, *args, **kwargs):
         """
@@ -114,7 +115,10 @@ class ActionDetail(GenericAPIPermView):
             objects = {'host': obj}
         else:
             objects = {action.prototype.type: obj}
-        serializer = self.serializer_class(action, context={'request': request, 'objects': objects})
+        serializer_class = self.select_serializer(request)
+        serializer = serializer_class(
+            action, context={'request': request, 'objects': objects, 'obj': obj}
+        )
         return Response(serializer.data)
 
 

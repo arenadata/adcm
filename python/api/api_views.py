@@ -89,6 +89,7 @@ def get_api_url_kwargs(obj, request, no_obj_type=False):
     kwargs = {
         f'{obj_type}_id': obj.id,
     }
+    # Do not include object_type in kwargs if no_obj_type == True
     if not no_obj_type:
         kwargs['object_type'] = obj_type
     if obj_type == 'service':
@@ -109,6 +110,12 @@ def get_api_url_kwargs(obj, request, no_obj_type=False):
 class CommonAPIURL(serializers.HyperlinkedIdentityField):
     def get_url(self, obj, view_name, request, format):   # pylint: disable=redefined-builtin
         kwargs = get_api_url_kwargs(obj, request)
+        return reverse(view_name, kwargs=kwargs, request=request, format=format)
+
+
+class ObjectURL(serializers.HyperlinkedIdentityField):
+    def get_url(self, obj, view_name, request, format):   # pylint: disable=redefined-builtin
+        kwargs = get_api_url_kwargs(obj, request, True)
         return reverse(view_name, kwargs=kwargs, request=request, format=format)
 
 
@@ -178,7 +185,7 @@ def fix_ordering(field, view):
         fix = fix.replace('cluster_', 'cluster__')
     if view.__class__.__name__ not in ('BundleList',):
         fix = fix.replace('version', 'version_order')
-    if view.__class__.__name__ in ['ClusterServiceList', 'ServiceListView', 'ComponentListView']:
+    if view.__class__.__name__ in ['ServiceListView', 'ComponentListView']:
         if 'display_name' in fix:
             fix = fix.replace('display_name', 'prototype__display_name')
     return fix
