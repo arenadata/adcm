@@ -809,7 +809,8 @@ def log_rotation():
 def prepare_ansible_config(job_id, action, sub_action):
     config_parser = ConfigParser()
     config_parser['defaults'] = {
-        'stdout_callback': 'yaml'
+        'stdout_callback': 'yaml',
+        'callback_whitelist': 'profile_tasks',
     }
     adcm_object = ADCM.objects.get(id=1)
     cl = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
