@@ -12,34 +12,18 @@
 
 # pylint: disable=too-many-branches,
 
-from django.utils import timezone
-
 import cm.config as config
 from cm import api
 from cm.adcm_config import obj_ref
 from cm.logger import log
 from cm.models import (
-    ServiceComponent,
-    Host,
-    ClusterObject,
     ADCM,
     Cluster,
+    ClusterObject,
+    Host,
     HostProvider,
-    TaskLog,
-    JobLog,
+    ServiceComponent,
 )
-
-
-def set_task_status(task, status, event):
-    task.status = status
-    task.finish_date = timezone.now()
-    task.save()
-    event.set_task_status(task.id, status)
-
-
-def set_job_status(job_id, status, event, pid=0):
-    JobLog.objects.filter(id=job_id).update(status=status, pid=pid, finish_date=timezone.now())
-    event.set_job_status(job_id, status)
 
 
 def lock_obj(obj, event):
@@ -174,7 +158,3 @@ def unlock_all(event):
         unlock_objects(obj, event)
     for obj in Host.objects.filter(state=config.Job.LOCKED):
         unlock_objects(obj, event)
-    for task in TaskLog.objects.filter(status=config.Job.RUNNING):
-        set_task_status(task, config.Job.ABORTED, event)
-    for job in JobLog.objects.filter(status=config.Job.RUNNING):
-        set_job_status(job.id, config.Job.ABORTED, event)

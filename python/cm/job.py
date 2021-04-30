@@ -32,7 +32,7 @@ from cm import api, issue, inventory, adcm_config, variant
 from cm.adcm_config import obj_ref, process_file_type
 from cm.errors import raise_AdcmEx as err
 from cm.inventory import get_obj_config, process_config_and_attr
-from cm.lock import lock_objects, unlock_objects, set_task_status, set_job_status
+from cm.lock import lock_objects, unlock_objects  # , set_task_status, set_job_status
 from cm.logger import log
 from cm.models import (
     Cluster, Action, SubAction, TaskLog, JobLog, CheckLog, Host, ADCM,
@@ -832,3 +832,22 @@ def prepare_ansible_config(job_id, action, sub_action):
 
     with open(os.path.join(config.RUN_DIR, f'{job_id}/ansible.cfg'), 'w') as config_file:
         config_parser.write(config_file)
+
+
+def set_task_status(task, status, event):
+    task.status = status
+    task.finish_date = timezone.now()
+    task.save()
+    event.set_task_status(task.id, status)
+
+
+def set_job_status(job_id, status, event, pid=0):
+    JobLog.objects.filter(id=job_id).update(status=status, pid=pid, finish_date=timezone.now())
+    event.set_job_status(job_id, status)
+
+
+def abort_all(event):
+    for task in TaskLog.objects.filter(status=config.Job.RUNNING):
+        set_task_status(task, config.Job.ABORTED, event)
+    for job in JobLog.objects.filter(status=config.Job.RUNNING):
+        set_job_status(job.id, config.Job.ABORTED, event)

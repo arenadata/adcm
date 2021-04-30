@@ -42,7 +42,7 @@ class TestJob(TestCase):
         pid = 10
         event = Mock()
 
-        lock_module.set_job_status(job.id, status, event, pid)
+        job_module.set_job_status(job.id, status, event, pid)
 
         job = models.JobLog.objects.get(id=job.id)
         self.assertEqual(job.status, status)
@@ -56,7 +56,7 @@ class TestJob(TestCase):
             action_id=1, object_id=1,
             start_date=timezone.now(), finish_date=timezone.now())
 
-        lock_module.set_task_status(task, config.Job.RUNNING, event)
+        job_module.set_task_status(task, config.Job.RUNNING, event)
 
         self.assertEqual(task.status, config.Job.RUNNING)
         event.set_task_status.assert_called_once_with(task.id, config.Job.RUNNING)
