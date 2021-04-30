@@ -70,7 +70,7 @@ def start_task(action_id, selector, conf, attr, hc, hosts, verbose):   # pylint:
 def check_task(action, selector, conf):
     obj, cluster, provider = get_action_context(action, selector)
     check_action_state(action, obj)
-    iss = issue.get_issue(obj)
+    iss = issue.aggregate_issues(obj)
     if not issue.issue_to_bool(iss):
         err('TASK_ERROR', 'action has issues', iss)
     return obj, cluster, provider
