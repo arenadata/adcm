@@ -113,8 +113,8 @@ def service(sdk_client_fs, name='zookeeper'):
     return cluster(sdk_client_fs).service_add(name=name)
 
 
-def cluster_action_run(sdk_client_fs, name, verbose_state=False):
-    return cluster(sdk_client_fs).action(name=name).run(verbose=verbose_state)
+def cluster_action_run(sdk_client_fs, name, **kwargs):
+    return cluster(sdk_client_fs).action(name=name).run(**kwargs)
 
 
 def expected_success_task(obj, job):
