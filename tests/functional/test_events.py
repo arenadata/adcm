@@ -212,7 +212,7 @@ def test_events_when_service_(case, action_name, expected, ws, cluster_with_svc_
 )
 def test_check_time_information_in_action_run(sdk_client_fs: ADCMClient, verbose_state):
     """Test for timestamps in Job logs in both ordinary and verbose modes."""
-    task = cluster_action_run(sdk_client_fs, name="install", verbose_state=verbose_state)
+    task = cluster_action_run(sdk_client_fs, name="install", verbose=verbose_state)
     with allure.step("Check timestamps"):
         task.wait()
         log = task.job().log()
