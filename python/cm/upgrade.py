@@ -184,7 +184,7 @@ def check_upgrade_import(obj, upgrade):   # pylint: disable=too-many-branches
 
 
 def check_upgrade(obj, upgrade):
-    issue = cm.issue.get_issue(obj)
+    issue = cm.issue.aggregate_issues(obj)
     if not cm.issue.issue_to_bool(issue):
         return False, '{} has issue: {}'.format(obj_ref(obj), issue)
 

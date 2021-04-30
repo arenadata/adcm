@@ -94,7 +94,7 @@ class TestImport(TestCase):
         _, _, cluster2 = self.cook_cluster('Not_Monitoring', 'Cluster2')
         ClusterBind.objects.create(cluster=cluster1, source_cluster=cluster2)
 
-        self.assertEqual(cm.issue.check_issue(cluster1), {'required_import': False})
+        self.assertEqual(cm.issue.check_for_issue(cluster1), {'required_import': False})
 
     def test_issue_cluster_imported(self):
         _, proto1, cluster1 = self.cook_cluster('Hadoop', 'Cluster1')
@@ -103,7 +103,7 @@ class TestImport(TestCase):
         _, _, cluster2 = self.cook_cluster('Monitoring', 'Cluster2')
         ClusterBind.objects.create(cluster=cluster1, source_cluster=cluster2)
 
-        self.assertEqual(cm.issue.check_issue(cluster1), {})
+        self.assertEqual(cm.issue.check_for_issue(cluster1), {})
 
     def test_issue_service_required_import(self):
         b1, _, cluster1 = self.cook_cluster('Hadoop', 'Cluster1')
@@ -114,7 +114,7 @@ class TestImport(TestCase):
         _, _, cluster2 = self.cook_cluster('Non_Monitoring', 'Cluster2')
         ClusterBind.objects.create(cluster=cluster1, service=service, source_cluster=cluster2)
 
-        self.assertEqual(cm.issue.check_issue(service), {'required_import': False})
+        self.assertEqual(cm.issue.check_for_issue(service), {'required_import': False})
 
     def test_issue_service_imported(self):
         b1, _, cluster1 = self.cook_cluster('Hadoop', 'Cluster1')
@@ -125,4 +125,4 @@ class TestImport(TestCase):
         _, _, cluster2 = self.cook_cluster('Monitoring', 'Cluster2')
         ClusterBind.objects.create(cluster=cluster1, service=service, source_cluster=cluster2)
 
-        self.assertEqual(cm.issue.check_issue(service), {})
+        self.assertEqual(cm.issue.check_for_issue(service), {})

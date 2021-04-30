@@ -198,6 +198,15 @@ class ADCM(ADCMModel):
     def bundle_id(self):
         return self.prototype.bundle_id
 
+    @property
+    def serialized_issue(self):
+        result = {
+            'id': self.id,
+            'name': self.name,
+            'issue': self.issue,
+        }
+        return result if result['issue'] else {}
+
 
 class Cluster(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
@@ -224,6 +233,15 @@ class Cluster(ADCMModel):
 
     def __str__(self):
         return f'{self.name} ({self.id})'
+
+    @property
+    def serialized_issue(self):
+        result = {
+            'id': self.id,
+            'name': self.name,
+            'issue': self.issue,
+        }
+        return result if result['issue'] else {}
 
 
 class HostProvider(ADCMModel):
@@ -252,6 +270,15 @@ class HostProvider(ADCMModel):
     def __str__(self):
         return str(self.name)
 
+    @property
+    def serialized_issue(self):
+        result = {
+            'id': self.id,
+            'name': self.name,
+            'issue': self.issue,
+        }
+        return result if result['issue'] else {}
+
 
 class Host(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
@@ -276,6 +303,18 @@ class Host(ADCMModel):
 
     def __str__(self):
         return "{}".format(self.fqdn)
+
+    @property
+    def serialized_issue(self):
+        result = {
+            'id': self.id,
+            'name': self.fqdn,
+            'issue': self.issue.copy()
+        }
+        provider_issue = self.provider.serialized_issue
+        if provider_issue:
+            result['issue']['provider'] = provider_issue
+        return result if result['issue'] else {}
 
 
 class ClusterObject(ADCMModel):
@@ -312,6 +351,15 @@ class ClusterObject(ADCMModel):
     @property
     def monitoring(self):
         return self.prototype.monitoring
+
+    @property
+    def serialized_issue(self):
+        result = {
+            'id': self.id,
+            'name': self.prototype.name,
+            'issue': self.issue,
+        }
+        return result if result['issue'] else {}
 
     class Meta:
         unique_together = (('cluster', 'prototype'),)
@@ -355,6 +403,15 @@ class ServiceComponent(ADCMModel):
     @property
     def monitoring(self):
         return self.prototype.monitoring
+
+    @property
+    def serialized_issue(self):
+        result = {
+            'id': self.id,
+            'name': self.prototype.name,
+            'issue': self.issue,
+        }
+        return result if result['issue'] else {}
 
     class Meta:
         unique_together = (('cluster', 'service', 'prototype'),)

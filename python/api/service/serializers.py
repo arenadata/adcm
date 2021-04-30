@@ -79,7 +79,7 @@ class ServiceDetailSerializer(ServiceSerializer):
         lookup_url_kwarg='prototype_id')
 
     def get_issue(self, obj):
-        return issue.get_issue(obj)
+        return issue.aggregate_issues(obj)
 
     def get_status(self, obj):
         return status_api.get_service_status(obj.cluster.id, obj.id)
