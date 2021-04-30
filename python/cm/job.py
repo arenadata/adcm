@@ -70,7 +70,7 @@ def start_task(action_id, selector, conf, attr, hc, hosts, verbose):   # pylint:
 def check_task(action, selector, conf):
     obj, cluster, provider = get_action_context(action, selector)
     check_action_state(action, obj)
-    iss = issue.get_issue(obj)
+    iss = issue.aggregate_issues(obj)
     if not issue.issue_to_bool(iss):
         err('TASK_ERROR', 'action has issues', iss)
     return obj, cluster, provider
@@ -809,7 +809,8 @@ def log_rotation():
 def prepare_ansible_config(job_id, action, sub_action):
     config_parser = ConfigParser()
     config_parser['defaults'] = {
-        'stdout_callback': 'yaml'
+        'stdout_callback': 'yaml',
+        'callback_whitelist': 'profile_tasks',
     }
     adcm_object = ADCM.objects.get(id=1)
     cl = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)

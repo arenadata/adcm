@@ -86,7 +86,7 @@ class ClusterDetailSerializer(ClusterSerializer):
     prototype = hlink('cluster-type-details', 'prototype_id', 'prototype_id')
 
     def get_issue(self, obj):
-        return cm.issue.get_issue(obj)
+        return cm.issue.aggregate_issues(obj)
 
     def get_status(self, obj):
         return cm.status_api.get_cluster_status(obj.id)

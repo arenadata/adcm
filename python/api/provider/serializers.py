@@ -60,7 +60,7 @@ class ProviderDetailSerializer(ProviderSerializer):
     host = ObjectURL(read_only=True, view_name='host')
 
     def get_issue(self, obj):
-        return cm.issue.get_issue(obj)
+        return cm.issue.aggregate_issues(obj)
 
 
 class ProviderUISerializer(ProviderDetailSerializer):
