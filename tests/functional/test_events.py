@@ -216,4 +216,5 @@ def test_check_timestamp_in_job_logs(sdk_client_fs: ADCMClient, verbose_state):
     with allure.step("Check timestamps presence in job logs"):
         task.wait()
         log = task.job().log()
-        assert strftime("%A %d %B %Y  %H:%M", gmtime()) in log.content, "There are no timestamps in job logs"
+        assert strftime("%A %d %B %Y  %H:%M", gmtime()) in log.content, \
+            "There are no timestamps in job logs"
