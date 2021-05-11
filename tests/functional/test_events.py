@@ -210,7 +210,7 @@ def test_events_when_service_(case, action_name, expected, ws, cluster_with_svc_
 @pytest.mark.parametrize(
     "verbose_state", [True, False], ids=["verbose_state_true", "verbose_state_false"]
 )
-def test_check_time_information_in_action_run(sdk_client_fs: ADCMClient, verbose_state):
+def test_check_timestamp_in_job_logs(sdk_client_fs: ADCMClient, verbose_state):
     """Test for timestamps in Job logs in both ordinary and verbose modes."""
     task = cluster_action_run(sdk_client_fs, name="install", verbose=verbose_state)
     with allure.step("Check timestamps"):
