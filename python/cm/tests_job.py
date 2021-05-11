@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# pylint: disable=protected-access
+
 import os
 from unittest.mock import patch, Mock, call
 
@@ -166,12 +169,12 @@ class TestJob(TestCase):
         for obj, check_assert in data:
             with self.subTest(obj=obj):
 
-                lock_module.unlock_obj(obj, event)
+                lock_module._unlock_obj(obj, event)
 
                 check_assert()
                 mock_set_object_state.reset_mock()
 
-    @patch('cm.lock.unlock_obj')
+    @patch('cm.lock._unlock_obj')
     def test_unlock_objects(self, mock_unlock_obj):
         bundle = models.Bundle.objects.create()
         prototype = models.Prototype.objects.create(bundle=bundle)

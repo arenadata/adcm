@@ -26,7 +26,7 @@ from cm.models import (
 )
 
 
-def lock_obj(obj, event):
+def _lock_obj(obj, event):
     stack = obj.stack
 
     if not stack:
@@ -39,7 +39,7 @@ def lock_obj(obj, event):
     api.set_object_state(obj, config.Job.LOCKED, event)
 
 
-def unlock_obj(obj, event):
+def _unlock_obj(obj, event):
     if obj.stack:
         stack = obj.stack
     else:
@@ -57,40 +57,40 @@ def unlock_obj(obj, event):
 
 def lock_objects(obj, event):
     if isinstance(obj, ServiceComponent):
-        lock_obj(obj, event)
-        lock_obj(obj.service, event)
-        lock_obj(obj.cluster, event)
+        _lock_obj(obj, event)
+        _lock_obj(obj.service, event)
+        _lock_obj(obj.cluster, event)
         for host in Host.objects.filter(cluster=obj.cluster):
-            lock_obj(host, event)
+            _lock_obj(host, event)
     elif isinstance(obj, ClusterObject):
-        lock_obj(obj, event)
-        lock_obj(obj.cluster, event)
+        _lock_obj(obj, event)
+        _lock_obj(obj.cluster, event)
         for sc in ServiceComponent.objects.filter(service=obj):
-            lock_obj(sc, event)
+            _lock_obj(sc, event)
         for host in Host.objects.filter(cluster=obj.cluster):
-            lock_obj(host, event)
+            _lock_obj(host, event)
     elif isinstance(obj, Host):
-        lock_obj(obj, event)
+        _lock_obj(obj, event)
         if obj.cluster:
-            lock_obj(obj.cluster, event)
+            _lock_obj(obj.cluster, event)
             for service in ClusterObject.objects.filter(cluster=obj.cluster):
-                lock_obj(service, event)
+                _lock_obj(service, event)
             for sc in ServiceComponent.objects.filter(cluster=obj.cluster):
-                lock_obj(sc, event)
+                _lock_obj(sc, event)
     elif isinstance(obj, HostProvider):
-        lock_obj(obj, event)
+        _lock_obj(obj, event)
         for host in Host.objects.filter(provider=obj):
-            lock_obj(host, event)
+            _lock_obj(host, event)
     elif isinstance(obj, ADCM):
-        lock_obj(obj, event)
+        _lock_obj(obj, event)
     elif isinstance(obj, Cluster):
-        lock_obj(obj, event)
+        _lock_obj(obj, event)
         for service in ClusterObject.objects.filter(cluster=obj):
-            lock_obj(service, event)
+            _lock_obj(service, event)
         for sc in ServiceComponent.objects.filter(cluster=obj):
-            lock_obj(sc, event)
+            _lock_obj(sc, event)
         for host in Host.objects.filter(cluster=obj):
-            lock_obj(host, event)
+            _lock_obj(host, event)
     else:
         log.warning('lock_objects: unknown object type: %s', obj)
 
@@ -107,40 +107,40 @@ def unlock_deleted_objects(job, event):
 
 def unlock_objects(obj, event, job=None):
     if isinstance(obj, ServiceComponent):
-        unlock_obj(obj, event)
-        unlock_obj(obj.service, event)
-        unlock_obj(obj.cluster, event)
+        _unlock_obj(obj, event)
+        _unlock_obj(obj.service, event)
+        _unlock_obj(obj.cluster, event)
         for host in Host.objects.filter(cluster=obj.cluster):
-            unlock_obj(host, event)
+            _unlock_obj(host, event)
     elif isinstance(obj, ClusterObject):
-        unlock_obj(obj, event)
-        unlock_obj(obj.cluster, event)
+        _unlock_obj(obj, event)
+        _unlock_obj(obj.cluster, event)
         for sc in ServiceComponent.objects.filter(service=obj):
-            unlock_obj(sc, event)
+            _unlock_obj(sc, event)
         for host in Host.objects.filter(cluster=obj.cluster):
-            unlock_obj(host, event)
+            _unlock_obj(host, event)
     elif isinstance(obj, Host):
-        unlock_obj(obj, event)
+        _unlock_obj(obj, event)
         if obj.cluster:
-            unlock_obj(obj.cluster, event)
+            _unlock_obj(obj.cluster, event)
             for service in ClusterObject.objects.filter(cluster=obj.cluster):
-                unlock_obj(service, event)
+                _unlock_obj(service, event)
             for sc in ServiceComponent.objects.filter(cluster=obj.cluster):
-                unlock_obj(sc, event)
+                _unlock_obj(sc, event)
     elif isinstance(obj, HostProvider):
-        unlock_obj(obj, event)
+        _unlock_obj(obj, event)
         for host in Host.objects.filter(provider=obj):
-            unlock_obj(host, event)
+            _unlock_obj(host, event)
     elif isinstance(obj, ADCM):
-        unlock_obj(obj, event)
+        _unlock_obj(obj, event)
     elif isinstance(obj, Cluster):
-        unlock_obj(obj, event)
+        _unlock_obj(obj, event)
         for service in ClusterObject.objects.filter(cluster=obj):
-            unlock_obj(service, event)
+            _unlock_obj(service, event)
         for sc in ServiceComponent.objects.filter(cluster=obj):
-            unlock_obj(sc, event)
+            _unlock_obj(sc, event)
         for host in Host.objects.filter(cluster=obj):
-            unlock_obj(host, event)
+            _unlock_obj(host, event)
     elif obj is None:
         unlock_deleted_objects(job, event)
     else:
