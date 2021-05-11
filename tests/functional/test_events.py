@@ -213,7 +213,7 @@ def test_events_when_service_(case, action_name, expected, ws, cluster_with_svc_
 def test_check_timestamp_in_job_logs(sdk_client_fs: ADCMClient, verbose_state):
     """Test that timestamps are presented in Job logs for both ordinary and verbose modes."""
     task = cluster_action_run(sdk_client_fs, name="install", verbose=verbose_state)
-    with allure.step("Check timestamps"):
+    with allure.step("Check timestamps presence in job logs"):
         task.wait()
         log = task.job().log()
         assert strftime("%A %d %B %Y  %H:%M", gmtime()) in log.content
