@@ -32,7 +32,7 @@ from cm import api, issue, inventory, adcm_config, variant
 from cm.adcm_config import obj_ref, process_file_type
 from cm.errors import raise_AdcmEx as err
 from cm.inventory import get_obj_config, process_config_and_attr
-from cm.lock import lock_objects, unlock_objects  # , set_task_status, set_job_status
+from cm.lock import lock_objects, unlock_objects
 from cm.logger import log
 from cm.models import (
     Cluster, Action, SubAction, TaskLog, JobLog, CheckLog, Host, ADCM,
@@ -96,6 +96,7 @@ def check_action_hosts(action, cluster, provider, hosts):
 @transaction.atomic
 def prepare_task(action, obj, selector, conf, attr, spec, old_hc, delta, host_map, cluster,   # pylint: disable=too-many-locals
                  hosts, event, verbose):
+    DummyData.objects.filter(id=1).update(date=timezone.now())
     lock_objects(obj, event)
 
     if not attr:
@@ -632,6 +633,16 @@ def restore_hc(task, action, status):
     api.save_hc(cluster, host_comp_list)
 
 
+def get_job_cluster(job):
+    """Get Job's cluster for unlocking in case linked objects were somehow deleted"""
+    if not job:
+        return
+
+    selector = job.selector
+    if 'cluster' in selector:
+        return Cluster.objects.get(id=selector['cluster'])
+
+
 def finish_task(task, job, status):
     action = Action.objects.get(id=task.action_id)
     obj = get_task_obj(action.prototype.type, task.object_id)
@@ -641,7 +652,7 @@ def finish_task(task, job, status):
         DummyData.objects.filter(id=1).update(date=timezone.now())
         if state is not None:
             set_action_state(action, task, obj, state)
-        unlock_objects(obj, event, job)
+        unlock_objects(obj or get_job_cluster(job), event)
         restore_hc(task, action, status)
         set_task_status(task, status, event)
     event.send_state()

@@ -38,6 +38,16 @@ def gen_prototype(bundle: models.Bundle, proto_type):
     )
 
 
+def gen_adcm():
+    """Generate or return existing the only ADCM object"""
+    try:
+        return models.ADCM.objects.get(name='ADCM')
+    except models.ObjectDoesNotExist:
+        bundle = gen_bundle()
+        prototype = gen_prototype(bundle, 'adcm')
+        return models.ADCM.objects.create(name='ADCM', prototype=prototype)
+
+
 def gen_cluster(name='', bundle=None, prototype=None):
     """Generate cluster from specified prototype"""
     if not prototype:
@@ -87,7 +97,7 @@ def gen_host(provider, cluster=None, fqdn='', bundle=None, prototype=None):
     """Generate host for specified cluster, provider, and prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
-        prototype = gen_prototype(bundle, 'service')
+        prototype = gen_prototype(bundle, 'host')
     return models.Host.objects.create(
         **_gen_name(fqdn, 'fqdn'),
         cluster=cluster,
