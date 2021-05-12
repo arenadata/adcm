@@ -163,7 +163,8 @@ export class PasswordComponent extends FieldDirective implements OnInit, AfterVi
 
   change(value: string) {
     if (value === null) {
-      this.hideDummy(!!this.ConfirmPasswordField);
+      this.hideDummy(false);
+      this.cd.detectChanges();
     }
   }
 }
