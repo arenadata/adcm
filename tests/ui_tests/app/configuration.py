@@ -282,7 +282,8 @@ class Configuration(BasePage):
 
     @allure.step('Get password elements')
     def get_password_elements(self):
-        return self.driver.find_elements(*ConfigurationLocators.app_fields_password)
+        base_password_fields = self.driver.find_elements(*ConfigurationLocators.app_fields_password)
+        return base_password_fields[0].find_elements(*ConfigurationLocators.displayed_password_fields)
 
     @allure.step('Get display names')
     def get_display_names(self):
