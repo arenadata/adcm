@@ -48,9 +48,9 @@ def check_bundle(bundle_file, use_directory=False, verbose=False):
             untar(bundle_file)
         except FileNotFoundError as e:
             print(e)
+            sys.exit(1)
     if verbose:
         print(f'Bundle "{bundle_file}"')
-        sys.exit(1)
     for conf_file in get_config_files(TMP_DIR):
         check_config(conf_file, os.path.join(cm.config.CODE_DIR, 'cm', 'adcm_schema.yaml'), verbose)
 
