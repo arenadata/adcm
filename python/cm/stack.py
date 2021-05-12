@@ -93,6 +93,7 @@ def check_adcm_config(conf_file):
         rules = ruyaml.round_trip_load(fd)
     try:
         with open(conf_file) as fd:
+            ruyaml.version_info=(0, 15, 0)   # switch off duplicate keys error
             data = ruyaml.round_trip_load(fd, version="1.1")
     except (ruyaml.parser.ParserError, ruyaml.scanner.ScannerError, NotImplementedError) as e:
         err('STACK_LOAD_ERROR', f'YAML decode "{conf_file}" error: {e}')
