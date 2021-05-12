@@ -31,7 +31,7 @@ class HostSerializer(serializers.Serializer):
     url = ObjectURL(read_only=True, view_name='host-details')
 
     def get_issue(self, obj):
-        return cm.issue.get_issue(obj)
+        return cm.issue.aggregate_issues(obj)
 
     def validate_prototype_id(self, prototype_id):
         return check_obj(Prototype, {'id': prototype_id, 'type': 'host'})
@@ -64,7 +64,7 @@ class HostDetailSerializer(HostSerializer):
     prototype = hlink('host-type-details', 'prototype_id', 'prototype_id')
 
     def get_issue(self, obj):
-        return cm.issue.get_issue(obj)
+        return cm.issue.aggregate_issues(obj)
 
     def get_status(self, obj):
         return cm.status_api.get_host_status(obj.id)
