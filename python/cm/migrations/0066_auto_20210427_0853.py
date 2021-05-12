@@ -170,4 +170,28 @@ class Migration(migrations.Migration):
         migrations.RunPython(fix_joblog),
         migrations.RunPython(fix_checklog),
         migrations.RunPython(fix_grouplog),
+        migrations.RemoveField(
+            model_name='checklog',
+            name='old_job_id',
+        ),
+        migrations.RemoveField(
+            model_name='groupchecklog',
+            name='old_job_id',
+        ),
+        migrations.RemoveField(
+            model_name='joblog',
+            name='old_action_id',
+        ),
+        migrations.RemoveField(
+            model_name='joblog',
+            name='old_sub_action_id',
+        ),
+        migrations.RemoveField(
+            model_name='joblog',
+            name='old_task_id',
+        ),
+        migrations.RemoveField(
+            model_name='tasklog',
+            name='old_action_id',
+        ),
     ]

@@ -596,7 +596,6 @@ class Role(ADCMModel):
 
 
 class TaskLog(ADCMModel):
-    old_action_id = models.PositiveIntegerField(default=0)
     object_id = models.PositiveIntegerField()
     action = models.ForeignKey(Action, on_delete=models.CASCADE, null=True, default=None)
     pid = models.PositiveIntegerField(blank=True, default=0)
@@ -612,9 +611,6 @@ class TaskLog(ADCMModel):
 
 
 class JobLog(ADCMModel):
-    old_task_id = models.PositiveIntegerField(default=0)
-    old_action_id = models.PositiveIntegerField(default=0)
-    old_sub_action_id = models.PositiveIntegerField(default=0)
     task = models.ForeignKey(TaskLog, on_delete=models.SET_NULL, null=True, default=None)
     action = models.ForeignKey(Action, on_delete=models.SET_NULL, null=True, default=None)
     sub_action = models.ForeignKey(SubAction, on_delete=models.SET_NULL, null=True, default=None)
@@ -629,7 +625,6 @@ class JobLog(ADCMModel):
 
 
 class GroupCheckLog(ADCMModel):
-    old_job_id = models.PositiveIntegerField(default=0)
     job = models.ForeignKey(JobLog, on_delete=models.SET_NULL, null=True, default=None)
     title = models.TextField()
     message = models.TextField(blank=True, null=True)
@@ -644,7 +639,6 @@ class GroupCheckLog(ADCMModel):
 
 class CheckLog(ADCMModel):
     group = models.ForeignKey(GroupCheckLog, blank=True, null=True, on_delete=models.CASCADE)
-    old_job_id = models.PositiveIntegerField(default=0)
     job = models.ForeignKey(JobLog, on_delete=models.SET_NULL, null=True, default=None)
     title = models.TextField()
     message = models.TextField()
