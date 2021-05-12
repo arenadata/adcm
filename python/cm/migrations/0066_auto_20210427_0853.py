@@ -28,6 +28,7 @@ def fix_tasklog(apps, schema_editor):
             except Action.DoesNotExist:
                 pass
 
+
 def fix_joblog(apps, schema_editor):
     JobLog = apps.get_model('cm', 'JobLog')
     TaskLog = apps.get_model('cm', 'TaskLog')
@@ -52,6 +53,7 @@ def fix_joblog(apps, schema_editor):
         except TaskLog.DoesNotExist:
             pass
         job.save()
+
 
 def fix_checklog(apps, schema_editor):
     JobLog = apps.get_model('cm', 'JobLog')
