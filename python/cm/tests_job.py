@@ -52,8 +52,11 @@ class TestJob(TestCase):
 
     def test_set_task_status(self):
         event = Mock()
+        bundle = models.Bundle.objects.create()
+        prototype = models.Prototype.objects.create(bundle=bundle)
+        action = models.Action.objects.create(prototype=prototype)
         task = models.TaskLog.objects.create(
-            action_id=1, object_id=1,
+            action=action, object_id=1,
             start_date=timezone.now(), finish_date=timezone.now())
 
         lock_module.set_task_status(task, config.Job.RUNNING, event)
@@ -136,7 +139,7 @@ class TestJob(TestCase):
         adcm = models.ADCM.objects.create(prototype=prototype)
         action = models.Action.objects.create(prototype=prototype)
         task = models.TaskLog.objects.create(
-            action_id=action.id, object_id=1, start_date=timezone.now(),
+            action=action, object_id=1, start_date=timezone.now(),
             finish_date=timezone.now())
 
         data = [

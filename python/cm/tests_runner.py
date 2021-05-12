@@ -20,7 +20,7 @@ import cm.config as config
 import job_runner
 import task_runner
 from cm.logger import log
-from cm.models import TaskLog, JobLog
+from cm.models import TaskLog, JobLog, Bundle, Prototype, Action
 
 
 class PreparationData:
@@ -33,9 +33,12 @@ class PreparationData:
         self.to_prepare()
 
     def to_prepare(self):
+        bundle = Bundle.objects.create()
+        prototype = Prototype.objects.create(bundle=bundle, type='cluster')
+        action = Action.objects.create(prototype=prototype, name='do')
         for task_id in range(1, self.number_tasks + 1):
             task_log_data = {
-                'action_id': task_id,
+                'action': action,
                 'object_id': task_id,
                 'pid': task_id,
                 'selector': {'cluster': task_id},
@@ -50,7 +53,7 @@ class PreparationData:
             for jn in range(1, self.number_jobs + 1):
                 job_log_data = {
                     'task_id': task_id,
-                    'action_id': task_id,
+                    'action': action,
                     'pid': jn + 1,
                     'selector': {'cluster': task_id},
                     'status': 'success',

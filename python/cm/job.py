@@ -112,7 +112,7 @@ def prepare_task(action, obj, selector, conf, attr, spec, old_hc, delta, host_ma
         task = create_one_job_task(
             action, selector, obj, conf, attr, old_hc, hosts, event, verbose
         )
-        _job = create_job(action, None, selector, event, task.id)
+        _job = create_job(action, None, selector, event, task)
 
     if conf:
         new_conf = process_config_and_attr(task, conf, attr, spec)
@@ -151,7 +151,7 @@ def cancel_task(task):
     if task.status in [config.Job.FAILED, config.Job.ABORTED, config.Job.SUCCESS]:
         err(*errors.get(task.status))
     i = 0
-    while not JobLog.objects.filter(task_id=task.id, status=config.Job.RUNNING) and i < 10:
+    while not JobLog.objects.filter(task=task, status=config.Job.RUNNING) and i < 10:
         time.sleep(0.5)
         i += 1
     if i == 10:
@@ -507,13 +507,13 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf, verbose)
 def create_task(action, selector, obj, conf, attr, hc, delta, hosts, event, verbose):
     task = create_one_job_task(action, selector, obj, conf, attr, hc, hosts, event, verbose)
     for sub in SubAction.objects.filter(action=action):
-        _job = create_job(action, sub, selector, event, task.id)
+        _job = create_job(action, sub, selector, event, task)
     return task
 
 
 def create_one_job_task(action, selector, obj, conf, attr, hc, hosts, event, verbose):
     task = TaskLog(
-        action_id=action.id,
+        action=action,
         object_id=obj.id,
         selector=selector,
         config=conf,
@@ -530,10 +530,10 @@ def create_one_job_task(action, selector, obj, conf, attr, hc, hosts, event, ver
     return task
 
 
-def create_job(action, sub_action, selector, event, task_id=0):
+def create_job(action, sub_action, selector, event, task):
     job = JobLog(
-        task_id=task_id,
-        action_id=action.id,
+        task=task,
+        action=action,
         selector=selector,
         log_files=action.log_files,
         start_date=timezone.now(),
@@ -541,7 +541,7 @@ def create_job(action, sub_action, selector, event, task_id=0):
         status=config.Job.CREATED
     )
     if sub_action:
-        job.sub_action_id = sub_action.id
+        job.sub_action = sub_action
     job.save()
     LogStorage.objects.create(job=job, name='ansible', type='stdout', format='txt')
     LogStorage.objects.create(job=job, name='ansible', type='stderr', format='txt')
@@ -688,11 +688,11 @@ def log_check(job_id, group_data, check_data):
     group_title = group_data.pop('title')
 
     if group_title:
-        group, _ = GroupCheckLog.objects.get_or_create(job_id=job_id, title=group_title)
+        group, _ = GroupCheckLog.objects.get_or_create(job=job, title=group_title)
     else:
         group = None
 
-    check_data.update({'job_id': job_id, 'group': group})
+    check_data.update({'job': job, 'group': group})
     cl = CheckLog.objects.create(**check_data)
 
     if group is not None:
@@ -727,9 +727,7 @@ def get_check_log(job_id):
 
 
 def finish_check(job_id):
-
     data = get_check_log(job_id)
-
     if not data:
         return
 
@@ -737,8 +735,8 @@ def finish_check(job_id):
     LogStorage.objects.filter(job=job, name='ansible', type='check', format='json').update(
         body=json.dumps(data))
 
-    GroupCheckLog.objects.filter(job_id=job_id).delete()
-    CheckLog.objects.filter(job_id=job_id).delete()
+    GroupCheckLog.objects.filter(job=job).delete()
+    CheckLog.objects.filter(job=job).delete()
 
 
 def log_custom(job_id, name, log_format, body):

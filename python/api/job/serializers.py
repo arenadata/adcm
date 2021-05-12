@@ -23,10 +23,7 @@ import cm.stack
 import cm.status_api
 import cm.config as config
 from cm.errors import AdcmEx
-from cm.models import (
-    Action, SubAction, JobLog, HostProvider, Host, Cluster, ClusterObject, ServiceComponent
-)
-
+from cm.models import JobLog, HostProvider, Host, Cluster, ClusterObject, ServiceComponent
 from api.api_views import hlink
 
 
@@ -93,7 +90,7 @@ class JobShort(serializers.Serializer):
     start_date = serializers.DateTimeField(read_only=True)
     finish_date = serializers.DateTimeField(read_only=True)
     url = hlink('job-details', 'id', 'job_id')
-    
+
     get_display_name = get_job_display_name
 
 
