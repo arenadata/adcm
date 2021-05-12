@@ -17,7 +17,6 @@ import { SharedModule } from '@app/shared/shared.module';
 
 import { HoverDirective } from './hover.directive';
 import { TasksComponent } from './tasks.component';
-import { InnerComponent } from './inner.component';
 import { TaskObjectsComponent } from '@app/components/columns/task-objects/task-objects.component';
 import { ObjectLinkColumnPipe } from '@app/pipes/object-link-column.pipe';
 import { TaskStatusColumnComponent } from '@app/components/columns/task-status-column/task-status-column.component';
@@ -46,7 +45,6 @@ export class TaskRoutingModule {}
   declarations: [
     TasksComponent,
     HoverDirective,
-    InnerComponent,
     TaskObjectsComponent,
     ObjectLinkColumnPipe,
     TaskStatusColumnComponent,
