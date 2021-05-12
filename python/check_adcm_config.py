@@ -23,7 +23,11 @@ import cm.checker
 def check_config(data_file, schema_file, print_ok=True):
     rules = ruyaml.round_trip_load(open(schema_file))
     try:
+        # ruyaml.version_info=(0, 15, 0)   # switch off duplicate key error
         data = ruyaml.round_trip_load(open(data_file), version="1.1")
+    except FileNotFoundError as e:
+        print(e)
+        return 1
     except ruyaml.constructor.DuplicateKeyError as e:
         print(f'Config file "{data_file}" Duplicate Keys Error:')
         print(f'{e.context}\n{e.context_mark}\n{e.problem}\n{e.problem_mark}')
