@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { animate, state, style, transition, trigger } from '@angular/animations';
-import { Component, ElementRef, OnInit, QueryList, ViewChild, ViewChildren } from '@angular/core';
+import { Component, ElementRef, OnInit, QueryList, ViewChild, ViewChildren, ComponentRef } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort, MatSortHeader } from '@angular/material/sort';
@@ -19,16 +19,21 @@ import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { filter, switchMap } from 'rxjs/operators';
 import { BehaviorSubject } from 'rxjs';
-import { IColumns, IListResult } from '@adwp-ui/widgets';
+import { IColumns, IListResult, InstanceTakenFunc, Paging } from '@adwp-ui/widgets';
 import { DateHelper } from '@app/helpers/date-helper';
+import { Sort } from '@angular/material/sort';
 
 import { ApiService } from '@app/core/api';
 import { EventMessage, SocketState } from '@app/core/store';
-import { JobStatus, Task, JobObject, TaskRaw, Job } from '@app/core/types';
+import { JobStatus, Task, JobObject, Job } from '@app/core/types';
 import { SocketListenerDirective } from '@app/shared/directives';
 import { DialogComponent } from '@app/shared/components';
-import { TaskObjectsComponent } from '../../components/columns/task-objects/task-objects.component';
-import { TaskStatusColumnComponent } from '../../components/columns/task-status-column/task-status-column.component';
+import { TaskObjectsComponent } from '@app/components/columns/task-objects/task-objects.component';
+import { TaskStatusColumnComponent } from '@app/components/columns/task-status-column/task-status-column.component';
+import { JobsComponent } from '@app/components/task/jobs/jobs.component';
+import { TaskNameComponent } from '@app/components/columns/task-name/task-name.component';
+import { TaskService } from '@app/services/task.service';
+import { JobService } from '@app/services/job.service';
 
 @Component({
   selector: 'app-tasks',
@@ -45,16 +50,28 @@ import { TaskStatusColumnComponent } from '../../components/columns/task-status-
 export class TasksComponent extends SocketListenerDirective implements OnInit {
 
   /* BEGIN: My editions */
+  JobsComponent = JobsComponent;
+  expandedTask = new BehaviorSubject<Task | null>(null);
+
   listColumns = [
     {
       label: '#',
       value: (row) => row.id,
+      className: 'first-child',
+      headerClassName: 'first-child',
     },
     {
-      type: 'link',
+      type: 'component',
       label: 'Action name',
-      value: row => row.action?.display_name || 'unknown',
-      url: row => `/job/${row.jobs[0].id}`,
+      component: TaskNameComponent,
+      instanceTaken: (componentRef: ComponentRef<TaskNameComponent>) => {
+        componentRef.instance.expandedTask = this.expandedTask;
+        componentRef.instance.toggleExpand = (row) => {
+          this.expandedTask.next(
+            this.expandedTask.value && this.expandedTask.value.id === row.id ? null : row
+          );
+        };
+      },
     },
     {
       type: 'component',
@@ -64,27 +81,110 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
     {
       label: 'Start date',
       value: row => DateHelper.short(row.start_date),
+      className: 'action_date',
+      headerClassName: 'action_date',
     },
     {
       label: 'Finish date',
       value: row => row.status === 'success' || row.status === 'failed' ? DateHelper.short(row.finish_date) : '',
+      className: 'action_date',
+      headerClassName: 'action_date',
     },
     {
       type: 'component',
       label: 'Status',
       component: TaskStatusColumnComponent,
-      className: 'parent-end center',
+      className: 'table-end center status',
+      headerClassName: 'table-end center status',
     }
   ] as IColumns<Task>;
 
+  jobsTableInstanceTaken: InstanceTakenFunc<Task> = (componentRef: ComponentRef<JobsComponent<Task>>) => {
+    componentRef.instance.expandedTask = this.expandedTask;
+  }
+
   data$: BehaviorSubject<IListResult<Task>> = new BehaviorSubject(null);
+  nPaging: BehaviorSubject<Paging> = new BehaviorSubject<Paging>(null);
+  nSort: BehaviorSubject<Sort> = new BehaviorSubject<Sort>(null);
+
+  taskChanged(event: EventMessage): void {
+    const data: IListResult<Task> = Object.assign({}, this.data$.value);
+    if (event.object.details.type === 'status' && event.object.details.value === 'created') {
+      if (this.data$.value.results.some((task) => task.id === event.object.id)) return;
+      this.taskService.get(event.object.id).subscribe((task) => {
+        data.results = [task, ...data.results];
+        this.data$.next(data);
+      });
+    } else {
+      const index = data.results.findIndex((a) => a.id === event.object.id);
+      if (index > -1) {
+        const task: Task = Object.assign({}, data.results[index]);
+        task.finish_date = new Date().toISOString();
+        task.status = event.object.details.value as JobStatus;
+        data.results.splice(index, 1, task);
+        this.data$.next(data);
+      }
+    }
+  }
+
+  jobChanged(event: EventMessage): void {
+    const data: IListResult<Task> = Object.assign({}, this.data$.value);
+    const taskIndex = data.results.findIndex(
+      (item) => item.jobs.some((job) => job.id === event.object.id)
+    );
+    if (taskIndex > -1) {
+      const task: Task = Object.assign({}, data.results[taskIndex]);
+      const jobIndex = task.jobs.findIndex((item) => item.id === event.object.id);
+      if (jobIndex > -1) {
+        const job: Job = Object.assign({}, task.jobs[jobIndex]);
+        job.status = event.object.details.value as JobStatus;
+        if (event.object.details.type === 'status' && event.object.details.value === 'running') {
+          job.start_date = new Date().toISOString();
+        }
+        if (
+          event.object.details.type === 'status'
+          && (event.object.details.value === 'success' || event.object.details.value === 'failed')
+        ) {
+          job.finish_date = new Date().toISOString();
+        }
+        task.jobs.splice(jobIndex, 1, job);
+        data.results.splice(taskIndex, 1, task);
+        this.data$.next(data);
+      }
+    }
+  }
+
+  startListen() {
+    this.taskService.events(['change_job_status']).subscribe(event => this.taskChanged(event));
+    this.jobService.events(['change_job_status']).subscribe(event => this.jobChanged(event));
+  }
+
+  initPaging() {
+    this.nPaging.pipe(filter(paging => !!paging)).subscribe((paging) => {
+      const params = {
+        limit: paging.pageSize.toString(),
+        offset: ((paging.pageIndex - 1) * paging.pageSize).toString(),
+      };
+      this.taskService.list(params).subscribe((resp) => {
+        this.data$.next(resp);
+      });
+    });
+
+    let limit = +localStorage.getItem('limit');
+    if (!limit) localStorage.setItem('limit', '10');
+
+    this.route.paramMap.pipe(this.takeUntil()).subscribe((p) => {
+      const page = +p.get('page') ? +p.get('page') + 1 : 1;
+      limit = p.get('limit') ? +p.get('limit') : +localStorage.getItem('limit');
+      this.nPaging.next({ pageIndex: page, pageSize: limit });
+    });
+  }
   /* END: My editions */
 
   isDisabled = false;
 
   dataSource = new MatTableDataSource<Task>([]);
   columnsToDisplay = ['id', 'name', 'objects', 'start_date', 'finish_date', 'status'];
-  expandedTask: Task | null;
 
   paramMap: ParamMap;
   dataCount = 0;
@@ -97,7 +197,15 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
 
   @ViewChildren(MatSortHeader, { read: ElementRef }) matSortHeader: QueryList<ElementRef>;
 
-  constructor(private api: ApiService, protected store: Store<SocketState>, public router: Router, public route: ActivatedRoute, public dialog: MatDialog) {
+  constructor(
+    private api: ApiService,
+    protected store: Store<SocketState>,
+    public router: Router,
+    public route: ActivatedRoute,
+    public dialog: MatDialog,
+    private taskService: TaskService,
+    private jobService: JobService,
+  ) {
     super(store);
   }
 
@@ -111,6 +219,7 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
   }
 
   ngOnInit() {
+    this.initPaging();
     const limit = +localStorage.getItem('limit');
     if (!limit) localStorage.setItem('limit', '10');
     this.paginator.pageSize = +localStorage.getItem('limit');
@@ -130,6 +239,7 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
     });
 
     super.startListenSocket();
+    this.startListen();
   }
 
   cancelTask(url: string) {
@@ -198,7 +308,6 @@ export class TasksComponent extends SocketListenerDirective implements OnInit {
 
   refresh() {
     this.api.root.pipe(switchMap((root) => this.api.getList<Task>(root.task, this.paramMap))).subscribe((data) => {
-      this.data$.next(data as IListResult<Task>);
       this.dataSource.data = data.results.map((a) => ({ ...a, objects: this.buildLink(a.objects) }));
       this.paginator.length = data.count;
       this.dataCount = data.count;

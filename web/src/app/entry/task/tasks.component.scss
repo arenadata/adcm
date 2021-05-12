@@ -15,23 +15,51 @@
 
 table.main {
   width: 100%;
+}
 
-  & .first-child {
-    width: 20px;
-    padding-right: 10px;
+:host ::ng-deep .first-child {
+  width: 20px;
+  padding-right: 10px;
+  flex-grow: 0;
+  flex-basis: 20px;
+}
+
+:host ::ng-deep .action_date {
+  width: 200px;
+  flex-basis: 200px;
+  flex-grow: 0;
+}
+
+:host ::ng-deep .regular-table {
+  mat-row:not(:hover) {
+    background-color: #303030 !important;
+  }
+  mat-cell {
+    cursor: auto;
+  }
+  adwp-link-cell {
+    cursor: pointer;
   }
 }
 
-.action_date {
-  width: 200px;
+:host ::ng-deep .expandedRow > mat-cell {
+  padding: 0;
 }
 
 .padding20 {
   padding-right: 20px;
 }
 
-.parent-end {
+:host ::ng-deep .parent-end {
   width: 84px;
+  flex-basis: 84px;
+  flex-grow: 0;
+}
+
+:host ::ng-deep .table-end {
+  width: 50px;
+  flex-basis: 50px;
+  flex-grow: 0;
 }
 
 .end {
@@ -39,8 +67,13 @@ table.main {
   padding-left: 30px !important;
 }
 
-.center {
+:host ::ng-deep .center {
   text-align: center;
+}
+
+:host ::ng-deep .status {
+  display: flex;
+  justify-content: center;
 }
 
 table.inner {

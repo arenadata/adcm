@@ -1,6 +1,11 @@
 import { Component } from '@angular/core';
-import { AdwpCellComponent } from '@adwp-ui/widgets/public-api';
+import { AdwpCellComponent } from '@adwp-ui/widgets';
+import { filter, switchMap } from 'rxjs/operators';
+import { MatDialog } from '@angular/material/dialog';
+
 import { Task } from '@app/core/types';
+import { DialogComponent } from '@app/shared/components';
+import { ApiService } from '@app/core/api';
 
 @Component({
   selector: 'app-task-status-column',
@@ -9,19 +14,27 @@ import { Task } from '@app/core/types';
 })
 export class TaskStatusColumnComponent implements AdwpCellComponent<Task> {
 
+  constructor(
+    public dialog: MatDialog,
+    private api: ApiService,
+  ) {}
+
   row: Task;
 
-  getIcon(status: string) {
-    switch (status) {
-      case 'aborted':
-        return 'block';
-      default:
-        return 'done_all';
-    }
-  }
-
   cancelTask(url: string) {
-    
+    this.dialog
+      .open(DialogComponent, {
+        data: {
+          text: 'Are you sure?',
+          controls: ['Yes', 'No'],
+        },
+      })
+      .beforeClosed()
+      .pipe(
+        filter((yes) => yes),
+        switchMap(() => this.api.put(url, {}))
+      )
+      .subscribe();
   }
 
 }

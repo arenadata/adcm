@@ -4,6 +4,19 @@
 <div class="container-entry">
   <div class="main">
 
+    <adwp-list
+      class="regular-table"
+      [columns]="listColumns"
+      [dataSource]="data$ | async"
+      [expandedRow]="JobsComponent"
+      [expandedRowInstanceTaken]="jobsTableInstanceTaken"
+      [paging]="nPaging | async"
+      (changePaging)="nPaging.next($event)"
+      expandedRowClassName="expandedRow"
+    ></adwp-list>
+
+    <div style="height: 100px;"></div>
+
     <table mat-table class="main" [dataSource]="dataSource" multiTemplateDataRows [trackBy]="trackBy" matSort>
       <ng-container matColumnDef="id">
         <th mat-header-cell *matHeaderCellDef class="first-child">#</th>
@@ -19,10 +32,13 @@
             {{ element.action?.display_name || 'unknown' }}
           </a>
           <ng-template #multi>
-            <div class="multi-title" (click)="expandedTask = expandedTask === element ? null : element">
+            <div class="multi-title"
+                 (click)="expandedTask.next(expandedTask.value && expandedTask.value.id === element.id ? null : element)">
               <span>{{ element.action?.display_name || 'unknown' }}</span>
               &nbsp;
-              <mat-icon>{{ expandedTask?.id === element.id ? 'expand_less' : 'expand_more' }}</mat-icon>
+              <mat-icon>
+                {{ (expandedTask | async) && (expandedTask | async).id === element.id ? 'expand_less' : 'expand_more' }}
+              </mat-icon>
             </div>
           </ng-template>
         </td>
@@ -73,7 +89,7 @@
       <ng-container matColumnDef="expandedDetail">
         <td mat-cell *matCellDef="let element" [attr.colspan]="columnsToDisplay.length">
           <div class="expand-jobs" [@.disabled]="isDisabled"
-            [@jobsExpand]="element.id === expandedTask?.id ? 'expanded' : 'collapsed'">
+            [@jobsExpand]="(expandedTask | async) && (expandedTask | async).id === element.id ? 'expanded' : 'collapsed'">
             <app-task-inner [dataSource]="element.jobs"></app-task-inner>
           </div>
         </td>
@@ -85,11 +101,6 @@
     </table>
 
     <mat-paginator [pageSizeOptions]="[10, 25, 50, 100]" (page)="pageHandler($event)"></mat-paginator>
-
-    <adwp-list
-      [columns]="listColumns"
-      [dataSource]="data$ | async"
-    ></adwp-list>
 
   </div>
 </div>
