@@ -99,3 +99,11 @@ tr.jobs-row {
   overflow: hidden;
   padding: 0 12px;
 }
+
+.toggle {
+  font-size: small;
+}
+
+:host ::ng-deep .toggle .mat-button-toggle-label-content {
+  line-height: 36px;
+}

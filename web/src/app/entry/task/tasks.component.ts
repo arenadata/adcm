@@ -10,9 +10,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnInit, ComponentRef } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { filter } from 'rxjs/operators';
-import { BehaviorSubject } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
+import { filter, tap } from 'rxjs/operators';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { BaseDirective, IColumns, IListResult, InstanceTakenFunc, Paging } from '@adwp-ui/widgets';
 import { DateHelper } from '@app/helpers/date-helper';
 
@@ -24,6 +24,9 @@ import { JobsComponent } from '@app/components/task/jobs/jobs.component';
 import { TaskNameComponent } from '@app/components/columns/task-name/task-name.component';
 import { TaskService } from '@app/services/task.service';
 import { JobService } from '@app/services/job.service';
+import { MatButtonToggleChange } from '@angular/material/button-toggle';
+
+type TaskStatus = '' | 'running' | 'success' | 'failed';
 
 @Component({
   selector: 'app-tasks',
@@ -37,6 +40,7 @@ export class TasksComponent extends BaseDirective implements OnInit {
 
   data$: BehaviorSubject<IListResult<Task>> = new BehaviorSubject(null);
   paging: BehaviorSubject<Paging> = new BehaviorSubject<Paging>(null);
+  status: TaskStatus = '';
 
   listColumns = [
     {
@@ -89,7 +93,8 @@ export class TasksComponent extends BaseDirective implements OnInit {
   }
 
   constructor(
-    public route: ActivatedRoute,
+    private route: ActivatedRoute,
+    private router: Router,
     private taskService: TaskService,
     private jobService: JobService,
   ) {
@@ -153,37 +158,62 @@ export class TasksComponent extends BaseDirective implements OnInit {
       .subscribe(event => this.jobChanged(event));
   }
 
+  refreshList(page: number, limit: number, status: TaskStatus): Observable<IListResult<Task>> {
+    const params: any = {
+      limit: limit.toString(),
+      offset: ((page - 1) * limit).toString(),
+    };
+
+    if (status) {
+      params.status = status.toString();
+    }
+
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        page,
+        limit,
+        status,
+      },
+      queryParamsHandling: 'merge',
+    });
+
+    return this.taskService.list(params).pipe(tap(resp => this.data$.next(resp)));
+  }
+
   initPaging() {
     this.paging.pipe(
       this.takeUntil(),
       filter(paging => !!paging),
-    ).subscribe((paging) => {
-      const params = {
-        limit: paging.pageSize.toString(),
-        offset: ((paging.pageIndex - 1) * paging.pageSize).toString(),
-      };
-      this.taskService.list(params).subscribe((resp) => {
-        this.data$.next(resp);
-      });
-    });
+    ).subscribe((paging) => this.refreshList(paging.pageIndex, paging.pageSize, this.status).subscribe());
+  }
 
-    let limit = +localStorage.getItem('limit');
-    if (!limit) localStorage.setItem('limit', '10');
-
-    this.route.paramMap.pipe(this.takeUntil()).subscribe((p) => {
-      const page = +p.get('page') ? +p.get('page') + 1 : 1;
-      limit = p.get('limit') ? +p.get('limit') : +localStorage.getItem('limit');
-      this.paging.next({ pageIndex: page, pageSize: limit });
-    });
+  getLimit(): number {
+    const p = this.route.snapshot.queryParamMap;
+    return p.get('limit') ? +p.get('limit') : +localStorage.getItem('limit');
   }
 
   ngOnInit() {
     this.initPaging();
 
-    const limit = +localStorage.getItem('limit');
-    if (!limit) localStorage.setItem('limit', '10');
+    if (!localStorage.getItem('limit')) localStorage.setItem('limit', '10');
+
+    this.route.queryParamMap.pipe(this.takeUntil()).subscribe((p) => {
+      const page = +p.get('page') ? +p.get('page') : 1;
+      const limit = this.getLimit();
+      if (limit) {
+        localStorage.setItem('limit', limit.toString());
+      }
+      this.status = (p.get('status') || '') as TaskStatus;
+      this.paging.next({ pageIndex: page, pageSize: limit });
+    });
 
     this.startListen();
+  }
+
+  filterChanged(event: MatButtonToggleChange) {
+    this.status = event.value;
+    this.paging.next({ pageIndex: 1, pageSize: this.getLimit() });
   }
 
 }
