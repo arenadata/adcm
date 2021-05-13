@@ -23,26 +23,8 @@ import cm.stack
 import cm.status_api
 import cm.config as config
 from cm.errors import AdcmEx
-from cm.models import (
-    Action, SubAction, JobLog, HostProvider, Host, Cluster, ClusterObject, ServiceComponent
-)
-
+from cm.models import JobLog, HostProvider, Host, Cluster, ClusterObject, ServiceComponent
 from api.api_views import hlink
-
-
-def get_job_action(obj):
-    try:
-        act = Action.objects.get(id=obj.action_id)
-        return {
-            'name': act.name,
-            'display_name': act.display_name,
-            'prototype_id': act.prototype.id,
-            'prototype_name': act.prototype.name,
-            'prototype_version': act.prototype.version,
-            'prototype_type': act.prototype.type,
-        }
-    except Action.DoesNotExist:
-        return None
 
 
 def get_job_objects(obj):
@@ -77,11 +59,12 @@ def get_job_objects(obj):
     return resp
 
 
-def get_job_object_type(obj):
-    try:
-        action = Action.objects.get(id=obj.action_id)
-        return action.prototype.type
-    except Action.DoesNotExist:
+def get_job_display_name(self, obj):
+    if obj.sub_action:
+        return obj.sub_action.display_name
+    elif obj.action:
+        return obj.action.display_name
+    else:
         return None
 
 
@@ -90,14 +73,25 @@ class DataField(serializers.CharField):
         return value
 
 
+class JobAction(serializers.Serializer):
+    name = serializers.CharField(read_only=True)
+    display_name = serializers.CharField(read_only=True)
+    prototype_id = serializers.IntegerField(read_only=True)
+    prototype_name = serializers.CharField(read_only=True)
+    prototype_type = serializers.CharField(read_only=True)
+    prototype_version = serializers.CharField(read_only=True)
+
+
 class JobShort(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
-    display_name = serializers.CharField(read_only=True)
+    display_name = serializers.SerializerMethodField()
     status = serializers.CharField(read_only=True)
     start_date = serializers.DateTimeField(read_only=True)
     finish_date = serializers.DateTimeField(read_only=True)
     url = hlink('job-details', 'id', 'job_id')
+
+    get_display_name = get_job_display_name
 
 
 class TaskListSerializer(serializers.Serializer):
@@ -133,10 +127,9 @@ class TaskSerializer(TaskListSerializer):
     object_type = serializers.SerializerMethodField()
 
     def get_terminatable(self, obj):
-        try:
-            action = Action.objects.get(id=obj.action_id)
-            allow_to_terminate = action.allow_to_terminate
-        except Action.DoesNotExist:
+        if obj.action:
+            allow_to_terminate = obj.action.allow_to_terminate
+        else:
             allow_to_terminate = False
         # pylint: disable=simplifiable-if-statement
         if allow_to_terminate and obj.status in [config.Job.CREATED, config.Job.RUNNING]:
@@ -146,35 +139,19 @@ class TaskSerializer(TaskListSerializer):
             return False
 
     def get_jobs(self, obj):
-        task_jobs = JobLog.objects.filter(task_id=obj.id)
-        for job in task_jobs:
-            if job.sub_action_id:
-                try:
-                    sub = SubAction.objects.get(id=job.sub_action_id)
-                    job.display_name = sub.display_name
-                    job.name = sub.name
-                except SubAction.DoesNotExist:
-                    job.display_name = None
-                    job.name = None
-            else:
-                try:
-                    action = Action.objects.get(id=job.action_id)
-                    job.display_name = action.display_name
-                    job.name = action.name
-                except Action.DoesNotExist:
-                    job.display_name = None
-                    job.name = None
-        jobs = JobShort(task_jobs, many=True, context=self.context)
-        return jobs.data
+        return JobShort(obj.joblog_set, many=True, context=self.context).data
 
     def get_action(self, obj):
-        return get_job_action(obj)
+        return JobAction(obj.action, context=self.context).data
 
     def get_objects(self, obj):
         return get_job_objects(obj)
 
     def get_object_type(self, obj):
-        return get_job_object_type(obj)
+        if obj.action:
+            return obj.action.prototype.type
+        else:
+            return None
 
 
 class RunTaskSerializer(TaskSerializer):
@@ -224,22 +201,10 @@ class JobSerializer(JobListSerializer):
     action_url = hlink('action-details', 'action_id', 'action_id')
     task_url = hlink('task-details', 'task_id', 'task_id')
 
-    def get_action(self, obj):
-        return get_job_action(obj)
+    get_display_name = get_job_display_name
 
-    def get_display_name(self, obj):
-        if obj.sub_action_id:
-            try:
-                sub = SubAction.objects.get(id=obj.sub_action_id)
-                return sub.display_name
-            except SubAction.DoesNotExist:
-                return None
-        else:
-            try:
-                action = Action.objects.get(id=obj.action_id)
-                return action.display_name
-            except Action.DoesNotExist:
-                return None
+    def get_action(self, obj):
+        return JobAction(obj.action, context=self.context).data
 
     def get_objects(self, obj):
         return get_job_objects(obj)

@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import os
+import sys
 import shutil
 import tarfile
 import argparse
@@ -43,7 +44,11 @@ def get_config_files(path):
 
 def check_bundle(bundle_file, use_directory=False, verbose=False):
     if not use_directory:
-        untar(bundle_file)
+        try:
+            untar(bundle_file)
+        except FileNotFoundError as e:
+            print(e)
+            sys.exit(1)
     if verbose:
         print(f'Bundle "{bundle_file}"')
     for conf_file in get_config_files(TMP_DIR):

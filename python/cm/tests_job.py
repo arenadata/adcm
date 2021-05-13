@@ -9,8 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# pylint: disable=protected-access
+
 import os
-from unittest.mock import patch, Mock, call
+from unittest.mock import patch, Mock
 
 from django.test import TestCase
 from django.utils import timezone
@@ -20,6 +23,7 @@ import cm.job as job_module
 import cm.lock as lock_module
 from cm import models
 from cm.logger import log
+from cm.unit_tests import utils
 
 
 class TestJob(TestCase):
@@ -42,7 +46,7 @@ class TestJob(TestCase):
         pid = 10
         event = Mock()
 
-        lock_module.set_job_status(job.id, status, event, pid)
+        job_module.set_job_status(job.id, status, event, pid)
 
         job = models.JobLog.objects.get(id=job.id)
         self.assertEqual(job.status, status)
@@ -52,11 +56,14 @@ class TestJob(TestCase):
 
     def test_set_task_status(self):
         event = Mock()
+        bundle = models.Bundle.objects.create()
+        prototype = models.Prototype.objects.create(bundle=bundle)
+        action = models.Action.objects.create(prototype=prototype)
         task = models.TaskLog.objects.create(
-            action_id=1, object_id=1,
+            action=action, object_id=1,
             start_date=timezone.now(), finish_date=timezone.now())
 
-        lock_module.set_task_status(task, config.Job.RUNNING, event)
+        job_module.set_task_status(task, config.Job.RUNNING, event)
 
         self.assertEqual(task.status, config.Job.RUNNING)
         event.set_task_status.assert_called_once_with(task.id, config.Job.RUNNING)
@@ -136,7 +143,7 @@ class TestJob(TestCase):
         adcm = models.ADCM.objects.create(prototype=prototype)
         action = models.Action.objects.create(prototype=prototype)
         task = models.TaskLog.objects.create(
-            action_id=action.id, object_id=1, start_date=timezone.now(),
+            action=action, object_id=1, start_date=timezone.now(),
             finish_date=timezone.now())
 
         data = [
@@ -166,55 +173,26 @@ class TestJob(TestCase):
         for obj, check_assert in data:
             with self.subTest(obj=obj):
 
-                lock_module.unlock_obj(obj, event)
+                lock_module._unlock_obj(obj, event)
 
                 check_assert()
                 mock_set_object_state.reset_mock()
 
-    @patch('cm.lock.unlock_obj')
+    @patch('cm.lock._unlock_obj')
     def test_unlock_objects(self, mock_unlock_obj):
-        bundle = models.Bundle.objects.create()
-        prototype = models.Prototype.objects.create(bundle=bundle)
-        cluster = models.Cluster.objects.create(prototype=prototype)
-        cluster_object = models.ClusterObject.objects.create(prototype=prototype, cluster=cluster)
-        host = models.Host.objects.create(prototype=prototype, cluster=cluster)
-        host_provider = models.HostProvider.objects.create(prototype=prototype)
-        adcm = models.ADCM.objects.create(prototype=prototype)
-
-        data = [cluster_object, host, host_provider, adcm, cluster]
+        bundle = utils.gen_bundle()
+        cluster = utils.gen_cluster(bundle=bundle)
+        service = utils.gen_service(cluster, bundle=bundle)
+        component = utils.gen_component(service, bundle=bundle)
+        host_provider = utils.gen_provider(bundle=bundle)
+        host = utils.gen_host(provider=host_provider, cluster=cluster, bundle=bundle)
+        utils.gen_host_component(component, host)
         event = Mock()
 
-        for obj in data:
+        for obj in [cluster, service, component, host, host_provider]:
             with self.subTest(obj=obj):
-
                 lock_module.unlock_objects(obj, event)
-
-                if isinstance(obj, models.ClusterObject):
-                    mock_unlock_obj.assert_has_calls([
-                        call(obj, event),
-                        call(cluster, event),
-                        call(host, event)
-                    ])
-                if isinstance(obj, models.Host):
-                    mock_unlock_obj.assert_has_calls([
-                        call(obj, event),
-                        call(obj.cluster, event),
-                        call(cluster_object, event),
-                    ])
-                if isinstance(obj, models.HostProvider):
-                    mock_unlock_obj.assert_has_calls([
-                        call(obj, event)
-                    ])
-                if isinstance(obj, models.ADCM):
-                    mock_unlock_obj.assert_has_calls([
-                        call(obj, event)
-                    ])
-                if isinstance(obj, models.Cluster):
-                    mock_unlock_obj.assert_has_calls([
-                        call(obj, event),
-                        call(cluster_object, event),
-                        call(host, event),
-                    ])
+                self.assertEqual(mock_unlock_obj.call_count, 5)
                 mock_unlock_obj.reset_mock()
 
     @patch('cm.job.api.save_hc')

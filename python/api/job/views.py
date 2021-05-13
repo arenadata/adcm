@@ -181,11 +181,6 @@ class TaskDetail(DetailViewRO):
     lookup_url_kwarg = 'task_id'
     error_code = 'TASK_NOT_FOUND'
 
-    def get_object(self):
-        task = super().get_object()
-        task.jobs = JobLog.objects.filter(task_id=task.id)
-        return task
-
 
 class TaskReStart(GenericAPIView):
     queryset = TaskLog.objects.all()

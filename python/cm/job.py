@@ -32,7 +32,7 @@ from cm import api, issue, inventory, adcm_config, variant
 from cm.adcm_config import obj_ref, process_file_type
 from cm.errors import raise_AdcmEx as err
 from cm.inventory import get_obj_config, process_config_and_attr
-from cm.lock import lock_objects, unlock_objects, set_task_status, set_job_status
+from cm.lock import lock_objects, unlock_objects
 from cm.logger import log
 from cm.models import (
     Cluster, Action, SubAction, TaskLog, JobLog, CheckLog, Host, ADCM,
@@ -96,6 +96,7 @@ def check_action_hosts(action, cluster, provider, hosts):
 @transaction.atomic
 def prepare_task(action, obj, selector, conf, attr, spec, old_hc, delta, host_map, cluster,   # pylint: disable=too-many-locals
                  hosts, event, verbose):
+    DummyData.objects.filter(id=1).update(date=timezone.now())
     lock_objects(obj, event)
 
     if not attr:
@@ -112,7 +113,7 @@ def prepare_task(action, obj, selector, conf, attr, spec, old_hc, delta, host_ma
         task = create_one_job_task(
             action, selector, obj, conf, attr, old_hc, hosts, event, verbose
         )
-        _job = create_job(action, None, selector, event, task.id)
+        _job = create_job(action, None, selector, event, task)
 
     if conf:
         new_conf = process_config_and_attr(task, conf, attr, spec)
@@ -151,7 +152,7 @@ def cancel_task(task):
     if task.status in [config.Job.FAILED, config.Job.ABORTED, config.Job.SUCCESS]:
         err(*errors.get(task.status))
     i = 0
-    while not JobLog.objects.filter(task_id=task.id, status=config.Job.RUNNING) and i < 10:
+    while not JobLog.objects.filter(task=task, status=config.Job.RUNNING) and i < 10:
         time.sleep(0.5)
         i += 1
     if i == 10:
@@ -507,13 +508,13 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf, verbose)
 def create_task(action, selector, obj, conf, attr, hc, delta, hosts, event, verbose):
     task = create_one_job_task(action, selector, obj, conf, attr, hc, hosts, event, verbose)
     for sub in SubAction.objects.filter(action=action):
-        _job = create_job(action, sub, selector, event, task.id)
+        _job = create_job(action, sub, selector, event, task)
     return task
 
 
 def create_one_job_task(action, selector, obj, conf, attr, hc, hosts, event, verbose):
     task = TaskLog(
-        action_id=action.id,
+        action=action,
         object_id=obj.id,
         selector=selector,
         config=conf,
@@ -530,10 +531,10 @@ def create_one_job_task(action, selector, obj, conf, attr, hc, hosts, event, ver
     return task
 
 
-def create_job(action, sub_action, selector, event, task_id=0):
+def create_job(action, sub_action, selector, event, task):
     job = JobLog(
-        task_id=task_id,
-        action_id=action.id,
+        task=task,
+        action=action,
         selector=selector,
         log_files=action.log_files,
         start_date=timezone.now(),
@@ -541,7 +542,7 @@ def create_job(action, sub_action, selector, event, task_id=0):
         status=config.Job.CREATED
     )
     if sub_action:
-        job.sub_action_id = sub_action.id
+        job.sub_action = sub_action
     job.save()
     LogStorage.objects.create(job=job, name='ansible', type='stdout', format='txt')
     LogStorage.objects.create(job=job, name='ansible', type='stderr', format='txt')
@@ -632,6 +633,16 @@ def restore_hc(task, action, status):
     api.save_hc(cluster, host_comp_list)
 
 
+def get_job_cluster(job):
+    """Get Job's cluster for unlocking in case linked objects were somehow deleted"""
+    if not job:
+        return
+
+    selector = job.selector
+    if 'cluster' in selector:
+        return Cluster.objects.get(id=selector['cluster'])
+
+
 def finish_task(task, job, status):
     action = Action.objects.get(id=task.action_id)
     obj = get_task_obj(action.prototype.type, task.object_id)
@@ -641,7 +652,7 @@ def finish_task(task, job, status):
         DummyData.objects.filter(id=1).update(date=timezone.now())
         if state is not None:
             set_action_state(action, task, obj, state)
-        unlock_objects(obj, event, job)
+        unlock_objects(obj or get_job_cluster(job), event)
         restore_hc(task, action, status)
         set_task_status(task, status, event)
     event.send_state()
@@ -688,11 +699,11 @@ def log_check(job_id, group_data, check_data):
     group_title = group_data.pop('title')
 
     if group_title:
-        group, _ = GroupCheckLog.objects.get_or_create(job_id=job_id, title=group_title)
+        group, _ = GroupCheckLog.objects.get_or_create(job=job, title=group_title)
     else:
         group = None
 
-    check_data.update({'job_id': job_id, 'group': group})
+    check_data.update({'job': job, 'group': group})
     cl = CheckLog.objects.create(**check_data)
 
     if group is not None:
@@ -727,9 +738,7 @@ def get_check_log(job_id):
 
 
 def finish_check(job_id):
-
     data = get_check_log(job_id)
-
     if not data:
         return
 
@@ -737,8 +746,8 @@ def finish_check(job_id):
     LogStorage.objects.filter(job=job, name='ansible', type='check', format='json').update(
         body=json.dumps(data))
 
-    GroupCheckLog.objects.filter(job_id=job_id).delete()
-    CheckLog.objects.filter(job_id=job_id).delete()
+    GroupCheckLog.objects.filter(job=job).delete()
+    CheckLog.objects.filter(job=job).delete()
 
 
 def log_custom(job_id, name, log_format, body):
@@ -832,3 +841,22 @@ def prepare_ansible_config(job_id, action, sub_action):
 
     with open(os.path.join(config.RUN_DIR, f'{job_id}/ansible.cfg'), 'w') as config_file:
         config_parser.write(config_file)
+
+
+def set_task_status(task, status, event):
+    task.status = status
+    task.finish_date = timezone.now()
+    task.save()
+    event.set_task_status(task.id, status)
+
+
+def set_job_status(job_id, status, event, pid=0):
+    JobLog.objects.filter(id=job_id).update(status=status, pid=pid, finish_date=timezone.now())
+    event.set_job_status(job_id, status)
+
+
+def abort_all(event):
+    for task in TaskLog.objects.filter(status=config.Job.RUNNING):
+        set_task_status(task, config.Job.ABORTED, event)
+    for job in JobLog.objects.filter(status=config.Job.RUNNING):
+        set_job_status(job.id, config.Job.ABORTED, event)
