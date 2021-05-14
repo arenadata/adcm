@@ -798,3 +798,38 @@ class StagePrototypeImport(ADCMModel):
 
 class DummyData(ADCMModel):
     date = models.DateTimeField(auto_now=True)
+
+
+class ConfigHostGroup(ADCMModel):
+    name = models.CharField(max_length=160)
+    display_name = models.CharField(max_length=160, blank=True)
+    description = models.TextField(blank=True)
+    owner = models.ForeignKey(ADCMModel, on_delete=models.CASCADE, related_name='group')  # redefine
+    host = models.ManyToManyField(Host, blank=True)
+    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
+
+    class Meta:
+        abstract = True
+
+    def add_host(self, host: Host):
+        # check constraints before
+        pass
+
+    def remove_host(self, host: Host):
+        pass
+
+
+class ClusterConfigHostGroup(ConfigHostGroup):
+    owner = models.ForeignKey(Cluster, on_delete=models.CASCADE, related_name='group')
+
+
+class ServiceConfigHostGroup(ConfigHostGroup):
+    owner = models.ForeignKey(ClusterObject, on_delete=models.CASCADE, related_name='group')
+
+
+class ComponentConfigHostGroup(ConfigHostGroup):
+    owner = models.ForeignKey(ServiceComponent, on_delete=models.CASCADE, related_name='group')
+
+
+class ProviderConfigHostGroup(ConfigHostGroup):
+    owner = models.ForeignKey(HostProvider, on_delete=models.CASCADE, related_name='group')
