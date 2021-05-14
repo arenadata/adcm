@@ -10,38 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.db import models
 from rest_framework.response import Response
 
 from api.api_views import (
-    ListView, GenericAPIPermView, ActionFilter, create, check_obj, filter_actions
+    ListView, DetailViewRO, GenericAPIPermView, ActionFilter, create, check_obj, filter_actions
 )
-from api.job_serial import RunTaskSerializer
-from cm.errors import AdcmApiEx
+from api.job.serializers import RunTaskSerializer
 from cm.models import (
-    ADCM, Cluster, HostProvider, Host, ClusterObject, ServiceComponent, Action, TaskLog,
-    HostComponent
+    Host, ClusterObject, ServiceComponent, Action, TaskLog, HostComponent, get_model_by_type
 )
 from . import serializers
-
-
-def get_action_objects(object_type):
-    if object_type == 'adcm':
-        return ADCM.objects.all()
-    if object_type == 'cluster':
-        return Cluster.objects.all()
-    elif object_type == 'provider':
-        return HostProvider.objects.all()
-    elif object_type == 'service':
-        return ClusterObject.objects.all()
-    elif object_type == 'component':
-        return ServiceComponent.objects.all()
-    elif object_type == 'host':
-        return Host.objects.all()
-    else:
-        # This function should return a QuerySet, this is necessary for the correct
-        # construction of the schema.
-        return Cluster.objects.all()
 
 
 def get_object_type_id(**kwargs):
@@ -53,19 +31,8 @@ def get_object_type_id(**kwargs):
 
 def get_obj(**kwargs):
     object_type, object_id, action_id = get_object_type_id(**kwargs)
-    objects = get_action_objects(object_type)
-    try:
-        obj = objects.get(id=object_id)
-    except models.ObjectDoesNotExist:
-        errors = {
-            'adcm': 'ADCM_NOT_FOUND',
-            'cluster': 'CLUSTER_NOT_FOUND',
-            'provider': 'PROVIDER_NOT_FOUND',
-            'host': 'HOST_NOT_FOUND',
-            'service': 'SERVICE_NOT_FOUND',
-            'component': 'COMPONENT_NOT_FOUND',
-        }
-        raise AdcmApiEx(errors[object_type]) from None
+    model = get_model_by_type(object_type)
+    obj = model.obj.get(id=object_id)
     return obj, action_id
 
 
@@ -78,10 +45,10 @@ def get_selector(obj, action):
         selector['service'] = obj.service.id
     if isinstance(obj, Host) and action.host_action:
         if action.prototype.type == 'component':
-            component = ServiceComponent.objects.get(prototype=action.prototype)
+            component = ServiceComponent.obj.get(prototype=action.prototype)
             selector['component'] = component.id
         if action.prototype.type == 'service':
-            service = ClusterObject.objects.get(prototype=action.prototype)
+            service = ClusterObject.obj.get(prototype=action.prototype)
             selector['service'] = service.id
         if obj.cluster is not None:
             selector['cluster'] = obj.cluster.id
@@ -91,7 +58,7 @@ def get_selector(obj, action):
 class ActionList(ListView):
     queryset = Action.objects.all()
     serializer_class = serializers.ActionSerializer
-    serializer_class_ui = serializers.ActionDetailSerializer
+    serializer_class_ui = serializers.ActionUISerializer
     filterset_class = ActionFilter
     filterset_fields = ('name', 'button', 'button_is_null')
 
@@ -104,6 +71,7 @@ class ActionList(ListView):
             actions = set(filter_actions(host, self.filter_queryset(
                 self.get_queryset().filter(prototype=host.prototype)
             )))
+            obj = host
             objects = {'host': host}
             hcs = HostComponent.objects.filter(host_id=kwargs['host_id'])
             if hcs:
@@ -128,14 +96,15 @@ class ActionList(ListView):
             objects = {obj.prototype.type: obj}
         serializer_class = self.select_serializer(request)
         serializer = serializer_class(
-            actions, many=True, context={'request': request, 'objects': objects}
+            actions, many=True, context={'request': request, 'objects': objects, 'obj': obj}
         )
         return Response(serializer.data)
 
 
-class ActionDetail(GenericAPIPermView):
+class ActionDetail(DetailViewRO):
     queryset = Action.objects.all()
     serializer_class = serializers.ActionDetailSerializer
+    serializer_class_ui = serializers.ActionUISerializer
 
     def get(self, request, *args, **kwargs):
         """
@@ -147,7 +116,10 @@ class ActionDetail(GenericAPIPermView):
             objects = {'host': obj}
         else:
             objects = {action.prototype.type: obj}
-        serializer = self.serializer_class(action, context={'request': request, 'objects': objects})
+        serializer_class = self.select_serializer(request)
+        serializer = serializer_class(
+            action, context={'request': request, 'objects': objects, 'obj': obj}
+        )
         return Response(serializer.data)
 
 

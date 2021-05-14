@@ -72,23 +72,15 @@ def var_host_or(cluster, args):
 def var_host_get_service(cluster, args, func):
     if 'service' not in args:
         err('CONFIG_VARIANT_ERROR', f'no "service" argument for predicate "{func}"')
-    try:
-        service = ClusterObject.objects.get(cluster=cluster, prototype__name=args['service'])
-    except ClusterObject.DoesNotExist:
-        err('CONFIG_VARIANT_ERROR', 'service "{}" is not found'.format(args['service']))
-    return service
+    return ClusterObject.obj.get(cluster=cluster, prototype__name=args['service'])
 
 
 def var_host_get_component(cluster, args, service, func):
     if 'component' not in args:
         err('CONFIG_VARIANT_ERROR', f'no "component" argument for predicate "{func}"')
-    try:
-        comp = ServiceComponent.objects.get(
-            cluster=cluster, service=service, prototype__name=args['component']
-        )
-    except ServiceComponent.DoesNotExist:
-        err('CONFIG_VARIANT_ERROR', 'component "{}" is not found'.format(args['component']))
-    return comp
+    return ServiceComponent.obj.get(
+        cluster=cluster, service=service, prototype__name=args['component']
+    )
 
 
 def var_host_in_service(cluster, args):
@@ -181,12 +173,12 @@ def var_host_solver(cluster, func_map, args):
         if key not in args:
             err('CONFIG_VARIANT_ERROR', f'no "{key}" key in solver args')
 
-    log.debug('QQ solver args: %s', args)
+    # log.debug('solver args: %s', args)
     if args is None:
         return None
     if isinstance(args, dict):
         if 'predicate' not in args:
-            log.debug('QQ solver res1: %s', args)
+            # log.debug('solver res1: %s', args)
             return args
         else:
             predicate = args['predicate']
@@ -194,7 +186,7 @@ def var_host_solver(cluster, func_map, args):
                 err('CONFIG_VARIANT_ERROR', f'no "{predicate}" in list of host functions')
             check_key('args', args)
             res = func_map[predicate](cluster, var_host_solver(cluster, func_map, args['args']))
-            log.debug('QQ solver res2: %s', res)
+            # log.debug('solver res2: %s', res)
             return res
 
     res = []
@@ -208,7 +200,7 @@ def var_host_solver(cluster, func_map, args):
             err('CONFIG_VARIANT_ERROR', f'no "{predicate}" in list of host functions')
         res.append(func_map[predicate](cluster, var_host_solver(cluster, func_map, item['args'])))
 
-    log.debug('QQ solver res3: %s', res)
+    # log.debug('solver res3: %s', res)
     return res
 
 

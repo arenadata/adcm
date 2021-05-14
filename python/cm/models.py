@@ -12,9 +12,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import json
-
 from django.contrib.auth.models import User, Group, Permission
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 
 from cm.errors import AdcmEx
@@ -36,35 +35,67 @@ LICENSE_STATE = (
 )
 
 
-class JSONField(models.Field):
-    def db_type(self, connection):
-        return 'text'
-
-    def from_db_value(self, value, expression, connection):
-        if value is not None:
-            try:
-                return json.loads(value)
-            except json.JSONDecodeError:
-                raise AdcmEx(
-                    'JSON_DB_ERROR',
-                    msg=f"Not correct field format '{expression.field.attname}'") from None
-        return value
-
-    def get_prep_value(self, value):
-        if value is not None:
-            return str(json.dumps(value))
-        return value
-
-    def to_python(self, value):
-        if value is not None:
-            return json.loads(value)
-        return value
-
-    def value_to_string(self, obj):
-        return self.value_from_object(obj)
+def get_model_by_type(object_type):
+    if object_type == 'adcm':
+        return ADCM
+    if object_type == 'cluster':
+        return Cluster
+    elif object_type == 'provider':
+        return HostProvider
+    elif object_type == 'service':
+        return ClusterObject
+    elif object_type == 'component':
+        return ServiceComponent
+    elif object_type == 'host':
+        return Host
+    else:
+        # This function should return a Model, this is necessary for the correct
+        # construction of the schema.
+        return Cluster
 
 
-class Bundle(models.Model):
+class ADCMManager(models.Manager):
+    """
+    Custom model manager catch ObjectDoesNotExist error and re-raise it as custom
+    AdcmEx exception. AdcmEx is derived from DRF APIException, so it handled gracefully
+    by DRF and is reported out as nicely formated error instead of ugly exception.
+
+    Using ADCMManager can shorten you code significaly. Insted of
+
+    try:
+        cluster = Cluster.objects.get(id=id)
+    except Cluster.DoesNotExist:
+        raise AdcmEx(f'Cluster {id} is not found')
+
+    You can just write
+
+    cluster = Cluster.obj.get(id=id)
+
+    and DRF magic do the rest.
+
+    Please pay attention, to use ADCMManager you need reffer to "obj" model attribute,
+    not "objects". "objects" attribute is reffered to standard Django model manager,
+    so if you need familiar behavior you can use it as usual.
+    """
+    def get(self, *args, **kwargs):
+        try:
+            return super().get(*args, **kwargs)
+        except ObjectDoesNotExist:
+            if not hasattr(self.model, '__error_code__'):
+                raise AdcmEx('NO_MODEL_ERROR_CODE', f'model: {self.model.__name__}') from None
+            msg = '{} {} does not exist'.format(self.model.__name__, kwargs)
+            raise AdcmEx(self.model.__error_code__, msg) from None
+
+
+class ADCMModel(models.Model):
+    objects = models.Manager()
+    obj = ADCMManager()
+
+    class Meta:
+        abstract = True
+
+
+class Bundle(ADCMModel):
     name = models.CharField(max_length=160)
     version = models.CharField(max_length=80)
     version_order = models.PositiveIntegerField(default=0)
@@ -76,21 +107,29 @@ class Bundle(models.Model):
     description = models.TextField(blank=True)
     date = models.DateTimeField(auto_now=True)
 
+    __error_code__ = 'BUNDLE_NOT_FOUND'
+
     class Meta:
         unique_together = (('name', 'version', 'edition'),)
 
 
-class Upgrade(models.Model):
+def get_default_from_edition():
+    return ['community']
+
+
+class Upgrade(ADCMModel):
     bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE)
     name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
     min_version = models.CharField(max_length=80)
     max_version = models.CharField(max_length=80)
-    from_edition = JSONField(default=['community'])
+    from_edition = models.JSONField(default=get_default_from_edition)
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
-    state_available = JSONField(default=[])
+    state_available = models.JSONField(default=list)
     state_on_success = models.CharField(max_length=64, blank=True)
+
+    __error_code__ = 'UPGRADE_NOT_FOUND'
 
 
 MONITORING_TYPE = (
@@ -99,7 +138,11 @@ MONITORING_TYPE = (
 )
 
 
-class Prototype(models.Model):
+def get_default_constraint():
+    return [0, '+']
+
+
+class Prototype(ADCMModel):
     bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE)
     type = models.CharField(max_length=16, choices=PROTO_TYPE)
     parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
@@ -110,12 +153,14 @@ class Prototype(models.Model):
     version_order = models.PositiveIntegerField(default=0)
     required = models.BooleanField(default=False)
     shared = models.BooleanField(default=False)
-    constraint = JSONField(default=[0, '+'])
-    requires = JSONField(default=[])
-    bound_to = JSONField(default={})
+    constraint = models.JSONField(default=get_default_constraint)
+    requires = models.JSONField(default=list)
+    bound_to = models.JSONField(default=dict)
     adcm_min_version = models.CharField(max_length=80, default=None, null=True)
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
     description = models.TextField(blank=True)
+
+    __error_code__ = 'PROTOTYPE_NOT_FOUND'
 
     def __str__(self):
         return str(self.name)
@@ -124,40 +169,91 @@ class Prototype(models.Model):
         unique_together = (('bundle', 'type', 'parent', 'name', 'version'),)
 
 
-class ObjectConfig(models.Model):
+class ObjectConfig(ADCMModel):
     current = models.PositiveIntegerField()
     previous = models.PositiveIntegerField()
 
+    __error_code__ = 'CONFIG_NOT_FOUND'
 
-class ConfigLog(models.Model):
+
+class ConfigLog(ADCMModel):
     obj_ref = models.ForeignKey(ObjectConfig, on_delete=models.CASCADE)
-    config = JSONField(default={})
-    attr = JSONField(default={})
+    config = models.JSONField(default=dict)
+    attr = models.JSONField(default=dict)
     date = models.DateTimeField(auto_now=True)
     description = models.TextField(blank=True)
 
+    __error_code__ = 'CONFIG_NOT_FOUND'
 
-class ADCM(models.Model):
+
+class ADCM(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = JSONField(default=[])
-    issue = JSONField(default={})
+    stack = models.JSONField(default=list)
+    issue = models.JSONField(default=dict)
 
     @property
     def bundle_id(self):
         return self.prototype.bundle_id
 
+    @property
+    def serialized_issue(self):
+        result = {
+            'id': self.id,
+            'name': self.name,
+            'issue': self.issue,
+        }
+        return result if result['issue'] else {}
 
-class Cluster(models.Model):
+
+class Cluster(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     name = models.CharField(max_length=80, unique=True)
     description = models.TextField(blank=True)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = JSONField(default=[])
-    issue = JSONField(default={})
+    stack = models.JSONField(default=list)
+    issue = models.JSONField(default=dict)
+
+    __error_code__ = 'CLUSTER_NOT_FOUND'
+
+    @property
+    def bundle_id(self):
+        return self.prototype.bundle_id
+
+    @property
+    def edition(self):
+        return self.prototype.bundle.edition
+
+    @property
+    def license(self):
+        return self.prototype.bundle.license
+
+    def __str__(self):
+        return f'{self.name} ({self.id})'
+
+    @property
+    def serialized_issue(self):
+        result = {
+            'id': self.id,
+            'name': self.name,
+            'issue': self.issue,
+        }
+        return result if result['issue'] else {}
+
+
+class HostProvider(ADCMModel):
+    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
+    name = models.CharField(max_length=80, unique=True)
+    description = models.TextField(blank=True)
+    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
+    state = models.CharField(max_length=64, default='created')
+    stack = models.JSONField(default=list)
+    issue = models.JSONField(default=dict)
+
+    __error_code__ = 'PROVIDER_NOT_FOUND'
 
     @property
     def bundle_id(self):
@@ -174,33 +270,17 @@ class Cluster(models.Model):
     def __str__(self):
         return str(self.name)
 
-
-class HostProvider(models.Model):
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
-    name = models.CharField(max_length=80, unique=True)
-    description = models.TextField(blank=True)
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default='created')
-    stack = JSONField(default=[])
-    issue = JSONField(default={})
-
     @property
-    def bundle_id(self):
-        return self.prototype.bundle_id
-
-    @property
-    def edition(self):
-        return self.prototype.bundle.edition
-
-    @property
-    def license(self):
-        return self.prototype.bundle.license
-
-    def __str__(self):
-        return str(self.name)
+    def serialized_issue(self):
+        result = {
+            'id': self.id,
+            'name': self.name,
+            'issue': self.issue,
+        }
+        return result if result['issue'] else {}
 
 
-class Host(models.Model):
+class Host(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     fqdn = models.CharField(max_length=160, unique=True)
     description = models.TextField(blank=True)
@@ -208,8 +288,10 @@ class Host(models.Model):
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = JSONField(default=[])
-    issue = JSONField(default={})
+    stack = models.JSONField(default=list)
+    issue = models.JSONField(default=dict)
+
+    __error_code__ = 'HOST_NOT_FOUND'
 
     @property
     def bundle_id(self):
@@ -222,15 +304,29 @@ class Host(models.Model):
     def __str__(self):
         return "{}".format(self.fqdn)
 
+    @property
+    def serialized_issue(self):
+        result = {
+            'id': self.id,
+            'name': self.fqdn,
+            'issue': self.issue.copy()
+        }
+        provider_issue = self.provider.serialized_issue
+        if provider_issue:
+            result['issue']['provider'] = provider_issue
+        return result if result['issue'] else {}
 
-class ClusterObject(models.Model):
+
+class ClusterObject(ADCMModel):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     service = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = JSONField(default=[])
-    issue = JSONField(default={})
+    stack = models.JSONField(default=list)
+    issue = models.JSONField(default=dict)
+
+    __error_code__ = 'CLUSTER_SERVICE_NOT_FOUND'
 
     @property
     def bundle_id(self):
@@ -256,18 +352,29 @@ class ClusterObject(models.Model):
     def monitoring(self):
         return self.prototype.monitoring
 
+    @property
+    def serialized_issue(self):
+        result = {
+            'id': self.id,
+            'name': self.prototype.name,
+            'issue': self.issue,
+        }
+        return result if result['issue'] else {}
+
     class Meta:
         unique_together = (('cluster', 'prototype'),)
 
 
-class ServiceComponent(models.Model):
+class ServiceComponent(ADCMModel):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE, null=True, default=None)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = JSONField(default=[])
-    issue = JSONField(default={})
+    stack = models.JSONField(default=list)
+    issue = models.JSONField(default=dict)
+
+    __error_code__ = 'COMPONENT_NOT_FOUND'
 
     @property
     def name(self):
@@ -297,6 +404,15 @@ class ServiceComponent(models.Model):
     def monitoring(self):
         return self.prototype.monitoring
 
+    @property
+    def serialized_issue(self):
+        result = {
+            'id': self.id,
+            'name': self.prototype.name,
+            'issue': self.issue,
+        }
+        return result if result['issue'] else {}
+
     class Meta:
         unique_together = (('cluster', 'service', 'prototype'),)
 
@@ -312,12 +428,12 @@ SCRIPT_TYPE = (
 )
 
 
-class Action(models.Model):
+class Action(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
-    ui_options = JSONField(default={})
+    ui_options = models.JSONField(default=dict)
 
     type = models.CharField(max_length=16, choices=ACTION_TYPE)
     button = models.CharField(max_length=64, default=None, null=True)
@@ -327,15 +443,29 @@ class Action(models.Model):
 
     state_on_success = models.CharField(max_length=64, blank=True)
     state_on_fail = models.CharField(max_length=64, blank=True)
-    state_available = JSONField(default=[])
+    state_available = models.JSONField(default=list)
 
-    params = JSONField(default={})
-    log_files = JSONField(default=[])
+    params = models.JSONField(default=dict)
+    log_files = models.JSONField(default=list)
 
-    hostcomponentmap = JSONField(default=[])
+    hostcomponentmap = models.JSONField(default=list)
     allow_to_terminate = models.BooleanField(default=False)
     partial_execution = models.BooleanField(default=False)
     host_action = models.BooleanField(default=False)
+
+    __error_code__ = 'ACTION_NOT_FOUND'
+
+    @property
+    def prototype_name(self):
+        return self.prototype.name
+
+    @property
+    def prototype_version(self):
+        return self.prototype.version
+
+    @property
+    def prototype_type(self):
+        return self.prototype.type
 
     def __str__(self):
         return "{} {}".format(self.prototype, self.name)
@@ -344,17 +474,17 @@ class Action(models.Model):
         unique_together = (('prototype', 'name'),)
 
 
-class SubAction(models.Model):
+class SubAction(ADCMModel):
     action = models.ForeignKey(Action, on_delete=models.CASCADE)
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     script = models.CharField(max_length=160)
     script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
     state_on_fail = models.CharField(max_length=64, blank=True)
-    params = JSONField(default={})
+    params = models.JSONField(default=dict)
 
 
-class HostComponent(models.Model):
+class HostComponent(ADCMModel):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     host = models.ForeignKey(Host, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
@@ -384,7 +514,7 @@ CONFIG_FIELD_TYPE = (
 )
 
 
-class PrototypeConfig(models.Model):
+class PrototypeConfig(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     action = models.ForeignKey(Action, on_delete=models.CASCADE, null=True, default=None)
     name = models.CharField(max_length=160)
@@ -393,15 +523,15 @@ class PrototypeConfig(models.Model):
     type = models.CharField(max_length=16, choices=CONFIG_FIELD_TYPE)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
-    limits = JSONField(default={})
-    ui_options = JSONField(blank=True, default={})
+    limits = models.JSONField(default=dict)
+    ui_options = models.JSONField(blank=True, default=dict)
     required = models.BooleanField(default=True)
 
     class Meta:
         unique_together = (('prototype', 'action', 'name', 'subname'),)
 
 
-class PrototypeExport(models.Model):
+class PrototypeExport(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     name = models.CharField(max_length=160)
 
@@ -409,14 +539,14 @@ class PrototypeExport(models.Model):
         unique_together = (('prototype', 'name'),)
 
 
-class PrototypeImport(models.Model):
+class PrototypeImport(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     name = models.CharField(max_length=160)
     min_version = models.CharField(max_length=80)
     max_version = models.CharField(max_length=80)
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
-    default = JSONField(null=True, default=None)
+    default = models.JSONField(null=True, default=None)
     required = models.BooleanField(default=False)
     multibind = models.BooleanField(default=False)
 
@@ -424,7 +554,7 @@ class PrototypeImport(models.Model):
         unique_together = (('prototype', 'name'),)
 
 
-class ClusterBind(models.Model):
+class ClusterBind(ADCMModel):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE, null=True, default=None)
     source_cluster = models.ForeignKey(
@@ -438,6 +568,8 @@ class ClusterBind(models.Model):
         default=None
     )
 
+    __error_code__ = 'BIND_NOT_FOUND'
+
     class Meta:
         unique_together = (('cluster', 'service', 'source_cluster', 'source_service'),)
 
@@ -450,12 +582,12 @@ JOB_STATUS = (
 )
 
 
-class UserProfile(models.Model):
+class UserProfile(ADCMModel):
     login = models.CharField(max_length=32, unique=True)
-    profile = JSONField(default='')
+    profile = models.JSONField(default=str)
 
 
-class Role(models.Model):
+class Role(ADCMModel):
     name = models.CharField(max_length=32, unique=True)
     description = models.TextField(blank=True)
     permissions = models.ManyToManyField(Permission, blank=True)
@@ -463,35 +595,37 @@ class Role(models.Model):
     group = models.ManyToManyField(Group, blank=True)
 
 
-class JobLog(models.Model):
-    task_id = models.PositiveIntegerField(default=0)
-    action_id = models.PositiveIntegerField()
-    sub_action_id = models.PositiveIntegerField(default=0)
-    pid = models.PositiveIntegerField(blank=True, default=0)
-    selector = JSONField(default={})
-    log_files = JSONField(default=[])
-    status = models.CharField(max_length=16, choices=JOB_STATUS)
-    start_date = models.DateTimeField()
-    finish_date = models.DateTimeField(db_index=True)
-
-
-class TaskLog(models.Model):
-    action_id = models.PositiveIntegerField()
+class TaskLog(ADCMModel):
     object_id = models.PositiveIntegerField()
+    action = models.ForeignKey(Action, on_delete=models.CASCADE, null=True, default=None)
     pid = models.PositiveIntegerField(blank=True, default=0)
-    selector = JSONField(default={})
+    selector = models.JSONField(default=dict)
     status = models.CharField(max_length=16, choices=JOB_STATUS)
-    config = JSONField(null=True, default=None)
-    attr = JSONField(default={})
-    hostcomponentmap = JSONField(null=True, default=None)
-    hosts = JSONField(null=True, default=None)
+    config = models.JSONField(null=True, default=None)
+    attr = models.JSONField(default=dict)
+    hostcomponentmap = models.JSONField(null=True, default=None)
+    hosts = models.JSONField(null=True, default=None)
     verbose = models.BooleanField(default=False)
     start_date = models.DateTimeField()
     finish_date = models.DateTimeField()
 
 
-class GroupCheckLog(models.Model):
-    job_id = models.PositiveIntegerField(default=0)
+class JobLog(ADCMModel):
+    task = models.ForeignKey(TaskLog, on_delete=models.SET_NULL, null=True, default=None)
+    action = models.ForeignKey(Action, on_delete=models.SET_NULL, null=True, default=None)
+    sub_action = models.ForeignKey(SubAction, on_delete=models.SET_NULL, null=True, default=None)
+    pid = models.PositiveIntegerField(blank=True, default=0)
+    selector = models.JSONField(default=dict)
+    log_files = models.JSONField(default=list)
+    status = models.CharField(max_length=16, choices=JOB_STATUS)
+    start_date = models.DateTimeField()
+    finish_date = models.DateTimeField(db_index=True)
+
+    __error_code__ = 'JOB_NOT_FOUND'
+
+
+class GroupCheckLog(ADCMModel):
+    job = models.ForeignKey(JobLog, on_delete=models.SET_NULL, null=True, default=None)
     title = models.TextField()
     message = models.TextField(blank=True, null=True)
     result = models.BooleanField(blank=True, null=True)
@@ -499,13 +633,13 @@ class GroupCheckLog(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['job_id', 'title'], name='unique_group_job')
+                fields=['job', 'title'], name='unique_group_job')
         ]
 
 
-class CheckLog(models.Model):
+class CheckLog(ADCMModel):
     group = models.ForeignKey(GroupCheckLog, blank=True, null=True, on_delete=models.CASCADE)
-    job_id = models.PositiveIntegerField(default=0)
+    job = models.ForeignKey(JobLog, on_delete=models.SET_NULL, null=True, default=None)
     title = models.TextField()
     message = models.TextField()
     result = models.BooleanField()
@@ -524,7 +658,7 @@ FORMAT_TYPE = (
 )
 
 
-class LogStorage(models.Model):
+class LogStorage(ADCMModel):
     job = models.ForeignKey(JobLog, on_delete=models.CASCADE)
     name = models.TextField(default='')
     body = models.TextField(blank=True, null=True)
@@ -540,7 +674,7 @@ class LogStorage(models.Model):
 
 # Stage: Temporary tables to load bundle
 
-class StagePrototype(models.Model):
+class StagePrototype(ADCMModel):
     type = models.CharField(max_length=16, choices=PROTO_TYPE)
     parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
     name = models.CharField(max_length=160)
@@ -552,12 +686,14 @@ class StagePrototype(models.Model):
     license_hash = models.CharField(max_length=64, default=None, null=True)
     required = models.BooleanField(default=False)
     shared = models.BooleanField(default=False)
-    constraint = JSONField(default=[0, '+'])
-    requires = JSONField(default=[])
-    bound_to = JSONField(default={})
+    constraint = models.JSONField(default=get_default_constraint)
+    requires = models.JSONField(default=list)
+    bound_to = models.JSONField(default=dict)
     adcm_min_version = models.CharField(max_length=80, default=None, null=True)
     description = models.TextField(blank=True)
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
+
+    __error_code__ = 'PROTOTYPE_NOT_FOUND'
 
     def __str__(self):
         return str(self.name)
@@ -566,24 +702,24 @@ class StagePrototype(models.Model):
         unique_together = (('type', 'parent', 'name', 'version'),)
 
 
-class StageUpgrade(models.Model):
+class StageUpgrade(ADCMModel):
     name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
     min_version = models.CharField(max_length=80)
     max_version = models.CharField(max_length=80)
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
-    from_edition = JSONField(default=['community'])
-    state_available = JSONField(default=[])
+    from_edition = models.JSONField(default=get_default_from_edition)
+    state_available = models.JSONField(default=list)
     state_on_success = models.CharField(max_length=64, blank=True)
 
 
-class StageAction(models.Model):
+class StageAction(ADCMModel):
     prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
-    ui_options = JSONField(default={})
+    ui_options = models.JSONField(default=dict)
 
     type = models.CharField(max_length=16, choices=ACTION_TYPE)
     button = models.CharField(max_length=64, default=None, null=True)
@@ -593,12 +729,12 @@ class StageAction(models.Model):
 
     state_on_success = models.CharField(max_length=64, blank=True)
     state_on_fail = models.CharField(max_length=64, blank=True)
-    state_available = JSONField(default=[])
+    state_available = models.JSONField(default=list)
 
-    params = JSONField(default={})
-    log_files = JSONField(default=[])
+    params = models.JSONField(default=dict)
+    log_files = models.JSONField(default=list)
 
-    hostcomponentmap = JSONField(default=[])
+    hostcomponentmap = models.JSONField(default=list)
     allow_to_terminate = models.BooleanField(default=False)
     partial_execution = models.BooleanField(default=False)
     host_action = models.BooleanField(default=False)
@@ -610,17 +746,17 @@ class StageAction(models.Model):
         unique_together = (('prototype', 'name'),)
 
 
-class StageSubAction(models.Model):
+class StageSubAction(ADCMModel):
     action = models.ForeignKey(StageAction, on_delete=models.CASCADE)
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     script = models.CharField(max_length=160)
     script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
     state_on_fail = models.CharField(max_length=64, blank=True)
-    params = JSONField(default={})
+    params = models.JSONField(default=dict)
 
 
-class StagePrototypeConfig(models.Model):
+class StagePrototypeConfig(ADCMModel):
     prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
     action = models.ForeignKey(StageAction, on_delete=models.CASCADE, null=True, default=None)
     name = models.CharField(max_length=160)
@@ -629,15 +765,15 @@ class StagePrototypeConfig(models.Model):
     type = models.CharField(max_length=16, choices=CONFIG_FIELD_TYPE)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
-    limits = JSONField(default={})
-    ui_options = JSONField(blank=True, default={})   # JSON
+    limits = models.JSONField(default=dict)
+    ui_options = models.JSONField(blank=True, default=dict)
     required = models.BooleanField(default=True)
 
     class Meta:
         unique_together = (('prototype', 'action', 'name', 'subname'),)
 
 
-class StagePrototypeExport(models.Model):
+class StagePrototypeExport(ADCMModel):
     prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
     name = models.CharField(max_length=160)
 
@@ -645,14 +781,14 @@ class StagePrototypeExport(models.Model):
         unique_together = (('prototype', 'name'),)
 
 
-class StagePrototypeImport(models.Model):
+class StagePrototypeImport(ADCMModel):
     prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
     name = models.CharField(max_length=160)
     min_version = models.CharField(max_length=80)
     max_version = models.CharField(max_length=80)
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
-    default = JSONField(null=True, default=None)
+    default = models.JSONField(null=True, default=None)
     required = models.BooleanField(default=False)
     multibind = models.BooleanField(default=False)
 
@@ -660,5 +796,5 @@ class StagePrototypeImport(models.Model):
         unique_together = (('prototype', 'name'),)
 
 
-class DummyData(models.Model):
+class DummyData(ADCMModel):
     date = models.DateTimeField(auto_now=True)

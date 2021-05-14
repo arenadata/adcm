@@ -42,13 +42,13 @@ def read_config(job_id):
 
 def set_job_status(job_id, ret, pid, event):
     if ret == 0:
-        cm.lock.set_job_status(job_id, config.Job.SUCCESS, event, pid)
+        cm.job.set_job_status(job_id, config.Job.SUCCESS, event, pid)
         return 0
     elif ret == -15:
-        cm.lock.set_job_status(job_id, config.Job.ABORTED, event, pid)
+        cm.job.set_job_status(job_id, config.Job.ABORTED, event, pid)
         return 15
     else:
-        cm.lock.set_job_status(job_id, config.Job.FAILED, event, pid)
+        cm.job.set_job_status(job_id, config.Job.FAILED, event, pid)
         return ret
 
 
@@ -116,7 +116,7 @@ def run_ansible(job_id):
 
     proc = subprocess.Popen(cmd, env=env_configuration(conf), stdout=out_file, stderr=err_file)
     log.info("job #%s run cmd: %s", job_id, ' '.join(cmd))
-    cm.lock.set_job_status(job_id, config.Job.RUNNING, event, proc.pid)
+    cm.job.set_job_status(job_id, config.Job.RUNNING, event, proc.pid)
     event.send_state()
     log.info("run ansible job #%s, pid %s, playbook %s", job_id, proc.pid, playbook)
     ret = proc.wait()

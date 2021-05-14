@@ -15,8 +15,12 @@ from ansible.plugins.action import ActionBase
 from ansible.utils.vars import merge_hash
 
 import cm
+import cm.config as config
 from cm.errors import raise_AdcmEx as err
-from cm.models import ServiceComponent
+from cm.api import push_obj, set_object_state, add_hc, get_hc
+from cm.adcm_config import set_object_config
+from cm.models import Cluster, ClusterObject, ServiceComponent, HostProvider, Host
+from cm.models import Prototype, Action, JobLog
 
 
 MSG_NO_CONFIG = (
@@ -207,33 +211,145 @@ class ContextActionModule(ActionBase):
         return merge_hash(result, res)
 
 
-# Helper functions to find objects for ansible plugins
+# Helper functions for ansible plugins
 
 
 def get_component_by_name(cluster_id, service_id, component_name, service_name):
-    try:
-        if service_id is not None:
-            comp = ServiceComponent.objects.get(
-                cluster_id=cluster_id,
-                service_id=service_id,
-                prototype__name=component_name
-            )
+    if service_id is not None:
+        comp = ServiceComponent.obj.get(
+            cluster_id=cluster_id,
+            service_id=service_id,
+            prototype__name=component_name
+        )
+    else:
+        comp = ServiceComponent.obj.get(
+            cluster_id=cluster_id,
+            service__prototype__name=service_name,
+            prototype__name=component_name
+        )
+    return comp
+
+
+def get_service_by_name(cluster_id, service_name):
+    cluster = Cluster.obj.get(id=cluster_id)
+    proto = Prototype.obj.get(
+        type='service', name=service_name, bundle=cluster.prototype.bundle
+    )
+    return ClusterObject.obj.get(cluster=cluster, prototype=proto)
+
+
+def set_cluster_state(cluster_id, state):
+    cluster = Cluster.obj.get(id=cluster_id)
+    return push_obj(cluster, state)
+
+
+def set_host_state(host_id, state):
+    host = Host.obj.get(id=host_id)
+    return push_obj(host, state)
+
+
+def set_component_state(component_id, state):
+    comp = ServiceComponent.obj.get(id=component_id)
+    return push_obj(comp, state)
+
+
+def set_component_state_by_name(cluster_id, service_id, component_name, service_name, state):
+    comp = get_component_by_name(cluster_id, service_id, component_name, service_name)
+    return push_obj(comp, state)
+
+
+def set_provider_state(provider_id, state, event):
+    provider = HostProvider.obj.get(id=provider_id)
+    if provider.state == config.Job.LOCKED:
+        return push_obj(provider, state)
+    else:
+        return set_object_state(provider, state, event)
+
+
+def set_service_state(cluster_id, service_name, state):
+    obj = get_service_by_name(cluster_id, service_name)
+    return push_obj(obj, state)
+
+
+def set_service_state_by_id(cluster_id, service_id, state):
+    obj = ClusterObject.obj.get(
+        id=service_id, cluster__id=cluster_id, prototype__type='service'
+    )
+    return push_obj(obj, state)
+
+
+def change_hc(job_id, cluster_id, operations):   # pylint: disable=too-many-branches
+    '''
+    For use in ansible plugin adcm_hc
+    '''
+    job = JobLog.objects.get(id=job_id)
+    action = Action.objects.get(id=job.action_id)
+    if action.hostcomponentmap:
+        err('ACTION_ERROR', 'You can not change hc in plugin for action with hc_acl')
+
+    cluster = Cluster.obj.get(id=cluster_id)
+    hc = get_hc(cluster)
+    for op in operations:
+        service = ClusterObject.obj.get(cluster=cluster, prototype__name=op['service'])
+        component = ServiceComponent.obj.get(
+            cluster=cluster, service=service, prototype__name=op['component']
+        )
+        host = Host.obj.get(cluster=cluster, fqdn=op['host'])
+        item = {
+            'host_id': host.id,
+            'service_id': service.id,
+            'component_id': component.id,
+        }
+        if op['action'] == 'add':
+            if item not in hc:
+                hc.append(item)
+            else:
+                msg = 'There is already component "{}" on host "{}"'
+                err('COMPONENT_CONFLICT', msg.format(component.prototype.name, host.fqdn))
+        elif op['action'] == 'remove':
+            if item in hc:
+                hc.remove(item)
+            else:
+                msg = 'There is no component "{}" on host "{}"'
+                err('COMPONENT_CONFLICT', msg.format(component.prototype.name, host.fqdn))
         else:
-            comp = ServiceComponent.objects.get(
-                cluster_id=cluster_id,
-                service__prototype__name=service_name,
-                prototype__name=component_name
-            )
-    except ServiceComponent.DoesNotExist:
-        msg = 'Component # {} does not found'
-        err('COMPONENT_NOT_FOUND', msg.format(component_name))
-    return comp
+            err('INVALID_INPUT', 'unknown hc action "{}"'.format(op['action']))
+
+    add_hc(cluster, hc)
 
 
-def get_component(component_id):
-    try:
-        comp = ServiceComponent.objects.get(id=component_id)
-    except ServiceComponent.DoesNotExist:
-        msg = 'Component # {} does not exist'
-        err('COMPONENT_NOT_FOUND', msg.format(component_id))
-    return comp
+def set_cluster_config(cluster_id, keys, value):
+    cluster = Cluster.obj.get(id=cluster_id)
+    return set_object_config(cluster, keys, value)
+
+
+def set_host_config(host_id, keys, value):
+    host = Host.obj.get(id=host_id)
+    return set_object_config(host, keys, value)
+
+
+def set_provider_config(provider_id, keys, value):
+    provider = HostProvider.obj.get(id=provider_id)
+    return set_object_config(provider, keys, value)
+
+
+def set_service_config(cluster_id, service_name, keys, value):
+    obj = get_service_by_name(cluster_id, service_name)
+    return set_object_config(obj, keys, value)
+
+
+def set_service_config_by_id(cluster_id, service_id, keys, value):
+    obj = ClusterObject.obj.get(
+        id=service_id, cluster__id=cluster_id, prototype__type='service'
+    )
+    return set_object_config(obj, keys, value)
+
+
+def set_component_config_by_name(cluster_id, service_id, component_name, service_name, keys, value):
+    obj = get_component_by_name(cluster_id, service_id, component_name, service_name)
+    return set_object_config(obj, keys, value)
+
+
+def set_component_config(component_id, keys, value):
+    obj = ServiceComponent.obj.get(id=component_id)
+    return set_object_config(obj, keys, value)

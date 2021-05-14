@@ -570,7 +570,7 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
             {'service_id': service_id, 'host_id': host_id, 'component_id': comp_id}
         ]})
         self.assertEqual(r1.status_code, 404)
-        self.assertEqual(r1.json()['code'], "SERVICE_NOT_FOUND")
+        self.assertEqual(r1.json()['code'], "CLUSTER_SERVICE_NOT_FOUND")
 
         r1 = self.api_post(
             '/cluster/' + str(cluster_id2) + '/service/', {'prototype_id': service_proto_id}
@@ -601,8 +601,12 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         r1 = self.api_post('/stack/load/', {'bundle_file': self.ssh_bundle})
         self.assertEqual(r1.status_code, 200)
 
+        ssh_bundle_id, provider_id, host_id = self.create_host(self.host)
+        config = {'config': {'entry': 'some value'}}
+        r1 = self.api_post(f'/provider/{provider_id}/config/history/', config)
+        self.assertEqual(r1.status_code, 201)
+
         adh_bundle_id, cluster_proto = self.get_cluster_proto_id()
-        ssh_bundle_id, _, host_id = self.create_host(self.host)
         service_id = self.get_service_proto_id()
         action_id = self.get_action_id(service_id, 'start')
         r1 = self.api_post('/cluster/', {'name': self.cluster, 'prototype_id': cluster_proto})

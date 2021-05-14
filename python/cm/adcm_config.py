@@ -16,22 +16,15 @@ import json
 import os
 
 import yspec.checker
-from django.conf import settings
-from django.db import DEFAULT_DB_ALIAS, connections
-from django.db.migrations.executor import MigrationExecutor
-from django.db.utils import OperationalError
 from ansible.parsing.vault import VaultSecret, VaultAES256
+from django.conf import settings
+from django.db.utils import OperationalError
 
-import cm.variant
-import cm.ansible_plugin
 import cm.config as config
-from cm.errors import AdcmApiEx, AdcmEx
+import cm.variant
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
-from cm.models import (
-    Cluster, Prototype, Host, HostProvider, ADCM, ClusterObject,
-    PrototypeConfig, ObjectConfig, ConfigLog
-)
+from cm.models import ADCM, PrototypeConfig, ObjectConfig, ConfigLog
 
 
 def proto_ref(proto):
@@ -169,18 +162,6 @@ def load_social_auth():
             return
     except OperationalError:
         return
-    except AdcmEx as error:
-        # This code handles the "JSON_DB_ERROR" error that occurs when
-        # the "0057_auto_20200831_1055" migration is applied. In the "ADCM" object,
-        # the "stack" field type was changed from "TextField" to "JSONField", so the "stack" field
-        # contained an empty string, which is not a valid json format.
-        # This error occurs due to the fact that when "manage.py migrate" is started, the "urls.py"
-        # module is imported, in which the "load_social_auth()" function is called.
-        if error.code == 'JSON_DB_ERROR':
-            executor = MigrationExecutor(connections[DEFAULT_DB_ALIAS])
-            if ('cm', '0057_auto_20200831_1055') not in executor.loader.applied_migrations:
-                return
-        raise error
 
     try:
         cl = ConfigLog.objects.get(obj_ref=adcm[0].config, id=adcm[0].config.current)
@@ -291,10 +272,7 @@ def switch_config(obj, new_proto, old_proto):   # pylint: disable=too-many-local
 
 
 def restore_cluster_config(obj_conf, version, desc=''):
-    try:
-        cl = ConfigLog.objects.get(obj_ref=obj_conf, id=version)
-    except ConfigLog.DoesNotExist:
-        raise AdcmApiEx('CONFIG_NOT_FOUND', "config version doesn't exist") from None
+    cl = ConfigLog.obj.get(obj_ref=obj_conf, id=version)
     obj_conf.previous = obj_conf.current
     obj_conf.current = version
     obj_conf.save()
@@ -757,91 +735,16 @@ def replace_object_config(obj, key, subkey, value):
     save_obj_config(obj.config, conf, cl.attr, 'ansible update')
 
 
-def set_cluster_config(cluster_id, keys, value):
-    try:
-        cluster = Cluster.objects.get(id=cluster_id)
-    except Cluster.DoesNotExist:
-        msg = 'Cluster # {} does not exist'
-        err('CLUSTER_NOT_FOUND', msg.format(cluster_id))
-    return set_object_config(cluster, keys, value)
-
-
-def set_host_config(host_id, keys, value):
-    try:
-        host = Host.objects.get(id=host_id)
-    except Host.DoesNotExist:
-        msg = 'Host # {} does not exist'
-        err('HOST_NOT_FOUND', msg.format(host_id))
-    return set_object_config(host, keys, value)
-
-
-def set_provider_config(provider_id, keys, value):
-    try:
-        provider = HostProvider.objects.get(id=provider_id)
-    except HostProvider.DoesNotExist:
-        msg = 'Host # {} does not exist'
-        err('PROVIDER_NOT_FOUND', msg.format(provider_id))
-    return set_object_config(provider, keys, value)
-
-
-def set_service_config(cluster_id, service_name, keys, value):
-    try:
-        cluster = Cluster.objects.get(id=cluster_id)
-    except Cluster.DoesNotExist:
-        msg = 'Cluster # {} does not exist'
-        err('CLUSTER_NOT_FOUND', msg.format(cluster_id))
-    try:
-        proto = Prototype.objects.get(
-            type='service', name=service_name, bundle=cluster.prototype.bundle
-        )
-    except Prototype.DoesNotExist:
-        msg = 'Service "{}" does not exist'
-        err('SERVICE_NOT_FOUND', msg.format(service_name))
-    try:
-        obj = ClusterObject.objects.get(cluster=cluster, prototype=proto)
-    except ClusterObject.DoesNotExist:
-        msg = '{} does not exist in cluster # {}'
-        err('OBJECT_NOT_FOUND', msg.format(proto_ref(proto), cluster.id))
-    return set_object_config(obj, keys, value)
-
-
-def set_service_config_by_id(cluster_id, service_id, keys, value):
-    try:
-        obj = ClusterObject.objects.get(
-            id=service_id, cluster__id=cluster_id, prototype__type='service'
-        )
-    except ClusterObject.DoesNotExist:
-        msg = 'service # {} does not exist in cluster # {}'
-        err('OBJECT_NOT_FOUND', msg.format(service_id, cluster_id))
-    return set_object_config(obj, keys, value)
-
-
-def set_component_config_by_name(cluster_id, service_id, component_name, service_name, keys, value):
-    obj = cm.ansible_plugin.get_component_by_name(
-        cluster_id, service_id, component_name, service_name
-    )
-    return set_object_config(obj, keys, value)
-
-
-def set_component_config(component_id, keys, value):
-    obj = cm.ansible_plugin.get_component(component_id)
-    return set_object_config(obj, keys, value)
-
-
 def set_object_config(obj, keys, value):
     proto = obj.prototype
-    try:
-        spl = keys.split('/')
-        key = spl[0]
-        if len(spl) == 1:
-            subkey = ''
-        else:
-            subkey = spl[1]
-        pconf = PrototypeConfig.objects.get(prototype=proto, action=None, name=key, subname=subkey)
-    except PrototypeConfig.DoesNotExist:
-        msg = '{} does not has config key "{}/{}"'
-        err('CONFIG_NOT_FOUND', msg.format(proto_ref(proto), key, subkey))
+    spl = keys.split('/')
+    key = spl[0]
+    if len(spl) == 1:
+        subkey = ''
+    else:
+        subkey = spl[1]
 
+    pconf = PrototypeConfig.obj.get(prototype=proto, action=None, name=key, subname=subkey)
     if pconf.type == 'group':
         msg = 'You can not update config group "{}" for {}'
         err('CONFIG_VALUE_ERROR', msg.format(key, obj_ref(obj)))

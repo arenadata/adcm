@@ -96,4 +96,4 @@ def test_shouldnt_create_host_with_unknown_prototype(sdk_client_fs):
                 fqdn=utils.random_string()
             )
     with allure.step("Check error provider doesnt exist"):
-        errorcodes.PROVIDER_NOT_FOUND.equal(e, "provider doesn't exist")
+        errorcodes.PROVIDER_NOT_FOUND.equal(e, "HostProvider", "does not exist")
