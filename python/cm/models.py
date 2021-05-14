@@ -800,6 +800,8 @@ class DummyData(ADCMModel):
     date = models.DateTimeField(auto_now=True)
 
 
+# =========== MANY MODELS GROUPS ===============
+
 class ConfigHostGroup(ADCMModel):
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
@@ -833,3 +835,46 @@ class ComponentConfigHostGroup(ConfigHostGroup):
 
 class ProviderConfigHostGroup(ConfigHostGroup):
     owner = models.ForeignKey(HostProvider, on_delete=models.CASCADE, related_name='group')
+
+
+# =========== SINGLE MODELS GROUPS ===============
+
+class ConfigGroup(ADCMModel):
+    # create-only attrs, exactly one of them is not NULL
+    cluster = models.ForeignKey(Cluster,
+                                on_delete=models.CASCADE,
+                                default=None,
+                                related_name='group')
+    service = models.ForeignKey(ClusterObject,
+                                on_delete=models.CASCADE,
+                                default=None,
+                                related_name='group')
+    component = models.ForeignKey(ServiceComponent,
+                                  on_delete=models.CASCADE,
+                                  default=None,
+                                  related_name='group')
+    provider = models.ForeignKey(HostProvider,
+                                 on_delete=models.CASCADE,
+                                 default=None,
+                                 related_name='group')
+
+    # rest of attrs
+    name = models.CharField(max_length=160)
+    display_name = models.CharField(max_length=160, blank=True)
+    description = models.TextField(blank=True)
+    host = models.ManyToManyField(Host)
+    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
+
+    # TODO: custom create method to check create-only fields consistency
+    # TODO: custom update method to check create-only fields consistency
+
+    def add_host(self, host: Host):
+        # check constraints before
+        pass
+
+    def remove_host(self, host: Host):
+        pass
+
+    def get_available_hosts(self):
+        """Get list of Hosts which could be included in this group"""
+        pass
