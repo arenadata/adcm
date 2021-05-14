@@ -101,23 +101,42 @@ export class TasksComponent extends BaseDirective implements OnInit {
     super();
   }
 
-  taskChanged(event: EventMessage): void {
+  addTask(event: EventMessage): void {
+    if (this.data$.value.results.some((task) => task.id === event.object.id)) {
+      return;
+    }
+
     const data: IListResult<Task> = Object.assign({}, this.data$.value);
-    if (event.object.details.type === 'status' && event.object.details.value === 'created') {
-      if (this.data$.value.results.some((task) => task.id === event.object.id)) return;
-      this.taskService.get(event.object.id).subscribe((task) => {
-        data.results = [task, ...data.results];
-        this.data$.next(data);
-      });
-    } else {
-      const index = data.results.findIndex((a) => a.id === event.object.id);
-      if (index > -1) {
-        const task: Task = Object.assign({}, data.results[index]);
-        task.finish_date = new Date().toISOString();
-        task.status = event.object.details.value as JobStatus;
-        data.results.splice(index, 1, task);
-        this.data$.next(data);
+    this.taskService.get(event.object.id).subscribe((task) => {
+      if (data.results.length < this.paging.value.pageSize) {
+        data.count++;
+      } else {
+        data.results.splice(data.results.length - 1, 1);
       }
+      data.results = [task, ...data.results];
+      this.data$.next(data);
+    });
+  }
+
+  deleteTask(event: EventMessage): void {
+    const data: IListResult<Task> = Object.assign({}, this.data$.value);
+    const index = data.results.findIndex((task) => task.id === event.object.id);
+    if (index > -1) {
+      data.results.splice(index, 1);
+      data.count--;
+      this.data$.next(data);
+    }
+  }
+
+  changeTask(event: EventMessage): void {
+    const data: IListResult<Task> = Object.assign({}, this.data$.value);
+    const index = data.results.findIndex((a) => a.id === event.object.id);
+    if (index > -1) {
+      const task: Task = Object.assign({}, data.results[index]);
+      task.finish_date = new Date().toISOString();
+      task.status = event.object.details.value as JobStatus;
+      data.results.splice(index, 1, task);
+      this.data$.next(data);
     }
   }
 
@@ -150,8 +169,45 @@ export class TasksComponent extends BaseDirective implements OnInit {
 
   startListen() {
     this.taskService.events(['change_job_status'])
-      .pipe(this.takeUntil())
-      .subscribe(event => this.taskChanged(event));
+      .pipe(
+        this.takeUntil(),
+      )
+      .subscribe(event => {
+        if (event.object.details.type === 'status') {
+          switch (event.object.details.value) {
+            case 'created':
+              if (['', 'running'].includes(this.status)) {
+                this.addTask(event);
+              }
+              break;
+            case 'running':
+              if (['', 'running'].includes(this.status)) {
+                this.changeTask(event);
+              }
+              break;
+            case 'success':
+              if (this.status === '') {
+                this.changeTask(event);
+              } else if (this.status === 'running') {
+                this.deleteTask(event);
+              } else if (this.status === 'success') {
+                this.addTask(event);
+              }
+              break;
+            case 'failed':
+              if (this.status === '') {
+                this.changeTask(event);
+              } else if (this.status === 'running') {
+                this.deleteTask(event);
+              } else if (this.status === 'failed') {
+                this.addTask(event);
+              }
+              break;
+          }
+        } else {
+          this.changeTask(event);
+        }
+      });
 
     this.jobService.events(['change_job_status'])
       .pipe(this.takeUntil())
