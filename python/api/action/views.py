@@ -58,7 +58,7 @@ def get_selector(obj, action):
 class ActionList(ListView):
     queryset = Action.objects.all()
     serializer_class = serializers.ActionSerializer
-    serializer_class_ui = serializers.ActionDetailSerializer
+    serializer_class_ui = serializers.ActionUISerializer
     filterset_class = ActionFilter
     filterset_fields = ('name', 'button', 'button_is_null')
 
@@ -71,6 +71,7 @@ class ActionList(ListView):
             actions = set(filter_actions(host, self.filter_queryset(
                 self.get_queryset().filter(prototype=host.prototype)
             )))
+            obj = host
             objects = {'host': host}
             hcs = HostComponent.objects.filter(host_id=kwargs['host_id'])
             if hcs:
@@ -95,7 +96,7 @@ class ActionList(ListView):
             objects = {obj.prototype.type: obj}
         serializer_class = self.select_serializer(request)
         serializer = serializer_class(
-            actions, many=True, context={'request': request, 'objects': objects}
+            actions, many=True, context={'request': request, 'objects': objects, 'obj': obj}
         )
         return Response(serializer.data)
 
