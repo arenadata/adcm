@@ -68,6 +68,14 @@ def get_job_display_name(self, obj):
         return None
 
 
+def get_action_url(self, obj):
+    if not obj.action_id:
+        return None
+    return reverse(
+        'action-details', kwargs={'action_id': obj.action_id}, request=self.context['request']
+    )
+
+
 class DataField(serializers.CharField):
     def to_representation(self, value):
         return value
@@ -112,12 +120,7 @@ class TaskSerializer(TaskListSerializer):
     hc = serializers.JSONField(required=False)
     hosts = serializers.JSONField(required=False)
     verbose = serializers.BooleanField(required=False)
-    action_url = serializers.HyperlinkedIdentityField(
-        read_only=True,
-        view_name='action-details',
-        lookup_field='action_id',
-        lookup_url_kwarg='action_id'
-    )
+    action_url = serializers.SerializerMethodField()
     action = serializers.SerializerMethodField()
     objects = serializers.SerializerMethodField()
     jobs = serializers.SerializerMethodField()
@@ -125,6 +128,8 @@ class TaskSerializer(TaskListSerializer):
     terminatable = serializers.SerializerMethodField()
     cancel = hlink('task-cancel', 'id', 'task_id')
     object_type = serializers.SerializerMethodField()
+
+    get_action_url = get_action_url
 
     def get_terminatable(self, obj):
         if obj.action:
@@ -198,10 +203,11 @@ class JobSerializer(JobListSerializer):
     selector = serializers.JSONField(required=False)
     log_dir = serializers.CharField(read_only=True)
     log_files = DataField(read_only=True)
-    action_url = hlink('action-details', 'action_id', 'action_id')
+    action_url = serializers.SerializerMethodField()
     task_url = hlink('task-details', 'task_id', 'task_id')
 
     get_display_name = get_job_display_name
+    get_action_url = get_action_url
 
     def get_action(self, obj):
         return JobAction(obj.action, context=self.context).data
