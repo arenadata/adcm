@@ -1,17 +1,20 @@
 import { Injectable } from '@angular/core';
-
-import { ApiService } from '../core/api';
 import { Observable } from 'rxjs';
+
+import { ApiService } from '@app/core/api';
 import { IClusterService } from '@app/models/cluster-service';
+import { EntityService } from '@app/abstract/entity-service';
 
 @Injectable({
   providedIn: 'root',
 })
-export class ServiceService {
+export class ServiceService extends EntityService<IClusterService> {
 
   constructor(
-    private api: ApiService,
-  ) {}
+    protected api: ApiService,
+  ) {
+    super(api);
+  }
 
   get(
     id: number,
