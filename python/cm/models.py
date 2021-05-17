@@ -14,9 +14,11 @@ from __future__ import unicode_literals
 
 from django.contrib.auth.models import User, Group, Permission
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import models
+from django.db import models, transaction
+from django.utils import timezone
 
 from cm.errors import AdcmEx
+from cm.hierarchy import Tree  # FIXME: cyclic imports
 
 PROTO_TYPE = (
     ('adcm', 'adcm'),
@@ -800,45 +802,6 @@ class DummyData(ADCMModel):
     date = models.DateTimeField(auto_now=True)
 
 
-# =========== MANY MODELS GROUPS ===============
-
-class ConfigHostGroup(ADCMModel):
-    name = models.CharField(max_length=160)
-    display_name = models.CharField(max_length=160, blank=True)
-    description = models.TextField(blank=True)
-    owner = models.ForeignKey(ADCMModel, on_delete=models.CASCADE, related_name='group')  # redefine
-    host = models.ManyToManyField(Host, blank=True)
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-
-    class Meta:
-        abstract = True
-
-    def add_host(self, host: Host):
-        # check constraints before
-        pass
-
-    def remove_host(self, host: Host):
-        pass
-
-
-class ClusterConfigHostGroup(ConfigHostGroup):
-    owner = models.ForeignKey(Cluster, on_delete=models.CASCADE, related_name='group')
-
-
-class ServiceConfigHostGroup(ConfigHostGroup):
-    owner = models.ForeignKey(ClusterObject, on_delete=models.CASCADE, related_name='group')
-
-
-class ComponentConfigHostGroup(ConfigHostGroup):
-    owner = models.ForeignKey(ServiceComponent, on_delete=models.CASCADE, related_name='group')
-
-
-class ProviderConfigHostGroup(ConfigHostGroup):
-    owner = models.ForeignKey(HostProvider, on_delete=models.CASCADE, related_name='group')
-
-
-# =========== SINGLE MODELS GROUPS ===============
-
 class ConfigGroup(ADCMModel):
     # create-only attrs, exactly one of them is not NULL
     cluster = models.ForeignKey(Cluster,
@@ -862,19 +825,47 @@ class ConfigGroup(ADCMModel):
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
-    host = models.ManyToManyField(Host)
+    hosts = models.ManyToManyField(Host)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
 
     # TODO: custom create method to check create-only fields consistency
     # TODO: custom update method to check create-only fields consistency
 
+    @property
+    def owner(self):
+        """Single non-empty attr cluster|service|component|provider"""
+        return list(filter(None, [self.cluster, self.service, self.component, self.provider]))[0]
+
+    @transaction.atomic
     def add_host(self, host: Host):
-        # check constraints before
-        pass
+        DummyData.objects.filter(id=1).update(date=timezone.now())
+
+        if host not in self.get_available_hosts():
+            raise AdcmEx('TODO: add error definition', f'This host does not belong here') from None
+
+        self.hosts.add(host)
 
     def remove_host(self, host: Host):
-        pass
+        if host not in self.hosts:
+            raise AdcmEx('TODO: add error definition', f'This host is not a group member') from None
+
+        self.hosts.remove(host)
 
     def get_available_hosts(self):
-        """Get list of Hosts which could be included in this group"""
-        pass
+        """
+        Get list of Hosts which could be added to this group
+        Empty host attached to cluster without real workload will not be listed
+        """
+        same_owner_groups = self.objects.filter(
+            cluster=self.cluster,
+            service=self.service,
+            component=self.component,
+            provider=self.provider,
+        ).prefetch_related('hosts')
+        already_grouped = set()
+        for group in same_owner_groups:
+            already_grouped.update(group.hosts)
+
+        tree = Tree(self.owner)
+        related_hosts = {n.value for n in tree.get_directly_affected(tree.built_from)}
+        return related_hosts.difference(already_grouped)
