@@ -9,12 +9,6 @@
       display_name: "Global Options"
       type: "group"
       subs:
-        - name: "send_stats"
-          display_name: "Send Anonymous Statistics"
-          description: |
-            We will send anonymous statistic about number of bundles your use and number of hosts and clusters, but without any config or names.
-          type: boolean
-          default: true
         - name: "adcm_url"
           display_name: "ADCM's URL"
           description: |
