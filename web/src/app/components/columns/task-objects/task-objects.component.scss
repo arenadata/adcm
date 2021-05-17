@@ -1,0 +1,7 @@
+adwp-link-cell {
+  display: inline;
+}
+
+:host ::ng-deep adwp-link-cell a {
+  display: inline !important;
+}
