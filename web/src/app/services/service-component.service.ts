@@ -1,17 +1,20 @@
 import { Injectable } from '@angular/core';
-
-import { ApiService } from '../core/api';
 import { Observable } from 'rxjs';
-import { IServiceComponent } from '../models/service-component';
+
+import { ApiService } from '@app/core/api';
+import { IServiceComponent } from '@app/models/service-component';
+import { EntityService } from '@app/abstract/entity-service';
 
 @Injectable({
   providedIn: 'root',
 })
-export class ServiceComponentService {
+export class ServiceComponentService extends EntityService<IServiceComponent> {
 
   constructor(
-    private api: ApiService,
-  ) {}
+    protected api: ApiService,
+  ) {
+    super(api);
+  }
 
   get(
     id: number,

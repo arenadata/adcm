@@ -10,7 +10,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { TypeName } from '@app/core/types';
-import { Action, createAction, createFeatureSelector, createReducer, createSelector, on, props } from '@ngrx/store';
+import {
+  Action,
+  createAction,
+  createFeatureSelector,
+  createReducer,
+  createSelector,
+  on,
+  props,
+  select
+} from '@ngrx/store';
+import { pipe } from 'rxjs';
+import { skip } from 'rxjs/operators';
 
 /**
  * Event Message Object dispatched from socket
@@ -25,21 +36,23 @@ export interface IEMObject {
   };
 }
 
+export type EntityEvent =
+  | 'add'
+  | 'add_job_log'
+  | 'create'
+  | 'delete'
+  | 'remove'
+  | 'change_config'
+  | 'change_state'
+  | 'change_status'
+  | 'change_job_status'
+  | 'change_hostcomponentmap'
+  | 'raise_issue'
+  | 'clear_issue'
+  | 'upgrade';
+
 export interface EventMessage {
-  event:
-    | 'add'
-    | 'add_job_log'
-    | 'create'
-    | 'delete'
-    | 'remove'
-    | 'change_config'
-    | 'change_state'
-    | 'change_status'
-    | 'change_job_status'
-    | 'change_hostcomponentmap'
-    | 'raise_issue'
-    | 'clear_issue'
-    | 'upgrade';
+  event: EntityEvent;
   object?: IEMObject;
 }
 
@@ -86,3 +99,7 @@ export function socketReducer(state: SocketState, action: Action) {
 export const getSocketState = createFeatureSelector<SocketState>('socket');
 export const getConnectStatus = createSelector(getSocketState, (state: SocketState) => state.status);
 export const getMessage = createSelector(getSocketState, (state) => state.message);
+export const selectMessage = pipe(
+  select(getMessage),
+  skip(1),
+);
