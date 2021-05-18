@@ -24,6 +24,8 @@ def fix_tasklog(apps, schema_editor):
             try:
                 action = Action.objects.get(id=task.old_action_id)
                 task.action = action
+                if task.attr is None:
+                    task.attr = {}
                 task.save()
             except Action.DoesNotExist:
                 pass
@@ -45,7 +47,7 @@ def fix_joblog(apps, schema_editor):
             try:
                 sub_action = SubAction.objects.get(id=job.old_sub_action_id)
                 job.sub_action = sub_action
-            except Action.DoesNotExist:
+            except SubAction.DoesNotExist:
                 pass
         try:
             task = TaskLog.objects.get(id=job.old_task_id)
