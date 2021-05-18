@@ -1,10 +1,12 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { Observable } from 'rxjs';
 import { BaseDirective } from '@adwp-ui/widgets';
 
 import { AdcmTypedEntity } from '@app/models/entity';
 import { IAction } from '@app/core/types';
 import { IIssues } from '@app/models/issue';
+import { Store } from '@ngrx/store';
+import { selectMessage } from '@app/core/store';
 
 @Component({
   selector: 'app-navigation',
@@ -93,7 +95,7 @@ import { IIssues } from '@app/models/issue';
 
   `],
 })
-export class NavigationComponent extends BaseDirective {
+export class NavigationComponent extends BaseDirective implements OnInit {
 
   actionFlag = false;
   actionLink: string;
@@ -124,6 +126,17 @@ export class NavigationComponent extends BaseDirective {
   }
   get path(): Observable<AdcmTypedEntity[]> {
     return this.ownPath;
+  }
+
+  constructor(
+    private store: Store,
+  ) {
+    super();
+  }
+
+  ngOnInit() {
+    console.log('Ok');
+    this.store.pipe(selectMessage).subscribe(event => console.log('Second', event));
   }
 
 }
