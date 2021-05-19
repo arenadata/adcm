@@ -88,11 +88,12 @@ export class NavigationEffects {
       return new Observable<Action>(subscriber => {
         this.store.select(getNavigationPath).pipe(take(1)).subscribe((path) => {
           if (path.some(item => item.typeName === getEventEntityType(event.message.object.type) && event.message.object.id === item.id)) {
-            this.entityGetter(event.message.object.type, event.message.object.id)
+            this.entityGetter(getEventEntityType(event.message.object.type), event.message.object.id)
               .subscribe((entity) => {
                 console.log(entity);
                 subscriber.next(setPath({
-                  path: path.reduce((acc, item) => acc.concat(item.id === event.message.object.id ? entity : item), []),
+                  path: path.reduce((acc, item) =>
+                    acc.concat(getEventEntityType(event.message.object.type) === item.typeName && item.id === event.message.object.id ? entity : item), []),
                 }));
                 subscriber.complete();
               }, () => subscriber.complete());
