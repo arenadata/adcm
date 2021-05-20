@@ -103,6 +103,9 @@ def aggregate_issues(obj: ADCMModel, tree: Tree = None) -> dict:
     tree = tree or Tree(obj)
     node = tree.get_node(obj)
     for child in tree.get_directly_affected(node):
+        if child.key == node.key:  # skip itself
+            continue
+
         if obj.prototype.type == 'provider':
             continue
 
