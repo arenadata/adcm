@@ -5,7 +5,6 @@ import { BaseDirective } from '@adwp-ui/widgets';
 import { AdcmTypedEntity } from '@app/models/entity';
 import { IAction } from '@app/core/types';
 import { IIssues } from '@app/models/issue';
-import { Store } from '@ngrx/store';
 
 @Component({
   selector: 'app-navigation',
@@ -125,12 +124,6 @@ export class NavigationComponent extends BaseDirective {
   }
   get path(): Observable<AdcmTypedEntity[]> {
     return this.ownPath;
-  }
-
-  constructor(
-    private store: Store,
-  ) {
-    super();
   }
 
 }
