@@ -162,6 +162,8 @@ mat-checkbox.advanced>label>span {
 .mat-dialog-content {
   margin: 0 -18px !important;
   max-height: 80vh !important;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
 }
 
 .mat-dialog-actions {
@@ -355,4 +357,26 @@ mat-cell.control {
   font-feature-settings: 'liga';
   -webkit-font-feature-settings: 'liga';
   -webkit-font-smoothing: antialiased;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #B5C6CA #FFF;
+}
+
+*::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 4px;
+}
+
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track {
+  background: inherit;
+}
+
+*::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+  background-color: #B5C6CA;
+  border-radius: 2.5px;
+  border: 3px solid inherit;
 }
