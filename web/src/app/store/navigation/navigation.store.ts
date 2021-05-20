@@ -11,7 +11,7 @@ import {
 import { ParamMap } from '@angular/router';
 import { Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { concatMap, filter, map, switchMap, take, tap } from 'rxjs/operators';
+import { concatMap, filter, map, switchMap, take } from 'rxjs/operators';
 import { Observable, zip } from 'rxjs';
 
 import { AdcmEntity, AdcmTypedEntity } from '@app/models/entity';
@@ -83,14 +83,12 @@ export class NavigationEffects {
   changePathOfEvent$ = createEffect(() => this.actions$.pipe(
     ofType(socketResponse),
     filter(action => ['raise_issue', 'clear_issue'].includes(action.message.event)),
-    tap(event => console.log('event', event)),
     concatMap((event: { message: EventMessage }) => {
       return new Observable<Action>(subscriber => {
         this.store.select(getNavigationPath).pipe(take(1)).subscribe((path) => {
           if (path.some(item => item.typeName === getEventEntityType(event.message.object.type) && event.message.object.id === item.id)) {
             this.entityGetter(getEventEntityType(event.message.object.type), event.message.object.id)
               .subscribe((entity) => {
-                console.log(entity);
                 subscriber.next(setPath({
                   path: path.reduce((acc, item) =>
                     acc.concat(getEventEntityType(event.message.object.type) === item.typeName && item.id === event.message.object.id ? entity : item), []),

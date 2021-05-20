@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { Observable } from 'rxjs';
 import { BaseDirective } from '@adwp-ui/widgets';
 
@@ -6,7 +6,6 @@ import { AdcmTypedEntity } from '@app/models/entity';
 import { IAction } from '@app/core/types';
 import { IIssues } from '@app/models/issue';
 import { Store } from '@ngrx/store';
-import { selectMessage } from '@app/core/store';
 
 @Component({
   selector: 'app-navigation',
@@ -95,7 +94,7 @@ import { selectMessage } from '@app/core/store';
 
   `],
 })
-export class NavigationComponent extends BaseDirective implements OnInit {
+export class NavigationComponent extends BaseDirective {
 
   actionFlag = false;
   actionLink: string;
@@ -132,11 +131,6 @@ export class NavigationComponent extends BaseDirective implements OnInit {
     private store: Store,
   ) {
     super();
-  }
-
-  ngOnInit() {
-    console.log('Ok');
-    this.store.pipe(selectMessage).subscribe(event => console.log('Second', event));
   }
 
 }
