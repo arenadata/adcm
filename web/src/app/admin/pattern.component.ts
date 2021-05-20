@@ -85,7 +85,6 @@ export class PatternComponent extends BaseDirective implements OnInit, OnDestroy
               const config = c.config;
               const global = config['global'] || {};
               global.adcm_url = global.adcm_url || `${location.protocol}//${location.host}`;
-              global.send_stats = true;
               return this.api.post('/api/v1/adcm/1/config/history/', c);
             })
           )
