@@ -11,6 +11,8 @@
 # limitations under the License.
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+from itertools import chain
+from typing import Iterable
 
 from django.contrib.auth.models import User, Group, Permission
 from django.core.exceptions import ObjectDoesNotExist
@@ -93,6 +95,42 @@ class ADCMModel(models.Model):
 
     class Meta:
         abstract = True
+
+
+class HierarchyMember(ADCMModel):
+    """
+    Base abstract class for members of hierarchy
+    ADCM
+        Cluster
+            ClusterObject
+                ServiceComponent
+        HostProvider
+            Host
+    """
+    prototype = models.ForeignKey('Prototype', on_delete=models.CASCADE)
+    config = models.OneToOneField('ObjectConfig', on_delete=models.CASCADE, null=True)
+    state = models.CharField(max_length=64, default='created')
+    stack = models.JSONField(default=list)
+    issue = models.JSONField(default=dict)
+
+    class Meta:
+        abstract = True
+
+    @property
+    def serialized_issue(self):
+        result = {
+            'id': self.pk,
+            'name': getattr(self, 'name', ''),  # Host is special case here
+            'issue': self.issue,
+        }
+        return result if result['issue'] else {}
+
+    def get_children(self) -> Iterable['HierarchyMember']:
+        raise NotImplemented('That method should be defined for every descendant model')
+
+    def get_parents(self) -> Iterable['HierarchyMember']:
+        print('>>>>>>>>>>>>>>>>>', self.__class__)
+        raise NotImplemented('That method should be defined for every descendant model')
 
 
 class Bundle(ADCMModel):
@@ -186,36 +224,26 @@ class ConfigLog(ADCMModel):
     __error_code__ = 'CONFIG_NOT_FOUND'
 
 
-class ADCM(ADCMModel):
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
+class ADCM(HierarchyMember):
     name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
 
     @property
     def bundle_id(self):
         return self.prototype.bundle_id
 
-    @property
-    def serialized_issue(self):
-        result = {
-            'id': self.id,
-            'name': self.name,
-            'issue': self.issue,
-        }
-        return result if result['issue'] else {}
+    def get_children(self):
+        return chain(
+            Cluster.objects.all(),
+            HostProvider.objects.all()
+        )
+
+    def get_parents(self):
+        return []
 
 
-class Cluster(ADCMModel):
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
+class Cluster(HierarchyMember):
     name = models.CharField(max_length=80, unique=True)
     description = models.TextField(blank=True)
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
 
     __error_code__ = 'CLUSTER_NOT_FOUND'
 
@@ -234,24 +262,16 @@ class Cluster(ADCMModel):
     def __str__(self):
         return f'{self.name} ({self.id})'
 
-    @property
-    def serialized_issue(self):
-        result = {
-            'id': self.id,
-            'name': self.name,
-            'issue': self.issue,
-        }
-        return result if result['issue'] else {}
+    def get_children(self):
+        return ClusterObject.objects.filter(cluster=self).all()
+
+    def get_parents(self):
+        return ADCM.objects.filter(name='ADCM').all()
 
 
-class HostProvider(ADCMModel):
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
+class HostProvider(HierarchyMember):
     name = models.CharField(max_length=80, unique=True)
     description = models.TextField(blank=True)
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
 
     __error_code__ = 'PROVIDER_NOT_FOUND'
 
@@ -270,26 +290,18 @@ class HostProvider(ADCMModel):
     def __str__(self):
         return str(self.name)
 
-    @property
-    def serialized_issue(self):
-        result = {
-            'id': self.id,
-            'name': self.name,
-            'issue': self.issue,
-        }
-        return result if result['issue'] else {}
+    def get_children(self):
+        return Host.objects.filter(provider=self).all()
+
+    def get_parents(self):
+        return ADCM.objects.filter(name='ADCM').all()
 
 
-class Host(ADCMModel):
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
+class Host(HierarchyMember):
     fqdn = models.CharField(max_length=160, unique=True)
     description = models.TextField(blank=True)
     provider = models.ForeignKey(HostProvider, on_delete=models.CASCADE, null=True, default=None)
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
 
     __error_code__ = 'HOST_NOT_FOUND'
 
@@ -307,7 +319,7 @@ class Host(ADCMModel):
     @property
     def serialized_issue(self):
         result = {
-            'id': self.id,
+            'id': self.pk,
             'name': self.fqdn,
             'issue': self.issue.copy()
         }
@@ -316,15 +328,20 @@ class Host(ADCMModel):
             result['issue']['provider'] = provider_issue
         return result if result['issue'] else {}
 
+    def get_children(self):
+        return []
 
-class ClusterObject(ADCMModel):
+    def get_parents(self):
+        return chain(
+            [self.provider],
+            [c.component for c in HostComponent.objects.filter(
+                host=self).select_related('host').all()]
+        )
+
+
+class ClusterObject(HierarchyMember):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     service = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
 
     __error_code__ = 'CLUSTER_SERVICE_NOT_FOUND'
 
@@ -352,27 +369,19 @@ class ClusterObject(ADCMModel):
     def monitoring(self):
         return self.prototype.monitoring
 
-    @property
-    def serialized_issue(self):
-        result = {
-            'id': self.id,
-            'name': self.prototype.name,
-            'issue': self.issue,
-        }
-        return result if result['issue'] else {}
-
     class Meta:
         unique_together = (('cluster', 'prototype'),)
 
+    def get_children(self):
+        return ServiceComponent.objects.filter(cluster=self.cluster, service=self).all()
 
-class ServiceComponent(ADCMModel):
+    def get_parents(self):
+        return [self.cluster]
+
+
+class ServiceComponent(HierarchyMember):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE, null=True, default=None)
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
 
     __error_code__ = 'COMPONENT_NOT_FOUND'
 
@@ -404,17 +413,20 @@ class ServiceComponent(ADCMModel):
     def monitoring(self):
         return self.prototype.monitoring
 
-    @property
-    def serialized_issue(self):
-        result = {
-            'id': self.id,
-            'name': self.prototype.name,
-            'issue': self.issue,
-        }
-        return result if result['issue'] else {}
-
     class Meta:
         unique_together = (('cluster', 'service', 'prototype'),)
+
+    def get_children(self):
+        return [
+            c.host for c in HostComponent.objects.filter(
+                cluster=self.service.cluster,
+                service=self.service,
+                component=self
+            ).select_related('host').all()
+        ]
+
+    def get_parents(self):
+        return [self.service]
 
 
 ACTION_TYPE = (

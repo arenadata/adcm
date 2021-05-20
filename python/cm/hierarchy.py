@@ -10,11 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from itertools import chain
 from typing import Set, Optional, Tuple
 
 from cm.models import (
+    ADCM,
     ADCMModel,
+    HierarchyMember,
+    Cluster,
     ClusterObject,
+    HostProvider,
     Host,
     HostComponent,
     ServiceComponent,
@@ -185,6 +190,174 @@ class Tree:
         return result
 
     def get_all_affected(self, node: Node) -> Set[Node]:
+        """Collect directly affected nodes and propagate effect back through affected hosts"""
+        directly_affected = self.get_directly_affected(node)
+        indirectly_affected = set()
+        for host_node in filter(lambda x: x.type == 'host', directly_affected):
+            indirectly_affected.update(host_node.get_parents())
+        result = indirectly_affected.union(directly_affected)
+        result.discard(self.root)
+        return result
+
+
+# ------------------- POC changes to classes above ------------------------
+
+
+class ANode:
+    """
+    Node of hierarchy tree
+    Each node has zero to many parents and zero to many children
+    """
+    def __init__(self, value: HierarchyMember):
+        self.id = value.pk
+        self.type = value.prototype.type
+        self.value = value
+        self.parents = set()
+        self.children = set()
+
+    def add_child(self, child: 'ANode') -> None:
+        if child in self.parents or child == self:
+            return
+        self.children.add(child)
+
+    def add_parent(self, parent: 'ANode') -> None:
+        if parent in self.children or parent == self:
+            return
+        self.parents.add(parent)
+
+    def get_parents(self) -> Set['ANode']:
+        """Get own parents and all its ancestors"""
+        result = set(self.parents)
+        for parent in self.parents:
+            result.update(parent.get_parents())
+        return result
+
+    def get_children(self) -> Set['ANode']:
+        """Get own children and all its descendants"""
+        result = set(self.children)
+        for child in self.children:
+            result.update(child.get_children())
+        return result
+
+    @staticmethod
+    def get_obj_key(obj: HierarchyMember) -> Tuple[str, int]:
+        """Make simple unique key for caching in tree"""
+        return obj.prototype.type, obj.pk
+
+    @property
+    def key(self) -> Tuple[str, int]:
+        """Simple key unique in tree"""
+        return self.type, self.id
+
+    def __hash__(self):
+        return hash(self.key)
+
+    def __eq__(self, other):
+        return self.key == other.key
+
+
+class ATree:
+    """
+    Hierarchy tree class keep links and relations between its nodes like this:
+        common_virtual_root -> *cluster -> *service -> *component -> *host -> provider
+    """
+
+    def __init__(self, obj: HierarchyMember):
+        self._nodes = {}
+        self.root = self._make_node(ADCM.objects.get(name='ADCM'))
+        self.built_from = self._make_node(obj)
+        self._build_tree(obj)
+        # self._build_tree(self.built_from)  # go to the root ...
+        # self._build_tree_down(self.root)  # ... and find all its children
+
+    def _make_node(self, obj: HierarchyMember) -> ANode:
+        cached = self._nodes.get(ANode.get_obj_key(obj))
+        if cached:
+            return cached
+        else:
+            node = ANode(value=obj)
+            self._nodes[node.key] = node
+            return node
+
+    # def _find_subroots(self, obj: HierarchyMember) -> None:
+    #     nodes = set()
+    #
+    #     cluster = getattr(obj, 'cluster', None)
+    #     if cluster:
+    #         nodes.add(self._make_node(cluster))
+    #
+    #     provider = getattr(obj, 'provider', None)
+    #     if provider:
+    #         nodes.add(self._make_node(provider))
+
+    # def _build_tree_down(self, node: ANode) -> None:
+    #     if node.type == 'adcm':
+    #         children_values = [n.value for n in node.children]  # do not collect all clusters
+    #     else:
+    #         children_values = node.value.get_children()
+    #
+    #     # add provider-host branches to the tree without recursion
+    #     if node.type == 'host':
+    #         for provider in node.value.get_parents():
+    #             provider_node = self._make_node(provider)
+    #             provider_node.add_parent(self.root)
+    #             provider_node.add_child(node)
+    #
+    #     for value in children_values:
+    #         child = self._make_node(value)
+    #         node.add_child(child)
+    #         child.add_parent(node)
+    #         self._build_tree_down(child)
+
+    # def _build_tree_up(self, node: ANode) -> None:
+    #     for obj in node.value.get_parents():
+    #         parent = self._make_node(obj)
+    #         node.add_parent(parent)
+    #         parent.add_child(node)
+    #         self._build_tree_up(parent)
+
+    def _build_tree(self, obj: HierarchyMember) -> None:
+        if obj.prototype.type == 'adcm':
+            return  # TODO: do something when needed
+        elif obj.prototype.type == 'provider':
+            self._build_subtree(obj)
+            for host in [n.value for n in self._nodes.values() if n.type == 'host']:
+                self._build_subtree(host.cluster)
+        else:
+            cluster = obj if obj.prototype.type == 'cluster' else getattr(obj, 'cluster', None)
+            self._build_subtree(cluster)
+            for host in [n.value for n in self._nodes.values() if n.type == 'host']:
+                self._build_subtree(host.provider)
+
+    def _build_subtree(self, obj: Optional[HierarchyMember]) -> None:
+        if not obj:
+            return
+
+        node = self._make_node(obj)
+        for child in obj.get_children():
+            child_node = self._make_node(child)
+            node.add_child(child_node)
+            child_node.add_parent(node)
+            self._build_subtree(child)
+
+    def get_node(self, obj: HierarchyMember) -> ANode:
+        """Get tree node by its object"""
+        key = ANode.get_obj_key(obj)
+        cached = self._nodes.get(key)
+        if cached:
+            return cached
+        else:
+            raise HierarchyError(f'Object {key} is not part of tree')
+
+    def get_directly_affected(self, node: ANode) -> Set[ANode]:
+        """Collect directly affected nodes for issues re-calc"""
+        result = {node}
+        result.update(node.get_parents())
+        result.update(node.get_children())
+        result.discard(self.root)
+        return result
+
+    def get_all_affected(self, node: ANode) -> Set[ANode]:
         """Collect directly affected nodes and propagate effect back through affected hosts"""
         directly_affected = self.get_directly_affected(node)
         indirectly_affected = set()

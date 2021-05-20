@@ -42,6 +42,7 @@ def generate_hierarchy():  # pylint: disable=too-many-locals,too-many-statements
                                            - host_22 - provider_2
                                            - host_32 - provider_3
     """
+    utils.gen_adcm()
     cluster_bundle = utils.gen_bundle()
 
     cluster_pt = utils.gen_prototype(cluster_bundle, 'cluster')
@@ -154,7 +155,7 @@ class HierarchyTest(TestCase):
         start = time.time()
         counter = 0
         for obj in hierarchy_objects.values():
-            hierarchy.Tree(obj)
+            hierarchy.ATree(obj)
             counter += 1
         duration = time.time() - start
 
@@ -163,7 +164,7 @@ class HierarchyTest(TestCase):
     def test_get_node(self):
         """Test function `hierarchy.Tree.get_node()` AND if tree was built correctly"""
         hierarchy_objects = generate_hierarchy()
-        tree = hierarchy.Tree(hierarchy_objects['cluster_1'])
+        tree = hierarchy.ATree(hierarchy_objects['cluster_1'])
         expected = (
             'cluster_1',
             'service_11',
@@ -201,7 +202,7 @@ class HierarchyTest(TestCase):
     def test_get_directly_affected(self):
         """Test `hierarchy.Tree.get_directly_affected()` function"""
         hierarchy_objects = generate_hierarchy()
-        tree = hierarchy.Tree(hierarchy_objects['cluster_1'])
+        tree = hierarchy.ATree(hierarchy_objects['cluster_1'])
 
         expected = {
             'cluster_1': (
@@ -317,7 +318,7 @@ class HierarchyTest(TestCase):
     def test_get_all_affected(self):
         """Test `hierarchy.Tree.get_all_affected()` function"""
         hierarchy_objects = generate_hierarchy()
-        tree = hierarchy.Tree(hierarchy_objects['cluster_1'])
+        tree = hierarchy.ATree(hierarchy_objects['cluster_1'])
 
         expected = {
             'cluster_1': (
