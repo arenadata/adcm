@@ -417,6 +417,76 @@ class ServiceComponent(ADCMModel):
         unique_together = (('cluster', 'service', 'prototype'),)
 
 
+class AllObjects(ADCMModel):
+    type = models.CharField(max_length=16, choices=PROTO_TYPE)
+    cluster = models.OneToOneField(Cluster, on_delete=models.CASCADE, null=True)
+    provider = models.OneToOneField(HostProvider, on_delete=models.CASCADE, null=True)
+    host = models.OneToOneField(Host, on_delete=models.CASCADE, null=True)
+    service = models.OneToOneField(ClusterObject, on_delete=models.CASCADE, null=True)
+    component = models.OneToOneField(ServiceComponent, on_delete=models.CASCADE, null=True)
+    adcm = models.OneToOneField(ADCM, on_delete=models.CASCADE, null=True)
+    # cluster for service, service for component, host provider for host
+    parent = models.ForeignKey(
+        "self", on_delete=models.CASCADE, null=True, default=None, related_name='childs'
+    )
+    # cluster for host
+    belong = models.ForeignKey(
+        "self", on_delete=models.SET_NULL, null=True, default=None, related_name='belonged'
+    )
+
+    def get_obj(self):
+        return getattr(self, self.type)
+
+    @property
+    def legacy_id(self):
+        return self.get_obj().id
+
+    @property
+    def prototype(self):
+        return self.get_obj().prototype
+
+    @property
+    def config(self):
+        return self.get_obj().config
+
+    @property
+    def state(self):
+        return self.get_obj().state
+
+    @property
+    def stack(self):
+        return self.get_obj().stack
+
+    @property
+    def issue(self):
+        return self.get_obj().issue
+
+    @property
+    def name(self):
+        obj = self.get_obj()
+        if type in ('cluster', 'provider', 'adcm'):
+            return obj.name
+        elif type == 'host':
+            return obj.fqdn
+        else:
+            return obj.prototype.name
+
+    @property
+    def description(self):
+        obj = self.get_obj()
+        if hasattr(obj, 'description'):
+            return obj.description
+        else:
+            return obj.prototype.description
+
+    @property
+    def fqdn(self):
+        obj = self.get_obj()
+        if hasattr(obj, 'fqdn'):
+            return obj.fqdn
+        return None
+
+
 ACTION_TYPE = (
     ('task', 'task'),
     ('job', 'job'),
