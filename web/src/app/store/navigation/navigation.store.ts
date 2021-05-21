@@ -11,15 +11,15 @@ import {
 import { ParamMap } from '@angular/router';
 import { Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { filter, map, mergeMap, switchMap, tap, withLatestFrom } from 'rxjs/operators';
-import { Observable, zip, of } from 'rxjs';
+import { concatMap, filter, map, switchMap, take } from 'rxjs/operators';
+import { Observable, zip } from 'rxjs';
 
 import { AdcmEntity, AdcmTypedEntity } from '@app/models/entity';
 import { TypeName } from '@app/core/types';
 import { ApiService } from '@app/core/api';
 import { ServiceComponentService } from '@app/services/service-component.service';
 import { EntityNames } from '@app/models/entity-names';
-import { socketResponse } from '@app/core/store/sockets/socket.reducer';
+import { EventMessage, socketResponse } from '@app/core/store/sockets/socket.reducer';
 
 export const setPath = createAction('[Navigation] Set path', props<{ path: AdcmTypedEntity[] }>());
 export const setPathOfRoute = createAction('[Navigation] Set path', props<{ params: ParamMap }>());
@@ -47,6 +47,16 @@ export const getNavigationPath = createSelector(
   state => state.path
 );
 
+export function getEventEntityType(type: string): TypeName {
+  return type === 'component' ? 'servicecomponent' : <TypeName>type;
+}
+
+export function getPath(getters: Observable<AdcmTypedEntity>[]): Observable<Action> {
+  return zip(...getters).pipe(
+    map((path: AdcmTypedEntity[]) => setPath({ path })),
+  );
+}
+
 @Injectable()
 export class NavigationEffects {
 
@@ -65,7 +75,7 @@ export class NavigationEffects {
             return acc;
           }, []);
 
-          return this.getPath(getters);
+          return getPath(getters);
         }),
       ),
   );
@@ -73,27 +83,23 @@ export class NavigationEffects {
   changePathOfEvent$ = createEffect(() => this.actions$.pipe(
     ofType(socketResponse),
     filter(action => ['raise_issue', 'clear_issue'].includes(action.message.event)),
-    withLatestFrom(this.store.select(getNavigationPath)),
-    filter(
-      ([action, path]) => path.some(
-        item => item.typeName === this.getEventEntityType(action.message.object.type) && action.message.object.id === item.id
-      )
-    ),
-    mergeMap(([action, path]) => {
-      const getters: Observable<AdcmTypedEntity>[] = path.reduce((acc, entity) => {
-        if (entity.typeName === this.getEventEntityType(action.message.object.type)) {
-          const getter = this.entityGetter(entity.typeName, action.message.object.id);
-          if (getter) {
-            acc.push(getter);
+    concatMap((event: { message: EventMessage }) => {
+      return new Observable<Action>(subscriber => {
+        this.store.select(getNavigationPath).pipe(take(1)).subscribe((path) => {
+          if (path.some(item => item.typeName === getEventEntityType(event.message.object.type) && event.message.object.id === item.id)) {
+            this.entityGetter(getEventEntityType(event.message.object.type), event.message.object.id)
+              .subscribe((entity) => {
+                subscriber.next(setPath({
+                  path: path.reduce((acc, item) =>
+                    acc.concat(getEventEntityType(event.message.object.type) === item.typeName && item.id === event.message.object.id ? entity : item), []),
+                }));
+                subscriber.complete();
+              }, () => subscriber.complete());
+          } else {
+            subscriber.complete();
           }
-        } else {
-          acc.push(of(entity));
-        }
-
-        return acc;
-      }, []);
-
-      return this.getPath(getters);
+        }, () => subscriber.complete());
+      });
     }),
   ));
 
@@ -103,16 +109,6 @@ export class NavigationEffects {
     private serviceComponentService: ServiceComponentService,
     private store: Store,
   ) {}
-
-  getEventEntityType(type: string): TypeName {
-    return type === 'component' ? 'servicecomponent' : <TypeName>type;
-  }
-
-  getPath(getters: Observable<AdcmTypedEntity>[]): Observable<Action> {
-    return zip(...getters).pipe(
-      map((path: AdcmTypedEntity[]) => setPath({ path })),
-    );
-  }
 
   entityGetter(type: TypeName, id: number): Observable<AdcmTypedEntity> {
     const entityToTypedEntity = (getter: Observable<AdcmEntity>, typeName: TypeName) => getter.pipe(
