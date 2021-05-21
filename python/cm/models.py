@@ -342,7 +342,7 @@ class ClusterObject(ADCMModel):
 
     @property
     def display_name(self):
-        return self.prototype.display_name
+        return self.prototype.display_name or self.name
 
     @property
     def description(self):
@@ -356,7 +356,7 @@ class ClusterObject(ADCMModel):
     def serialized_issue(self):
         result = {
             'id': self.id,
-            'name': self.prototype.name,
+            'name': self.display_name,
             'issue': self.issue,
         }
         return result if result['issue'] else {}
@@ -382,7 +382,7 @@ class ServiceComponent(ADCMModel):
 
     @property
     def display_name(self):
-        return self.prototype.display_name
+        return self.prototype.display_name or self.name
 
     @property
     def description(self):
@@ -408,7 +408,7 @@ class ServiceComponent(ADCMModel):
     def serialized_issue(self):
         result = {
             'id': self.id,
-            'name': self.prototype.name,
+            'name': self.display_name,
             'issue': self.issue,
         }
         return result if result['issue'] else {}
