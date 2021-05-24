@@ -35,11 +35,14 @@ class IssueReporter:
     def __init__(self, obj: ADCMModel):
         self.tree = Tree(obj)
         self._cache = {}
+        self._init_cache()
 
-    def update_issues(self):
+    def _init_cache(self):
         for node in self.tree.get_directly_affected(self.tree.built_from):
             self._cache[node.key] = aggregate_issues(node.value, self.tree)
 
+    def update_issues(self):
+        for node in self.tree.get_directly_affected(self.tree.built_from):
             obj = node.value
             issue = check_for_issue(obj)
             if obj.issue != issue:
@@ -100,9 +103,13 @@ def aggregate_issues(obj: ADCMModel, tree: Tree = None) -> dict:
     if obj.prototype.type == 'provider':
         return issue
 
+    refresh_needed = bool(tree)
     tree = tree or Tree(obj)
     node = tree.get_node(obj)
     for child in tree.get_directly_affected(node):
+        if refresh_needed:
+            child.value.refresh_from_db()  # workaround for some Django ORM cache problem
+
         if child.key == node.key:  # skip itself
             continue
 
