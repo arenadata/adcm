@@ -21,9 +21,6 @@ import { Component } from '@angular/core';
     <div class="admin-warn">
       <ul>
         <li>
-          <i>We will send anonymous statistic about number of bundles your use and number of hosts and clusters, but without any config or names.</i>
-        </li>
-        <li>
           <i
             >We have to know ADCM's Url [ <b style="color: #00e676;">{{ adcm_url }}</b> ] to send information from host. We try to gues that information from url you enter in
             browser. <br />But if your network has more complicated structure and we gues wrong, <a routerLink="/admin/settings">please fix that here</a>.</i
