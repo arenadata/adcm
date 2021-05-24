@@ -1,6 +1,6 @@
 import { AdcmEntity } from '@app/models/entity';
 
-export type IssueType = 'cluster' | 'service' | 'servicecomponent';
+export type IssueType = 'cluster' | 'service' | 'servicecomponent' | 'component';
 
 export interface IssueEntity extends AdcmEntity {
   issue: IIssues;

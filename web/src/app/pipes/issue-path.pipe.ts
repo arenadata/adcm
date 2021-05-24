@@ -27,7 +27,7 @@ export class IssuePathPipe implements PipeTransform {
         .pipe(map(
           service => `/cluster/${service.cluster_id}/${issueType}/${id}/${issue}`,
         ));
-    } else if (issueType === 'servicecomponent') {
+    } else if (issueType === 'servicecomponent' || issueType === 'component') {
       return this.serviceComponentService.get(id)
         .pipe(map(
           component => `/cluster/${component.cluster_id}/service/${component.service_id}/component/${id}/${issue}`,
