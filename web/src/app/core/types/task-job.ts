@@ -13,10 +13,12 @@ import { ApiBase } from './api';
 
 export type JobStatus = 'created' | 'running' | 'failed' | 'success' | 'aborted';
 
+export type JobType = 'component' | 'service' | 'cluster';
+
 export interface JobObject {
   id: number;
   name: string;
-  type: string;
+  type: JobType;
   url?: string[];
 }
 
@@ -31,7 +33,7 @@ interface TaskBase {
 }
 
 export interface JobAction {
-  prototype_name?: string;  
+  prototype_name?: string;
   prototype_version?: string;
   bundle_id?: number;
   display_name: string;
@@ -56,7 +58,7 @@ export interface LogFile {
   type: string;
   format: 'txt' | 'json';
   download_url: string;
-  content: string | CheckLog[];  
+  content: string | CheckLog[];
 }
 
 export interface CheckLog {
