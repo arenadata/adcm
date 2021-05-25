@@ -24,7 +24,6 @@ import { JobsComponent } from '@app/components/task/jobs/jobs.component';
 import { JobStatusColumnComponent } from '@app/components/columns/job-status-column/job-status-column.component';
 import { TaskNameComponent } from '@app/components/columns/task-name/task-name.component';
 import { TaskService } from '@app/services/task.service';
-import { JobService } from '@app/services/job.service';
 
 const routes: Routes = [
   {
@@ -52,7 +51,6 @@ const routes: Routes = [
   ],
   providers: [
     TaskService,
-    JobService,
   ],
 })
 export class TaskModule {}

@@ -13,7 +13,7 @@ export class JobService implements EventableService {
     private store: Store<SocketState>,
   ) {}
 
-  events(events: EntityEvent[]): Observable<EventMessage> {
+  events(events?: EntityEvent[]): Observable<EventMessage> {
     const result = this.store.pipe(
       selectMessage,
       filter(event => event?.object?.type === 'job'),

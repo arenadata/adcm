@@ -23,38 +23,39 @@
     <span *ngIf="(isAuth$ | async)">
       <ng-container *ngIf="(jobStat$ | async)"></ng-container>
       <span class="job-status">
-        <button
-          [appForTest]="'jobs_yellow'"
-          mat-mini-fab
-          [style.backgroundColor]="'#FFEA00'"
-          [routerLink]="['/task']"
-          [queryParams]="{ page: 1, status: 'running' }"
-          matTooltip="Show jobs in progress"
-        >
-          {{ jobStatus.running }}
-        </button>
+        <app-bell></app-bell>
+<!--        <button-->
+<!--          [appForTest]="'jobs_yellow'"-->
+<!--          mat-mini-fab-->
+<!--          [style.backgroundColor]="'#FFEA00'"-->
+<!--          [routerLink]="['/task']"-->
+<!--          [queryParams]="{ page: 1, status: 'running' }"-->
+<!--          matTooltip="Show jobs in progress"-->
+<!--        >-->
+<!--          {{ jobStatus.running }}-->
+<!--        </button>-->
 
-        <button
-          [appForTest]="'jobs_green'"
-          mat-mini-fab
-          color="accent"
-          [routerLink]="['/task']"
-          [queryParams]="{ page: 1, status: 'success' }"
-          matTooltip="Show success jobs"
-        >
-          {{ jobStatus.success > 1000 ? (jobStatus.success/1000).toFixed(1) + 'K' : jobStatus.success }}
-        </button>
+<!--        <button-->
+<!--          [appForTest]="'jobs_green'"-->
+<!--          mat-mini-fab-->
+<!--          color="accent"-->
+<!--          [routerLink]="['/task']"-->
+<!--          [queryParams]="{ page: 1, status: 'success' }"-->
+<!--          matTooltip="Show success jobs"-->
+<!--        >-->
+<!--          {{ jobStatus.success > 1000 ? (jobStatus.success/1000).toFixed(1) + 'K' : jobStatus.success }}-->
+<!--        </button>-->
 
-        <button
-          [appForTest]="'jobs_red'"
-          mat-mini-fab
-          [style.backgroundColor]="'#FF8A80'"
-          [routerLink]="['/task']"
-          [queryParams]="{ page: 1, status: 'failed' }"
-          matTooltip="Show failed jobs"
-        >
-          {{ jobStatus.failed > 1000 ? (jobStatus.failed/1000).toFixed(1) + 'K' : jobStatus.failed }}
-        </button>
+<!--        <button-->
+<!--          [appForTest]="'jobs_red'"-->
+<!--          mat-mini-fab-->
+<!--          [style.backgroundColor]="'#FF8A80'"-->
+<!--          [routerLink]="['/task']"-->
+<!--          [queryParams]="{ page: 1, status: 'failed' }"-->
+<!--          matTooltip="Show failed jobs"-->
+<!--        >-->
+<!--          {{ jobStatus.failed > 1000 ? (jobStatus.failed/1000).toFixed(1) + 'K' : jobStatus.failed }}-->
+<!--        </button>-->
       </span>
 
       <button [appForTest]="'help'" mat-icon-button [matMenuTriggerFor]="helpMenu">
