@@ -147,7 +147,7 @@ class HierarchyTest(TestCase):
     def test_build_tree_performance(self):
         """
         Un-skip it for manual performance testing after changes to cm/hierarchy.py
-        average ~0.03 seconds per single build
+        average ~0.025 seconds per single build
         """
         hierarchy_objects = generate_hierarchy()
 

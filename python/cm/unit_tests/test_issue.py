@@ -47,32 +47,39 @@ def generate_hierarchy():  # pylint: disable=too-many-locals,too-many-statements
 
 
 class AggregateIssuesTest(TestCase):
+    """
+    Tests for `cm.issue.aggregate_issues()`
+    BEWARE of different object instances in `self.tree` and `self.hierarchy`, use `refresh_from_db`
+    """
     def setUp(self) -> None:
         self.hierarchy = generate_hierarchy()
         self.tree = Tree(self.hierarchy['cluster'])
 
     def test_no_issues(self):
+        """Objects with no issues has no aggregated issues as well"""
         for obj in self.hierarchy.values():
             self.assertFalse(issue.aggregate_issues(obj, self.tree))
 
     def test_provider_issue(self):
         """Test provider's special case - it does not aggregate issues from other objects"""
         data = {'config': False}
-        for obj in self.hierarchy.values():
-            obj.issue = data
-            obj.save()
+        for node in self.tree.get_all_affected(self.tree.built_from):
+            node.value.issue = data
+            node.value.save()
 
         provider = self.hierarchy['provider']
+        provider.refresh_from_db()
         self.assertDictEqual(data, issue.aggregate_issues(provider, self.tree))
 
     def test_own_issue(self):
         """Test if own issue is not doubled as nested"""
         data = {'config': False}
-        for obj in self.hierarchy.values():
-            obj.issue = data
-            obj.save()
+        for node in self.tree.get_all_affected(self.tree.built_from):
+            node.value.issue = data
+            node.value.save()
 
         for name, obj in self.hierarchy.items():
+            obj.refresh_from_db()
             agg_issue = issue.aggregate_issues(obj, self.tree)
             self.assertNotIn(name, agg_issue)
             self.assertIn('config', agg_issue)
@@ -80,15 +87,16 @@ class AggregateIssuesTest(TestCase):
     def test_linked_issues(self):
         """Test if aggregated issue has issues from all linked objects"""
         data = {'config': False}
-        for obj in self.hierarchy.values():
-            obj.issue = data
-            obj.save()
+        for node in self.tree.get_all_affected(self.tree.built_from):
+            node.value.issue = data
+            node.value.save()
 
         keys = {'config', 'cluster', 'service', 'component', 'provider', 'host'}
         for name, obj in self.hierarchy.items():
             if name == 'provider':
                 continue
 
+            obj.refresh_from_db()
             agg_issue = issue.aggregate_issues(obj, self.tree)
             expected_keys = keys.difference({name})
             got_keys = set(agg_issue.keys())
