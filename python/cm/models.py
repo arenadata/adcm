@@ -186,14 +186,30 @@ class ConfigLog(ADCMModel):
     __error_code__ = 'CONFIG_NOT_FOUND'
 
 
-class ADCM(ADCMModel):
+class AllObjects(ADCMModel):
+    type = models.CharField(max_length=16, choices=PROTO_TYPE)
+    legacy_id = models.PositiveIntegerField(default=None, null=True)
+    # cluster for service, service for component, host provider for host
+    parent = models.ForeignKey(
+        "self", on_delete=models.CASCADE, null=True, default=None, related_name='childs'
+    )
+    # cluster for host
+    belong = models.ForeignKey(
+        "self", on_delete=models.SET_NULL, null=True, default=None, related_name='belonged'
+    )
+    name = models.CharField(max_length=80, null=True)
+    description = models.TextField(blank=True)
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
-    name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
     stack = models.JSONField(default=list)
     issue = models.JSONField(default=dict)
 
+    class Meta:
+        unique_together = (('type', 'prototype', 'name', 'parent'),)
+
+
+class ADCM(AllObjects):
     @property
     def bundle_id(self):
         return self.prototype.bundle_id
@@ -207,16 +223,24 @@ class ADCM(ADCMModel):
         }
         return result if result['issue'] else {}
 
+    class Meta:
+        proxy = True
 
-class Cluster(ADCMModel):
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
-    name = models.CharField(max_length=80, unique=True)
-    description = models.TextField(blank=True)
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
 
+class OldObjectManager(models.Manager):
+    object_type = None
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        return queryset.filter(type=self.object_type)
+
+
+class ClusterManager(OldObjectManager):
+    object_type = 'cluster'
+
+
+class Cluster(AllObjects):
+    objects = ClusterManager()
     __error_code__ = 'CLUSTER_NOT_FOUND'
 
     @property
@@ -243,16 +267,16 @@ class Cluster(ADCMModel):
         }
         return result if result['issue'] else {}
 
+    def save(self, *args, **kwargs):
+        self.type = 'cluster'
+        self.parent_id = 1
+        super().save(*args, **kwargs)
 
-class HostProvider(ADCMModel):
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
-    name = models.CharField(max_length=80, unique=True)
-    description = models.TextField(blank=True)
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
+    class Meta:
+        proxy = True
 
+
+class HostProvider(AllObjects):
     __error_code__ = 'PROVIDER_NOT_FOUND'
 
     @property
@@ -279,19 +303,32 @@ class HostProvider(ADCMModel):
         }
         return result if result['issue'] else {}
 
+    class Meta:
+        proxy = True
 
-class Host(ADCMModel):
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
-    fqdn = models.CharField(max_length=160, unique=True)
-    description = models.TextField(blank=True)
-    provider = models.ForeignKey(HostProvider, on_delete=models.CASCADE, null=True, default=None)
-    cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
 
+class Host(AllObjects):
     __error_code__ = 'HOST_NOT_FOUND'
+
+    @property
+    def fqdn(self):
+        return self.name
+
+    @property
+    def provider(self):
+        return self.parent
+
+    @property
+    def provider_id(self):
+        return self.parent_id
+
+    @property
+    def cluster(self):
+        return self.belong
+
+    @property
+    def cluster_id(self):
+        return self.belong_id
 
     @property
     def bundle_id(self):
@@ -316,17 +353,16 @@ class Host(ADCMModel):
             result['issue']['provider'] = provider_issue
         return result if result['issue'] else {}
 
+    class Meta:
+        proxy = True
 
-class ClusterObject(ADCMModel):
-    cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
-    service = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
 
+class ClusterObject(AllObjects):
     __error_code__ = 'CLUSTER_SERVICE_NOT_FOUND'
+
+    @property
+    def cluster(self):
+        return self.parent
 
     @property
     def bundle_id(self):
@@ -362,19 +398,19 @@ class ClusterObject(ADCMModel):
         return result if result['issue'] else {}
 
     class Meta:
-        unique_together = (('cluster', 'prototype'),)
+        proxy = True
 
 
-class ServiceComponent(ADCMModel):
-    cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
-    service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE, null=True, default=None)
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
-
+class ServiceComponent(AllObjects):
     __error_code__ = 'COMPONENT_NOT_FOUND'
+
+    @property
+    def cluster(self):
+        return self.parent.parent
+
+    @property
+    def service(self):
+        return self.parent
 
     @property
     def name(self):
@@ -414,7 +450,7 @@ class ServiceComponent(ADCMModel):
         return result if result['issue'] else {}
 
     class Meta:
-        unique_together = (('cluster', 'service', 'prototype'),)
+        proxy = True
 
 
 ACTION_TYPE = (
@@ -485,10 +521,18 @@ class SubAction(ADCMModel):
 
 
 class HostComponent(ADCMModel):
-    cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
-    host = models.ForeignKey(Host, on_delete=models.CASCADE)
-    service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
-    component = models.ForeignKey(ServiceComponent, on_delete=models.CASCADE)
+    cluster = models.ForeignKey(
+        AllObjects, related_name='hc_cluster', null=True, on_delete=models.CASCADE
+    )
+    host = models.ForeignKey(
+        AllObjects, related_name='hc_host', null=True, on_delete=models.CASCADE
+    )
+    service = models.ForeignKey(
+        AllObjects, related_name='hc_service', null=True, on_delete=models.CASCADE
+    )
+    component = models.ForeignKey(
+        AllObjects, related_name='hc_component', null=True, on_delete=models.CASCADE
+    )
     state = models.CharField(max_length=64, default='created')
 
     class Meta:
@@ -555,17 +599,17 @@ class PrototypeImport(ADCMModel):
 
 
 class ClusterBind(ADCMModel):
-    cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
-    service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE, null=True, default=None)
+    cluster = models.ForeignKey(
+        AllObjects, related_name='bind_cluster', null=True, on_delete=models.CASCADE
+    )
+    service = models.ForeignKey(
+        AllObjects, related_name='bind_service', null=True, on_delete=models.CASCADE
+    )
     source_cluster = models.ForeignKey(
-        Cluster, related_name='source_cluster', on_delete=models.CASCADE
+        AllObjects, related_name='bind_source_cluster', null=True, on_delete=models.CASCADE
     )
     source_service = models.ForeignKey(
-        ClusterObject,
-        related_name='source_service',
-        on_delete=models.CASCADE,
-        null=True,
-        default=None
+        AllObjects, related_name='bind_source_service', null=True, on_delete=models.CASCADE
     )
 
     __error_code__ = 'BIND_NOT_FOUND'

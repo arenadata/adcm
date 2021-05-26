@@ -27,7 +27,8 @@ class HostFilter(drf_filters.FilterSet):
 
     class Meta:
         model = Host
-        fields = ['cluster_id', 'prototype_id', 'provider_id', 'fqdn']
+        # fields = ['cluster_id', 'prototype_id', 'provider_id', 'fqdn']
+        fields = ['parent_id', 'prototype_id', 'belong_id', 'name']
 
 
 class HostList(PageView):

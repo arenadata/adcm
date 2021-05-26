@@ -51,9 +51,9 @@ def add_cluster(proto, name, desc=''):
         cluster = Cluster(prototype=proto, name=name, config=obj_conf, description=desc)
         cluster.save()
         process_file_type(cluster, spec, conf)
-        cm.issue.update_hierarchy_issues(cluster)
+        # cm.issue.update_hierarchy_issues(cluster)
     cm.status_api.post_event('create', 'cluster', cluster.id)
-    cm.status_api.load_service_map()
+    # cm.status_api.load_service_map()
     return cluster
 
 
