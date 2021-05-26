@@ -24,7 +24,7 @@ pytestmark = pytest.mark.skip(reason="ADCM-961 That test group should be moved t
 def schema():
     filename = get_data_dir(__file__) + "/schema.yaml"
     with open(filename, 'r') as f:
-        return yaml.load(f)
+        return yaml.safe_load(f)
 
 
 def test_bundle_upload(sdk_client_fs: ADCMClient):
@@ -255,7 +255,7 @@ def test_action_fail(sdk_client_fs: ADCMClient):
         cluster = bundle.cluster_create(name="sample cluster")
     with allure.step('Check action fail'):
         with pytest.raises(TaskFailed):
-            cluster.action_run(name="fail").try_wait()
+            cluster.action(name="fail").run().try_wait()
 
 
 def test_cluster_upgrade(sdk_client_fs: ADCMClient):

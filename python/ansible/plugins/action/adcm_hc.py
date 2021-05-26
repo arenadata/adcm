@@ -54,8 +54,7 @@ from ansible.plugins.action import ActionBase
 
 sys.path.append('/adcm/python')
 import adcm.init_django
-import cm.api
-from cm.ansible_plugin import get_object_id_from_context
+from cm.ansible_plugin import get_object_id_from_context, change_hc
 from cm.errors import AdcmEx
 from cm.logger import log
 
@@ -87,7 +86,7 @@ class ActionModule(ActionBase):
                 raise AnsibleError('Invalid operation arguments: %s' % op)
 
         try:
-            cm.api.change_hc(job_id, cluster_id, ops)
+            change_hc(job_id, cluster_id, ops)
         except AdcmEx as e:
             raise AnsibleError(e.code + ": " + e.msg) from e
 

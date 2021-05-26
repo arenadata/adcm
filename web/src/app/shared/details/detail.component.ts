@@ -11,15 +11,17 @@
 // limitations under the License.
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ChannelService, ClusterService, keyChannelStrim, WorkerInstance } from '@app/core';
-import { EventMessage, SocketState } from '@app/core/store';
-import { Cluster, Host, IAction, Issue, Job, isIssue } from '@app/core/types';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 import { switchMap, tap } from 'rxjs/operators';
 
-import { SocketListenerDirective } from '../directives/socketListener.directive';
+import { ChannelService, keyChannelStrim } from '@app/core';
+import { WorkerInstance, ClusterService } from '@app/core/services/cluster.service';
+import { EventMessage, getNavigationPath, SocketState } from '@app/core/store';
+import { Cluster, Host, IAction, Issue, Job, isIssue } from '@app/core/types';
+import { SocketListenerDirective } from '@app/shared/directives/socketListener.directive';
 import { IDetails } from './navigation.service';
+import { AdcmEntity } from '@app/models/entity';
 
 @Component({
   selector: 'app-detail',
@@ -35,7 +37,15 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
   current: IDetails;
   currentName = '';
 
-  constructor(socket: Store<SocketState>, private route: ActivatedRoute, private service: ClusterService, private channel: ChannelService) {
+  navigationPath: Observable<AdcmEntity[]> = this.store.select(getNavigationPath).pipe(this.takeUntil());
+
+  constructor(
+    socket: Store<SocketState>,
+    private route: ActivatedRoute,
+    private service: ClusterService,
+    private channel: ChannelService,
+    private store: Store,
+  ) {
     super(socket);
   }
 
@@ -61,7 +71,20 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
   }
 
   run(w: WorkerInstance) {
-    const { id, name, typeName, action, actions, issue, status, prototype_name, prototype_display_name, prototype_version, bundle_id, state } = w.current;
+    const {
+      id,
+      name,
+      typeName,
+      action,
+      actions,
+      issue,
+      status,
+      prototype_name,
+      prototype_display_name,
+      prototype_version,
+      bundle_id,
+      state,
+    } = w.current;
     const { upgradable, upgrade, hostcomponent } = w.current as Cluster;
     const { log_files, objects } = w.current as Job;
     const { provider_id } = w.current as Host;
@@ -114,7 +137,8 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
       return;
     }
 
-    if (this.Current?.typeName === m.object.type && this.Current?.id === m.object.id) {
+    const type = m.object.type === 'component' ? 'servicecomponent' : m.object.type;
+    if (this.Current?.typeName === type && this.Current?.id === m.object.id) {
       if (this.service.Current.typeName === 'job' && (m.event === 'change_job_status' || m.event === 'add_job_log')) {
         this.reset();
         return;
@@ -130,6 +154,6 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
     }
 
     // parent
-    if (this.service.Cluster?.id === m.object.id && this.Current?.typeName !== 'cluster' && m.object.type === 'cluster' && m.event === 'clear_issue') this.issue = {};
+    if (this.service.Cluster?.id === m.object.id && this.Current?.typeName !== 'cluster' && type === 'cluster' && m.event === 'clear_issue') this.issue = {};
   }
 }

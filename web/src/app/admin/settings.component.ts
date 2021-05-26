@@ -11,13 +11,13 @@
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
 import { ApiService } from '@app/core/api';
-import { sendMetrics, State } from '@app/core/store';
+import { settingsSave, State } from '@app/core/store';
 import { ApiBase } from '@app/core/types/api';
-import { DynamicEvent } from '@app/shared';
+import { DynamicEvent } from '@app/shared/directives';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
-import { FormGroup } from '@angular/forms';
+
 
 @Component({
   selector: 'app-settings',
@@ -37,6 +37,6 @@ export class SettingsComponent implements OnInit {
   }
 
   onEvent(e: DynamicEvent) {
-    if (e.name === 'send') this.store.dispatch(sendMetrics({ metrics: (e.data.form.controls['global'] as FormGroup).controls['send_stats'].value }));
+    if (e.name === 'send') this.store.dispatch(settingsSave({ isSet: true }));
   }
 }

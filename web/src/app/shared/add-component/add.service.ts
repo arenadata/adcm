@@ -13,14 +13,15 @@ import { EventEmitter, Injectable } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { convertToParamMap, Params } from '@angular/router';
-import { ClusterService, StackInfo, StackService } from '@app/core';
-import { ApiService } from '@app/core/api';
-import { Host, Prototype, ServicePrototype, StackBase, TypeName } from '@app/core/types';
 import { environment } from '@env/environment';
 import { Observable, of, throwError, forkJoin } from 'rxjs';
 import { concatAll, filter, map, switchMap, catchError } from 'rxjs/operators';
 
-import { DialogComponent } from '../components/dialog.component';
+import { StackInfo, StackService } from '@app/core';
+import { ClusterService } from '@app/core/services/cluster.service';
+import { ApiService } from '@app/core/api';
+import { Host, Prototype, ServicePrototype, StackBase, TypeName } from '@app/core/types';
+import { DialogComponent } from '@app/shared/components/dialog.component';
 import { GenName } from './naming';
 
 export interface FormModel {
@@ -75,7 +76,7 @@ export class AddService {
   get currentPrototype(): StackBase {
     return this._currentPrototype;
   }
-  
+
   constructor(private api: ApiService, private stack: StackService, private cluster: ClusterService, public dialog: MatDialog) {}
 
   model(name: string) {
@@ -145,7 +146,7 @@ export class AddService {
     return this.api.root.pipe(switchMap((root) => this.api.getList<T>(root[type], paramMap)));
   }
 
-  getList<T>(type: TypeName, param: Params = {}): Observable<T[]> {    
+  getList<T>(type: TypeName, param: Params = {}): Observable<T[]> {
     return this.getListResults<T>(type, param).pipe(map((list) => list.results));
   }
 

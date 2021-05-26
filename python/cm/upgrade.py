@@ -184,7 +184,7 @@ def check_upgrade_import(obj, upgrade):   # pylint: disable=too-many-branches
 
 
 def check_upgrade(obj, upgrade):
-    issue = cm.issue.get_issue(obj)
+    issue = cm.issue.aggregate_issues(obj)
     if not cm.issue.issue_to_bool(issue):
         return False, '{} has issue: {}'.format(obj_ref(obj), issue)
 
@@ -293,7 +293,7 @@ def do_upgrade(obj, upgrade):
             for p in Prototype.objects.filter(bundle=upgrade.bundle, type='host'):
                 for host in Host.objects.filter(provider=obj, prototype__name=p.name):
                     switch_service(host, p)
-        cm.issue.save_issue(obj)
+        cm.issue.update_hierarchy_issues(obj)
 
     log.info('upgrade %s OK to version %s', obj_ref(obj), obj.prototype.version)
     cm.status_api.post_event(

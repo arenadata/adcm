@@ -140,6 +140,7 @@ class ConfigurationLocators:
     map_key_field = bys.by_class('key-field')
     map_value_field = bys.by_class('value-field')
     load_marker = bys.by_class('load_complete')
+    displayed_password_fields = bys.by_xpath("//div[@style='display: flex;']")
 
 
 class ActionPageLocators:

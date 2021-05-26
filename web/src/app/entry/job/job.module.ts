@@ -12,8 +12,8 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { SharedModule } from '@app/shared';
 
+import { SharedModule } from '@app/shared/shared.module';
 import { JobInfoComponent } from './job-info.component';
 import { JobRoutingModule } from './job-routing.module';
 import { JobComponent, MainComponent } from './job.component';

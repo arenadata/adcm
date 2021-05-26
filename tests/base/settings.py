@@ -10,6 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+from os.path import dirname
+
 from adcm.settings import *   # pylint: disable=wildcard-import,unused-wildcard-import,import-error
 
 DEBUG = True

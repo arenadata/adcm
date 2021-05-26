@@ -12,6 +12,7 @@
 import json
 import os
 import re
+from time import gmtime, strftime
 
 import allure
 import pytest
@@ -112,8 +113,8 @@ def service(sdk_client_fs, name='zookeeper'):
     return cluster(sdk_client_fs).service_add(name=name)
 
 
-def cluster_action_run(sdk_client_fs, name):
-    return cluster(sdk_client_fs).action_run(name=name)
+def cluster_action_run(sdk_client_fs, name, **kwargs):
+    return cluster(sdk_client_fs).action(name=name).run(**kwargs)
 
 
 def expected_success_task(obj, job):
@@ -187,7 +188,7 @@ def test_event_when_add_service(sdk_client_fs, ws):
 @pytest.mark.parametrize(('case', 'action_name', 'expected'), cluster_actions)
 def test_events_when_cluster_action_(case, action_name, expected, ws, cluster_with_svc_and_host):
     cluster, _, _ = cluster_with_svc_and_host
-    job = cluster.action_run(name=action_name)
+    job = cluster.action(name=action_name).run()
     with allure.step('Check job'):
         assert_events(
             ws,
@@ -198,9 +199,22 @@ def test_events_when_cluster_action_(case, action_name, expected, ws, cluster_wi
 @pytest.mark.parametrize(('case', 'action_name', 'expected'), svc_actions)
 def test_events_when_service_(case, action_name, expected, ws, cluster_with_svc_and_host):
     _, zookeeper, _ = cluster_with_svc_and_host
-    job = zookeeper.action_run(name=action_name)
+    job = zookeeper.action(name=action_name).run()
     with allure.step('Check job'):
         assert_events(
             ws,
             *expected(zookeeper, job)
         )
+
+
+@pytest.mark.parametrize(
+    "verbose_state", [True, False], ids=["verbose_state_true", "verbose_state_false"]
+)
+def test_check_timestamp_in_job_logs(sdk_client_fs: ADCMClient, verbose_state):
+    """Test that timestamps are presented in Job logs for both ordinary and verbose modes."""
+    task = cluster_action_run(sdk_client_fs, name="install", verbose=verbose_state)
+    with allure.step("Check timestamps presence in job logs"):
+        task.wait()
+        log = task.job().log()
+        assert strftime("%A %d %B %Y  %H:%M", gmtime()) in log.content, \
+            "There are no timestamps in job logs"

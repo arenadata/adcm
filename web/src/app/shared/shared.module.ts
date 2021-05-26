@@ -13,6 +13,7 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { AdwpListModule } from '@adwp-ui/widgets';
 
 import { AddingModule } from './add-component/adding.module';
 import {
@@ -29,7 +30,6 @@ import {
 } from './components';
 import { ActionCardComponent } from './components/actions/action-card/action-card.component';
 import { ActionMasterConfigComponent } from './components/actions/master/action-master-config.component';
-import { BaseListDirective } from './components/list/base-list.directive';
 import { ListComponent } from './components/list/list.component';
 import { MultiSortDirective } from './components/list/multi-sort.directive';
 import { SimpleTextComponent } from './components/tooltip';
@@ -41,6 +41,11 @@ import { HostComponentsMapModule } from './host-components-map/host-components-m
 import { MaterialModule } from './material.module';
 import { BreakRowPipe, TagEscPipe } from './pipes';
 import { StuffModule } from './stuff.module';
+import { StatusColumnComponent } from '@app/components/columns/status-column/status-column.component';
+import { StateColumnComponent } from '@app/components/columns/state-column/state-column.component';
+import { EditionColumnComponent } from '@app/components/columns/edition-column/edition-column.component';
+import { ClusterColumnComponent } from '@app/components/columns/cluster-column/cluster-column.component';
+import { ServiceComponentsComponent } from '@app/components/service-components.component';
 
 @NgModule({
   imports: [
@@ -55,6 +60,9 @@ import { StuffModule } from './stuff.module';
     AddingModule,
     HostComponentsMapModule,
     DetailsModule,
+    AdwpListModule.forRoot({
+      itemsPerPage: [10, 25, 50, 100],
+    }),
   ],
   declarations: [
     DialogComponent,
@@ -66,7 +74,6 @@ import { StuffModule } from './stuff.module';
     TagEscPipe,
     IssueInfoComponent,
     SimpleTextComponent,
-    BaseListDirective,
     StatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
@@ -76,6 +83,11 @@ import { StuffModule } from './stuff.module';
     ActionMasterComponent,
     ActionMasterConfigComponent,
     ActionCardComponent,
+    StatusColumnComponent,
+    StateColumnComponent,
+    EditionColumnComponent,
+    ClusterColumnComponent,
+    ServiceComponentsComponent,
   ],
   // entryComponents: [DialogComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent, ActionMasterComponent],
   exports: [
@@ -96,13 +108,18 @@ import { StuffModule } from './stuff.module';
     ButtonSpinnerComponent,
     UpgradeComponent,
     TagEscPipe,
-    BaseListDirective,
     StatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
     ImportComponent,
     ExportComponent,
     ActionCardComponent,
+    StatusColumnComponent,
+    StateColumnComponent,
+    EditionColumnComponent,
+    ClusterColumnComponent,
+    ServiceComponentsComponent,
+    AdwpListModule,
   ],
 })
 export class SharedModule {}

@@ -14,7 +14,6 @@ from time import sleep
 
 import allure
 # Created by a1wen at 05.03.19
-from retrying import retry
 from selenium.common.exceptions import TimeoutException, InvalidElementStateException, \
     NoSuchElementException, StaleElementReferenceException
 from selenium.webdriver.common.action_chains import ActionChains
@@ -23,13 +22,8 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
 
-from cm.errors import ERRORS
 from tests.ui_tests.app.helpers import bys
 from tests.ui_tests.app.locators import Menu, Common, Cluster, Provider, Host, Service
-
-
-def ui_retry(func):
-    return retry(stop_max_delay=15 * 1000)(func)
 
 
 def element_text(e):
@@ -48,13 +42,11 @@ class BasePage:
     def __init__(self, driver):
         self.driver = driver
 
-    @ui_retry
     def get(self, url, url_path=None, timeout=5):
         if self.driver.current_url != url:
             self.driver.get(url)
         self._contains_url(url_path, timer=timeout)
 
-    @ui_retry
     @allure.step('Find elements')
     def _elements(self, locator: tuple, f, **kwargs):
         """Find elements
@@ -195,15 +187,6 @@ class BasePage:
         self.clear_element(input_element)
         return element
 
-    def _error_handler(self, error: ERRORS):
-        if error in ERRORS.keys():
-            e = self._getelement(Common.error).text
-        return bool(error in e), e
-
-    @allure.step('Check error')
-    def check_error(self, error: ERRORS):
-        return self._error_handler(error)
-
     def _click_with_offset(self, element: tuple, x_offset, y_offset):
         actions = ActionChains(self.driver)
         actions.move_to_element_with_offset(self._getelement(element),
@@ -213,7 +196,7 @@ class BasePage:
         WDW(self.driver, timer).until(EC.url_contains(url))
         return self.driver.current_url
 
-    def _is_element_clickable(self, locator: tuple, timer=5) -> WebElement:
+    def _is_element_clickable(self, locator: tuple, timer=5) -> bool:
         return bool(WDW(self.driver, timer).until(EC.element_to_be_clickable(locator)))
 
     def _menu_click(self, locator: tuple):

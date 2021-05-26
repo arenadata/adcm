@@ -23,7 +23,6 @@ const PROFILE_LINK = `${environment.apiRoot}profile/`;
 export interface IProfile {
   dashboard: any[];
   textarea: { [key: string]: number };
-  metrics: boolean;
   settingsSaved: boolean;
 }
 
@@ -48,7 +47,7 @@ export class ProfileService {
   }
 
   emptyProfile() {
-    return { dashboard: PROFILE_DASHBOARD_DEFAULT, textarea: {}, metrics: null, settingsSaved: false };
+    return { dashboard: PROFILE_DASHBOARD_DEFAULT, textarea: {}, settingsSaved: false };
   }
 
   setUser(key: string, value: string | boolean | { [key: string]: number }) {

@@ -11,10 +11,9 @@
 // limitations under the License.
 import { Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { Action, createAction, createFeatureSelector, createReducer, createSelector, on, props, Store } from '@ngrx/store';
+import { Action, createAction, createFeatureSelector, createReducer, createSelector, on, props } from '@ngrx/store';
 import { exhaustMap, map } from 'rxjs/operators';
 
-import { State } from '../../store';
 import { IUser, ProfileService } from './profile.service';
 
 export type ProfileState = IUser;
@@ -25,7 +24,6 @@ const InitState = {
   profile: {
     dashboard: [],
     textarea: {},
-    metrics: true, // deprecated
     settingsSaved: false,
   },
 };
@@ -35,7 +33,6 @@ export const clearProfile = createAction('[Profile] ClearProfile');
 export const saveDashboard = createAction('[Profile] SaveDashboard', props<{ dashboard: any[] }>());
 export const loadProfileSuccess = createAction('[Profile] LoadSuccess', props<{ profile: IUser }>());
 export const setTextareaHeight = createAction('[Profile] SetTextareaHeight', props<{ key: string; value: number }>());
-export const sendMetrics = createAction('[Profile] SendMetrics', props<{ metrics: boolean }>());
 export const settingsSave = createAction('[Profile] SettingsSave', props<{ isSet: boolean }>());
 
 const reducer = createReducer(
@@ -43,7 +40,6 @@ const reducer = createReducer(
   on(loadProfileSuccess, (state, { profile }) => ({ ...profile })),
   on(setTextareaHeight, state => ({ ...state })),
   on(saveDashboard, (state, { dashboard }) => ({ ...state, dashboard })),
-  on(sendMetrics, (state, { metrics }) => ({ ...state, metrics })),
   on(settingsSave, (state, { isSet }) => ({ ...state, isSet })),
   on(clearProfile, () => InitState)
 );
@@ -80,14 +76,6 @@ export class ProfileEffects {
     )
   );
 
-  sendMetrics$ = createEffect(() =>
-    this.actions$.pipe(
-      ofType(sendMetrics),
-      map(a => this.service.setUser('metrics', a.metrics)),
-      exhaustMap(() => this.service.setProfile().pipe(map(user => loadProfileSuccess({ profile: user }))))
-    )
-  );
-
   saveSettings$ = createEffect(() =>
     this.actions$.pipe(
       ofType(settingsSave),
@@ -96,7 +84,7 @@ export class ProfileEffects {
     )
   );
 
-  constructor(private actions$: Actions, private service: ProfileService, private store: Store<State>) {}
+  constructor(private actions$: Actions, private service: ProfileService) {}
 }
 
 export const getProfileSelector = createFeatureSelector<ProfileState>('profile');

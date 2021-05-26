@@ -292,6 +292,6 @@ class TestInventory(TestCase):
                 prototype.type = prototype_type
                 prototype.save()
 
-                cm.inventory.prepare_job_inventory(selector, job.id, [])
+                cm.inventory.prepare_job_inventory(selector, job.id, action, [])
                 mock_dump.assert_called_once_with(inv, fd, indent=3)
                 mock_dump.reset_mock()

@@ -13,7 +13,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { ApiService } from '@app/core/api';
 import { getProfileSelector, settingsSave, State } from '@app/core/store';
-import { BaseDirective } from '@app/shared';
+import { BaseDirective } from '@app/shared/directives';
 import { IConfig } from '@app/shared/configuration/types';
 import { select, Store } from '@ngrx/store';
 import { exhaustMap, filter } from 'rxjs/operators';
@@ -85,7 +85,6 @@ export class PatternComponent extends BaseDirective implements OnInit, OnDestroy
               const config = c.config;
               const global = config['global'] || {};
               global.adcm_url = global.adcm_url || `${location.protocol}//${location.host}`;
-              global.send_stats = true;
               return this.api.post('/api/v1/adcm/1/config/history/', c);
             })
           )

@@ -15,7 +15,7 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideMockStore } from '@ngrx/store/testing';
 
-import { ClusterService } from '../../../../core/services/detail.service';
+import { ClusterService } from '../../../../core/services/cluster.service';
 import { Entities } from '../../../../core/types/';
 import { ActionsService } from '../actions.service';
 import { ActionCardComponent } from './action-card.component';

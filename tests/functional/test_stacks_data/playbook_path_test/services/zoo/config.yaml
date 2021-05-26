@@ -17,7 +17,7 @@
      do-something:
          type: job
          script: stack/service/cluster/job.py
-         script_type: task_generator
+         script_type: ansible
          params:
      create-something:
          type: job
@@ -38,7 +38,7 @@
      install:
          type: job
          script: cook.py
-         script_type: task_generator
+         script_type: ansible
      start:
          type: job
          log_files: [remote]

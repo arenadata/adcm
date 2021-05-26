@@ -19,7 +19,6 @@ import logrotate
 import cm.adcm_config
 from cm.adcm_config import ui_config, restore_cluster_config
 from cm.api import update_obj_config
-from cm.errors import AdcmEx, AdcmApiEx
 from api.api_views import get_api_url_kwargs, CommonAPIURL
 
 
@@ -46,17 +45,14 @@ class ObjectConfigSerializer(serializers.Serializer):
 
 class ObjectConfigUpdateSerializer(ObjectConfigSerializer):
     def update(self, instance, validated_data):
-        try:
-            conf = validated_data.get('config')
-            attr = validated_data.get('attr', {})
-            desc = validated_data.get('description', '')
-            cl = update_obj_config(instance.obj_ref, conf, attr, desc)
-            if validated_data.get('ui'):
-                cl.config = ui_config(validated_data.get('obj'), cl)
-            if hasattr(instance.obj_ref, 'adcm'):
-                logrotate.run()
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code, e.adds) from e
+        conf = validated_data.get('config')
+        attr = validated_data.get('attr', {})
+        desc = validated_data.get('description', '')
+        cl = update_obj_config(instance.obj_ref, conf, attr, desc)
+        if validated_data.get('ui'):
+            cl.config = ui_config(validated_data.get('obj'), cl)
+        if hasattr(instance.obj_ref, 'adcm'):
+            logrotate.run()
         return cl
 
 
@@ -64,15 +60,11 @@ class ObjectConfigRestoreSerializer(ObjectConfigSerializer):
     config = serializers.JSONField(read_only=True)
 
     def update(self, instance, validated_data):
-        try:
-            cc = restore_cluster_config(
-                instance.obj_ref,
-                instance.id,
-                validated_data.get('description', instance.description)
-            )
-        except AdcmEx as e:
-            raise AdcmApiEx(e.code, e.msg, e.http_code) from e
-        return cc
+        return restore_cluster_config(
+            instance.obj_ref,
+            instance.id,
+            validated_data.get('description', instance.description)
+        )
 
 
 class ConfigHistorySerializer(ObjectConfigSerializer):

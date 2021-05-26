@@ -25,7 +25,7 @@ import { FieldDirective } from './field.directive';
 import { InputComponent } from './input.component';
 import { JsonComponent } from './json.component';
 import { BaseMapListDirective, FieldListComponent, FieldMapComponent } from './map.component';
-import { PasswordComponent } from './password.component';
+import { PasswordComponent } from './password/password.component';
 import { TextBoxComponent } from './text-box.component';
 import { TextareaComponent } from './textarea.component';
 import { VariantComponent } from './variant.component';

@@ -11,18 +11,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import sys
+# pylint: disable=unused-import
+
 import json
+import os
 import subprocess
+import sys
 
-import adcm.init_django		# pylint: disable=unused-import
-
-from cm.logger import log
+import adcm.init_django  # DO NOT DELETE !!!
 import cm.config as config
 import cm.job
-from cm.status_api import Event
+import cm.lock
+from cm.logger import log
 from cm.models import LogStorage
+from cm.status_api import Event
 
 
 def open_file(root, tag, job_id):

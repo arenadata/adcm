@@ -40,7 +40,7 @@ def read_conf(template_file_name):
 @allure.step('Load template file')
 def render(template, context):
     tmpl = Template(template)
-    return yaml.load(tmpl.render(config_type=context))
+    return yaml.safe_load(tmpl.render(config_type=context))
 
 
 @allure.step('Save template')

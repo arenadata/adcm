@@ -258,21 +258,11 @@ def check_component_requires(comp):
     req_list = comp.requires
     for i, item in enumerate(req_list):
         if 'service' in item:
-            try:
-                service = StagePrototype.objects.get(name=item['service'], type='service')
-            except StagePrototype.DoesNotExist:
-                msg = 'Unknown service "{}" {}'
-                err('COMPONENT_CONSTRAINT_ERROR', msg.format(item['service'], ref))
+            service = StagePrototype.obj.get(name=item['service'], type='service')
         else:
-            service = comp.prototype
-            req_list[i]['service'] = comp.prototype.name
-        try:
-            req_comp = StagePrototype.objects.get(
-                name=item['component'], type='component', parent=service
-            )
-        except StagePrototype.DoesNotExist:
-            msg = 'Unknown component "{}" {}'
-            err('COMPONENT_CONSTRAINT_ERROR', msg.format(item['component'], ref))
+            service = comp.parent
+            req_list[i]['service'] = comp.parent.name
+        req_comp = StagePrototype.obj.get(name=item['component'], type='component', parent=service)
         if comp == req_comp:
             msg = 'Component can not require themself {}'
             err('COMPONENT_CONSTRAINT_ERROR', msg.format(ref))
@@ -285,20 +275,8 @@ def check_bound_component(comp):
         return
     ref = 'in "bound_to" of component "{}" of {}'.format(comp.name, proto_ref(comp.parent))
     bind = comp.bound_to
-    try:
-        service = StagePrototype.objects.get(name=bind['service'], type='service')
-    except StagePrototype.DoesNotExist:
-        msg = 'Unknown service "{}" {}'
-        err('COMPONENT_CONSTRAINT_ERROR', msg.format(bind['service'], ref))
-
-    try:
-        bind_comp = StagePrototype.objects.get(
-            name=bind['component'], type='component', parent=service
-        )
-    except StagePrototype.DoesNotExist:
-        msg = 'Unknown component "{}" {}'
-        err('COMPONENT_CONSTRAINT_ERROR', msg.format(bind['component'], ref))
-
+    service = StagePrototype.obj.get(name=bind['service'], type='service')
+    bind_comp = StagePrototype.obj.get(name=bind['component'], type='component', parent=service)
     if comp == bind_comp:
         msg = 'Component can not require themself {}'
         err('COMPONENT_CONSTRAINT_ERROR', msg.format(ref))
@@ -308,6 +286,30 @@ def re_check_components():
     for comp in StagePrototype.objects.filter(type='component'):
         check_component_requires(comp)
         check_bound_component(comp)
+
+
+def check_variant_host(args, ref):
+    # log.debug('check_variant_host args: %s', args)
+    def check_predicate(predicate, args):
+        if predicate == 'in_service':
+            # log.debug('check in_service %s', args)
+            StagePrototype.obj.get(type='service', name=args['service'])
+        elif predicate == 'in_component':
+            # log.debug('check in_component %s', args)
+            service = StagePrototype.obj.get(type='service', name=args['service'])
+            StagePrototype.obj.get(type='component', name=args['component'], parent=service)
+
+    if args is None:
+        return
+    if isinstance(args, dict):
+        if 'predicate' not in args:
+            return
+        check_predicate(args['predicate'], args['args'])
+        check_variant_host(args['args'], ref)
+    if isinstance(args, list):
+        for i in args:
+            check_predicate(i['predicate'], i['args'])
+            check_variant_host(i['args'], ref)
 
 
 def re_check_config():
@@ -333,17 +335,20 @@ def re_check_config():
         elif lim['source']['type'] == 'builtin':
             if not lim['source']['args']:
                 continue
+            if lim['source']['name'] == 'host':
+                msg = f'in source:args of {ref} config "{c.name}/{c.subname}"'
+                check_variant_host(lim['source']['args'], msg)
             if 'service' in lim['source']['args']:
                 service = lim['source']['args']['service']
                 try:
-                    StagePrototype.objects.get(type='service', name=service)
+                    sp_service = StagePrototype.objects.get(type='service', name=service)
                 except StagePrototype.DoesNotExist:
                     msg = 'Service "{}" in source:args of {} config "{}/{}" does not exists'
                     err('INVALID_CONFIG_DEFINITION', msg.format(service, ref, c.name, c.subname))
             if 'component' in lim['source']['args']:
                 comp = lim['source']['args']['component']
                 try:
-                    StagePrototype.objects.get(type='component', name=comp, parent=c.prototype)
+                    StagePrototype.objects.get(type='component', name=comp, parent=sp_service)
                 except StagePrototype.DoesNotExist:
                     msg = 'Component "{}" in source:args of {} config "{}/{}" does not exists'
                     err('INVALID_CONFIG_DEFINITION', msg.format(comp, ref, c.name, c.subname))
@@ -396,7 +401,7 @@ def copy_stage_actons(stage_actions, prototype):
         ('name', 'type', 'script', 'script_type', 'state_on_success',
          'state_on_fail', 'state_available', 'params', 'log_files',
          'hostcomponentmap', 'button', 'display_name', 'description', 'ui_options',
-         'allow_to_terminate', 'partial_execution')
+         'allow_to_terminate', 'partial_execution', 'host_action')
     )
     Action.objects.bulk_create(actions)
 
@@ -529,14 +534,14 @@ def update_bundle_from_stage(bundle):   # pylint: disable=too-many-locals,too-ma
                     'type', 'script', 'script_type', 'state_on_success',
                     'state_on_fail', 'state_available', 'params', 'log_files',
                     'hostcomponentmap', 'button', 'display_name', 'description', 'ui_options',
-                    'allow_to_terminate', 'partial_execution'
+                    'allow_to_terminate', 'partial_execution', 'host_action'
                 ))
             except Action.DoesNotExist:
                 action = copy_obj(saction, Action, (
                     'name', 'type', 'script', 'script_type', 'state_on_success',
                     'state_on_fail', 'state_available', 'params', 'log_files',
                     'hostcomponentmap', 'button', 'display_name', 'description', 'ui_options',
-                    'allow_to_terminate', 'partial_execution'
+                    'allow_to_terminate', 'partial_execution', 'host_action'
                 ))
                 action.prototype = p
             action.save()
