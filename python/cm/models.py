@@ -12,6 +12,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User, Group, Permission
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
@@ -597,6 +599,8 @@ class Role(ADCMModel):
 
 class TaskLog(ADCMModel):
     object_id = models.PositiveIntegerField()
+    object_type = models.ForeignKey(ContentType, null=True, on_delete=models.CASCADE)
+    task_object = GenericForeignKey('object_type', 'object_id')
     action = models.ForeignKey(Action, on_delete=models.CASCADE, null=True, default=None)
     pid = models.PositiveIntegerField(blank=True, default=0)
     selector = models.JSONField(default=dict)

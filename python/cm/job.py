@@ -515,7 +515,7 @@ def create_task(action, selector, obj, conf, attr, hc, delta, hosts, event, verb
 def create_one_job_task(action, selector, obj, conf, attr, hc, hosts, event, verbose):
     task = TaskLog(
         action=action,
-        object_id=obj.id,
+        task_object=obj,
         selector=selector,
         config=conf,
         attr=attr,
@@ -549,31 +549,6 @@ def create_job(action, sub_action, selector, event, task):
     set_job_status(job.id, config.Job.CREATED, event)
     os.makedirs(os.path.join(config.RUN_DIR, f'{job.id}', 'tmp'), exist_ok=True)
     return job
-
-
-def get_task_obj(context, obj_id):
-    def get_obj_safe(model, obj_id):
-        try:
-            return model.objects.get(id=obj_id)
-        except model.DoesNotExist:
-            return None
-
-    if context == 'component':
-        obj = get_obj_safe(ServiceComponent, obj_id)
-    elif context == 'service':
-        obj = get_obj_safe(ClusterObject, obj_id)
-    elif context == 'host':
-        obj = get_obj_safe(Host, obj_id)
-    elif context == 'cluster':
-        obj = Cluster.objects.get(id=obj_id)
-    elif context == 'provider':
-        obj = HostProvider.objects.get(id=obj_id)
-    elif context == 'adcm':
-        obj = ADCM.objects.get(id=obj_id)
-    else:
-        log.error("unknown context: %s", context)
-        return None
-    return obj
 
 
 def get_state(action, job, status):
@@ -645,7 +620,7 @@ def get_job_cluster(job):
 
 def finish_task(task, job, status):
     action = Action.objects.get(id=task.action_id)
-    obj = get_task_obj(action.prototype.type, task.object_id)
+    obj = task.task_object
     state = get_state(action, job, status)
     event = Event()
     with transaction.atomic():
