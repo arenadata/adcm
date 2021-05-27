@@ -13,15 +13,17 @@ from .utils import prepare_cluster_and_get_config
 
 PAIR = (True, False)
 UI_OPTIONS_PAIRS = ((False, False), (False, True), (True, False))
-UI_OPTIONS_PAIRS_GROUPS = [(True, False, True, False),
-                           (True, False, False, True),
-                           (True, False, False, False),
-                           (False, True, True, False),
-                           (False, True, False, True),
-                           (False, True, False, False),
-                           (False, False, True, False),
-                           (False, False, False, True),
-                           (False, False, False, False)]
+UI_OPTIONS_PAIRS_GROUPS = [
+    (True, False, True, False),
+    (True, False, False, True),
+    (True, False, False, False),
+    (False, True, True, False),
+    (False, True, False, True),
+    (False, True, False, False),
+    (False, False, True, False),
+    (False, False, False, True),
+    (False, False, False, False),
+]
 
 FIELDS = []
 
@@ -32,20 +34,21 @@ for ro in True, False:
                 continue
             FIELDS.append((ro, required, default))
 
-TYPES = ('string', 'password', 'integer', 'text', 'boolean',
-         'float', 'list', 'map', 'json', 'file')
+TYPES = ('string', 'password', 'integer', 'text', 'boolean', 'float', 'list', 'map', 'json', 'file')
 
 
-DEFAULT_VALUE = {"string": "string",
-                 "text": "text",
-                 "password": "password",
-                 "integer": 4,
-                 "float": 4.0,
-                 "boolean": True,
-                 "json": {},
-                 "map": {"name": "Joe", "age": "24", "sex": "m"},
-                 "list": ['/dev/rdisk0s1', '/dev/rdisk0s2', '/dev/rdisk0s3'],
-                 "file": "./file.txt"}
+DEFAULT_VALUE = {
+    "string": "string",
+    "text": "text",
+    "password": "password",
+    "integer": 4,
+    "float": 4.0,
+    "boolean": True,
+    "json": {},
+    "map": {"name": "Joe", "age": "24", "sex": "m"},
+    "list": ['/dev/rdisk0s1', '/dev/rdisk0s2', '/dev/rdisk0s3'],
+    "file": "./file.txt",
+}
 
 
 class ListWithoutRepr(list):
@@ -69,10 +72,12 @@ def generate_group_data() -> list:
                             "activatable": activatable,
                             'active': active,
                             "read_only": ro,
-                            "ui_options": {"invisible": ui_options[0],
-                                           'advanced': ui_options[1]},
-                            "field_ui_options": {"invisible": ui_options[2],
-                                                 'advanced': ui_options[3]}}
+                            "ui_options": {"invisible": ui_options[0], 'advanced': ui_options[1]},
+                            "field_ui_options": {
+                                "invisible": ui_options[2],
+                                'advanced': ui_options[3],
+                            },
+                        }
                     else:
                         data = {
                             'default': default,
@@ -80,10 +85,12 @@ def generate_group_data() -> list:
                             "activatable": False,
                             'active': False,
                             "read_only": ro,
-                            "ui_options": {"invisible": ui_options[0],
-                                           'advanced': ui_options[1]},
-                            "field_ui_options": {"invisible": ui_options[2],
-                                                 'advanced': ui_options[3]}}
+                            "ui_options": {"invisible": ui_options[0], 'advanced': ui_options[1]},
+                            "field_ui_options": {
+                                "invisible": ui_options[2],
+                                'advanced': ui_options[3],
+                            },
+                        }
                     if data not in group_data:
                         group_data.append(data)
     return group_data
@@ -91,32 +98,35 @@ def generate_group_data() -> list:
 
 @allure.step('Generate expected result for groups')
 def generate_group_expected_result(group_config) -> dict:
-    expected_result = {'group_visible': not group_config['ui_options']['invisible'],
-                       'editable': not group_config['read_only'],
-                       "content": group_config['default']}
+    expected_result = {
+        'group_visible': not group_config['ui_options']['invisible'],
+        'editable': not group_config['read_only'],
+        "content": group_config['default'],
+    }
     if group_config['required'] and not group_config['default']:
         expected_result['alerts'] = True
     else:
         expected_result['alerts'] = False
     group_advanced = group_config['ui_options']['advanced']
     group_invisible = group_config['ui_options']['invisible']
-    expected_result['group_visible_advanced'] = (group_advanced and not group_invisible)
+    expected_result['group_visible_advanced'] = group_advanced and not group_invisible
     field_advanced = group_config['field_ui_options']['advanced']
     field_invisible = group_config['field_ui_options']['invisible']
-    expected_result['field_visible_advanced'] = (field_advanced and not field_invisible)
+    expected_result['field_visible_advanced'] = field_advanced and not field_invisible
     expected_result['field_visible'] = not field_invisible
-    config_valid = validate_config(group_config['required'],
-                                   group_config['default'],
-                                   group_config['read_only'])
+    config_valid = validate_config(
+        group_config['required'], group_config['default'], group_config['read_only']
+    )
     expected_result['config_valid'] = config_valid
     invisible = group_invisible or field_invisible
     if group_config['activatable']:
         required = group_config['required']
         default = group_config['default']
         group_active = group_config['active']
-        expected_result['field_visible'] = (group_active and not field_invisible)
+        expected_result['field_visible'] = group_active and not field_invisible
         expected_result['field_visible_advanced'] = (
-            field_advanced and group_active and not field_invisible)
+            field_advanced and group_active and not field_invisible
+        )
         if group_active and (required and not default):
             expected_result['save'] = False
         else:
@@ -141,17 +151,24 @@ def generate_config_data() -> list:
     data = []
     for default, required, ro in FIELDS:
         for ui_options in UI_OPTIONS_PAIRS:
-            data.append({'default': default, "required": required,
-                         "read_only": ro, "ui_options": {"invisible": ui_options[0],
-                                                         'advanced': ui_options[1]}})
+            data.append(
+                {
+                    'default': default,
+                    "required": required,
+                    "read_only": ro,
+                    "ui_options": {"invisible": ui_options[0], 'advanced': ui_options[1]},
+                }
+            )
     return data
 
 
 @allure.step('Generate expected result for config')
 def generate_config_expected_result(config) -> dict:
-    expected_result = {'visible': not config['ui_options']['invisible'],
-                       'editable': not config['read_only'],
-                       "content": config['default']}
+    expected_result = {
+        'visible': not config['ui_options']['invisible'],
+        'editable': not config['read_only'],
+        "content": config['default'],
+    }
     if config['required'] and not config['default']:
         expected_result['save'] = False
         expected_result['alerts'] = True
@@ -174,17 +191,18 @@ def generate_group_configs(group_config_data) -> list:
     group_configs = []
     for _type in TYPES:
         for data in group_config_data:
-            config_dict = {"type": "cluster",
-                           "version": "1",
-                           "config": []}
-            unsupported_options = all([data['read_only'],
-                                       data['required']])
+            config_dict = {"type": "cluster", "version": "1", "config": []}
+            unsupported_options = all([data['read_only'], data['required']])
             if not data['default'] and unsupported_options:
                 continue
-            cluster_config = {"name": "group",
-                              "type": "group",
-                              'ui_options': {"invisible": data['ui_options']['invisible'],
-                                             'advanced': data['ui_options']['advanced']}}
+            cluster_config = {
+                "name": "group",
+                "type": "group",
+                'ui_options': {
+                    "invisible": data['ui_options']['invisible'],
+                    'advanced': data['ui_options']['advanced'],
+                },
+            }
             sub_config = {'name': _type, 'type': _type, 'required': data['required']}
             if data['default']:
                 sub_config['default'] = DEFAULT_VALUE[_type]
@@ -193,8 +211,10 @@ def generate_group_configs(group_config_data) -> list:
             if data['activatable']:
                 cluster_config['activatable'] = True
                 cluster_config['active'] = data['active']
-            sub_config['ui_options'] = {'invisible': data['field_ui_options']['invisible'],
-                                        'advanced': data['field_ui_options']['advanced']}
+            sub_config['ui_options'] = {
+                'invisible': data['field_ui_options']['invisible'],
+                'advanced': data['field_ui_options']['advanced'],
+            }
             cluster_config['subs'] = [sub_config]
             config_dict['config'] = [cluster_config]
             config_dict['name'] = random_string()
@@ -209,12 +229,8 @@ def generate_configs(config_data) -> list:
     configs = []
     for _type in TYPES:
         for data in config_data:
-            config_dict = {"type": "cluster",
-                           "name": random_string(),
-                           "version": "1",
-                           "config": []}
-            unsupported_options = all([data['read_only'],
-                                       data['required']])
+            config_dict = {"type": "cluster", "name": random_string(), "version": "1", "config": []}
+            unsupported_options = all([data['read_only'], data['required']])
             if not data['default'] and unsupported_options:
                 continue
             field_config = {'name': _type, 'type': _type, 'required': data['required']}
@@ -222,8 +238,10 @@ def generate_configs(config_data) -> list:
                 field_config['default'] = DEFAULT_VALUE[_type]
             if data['read_only']:
                 field_config['read_only'] = 'any'
-            field_config['ui_options'] = {'invisible': data['ui_options']['invisible'],
-                                          'advanced': data['ui_options']['advanced']}
+            field_config['ui_options'] = {
+                'invisible': data['ui_options']['invisible'],
+                'advanced': data['ui_options']['advanced'],
+            }
             config_dict['config'] = [field_config]
             config = [config_dict]
             expected_result = generate_config_expected_result(data)
@@ -249,11 +267,12 @@ def prepare_config(config):
         read_only,
         default,
         config[0][0]['config'][0]['ui_options']['invisible'],
-        config[0][0]['config'][0]['ui_options']['advanced'])
+        config[0][0]['config'][0]['ui_options']['advanced'],
+    )
     temdir = tempfile.mkdtemp()
-    d_name = "{}/configs/fields/{}/{}".format(temdir,
-                                              config[0][0]['config'][0]['type'],
-                                              config_folder_name)
+    d_name = "{}/configs/fields/{}/{}".format(
+        temdir, config[0][0]['config'][0]['type'], config_folder_name
+    )
 
     os.makedirs(d_name)
     if config[0][0]['config'][0]['name'] == 'file':
@@ -286,7 +305,8 @@ def prepare_group_config(config):
         config[0]['config'][0]['ui_options']['invisible'],
         config[0]['config'][0]['ui_options']['advanced'],
         config[0]['config'][0]['subs'][0]['ui_options']['invisible'],
-        config[0]['config'][0]['subs'][0]['ui_options']['advanced'])
+        config[0]['config'][0]['subs'][0]['ui_options']['advanced'],
+    )
     temdir = tempfile.mkdtemp()
     d_name = "{}/configs/groups/{}".format(temdir, config_folder_name)
     os.makedirs(d_name)
@@ -315,9 +335,11 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs, login_to
     config = data[0]
     expected = data[1]
     path = data[2]
-    allure.attach.file("/".join([path, 'config.yaml']),
-                       attachment_type=allure.attachment_type.YAML,
-                       name='config.yaml')
+    allure.attach.file(
+        "/".join([path, 'config.yaml']),
+        attachment_type=allure.attachment_type.YAML,
+        name='config.yaml',
+    )
     field_type = config['config'][0]['type']
 
     _, ui_config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
@@ -338,8 +360,9 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs, login_to
             for field in fields:
                 ui_config.assert_field_editable(field, expected['editable'])
             if expected['content']:
-                ui_config.assert_field_content_equal(field_type, fields[0],
-                                                     config['config'][0]['default'])
+                ui_config.assert_field_content_equal(
+                    field_type, fields[0], config['config'][0]['default']
+                )
             if expected['alerts']:
                 ui_config.assert_alerts_presented(field_type)
         else:
@@ -347,8 +370,9 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs, login_to
 
 
 @pytest.mark.parametrize(("config_dict", "expected_results"), group_configs)
-def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, expected_results,
-                             app_fs, login_to_adcm):
+def test_group_configs_field(
+    sdk_client_fs: ADCMClient, config_dict, expected_results, app_fs, login_to_adcm
+):
     """Test for configuration fields with groups. Before start test actions
     we always create configuration and expected result. All logic for test
     expected result in functions before this test function. If we have
@@ -368,9 +392,11 @@ def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, expected_re
     config = data[0]
     expected = expected_results
     path = data[1]
-    allure.attach.file("/".join([path, 'config.yaml']),
-                       attachment_type=allure.attachment_type.YAML,
-                       name='config.yaml')
+    allure.attach.file(
+        "/".join([path, 'config.yaml']),
+        attachment_type=allure.attachment_type.YAML,
+        name='config.yaml',
+    )
 
     field_type = config['config'][0]['subs'][0]['type']
 

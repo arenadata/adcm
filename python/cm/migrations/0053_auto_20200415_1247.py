@@ -24,6 +24,8 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddConstraint(
             model_name='logstorage',
-            constraint=models.UniqueConstraint(condition=models.Q(type='check'), fields=('job',), name='unique_check_job'),
+            constraint=models.UniqueConstraint(
+                condition=models.Q(type='check'), fields=('job',), name='unique_check_job'
+            ),
         ),
     ]

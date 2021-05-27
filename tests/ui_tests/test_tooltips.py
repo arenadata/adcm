@@ -10,8 +10,7 @@ from tests.ui_tests.app.configuration import Configuration
 DATADIR = get_data_dir(__file__)
 BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
 
-NO_TOOLTIP_FIELDS = ['string_required_by_default_without_type',
-                     'string_read_only_any_without_type']
+NO_TOOLTIP_FIELDS = ['string_required_by_default_without_type', 'string_read_only_any_without_type']
 
 
 @pytest.fixture()
@@ -26,11 +25,12 @@ def service(sdk_client_fs):
 @pytest.fixture()
 @allure.step('Open Configuration page')
 def ui_config(app_fs, login_to_adcm, service):
-    return Configuration(app_fs.driver,
-                         "{}/cluster/{}/service/{}/config".format(app_fs.adcm.url,
-                                                                  service.cluster_id,
-                                                                  service.service_id)
-                         )
+    return Configuration(
+        app_fs.driver,
+        "{}/cluster/{}/service/{}/config".format(
+            app_fs.adcm.url, service.cluster_id, service.service_id
+        ),
+    )
 
 
 @pytest.fixture()

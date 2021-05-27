@@ -41,7 +41,8 @@ class TestJob(TestCase):
         prototype = models.Prototype.objects.create(bundle=bundle)
         action = models.Action.objects.create(prototype=prototype)
         job = models.JobLog.objects.create(
-            action_id=action.id, start_date=timezone.now(), finish_date=timezone.now())
+            action_id=action.id, start_date=timezone.now(), finish_date=timezone.now()
+        )
         status = config.Job.RUNNING
         pid = 10
         event = Mock()
@@ -60,8 +61,8 @@ class TestJob(TestCase):
         prototype = models.Prototype.objects.create(bundle=bundle)
         action = models.Action.objects.create(prototype=prototype)
         task = models.TaskLog.objects.create(
-            action=action, object_id=1,
-            start_date=timezone.now(), finish_date=timezone.now())
+            action=action, object_id=1, start_date=timezone.now(), finish_date=timezone.now()
+        )
 
         job_module.set_task_status(task, config.Job.RUNNING, event)
 
@@ -85,7 +86,6 @@ class TestJob(TestCase):
             ('provider', host_provider.id, host_provider),
             ('adcm', adcm.id, adcm),
             ('action', 1, None),
-
         ]
 
         for context, obj_id, test_obj in data:
@@ -100,11 +100,15 @@ class TestJob(TestCase):
         prototype = models.Prototype.objects.create(bundle=bundle)
         cluster = models.Cluster.objects.create(prototype=prototype)
         action = models.Action.objects.create(
-            prototype=prototype, state_on_success='create', state_on_fail='installed')
+            prototype=prototype, state_on_success='create', state_on_fail='installed'
+        )
 
         job = models.JobLog(
-            action_id=action.id, selector={'cluster': cluster.id},
-            start_date=timezone.now(), finish_date=timezone.now())
+            action_id=action.id,
+            selector={'cluster': cluster.id},
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
+        )
 
         data = [
             (config.Job.SUCCESS, False, 'create'),
@@ -112,16 +116,18 @@ class TestJob(TestCase):
             (config.Job.FAILED, False, 'installed'),
             (config.Job.FAILED, False, None),
             (config.Job.FAILED, True, 'installed'),
-            (config.Job.ABORTED, False, None)
+            (config.Job.ABORTED, False, None),
         ]
 
         for status, create_sub_action, test_state in data:
-            with self.subTest(status=status, create_sub_action=create_sub_action,
-                              test_state=test_state):
+            with self.subTest(
+                status=status, create_sub_action=create_sub_action, test_state=test_state
+            ):
 
                 if create_sub_action:
                     sub_action = models.SubAction.objects.create(
-                        action=action, state_on_fail='installed')
+                        action=action, state_on_fail='installed'
+                    )
                     job.sub_action_id = sub_action.id
                 if status == config.Job.SUCCESS and test_state is None:
                     action.state_on_success = ''
@@ -143,8 +149,8 @@ class TestJob(TestCase):
         adcm = models.ADCM.objects.create(prototype=prototype)
         action = models.Action.objects.create(prototype=prototype)
         task = models.TaskLog.objects.create(
-            action=action, object_id=1, start_date=timezone.now(),
-            finish_date=timezone.now())
+            action=action, object_id=1, start_date=timezone.now(), finish_date=timezone.now()
+        )
 
         data = [
             (cluster_object, 'running'),
@@ -206,21 +212,26 @@ class TestJob(TestCase):
             parent=prototype, type='component', bundle=bundle
         )
         service_component = models.ServiceComponent.objects.create(
-            cluster=cluster, service=cluster_object, prototype=component)
+            cluster=cluster, service=cluster_object, prototype=component
+        )
         hostcomponentmap = [
             {
                 'host_id': host.id,
                 'service_id': cluster_object.id,
-                'component_id': service_component.id
+                'component_id': service_component.id,
             }
         ]
         action = models.Action.objects.create(
-            prototype=prototype, hostcomponentmap=hostcomponentmap)
+            prototype=prototype, hostcomponentmap=hostcomponentmap
+        )
         task = models.TaskLog.objects.create(
-            action_id=action.id, object_id=cluster.id,
-            start_date=timezone.now(), finish_date=timezone.now(),
+            action_id=action.id,
+            object_id=cluster.id,
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
             selector={'cluster': cluster.id},
-            hostcomponentmap=hostcomponentmap)
+            hostcomponentmap=hostcomponentmap,
+        )
 
         job_module.restore_hc(task, action, config.Job.FAILED)
 
@@ -287,20 +298,23 @@ class TestJob(TestCase):
     @patch('cm.job.prepare_ansible_config')
     @patch('cm.job.prepare_job_config')
     @patch('cm.job.inventory.prepare_job_inventory')
-    def test_prepare_job(self, mock_prepare_job_inventory, mock_prepare_job_config,
-                         mock_prepare_ansible_config):
+    def test_prepare_job(
+        self, mock_prepare_job_inventory, mock_prepare_job_config, mock_prepare_ansible_config
+    ):
         bundle = models.Bundle.objects.create()
         prototype = models.Prototype.objects.create(bundle=bundle)
         cluster = models.Cluster.objects.create(prototype=prototype)
         action = models.Action.objects.create(prototype=prototype)
         job = models.JobLog.objects.create(
-            action_id=action.id, start_date=timezone.now(), finish_date=timezone.now())
+            action_id=action.id, start_date=timezone.now(), finish_date=timezone.now()
+        )
 
         job_module.prepare_job(action, None, {'cluster': 1}, job.id, cluster, '', {}, None, False)
 
         mock_prepare_job_inventory.assert_called_once_with({'cluster': 1}, job.id, action, {}, None)
-        mock_prepare_job_config.assert_called_once_with(action, None, {'cluster': 1},
-                                                        job.id, cluster, '', False)
+        mock_prepare_job_config.assert_called_once_with(
+            action, None, {'cluster': 1}, job.id, cluster, '', False
+        )
         mock_prepare_ansible_config.assert_called_once_with(job.id, action, None)
 
     @patch('cm.job.get_obj_config')
@@ -334,10 +348,7 @@ class TestJob(TestCase):
         prototype = models.Prototype.objects.create(bundle=bundle)
         action = models.Action.objects.create(prototype=prototype)
 
-        data = [
-            ('adcm', os.path.join(config.BASE_DIR, 'conf')),
-            ('', config.BUNDLE_DIR)
-        ]
+        data = [('adcm', os.path.join(config.BASE_DIR, 'conf')), ('', config.BUNDLE_DIR)]
 
         for prototype_type, test_path in data:
             prototype.type = prototype_type
@@ -356,12 +367,21 @@ class TestJob(TestCase):
         mock_get_bundle_root.return_value = config.BUNDLE_DIR
 
         data = [
-            (sub_action, 'main.yaml', os.path.join(
-                config.BUNDLE_DIR, action.prototype.bundle.hash, 'ansible/sleep.yaml')),
-            (None, 'main.yaml', os.path.join(
-                config.BUNDLE_DIR, action.prototype.bundle.hash, 'main.yaml')),
-            (None, './main.yaml', os.path.join(
-                config.BUNDLE_DIR, action.prototype.bundle.hash, 'main.yaml')),
+            (
+                sub_action,
+                'main.yaml',
+                os.path.join(config.BUNDLE_DIR, action.prototype.bundle.hash, 'ansible/sleep.yaml'),
+            ),
+            (
+                None,
+                'main.yaml',
+                os.path.join(config.BUNDLE_DIR, action.prototype.bundle.hash, 'main.yaml'),
+            ),
+            (
+                None,
+                './main.yaml',
+                os.path.join(config.BUNDLE_DIR, action.prototype.bundle.hash, 'main.yaml'),
+            ),
         ]
 
         for sa, script, test_path in data:
@@ -381,8 +401,15 @@ class TestJob(TestCase):
     @patch('cm.job.get_adcm_config')
     @patch("json.dump")
     @patch("builtins.open")
-    def test_prepare_job_config(self, mock_open, mock_dump, mock_get_adcm_config,
-                                mock_prepare_context, mock_get_bundle_root, mock_cook_script):
+    def test_prepare_job_config(
+        self,
+        mock_open,
+        mock_dump,
+        mock_get_adcm_config,
+        mock_prepare_context,
+        mock_get_bundle_root,
+        mock_cook_script,
+    ):
         bundle = models.Bundle.objects.create()
         prototype = models.Prototype.objects.create(bundle=bundle)
         cluster = models.Cluster.objects.create(prototype=prototype)
@@ -396,10 +423,12 @@ class TestJob(TestCase):
         mock_prepare_context.return_value = {'type': 'cluster', 'cluster_id': 1}
         mock_get_bundle_root.return_value = config.BUNDLE_DIR
         mock_cook_script.return_value = os.path.join(
-            config.BUNDLE_DIR, action.prototype.bundle.hash, action.script)
+            config.BUNDLE_DIR, action.prototype.bundle.hash, action.script
+        )
 
         job = models.JobLog.objects.create(
-            action_id=action.id, start_date=timezone.now(), finish_date=timezone.now())
+            action_id=action.id, start_date=timezone.now(), finish_date=timezone.now()
+        )
 
         action.params = {'ansible_tags': 'create_users'}
         action.save()
@@ -424,22 +453,19 @@ class TestJob(TestCase):
                 prototype.save()
 
                 job_module.prepare_job_config(
-                    action, sub_action, selector, job.id, obj, conf, False)
+                    action, sub_action, selector, job.id, obj, conf, False
+                )
 
                 job_config = {
-                    'adcm': {
-                        'config': {}
-                    },
-                    'context': {
-                        'type': 'cluster',
-                        'cluster_id': 1
-                    },
+                    'adcm': {'config': {}},
+                    'context': {'type': 'cluster', 'cluster_id': 1},
                     'env': {
                         'run_dir': mock_dump.call_args[0][0]['env']['run_dir'],
                         'log_dir': mock_dump.call_args[0][0]['env']['log_dir'],
                         'tmp_dir': os.path.join(config.RUN_DIR, f'{job.id}', 'tmp'),
                         'stack_dir': mock_dump.call_args[0][0]['env']['stack_dir'],
-                        'status_api_token': mock_dump.call_args[0][0]['env']['status_api_token']},
+                        'status_api_token': mock_dump.call_args[0][0]['env']['status_api_token'],
+                    },
                     'job': {
                         'id': 1,
                         'action': '',
@@ -448,20 +474,19 @@ class TestJob(TestCase):
                         'script': '',
                         'verbose': False,
                         'playbook': mock_dump.call_args[0][0]['job']['playbook'],
-                        'params': {
-                            'ansible_tags': 'create_users'
-                        },
+                        'params': {'ansible_tags': 'create_users'},
                         'cluster_id': 1,
-                        'config': 'test'
-                    }
+                        'config': 'test',
+                    },
                 }
                 if prototype_type == 'service':
                     job_config['job'].update(
                         {
                             'hostgroup': obj.prototype.name,
                             'service_id': obj.id,
-                            'service_type_id': obj.prototype.id
-                        })
+                            'service_type_id': obj.prototype.id,
+                        }
+                    )
 
                 elif prototype_type == 'cluster':
                     job_config['job']['hostgroup'] = 'CLUSTER'
@@ -472,19 +497,17 @@ class TestJob(TestCase):
                             'hostname': obj.fqdn,
                             'host_id': obj.id,
                             'host_type_id': obj.prototype.id,
-                            'provider_id': obj.provider.id
-                        })
+                            'provider_id': obj.provider.id,
+                        }
+                    )
                 elif prototype_type == 'provider':
-                    job_config['job'].update(
-                        {
-                            'hostgroup': 'PROVIDER',
-                            'provider_id': obj.id
-                        })
+                    job_config['job'].update({'hostgroup': 'PROVIDER', 'provider_id': obj.id})
                 elif prototype_type == 'adcm':
                     job_config['job']['hostgroup'] = '127.0.0.1'
 
                 mock_open.assert_called_with(
-                    '{}/{}/config.json'.format(config.RUN_DIR, job.id), 'w')
+                    '{}/{}/config.json'.format(config.RUN_DIR, job.id), 'w'
+                )
                 mock_dump.assert_called_with(job_config, fd, indent=3, sort_keys=True)
                 mock_get_adcm_config.assert_called()
                 mock_prepare_context.assert_called_with({'cluster': 1})
@@ -495,8 +518,9 @@ class TestJob(TestCase):
     @patch('cm.job.get_old_hc')
     @patch('cm.job.get_new_hc')
     @patch('cm.job.prepare_job')
-    def test_re_prepare_job(self, mock_prepare_job, mock_get_new_hc,
-                            mock_get_old_hc, mock_cook_delta):
+    def test_re_prepare_job(
+        self, mock_prepare_job, mock_get_new_hc, mock_get_old_hc, mock_cook_delta
+    ):
         new_hc = Mock()
         mock_get_new_hc.return_value = new_hc
         old_hc = Mock()
@@ -513,34 +537,42 @@ class TestJob(TestCase):
             parent=prototype, type='component', bundle=bundle
         )
         service_component = models.ServiceComponent.objects.create(
-            cluster=cluster, service=cluster_object, prototype=component)
+            cluster=cluster, service=cluster_object, prototype=component
+        )
         action = models.Action.objects.create(
-            prototype=prototype,
-            hostcomponentmap=[{'service': '', 'component': '', 'action': ''}])
+            prototype=prototype, hostcomponentmap=[{'service': '', 'component': '', 'action': ''}]
+        )
         sub_action = models.SubAction.objects.create(action=action)
         hostcomponentmap = [
             {
                 'host_id': host.id,
                 'service_id': cluster_object.id,
-                'component_id': service_component.id
+                'component_id': service_component.id,
             }
         ]
         selector = {'cluster': cluster.id}
         task = models.TaskLog.objects.create(
-            action_id=action.id, object_id=1, start_date=timezone.now(),
-            finish_date=timezone.now(), hostcomponentmap=hostcomponentmap,
+            action_id=action.id,
+            object_id=1,
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
+            hostcomponentmap=hostcomponentmap,
             selector=selector,
-            config={"sleeptime": 1})
+            config={"sleeptime": 1},
+        )
         job = models.JobLog.objects.create(
-            task_id=task.id, action_id=action.id, sub_action_id=sub_action.id,
-            start_date=timezone.now(), finish_date=timezone.now())
+            task_id=task.id,
+            action_id=action.id,
+            sub_action_id=sub_action.id,
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
+        )
 
         job_module.re_prepare_job(task, job)
 
         mock_get_new_hc.assert_called_once_with(cluster)
         mock_get_old_hc.assert_called_once_with(task.hostcomponentmap)
-        mock_cook_delta.assert_called_once_with(
-            cluster, new_hc, action.hostcomponentmap, old_hc)
+        mock_cook_delta.assert_called_once_with(cluster, new_hc, action.hostcomponentmap, old_hc)
         mock_prepare_job.assert_called_once_with(
-            action, sub_action, selector, job.id, cluster,
-            task.config, delta, None, False)
+            action, sub_action, selector, job.id, cluster, task.config, delta, None, False
+        )

@@ -32,6 +32,7 @@ class JobList(PageView):
     get:
     List all jobs
     """
+
     queryset = JobLog.objects.order_by('-id')
     serializer_class = serializers.JobListSerializer
     serializer_class_ui = serializers.JobSerializer
@@ -53,19 +54,10 @@ class JobDetail(GenericAPIView):
         for lg in logs:
             log_id = lg['id']
             lg['url'] = reverse(
-                'log-storage',
-                kwargs={
-                    'job_id': job.id,
-                    'log_id': log_id
-                },
-                request=request)
+                'log-storage', kwargs={'job_id': job.id, 'log_id': log_id}, request=request
+            )
             lg['download_url'] = reverse(
-                'download-log',
-                kwargs={
-                    'job_id': job.id,
-                    'log_id': log_id
-                },
-                request=request
+                'download-log', kwargs={'job_id': job.id, 'log_id': log_id}, request=request
             )
 
         job.log_files = logs
@@ -94,9 +86,7 @@ class LogStorageView(GenericAPIView):
         try:
             log_storage = LogStorage.objects.get(id=log_id, job=job)
         except LogStorage.DoesNotExist:
-            raise AdcmEx(
-                'LOG_NOT_FOUND', f'log {log_id} not found for job {job_id}'
-            ) from None
+            raise AdcmEx('LOG_NOT_FOUND', f'log {log_id} not found for job {job_id}') from None
         serializer = self.serializer_class(log_storage, context={'request': request})
         return Response(serializer.data)
 
@@ -154,6 +144,7 @@ class Task(PageView):
     get:
     List all tasks
     """
+
     queryset = TaskLog.objects.order_by('-id')
     serializer_class = serializers.TaskListSerializer
     serializer_class_ui = serializers.TaskSerializer
@@ -175,6 +166,7 @@ class TaskDetail(DetailViewRO):
     get:
     Show task
     """
+
     queryset = TaskLog.objects.all()
     serializer_class = serializers.TaskSerializer
     lookup_field = 'id'

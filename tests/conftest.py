@@ -53,8 +53,12 @@ def write_json_file(f_name, j_data):
 
 
 def pytest_addoption(parser):
-    parser.addoption("--firefox", action="store_true", default=False,
-                     help='Additionally run UI tests on Firefox browser.')
+    parser.addoption(
+        "--firefox",
+        action="store_true",
+        default=False,
+        help='Additionally run UI tests on Firefox browser.',
+    )
 
 
 def pytest_generate_tests(metafunc):
@@ -110,9 +114,9 @@ def _get_listener_by_item_if_present(item: Function) -> Optional[AllureListener]
 @pytest.fixture(scope="session")
 def web_driver(browser):
     """
-        Create ADCMTest object and initialize web driver session
-        Destroy session after test is done
-        :param browser: browser name from pytest_generate_tests hook
+    Create ADCMTest object and initialize web driver session
+    Destroy session after test is done
+    :param browser: browser name from pytest_generate_tests hook
     """
     driver = ADCMTest(browser)
     driver.create_driver()
@@ -128,8 +132,8 @@ def web_driver(browser):
 @pytest.fixture()
 def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
     """
-        Attach ADCM API to ADCMTest object and open new tab in browser for test
-        Collect logs on failure and close browser tab after test is done
+    Attach ADCM API to ADCMTest object and open new tab in browser for test
+    Collect logs on failure and close browser tab after test is done
     """
     try:
         web_driver.new_tab()
@@ -140,13 +144,17 @@ def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
     yield web_driver
     try:
         if request.node.rep_setup.failed or request.node.rep_call.failed:
-            allure.attach(web_driver.driver.page_source,
-                          name="page_source",
-                          attachment_type=allure.attachment_type.TEXT)
+            allure.attach(
+                web_driver.driver.page_source,
+                name="page_source",
+                attachment_type=allure.attachment_type.TEXT,
+            )
             web_driver.driver.execute_script("document.body.bgColor = 'white';")
-            allure.attach(web_driver.driver.get_screenshot_as_png(),
-                          name="screenshot",
-                          attachment_type=allure.attachment_type.PNG)
+            allure.attach(
+                web_driver.driver.get_screenshot_as_png(),
+                name="screenshot",
+                attachment_type=allure.attachment_type.PNG,
+            )
             # this way of getting logs does not work for Firefox, see ADCM-1497
             if web_driver.capabilities['browserName'] != 'firefox':
                 console_logs = web_driver.driver.get_log('browser')
@@ -156,14 +164,22 @@ def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
                 events_json = write_json_file("all_logs", events)
                 network_console_logs = write_json_file("network_log", network_logs)
                 console_logs = write_json_file("console_logs", console_logs)
-                allure.attach(web_driver.driver.current_url, name='Current URL',
-                              attachment_type=allure.attachment_type.TEXT)
-                allure.attach.file(console_logs, name="console_log",
-                                   attachment_type=allure.attachment_type.TEXT)
-                allure.attach.file(network_console_logs, name="network_log",
-                                   attachment_type=allure.attachment_type.TEXT)
-                allure.attach.file(events_json, name="all_events_log",
-                                   attachment_type=allure.attachment_type.TEXT)
+                allure.attach(
+                    web_driver.driver.current_url,
+                    name='Current URL',
+                    attachment_type=allure.attachment_type.TEXT,
+                )
+                allure.attach.file(
+                    console_logs, name="console_log", attachment_type=allure.attachment_type.TEXT
+                )
+                allure.attach.file(
+                    network_console_logs,
+                    name="network_log",
+                    attachment_type=allure.attachment_type.TEXT,
+                )
+                allure.attach.file(
+                    events_json, name="all_events_log", attachment_type=allure.attachment_type.TEXT
+                )
     except AttributeError:
         # rep_setup and rep_call attributes are generated in runtime and can be absent
         pass

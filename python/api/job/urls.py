@@ -16,19 +16,40 @@ from . import views
 
 urlpatterns = [
     path('', views.JobList.as_view(), name='job'),
-    path('<int:job_id>/', include([
-        path('', views.JobDetail.as_view(), name='job-details'),
-        path('log/', include([
-            path('', views.LogStorageListView.as_view(), name='log-list'),
-            path('<int:log_id>/', include([
-                path('', views.LogStorageView.as_view(), name='log-storage'),
-                path('download/', views.download_log_file, name='download-log'),
-            ])),
-            path(
-                '<name:tag>/<name:level>/<name:log_type>/',
-                views.LogFile.as_view(),
-                name='log-file'
-            ),
-        ])),
-    ])),
+    path(
+        '<int:job_id>/',
+        include(
+            [
+                path('', views.JobDetail.as_view(), name='job-details'),
+                path(
+                    'log/',
+                    include(
+                        [
+                            path('', views.LogStorageListView.as_view(), name='log-list'),
+                            path(
+                                '<int:log_id>/',
+                                include(
+                                    [
+                                        path(
+                                            '', views.LogStorageView.as_view(), name='log-storage'
+                                        ),
+                                        path(
+                                            'download/',
+                                            views.download_log_file,
+                                            name='download-log',
+                                        ),
+                                    ]
+                                ),
+                            ),
+                            path(
+                                '<name:tag>/<name:level>/<name:log_type>/',
+                                views.LogFile.as_view(),
+                                name='log-file',
+                            ),
+                        ]
+                    ),
+                ),
+            ]
+        ),
+    ),
 ]

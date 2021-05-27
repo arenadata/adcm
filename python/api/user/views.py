@@ -57,6 +57,7 @@ class UserList(PageViewAdd):
     post:
     Create new user
     """
+
     queryset = User.objects.all()
     serializer_class = serializers.UserSerializer
     ordering_fields = ('username',)
@@ -113,9 +114,7 @@ class AddUser2Group(GenericAPIPermView):
         user = check_obj(User, {'username': username}, 'USER_NOT_FOUND')
         serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
-        group = check_obj(
-            Group, {'name': serializer.data['name']}, 'GROUP_NOT_FOUND'
-        )
+        group = check_obj(Group, {'name': serializer.data['name']}, 'GROUP_NOT_FOUND')
         group.user_set.remove(user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -152,6 +151,7 @@ class GroupList(PageViewAdd):
     post:
     Create new user group
     """
+
     queryset = Group.objects.all()
     serializer_class = serializers.GroupSerializer
     ordering_fields = ('name',)
@@ -207,6 +207,7 @@ class RoleList(PageView):
     get:
     List all existing roles
     """
+
     queryset = Role.objects.all()
     serializer_class = serializers.RoleSerializer
     ordering_fields = ('name',)
@@ -216,7 +217,7 @@ class RoleDetail(PageView):
     queryset = Role.objects.all()
     serializer_class = serializers.RoleDetailSerializer
 
-    def get(self, request, role_id):   # pylint: disable=arguments-differ
+    def get(self, request, role_id):  # pylint: disable=arguments-differ
         """
         show role
         """
@@ -233,6 +234,7 @@ class ProfileList(PageViewAdd):
     post:
     Create new user profile
     """
+
     queryset = UserProfile.objects.all()
     serializer_class = serializers.ProfileSerializer
     ordering_fields = ('username',)
@@ -243,6 +245,7 @@ class ProfileDetail(DetailViewRO):
     get:
     Show user profile
     """
+
     queryset = UserProfile.objects.all()
     serializer_class = serializers.ProfileDetailSerializer
     lookup_field = 'login'

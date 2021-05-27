@@ -13,6 +13,7 @@
 from django.urls import path, include
 from . import views
 
+# fmt: off
 urlpatterns = [
     path('', views.ClusterList.as_view(), name='cluster'),
     path('<int:cluster_id>/', include([
@@ -41,3 +42,4 @@ urlpatterns = [
         ])),
     ])),
 ]
+# fmt: on

@@ -1,8 +1,7 @@
 import json
 
 import allure
-from selenium.common.exceptions import NoSuchElementException, \
-    TimeoutException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.remote.webelement import WebElement
 
@@ -71,22 +70,22 @@ class Configuration(BasePage):
     @allure.step('Check that mat form field text have expected value: {expected_text}')
     def assert_form_field_text_equal(self, form_field_element: WebElement, expected_text: str):
         field_text = self.get_form_field_text(form_field_element)
-        err_msg = "Actual field text: {}. Expected field text: {}".format(
-            field_text, expected_text)
+        err_msg = "Actual field text: {}. Expected field text: {}".format(field_text, expected_text)
         assert field_text == expected_text, err_msg
 
     @allure.step('Check that expected text in form field: {expected_text}')
     def assert_form_field_text_in(self, form_field_element: WebElement, expected_text: str):
         field_text = self.get_form_field_text(form_field_element)
         err_msg = "Actual field text: {}. Expected part of text: {}".format(
-            field_text, expected_text)
+            field_text, expected_text
+        )
         assert expected_text in field_text, err_msg
 
     @allure.step('Check that expected text in form field: {expected_text}')
     def assert_text_in_form_field_element(self, element: WebElement, expected_text: str):
-        result = self._wait_text_element_in_element(element,
-                                                    Common.mat_form_field,
-                                                    text=expected_text)
+        result = self._wait_text_element_in_element(
+            element, Common.mat_form_field, text=expected_text
+        )
         err_msg = "Expected text not presented: {}.".format(expected_text)
         assert result, err_msg
 
@@ -118,9 +117,7 @@ class Configuration(BasePage):
             current_value = self.get_field_value(element_with_value)
         elif field_type == 'list':
             elements_with_value = field_element.find_elements(*Common.mat_input_element)
-            current_value = [
-                self.get_field_value(element) for element in elements_with_value
-            ]
+            current_value = [self.get_field_value(element) for element in elements_with_value]
         elif field_type == 'structure':
             return self.get_structure_values(field_element)
         else:

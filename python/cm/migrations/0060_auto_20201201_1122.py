@@ -59,12 +59,23 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='clusterobject',
             name='service',
-            field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.clusterobject'),
+            field=models.ForeignKey(
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to='cm.clusterobject',
+            ),
         ),
         migrations.AddField(
             model_name='component',
             name='comp_prototype',
-            field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='+', to='cm.prototype'),
+            field=models.ForeignKey(
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name='+',
+                to='cm.prototype',
+            ),
         ),
         migrations.AddField(
             model_name='prototype',
@@ -74,7 +85,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='prototype',
             name='parent',
-            field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.prototype'),
+            field=models.ForeignKey(
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to='cm.prototype',
+            ),
         ),
         migrations.AddField(
             model_name='prototype',
@@ -84,7 +100,9 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='servicecomponent',
             name='config',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.objectconfig'),
+            field=models.OneToOneField(
+                null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.objectconfig'
+            ),
         ),
         migrations.AddField(
             model_name='servicecomponent',
@@ -94,7 +112,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='servicecomponent',
             name='prototype',
-            field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.prototype'),
+            field=models.ForeignKey(
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to='cm.prototype',
+            ),
         ),
         migrations.AddField(
             model_name='servicecomponent',
@@ -114,7 +137,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='stageprototype',
             name='parent',
-            field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.stageprototype'),
+            field=models.ForeignKey(
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to='cm.stageprototype',
+            ),
         ),
         migrations.AddField(
             model_name='stageprototype',
@@ -124,17 +152,42 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='prototype',
             name='type',
-            field=models.CharField(choices=[('adcm', 'adcm'), ('service', 'service'), ('component', 'component'), ('cluster', 'cluster'), ('host', 'host'), ('provider', 'provider')], max_length=16),
+            field=models.CharField(
+                choices=[
+                    ('adcm', 'adcm'),
+                    ('service', 'service'),
+                    ('component', 'component'),
+                    ('cluster', 'cluster'),
+                    ('host', 'host'),
+                    ('provider', 'provider'),
+                ],
+                max_length=16,
+            ),
         ),
         migrations.AlterField(
             model_name='servicecomponent',
             name='component',
-            field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.component'),
+            field=models.ForeignKey(
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to='cm.component',
+            ),
         ),
         migrations.AlterField(
             model_name='stageprototype',
             name='type',
-            field=models.CharField(choices=[('adcm', 'adcm'), ('service', 'service'), ('component', 'component'), ('cluster', 'cluster'), ('host', 'host'), ('provider', 'provider')], max_length=16),
+            field=models.CharField(
+                choices=[
+                    ('adcm', 'adcm'),
+                    ('service', 'service'),
+                    ('component', 'component'),
+                    ('cluster', 'cluster'),
+                    ('host', 'host'),
+                    ('provider', 'provider'),
+                ],
+                max_length=16,
+            ),
         ),
         migrations.AlterUniqueTogether(
             name='prototype',

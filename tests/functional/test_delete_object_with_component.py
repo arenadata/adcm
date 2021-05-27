@@ -34,8 +34,7 @@ def cluster(sdk_client_fs: ADCMClient):
 
 
 def test_delete_host_with_components(cluster):
-    """If host has NO component, than we can simple remove it from cluster.
-    """
+    """If host has NO component, than we can simple remove it from cluster."""
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         cluster[0].host_delete(cluster[1])
     with allure.step('Check host conflict'):
@@ -43,8 +42,7 @@ def test_delete_host_with_components(cluster):
 
 
 def test_delete_service_with_components(cluster):
-    """If host has NO component, than we can simple remove it from cluster.
-    """
+    """If host has NO component, than we can simple remove it from cluster."""
     service = cluster[2]
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         service.delete()
