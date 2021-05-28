@@ -13,6 +13,8 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.models import User, Group, Permission
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 
@@ -188,13 +190,19 @@ class ConfigLog(ADCMModel):
     __error_code__ = 'CONFIG_NOT_FOUND'
 
 
-class ADCM(ADCMModel):
+class ADCMEntity(models.Model):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
-    name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
     stack = models.JSONField(default=list)
     issue = models.JSONField(default=dict)
+
+    class Meta:
+        abstract = True
+
+
+class ADCM(ADCMModel, ADCMEntity):
+    name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
 
     @property
     def bundle_id(self):
@@ -210,14 +218,9 @@ class ADCM(ADCMModel):
         return result if result['issue'] else {}
 
 
-class Cluster(ADCMModel):
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
+class Cluster(ADCMModel, ADCMEntity):
     name = models.CharField(max_length=80, unique=True)
     description = models.TextField(blank=True)
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
 
     __error_code__ = 'CLUSTER_NOT_FOUND'
 
@@ -246,14 +249,9 @@ class Cluster(ADCMModel):
         return result if result['issue'] else {}
 
 
-class HostProvider(ADCMModel):
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
+class HostProvider(ADCMModel, ADCMEntity):
     name = models.CharField(max_length=80, unique=True)
     description = models.TextField(blank=True)
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
 
     __error_code__ = 'PROVIDER_NOT_FOUND'
 
@@ -282,16 +280,11 @@ class HostProvider(ADCMModel):
         return result if result['issue'] else {}
 
 
-class Host(ADCMModel):
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
+class Host(ADCMModel, ADCMEntity):
     fqdn = models.CharField(max_length=160, unique=True)
     description = models.TextField(blank=True)
     provider = models.ForeignKey(HostProvider, on_delete=models.CASCADE, null=True, default=None)
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
 
     __error_code__ = 'HOST_NOT_FOUND'
 
@@ -315,14 +308,9 @@ class Host(ADCMModel):
         return result if result['issue'] else {}
 
 
-class ClusterObject(ADCMModel):
+class ClusterObject(ADCMModel, ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     service = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
 
     __error_code__ = 'CLUSTER_SERVICE_NOT_FOUND'
 
@@ -363,14 +351,10 @@ class ClusterObject(ADCMModel):
         unique_together = (('cluster', 'prototype'),)
 
 
-class ServiceComponent(ADCMModel):
+class ServiceComponent(ADCMModel, ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE, null=True, default=None)
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
 
     __error_code__ = 'COMPONENT_NOT_FOUND'
 
@@ -413,6 +397,16 @@ class ServiceComponent(ADCMModel):
 
     class Meta:
         unique_together = (('cluster', 'service', 'prototype'),)
+
+
+class ConfigGroup(ADCMModel):
+    object_id = models.PositiveIntegerField()
+    object_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object = GenericForeignKey('object_type', 'object_id')
+    name = models.CharField(max_length=30)
+    description = models.TextField(blank=True)
+    hosts = models.ManyToManyField(Host)
+    config = models.JSONField(default=dict)
 
 
 ACTION_TYPE = (
