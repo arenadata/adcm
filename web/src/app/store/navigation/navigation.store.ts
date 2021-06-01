@@ -22,7 +22,7 @@ import { EntityNames } from '@app/models/entity-names';
 import { EventMessage, socketResponse } from '@app/core/store/sockets/socket.reducer';
 
 export const setPath = createAction('[Navigation] Set path', props<{ path: AdcmTypedEntity[] }>());
-export const setPathOfRoute = createAction('[Navigation] Set path', props<{ params: ParamMap }>());
+export const setPathOfRoute = createAction('[Navigation] Set path', props<{ params: ParamMap, noEffect?: boolean }>());
 
 export interface NavigationState {
   path: AdcmTypedEntity[];
@@ -64,7 +64,7 @@ export class NavigationEffects {
     () =>
       this.actions$.pipe(
         ofType(setPathOfRoute),
-        filter(action => !!action.params),
+        filter(action => !!action.params && !action.noEffect),
         switchMap(action => {
           const getters: Observable<AdcmTypedEntity>[] = action.params.keys.reduce((acc, param) => {
             const getter = this.entityGetter(param as TypeName, +action.params.get(param));
@@ -74,7 +74,6 @@ export class NavigationEffects {
 
             return acc;
           }, []);
-
           return getPath(getters);
         }),
       ),

@@ -95,7 +95,7 @@ export class ClusterService {
   }
 
   getContext(param: ParamMap): Observable<WorkerInstance> {
-    this.store.dispatch(setPathOfRoute({ params: param }));
+    this.store.dispatch(setPathOfRoute({ params: param, noEffect: true }));
 
     const typeName = EntityNames.find((a) => param.keys.some((b) => a === b));
     const id = +param.get(typeName);
