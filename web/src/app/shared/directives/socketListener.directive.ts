@@ -20,13 +20,7 @@ import { BaseDirective } from './base.directive';
 })
 @Injectable()
 export class SocketListenerDirective extends BaseDirective implements OnDestroy {
-  socket$ = this.socket.pipe(
-    this.takeUntil(),
-    select(getMessage),
-    filter(m => !!m && !!m.object),
-    tap((data) => console.log('SocketListenerDirective | socket$:', data)),
-
-  );
+  socket$ = this.socket.pipe(this.takeUntil(), select(getMessage), filter(m => !!m && !!m.object));
 
   constructor(private socket: Store<SocketState>) {
     super();
