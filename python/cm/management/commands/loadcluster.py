@@ -158,10 +158,7 @@ def create_service(service, cluster):
     ex_id = service.pop('id')
     config = create_config(service.pop('config'))
     service = models.ClusterObject.objects.create(
-        prototype=prototype,
-        cluster=cluster,
-        config=config,
-        **service
+        prototype=prototype, cluster=cluster, config=config, **service
     )
     return ex_id, service
 
@@ -183,16 +180,12 @@ def create_component(component, cluster, service):
         bundle_hash=component.pop('bundle_hash'),
         type='component',
         name=component.pop('prototype__name'),
-        parent=service.prototype
+        parent=service.prototype,
     )
     ex_id = component.pop('id')
     config = create_config(component.pop('config'))
     component = models.ServiceComponent.objects.create(
-        prototype=prototype,
-        cluster=cluster,
-        service=service,
-        config=config,
-        **component
+        prototype=prototype, cluster=cluster, service=service, config=config, **component
     )
     return ex_id, component
 
@@ -216,11 +209,7 @@ def create_host_component(host_component, cluster, host, service, component):
     """
     host_component.pop('cluster')
     host_component = models.HostComponent.objects.create(
-        cluster=cluster,
-        host=host,
-        service=service,
-        component=component,
-        **host_component
+        cluster=cluster, host=host, service=service, component=component, **host_component
     )
     return host_component
 
@@ -235,8 +224,11 @@ def check(data):
     if settings.ADCM_VERSION != data['ADCM_VERSION']:
         raise AdcmEx(
             'DUMP_LOAD_CLUSTER_ERROR',
-            msg=(f'ADCM versions do not match, dump version: {data["ADCM_VERSION"]},'
-                 f' load version: {settings.ADCM_VERSION}'))
+            msg=(
+                f'ADCM versions do not match, dump version: {data["ADCM_VERSION"]},'
+                f' load version: {settings.ADCM_VERSION}'
+            ),
+        )
 
     for bundle_hash, bundle in data['bundles'].items():
         try:
@@ -244,7 +236,8 @@ def check(data):
         except models.Bundle.DoesNotExist as err:
             raise AdcmEx(
                 'DUMP_LOAD_CLUSTER_ERROR',
-                msg=f'Bundle "{bundle["name"]} {bundle["version"]}" not found') from err
+                msg=f'Bundle "{bundle["name"]} {bundle["version"]}" not found',
+            ) from err
 
 
 @atomic
@@ -302,6 +295,7 @@ class Command(BaseCommand):
     Example:
         manage.py loadcluster cluster.json
     """
+
     help = 'Load cluster object from JSON format'
 
     def add_arguments(self, parser):

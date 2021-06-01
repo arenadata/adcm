@@ -43,8 +43,7 @@ def processing_data(sdk_client_ms, request, variant):
     provider_bundle = sdk_client_ms.upload_from_fs(os.path.join(path, 'provider'))
 
     cluster = cluster_bundle.cluster_create(f'cluster_{config_type}_{variant}')
-    service = cluster.service_add(
-        name=f'service_{config_type}_{variant}')
+    service = cluster.service_add(name=f'service_{config_type}_{variant}')
 
     provider = provider_bundle.provider_create(f'provider_{config_type}_{variant}')
     host = provider.host_create(f'host_{config_type}_{variant}')
@@ -165,8 +164,9 @@ def assert_password_type(*args):
             if sent_value_type in ['empty_value', 'null_value']:
                 assert_config_value_error(entity, sent_data)
             else:
-                assert entity.config_set(
-                    sent_data)['password'].startswith('$ANSIBLE_VAULT;1.1;AES256')
+                assert entity.config_set(sent_data)['password'].startswith(
+                    '$ANSIBLE_VAULT;1.1;AES256'
+                )
 
             action_status = entity.action(name='job').run().wait()
             assert action_status == 'success'
@@ -174,8 +174,9 @@ def assert_password_type(*args):
             if sent_value_type in ['empty_value', 'null_value']:
                 assert_config_value_error(entity, sent_data)
             else:
-                assert entity.config_set(
-                    sent_data)['password'].startswith('$ANSIBLE_VAULT;1.1;AES256')
+                assert entity.config_set(sent_data)['password'].startswith(
+                    '$ANSIBLE_VAULT;1.1;AES256'
+                )
 
             if isinstance(entity, Cluster):
                 assert_action_has_issues(entity)
@@ -395,282 +396,295 @@ def assert_config_type(path, config_type, entities, is_required, is_default, sen
     """
     for entity in entities:
         ASSERT_TYPE[config_type](
-            path, config_type, entity, is_required, is_default, sent_value_type)
+            path, config_type, entity, is_required, is_default, sent_value_type
+        )
 
 
 @fixture_parametrized_by_data_subdirs(
-    __file__, 'not_required', 'with_default', 'sent_correct_value', scope='module')
+    __file__, 'not_required', 'with_default', 'sent_correct_value', scope='module'
+)
 def nr_wd_cv(sdk_client_ms: ADCMClient, request):
     return processing_data(sdk_client_ms, request, 'not_required_with_default_sent_correct_value')
 
 
 @fixture_parametrized_by_data_subdirs(
-    __file__, 'not_required', 'with_default', 'sent_empty_value', scope='module')
+    __file__, 'not_required', 'with_default', 'sent_empty_value', scope='module'
+)
 def nr_wd_ev(sdk_client_ms: ADCMClient, request):
     return processing_data(sdk_client_ms, request, 'not_required_with_default_sent_empty_value')
 
 
 @fixture_parametrized_by_data_subdirs(
-    __file__, 'not_required', 'with_default', 'sent_null_value', scope='module')
+    __file__, 'not_required', 'with_default', 'sent_null_value', scope='module'
+)
 def nr_wd_nv(sdk_client_ms: ADCMClient, request):
     return processing_data(sdk_client_ms, request, 'not_required_with_default_sent_null_value')
 
 
 def test_not_required_with_default_sent_correct_value(nr_wd_cv):
     """
-        A test for each type, provided that the parameter is not required, and contains a
-        default value. Trying to send the correct value. Each action playbook contains the value
-        to be sent, and the value that we expect in the config, after sending.
-        Scenario:
-        1. Uploading bundle for cluster and provider from
-           not_required/with_default/sent_correct_value for each type
-        2. Creating cluster, provider and host. Adding service and host in cluster
-        3. Updating config for cluster, service, provider and host. Sending correct value for
-           each type
-        4. Running action for cluster, service, provider and host. Checking current config
-           in action.
+    A test for each type, provided that the parameter is not required, and contains a
+    default value. Trying to send the correct value. Each action playbook contains the value
+    to be sent, and the value that we expect in the config, after sending.
+    Scenario:
+    1. Uploading bundle for cluster and provider from
+       not_required/with_default/sent_correct_value for each type
+    2. Creating cluster, provider and host. Adding service and host in cluster
+    3. Updating config for cluster, service, provider and host. Sending correct value for
+       each type
+    4. Running action for cluster, service, provider and host. Checking current config
+       in action.
     """
     assert_config_type(*nr_wd_cv, False, True, 'correct_value')
 
 
 def test_not_required_with_default_sent_empty_value(nr_wd_ev):
     """
-        A test for each type, provided that the parameter is not required, and contains a
-        default value. Trying to send the empty value. Each action playbook contains the value
-        to be sent, and the value that we expect in the config, after sending.
-        Scenario:
-        1. Uploading bundle for cluster and provider from
-           not_required/with_default/sent_empty_value for each type
-        2. Creating cluster, provider and host. Adding service and host in cluster
-        3. Updating config for cluster, service, provider and host. Sending empty value for
-           each type
-        4. Running action for cluster, service, provider and host. Checking current config
-           in action.
+    A test for each type, provided that the parameter is not required, and contains a
+    default value. Trying to send the empty value. Each action playbook contains the value
+    to be sent, and the value that we expect in the config, after sending.
+    Scenario:
+    1. Uploading bundle for cluster and provider from
+       not_required/with_default/sent_empty_value for each type
+    2. Creating cluster, provider and host. Adding service and host in cluster
+    3. Updating config for cluster, service, provider and host. Sending empty value for
+       each type
+    4. Running action for cluster, service, provider and host. Checking current config
+       in action.
     """
     assert_config_type(*nr_wd_ev, False, True, 'empty_value')
 
 
 def test_not_required_with_default_sent_null_value(nr_wd_nv):
     """
-        A test for each type, provided that the parameter is not required, and contains a
-        default value. Trying to send the null value. Each action playbook contains the value
-        to be sent, and the value that we expect in the config, after sending.
-        Scenario:
-        1. Uploading bundle for cluster and provider from
-           not_required/with_default/sent_null_value for each type
-        2. Creating cluster, provider and host. Adding service and host in cluster
-        3. Updating config for cluster, service, provider and host. Sending null value for
-           each type
-        4. Running action for cluster, service, provider and host. Checking current config
-           in action.
+    A test for each type, provided that the parameter is not required, and contains a
+    default value. Trying to send the null value. Each action playbook contains the value
+    to be sent, and the value that we expect in the config, after sending.
+    Scenario:
+    1. Uploading bundle for cluster and provider from
+       not_required/with_default/sent_null_value for each type
+    2. Creating cluster, provider and host. Adding service and host in cluster
+    3. Updating config for cluster, service, provider and host. Sending null value for
+       each type
+    4. Running action for cluster, service, provider and host. Checking current config
+       in action.
     """
     assert_config_type(*nr_wd_nv, False, True, 'null_value')
 
 
 @fixture_parametrized_by_data_subdirs(
-    __file__, 'not_required', 'without_default', 'sent_correct_value', scope='module')
+    __file__, 'not_required', 'without_default', 'sent_correct_value', scope='module'
+)
 def nr_wod_cv(sdk_client_ms: ADCMClient, request):
     return processing_data(
-        sdk_client_ms, request, 'not_required_without_default_sent_correct_value')
+        sdk_client_ms, request, 'not_required_without_default_sent_correct_value'
+    )
 
 
 @fixture_parametrized_by_data_subdirs(
-    __file__, 'not_required', 'without_default', 'sent_empty_value', scope='module')
+    __file__, 'not_required', 'without_default', 'sent_empty_value', scope='module'
+)
 def nr_wod_ev(sdk_client_ms: ADCMClient, request):
     return processing_data(sdk_client_ms, request, 'not_required_without_default_sent_empty_value')
 
 
 @fixture_parametrized_by_data_subdirs(
-    __file__, 'not_required', 'without_default', 'sent_null_value', scope='module')
+    __file__, 'not_required', 'without_default', 'sent_null_value', scope='module'
+)
 def nr_wod_nv(sdk_client_ms: ADCMClient, request):
     return processing_data(sdk_client_ms, request, 'not_required_without_default_sent_null_value')
 
 
 def test_not_required_without_default_sent_correct_value(nr_wod_cv):
     """
-        A test for each type, provided that the parameter is not required, and not contains a
-        default value. Trying to send the correct value. Each action playbook contains the value
-        to be sent, and the value that we expect in the config, after sending.
-        Scenario:
-        1. Uploading bundle for cluster and provider from
-           not_required/without_default/sent_correct_value for each type
-        2. Creating cluster, provider and host. Adding service and host in cluster
-        3. Updating config for cluster, service, provider and host. Sending correct value for
-           each type
-        4. Running action for cluster, service, provider and host. Checking current config
-           in action.
+    A test for each type, provided that the parameter is not required, and not contains a
+    default value. Trying to send the correct value. Each action playbook contains the value
+    to be sent, and the value that we expect in the config, after sending.
+    Scenario:
+    1. Uploading bundle for cluster and provider from
+       not_required/without_default/sent_correct_value for each type
+    2. Creating cluster, provider and host. Adding service and host in cluster
+    3. Updating config for cluster, service, provider and host. Sending correct value for
+       each type
+    4. Running action for cluster, service, provider and host. Checking current config
+       in action.
     """
     assert_config_type(*nr_wod_cv, False, False, 'correct_value')
 
 
 def test_not_required_without_default_sent_empty_value(nr_wod_ev):
     """
-        A test for each type, provided that the parameter is not required, and not contains a
-        default value. Trying to send the empty value. Each action playbook contains the value
-        to be sent, and the value that we expect in the config, after sending.
-        Scenario:
-        1. Uploading bundle for cluster and provider from
-           not_required/without_default/sent_empty_value for each type
-        2. Creating cluster, provider and host. Adding service and host in cluster
-        3. Updating config for cluster, service, provider and host. Sending empty value for
-           each type
-        4. Running action for cluster, service, provider and host. Checking current config
-           in action.
+    A test for each type, provided that the parameter is not required, and not contains a
+    default value. Trying to send the empty value. Each action playbook contains the value
+    to be sent, and the value that we expect in the config, after sending.
+    Scenario:
+    1. Uploading bundle for cluster and provider from
+       not_required/without_default/sent_empty_value for each type
+    2. Creating cluster, provider and host. Adding service and host in cluster
+    3. Updating config for cluster, service, provider and host. Sending empty value for
+       each type
+    4. Running action for cluster, service, provider and host. Checking current config
+       in action.
     """
     assert_config_type(*nr_wod_ev, False, False, 'empty_value')
 
 
 def test_not_required_without_default_sent_null_value(nr_wod_nv):
     """
-        A test for each type, provided that the parameter is not required, and not contains a
-        default value. Trying to send the null value. Each action playbook contains the value
-        to be sent, and the value that we expect in the config, after sending.
-        Scenario:
-        1. Uploading bundle for cluster and provider from
-           not_required/without_default/sent_null_value for each type
-        2. Creating cluster, provider and host. Adding service and host in cluster
-        3. Updating config for cluster, service, provider and host. Sending null value for
-           each type
-        4. Running action for cluster, service, provider and host. Checking current config
-           in action.
+    A test for each type, provided that the parameter is not required, and not contains a
+    default value. Trying to send the null value. Each action playbook contains the value
+    to be sent, and the value that we expect in the config, after sending.
+    Scenario:
+    1. Uploading bundle for cluster and provider from
+       not_required/without_default/sent_null_value for each type
+    2. Creating cluster, provider and host. Adding service and host in cluster
+    3. Updating config for cluster, service, provider and host. Sending null value for
+       each type
+    4. Running action for cluster, service, provider and host. Checking current config
+       in action.
     """
     assert_config_type(*nr_wod_nv, False, False, 'null_value')
 
 
 @fixture_parametrized_by_data_subdirs(
-    __file__, 'required', 'with_default', 'sent_correct_value', scope='module')
+    __file__, 'required', 'with_default', 'sent_correct_value', scope='module'
+)
 def r_wd_cv(sdk_client_ms: ADCMClient, request):
     return processing_data(sdk_client_ms, request, 'required_with_default_sent_correct_value')
 
 
 @fixture_parametrized_by_data_subdirs(
-    __file__, 'required', 'with_default', 'sent_empty_value', scope='module')
+    __file__, 'required', 'with_default', 'sent_empty_value', scope='module'
+)
 def r_wd_ev(sdk_client_ms: ADCMClient, request):
     return processing_data(sdk_client_ms, request, 'required_with_default_sent_empty_value')
 
 
 @fixture_parametrized_by_data_subdirs(
-    __file__, 'required', 'with_default', 'sent_null_value', scope='module')
+    __file__, 'required', 'with_default', 'sent_null_value', scope='module'
+)
 def r_wd_nv(sdk_client_ms: ADCMClient, request):
     return processing_data(sdk_client_ms, request, 'required_with_default_sent_null_value')
 
 
 def test_required_with_default_sent_correct_value(r_wd_cv):
     """
-        A test for each type, provided that the parameter is required, and contains a
-        default value. Trying to send the correct value. Each action playbook contains the value
-        to be sent, and the value that we expect in the config, after sending.
-        Scenario:
-        1. Uploading bundle for cluster and provider from
-           required/with_default/sent_correct_value for each type
-        2. Creating cluster, provider and host. Adding service and host in cluster
-        3. Updating config for cluster, service, provider and host. Sending correct value for
-           each type
-        4. Running action for cluster, service, provider and host. Checking current config
-           in action.
+    A test for each type, provided that the parameter is required, and contains a
+    default value. Trying to send the correct value. Each action playbook contains the value
+    to be sent, and the value that we expect in the config, after sending.
+    Scenario:
+    1. Uploading bundle for cluster and provider from
+       required/with_default/sent_correct_value for each type
+    2. Creating cluster, provider and host. Adding service and host in cluster
+    3. Updating config for cluster, service, provider and host. Sending correct value for
+       each type
+    4. Running action for cluster, service, provider and host. Checking current config
+       in action.
     """
     assert_config_type(*r_wd_cv, True, True, 'correct_value')
 
 
 def test_required_with_default_sent_empty_value(r_wd_ev):
     """
-        A test for each type, provided that the parameter is required, and contains a
-        default value. Trying to send the empty value. Each action playbook contains the value
-        to be sent, and the value that we expect in the config, after sending.
-        Scenario:
-        1. Uploading bundle for cluster and provider from
-           required/with_default/sent_empty_value for each type
-        2. Creating cluster, provider and host. Adding service and host in cluster
-        3. Updating config for cluster, service, provider and host. Sending empty value for
-           each type
-        4. Running action for cluster, service, provider and host. Checking current config
-           in action.
+    A test for each type, provided that the parameter is required, and contains a
+    default value. Trying to send the empty value. Each action playbook contains the value
+    to be sent, and the value that we expect in the config, after sending.
+    Scenario:
+    1. Uploading bundle for cluster and provider from
+       required/with_default/sent_empty_value for each type
+    2. Creating cluster, provider and host. Adding service and host in cluster
+    3. Updating config for cluster, service, provider and host. Sending empty value for
+       each type
+    4. Running action for cluster, service, provider and host. Checking current config
+       in action.
     """
     assert_config_type(*r_wd_ev, True, True, 'empty_value')
 
 
 def test_required_with_default_sent_null_value(r_wd_nv):
     """
-        A test for each type, provided that the parameter is required, and contains a
-        default value. Trying to send the null value. Each action playbook contains the value
-        to be sent, and the value that we expect in the config, after sending.
-        Scenario:
-        1. Uploading bundle for cluster and provider from
-           required/with_default/sent_null_value for each type
-        2. Creating cluster, provider and host. Adding service and host in cluster
-        3. Updating config for cluster, service, provider and host. Sending null value for
-           each type
-        4. Running action for cluster, service, provider and host. Checking current config
-           in action.
+    A test for each type, provided that the parameter is required, and contains a
+    default value. Trying to send the null value. Each action playbook contains the value
+    to be sent, and the value that we expect in the config, after sending.
+    Scenario:
+    1. Uploading bundle for cluster and provider from
+       required/with_default/sent_null_value for each type
+    2. Creating cluster, provider and host. Adding service and host in cluster
+    3. Updating config for cluster, service, provider and host. Sending null value for
+       each type
+    4. Running action for cluster, service, provider and host. Checking current config
+       in action.
     """
     assert_config_type(*r_wd_nv, True, True, 'null_value')
 
 
 @fixture_parametrized_by_data_subdirs(
-    __file__, 'required', 'without_default', 'sent_correct_value', scope='module')
+    __file__, 'required', 'without_default', 'sent_correct_value', scope='module'
+)
 def r_wod_cv(sdk_client_ms: ADCMClient, request):
-    return processing_data(
-        sdk_client_ms, request, 'required_without_default_sent_correct_value')
+    return processing_data(sdk_client_ms, request, 'required_without_default_sent_correct_value')
 
 
 @fixture_parametrized_by_data_subdirs(
-    __file__, 'required', 'without_default', 'sent_empty_value', scope='module')
+    __file__, 'required', 'without_default', 'sent_empty_value', scope='module'
+)
 def r_wod_ev(sdk_client_ms: ADCMClient, request):
     return processing_data(sdk_client_ms, request, 'required_without_default_sent_empty_value')
 
 
 @fixture_parametrized_by_data_subdirs(
-    __file__, 'required', 'without_default', 'sent_null_value', scope='module')
+    __file__, 'required', 'without_default', 'sent_null_value', scope='module'
+)
 def r_wod_nv(sdk_client_ms: ADCMClient, request):
     return processing_data(sdk_client_ms, request, 'required_without_default_sent_null_value')
 
 
 def test_required_without_default_sent_correct_value(r_wod_cv):
     """
-        A test for each type, provided that the parameter is required, and not contains a
-        default value. Trying to send the correct value. Each action playbook contains the value
-        to be sent, and the value that we expect in the config, after sending.
-        Scenario:
-        1. Uploading bundle for cluster and provider from
-           required/without_default/sent_correct_value for each type
-        2. Creating cluster, provider and host. Adding service and host in cluster
-        3. Updating config for cluster, service, provider and host. Sending correct value for
-           each type
-        4. Running action for cluster, service, provider and host. Checking current config
-           in action.
+    A test for each type, provided that the parameter is required, and not contains a
+    default value. Trying to send the correct value. Each action playbook contains the value
+    to be sent, and the value that we expect in the config, after sending.
+    Scenario:
+    1. Uploading bundle for cluster and provider from
+       required/without_default/sent_correct_value for each type
+    2. Creating cluster, provider and host. Adding service and host in cluster
+    3. Updating config for cluster, service, provider and host. Sending correct value for
+       each type
+    4. Running action for cluster, service, provider and host. Checking current config
+       in action.
     """
     assert_config_type(*r_wod_cv, True, False, 'correct_value')
 
 
 def test_required_without_default_sent_empty_value(r_wod_ev):
     """
-        A test for each type, provided that the parameter is required, and not contains a
-        default value. Trying to send the empty value. Each action playbook contains the value
-        to be sent, and the value that we expect in the config, after sending.
-        Scenario:
-        1. Uploading bundle for cluster and provider from
-           required/without_default/sent_empty_value for each type
-        2. Creating cluster, provider and host. Adding service and host in cluster
-        3. Updating config for cluster, service, provider and host. Sending empty value for
-           each type
-        4. Running action for cluster, service, provider and host. Checking current config
-           in action.
+    A test for each type, provided that the parameter is required, and not contains a
+    default value. Trying to send the empty value. Each action playbook contains the value
+    to be sent, and the value that we expect in the config, after sending.
+    Scenario:
+    1. Uploading bundle for cluster and provider from
+       required/without_default/sent_empty_value for each type
+    2. Creating cluster, provider and host. Adding service and host in cluster
+    3. Updating config for cluster, service, provider and host. Sending empty value for
+       each type
+    4. Running action for cluster, service, provider and host. Checking current config
+       in action.
     """
     assert_config_type(*r_wod_ev, True, False, 'empty_value')
 
 
 def test_required_without_default_sent_null_value(r_wod_nv):
     """
-        A test for each type, provided that the parameter is required, and not contains a
-        default value. Trying to send the null value. Each action playbook contains the value
-        to be sent, and the value that we expect in the config, after sending.
-        Scenario:
-        1. Uploading bundle for cluster and provider from
-           required/without_default/sent_null_value for each type
-        2. Creating cluster, provider and host. Adding service and host in cluster
-        3. Updating config for cluster, service, provider and host. Sending null value for
-           each type
-        4. Running action for cluster, service, provider and host. Checking current config
-           in action.
+    A test for each type, provided that the parameter is required, and not contains a
+    default value. Trying to send the null value. Each action playbook contains the value
+    to be sent, and the value that we expect in the config, after sending.
+    Scenario:
+    1. Uploading bundle for cluster and provider from
+       required/without_default/sent_null_value for each type
+    2. Creating cluster, provider and host. Adding service and host in cluster
+    3. Updating config for cluster, service, provider and host. Sending null value for
+       each type
+    4. Running action for cluster, service, provider and host. Checking current config
+       in action.
     """
     assert_config_type(*r_wod_nv, True, False, 'null_value')

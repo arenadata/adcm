@@ -54,8 +54,10 @@ def _get_cases_paths(path: str) -> List[ParameterSet]:
             case_dir = os.path.join(bundle_path, CASES_PATH, sub_path)
             for b in os.listdir(case_dir):
                 params.append(
-                    pytest.param(os.path.join(case_dir, b),
-                                 id=f"{bundles_ids[i]}_{sub_path}_{b.strip('.yaml')}")
+                    pytest.param(
+                        os.path.join(case_dir, b),
+                        id=f"{bundles_ids[i]}_{sub_path}_{b.strip('.yaml')}",
+                    )
                 )
     return params
 
@@ -75,17 +77,14 @@ def _test_related_hc(client: ADCMClient, case_path: str):
         hostcomponent_list = []
         for host in case_template["hc_map"].keys():
             added_host = created_cluster.host_add(
-                provider.host_create(fqdn=f"fqdn_{random_string()}"))
+                provider.host_create(fqdn=f"fqdn_{random_string()}")
+            )
             for service_with_component in case_template["hc_map"][host]:
                 service_name, component_name = service_with_component.split(".")
                 service = _get_or_add_service(created_cluster, service_name)
-                hostcomponent_list.append(
-                    (added_host, service.component(name=component_name))
-                )
+                hostcomponent_list.append((added_host, service.component(name=component_name)))
         expectation = (
-            _does_not_raise()
-            if case_template["positive"] else
-            pytest.raises(ErrorMessage)
+            _does_not_raise() if case_template["positive"] else pytest.raises(ErrorMessage)
         )
         with expectation:
             created_cluster.hostcomponent_set(*hostcomponent_list)

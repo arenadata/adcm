@@ -13,7 +13,7 @@
 from django.urls import path, include
 from . import views
 
-
+# fmt: off
 urlpatterns = [
     path('', views.JobList.as_view(), name='job'),
     path('<int:job_id>/', include([
@@ -32,3 +32,4 @@ urlpatterns = [
         ])),
     ])),
 ]
+# fmt: on

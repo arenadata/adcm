@@ -13,9 +13,14 @@
 from time import sleep
 
 import allure
+
 # Created by a1wen at 05.03.19
-from selenium.common.exceptions import TimeoutException, InvalidElementStateException, \
-    NoSuchElementException, StaleElementReferenceException
+from selenium.common.exceptions import (
+    TimeoutException,
+    InvalidElementStateException,
+    NoSuchElementException,
+    StaleElementReferenceException,
+)
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webelement import WebElement
@@ -39,6 +44,7 @@ class BasePage:
     ignored_exceptions = (NoSuchElementException, StaleElementReferenceException)
 
     """That is base page object for all ADCM's pages"""
+
     def __init__(self, driver):
         self.driver = driver
 
@@ -75,16 +81,13 @@ class BasePage:
 
         if "parent" in kwargs:
             parent_name = kwargs["parent_name"] if "parent_name" in kwargs else ""
-            parent_element = get_elements(kwargs["parent"], parent_name, self.driver)[
-                parent_idx
-            ]
+            parent_element = get_elements(kwargs["parent"], parent_name, self.driver)[parent_idx]
 
         name = kwargs["name"] if "name" in kwargs else ""
         return f(get_elements(locator, name, parent_element))
 
     def _wait_element(self, locator: tuple, **kwargs):
-        """see _elements
-        """
+        """see _elements"""
 
         def wait(elements):
             _ = elements
@@ -95,14 +98,12 @@ class BasePage:
         return self._getelement(bys.by_xpath("//*[@adcm_test='{}']".format(element_name)))
 
     def _getelement(self, locator: tuple, timer=10):
-        return WDW(self.driver,
-                   timer,
-                   ignored_exceptions=self.ignored_exceptions
-                   ).until(EC.presence_of_element_located(locator))
+        return WDW(self.driver, timer, ignored_exceptions=self.ignored_exceptions).until(
+            EC.presence_of_element_located(locator)
+        )
 
     def _click_element(self, locator: tuple, **kwargs):
-        """see _elements
-        """
+        """see _elements"""
 
         idx = kwargs["idx"] if "idx" in kwargs else 0
 
@@ -189,8 +190,9 @@ class BasePage:
 
     def _click_with_offset(self, element: tuple, x_offset, y_offset):
         actions = ActionChains(self.driver)
-        actions.move_to_element_with_offset(self._getelement(element),
-                                            x_offset, y_offset).click().perform()
+        actions.move_to_element_with_offset(
+            self._getelement(element), x_offset, y_offset
+        ).click().perform()
 
     def _contains_url(self, url: str, timer=5):
         WDW(self.driver, timer).until(EC.url_contains(url))
@@ -207,7 +209,7 @@ class BasePage:
 
 
 class Ui(BasePage):
-    """ This class describes main menu and returns specified page in POM"""
+    """This class describes main menu and returns specified page in POM"""
 
     @property
     def session(self):
@@ -244,8 +246,10 @@ class Ui(BasePage):
 
 class ListPage(BasePage):
     """Basic methods under the lists pages"""
+
     _inactive_tabs = bys.by_xpath(
-        "//a[@class='mat-list-item ng-star-inserted']//div[@class='mat-list-item-content']")
+        "//a[@class='mat-list-item ng-star-inserted']//div[@class='mat-list-item-content']"
+    )
 
     def _press_add(self):
         self._click_element(Common.add_btn)
@@ -297,7 +301,7 @@ class ListPage(BasePage):
     @allure.step('Delete specified row by his number: {row_number}')
     def delete_row(self, row_number):
         """Deleting specified row by his number
-            :param: """
+        :param:"""
         rows = self.get_rows()
         _del = rows[row_number].find_element_by_xpath(Common.del_btn)
         _del.click()
@@ -378,7 +382,6 @@ class LoginPage(BasePage):
 
 
 class ClustersList(ListPage):
-
     @allure.step('Add new cluster')
     def add_new_cluster(self, name=None, description=None):
         return self._form(name=name, description=description)
@@ -474,7 +477,6 @@ class ClusterDetails(Details, ListPage):
 
 
 class ProvidersList(ListPage):
-
     @allure.step('Add new provider')
     def add_new_provider(self, name=None, description=None):
         self._press_add()
@@ -492,7 +494,6 @@ class ProvidersList(ListPage):
 
 
 class HostsList(ListPage):
-
     @allure.step('Add new host')
     def add_new_host(self, fqdn=None, description=None):
         self._press_add()
@@ -510,7 +511,6 @@ class HostsList(ListPage):
 
 
 class SettingsPage(ListPage):
-
     def save(self):
         self._press_save()
 
@@ -524,7 +524,6 @@ class JobsList(ListPage):
 
 
 class ServiceList(ListPage):
-
     @allure.step('Add service: {service_name}')
     def add_service(self, service_name):
         self._press_add()
@@ -545,9 +544,15 @@ class ServiceList(ListPage):
 
     @allure.step('Get service list')
     def service_list(self):
-        return [{service.text.split("\n")[0]: {"version": service.text.split("\n")[1],
-                                               "status": service.text.split("\n")[2]}
-                 } for service in self._getelements(Common.rows)]
+        return [
+            {
+                service.text.split("\n")[0]: {
+                    "version": service.text.split("\n")[1],
+                    "status": service.text.split("\n")[2],
+                }
+            }
+            for service in self._getelements(Common.rows)
+        ]
 
     @allure.step('Open service config: {service_name}')
     def open_service_config(self, service_name):

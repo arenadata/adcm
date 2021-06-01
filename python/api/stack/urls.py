@@ -17,6 +17,7 @@ from . import views
 PROTOTYPE_ID = '<int:prototype_id>/'
 
 
+# fmt: off
 urlpatterns = [
     path('', views.Stack.as_view(), name='stack'),
     path('upload/', views.UploadBundle.as_view(), name='upload-bundle'),
@@ -64,3 +65,4 @@ urlpatterns = [
         path(PROTOTYPE_ID, views.AdcmTypeDetail.as_view(), name='adcm-type-details'),
     ])),
 ]
+# fmt: on

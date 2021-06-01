@@ -13,7 +13,7 @@
 from django.urls import path, include
 from . import views
 
-
+# fmt: off
 urlpatterns = [
     path('', views.ProviderList.as_view(), name='provider'),
     path('<int:provider_id>/', include([
@@ -30,3 +30,4 @@ urlpatterns = [
         ])),
     ])),
 ]
+# fmt: on

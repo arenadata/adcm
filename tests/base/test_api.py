@@ -21,7 +21,7 @@ import requests
 token = None
 
 
-class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
+class TestAPI(unittest.TestCase):  # pylint: disable=too-many-public-methods
     debug = os.environ.get('BASE_DEBUG', False)
     # debug = True
     url = 'http://localhost:8040/api/v1'
@@ -34,13 +34,13 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
     ssh_bundle = 'ssh.1.0.tar'
 
     def setUp(self):
-        global token    # pylint: disable=global-statement
+        global token  # pylint: disable=global-statement
         if token is not None:
             return
         r1 = requests.post(
             self.url + '/token/',
             data=json.dumps({'username': 'admin', 'password': 'admin'}),
-            headers={'Content-Type': 'application/json'}
+            headers={'Content-Type': 'application/json'},
         )
         self.print_result('/token/', r1)
         self.assertEqual(r1.status_code, 200)
@@ -60,25 +60,37 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         return self.api(path, requests.delete(self.url + path, headers=self.token_hdr()))
 
     def api_post(self, path, data):
-        return self.api(path, requests.post(
-            self.url + path,
-            data=json.dumps(data),
-            headers={'Content-Type': 'application/json', 'Authorization': 'Token ' + token}
-        ), data)
+        return self.api(
+            path,
+            requests.post(
+                self.url + path,
+                data=json.dumps(data),
+                headers={'Content-Type': 'application/json', 'Authorization': 'Token ' + token},
+            ),
+            data,
+        )
 
     def api_put(self, path, data):
-        return self.api(path, requests.put(
-            self.url + path,
-            data=json.dumps(data),
-            headers={'Content-Type': 'application/json', 'Authorization': 'Token ' + token},
-        ), data)
+        return self.api(
+            path,
+            requests.put(
+                self.url + path,
+                data=json.dumps(data),
+                headers={'Content-Type': 'application/json', 'Authorization': 'Token ' + token},
+            ),
+            data,
+        )
 
     def api_patch(self, path, data):
-        return self.api(path, requests.patch(
-            self.url + path,
-            data=json.dumps(data),
-            headers={'Content-Type': 'application/json', 'Authorization': 'Token ' + token},
-        ), data)
+        return self.api(
+            path,
+            requests.patch(
+                self.url + path,
+                data=json.dumps(data),
+                headers={'Content-Type': 'application/json', 'Authorization': 'Token ' + token},
+            ),
+            data,
+        )
 
     def print_result(self, path, r, data=''):
         if self.debug:
@@ -137,9 +149,9 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         r1 = self.api_post('/provider/', {'name': name, 'prototype_id': provider_proto})
         self.assertEqual(r1.status_code, 201)
         provider_id = r1.json()['id']
-        r1 = self.api_post('/host/', {
-            'fqdn': fqdn, 'prototype_id': host_proto, 'provider_id': provider_id
-        })
+        r1 = self.api_post(
+            '/host/', {'fqdn': fqdn, 'prototype_id': host_proto, 'provider_id': provider_id}
+        )
         self.assertEqual(r1.status_code, 201)
         host_id = r1.json()['id']
         return (ssh_bundle_id, provider_id, host_id)
@@ -200,11 +212,9 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         self.assertEqual(r1.status_code, 404)
         self.assertEqual(r1.json()['code'], 'PROTOTYPE_NOT_FOUND')
 
-        r1 = self.api_post('/cluster/', {
-            'name': cluster,
-            'prototype_id': proto_id,
-            'description': ''
-        })
+        r1 = self.api_post(
+            '/cluster/', {'name': cluster, 'prototype_id': proto_id, 'description': ''}
+        )
         self.assertEqual(r1.status_code, 400)
         self.assertEqual(r1.json()['description'], ['This field may not be blank.'])
 
@@ -254,10 +264,9 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         self.assertEqual(r1.json()['name'], patched_name)
 
         description = 'cluster_description'
-        r1 = self.api_patch('/cluster/' + str(cluster_id) + '/', {
-            'name': patched_name,
-            'description': description
-        })
+        r1 = self.api_patch(
+            '/cluster/' + str(cluster_id) + '/', {'name': patched_name, 'description': description}
+        )
         self.assertEqual(r1.status_code, 200)
         self.assertEqual(r1.json()['description'], description)
 
@@ -310,27 +319,31 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         self.assertEqual(r1.status_code, 400)
         self.assertEqual(r1.json()['provider_id'], ['This field is required.'])
 
-        r1 = self.api_post('/host/', {
-            'fqdn': 'x' + 'deadbeef' * 32,  # 257 chars
-            'prototype_id': host_proto,
-            'provider_id': provider_id
-        })
+        r1 = self.api_post(
+            '/host/',
+            {
+                'fqdn': 'x' + 'deadbeef' * 32,  # 257 chars
+                'prototype_id': host_proto,
+                'provider_id': provider_id,
+            },
+        )
         self.assertEqual(r1.status_code, 400)
         self.assertEqual(r1.json()['desc'], 'Host name is too long. Max length is 256')
 
-        r1 = self.api_post('/host/', {
-            'fqdn': 'x' + string.punctuation,
-            'prototype_id': host_proto,
-            'provider_id': provider_id
-        })
+        r1 = self.api_post(
+            '/host/',
+            {
+                'fqdn': 'x' + string.punctuation,
+                'prototype_id': host_proto,
+                'provider_id': provider_id,
+            },
+        )
         self.assertEqual(r1.status_code, 400)
         self.assertEqual(r1.json()['code'], 'WRONG_NAME')
 
-        r1 = self.api_post('/host/', {
-            'fqdn': host,
-            'prototype_id': host_proto,
-            'provider_id': provider_id
-        })
+        r1 = self.api_post(
+            '/host/', {'fqdn': host, 'prototype_id': host_proto, 'provider_id': provider_id}
+        )
         self.assertEqual(r1.status_code, 201)
         host_id = r1.json()['id']
 
@@ -342,9 +355,9 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         self.assertEqual(r1.status_code, 405)
         self.assertEqual(r1.json()['detail'], 'Method "PUT" not allowed.')
 
-        r1 = self.api_post('/host/', {
-            'fqdn': host, 'prototype_id': host_proto, 'provider_id': provider_id
-        })
+        r1 = self.api_post(
+            '/host/', {'fqdn': host, 'prototype_id': host_proto, 'provider_id': provider_id}
+        )
         self.assertEqual(r1.status_code, 409)
         self.assertEqual(r1.json()['code'], 'HOST_CONFLICT')
 
@@ -448,27 +461,39 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         self.assertEqual(r1.status_code, 201)
         cluster_id = r1.json()['id']
 
-        r1 = self.api_post('/cluster/' + str(cluster_id) + '/service/', {
-            'prototype_id': 'some-string',
-        })
+        r1 = self.api_post(
+            '/cluster/' + str(cluster_id) + '/service/',
+            {
+                'prototype_id': 'some-string',
+            },
+        )
         self.assertEqual(r1.status_code, 400)
         self.assertEqual(r1.json()['prototype_id'], ['A valid integer is required.'])
 
-        r1 = self.api_post('/cluster/' + str(cluster_id) + '/service/', {
-            'prototype_id': - service_proto_id,
-        })
+        r1 = self.api_post(
+            '/cluster/' + str(cluster_id) + '/service/',
+            {
+                'prototype_id': -service_proto_id,
+            },
+        )
         self.assertEqual(r1.status_code, 404)
         self.assertEqual(r1.json()['code'], 'PROTOTYPE_NOT_FOUND')
 
-        r1 = self.api_post('/cluster/' + str(cluster_id) + '/service/', {
-            'prototype_id': service_proto_id,
-        })
+        r1 = self.api_post(
+            '/cluster/' + str(cluster_id) + '/service/',
+            {
+                'prototype_id': service_proto_id,
+            },
+        )
         self.assertEqual(r1.status_code, 201)
         service_id = r1.json()['id']
 
-        r1 = self.api_post('/cluster/' + str(cluster_id) + '/service/', {
-            'prototype_id': service_proto_id,
-        })
+        r1 = self.api_post(
+            '/cluster/' + str(cluster_id) + '/service/',
+            {
+                'prototype_id': service_proto_id,
+            },
+        )
         self.assertEqual(r1.status_code, 409)
         self.assertEqual(r1.json()['code'], 'SERVICE_CONFLICT')
 
@@ -481,7 +506,7 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         r1 = self.api_delete('/stack/bundle/' + str(bundle_id) + '/')
         self.assertEqual(r1.status_code, 204)
 
-    def test_hostcomponent(self):   # pylint: disable=too-many-statements,too-many-locals
+    def test_hostcomponent(self):  # pylint: disable=too-many-statements,too-many-locals
         r1 = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
         self.assertEqual(r1.status_code, 200)
         r1 = self.api_post('/stack/load/', {'bundle_file': self.ssh_bundle})
@@ -506,21 +531,22 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         self.assertEqual(r1.json()['desc'], "hc field is required")
 
         comp_id = self.get_component_id(cluster_id, service_id, self.component)
-        r1 = self.api_post(HS_URL, {'hc': [
-            {'service_id': service_id, 'host_id': 100500, 'component_id': comp_id}
-        ]})
+        r1 = self.api_post(
+            HS_URL, {'hc': [{'service_id': service_id, 'host_id': 100500, 'component_id': comp_id}]}
+        )
         self.assertEqual(r1.status_code, 404)
         self.assertEqual(r1.json()['code'], "HOST_NOT_FOUND")
 
-        r1 = self.api_post(HS_URL, {'hc': [
-            {'service_id': service_id, 'host_id': host_id, 'component_id': 100500}
-        ]})
+        r1 = self.api_post(
+            HS_URL, {'hc': [{'service_id': service_id, 'host_id': host_id, 'component_id': 100500}]}
+        )
         self.assertEqual(r1.status_code, 404)
         self.assertEqual(r1.json()['code'], "COMPONENT_NOT_FOUND")
 
-        r1 = self.api_post(HS_URL, {'hc': [
-            {'service_id': service_id, 'host_id': host_id, 'component_id': comp_id}
-        ]})
+        r1 = self.api_post(
+            HS_URL,
+            {'hc': [{'service_id': service_id, 'host_id': host_id, 'component_id': comp_id}]},
+        )
         self.assertEqual(r1.status_code, 409)
         self.assertEqual(r1.json()['code'], "FOREIGN_HOST")
 
@@ -540,17 +566,23 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         self.assertEqual(r1.status_code, 400)
         self.assertEqual(r1.json()['code'], "INVALID_INPUT")
 
-        r1 = self.api_post(HS_URL, {'hc': [
-            {'service_id': service_id, 'host_id': 1, 'component_id': comp_id},
-            {'service_id': service_id, 'host_id': 1, 'component_id': comp_id}
-        ]})
+        r1 = self.api_post(
+            HS_URL,
+            {
+                'hc': [
+                    {'service_id': service_id, 'host_id': 1, 'component_id': comp_id},
+                    {'service_id': service_id, 'host_id': 1, 'component_id': comp_id},
+                ]
+            },
+        )
         self.assertEqual(r1.status_code, 400)
         self.assertEqual(r1.json()['code'], "INVALID_INPUT")
         self.assertEqual(r1.json()['desc'][0:9], "duplicate")
 
-        r1 = self.api_post(HS_URL, {'hc': [
-            {'service_id': service_id, 'host_id': host_id, 'component_id': comp_id}
-        ]})
+        r1 = self.api_post(
+            HS_URL,
+            {'hc': [{'service_id': service_id, 'host_id': host_id, 'component_id': comp_id}]},
+        )
         self.assertEqual(r1.status_code, 201)
         hs_id = r1.json()[0]['id']
 
@@ -558,17 +590,19 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         self.assertEqual(r1.status_code, 200)
 
         zclient_id = self.get_component_id(cluster_id, service_id, 'ZOOKEEPER_CLIENT')
-        r1 = self.api_post(HS_URL, {'hc': [
-            {'service_id': service_id, 'host_id': host_id, 'component_id': zclient_id}
-        ]})
+        r1 = self.api_post(
+            HS_URL,
+            {'hc': [{'service_id': service_id, 'host_id': host_id, 'component_id': zclient_id}]},
+        )
         self.assertEqual(r1.status_code, 201)
 
         r1 = self.api_post('/cluster/', {'name': 'qwe', 'prototype_id': cluster_proto})
         cluster_id2 = r1.json()['id']
 
-        r1 = self.api_post('/cluster/' + str(cluster_id2) + '/hostcomponent/', {'hc': [
-            {'service_id': service_id, 'host_id': host_id, 'component_id': comp_id}
-        ]})
+        r1 = self.api_post(
+            '/cluster/' + str(cluster_id2) + '/hostcomponent/',
+            {'hc': [{'service_id': service_id, 'host_id': host_id, 'component_id': comp_id}]},
+        )
         self.assertEqual(r1.status_code, 404)
         self.assertEqual(r1.json()['code'], "CLUSTER_SERVICE_NOT_FOUND")
 
@@ -578,9 +612,10 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         service_id2 = r1.json()['id']
         self.assertEqual(r1.status_code, 201)
         comp_id2 = self.get_component_id(cluster_id2, service_id2, self.component)
-        r1 = self.api_post('/cluster/' + str(cluster_id2) + '/hostcomponent/', {'hc': [
-            {'service_id': service_id2, 'host_id': host_id, 'component_id': comp_id2}
-        ]})
+        r1 = self.api_post(
+            '/cluster/' + str(cluster_id2) + '/hostcomponent/',
+            {'hc': [{'service_id': service_id2, 'host_id': host_id, 'component_id': comp_id2}]},
+        )
         self.assertEqual(r1.status_code, 409)
         self.assertEqual(r1.json()['code'], "FOREIGN_HOST")
 
@@ -622,25 +657,19 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         service_id = r1.json()['id']
 
         comp_id = self.get_component_id(cluster_id, service_id, self.component)
-        r1 = self.api_post('/cluster/' + str(cluster_id) + '/hostcomponent/', {'hc': [
-            {'service_id': service_id, 'host_id': host_id, 'component_id': comp_id}
-        ]})
+        r1 = self.api_post(
+            '/cluster/' + str(cluster_id) + '/hostcomponent/',
+            {'hc': [{'service_id': service_id, 'host_id': host_id, 'component_id': comp_id}]},
+        )
         self.assertEqual(r1.status_code, 201)
 
-        r1 = self.api_post(
-            '/task/', {'selector': {"cluster": cluster_id}, 'action_id': 100500}
-        )
+        r1 = self.api_post('/task/', {'selector': {"cluster": cluster_id}, 'action_id': 100500})
         self.assertEqual(r1.status_code, 404)
 
-        r1 = self.api_post(
-            '/task/', {'selector': {"cluster": 100500}, 'action_id': action_id}
-        )
+        r1 = self.api_post('/task/', {'selector': {"cluster": 100500}, 'action_id': action_id})
         self.assertEqual(r1.status_code, 404)
 
-        r1 = self.api_post(
-            '/task/',
-            {'selector': {"cluster": cluster_id}, 'action_id': action_id}
-        )
+        r1 = self.api_post('/task/', {'selector': {"cluster": cluster_id}, 'action_id': action_id})
         self.assertEqual(r1.status_code, 409)
         self.assertEqual(r1.json()['code'], 'TASK_ERROR')
         self.assertEqual(r1.json()['desc'], 'action has issues')
@@ -650,10 +679,7 @@ class TestAPI(unittest.TestCase):   # pylint: disable=too-many-public-methods
         )
         self.assertEqual(r1.status_code, 201)
 
-        r1 = self.api_post(
-            '/task/',
-            {'selector': {"cluster": cluster_id}, 'action_id': action_id}
-        )
+        r1 = self.api_post('/task/', {'selector': {"cluster": cluster_id}, 'action_id': action_id})
         self.assertEqual(r1.status_code, 201)
         task_id = r1.json()['id']
         job_id = task_id

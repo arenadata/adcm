@@ -136,6 +136,7 @@ def match_set(data, rules, rule, path, parent=None):
 def match_simple_type(obj_type):
     def match(data, rules, rule, path, parent=None):
         check_type(data, obj_type, path, rule, parent=parent)
+
     return match
 
 

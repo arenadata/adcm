@@ -24,29 +24,60 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RenameField(
-            model_name='clusterbind',
-            old_name='source',
-            new_name='source_cluster'
+            model_name='clusterbind', old_name='source', new_name='source_cluster'
         ),
         migrations.RenameField(
-            model_name='clusterbind',
-            old_name='service',
-            new_name='source_service'
+            model_name='clusterbind', old_name='service', new_name='source_service'
         ),
         migrations.AddField(
             model_name='clusterbind',
             name='service',
-            field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.ClusterObject'),
+            field=models.ForeignKey(
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to='cm.ClusterObject',
+            ),
         ),
         migrations.AlterField(
             model_name='prototypeconfig',
             name='type',
-            field=models.CharField(choices=[('string', 'string'), ('text', 'text'), ('password', 'password'), ('json', 'json'), ('integer', 'integer'), ('float', 'float'), ('option', 'option'), ('boolean', 'boolean'), ('file', 'file'), ('list', 'list'), ('map', 'map')], max_length=16),
+            field=models.CharField(
+                choices=[
+                    ('string', 'string'),
+                    ('text', 'text'),
+                    ('password', 'password'),
+                    ('json', 'json'),
+                    ('integer', 'integer'),
+                    ('float', 'float'),
+                    ('option', 'option'),
+                    ('boolean', 'boolean'),
+                    ('file', 'file'),
+                    ('list', 'list'),
+                    ('map', 'map'),
+                ],
+                max_length=16,
+            ),
         ),
         migrations.AlterField(
             model_name='stageprototypeconfig',
             name='type',
-            field=models.CharField(choices=[('string', 'string'), ('text', 'text'), ('password', 'password'), ('json', 'json'), ('integer', 'integer'), ('float', 'float'), ('option', 'option'), ('boolean', 'boolean'), ('file', 'file'), ('list', 'list'), ('map', 'map')], max_length=16),
+            field=models.CharField(
+                choices=[
+                    ('string', 'string'),
+                    ('text', 'text'),
+                    ('password', 'password'),
+                    ('json', 'json'),
+                    ('integer', 'integer'),
+                    ('float', 'float'),
+                    ('option', 'option'),
+                    ('boolean', 'boolean'),
+                    ('file', 'file'),
+                    ('list', 'list'),
+                    ('map', 'map'),
+                ],
+                max_length=16,
+            ),
         ),
         migrations.AlterUniqueTogether(
             name='clusterbind',

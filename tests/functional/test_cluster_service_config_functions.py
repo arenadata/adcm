@@ -69,9 +69,7 @@ def _get_config_history(obj: BaseAPIObject):
 
 
 class TestClusterServiceConfig:
-    def test_create_cluster_service_config(
-        self, cluster_with_service: Tuple[Cluster, Service]
-    ):
+    def test_create_cluster_service_config(self, cluster_with_service: Tuple[Cluster, Service]):
         cfg_json = {
             "ssh-key": "TItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAA",
             "zoo.cfg": {"autopurge.purgeInterval": 30, "dataDir": "/dev/0", "port": 80},
@@ -264,9 +262,7 @@ class TestClusterServiceConfig:
         ),
     ]
 
-    @pytest.mark.parametrize(
-        ("service_config", "expected_error"), INVALID_SERVICE_CONFIGS
-    )
+    @pytest.mark.parametrize(("service_config", "expected_error"), INVALID_SERVICE_CONFIGS)
     def test_should_not_create_service_with_invalid_config(
         self,
         cluster_with_service: Tuple[Cluster, Service],
@@ -276,9 +272,7 @@ class TestClusterServiceConfig:
         _, cluster_svc = cluster_with_service
         adcm_error, expected_msg = expected_error
         with allure.step("Try to set invalid config"):
-            allure.attach(
-                json.dumps(service_config), "config.json", allure.attachment_type.JSON
-            )
+            allure.attach(json.dumps(service_config), "config.json", allure.attachment_type.JSON)
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 cluster_svc.config_set(service_config)
         with allure.step("Check error"):
@@ -348,9 +342,7 @@ class TestClusterServiceConfigHistory:
 
 class TestClusterConfig:
     # Do we really need this test?
-    def test_config_history_url_must_point_to_the_cluster_config(
-        self, cluster: Cluster
-    ):
+    def test_config_history_url_must_point_to_the_cluster_config(self, cluster: Cluster):
         config_str = {"required": 10, "int_key": 50, "bool": False, "str-key": "eulav"}
         with allure.step("Create config history"):
             for _ in range(10):
@@ -403,9 +395,7 @@ class TestClusterConfig:
         ),
     ]
 
-    @pytest.mark.parametrize(
-        ("cluster_config", "expected_error"), INVALID_CLUSTER_CONFIGS
-    )
+    @pytest.mark.parametrize(("cluster_config", "expected_error"), INVALID_CLUSTER_CONFIGS)
     def test_should_not_create_cluster_with_invalid_config(
         self,
         cluster: Cluster,
@@ -414,9 +404,7 @@ class TestClusterConfig:
     ):
         adcm_error, expected_msg = expected_error
         with allure.step("Try to set invalid config"):
-            allure.attach(
-                json.dumps(cluster_config), "config.json", allure.attachment_type.JSON
-            )
+            allure.attach(json.dumps(cluster_config), "config.json", allure.attachment_type.JSON)
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 cluster.config_set(cluster_config)
         with allure.step("Check error"):
@@ -439,17 +427,13 @@ class TestClusterConfig:
     ]
 
     @pytest.mark.parametrize(("datatype", "name"), check_types)
-    def test_verify_that_supported_type_is(
-        self, cluster_bundle: Bundle, datatype, name
-    ):
+    def test_verify_that_supported_type_is(self, cluster_bundle: Bundle, datatype, name):
         with allure.step("Check stack config"):
             for item in cluster_bundle.cluster_prototype().config:
                 if item["name"] == name:
                     assert item["type"] == datatype
 
-    def test_check_that_file_field_put_correct_data_in_file_inside_docker(
-        self, cluster: Cluster
-    ):
+    def test_check_that_file_field_put_correct_data_in_file_inside_docker(self, cluster: Cluster):
         test_data = "lorem ipsum"
         with allure.step("Create config data"):
             config_data = utils.ordered_dict_to_dict(cluster.config())
@@ -458,6 +442,4 @@ class TestClusterConfig:
         with allure.step("Create config history"):
             cluster.config_set(config_data)
         with allure.step("Check file type"):
-            run_cluster_action_and_assert_result(
-                cluster=cluster, action="check-file-type"
-            )
+            run_cluster_action_and_assert_result(cluster=cluster, action="check-file-type")
