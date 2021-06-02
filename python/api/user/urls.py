@@ -17,10 +17,15 @@ from . import views
 
 urlpatterns = [
     path('', views.UserList.as_view(), name='user-list'),
-    path('<name:username>/', include([
-        path('', views.UserDetail.as_view(), name='user-details'),
-        path('role/', views.ChangeUserRole.as_view(), name='change-user-role'),
-        path('group/', views.AddUser2Group.as_view(), name='add-user-group'),
-        path('password/', views.UserPasswd.as_view(), name='user-passwd'),
-    ])),
+    path(
+        '<name:username>/',
+        include(
+            [
+                path('', views.UserDetail.as_view(), name='user-details'),
+                path('role/', views.ChangeUserRole.as_view(), name='change-user-role'),
+                path('group/', views.AddUser2Group.as_view(), name='add-user-group'),
+                path('password/', views.UserPasswd.as_view(), name='user-passwd'),
+            ]
+        ),
+    ),
 ]

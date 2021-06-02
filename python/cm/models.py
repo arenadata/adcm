@@ -18,6 +18,7 @@ from django.db import models
 
 from cm.errors import AdcmEx
 
+
 PROTO_TYPE = (
     ('adcm', 'adcm'),
     ('service', 'service'),
@@ -77,6 +78,7 @@ class ADCMManager(models.Manager):
     not "objects". "objects" attribute is reffered to standard Django model manager,
     so if you need familiar behavior you can use it as usual.
     """
+
     def get(self, *args, **kwargs):
         try:
             return super().get(*args, **kwargs)
@@ -306,11 +308,7 @@ class Host(ADCMModel):
 
     @property
     def serialized_issue(self):
-        result = {
-            'id': self.id,
-            'name': self.fqdn,
-            'issue': self.issue.copy()
-        }
+        result = {'id': self.id, 'name': self.fqdn, 'issue': self.issue.copy()}
         provider_issue = self.provider.serialized_issue
         if provider_issue:
             result['issue']['provider'] = provider_issue
@@ -565,7 +563,7 @@ class ClusterBind(ADCMModel):
         related_name='source_service',
         on_delete=models.CASCADE,
         null=True,
-        default=None
+        default=None,
     )
 
     __error_code__ = 'BIND_NOT_FOUND'
@@ -578,7 +576,7 @@ JOB_STATUS = (
     ('created', 'created'),
     ('running', 'running'),
     ('success', 'success'),
-    ('failed', 'failed')
+    ('failed', 'failed'),
 )
 
 
@@ -631,10 +629,7 @@ class GroupCheckLog(ADCMModel):
     result = models.BooleanField(blank=True, null=True)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=['job', 'title'], name='unique_group_job')
-        ]
+        constraints = [models.UniqueConstraint(fields=['job', 'title'], name='unique_group_job')]
 
 
 class CheckLog(ADCMModel):
@@ -668,11 +663,13 @@ class LogStorage(ADCMModel):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['job'], condition=models.Q(type='check'), name='unique_check_job')
+                fields=['job'], condition=models.Q(type='check'), name='unique_check_job'
+            )
         ]
 
 
 # Stage: Temporary tables to load bundle
+
 
 class StagePrototype(ADCMModel):
     type = models.CharField(max_length=16, choices=PROTO_TYPE)

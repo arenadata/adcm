@@ -108,8 +108,18 @@ from cm.logger import log
 
 class ActionModule(ActionBase):
     TRANSFERS_FILES = False
-    _VALID_ARGS = frozenset(('title', 'result', 'msg', 'fail_msg', 'success_msg',
-                             'group_title', 'group_success_msg', 'group_fail_msg'))
+    _VALID_ARGS = frozenset(
+        (
+            'title',
+            'result',
+            'msg',
+            'fail_msg',
+            'success_msg',
+            'group_title',
+            'group_success_msg',
+            'group_fail_msg',
+        )
+    )
 
     def run(self, tmp=None, task_vars=None):
         super().run(tmp, task_vars)
@@ -127,8 +137,10 @@ class ActionModule(ActionBase):
         if not required_condition:
             return {
                 "failed": True,
-                "msg": ("title, result and msg, fail_msg or success"
-                        "_msg are mandatory args of adcm_check")
+                "msg": (
+                    "title, result and msg, fail_msg or success"
+                    "_msg are mandatory args of adcm_check"
+                ),
             }
 
         title = self._task.args['title']
@@ -146,11 +158,7 @@ class ActionModule(ActionBase):
         else:
             msg = fail_msg if fail_msg else msg
 
-        group = {
-            'title': group_title,
-            'success_msg': group_success_msg,
-            'fail_msg': group_fail_msg
-        }
+        group = {'title': group_title, 'success_msg': group_success_msg, 'fail_msg': group_fail_msg}
 
         check = {
             'title': title,
@@ -158,9 +166,11 @@ class ActionModule(ActionBase):
             'message': msg,
         }
 
-        log.debug('ansible adcm_check: %s, %s',
-                  ', '.join([f'{k}: {v}' for k, v in group.items() if v]),
-                  ', '.join([f'{k}: {v}' for k, v in check.items() if v]))
+        log.debug(
+            'ansible adcm_check: %s, %s',
+            ', '.join([f'{k}: {v}' for k, v in group.items() if v]),
+            ', '.join([f'{k}: {v}' for k, v in check.items() if v]),
+        )
 
         try:
             cm.job.log_check(job_id, group, check)

@@ -22,10 +22,7 @@ def _gen_name(prefix: str, name='name'):
 
 def gen_bundle(name=''):
     """Generate some bundle"""
-    return models.Bundle.objects.create(
-        **_gen_name(name),
-        version='1.0.0'
-    )
+    return models.Bundle.objects.create(**_gen_name(name), version='1.0.0')
 
 
 def gen_prototype(bundle: models.Bundle, proto_type):

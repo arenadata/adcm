@@ -26,46 +26,109 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='ClusterBind',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('cluster', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Cluster')),
-                ('service', models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.Prototype')),
-                ('source', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='source', to='cm.Cluster')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
+                (
+                    'cluster',
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Cluster'),
+                ),
+                (
+                    'service',
+                    models.ForeignKey(
+                        default=None,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to='cm.Prototype',
+                    ),
+                ),
+                (
+                    'source',
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name='source',
+                        to='cm.Cluster',
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
             name='PrototypeExport',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('name', models.CharField(max_length=160)),
-                ('prototype', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Prototype')),
+                (
+                    'prototype',
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to='cm.Prototype'
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
             name='PrototypeImport',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('name', models.CharField(max_length=160)),
                 ('min_version', models.CharField(max_length=80)),
                 ('max_version', models.CharField(max_length=80)),
-                ('prototype', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Prototype')),
+                (
+                    'prototype',
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to='cm.Prototype'
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
             name='StagePrototypeExport',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('name', models.CharField(max_length=160)),
-                ('prototype', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.StagePrototype')),
+                (
+                    'prototype',
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to='cm.StagePrototype'
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
             name='StagePrototypeImport',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('name', models.CharField(max_length=160)),
                 ('min_version', models.CharField(max_length=80)),
                 ('max_version', models.CharField(max_length=80)),
-                ('prototype', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.StagePrototype')),
+                (
+                    'prototype',
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to='cm.StagePrototype'
+                    ),
+                ),
             ],
         ),
         migrations.AlterUniqueTogether(

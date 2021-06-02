@@ -133,7 +133,7 @@ def check_cluster_issue(cluster):
 def check_service_issue(service):
     return {
         'config': check_config(service),
-        'required_import': check_required_import(service.cluster, service)
+        'required_import': check_required_import(service.cluster, service),
     }
 
 
@@ -141,10 +141,10 @@ def check_config_issue(obj):
     return {'config': check_config(obj)}
 
 
-def check_config(obj):   # pylint: disable=too-many-branches
+def check_config(obj):  # pylint: disable=too-many-branches
     spec, _, _, _ = get_prototype_config(obj.prototype)
     conf, attr = get_obj_config(obj)
-    for key in spec:   # pylint: disable=too-many-nested-blocks
+    for key in spec:  # pylint: disable=too-many-nested-blocks
         if 'required' in spec[key]:
             if spec[key]['required']:
                 if key in conf and conf[key] is None:

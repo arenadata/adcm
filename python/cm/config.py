@@ -53,7 +53,7 @@ if os.path.exists(SECRETS_FILE):
         ANSIBLE_SECRET = data['adcmuser']['password']
 
 
-class Job():
+class Job:
     CREATED = 'created'
     SUCCESS = 'success'
     FAILED = 'failed'

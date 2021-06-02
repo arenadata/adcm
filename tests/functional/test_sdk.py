@@ -58,8 +58,9 @@ def test_bundle_test_list(sdk_client_fs: ADCMClient):
         assert len(type1) == 2
         assert type1[0].name == "cluster_type_1"
         assert type1[1].name == "cluster_type_1"
-        assert ((type1[0].version == "1.4" and type1[1].version == "1.5"
-                 ) or (type1[0].version == "1.5" and type1[1].version == "1.4"))
+        assert (type1[0].version == "1.4" and type1[1].version == "1.5") or (
+            type1[0].version == "1.5" and type1[1].version == "1.4"
+        )
 
 
 def _assert_attrs(obj) -> object:
@@ -155,8 +156,7 @@ def test_cluster_config(sdk_client_fs: ADCMClient):
 
 def test_cluster_full_config(sdk_client_fs: ADCMClient):
     with allure.step('Create cluster with activatable, get and check conf1'):
-        bundle = sdk_client_fs.upload_from_fs(
-            get_data_dir(__file__) + "/cluster_with_activatable")
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__) + "/cluster_with_activatable")
         cluster = bundle.cluster_create(name="sample cluster")
         conf1 = cluster.config(full=True)
         assert conf1['config']['xxx']['yyy'] == 'hahaha'
@@ -171,8 +171,7 @@ def test_cluster_full_config(sdk_client_fs: ADCMClient):
 
 def test_cluster_config_attrs(sdk_client_fs: ADCMClient):
     with allure.step('Create cluster with activatable, get and check conf3'):
-        bundle = sdk_client_fs.upload_from_fs(
-            get_data_dir(__file__) + "/cluster_with_activatable")
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__) + "/cluster_with_activatable")
         cluster = bundle.cluster_create(name="sample cluster")
         conf3 = cluster.config(full=True)
         conf3['attr']['xxx']['active'] = False
@@ -262,8 +261,9 @@ def test_cluster_upgrade(sdk_client_fs: ADCMClient):
     with allure.step('Create cluster with upgrade'):
         for i in range(1, 4):
             sdk_client_fs.upload_from_fs(get_data_dir(__file__) + "/cluster_upgrade" + str(i))
-            cluster = sdk_client_fs.bundle(name='cluster',
-                                           version="1.4").cluster_create(name="azaza")
+            cluster = sdk_client_fs.bundle(name='cluster', version="1.4").cluster_create(
+                name="azaza"
+            )
     with allure.step('Check upgrade list len=2'):
         assert len(cluster.upgrade_list()) == 2
     with allure.step('Upgrade cluster'):

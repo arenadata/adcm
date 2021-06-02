@@ -15,19 +15,13 @@ That is Areandata Cluster Manager Project (aka Chapelnik)
 
 ## Dirs
 
-* adcm - django projects root dir
-* api - python module with django REST
-* cm - core django modules and python functions
+* assemble - information about the way we build product
+* python - core django modules and python functions
 * docs 
 * go - golang part of application. There is a status server here now.
 * test 
+* spec - specification in form of Sphinx RST 
 * web - UI source
-* wwwroot - static root for frontend files
-
-## Files
-
-* inventory.py - dinamic inventory for ansible
-* job_runner.py - run plabook script
 
 # Build logic
 
@@ -65,3 +59,16 @@ help                           Shows that help
 ```
 
 And check out the description for every operation available.
+
+## Pre-commit hook
+
+We are using black, pylint and pre-commit to care about code formating and linting.
+
+So you have to install pre-commit hook before you do something with code.
+
+``` sh
+pip install pre-commit # Or do it with your preffered way to install pip packages
+pre-commit install
+```
+
+After this you will see invocation of black and pylint on every commit.

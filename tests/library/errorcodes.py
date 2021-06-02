@@ -12,7 +12,7 @@
 from delayed_assert import expect, assert_expectations
 
 
-class ADCMError():
+class ADCMError:
     def __init__(self, title, code):
         self.title = title
         self.code = code
@@ -22,20 +22,14 @@ class ADCMError():
         code = e.value.error.get("code", "")
         desc = e.value.error.get("desc", "")
         error_args = e.value.error.get("args", "")
-        expect(
-            title == self.title,
-            f'Expected title is "{self.title}", actual is "{title}"'
-        )
-        expect(
-            code == self.code,
-            f'Expected error code is "{self.code}", actual is "{code}"'
-        )
+        expect(title == self.title, f'Expected title is "{self.title}", actual is "{title}"')
+        expect(code == self.code, f'Expected error code is "{self.code}", actual is "{code}"')
         for i in args:
             expect(
                 i in desc or i in error_args,
                 f'Expected part of desc or args is "{i}", '
                 f'actual desc is: \n"{desc}", '
-                f'\nargs is: \n"{error_args or None}"'
+                f'\nargs is: \n"{error_args or None}"',
             )
         assert_expectations()
 

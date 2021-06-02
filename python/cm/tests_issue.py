@@ -18,7 +18,6 @@ from cm.models import Bundle, Prototype, PrototypeImport, ClusterBind
 
 
 class TestImport(TestCase):
-
     def cook_cluster(self, proto_name, cluster_name):
         b = Bundle.objects.create(name=proto_name, version='1.0')
         proto = Prototype.objects.create(type="cluster", name=proto_name, bundle=b)

@@ -11,14 +11,12 @@
 # limitations under the License.
 import coreapi
 import pytest
+
 # pylint: disable=W0611, W0621
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
 
-from tests.library.errorcodes import (
-    INVALID_VERSION_DEFINITION,
-    UPGRADE_ERROR, UPGRADE_NOT_FOUND
-)
+from tests.library.errorcodes import INVALID_VERSION_DEFINITION, UPGRADE_ERROR, UPGRADE_NOT_FOUND
 import allure
 
 
@@ -36,8 +34,9 @@ def host_bundles():
     return bundle, upgrade_bundle
 
 
-def test_a_cluster_bundle_upgrade_will_ends_successfully(sdk_client_fs: ADCMClient,
-                                                         cluster_bundles):
+def test_a_cluster_bundle_upgrade_will_ends_successfully(
+    sdk_client_fs: ADCMClient, cluster_bundles
+):
     bundle, upgrade_bundle = cluster_bundles
     cluster_bundle = sdk_client_fs.upload_from_fs(bundle)
     cluster = cluster_bundle.cluster_create("test")
@@ -87,8 +86,9 @@ def test_that_check_nonexistent_hostprovider_upgrade(sdk_client_fs: ADCMClient, 
         UPGRADE_NOT_FOUND.equal(e, 'Upgrade', 'does not exist')
 
 
-def test_a_hostprovider_bundle_upgrade_will_ends_successfully(sdk_client_fs: ADCMClient,
-                                                              host_bundles):
+def test_a_hostprovider_bundle_upgrade_will_ends_successfully(
+    sdk_client_fs: ADCMClient, host_bundles
+):
     bundle, upgrade_bundle = host_bundles
     hostprovider_bundle = sdk_client_fs.upload_from_fs(bundle)
     hostprovider = hostprovider_bundle.provider_create("test")
@@ -117,13 +117,13 @@ def test_shouldnt_upgrade_upgrated_hostprovider(sdk_client_fs: ADCMClient, host_
 
 
 def test_upgrade_cluster_without_old_config(sdk_client_fs: ADCMClient):
-    bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__,
-                                                             'cluster_without_old_config',
-                                                             'old'))
+    bundle = sdk_client_fs.upload_from_fs(
+        utils.get_data_dir(__file__, 'cluster_without_old_config', 'old')
+    )
     cluster = bundle.cluster_create(utils.random_string())
-    sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__,
-                                                    'cluster_without_old_config',
-                                                    'upgrade'))
+    sdk_client_fs.upload_from_fs(
+        utils.get_data_dir(__file__, 'cluster_without_old_config', 'upgrade')
+    )
     upgrade = cluster.upgrade()
     upgrade.do()
     cluster.reread()
@@ -131,14 +131,16 @@ def test_upgrade_cluster_without_old_config(sdk_client_fs: ADCMClient):
         assert cluster.prototype().version == '2-config'
 
 
-@pytest.mark.parametrize(('boundary', 'expected'), [
-    ("min_cluster", "can not be used simultaneously"),
-    ("max_cluster", "should be present"),
-    ("min_hostprovider", "can not be used simultaneously"),
-    ("max_hostprovider", "can not be used simultaneously")
-])
-def test_upgrade_contains_strict_and_nonstrict_value(sdk_client_fs: ADCMClient, boundary,
-                                                     expected):
+@pytest.mark.parametrize(
+    ('boundary', 'expected'),
+    [
+        ("min_cluster", "can not be used simultaneously"),
+        ("max_cluster", "should be present"),
+        ("min_hostprovider", "can not be used simultaneously"),
+        ("max_hostprovider", "can not be used simultaneously"),
+    ],
+)
+def test_upgrade_contains_strict_and_nonstrict_value(sdk_client_fs: ADCMClient, boundary, expected):
     bundledir = utils.get_data_dir(__file__, 'strict_and_non_strict_upgrade', boundary)
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(bundledir)

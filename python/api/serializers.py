@@ -1,4 +1,3 @@
-
 import django.contrib.auth
 import rest_framework.authtoken.serializers
 from rest_framework import serializers
@@ -17,8 +16,7 @@ from api.api_views import UrlField
 class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):
     def validate(self, attrs):
         user = django.contrib.auth.authenticate(
-            username=attrs.get('username'),
-            password=attrs.get('password')
+            username=attrs.get('username'), password=attrs.get('password')
         )
         if not user:
             raise AdcmEx('AUTH_ERROR', 'Wrong user or password')

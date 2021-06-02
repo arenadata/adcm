@@ -15,13 +15,30 @@ from typing import List
 import allure
 import pytest
 from adcm_client.base import ResponseTooLong
-from adcm_client.objects import (Action, ADCMClient, Bundle,  # ActionList,
-                                 BundleList, Cluster, ClusterList,
-                                 ClusterPrototype, ClusterPrototypeList, Host,
-                                 HostList, HostPrototype, HostPrototypeList,
-                                 Job, JobList, Prototype, PrototypeList,
-                                 Provider, ProviderList, ProviderPrototype,
-                                 ProviderPrototypeList, Task, TaskList)
+from adcm_client.objects import (
+    Action,
+    ADCMClient,
+    Bundle,  # ActionList,
+    BundleList,
+    Cluster,
+    ClusterList,
+    ClusterPrototype,
+    ClusterPrototypeList,
+    Host,
+    HostList,
+    HostPrototype,
+    HostPrototypeList,
+    Job,
+    JobList,
+    Prototype,
+    PrototypeList,
+    Provider,
+    ProviderList,
+    ProviderPrototype,
+    ProviderPrototypeList,
+    Task,
+    TaskList,
+)
 from adcm_pytest_plugin.utils import get_data_dir, get_subdirs_iter
 from delayed_assert import assert_expectations, expect
 from pytest_lazyfixture import lazy_fixture
@@ -137,47 +154,17 @@ def one_host_provider_id_attr(one_host: Host):
 @pytest.mark.parametrize(
     'TestedClass',
     [
-        pytest.param(
-            Bundle,
-            id="Bundle"
-        ),
-        pytest.param(
-            Prototype,
-            id="Prototype"
-        ),
-        pytest.param(
-            ClusterPrototype,
-            id="ClusterPrototype"
-        ),
-        pytest.param(
-            ProviderPrototype,
-            id="ProviderPrototype"
-        ),
-        pytest.param(
-            HostPrototype,
-            id="HostPrototype"
-        ),
-        pytest.param(
-            Cluster,
-            id="Cluster"
-        ),
-        pytest.param(
-            Provider,
-            id="Provider"
-        ),
-        pytest.param(
-            Host,
-            id="Host"
-        ),
-        pytest.param(
-            Task,
-            id="Task"
-        ),
-        pytest.param(
-            Job,
-            id="Job"
-        ),
-    ]
+        pytest.param(Bundle, id="Bundle"),
+        pytest.param(Prototype, id="Prototype"),
+        pytest.param(ClusterPrototype, id="ClusterPrototype"),
+        pytest.param(ProviderPrototype, id="ProviderPrototype"),
+        pytest.param(HostPrototype, id="HostPrototype"),
+        pytest.param(Cluster, id="Cluster"),
+        pytest.param(Provider, id="Provider"),
+        pytest.param(Host, id="Host"),
+        pytest.param(Task, id="Task"),
+        pytest.param(Job, id="Job"),
+    ],
 )
 def test_coreapi_schema(sdk_client_fs: ADCMClient, TestedClass):
     def get_params(link):
@@ -198,7 +185,7 @@ def test_coreapi_schema(sdk_client_fs: ADCMClient, TestedClass):
                 f in params,
                 "Filter {} should be acceptable for coreapi in class {}".format(
                     f, TestedClass.__name__
-                )
+                ),
             )
         assert_expectations()
 
@@ -206,42 +193,17 @@ def test_coreapi_schema(sdk_client_fs: ADCMClient, TestedClass):
 @pytest.mark.parametrize(
     ('sdk_client', 'TestedClass'),
     [
+        pytest.param(lazy_fixture('cluster_bundles'), ClusterPrototypeList, id="Cluster Prototype"),
+        pytest.param(lazy_fixture('cluster_bundles'), PrototypeList, id="Prototype"),
         pytest.param(
-            lazy_fixture('cluster_bundles'),
-            ClusterPrototypeList,
-            id="Cluster Prototype"),
-        pytest.param(
-            lazy_fixture('cluster_bundles'),
-            PrototypeList,
-            id="Prototype"),
-        pytest.param(
-            lazy_fixture('provider_bundles'),
-            ProviderPrototypeList,
-            id="Provider Prototype"),
-        pytest.param(
-            lazy_fixture('provider_bundles'),
-            HostPrototypeList,
-            id="Host Prototype"),
-        pytest.param(
-            lazy_fixture('provider_bundles'),
-            BundleList,
-            id="Bundle"),
-        pytest.param(
-            lazy_fixture('clusters'),
-            ClusterList,
-            id="Cluster"),
-        pytest.param(
-            lazy_fixture('hosts'),
-            HostList,
-            id="Host"),
-        pytest.param(
-            lazy_fixture('hosts_with_jobs'),
-            TaskList,
-            id="Task"),
-        pytest.param(
-            lazy_fixture('hosts_with_jobs'),
-            JobList,
-            id="Job"),
+            lazy_fixture('provider_bundles'), ProviderPrototypeList, id="Provider Prototype"
+        ),
+        pytest.param(lazy_fixture('provider_bundles'), HostPrototypeList, id="Host Prototype"),
+        pytest.param(lazy_fixture('provider_bundles'), BundleList, id="Bundle"),
+        pytest.param(lazy_fixture('clusters'), ClusterList, id="Cluster"),
+        pytest.param(lazy_fixture('hosts'), HostList, id="Host"),
+        pytest.param(lazy_fixture('hosts_with_jobs'), TaskList, id="Task"),
+        pytest.param(lazy_fixture('hosts_with_jobs'), JobList, id="Job"),
     ],
 )
 def test_paging_fail(sdk_client, TestedClass):
@@ -250,8 +212,10 @@ def test_paging_fail(sdk_client, TestedClass):
     * Call listing api over objects.*List classes
     * Expecting to have ResponseTooLong error
     """
-    with allure.step(f'Prepare a lot of objects: {TestedClass.__name__} '
-                     f'in ADCM and check ResponseTooLong error'):
+    with allure.step(
+        f'Prepare a lot of objects: {TestedClass.__name__} '
+        f'in ADCM and check ResponseTooLong error'
+    ):
         with pytest.raises(ResponseTooLong):
             TestedClass(sdk_client._api)
 
@@ -265,148 +229,169 @@ def test_paging_fail(sdk_client, TestedClass):
             ClusterPrototypeList,
             lazy_fixture('one_cluster_prototype_name_attr'),
             lazy_fixture('one_cluster_prototype_name_attr'),
-            id="Cluster Prototype Name Filter"),
+            id="Cluster Prototype Name Filter",
+        ),
         pytest.param(
             lazy_fixture('cluster_bundles'),
             ClusterPrototype,
             ClusterPrototypeList,
             lazy_fixture('one_cluster_prototype_bundle_id_attr'),
             lazy_fixture('one_cluster_prototype_bundle_id_attr'),
-            id="Cluster Prototype Bundle ID Filter"),
+            id="Cluster Prototype Bundle ID Filter",
+        ),
         pytest.param(
             lazy_fixture('cluster_bundles'),
             Prototype,
             PrototypeList,
             lazy_fixture('one_cluster_prototype_name_attr'),
             lazy_fixture('one_cluster_prototype_name_attr'),
-            id="Prototype Name Filter"),
+            id="Prototype Name Filter",
+        ),
         pytest.param(
             lazy_fixture('cluster_bundles'),
             Prototype,
             PrototypeList,
             lazy_fixture('one_cluster_prototype_bundle_id_attr'),
             lazy_fixture('one_cluster_prototype_bundle_id_attr'),
-            id="Prototype Bundle ID Filter"),
+            id="Prototype Bundle ID Filter",
+        ),
         pytest.param(
             lazy_fixture('provider_bundles'),
             ProviderPrototype,
             ProviderPrototypeList,
             {'name': 'provider24'},
             {'name': 'provider24'},
-            id="Provider Prototype Name Filter"),
+            id="Provider Prototype Name Filter",
+        ),
         pytest.param(
             lazy_fixture('provider_bundles'),
             ProviderPrototype,
             ProviderPrototypeList,
             lazy_fixture('provider_bundle_id'),
             lazy_fixture('provider_bundle_id'),
-            id="Provider Prototype Bundle ID Filter"),
+            id="Provider Prototype Bundle ID Filter",
+        ),
         pytest.param(
             lazy_fixture('provider_bundles'),
             HostPrototype,
             HostPrototypeList,
             {'name': 'host13'},
             {'name': 'host13'},
-            id="Host Prototype Name Filter"),
+            id="Host Prototype Name Filter",
+        ),
         pytest.param(
             lazy_fixture('provider_bundles'),
             HostPrototype,
             HostPrototypeList,
             lazy_fixture('provider_bundle_id'),
             lazy_fixture('provider_bundle_id'),
-            id="Host Prototype Bundle ID Filter"),
+            id="Host Prototype Bundle ID Filter",
+        ),
         pytest.param(
             lazy_fixture('cluster_bundles'),
             Bundle,
             BundleList,
             {'name': '4'},
             {'version': 'ver4'},
-            id="Bundle Name Filter"),
+            id="Bundle Name Filter",
+        ),
         pytest.param(
             lazy_fixture('cluster_bundles'),
             Bundle,
             BundleList,
             {'version': 'ver8'},
             {'name': '8'},
-            id="Bundle Version Filter"),
+            id="Bundle Version Filter",
+        ),
         pytest.param(
             lazy_fixture('clusters'),
             Cluster,
             ClusterList,
             lazy_fixture('one_cluster_name_attr'),
             lazy_fixture('one_cluster_prototype_id_attr'),
-            id="Cluster Name Filter"),
+            id="Cluster Name Filter",
+        ),
         pytest.param(
             lazy_fixture('clusters'),
             Cluster,
             ClusterList,
             lazy_fixture('one_cluster_prototype_id_attr'),
             lazy_fixture('one_cluster_name_attr'),
-            id="Cluster Prototype Id Filter"),
+            id="Cluster Prototype Id Filter",
+        ),
         pytest.param(
             lazy_fixture('providers'),
             Provider,
             ProviderList,
             lazy_fixture('one_provider_name_attr'),
             lazy_fixture('one_provider_prototype_id_attr'),
-            id="Provider Name Filter"),
+            id="Provider Name Filter",
+        ),
         pytest.param(
             lazy_fixture('providers'),
             Provider,
             ProviderList,
             lazy_fixture('one_provider_prototype_id_attr'),
             lazy_fixture('one_provider_name_attr'),
-            id="Provider Prototype Id Filter"),
+            id="Provider Prototype Id Filter",
+        ),
         pytest.param(
             lazy_fixture('hosts'),
             Host,
             HostList,
             lazy_fixture('one_host_fqdn_attr'),
             lazy_fixture('one_host_prototype_id_attr'),
-            id="Host Fqdn Filter"),
+            id="Host Fqdn Filter",
+        ),
         pytest.param(
             lazy_fixture('hosts'),
             Host,
             HostList,
             lazy_fixture('one_host_prototype_id_attr'),
             lazy_fixture('one_host_fqdn_attr'),
-            id="Host Prototype Id Filter"),
+            id="Host Prototype Id Filter",
+        ),
         pytest.param(
             lazy_fixture('hosts_with_jobs'),
             Task,
             TaskList,
             lazy_fixture('task_action_id_attr'),
             lazy_fixture('task_action_id_attr'),
-            id="Task Action Id Filter"),
+            id="Task Action Id Filter",
+        ),
         pytest.param(
             lazy_fixture('hosts_with_jobs'),
             Task,
             TaskList,
             lazy_fixture('task_status_attr'),
             lazy_fixture('task_status_attr'),
-            id="Task Status Filter"),
+            id="Task Status Filter",
+        ),
         pytest.param(
             lazy_fixture('hosts_with_jobs'),
             Job,
             JobList,
             lazy_fixture('task_status_attr'),
             lazy_fixture('task_status_attr'),
-            id="Job Action Id Filter"),
+            id="Job Action Id Filter",
+        ),
         pytest.param(
             lazy_fixture('hosts_with_jobs'),
             Job,
             JobList,
             lazy_fixture('task_status_attr'),
             lazy_fixture('task_status_attr'),
-            id="Job Status Filter"),
+            id="Job Status Filter",
+        ),
         pytest.param(
             lazy_fixture('hosts_with_jobs'),
             Job,
             JobList,
             lazy_fixture('job_task_id_attr'),
             lazy_fixture('job_task_id_attr'),
-            id="Job Task Id Filter"),
-    ]
+            id="Job Task Id Filter",
+        ),
+    ],
 )
 def test_filter(sdk_client: ADCMClient, TestedClass, TestedListClass, search_args, expected_args):
     """Scenario:
@@ -423,8 +408,10 @@ def test_filter(sdk_client: ADCMClient, TestedClass, TestedListClass, search_arg
     with allure.step('Inspect first (and only) element of list'):
         for k, v in expected_args.items():
             assert getattr(lo[0], k) == v
-    with allure.step('Create single object over class call (like Cluster or Bundle) '
-                     'with tested filter as search args'):
+    with allure.step(
+        'Create single object over class call (like Cluster or Bundle) '
+        'with tested filter as search args'
+    ):
         o = TestedClass(sdk_client._api, **search_args)
     with allure.step('Check created object'):
         for k, v in expected_args.items():
@@ -527,6 +514,7 @@ def job_task_id_attr(host_ok_action: Action):
 #         from pprint import pprint
 #         pprint(TestedParentClass.action_list())
 
+
 @pytest.mark.parametrize(
     ('TestedParentClass', 'search_args', 'expected_args'),
     [
@@ -534,23 +522,24 @@ def job_task_id_attr(host_ok_action: Action):
             lazy_fixture('cluster_with_actions'),
             {'name': 'ok14'},
             {'name': 'ok14'},
-            id="on Cluster"),
+            id="on Cluster",
+        ),
         pytest.param(
             lazy_fixture('service_with_actions'),
             {'name': 'fail15'},
             {'name': 'fail15'},
-            id="on Service"),
+            id="on Service",
+        ),
         pytest.param(
             lazy_fixture('provider_with_actions'),
             {'name': 'ok14'},
             {'name': 'ok14'},
-            id="on Provider"),
+            id="on Provider",
+        ),
         pytest.param(
-            lazy_fixture('host_with_actions'),
-            {'name': 'fail15'},
-            {'name': 'fail15'},
-            id="on Host"),
-    ]
+            lazy_fixture('host_with_actions'), {'name': 'fail15'}, {'name': 'fail15'}, id="on Host"
+        ),
+    ],
 )
 def test_actions_name_filter(TestedParentClass, search_args, expected_args):
     """Scenario:

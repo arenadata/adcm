@@ -35,9 +35,9 @@ def adcm_client(adcm_repo, adcm_credentials, adcm_tag, volumes, init=False):
     """
     if init:
         with allure.step(f"Create isolated image copy from {adcm_repo}:{adcm_tag}"):
-            new_image = get_initialized_adcm_image(adcm_repo=adcm_repo,
-                                                   adcm_tag=adcm_tag,
-                                                   pull=True)
+            new_image = get_initialized_adcm_image(
+                adcm_repo=adcm_repo, adcm_tag=adcm_tag, pull=True
+            )
             repo, tag = new_image["repo"], new_image["tag"]
     else:
         repo, tag = adcm_repo, adcm_tag
@@ -74,26 +74,28 @@ def volume(request):
 def test_upgrade_adcm(old_adcm, volume, image, adcm_credentials):
     with allure.step(f'Get old adcm repo {old_adcm}'):
         old_repo, old_tag = old_adcm
-    with adcm_client(adcm_repo=old_repo,
-                     adcm_credentials=adcm_credentials,
-                     adcm_tag=old_tag,
-                     volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}},
-                     init=True) as old_adcm_client:
+    with adcm_client(
+        adcm_repo=old_repo,
+        adcm_credentials=adcm_credentials,
+        adcm_tag=old_tag,
+        volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}},
+        init=True,
+    ) as old_adcm_client:
         bundle = old_adcm_client.upload_from_fs(get_data_dir(__file__, 'cluster_bundle'))
         cluster_name = f"test_{random_string()}"
-        bundle.cluster_prototype().cluster_create(
-            name=cluster_name
-        )
+        bundle.cluster_prototype().cluster_create(name=cluster_name)
     with allure.step(f'Get latest adcm repo {image}'):
         latest_repo, latest_tag = image
-    with adcm_client(adcm_repo=latest_repo,
-                     adcm_credentials=adcm_credentials,
-                     adcm_tag=latest_tag,
-                     volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}}
-                     ) as latest_adcm_client:
+    with adcm_client(
+        adcm_repo=latest_repo,
+        adcm_credentials=adcm_credentials,
+        adcm_tag=latest_tag,
+        volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}},
+    ) as latest_adcm_client:
         with allure.step('Check that cluster is present'):
-            assert len(latest_adcm_client.cluster_list()) == 1, \
-                "There is no clusters. Expecting one"
+            assert (
+                len(latest_adcm_client.cluster_list()) == 1
+            ), "There is no clusters. Expecting one"
             cluster = latest_adcm_client.cluster_list()[0]
             assert cluster.name == cluster_name, "Unexpected cluster name"
 
@@ -102,22 +104,21 @@ def test_upgrade_adcm(old_adcm, volume, image, adcm_credentials):
 def test_pass_in_cluster_config_encryption_after_upgrade(old_adcm, volume, image, adcm_credentials):
     with allure.step(f'Get old adcm repo {old_adcm}'):
         old_repo, old_tag = old_adcm
-    with adcm_client(adcm_repo=old_repo,
-                     adcm_credentials=adcm_credentials,
-                     adcm_tag=old_tag,
-                     volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}},
-                     init=True) as old_adcm_client:
+    with adcm_client(
+        adcm_repo=old_repo,
+        adcm_credentials=adcm_credentials,
+        adcm_tag=old_tag,
+        volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}},
+        init=True,
+    ) as old_adcm_client:
         hostprovider_bundle = old_adcm_client.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
-        hostprovider = hostprovider_bundle.provider_create(
-            name=f"test_{random_string()}"
-        )
+        hostprovider = hostprovider_bundle.provider_create(name=f"test_{random_string()}")
         host = hostprovider.host_create(fqdn=f"test_host_{random_string()}")
 
         cluster_bundle = old_adcm_client.upload_from_fs(
-            get_data_dir(__file__, 'cluster_with_cluster_pass_verify'))
-        cluster = cluster_bundle.cluster_prototype().cluster_create(
-            name=f"test_{random_string()}"
+            get_data_dir(__file__, 'cluster_with_cluster_pass_verify')
         )
+        cluster = cluster_bundle.cluster_prototype().cluster_create(name=f"test_{random_string()}")
 
         cluster.host_add(host)
 
@@ -126,14 +127,16 @@ def test_pass_in_cluster_config_encryption_after_upgrade(old_adcm, volume, image
         cluster.config_set(cluster_config)
     with allure.step(f'Get latest adcm repo {image}'):
         latest_repo, latest_tag = image
-    with adcm_client(adcm_repo=latest_repo,
-                     adcm_credentials=adcm_credentials,
-                     adcm_tag=latest_tag,
-                     volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}}
-                     ) as latest_adcm_client:
+    with adcm_client(
+        adcm_repo=latest_repo,
+        adcm_credentials=adcm_credentials,
+        adcm_tag=latest_tag,
+        volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}},
+    ) as latest_adcm_client:
         with allure.step('Check that cluster is present'):
-            assert len(latest_adcm_client.cluster_list()) == 1, \
-                "There is no clusters. Expecting one"
+            assert (
+                len(latest_adcm_client.cluster_list()) == 1
+            ), "There is no clusters. Expecting one"
             cluster = latest_adcm_client.cluster_list()[0]
             assert cluster.action(name="check-password").run().wait() == "success"
 
@@ -142,22 +145,21 @@ def test_pass_in_cluster_config_encryption_after_upgrade(old_adcm, volume, image
 def test_pass_in_service_config_encryption_after_upgrade(old_adcm, volume, image, adcm_credentials):
     with allure.step(f'Get old adcm repo {old_adcm}'):
         old_repo, old_tag = old_adcm
-    with adcm_client(adcm_repo=old_repo,
-                     adcm_credentials=adcm_credentials,
-                     adcm_tag=old_tag,
-                     volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}},
-                     init=True) as old_adcm_client:
+    with adcm_client(
+        adcm_repo=old_repo,
+        adcm_credentials=adcm_credentials,
+        adcm_tag=old_tag,
+        volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}},
+        init=True,
+    ) as old_adcm_client:
         hostprovider_bundle = old_adcm_client.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
-        hostprovider = hostprovider_bundle.provider_create(
-            name=f"test_{random_string()}"
-        )
+        hostprovider = hostprovider_bundle.provider_create(name=f"test_{random_string()}")
         host = hostprovider.host_create(fqdn=f"test_host_{random_string()}")
 
         cluster_bundle = old_adcm_client.upload_from_fs(
-            get_data_dir(__file__, 'cluster_with_service_pass_verify'))
-        cluster = cluster_bundle.cluster_prototype().cluster_create(
-            name=f"test_{random_string()}"
+            get_data_dir(__file__, 'cluster_with_service_pass_verify')
         )
+        cluster = cluster_bundle.cluster_prototype().cluster_create(name=f"test_{random_string()}")
 
         cluster.host_add(host)
 
@@ -167,14 +169,16 @@ def test_pass_in_service_config_encryption_after_upgrade(old_adcm, volume, image
         service.config_set(service_config)
     with allure.step(f'Get latest adcm repo {image}'):
         latest_repo, latest_tag = image
-    with adcm_client(adcm_repo=latest_repo,
-                     adcm_credentials=adcm_credentials,
-                     adcm_tag=latest_tag,
-                     volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}}
-                     ) as latest_adcm_client:
+    with adcm_client(
+        adcm_repo=latest_repo,
+        adcm_credentials=adcm_credentials,
+        adcm_tag=latest_tag,
+        volumes={volume.name: {'bind': '/adcm/data', 'mode': 'rw'}},
+    ) as latest_adcm_client:
         with allure.step('Check cluster'):
-            assert len(latest_adcm_client.cluster_list()) == 1, \
-                "There is no clusters. Expecting one"
+            assert (
+                len(latest_adcm_client.cluster_list()) == 1
+            ), "There is no clusters. Expecting one"
             cluster = latest_adcm_client.cluster_list()[0]
             assert len(cluster.service_list()) == 1, "There is no services. Expecting one"
             service = cluster.service_list()[0]
