@@ -188,7 +188,7 @@ class ConfigLog(ADCMModel):
     __error_code__ = 'CONFIG_NOT_FOUND'
 
 
-class ADCMEntity(models.Model):
+class ADCMEntity(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
@@ -199,7 +199,7 @@ class ADCMEntity(models.Model):
         abstract = True
 
 
-class ADCM(ADCMModel, ADCMEntity):
+class ADCM(ADCMEntity):
     name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
 
     @property
@@ -216,7 +216,7 @@ class ADCM(ADCMModel, ADCMEntity):
         return result if result['issue'] else {}
 
 
-class Cluster(ADCMModel, ADCMEntity):
+class Cluster(ADCMEntity):
     name = models.CharField(max_length=80, unique=True)
     description = models.TextField(blank=True)
 
@@ -247,7 +247,7 @@ class Cluster(ADCMModel, ADCMEntity):
         return result if result['issue'] else {}
 
 
-class HostProvider(ADCMModel, ADCMEntity):
+class HostProvider(ADCMEntity):
     name = models.CharField(max_length=80, unique=True)
     description = models.TextField(blank=True)
 
@@ -278,7 +278,7 @@ class HostProvider(ADCMModel, ADCMEntity):
         return result if result['issue'] else {}
 
 
-class Host(ADCMModel, ADCMEntity):
+class Host(ADCMEntity):
     fqdn = models.CharField(max_length=160, unique=True)
     description = models.TextField(blank=True)
     provider = models.ForeignKey(HostProvider, on_delete=models.CASCADE, null=True, default=None)
@@ -310,7 +310,7 @@ class Host(ADCMModel, ADCMEntity):
         return result if result['issue'] else {}
 
 
-class ClusterObject(ADCMModel, ADCMEntity):
+class ClusterObject(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
 
@@ -353,7 +353,7 @@ class ClusterObject(ADCMModel, ADCMEntity):
         unique_together = (('cluster', 'prototype'),)
 
 
-class ServiceComponent(ADCMModel, ADCMEntity):
+class ServiceComponent(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE, null=True, default=None)
@@ -399,16 +399,6 @@ class ServiceComponent(ADCMModel, ADCMEntity):
 
     class Meta:
         unique_together = (('cluster', 'service', 'prototype'),)
-
-
-class ConfigGroup(ADCMModel):
-    object_id = models.PositiveIntegerField()
-    object_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    object = GenericForeignKey('object_type', 'object_id')
-    name = models.CharField(max_length=30)
-    description = models.TextField(blank=True)
-    hosts = models.ManyToManyField(Host)
-    config = models.JSONField(default=dict)
 
 
 ACTION_TYPE = (
