@@ -149,19 +149,28 @@ class TestVariantHost(TestCase):
 
         args = {'predicate': 'inline_list', 'args': {'list': [1, 2, 3]}}
         self.assertEqual(variant_host(cls, args), [1, 2, 3])
-        args = {'predicate': 'and', 'args': [
-            {'predicate': 'inline_list', 'args': {'list': [1, 2, 3]}},
-            {'predicate': 'inline_list', 'args': {'list': [2, 3, 4]}},
-        ]}
+        args = {
+            'predicate': 'and',
+            'args': [
+                {'predicate': 'inline_list', 'args': {'list': [1, 2, 3]}},
+                {'predicate': 'inline_list', 'args': {'list': [2, 3, 4]}},
+            ],
+        }
         self.assertEqual(variant_host(cls, args), [2, 3])
-        args = {'predicate': 'or', 'args': [
-            {'predicate': 'inline_list', 'args': {'list': [1, 2, 3]}},
-            {'predicate': 'inline_list', 'args': {'list': [2, 3, 4]}},
-        ]}
+        args = {
+            'predicate': 'or',
+            'args': [
+                {'predicate': 'inline_list', 'args': {'list': [1, 2, 3]}},
+                {'predicate': 'inline_list', 'args': {'list': [2, 3, 4]}},
+            ],
+        }
         self.assertEqual(variant_host(cls, args), [1, 2, 3, 4])
-        args = {'predicate': 'or', 'args': [
-            {'predicate': 'inline_list', 'args': {'list': [1, 2, 3]}},
-        ]}
+        args = {
+            'predicate': 'or',
+            'args': [
+                {'predicate': 'inline_list', 'args': {'list': [1, 2, 3]}},
+            ],
+        }
         self.assertEqual(variant_host(cls, args), [1, 2, 3])
 
     def test_no_host_in_cluster(self):
@@ -296,7 +305,8 @@ class TestVariantHost(TestCase):
         self.assertTrue('} does not exist' in e.exception.msg)
         with self.assertRaises(AdcmEx) as e:
             args = {
-                'predicate': 'not_in_component', 'args': {'service': 'UBER', 'component': 'asd'}
+                'predicate': 'not_in_component',
+                'args': {'service': 'UBER', 'component': 'asd'},
             }
             variant_host(cls, args)
         self.assertTrue('ServiceComponent {' in e.exception.msg)
@@ -336,10 +346,13 @@ class TestVariantHost(TestCase):
         self.assertEqual(e.exception.msg, 'no "qwe" in list of host functions')
 
         self.assertEqual(variant_host(cls, {'predicate': 'and', 'args': []}), [])
-        args = {'predicate': 'and', 'args': [
-            {'predicate': 'in_service', 'args': {'service': 'UBER'}},
-            {'predicate': 'in_component', 'args': {'service': 'UBER', 'component': 'Node'}},
-        ]}
+        args = {
+            'predicate': 'and',
+            'args': [
+                {'predicate': 'in_service', 'args': {'service': 'UBER'}},
+                {'predicate': 'in_component', 'args': {'service': 'UBER', 'component': 'Node'}},
+            ],
+        }
         hosts = variant_host(cls, args)
         self.assertEqual(hosts, ['h11', 'h12'])
 
@@ -378,16 +391,24 @@ class TestVariantHost(TestCase):
 
         self.assertEqual(variant_host(cls, {'predicate': 'or', 'args': []}), [])
         args = {
-            'predicate': 'or', 'args': [
-                {'predicate': 'in_component', 'args': {
-                    'service': 'UBER',
-                    'component': 'Server',
-                }},
-                {'predicate': 'in_component', 'args': {
-                    'service': 'UBER',
-                    'component': 'Secondary',
-                }},
-            ]}
+            'predicate': 'or',
+            'args': [
+                {
+                    'predicate': 'in_component',
+                    'args': {
+                        'service': 'UBER',
+                        'component': 'Server',
+                    },
+                },
+                {
+                    'predicate': 'in_component',
+                    'args': {
+                        'service': 'UBER',
+                        'component': 'Secondary',
+                    },
+                },
+            ],
+        }
         hosts = variant_host(cls, args)
         self.assertEqual(hosts, ['h10', 'h12'])
 

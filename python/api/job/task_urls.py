@@ -16,9 +16,14 @@ from . import views
 
 urlpatterns = [
     path('', views.Task.as_view(), name='task'),
-    path('<int:task_id>/', include([
-        path('', views.TaskDetail.as_view(), name='task-details'),
-        path('restart/', views.TaskReStart.as_view(), name='task-restart'),
-        path('cancel/', views.TaskCancel.as_view(), name='task-cancel'),
-    ])),
+    path(
+        '<int:task_id>/',
+        include(
+            [
+                path('', views.TaskDetail.as_view(), name='task-details'),
+                path('restart/', views.TaskReStart.as_view(), name='task-restart'),
+                path('cancel/', views.TaskCancel.as_view(), name='task-cancel'),
+            ]
+        ),
+    ),
 ]

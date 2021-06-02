@@ -39,7 +39,8 @@ class ServiceSerializer(serializers.Serializer):
 
     def validate_prototype_id(self, prototype_id):
         prototype = check_obj(
-            Prototype, {'id': prototype_id, 'type': 'service'}, 'PROTOTYPE_NOT_FOUND')
+            Prototype, {'id': prototype_id, 'type': 'service'}, 'PROTOTYPE_NOT_FOUND'
+        )
         return prototype
 
     def create(self, validated_data):
@@ -75,8 +76,10 @@ class ServiceDetailSerializer(ServiceSerializer):
     imports = ObjectURL(read_only=True, view_name='service-import')
     bind = ObjectURL(read_only=True, view_name='service-bind')
     prototype = serializers.HyperlinkedIdentityField(
-        view_name='service-type-details', lookup_field='prototype_id',
-        lookup_url_kwarg='prototype_id')
+        view_name='service-type-details',
+        lookup_field='prototype_id',
+        lookup_url_kwarg='prototype_id',
+    )
 
     def get_issue(self, obj):
         return issue.aggregate_issues(obj)
@@ -143,5 +146,5 @@ class ServiceBindPostSerializer(serializers.Serializer):
             validated_data.get('cluster'),
             validated_data.get('service'),
             export_cluster,
-            validated_data.get('export_service_id')
+            validated_data.get('export_service_id'),
         )

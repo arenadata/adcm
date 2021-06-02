@@ -35,14 +35,29 @@ from cm.inventory import get_obj_config, process_config_and_attr
 from cm.lock import lock_objects, unlock_objects
 from cm.logger import log
 from cm.models import (
-    Cluster, Action, SubAction, TaskLog, JobLog, CheckLog, Host, ADCM,
-    ClusterObject, HostComponent, ServiceComponent, HostProvider, DummyData,
-    LogStorage, ConfigLog, GroupCheckLog
+    Cluster,
+    Action,
+    SubAction,
+    TaskLog,
+    JobLog,
+    CheckLog,
+    Host,
+    ADCM,
+    ClusterObject,
+    HostComponent,
+    ServiceComponent,
+    HostProvider,
+    DummyData,
+    LogStorage,
+    ConfigLog,
+    GroupCheckLog,
 )
 from cm.status_api import Event, post_event
 
 
-def start_task(action_id, selector, conf, attr, hc, hosts, verbose):   # pylint: disable=too-many-locals
+def start_task(
+    action_id, selector, conf, attr, hc, hosts, verbose
+):  # pylint: disable=too-many-locals
     action = Action.obj.get(id=action_id)
     obj, cluster, provider = check_task(action, selector, conf)
     act_conf, spec = check_action_config(action, obj, conf, attr)
@@ -56,8 +71,19 @@ def start_task(action_id, selector, conf, attr, hc, hosts, verbose):   # pylint:
 
     event = Event()
     task = prepare_task(
-        action, obj, selector, act_conf, attr, spec, old_hc, delta, host_map, cluster, hosts,
-        event, verbose
+        action,
+        obj,
+        selector,
+        act_conf,
+        attr,
+        spec,
+        old_hc,
+        delta,
+        host_map,
+        cluster,
+        hosts,
+        event,
+        verbose,
     )
     event.send_state()
     run_task(task, event)
@@ -94,8 +120,21 @@ def check_action_hosts(action, cluster, provider, hosts):
 
 
 @transaction.atomic
-def prepare_task(action, obj, selector, conf, attr, spec, old_hc, delta, host_map, cluster,   # pylint: disable=too-many-locals
-                 hosts, event, verbose):
+def prepare_task(
+    action,
+    obj,
+    selector,
+    conf,
+    attr,
+    spec,
+    old_hc,
+    delta,
+    host_map,
+    cluster,
+    hosts,
+    event,
+    verbose,
+):
     DummyData.objects.filter(id=1).update(date=timezone.now())
     lock_objects(obj, event)
 
@@ -106,14 +145,10 @@ def prepare_task(action, obj, selector, conf, attr, spec, old_hc, delta, host_ma
         api.save_hc(cluster, host_map)
 
     if action.type == 'task':
-        task = create_task(
-            action, selector, obj, conf, attr, old_hc, delta, hosts, event, verbose
-        )
+        task = create_task(action, selector, obj, conf, attr, old_hc, delta, hosts, event, verbose)
     else:
-        task = create_one_job_task(
-            action, selector, obj, conf, attr, old_hc, hosts, event, verbose
-        )
-        _job = create_job(action, None, selector, event, task)
+        task = create_one_job_task(action, selector, obj, conf, attr, old_hc, hosts, event, verbose)
+        create_job(action, None, selector, event, task)
 
     if conf:
         new_conf = process_config_and_attr(task, conf, attr, spec)
@@ -142,13 +177,14 @@ def cancel_task(task):
     errors = {
         config.Job.FAILED: ('TASK_IS_FAILED', f'task #{task.id} is failed'),
         config.Job.ABORTED: ('TASK_IS_ABORTED', f'task #{task.id} is aborted'),
-        config.Job.SUCCESS: ('TASK_IS_SUCCESS', f'task #{task.id} is success')
-
+        config.Job.SUCCESS: ('TASK_IS_SUCCESS', f'task #{task.id} is success'),
     }
     action = Action.objects.get(id=task.action_id)
     if not action.allow_to_terminate:
-        err('NOT_ALLOWED_TERMINATION',
-            f'not allowed termination task #{task.id} for action #{action.id}')
+        err(
+            'NOT_ALLOWED_TERMINATION',
+            f'not allowed termination task #{task.id} for action #{action.id}',
+        )
     if task.status in [config.Job.FAILED, config.Job.ABORTED, config.Job.SUCCESS]:
         err(*errors.get(task.status))
     i = 0
@@ -241,8 +277,10 @@ def cook_delta(cluster, new_hc, action_hc, old=None):
     def add_delta(delta, action, key, fqdn, host):
         service, comp = key.split('.')
         if not check_action_hc(action_hc, service, comp, action):
-            msg = (f'no permission to "{action}" component "{comp}" of '
-                   f'service "{service}" to/from hostcomponentmap')
+            msg = (
+                f'no permission to "{action}" component "{comp}" of '
+                f'service "{service}" to/from hostcomponentmap'
+            )
             err('WRONG_ACTION_HC', msg)
         add_to_dict(delta[action], key, fqdn, host)
 
@@ -307,8 +345,10 @@ def check_service_task(cluster_id, action):
         service = ClusterObject.objects.get(cluster=cluster, prototype=action.prototype)
         return service
     except ClusterObject.DoesNotExist:
-        msg = (f'service #{action.prototype.id} for action '
-               f'"{action.name}" is not installed in cluster #{cluster.id}')
+        msg = (
+            f'service #{action.prototype.id} for action '
+            f'"{action.name}" is not installed in cluster #{cluster.id}'
+        )
         err('CLUSTER_SERVICE_NOT_FOUND', msg)
 
 
@@ -318,8 +358,10 @@ def check_component_task(cluster_id, action):
         component = ServiceComponent.objects.get(cluster=cluster, prototype=action.prototype)
         return component
     except ServiceComponent.DoesNotExist:
-        msg = (f'component #{action.prototype.id} for action '
-               f'"{action.name}" is not installed in cluster #{cluster.id}')
+        msg = (
+            f'component #{action.prototype.id} for action '
+            f'"{action.name}" is not installed in cluster #{cluster.id}'
+        )
         err('COMPONENT_NOT_FOUND', msg)
 
 
@@ -456,7 +498,7 @@ def prepare_job_config(action, sub_action, selector, job_id, obj, conf, verbose)
             'command': action.name,
             'script': action.script,
             'verbose': verbose,
-            'playbook': cook_script(action, sub_action)
+            'playbook': cook_script(action, sub_action),
         },
     }
     if action.params:
@@ -539,7 +581,7 @@ def create_job(action, sub_action, selector, event, task):
         log_files=action.log_files,
         start_date=timezone.now(),
         finish_date=timezone.now(),
-        status=config.Job.CREATED
+        status=config.Job.CREATED,
     )
     if sub_action:
         job.sub_action = sub_action
@@ -642,12 +684,7 @@ def get_log(job):
     logs = []
 
     for ls in log_storage:
-        logs.append({
-            'name': ls.name,
-            'type': ls.type,
-            'format': ls.format,
-            'id': ls.id
-        })
+        logs.append({'name': ls.name, 'type': ls.type, 'format': ls.format, 'id': ls.id})
 
     return logs
 
@@ -687,9 +724,17 @@ def log_check(job_id, group_data, check_data):
 
     ls, _ = LogStorage.objects.get_or_create(job=job, name='ansible', type='check', format='json')
 
-    post_event('add_job_log', 'job', job_id, {
-        'id': ls.id, 'type': ls.type, 'name': ls.name, 'format': ls.format,
-    })
+    post_event(
+        'add_job_log',
+        'job',
+        job_id,
+        {
+            'id': ls.id,
+            'type': ls.type,
+            'name': ls.name,
+            'format': ls.format,
+        },
+    )
     return cl
 
 
@@ -701,14 +746,22 @@ def get_check_log(job_id):
         group = cl.group
         if group is None:
             data.append(
-                {'title': cl.title, 'type': 'check', 'message': cl.message, 'result': cl.result})
+                {'title': cl.title, 'type': 'check', 'message': cl.message, 'result': cl.result}
+            )
         else:
             if group not in group_subs:
                 data.append(
-                    {'title': group.title, 'type': 'group', 'message': group.message,
-                     'result': group.result, 'content': group_subs[group]})
+                    {
+                        'title': group.title,
+                        'type': 'group',
+                        'message': group.message,
+                        'result': group.result,
+                        'content': group_subs[group],
+                    }
+                )
             group_subs[group].append(
-                {'title': cl.title, 'type': 'check', 'message': cl.message, 'result': cl.result})
+                {'title': cl.title, 'type': 'check', 'message': cl.message, 'result': cl.result}
+            )
     return data
 
 
@@ -719,7 +772,8 @@ def finish_check(job_id):
 
     job = JobLog.objects.get(id=job_id)
     LogStorage.objects.filter(job=job, name='ansible', type='check', format='json').update(
-        body=json.dumps(data))
+        body=json.dumps(data)
+    )
 
     GroupCheckLog.objects.filter(job=job).delete()
     CheckLog.objects.filter(job=job).delete()
@@ -727,12 +781,18 @@ def finish_check(job_id):
 
 def log_custom(job_id, name, log_format, body):
     job = JobLog.obj.get(id=job_id)
-    l1 = LogStorage.objects.create(
-        job=job, name=name, type='custom', format=log_format, body=body
+    l1 = LogStorage.objects.create(job=job, name=name, type='custom', format=log_format, body=body)
+    post_event(
+        'add_job_log',
+        'job',
+        job_id,
+        {
+            'id': l1.id,
+            'type': l1.type,
+            'name': l1.name,
+            'format': l1.format,
+        },
     )
-    post_event('add_job_log', 'job', job_id, {
-        'id': l1.id, 'type': l1.type, 'name': l1.name, 'format': l1.format,
-    })
 
 
 def check_all_status():
@@ -741,11 +801,9 @@ def check_all_status():
 
 def run_task(task, event, args=''):
     err_file = open(os.path.join(config.LOG_DIR, 'task_runner.err'), 'a+')
-    proc = subprocess.Popen([
-        os.path.join(config.CODE_DIR, 'task_runner.py'),
-        str(task.id),
-        args
-    ], stderr=err_file)
+    proc = subprocess.Popen(
+        [os.path.join(config.CODE_DIR, 'task_runner.py'), str(task.id), args], stderr=err_file
+    )
     log.info("run task #%s, python process %s", task.id, proc.pid)
     task.pid = proc.pid
 
@@ -764,7 +822,8 @@ def log_rotation():
 
     if log_rotation_on_db:
         rotation_jobs_on_db = JobLog.objects.filter(
-            finish_date__lt=timezone.now() - timedelta(days=log_rotation_on_db))
+            finish_date__lt=timezone.now() - timedelta(days=log_rotation_on_db)
+        )
         if rotation_jobs_on_db:
             task_ids = [job['task_id'] for job in rotation_jobs_on_db.values('task_id')]
             with transaction.atomic():
@@ -803,7 +862,8 @@ def prepare_ansible_config(job_id, action, sub_action):
     if mitogen:
         config_parser['defaults']['strategy'] = 'mitogen_linear'
         config_parser['defaults']['strategy_plugins'] = os.path.join(
-            config.PYTHON_SITE_PACKAGES, 'ansible_mitogen/plugins/strategy')
+            config.PYTHON_SITE_PACKAGES, 'ansible_mitogen/plugins/strategy'
+        )
         config_parser['defaults']['host_key_checking'] = 'False'
     forks = adcm_conf['ansible_settings']['forks']
     config_parser['defaults']['forks'] = str(forks)

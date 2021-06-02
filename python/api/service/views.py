@@ -13,9 +13,7 @@
 from rest_framework import status
 from rest_framework.response import Response
 
-from api.api_views import (
-    PageView, create, check_obj, DetailViewRO, ListView, DetailViewDelete
-)
+from api.api_views import PageView, create, check_obj, DetailViewRO, ListView, DetailViewDelete
 from api.stack.serializers import ImportSerializer
 from api.cluster.serializers import BindSerializer
 
@@ -36,7 +34,7 @@ class ServiceListView(PageView):
     serializer_class = serializers.ServiceSerializer
     serializer_class_ui = serializers.ServiceUISerializer
     serializer_class_cluster = serializers.ClusterServiceSerializer
-    filterset_fields = ('cluster_id', )
+    filterset_fields = ('cluster_id',)
     ordering_fields = ('state', 'prototype__display_name', 'prototype__version_order')
 
     def get(self, request, *args, **kwargs):
@@ -56,8 +54,9 @@ class ServiceListView(PageView):
         serializer_class = self.serializer_class
         if 'cluster_id' in kwargs:
             serializer_class = self.serializer_class_cluster
-        serializer = serializer_class(data=request.data, context={
-            'request': request, 'cluster_id': kwargs.get('cluster_id', None)}
+        serializer = serializer_class(
+            data=request.data,
+            context={'request': request, 'cluster_id': kwargs.get('cluster_id', None)},
         )
         return create(serializer)
 
@@ -102,11 +101,10 @@ class ServiceImportView(ListView):
         service = check_service(kwargs)
         cluster = service.cluster
         serializer = self.post_serializer_class(
-            data=request.data,
-            context={'request': request, 'cluster': cluster, 'service': service})
+            data=request.data, context={'request': request, 'cluster': cluster, 'service': service}
+        )
         if serializer.is_valid():
-            return Response(
-                serializer.create(serializer.validated_data), status=status.HTTP_200_OK)
+            return Response(serializer.create(serializer.validated_data), status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 

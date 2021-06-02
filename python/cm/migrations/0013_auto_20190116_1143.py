@@ -26,6 +26,11 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='clusterbind',
             name='service',
-            field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.ClusterObject'),
+            field=models.ForeignKey(
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to='cm.ClusterObject',
+            ),
         ),
     ]

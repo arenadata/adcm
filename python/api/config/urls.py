@@ -16,36 +16,23 @@ from . import views
 
 
 urlpatterns = [
+    path('', views.ConfigView.as_view(), name='object-config'),
+    path('history/', views.ConfigHistoryView.as_view(), name='config-history'),
     path(
-        '',
-        views.ConfigView.as_view(),
-        name='object-config'
-    ),
-    path(
-        'history/',
-        views.ConfigHistoryView.as_view(),
-        name='config-history'
-    ),
-    path(
-        'history/<int:version>/',
-        views.ConfigVersionView.as_view(),
-        name='config-history-version'
+        'history/<int:version>/', views.ConfigVersionView.as_view(), name='config-history-version'
     ),
     path(
         'history/<int:version>/restore/',
         views.ConfigHistoryRestoreView.as_view(),
-        name='config-history-version-restore'
+        name='config-history-version-restore',
     ),
     path(
         'previous/',
         views.ConfigVersionView.as_view(),
         {'version': 'previous'},
-        name='config-previous'
+        name='config-previous',
     ),
     path(
-        'current/',
-        views.ConfigVersionView.as_view(),
-        {'version': 'current'},
-        name='config-current'
-    )
+        'current/', views.ConfigVersionView.as_view(), {'version': 'current'}, name='config-current'
+    ),
 ]

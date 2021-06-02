@@ -69,8 +69,7 @@ def test_cluster_import_negative(sdk_client_fs: ADCMClient, path):
 
 @parametrize_by_data_subdirs(__file__, "service_import")
 def test_service_import(sdk_client_fs: ADCMClient, path):
-    """Import service test
-    """
+    """Import service test"""
     with allure.step('Create cluster with export and service test'):
         bundle = sdk_client_fs.upload_from_fs(path + '/export')
         cluster = bundle.cluster_create("test")
@@ -84,8 +83,7 @@ def test_service_import(sdk_client_fs: ADCMClient, path):
 
 @parametrize_by_data_subdirs(__file__, "cluster_import")
 def test_cluster_import(sdk_client_fs: ADCMClient, path):
-    """Import cluster test
-    """
+    """Import cluster test"""
     with allure.step('Create test cluster with export'):
         bundle = sdk_client_fs.upload_from_fs(path + '/export')
         cluster = bundle.cluster_create("test")

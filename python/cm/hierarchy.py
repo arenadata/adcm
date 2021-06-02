@@ -32,6 +32,7 @@ class Node:
     Node of hierarchy tree
     Each node has zero to many parents and zero to many children
     """
+
     order = ('root', 'cluster', 'service', 'component', 'host', 'provider')
 
     def __init__(self, value: Optional[ADCMModel]):
@@ -123,17 +124,19 @@ class Tree:
 
         elif node.type == 'service':
             children_values = ServiceComponent.objects.filter(
-                cluster=node.value.cluster,
-                service=node.value
+                cluster=node.value.cluster, service=node.value
             ).all()
 
         elif node.type == 'component':
             children_values = [
-                c.host for c in HostComponent.objects.filter(
+                c.host
+                for c in HostComponent.objects.filter(
                     cluster=node.value.service.cluster,
                     service=node.value.service,
-                    component=node.value
-                ).select_related('host').all()
+                    component=node.value,
+                )
+                .select_related('host')
+                .all()
             ]
 
         elif node.type == 'host':
@@ -158,8 +161,10 @@ class Tree:
             parent_values = [node.value.service]
         elif node.type == 'host':
             parent_values = [
-                hc.component for hc in
-                HostComponent.objects.filter(host=node.value).select_related('component').all()
+                hc.component
+                for hc in HostComponent.objects.filter(host=node.value)
+                .select_related('component')
+                .all()
             ]
         elif node.type == 'provider':
             parent_values = Host.objects.filter(provider=node.value).all()

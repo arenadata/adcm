@@ -13,7 +13,7 @@
 import os
 from os.path import dirname
 
-from adcm.settings import *   # pylint: disable=wildcard-import,unused-wildcard-import,import-error
+from adcm.settings import *  # pylint: disable=wildcard-import,unused-wildcard-import,import-error
 
 DEBUG = True
 

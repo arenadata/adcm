@@ -34,15 +34,15 @@ def test_upgrade_cluster_with_import(sdk_client_fs: ADCMClient):
     5. Check that cluster was upgraded
     """
     with allure.step('Create cluster with exports'):
-        bundle = sdk_client_fs.upload_from_fs(get_data_dir(
-            __file__, 'upgrade_cluster_with_export'))
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgrade_cluster_with_export'))
         cluster = bundle.cluster_create("test")
         service = cluster.service_add(name="hadoop")
         cluster_config_before = cluster.config()
         service_config_before = service.config()
     with allure.step('Create cluster for upgrade with imports'):
-        bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(
-            __file__, 'upgradable_cluster_with_import'))
+        bundle_import = sdk_client_fs.upload_from_fs(
+            get_data_dir(__file__, 'upgradable_cluster_with_import')
+        )
         cluster_import = bundle_import.cluster_create("cluster_import")
     bind_service_and_cluster(cluster_import, service, cluster)
     with allure.step('Upgrade cluster'):
@@ -75,8 +75,9 @@ def test_upgrade_cluster_with_export(sdk_client_fs: ADCMClient):
         cluster = bundle.cluster_create("test")
         service = cluster.service_add(name="hadoop")
     with allure.step('Create cluster for upgrade with imports. Load upgradable bundle with import'):
-        bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(
-            __file__, 'upgrade_cluster_with_import'))
+        bundle_import = sdk_client_fs.upload_from_fs(
+            get_data_dir(__file__, 'upgrade_cluster_with_import')
+        )
         sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster_with_import'))
         cluster_import = bundle_import.cluster_create("cluster_import")
     bind_service_and_cluster(cluster_import, service, cluster)
@@ -104,14 +105,16 @@ def test_incorrect_import_strict_version(sdk_client_fs: ADCMClient, path):
     in cluster with import
     """
     with allure.step('Create cluster for upgrade with exports for strict test'):
-        bundle = sdk_client_fs.upload_from_fs(get_data_dir(
-            __file__, 'upgrade_cluster_with_export_for_strict_test'))
+        bundle = sdk_client_fs.upload_from_fs(
+            get_data_dir(__file__, 'upgrade_cluster_with_export_for_strict_test')
+        )
         sdk_client_fs.upload_from_fs(path)
         cluster = bundle.cluster_create("test")
         service = cluster.service_add(name="hadoop")
     with allure.step('Create upgradable cluster with import'):
         bundle_import_correct = sdk_client_fs.upload_from_fs(
-            get_data_dir(__file__, 'cluster_with_correct_import'))
+            get_data_dir(__file__, 'cluster_with_correct_import')
+        )
         cluster_import = bundle_import_correct.cluster_create("cluster_import")
     bind_service_and_cluster(cluster_import, service, cluster)
     with allure.step('Upgrade cluster with import with error'):
@@ -134,12 +137,12 @@ def test_incorrect_import_version(sdk_client_fs: ADCMClient, path):
     6. Check that cluster was not upgraded because incorrect version for service
     in cluster with import
     """
-    with allure.step('Create cluster for upgrade with exports and '
-                     'cluster with correct import'):
+    with allure.step('Create cluster for upgrade with exports and cluster with correct import'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgrade_cluster_with_export'))
         sdk_client_fs.upload_from_fs(path)
         bundle_import_correct = sdk_client_fs.upload_from_fs(
-            get_data_dir(__file__, 'cluster_with_correct_import'))
+            get_data_dir(__file__, 'cluster_with_correct_import')
+        )
         cluster = bundle.cluster_create("test")
         service = cluster.service_add(name="hadoop")
         cluster_import = bundle_import_correct.cluster_create("cluster_import")
@@ -154,19 +157,21 @@ def test_incorrect_import_version(sdk_client_fs: ADCMClient, path):
 
 def test_upgrade_cluster_without_service_config_in_import(sdk_client_fs: ADCMClient):
     """Upgrade cluster with service when in new cluster when
-     we haven't some service configuration variables
-     Scenario:
-     1. Create cluster for upgrade with export
-     2. Create upgradable cluster with import and without config in import
-     3. Bind service from cluster with export to cluster with import
-     4. Upgrade cluster with export
-     5. Check upgrade error
+    we haven't some service configuration variables
+    Scenario:
+    1. Create cluster for upgrade with export
+    2. Create upgradable cluster with import and without config in import
+    3. Bind service from cluster with export to cluster with import
+    4. Upgrade cluster with export
+    5. Check upgrade error
     """
-    with allure.step('Create cluster for upgrade with exports and '
-                     'cluster without config in import'):
+    with allure.step(
+        'Create cluster for upgrade with exports and cluster without config in import'
+    ):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgrade_cluster_with_export'))
-        bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(
-            __file__, 'upgradable_cluster_without_service'))
+        bundle_import = sdk_client_fs.upload_from_fs(
+            get_data_dir(__file__, 'upgradable_cluster_without_service')
+        )
         cluster = bundle.cluster_create("test")
         service = cluster.service_add(name="hadoop")
         cluster_import = bundle_import.cluster_create("cluster_import")
@@ -182,13 +187,14 @@ def test_upgrade_cluster_without_service_config_in_import(sdk_client_fs: ADCMCli
 
 
 def test_upgrade_cluster_with_new_configuration_variables(sdk_client_fs: ADCMClient):
-    """Upgrade to cluster with new configuration variables
-    """
-    with allure.step('Create cluster for upgrade with exports and cluster '
-                     'with import new config vars'):
+    """Upgrade to cluster with new configuration variables"""
+    with allure.step(
+        'Create cluster for upgrade with exports and cluster with import new config vars'
+    ):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgrade_cluster_with_export'))
-        bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(
-            __file__, 'upgradable_cluster_with_import_new_config_vars'))
+        bundle_import = sdk_client_fs.upload_from_fs(
+            get_data_dir(__file__, 'upgradable_cluster_with_import_new_config_vars')
+        )
         cluster = bundle.cluster_create("test")
         service = cluster.service_add(name="hadoop")
         cluster_config_before = cluster.config()

@@ -18,7 +18,6 @@ import cm.adcm_config
 
 
 class TestAdcmConfig(TestCase):
-
     def setUp(self):
         pass
 
@@ -28,15 +27,11 @@ class TestAdcmConfig(TestCase):
         obj_mock = Mock()
 
         test_data = [
-            (
-                {'global': {'type': 'file'}},
-                {'global': ''},
-                {'global': 'data_from_file'}
-            ),
+            ({'global': {'type': 'file'}}, {'global': ''}, {'global': 'data_from_file'}),
             (
                 {'global': {'test': {'type': 'file'}}},
                 {'global': {'test': ''}},
-                {'global': {'test': 'data_from_file'}}
+                {'global': {'test': 'data_from_file'}},
             ),
         ]
 
@@ -47,7 +42,9 @@ class TestAdcmConfig(TestCase):
 
                 self.assertDictEqual(config, test_conf)
 
-        mock_cook_file_type_name.assert_has_calls([
-            call(obj_mock, 'global', ''),
-            call(obj_mock, 'global', 'test'),
-        ])
+        mock_cook_file_type_name.assert_has_calls(
+            [
+                call(obj_mock, 'global', ''),
+                call(obj_mock, 'global', 'test'),
+            ]
+        )

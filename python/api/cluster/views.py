@@ -22,7 +22,7 @@ import cm.status_api
 from cm.errors import AdcmEx
 from cm.models import Cluster, HostComponent, Prototype
 from cm.models import ClusterObject, Upgrade, ClusterBind
-from cm.logger import log   # pylint: disable=unused-import
+from cm.logger import log  # pylint: disable=unused-import
 
 import api.serializers
 from api.api_views import create, update, check_obj, GenericAPIPermView
@@ -52,6 +52,7 @@ class ClusterList(PageViewAdd):
     post:
     Create new cluster
     """
+
     queryset = Cluster.objects.all()
     serializer_class = serializers.ClusterSerializer
     serializer_class_ui = serializers.ClusterUISerializer
@@ -65,6 +66,7 @@ class ClusterDetail(DetailViewDelete):
     get:
     Show cluster
     """
+
     queryset = Cluster.objects.all()
     serializer_class = serializers.ClusterDetailSerializer
     serializer_class_ui = serializers.ClusterUISerializer
@@ -96,7 +98,7 @@ class ClusterBundle(ListView):
     serializer_class = api.stack.serializers.ServiceSerializer
     serializer_class_ui = api.stack.serializers.BundleServiceUISerializer
 
-    def get(self, request, cluster_id):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id):  # pylint: disable=arguments-differ
         """
         List all services of specified cluster of bundle
         """
@@ -115,7 +117,7 @@ class ClusterImport(ListView):
     serializer_class = api.stack.serializers.ImportSerializer
     post_serializer = serializers.PostImportSerializer
 
-    def get(self, request, cluster_id):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id):  # pylint: disable=arguments-differ
         """
         List all imports avaliable for specified cluster
         """
@@ -123,14 +125,14 @@ class ClusterImport(ListView):
         res = cm.api.get_import(cluster)
         return Response(res)
 
-    def post(self, request, cluster_id):   # pylint: disable=arguments-differ
+    def post(self, request, cluster_id):  # pylint: disable=arguments-differ
         """
         Update bind for cluster
         """
         cluster = check_obj(Cluster, cluster_id)
-        serializer = self.post_serializer(data=request.data, context={
-            'request': request, 'cluster': cluster
-        })
+        serializer = self.post_serializer(
+            data=request.data, context={'request': request, 'cluster': cluster}
+        )
         if serializer.is_valid():
             res = serializer.create(serializer.validated_data)
             return Response(res, status.HTTP_200_OK)
@@ -147,7 +149,7 @@ class ClusterBindList(ListView):
         else:
             return serializers.ClusterBindSerializer
 
-    def get(self, request, cluster_id):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id):  # pylint: disable=arguments-differ
         """
         List all binds of specified cluster
         """
@@ -173,7 +175,7 @@ class ClusterBindDetail(DetailViewDelete):
         cluster = check_obj(Cluster, cluster_id)
         return check_obj(ClusterBind, {'cluster': cluster, 'id': bind_id})
 
-    def get(self, request, cluster_id, bind_id):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id, bind_id):  # pylint: disable=arguments-differ
         """
         Show specified bind of specified cluster
         """
@@ -181,7 +183,7 @@ class ClusterBindDetail(DetailViewDelete):
         serializer = self.serializer_class(obj, context={'request': request})
         return Response(serializer.data)
 
-    def delete(self, request, cluster_id, bind_id):   # pylint: disable=arguments-differ
+    def delete(self, request, cluster_id, bind_id):  # pylint: disable=arguments-differ
         """
         Unbind specified bind of specified cluster
         """
@@ -194,15 +196,15 @@ class ClusterUpgrade(PageView):
     queryset = Upgrade.objects.all()
     serializer_class = api.serializers.UpgradeLinkSerializer
 
-    def get(self, request, cluster_id):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id):  # pylint: disable=arguments-differ
         """
         List all avaliable upgrades for specified cluster
         """
         cluster = check_obj(Cluster, cluster_id)
         obj = cm.upgrade.get_upgrade(cluster, self.get_ordering(request, self.queryset, self))
-        serializer = self.serializer_class(obj, many=True, context={
-            'cluster_id': cluster.id, 'request': request
-        })
+        serializer = self.serializer_class(
+            obj, many=True, context={'cluster_id': cluster.id, 'request': request}
+        )
         return Response(serializer.data)
 
 
@@ -210,15 +212,15 @@ class ClusterUpgradeDetail(ListView):
     queryset = Upgrade.objects.all()
     serializer_class = api.serializers.UpgradeLinkSerializer
 
-    def get(self, request, cluster_id, upgrade_id):   # pylint: disable=arguments-differ
+    def get(self, request, cluster_id, upgrade_id):  # pylint: disable=arguments-differ
         """
         List all avaliable upgrades for specified cluster
         """
         cluster = check_obj(Cluster, cluster_id)
         obj = self.get_queryset().get(id=upgrade_id)
-        serializer = self.serializer_class(obj, context={
-            'cluster_id': cluster.id, 'request': request
-        })
+        serializer = self.serializer_class(
+            obj, context={'cluster_id': cluster.id, 'request': request}
+        )
         return Response(serializer.data)
 
 
@@ -280,9 +282,13 @@ class HostComponentList(GenericAPIPermView, InterfaceView):
         """
         cluster = check_obj(Cluster, cluster_id)
         save_serializer = self.get_serializer_class()
-        serializer = save_serializer(data=request.data, context={
-            'request': request, 'cluster': cluster,
-        })
+        serializer = save_serializer(
+            data=request.data,
+            context={
+                'request': request,
+                'cluster': cluster,
+            },
+        )
         if serializer.is_valid():
             hc_list = serializer.save()
             responce_serializer = self.serializer_class(
@@ -298,11 +304,7 @@ class HostComponentDetail(GenericAPIPermView):
 
     def get_obj(self, cluster_id, hs_id):
         cluster = check_obj(Cluster, cluster_id)
-        return check_obj(
-            HostComponent,
-            {'id': hs_id, 'cluster': cluster},
-            'HOSTSERVICE_NOT_FOUND'
-        )
+        return check_obj(HostComponent, {'id': hs_id, 'cluster': cluster}, 'HOSTSERVICE_NOT_FOUND')
 
     def get(self, request, cluster_id, hs_id):
         """

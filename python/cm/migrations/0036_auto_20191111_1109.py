@@ -25,7 +25,15 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='bundle',
             name='license',
-            field=models.CharField(choices=[('absent', 'absent'), ('accepted', 'accepted'), ('unaccepted', 'unaccepted')], default='absent', max_length=16),
+            field=models.CharField(
+                choices=[
+                    ('absent', 'absent'),
+                    ('accepted', 'accepted'),
+                    ('unaccepted', 'unaccepted'),
+                ],
+                default='absent',
+                max_length=16,
+            ),
         ),
         migrations.AddField(
             model_name='bundle',

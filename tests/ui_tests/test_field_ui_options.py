@@ -8,8 +8,9 @@ from .utils import prepare_cluster_and_get_config
 
 
 @parametrize_by_data_subdirs(__file__, "invisible_true", 'advanced_true')
-def test_ui_option_invisible_true_advanced_true(sdk_client_fs: ADCMClient, path, app_fs,
-                                                login_to_adcm):
+def test_ui_option_invisible_true_advanced_true(
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+):
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     groups = config.get_field_groups()
     with allure.step('Check that we havent invisible fields on UI'):
@@ -18,8 +19,9 @@ def test_ui_option_invisible_true_advanced_true(sdk_client_fs: ADCMClient, path,
 
 
 @parametrize_by_data_subdirs(__file__, "invisible_true", 'advanced_false')
-def test_ui_option_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path, app_fs,
-                                                 login_to_adcm):
+def test_ui_option_invisible_true_advanced_false(
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+):
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     if not config.advanced:
         config.click_advanced()
@@ -31,8 +33,9 @@ def test_ui_option_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path
 
 
 @parametrize_by_data_subdirs(__file__, "invisible_false", 'advanced_true')
-def test_ui_option_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app_fs,
-                                                 login_to_adcm):
+def test_ui_option_invisible_false_advanced_true(
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+):
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     groups = config.get_field_groups()
     if config.advanced:
@@ -43,15 +46,17 @@ def test_ui_option_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path
     config.click_advanced()
     assert config.advanced
     groups = config.get_field_groups()
-    with allure.step('Check that field is not visible by default '
-                     'but with enabled advanced visible'):
+    with allure.step(
+        'Check that field is not visible by default but with enabled advanced visible'
+    ):
         for group in groups:
             assert group.is_displayed(), group.get_attribute("class")
 
 
 @parametrize_by_data_subdirs(__file__, "invisible_false", 'advanced_false')
-def test_ui_option_invisible_false_advanced_false(sdk_client_fs: ADCMClient, path, app_fs,
-                                                  login_to_adcm):
+def test_ui_option_invisible_false_advanced_false(
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+):
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     groups = config.get_field_groups()
     for group in groups:

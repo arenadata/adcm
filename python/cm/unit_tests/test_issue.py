@@ -51,6 +51,7 @@ class AggregateIssuesTest(TestCase):
     Tests for `cm.issue.aggregate_issues()`
     BEWARE of different object instances in `self.tree` and `self.hierarchy`, use `refresh_from_db`
     """
+
     def setUp(self) -> None:
         self.hierarchy = generate_hierarchy()
         self.tree = Tree(self.hierarchy['cluster'])
