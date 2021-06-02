@@ -14,6 +14,8 @@
 # limitations under the License.
 
 from __future__ import unicode_literals
+from itertools import chain
+from typing import Iterable, Optional
 
 from enum import Enum
 from itertools import chain
@@ -242,7 +244,10 @@ class ADCMEntity(ADCMModel):
         return own_name or fqdn or self.prototype.display_name or self.prototype.name
 
     def __str__(self):
-        return '{} #{} "{}"'.format(self.prototype.type, self.id, self.display_name)
+        own_name = getattr(self, 'name', None)
+        fqdn = getattr(self, 'fqdn', None)
+        name = own_name or fqdn or self.prototype.name
+        return '{} #{} "{}"'.format(self.prototype.type, self.id, name)
 
     def set_state(self, state: str, event=None) -> None:
         self.state = state or self.state
