@@ -19,11 +19,10 @@
     </a>
   </mat-nav-list>
 
-  <span class="col s12 l3" [style.textAlign]="'right'">
-    <span *ngIf="(isAuth$ | async)">
+  <span class="col s12 l3">
+    <span *ngIf="(isAuth$ | async)" class="right-panel">
       <ng-container *ngIf="(jobStat$ | async)"></ng-container>
-      <span class="job-status">
-        <app-bell></app-bell>
+<!--      <span class="job-status" style="position: relative;">-->
 <!--        <button-->
 <!--          [appForTest]="'jobs_yellow'"-->
 <!--          mat-mini-fab-->
@@ -56,8 +55,9 @@
 <!--        >-->
 <!--          {{ jobStatus.failed > 1000 ? (jobStatus.failed/1000).toFixed(1) + 'K' : jobStatus.failed }}-->
 <!--        </button>-->
-      </span>
+<!--      </span>-->
 
+      <app-bell></app-bell>
       <button [appForTest]="'help'" mat-icon-button [matMenuTriggerFor]="helpMenu">
         <mat-icon>help</mat-icon>
       </button>

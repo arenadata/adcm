@@ -1,0 +1,31 @@
+.counters {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 300px;
+
+  & .item {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+  }
+}
+
+.notifications {
+  border-top: solid 1px #455A64;
+  margin-top: 10px;
+  padding-top: 10px;
+  width: 100%;
+}
+
+.notification {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.notification + .notification {
+  border-top: solid 1px #455A64;
+  margin-top: 5px;
+  padding-top: 5px;
+}

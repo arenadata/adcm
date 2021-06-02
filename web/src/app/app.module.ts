@@ -19,7 +19,7 @@ import { EffectsModule } from '@ngrx/effects';
 import { StoreModule } from '@ngrx/store';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 
-import { environment } from '../environments/environment';
+import { environment } from '@env/environment';
 import { AppComponent } from './app.component';
 import { EntryModule } from './entry/entry.module';
 import { MainModule } from './main/main.module';

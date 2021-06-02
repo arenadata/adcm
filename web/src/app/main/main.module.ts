@@ -22,6 +22,7 @@ import { TopComponent } from './top/top.component';
 import { ProgressComponent } from './progress.component';
 import { PageNotFoundComponent, FatalErrorComponent, GatewayTimeoutComponent } from './server-status.component';
 import { BellComponent } from '@app/components/bell/bell.component';
+import { NotificationsComponent } from '@app/components/notifications/notifications.component';
 
 @NgModule({
   imports: [CommonModule, MainRoutingModule, SharedModule],
@@ -35,6 +36,7 @@ import { BellComponent } from '@app/components/bell/bell.component';
     TopComponent,
     ProgressComponent,
     BellComponent,
+    NotificationsComponent,
   ],
   exports: [
     TopComponent,

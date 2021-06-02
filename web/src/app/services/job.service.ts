@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { filter } from 'rxjs/operators';
+import { filter, tap } from 'rxjs/operators';
 import { Store } from '@ngrx/store';
 
 import { EventableService } from '@app/models/eventable-service';
@@ -14,14 +14,11 @@ export class JobService implements EventableService {
   ) {}
 
   events(events?: EntityEvent[]): Observable<EventMessage> {
-    const result = this.store.pipe(
+    return this.store.pipe(
       selectMessage,
       filter(event => event?.object?.type === 'job'),
+      filter(event => !events || events.includes(event?.event)),
     );
-    if (events) {
-      result.pipe(filter(event => events.includes(event.event)));
-    }
-    return result;
   }
 
 }

@@ -1,14 +1,67 @@
+//:host {
+//  position: absolute;
+//  left: -50px;
+//  top: -30px;
+//}
+
 .circle {
   width: 50px;
   height: 50px;
-  background: white;
   border-radius: 50%;
   background-repeat: no-repeat;
+  //background: conic-gradient(#FFEA00 0deg 120deg, #1EE564 120deg 240deg, #FF8A80 240deg 360deg);
+
+  cursor: pointer;
+  position: relative;
 }
 
-https://developer.mozilla.org/en-US/docs/Web/CSS/conic-gradient()
-gfdgdfgfdgfdgfdg
-fdg
-fdg
-fdg
-fdg
+@keyframes spinner {
+  0% {
+    transform: rotate(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: rotate(180deg);
+    opacity: 0.8;
+  }
+  75% {
+    transform: rotate(270deg);
+    opacity: 0.6;
+  }
+  100% {
+    transform: rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.animation {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-repeat: no-repeat;
+  background-image: conic-gradient(#fff, #262d37);
+  animation-duration: 0.7s;
+  animation-timing-function: linear;
+}
+
+.animated {
+  animation-name: spinner;
+}
+
+.hide {
+  opacity: 0;
+}
+
+.insider {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #262d37;
+  top: 7px;
+  left: 7px;
+  position: absolute;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

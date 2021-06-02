@@ -47,6 +47,7 @@ import { EditionColumnComponent } from '@app/components/columns/edition-column/e
 import { ClusterColumnComponent } from '@app/components/columns/cluster-column/cluster-column.component';
 import { ServiceComponentsComponent } from '@app/components/service-components.component';
 import { JobService } from '@app/services/job.service';
+import { TaskService } from '@app/services/task.service';
 
 @NgModule({
   imports: [
@@ -123,6 +124,7 @@ import { JobService } from '@app/services/job.service';
   ],
   providers: [
     JobService,
+    TaskService,
   ],
 })
 export class SharedModule {}
