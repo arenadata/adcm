@@ -23,7 +23,6 @@ from cm.models import UserProfile, DummyData, CheckLog, GroupCheckLog
 from cm.bundle import load_adcm
 from cm.config import SECRETS_FILE
 from cm.job import abort_all
-from cm.lock import unlock_all
 from cm.status_api import Event
 
 
@@ -68,7 +67,6 @@ def init():
     create_status_user()
     event = Event()
     abort_all(event)
-    unlock_all(event)
     clear_temp_tables()
     event.send_state()
     load_adcm()

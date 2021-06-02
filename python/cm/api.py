@@ -12,47 +12,44 @@
 
 import json
 
-from django.db import transaction
 from django.core.exceptions import MultipleObjectsReturned
+from django.db import transaction
 from django.utils import timezone
 
-import cm.errors
 import cm.issue
 import cm.status_api
-import cm.lock
-from cm import config
-from cm.logger import log
-from cm.upgrade import check_license, version_in
 from cm.adcm_config import (
-    proto_ref,
+    check_json_config,
+    get_prototype_config,
+    init_object_config,
     obj_ref,
     prepare_social_auth,
     process_file_type,
+    proto_ref,
     read_bundle_file,
-    get_prototype_config,
-    init_object_config,
     save_obj_config,
-    check_json_config,
 )
-from cm.errors import AdcmEx
-from cm.errors import raise_AdcmEx as err
-from cm.status_api import Event
+from cm.errors import AdcmEx, raise_AdcmEx as err
+from cm.logger import log
 from cm.models import (
+    ADCM,
     Cluster,
-    Prototype,
+    ClusterBind,
+    ClusterObject,
+    ConfigLog,
+    DummyData,
     Host,
     HostComponent,
-    ADCM,
-    ClusterObject,
-    ServiceComponent,
-    ConfigLog,
     HostProvider,
-    PrototypeImport,
+    AgendaItem,
+    Prototype,
     PrototypeExport,
-    ClusterBind,
-    DummyData,
+    PrototypeImport,
     Role,
+    ServiceComponent,
 )
+from cm.status_api import Event
+from cm.upgrade import check_license, version_in
 
 
 def check_proto_type(proto, check_type):
@@ -77,7 +74,7 @@ def add_cluster(proto, name, desc=''):
     return cluster
 
 
-def add_host(proto, provider, fqdn, desc='', lock=False):
+def add_host(proto, provider, fqdn, desc='', lock: AgendaItem = None):
     check_proto_type(proto, 'host')
     check_license(proto.bundle)
     if proto.bundle != provider.prototype.bundle:
@@ -91,9 +88,7 @@ def add_host(proto, provider, fqdn, desc='', lock=False):
             prototype=proto, provider=provider, fqdn=fqdn, config=obj_conf, description=desc
         )
         host.save()
-        if lock:
-            host.stack = ['created']
-            host.set_state(config.Job.LOCKED, event)
+        host.add_to_agenda(lock, event)
         process_file_type(host, spec, conf)
         cm.issue.update_hierarchy_issues(host)
     event.send_state()
@@ -103,7 +98,7 @@ def add_host(proto, provider, fqdn, desc='', lock=False):
     return host
 
 
-def add_provider_host(provider_id, fqdn, desc=''):
+def add_provider_host(provider_id, fqdn, desc='', lock: AgendaItem = None):
     """
     add provider host
 
@@ -111,7 +106,7 @@ def add_provider_host(provider_id, fqdn, desc=''):
     """
     provider = HostProvider.obj.get(id=provider_id)
     proto = Prototype.objects.get(bundle=provider.prototype.bundle, type='host')
-    return add_host(proto, provider, fqdn, desc, lock=True)
+    return add_host(proto, provider, fqdn, desc, lock)
 
 
 def add_host_provider(proto, name, desc=''):
@@ -537,20 +532,15 @@ def check_hc(cluster, hc_in):  # pylint: disable=too-many-branches
     return host_comp_list
 
 
-def save_hc(cluster, host_comp_list):
+def save_hc(cluster, host_comp_list, lock: AgendaItem = None):
     event = Event()
     hc_queryset = HostComponent.objects.filter(cluster=cluster)
-
-    # TODO: double purpose code need to be refactored
-    # HC mapping could be edited with OR without hierarchy locking
     old_hosts = {i.host for i in hc_queryset.select_related('host').all()}
     new_hosts = {i[1] for i in host_comp_list}
     for removed_host in old_hosts.difference(new_hosts):
-        if removed_host.state == config.Job.LOCKED:
-            cm.lock._unlock_obj(removed_host, event)  # pylint: disable=protected-access
+        removed_host.remove_from_agenda(lock, event)
     for added_host in new_hosts.difference(old_hosts):
-        if added_host.cluster.state == config.Job.LOCKED:
-            cm.lock._lock_obj(added_host, event)  # pylint: disable=protected-access
+        added_host.add_to_agenda(lock, event)
 
     hc_queryset.delete()
     result = []
@@ -570,11 +560,11 @@ def save_hc(cluster, host_comp_list):
     return result
 
 
-def add_hc(cluster, hc_in):
+def add_hc(cluster, hc_in, lock: AgendaItem = None):
     host_comp_list = check_hc(cluster, hc_in)
     with transaction.atomic():
         DummyData.objects.filter(id=1).update(date=timezone.now())
-        new_hc = save_hc(cluster, host_comp_list)
+        new_hc = save_hc(cluster, host_comp_list, lock)
     return new_hc
 
 
@@ -842,14 +832,3 @@ def check_multi_bind(actual_import, cluster, service, export_cluster, export_ser
             if source_proto == export_cluster.prototype:
                 msg = 'can not multi bind {} to {}'
                 err('BIND_ERROR', msg.format(proto_ref(source_proto), obj_ref(cluster)))
-
-
-def push_obj(obj, state):
-    stack = obj.stack
-    if not stack:
-        stack = [state]
-    else:
-        stack[0] = state
-    obj.stack = stack
-    obj.save()
-    return obj

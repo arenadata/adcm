@@ -11,6 +11,8 @@
 # limitations under the License.
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+from itertools import chain
+from typing import Iterable
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -204,22 +206,45 @@ class ADCMEntity(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
     issue = models.JSONField(default=dict)
+    agenda = models.ManyToManyField('AgendaItem', blank=True, related_name='%(class)s_entities')
 
     class Meta:
         abstract = True
 
+    @property
+    def is_locked(self) -> bool:
+        return self.agenda.exists()
+
+    def add_to_agenda(self, item: 'AgendaItem', event=None) -> None:
+        if not item or getattr(item, 'id', None) is None:
+            return
+
+        if item not in self.agenda.all():
+            self.agenda.add(item)
+            if event:
+                event.acquire_lock(self, item)
+
+    def remove_from_agenda(self, item: 'AgendaItem', event=None) -> None:
+        if not item or not hasattr(item, 'id'):
+            return
+
+        if item in self.agenda.all():
+            self.agenda.remove(item)
+            if event:
+                event.release_lock(self, item)
+
     def __str__(self):
-        """Legacy `cm.adcm_config.obj_ref()` to avoid cyclic imports"""
-        name = getattr(self, 'name', None) or getattr(self, 'fqdn', self.prototype.name)
+        own_name = getattr(self, 'name', None)
+        fqdn = getattr(self, 'fqdn', None)
+        name = own_name or fqdn or self.prototype.name
         return '{} #{} "{}"'.format(self.prototype.type, self.id, name)
 
     def set_state(self, state: str, event=None) -> 'ADCMEntity':
-        """Legacy `cm.api.set_object_state()` to avoid cyclic imports"""
-        self.state = state
+        self.state = state or self.state
         self.save()
-        event.set_object_state(self.prototype.type, self.id, state)
+        if event:
+            event.set_object_state(self.prototype.type, self.id, state)
         log.info('set %s state to "%s"', self, state)
         return self
 
@@ -615,6 +640,36 @@ class TaskLog(ADCMModel):
     verbose = models.BooleanField(default=False)
     start_date = models.DateTimeField()
     finish_date = models.DateTimeField()
+    lock = models.ForeignKey('AgendaItem', null=True, on_delete=models.SET_NULL, default=None)
+
+    def lock_affected(self, objects: Iterable[ADCMEntity], event=None) -> None:
+        if self.lock:
+            return
+
+        self.lock = AgendaItem.objects.create(
+            name=None,
+            reason={
+                # TODO: some templated string from self.action
+                'task': self.pk,
+                'action': self.action and self.action.pk,
+                'selector': self.selector,
+            },
+        )
+        self.save()
+        for obj in objects:
+            obj.add_to_agenda(self.lock)
+            if event:
+                event.acquire_lock(obj, self.lock)
+
+    def unlock_affected(self, event=None) -> None:
+        if not self.lock:
+            return
+
+        if event:
+            for obj in self.lock.attendees:
+                event.release_lock(obj, self.lock)
+
+        self.lock.delete()
 
 
 class JobLog(ADCMModel):
@@ -804,3 +859,33 @@ class StagePrototypeImport(ADCMModel):
 
 class DummyData(ADCMModel):
     date = models.DateTimeField(auto_now=True)
+
+
+class AgendaItem(ADCMModel):
+    """
+    Representation for object's lock/issue/flag
+    Man-to-many from ADCMEntities
+    One-to-one from TaskLog
+    ...
+
+    `name` is used for (un)setting flags from ansible playbooks
+    `attendees` are back-refs from affected ADCMEntities.agenda
+    `reason` is used to display/notify in front-end, text template and data for URL generation
+        for lock - "locked by Action(id) TaskLog(id) JobLog(id)"
+        for issue - "source(id) has issue with config| imports| not-deployed services"
+        for flag - TODO: depends on use cases
+    """
+
+    name = models.CharField(max_length=160, null=True)
+    reason = models.JSONField(default=dict)
+
+    @property
+    def attendees(self) -> Iterable[ADCMEntity]:
+        return chain(
+            self.adcm_entities.all(),
+            self.cluster_entities.all(),
+            self.clusterobject_entities.all(),
+            self.servicecomponent_entities.all(),
+            self.hostprovider_entities.all(),
+            self.host_entities.all(),
+        )

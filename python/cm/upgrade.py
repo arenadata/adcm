@@ -115,7 +115,7 @@ def check_upgrade_edition(obj, upgrade):
 
 
 def check_upgrade_state(obj, upgrade):
-    if obj.state == config.Job.LOCKED:
+    if obj.is_locked:
         return False, 'object is locked'
     if upgrade.state_available:
         available = upgrade.state_available

@@ -30,26 +30,26 @@ from cm import config
 from cm import api, issue, inventory, adcm_config, variant
 from cm.adcm_config import obj_ref, process_file_type
 from cm.errors import raise_AdcmEx as err
+from cm.hierarchy import Tree
 from cm.inventory import get_obj_config, process_config_and_attr
-from cm.lock import lock_objects, unlock_objects
 from cm.logger import log
 from cm.models import (
-    Cluster,
+    ADCM,
     Action,
+    CheckLog,
+    Cluster,
+    ClusterObject,
+    DummyData,
+    GroupCheckLog,
+    Host,
+    HostComponent,
+    HostProvider,
+    JobLog,
+    LogStorage,
+    ServiceComponent,
     SubAction,
     TaskLog,
-    JobLog,
-    CheckLog,
-    Host,
-    ADCM,
-    ClusterObject,
-    HostComponent,
-    ServiceComponent,
-    HostProvider,
-    DummyData,
-    LogStorage,
     ConfigLog,
-    GroupCheckLog,
     get_object_cluster,
     get_model_by_type,
 )
@@ -111,18 +111,17 @@ def prepare_task(
     if not attr:
         attr = {}
 
-    with transaction.atomic():
+    with transaction.atomic():  # pylint: disable=too-many-locals
         DummyData.objects.filter(id=1).update(date=timezone.now())
-        lock_objects(obj, event)
-
-        if host_map:
-            api.save_hc(cluster, host_map)
 
         if action.type == 'task':
             task = create_task(action, obj, conf, attr, old_hc, delta, hosts, event, verbose)
         else:
             task = create_one_job_task(action, obj, conf, attr, old_hc, hosts, event, verbose)
             create_job(action, None, event, task)
+
+        if host_map:
+            api.save_hc(cluster, host_map, task.lock)
 
         if conf:
             new_conf = process_config_and_attr(task, conf, attr, spec)
@@ -186,7 +185,7 @@ def check_action_state(action, task_object, cluster):
     else:
         obj = task_object
 
-    if obj.state == config.Job.LOCKED:
+    if obj.is_locked:
         err('TASK_ERROR', 'object is locked')
     available = action.state_available
     if available == 'any':
@@ -535,6 +534,9 @@ def create_one_job_task(action, obj, conf, attr, hc, hosts, event, verbose):
         status=config.Job.CREATED,
     )
     task.save()
+    tree = Tree(obj)
+    affected = (node.value for node in tree.get_all_affected(tree.built_from))
+    task.lock_affected(affected, event)
     set_task_status(task, config.Job.CREATED, event)
     return task
 
@@ -589,7 +591,7 @@ def set_action_state(action, task, obj, state):
         return
     msg = 'action "%s" of task #%s will set %s state to "%s"'
     log.info(msg, action.name, task.id, obj_ref(obj), state)
-    api.push_obj(obj, state)
+    obj.set_state(state)
 
 
 def restore_hc(task, action, status):
@@ -611,7 +613,7 @@ def restore_hc(task, action, status):
         host_comp_list.append((service, host, comp))
 
     log.warning('task #%s is failed, restore old hc', task.id)
-    api.save_hc(cluster, host_comp_list)
+    api.save_hc(cluster, host_comp_list, task.lock)
 
 
 def finish_task(task, job, status):
@@ -630,8 +632,8 @@ def finish_task(task, job, status):
         DummyData.objects.filter(id=1).update(date=timezone.now())
         if state is not None:
             set_action_state(action, task, obj, state)
-        unlock_objects(obj or get_object_cluster(obj), event)
         restore_hc(task, action, status)
+        task.unlock_affected(event)
         set_task_status(task, status, event)
     event.send_state()
 
@@ -854,5 +856,6 @@ def set_job_status(job_id, status, event, pid=0):
 def abort_all(event):
     for task in TaskLog.objects.filter(status=config.Job.RUNNING):
         set_task_status(task, config.Job.ABORTED, event)
+        task.unlock_affected(event)
     for job in JobLog.objects.filter(status=config.Job.RUNNING):
         set_job_status(job.id, config.Job.ABORTED, event)

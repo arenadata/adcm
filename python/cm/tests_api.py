@@ -9,15 +9,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from unittest.mock import patch, Mock
+from unittest.mock import patch
 
 from django.test import TestCase
 from django.utils import timezone
 
 import cm.api as api_module
 import cm.hierarchy
-import cm.lock
-from cm import models, config
+from cm import models
 from cm.unit_tests import utils
 
 
@@ -62,26 +61,9 @@ class TestApi(TestCase):
                 'description': '',
                 'config_id': self.object_config.id,
                 'state': 'installed',
-                'stack': [],
                 'issue': {},
             }
         )
-
-    def test_push_obj(self):
-
-        data = [
-            ([], 'created'),
-            ('', 'running'),
-            (['created'], 'running'),
-        ]
-
-        for stack, state in data:
-            with self.subTest(stack=stack, state=state):
-                self.cluster.stack = stack
-                self.cluster.save()
-
-                cluster = api_module.push_obj(self.cluster, state)
-                self.assertEqual(cluster.stack, [state])
 
     @patch('cm.status_api.load_service_map')
     @patch('cm.issue.update_hierarchy_issues')
@@ -124,7 +106,6 @@ class TestApi(TestCase):
             host_2 is unlocked
             host_3 became locked
         """
-        event = Mock()
         service = utils.gen_service(self.cluster)
         component_1 = utils.gen_component(service)
         component_2 = utils.gen_component(service)
@@ -135,39 +116,32 @@ class TestApi(TestCase):
         utils.gen_host_component(component_1, host_1)
         utils.gen_host_component(component_2, host_2)
 
-        cm.lock.lock_objects(self.cluster, event)
-        # refresh due to new instances were updated in lock_objects()
+        task = utils.gen_task_log(service)
+        tree = cm.hierarchy.Tree(self.cluster)
+        affected = (node.value for node in tree.get_all_affected(tree.built_from))
+        task.lock_affected(affected)
+
+        # refresh due to new instances were updated in task.lock_affected()
         host_1.refresh_from_db()
         host_2.refresh_from_db()
         host_3.refresh_from_db()
-
-        self.assertEqual(host_1.state, config.Job.LOCKED)
-        self.assertListEqual(host_1.stack, ['created'])
-
-        self.assertEqual(host_2.state, config.Job.LOCKED)
-        self.assertListEqual(host_2.stack, ['created'])
-
-        self.assertEqual(host_3.state, config.Job.CREATED)
-        self.assertListEqual(host_3.stack, [])
+        self.assertTrue(host_1.is_locked)
+        self.assertTrue(host_2.is_locked)
+        self.assertFalse(host_3.is_locked)
 
         new_hc_list = [
             (service, host_1, component_1),
             (service, host_3, component_2),
         ]
-        api_module.save_hc(self.cluster, new_hc_list)
+        api_module.save_hc(self.cluster, new_hc_list, task.lock)
+
         # refresh due to new instances were updated in save_hc()
         host_1.refresh_from_db()
         host_2.refresh_from_db()
         host_3.refresh_from_db()
-
-        self.assertEqual(host_1.state, config.Job.LOCKED)
-        self.assertListEqual(host_1.stack, ['created'])
-
-        self.assertEqual(host_2.state, config.Job.CREATED)
-        self.assertListEqual(host_2.stack, [])
-
-        self.assertEqual(host_3.state, config.Job.LOCKED)
-        self.assertListEqual(host_1.stack, ['created'])
+        self.assertTrue(host_1.is_locked)
+        self.assertFalse(host_2.is_locked)
+        self.assertTrue(host_3.is_locked)
 
     @patch('cm.status_api.load_service_map')
     @patch('cm.issue.update_hierarchy_issues')
@@ -191,30 +165,23 @@ class TestApi(TestCase):
         utils.gen_host_component(component_1, host_1)
         utils.gen_host_component(component_2, host_2)
 
-        self.assertEqual(host_1.state, config.Job.CREATED)
-        self.assertListEqual(host_1.stack, [])
-
-        self.assertEqual(host_2.state, config.Job.CREATED)
-        self.assertListEqual(host_2.stack, [])
-
-        self.assertEqual(host_3.state, config.Job.CREATED)
-        self.assertListEqual(host_3.stack, [])
+        host_1.refresh_from_db()
+        host_2.refresh_from_db()
+        host_3.refresh_from_db()
+        self.assertFalse(host_1.is_locked)
+        self.assertFalse(host_2.is_locked)
+        self.assertFalse(host_3.is_locked)
 
         new_hc_list = [
             (service, host_1, component_1),
             (service, host_3, component_2),
         ]
         api_module.save_hc(self.cluster, new_hc_list)
+
         # refresh due to new instances were updated in save_hc()
         host_1.refresh_from_db()
         host_2.refresh_from_db()
         host_3.refresh_from_db()
-
-        self.assertEqual(host_1.state, config.Job.CREATED)
-        self.assertListEqual(host_1.stack, [])
-
-        self.assertEqual(host_2.state, config.Job.CREATED)
-        self.assertListEqual(host_2.stack, [])
-
-        self.assertEqual(host_3.state, config.Job.CREATED)
-        self.assertListEqual(host_1.stack, [])
+        self.assertFalse(host_1.is_locked)
+        self.assertFalse(host_2.is_locked)
+        self.assertFalse(host_3.is_locked)

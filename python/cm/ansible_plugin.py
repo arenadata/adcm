@@ -16,12 +16,19 @@ from ansible.utils.vars import merge_hash
 
 import cm
 from cm import config
-from cm.errors import raise_AdcmEx as err
-from cm.api import push_obj, add_hc, get_hc
+from cm.api import add_hc, get_hc
 from cm.adcm_config import set_object_config
-from cm.models import Cluster, ClusterObject, ServiceComponent, HostProvider, Host
-from cm.models import Prototype, Action, JobLog
-
+from cm.errors import raise_AdcmEx as err
+from cm.models import (
+    Cluster,
+    ClusterObject,
+    ServiceComponent,
+    HostProvider,
+    Host,
+    Prototype,
+    Action,
+    JobLog,
+)
 
 MSG_NO_CONFIG = (
     "There are no job related vars in inventory. It's mandatory for that module to have some"
@@ -225,40 +232,38 @@ def get_service_by_name(cluster_id, service_name):
 
 def set_cluster_state(cluster_id, state):
     cluster = Cluster.obj.get(id=cluster_id)
-    return push_obj(cluster, state)
+    return cluster.set_state(state)
 
 
 def set_host_state(host_id, state):
     host = Host.obj.get(id=host_id)
-    return push_obj(host, state)
+    return host.set_state(state)
 
 
 def set_component_state(component_id, state):
     comp = ServiceComponent.obj.get(id=component_id)
-    return push_obj(comp, state)
+    return comp.set_state(state)
 
 
 def set_component_state_by_name(cluster_id, service_id, component_name, service_name, state):
     comp = get_component_by_name(cluster_id, service_id, component_name, service_name)
-    return push_obj(comp, state)
+    return comp.set_state(state)
 
 
 def set_provider_state(provider_id, state, event):
     provider = HostProvider.obj.get(id=provider_id)
-    if provider.state == config.Job.LOCKED:
-        return push_obj(provider, state)
-    else:
-        return provider.set_state(state, event)
+    evt = None if provider.is_locked else event
+    return provider.set_state(state, evt)
 
 
 def set_service_state(cluster_id, service_name, state):
     obj = get_service_by_name(cluster_id, service_name)
-    return push_obj(obj, state)
+    return obj.set_state(state)
 
 
 def set_service_state_by_id(cluster_id, service_id, state):
     obj = ClusterObject.obj.get(id=service_id, cluster__id=cluster_id, prototype__type='service')
-    return push_obj(obj, state)
+    return obj.set_state(state)
 
 
 def change_hc(job_id, cluster_id, operations):  # pylint: disable=too-many-branches
@@ -266,6 +271,7 @@ def change_hc(job_id, cluster_id, operations):  # pylint: disable=too-many-branc
     For use in ansible plugin adcm_hc
     '''
     job = JobLog.objects.get(id=job_id)
+    lock = getattr(job.task, 'lock', None)
     action = Action.objects.get(id=job.action_id)
     if action.hostcomponentmap:
         err('ACTION_ERROR', 'You can not change hc in plugin for action with hc_acl')
@@ -298,7 +304,7 @@ def change_hc(job_id, cluster_id, operations):  # pylint: disable=too-many-branc
         else:
             err('INVALID_INPUT', 'unknown hc action "{}"'.format(op['action']))
 
-    add_hc(cluster, hc)
+    add_hc(cluster, hc, lock)
 
 
 def set_cluster_config(cluster_id, keys, value):

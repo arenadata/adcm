@@ -30,8 +30,7 @@ from adcm.settings import REST_FRAMEWORK
 import cm.upgrade
 from cm import config
 from cm.errors import AdcmEx
-from cm.models import Action, ConfigLog, PrototypeConfig
-from cm.logger import log
+from cm.models import Action, ADCMEntity, PrototypeConfig
 
 
 def check_obj(model, req, error=None):
@@ -63,8 +62,8 @@ def update(serializer, **kwargs):
     return save(serializer, status.HTTP_200_OK, **kwargs)
 
 
-def filter_actions(obj, actions_set):
-    if obj.state == config.Job.LOCKED:
+def filter_actions(obj: ADCMEntity, actions_set):
+    if obj.is_locked:
         return []
     filtered = []
     for act in actions_set:
