@@ -12,6 +12,8 @@
 
 from uuid import uuid4
 
+from django.utils import timezone
+
 import cm.models as models
 
 
@@ -20,12 +22,12 @@ def _gen_name(prefix: str, name='name'):
     return {name: prefix + uuid4().hex}
 
 
-def gen_bundle(name=''):
+def gen_bundle(name='') -> models.Bundle:
     """Generate some bundle"""
     return models.Bundle.objects.create(**_gen_name(name), version='1.0.0')
 
 
-def gen_prototype(bundle: models.Bundle, proto_type):
+def gen_prototype(bundle: models.Bundle, proto_type) -> models.Prototype:
     """Generate prototype of specified type from bundle"""
     return models.Prototype.objects.create(
         type=proto_type,
@@ -35,7 +37,7 @@ def gen_prototype(bundle: models.Bundle, proto_type):
     )
 
 
-def gen_adcm():
+def gen_adcm() -> models.ADCM:
     """Generate or return existing the only ADCM object"""
     try:
         return models.ADCM.objects.get(name='ADCM')
@@ -45,7 +47,7 @@ def gen_adcm():
         return models.ADCM.objects.create(name='ADCM', prototype=prototype)
 
 
-def gen_cluster(name='', bundle=None, prototype=None):
+def gen_cluster(name='', bundle=None, prototype=None) -> models.Cluster:
     """Generate cluster from specified prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
@@ -56,7 +58,7 @@ def gen_cluster(name='', bundle=None, prototype=None):
     )
 
 
-def gen_service(cluster, bundle=None, prototype=None):
+def gen_service(cluster, bundle=None, prototype=None) -> models.ClusterObject:
     """Generate service of specified cluster and prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
@@ -67,7 +69,7 @@ def gen_service(cluster, bundle=None, prototype=None):
     )
 
 
-def gen_component(service, bundle=None, prototype=None):
+def gen_component(service, bundle=None, prototype=None) -> models.ServiceComponent:
     """Generate service component for specified service and prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
@@ -79,7 +81,7 @@ def gen_component(service, bundle=None, prototype=None):
     )
 
 
-def gen_provider(name='', bundle=None, prototype=None):
+def gen_provider(name='', bundle=None, prototype=None) -> models.HostProvider:
     """Generate host provider for specified prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
@@ -90,7 +92,7 @@ def gen_provider(name='', bundle=None, prototype=None):
     )
 
 
-def gen_host(provider, cluster=None, fqdn='', bundle=None, prototype=None):
+def gen_host(provider, cluster=None, fqdn='', bundle=None, prototype=None) -> models.Host:
     """Generate host for specified cluster, provider, and prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
@@ -103,7 +105,7 @@ def gen_host(provider, cluster=None, fqdn='', bundle=None, prototype=None):
     )
 
 
-def gen_host_component(component, host):
+def gen_host_component(component, host) -> models.HostComponent:
     """Generate host-component for specified host and component"""
     cluster = component.service.cluster
     if not host.cluster:
@@ -116,4 +118,54 @@ def gen_host_component(component, host):
         cluster=cluster,
         service=component.service,
         component=component,
+    )
+
+
+def gen_agenda_item(name=None, reason='Test') -> models.AgendaItem:
+    """Generate AgendaItem object"""
+    return models.AgendaItem.objects.create(name=name, reason=reason)
+
+
+def gen_task_log(obj) -> models.TaskLog:
+    return models.TaskLog.objects.create(
+        object_id=obj.pk,
+        status='CREATED',
+        start_date=timezone.now(),
+        finish_date=timezone.now(),
+    )
+
+
+def generate_hierarchy():  # pylint: disable=too-many-locals,too-many-statements
+    """
+    Generates hierarchy:
+        cluster - service - component - host - provider
+    """
+    gen_adcm()
+
+    cluster_bundle = gen_bundle()
+    provider_bundle = gen_bundle()
+
+    cluster_pt = gen_prototype(cluster_bundle, 'cluster')
+    cluster = gen_cluster(prototype=cluster_pt)
+
+    service_pt = gen_prototype(cluster_bundle, 'service')
+    service = gen_service(cluster, prototype=service_pt)
+
+    component_pt = gen_prototype(cluster_bundle, 'component')
+    component = gen_component(service, prototype=component_pt)
+
+    provider_pt = gen_prototype(provider_bundle, 'provider')
+    provider = gen_provider(prototype=provider_pt)
+
+    host_pt = gen_prototype(provider_bundle, 'host')
+    host = gen_host(provider, prototype=host_pt)
+
+    gen_host_component(component, host)
+
+    return dict(
+        cluster=cluster,
+        service=service,
+        component=component,
+        provider=provider,
+        host=host,
     )

@@ -15,7 +15,7 @@ import requests
 import simplejson
 
 from cm.logger import log
-from cm.models import HostComponent, ServiceComponent, ClusterObject, Host
+from cm.models import HostComponent, ServiceComponent, ClusterObject, Host, ADCMEntity, AgendaItem
 from cm.config import STATUS_SECRET_KEY
 
 API_URL = "http://localhost:8020/api/v1"
@@ -43,6 +43,12 @@ class Event:
 
     def set_task_status(self, task_id, status):
         self.events.append((set_task_status, (task_id, status)))
+
+    def acquire_lock(self, obj: ADCMEntity, lock: AgendaItem):
+        self.events.append((acquire_lock, (obj, lock)))
+
+    def release_lock(self, obj: ADCMEntity, lock: AgendaItem):
+        self.events.append((release_lock, (obj, lock)))
 
 
 def api_post(path, data):
@@ -198,3 +204,15 @@ def load_service_map():
     }
     log.debug("service map: %s", m)
     return api_post('/servicemap/', m)
+
+
+def acquire_lock(obj: ADCMEntity, lock: AgendaItem):
+    # TODO: add more sense
+    details = {'reason': lock.reason}
+    return post_event('acquire_lock', obj.prototype.type, obj.pk, det_type=details)
+
+
+def release_lock(obj: ADCMEntity, lock: AgendaItem):
+    # TODO: add more sense
+    details = {'reason': lock.reason}
+    return post_event('release_lock', obj.prototype.type, obj.pk, det_type=details)

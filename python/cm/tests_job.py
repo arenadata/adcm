@@ -21,10 +21,8 @@ from django.utils import timezone
 import cm
 import cm.config as config
 import cm.job as job_module
-import cm.lock as lock_module
 from cm import models
 from cm.logger import log
-from cm.unit_tests import utils
 
 
 class TestJob(TestCase):
@@ -112,8 +110,7 @@ class TestJob(TestCase):
 
                 self.assertEqual(state, test_state)
 
-    @patch('cm.api.push_obj')
-    def test_set_action_state(self, mock_push_obj):
+    def test_set_action_state(self):
         bundle = models.Bundle.objects.create()
         prototype = models.Prototype.objects.create(bundle=bundle)
         cluster = models.Cluster.objects.create(prototype=prototype)
@@ -136,44 +133,8 @@ class TestJob(TestCase):
 
         for obj, state in data:
             with self.subTest(obj=obj, state=state):
-
                 job_module.set_action_state(action, task, obj, state)
-
-                mock_push_obj.assert_called_with(obj, state)
-
-    def test_unlock_obj(self):
-        event = Mock()
-        obj1 = Mock(stack=['running'])
-        obj2 = Mock(stack=[])
-        obj3 = Mock(stack='')
-
-        data = [
-            (obj1, obj1.set_state.assert_called_once),
-            (obj2, obj2.set_state.assert_not_called),
-            (obj3, obj3.set_state.assert_not_called),
-        ]
-
-        for obj, check_assert in data:
-            with self.subTest(obj=obj):
-                lock_module._unlock_obj(obj, event)
-                check_assert()
-
-    @patch('cm.lock._unlock_obj')
-    def test_unlock_objects(self, mock_unlock_obj):
-        bundle = utils.gen_bundle()
-        cluster = utils.gen_cluster(bundle=bundle)
-        service = utils.gen_service(cluster, bundle=bundle)
-        component = utils.gen_component(service, bundle=bundle)
-        host_provider = utils.gen_provider(bundle=bundle)
-        host = utils.gen_host(provider=host_provider, cluster=cluster, bundle=bundle)
-        utils.gen_host_component(component, host)
-        event = Mock()
-
-        for obj in [cluster, service, component, host, host_provider]:
-            with self.subTest(obj=obj):
-                lock_module.unlock_objects(obj, event)
-                self.assertEqual(mock_unlock_obj.call_count, 5)
-                mock_unlock_obj.reset_mock()
+                self.assertEqual(obj.state, state or 'created')
 
     @patch('cm.job.api.save_hc')
     def test_restore_hc(self, mock_save_hc):
@@ -209,7 +170,9 @@ class TestJob(TestCase):
 
         job_module.restore_hc(task, action, config.Job.FAILED)
 
-        mock_save_hc.assert_called_once_with(cluster, [(cluster_object, host, service_component)])
+        mock_save_hc.assert_called_once_with(
+            cluster, [(cluster_object, host, service_component)], None
+        )
 
     @patch('cm.job.err')
     def test_check_service_task(self, mock_err):

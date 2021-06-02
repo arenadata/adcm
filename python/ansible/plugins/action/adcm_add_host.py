@@ -14,6 +14,7 @@
 # pylint: disable=wrong-import-position, unused-import, import-error
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 ANSIBLE_METADATA = {'metadata_version': '1.1', 'supported_by': 'Arenadata'}
@@ -58,6 +59,7 @@ import cm.api
 from cm.ansible_plugin import get_object_id_from_context
 from cm.errors import AdcmEx
 from cm.logger import log
+from cm.models import JobLog
 
 
 class ActionModule(ActionBase):
@@ -79,8 +81,12 @@ class ActionModule(ActionBase):
 
         log.info('ansible module adcm_add_host: provider %s, fqdn %s', provider_id, fqdn)
 
+        job_id = task_vars['job']['id']
+        job = JobLog.objects.get(id=job_id)
+        lock = getattr(job.task, 'lock', None)
+
         try:
-            host = cm.api.add_provider_host(provider_id, fqdn, desc)
+            host = cm.api.add_provider_host(provider_id, fqdn, desc, lock)
         except AdcmEx as e:
             raise AnsibleError(e.code + ":" + e.msg) from e
 

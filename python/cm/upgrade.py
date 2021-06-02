@@ -15,7 +15,6 @@ import functools
 from django.db import transaction
 from version_utils import rpm
 
-import cm.config as config
 import cm.issue
 import cm.status_api
 from cm.adcm_config import proto_ref, obj_ref, switch_config
@@ -115,7 +114,7 @@ def check_upgrade_edition(obj, upgrade):
 
 
 def check_upgrade_state(obj, upgrade):
-    if obj.state == config.Job.LOCKED:
+    if obj.is_locked:
         return False, 'object is locked'
     if upgrade.state_available:
         available = upgrade.state_available
