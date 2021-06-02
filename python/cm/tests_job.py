@@ -69,32 +69,6 @@ class TestJob(TestCase):
         self.assertEqual(task.status, config.Job.RUNNING)
         event.set_task_status.assert_called_once_with(task.id, config.Job.RUNNING)
 
-    def test_get_task_obj(self):
-        bundle = models.Bundle.objects.create()
-        prototype = models.Prototype.objects.create(bundle=bundle)
-        cluster = models.Cluster.objects.create(prototype=prototype)
-        cluster_object = models.ClusterObject.objects.create(prototype=prototype, cluster=cluster)
-        host = models.Host.objects.create(prototype=prototype)
-        host_provider = models.HostProvider.objects.create(prototype=prototype)
-        adcm = models.ADCM.objects.create(prototype=prototype)
-
-        data = [
-            ('service', cluster_object.id, cluster_object),
-            ('host', host.id, host),
-            ('host', 2, None),
-            ('cluster', cluster.id, cluster),
-            ('provider', host_provider.id, host_provider),
-            ('adcm', adcm.id, adcm),
-            ('action', 1, None),
-        ]
-
-        for context, obj_id, test_obj in data:
-            with self.subTest(context=context, obj_id=obj_id):
-
-                obj = job_module.get_task_obj(context, obj_id)
-
-                self.assertEqual(obj, test_obj)
-
     def test_get_state(self):
         bundle = models.Bundle.objects.create()
         prototype = models.Prototype.objects.create(bundle=bundle)

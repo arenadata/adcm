@@ -164,6 +164,5 @@ class RunTask(GenericAPIPermView):
         """
         obj, action_id = get_obj(**kwargs)
         action = check_obj(Action, {'id': action_id}, 'ACTION_NOT_FOUND')
-        selector = get_selector(obj, action)
         serializer = self.serializer_class(data=request.data, context={'request': request})
-        return create(serializer, action_id=action.id, selector=selector)
+        return create(serializer, action=action, task_object=obj)
