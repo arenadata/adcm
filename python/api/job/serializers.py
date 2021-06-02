@@ -51,11 +51,13 @@ def get_job_objects(obj):
                 name = ''
         except ObjectDoesNotExist:
             name = 'does not exist'
-        resp.append({
-            'type': obj_type,
-            'id': selector[obj_type],
-            'name': name,
-        })
+        resp.append(
+            {
+                'type': obj_type,
+                'id': selector[obj_type],
+                'name': name,
+            }
+        )
     return resp
 
 
@@ -168,7 +170,7 @@ class RunTaskSerializer(TaskSerializer):
             validated_data.get('attr', {}),
             validated_data.get('hc', []),
             validated_data.get('hosts', []),
-            validated_data.get('verbose', False)
+            validated_data.get('verbose', False),
         )
         obj.jobs = JobLog.objects.filter(task_id=obj.id)
         return obj
@@ -225,7 +227,8 @@ class LogStorageSerializer(serializers.Serializer):
 
     def _get_ansible_content(self, obj):
         path_file = os.path.join(
-            config.RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}')
+            config.RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}'
+        )
         try:
             with open(path_file, 'r') as f:
                 content = f.read()
@@ -264,7 +267,8 @@ class LogStorageListSerializer(LogStorageSerializer):
         return reverse(
             'log-storage',
             kwargs={'job_id': obj.job_id, 'log_id': obj.id},
-            request=self.context['request'])
+            request=self.context['request'],
+        )
 
 
 class LogSerializer(serializers.Serializer):
@@ -294,7 +298,8 @@ class LogSerializer(serializers.Serializer):
         if obj.type in ['stdout', 'stderr']:
             if content is None:
                 path_file = os.path.join(
-                    config.RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}')
+                    config.RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}'
+                )
                 with open(path_file, 'r') as f:
                     content = f.read()
         elif obj.type == 'check':

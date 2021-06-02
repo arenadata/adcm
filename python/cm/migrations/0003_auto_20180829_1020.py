@@ -60,7 +60,20 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='prototypeconfig',
             name='type',
-            field=models.CharField(choices=[('string', 'string'), ('text', 'text'), ('password', 'password'), ('json', 'json'), ('integer', 'integer'), ('float', 'float'), ('option', 'option'), ('boolean', 'boolean'), ('file', 'file')], max_length=16),
+            field=models.CharField(
+                choices=[
+                    ('string', 'string'),
+                    ('text', 'text'),
+                    ('password', 'password'),
+                    ('json', 'json'),
+                    ('integer', 'integer'),
+                    ('float', 'float'),
+                    ('option', 'option'),
+                    ('boolean', 'boolean'),
+                    ('file', 'file'),
+                ],
+                max_length=16,
+            ),
         ),
         migrations.AlterField(
             model_name='stagecomponent',
@@ -75,7 +88,20 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='stageprototypeconfig',
             name='type',
-            field=models.CharField(choices=[('string', 'string'), ('text', 'text'), ('password', 'password'), ('json', 'json'), ('integer', 'integer'), ('float', 'float'), ('option', 'option'), ('boolean', 'boolean'), ('file', 'file')], max_length=16),
+            field=models.CharField(
+                choices=[
+                    ('string', 'string'),
+                    ('text', 'text'),
+                    ('password', 'password'),
+                    ('json', 'json'),
+                    ('integer', 'integer'),
+                    ('float', 'float'),
+                    ('option', 'option'),
+                    ('boolean', 'boolean'),
+                    ('file', 'file'),
+                ],
+                max_length=16,
+            ),
         ),
         migrations.AlterField(
             model_name='stageupgrade',

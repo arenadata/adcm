@@ -19,10 +19,12 @@ from ansible.plugins.lookup import LookupBase
 try:
     from __main__ import display
 except ImportError:
-    from ansible.utils.display import Display   # pylint: disable=ungrouped-imports
+    from ansible.utils.display import Display  # pylint: disable=ungrouped-imports
+
     display = Display()
 
 import sys
+
 sys.path.append('/adcm/python')
 import adcm.init_django
 import cm.status_api
@@ -33,7 +35,7 @@ from cm.ansible_plugin import (
     set_service_state_by_id,
     set_cluster_state,
     set_provider_state,
-    set_host_state
+    set_host_state,
 )
 
 
@@ -71,8 +73,7 @@ RETURN = """
 
 
 class LookupModule(LookupBase):
-
-    def run(self, terms, variables=None, **kwargs):   # pylint: disable=too-many-branches
+    def run(self, terms, variables=None, **kwargs):  # pylint: disable=too-many-branches
         log.debug('run %s %s', terms, kwargs)
         ret = []
         event = Event()

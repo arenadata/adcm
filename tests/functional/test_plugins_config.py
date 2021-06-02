@@ -28,19 +28,9 @@ xxx
 yyyy
 """,
     "string": "zzz",
-    "json": [
-        {"x": "y"},
-        {"y": "z"}
-    ],
-    "map": {
-        "one": "two",
-        "two": "three"
-    },
-    "list": [
-        "one",
-        "two",
-        "three"
-    ]
+    "json": [{"x": "y"}, {"y": "z"}],
+    "map": {"one": "two", "two": "three"},
+    "list": ["one", "two", "three"],
 }
 
 KEYS = list(INITIAL_CONFIG.keys())
@@ -55,19 +45,9 @@ xxx
 yyyy
 """,
     "string": "double new",
-    "json": [
-        {"x": "new"},
-        {"y": "z"}
-    ],
-    "map": {
-        "one": "two",
-        "two": "new"
-    },
-    "list": [
-        "one",
-        "new",
-        "three"
-    ]
+    "json": [{"x": "new"}, {"y": "z"}],
+    "map": {"one": "two", "two": "new"},
+    "list": ["one", "new", "three"],
 }
 
 INITIAL_CLUSTERS_CONFIG = {
@@ -75,22 +55,22 @@ INITIAL_CLUSTERS_CONFIG = {
         'config': copy.deepcopy(INITIAL_CONFIG),
         'services': {
             'First': copy.deepcopy(INITIAL_CONFIG),
-            'Second': copy.deepcopy(INITIAL_CONFIG)
-        }
+            'Second': copy.deepcopy(INITIAL_CONFIG),
+        },
     },
     'second': {
         'config': copy.deepcopy(INITIAL_CONFIG),
         'services': {
             'First': copy.deepcopy(INITIAL_CONFIG),
-            'Second': copy.deepcopy(INITIAL_CONFIG)
-        }
+            'Second': copy.deepcopy(INITIAL_CONFIG),
+        },
     },
     'third': {
         'config': copy.deepcopy(INITIAL_CONFIG),
         'services': {
             'First': copy.deepcopy(INITIAL_CONFIG),
-            'Second': copy.deepcopy(INITIAL_CONFIG)
-        }
+            'Second': copy.deepcopy(INITIAL_CONFIG),
+        },
     },
 }
 
@@ -110,7 +90,7 @@ def assert_cluster_config(bundle: Bundle, statemap: dict):
                 v == actual_cnf[k],
                 'Cluster {} config "{}" is "{}" while expected "{}"'.format(
                     cname, k, str(actual_cnf[k]), str(v)
-                )
+                ),
             )
         for sname, service_expected_cnf in clv['services'].items():
             service_actual_cnf = bundle.cluster(name=cname).service(name=sname).config()
@@ -119,7 +99,7 @@ def assert_cluster_config(bundle: Bundle, statemap: dict):
                     v == service_actual_cnf[k],
                     'Cluster {} service {} config {} is {} while expected {}'.format(
                         cname, sname, k, str(service_actual_cnf[k]), str(v)
-                    )
+                    ),
                 )
     assert_expectations()
 
@@ -225,22 +205,22 @@ INITIAL_PROVIDERS_CONFIG = {
         'config': copy.deepcopy(INITIAL_CONFIG),
         'hosts': {
             'first_First': copy.deepcopy(INITIAL_CONFIG),
-            'first_Second': copy.deepcopy(INITIAL_CONFIG)
-        }
+            'first_Second': copy.deepcopy(INITIAL_CONFIG),
+        },
     },
     'second': {
         'config': copy.deepcopy(INITIAL_CONFIG),
         'hosts': {
             'second_First': copy.deepcopy(INITIAL_CONFIG),
-            'second_Second': copy.deepcopy(INITIAL_CONFIG)
-        }
+            'second_Second': copy.deepcopy(INITIAL_CONFIG),
+        },
     },
     'third': {
         'config': copy.deepcopy(INITIAL_CONFIG),
         'hosts': {
             'third_First': copy.deepcopy(INITIAL_CONFIG),
-            'third_Second': copy.deepcopy(INITIAL_CONFIG)
-        }
+            'third_Second': copy.deepcopy(INITIAL_CONFIG),
+        },
     },
 }
 
@@ -270,7 +250,7 @@ def assert_provider_config(bundle: Bundle, statemap: dict):
                 v == actual_cnf[k],
                 'Provider {} config "{}" is "{}" while expected "{}"'.format(
                     pname, k, str(actual_cnf[k]), str(v)
-                )
+                ),
             )
         for hname, host_expected_cnf in plv['hosts'].items():
             host_actual_cnf = bundle.provider(name=pname).host(fqdn=hname).config()
@@ -279,7 +259,7 @@ def assert_provider_config(bundle: Bundle, statemap: dict):
                     v == host_actual_cnf[k],
                     'Provider {} host {} config {} is {} while expected {}'.format(
                         pname, hname, k, str(host_actual_cnf[k]), str(v)
-                    )
+                    ),
                 )
     assert_expectations()
 

@@ -93,7 +93,7 @@ def check_adcm_config(conf_file):
         rules = ruyaml.round_trip_load(fd)
     try:
         with open(conf_file) as fd:
-            ruyaml.version_info = (0, 15, 0)   # switch off duplicate keys error
+            ruyaml.version_info = (0, 15, 0)  # switch off duplicate keys error
             data = ruyaml.round_trip_load(fd, version="1.1")
     except (ruyaml.parser.ParserError, ruyaml.scanner.ScannerError, NotImplementedError) as e:
         err('STACK_LOAD_ERROR', f'YAML decode "{conf_file}" error: {e}')
@@ -326,10 +326,7 @@ def save_sub_actions(proto, conf, action):
         return
     for sub in conf['scripts']:
         sub_action = StageSubAction(
-            action=action,
-            script=sub['script'],
-            script_type=sub['script_type'],
-            name=sub['name']
+            action=action, script=sub['script'], script_type=sub['script_type'], name=sub['name']
         )
         sub_action.display_name = sub['name']
         if 'display_name' in sub:
@@ -400,7 +397,9 @@ def get_yspec(proto, ref, bundle_hash, conf, name, subname):
     return schema
 
 
-def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pylint: disable=too-many-statements,too-many-locals
+def save_prototype_config(
+    proto, proto_conf, bundle_hash, action=None
+):  # pylint: disable=too-many-statements,too-many-locals
     if not in_dict(proto_conf, 'config'):
         return
     conf_dict = proto_conf['config']
@@ -454,12 +453,7 @@ def save_prototype_config(proto, proto_conf, bundle_hash, action=None):   # pyli
         return opt
 
     def cook_conf(obj, conf, name, subname):
-        sc = StagePrototypeConfig(
-            prototype=obj,
-            action=action,
-            name=name,
-            type=conf['type']
-        )
+        sc = StagePrototypeConfig(prototype=obj, action=action, name=name, type=conf['type'])
         dict_to_obj(conf, 'description', sc)
         dict_to_obj(conf, 'display_name', sc)
         dict_to_obj(conf, 'required', sc)
@@ -518,8 +512,10 @@ def validate_name(value, name):
     if not isinstance(value, str):
         err("WRONG_NAME", '{} should be string'.format(name))
     p = re.compile(NAME_REGEX)
-    msg1 = '{} is incorrect. Only latin characters, digits,' \
+    msg1 = (
+        '{} is incorrect. Only latin characters, digits,'
         ' dots (.), dashes (-), and underscores (_) are allowed.'
+    )
     if p.fullmatch(value) is None:
         err("WRONG_NAME", msg1.format(name))
     if len(value) > MAX_NAME_LENGTH:

@@ -21,7 +21,6 @@ from cm import adcm_config
 
 
 class TestUpgradeVersion(TestCase):
-
     def cook_cluster(self):
         b = Bundle(name="ADH", version="1.0")
         proto = Prototype(type="cluster", name="ADH", bundle=b)
@@ -33,7 +32,7 @@ class TestUpgradeVersion(TestCase):
             max_version="2.0",
             min_strict=False,
             max_strict=False,
-            state_available='any'
+            state_available='any',
         )
 
     def check_upgrade(self, obj, upgrade, result):
@@ -95,7 +94,7 @@ class TestUpgradeVersion(TestCase):
         self.check_upgrade(obj, upgrade, False)
 
 
-class SetUp():
+class SetUp:
     def cook_cluster_bundle(self, ver):
         b = Bundle.objects.create(name='ADH', version=ver)
         b.save()
@@ -133,10 +132,7 @@ class SetUp():
 
     def cook_upgrade(self, bundle):
         return Upgrade.objects.create(
-            bundle=bundle,
-            min_version="1.0",
-            max_version="2.0",
-            state_available=['created']
+            bundle=bundle, min_version="1.0", max_version="2.0", state_available=['created']
         )
 
 
@@ -272,12 +268,20 @@ class TestConfigUpgrade(TestCase):
         * Expect that the cluster configuration has not changed
         """
         proto1, proto2 = self.cook_proto()
-        self.add_conf(prototype=proto1, name='advance', type='group',
-                      limits={"activatable": True, "active": False})
+        self.add_conf(
+            prototype=proto1,
+            name='advance',
+            type='group',
+            limits={"activatable": True, "active": False},
+        )
         self.add_conf(prototype=proto1, name='advance', subname='port', type='integer', default=11)
 
-        self.add_conf(prototype=proto2, name='advance', type='group',
-                      limits={"activatable": True, "active": False})
+        self.add_conf(
+            prototype=proto2,
+            name='advance',
+            type='group',
+            limits={"activatable": True, "active": False},
+        )
         self.add_conf(prototype=proto2, name='advance', subname='port', type='integer', default=22)
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
         cm.api.update_obj_config(
@@ -293,7 +297,6 @@ class TestConfigUpgrade(TestCase):
 
 
 class TestUpgrade(TestCase):
-
     def test_cluster_upgrade(self):
         setup = SetUp()
         b1 = setup.cook_cluster_bundle('1.0')
@@ -320,7 +323,7 @@ class TestUpgrade(TestCase):
         self.assertEqual(co1.id, co2.id)
         self.assertEqual(co2.prototype.id, new_proto.id)
 
-    def test_hc(self):   # pylint: disable=too-many-locals
+    def test_hc(self):  # pylint: disable=too-many-locals
         setup = SetUp()
         b1 = setup.cook_cluster_bundle('1.0')
         b2 = setup.cook_cluster_bundle('2.0')
@@ -356,7 +359,7 @@ class TestUpgrade(TestCase):
         r = HostComponent.objects.filter(cluster=cluster, service=co, component=sc2)
         self.assertEqual(len(r), 0)
 
-    def test_component(self):   # pylint: disable=too-many-locals
+    def test_component(self):  # pylint: disable=too-many-locals
         setup = SetUp()
         b1 = setup.cook_cluster_bundle('1.0')
         b2 = setup.cook_cluster_bundle('2.0')

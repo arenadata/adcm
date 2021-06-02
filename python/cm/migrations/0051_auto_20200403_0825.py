@@ -28,7 +28,12 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='GroupCheckLog',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('job_id', models.PositiveIntegerField(default=0)),
                 ('title', models.TextField()),
                 ('message', models.TextField(blank=True, null=True)),
@@ -38,6 +43,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='checklog',
             name='group',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.GroupCheckLog'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to='cm.GroupCheckLog',
+            ),
         ),
     ]

@@ -19,13 +19,11 @@ def prepare_cluster(sdk_client: ADCMClient, path) -> Cluster:
 @allure.step("Prepare cluster and get config")
 def prepare_cluster_and_get_config(sdk_client: ADCMClient, path, app):
     cluster = prepare_cluster(sdk_client, path)
-    config = Configuration(app.driver,
-                           f"{app.adcm.url}/cluster/{cluster.cluster_id}/config")
+    config = Configuration(app.driver, f"{app.adcm.url}/cluster/{cluster.cluster_id}/config")
     return cluster, config
 
 
 class BundleObjectDefinition(UserDict):
-
     def __init__(self, obj_type=None, name=None, version=None):
         super().__init__()
         self["type"] = obj_type

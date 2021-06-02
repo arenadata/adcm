@@ -74,9 +74,9 @@ def filter_actions(obj, actions_set):
         elif obj.state in available:
             filtered.append(act)
     for act in actions_set:
-        act.config = PrototypeConfig.objects.filter(
-            prototype=act.prototype, action=act
-        ).order_by('id')
+        act.config = PrototypeConfig.objects.filter(prototype=act.prototype, action=act).order_by(
+            'id'
+        )
     return filtered
 
 
@@ -108,13 +108,13 @@ def get_api_url_kwargs(obj, request, no_obj_type=False):
 
 
 class CommonAPIURL(serializers.HyperlinkedIdentityField):
-    def get_url(self, obj, view_name, request, format):   # pylint: disable=redefined-builtin
+    def get_url(self, obj, view_name, request, format):  # pylint: disable=redefined-builtin
         kwargs = get_api_url_kwargs(obj, request)
         return reverse(view_name, kwargs=kwargs, request=request, format=format)
 
 
 class ObjectURL(serializers.HyperlinkedIdentityField):
-    def get_url(self, obj, view_name, request, format):   # pylint: disable=redefined-builtin
+    def get_url(self, obj, view_name, request, format):  # pylint: disable=redefined-builtin
         kwargs = get_api_url_kwargs(obj, request, True)
         return reverse(view_name, kwargs=kwargs, request=request, format=format)
 
@@ -123,7 +123,7 @@ class UrlField(serializers.HyperlinkedIdentityField):
     def get_kwargs(self, obj):
         return {}
 
-    def get_url(self, obj, view_name, request, format):	   # pylint: disable=redefined-builtin
+    def get_url(self, obj, view_name, request, format):  # pylint: disable=redefined-builtin
         kwargs = self.get_kwargs(obj)
         return reverse(self.view_name, kwargs=kwargs, request=request, format=format)
 
@@ -132,6 +132,7 @@ class DjangoModelPerm(DjangoModelPermissions):
     """
     Similar to `DjangoModelPermissions`, but adding 'view' permissions.
     """
+
     perms_map = {
         'GET': ['%(app_label)s.view_%(model_name)s'],
         'OPTIONS': ['%(app_label)s.view_%(model_name)s'],
@@ -147,7 +148,7 @@ class GenericAPIPermView(GenericAPIView):
     permission_classes = (DjangoModelPerm,)
 
 
-class InterfaceView():
+class InterfaceView:
     def for_ui(self, request):
         view = self.request.query_params.get('view', None)
         return bool(view == 'interface')
@@ -264,8 +265,13 @@ class PageView(GenericAPIView, InterfaceView):
                     obj = obj.values(*fields)
 
             except (FieldError, ValueError):
-                qp = ','.join([f'{k}={v}' for k, v in request.query_params.items()
-                               if k in ['fields', 'distinct']])
+                qp = ','.join(
+                    [
+                        f'{k}={v}'
+                        for k, v in request.query_params.items()
+                        if k in ['fields', 'distinct']
+                    ]
+                )
                 msg = f'Bad query params: {qp}'
                 raise AdcmEx('BAD_QUERY_PARAMS', msg=msg) from None
 

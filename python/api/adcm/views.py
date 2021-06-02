@@ -20,6 +20,7 @@ class AdcmList(ListView):
     get:
     List adcm object
     """
+
     queryset = ADCM.objects.all()
     serializer_class = serializers.AdcmSerializer
     serializer_class_ui = serializers.AdcmDetailSerializer
@@ -30,6 +31,7 @@ class AdcmDetail(DetailViewRO):
     get:
     Show adcm object
     """
+
     queryset = ADCM.objects.all()
     serializer_class = serializers.AdcmDetailSerializer
     lookup_field = 'id'

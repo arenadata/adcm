@@ -45,10 +45,11 @@ def variant_service_to_add(obj, args=None):
     if cluster is None:
         return out
 
-    for proto in Prototype.objects \
-            .filter(bundle=cluster.prototype.bundle, type='service') \
-            .exclude(id__in=ClusterObject.objects.filter(cluster=cluster).values('prototype')) \
-            .order_by('name'):
+    for proto in (
+        Prototype.objects.filter(bundle=cluster.prototype.bundle, type='service')
+        .exclude(id__in=ClusterObject.objects.filter(cluster=cluster).values('prototype'))
+        .order_by('name')
+    ):
         out.append(proto.name)
     return out
 
@@ -86,9 +87,7 @@ def var_host_get_component(cluster, args, service, func):
 def var_host_in_service(cluster, args):
     out = []
     service = var_host_get_service(cluster, args, 'in_service')
-    for hc in HostComponent.objects \
-            .filter(cluster=cluster, service=service) \
-            .order_by('host__fqdn'):
+    for hc in HostComponent.objects.filter(cluster=cluster, service=service).order_by('host__fqdn'):
         out.append(hc.host.fqdn)
     return out
 
@@ -114,9 +113,9 @@ def var_host_in_component(cluster, args):
     out = []
     service = var_host_get_service(cluster, args, 'in_component')
     comp = var_host_get_component(cluster, args, service, 'in_component')
-    for hc in HostComponent.objects \
-            .filter(cluster=cluster, service=service, component=comp) \
-            .order_by('host__fqdn'):
+    for hc in HostComponent.objects.filter(
+        cluster=cluster, service=service, component=comp
+    ).order_by('host__fqdn'):
         out.append(hc.host.fqdn)
     return out
 
@@ -162,7 +161,7 @@ VARIANT_HOST_FUNC = {
     'not_in_component': var_host_not_in_component,
     'in_hc': var_host_in_hc,
     'not_in_hc': var_host_not_in_hc,
-    'inline_list': var_host_inline_list,   # just for logic functions (and, or) test purpose
+    'inline_list': var_host_inline_list,  # just for logic functions (and, or) test purpose
 }
 
 
@@ -234,15 +233,15 @@ def variant_host_in_cluster(obj, args=None):
                 )
             except ServiceComponent.DoesNotExist:
                 return []
-            for hc in HostComponent.objects \
-                    .filter(cluster=cluster, service=service, component=comp) \
-                    .order_by('host__fqdn'):
+            for hc in HostComponent.objects.filter(
+                cluster=cluster, service=service, component=comp
+            ).order_by('host__fqdn'):
                 out.append(hc.host.fqdn)
             return out
         else:
-            for hc in HostComponent.objects \
-                    .filter(cluster=cluster, service=service) \
-                    .order_by('host__fqdn'):
+            for hc in HostComponent.objects.filter(cluster=cluster, service=service).order_by(
+                'host__fqdn'
+            ):
                 out.append(hc.host.fqdn)
             return out
 

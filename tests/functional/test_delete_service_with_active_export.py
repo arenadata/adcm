@@ -43,8 +43,7 @@ def service_import(sdk_client_fs: ADCMClient):
 
 
 def test_delete_service_with_with_active_export(cluster):
-    """If host has NO component, than we can simple remove it from cluster.
-    """
+    """If host has NO component, than we can simple remove it from cluster."""
     with allure.step('Create cluster'):
         service = cluster
     with allure.step('Delete service'):

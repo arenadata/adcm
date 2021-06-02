@@ -30,17 +30,13 @@ from adcm_pytest_plugin.utils import random_string
 
 @pytest.fixture()
 def cluster(sdk_client_fs: ADCMClient) -> Cluster:
-    uploaded_bundle = sdk_client_fs.upload_from_fs(
-        utils.get_data_dir(__file__, "cluster")
-    )
+    uploaded_bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, "cluster"))
     return uploaded_bundle.cluster_prototype().cluster_create(name=random_string())
 
 
 @pytest.fixture()
 def host_provider(sdk_client_fs: ADCMClient) -> Provider:
-    provider_bundle = sdk_client_fs.upload_from_fs(
-        utils.get_data_dir(__file__, "provider")
-    )
+    provider_bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, "provider"))
     return provider_bundle.provider_prototype().provider_create(random_string())
 
 
@@ -257,9 +253,7 @@ class TestHostProviderLock:
         """
         Test that no horizontal lock when host locked
         """
-        second_provider = host_provider.prototype().provider_create(
-            name=random_string()
-        )
+        second_provider = host_provider.prototype().provider_create(name=random_string())
         _lock_obj(host_provider)
         is_free(second_provider)
 
@@ -272,9 +266,7 @@ def test_cluster_should_be_unlocked_when_ansible_task_killed(cluster: Cluster):
     assert_state(cluster, "terminate_failed")
 
 
-def test_host_should_be_unlocked_when_ansible_task_killed(
-    complete_cluster: Cluster, host: Host
-):
+def test_host_should_be_unlocked_when_ansible_task_killed(complete_cluster: Cluster, host: Host):
     with allure.step("Run action: lock-terminate for cluster"):
         task = complete_cluster.action(name="lock-terminate").run()
 
@@ -300,9 +292,7 @@ def _lock_obj(obj) -> Task:
         return obj.action(name="lock").run()
 
 
-def is_locked(
-    obj: Union[Cluster, Service, Component, Provider, Host]
-):
+def is_locked(obj: Union[Cluster, Service, Component, Provider, Host]):
     """
     Assert that object state is 'locked' and action list is empty
     """
@@ -314,13 +304,13 @@ def is_locked(
         ), f"{obj.__class__.__name__} action list isn't empty. {obj.__class__.__name__} not locked"
 
 
-def is_free(
-        obj: Union[Cluster, Service, Component, Provider, Host]
-):
+def is_free(obj: Union[Cluster, Service, Component, Provider, Host]):
     """
     Assert that object state is 'created' and action list isn't empty
     """
     with allure.step(f"Assert that {obj.__class__.__name__} is free"):
         assert_state(obj, state="created")
-        assert obj.action_list(), f"{obj.__class__.__name__} action list is empty. " \
-                                  f"Actions should be available for unlocked objects"
+        assert obj.action_list(), (
+            f"{obj.__class__.__name__} action list is empty. "
+            f"Actions should be available for unlocked objects"
+        )

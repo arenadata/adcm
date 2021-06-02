@@ -25,21 +25,37 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='component',
             name='monitoring',
-            field=models.CharField(choices=[('active', 'active'), ('passive', 'passive')], default='active', max_length=16),
+            field=models.CharField(
+                choices=[('active', 'active'), ('passive', 'passive')],
+                default='active',
+                max_length=16,
+            ),
         ),
         migrations.AddField(
             model_name='prototype',
             name='monitoring',
-            field=models.CharField(choices=[('active', 'active'), ('passive', 'passive')], default='active', max_length=16),
+            field=models.CharField(
+                choices=[('active', 'active'), ('passive', 'passive')],
+                default='active',
+                max_length=16,
+            ),
         ),
         migrations.AddField(
             model_name='stagecomponent',
             name='monitoring',
-            field=models.CharField(choices=[('active', 'active'), ('passive', 'passive')], default='active', max_length=16),
+            field=models.CharField(
+                choices=[('active', 'active'), ('passive', 'passive')],
+                default='active',
+                max_length=16,
+            ),
         ),
         migrations.AddField(
             model_name='stageprototype',
             name='monitoring',
-            field=models.CharField(choices=[('active', 'active'), ('passive', 'passive')], default='active', max_length=16),
+            field=models.CharField(
+                choices=[('active', 'active'), ('passive', 'passive')],
+                default='active',
+                max_length=16,
+            ),
         ),
     ]

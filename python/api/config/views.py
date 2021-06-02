@@ -66,7 +66,8 @@ class ConfigView(ListView):
         self.object_type = object_type
         obj, _, _ = get_obj(object_type, object_id)
         serializer = self.serializer_class(
-            self.get_queryset().get(id=obj.id), context={'request': request, 'object': obj})
+            self.get_queryset().get(id=obj.id), context={'request': request, 'object': obj}
+        )
         return Response(serializer.data)
 
 

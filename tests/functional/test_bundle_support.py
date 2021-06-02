@@ -30,15 +30,11 @@ from tests.library import errorcodes as err
     ],
     indirect=True,
 )
-def test_bundle_should_have_any_cluster_definition(
-    sdk_client_fs: ADCMClient, bundle_archive
-):
+def test_bundle_should_have_any_cluster_definition(sdk_client_fs: ADCMClient, bundle_archive):
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(bundle_archive)
     with allure.step("Check error message"):
-        err.BUNDLE_ERROR.equal(
-            e, "There isn't any cluster or host provider definition in bundle"
-        )
+        err.BUNDLE_ERROR.equal(e, "There isn't any cluster or host provider definition in bundle")
 
 
 def test_bundle_cant_removed_when_some_object_associated_with(
@@ -136,9 +132,7 @@ def test_run_parametrized_action_must_be_runned(sdk_client_fs: ADCMClient):
     bundle_path = utils.get_data_dir(__file__, "run_parametrized_action")
     bundle = sdk_client_fs.upload_from_fs(bundle_path)
     cluster = bundle.cluster_prototype().cluster_create(name=utils.random_string())
-    task = cluster.action(name="install").run(
-        config={"param": "test test test test test"}
-    )
+    task = cluster.action(name="install").run(config={"param": "test test test test test"})
     task.try_wait()
     with allure.step("Check if state is success"):
         assert task.job().status == "success"

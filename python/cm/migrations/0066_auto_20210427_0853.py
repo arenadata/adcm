@@ -123,22 +123,39 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='joblog',
             name='action',
-            field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, to='cm.action'),
+            field=models.ForeignKey(
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to='cm.action',
+            ),
         ),
         migrations.AddField(
             model_name='joblog',
             name='sub_action',
-            field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, to='cm.subaction'),
+            field=models.ForeignKey(
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to='cm.subaction',
+            ),
         ),
         migrations.AddField(
             model_name='joblog',
             name='task',
-            field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, to='cm.tasklog'),
+            field=models.ForeignKey(
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to='cm.tasklog',
+            ),
         ),
         migrations.AddField(
             model_name='tasklog',
             name='action',
-            field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.action'),
+            field=models.ForeignKey(
+                default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.action'
+            ),
         ),
         migrations.RemoveConstraint(
             model_name='groupchecklog',
@@ -157,12 +174,22 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='checklog',
             name='job',
-            field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, to='cm.joblog'),
+            field=models.ForeignKey(
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to='cm.joblog',
+            ),
         ),
         migrations.AddField(
             model_name='groupchecklog',
             name='job',
-            field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, to='cm.joblog'),
+            field=models.ForeignKey(
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to='cm.joblog',
+            ),
         ),
         migrations.AddConstraint(
             model_name='groupchecklog',

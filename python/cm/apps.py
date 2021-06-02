@@ -17,9 +17,23 @@ from django.db.models.signals import post_migrate
 
 
 ops_model_list = [
-    'adcm', 'bundle', 'prototype', 'upgrade', 'tasklog', 'joblog', 'logstorage',
-    'cluster', 'clusterbind', 'clusterobject', 'servicecomponent', 'hostcomponent',
-    'hostprovider', 'host', 'action', 'configlog', 'userprofile'
+    'adcm',
+    'bundle',
+    'prototype',
+    'upgrade',
+    'tasklog',
+    'joblog',
+    'logstorage',
+    'cluster',
+    'clusterbind',
+    'clusterobject',
+    'servicecomponent',
+    'hostcomponent',
+    'hostprovider',
+    'host',
+    'action',
+    'configlog',
+    'userprofile',
 ]
 
 auth_model_list = ['user', 'group', 'role']
