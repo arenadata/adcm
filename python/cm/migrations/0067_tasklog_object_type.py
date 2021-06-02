@@ -66,7 +66,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='tasklog',
             name='object_type',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to='contenttypes.contenttype'),
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to='contenttypes.contenttype',
+            ),
         ),
         migrations.RunPython(fix_tasklog),
     ]
