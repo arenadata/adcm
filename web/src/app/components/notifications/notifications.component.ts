@@ -1,28 +1,30 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
 import { NotificationsData } from '@app/components/bell/bell.component';
 import { TaskRaw } from '@app/core/types';
+import { PopoverEventFunc } from '@app/abstract-directives/popover-content.directive';
+
+export const ACKNOWLEDGE_EVENT = 'acknowledge';
 
 @Component({
   selector: 'app-notifications',
   template: `
     <div class="counters">
-      <div class="item" routerLink="/task" [queryParams]="{ status: 'running' }">
+      <div class="item" routerLink="/task" [queryParams]="{ status: 'running' }" matTooltip="Show jobs in progress">
         <mat-icon class="running">autorenew</mat-icon> {{ (data.counts | async).runningCount }}
       </div>
-      <div class="item" routerLink="/task" [queryParams]="{ status: 'success' }">
+      <div class="item" routerLink="/task" [queryParams]="{ status: 'success' }" matTooltip="Show success jobs">
         <mat-icon class="success">done_all</mat-icon> {{ (data.counts | async).successCount }}
       </div>
-      <div class="item" routerLink="/task" [queryParams]="{ status: 'failed' }">
+      <div class="item" routerLink="/task" [queryParams]="{ status: 'failed' }" matTooltip="Show failed jobs">
         <mat-icon class="failed">done_all</mat-icon> {{ (data.counts | async).failedCount }}
       </div>
     </div>
 
-    <ng-container *ngIf="(data.tasks | async)?.length">
+    <ng-container *ngIf="(data.tasks | async)?.length; else empty">
       <div class="header">
         <span>Last {{(data.tasks | async)?.length}} notifications:</span>
-        <a (click)="acknowledge.emit()" class="acknowledge"><mat-icon class="success">check_circle</mat-icon>acknowledge</a>
       </div>
 
       <div class="notifications">
@@ -37,9 +39,20 @@ import { TaskRaw } from '@app/core/types';
         </div>
       </div>
 
-      <div class="footer"><a routerLink="/task">Show more...</a></div>
+      <div class="footer">
+        <a routerLink="/task">Show more...</a>
+        <a (click)="acknowledge()" class="acknowledge"><mat-icon class="success">check_circle</mat-icon>acknowledge</a>
+      </div>
 
     </ng-container>
+    <ng-template #empty>
+      <div class="empty-label">
+        Nothing to display
+      </div>
+      <div class="empty-footer">
+        <a routerLink="/task">Show all jobs...</a>
+      </div>
+    </ng-template>
   `,
   styleUrls: ['./notifications.component.scss']
 })
@@ -47,6 +60,10 @@ export class NotificationsComponent {
 
   @Input() data: { counts: BehaviorSubject<NotificationsData>, tasks: BehaviorSubject<TaskRaw[]> };
 
-  @Output() acknowledge = new EventEmitter();
+  event: PopoverEventFunc;
+
+  acknowledge() {
+    this.event(ACKNOWLEDGE_EVENT);
+  }
 
 }

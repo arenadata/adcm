@@ -3,8 +3,8 @@ import { JobService } from '@app/services/job.service';
 import { BaseDirective } from '@adwp-ui/widgets';
 import { TaskService } from '@app/services/task.service';
 import { BehaviorSubject, combineLatest, interval, Observable, zip } from 'rxjs';
-import { filter, map, mergeMap, take, takeWhile, tap } from 'rxjs/operators';
-import { NotificationsComponent } from '@app/components/notifications/notifications.component';
+import { filter, map, take, takeWhile } from 'rxjs/operators';
+import { ACKNOWLEDGE_EVENT, NotificationsComponent } from '@app/components/notifications/notifications.component';
 import { Task, TaskRaw } from '@app/core/types';
 import { EventMessage } from '@app/core/store';
 
@@ -27,6 +27,7 @@ export interface NotificationsData {
       routerLink="/task"
       appPopover
       [component]="NotificationsComponent"
+      [event]="bindedPopoverEvent"
       [data]="{ counts: counts, tasks: tasks }"
     >
       <div class="animation hide" (animationstart)="onAnimationStart()" (animationend)="onAnimationEnd()" #animation></div>
@@ -55,12 +56,20 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
   counts = new BehaviorSubject<NotificationsData>(null);
   tasks = new BehaviorSubject<TaskRaw[]>([]);
 
+  readonly bindedPopoverEvent = this.popoverEvent.bind(this);
+
   constructor(
     private jobService: JobService,
     private taskService: TaskService,
     private renderer: Renderer2,
   ) {
     super();
+  }
+
+  popoverEvent(event: any) {
+    if (event === ACKNOWLEDGE_EVENT) {
+      this.tasks.next([]);
+    }
   }
 
   onAnimationStart() {
