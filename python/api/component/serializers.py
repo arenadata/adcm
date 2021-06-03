@@ -52,6 +52,9 @@ class ComponentDetailSerializer(ComponentSerializer):
     action = CommonAPIURL(read_only=True, view_name='object-action')
     config = CommonAPIURL(read_only=True, view_name='object-config')
     prototype = hlink('component-type-details', 'prototype_id', 'prototype_id')
+    config_groups = serializers.HyperlinkedRelatedField(
+        many=True, read_only=True, view_name='config-group-detail'
+    )
 
     def get_issue(self, obj):
         return issue.aggregate_issues(obj)

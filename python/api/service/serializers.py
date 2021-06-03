@@ -80,6 +80,9 @@ class ServiceDetailSerializer(ServiceSerializer):
         lookup_field='prototype_id',
         lookup_url_kwarg='prototype_id',
     )
+    config_groups = serializers.HyperlinkedRelatedField(
+        many=True, read_only=True, view_name='config-group-detail'
+    )
 
     def get_issue(self, obj):
         return issue.aggregate_issues(obj)
