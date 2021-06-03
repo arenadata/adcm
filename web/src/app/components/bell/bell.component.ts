@@ -149,7 +149,7 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
     });
   }
 
-  getCurrentValues(): Observable<{ running: number, success: number, failed: number }> {
+  getCurrentCounts(): Observable<{ running: number, success: number, failed: number }> {
     const defaultParams = {
       limit: '1',
       offset: '0',
@@ -179,6 +179,21 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
     );
   }
 
+  getLastTasks(): Observable<Task[]> {
+    return zip(
+      this.taskService.list({ ordering: '-finish_date', status: 'failed', limit: '5' }),
+      this.taskService.list({ ordering: '-finish_date', status: 'success', limit: '5' }),
+      this.taskService.list({ ordering: '-start_date', status: 'running', limit: '5' }),
+    ).pipe(map(([failed, succeed, running]) => {
+      return [...failed.results, ...succeed.results, ...running.results].sort((a, b) => {
+        const getDateField = (task: Task) => task.status === 'failed' || task.status === 'success' ? task.finish_date : task.start_date;
+        const aDate = new Date(getDateField(a));
+        const bDate = new Date(getDateField(b));
+        return aDate.getDate() - bDate.getDate();
+      }).slice(0, 5);
+    }));
+  }
+
   ngAfterViewInit(): void {
     interval(200).pipe(
       this.takeUntil(),
@@ -192,13 +207,15 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
       filter((elem) => !!elem),
       take(1),
     ).subscribe(() => {
-      this.getCurrentValues().subscribe((resp) => {
-        this.runningCount.next(resp.running);
-        this.successCount.next(resp.success);
-        this.failedCount.next(resp.failed);
-        this.afterCountChanged();
-        this.listenToJobs();
-      });
+      zip(this.getCurrentCounts(), this.getLastTasks())
+        .subscribe(([counts, tasks]) => {
+          this.runningCount.next(counts.running);
+          this.successCount.next(counts.success);
+          this.failedCount.next(counts.failed);
+          this.afterCountChanged();
+          this.tasks.next(tasks);
+          this.listenToJobs();
+        });
     });
 
     this.isAnimationRunning.pipe(

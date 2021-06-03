@@ -12,7 +12,6 @@
 }
 
 .notifications {
-  border-top: solid 1px #455A64;
   margin-top: 10px;
   padding-top: 10px;
   width: 100%;
@@ -28,4 +27,21 @@
   border-top: solid 1px #455A64;
   margin-top: 5px;
   padding-top: 5px;
+}
+
+.footer, .header {
+  margin-top: 20px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.acknowledge {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
 }

@@ -1,7 +1,7 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { BehaviorSubject } from 'rxjs';
 
 import { NotificationsData } from '@app/components/bell/bell.component';
-import { BehaviorSubject } from 'rxjs';
 import { TaskRaw } from '@app/core/types';
 
 @Component({
@@ -19,26 +19,34 @@ import { TaskRaw } from '@app/core/types';
       </div>
     </div>
 
-    <div *ngIf="(data.tasks | async)?.length" class="notifications">
-      <div *ngFor="let task of (data.tasks | async)" class="notification">
-        <ng-container [ngSwitch]="task.status">
-          <mat-icon *ngSwitchCase="'running'" class="icon-locked running">autorenew</mat-icon>
-          <mat-icon *ngSwitchCase="'aborted'" [ngClass]="task.status">block</mat-icon>
-          <mat-icon *ngSwitchDefault [ngClass]="task.status">done_all</mat-icon>
-        </ng-container>
-        <a [routerLink]="['job', task.id]">{{ task.action.display_name }}</a>
-        <mat-icon *ngIf="task.terminatable" class="failed">cancel</mat-icon>
+    <ng-container *ngIf="(data.tasks | async)?.length">
+      <div class="header">
+        <span>Last {{(data.tasks | async)?.length}} notifications:</span>
+        <a (click)="acknowledge.emit()" class="acknowledge"><mat-icon class="success">check_circle</mat-icon>acknowledge</a>
       </div>
-    </div>
+
+      <div class="notifications">
+        <div *ngFor="let task of (data.tasks | async)" class="notification">
+          <ng-container [ngSwitch]="task.status">
+            <mat-icon *ngSwitchCase="'running'" class="icon-locked running">autorenew</mat-icon>
+            <mat-icon *ngSwitchCase="'aborted'" [ngClass]="task.status">block</mat-icon>
+            <mat-icon *ngSwitchDefault [ngClass]="task.status">done_all</mat-icon>
+          </ng-container>
+          <a [routerLink]="['job', task.id]">{{ task.action.display_name }}</a>
+          <mat-icon *ngIf="task.terminatable" class="failed">cancel</mat-icon>
+        </div>
+      </div>
+
+      <div class="footer"><a routerLink="/task">Show more...</a></div>
+
+    </ng-container>
   `,
   styleUrls: ['./notifications.component.scss']
 })
-export class NotificationsComponent implements OnInit {
+export class NotificationsComponent {
 
   @Input() data: { counts: BehaviorSubject<NotificationsData>, tasks: BehaviorSubject<TaskRaw[]> };
 
-  ngOnInit() {
-    // this.data.tasks.subscribe(data => console.log('Tasks', data));
-  }
+  @Output() acknowledge = new EventEmitter();
 
 }
