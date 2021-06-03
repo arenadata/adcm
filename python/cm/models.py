@@ -15,12 +15,13 @@ from __future__ import unicode_literals
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User, Group, Permission
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 
 from cm.errors import AdcmEx
 from cm.logger import log
-
 
 PROTO_TYPE = (
     ('adcm', 'adcm'),
@@ -244,6 +245,9 @@ class ADCM(ADCMEntity):
 class Cluster(ADCMEntity):
     name = models.CharField(max_length=80, unique=True)
     description = models.TextField(blank=True)
+    config_groups = GenericRelation(
+        'ConfigGroup', object_id_field='object_id', content_type_field='object_type'
+    )
 
     __error_code__ = 'CLUSTER_NOT_FOUND'
 
@@ -275,6 +279,9 @@ class Cluster(ADCMEntity):
 class HostProvider(ADCMEntity):
     name = models.CharField(max_length=80, unique=True)
     description = models.TextField(blank=True)
+    config_groups = GenericRelation(
+        'ConfigGroup', object_id_field='object_id', content_type_field='object_type'
+    )
 
     __error_code__ = 'PROVIDER_NOT_FOUND'
 
@@ -334,6 +341,9 @@ class Host(ADCMEntity):
 class ClusterObject(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
+    config_groups = GenericRelation(
+        'ConfigGroup', object_id_field='object_id', content_type_field='object_type'
+    )
 
     __error_code__ = 'CLUSTER_SERVICE_NOT_FOUND'
 
@@ -378,6 +388,9 @@ class ServiceComponent(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE, null=True, default=None)
+    config_groups = GenericRelation(
+        'ConfigGroup', object_id_field='object_id', content_type_field='object_type'
+    )
 
     __error_code__ = 'COMPONENT_NOT_FOUND'
 
@@ -420,6 +433,16 @@ class ServiceComponent(ADCMEntity):
 
     class Meta:
         unique_together = (('cluster', 'service', 'prototype'),)
+
+
+class ConfigGroup(ADCMModel):
+    object_id = models.PositiveIntegerField()
+    object_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object = GenericForeignKey('object_type', 'object_id')
+    name = models.CharField(max_length=30)
+    description = models.TextField(blank=True)
+    hosts = models.ManyToManyField(Host, blank=True)
+    config = models.JSONField(default=dict)
 
 
 ACTION_TYPE = (

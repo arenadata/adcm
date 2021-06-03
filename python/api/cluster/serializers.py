@@ -84,6 +84,9 @@ class ClusterDetailSerializer(ClusterSerializer):
     imports = hlink('cluster-import', 'id', 'cluster_id')
     bind = hlink('cluster-bind', 'id', 'cluster_id')
     prototype = hlink('cluster-type-details', 'prototype_id', 'prototype_id')
+    config_groups = serializers.HyperlinkedRelatedField(
+        many=True, read_only=True, view_name='config-group-detail'
+    )
 
     def get_issue(self, obj):
         return cm.issue.aggregate_issues(obj)

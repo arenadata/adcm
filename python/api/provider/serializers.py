@@ -58,6 +58,9 @@ class ProviderDetailSerializer(ProviderSerializer):
     action = CommonAPIURL(view_name='object-action')
     upgrade = hlink('provider-upgrade', 'id', 'provider_id')
     host = ObjectURL(read_only=True, view_name='host')
+    config_groups = serializers.HyperlinkedRelatedField(
+        many=True, read_only=True, view_name='config-group-detail'
+    )
 
     def get_issue(self, obj):
         return cm.issue.aggregate_issues(obj)
