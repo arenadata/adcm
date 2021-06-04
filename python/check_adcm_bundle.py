@@ -61,8 +61,6 @@ if __name__ == '__main__':
     parser.add_argument(
         "-d", "--dir", action="store_true", help="use bundle_file as bundle directory name"
     )
-    parser.add_argument(
-        "-v", "--verbose", action="store_true", help="print OK result"
-    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="print OK result")
     args = parser.parse_args()
     check_bundle(args.bundle_file, args.dir, args.verbose)

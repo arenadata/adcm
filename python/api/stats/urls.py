@@ -19,5 +19,4 @@ urlpatterns = [
     path('', views.Stats.as_view(), name='stats'),
     path('task/<int:task_id>/', views.TaskStats.as_view(), name='task-stats'),
     path('job/<int:job_id>/', views.JobStats.as_view(), name='job-stats'),
-
 ]

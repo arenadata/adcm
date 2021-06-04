@@ -59,8 +59,9 @@ def _generate_bundle_config(bundle_type, entity_type, prop_types):
         # config
         config_proto = [
             FieldDefinition(prop_type=prop_type, prop_name=f"{prop_type}_{PROPERTY_NAME}")
-            for prop_type in prop_types if prop_type in ["string", "text", "boolean", "integer"]
-        ]   # scalar types
+            for prop_type in prop_types
+            if prop_type in ["string", "text", "boolean", "integer"]
+        ]  # scalar types
 
         if "structure" in prop_types:
             struct_property = FieldDefinition(
@@ -80,11 +81,7 @@ def _generate_bundle_config(bundle_type, entity_type, prop_types):
             if v["type"] == entity_type:
                 bundle_proto[k]["config"] = config_proto
 
-        ids.append(
-            "-".join(selected_opts).lower()
-            if len(selected_opts) > 0
-            else "default"
-        )
+        ids.append("-".join(selected_opts).lower() if len(selected_opts) > 0 else "default")
         params.append(
             {
                 "opts": (selected_opts, prop_types),
@@ -137,10 +134,7 @@ def cluster(bundle: Bundle) -> Cluster:
 @pytest.fixture()
 def cluster_config_page(app_fs, cluster: Cluster, login_to_adcm):
     return Configuration(
-        app_fs.driver,
-        "{}/cluster/{}/config".format(
-            app_fs.adcm.url, cluster.cluster_id
-        )
+        app_fs.driver, "{}/cluster/{}/config".format(app_fs.adcm.url, cluster.cluster_id)
     )
 
 
@@ -154,9 +148,7 @@ def service(cluster: Cluster, sdk_client_fs: ADCMClient) -> Service:
 def service_config_page(app_fs, service: Service, login_to_adcm) -> Configuration:
     return Configuration(
         app_fs.driver,
-        "{}/cluster/{}/service/{}/config".format(
-            app_fs.adcm.url, service.cluster_id, service.id
-        ),
+        "{}/cluster/{}/service/{}/config".format(app_fs.adcm.url, service.cluster_id, service.id),
     )
 
 
@@ -169,9 +161,7 @@ def provider(bundle: Bundle) -> Provider:
 def provider_config_page(app_fs, provider: Provider, login_to_adcm) -> Configuration:
     return Configuration(
         app_fs.driver,
-        "{}/provider/{}/config".format(
-            app_fs.adcm.url, provider.provider_id
-        ),
+        "{}/provider/{}/config".format(app_fs.adcm.url, provider.provider_id),
     )
 
 
@@ -215,9 +205,7 @@ def _test_save_configuration_button(
     if group_name:
         config_page.activate_group_by_name(group_name)
 
-    assert len(config_page.get_app_fields()) == len(
-        prop_types
-    ), "Unexpected count of fields"
+    assert len(config_page.get_app_fields()) == len(prop_types), "Unexpected count of fields"
     with allure.step("Update config properties"):
         for field_type, field in zip(prop_types, config_page.get_app_fields()):
             _update_config_property(config_page, field, field_type)
@@ -236,9 +224,7 @@ def _test_save_configuration_button(
             value_to_check = _get_test_value(field_type)
             if field_type == "boolean":
                 assert (
-                    config_page.get_checkbox_element_status(
-                        config_page.get_field_checkbox(field)
-                    )
+                    config_page.get_checkbox_element_status(config_page.get_field_checkbox(field))
                     == value_to_check
                 )
             else:
@@ -247,9 +233,7 @@ def _test_save_configuration_button(
                     field_type = "string"
                     field = config_page.get_form_field(field)
                     value_to_check = _get_test_value(field_type)
-                config_page.assert_field_content_equal(
-                    field_type, field, value_to_check
-                )
+                config_page.assert_field_content_equal(field_type, field, value_to_check)
 
 
 def _get_default_props_list() -> list:
@@ -297,9 +281,7 @@ def test_service_configuration_save_button(bundle_content, bundle, service_confi
     entity_type="provider",
     prop_types=_get_default_props_list(),
 )
-def test_provider_configuration_save_button(
-    bundle_content, bundle, provider_config_page
-):
+def test_provider_configuration_save_button(bundle_content, bundle, provider_config_page):
     (selected_opts, prop_types), _ = bundle_content
     _test_save_configuration_button(
         provider_config_page,

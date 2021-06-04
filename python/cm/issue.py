@@ -34,12 +34,16 @@ class IssueReporter:
 
     def __init__(self, obj: ADCMModel):
         self.tree = Tree(obj)
+        self._affected_nodes = self.tree.get_directly_affected(self.tree.built_from)
         self._cache = {}
+        self._init_cache()
 
-    def update_issues(self):
-        for node in self.tree.get_directly_affected(self.tree.built_from):
+    def _init_cache(self):
+        for node in self._affected_nodes:
             self._cache[node.key] = aggregate_issues(node.value, self.tree)
 
+    def update_issues(self):
+        for node in self._affected_nodes:
             obj = node.value
             issue = check_for_issue(obj)
             if obj.issue != issue:
@@ -47,7 +51,7 @@ class IssueReporter:
                 obj.save()
 
     def report_changed(self):
-        for node in self.tree.get_directly_affected(self.tree.built_from):
+        for node in self._affected_nodes:
             new_issue = aggregate_issues(node.value, self.tree)
             old_issue = self._cache[node.key]
             if new_issue != old_issue:
@@ -103,6 +107,7 @@ def aggregate_issues(obj: ADCMModel, tree: Tree = None) -> dict:
     tree = tree or Tree(obj)
     node = tree.get_node(obj)
     for child in tree.get_directly_affected(node):
+
         if child.key == node.key:  # skip itself
             continue
 
@@ -128,7 +133,7 @@ def check_cluster_issue(cluster):
 def check_service_issue(service):
     return {
         'config': check_config(service),
-        'required_import': check_required_import(service.cluster, service)
+        'required_import': check_required_import(service.cluster, service),
     }
 
 
@@ -136,10 +141,10 @@ def check_config_issue(obj):
     return {'config': check_config(obj)}
 
 
-def check_config(obj):   # pylint: disable=too-many-branches
+def check_config(obj):  # pylint: disable=too-many-branches
     spec, _, _, _ = get_prototype_config(obj.prototype)
     conf, attr = get_obj_config(obj)
-    for key in spec:   # pylint: disable=too-many-nested-blocks
+    for key in spec:  # pylint: disable=too-many-nested-blocks
         if 'required' in spec[key]:
             if spec[key]['required']:
                 if key in conf and conf[key] is None:

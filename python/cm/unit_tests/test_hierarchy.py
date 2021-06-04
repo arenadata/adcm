@@ -119,7 +119,6 @@ def generate_hierarchy():  # pylint: disable=too-many-locals,too-many-statements
         component_112=component_112,
         component_121=component_121,
         component_122=component_122,
-
         cluster_2=cluster_2,
         service_21=service_21,
         service_22=service_22,
@@ -127,15 +126,12 @@ def generate_hierarchy():  # pylint: disable=too-many-locals,too-many-statements
         component_212=component_212,
         component_221=component_221,
         component_222=component_222,
-
         provider_1=provider_1,
         host_11=host_11,
         host_12=host_12,
-
         provider_2=provider_2,
         host_21=host_21,
         host_22=host_22,
-
         provider_3=provider_3,
         host_31=host_31,
         host_32=host_32,
@@ -147,7 +143,7 @@ class HierarchyTest(TestCase):
     def test_build_tree_performance(self):
         """
         Un-skip it for manual performance testing after changes to cm/hierarchy.py
-        average ~0.03 seconds per single build
+        average ~0.025 seconds per single build
         """
         hierarchy_objects = generate_hierarchy()
 

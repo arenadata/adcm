@@ -9,14 +9,20 @@ from .utils import prepare_cluster_and_get_config
 # pylint: disable=W0611, W0621
 
 
-RANGE_VALUES = [("float", 0.15), ("float", 0), ("float", -1.2),
-                ("integer", 4), ("integer", 0), ("integer", -3)]
+RANGE_VALUES = [
+    ("float", 0.15),
+    ("float", 0),
+    ("float", -1.2),
+    ("integer", 4),
+    ("integer", 0),
+    ("integer", -3),
+]
 
 
 @parametrize_by_data_subdirs(__file__, 'bundles')
 def test_number_validation(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm):
     """Check that we have errors and save button is not active
-     for number field with values out of range
+    for number field with values out of range
     """
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
 
@@ -34,13 +40,13 @@ def test_number_validation(sdk_client_fs: ADCMClient, path, app_fs, login_to_adc
     config.assert_form_field_text_in(fields[0], "Field [numbers_test] value cannot be less than")
     config.set_element_value_in_input(form_field, "111111")
     assert not config.save_button_status()
-    config.assert_form_field_text_in(fields[0],
-                                     "Field [numbers_test] value cannot be greater than")
+    config.assert_form_field_text_in(fields[0], "Field [numbers_test] value cannot be greater than")
 
 
 @pytest.mark.parametrize(("number_type", "value"), RANGE_VALUES)
-def test_number_in_range_values(sdk_client_fs: ADCMClient, value, app_fs, number_type,
-                                login_to_adcm):
+def test_number_in_range_values(
+    sdk_client_fs: ADCMClient, value, app_fs, number_type, login_to_adcm
+):
     path = get_data_dir(__file__) + "/bundles/{}-positive_and_negative".format(number_type)
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     fields = config.get_app_fields()

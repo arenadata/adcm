@@ -41,9 +41,7 @@ def test_service_wo_version(sdk_client_fs: ADCMClient):
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Check error: no version in service"):
-        errorcodes.INVALID_OBJECT_DEFINITION.equal(
-            e, 'There is no required key "version" in map.'
-        )
+        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'There is no required key "version" in map.')
 
 
 def test_service_wo_actions(sdk_client_fs: ADCMClient):
@@ -105,8 +103,9 @@ def test_stack_hasnt_scripttype_mandatory_key(sdk_client_fs: ADCMClient):
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Check error: has no mandatory"):
-        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'There is no '
-                                                      'required key "script_type" in map.')
+        errorcodes.INVALID_OBJECT_DEFINITION.equal(
+            e, 'There is no required key "script_type" in map.'
+        )
 
 
 def test_playbook_path(sdk_client_fs: ADCMClient):
@@ -128,8 +127,9 @@ def test_load_stack_w_empty_config_field(sdk_client_fs: ADCMClient):
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Check error: config field should not be empty"):
-        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'None of the variants '
-                                                      'for rule "config_obj" match')
+        errorcodes.INVALID_OBJECT_DEFINITION.equal(
+            e, 'None of the variants for rule "config_obj" match'
+        )
 
 
 def test_shouldn_load_config_with_wrong_name(sdk_client_fs: ADCMClient):
@@ -157,9 +157,7 @@ def test_when_config_has_two_identical_service_proto(sdk_client_fs: ADCMClient):
 
 
 @pytest.mark.parametrize("entity", ["host", "provider"])
-def test_config_has_one_definition_and_two_diff_types(
-    sdk_client_fs: ADCMClient, entity
-):
+def test_config_has_one_definition_and_two_diff_types(sdk_client_fs: ADCMClient, entity):
     name = "cluster_has_a_" + entity + "_definition"
     stack_dir = utils.get_data_dir(__file__, name)
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
@@ -202,9 +200,7 @@ def test_host_bundle_can_be_on_any_level(sdk_client_fs: ADCMClient):
 
 @allure.issue("https://jira.arenadata.io/browse/ADCM-184")
 def test_cluster_config_without_required_parent_key(sdk_client_fs: ADCMClient):
-    stack_dir = utils.get_data_dir(
-        __file__, "cluster_config_without_required_parent_key"
-    )
+    stack_dir = utils.get_data_dir(__file__, "cluster_config_without_required_parent_key")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(name=utils.random_string())
     with allure.step('Set config "str-key": "string"'):
@@ -254,9 +250,7 @@ def test_host_bundle_shouldnt_contains_service_definition(sdk_client_fs: ADCMCli
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Check error: service definition in host provider type bundle"):
-        errorcodes.BUNDLE_ERROR.equal(
-            e, "service definition in host provider type bundle"
-        )
+        errorcodes.BUNDLE_ERROR.equal(e, "service definition in host provider type bundle")
 
 
 def test_service_job_should_run_success(sdk_client_fs: ADCMClient):
@@ -341,20 +335,16 @@ def test_when_import_has_unknown_config_parameter_shouldnt_be_loaded(
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(bundledir)
     with allure.step("Check error: does not has config group"):
-        errorcodes.INVALID_OBJECT_DEFINITION.equal(
-            e, "cluster ", " does not has ", " config group"
-        )
+        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, "cluster ", " does not has ", " config group")
 
 
 def test_when_bundle_hasnt_only_host_definition(sdk_client_fs: ADCMClient):
     bundledir = utils.get_data_dir(__file__, "host_wo_provider")
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(bundledir)
-    with allure.step(
-        "Check error: There isnt any cluster or host provider definition in bundle"
-    ):
+    with allure.step("Check error: There isnt any cluster or host provider definition in bundle"):
         errorcodes.BUNDLE_ERROR.equal(
-            e, "There isn't any cluster or " "host provider definition in bundle"
+            e, "There isn't any cluster or host provider definition in bundle"
         )
 
 
@@ -370,9 +360,7 @@ def _get_invalid_bundle_config_params() -> List[ParameterSet]:
             errorcodes.STACK_LOAD_ERROR,
             "no config files in stack directory",
         ),
-        get_pytest_param(
-            "yaml_parser_error", errorcodes.STACK_LOAD_ERROR, "YAML decode"
-        ),
+        get_pytest_param("yaml_parser_error", errorcodes.STACK_LOAD_ERROR, "YAML decode"),
         get_pytest_param(
             "yaml_decode_duplicate_anchor",
             errorcodes.STACK_LOAD_ERROR,

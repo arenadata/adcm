@@ -70,13 +70,7 @@ def get_bundle(prototype_id):
     :return: Bundle object
     :rtype: dict
     """
-    fields = (
-        'name',
-        'version',
-        'edition',
-        'hash',
-        'description'
-    )
+    fields = ('name', 'version', 'edition', 'hash', 'description')
     prototype = models.Prototype.objects.get(id=prototype_id)
     bundle = get_object(models.Bundle, prototype.bundle_id, fields)
     return bundle
@@ -313,15 +307,19 @@ def dump(cluster_id, output):
     service_ids = [service['id'] for service in data['services']]
 
     for component_obj in models.ServiceComponent.objects.filter(
-            cluster_id=cluster['id'], service_id__in=service_ids):
+        cluster_id=cluster['id'], service_id__in=service_ids
+    ):
         component = get_component(component_obj.id)
         data['components'].append(component)
 
     component_ids = [component['id'] for component in data['components']]
 
     for host_component_obj in models.HostComponent.objects.filter(
-            cluster_id=cluster['id'], host_id__in=host_ids, service_id__in=service_ids,
-            component_id__in=component_ids):
+        cluster_id=cluster['id'],
+        host_id__in=host_ids,
+        service_id__in=service_ids,
+        component_id__in=component_ids,
+    ):
         host_component = get_host_component(host_component_obj.id)
         data['host_components'].append(host_component)
 
@@ -341,6 +339,7 @@ class Command(BaseCommand):
     Example:
         manage.py dumpcluster --cluster_id 1 --output cluster.json
     """
+
     help = 'Dump cluster object to JSON format'
 
     def add_arguments(self, parser):
@@ -348,12 +347,15 @@ class Command(BaseCommand):
         Parsing command line arguments
         """
         parser.add_argument(
-            '-c', '--cluster_id', action='store', dest='cluster_id', required=True,
-            type=int, help='Cluster ID'
+            '-c',
+            '--cluster_id',
+            action='store',
+            dest='cluster_id',
+            required=True,
+            type=int,
+            help='Cluster ID',
         )
-        parser.add_argument(
-            '-o', '--output', help='Specifies file to which the output is written.'
-        )
+        parser.add_argument('-o', '--output', help='Specifies file to which the output is written.')
 
     def handle(self, *args, **options):
         """Handler method"""

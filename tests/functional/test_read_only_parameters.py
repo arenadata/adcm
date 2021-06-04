@@ -12,20 +12,28 @@
 import allure
 import coreapi
 import pytest
+
 # pylint: disable=W0611, W0621
 from adcm_pytest_plugin import utils
 
 from tests.library.errorcodes import CONFIG_VALUE_ERROR
 
-TEST_DATA = [("read-only-when-runned", False, True, "run", False, True),
-             ("writable-when-installed", "bluhbluh", "bluhbluh", "install", False, False),
-             ("writable", "bluh bluh", "bluh bluh", "", False, False),
-             ('read-only-when-installed', False, True, "install", True, True),
-             ('read-only-runned-integer', 500, 10, "run", True, True),
-             ('read-only-int', 10, 10, "", False, False)
-             ]
-TEST_IDS = ["ro_when_runned", "wr_when_installed", "wr", "group-ro-installed",
-            "group-ro-runned", "same-ro-values"]
+TEST_DATA = [
+    ("read-only-when-runned", False, True, "run", False, True),
+    ("writable-when-installed", "bluhbluh", "bluhbluh", "install", False, False),
+    ("writable", "bluh bluh", "bluh bluh", "", False, False),
+    ('read-only-when-installed', False, True, "install", True, True),
+    ('read-only-runned-integer', 500, 10, "run", True, True),
+    ('read-only-int', 10, 10, "", False, False),
+]
+TEST_IDS = [
+    "ro_when_runned",
+    "wr_when_installed",
+    "wr",
+    "group-ro-installed",
+    "group-ro-runned",
+    "same-ro-values",
+]
 
 
 @pytest.fixture()
@@ -40,8 +48,11 @@ def cluster_config(cluster_sdk):
     return cluster_sdk.config()
 
 
-@pytest.mark.parametrize(('key', 'input_value', 'expected', 'action', 'group', 'check_exception'),
-                         TEST_DATA, ids=TEST_IDS)
+@pytest.mark.parametrize(
+    ('key', 'input_value', 'expected', 'action', 'group', 'check_exception'),
+    TEST_DATA,
+    ids=TEST_IDS,
+)
 def test_readonly_variable(key, input_value, expected, action, group, check_exception, cluster_sdk):
     with allure.step('Set config'):
         current_config = cluster_sdk.config()

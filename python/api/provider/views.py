@@ -30,6 +30,7 @@ class ProviderList(PageViewAdd):
     post:
     Create new host provider
     """
+
     queryset = HostProvider.objects.all()
     serializer_class = serializers.ProviderSerializer
     serializer_class_ui = serializers.ProviderUISerializer
@@ -43,6 +44,7 @@ class ProviderDetail(DetailViewRO):
     get:
     Show host provider
     """
+
     queryset = HostProvider.objects.all()
     serializer_class = serializers.ProviderDetailSerializer
     serializer_class_ui = serializers.ProviderUISerializer
@@ -50,7 +52,7 @@ class ProviderDetail(DetailViewRO):
     lookup_url_kwarg = 'provider_id'
     error_code = 'PROVIDER_NOT_FOUND'
 
-    def delete(self, request, provider_id):   # pylint: disable=arguments-differ
+    def delete(self, request, provider_id):  # pylint: disable=arguments-differ
         """
         Remove host provider
         """
@@ -63,15 +65,15 @@ class ProviderUpgrade(PageView):
     queryset = Upgrade.objects.all()
     serializer_class = serializers.UpgradeProviderSerializer
 
-    def get(self, request, provider_id):   # pylint: disable=arguments-differ
+    def get(self, request, provider_id):  # pylint: disable=arguments-differ
         """
         List all avaliable upgrades for specified host provider
         """
         provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
         obj = cm.upgrade.get_upgrade(provider, self.get_ordering(request, self.queryset, self))
-        serializer = self.serializer_class(obj, many=True, context={
-            'provider_id': provider.id, 'request': request
-        })
+        serializer = self.serializer_class(
+            obj, many=True, context={'provider_id': provider.id, 'request': request}
+        )
         return Response(serializer.data)
 
 
@@ -79,15 +81,15 @@ class ProviderUpgradeDetail(ListView):
     queryset = Upgrade.objects.all()
     serializer_class = serializers.UpgradeProviderSerializer
 
-    def get(self, request, provider_id, upgrade_id):   # pylint: disable=arguments-differ
+    def get(self, request, provider_id, upgrade_id):  # pylint: disable=arguments-differ
         """
         List all avaliable upgrades for specified host provider
         """
         provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
         obj = self.get_queryset().get(id=upgrade_id)
-        serializer = self.serializer_class(obj, context={
-            'provider_id': provider.id, 'request': request
-        })
+        serializer = self.serializer_class(
+            obj, context={'provider_id': provider.id, 'request': request}
+        )
         return Response(serializer.data)
 
 

@@ -56,17 +56,22 @@ def add_path(path):
 
 def run_python_script(base_dir, py_script, command, json_config, out_file, err_file):
     try:
-        res = call([
-            'python',
-            py_script,
-            command.upper(),
-            json_config,
-            base_dir,
-            '/tmp/structured_out.json',
-            LOG_LEVEL,
-            TMP_DIR
-        ], stdout=out_file, stderr=err_file, env=add_path(ROOT_DIR))
-    except:				# pylint: disable=bare-except
+        res = call(
+            [
+                'python',
+                py_script,
+                command.upper(),
+                json_config,
+                base_dir,
+                '/tmp/structured_out.json',
+                LOG_LEVEL,
+                TMP_DIR,
+            ],
+            stdout=out_file,
+            stderr=err_file,
+            env=add_path(ROOT_DIR),
+        )
+    except:  # pylint: disable=bare-except
         log.error("exception runnung python script")
         res = 42
 
@@ -128,9 +133,11 @@ def run_ambari_command(folder, script, command, command_id):
 
 
 def print_usage():
-    print('''
+    print(
+        '''
     command.py folder script.py commnad command_id
-    ''')
+    '''
+    )
 
 
 if __name__ == '__main__':

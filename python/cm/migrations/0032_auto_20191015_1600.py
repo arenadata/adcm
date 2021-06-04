@@ -27,27 +27,57 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='SubAction',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('name', models.CharField(max_length=160)),
                 ('display_name', models.CharField(blank=True, max_length=160)),
                 ('script', models.CharField(max_length=160)),
-                ('script_type', models.CharField(choices=[('ansible', 'ansible'), ('task_generator', 'task_generator')], max_length=16)),
+                (
+                    'script_type',
+                    models.CharField(
+                        choices=[('ansible', 'ansible'), ('task_generator', 'task_generator')],
+                        max_length=16,
+                    ),
+                ),
                 ('state_on_fail', models.CharField(blank=True, max_length=64)),
                 ('params', models.TextField(blank=True)),
-                ('action', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Action')),
+                (
+                    'action',
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Action'),
+                ),
             ],
         ),
         migrations.CreateModel(
             name='StageSubAction',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('name', models.CharField(max_length=160)),
                 ('display_name', models.CharField(blank=True, max_length=160)),
                 ('script', models.CharField(max_length=160)),
-                ('script_type', models.CharField(choices=[('ansible', 'ansible'), ('task_generator', 'task_generator')], max_length=16)),
+                (
+                    'script_type',
+                    models.CharField(
+                        choices=[('ansible', 'ansible'), ('task_generator', 'task_generator')],
+                        max_length=16,
+                    ),
+                ),
                 ('state_on_fail', models.CharField(blank=True, max_length=64)),
                 ('params', models.TextField(blank=True)),
-                ('action', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.StageAction')),
+                (
+                    'action',
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to='cm.StageAction'
+                    ),
+                ),
             ],
         ),
         migrations.AddField(
