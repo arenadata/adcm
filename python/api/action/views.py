@@ -24,8 +24,6 @@ from api.api_views import (
 from api.job.serializers import RunTaskSerializer
 from cm.models import (
     Host,
-    ClusterObject,
-    ServiceComponent,
     Action,
     TaskLog,
     HostComponent,
@@ -46,25 +44,6 @@ def get_obj(**kwargs):
     model = get_model_by_type(object_type)
     obj = model.obj.get(id=object_id)
     return obj, action_id
-
-
-def get_selector(obj, action):
-    selector = {obj.prototype.type: obj.id}
-    if obj.prototype.type == 'service':
-        selector['cluster'] = obj.cluster.id
-    if obj.prototype.type == 'component':
-        selector['cluster'] = obj.cluster.id
-        selector['service'] = obj.service.id
-    if isinstance(obj, Host) and action.host_action:
-        if action.prototype.type == 'component':
-            component = ServiceComponent.obj.get(prototype=action.prototype)
-            selector['component'] = component.id
-        if action.prototype.type == 'service':
-            service = ClusterObject.obj.get(prototype=action.prototype)
-            selector['service'] = service.id
-        if obj.cluster is not None:
-            selector['cluster'] = obj.cluster.id
-    return selector
 
 
 class ActionList(ListView):

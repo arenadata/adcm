@@ -21,7 +21,7 @@ import cm.stack
 import cm.status_api
 import cm.config as config
 from cm.errors import AdcmEx
-from cm.models import JobLog
+from cm.models import JobLog, Host, ClusterObject, ServiceComponent
 from api.api_views import hlink
 
 
@@ -35,6 +35,9 @@ def get_object_name(obj):
 
 
 def get_job_objects(task):
+    if not task.task_object:
+        return None
+
     def cook_obj(obj_type, obj_id, name):
         return {'type': obj_type, 'id': obj_id, 'name': name}
 
@@ -49,6 +52,27 @@ def get_job_objects(task):
     elif obj_type == 'host':
         resp.append(cook_obj('provider', obj.provider.id, get_object_name(obj.provider)))
     return resp
+
+
+def get_task_selector(obj, action):
+    if not obj:
+        return None
+    selector = {obj.prototype.type: obj.id}
+    if obj.prototype.type == 'service':
+        selector['cluster'] = obj.cluster.id
+    if obj.prototype.type == 'component':
+        selector['cluster'] = obj.cluster.id
+        selector['service'] = obj.service.id
+    if isinstance(obj, Host) and action.host_action:
+        if action.prototype.type == 'component':
+            component = ServiceComponent.obj.get(prototype=action.prototype)
+            selector['component'] = component.id
+        if action.prototype.type == 'service':
+            service = ClusterObject.obj.get(prototype=action.prototype)
+            selector['service'] = service.id
+        if obj.cluster is not None:
+            selector['cluster'] = obj.cluster.id
+    return selector
 
 
 def get_job_display_name(self, obj):
@@ -106,7 +130,7 @@ class TaskListSerializer(serializers.Serializer):
 
 
 class TaskSerializer(TaskListSerializer):
-    selector = serializers.JSONField(read_only=True)
+    selector = serializers.SerializerMethodField()
     config = serializers.JSONField(required=False)
     attr = serializers.JSONField(required=False)
     hc = serializers.JSONField(required=False)
@@ -122,6 +146,9 @@ class TaskSerializer(TaskListSerializer):
     object_type = serializers.SerializerMethodField()
 
     get_action_url = get_action_url
+
+    def get_selector(self, obj):
+        return get_task_selector(obj.task_object, obj.action)
 
     def get_terminatable(self, obj):
         if obj.action:
@@ -164,16 +191,6 @@ class RunTaskSerializer(TaskSerializer):
         )
         obj.jobs = JobLog.objects.filter(task_id=obj.id)
         return obj
-
-
-class TaskPostSerializer(RunTaskSerializer):
-    action_id = serializers.IntegerField()
-    selector = serializers.JSONField()
-
-    def validate_selector(self, selector):
-        if not isinstance(selector, dict):
-            raise AdcmEx('JSON_ERROR', 'selector should be a map')
-        return selector
 
 
 class JobListSerializer(serializers.Serializer):

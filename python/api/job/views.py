@@ -20,7 +20,7 @@ from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
 import cm.config as config
-from api.api_views import DetailViewRO, create, check_obj, PageView
+from api.api_views import DetailViewRO, check_obj, PageView
 from cm.errors import AdcmEx
 from cm.job import get_log, restart_task, cancel_task
 from cm.models import JobLog, TaskLog, LogStorage
@@ -148,17 +148,8 @@ class Task(PageView):
     queryset = TaskLog.objects.order_by('-id')
     serializer_class = serializers.TaskListSerializer
     serializer_class_ui = serializers.TaskSerializer
-    post_serializer = serializers.TaskPostSerializer
     filterset_fields = ('action_id', 'pid', 'status', 'start_date', 'finish_date')
     ordering_fields = ('status', 'start_date', 'finish_date')
-
-    def post(self, request):
-        """
-        Create and run new task
-        Return handler to new task
-        """
-        serializer = self.post_serializer(data=request.data, context={'request': request})
-        return create(serializer)
 
 
 class TaskDetail(DetailViewRO):
