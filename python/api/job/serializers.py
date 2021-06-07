@@ -209,7 +209,7 @@ class JobSerializer(JobListSerializer):
     action = serializers.SerializerMethodField()
     display_name = serializers.SerializerMethodField()
     objects = serializers.SerializerMethodField()
-    selector = serializers.JSONField(required=False)
+    selector = serializers.SerializerMethodField()
     log_dir = serializers.CharField(read_only=True)
     log_files = DataField(read_only=True)
     action_url = serializers.SerializerMethodField()
@@ -217,6 +217,9 @@ class JobSerializer(JobListSerializer):
 
     get_display_name = get_job_display_name
     get_action_url = get_action_url
+
+    def get_selector(self, obj):
+        return get_task_selector(obj.task.task_object, obj.action)
 
     def get_action(self, obj):
         return JobAction(obj.action, context=self.context).data

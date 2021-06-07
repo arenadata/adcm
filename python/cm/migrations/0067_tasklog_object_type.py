@@ -25,14 +25,20 @@ def fix_tasklog(apps, schema_editor):
     ADCM = apps.get_model('cm', 'ADCM')
 
     ContentType = apps.get_model('contenttypes', 'ContentType')
-    content = {
-        'component': ContentType.objects.get(app_label='cm', model='servicecomponent'),
-        'service': ContentType.objects.get(app_label='cm', model='clusterobject'),
-        'host': ContentType.objects.get(app_label='cm', model='host'),
-        'provider': ContentType.objects.get(app_label='cm', model='hostprovider'),
-        'cluster': ContentType.objects.get(app_label='cm', model='cluster'),
-        'adcm': ContentType.objects.get(app_label='cm', model='adcm'),
-    }
+    cash = {}
+
+    def get_content(context):
+        content = {
+            'component': 'servicecomponent',
+            'service': 'clusterobject',
+            'host': 'host',
+            'provider': 'hostprovider',
+            'cluster': 'cluster',
+            'adcm': 'adcm',
+        }
+        if context not in cash:
+            cash[context] = ContentType.objects.get(app_label='cm', model=content[context])
+        return cash[context]
 
     def get_task_obj(context, obj_id):
         def get_obj_safe(model, obj_id):
@@ -60,7 +66,7 @@ def fix_tasklog(apps, schema_editor):
     for task in TaskLog.objects.all():
         obj = get_task_obj(task.action.prototype.type, task.object_id)
         if obj:
-            task.object_type = content[task.action.prototype.type]
+            task.object_type = get_content(task.action.prototype.type)
             task.save()
 
 
