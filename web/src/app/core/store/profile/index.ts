@@ -30,7 +30,6 @@ const InitState = {
 
 export const loadProfile = createAction('[Profile] Load');
 export const clearProfile = createAction('[Profile] ClearProfile');
-export const saveDashboard = createAction('[Profile] SaveDashboard', props<{ dashboard: any[] }>());
 export const loadProfileSuccess = createAction('[Profile] LoadSuccess', props<{ profile: IUser }>());
 export const setTextareaHeight = createAction('[Profile] SetTextareaHeight', props<{ key: string; value: number }>());
 export const settingsSave = createAction('[Profile] SettingsSave', props<{ isSet: boolean }>());
@@ -39,7 +38,6 @@ const reducer = createReducer(
   InitState,
   on(loadProfileSuccess, (state, { profile }) => ({ ...profile })),
   on(setTextareaHeight, state => ({ ...state })),
-  on(saveDashboard, (state, { dashboard }) => ({ ...state, dashboard })),
   on(settingsSave, (state, { isSet }) => ({ ...state, isSet })),
   on(clearProfile, () => InitState)
 );
@@ -54,16 +52,6 @@ export class ProfileEffects {
     this.actions$.pipe(
       ofType(loadProfile),
       exhaustMap(() => this.service.getProfile().pipe(map(user => loadProfileSuccess({ profile: user }))))
-    )
-  );
-
-  saveDashboard$ = createEffect(() =>
-    this.actions$.pipe(
-      ofType(saveDashboard),
-      map(action => action.dashboard),
-      exhaustMap(data =>
-        this.service.setDashboardProfile(data).pipe(map(user => loadProfileSuccess({ profile: user })))
-      )
     )
   );
 

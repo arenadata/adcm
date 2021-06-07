@@ -6,7 +6,7 @@ import { BehaviorSubject, combineLatest, interval, Observable, zip } from 'rxjs'
 import { filter, map, take, takeWhile } from 'rxjs/operators';
 import { ACKNOWLEDGE_EVENT, NotificationsComponent } from '@app/components/notifications/notifications.component';
 import { Task, TaskRaw } from '@app/core/types';
-import { EventMessage } from '@app/core/store';
+import { EventMessage, ProfileService } from '@app/core/store';
 
 const RUNNING_COLOR = '#FFEA00';
 const SUCCESS_COLOR = '#1EE564';
@@ -62,12 +62,17 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
     private jobService: JobService,
     private taskService: TaskService,
     private renderer: Renderer2,
+    private profileService: ProfileService,
   ) {
     super();
   }
 
   popoverEvent(event: any) {
     if (event === ACKNOWLEDGE_EVENT) {
+      const lastTaskId = this.tasks.value[0]?.id;
+      if (lastTaskId) {
+        this.profileService.setLastViewedTask(lastTaskId).subscribe();
+      }
       this.tasks.next([]);
     }
   }

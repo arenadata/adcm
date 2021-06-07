@@ -56,33 +56,28 @@ export class ProfileService {
     this.user = { ...this.user, profile };
   }
 
-  public setProfile(): Observable<IUser> {
+  setProfile(): Observable<IUser> {
     const { username, profile } = { ...this.user };
     return this.http.patch<IUser>(`${PROFILE_LINK}${this.user.username}/`, { username, profile });
   }
 
-  public setDashboardProfile(dashboard: any[]) {
-    this.user.profile.dashboard = dashboard;
-    return this.setProfile();
-  }
-
-  public setTextareaProfile(data: { key: string; value: number }) {
+  setTextareaProfile(data: { key: string; value: number }): Observable<IUser> {
     const textarea = { ...this.user.profile.textarea };
     textarea[data.key] = data.value;
     this.setUser('textarea', textarea);
     return this.setProfile();
   }
 
-  public addUser(user: { username: string; profile: string }): Observable<IUser> {
-    return this.http.post<IUser>(`${PROFILE_LINK}`, user);
-  }
-
-  public defaultProfile() {
-    this.user.profile.dashboard = PROFILE_DASHBOARD_DEFAULT;
+  setLastViewedTask(id: number): Observable<IUser> {
+    this.setUser('lastViewedTask', { id });
     return this.setProfile();
   }
 
-  public setPassword(password: string) {
+  addUser(user: { username: string; profile: string }): Observable<IUser> {
+    return this.http.post<IUser>(`${PROFILE_LINK}`, user);
+  }
+
+  setPassword(password: string) {
     return this.http.patch(this.user.change_password, { password });
   }
 }
