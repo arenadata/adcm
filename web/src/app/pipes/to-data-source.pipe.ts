@@ -5,7 +5,7 @@ import { Pipe, PipeTransform } from '@angular/core';
 })
 export class ToDataSourcePipe implements PipeTransform {
 
-  transform(model: {}): { results: any[]; count: number; } {
+  transform(model: { [key: string]: any }): { results: any[]; count: number; } {
     if (!model) {
       return { results: [], count: 0 };
     }
