@@ -115,7 +115,7 @@ export class MainComponent implements OnInit {
   listColumns = [
     ListFactory.keyColumn(),
     ListFactory.valueColumn(),
-  ] as IColumns<IBundle>;
+  ] as IColumns<any>;
 
   constructor(private service: ClusterService) {}
 
