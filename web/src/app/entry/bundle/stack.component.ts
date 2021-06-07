@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { ChangeDetectionStrategy, Component, ComponentRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ComponentRef, OnInit, ViewChild } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
@@ -101,13 +101,12 @@ export class StackComponent extends AdwpListDirective<IBundle> {
 @Component({
   selector: 'app-main',
   template: `
-    <adwp-list
+    <adwp-table
       [columns]="listColumns"
-      [dataSource]="toDataSource(model)"
-    ></adwp-list>
+      [dataSource]="model | toDataSource"
+    ></adwp-table>
   `,
-  styles: [':host {width: 100%; max-width: 960px}'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  styles: [':host {width: 100%; max-width: 960px}']
 })
 export class MainComponent implements OnInit {
   model: any;
@@ -123,15 +122,4 @@ export class MainComponent implements OnInit {
     this.model = this.service.Current;
   }
 
-  toDataSource(model: {}): { results: any[]; count: number; } {
-    if (!model) {
-      return { results: [], count: 0 };
-    }
-
-    const results = Object.entries(model)
-      .reduce((acc, [key, value]) => [...acc, { key, value }], []);
-
-    return { results, count: 0 };
-
-  }
 }

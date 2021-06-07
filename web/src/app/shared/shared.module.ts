@@ -46,6 +46,7 @@ import { StateColumnComponent } from '@app/components/columns/state-column/state
 import { EditionColumnComponent } from '@app/components/columns/edition-column/edition-column.component';
 import { ClusterColumnComponent } from '@app/components/columns/cluster-column/cluster-column.component';
 import { ServiceComponentsComponent } from '@app/components/service-components.component';
+import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
 
 @NgModule({
   imports: [
@@ -88,6 +89,7 @@ import { ServiceComponentsComponent } from '@app/components/service-components.c
     EditionColumnComponent,
     ClusterColumnComponent,
     ServiceComponentsComponent,
+    ToDataSourcePipe,
   ],
   // entryComponents: [DialogComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent, ActionMasterComponent],
   exports: [
@@ -120,6 +122,7 @@ import { ServiceComponentsComponent } from '@app/components/service-components.c
     ClusterColumnComponent,
     ServiceComponentsComponent,
     AdwpListModule,
+    ToDataSourcePipe
   ],
 })
 export class SharedModule {}
