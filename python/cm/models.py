@@ -441,8 +441,25 @@ class ConfigGroup(ADCMModel):
     object = GenericForeignKey('object_type', 'object_id')
     name = models.CharField(max_length=30)
     description = models.TextField(blank=True)
-    hosts = models.ManyToManyField(Host, blank=True)
+    hosts = models.ManyToManyField(Host, blank=True, through='HostGroup')
     config = models.JSONField(default=dict)
+
+
+class HostGroup(models.Model):
+    group = models.ForeignKey(ConfigGroup, on_delete=models.CASCADE)
+    host = models.ForeignKey(Host, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ['group', 'host']
+
+    def save(self, *args, **kwargs):
+        groups = ConfigGroup.objects.filter(
+            object_id=self.group.object_id, object_type=self.group.object_type
+        )
+        for group in groups:
+            if self.host in group.hosts.all():
+                raise AdcmEx('CONFIG_GROUP_ERROR')
+        super().save(*args, **kwargs)
 
 
 ACTION_TYPE = (
