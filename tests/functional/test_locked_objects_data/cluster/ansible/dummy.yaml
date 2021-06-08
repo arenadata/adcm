@@ -17,5 +17,5 @@
 
   tasks:
     - name: Do nothing
-    - debug:
+      debug:
         msg: "Nothing done"

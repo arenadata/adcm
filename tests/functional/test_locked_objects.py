@@ -294,22 +294,76 @@ def test_service_should_be_unlocked_when_ansible_task_killed(complete_cluster: C
     is_free(service)
 
 
+@pytest.mark.parametrize("adcm_object", ["Cluster", "Service", "Component"])
 @pytest.mark.parametrize("expand_action", ["expand_success", "expand_failed"])
-def test_host_should_be_unlocked_after_expand_service_action(
+def test_host_should_be_unlocked_after_expand_action(
     sdk_client_fs: ADCMClient,
     cluster_with_two_hosts: Tuple[Cluster, List[Host]],
     host_provider: Provider,
+    adcm_object: str,
     expand_action: str,
+):
+    action_args = {
+        "obj_for_action": None
+    }
+    cluster, _ = cluster_with_two_hosts
+    dummy_service = cluster.service_add(name="second")
+    dummy_component = dummy_service.component(name="dummy")
+    if adcm_object == "Cluster":
+        action_args["obj_for_action"] = cluster
+    elif adcm_object == "Service":
+        action_args["obj_for_action"] = dummy_service
+    elif adcm_object == "Component":
+        action_args["obj_for_action"] = dummy_component
+    _test_expand_object_action(
+        cluster_with_two_hosts,
+        action_name=expand_action,
+        **action_args
+    )
+
+
+@pytest.mark.parametrize("adcm_object", ["Cluster", "Service", "Component"])
+@pytest.mark.parametrize("shrink_action", ["shrink_success", "shrink_failed"])
+def test_host_should_be_unlocked_after_shrink_action(
+    sdk_client_fs: ADCMClient,
+    cluster_with_two_hosts: Tuple[Cluster, List[Host]],
+    host_provider: Provider,
+    adcm_object: str,
+    shrink_action: str,
+):
+    action_args = {
+        "obj_for_action": None
+    }
+    cluster, _ = cluster_with_two_hosts
+    dummy_service = cluster.service_add(name="second")
+    dummy_component = dummy_service.component(name="dummy")
+    if adcm_object == "Cluster":
+        action_args["obj_for_action"] = cluster
+    elif adcm_object == "Service":
+        action_args["obj_for_action"] = dummy_service
+    elif adcm_object == "Component":
+        action_args["obj_for_action"] = dummy_component
+    _test_shrink_object_action(
+        cluster_with_two_hosts,
+        action_name=shrink_action,
+        **action_args
+    )
+
+
+def _test_expand_object_action(
+    cluster_with_two_hosts: Tuple[Cluster, List[Host]],
+    obj_for_action: Union[Cluster, Service, Component],
+    action_name: str
 ):
     cluster, hosts = cluster_with_two_hosts
     host1, host2 = hosts
-    dummy_service = cluster.service_add(name="second")
+    dummy_service = cluster.service(name="second")
     dummy_component = dummy_service.component(name="dummy")
     cluster.hostcomponent_set(
         (host1, dummy_component),
     )
-    with allure.step("Run action: expand component from host"):
-        dummy_service.action(name=expand_action,).run(
+    with allure.step(f"Run {obj_for_action.__class__.__name__} action: expand component from host"):
+        obj_for_action.action(name=action_name, ).run(
             hc=[
                 {
                     "host_id": host1.host_id,
@@ -327,23 +381,21 @@ def test_host_should_be_unlocked_after_expand_service_action(
     is_free(host2)
 
 
-@pytest.mark.parametrize("shrink_action", ["shrink_success", "shrink_failed"])
-def test_host_should_be_unlocked_after_shrink_service(
-    sdk_client_fs: ADCMClient,
+def _test_shrink_object_action(
     cluster_with_two_hosts: Tuple[Cluster, List[Host]],
-    host_provider: Provider,
-    shrink_action: str,
+    obj_for_action: Union[Cluster, Service, Component],
+    action_name: str
 ):
     cluster, hosts = cluster_with_two_hosts
     host1, host2 = hosts
-    dummy_service = cluster.service_add(name="second")
+    dummy_service = cluster.service(name="second")
     dummy_component = dummy_service.component(name="dummy")
     cluster.hostcomponent_set(
         (host1, dummy_component),
         (host2, dummy_component),
     )
-    with allure.step("Run action: shrink component from host"):
-        dummy_service.action(name=shrink_action,).run(
+    with allure.step(f"Run {obj_for_action.__class__.__name__} action: shrink component from host"):
+        obj_for_action.action(name=action_name, ).run(
             hc=[
                 {
                     "host_id": host1.host_id,
