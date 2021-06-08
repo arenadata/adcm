@@ -47,7 +47,27 @@
   components:
     dummy:
       actions: *actions
-  actions: *actions
+  actions:
+    expand:
+      type: job
+      script: ansible/dummy.yaml
+      script_type: ansible
+      hc_acl:
+        - service: second
+          component: dummy
+          action: add
+      states:
+        available: any
+    shrink:
+      type: job
+      script: ansible/dummy.yaml
+      script_type: ansible
+      hc_acl:
+        - service: second
+          component: dummy
+          action: remove
+      states:
+        available: any
 
 - type: cluster
   name: locking
