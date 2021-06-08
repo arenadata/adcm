@@ -294,10 +294,12 @@ def test_service_should_be_unlocked_when_ansible_task_killed(complete_cluster: C
     is_free(service)
 
 
-def test_host_should_be_unlocked_after_expand(
+@pytest.mark.parametrize("expand_action", ["expand_success", "expand_failed"])
+def test_host_should_be_unlocked_after_expand_service_action(
     sdk_client_fs: ADCMClient,
     cluster_with_two_hosts: Tuple[Cluster, List[Host]],
     host_provider: Provider,
+    expand_action: str,
 ):
     cluster, hosts = cluster_with_two_hosts
     host1, host2 = hosts
@@ -307,7 +309,7 @@ def test_host_should_be_unlocked_after_expand(
         (host1, dummy_component),
     )
     with allure.step("Run action: expand component from host"):
-        dummy_service.action(name="expand",).run(
+        dummy_service.action(name=expand_action,).run(
             hc=[
                 {
                     "host_id": host1.host_id,
@@ -325,10 +327,12 @@ def test_host_should_be_unlocked_after_expand(
     is_free(host2)
 
 
-def test_host_should_be_unlocked_after_shrink(
+@pytest.mark.parametrize("shrink_action", ["shrink_success", "shrink_failed"])
+def test_host_should_be_unlocked_after_shrink_service(
     sdk_client_fs: ADCMClient,
     cluster_with_two_hosts: Tuple[Cluster, List[Host]],
     host_provider: Provider,
+    shrink_action: str,
 ):
     cluster, hosts = cluster_with_two_hosts
     host1, host2 = hosts
@@ -339,7 +343,7 @@ def test_host_should_be_unlocked_after_shrink(
         (host2, dummy_component),
     )
     with allure.step("Run action: shrink component from host"):
-        dummy_service.action(name="shrink",).run(
+        dummy_service.action(name=shrink_action,).run(
             hc=[
                 {
                     "host_id": host1.host_id,
