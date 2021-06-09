@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, ElementRef, Input, ViewChild } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
 import { NotificationsData } from '@app/components/bell/bell.component';
@@ -27,7 +27,7 @@ export const ACKNOWLEDGE_EVENT = 'acknowledge';
         <span>Last {{(data.tasks | async)?.length}} notifications:</span>
       </div>
 
-      <div class="notifications">
+      <div class="notifications" #notifications>
         <div *ngFor="let task of (data.tasks | async)" class="notification">
           <ng-container [ngSwitch]="task.status">
             <mat-icon *ngSwitchCase="'running'" class="icon-locked running">autorenew</mat-icon>
@@ -36,16 +36,16 @@ export const ACKNOWLEDGE_EVENT = 'acknowledge';
           </ng-container>
           <a [routerLink]="['job', task.id]">{{ task.action.display_name }}</a>
         </div>
-      </div>
 
-      <div class="footer">
-        <a routerLink="/task">Show more...</a>
-        <a (click)="acknowledge()" class="acknowledge"><mat-icon class="success">check_circle</mat-icon>acknowledge</a>
-      </div>
+        <div class="footer">
+          <a routerLink="/task">Show more...</a>
+          <a (click)="acknowledge()" class="acknowledge"><mat-icon class="success">check_circle</mat-icon>acknowledge</a>
+        </div>
 
+      </div>
     </ng-container>
     <ng-template #empty>
-      <div class="empty-label">
+      <div class="empty-label" [ngStyle]="{ 'min-height': minHeightNotifications + 'px' }">
         Nothing to display
       </div>
       <div class="empty-footer">
@@ -57,11 +57,20 @@ export const ACKNOWLEDGE_EVENT = 'acknowledge';
 })
 export class NotificationsComponent {
 
+  minHeightNotifications = 200;
+
+  @ViewChild('notifications', { static: false }) notificationsRef: ElementRef;
+
   @Input() data: { counts: BehaviorSubject<NotificationsData>, tasks: BehaviorSubject<TaskRaw[]> };
 
   event: PopoverEventFunc;
 
+  setLabelHeightAfterAcknowledge() {
+    this.minHeightNotifications = this.notificationsRef.nativeElement.clientHeight;
+  }
+
   acknowledge() {
+    this.setLabelHeightAfterAcknowledge();
     this.event(ACKNOWLEDGE_EVENT);
   }
 

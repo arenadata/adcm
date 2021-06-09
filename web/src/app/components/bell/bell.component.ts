@@ -1,10 +1,9 @@
-import { AfterViewInit, Component, Renderer2, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, Renderer2, ViewChild } from '@angular/core';
 import { BaseDirective } from '@adwp-ui/widgets';
 import { BehaviorSubject, combineLatest, interval, Observable, zip } from 'rxjs';
 import { filter, map, mergeMap, take, takeWhile } from 'rxjs/operators';
 
 import { TaskService } from '@app/services/task.service';
-import { JobService } from '@app/services/job.service';
 import { ACKNOWLEDGE_EVENT, NotificationsComponent } from '@app/components/notifications/notifications.component';
 import { Task, TaskRaw } from '@app/core/types';
 import { EventMessage, ProfileService } from '@app/core/store';
@@ -44,7 +43,7 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
 
   NotificationsComponent = NotificationsComponent;
 
-  @ViewChild('animation', { static: false }) animationRef: any;
+  @ViewChild('animation', { static: false }) animationRef: ElementRef;
 
   runningCount = new BehaviorSubject<number>(0);
   successCount = new BehaviorSubject<number>(0);
@@ -61,7 +60,6 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
   readonly bindedPopoverEvent = this.popoverEvent.bind(this);
 
   constructor(
-    private jobService: JobService,
     private taskService: TaskService,
     private renderer: Renderer2,
     private profileService: ProfileService,
@@ -122,12 +120,12 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
     this.startAnimation();
   }
 
-  getChangeJobObservable(): Observable<EventMessage> {
-    return this.jobService.events(['change_job_status']).pipe(this.takeUntil());
+  getChangeTaskObservable(): Observable<EventMessage> {
+    return this.taskService.events(['change_job_status']).pipe(this.takeUntil());
   }
 
   listenToJobs() {
-    this.getChangeJobObservable().subscribe((event) => {
+    this.getChangeTaskObservable().subscribe((event) => {
       const status = event.object.details.value;
       if (status === 'running') {
         this.runningCount.next(this.runningCount.value + 1);
@@ -143,7 +141,7 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
       }
     });
 
-    this.getChangeJobObservable().pipe(
+    this.getChangeTaskObservable().pipe(
       filter(event => event.object.details.type === 'status'),
       filter(event => event.object.details.value !== 'created'),
     ).subscribe((event) => {
