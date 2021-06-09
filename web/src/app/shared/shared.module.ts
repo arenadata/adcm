@@ -47,6 +47,8 @@ import { EditionColumnComponent } from '@app/components/columns/edition-column/e
 import { ClusterColumnComponent } from '@app/components/columns/cluster-column/cluster-column.component';
 import { ServiceComponentsComponent } from '@app/components/service-components.component';
 import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
+import { TranslateModule } from '@ngx-translate/core';
+import { PickKeysPipe } from '@app/pipes/pick-keys.pipe';
 
 @NgModule({
   imports: [
@@ -61,6 +63,7 @@ import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
     AddingModule,
     HostComponentsMapModule,
     DetailsModule,
+    TranslateModule,
     AdwpListModule.forRoot({
       itemsPerPage: [10, 25, 50, 100],
     }),
@@ -90,6 +93,7 @@ import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
     ClusterColumnComponent,
     ServiceComponentsComponent,
     ToDataSourcePipe,
+    PickKeysPipe
   ],
   // entryComponents: [DialogComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent, ActionMasterComponent],
   exports: [
@@ -122,7 +126,9 @@ import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
     ClusterColumnComponent,
     ServiceComponentsComponent,
     AdwpListModule,
-    ToDataSourcePipe
+    ToDataSourcePipe,
+    PickKeysPipe
   ],
 })
-export class SharedModule {}
+export class SharedModule {
+}

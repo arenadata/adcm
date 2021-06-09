@@ -103,13 +103,15 @@ export class StackComponent extends AdwpListDirective<IBundle> {
   template: `
     <adwp-table
       [columns]="listColumns"
-      [dataSource]="model | toDataSource"
+      [dataSource]="model | pickKeys:keys | toDataSource"
     ></adwp-table>
   `,
   styles: [':host {width: 100%; max-width: 960px}']
 })
 export class MainComponent implements OnInit {
   model: any;
+
+  keys = ['display_name', 'version', 'license_path', 'license'];
 
   listColumns = [
     ListFactory.keyColumn(),
