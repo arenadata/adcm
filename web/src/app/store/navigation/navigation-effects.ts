@@ -18,6 +18,7 @@ import {
   setPathOfRoute
 } from '@app/store/navigation/navigation.store';
 import { EventMessage, socketResponse } from '@app/core/store/sockets/socket.reducer';
+import { IClusterService } from '@app/models/cluster-service';
 
 @Injectable()
 export class NavigationEffects {
@@ -82,7 +83,7 @@ export class NavigationEffects {
 
 
     if (EntityNames.includes(type)) {
-      if(type === 'bundle') {
+      if (type === 'bundle') {
         return entityToTypedEntity(
           this.clusterService.one_bundle(id),
           type,
@@ -92,6 +93,14 @@ export class NavigationEffects {
           this.serviceComponentService.get(id),
           type,
         );
+      } if (type === 'service') {
+        return entityToTypedEntity(
+          this.api.getOne<any>(type, id),
+          type,
+        ).pipe(switchMap((entity) => {
+          return this.api.getOne<any>('cluster', (entity as any as IClusterService).cluster_id)
+            .pipe(map(cluster => ({...entity, cluster})));
+        }));
       } else {
         return entityToTypedEntity(
           this.api.getOne<any>(type, id),
