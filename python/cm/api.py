@@ -20,6 +20,7 @@ import cm.errors
 import cm.issue
 import cm.config as config
 import cm.status_api
+import cm.lock
 from cm.logger import log  # pylint: disable=unused-import
 from cm.upgrade import check_license, version_in
 from cm.adcm_config import (
@@ -507,7 +508,18 @@ def check_hc(cluster, hc_in):  # pylint: disable=too-many-branches
 
 
 def save_hc(cluster, host_comp_list):
-    HostComponent.objects.filter(cluster=cluster).delete()
+    event = Event()
+    hc_queryset = HostComponent.objects.filter(cluster=cluster)
+
+    old_hosts = {i.host for i in hc_queryset.select_related('host').all()}
+    new_hosts = {i[1] for i in host_comp_list}
+    for removed_host in old_hosts.difference(new_hosts):
+        cm.lock._unlock_obj(removed_host, event)  # pylint: disable=protected-access
+    for added_host in new_hosts.difference(old_hosts):
+        if added_host.state != config.Job.LOCKED:
+            cm.lock._lock_obj(added_host, event)  # pylint: disable=protected-access
+
+    hc_queryset.delete()
     result = []
     for (proto, host, comp) in host_comp_list:
         hc = HostComponent(
@@ -518,6 +530,7 @@ def save_hc(cluster, host_comp_list):
         )
         hc.save()
         result.append(hc)
+    event.send_state()
     cm.status_api.post_event('change_hostcomponentmap', 'cluster', cluster.id)
     cm.issue.update_hierarchy_issues(cluster)
     cm.status_api.load_service_map()
