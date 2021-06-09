@@ -15,15 +15,18 @@ import { environment } from '@env/environment';
 import { Observable, throwError } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 
-import { AuthService } from '../../auth/auth.service';
-import { PROFILE_DASHBOARD_DEFAULT } from '../../types/dashboard';
+import { AuthService } from '@app/core';
 
 const PROFILE_LINK = `${environment.apiRoot}profile/`;
 
+export interface LastViewedTask {
+  id: number;
+}
+
 export interface IProfile {
-  dashboard: any[];
   textarea: { [key: string]: number };
   settingsSaved: boolean;
+  lastViewedTask?: LastViewedTask;
 }
 
 export interface IUser {
@@ -47,7 +50,7 @@ export class ProfileService {
   }
 
   emptyProfile() {
-    return { dashboard: PROFILE_DASHBOARD_DEFAULT, textarea: {}, settingsSaved: false };
+    return { textarea: {}, settingsSaved: false };
   }
 
   setUser(key: string, value: string | boolean | { [key: string]: number }) {

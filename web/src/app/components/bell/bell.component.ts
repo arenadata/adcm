@@ -1,12 +1,14 @@
-import { AfterViewInit, Component, ElementRef, OnInit, Renderer2, ViewChild } from '@angular/core';
-import { JobService } from '@app/services/job.service';
+import { AfterViewInit, Component, Renderer2, ViewChild } from '@angular/core';
 import { BaseDirective } from '@adwp-ui/widgets';
-import { TaskService } from '@app/services/task.service';
 import { BehaviorSubject, combineLatest, interval, Observable, zip } from 'rxjs';
-import { filter, map, take, takeWhile } from 'rxjs/operators';
+import { filter, map, mergeMap, take, takeWhile } from 'rxjs/operators';
+
+import { TaskService } from '@app/services/task.service';
+import { JobService } from '@app/services/job.service';
 import { ACKNOWLEDGE_EVENT, NotificationsComponent } from '@app/components/notifications/notifications.component';
 import { Task, TaskRaw } from '@app/core/types';
 import { EventMessage, ProfileService } from '@app/core/store';
+import { Stats, StatsService } from '@app/services/stats.service';
 
 const RUNNING_COLOR = '#FFEA00';
 const SUCCESS_COLOR = '#1EE564';
@@ -63,6 +65,7 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
     private taskService: TaskService,
     private renderer: Renderer2,
     private profileService: ProfileService,
+    private statsService: StatsService,
   ) {
     super();
   }
@@ -74,6 +77,9 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
         this.profileService.setLastViewedTask(lastTaskId).subscribe();
       }
       this.tasks.next([]);
+      this.successCount.next(0);
+      this.runningCount.next(0);
+      this.failedCount.next(0);
     }
   }
 
@@ -100,13 +106,11 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
   }
 
   afterCountChanged() {
-    // console.log('changed', this.runningCount, this.successCount, this.failedCount);
     const total =  this.runningCount.value + this.successCount.value + this.failedCount.value;
     if (total > 0) {
       const degOne = 360 / total;
       const degRunning = this.runningCount.value * degOne;
       const degSuccess = this.successCount.value * degOne;
-      // const degFailed = this.failedCount.value * degOne;
       this.bellGradient =
         `conic-gradient(`
         + `${RUNNING_COLOR} 0deg ${degRunning}deg,`
@@ -143,53 +147,27 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
       filter(event => event.object.details.type === 'status'),
       filter(event => event.object.details.value !== 'created'),
     ).subscribe((event) => {
-      console.log('Event', event);
       const tasks: TaskRaw[] = this.tasks.value.slice();
       const index = tasks.findIndex(item => item.id === event.object.id);
       if (index >= 0) {
         const task: TaskRaw = Object.assign({}, tasks[index]);
         task.status = event.object.details.value;
-        console.log('Task changed', task);
         tasks.splice(index, 1, task);
         this.tasks.next(tasks);
       } else {
         this.taskService.get(event.object.id).subscribe((task) => {
-          console.log(task);
           task.status = event.object.details.value;
           tasks.unshift(task);
-          this.tasks.next(tasks);
+          this.tasks.next(tasks.slice(0, 5));
         });
       }
     });
   }
 
-  getCurrentCounts(): Observable<{ running: number, success: number, failed: number }> {
-    const defaultParams = {
-      limit: '1',
-      offset: '0',
-    };
-
-    return zip(
-      this.taskService.list({
-        status: 'running',
-        ...defaultParams,
-      }),
-      this.taskService.list({
-        status: 'success',
-        ...defaultParams,
-      }),
-      this.taskService.list({
-        status: 'failed',
-        ...defaultParams,
-      }),
-    ).pipe(
-      map(
-        ([runningList, successList, failedList]) => ({
-          running: runningList.count,
-          success: successList.count,
-          failed: failedList.count,
-        })
-      )
+  getCurrentCounts(): Observable<Stats> {
+    return this.profileService.getProfile().pipe(
+      take(1),
+      mergeMap((user) => this.statsService.tasks(user.profile?.lastViewedTask?.id)),
     );
   }
 
@@ -222,10 +200,10 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
       take(1),
     ).subscribe(() => {
       zip(this.getCurrentCounts(), this.getLastTasks())
-        .subscribe(([counts, tasks]) => {
-          this.runningCount.next(counts.running);
-          this.successCount.next(counts.success);
-          this.failedCount.next(counts.failed);
+        .subscribe(([stats, tasks]) => {
+          this.runningCount.next(stats.running);
+          this.successCount.next(stats.success);
+          this.failedCount.next(stats.failed);
           this.afterCountChanged();
           this.tasks.next(tasks);
           this.listenToJobs();
@@ -238,14 +216,14 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
     ).subscribe(() => this.endAnimation());
 
     combineLatest(this.runningCount, this.successCount, this.failedCount)
-      .pipe(this.takeUntil())
-      .subscribe(
-        ([runningCount, successCount, failedCount]) => this.counts.next({
-          runningCount,
-          successCount,
-          failedCount,
-        })
-      );
+    .pipe(this.takeUntil())
+    .subscribe(
+      ([runningCount, successCount, failedCount]) => this.counts.next({
+        runningCount,
+        successCount,
+        failedCount,
+      })
+    );
   }
 
 }

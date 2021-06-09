@@ -22,7 +22,6 @@ const InitState = {
   username: '',
   change_password: '',
   profile: {
-    dashboard: [],
     textarea: {},
     settingsSaved: false,
   },

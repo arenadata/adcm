@@ -35,7 +35,6 @@ export const ACKNOWLEDGE_EVENT = 'acknowledge';
             <mat-icon *ngSwitchDefault [ngClass]="task.status">done_all</mat-icon>
           </ng-container>
           <a [routerLink]="['job', task.id]">{{ task.action.display_name }}</a>
-          <mat-icon *ngIf="task.terminatable" class="failed">cancel</mat-icon>
         </div>
       </div>
 
