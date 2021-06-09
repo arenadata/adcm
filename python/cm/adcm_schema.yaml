@@ -545,8 +545,12 @@ vfh_predicate_item:
     and: vfh_predicate_and
     or: vfh_predicate_and
     in_cluster: vfh_predicate_in_cluster
+    in_hc: vfh_predicate_in_cluster
+    not_in_hc: vfh_predicate_in_cluster
     in_service: vfh_predicate_in_service
+    not_in_service: vfh_predicate_in_service
     in_component: vfh_predicate_in_component
+    not_in_component: vfh_predicate_in_component
 
 vfh_predicate_and:
   match: dict
@@ -608,6 +612,10 @@ vfh_predicates:
     - in_service
     - in_component
     - in_cluster
+    - in_hc
+    - not_in_hc
+    - not_in_service
+    - not_in_component
 
 # Imports
 import_dict:
