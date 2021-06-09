@@ -12,17 +12,17 @@ export const ACKNOWLEDGE_EVENT = 'acknowledge';
   template: `
     <div class="counters">
       <div class="item" routerLink="/task" [queryParams]="{ status: 'running' }" matTooltip="Show jobs in progress">
-        <mat-icon class="running">autorenew</mat-icon> {{ (data.counts | async).runningCount }}
+        <mat-icon class="running">autorenew</mat-icon> {{ (data?.counts | async)?.runningCount }}
       </div>
       <div class="item" routerLink="/task" [queryParams]="{ status: 'success' }" matTooltip="Show success jobs">
-        <mat-icon class="success">done_all</mat-icon> {{ (data.counts | async).successCount }}
+        <mat-icon class="success">done_all</mat-icon> {{ (data?.counts | async)?.successCount }}
       </div>
       <div class="item" routerLink="/task" [queryParams]="{ status: 'failed' }" matTooltip="Show failed jobs">
-        <mat-icon class="failed">done_all</mat-icon> {{ (data.counts | async).failedCount }}
+        <mat-icon class="failed">done_all</mat-icon> {{ (data?.counts | async)?.failedCount }}
       </div>
     </div>
 
-    <ng-container *ngIf="(data.tasks | async)?.length; else empty">
+    <ng-container *ngIf="(data?.tasks | async)?.length; else empty">
       <div class="header">
         <span>Last {{(data.tasks | async)?.length}} notifications:</span>
       </div>
