@@ -82,18 +82,6 @@ class TestApi(TestCase):
                 cluster = api_module.push_obj(self.cluster, state)
                 self.assertEqual(cluster.stack, [state])
 
-    def test_set_object_state(self):
-        event = Mock()
-        event.set_obj_state = Mock()
-        state = self.cluster.state
-
-        cluster = api_module.set_object_state(self.cluster, 'created', event)
-
-        self.assertTrue(cluster.state != state)
-        event.set_object_state.assert_called_once_with(
-            self.cluster.prototype.type, self.cluster.id, 'created'
-        )
-
     @patch('cm.status_api.load_service_map')
     @patch('cm.issue.update_hierarchy_issues')
     @patch('cm.status_api.post_event')

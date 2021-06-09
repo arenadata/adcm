@@ -21,7 +21,7 @@ import cm.issue
 import cm.config as config
 import cm.status_api
 import cm.lock
-from cm.logger import log  # pylint: disable=unused-import
+from cm.logger import log
 from cm.upgrade import check_license, version_in
 from cm.adcm_config import (
     proto_ref,
@@ -92,7 +92,7 @@ def add_host(proto, provider, fqdn, desc='', lock=False):
         host.save()
         if lock:
             host.stack = ['created']
-            set_object_state(host, config.Job.LOCKED, event)
+            host.set_state(config.Job.LOCKED, event)
         process_file_type(host, spec, conf)
         cm.issue.update_hierarchy_issues(host)
     event.send_state()
@@ -819,12 +819,4 @@ def push_obj(obj, state):
         stack[0] = state
     obj.stack = stack
     obj.save()
-    return obj
-
-
-def set_object_state(obj, state, event):
-    obj.state = state
-    obj.save()
-    event.set_object_state(obj.prototype.type, obj.id, state)
-    log.info('set %s state to "%s"', obj_ref(obj), state)
     return obj
