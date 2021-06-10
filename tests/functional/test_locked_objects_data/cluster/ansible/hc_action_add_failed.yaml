@@ -10,11 +10,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-- name: Dummy action
+- name: Add component
   hosts: localhost
   gather_facts: no
 
   tasks:
-    - name: Do nothing
-      debug:
-        msg: "Nothing done"
+    - name: Add component
+      adcm_hc:
+        operations:
+          -
+            action: "add"
+            service: "second"
+            component: "dummy"
+            host: "host_1"
+
+    - block:
+      - name: "It is failed task"
+        assert:
+          msg: "It is failed task"
+          that: False

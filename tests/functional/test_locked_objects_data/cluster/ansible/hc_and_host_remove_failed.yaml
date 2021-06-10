@@ -10,11 +10,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-- name: Dummy action
+- name: Remove component
   hosts: localhost
   gather_facts: no
-
   tasks:
-    - name: Do nothing
-      debug:
-        msg: "Nothing done"
+    - name: Remove component
+      adcm_hc:
+        operations:
+          -
+            action: "remove"
+            service: "second"
+            component: "dummy"
+            host: "host_0"
+
+    - name: Remove host
+      adcm_remove_host_from_cluster:
+        fqdn: "host_0"
+
+    - block:
+        - name: "It is failed task"
+          assert:
+            msg: "It is failed task"
+            that: False

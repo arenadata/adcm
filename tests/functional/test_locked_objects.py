@@ -56,8 +56,8 @@ def complete_cluster(cluster: Cluster, host: Host) -> Cluster:
 @pytest.fixture()
 def cluster_with_two_hosts(cluster: Cluster, host_provider: Provider) -> Tuple[Cluster, List[Host]]:
     hosts = []
-    for _ in range(2):
-        host = host_provider.host_create(random_string())
+    for i in range(2):
+        host = host_provider.host_create(f"host_{i}")
         hosts.append(host)
         cluster.host_add(host)
     return cluster, hosts
@@ -315,6 +315,7 @@ def test_host_should_be_unlocked_after_expand_action(
         action_args["obj_for_action"] = dummy_service
     elif adcm_object == "Component":
         action_args["obj_for_action"] = dummy_component
+
     _test_expand_object_action(
         cluster_with_two_hosts,
         action_name=expand_action,
@@ -343,10 +344,63 @@ def test_host_should_be_unlocked_after_shrink_action(
         action_args["obj_for_action"] = dummy_service
     elif adcm_object == "Component":
         action_args["obj_for_action"] = dummy_component
+
     _test_shrink_object_action(
         cluster_with_two_hosts,
         action_name=shrink_action,
         **action_args
+    )
+
+
+@pytest.mark.parametrize(
+    "action_with_ansible_plugin",
+    [
+        "delete_service", "hc_action_remove", "hc_action_add", "hc_and_host_remove",
+        "delete_service_failed", "hc_action_remove_failed", "hc_action_add_failed",
+        "hc_and_host_remove_failed",
+        # MULTIJOBS
+        "delete_service_multijob", "hc_action_remove_multijob", "hc_action_add_multijob",
+        "delete_service_multijob_failed", "hc_action_remove_multijob_failed",
+        "hc_action_add_multijob_failed",
+    ]
+)
+def test_host_should_be_unlocked_after_service_action_with_ansible_plugin(
+    sdk_client_fs: ADCMClient,
+    cluster_with_two_hosts: Tuple[Cluster, List[Host]],
+    host_provider: Provider,
+    action_with_ansible_plugin: str,
+):
+    cluster, _ = cluster_with_two_hosts
+    dummy_service = cluster.service_add(name="second")
+    _test_object_action_with_ansible_plugin(
+        cluster_with_two_hosts,
+        action_name=action_with_ansible_plugin,
+        obj_for_action=dummy_service
+    )
+
+
+@pytest.mark.parametrize(
+    "action_with_ansible_plugin",
+    [
+        "hc_action_remove", "hc_action_add", "hc_and_host_remove",
+        "hc_action_remove_failed", "hc_action_add_failed", "hc_and_host_remove_failed",
+        # MULTIJOBS
+        "hc_action_remove_multijob", "hc_action_add_multijob",
+        "hc_action_remove_multijob_failed", "hc_action_add_multijob_failed",
+    ]
+)
+def test_host_should_be_unlocked_after_cluster_action_with_ansible_plugin(
+    sdk_client_fs: ADCMClient,
+    cluster_with_two_hosts: Tuple[Cluster, List[Host]],
+    host_provider: Provider,
+    action_with_ansible_plugin: str,
+):
+    cluster, _ = cluster_with_two_hosts
+    cluster.service_add(name="second")
+    _test_object_action_with_ansible_plugin(
+        cluster_with_two_hosts,
+        action_name=action_with_ansible_plugin,
+        obj_for_action=cluster
     )
 
 
@@ -404,6 +458,25 @@ def _test_shrink_object_action(
                 }
             ]
         ).wait()
+    is_free(host1)
+    is_free(host2)
+
+
+def _test_object_action_with_ansible_plugin(
+    cluster_with_two_hosts: Tuple[Cluster, List[Host]],
+    obj_for_action: Union[Cluster, Service, Component],
+    action_name: str
+):
+    cluster, hosts = cluster_with_two_hosts
+    host1, host2 = hosts
+    dummy_service = cluster.service(name="second")
+    dummy_component = dummy_service.component(name="dummy")
+    cluster.hostcomponent_set(
+        (host1, dummy_component),
+    )
+    with allure.step(f"Run {obj_for_action.__class__.__name__} action {action_name}"):
+        obj_for_action.action(name=action_name).run().wait(timeout=10)
+
     is_free(host1)
     is_free(host2)
 

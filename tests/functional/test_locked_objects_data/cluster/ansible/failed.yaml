@@ -10,8 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 - name: Should be failed(role doesnt find)
-  hosts: all
-  become: true
+  hosts: localhost
   gather_facts: no
-  roles:
-    - roles/failed
+
+  tasks:
+    - block:
+      - name: "It is failed task"
+        assert:
+          msg: "It is failed task"
+          that: False
