@@ -15,7 +15,9 @@ from django.test import TestCase
 from django.utils import timezone
 
 import cm.api as api_module
-from cm import models
+import cm.lock
+from cm import models, config
+from cm.unit_tests import utils
 
 
 class TestApi(TestCase):
@@ -80,18 +82,6 @@ class TestApi(TestCase):
                 cluster = api_module.push_obj(self.cluster, state)
                 self.assertEqual(cluster.stack, [state])
 
-    def test_set_object_state(self):
-        event = Mock()
-        event.set_obj_state = Mock()
-        state = self.cluster.state
-
-        cluster = api_module.set_object_state(self.cluster, 'created', event)
-
-        self.assertTrue(cluster.state != state)
-        event.set_object_state.assert_called_once_with(
-            self.cluster.prototype.type, self.cluster.id, 'created'
-        )
-
     @patch('cm.status_api.load_service_map')
     @patch('cm.issue.update_hierarchy_issues')
     @patch('cm.status_api.post_event')
@@ -120,3 +110,55 @@ class TestApi(TestCase):
         )
         mock_update_issues.assert_called_once_with(self.cluster)
         mock_load_service_map.assert_called_once()
+
+    @patch('cm.status_api.load_service_map')
+    @patch('cm.issue.update_hierarchy_issues')
+    @patch('cm.status_api.post_event')
+    def test_save_hc__big_update(self, mock_post_event, mock_update_issues, mock_load_service_map):
+        """
+        Update bigger HC map - move `component_2` from `host_2` to `host_3`
+        Test:
+            host_1 remains the same
+            host_2 is unlocked
+            host_3 became locked
+        """
+        event = Mock()
+        service = utils.gen_service(self.cluster)
+        component_1 = utils.gen_component(service)
+        component_2 = utils.gen_component(service)
+        provider = utils.gen_provider()
+        host_1 = utils.gen_host(provider)
+        cm.lock._lock_obj(host_1, event)  # pylint: disable=protected-access
+        host_2 = utils.gen_host(provider)
+        cm.lock._lock_obj(host_2, event)  # pylint: disable=protected-access
+        host_3 = utils.gen_host(provider)
+        utils.gen_host_component(component_1, host_1)
+        utils.gen_host_component(component_2, host_2)
+
+        self.assertEqual(host_1.state, config.Job.LOCKED)
+        self.assertListEqual(host_1.stack, ['created'])
+
+        self.assertEqual(host_2.state, config.Job.LOCKED)
+        self.assertListEqual(host_2.stack, ['created'])
+
+        self.assertEqual(host_3.state, config.Job.CREATED)
+        self.assertListEqual(host_3.stack, [])
+
+        new_hc_list = [
+            (service, host_1, component_1),
+            (service, host_3, component_2),
+        ]
+        api_module.save_hc(self.cluster, new_hc_list)
+        # refresh due to new instances were updated in save_hc()
+        host_1.refresh_from_db()
+        host_2.refresh_from_db()
+        host_3.refresh_from_db()
+
+        self.assertEqual(host_1.state, config.Job.LOCKED)
+        self.assertListEqual(host_1.stack, ['created'])
+
+        self.assertEqual(host_2.state, config.Job.CREATED)
+        self.assertListEqual(host_2.stack, [])
+
+        self.assertEqual(host_3.state, config.Job.LOCKED)
+        self.assertListEqual(host_1.stack, ['created'])

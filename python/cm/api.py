@@ -20,7 +20,8 @@ import cm.errors
 import cm.issue
 import cm.config as config
 import cm.status_api
-from cm.logger import log  # pylint: disable=unused-import
+import cm.lock
+from cm.logger import log
 from cm.upgrade import check_license, version_in
 from cm.adcm_config import (
     proto_ref,
@@ -91,7 +92,7 @@ def add_host(proto, provider, fqdn, desc='', lock=False):
         host.save()
         if lock:
             host.stack = ['created']
-            set_object_state(host, config.Job.LOCKED, event)
+            host.set_state(config.Job.LOCKED, event)
         process_file_type(host, spec, conf)
         cm.issue.update_hierarchy_issues(host)
     event.send_state()
@@ -507,7 +508,18 @@ def check_hc(cluster, hc_in):  # pylint: disable=too-many-branches
 
 
 def save_hc(cluster, host_comp_list):
-    HostComponent.objects.filter(cluster=cluster).delete()
+    event = Event()
+    hc_queryset = HostComponent.objects.filter(cluster=cluster)
+
+    old_hosts = {i.host for i in hc_queryset.select_related('host').all()}
+    new_hosts = {i[1] for i in host_comp_list}
+    for removed_host in old_hosts.difference(new_hosts):
+        cm.lock._unlock_obj(removed_host, event)  # pylint: disable=protected-access
+    for added_host in new_hosts.difference(old_hosts):
+        if added_host.state != config.Job.LOCKED:
+            cm.lock._lock_obj(added_host, event)  # pylint: disable=protected-access
+
+    hc_queryset.delete()
     result = []
     for (proto, host, comp) in host_comp_list:
         hc = HostComponent(
@@ -518,6 +530,7 @@ def save_hc(cluster, host_comp_list):
         )
         hc.save()
         result.append(hc)
+    event.send_state()
     cm.status_api.post_event('change_hostcomponentmap', 'cluster', cluster.id)
     cm.issue.update_hierarchy_issues(cluster)
     cm.status_api.load_service_map()
@@ -806,12 +819,4 @@ def push_obj(obj, state):
         stack[0] = state
     obj.stack = stack
     obj.save()
-    return obj
-
-
-def set_object_state(obj, state, event):
-    obj.state = state
-    obj.save()
-    event.set_object_state(obj.prototype.type, obj.id, state)
-    log.info('set %s state to "%s"', obj_ref(obj), state)
     return obj

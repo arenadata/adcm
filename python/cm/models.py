@@ -17,6 +17,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 
 from cm.errors import AdcmEx
+from cm.logger import log
 
 
 PROTO_TYPE = (
@@ -197,6 +198,19 @@ class ADCMEntity(ADCMModel):
 
     class Meta:
         abstract = True
+
+    def __str__(self):
+        """Legacy `cm.adcm_config.obj_ref()` to avoid cyclic imports"""
+        name = getattr(self, 'name', None) or getattr(self, 'fqdn', self.prototype.name)
+        return '{} #{} "{}"'.format(self.prototype.type, self.id, name)
+
+    def set_state(self, state: str, event=None) -> 'ADCMEntity':
+        """Legacy `cm.api.set_object_state()` to avoid cyclic imports"""
+        self.state = state
+        self.save()
+        event.set_object_state(self.prototype.type, self.id, state)
+        log.info('set %s state to "%s"', self, state)
+        return self
 
 
 class ADCM(ADCMEntity):
