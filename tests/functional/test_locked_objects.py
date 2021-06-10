@@ -475,7 +475,7 @@ def _test_object_action_with_ansible_plugin(
         (host1, dummy_component),
     )
     with allure.step(f"Run {obj_for_action.__class__.__name__} action {action_name}"):
-        obj_for_action.action(name=action_name).run().wait(timeout=10)
+        obj_for_action.action(name=action_name).run().wait(timeout=30)
 
     is_free(host1)
     is_free(host2)
