@@ -36,6 +36,46 @@
           script_type: ansible
           states:
             available: any
+        expand_success:
+          type: job
+          script: ansible/dummy.yaml
+          script_type: ansible
+          hc_acl:
+            - service: second
+              component: dummy
+              action: add
+          states:
+            available: any
+        expand_failed:
+          type: job
+          script: ansible/failed.yaml
+          script_type: ansible
+          hc_acl:
+            - service: second
+              component: dummy
+              action: add
+          states:
+            available: any
+        shrink_success:
+          type: job
+          script: ansible/dummy.yaml
+          script_type: ansible
+          hc_acl:
+            - service: second
+              component: dummy
+              action: remove
+          states:
+            available: any
+        shrink_failed:
+          type: job
+          script: ansible/failed.yaml
+          script_type: ansible
+          hc_acl:
+            - service: second
+              component: dummy
+              action: remove
+          states:
+            available: any
     second:
       actions: *actions
 
