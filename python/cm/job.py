@@ -51,6 +51,7 @@ from cm.models import (
     ConfigLog,
     GroupCheckLog,
     get_object_cluster,
+    get_model_by_type,
 )
 from cm.status_api import Event, post_event
 
@@ -518,8 +519,8 @@ def create_job(action, sub_action, event, task):
 
 def get_state(action, job, status):
     sub_action = None
-    if job and job.sub_action_id:
-        sub_action = SubAction.objects.get(id=job.sub_action_id)
+    if job and job.sub_action:
+        sub_action = job.sub_action
 
     if status == config.Job.SUCCESS:
         if not action.state_on_success:
@@ -574,7 +575,10 @@ def restore_hc(task, action, status):
 
 def finish_task(task, job, status):
     action = task.action
-    obj = task.task_object
+    # GenericForeignKey does not work here (probably because of cashing)
+    # obj = task.task_object
+    model = get_model_by_type(task.action.prototype.type)
+    obj = model.objects.get(id=task.object_id)
     state = get_state(action, job, status)
     event = Event()
     with transaction.atomic():
