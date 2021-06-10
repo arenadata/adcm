@@ -8,7 +8,7 @@ export function createTranslateLoader(http: HttpClient) {
   return new TranslateHttpLoader(http, './assets/i18n/', '.json');
 }
 
-export function appInitializerFactory(translate: TranslateService, injector: Injector) {
+export function translateFactory(translate: TranslateService, injector: Injector) {
   return () => new Promise<any>((resolve: any) => {
     const locationInitialized = injector.get(LOCATION_INITIALIZED, Promise.resolve(null));
     locationInitialized.then(() => {
