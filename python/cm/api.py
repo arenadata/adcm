@@ -209,16 +209,36 @@ def delete_host_by_id(host_id):
     delete_host(host)
 
 
+def _clean_up_related_hc(service: ClusterObject) -> None:
+    """Unconditional removal of HostComponents related to removing ClusterObject"""
+    qs = (
+        HostComponent.objects.filter(cluster=service.cluster)
+        .exclude(service=service)
+        .select_related('host', 'component')
+    )
+    new_hc_list = []
+    for hc in qs.all():
+        new_hc_list.append((hc.service, hc.host, hc.component))
+    save_hc(service.cluster, new_hc_list)
+
+
+def _clean_up_related_bind(service: ClusterObject) -> None:
+    """Unconditional removal of ClusterBind related to removing ClusterObject"""
+    ClusterBind.objects.filter(source_service=service).delete()
+
+
 def delete_service_by_id(service_id):
     """
     Unconditional removal of service from cluster
 
     This is intended for use in adcm_delete_service ansible plugin only
     """
-    service = ClusterObject.obj.get(id=service_id)
-    service.delete()
-    cm.status_api.post_event('delete', 'service', service_id)
-    cm.status_api.load_service_map()
+    with transaction.atomic():
+        DummyData.objects.filter(id=1).update(date=timezone.now())
+        service = ClusterObject.obj.get(id=service_id)
+        _clean_up_related_hc(service)
+        _clean_up_related_bind(service)
+        delete_service(service)
 
 
 def delete_service_by_name(service_name, cluster_id):
@@ -227,17 +247,18 @@ def delete_service_by_name(service_name, cluster_id):
 
     This is intended for use in adcm_delete_service ansible plugin only
     """
-    service = ClusterObject.obj.get(cluster__id=cluster_id, prototype__name=service_name)
-    service_id = service.id
-    service.delete()
-    cm.status_api.post_event('delete', 'service', service_id)
-    cm.status_api.load_service_map()
+    with transaction.atomic():
+        DummyData.objects.filter(id=1).update(date=timezone.now())
+        service = ClusterObject.obj.get(cluster__id=cluster_id, prototype__name=service_name)
+        _clean_up_related_hc(service)
+        _clean_up_related_bind(service)
+        delete_service(service)
 
 
 def delete_service(service):
-    if HostComponent.objects.filter(cluster=service.cluster, service=service):
+    if HostComponent.objects.filter(cluster=service.cluster, service=service).exists():
         err('SERVICE_CONFLICT', 'Service #{} has component(s) on host(s)'.format(service.id))
-    if ClusterBind.objects.filter(source_service=service):
+    if ClusterBind.objects.filter(source_service=service).exists():
         err('SERVICE_CONFLICT', 'Service #{} has exports(s)'.format(service.id))
     service_id = service.id
     service.delete()
