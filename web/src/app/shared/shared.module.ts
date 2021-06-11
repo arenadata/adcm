@@ -49,6 +49,7 @@ import { ServiceComponentsComponent } from '@app/components/service-components.c
 import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
 import { TranslateModule } from '@ngx-translate/core';
 import { PickKeysPipe } from '@app/pipes/pick-keys.pipe';
+import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
 
 @NgModule({
   imports: [
@@ -93,7 +94,8 @@ import { PickKeysPipe } from '@app/pipes/pick-keys.pipe';
     ClusterColumnComponent,
     ServiceComponentsComponent,
     ToDataSourcePipe,
-    PickKeysPipe
+    PickKeysPipe,
+    TranslateKeysPipe
   ],
   // entryComponents: [DialogComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent, ActionMasterComponent],
   exports: [
@@ -127,7 +129,8 @@ import { PickKeysPipe } from '@app/pipes/pick-keys.pipe';
     ServiceComponentsComponent,
     AdwpListModule,
     ToDataSourcePipe,
-    PickKeysPipe
+    PickKeysPipe,
+    TranslateKeysPipe,
   ],
 })
 export class SharedModule {

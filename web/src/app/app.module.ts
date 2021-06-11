@@ -28,7 +28,7 @@ import { LogComponent } from './ws-logs/log.component';
 import { AdwpUiWidgetsModule } from '@adwp-ui/widgets';
 import { TranslateLoader, TranslateModule, TranslateService } from '@ngx-translate/core';
 import { HttpClient } from '@angular/common/http';
-import { createTranslateLoader, translateFactory } from '@app/shared/translate/factory';
+import { translateInitializer, translateLoader } from '@app/shared/translate/intializer';
 
 //registerLocaleData(localeRu, 'ru');
 
@@ -53,7 +53,7 @@ import { createTranslateLoader, translateFactory } from '@app/shared/translate/f
       defaultLanguage: 'en',
       loader: {
         provide: TranslateLoader,
-        useFactory: createTranslateLoader,
+        useFactory: translateLoader,
         deps: [HttpClient]
       }
     }),
@@ -70,7 +70,7 @@ import { createTranslateLoader, translateFactory } from '@app/shared/translate/f
     },
     {
       provide: APP_INITIALIZER,
-      useFactory: translateFactory,
+      useFactory: translateInitializer,
       deps: [TranslateService, Injector],
       multi: true
     }

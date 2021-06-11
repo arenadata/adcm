@@ -103,7 +103,7 @@ export class StackComponent extends AdwpListDirective<IBundle> {
   template: `
     <adwp-table
       [columns]="listColumns"
-      [dataSource]="model | pickKeys:keys | toDataSource"
+      [dataSource]="model | pickKeys:keys | translateKeys | toDataSource"
     ></adwp-table>
   `,
   styles: [':host {width: 100%; max-width: 960px}']
