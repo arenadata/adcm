@@ -511,12 +511,15 @@ def save_hc(cluster, host_comp_list):
     event = Event()
     hc_queryset = HostComponent.objects.filter(cluster=cluster)
 
+    # TODO: double purpose code need to be refactored
+    # HC mapping could be edited with OR without hierarchy locking
     old_hosts = {i.host for i in hc_queryset.select_related('host').all()}
     new_hosts = {i[1] for i in host_comp_list}
     for removed_host in old_hosts.difference(new_hosts):
-        cm.lock._unlock_obj(removed_host, event)  # pylint: disable=protected-access
+        if removed_host.state == config.Job.LOCKED:
+            cm.lock._unlock_obj(removed_host, event)  # pylint: disable=protected-access
     for added_host in new_hosts.difference(old_hosts):
-        if added_host.state != config.Job.LOCKED:
+        if added_host.cluster.state == config.Job.LOCKED:
             cm.lock._lock_obj(added_host, event)  # pylint: disable=protected-access
 
     hc_queryset.delete()
