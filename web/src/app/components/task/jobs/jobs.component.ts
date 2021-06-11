@@ -6,6 +6,7 @@ import { BehaviorSubject } from 'rxjs';
 import { Job, Task } from '@app/core/types';
 import { DateHelper } from '@app/helpers/date-helper';
 import { JobStatusColumnComponent } from '@app/components/columns/job-status-column/job-status-column.component';
+import { JobNameComponent } from '@app/components/columns/job-name/job-name.component';
 
 @Component({
   selector: 'app-jobs',
@@ -32,10 +33,9 @@ export class JobsComponent<T extends Task> implements AdwpComponentHolder<Task> 
 
   columns: IColumns<Job> = [
     {
-      type: 'link',
+      type: 'component',
       label: '',
-      value: (row) => row.display_name || row.id,
-      url: (row) => `/job/${row.id}`,
+      component: JobNameComponent,
     },
     {
       label: '',
