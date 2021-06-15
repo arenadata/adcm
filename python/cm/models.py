@@ -433,7 +433,7 @@ class HostGroup(models.Model):
         )
         for group in groups:
             if self.host in group.hosts.all():
-                raise AdcmEx('CONFIG_GROUP_ERROR')
+                raise AdcmEx('HOST_GROUP_ERROR')
         super().save(*args, **kwargs)
 
 
