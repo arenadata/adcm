@@ -6,10 +6,12 @@ from http import HTTPStatus
 import attr
 import requests
 
+_OBJECTS_URL_TEMPLATE = "/{name}/"
+_OBJECT_URL_TEMPLATE = "/{name}/{id}/"
 
 @attr.dataclass
 class Method:  # pylint: disable=too-few-public-methods
-    """Describe possible methods and how they are used in ADSS api"""
+    """Describe possible methods and how they are used in ADCM api"""
 
     function: Callable
     url_template: str
@@ -37,15 +39,17 @@ class Methods(Enum):
         """Getter for Method.default_success_code attribute"""
         return self.method.default_success_code
 
-    GET = Method(function=requests.get, url_template="/{name}/{id}/")
-    LIST = Method(function=requests.get, url_template="/{name}/")
+    GET = Method(function=requests.get, url_template=_OBJECT_URL_TEMPLATE)
+    LIST = Method(function=requests.get, url_template=_OBJECTS_URL_TEMPLATE)
     POST = Method(
-        function=requests.post, url_template="/{name}/", default_success_code=HTTPStatus.CREATED
+        function=requests.post,
+        url_template=_OBJECTS_URL_TEMPLATE,
+        default_success_code=HTTPStatus.CREATED
     )
-    PUT = Method(function=requests.put, url_template="/{name}/{id}/")
-    PATCH = Method(function=requests.patch, url_template="/{name}/{id}/")
+    PUT = Method(function=requests.put, url_template=_OBJECT_URL_TEMPLATE)
+    PATCH = Method(function=requests.patch, url_template=_OBJECT_URL_TEMPLATE)
     DELETE = Method(
         function=requests.delete,
-        url_template="/{name}/{id}/",
+        url_template=_OBJECT_URL_TEMPLATE,
         default_success_code=HTTPStatus.NO_CONTENT,
     )

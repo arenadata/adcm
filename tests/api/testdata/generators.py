@@ -3,34 +3,26 @@
 
 from collections import ChainMap
 from http import HTTPStatus
-from typing import NamedTuple, List
+from typing import NamedTuple, List, Optional
 
 import allure
 import attr
 import pytest
 from _pytest.mark.structures import ParameterSet
 
-from tests.utils.api_objects import Request, ExpectedResponse
-from tests.utils.endpoints import Endpoints
-from tests.utils.methods import Methods
-from tests.utils.tools import fill_lists_by_longest
-from tests.utils.types import (
+from tests.api.utils.api_objects import Request, ExpectedResponse
+from tests.api.utils.endpoints import Endpoints
+from tests.api.utils.methods import Methods
+from tests.api.utils.tools import fill_lists_by_longest
+from tests.api.utils.types import (
     get_fields,
     BaseType,
     PreparedFieldValue,
 )
 
 
-class MaxRetriesError(BaseException):
+class MaxRetriesError(Exception):
     """Raise when limit of retries exceeded"""
-
-
-INVALID_BODY_MESSAGE = {
-    "code": "BAD_REQUEST",
-    "level": "error",
-    "desc": "Bad request.",
-    "details": {},
-}
 
 
 @attr.dataclass(repr=False)
@@ -39,7 +31,7 @@ class TestData:  # pylint: disable=too-few-public-methods
 
     request: Request
     response: ExpectedResponse
-    description: str = None
+    description: Optional[str] = None
 
     def __repr__(self):
         return (
@@ -90,6 +82,8 @@ def get_data_for_methods_check():
     """
     test_data = []
     for endpoint in Endpoints:
+        if endpoint.technical:
+            continue
         for method in Methods:
             request = Request(
                 method=method,
@@ -117,6 +111,8 @@ def get_data_for_params_check(method=Methods.GET, fields_predicate=None):
     """
     test_data = []
     for endpoint in Endpoints:
+        if endpoint.technical:
+            continue
         if method not in endpoint.methods:
             continue
         if not get_fields(endpoint.data_class, predicate=fields_predicate):
@@ -415,6 +411,8 @@ def get_data_for_body_check(method: Methods, endpoints_with_test_sets: List[tupl
     """
     test_data = []
     for endpoint, test_groups in endpoints_with_test_sets:
+        if endpoint.technical:
+            continue
         for test_group, group_name in test_groups:
             values: List[TestDataWithPreparedBody] = []
             for test_set in test_group:
@@ -490,8 +488,7 @@ def _prepare_test_data_with_one_by_one_fields(
         request_data = {}
         if not param_value.error_messages:
             continue
-        body = INVALID_BODY_MESSAGE.copy()
-        body['details'] = {param_name: param_value.get_error_data()}
+        body = {param_name: param_value.get_error_data()}
         request_data[param_name] = param_value
         request = Request(method=method, endpoint=endpoint)
         response = ExpectedResponse(status_code=status_code, body=body)

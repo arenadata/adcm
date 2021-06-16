@@ -7,7 +7,7 @@ from random import randint, choice
 import allure
 from rstr.xeger import Xeger
 
-from tests.utils.tools import random_string
+from tests.api.utils.tools import random_string
 
 
 def gen_int(prop=None):

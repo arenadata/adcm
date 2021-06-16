@@ -4,17 +4,18 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from datetime import datetime, timedelta
 from random import randint, choice
-from typing import ClassVar, List, Type, Union, NamedTuple
+from typing import ClassVar, List, Type, Union, NamedTuple, Optional
 from multipledispatch import dispatch
 
 import attr
 
-from tests.utils.tools import random_string
-from tests.utils.fake_data import generate_json_from_schema, gen_string
 
 # There is no circular import, because the import of the module is not yet completed at the moment,
 # and this allows you to resolve the conflict.
-from tests.utils import data_classes  # pylint: disable=unused-import,cyclic-import
+from tests.api.utils import data_classes  # pylint: disable=unused-import,cyclic-import
+
+from tests.api.utils.fake_data import generate_json_from_schema, gen_string
+from tests.api.utils.tools import random_string
 
 
 def random_json():
@@ -48,10 +49,10 @@ class PreparedFieldValue:  # pylint: disable=too-few-public-methods,function-red
                      Used to generate PUT PATCH test datasets
     """
 
-    value: object = None
+    value: Optional[object] = None
     generated_value: bool = False
-    error_messages: Union[list, dict] = None
-    f_type: "BaseType" = None
+    error_messages: Optional[Union[list, dict]] = None
+    f_type: Optional["BaseType"] = None
 
     drop_key: bool = False
     unchanged_value: bool = False
@@ -109,11 +110,11 @@ class BaseType(ABC):
     Contains common methods and attributes for each types
     """
 
-    # tuple of class + field name to get related schema or other limitations
-    relates_on: Relation = None
+    # Tuple of class + field name to get related schema or other limitations
+    relates_on: Optional[Relation] = None
 
-    _sp_vals_positive: list = None
-    _sp_vals_negative: List[Union[object, Type["BaseType"], PreparedFieldValue]] = None
+    _sp_vals_positive: Optional[list] = None
+    _sp_vals_negative: Optional[List[Union[object, Type["BaseType"], PreparedFieldValue]]] = None
 
     is_huge: ClassVar[bool] = False
     error_message_not_be_null: ClassVar[str] = "This field may not be null."
@@ -263,7 +264,7 @@ class Json(BaseType):
         self.error_message_invalid_data = ""
 
     def generate(self, **kwargs):
-        return generate_json_from_schema(json_schema=kwargs.get("schema", None))
+        return generate_json_from_schema(json_schema=kwargs.get("related_value", None))
 
 
 class Enum(BaseType):
@@ -274,8 +275,10 @@ class Enum(BaseType):
     def __init__(self, enum_values, **kwargs):
         super().__init__(**kwargs)
         self.enum_values = enum_values
-        while (value := random_string()) in self.enum_values:
-            pass
+        value = random_string()
+        while True:
+            if value not in self.enum_values:
+                break
         self._sp_vals_negative = [
             PreparedFieldValue(
                 value,
@@ -298,59 +301,51 @@ class Enum(BaseType):
             raise ValueError("There is no available enum values except old one") from error
 
 
-class CronLine(String):
-    """Cronline field type. Based on String"""
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.error_message_invalid_data = 'Cron-line has wrong format'
-        self._sp_vals_positive = []
-        self._sp_vals_negative = [
-            '61 * * * *',
-            random_string(20),
-        ]
-
-    def generate(self, **kwargs):
-        past_date = datetime.now() - timedelta(weeks=1, minutes=randint(1, 60))
-        return f'{past_date.minute} {past_date.hour} {past_date.day} * *'
-
-
 class ForeignKey(BaseType):
     """Foreign key field type"""
 
-    fk_link: Type["data_classes.BaseClass"] = None
+    fk_link: Optional[Type["data_classes.BaseClass"]] = None
 
     def __init__(self, fk_link: Type["data_classes.BaseClass"], **kwargs):
         self.fk_link = fk_link
         super().__init__(**kwargs)
         self._sp_vals_negative = [
             PreparedFieldValue(
-                {"id": 100},
+                100,
                 f_type=self,
-                error_messages={"id": ["Invalid ID. Object with ID 100 does not exist."]},
+                error_messages=["Invalid pk \"100\" - object does not exist."],
             ),
             PreparedFieldValue(
-                {"id": 2 ** 63},
+                2 ** 63,
                 f_type=self,
-                error_messages={"id": [f"Invalid ID. Object with ID {2 ** 63} does not exist."]},
+                error_messages=[f"Invalid pk \"{2 ** 63}\" - object does not exist."],
             ),
         ]
 
     def generate(self, **kwargs):
-        pass
+        """You can't just generate a new FK. This is done inside db_filler"""
+        pass  # pylint: disable=unnecessary-pass
+
+
+class ADCMObjectFK(ForeignKey):
+    object_type_field: "Field" = None
+
+    def __init__(self, object_type_field: "Field", **kwargs):
+        self.object_type_field = object_type_field
+        super().__init__(**kwargs)
 
 
 class BackReferenceFK(BaseType):
     """Back reference foreign key field type"""
 
-    fk_link: Type["data_classes.BaseClass"] = None
+    fk_link: Optional[Type["data_classes.BaseClass"]] = None
 
     def __init__(self, fk_link: Type["data_classes.BaseClass"], **kwargs):
         self.fk_link = fk_link
         super().__init__(**kwargs)
 
     def generate(self, **kwargs):
-        return {"id": 42}
+        return 42
 
 
 class ForeignKeyM2M(ForeignKey):
@@ -359,11 +354,11 @@ class ForeignKeyM2M(ForeignKey):
 
 @attr.dataclass
 class Field:  # pylint: disable=too-few-public-methods
-    """Field class based on ADSS spec"""
+    """Field class based on ADCM API spec"""
 
     name: str
-    f_type: BaseType = None
-    default_value: object = None
+    f_type: Optional[BaseType] = None
+    default_value: Optional[object] = None
     nullable: bool = False
     # Some fields are declared as nullable but with
     # * about field value validation on another logical level

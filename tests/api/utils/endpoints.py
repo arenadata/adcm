@@ -1,4 +1,4 @@
-"""ADSS Endpoints classes and methods"""
+"""ADCM Endpoints classes and methods"""
 
 # pylint: disable=too-few-public-methods,invalid-name
 from enum import Enum
@@ -7,21 +7,14 @@ from typing import List, Type, Optional
 import attr
 
 from .data_classes import (
-    ClusterTypeFields,
-    ClusterFields,
-    ClusterCapacityFields,
-    ResourceTypeFields,
-    FileSystemFields,
-    FileSystemCapacityFields,
-    FileSystemTypeFields,
-    HandlerFields,
-    ClusterConsumptionFields,
-    FileSystemConsumptionFields,
-    CronLineFields,
-    JobQueueFields,
-    JobHistoryFields,
-    MountPointFields,
     BaseClass,
+    ConfigGroupFields,
+    HostGroupFields,
+    HostFields,
+    ClusterFields,
+    ServiceFields,
+    ComponentFields,
+    ProviderFields
 )
 from .methods import Methods
 from .types import get_fields
@@ -34,7 +27,7 @@ class Endpoint:
     :attribute path: endpoint name
     :attribute methods: list of allowed methods for endpoint
     :attribute data_class: endpoint fields specification
-    :attribute spec_link: link to ADSS specification for endpoint
+    :attribute spec_link: link to ADCM specification for endpoint
     :attribute ignored: reason why this endpoint should not be tested
     """
 
@@ -42,7 +35,8 @@ class Endpoint:
     methods: List[Methods]
     data_class: Type[BaseClass]
     spec_link: str
-    ignored: str = None
+    technical: bool = False
+    ignored: Optional[str] = None
 
 
 class Endpoints(Enum):
@@ -76,11 +70,24 @@ class Endpoints(Enum):
         """Getter for Endpoint.ignored attribute"""
         return self.endpoint.ignored
 
+    @property
+    def technical(self):
+        """Getter for Endpoint.technical attribute"""
+        return self.endpoint.technical
+
     @classmethod
     def get_by_data_class(cls, data_class: Type[BaseClass]) -> Optional["Endpoints"]:
         """Get endpoint instance by data class"""
         for endpoint in cls:
             if endpoint.data_class == data_class:
+                return endpoint
+        return None
+
+    @classmethod
+    def get_by_path(cls, path: str) -> Optional["Endpoints"]:
+        """Get endpoint instance by API path"""
+        for endpoint in cls:
+            if endpoint.path == path:
                 return endpoint
         return None
 
@@ -96,134 +103,60 @@ class Endpoints(Enum):
                     ) from AttributeError
         return None
 
-    ResourceType = Endpoint(
-        path="resource-type",
-        methods=[Methods.GET, Methods.LIST],
-        data_class=ResourceTypeFields,
-        spec_link="https://spec.adsw.io/adss_core/objects.html#resource-type",
-    )
-
-    ClusterType = Endpoint(
-        path="cluster-type",
-        methods=[Methods.GET, Methods.LIST],
-        data_class=ClusterTypeFields,
-        spec_link="https://spec.adsw.io/adss_core/objects.html#cluster-type",
-    )
-
     Cluster = Endpoint(
         path="cluster",
-        methods=[
-            Methods.GET,
-            Methods.LIST,
-            Methods.POST,
-            Methods.PUT,
-            Methods.PATCH,
-            Methods.DELETE,
-        ],
+        methods=[Methods.LIST, Methods.GET],
         data_class=ClusterFields,
-        spec_link="https://spec.adsw.io/adss_core/objects.html#cluster",
+        spec_link="",
+        technical=True
     )
 
-    ClusterCapacity = Endpoint(
-        path="cluster-capacity",
-        methods=[Methods.GET, Methods.LIST, Methods.PUT, Methods.PATCH],
-        data_class=ClusterCapacityFields,
-        spec_link="https://spec.adsw.io/adss_core/objects.html#cluster-capacity",
+    Service = Endpoint(
+        path="service",
+        methods=[Methods.LIST, Methods.GET],
+        data_class=ServiceFields,
+        spec_link="",
+        technical=True
     )
 
-    FileSystemType = Endpoint(
-        path="filesystem-type",
-        methods=[Methods.GET, Methods.LIST],
-        data_class=FileSystemTypeFields,
-        spec_link="https://spec.adsw.io/adss_core/objects.html#filesystem-type",
+    Component = Endpoint(
+        path="component",
+        methods=[Methods.LIST, Methods.GET],
+        data_class=ComponentFields,
+        spec_link="",
+        technical=True
     )
 
-    FileSystem = Endpoint(
-        path="filesystem",
+    Provider = Endpoint(
+        path="provider",
+        methods=[Methods.LIST, Methods.GET],
+        data_class=ProviderFields,
+        spec_link="",
+        technical=True
+    )
+
+    Host = Endpoint(
+        path="host",
+        methods=[Methods.LIST, Methods.GET],
+        data_class=HostFields,
+        spec_link="",
+        technical=True
+    )
+
+    ConfigGroup = Endpoint(
+        path="config-group",
         methods=[
-            Methods.GET,
-            Methods.LIST,
-            Methods.POST,
-            Methods.PUT,
-            Methods.PATCH,
-            Methods.DELETE,
+            Methods.GET, Methods.LIST, Methods.POST, Methods.PUT, Methods.PATCH, Methods.DELETE
         ],
-        data_class=FileSystemFields,
-        spec_link="https://spec.adsw.io/adss_core/objects.html#filesystem",
+        data_class=ConfigGroupFields,
+        spec_link="https://spec.adsw.io/adcm_core/objects.html#group",
     )
 
-    FileSystemCapacity = Endpoint(
-        path="filesystem-capacity",
-        methods=[Methods.GET, Methods.LIST, Methods.PUT, Methods.PATCH],
-        data_class=FileSystemCapacityFields,
-        spec_link="https://spec.adsw.io/adss_core/objects.html#filesystem-capacity",
-    )
-
-    MountPoint = Endpoint(
-        path='mount-point',
+    HostGroup = Endpoint(
+        path="host-group",
         methods=[
-            Methods.GET,
-            Methods.LIST,
-            Methods.POST,
-            Methods.PUT,
-            Methods.PATCH,
-            Methods.DELETE,
+            Methods.GET, Methods.LIST, Methods.POST, Methods.PUT, Methods.PATCH, Methods.DELETE
         ],
-        data_class=MountPointFields,
-        spec_link="https://spec.adsw.io/adss_core/objects.html#mount-point",
-    )
-
-    Handler = Endpoint(
-        path="handler",
-        methods=[Methods.GET, Methods.LIST],
-        data_class=HandlerFields,
-        spec_link="https://spec.adsw.io/adss_core/objects.html#handler",
-    )
-
-    ClusterConsumption = Endpoint(
-        path="cluster-consumption",
-        methods=[Methods.GET, Methods.LIST],
-        data_class=ClusterConsumptionFields,
-        spec_link="https://spec.adsw.io/adss_core/objects.html#cluster-consumption",
-    )
-
-    FileSystemConsumption = Endpoint(
-        path="filesystem-consumption",
-        methods=[Methods.GET, Methods.LIST],
-        data_class=FileSystemConsumptionFields,
-        spec_link="https://spec.adsw.io/adss_core/objects.html#filesystem-consumption",
-    )
-
-    CronLine = Endpoint(
-        path="cron-line",
-        methods=[
-            Methods.GET,
-            Methods.LIST,
-            Methods.POST,
-            Methods.PUT,
-            Methods.PATCH,
-            Methods.DELETE,
-        ],
-        data_class=CronLineFields,
-        spec_link="https://spec.adsw.io/adss_core/scheduler.html#cron-line",
-    )
-
-    JobQueue = Endpoint(
-        path="job-queue",
-        methods=[
-            Methods.GET,
-            Methods.LIST,
-            Methods.POST,
-            Methods.PUT,
-            Methods.PATCH,
-        ],
-        data_class=JobQueueFields,
-        spec_link="https://spec.adsw.io/adss_core/scheduler.html#job-queue",
-    )
-
-    JobHistory = Endpoint(
-        path="job-history",
-        methods=[Methods.GET, Methods.LIST],
-        data_class=JobHistoryFields,
-        spec_link="https://spec.adsw.io/adss_core/scheduler.html#job-history",
+        data_class=HostGroupFields,
+        spec_link="https://spec.adsw.io/adcm_core/objects.html#group",
     )

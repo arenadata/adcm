@@ -1,16 +1,12 @@
 """Methods for get endpoints data"""
-from random import choice
+from tests.api.utils.endpoints import Endpoints
+from tests.api.utils.methods import Methods
+from tests.api.utils.api_objects import Request, ExpectedResponse
 
-import allure
-
-from tests.utils.endpoints import Endpoints
-from tests.utils.methods import Methods
-from tests.utils.api_objects import Request, ExpectedResponse, ADSSApi
-
-DUMMY_HANDLER = choice(["dummy_backup_handler", "dummy_restore_handler"])
+from tests.api.utils.api_objects import ADCMTestApiWrapper
 
 
-def get_endpoint_data(adss: ADSSApi, endpoint: Endpoints) -> list:
+def get_endpoint_data(adcm: ADCMTestApiWrapper, endpoint: Endpoints) -> list:
     """
     Fetch endpoint data with LIST method
     Data of LIST method excludes links to related objects and huge fields
@@ -19,27 +15,23 @@ def get_endpoint_data(adss: ADSSApi, endpoint: Endpoints) -> list:
         raise AttributeError(
             f"Method {Methods.LIST.name} is not available for endpoint {endpoint.path}"
         )
-    res = adss.exec_request(
+    res = adcm.exec_request(
         request=Request(endpoint=endpoint, method=Methods.LIST),
         expected_response=ExpectedResponse(status_code=Methods.LIST.value.default_success_code),
     )
-    if endpoint == Endpoints.Handler:
-        with allure.step(f"Return handler with name '{DUMMY_HANDLER}' as LIST response"):
-            for handler in res.json()['results']:
-                if handler["name"] == DUMMY_HANDLER:
-                    return [handler]
-            raise AttributeError(
-                f"{DUMMY_HANDLER} not found in list of handlers. "
-                f"Handlers: {' ,'.join([handler['name'] for handler in res.json()['results']])}"
-            )
-    return res.json()['results']
+    if isinstance(res.json(), list):
+        return res.json()
+    else:
+        # New endpoints always return a response with pagination.
+        # In the future all endpoints will return that
+        return res.json().get("results")
 
 
-def get_object_data(adss: ADSSApi, endpoint: Endpoints, object_id: int) -> dict:
+def get_object_data(adcm: ADCMTestApiWrapper, endpoint: Endpoints, object_id: int) -> dict:
     """
     Fetch full object data includes huge field and links to related objects
     """
-    res = adss.exec_request(
+    res = adcm.exec_request(
         request=Request(endpoint=endpoint, method=Methods.GET, object_id=object_id),
         expected_response=ExpectedResponse(status_code=Methods.GET.value.default_success_code),
     )

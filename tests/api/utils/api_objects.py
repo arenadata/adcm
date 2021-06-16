@@ -1,10 +1,10 @@
 """Module contains api objects for executing and checking requests"""
+from typing import Optional
 from urllib.parse import urlencode
-from http import HTTPStatus
 
 import allure
 import attr
-import requests
+from adcm_client.wrappers.api import ADCMApiWrapper
 
 from .endpoints import Endpoints
 from .methods import Methods
@@ -18,7 +18,7 @@ class Request:  # pylint: disable=too-few-public-methods
 
     method: Methods
     endpoint: Endpoints
-    object_id: int = None
+    object_id: Optional[int] = None
     url_params: dict = {}
     headers: dict = {}
     data: dict = {}
@@ -29,37 +29,18 @@ class ExpectedResponse:  # pylint: disable=too-few-public-methods
     """Response to be expected. Checking the status code and body if present"""
 
     status_code: int
-    body: dict = None
+    body: Optional[dict] = None
 
 
-class ADSSApi:
-    """ADSS api wrapper"""
+class ADCMTestApiWrapper:
+    """ADCM api wrapper for API tests"""
 
-    __slots__ = ("_url", "_token")
-
-    _api_prefix = "/api/v1"
-
-    def __init__(self, url="http://localhost:8000"):
-        self._url = url
-        self._token = None
+    def __init__(self, adcm_api_wrapper: ADCMApiWrapper):
+        self._api_wrapper = adcm_api_wrapper
 
     @property
     def _base_url(self):
-        return f"{self._url}{self._api_prefix}"
-
-    @allure.step("Login to API")
-    def login(self, username, password):
-        """
-        Get API token and save it to class property
-        """
-        with allure.step("Send POST /token/"):
-            auth_resp = requests.post(
-                self._base_url + "/token/", json={"username": username, "password": password}
-            )
-            attach_request_log(auth_resp)
-            status_code_should_be(response=auth_resp, status_code=HTTPStatus.OK)
-
-        self._token = auth_resp.json()["token"]
+        return f"{self._api_wrapper.url}/api/v1"
 
     def exec_request(self, request: Request, expected_response: ExpectedResponse):
         """
@@ -79,7 +60,9 @@ class ADSSApi:
                 url=url,
                 params=url_params,
                 json=request.data,
-                headers={**request.headers, **{"Authorization": f"Token {self._token}"}},
+                headers={
+                    **request.headers, **{"Authorization": f"Token {self._api_wrapper.api_token}"}
+                },
             )
 
             attach_request_log(response)
@@ -106,15 +89,15 @@ class ADSSApi:
 
     def get_auth_token(self):
         """
-        Return auth token of ADSSApi object
+        Return auth token of ADCMTestApiWrapper object
         ATTENTION! Value may not match one required to execute request, if _token changed
         """
-        return self._token
+        return self._api_wrapper.api_token
 
     def set_auth_token(self, auth_token):
         """
-        Override auth token for ADSSApi object
+        Override auth token for ADCMTestApiWrapper object
         ATTENTION! Overwrites only for this class object.
-                   API of ADSS application will require auth token that it generated.
+                   API of ADCM application will require auth token that it generated.
         """
-        self._token = auth_token
+        self._api_wrapper.api_token = auth_token

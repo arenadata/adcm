@@ -1,4 +1,4 @@
-"""ADSS API PUT body tests"""
+"""ADCM API PUT body tests"""
 # pylint: disable=redefined-outer-name, invalid-name
 from copy import deepcopy
 from typing import List
@@ -6,32 +6,30 @@ from typing import List
 import allure
 import pytest
 
-from tests.test_data.generators import (
+from tests.api.testdata.generators import (
     get_positive_data_for_put_body_check,
     get_negative_data_for_put_body_check,
     TestData,
     TestDataWithPreparedBody,
 )
-from tests.test_data.db_filler import DbFiller
-from tests.utils.docker import ADSS_DEV_IMAGE
+from tests.api.testdata.db_filler import DbFiller
+from tests.api.utils.api_objects import ADCMTestApiWrapper
 
-from tests.utils.types import get_fields
-from tests.utils.methods import Methods
-from tests.utils.api_objects import ADSSApi
+from tests.api.utils.types import get_fields
+from tests.api.utils.methods import Methods
 
 pytestmark = [
-    allure.sub_suite("PUT"),
-    pytest.mark.parametrize("image", [ADSS_DEV_IMAGE], ids=["dev_adss"], indirect=True),
+    allure.suite("PUT"),
 ]
 
 
 @pytest.fixture()
-def prepare_put_body_data(request, adss_fs: ADSSApi):
+def prepare_put_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
     """
     Fixture for preparing test data for PUT request, depending on generated test datasets
     """
     test_data_list: List[TestDataWithPreparedBody] = request.param
-    dbfiller = DbFiller(adss=adss_fs)
+    dbfiller = DbFiller(adcm=adcm_api_fs)
     valid_data = dbfiller.generate_valid_request_data(
         endpoint=test_data_list[0].test_data.request.endpoint, method=Methods.PUT
     )
@@ -65,7 +63,7 @@ def prepare_put_body_data(request, adss_fs: ADSSApi):
         test_data.request.object_id = valid_data["object_id"]
         final_test_data_list.append(test_data)
 
-    return adss_fs, final_test_data_list
+    return adcm_api_fs, final_test_data_list
 
 
 @pytest.mark.parametrize(
@@ -76,10 +74,10 @@ def test_put_body_positive(prepare_put_body_data):
     Positive cases of PUT request body testing
     Includes sets of correct field values - boundary values, nullable if possible.
     """
-    adss, test_data_list = prepare_put_body_data
+    adcm, test_data_list = prepare_put_body_data
     for test_data in test_data_list:
         with allure.step(f'Assert - {test_data.description}'):
-            adss.exec_request(request=test_data.request, expected_response=test_data.response)
+            adcm.exec_request(request=test_data.request, expected_response=test_data.response)
 
 
 @pytest.mark.parametrize(
@@ -95,7 +93,7 @@ def test_put_body_negative(prepare_put_body_data, flexible_assert_step):
     Includes sets of invalid field values - out of boundary values,
     nullable and required if not possible, fields with incorrect types and etc.
     """
-    adss, test_data_list = prepare_put_body_data
+    adcm, test_data_list = prepare_put_body_data
     for test_data in test_data_list:
         with flexible_assert_step(title=f'Assert - {test_data.description}'):
-            adss.exec_request(request=test_data.request, expected_response=test_data.response)
+            adcm.exec_request(request=test_data.request, expected_response=test_data.response)

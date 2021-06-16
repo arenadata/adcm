@@ -2,39 +2,39 @@
 # pylint: disable=invalid-name
 
 import random
-from time import sleep
 from collections import defaultdict
 
 import allure
 
-from tests.steps.common import assume_step
-from tests.test_data.getters import get_endpoint_data, get_object_data
-from tests.utils.api_objects import Request, ExpectedResponse, ADSSApi
-from tests.utils.endpoints import Endpoints
-from tests.utils.methods import Methods
-from tests.utils.types import (
+from tests.api.steps.common import assume_step
+from tests.api.testdata.getters import get_endpoint_data, get_object_data
+from tests.api.utils.api_objects import Request, ExpectedResponse
+from tests.api.utils.endpoints import Endpoints
+from tests.api.utils.methods import Methods
+from tests.api.utils.types import (
     get_fields,
     Field,
     is_fk_field,
     ForeignKeyM2M,
     ForeignKey,
     get_field_name_by_fk_dataclass,
+    ADCMObjectFK,
 )
 
 
 # pylint: disable=too-few-public-methods
+from tests.api.utils.api_objects import ADCMTestApiWrapper
+
+
 class DbFiller:
     """Utils to prepare data in DB before test"""
 
-    __slots__ = ("adss", "_available_fkeys", "_used_fkeys", "_set_null_capacities")
+    __slots__ = ("adcm", "_available_fkeys", "_used_fkeys")
 
-    capacity_endpoints = (Endpoints.ClusterCapacity, Endpoints.FileSystemCapacity)
-
-    def __init__(self, adss: ADSSApi, set_null_capacities=True):
-        self.adss = adss
+    def __init__(self, adcm: ADCMTestApiWrapper):
+        self.adcm = adcm
         self._available_fkeys = defaultdict(set)
         self._used_fkeys = {}
-        self._set_null_capacities = set_null_capacities
 
     @allure.step("Generate valid request data")
     def generate_valid_request_data(self, endpoint: Endpoints, method: Methods) -> dict:
@@ -48,7 +48,6 @@ class DbFiller:
                     endpoint=endpoint,
                     force=True,
                     prepare_data_only=True,
-                    set_null_capacities=self._set_null_capacities,
                 )[0],
                 "url_params": {},
             }
@@ -58,11 +57,9 @@ class DbFiller:
             return {"data": None, "url_params": {}}
 
         full_item = get_object_data(
-            adss=self.adss,
+            adcm=self.adcm,
             endpoint=endpoint,
-            object_id=self._get_or_create_data_for_endpoint(
-                endpoint=endpoint, set_null_capacities=self._set_null_capacities
-            )[0]['id'],
+            object_id=self._get_or_create_data_for_endpoint(endpoint=endpoint,)[0]['id'],
         )
         # GET, DELETE
         if method in (Methods.GET, Methods.DELETE):
@@ -72,13 +69,17 @@ class DbFiller:
             changed_fields = {}
             for field in get_fields(endpoint.data_class, predicate=lambda x: x.changeable):
                 if isinstance(field.f_type, ForeignKey):
+                    if isinstance(field.f_type, ADCMObjectFK):
+                        field.f_type.fk_link = Endpoints.get_by_path(
+                            full_item[field.f_type.object_type_field.name]
+                        ).data_class
                     fk_data = self._get_or_create_data_for_endpoint(
                         endpoint=Endpoints.get_by_data_class(field.f_type.fk_link), force=True
                     )
                     if isinstance(field.f_type, ForeignKeyM2M):
                         changed_fields[field.name] = [{'id': el["id"]} for el in fk_data]
                     else:
-                        changed_fields[field.name] = {"id": fk_data[0]["id"]}
+                        changed_fields[field.name] = fk_data[0]["id"]
                 elif field.name != "id":
                     changed_fields[field.name] = self._generate_field_value(
                         field=field, old_value=full_item[field.name]
@@ -95,14 +96,16 @@ class DbFiller:
         raise ValueError(f"No such method {method}")
 
     def _get_or_create_data_for_endpoint(
-        self, endpoint: Endpoints, force=False, prepare_data_only=False, set_null_capacities=False
+        self, endpoint: Endpoints, force=False, prepare_data_only=False
     ):
         """
         Get data for endpoint with data preparation
         """
-        # Job History should be filled using custom algorithm
-        if endpoint in (Endpoints.JobHistory,):
-            return self._generate_data_for_special_endpoints(endpoint=endpoint)
+        # ConfigGroup should be filled using custom algorithm
+        if endpoint in (Endpoints.ConfigGroup,):
+            return self._generate_data_for_special_endpoints(
+                endpoint=endpoint, prepare_data_only=prepare_data_only
+            )
 
         for data_class in endpoint.data_class.predefined_dependencies:
             self._get_or_create_data_for_endpoint(
@@ -110,17 +113,16 @@ class DbFiller:
             )
 
         if force and not prepare_data_only and Methods.POST not in endpoint.methods:
-            if current_ep_data := get_endpoint_data(adss=self.adss, endpoint=endpoint):
+            if current_ep_data := get_endpoint_data(adcm=self.adcm, endpoint=endpoint):
                 return current_ep_data
             raise ValueError(
                 f"Force data creation is not available for {endpoint.path}"
                 "and there is no any existing data"
             )
 
-        if not force:
+        if not force and (current_ep_data := get_endpoint_data(adcm=self.adcm, endpoint=endpoint)):
             # try to fetch data from current endpoint
-            if current_ep_data := get_endpoint_data(adss=self.adss, endpoint=endpoint):
-                return current_ep_data
+            return current_ep_data
 
         data = self._prepare_data_for_object_creation(endpoint=endpoint, force=force)
 
@@ -129,13 +131,8 @@ class DbFiller:
                 endpoint=Endpoints.get_by_data_class(data_class), force=force
             )
 
-        # If set_null_capacities requested we need to set null for all capacities
-        # before creating Job in Job Queue
-        if endpoint == Endpoints.JobQueue and set_null_capacities:
-            self._set_null_values_for_capacities()
-
         if not prepare_data_only:
-            response = self.adss.exec_request(
+            response = self.adcm.exec_request(
                 request=Request(endpoint=endpoint, method=Methods.POST, data=data),
                 expected_response=ExpectedResponse(
                     status_code=Methods.POST.value.default_success_code
@@ -148,22 +145,26 @@ class DbFiller:
         data = {}
         for field in get_fields(
             data_class=endpoint.data_class,
+            predicate=lambda x: x.name != "id" and x.postable and not is_fk_field(x),
+        ):
+            data[field.name] = self._generate_field_value(field=field)
+        for field in get_fields(
+            data_class=endpoint.data_class,
             predicate=lambda x: x.name != "id" and x.postable and is_fk_field(x),
         ):
+            if isinstance(field.f_type, ADCMObjectFK):
+                field.f_type.fk_link = Endpoints.get_by_path(
+                    data[field.f_type.object_type_field.name]
+                ).data_class
+
             fk_data = get_endpoint_data(
-                adss=self.adss, endpoint=Endpoints.get_by_data_class(field.f_type.fk_link)
+                adcm=self.adcm, endpoint=Endpoints.get_by_data_class(field.f_type.fk_link)
             )
             if not fk_data or force:
                 fk_data = self._get_or_create_data_for_endpoint(
                     endpoint=Endpoints.get_by_data_class(field.f_type.fk_link), force=force
                 )
             data[field.name] = self._choose_fk_field_value(field=field, fk_data=fk_data)
-        for field in get_fields(
-            data_class=endpoint.data_class,
-            predicate=lambda x: x.name != "id" and x.postable and not is_fk_field(x),
-        ):
-            data[field.name] = self._generate_field_value(field=field)
-
         return data
 
     def _get_or_create_multiple_data_for_endpoint(self, endpoint: Endpoints, count: int):
@@ -175,7 +176,7 @@ class DbFiller:
         IMPORTANT: Class context _available_fkeys and _used_fkeys
                    will be relevant only for the last object in set
         """
-        current_ep_data = get_endpoint_data(adss=self.adss, endpoint=endpoint)
+        current_ep_data = get_endpoint_data(adcm=self.adcm, endpoint=endpoint)
         if len(current_ep_data) < count:
             for _ in range(count - len(current_ep_data)):
                 # clean up context before generating new element
@@ -185,55 +186,43 @@ class DbFiller:
                     endpoint=endpoint,
                     force=True,
                     prepare_data_only=False,
-                    set_null_capacities=self._set_null_capacities,
                 )
-                if len(get_endpoint_data(adss=self.adss, endpoint=endpoint)) > count:
+                if len(get_endpoint_data(adcm=self.adcm, endpoint=endpoint)) > count:
                     break
 
-    @allure.step("Set '0' values for capacities")
-    def _set_null_values_for_capacities(self):
-        """
-        To stop Jobs execution and changing in Job Queue
-        we need to set value=0 for all capacities.
-        Method set value=0 for all currently existing capacities.
-        """
-        for endpoint in self.capacity_endpoints:
-            objects = get_endpoint_data(adss=self.adss, endpoint=endpoint)
-            for obj in objects:
-                self.adss.exec_request(
-                    request=Request(
-                        endpoint=endpoint,
-                        method=Methods.PATCH,
-                        object_id=obj["id"],
-                        data={"value": 0},
-                    ),
-                    expected_response=ExpectedResponse(
-                        status_code=Methods.PATCH.value.default_success_code
-                    ),
-                )
-
-    def _generate_data_for_special_endpoints(self, endpoint: Endpoints):
+    def _generate_data_for_special_endpoints(self, endpoint: Endpoints, prepare_data_only: bool):
         """
         Data for some endpoints can be generated with custom logics
         This logics is implemented here
         """
-        if endpoint == Endpoints.JobHistory:
-            # To fill Job History we need to create item in Job Queue
-            # and wait until it will be finished and added to Job History
-            old_data = get_endpoint_data(adss=self.adss, endpoint=endpoint)
-            self._get_or_create_data_for_endpoint(endpoint=Endpoints.JobQueue)
-            timeout = 300
-            interval = 0.5
-            time_passed = 0
-            while (
-                len(data := get_endpoint_data(adss=self.adss, endpoint=endpoint)) <= len(old_data)
-                and time_passed < timeout  # noqa: W503
-            ):
-                sleep(interval)
-                time_passed += interval
-            if data:
-                return data
-            raise TimeoutError(f"Data for {endpoint} was not created in {timeout} seconds")
+        if endpoint == Endpoints.ConfigGroup:
+            # Constrains for Changeable, the host cannot be a member of
+            # different groups of the same object
+            old_data = get_endpoint_data(adcm=self.adcm, endpoint=endpoint)
+            attempts_count = 10
+            while True:
+                new_data = self._prepare_data_for_object_creation(endpoint=endpoint, force=True)
+                if (
+                    (new_data["object_type"], new_data["object_id"])
+                    not in
+                    [(old_obj["object_type"], old_obj["object_id"]) for old_obj in old_data]
+                ):
+                    break
+                attempts_count -= 1
+                if attempts_count == 0:
+                    raise ValueError(
+                        "Failed to create config group with different "
+                        "object_type and object_id in 10 attempts"
+                    )
+            if not prepare_data_only:
+                response = self.adcm.exec_request(
+                    request=Request(endpoint=endpoint, method=Methods.POST, data=new_data),
+                    expected_response=ExpectedResponse(
+                        status_code=Methods.POST.value.default_success_code
+                    ),
+                )
+                return [response.json()]
+            return [new_data]
         raise NotImplementedError(f"There is no special generator for {endpoint}")
 
     def _generate_field_value(self, field: Field, old_value=None):
@@ -241,13 +230,13 @@ class DbFiller:
         related_value = None
         if field.f_type.relates_on:
             related_value = get_object_data(
-                adss=self.adss,
+                adcm=self.adcm,
                 endpoint=Endpoints.get_by_data_class(field.f_type.relates_on.data_class),
                 object_id=self._used_fkeys[field.f_type.relates_on.data_class.__name__],
             )[field.f_type.relates_on.field.name]
         if old_value is not None:
-            return field.f_type.generate_new(old_value=old_value, schema=related_value)
-        return field.f_type.generate(schema=related_value)
+            return field.f_type.generate_new(old_value=old_value, related_value=related_value)
+        return field.f_type.generate(related_value=related_value)
 
     def _choose_fk_field_value(self, field: Field, fk_data: list):
         """Choose a random fk value for the specified field"""
@@ -272,7 +261,7 @@ class DbFiller:
                     )
             else:
                 key = random.choice(list(fk_vals))
-                result = {'id': key}
+                result = key
                 self._used_fkeys[fk_class_name] = key
                 self._available_fkeys[fk_class_name].add(key)
                 if new_fk:
@@ -291,7 +280,7 @@ class DbFiller:
             )
             for fk_id in fk_ids:
                 fk_data = get_object_data(
-                    adss=self.adss,
+                    adcm=self.adcm,
                     endpoint=Endpoints.get_by_data_class(fk_data_class),
                     object_id=fk_id,
                 )
@@ -301,7 +290,7 @@ class DbFiller:
                     )
                 elif isinstance(child_fk_field.f_type, ForeignKey):
                     self._available_fkeys[child_fk_field.f_type.fk_link.__name__].add(
-                        fk_data[fk_field_name]["id"]
+                        fk_data[fk_field_name]
                     )
 
     @allure.step("Generate new value for unchangeable FK_field")
@@ -309,7 +298,7 @@ class DbFiller:
         """Generate new value for unchangeable fk fields"""
         if not isinstance(f_type, ForeignKey):
             raise ValueError("Field type is not ForeignKey")
-        new_objects = get_endpoint_data(self.adss, Endpoints.get_by_data_class(f_type.fk_link))
+        new_objects = get_endpoint_data(self.adcm, Endpoints.get_by_data_class(f_type.fk_link))
         if len(new_objects) == 1:
             with assume_step(
                 f'Data creation is not available for {f_type.fk_link}', exception=ValueError
@@ -317,8 +306,8 @@ class DbFiller:
                 new_objects = self._get_or_create_data_for_endpoint(
                     endpoint=Endpoints.get_by_data_class(f_type.fk_link), force=True
                 )
-        valid_new_objects = [obj for obj in new_objects if obj["id"] != current_field_value["id"]]
+        valid_new_objects = [obj for obj in new_objects if obj["id"] != current_field_value]
         if valid_new_objects:
-            return {"id": valid_new_objects[0]["id"]}
+            return valid_new_objects[0]["id"]
         with allure.step("Failed to create new data. Returning a non-existent object"):
-            return {"id": 42}
+            return 42
