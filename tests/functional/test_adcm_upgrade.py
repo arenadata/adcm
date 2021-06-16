@@ -10,15 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=W0621,R0914
-from typing import Generator
+from typing import Generator, Union
 
 import allure
 import pytest
-from adcm_client.objects import ADCMClient
+from adcm_client.base import ObjectNotFound
+from adcm_client.objects import ADCMClient, Cluster, Host, Service
 from adcm_pytest_plugin.docker_utils import ADCM
 from adcm_pytest_plugin.fixtures import _adcm
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
-from adcm_pytest_plugin.utils import get_data_dir, random_string
+from adcm_pytest_plugin.utils import catch_failed, get_data_dir, random_string
 
 
 def old_adcm_images():
@@ -35,52 +36,65 @@ def adcm_fs(image, cmd_opts, request, adcm_api_credentials) -> Generator[ADCM, N
     yield from _adcm(image, cmd_opts, request, adcm_api_credentials, upgradable=True)
 
 
+def _upgrade_adcm_to_latest(adcm: ADCM) -> None:
+    adcm.upgrade(("hub.arenadata.io/adcm/adcm", "latest"))
+
+
+def _create_cluster(sdk_client_fs: ADCMClient, bundle_dir: str = "cluster_bundle") -> Cluster:
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, bundle_dir))
+    cluster_name = f"test_{random_string()}"
+    return bundle.cluster_prototype().cluster_create(name=cluster_name)
+
+
+def _create_host(sdk_client_fs: ADCMClient, bundle_dir: str = "hostprovider") -> Host:
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, bundle_dir))
+    provider = bundle.provider_create(name=f"test_{random_string()}")
+    return provider.host_create(fqdn=f"test_host_{random_string()}")
+
+
+@allure.step("Check that previously created cluster exists")
+def _check_that_cluster_exists(sdk_client_fs: ADCMClient, cluster: Cluster) -> None:
+    assert len(sdk_client_fs.cluster_list()) == 1, "Only one cluster expected to be"
+    with catch_failed(ObjectNotFound, "Previously created cluster not found"):
+        sdk_client_fs.cluster(name=cluster.name)
+
+
+@allure.step("Check that previously created service exists")
+def _check_that_host_exists(cluster: Cluster, host: Host) -> None:
+    assert len(cluster.host_list()) == 1, "Only one host expected to be"
+    with catch_failed(ObjectNotFound, "Previously created host not found"):
+        cluster.host(fqdn=host.fqdn)
+
+
+@allure.step("Check encryption")
+def _check_encryption(obj: Union[Cluster, Service]) -> None:
+    assert obj.action(name="check-password").run().wait() == "success"
+
+
 @pytest.mark.parametrize("image", old_adcm_images(), ids=repr)
 def test_upgrade_adcm(adcm_fs: ADCM, sdk_client_fs: ADCMClient):
-    sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_bundle"))
-    with allure.step("Create cluster"):
-        cluster_name = f"test_{random_string()}"
-        sdk_client_fs.cluster_prototype().cluster_create(name=cluster_name)
-    adcm_fs.upgrade(("hub.arenadata.io/adcm/adcm", "latest"))
-    with allure.step("Check that cluster is present"):
-        assert len(sdk_client_fs.cluster_list()) == 1, "There is no clusters. Expecting one"
-        cluster = sdk_client_fs.cluster_list()[0]
-        assert cluster.name == cluster_name, "Unexpected cluster name"
+    """Test adcm upgrade"""
+    cluster = _create_cluster(sdk_client_fs)
+    host = _create_host(sdk_client_fs)
+    cluster.host_add(host)
+
+    _upgrade_adcm_to_latest(adcm_fs)
+
+    _check_that_cluster_exists(sdk_client_fs, cluster)
+    _check_that_host_exists(cluster, host)
 
 
 @pytest.mark.parametrize("image", old_adcm_images(), ids=repr)
-def test_pass_in_cluster_config_encryption_after_upgrade(adcm_fs: ADCM, sdk_client_fs: ADCMClient):
-    hostprovider_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "hostprovider"))
-    hostprovider = hostprovider_bundle.provider_create(name=f"test_{random_string()}")
-    host = hostprovider.host_create(fqdn=f"test_host_{random_string()}")
-    sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_with_cluster_pass_verify"))
-    cluster_name = f"test_{random_string()}"
-    cluster = sdk_client_fs.cluster_prototype().cluster_create(name=cluster_name)
-    cluster.host_add(host)
-    cluster.config_set_diff(dict(password="q1w2e3r4"))
-    adcm_fs.upgrade(("hub.arenadata.io/adcm/adcm", "latest"))
-    with allure.step("Check that cluster is present"):
-        assert len(sdk_client_fs.cluster_list()) == 1, "There is no clusters. Expecting one"
-        cluster = sdk_client_fs.cluster(name=cluster_name)
-        assert cluster.action(name="check-password").run().wait() == "success"
+def test_pass_in_config_encryption_after_upgrade(adcm_fs: ADCM, sdk_client_fs: ADCMClient):
+    """Test adcm upgrade with encrypted fields"""
+    cluster = _create_cluster(sdk_client_fs, "cluster_with_pass_verify")
+    service = cluster.service_add(name="PassCheckerService")
 
+    config_diff = dict(password="q1w2e3r4")
+    cluster.config_set_diff(config_diff)
+    service.config_set_diff(config_diff)
 
-@pytest.mark.parametrize("image", old_adcm_images(), ids=repr)
-def test_pass_in_service_config_encryption_after_upgrade(adcm_fs: ADCM, sdk_client_fs: ADCMClient):
-    hostprovider_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "hostprovider"))
-    hostprovider = hostprovider_bundle.provider_create(name=f"test_{random_string()}")
-    host = hostprovider.host_create(fqdn=f"test_host_{random_string()}")
-    sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_with_service_pass_verify"))
-    cluster_name = f"test_{random_string()}"
-    cluster = sdk_client_fs.cluster_prototype().cluster_create(name=cluster_name)
-    cluster.host_add(host)
-    service_name = "PassChecker"
-    service = cluster.service_add(name=service_name)
-    service.config_set_diff(dict(password="q1w2e3r4"))
-    adcm_fs.upgrade(("hub.arenadata.io/adcm/adcm", "latest"))
-    with allure.step('Check cluster'):
-        assert len(sdk_client_fs.cluster_list()) == 1, "There is no clusters. Expecting one"
-        cluster = sdk_client_fs.cluster(name=cluster_name)
-        assert len(cluster.service_list()) == 1, "There is no services. Expecting one"
-        service = cluster.service(name=service_name)
-        assert service.action(name="check-password").run().wait() == "success"
+    _upgrade_adcm_to_latest(adcm_fs)
+
+    _check_encryption(cluster)
+    _check_encryption(service)
