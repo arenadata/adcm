@@ -14,6 +14,7 @@ from typing import Union, Tuple, List
 
 import allure
 import pytest
+from _pytest.main import Failed
 from adcm_client.objects import (
     Provider,
     Cluster,
@@ -414,24 +415,27 @@ def test_expand_on_clean_locked_host(
     elif adcm_object == "Component":
         obj_for_action = dummy_component
 
-    with pytest.raises(ErrorMessage, match="locked host"):
-        with allure.step(
-            f"Run {obj_for_action.__class__.__name__} action: expand on clean locked host"
-        ):
-            obj_for_action.action(name=expand_action, ).run(
-                hc=[
-                    {
-                        "host_id": host1.host_id,
-                        "service_id": dummy_component.service_id,
-                        "component_id": dummy_component.component_id,
-                    },
-                    {
-                        "host_id": host2.host_id,
-                        "service_id": dummy_component.service_id,
-                        "component_id": dummy_component.component_id,
-                    },
-                ]
-            ).wait()
+    try:
+        with pytest.raises(ErrorMessage, match="locked host"):
+            with allure.step(
+                f"Run {obj_for_action.__class__.__name__} action: expand on clean locked host"
+            ):
+                obj_for_action.action(name=expand_action, ).run(
+                    hc=[
+                        {
+                            "host_id": host1.host_id,
+                            "service_id": dummy_component.service_id,
+                            "component_id": dummy_component.component_id,
+                        },
+                        {
+                            "host_id": host2.host_id,
+                            "service_id": dummy_component.service_id,
+                            "component_id": dummy_component.component_id,
+                        },
+                    ]
+                ).wait()
+    except Failed as err:
+        raise AssertionError("Expand action should throw an API error as Host is locked") from err
 
 
 @pytest.mark.parametrize(
