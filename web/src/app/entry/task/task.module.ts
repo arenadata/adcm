@@ -12,7 +12,7 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { AuthGuard } from '@app/core';
+import { AuthGuard } from '../../core/auth/auth.guard';
 import { SharedModule } from '@app/shared/shared.module';
 
 import { HoverDirective } from './hover.directive';
@@ -51,10 +51,6 @@ const routes: Routes = [
     JobNameComponent,
     JobsComponent,
     JobStatusColumnComponent,
-  ],
-  providers: [
-    TaskService,
-    JobService,
   ],
 })
 export class TaskModule {}

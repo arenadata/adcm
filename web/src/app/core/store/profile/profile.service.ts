@@ -15,7 +15,7 @@ import { environment } from '@env/environment';
 import { Observable, throwError } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 
-import { AuthService } from '@app/core';
+import { AuthService } from '@app/core/auth/auth.service';
 
 const PROFILE_LINK = `${environment.apiRoot}profile/`;
 

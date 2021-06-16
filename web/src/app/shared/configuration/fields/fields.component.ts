@@ -10,8 +10,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, EventEmitter, Input, Output, QueryList, ViewChildren } from '@angular/core';
-import { ChannelService, FullyRenderedService, keyChannelStrim } from '@app/core';
 
+import { ChannelService } from '@app/core/services';
+import { FullyRenderedService } from '@app/core/services';
+import { keyChannelStrim } from '@app/core/services';
 import { FieldService, TFormOptions } from '../field.service';
 import { FieldComponent } from '../field/field.component';
 import { GroupFieldsComponent } from '../group-fields/group-fields.component';

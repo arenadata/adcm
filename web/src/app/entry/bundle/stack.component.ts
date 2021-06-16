@@ -15,7 +15,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { IColumns } from '@adwp-ui/widgets';
 
-import { StackService } from '@app/core';
+import { StackService } from '../../core/services';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
 import { ListService } from '@app/shared/components/list/list.service';

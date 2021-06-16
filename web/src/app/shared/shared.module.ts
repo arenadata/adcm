@@ -30,7 +30,6 @@ import {
 } from './components';
 import { ActionCardComponent } from './components/actions/action-card/action-card.component';
 import { ActionMasterConfigComponent } from './components/actions/master/action-master-config.component';
-import { ListComponent } from './components/list/list.component';
 import { MultiSortDirective } from './components/list/multi-sort.directive';
 import { SimpleTextComponent } from './components/tooltip';
 import { ConfigurationModule } from './configuration/configuration.module';
@@ -68,7 +67,6 @@ import { TaskService } from '@app/services/task.service';
   ],
   declarations: [
     DialogComponent,
-    ListComponent,
     BreakRowPipe,
     HoverDirective,
     DynamicDirective,
@@ -102,7 +100,6 @@ import { TaskService } from '@app/services/task.service';
     HostComponentsMapModule,
     DetailsModule,
     DialogComponent,
-    ListComponent,
     BreakRowPipe,
     HoverDirective,
     DynamicDirective,
