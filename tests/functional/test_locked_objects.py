@@ -26,7 +26,7 @@ from adcm_client.objects import (
 )
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.asserts import assert_state
-from adcm_pytest_plugin.utils import random_string
+from adcm_pytest_plugin.utils import random_string, catch_failed
 from coreapi.exceptions import ErrorMessage
 
 
@@ -415,7 +415,7 @@ def test_expand_on_clean_locked_host(
     elif adcm_object == "Component":
         obj_for_action = dummy_component
 
-    try:
+    with catch_failed(Failed, "Expand action should throw an API error as Host is locked"):
         with pytest.raises(ErrorMessage, match="locked host"):
             with allure.step(
                 f"Run {obj_for_action.__class__.__name__} action: expand on clean locked host"
@@ -434,8 +434,6 @@ def test_expand_on_clean_locked_host(
                         },
                     ]
                 ).wait()
-    except Failed as err:
-        raise AssertionError("Expand action should throw an API error as Host is locked") from err
 
 
 @pytest.mark.parametrize(
