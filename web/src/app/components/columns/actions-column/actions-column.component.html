@@ -1,5 +1,9 @@
-<button [appForTest]="'row_actions'" mat-icon-button color="warn" *ngIf="!notIssue(row?.issue); else actions"
-        [appTooltip]="row" appTooltipComponent="issue">
+<button [appForTest]="'row_actions'"
+        mat-icon-button
+        color="warn"
+        *ngIf="!notIssue(row?.issue); else actions"
+        [appTooltip]="row"
+        appTooltipComponent="issue">
   <mat-icon>priority_hight</mat-icon>
 </button>
 <ng-template #actions>
