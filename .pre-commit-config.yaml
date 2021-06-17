@@ -10,10 +10,15 @@ repos:
     hooks:
     - id: pylint
       additional_dependencies:
+        - ansible==2.8.8
         - croniter
         - django
+        - django-background-tasks
+        - django-filter
         - djangorestframework
         - drf-flex-fields
         - pylint-django
         - pytest
+        - simplejson
         - social-auth-app-django
+        - version_utils

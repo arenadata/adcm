@@ -17,7 +17,7 @@ from ansible.utils.vars import merge_hash
 import cm
 import cm.config as config
 from cm.errors import raise_AdcmEx as err
-from cm.api import push_obj, set_object_state, add_hc, get_hc
+from cm.api import push_obj, add_hc, get_hc
 from cm.adcm_config import set_object_config
 from cm.models import Cluster, ClusterObject, ServiceComponent, HostProvider, Host
 from cm.models import Prototype, Action, JobLog
@@ -248,7 +248,7 @@ def set_provider_state(provider_id, state, event):
     if provider.state == config.Job.LOCKED:
         return push_obj(provider, state)
     else:
-        return set_object_state(provider, state, event)
+        return provider.set_state(state, event)
 
 
 def set_service_state(cluster_id, service_name, state):
