@@ -29,11 +29,7 @@ DEFAULT_PROVIDER_BUNDLE_PATH = get_data_dir(__file__, "hostprovider_bundle")
 
 @pytest.fixture()
 def cluster_bundle(request, sdk_client_fs: ADCMClient) -> Bundle:
-    bundle_path = (
-        request.param
-        if hasattr(request, "param") else
-        DEFAULT_CLUSTER_BUNDLE_PATH
-    )
+    bundle_path = request.param if hasattr(request, "param") else DEFAULT_CLUSTER_BUNDLE_PATH
     return sdk_client_fs.upload_from_fs(bundle_path)
 
 
@@ -44,11 +40,7 @@ def cluster(cluster_bundle: Bundle) -> Cluster:
 
 @pytest.fixture()
 def provider_bundle(request, sdk_client_fs: ADCMClient) -> Bundle:
-    bundle_path = (
-        request.param
-        if hasattr(request, "param") else
-        DEFAULT_PROVIDER_BUNDLE_PATH
-    )
+    bundle_path = request.param if hasattr(request, "param") else DEFAULT_PROVIDER_BUNDLE_PATH
     return sdk_client_fs.upload_from_fs(bundle_path)
 
 
@@ -142,9 +134,7 @@ class TestClusterHost:
         with allure.step("Check host removed from cluster"):
             assert actual == expected
 
-    def test_host_along_to_cluster_should_not_deleted(
-        self, cluster: Cluster, provider: Provider
-    ):
+    def test_host_along_to_cluster_should_not_deleted(self, cluster: Cluster, provider: Provider):
         host = provider.host_create(utils.random_string())
         cluster.host_add(host)
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
@@ -163,9 +153,7 @@ class TestClusterService:
             assert actual.id == expected.id
             assert actual.name == expected.name
 
-    def test_get_cluster_service_list(
-        self, sdk_client_fs: ADCMClient, cluster: Cluster
-    ):
+    def test_get_cluster_service_list(self, sdk_client_fs: ADCMClient, cluster: Cluster):
         expected = []
         with allure.step("Create a list of services in the cluster"):
             for prototype in sdk_client_fs.service_prototype_list():

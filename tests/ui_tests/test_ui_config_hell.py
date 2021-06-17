@@ -31,10 +31,12 @@ def prototype_display_names(ui_hell_fs):
 @pytest.fixture()
 @allure.step('Open Configuration page')
 def ui_display_names(login_to_adcm, app_fs, ui_hell_fs):
-    ui_config = Configuration(app_fs.driver,
-                              "{}/cluster/{}/service/{}/config".format(app_fs.adcm.url,
-                                                                       ui_hell_fs.cluster_id,
-                                                                       ui_hell_fs.service_id))
+    ui_config = Configuration(
+        app_fs.driver,
+        "{}/cluster/{}/service/{}/config".format(
+            app_fs.adcm.url, ui_hell_fs.cluster_id, ui_hell_fs.service_id
+        ),
+    )
     return ui_config.get_display_names()
 
 

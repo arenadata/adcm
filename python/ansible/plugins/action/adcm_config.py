@@ -13,9 +13,11 @@
 # pylint: disable=wrong-import-position, unused-import, import-error
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import sys
+
 sys.path.append('/adcm/python')
 
 import adcm.init_django
@@ -99,7 +101,7 @@ class ActionModule(ContextActionModule):
             set_cluster_config,
             context['cluster_id'],
             self._task.args["key"],
-            self._task.args["value"]
+            self._task.args["value"],
         )
         res['value'] = self._task.args["value"]
         return res
@@ -110,7 +112,7 @@ class ActionModule(ContextActionModule):
             context['cluster_id'],
             self._task.args["service_name"],
             self._task.args["key"],
-            self._task.args["value"]
+            self._task.args["value"],
         )
         res['value'] = self._task.args["value"]
         return res
@@ -121,17 +123,14 @@ class ActionModule(ContextActionModule):
             context['cluster_id'],
             context['service_id'],
             self._task.args["key"],
-            self._task.args["value"]
+            self._task.args["value"],
         )
         res['value'] = self._task.args["value"]
         return res
 
     def _do_host(self, task_vars, context):
         res = self._wrap_call(
-            set_host_config,
-            context['host_id'],
-            self._task.args["key"],
-            self._task.args["value"]
+            set_host_config, context['host_id'], self._task.args["key"], self._task.args["value"]
         )
         res['value'] = self._task.args["value"]
         return res
@@ -142,7 +141,7 @@ class ActionModule(ContextActionModule):
             set_host_config,
             self._task.args['host_id'],
             self._task.args["key"],
-            self._task.args["value"]
+            self._task.args["value"],
         )
         res['value'] = self._task.args["value"]
         return res
@@ -152,7 +151,7 @@ class ActionModule(ContextActionModule):
             set_provider_config,
             context['provider_id'],
             self._task.args["key"],
-            self._task.args["value"]
+            self._task.args["value"],
         )
         res['value'] = self._task.args["value"]
         return res
@@ -165,7 +164,7 @@ class ActionModule(ContextActionModule):
             self._task.args['component_name'],
             self._task.args.get('service_name', None),
             self._task.args['key'],
-            self._task.args['value']
+            self._task.args['value'],
         )
         res['value'] = self._task.args['value']
         return res
@@ -175,7 +174,7 @@ class ActionModule(ContextActionModule):
             set_component_config,
             context['component_id'],
             self._task.args['key'],
-            self._task.args['value']
+            self._task.args['value'],
         )
         res['value'] = self._task.args['value']
         return res

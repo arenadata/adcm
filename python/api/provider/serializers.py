@@ -42,7 +42,7 @@ class ProviderSerializer(serializers.Serializer):
             return cm.api.add_host_provider(
                 validated_data.get('prototype_id'),
                 validated_data.get('name'),
-                validated_data.get('description', '')
+                validated_data.get('description', ''),
             )
         except IntegrityError:
             raise AdcmEx("PROVIDER_CONFLICT") from None

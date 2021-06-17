@@ -17,8 +17,13 @@ from . import views
 
 urlpatterns = [
     path('', views.ProfileList.as_view(), name='profile-list'),
-    path('<name:username>/', include([
-        path('', views.ProfileDetail.as_view(), name='profile-details'),
-        path('password/', views.UserPasswd.as_view(), name='profile-passwd'),
-    ])),
+    path(
+        '<name:username>/',
+        include(
+            [
+                path('', views.ProfileDetail.as_view(), name='profile-details'),
+                path('password/', views.UserPasswd.as_view(), name='profile-passwd'),
+            ]
+        ),
+    ),
 ]

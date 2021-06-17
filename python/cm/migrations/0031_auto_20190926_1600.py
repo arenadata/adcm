@@ -24,11 +24,7 @@ def add_group(apps, proto):
 
     for name in group:
         pc = PrototypeConfig(
-            prototype=proto,
-            name=name,
-            display_name=name,
-            type='group',
-            limits='{}'
+            prototype=proto, name=name, display_name=name, type='group', limits='{}'
         )
         pc.save()
 

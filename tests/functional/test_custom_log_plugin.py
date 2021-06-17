@@ -21,16 +21,16 @@ FIELD = ['name', 'format', 'storage_type']
 
 @pytest.mark.parametrize("bundle", FIELD)
 def test_required_fields(sdk_client_fs: ADCMClient, bundle):
-    """Task should be failed if required field not presented
-    """
+    """Task should be failed if required field not presented"""
     stack_dir = utils.get_data_dir(__file__, "required_fields", "no_{}".format(bundle))
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())
     task = cluster.action(name='custom_log').run()
     task.wait()
     with allure.step('Check job state'):
-        assert task.status == 'failed', "Current job status {}. " \
-                                        "Expected: failed".format(task.status)
+        assert task.status == 'failed', "Current job status {}. Expected: failed".format(
+            task.status
+        )
     with allure.step('Check if logs are equal 2'):
         job = task.job()
         logs = job.log_list()
@@ -39,8 +39,7 @@ def test_required_fields(sdk_client_fs: ADCMClient, bundle):
 
 @pytest.mark.parametrize("bundle", FORMAT_STORAGE)
 def test_different_storage_types_with_format(sdk_client_fs: ADCMClient, bundle):
-    """Check different combinations of storage and format
-    """
+    """Check different combinations of storage and format"""
     log_format = bundle.split("_")[0]
     stack_dir = utils.get_data_dir(__file__, bundle)
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
@@ -52,16 +51,16 @@ def test_different_storage_types_with_format(sdk_client_fs: ADCMClient, bundle):
         logs = job.log_list()
         log = job.log(job_id=job.id, log_id=logs[2].id)
         assert len(logs) == 3, "Logs count {}. Expected 3".format(len(logs))
-        assert job.status == 'success', "Current job status {}. " \
-                                        "Expected: success".format(job.status)
+        assert job.status == 'success', "Current job status {}. Expected: success".format(
+            job.status
+        )
         err_msg = "Expected log format {}. Actual log format {}".format(log_format, log.format)
         assert log.format == log_format, err_msg
         assert log.type == 'custom'
 
 
 def test_path_and_content(sdk_client_fs: ADCMClient):
-    """If path and content presented we need to get path, not content
-    """
+    """If path and content presented we need to get path, not content"""
     stack_dir = utils.get_data_dir(__file__, "path_and_content")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())
@@ -77,8 +76,7 @@ def test_path_and_content(sdk_client_fs: ADCMClient):
 
 @pytest.mark.parametrize("bundle", ['equal_pathes', 'equal_names', 'equal_pathes_and_names'])
 def test_multiple_tasks(sdk_client_fs: ADCMClient, bundle):
-    """Check situation when we have multiple tasks
-    """
+    """Check situation when we have multiple tasks"""
     stack_dir = utils.get_data_dir(__file__, bundle)
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())
@@ -91,8 +89,7 @@ def test_multiple_tasks(sdk_client_fs: ADCMClient, bundle):
 
 
 def test_check_text_file_content(sdk_client_fs: ADCMClient):
-    """Check that text content from file correct
-    """
+    """Check that text content from file correct"""
     stack_dir = utils.get_data_dir(__file__, "txt_path")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())
@@ -107,8 +104,7 @@ def test_check_text_file_content(sdk_client_fs: ADCMClient):
 
 
 def test_check_text_content(sdk_client_fs: ADCMClient):
-    """Check that text content correct
-    """
+    """Check that text content correct"""
     stack_dir = utils.get_data_dir(__file__, "txt_content")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())
@@ -122,8 +118,7 @@ def test_check_text_content(sdk_client_fs: ADCMClient):
 
 
 def test_check_json_content(sdk_client_fs: ADCMClient):
-    """Check that json content correct
-    """
+    """Check that json content correct"""
     stack_dir = utils.get_data_dir(__file__, "json_content")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())
@@ -137,8 +132,7 @@ def test_check_json_content(sdk_client_fs: ADCMClient):
 
 
 def test_incorrect_syntax_for_fields(sdk_client_fs: ADCMClient):
-    """Check if we have not json in content
-    """
+    """Check if we have not json in content"""
     stack_dir = utils.get_data_dir(__file__, "syntax_for_fields")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())

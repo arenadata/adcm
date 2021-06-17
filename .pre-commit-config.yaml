@@ -1,0 +1,24 @@
+repos:
+  - repo: https://github.com/psf/black
+    rev: '21.5b1'
+    hooks:
+      - id: black
+        language_version: python3.8
+        files: '^python/'
+  - repo: https://github.com/pre-commit/mirrors-pylint
+    rev: 'v3.0.0a3'
+    hooks:
+    - id: pylint
+      additional_dependencies:
+        - ansible==2.8.8
+        - croniter
+        - django
+        - django-background-tasks
+        - django-filter
+        - djangorestframework
+        - drf-flex-fields
+        - pylint-django
+        - pytest
+        - simplejson
+        - social-auth-app-django
+        - version_utils

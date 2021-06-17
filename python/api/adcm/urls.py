@@ -17,9 +17,14 @@ from . import views
 
 urlpatterns = [
     path('', views.AdcmList.as_view(), name='adcm'),
-    path('<int:adcm_id>/', include([
-        path('', views.AdcmDetail.as_view(), name='adcm-details'),
-        path('config/', include('api.config.urls'), {'object_type': 'adcm'}),
-        path('action/', include('api.action.urls'), {'object_type': 'adcm'}),
-    ])),
+    path(
+        '<int:adcm_id>/',
+        include(
+            [
+                path('', views.AdcmDetail.as_view(), name='adcm-details'),
+                path('config/', include('api.config.urls'), {'object_type': 'adcm'}),
+                path('action/', include('api.action.urls'), {'object_type': 'adcm'}),
+            ]
+        ),
+    ),
 ]

@@ -11,11 +11,10 @@
 # limitations under the License.
 ---
 - name: Dummy action
-  hosts: all
-  connection: local
+  hosts: localhost
   gather_facts: no
 
   tasks:
     - name: Do nothing
-    - debug:
+      debug:
         msg: "Nothing done"

@@ -20,18 +20,31 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
             name='Action',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('name', models.CharField(max_length=160)),
-                ('type', models.CharField(choices=[('task', 'task'), ('job', 'job')], max_length=16)),
+                (
+                    'type',
+                    models.CharField(choices=[('task', 'task'), ('job', 'job')], max_length=16),
+                ),
                 ('script', models.CharField(max_length=160)),
-                ('script_type', models.CharField(choices=[('ansible', 'ansible'), ('task_generator', 'task_generator')], max_length=16)),
+                (
+                    'script_type',
+                    models.CharField(
+                        choices=[('ansible', 'ansible'), ('task_generator', 'task_generator')],
+                        max_length=16,
+                    ),
+                ),
                 ('state_on_success', models.CharField(blank=True, max_length=64)),
                 ('state_on_fail', models.CharField(blank=True, max_length=64)),
                 ('state_available', models.TextField(blank=True)),
@@ -42,7 +55,12 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Bundle',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('name', models.CharField(max_length=160)),
                 ('version', models.CharField(max_length=80)),
                 ('hash', models.CharField(max_length=64)),
@@ -53,7 +71,12 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Cluster',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('name', models.CharField(max_length=80, unique=True)),
                 ('description', models.CharField(blank=True, max_length=160)),
                 ('state', models.CharField(default='created', max_length=64)),
@@ -62,15 +85,28 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='ClusterObject',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('state', models.CharField(default='created', max_length=64)),
-                ('cluster', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Cluster')),
+                (
+                    'cluster',
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Cluster'),
+                ),
             ],
         ),
         migrations.CreateModel(
             name='Component',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('name', models.CharField(max_length=160)),
                 ('description', models.CharField(blank=True, max_length=160)),
                 ('params', models.TextField(blank=True)),
@@ -80,7 +116,12 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='ConfigLog',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('config', models.TextField()),
                 ('date', models.DateTimeField(auto_now=True)),
                 ('description', models.TextField(blank=True)),
@@ -89,38 +130,88 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Host',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('fqdn', models.CharField(max_length=160, unique=True)),
                 ('state', models.CharField(default='created', max_length=64)),
-                ('cluster', models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, to='cm.Cluster')),
+                (
+                    'cluster',
+                    models.ForeignKey(
+                        default=None,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to='cm.Cluster',
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
             name='HostComponent',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('state', models.CharField(default='created', max_length=64)),
-                ('cluster', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Cluster')),
-                ('component', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Component')),
-                ('host', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Host')),
+                (
+                    'cluster',
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Cluster'),
+                ),
+                (
+                    'component',
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to='cm.Component'
+                    ),
+                ),
+                (
+                    'host',
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Host'),
+                ),
             ],
         ),
         migrations.CreateModel(
             name='JobLog',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('task_id', models.PositiveIntegerField(default=0)),
                 ('action_id', models.PositiveIntegerField()),
                 ('selector', models.TextField()),
                 ('log_files', models.TextField(blank=True)),
-                ('status', models.CharField(choices=[('created', 'created'), ('running', 'running'), ('success', 'success'), ('failed', 'failed')], max_length=16)),
+                (
+                    'status',
+                    models.CharField(
+                        choices=[
+                            ('created', 'created'),
+                            ('running', 'running'),
+                            ('success', 'success'),
+                            ('failed', 'failed'),
+                        ],
+                        max_length=16,
+                    ),
+                ),
                 ('date', models.DateTimeField(auto_now=True)),
             ],
         ),
         migrations.CreateModel(
             name='ObjectConfig',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('current', models.PositiveIntegerField()),
                 ('previous', models.PositiveIntegerField()),
             ],
@@ -128,36 +219,86 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Prototype',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('type', models.CharField(choices=[('service', 'service'), ('cluster', 'cluster'), ('host', 'host')], max_length=16)),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
+                (
+                    'type',
+                    models.CharField(
+                        choices=[('service', 'service'), ('cluster', 'cluster'), ('host', 'host')],
+                        max_length=16,
+                    ),
+                ),
                 ('name', models.CharField(max_length=160)),
                 ('version', models.CharField(max_length=80)),
                 ('description', models.CharField(blank=True, max_length=160)),
-                ('bundle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Bundle')),
+                (
+                    'bundle',
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Bundle'),
+                ),
             ],
         ),
         migrations.CreateModel(
             name='PrototypeConfig',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('name', models.CharField(max_length=160)),
                 ('subname', models.CharField(blank=True, max_length=160)),
                 ('default', models.TextField(blank=True)),
-                ('type', models.CharField(choices=[('string', 'string'), ('integer', 'integer'), ('float', 'float'), ('option', 'option'), ('boolean', 'boolean')], max_length=16)),
+                (
+                    'type',
+                    models.CharField(
+                        choices=[
+                            ('string', 'string'),
+                            ('integer', 'integer'),
+                            ('float', 'float'),
+                            ('option', 'option'),
+                            ('boolean', 'boolean'),
+                        ],
+                        max_length=16,
+                    ),
+                ),
                 ('description', models.TextField(blank=True)),
                 ('limits', models.TextField(blank=True)),
                 ('required', models.BooleanField(default=True)),
-                ('prototype', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Prototype')),
+                (
+                    'prototype',
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to='cm.Prototype'
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
             name='StageAction',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('name', models.CharField(max_length=160)),
-                ('type', models.CharField(choices=[('task', 'task'), ('job', 'job')], max_length=16)),
+                (
+                    'type',
+                    models.CharField(choices=[('task', 'task'), ('job', 'job')], max_length=16),
+                ),
                 ('script', models.CharField(max_length=160)),
-                ('script_type', models.CharField(choices=[('ansible', 'ansible'), ('task_generator', 'task_generator')], max_length=16)),
+                (
+                    'script_type',
+                    models.CharField(
+                        choices=[('ansible', 'ansible'), ('task_generator', 'task_generator')],
+                        max_length=16,
+                    ),
+                ),
                 ('state_on_success', models.CharField(blank=True, max_length=64)),
                 ('state_on_fail', models.CharField(blank=True, max_length=64)),
                 ('state_available', models.TextField(blank=True)),
@@ -168,7 +309,12 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='StageComponent',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('name', models.CharField(max_length=160)),
                 ('description', models.CharField(blank=True, max_length=160)),
                 ('params', models.TextField(blank=True)),
@@ -178,8 +324,19 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='StagePrototype',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('type', models.CharField(choices=[('service', 'service'), ('cluster', 'cluster'), ('host', 'host')], max_length=16)),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
+                (
+                    'type',
+                    models.CharField(
+                        choices=[('service', 'service'), ('cluster', 'cluster'), ('host', 'host')],
+                        max_length=16,
+                    ),
+                ),
                 ('name', models.CharField(max_length=160)),
                 ('version', models.CharField(max_length=80)),
                 ('description', models.CharField(blank=True, max_length=160)),
@@ -188,32 +345,75 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='StagePrototypeConfig',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('name', models.CharField(max_length=160)),
                 ('subname', models.CharField(blank=True, max_length=160)),
                 ('default', models.TextField(blank=True)),
-                ('type', models.CharField(choices=[('string', 'string'), ('integer', 'integer'), ('float', 'float'), ('option', 'option'), ('boolean', 'boolean')], max_length=16)),
+                (
+                    'type',
+                    models.CharField(
+                        choices=[
+                            ('string', 'string'),
+                            ('integer', 'integer'),
+                            ('float', 'float'),
+                            ('option', 'option'),
+                            ('boolean', 'boolean'),
+                        ],
+                        max_length=16,
+                    ),
+                ),
                 ('description', models.TextField(blank=True)),
                 ('limits', models.TextField(blank=True)),
                 ('required', models.BooleanField(default=True)),
-                ('prototype', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.StagePrototype')),
+                (
+                    'prototype',
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to='cm.StagePrototype'
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
             name='TaskLog',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('action_id', models.PositiveIntegerField()),
                 ('object_id', models.PositiveIntegerField()),
                 ('selector', models.TextField()),
-                ('status', models.CharField(choices=[('created', 'created'), ('running', 'running'), ('success', 'success'), ('failed', 'failed')], max_length=16)),
+                (
+                    'status',
+                    models.CharField(
+                        choices=[
+                            ('created', 'created'),
+                            ('running', 'running'),
+                            ('success', 'success'),
+                            ('failed', 'failed'),
+                        ],
+                        max_length=16,
+                    ),
+                ),
                 ('date', models.DateTimeField(auto_now=True)),
             ],
         ),
         migrations.CreateModel(
             name='UserProfile',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('login', models.CharField(max_length=32, unique=True)),
                 ('profile', models.TextField()),
             ],
@@ -225,12 +425,16 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='stagecomponent',
             name='prototype',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.StagePrototype'),
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to='cm.StagePrototype'
+            ),
         ),
         migrations.AddField(
             model_name='stageaction',
             name='prototype',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.StagePrototype'),
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to='cm.StagePrototype'
+            ),
         ),
         migrations.AddField(
             model_name='hostcomponent',
@@ -240,7 +444,9 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='host',
             name='config',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.ObjectConfig'),
+            field=models.OneToOneField(
+                null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.ObjectConfig'
+            ),
         ),
         migrations.AddField(
             model_name='host',
@@ -250,7 +456,9 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='configlog',
             name='obj_ref',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.ObjectConfig'),
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to='cm.ObjectConfig'
+            ),
         ),
         migrations.AddField(
             model_name='component',
@@ -260,7 +468,9 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='clusterobject',
             name='config',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.ObjectConfig'),
+            field=models.OneToOneField(
+                null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.ObjectConfig'
+            ),
         ),
         migrations.AddField(
             model_name='clusterobject',
@@ -270,7 +480,9 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='cluster',
             name='config',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.ObjectConfig'),
+            field=models.OneToOneField(
+                null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.ObjectConfig'
+            ),
         ),
         migrations.AddField(
             model_name='cluster',

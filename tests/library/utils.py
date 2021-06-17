@@ -101,8 +101,7 @@ def get_random_cluster_service_component(client, cluster, service) -> dict:
             If service is not found
     """
     components = client.cluster.service.component.list(
-        cluster_id=cluster['id'],
-        service_id=service['id']
+        cluster_id=cluster['id'], service_id=service['id']
     )
     if components:
         return random.choice(components)
@@ -144,7 +143,9 @@ def wait_until(client, task, interval=1, timeout=30):
 
     """
     start = time.time()
-    while not (task['status'] == 'success' or task['status'] == 'failed') \
-            and time.time() - start < timeout:
+    while (
+        not (task['status'] == 'success' or task['status'] == 'failed')
+        and time.time() - start < timeout
+    ):
         time.sleep(interval)
         task = client.task.read(task_id=task['id'])

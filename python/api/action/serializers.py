@@ -118,9 +118,9 @@ class ActionDetailSerializer(StackActionDetailSerializer):
 class ActionUISerializer(ActionDetailSerializer):
     def get_config(self, obj):
         action_obj = self.context['obj']
-        action_conf = PrototypeConfig.objects.filter(
-            prototype=obj.prototype, action=obj
-        ).order_by('id')
+        action_conf = PrototypeConfig.objects.filter(prototype=obj.prototype, action=obj).order_by(
+            'id'
+        )
         _, _, _, attr = cm.adcm_config.get_prototype_config(obj.prototype, obj)
         cm.adcm_config.get_action_variant(action_obj, action_conf)
         conf = ConfigSerializerUI(action_conf, many=True, context=self.context, read_only=True)

@@ -19,27 +19,9 @@ from adcm_pytest_plugin.utils import get_data_dir
 from delayed_assert import assert_expectations, expect
 
 INITIAL_CLUSTERS_STATE = {
-    'first': {
-        'state': 'created',
-        'services': {
-            'First': 'created',
-            'Second': 'created'
-        }
-    },
-    'second': {
-        'state': 'created',
-        'services': {
-            'First': 'created',
-            'Second': 'created'
-        }
-    },
-    'third': {
-        'state': 'created',
-        'services': {
-            'First': 'created',
-            'Second': 'created'
-        }
-    },
+    'first': {'state': 'created', 'services': {'First': 'created', 'Second': 'created'}},
+    'second': {'state': 'created', 'services': {'First': 'created', 'Second': 'created'}},
+    'third': {'state': 'created', 'services': {'First': 'created', 'Second': 'created'}},
 }
 
 
@@ -50,13 +32,16 @@ def assert_cluster_service_states(bundle: Bundle, statemap: dict):
         cstate_expected = clv['state']
         expect(
             cstate == cstate_expected,
-            f"Cluster \"{cname}\" is \"{cstate}\" while expected \"{cstate_expected}\"")
+            f"Cluster \"{cname}\" is \"{cstate}\" while expected \"{cstate_expected}\"",
+        )
         for sname, sstate_expected in clv['services'].items():
             sstate = bundle.cluster(name=cname).service(name=sname).state
             expect(
                 sstate == sstate_expected,
-                (f"Cluster \"{cname}\" service \"{sname}\" state is "
-                 f"\"{sstate}\" while expected \"{sstate_expected}\"")
+                (
+                    f"Cluster \"{cname}\" service \"{sname}\" state is "
+                    f"\"{sstate}\" while expected \"{sstate_expected}\""
+                ),
             )
     assert_expectations()
 
@@ -148,20 +133,12 @@ def test_change_cluster_state(cluster_bundle: Bundle):
 INITIAL_HOST_STATE = {
     'first': {
         'state': 'created',
-        'hosts': {
-            'first_host1': 'created',
-            'first_host2': 'created',
-            'first_host3': 'created'
-        }
+        'hosts': {'first_host1': 'created', 'first_host2': 'created', 'first_host3': 'created'},
     },
     'second': {
         'state': 'created',
-        'hosts': {
-            'second_host1': 'created',
-            'second_host2': 'created',
-            'second_host3': 'created'
-        }
-    }
+        'hosts': {'second_host1': 'created', 'second_host2': 'created', 'second_host3': 'created'},
+    },
 }
 
 
@@ -182,12 +159,13 @@ def assert_provider_host_states(bundle: Bundle, statemap: dict):
         pstate_expected = pv['state']
         expect(
             pstate == pstate_expected,
-            f"Provider \"{pname}\" is \"{pstate}\" while expected \"{pstate_expected}\"")
+            f"Provider \"{pname}\" is \"{pstate}\" while expected \"{pstate_expected}\"",
+        )
         for hname, hstate_expected in pv['hosts'].items():
             hstate = bundle.provider(name=pname).host(fqdn=hname).state
             expect(
                 hstate == hstate_expected,
-                f'Host state is {hstate} while expected {hstate_expected}'
+                f'Host state is {hstate} while expected {hstate_expected}',
             )
     assert_expectations()
 

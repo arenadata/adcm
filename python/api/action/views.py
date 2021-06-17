@@ -13,11 +13,23 @@
 from rest_framework.response import Response
 
 from api.api_views import (
-    ListView, DetailViewRO, GenericAPIPermView, ActionFilter, create, check_obj, filter_actions
+    ListView,
+    DetailViewRO,
+    GenericAPIPermView,
+    ActionFilter,
+    create,
+    check_obj,
+    filter_actions,
 )
 from api.job.serializers import RunTaskSerializer
 from cm.models import (
-    Host, ClusterObject, ServiceComponent, Action, TaskLog, HostComponent, get_model_by_type
+    Host,
+    ClusterObject,
+    ServiceComponent,
+    Action,
+    TaskLog,
+    HostComponent,
+    get_model_by_type,
 )
 from . import serializers
 
@@ -45,10 +57,14 @@ def get_selector(obj, action):
         selector['service'] = obj.service.id
     if isinstance(obj, Host) and action.host_action:
         if action.prototype.type == 'component':
-            component = ServiceComponent.obj.get(prototype=action.prototype)
+            service = ClusterObject.obj.get(prototype=action.prototype.parent, cluster=obj.cluster)
+            component = ServiceComponent.obj.get(
+                cluster=obj.cluster, service=service, prototype=action.prototype
+            )
+            selector['service'] = service.id
             selector['component'] = component.id
         if action.prototype.type == 'service':
-            service = ClusterObject.obj.get(prototype=action.prototype)
+            service = ClusterObject.obj.get(prototype=action.prototype, cluster=obj.cluster)
             selector['service'] = service.id
         if obj.cluster is not None:
             selector['cluster'] = obj.cluster.id
@@ -68,9 +84,11 @@ class ActionList(ListView):
         """
         if kwargs['object_type'] == 'host':
             host, _ = get_obj(object_type='host', host_id=kwargs['host_id'])
-            actions = set(filter_actions(host, self.filter_queryset(
-                self.get_queryset().filter(prototype=host.prototype)
-            )))
+            actions = set(
+                filter_actions(
+                    host, self.filter_queryset(self.get_queryset().filter(prototype=host.prototype))
+                )
+            )
             obj = host
             objects = {'host': host}
             hcs = HostComponent.objects.filter(host_id=kwargs['host_id'])
@@ -80,19 +98,36 @@ class ActionList(ListView):
                     service, _ = get_obj(object_type='service', service_id=hc.service_id)
                     component, _ = get_obj(object_type='component', component_id=hc.component_id)
                     for obj in [cluster, service, component]:
-                        actions.update(filter_actions(obj, self.filter_queryset(
-                            self.get_queryset().filter(
-                                prototype=obj.prototype, host_action=True))))
+                        actions.update(
+                            filter_actions(
+                                obj,
+                                self.filter_queryset(
+                                    self.get_queryset().filter(
+                                        prototype=obj.prototype, host_action=True
+                                    )
+                                ),
+                            )
+                        )
             else:
                 if host.cluster is not None:
-                    actions.update(filter_actions(host.cluster, self.filter_queryset(
-                        self.get_queryset().filter(
-                            prototype=host.cluster.prototype, host_action=True))))
+                    actions.update(
+                        filter_actions(
+                            host.cluster,
+                            self.filter_queryset(
+                                self.get_queryset().filter(
+                                    prototype=host.cluster.prototype, host_action=True
+                                )
+                            ),
+                        )
+                    )
         else:
             obj, _ = get_obj(**kwargs)
-            actions = filter_actions(obj, self.filter_queryset(
-                self.get_queryset().filter(prototype=obj.prototype, host_action=False)
-            ))
+            actions = filter_actions(
+                obj,
+                self.filter_queryset(
+                    self.get_queryset().filter(prototype=obj.prototype, host_action=False)
+                ),
+            )
             objects = {obj.prototype.type: obj}
         serializer_class = self.select_serializer(request)
         serializer = serializer_class(

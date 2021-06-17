@@ -79,7 +79,7 @@ class UserSerializer(serializers.Serializer):
             user = User.objects.create_user(
                 validated_data.get('username'),
                 password=validated_data.get('password'),
-                is_superuser=validated_data.get('is_superuser', True)
+                is_superuser=validated_data.get('is_superuser', True),
             )
             UserProfile.objects.create(login=validated_data.get('username'))
             return user
@@ -96,7 +96,7 @@ class UserDetailSerializer(UserSerializer):
 class AddUser2GroupSerializer(serializers.Serializer):
     name = serializers.CharField()
 
-    def update(self, user, validated_data):   # pylint: disable=arguments-differ
+    def update(self, user, validated_data):  # pylint: disable=arguments-differ
         group = check_obj(Group, {'name': validated_data.get('name')}, 'GROUP_NOT_FOUND')
         group.user_set.add(user)
         return group
@@ -106,7 +106,7 @@ class AddUserRoleSerializer(serializers.Serializer):
     role_id = serializers.IntegerField()
     name = serializers.CharField(read_only=True)
 
-    def update(self, user, validated_data):   # pylint: disable=arguments-differ
+    def update(self, user, validated_data):  # pylint: disable=arguments-differ
         role = check_obj(Role, {'id': validated_data.get('role_id')}, 'ROLE_NOT_FOUND')
         return cm.api.add_user_role(user, role)
 
@@ -115,7 +115,7 @@ class AddGroupRoleSerializer(serializers.Serializer):
     role_id = serializers.IntegerField()
     name = serializers.CharField(read_only=True)
 
-    def update(self, group, validated_data):   # pylint: disable=arguments-differ
+    def update(self, group, validated_data):  # pylint: disable=arguments-differ
         role = check_obj(Role, {'id': validated_data.get('role_id')}, 'ROLE_NOT_FOUND')
         return cm.api.add_group_role(group, role)
 
@@ -125,10 +125,10 @@ class UserPasswdSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     @transaction.atomic
-    def update(self, user, validated_data):   # pylint: disable=arguments-differ
+    def update(self, user, validated_data):  # pylint: disable=arguments-differ
         user.set_password(validated_data.get('password'))
         user.save()
-        token = Token.obj.get(user=user)
+        token = Token.objects.get(user=user)
         token.delete()
         token.key = token.generate_key()
         token.user = user

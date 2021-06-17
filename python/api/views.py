@@ -30,6 +30,7 @@ class APIRoot(routers.APIRootView):
     """
     Arenadata Chapel API
     """
+
     permission_classes = (rest_framework.permissions.AllowAny,)
     api_root_dict = {
         'adcm': 'adcm',
@@ -104,7 +105,4 @@ class ADCMInfo(GenericAPIView):
         """
         General info about ADCM
         """
-        return Response({
-            'adcm_version': ADCM_VERSION,
-            'google_oauth': cm.api.has_google_oauth()
-        })
+        return Response({'adcm_version': ADCM_VERSION, 'google_oauth': cm.api.has_google_oauth()})

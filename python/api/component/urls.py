@@ -17,9 +17,14 @@ from . import views
 
 urlpatterns = [
     path('', views.ComponentListView.as_view(), name='component'),
-    path('<int:component_id>/', include([
-        path('', views.ComponentDetailView.as_view(), name='component-details'),
-        path('config/', include('api.config.urls'), {'object_type': 'component'}),
-        path('action/', include('api.action.urls'), {'object_type': 'component'}),
-    ])),
+    path(
+        '<int:component_id>/',
+        include(
+            [
+                path('', views.ComponentDetailView.as_view(), name='component-details'),
+                path('config/', include('api.config.urls'), {'object_type': 'component'}),
+                path('action/', include('api.action.urls'), {'object_type': 'component'}),
+            ]
+        ),
+    ),
 ]

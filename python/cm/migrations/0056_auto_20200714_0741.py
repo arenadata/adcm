@@ -41,9 +41,10 @@ class Migration(migrations.Migration):
                     ('list', 'list'),
                     ('map', 'map'),
                     ('structure', 'structure'),
-                    ('group', 'group')
+                    ('group', 'group'),
                 ],
-                max_length=16),
+                max_length=16,
+            ),
         ),
         migrations.AlterField(
             model_name='stageprototypeconfig',
@@ -63,9 +64,10 @@ class Migration(migrations.Migration):
                     ('list', 'list'),
                     ('map', 'map'),
                     ('structure', 'structure'),
-                    ('group', 'group')
+                    ('group', 'group'),
                 ],
-                max_length=16),
+                max_length=16,
+            ),
         ),
         migrations.AddConstraint(
             model_name='groupchecklog',

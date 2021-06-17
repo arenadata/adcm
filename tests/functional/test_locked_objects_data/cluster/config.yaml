@@ -36,6 +36,46 @@
           script_type: ansible
           states:
             available: any
+        expand_success:
+          type: job
+          script: ansible/dummy.yaml
+          script_type: ansible
+          hc_acl:
+            - service: second
+              component: dummy
+              action: add
+          states:
+            available: any
+        expand_failed:
+          type: job
+          script: ansible/failed.yaml
+          script_type: ansible
+          hc_acl:
+            - service: second
+              component: dummy
+              action: add
+          states:
+            available: any
+        shrink_success:
+          type: job
+          script: ansible/dummy.yaml
+          script_type: ansible
+          hc_acl:
+            - service: second
+              component: dummy
+              action: remove
+          states:
+            available: any
+        shrink_failed:
+          type: job
+          script: ansible/failed.yaml
+          script_type: ansible
+          hc_acl:
+            - service: second
+              component: dummy
+              action: remove
+          states:
+            available: any
     second:
       actions: *actions
 
@@ -47,13 +87,143 @@
   components:
     dummy:
       actions: *actions
-  actions: *actions
+  actions: &additional_actions
+    <<: *actions
+    delete_service:
+      type: job
+      script: ansible/delete_service.yaml
+      script_type: ansible
+      states:
+        available: any
+    hc_action_add:
+      type: job
+      script: ansible/hc_action_add.yaml
+      script_type: ansible
+      states:
+        available: any
+    hc_action_remove:
+      type: job
+      script: ansible/hc_action_remove.yaml
+      script_type: ansible
+      states:
+        available: any
+    hc_and_host_remove:
+      type: job
+      script: ansible/hc_and_host_remove.yaml
+      script_type: ansible
+      states:
+        available: any
+    delete_service_failed:
+      type: job
+      script: ansible/delete_service_failed.yaml
+      script_type: ansible
+      states:
+        available: any
+    hc_action_add_failed:
+      type: job
+      script: ansible/hc_action_add_failed.yaml
+      script_type: ansible
+      states:
+        available: any
+    hc_action_remove_failed:
+      type: job
+      script: ansible/hc_action_remove_failed.yaml
+      script_type: ansible
+      states:
+        available: any
+    hc_and_host_remove_failed:
+      type: job
+      script: ansible/hc_and_host_remove_failed.yaml
+      script_type: ansible
+      states:
+        available: any
+    #################
+    ### MULTIJOBS ###
+    #################
+    delete_service_multijob:
+      type: task
+      scripts:
+        - name: part1
+          script_type: ansible
+          script: ansible/dummy.yaml
+        - name: part2
+          script_type: ansible
+          script: ansible/delete_service.yaml
+      states:
+        available: any
+    hc_action_add_multijob:
+      type: task
+      scripts:
+        - name: part1
+          script_type: ansible
+          script: ansible/dummy.yaml
+        - name: part2
+          script_type: ansible
+          script: ansible/hc_action_add.yaml
+        - name: part3
+          script_type: ansible
+          script: ansible/dummy.yaml
+      states:
+        available: any
+    hc_action_remove_multijob:
+      type: task
+      scripts:
+        - name: part1
+          script_type: ansible
+          script: ansible/dummy.yaml
+        - name: part2
+          script_type: ansible
+          script: ansible/hc_action_remove.yaml
+        - name: part3
+          script_type: ansible
+          script: ansible/dummy.yaml
+      states:
+        available: any
+    delete_service_multijob_failed:
+      type: task
+      scripts:
+        - name: part1
+          script_type: ansible
+          script: ansible/dummy.yaml
+        - name: part2
+          script_type: ansible
+          script: ansible/delete_service_failed.yaml
+      states:
+        available: any
+    hc_action_add_multijob_failed:
+      type: task
+      scripts:
+        - name: part1
+          script_type: ansible
+          script: ansible/dummy.yaml
+        - name: part2
+          script_type: ansible
+          script: ansible/hc_action_add_failed.yaml
+        - name: part3
+          script_type: ansible
+          script: ansible/dummy.yaml
+      states:
+        available: any
+    hc_action_remove_multijob_failed:
+      type: task
+      scripts:
+        - name: part1
+          script_type: ansible
+          script: ansible/dummy.yaml
+        - name: part2
+          script_type: ansible
+          script: ansible/hc_action_remove_failed.yaml
+        - name: part3
+          script_type: ansible
+          script: ansible/dummy.yaml
+      states:
+        available: any
 
 - type: cluster
   name: locking
   version: 1.0
   actions:
-    <<: *actions
+    <<: *additional_actions
     lock-terminate:
       type: job
       script: ansible/lock-terminate.yaml

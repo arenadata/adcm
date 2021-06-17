@@ -46,12 +46,19 @@ class TestStatusAPI(unittest.TestCase):
         return self.api(path, requests.delete(self.url + path, headers=self.token_hdr()))
 
     def api_post(self, path, data):
-        return self.api(path, requests.post(
-            self.url + path,
-            data=json.dumps(data),
-            headers={'Content-Type': 'application/json', 'Authorization': 'Token ' + self.token},
-            timeout=0.1
-        ), data)
+        return self.api(
+            path,
+            requests.post(
+                self.url + path,
+                data=json.dumps(data),
+                headers={
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Token ' + self.token,
+                },
+                timeout=0.1,
+            ),
+            data,
+        )
 
     def ws_connect(self, url):
         return websocket.create_connection(url, subprotocols=["adcm", self.token])
@@ -73,21 +80,13 @@ class TestStatusAPI(unittest.TestCase):
 
     def smap(self):
         return {
-            'service': {
-                "1": [5]
-            },
-            'host': {
-                "1": [1, 2]
-            },
+            'service': {"1": [5]},
+            'host': {"1": [1, 2]},
             'hostservice': {
                 "1.7": {"cluster": 1, "service": 5},
                 "2.7": {"cluster": 1, "service": 5},
             },
-            'component': {
-                "1": {
-                    "5": ["1.7", "2.7"]
-                }
-            }
+            'component': {"1": {"5": ["1.7", "2.7"]}},
         }
 
     def test_post_access(self):
@@ -175,7 +174,9 @@ class TestStatusAPI(unittest.TestCase):
         r1 = self.api_post('/host/1/component/7/', {'status': 0})
         self.assertEqual(r1.status_code, 200)
 
-    def check_event(self, ev, event, obj_type, obj_id, det_type, det_val, det_id=None):   # pylint: disable=too-many-arguments
+    def check_event(
+        self, ev, event, obj_type, obj_id, det_type, det_val, det_id=None
+    ):  # pylint: disable=too-many-arguments
         self.assertEqual(ev['event'], event)
         self.assertEqual(ev['object']['type'], obj_type)
         self.assertEqual(ev['object']['id'], obj_id)
@@ -184,7 +185,7 @@ class TestStatusAPI(unittest.TestCase):
         if det_id:
             self.assertEqual(ev['object']['details']['id'], str(det_id))
 
-    def test_status_ws(self):   # pylint: disable=too-many-statements
+    def test_status_ws(self):  # pylint: disable=too-many-statements
         ws = self.ws_connect("ws://localhost:8020/ws/event/")
 
         r1 = self.api_post('/servicemap/', self.smap())
@@ -277,8 +278,8 @@ class TestStatusAPI(unittest.TestCase):
                     'details': {
                         'type': 'state',
                         'value': st,
-                    }
-                }
+                    },
+                },
             }
             r1 = self.api_post(url, data)
             self.assertEqual(r1.status_code, 200)

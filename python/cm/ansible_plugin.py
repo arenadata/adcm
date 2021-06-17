@@ -17,7 +17,7 @@ from ansible.utils.vars import merge_hash
 import cm
 import cm.config as config
 from cm.errors import raise_AdcmEx as err
-from cm.api import push_obj, set_object_state, add_hc, get_hc
+from cm.api import push_obj, add_hc, get_hc
 from cm.adcm_config import set_object_config
 from cm.models import Cluster, ClusterObject, ServiceComponent, HostProvider, Host
 from cm.models import Prototype, Action, JobLog
@@ -125,15 +125,14 @@ class ContextActionModule(ActionBase):
     def _do_component_by_name(self, task_vars, context):
         raise NotImplementedError
 
-    def run(self, tmp=None, task_vars=None):   # pylint: disable=too-many-branches
+    def run(self, tmp=None, task_vars=None):  # pylint: disable=too-many-branches
         self._check_mandatory()
         obj_type = self._task.args["type"]
 
         if obj_type == 'cluster':
             check_context_type(task_vars, 'cluster', 'service')
             res = self._do_cluster(
-                task_vars,
-                {'cluster_id': self._get_job_var(task_vars, 'cluster_id')}
+                task_vars, {'cluster_id': self._get_job_var(task_vars, 'cluster_id')}
             )
         elif obj_type == "service" and "service_name" in self._task.args:
             check_context_type(task_vars, 'cluster', 'service')
@@ -148,8 +147,7 @@ class ContextActionModule(ActionBase):
                     # use (for cluster context and for service context)
                     raise AnsibleError(MSG_WRONG_SERVICE)
             res = self._do_service_by_name(
-                task_vars,
-                {'cluster_id': self._get_job_var(task_vars, 'cluster_id')}
+                task_vars, {'cluster_id': self._get_job_var(task_vars, 'cluster_id')}
             )
         elif obj_type == "service":
             check_context_type(task_vars, 'service')
@@ -157,34 +155,26 @@ class ContextActionModule(ActionBase):
                 task_vars,
                 {
                     'cluster_id': self._get_job_var(task_vars, 'cluster_id'),
-                    'service_id': self._get_job_var(task_vars, 'service_id')
-                }
+                    'service_id': self._get_job_var(task_vars, 'service_id'),
+                },
             )
         elif obj_type == "host" and "host_id" in self._task.args:
             check_context_type(task_vars, 'provider')
-            res = self._do_host_from_provider(
-                task_vars,
-                {}
-            )
+            res = self._do_host_from_provider(task_vars, {})
         elif obj_type == "host":
             check_context_type(task_vars, 'host')
-            res = self._do_host(
-                task_vars,
-                {'host_id': self._get_job_var(task_vars, 'host_id')}
-            )
+            res = self._do_host(task_vars, {'host_id': self._get_job_var(task_vars, 'host_id')})
         elif obj_type == "provider":
             check_context_type(task_vars, 'provider')
             res = self._do_provider(
-                task_vars,
-                {'provider_id': self._get_job_var(task_vars, 'provider_id')}
+                task_vars, {'provider_id': self._get_job_var(task_vars, 'provider_id')}
             )
         elif obj_type == "component" and "component_name" in self._task.args:
             check_context_type(task_vars, 'cluster', 'service', 'component')
             context = task_vars['context']
             if context['type'] == 'component':
                 res = self._do_component(
-                    task_vars,
-                    {'component_id': self._get_job_var(task_vars, 'component_id')}
+                    task_vars, {'component_id': self._get_job_var(task_vars, 'component_id')}
                 )
             else:
                 check_context_type(task_vars, 'cluster', 'service')
@@ -196,13 +186,12 @@ class ContextActionModule(ActionBase):
                     {
                         'cluster_id': self._get_job_var(task_vars, 'cluster_id'),
                         'service_id': task_vars['job'].get('service_id', None),
-                    }
+                    },
                 )
         elif obj_type == "component":
             check_context_type(task_vars, 'component')
             res = self._do_component(
-                task_vars,
-                {'component_id': self._get_job_var(task_vars, 'component_id')}
+                task_vars, {'component_id': self._get_job_var(task_vars, 'component_id')}
             )
         else:
             raise AnsibleError(MSG_NO_ROUTE)
@@ -217,24 +206,20 @@ class ContextActionModule(ActionBase):
 def get_component_by_name(cluster_id, service_id, component_name, service_name):
     if service_id is not None:
         comp = ServiceComponent.obj.get(
-            cluster_id=cluster_id,
-            service_id=service_id,
-            prototype__name=component_name
+            cluster_id=cluster_id, service_id=service_id, prototype__name=component_name
         )
     else:
         comp = ServiceComponent.obj.get(
             cluster_id=cluster_id,
             service__prototype__name=service_name,
-            prototype__name=component_name
+            prototype__name=component_name,
         )
     return comp
 
 
 def get_service_by_name(cluster_id, service_name):
     cluster = Cluster.obj.get(id=cluster_id)
-    proto = Prototype.obj.get(
-        type='service', name=service_name, bundle=cluster.prototype.bundle
-    )
+    proto = Prototype.obj.get(type='service', name=service_name, bundle=cluster.prototype.bundle)
     return ClusterObject.obj.get(cluster=cluster, prototype=proto)
 
 
@@ -263,7 +248,7 @@ def set_provider_state(provider_id, state, event):
     if provider.state == config.Job.LOCKED:
         return push_obj(provider, state)
     else:
-        return set_object_state(provider, state, event)
+        return provider.set_state(state, event)
 
 
 def set_service_state(cluster_id, service_name, state):
@@ -272,13 +257,11 @@ def set_service_state(cluster_id, service_name, state):
 
 
 def set_service_state_by_id(cluster_id, service_id, state):
-    obj = ClusterObject.obj.get(
-        id=service_id, cluster__id=cluster_id, prototype__type='service'
-    )
+    obj = ClusterObject.obj.get(id=service_id, cluster__id=cluster_id, prototype__type='service')
     return push_obj(obj, state)
 
 
-def change_hc(job_id, cluster_id, operations):   # pylint: disable=too-many-branches
+def change_hc(job_id, cluster_id, operations):  # pylint: disable=too-many-branches
     '''
     For use in ansible plugin adcm_hc
     '''
@@ -339,9 +322,7 @@ def set_service_config(cluster_id, service_name, keys, value):
 
 
 def set_service_config_by_id(cluster_id, service_id, keys, value):
-    obj = ClusterObject.obj.get(
-        id=service_id, cluster__id=cluster_id, prototype__type='service'
-    )
+    obj = ClusterObject.obj.get(id=service_id, cluster__id=cluster_id, prototype__type='service')
     return set_object_config(obj, keys, value)
 
 

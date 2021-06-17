@@ -12,12 +12,24 @@
 
 import json
 import os
+from itertools import chain
 
 import cm.config as config
-from cm.logger import log
 from cm.adcm_config import get_prototype_config, process_config
-from cm.models import Cluster, ClusterObject, ServiceComponent, HostComponent, Host, ConfigLog
-from cm.models import ClusterBind, PrototypeExport, HostProvider, Prototype, PrototypeImport
+from cm.logger import log
+from cm.models import (
+    Cluster,
+    ClusterObject,
+    ServiceComponent,
+    HostComponent,
+    Host,
+    ConfigLog,
+    ClusterBind,
+    PrototypeExport,
+    HostProvider,
+    Prototype,
+    PrototypeImport,
+)
 
 
 def process_config_and_attr(obj, conf, attr=None, spec=None):
@@ -31,7 +43,7 @@ def process_config_and_attr(obj, conf, attr=None, spec=None):
     return new_conf
 
 
-def get_import(cluster):   # pylint: disable=too-many-branches
+def get_import(cluster):  # pylint: disable=too-many-branches
     def get_actual_import(bind, obj):
         if bind.service:
             proto = bind.service.prototype
@@ -40,7 +52,7 @@ def get_import(cluster):   # pylint: disable=too-many-branches
         return PrototypeImport.objects.get(prototype=proto, name=obj.prototype.name)
 
     imports = {}
-    for obj in [cluster] + [o for o in ClusterObject.objects.filter(cluster=cluster)]:   # pylint: disable=unnecessary-comprehension
+    for obj in chain([cluster], ClusterObject.objects.filter(cluster=cluster)):
         for imp in PrototypeImport.objects.filter(prototype=obj.prototype):
             if imp.default:
                 if imp.multibind:
@@ -106,7 +118,7 @@ def get_cluster_config(cluster_id):
             'id': cluster.id,
             'version': cluster.prototype.version,
             'edition': cluster.prototype.bundle.edition,
-            'state': get_obj_state(cluster)
+            'state': get_obj_state(cluster),
         },
         'services': {},
     }
@@ -118,12 +130,12 @@ def get_cluster_config(cluster_id):
             'id': service.id,
             'version': service.prototype.version,
             'state': get_obj_state(service),
-            'config': get_obj_config(service)
+            'config': get_obj_config(service),
         }
         for component in ServiceComponent.objects.filter(cluster=cluster, service=service):
             res['services'][service.prototype.name][component.prototype.name] = {
                 'component_id': component.id,
-                'config': get_obj_config(component)
+                'config': get_obj_config(component),
             }
     return res
 
@@ -137,7 +149,7 @@ def get_provider_config(provider_id):
             'name': provider.name,
             'id': provider.id,
             'host_prototype_id': host_proto.id,
-            'state': get_obj_state(provider)
+            'state': get_obj_state(provider),
         }
     }
 
@@ -182,35 +194,31 @@ def get_hosts(host_list, action_host=None):
 
 
 def get_cluster_hosts(cluster_id, action_host=None):
-    return {'CLUSTER': {
-        'hosts': get_hosts(Host.objects.filter(cluster__id=cluster_id), action_host),
-        'vars': get_cluster_config(cluster_id)
-    }}
+    return {
+        'CLUSTER': {
+            'hosts': get_hosts(Host.objects.filter(cluster__id=cluster_id), action_host),
+            'vars': get_cluster_config(cluster_id),
+        }
+    }
 
 
 def get_provider_hosts(provider_id, action_host=None):
-    return {'PROVIDER': {
-        'hosts': get_hosts(Host.objects.filter(provider__id=provider_id), action_host),
-    }}
+    return {
+        'PROVIDER': {
+            'hosts': get_hosts(Host.objects.filter(provider__id=provider_id), action_host),
+        }
+    }
 
 
 def get_host(host_id):
     host = Host.objects.get(id=host_id)
-    groups = {'HOST': {
-        'hosts': get_hosts([host]),
-        'vars': get_provider_config(host.provider.id)
-    }}
+    groups = {'HOST': {'hosts': get_hosts([host]), 'vars': get_provider_config(host.provider.id)}}
     return groups
 
 
 def get_target_host(host_id):
     host = Host.objects.get(id=host_id)
-    groups = {
-        'target': {
-            'hosts': get_hosts([host]),
-            'vars': get_cluster_config(host.cluster.id)
-        }
-    }
+    groups = {'target': {'hosts': get_hosts([host]), 'vars': get_cluster_config(host.cluster.id)}}
     return groups
 
 

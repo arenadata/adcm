@@ -10,20 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-  - type: cluster
-    name: PassCheckerClusterAction
-    version: 1
+- type: cluster
+  name: PassCheckerClusterAction
+  version: 1
 
-    actions:
-        check-password:
-            type: job
-            script: cluster/check_password_cluster.yaml
-            script_type: ansible
-            states:
-                available:
-                    - created
+  actions:
+    check-password:
+      type: job
+      script: cluster/check_password_cluster.yaml
+      script_type: ansible
+      states:
+        available:
+          - created
 
-    config:
-        password:
-            type: password
-            required: yes
+  config:
+    password:
+      type: password
+      required: yes

@@ -14,6 +14,7 @@ import { clearEmptyField, Cluster } from '@app/core/types';
 
 import { BaseFormDirective } from './base-form.directive';
 import { Subscription } from 'rxjs';
+import { take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-add-cluster',
@@ -41,7 +42,7 @@ export class ClusterComponent extends BaseFormDirective implements OnInit, OnDes
     const data = clearEmptyField(this.form.value);
     this.service
       .add<Cluster>(data, 'cluster')
-      .pipe(this.takeUntil())
+      .pipe(take(1))
       .subscribe((_) => this.onCancel());
   }
 }

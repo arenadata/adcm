@@ -16,7 +16,7 @@ from rest_framework import serializers
 import cm.api
 import cm.job
 import cm.status_api
-from cm.logger import log   # pylint: disable=unused-import
+from cm.logger import log  # pylint: disable=unused-import
 from cm.errors import AdcmEx
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
 
@@ -227,14 +227,12 @@ class HCComponentSerializer(ComponentDetailSerializer):
                     type='component',
                     name=c['component'],
                     parent__name=c['service'],
-                    parent__bundle_id=obj.prototype.bundle_id
+                    parent__bundle_id=obj.prototype.bundle_id,
                 )
                 if comp == obj.prototype:
                     return
                 if comp.name not in comp_list:
-                    comp_list[comp.name] = {
-                        'components': {}, 'service': comp.parent
-                    }
+                    comp_list[comp.name] = {'components': {}, 'service': comp.parent}
                 if comp.name in comp_list[comp.name]['components']:
                     return
                 comp_list[comp.name]['components'][comp.name] = comp
@@ -251,19 +249,23 @@ class HCComponentSerializer(ComponentDetailSerializer):
             service = comp_list[service_name]['service']
             for comp_name in comp_list[service_name]['components']:
                 comp = comp_list[service_name]['components'][comp_name]
-                comp_out.append({
-                    'prototype_id': comp.id,
-                    'name': comp_name,
-                    'display_name': comp.display_name,
-                })
+                comp_out.append(
+                    {
+                        'prototype_id': comp.id,
+                        'name': comp_name,
+                        'display_name': comp.display_name,
+                    }
+                )
             if not comp_out:
                 continue
-            out.append({
-                'prototype_id': service.id,
-                'name': service_name,
-                'display_name': service.display_name,
-                'components': comp_out
-            })
+            out.append(
+                {
+                    'prototype_id': service.id,
+                    'name': service_name,
+                    'display_name': service.display_name,
+                    'components': comp_out,
+                }
+            )
         return out
 
 
@@ -304,10 +306,7 @@ class BindSerializer(serializers.Serializer):
 class ClusterBindSerializer(BindSerializer):
     class MyUrlField(UrlField):
         def get_kwargs(self, obj):
-            return {
-                'bind_id': obj.id,
-                'cluster_id': obj.cluster.id
-            }
+            return {'bind_id': obj.id, 'cluster_id': obj.cluster.id}
 
     url = MyUrlField(read_only=True, view_name='cluster-bind-details')
 
@@ -325,7 +324,7 @@ class DoBindSerializer(serializers.Serializer):
             validated_data.get('cluster'),
             None,
             export_cluster,
-            validated_data.get('export_service_id', 0)
+            validated_data.get('export_service_id', 0),
         )
 
 
