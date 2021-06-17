@@ -360,13 +360,13 @@ mat-cell.control {
 }
 
 * {
-  scrollbar-width: thin;
+  scrollbar-width: auto;
   scrollbar-color: #B5C6CA #FFF;
 }
 
 *::-webkit-scrollbar,
 *::-webkit-scrollbar {
-  width: 4px;
+  width: 8px;
 }
 
 *::-webkit-scrollbar-track,
