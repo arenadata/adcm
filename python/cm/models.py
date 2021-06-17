@@ -189,23 +189,32 @@ class ConfigLog(ADCMModel):
     __error_code__ = 'CONFIG_NOT_FOUND'
 
 
-class ADCMEntity(ADCMModel):
+class ConfigurableMixin(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
 
     class Meta:
         abstract = True
 
+
+class Joint(ADCMModel):
+    """
+    Non-abstract replacement for ADCMEntity
+    (see `https://docs.djangoproject.com/en/3.2/topics/db/models/#multi-table-inheritance`)
+    """
+
+    oid = models.BigAutoField(
+        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+    )  # default name `id` clashes with heir's own `id`
+    state = models.CharField(max_length=64, default='created')
+    stack = models.JSONField(default=list)
+    issue = models.JSONField(default=dict)
+
     def __str__(self):
-        """Legacy `cm.adcm_config.obj_ref()` to avoid cyclic imports"""
         name = getattr(self, 'name', None) or getattr(self, 'fqdn', self.prototype.name)
         return '{} #{} "{}"'.format(self.prototype.type, self.id, name)
 
-    def set_state(self, state: str, event=None) -> 'ADCMEntity':
-        """Legacy `cm.api.set_object_state()` to avoid cyclic imports"""
+    def set_state(self, state: str, event=None) -> 'Joint':
         self.state = state
         self.save()
         event.set_object_state(self.prototype.type, self.id, state)
@@ -213,8 +222,15 @@ class ADCMEntity(ADCMModel):
         return self
 
 
-class ADCM(ADCMEntity):
+class ADCM(Joint, ConfigurableMixin):
+    id = models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')
     name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
+    joint = models.OneToOneField(
+        Joint,
+        on_delete=models.CASCADE,
+        parent_link=True,
+        related_name='ptr_adcm',
+    )
 
     @property
     def bundle_id(self):
@@ -230,9 +246,16 @@ class ADCM(ADCMEntity):
         return result if result['issue'] else {}
 
 
-class Cluster(ADCMEntity):
+class Cluster(Joint, ConfigurableMixin):
+    id = models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')
     name = models.CharField(max_length=80, unique=True)
     description = models.TextField(blank=True)
+    joint = models.OneToOneField(
+        Joint,
+        on_delete=models.CASCADE,
+        parent_link=True,
+        related_name='ptr_cluster',
+    )
 
     __error_code__ = 'CLUSTER_NOT_FOUND'
 
@@ -248,9 +271,6 @@ class Cluster(ADCMEntity):
     def license(self):
         return self.prototype.bundle.license
 
-    def __str__(self):
-        return f'{self.name} ({self.id})'
-
     @property
     def serialized_issue(self):
         result = {
@@ -261,9 +281,16 @@ class Cluster(ADCMEntity):
         return result if result['issue'] else {}
 
 
-class HostProvider(ADCMEntity):
+class HostProvider(Joint, ConfigurableMixin):
+    id = models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')
     name = models.CharField(max_length=80, unique=True)
     description = models.TextField(blank=True)
+    joint = models.OneToOneField(
+        Joint,
+        on_delete=models.CASCADE,
+        parent_link=True,
+        related_name='ptr_provider',
+    )
 
     __error_code__ = 'PROVIDER_NOT_FOUND'
 
@@ -279,9 +306,6 @@ class HostProvider(ADCMEntity):
     def license(self):
         return self.prototype.bundle.license
 
-    def __str__(self):
-        return str(self.name)
-
     @property
     def serialized_issue(self):
         result = {
@@ -292,11 +316,18 @@ class HostProvider(ADCMEntity):
         return result if result['issue'] else {}
 
 
-class Host(ADCMEntity):
+class Host(Joint, ConfigurableMixin):
+    id = models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')
     fqdn = models.CharField(max_length=160, unique=True)
     description = models.TextField(blank=True)
     provider = models.ForeignKey(HostProvider, on_delete=models.CASCADE, null=True, default=None)
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
+    joint = models.OneToOneField(
+        Joint,
+        on_delete=models.CASCADE,
+        parent_link=True,
+        related_name='ptr_host',
+    )
 
     __error_code__ = 'HOST_NOT_FOUND'
 
@@ -308,9 +339,6 @@ class Host(ADCMEntity):
     def monitoring(self):
         return self.prototype.monitoring
 
-    def __str__(self):
-        return "{}".format(self.fqdn)
-
     @property
     def serialized_issue(self):
         result = {'id': self.id, 'name': self.fqdn, 'issue': self.issue.copy()}
@@ -320,9 +348,16 @@ class Host(ADCMEntity):
         return result if result['issue'] else {}
 
 
-class ClusterObject(ADCMEntity):
+class ClusterObject(Joint, ConfigurableMixin):
+    id = models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
+    joint = models.OneToOneField(
+        Joint,
+        on_delete=models.CASCADE,
+        parent_link=True,
+        related_name='ptr_service',
+    )
 
     __error_code__ = 'CLUSTER_SERVICE_NOT_FOUND'
 
@@ -363,10 +398,16 @@ class ClusterObject(ADCMEntity):
         unique_together = (('cluster', 'prototype'),)
 
 
-class ServiceComponent(ADCMEntity):
+class ServiceComponent(Joint, ConfigurableMixin):
+    id = models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE, null=True, default=None)
+    joint = models.OneToOneField(
+        Joint,
+        on_delete=models.CASCADE,
+        parent_link=True,
+        related_name='ptr_component',
+    )
 
     __error_code__ = 'COMPONENT_NOT_FOUND'
 
