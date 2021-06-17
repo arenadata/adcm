@@ -14,7 +14,7 @@ from typing import Union, Tuple, List
 
 import allure
 import pytest
-from _pytest.main import Failed
+from _pytest.outcomes import Failed
 from adcm_client.objects import (
     Provider,
     Cluster,
