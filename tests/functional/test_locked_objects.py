@@ -14,6 +14,7 @@ from typing import Union, Tuple, List
 
 import allure
 import pytest
+from _pytest.outcomes import Failed
 from adcm_client.objects import (
     Provider,
     Cluster,
@@ -25,28 +26,41 @@ from adcm_client.objects import (
 )
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.asserts import assert_state
-from adcm_pytest_plugin.utils import random_string
+from adcm_pytest_plugin.utils import random_string, catch_failed
+from coreapi.exceptions import ErrorMessage
 
 
 @pytest.fixture()
 def cluster(sdk_client_fs: ADCMClient) -> Cluster:
+    """
+    Upload dummy cluster bundle and create cluster object
+    """
     uploaded_bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, "cluster"))
     return uploaded_bundle.cluster_prototype().cluster_create(name=random_string())
 
 
 @pytest.fixture()
 def host_provider(sdk_client_fs: ADCMClient) -> Provider:
+    """
+    Upload dummy host provider bundle and create provider object
+    """
     provider_bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, "provider"))
     return provider_bundle.provider_prototype().provider_create(random_string())
 
 
 @pytest.fixture()
 def host(host_provider: Provider) -> Host:
+    """
+    Create dummy host
+    """
     return host_provider.host_create(random_string())
 
 
 @pytest.fixture()
 def complete_cluster(cluster: Cluster, host: Host) -> Cluster:
+    """
+    Prepare dummy cluster with service and component on host
+    """
     cluster.host_add(host)
     service = cluster.service_add(name="dummy")
     cluster.hostcomponent_set((host, service.component(name="dummy")))
@@ -55,6 +69,9 @@ def complete_cluster(cluster: Cluster, host: Host) -> Cluster:
 
 @pytest.fixture()
 def cluster_with_two_hosts(cluster: Cluster, host_provider: Provider) -> Tuple[Cluster, List[Host]]:
+    """
+    Prepare dummy cluster with two hosts
+    """
     hosts = []
     for i in range(2):
         host = host_provider.host_create(f"host_{i}")
@@ -269,6 +286,9 @@ class TestHostProviderLock:
 
 
 def test_cluster_should_be_unlocked_when_ansible_task_killed(cluster: Cluster):
+    """
+    Test cluster unlock if ansible task killed
+    """
     with allure.step("Run cluster action: lock-terminate for cluster"):
         task = cluster.action(name="lock-terminate").run()
     is_locked(cluster)
@@ -277,6 +297,9 @@ def test_cluster_should_be_unlocked_when_ansible_task_killed(cluster: Cluster):
 
 
 def test_host_should_be_unlocked_when_ansible_task_killed(complete_cluster: Cluster, host: Host):
+    """
+    Test host unlock if ansible task killed
+    """
     with allure.step("Run action: lock-terminate for cluster"):
         task = complete_cluster.action(name="lock-terminate").run()
 
@@ -286,6 +309,9 @@ def test_host_should_be_unlocked_when_ansible_task_killed(complete_cluster: Clus
 
 
 def test_service_should_be_unlocked_when_ansible_task_killed(complete_cluster: Cluster):
+    """
+    Test service unlock if ansible task killed
+    """
     service = complete_cluster.service(name="dummy")
     with allure.step("Run action: lock-terminate for cluster"):
         task = complete_cluster.action(name="lock-terminate").run()
@@ -303,6 +329,9 @@ def test_host_should_be_unlocked_after_expand_action(
     adcm_object: str,
     expand_action: str,
 ):
+    """
+    Test host should be unlocked after expand action (success or failed) on ADCM object
+    """
     action_args = {
         "obj_for_action": None
     }
@@ -332,6 +361,9 @@ def test_host_should_be_unlocked_after_shrink_action(
     adcm_object: str,
     shrink_action: str,
 ):
+    """
+    Test host should be unlocked after shrink action (success or failed) on ADCM object
+    """
     action_args = {
         "obj_for_action": None
     }
@@ -352,6 +384,58 @@ def test_host_should_be_unlocked_after_shrink_action(
     )
 
 
+@pytest.mark.parametrize("adcm_object", ["Cluster", "Service", "Component"])
+@pytest.mark.parametrize("expand_action", ["expand_success", "expand_failed", ])
+def test_expand_on_clean_locked_host(
+    sdk_client_fs: ADCMClient,
+    cluster_with_two_hosts: Tuple[Cluster, List[Host]],
+    host_provider: Provider,
+    adcm_object: str,
+    expand_action: str,
+):
+    """
+    Test attempt to expand component on locked host.
+    Action must end with "...locked host..." API error
+    """
+    obj_for_action = None
+    cluster, hosts = cluster_with_two_hosts
+    host1, host2 = hosts
+
+    dummy_service = cluster.service_add(name="second")
+    dummy_component = dummy_service.component(name="dummy")
+    cluster.hostcomponent_set(
+        (host1, dummy_component),
+    )
+    _lock_obj(host2, duration=30)
+
+    if adcm_object == "Cluster":
+        obj_for_action = cluster
+    elif adcm_object == "Service":
+        obj_for_action = dummy_service
+    elif adcm_object == "Component":
+        obj_for_action = dummy_component
+
+    with allure.step(
+        f"Run {obj_for_action.__class__.__name__} action: expand on clean locked host"
+    ):
+        with catch_failed(Failed, "Expand action should throw an API error as Host is locked"):
+            with pytest.raises(ErrorMessage, match="locked host"):
+                obj_for_action.action(name=expand_action, ).run(
+                    hc=[
+                        {
+                            "host_id": host1.host_id,
+                            "service_id": dummy_component.service_id,
+                            "component_id": dummy_component.component_id,
+                        },
+                        {
+                            "host_id": host2.host_id,
+                            "service_id": dummy_component.service_id,
+                            "component_id": dummy_component.component_id,
+                        },
+                    ]
+                ).wait()
+
+
 @pytest.mark.parametrize(
     "action_with_ansible_plugin",
     [
@@ -370,6 +454,9 @@ def test_host_should_be_unlocked_after_service_action_with_ansible_plugin(
     host_provider: Provider,
     action_with_ansible_plugin: str,
 ):
+    """
+    Test host should be unlocked after Service action with ansible plugin (simple job or multi-job)
+    """
     cluster, _ = cluster_with_two_hosts
     dummy_service = cluster.service_add(name="second")
     _test_object_action_with_ansible_plugin(
@@ -395,6 +482,9 @@ def test_host_should_be_unlocked_after_cluster_action_with_ansible_plugin(
     host_provider: Provider,
     action_with_ansible_plugin: str,
 ):
+    """
+    Test host should be unlocked after Cluster action with ansible plugin (simple job or multi-job)
+    """
     cluster, _ = cluster_with_two_hosts
     cluster.service_add(name="second")
     _test_object_action_with_ansible_plugin(
@@ -409,6 +499,9 @@ def _test_expand_object_action(
     obj_for_action: Union[Cluster, Service, Component],
     action_name: str
 ):
+    """
+    Common method for expand object tests
+    """
     cluster, hosts = cluster_with_two_hosts
     host1, host2 = hosts
     dummy_service = cluster.service(name="second")
@@ -440,6 +533,9 @@ def _test_shrink_object_action(
     obj_for_action: Union[Cluster, Service, Component],
     action_name: str
 ):
+    """
+    Common method for shrink object tests
+    """
     cluster, hosts = cluster_with_two_hosts
     host1, host2 = hosts
     dummy_service = cluster.service(name="second")
@@ -467,6 +563,9 @@ def _test_object_action_with_ansible_plugin(
     obj_for_action: Union[Cluster, Service, Component],
     action_name: str
 ):
+    """
+    Common method for object action with ansible plugin
+    """
     cluster, hosts = cluster_with_two_hosts
     host1, host2 = hosts
     dummy_service = cluster.service(name="second")
@@ -481,12 +580,12 @@ def _test_object_action_with_ansible_plugin(
     is_free(host2)
 
 
-def _lock_obj(obj: Union[Cluster, Service, Component, Provider, Host]) -> Task:
+def _lock_obj(obj: Union[Cluster, Service, Component, Provider, Host], duration: int = 5) -> Task:
     """
     Run action lock on object
     """
-    with allure.step(f"Lock {obj.__class__.__name__}"):
-        return obj.action(name="lock").run()
+    with allure.step(f"Lock {obj.__class__.__name__} with {duration} sec duration"):
+        return obj.action(name="lock").run(config={"duration": duration})
 
 
 def is_locked(obj: Union[Cluster, Service, Component, Provider, Host]):
