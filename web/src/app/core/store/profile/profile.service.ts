@@ -15,15 +15,18 @@ import { environment } from '@env/environment';
 import { Observable, throwError } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 
-import { AuthService } from '../../auth/auth.service';
-import { PROFILE_DASHBOARD_DEFAULT } from '../../types/dashboard';
+import { AuthService } from '@app/core';
 
 const PROFILE_LINK = `${environment.apiRoot}profile/`;
 
+export interface LastViewedTask {
+  id: number;
+}
+
 export interface IProfile {
-  dashboard: any[];
   textarea: { [key: string]: number };
   settingsSaved: boolean;
+  lastViewedTask?: LastViewedTask;
 }
 
 export interface IUser {
@@ -47,7 +50,7 @@ export class ProfileService {
   }
 
   emptyProfile() {
-    return { dashboard: PROFILE_DASHBOARD_DEFAULT, textarea: {}, settingsSaved: false };
+    return { textarea: {}, settingsSaved: false };
   }
 
   setUser(key: string, value: string | boolean | { [key: string]: number }) {
@@ -56,33 +59,28 @@ export class ProfileService {
     this.user = { ...this.user, profile };
   }
 
-  public setProfile(): Observable<IUser> {
+  setProfile(): Observable<IUser> {
     const { username, profile } = { ...this.user };
     return this.http.patch<IUser>(`${PROFILE_LINK}${this.user.username}/`, { username, profile });
   }
 
-  public setDashboardProfile(dashboard: any[]) {
-    this.user.profile.dashboard = dashboard;
-    return this.setProfile();
-  }
-
-  public setTextareaProfile(data: { key: string; value: number }) {
+  setTextareaProfile(data: { key: string; value: number }): Observable<IUser> {
     const textarea = { ...this.user.profile.textarea };
     textarea[data.key] = data.value;
     this.setUser('textarea', textarea);
     return this.setProfile();
   }
 
-  public addUser(user: { username: string; profile: string }): Observable<IUser> {
-    return this.http.post<IUser>(`${PROFILE_LINK}`, user);
-  }
-
-  public defaultProfile() {
-    this.user.profile.dashboard = PROFILE_DASHBOARD_DEFAULT;
+  setLastViewedTask(id: number): Observable<IUser> {
+    this.setUser('lastViewedTask', { id });
     return this.setProfile();
   }
 
-  public setPassword(password: string) {
+  addUser(user: { username: string; profile: string }): Observable<IUser> {
+    return this.http.post<IUser>(`${PROFILE_LINK}`, user);
+  }
+
+  setPassword(password: string) {
     return this.http.patch(this.user.change_password, { password });
   }
 }
