@@ -10,6 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { ApiBase } from './api';
+import { Entity } from '@adwp-ui/widgets';
 
 export type JobStatus = 'created' | 'running' | 'failed' | 'success' | 'aborted';
 
@@ -22,7 +23,7 @@ export interface JobObject {
   url?: string[];
 }
 
-interface TaskBase {
+interface TaskBase extends Entity {
   start_date: string;
   finish_date: string;
   objects: JobObject[];

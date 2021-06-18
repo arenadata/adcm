@@ -1,20 +1,8 @@
-import {
-  Directive,
-  ElementRef,
-  HostListener,
-  Input,
-  ViewContainerRef,
-  ComponentFactoryResolver,
-  ComponentFactory,
-  ComponentRef,
-  OnDestroy,
-  OnInit,
-  Renderer2, Type,
-} from '@angular/core';
+import { ComponentFactory, ComponentFactoryResolver, ComponentRef, Directive, ElementRef, HostListener, Input, OnDestroy, OnInit, Renderer2, Type, ViewContainerRef, } from '@angular/core';
 import { BaseDirective } from '@adwp-ui/widgets';
 
 import { PopoverComponent } from '@app/components/popover/popover.component';
-import { PopoverContentDirective } from '@app/abstract-directives/popover-content.directive';
+import { PopoverContentDirective, PopoverEventFunc } from '@app/abstract-directives/popover-content.directive';
 
 export interface PopoverInput { [inputKey: string]: any; }
 
@@ -29,6 +17,7 @@ export class PopoverDirective extends BaseDirective implements OnInit, OnDestroy
 
   @Input() component: Type<PopoverContentDirective>;
   @Input() data: PopoverInput = {};
+  @Input() event: PopoverEventFunc;
 
   constructor(
     private elementRef: ElementRef,
@@ -48,6 +37,7 @@ export class PopoverDirective extends BaseDirective implements OnInit, OnDestroy
       this.containerRef = this.viewContainer.createComponent(this.factory);
       this.containerRef.instance.component = this.component;
       this.containerRef.instance.data = this.data;
+      this.containerRef.instance.event = this.event;
       this.leaveListener = this.renderer.listen(
         this.elementRef.nativeElement.parentElement,
         'mouseleave',
