@@ -11,6 +11,7 @@
 # limitations under the License.
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+from typing import Iterable
 
 from django.contrib.auth.models import User, Group, Permission
 from django.core.exceptions import ObjectDoesNotExist
@@ -209,6 +210,7 @@ class Joint(ADCMModel):
     state = models.CharField(max_length=64, default='created')
     stack = models.JSONField(default=list)
     issue = models.JSONField(default=dict)
+    agenda = models.ManyToManyField('AgendaItem', blank=True, related_name='joints')
 
     def __str__(self):
         name = getattr(self, 'name', None) or getattr(self, 'fqdn', self.prototype.name)
@@ -220,6 +222,9 @@ class Joint(ADCMModel):
         event.set_object_state(self.prototype.type, self.id, state)
         log.info('set %s state to "%s"', self, state)
         return self
+
+    def attend(self, agenda_item: 'AgendaItem'):
+        self.agenda.add(agenda_item)
 
 
 class ADCM(Joint, ConfigurableMixin):
@@ -832,3 +837,51 @@ class StagePrototypeImport(ADCMModel):
 
 class DummyData(ADCMModel):
     date = models.DateTimeField(auto_now=True)
+
+
+class AgendaItem(ADCMModel):
+    """
+    Flag + Issue + Lock
+
+    `name` is used for (un)setting from ansible playbooks
+    `names` are unique - that means action will fail on try to set new flag along with existing one
+
+    `source` is Joint on which action was run or issue appears
+    `attendees` aka targets (no such field) are back-refs from Joints affected through the source
+
+    `reason` is used to display/notify in front-end  TODO: format
+    for lock - "locked by Action(id) TaskLog(id) JobLog(id)"
+    for issue - "source(id) has issue with config| imports| not-deployed services"
+    for flag - "source(id) was reconfigured and requires (what...?)"
+
+    `blocking` means that actions on attendee are blocked while item exists
+
+    Whats bad:
+    - no FK to task
+
+    TODO: custom delete with events
+    """
+
+    name = models.CharField(max_length=160, default=None, null=True, unique=True)
+    source = models.ForeignKey(Joint, on_delete=models.CASCADE)
+    reason = models.JSONField(default=dict)
+    blocking = models.BooleanField(default=True)
+
+    @property
+    def attendees(self) -> Iterable[Joint]:
+        """
+        Collection of Joints affected by item
+        TODO: adjust to real usage
+        """
+        return self.joints.all()
+
+    def propagate(self, targets: Iterable[Joint]) -> None:
+        """
+        Subscribe dependent Joints to AgendaItem
+        Iterable source of targets are one of function that implements propagation policy,
+        which differs for flags and locks
+        TODO: adjust to real usage
+        TODO: send events/signals
+        """
+        for target in targets:
+            target.attend(self)
