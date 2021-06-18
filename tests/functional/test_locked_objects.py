@@ -415,11 +415,11 @@ def test_expand_on_clean_locked_host(
     elif adcm_object == "Component":
         obj_for_action = dummy_component
 
-    with catch_failed(Failed, "Expand action should throw an API error as Host is locked"):
-        with pytest.raises(ErrorMessage, match="locked host"):
-            with allure.step(
-                f"Run {obj_for_action.__class__.__name__} action: expand on clean locked host"
-            ):
+    with allure.step(
+        f"Run {obj_for_action.__class__.__name__} action: expand on clean locked host"
+    ):
+        with catch_failed(Failed, "Expand action should throw an API error as Host is locked"):
+            with pytest.raises(ErrorMessage, match="locked host"):
                 obj_for_action.action(name=expand_action, ).run(
                     hc=[
                         {
