@@ -17,6 +17,8 @@ export class NavItemPipe implements PipeTransform {
         return 'services';
       case 'servicecomponent':
         return 'components';
+      case 'host':
+        return 'hosts';
     }
   }
 
@@ -36,7 +38,17 @@ export class NavItemPipe implements PipeTransform {
         ) : (
           `/${path[index - 2].typeName}/${path[index - 2].id}/service/${path[index - 1].id}/component/${path[index].id}`
         );
+      case 'host':
+        return group ? (
+          `/${path[index - 1].typeName}/${path[index - 1].id}/host`
+        ) : (
+          `/${path[index - 1].typeName}/${path[index - 1].id}/host/${path[index].id}`
+        );
     }
+  }
+
+  getEntityTitle(entity: AdcmTypedEntity): string {
+    return entity.typeName === 'host' ? entity.fqdn : entity.display_name || entity.name;
   }
 
   transform(path: AdcmTypedEntity[]): IStyledNavItem[] {
@@ -49,7 +61,7 @@ export class NavItemPipe implements PipeTransform {
           class: 'type-name',
         },
         {
-          title: item.display_name || item.name,
+          title: this.getEntityTitle(item),
           url: this.getLink(path, index, false),
           class: 'entity',
           entity: item,

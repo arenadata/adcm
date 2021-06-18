@@ -9,21 +9,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+---
+- name: Add component
+  hosts: localhost
+  gather_facts: no
 
-- type: cluster
-  name: PassCheckerClusterAction
-  version: 1
+  tasks:
+    - name: Add component
+      adcm_hc:
+        operations:
+          -
+            action: "add"
+            service: "second"
+            component: "dummy"
+            host: "host_1"
 
-  actions:
-    check-password:
-      type: job
-      script: cluster/check_password_cluster.yaml
-      script_type: ansible
-      states:
-        available:
-          - created
-
-  config:
-    password:
-      type: password
-      required: yes
+    - block:
+      - name: "It is failed task"
+        assert:
+          msg: "It is failed task"
+          that: False

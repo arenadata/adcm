@@ -10,11 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-- name: Dummy action
+- name: Delete service
   hosts: localhost
   gather_facts: no
 
   tasks:
-    - name: Do nothing
-      debug:
-        msg: "Nothing done"
+    - name: Delete service
+      adcm_delete_service:
+      run_once: true
+
+    - block:
+      - name: "It is failed task"
+        assert:
+          msg: "It is failed task"
+          that: False

@@ -46,6 +46,8 @@ import { StateColumnComponent } from '@app/components/columns/state-column/state
 import { EditionColumnComponent } from '@app/components/columns/edition-column/edition-column.component';
 import { ClusterColumnComponent } from '@app/components/columns/cluster-column/cluster-column.component';
 import { ServiceComponentsComponent } from '@app/components/service-components.component';
+import { JobService } from '@app/services/job.service';
+import { TaskService } from '@app/services/task.service';
 import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
 
 @NgModule({
@@ -91,7 +93,6 @@ import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
     ServiceComponentsComponent,
     ToDataSourcePipe,
   ],
-  // entryComponents: [DialogComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent, ActionMasterComponent],
   exports: [
     FormsModule,
     ReactiveFormsModule,
@@ -123,6 +124,10 @@ import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
     ServiceComponentsComponent,
     AdwpListModule,
     ToDataSourcePipe
+  ],
+  providers: [
+    JobService,
+    TaskService,
   ],
 })
 export class SharedModule {}
