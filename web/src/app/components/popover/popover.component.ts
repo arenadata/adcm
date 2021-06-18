@@ -8,11 +8,11 @@ import {
   ComponentFactoryResolver,
   AfterViewInit,
   Type,
-  HostListener,
+  HostListener, ElementRef, HostBinding,
 } from '@angular/core';
 import { EventHelper } from '@adwp-ui/widgets';
 
-import { PopoverContentDirective } from '@app/abstract-directives/popover-content.directive';
+import { PopoverContentDirective, PopoverEventFunc } from '@app/abstract-directives/popover-content.directive';
 import { PopoverInput } from '@app/directives/popover.directive';
 
 @Component({
@@ -31,13 +31,17 @@ export class PopoverComponent implements AfterViewInit {
 
   @Input() component: Type<PopoverContentDirective>;
   @Input() data: PopoverInput = {};
+  @Input() event: PopoverEventFunc;
 
   @HostListener('click', ['$event']) click(event: MouseEvent) {
     EventHelper.stopPropagation(event);
   }
 
+  @HostBinding('style.right') right: string;
+
   constructor(
     private componentFactoryResolver: ComponentFactoryResolver,
+    private elementRef: ElementRef,
   ) {}
 
   ngAfterViewInit() {
@@ -46,6 +50,13 @@ export class PopoverComponent implements AfterViewInit {
       this.container.clear();
       this.containerRef = this.container.createComponent(factory);
       this.containerRef.instance.data = this.data;
+      this.containerRef.instance.event = this.event;
+      setTimeout(() => {
+        const left = document.documentElement.clientWidth - (this.elementRef.nativeElement.offsetLeft + this.elementRef.nativeElement.offsetWidth);
+        if (left < 0) {
+          this.right = `0px`;
+        }
+      });
     });
   }
 

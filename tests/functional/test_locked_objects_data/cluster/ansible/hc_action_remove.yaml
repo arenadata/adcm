@@ -10,16 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-- name: Check password param value from service config
-  hosts: all
-  connection: local
+- name: Remove component
+  hosts: localhost
   gather_facts: no
-
-  vars:
-    password: "{{ services.PassChecker.config.password }}"
-
   tasks:
-    - name: Equals?
-      debug:
-        msg: "Comparison"
-      failed_when: password != "q1w2e3r4"
+    - name: Remove component
+      adcm_hc:
+        operations:
+          -
+            action: "remove"
+            service: "second"
+            component: "dummy"
+            host: "host_0"

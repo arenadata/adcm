@@ -46,6 +46,8 @@ import { StateColumnComponent } from '@app/components/columns/state-column/state
 import { EditionColumnComponent } from '@app/components/columns/edition-column/edition-column.component';
 import { ClusterColumnComponent } from '@app/components/columns/cluster-column/cluster-column.component';
 import { ServiceComponentsComponent } from '@app/components/service-components.component';
+import { JobService } from '@app/services/job.service';
+import { TaskService } from '@app/services/task.service';
 import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
 import { TranslateModule } from '@ngx-translate/core';
 import { PickKeysPipe } from '@app/pipes/pick-keys.pipe';
@@ -97,7 +99,6 @@ import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
     PickKeysPipe,
     TranslateKeysPipe
   ],
-  // entryComponents: [DialogComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent, ActionMasterComponent],
   exports: [
     FormsModule,
     ReactiveFormsModule,
@@ -132,6 +133,9 @@ import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
     PickKeysPipe,
     TranslateKeysPipe,
   ],
+  providers: [
+    JobService,
+    TaskService,
+  ],
 })
-export class SharedModule {
-}
+export class SharedModule {}
