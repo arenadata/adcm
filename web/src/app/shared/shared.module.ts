@@ -49,6 +49,9 @@ import { ServiceComponentsComponent } from '@app/components/service-components.c
 import { JobService } from '@app/services/job.service';
 import { TaskService } from '@app/services/task.service';
 import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
+import { TranslateModule } from '@ngx-translate/core';
+import { PickKeysPipe } from '@app/pipes/pick-keys.pipe';
+import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
 
 @NgModule({
   imports: [
@@ -63,6 +66,7 @@ import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
     AddingModule,
     HostComponentsMapModule,
     DetailsModule,
+    TranslateModule,
     AdwpListModule.forRoot({
       itemsPerPage: [10, 25, 50, 100],
     }),
@@ -92,6 +96,8 @@ import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
     ClusterColumnComponent,
     ServiceComponentsComponent,
     ToDataSourcePipe,
+    PickKeysPipe,
+    TranslateKeysPipe
   ],
   exports: [
     FormsModule,
@@ -123,7 +129,9 @@ import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
     ClusterColumnComponent,
     ServiceComponentsComponent,
     AdwpListModule,
-    ToDataSourcePipe
+    ToDataSourcePipe,
+    PickKeysPipe,
+    TranslateKeysPipe,
   ],
   providers: [
     JobService,
