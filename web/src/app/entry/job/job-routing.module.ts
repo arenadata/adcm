@@ -14,15 +14,10 @@ import { RouterModule, Routes } from '@angular/router';
 import { AuthGuard } from '@app/core/auth/auth.guard';
 import { DetailComponent } from '@app/shared/details/detail.component';
 
-import { JobComponent, MainComponent } from './job.component';
+import { MainComponent } from './job.component';
 import { LogComponent } from './log/log.component';
 
 const routes: Routes = [
-  {
-    path: '',
-    canActivate: [AuthGuard],
-    component: JobComponent
-  },
   {
     path: ':job',
     canActivate: [AuthGuard],

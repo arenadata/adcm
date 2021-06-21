@@ -12,13 +12,12 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { AuthGuard } from '@app/core';
+import { AuthGuard } from '@app/core/auth/auth.guard';
 import { DetailComponent } from '@app/shared/details/detail.component';
 import { ConfigComponent } from '@app/shared/configuration/main/main.component';
 import { MainInfoComponent, StatusComponent } from '@app/shared/components';
 import { SharedModule } from '@app/shared/shared.module';
 
-import { ListEntryComponent } from './list.component';
 import { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';
 import { HostproviderComponent } from '@app/components/hostprovider/hostprovider.component';
 import { HostListComponent } from '@app/components/host-list/host-list.component';
@@ -85,6 +84,6 @@ const entryRouter = [
 
 @NgModule({
   imports: [CommonModule, SharedModule, RouterModule.forChild(entryRouter)],
-  declarations: [ListEntryComponent, HostproviderComponent, HostListComponent],
+  declarations: [HostproviderComponent, HostListComponent],
 })
 export class EntryModule {}

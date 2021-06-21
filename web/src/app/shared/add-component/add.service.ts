@@ -17,7 +17,8 @@ import { environment } from '@env/environment';
 import { Observable, of, throwError, forkJoin } from 'rxjs';
 import { concatAll, filter, map, switchMap, catchError } from 'rxjs/operators';
 
-import { StackInfo, StackService } from '@app/core';
+import { StackInfo } from '@app/core/services';
+import { StackService } from '@app/core/services';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { ApiService } from '@app/core/api';
 import { Host, Prototype, ServicePrototype, StackBase, TypeName } from '@app/core/types';
