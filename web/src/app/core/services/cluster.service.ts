@@ -186,7 +186,7 @@ export class ClusterService {
     );
   }
 
-  getLicenseText(): Observable<string> {
+  getBundleLicenseText(): Observable<string> {
     const { license_url, license } = (this.Current as Bundle);
 
     return this.api.get<License>(license_url).pipe(

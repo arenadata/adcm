@@ -140,7 +140,7 @@ export class LicenseComponent implements OnInit {
   constructor(private service: ClusterService) {}
 
   ngOnInit() {
-    this.text = this.service.getLicenseText();
+    this.text = this.service.getBundleLicenseText();
   }
 
 }
