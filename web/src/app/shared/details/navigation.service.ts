@@ -69,6 +69,7 @@ export interface IStyledNavItem {
 
 const all = [
   { id: 0, title: 'Main', url: 'main' },
+  { id: 8, title: 'License', url: 'license' },
   { id: 4, title: 'Configuration', url: 'config' },
   { id: 5, title: 'Status', url: 'status' },
   { id: 6, title: 'Import', url: 'import' },
@@ -78,7 +79,7 @@ const all = [
   { id: 3, title: 'Hosts - Components', url: 'host_component' },
 ];
 
-const [main, config, m_status, m_import, actions] = all;
+const [main, license, config, m_status, m_import, actions] = all;
 
 const components = {
   id: 8,
@@ -92,7 +93,7 @@ export const Config = {
     service: [main, components, config, m_status, m_import, actions],
     host: [main, config, m_status, actions],
     provider: [main, config, actions],
-    bundle: [main],
+    bundle: [main, license],
     servicecomponent: [main, config, m_status, actions],
   },
 };
@@ -113,6 +114,8 @@ export class NavigationService {
         }));
       return c.typeName === 'job' ? forJob(c as Job) : def(c.typeName, c.issue || {}, +c.status);
     };
+    console.log('NavigationService | current: ', current);
+
     return getMenu(current);
   }
 
