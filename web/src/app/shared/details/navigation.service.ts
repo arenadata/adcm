@@ -114,8 +114,6 @@ export class NavigationService {
         }));
       return c.typeName === 'job' ? forJob(c as Job) : def(c.typeName, c.issue || {}, +c.status);
     };
-    console.log('NavigationService | current: ', current);
-
     return getMenu(current);
   }
 
