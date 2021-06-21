@@ -12,8 +12,8 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatStepper } from '@angular/material/stepper';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ClusterService } from '@app/core';
-import { Cluster } from '@app/core/types';
+import { ClusterService } from '../../core/services/cluster.service';
+import { Cluster } from '../../core/types';
 import { StepperSelectionEvent } from '@angular/cdk/stepper';
 
 @Component({

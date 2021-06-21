@@ -10,15 +10,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { animate, state, style, transition, trigger } from '@angular/animations';
+import { Store } from '@ngrx/store';
+import { combineLatest, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Component, Input, OnInit } from '@angular/core';
-import { ClusterService } from '@app/core';
+
+import { ClusterService } from '@app/core/services/cluster.service';
 import { ApiService } from '@app/core/api';
 import { SocketState } from '@app/core/store';
 import { Cluster, Entities, Host, Issue, Provider, Service } from '@app/core/types';
 import { BaseDirective } from '@app/shared/directives/base.directive';
-import { Store } from '@ngrx/store';
-import { combineLatest, Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-wizard-config',
