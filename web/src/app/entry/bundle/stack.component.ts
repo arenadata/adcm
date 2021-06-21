@@ -31,7 +31,8 @@ import { ApiService } from '@app/core/api';
   template: `
     <mat-toolbar class="toolbar">
       <app-crumbs [navigation]="[{ url: '/bundle', title: 'bundles' }]"></app-crumbs>
-      <app-button-uploader #uploadBtn [color]="'accent'" [label]="'Upload bundles'" (output)="upload($event)"></app-button-uploader>
+      <app-button-uploader #uploadBtn [color]="'accent'" [label]="'Upload bundles'"
+                           (output)="upload($event)"></app-button-uploader>
     </mat-toolbar>
 
     <adwp-list
@@ -100,23 +101,25 @@ export class StackComponent extends AdwpListDirective<IBundle> {
 @Component({
   selector: 'app-main',
   template: `
-    <table>
-      <tr *ngFor="let prop of keys(model)">
-        <td style="padding: 6px 20px;">{{ prop }}</td>
-        <td>{{ model[prop] }}</td>
-      </tr>
-    </table>
+    <adwp-table
+      [columns]="listColumns"
+      [dataSource]="model | toDataSource"
+    ></adwp-table>
   `,
+  styles: [':host {width: 100%; max-width: 960px}']
 })
 export class MainComponent implements OnInit {
   model: any;
+
+  listColumns = [
+    ListFactory.keyColumn(),
+    ListFactory.valueColumn(),
+  ] as IColumns<any>;
+
   constructor(private service: ClusterService) {}
 
   ngOnInit() {
     this.model = this.service.Current;
   }
 
-  keys(model: {}) {
-    return Object.keys(model);
-  }
 }

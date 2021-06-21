@@ -152,4 +152,20 @@ export class ListFactory {
     };
   }
 
+  static keyColumn(): IValueColumn<any> {
+    return {
+      label: 'Parameter',
+      value: (row) => row.key,
+    };
+  }
+
+  static valueColumn(): IValueColumn<any> {
+    return {
+      label: 'Value',
+      className: 'width30pr',
+      headerClassName: 'width30pr',
+      value: (row) => row.value,
+    };
+  }
+
 }
