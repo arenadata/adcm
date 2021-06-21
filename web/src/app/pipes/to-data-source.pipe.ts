@@ -11,10 +11,11 @@ export class ToDataSourcePipe implements PipeTransform {
     }
 
     const results = Object.entries(model)
-      .reduce((acc, [key, value]) => [...acc, { key, value }], []);
+      .reduce((acc, [key, value]) => {
+        return [...acc, { key, value }];
+      }, []);
 
     return { results, count: 0 };
-
   }
 
 }
