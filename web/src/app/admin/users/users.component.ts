@@ -15,7 +15,7 @@ import { map } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 
-import { AuthService } from '@app/core';
+import { AuthService } from '../../core/auth/auth.service';
 import { DialogComponent } from '@app/shared/components';
 import { User, UsersService } from './users.service';
 

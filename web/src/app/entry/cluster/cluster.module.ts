@@ -22,7 +22,7 @@ import { ClusterListComponent } from './cluster.component';
 import { HcmapComponent } from '@app/components/cluster/hcmap/hcmap.component';
 import { HostComponent } from '@app/components/cluster/host/host.component';
 import { ServicesComponent } from '@app/components/cluster/services/services.component';
-import { AuthGuard } from '@app/core';
+import { AuthGuard } from '../../core/auth/auth.guard';
 import { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';
 import { ServiceComponentsComponent } from '@app/components/service-components.component';
 

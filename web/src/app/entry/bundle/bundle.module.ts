@@ -13,7 +13,7 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Routes, RouterModule } from '@angular/router';
 
-import { AuthGuard } from '@app/core';
+import { AuthGuard } from '../../core/auth/auth.guard';
 import { StackComponent, MainComponent } from './stack.component';
 import { DetailComponent } from '@app/shared/details/detail.component';
 import { SharedModule } from '@app/shared/shared.module';

@@ -21,7 +21,7 @@ import { Sort } from '@angular/material/sort';
 import { Observable, Subject } from 'rxjs';
 
 import { DialogComponent } from '@app/shared/components';
-import { ListResult } from '@app/shared/components/list/list.component';
+import { ListResult } from '@app/models/list-result';
 import { ListService } from './list.service';
 import { ListDirective } from '@app/abstract-directives/list.directive';
 

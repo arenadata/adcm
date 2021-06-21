@@ -13,7 +13,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ParamMap } from '@angular/router';
 import { IRoot, TypeName } from '@app/core/types/api';
-import { ListResult } from '@app/shared/components/list/list.component';
+import { ListResult } from '@app/models/list-result';
 import { select, Store } from '@ngrx/store';
 import { EMPTY, Observable } from 'rxjs';
 import { catchError, filter, switchMap } from 'rxjs/operators';
