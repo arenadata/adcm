@@ -14,7 +14,7 @@ import { Entity } from '@adwp-ui/widgets';
 
 export type JobStatus = 'created' | 'running' | 'failed' | 'success' | 'aborted';
 
-export type JobType = 'component' | 'service' | 'cluster';
+export type JobType = 'component' | 'service' | 'cluster' | 'host' | 'provider';
 
 export interface JobObject {
   id: number;
