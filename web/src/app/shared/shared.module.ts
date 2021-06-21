@@ -47,6 +47,7 @@ import { ClusterColumnComponent } from '@app/components/columns/cluster-column/c
 import { ServiceComponentsComponent } from '@app/components/service-components.component';
 import { JobService } from '@app/services/job.service';
 import { TaskService } from '@app/services/task.service';
+import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
 
 @NgModule({
   imports: [
@@ -88,6 +89,7 @@ import { TaskService } from '@app/services/task.service';
     EditionColumnComponent,
     ClusterColumnComponent,
     ServiceComponentsComponent,
+    ToDataSourcePipe,
   ],
   exports: [
     FormsModule,
@@ -118,6 +120,7 @@ import { TaskService } from '@app/services/task.service';
     ClusterColumnComponent,
     ServiceComponentsComponent,
     AdwpListModule,
+    ToDataSourcePipe
   ],
   providers: [
     JobService,
