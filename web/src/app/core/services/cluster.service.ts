@@ -16,7 +16,18 @@ import { BehaviorSubject, EMPTY, forkJoin, Observable, of } from 'rxjs';
 import { filter, map, switchMap, tap } from 'rxjs/operators';
 import { Store } from '@ngrx/store';
 
-import { Bundle, Cluster, Entities, Host, IAction, IImport, Job, LogFile, Provider, Service } from '@app/core/types';
+import {
+  Bundle,
+  Cluster,
+  Entities,
+  Host,
+  IAction,
+  IImport,
+  Job, License,
+  LogFile,
+  Provider,
+  Service
+} from '@app/core/types';
 import { environment } from '@env/environment';
 import { ServiceComponentService } from '@app/services/service-component.service';
 import { setPathOfRoute } from '@app/store/navigation/navigation.store';
@@ -26,6 +37,7 @@ export interface WorkerInstance {
   current: Entities;
   cluster: Cluster | null;
 }
+
 type pagesType = 'cluster' | 'host' | 'provider' | 'service' | 'job' | 'bundle';
 
 @Injectable({
@@ -171,6 +183,14 @@ export class ClusterService {
       map((a: any) => a.config.find((b: { name: string }) => b.name === '__main_info')),
       filter((a) => a),
       map((a) => a.value)
+    );
+  }
+
+  getBundleLicenseText(): Observable<string> {
+    const { license_url, license } = (this.Current as Bundle);
+
+    return this.api.get<License>(license_url).pipe(
+      map(({ text }) => license !== 'absent' ? text : 'No license required'),
     );
   }
 
