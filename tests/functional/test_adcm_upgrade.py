@@ -26,7 +26,7 @@ from version_utils import rpm
 @pytest.fixture(scope="session")
 def upgrade_target(cmd_opts) -> Tuple[str, str]:
     if not cmd_opts.adcm_image:
-        pytest.exit("CLI parameter adcm_image should be provided")
+        pytest.fail("CLI parameter adcm_image should be provided")
     return tuple(cmd_opts.adcm_image.split(":", maxsplit=2))
 
 
