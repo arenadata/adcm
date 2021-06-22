@@ -25,6 +25,7 @@ import { IBundle } from '@app/models/bundle';
 import { ListFactory } from '@app/factories/list-factory';
 import { EditionColumnComponent } from '@app/components/columns/edition-column/edition-column.component';
 import { ApiService } from '@app/core/api';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-stack',
@@ -122,6 +123,24 @@ export class MainComponent implements OnInit {
 
   ngOnInit() {
     this.model = this.service.Current;
+  }
+
+}
+
+@Component({
+  selector: 'app-license',
+  template: `
+    <pre>{{ text | async }}</pre>
+  `,
+  styles: [':host {width: 100%; max-width: 960px}']
+})
+export class LicenseComponent implements OnInit {
+  text: Observable<string>;
+
+  constructor(private service: ClusterService) {}
+
+  ngOnInit() {
+    this.text = this.service.getBundleLicenseText();
   }
 
 }
