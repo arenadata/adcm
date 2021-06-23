@@ -221,7 +221,10 @@ class Cluster(ADCMEntity):
     name = models.CharField(max_length=80, unique=True)
     description = models.TextField(blank=True)
     config_groups = GenericRelation(
-        'ConfigGroup', object_id_field='object_id', content_type_field='object_type'
+        'ConfigGroup',
+        object_id_field='object_id',
+        content_type_field='object_type',
+        on_delete=models.CASCADE,
     )
 
     __error_code__ = 'CLUSTER_NOT_FOUND'
@@ -255,7 +258,10 @@ class HostProvider(ADCMEntity):
     name = models.CharField(max_length=80, unique=True)
     description = models.TextField(blank=True)
     config_groups = GenericRelation(
-        'ConfigGroup', object_id_field='object_id', content_type_field='object_type'
+        'ConfigGroup',
+        object_id_field='object_id',
+        content_type_field='object_type',
+        on_delete=models.CASCADE,
     )
 
     __error_code__ = 'PROVIDER_NOT_FOUND'
@@ -317,7 +323,10 @@ class ClusterObject(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
     config_groups = GenericRelation(
-        'ConfigGroup', object_id_field='object_id', content_type_field='object_type'
+        'ConfigGroup',
+        object_id_field='object_id',
+        content_type_field='object_type',
+        on_delete=models.CASCADE,
     )
 
     __error_code__ = 'CLUSTER_SERVICE_NOT_FOUND'
@@ -364,7 +373,10 @@ class ServiceComponent(ADCMEntity):
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE, null=True, default=None)
     config_groups = GenericRelation(
-        'ConfigGroup', object_id_field='object_id', content_type_field='object_type'
+        'ConfigGroup',
+        object_id_field='object_id',
+        content_type_field='object_type',
+        on_delete=models.CASCADE,
     )
 
     __error_code__ = 'COMPONENT_NOT_FOUND'
@@ -418,6 +430,13 @@ class ConfigGroup(ADCMModel):
     description = models.TextField(blank=True)
     hosts = models.ManyToManyField(Host, blank=True, through='HostGroup')
     config = models.JSONField(default=dict)
+
+    class Meta:
+        unique_together = ['object_id', 'name', 'object_type']
+
+    def save(self, *args, **kwargs):
+        self.object_type.model_class().obj.get(id=self.object_id)
+        super().save(*args, **kwargs)
 
 
 class HostGroup(models.Model):
