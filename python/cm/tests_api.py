@@ -22,6 +22,7 @@ from cm.unit_tests import utils
 
 class TestApi(TestCase):
     def setUp(self):
+        utils.gen_adcm()
         self.bundle = models.Bundle.objects.create(
             **{
                 'name': 'ADB',

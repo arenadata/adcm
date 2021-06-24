@@ -18,6 +18,7 @@ from cm.errors import AdcmEx
 from cm.models import Cluster, Host, HostProvider, Prototype, Action
 from api.api_views import hlink, check_obj, filter_actions, CommonAPIURL, ObjectURL
 from api.action.serializers import ActionShort
+from api.agenda.serializers import AgendaItemSerializer
 
 
 class HostSerializer(serializers.Serializer):
@@ -48,7 +49,7 @@ class HostSerializer(serializers.Serializer):
                 validated_data.get('prototype_id'),
                 validated_data.get('provider_id'),
                 validated_data.get('fqdn'),
-                validated_data.get('description', '')
+                validated_data.get('description', ''),
             )
         except IntegrityError:
             raise AdcmEx("HOST_CONFLICT", "duplicate host") from None
@@ -62,6 +63,7 @@ class HostDetailSerializer(HostSerializer):
     config = CommonAPIURL(view_name='object-config')
     action = CommonAPIURL(view_name='object-action')
     prototype = hlink('host-type-details', 'prototype_id', 'prototype_id')
+    agenda = AgendaItemSerializer(many=True, read_only=True)
 
     def get_issue(self, obj):
         return cm.issue.aggregate_issues(obj)
@@ -92,10 +94,7 @@ class ProvideHostSerializer(HostSerializer):
         proto = Prototype.obj.get(bundle=provider.prototype.bundle, type='host')
         try:
             return cm.api.add_host(
-                proto,
-                provider,
-                validated_data.get('fqdn'),
-                validated_data.get('description', '')
+                proto, provider, validated_data.get('fqdn'), validated_data.get('description', '')
             )
         except IntegrityError:
             raise AdcmEx("HOST_CONFLICT", "duplicate host") from None

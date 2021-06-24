@@ -17,9 +17,9 @@ from rest_framework.reverse import reverse
 
 from api.api_views import hlink, filter_actions, get_api_url_kwargs, CommonAPIURL
 from api.action.serializers import ActionShort
+from api.agenda.serializers import AgendaItemSerializer
 
-from cm import issue
-from cm import status_api
+from cm import issue, status_api
 from cm.models import Action
 
 
@@ -52,6 +52,7 @@ class ComponentDetailSerializer(ComponentSerializer):
     action = CommonAPIURL(read_only=True, view_name='object-action')
     config = CommonAPIURL(read_only=True, view_name='object-config')
     prototype = hlink('component-type-details', 'prototype_id', 'prototype_id')
+    agenda = AgendaItemSerializer(many=True, read_only=True)
 
     def get_issue(self, obj):
         return issue.aggregate_issues(obj)

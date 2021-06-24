@@ -11,8 +11,8 @@
 # limitations under the License.
 
 from rest_framework import serializers
-from api.api_views import hlink
-from api.api_views import CommonAPIURL
+from api.api_views import hlink, CommonAPIURL
+from api.agenda.serializers import AgendaItemSerializer
 
 
 class AdcmSerializer(serializers.Serializer):
@@ -28,6 +28,7 @@ class AdcmDetailSerializer(AdcmSerializer):
     bundle_id = serializers.IntegerField(read_only=True)
     config = CommonAPIURL(view_name='object-config')
     action = CommonAPIURL(view_name='object-action')
+    agenda = AgendaItemSerializer(many=True, read_only=True)
 
     def get_prototype_version(self, obj):
         return obj.prototype.version

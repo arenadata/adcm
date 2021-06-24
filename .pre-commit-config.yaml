@@ -16,6 +16,7 @@ repos:
         - django-background-tasks
         - django-filter
         - djangorestframework
+        - django-rest-swagger
         - drf-flex-fields
         - pylint-django
         - pytest

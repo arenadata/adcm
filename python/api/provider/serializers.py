@@ -21,6 +21,7 @@ from api.api_views import hlink, check_obj, filter_actions, get_upgradable_func
 from api.api_views import CommonAPIURL, ObjectURL
 from api.serializers import UpgradeSerializer, UrlField
 from api.action.serializers import ActionShort
+from api.agenda.serializers import AgendaItemSerializer
 
 
 class ProviderSerializer(serializers.Serializer):
@@ -58,6 +59,7 @@ class ProviderDetailSerializer(ProviderSerializer):
     action = CommonAPIURL(view_name='object-action')
     upgrade = hlink('provider-upgrade', 'id', 'provider_id')
     host = ObjectURL(read_only=True, view_name='host')
+    agenda = AgendaItemSerializer(many=True, read_only=True)
 
     def get_issue(self, obj):
         return cm.issue.aggregate_issues(obj)

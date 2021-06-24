@@ -20,6 +20,7 @@ from api.api_views import check_obj, filter_actions, CommonAPIURL, ObjectURL
 from api.cluster.serializers import BindSerializer
 from api.action.serializers import ActionShort
 from api.component.serializers import ComponentUISerializer
+from api.agenda.serializers import AgendaItemSerializer
 
 from cm import issue
 from cm import status_api
@@ -80,6 +81,7 @@ class ServiceDetailSerializer(ServiceSerializer):
         lookup_field='prototype_id',
         lookup_url_kwarg='prototype_id',
     )
+    agenda = AgendaItemSerializer(many=True, read_only=True)
 
     def get_issue(self, obj):
         return issue.aggregate_issues(obj)
