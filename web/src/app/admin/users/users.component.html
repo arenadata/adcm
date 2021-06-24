@@ -67,7 +67,7 @@
   <ng-container matColumnDef="username">
     <mat-header-cell *matHeaderCellDef> UserName </mat-header-cell>
     <mat-cell *matCellDef="let row">
-      {{ row.username }}
+      <div class="text-ellipsis">{{ row.username }}</div>
     </mat-cell>
   </ng-container>
 

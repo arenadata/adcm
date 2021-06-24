@@ -380,3 +380,10 @@ mat-cell.control {
   border-radius: 2.5px;
   border: 3px solid inherit;
 }
+
+.text-ellipsis {
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
