@@ -12,10 +12,11 @@
 
 from rest_framework import serializers
 
+from api.base_serializers import ADCMBaseSerializer
 from cm.models import HostGroup
 
 
-class HostGroupSerializer(serializers.ModelSerializer):
+class HostGroupSerializer(ADCMBaseSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='host-group-detail')
 
     class Meta:
