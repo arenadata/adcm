@@ -14,15 +14,14 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { IDetails } from './navigation.service';
 import { JobObject } from '@app/core/types';
 import { ObjectLinkColumnPipe } from '@app/shared/pipes/object-link-column/object-link-column.pipe';
-import { SortObjectsPipe } from '@app/shared/pipes/sort-objects/sort-objects.pipe';
 
 @Component({
   selector: 'app-details-subtitle',
   template: `
     <ng-container *ngIf="cur">
       <ng-container *ngIf="cur.typeName === 'job'; else link">
-        <ng-container *ngFor="let obj of cur.objects; index as i; last as lastElement">
-          <a [routerLink]="getUrl(obj, jobs(cur.objects))">{{ obj.name }}</a>
+        <ng-container *ngFor="let obj of cur.objects; last as lastElement">
+          <a [routerLink]="getUrl(obj, (cur.objects | sortObjects))">{{ obj.name }}</a>
           <span *ngIf="!lastElement"> / </span>
         </ng-container>
       </ng-container>
@@ -49,7 +48,4 @@ export class SubtitleComponent {
     return new ObjectLinkColumnPipe().transform(obj, jobs).url(null);
   }
 
-  jobs(jobs: JobObject[]): JobObject[] {
-    return new SortObjectsPipe().transform(jobs);
-  }
 }
