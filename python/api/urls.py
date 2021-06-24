@@ -41,6 +41,7 @@ urlpatterns = [
     path('adcm/', include('api.adcm.urls')),
     path('task/', include('api.job.task_urls')),
     path('job/', include('api.job.urls')),
+    path('agenda/', include('api.agenda.urls')),
     # path('docs/', include_docs_urls(title='ArenaData Chapel API')),
     path('swagger/', swagger_view),
     path('schema/', schema_view),

@@ -648,12 +648,7 @@ class TaskLog(ADCMModel):
 
         self.lock = AgendaItem.objects.create(
             name=None,
-            reason={
-                # TODO: some templated string from self.action
-                'task': self.pk,
-                'action': self.action and self.action.pk,
-                'selector': self.selector,
-            },
+            reason=AgendaItem.gen_lock_reason(self),
         )
         self.save()
         for obj in objects:
@@ -669,7 +664,10 @@ class TaskLog(ADCMModel):
             for obj in self.lock.attendees:
                 event.release_lock(obj, self.lock)
 
-        self.lock.delete()
+        lock = self.lock
+        self.lock = None
+        self.save()
+        lock.delete()
 
 
 class JobLog(ADCMModel):
@@ -889,3 +887,20 @@ class AgendaItem(ADCMModel):
             self.hostprovider_entities.all(),
             self.host_entities.all(),
         )
+
+    @staticmethod
+    def gen_lock_reason(task: TaskLog) -> dict:
+        action = task.action
+        target = ADCM.obj.get(id=1)  # TODO: fix it
+
+        return {
+            'message': f'Object was locked by running action "{action.display_name}" on "{target}"',
+            'action_id': action.pk,
+            'action target': {'type': target.prototype.type, 'id': target.pk},
+        }
+
+    def gen_issue_reason(self) -> dict:  # TODO: ...
+        ...
+
+    def gen_flag_reason(self) -> dict:  # TODO: ...
+        ...

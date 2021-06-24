@@ -125,8 +125,23 @@ def gen_agenda_item(name=None, reason='Test') -> models.AgendaItem:
     return models.AgendaItem.objects.create(name=name, reason=reason)
 
 
+def gen_action(name='', bundle=None, prototype=None) -> models.Action:
+    """Generate action from specified prototype"""
+    if not prototype:
+        bundle = bundle or gen_bundle()
+        prototype = gen_prototype(bundle, 'action')
+    return models.Action.objects.create(
+        **_gen_name(name),
+        prototype=prototype,
+        type='task',
+        script='',
+        script_type='ansible',
+    )
+
+
 def gen_task_log(obj) -> models.TaskLog:
     return models.TaskLog.objects.create(
+        action=gen_action(),
         object_id=obj.pk,
         status='CREATED',
         start_date=timezone.now(),

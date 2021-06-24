@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from django.test import TestCase
 
 from cm.unit_tests import utils
@@ -18,6 +17,9 @@ from cm.unit_tests import utils
 
 class TaskLogLockTest(TestCase):
     """Tests for `cm.models.TaskLog` lock-related methods"""
+
+    def setUp(self) -> None:
+        utils.gen_adcm()
 
     def test_lock_affected__lock_is_single(self):
         cluster = utils.gen_cluster()
@@ -44,6 +46,4 @@ class TaskLogLockTest(TestCase):
 
         task.unlock_affected()
         self.assertFalse(cluster.is_locked)
-        self.assertIsNone(task.lock.pk)
-        task.refresh_from_db()
         self.assertIsNone(task.lock)
