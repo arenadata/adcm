@@ -45,10 +45,6 @@ export class SubtitleComponent {
     }
   }
 
-  getParentLink(objects: { id: number; type: string }[], ind: number) {
-    return objects.filter((a, i) => i <= ind).reduce((a, c) => [...a, c.type, c.id], ['/']);
-  }
-
   getUrl(obj: JobObject, jobs: JobObject[]): string {
     return new ObjectLinkColumnPipe().transform(obj, jobs).url(null);
   }
