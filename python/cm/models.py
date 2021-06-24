@@ -431,6 +431,8 @@ class ConfigGroup(ADCMModel):
     hosts = models.ManyToManyField(Host, blank=True, through='HostGroup')
     config = models.JSONField(default=dict)
 
+    api_not_changeable_fields = ('id', 'object_id', 'object_type')
+
     class Meta:
         unique_together = ['object_id', 'name', 'object_type']
 
@@ -442,6 +444,8 @@ class ConfigGroup(ADCMModel):
 class HostGroup(models.Model):
     group = models.ForeignKey(ConfigGroup, on_delete=models.CASCADE)
     host = models.ForeignKey(Host, on_delete=models.CASCADE)
+
+    api_not_changeable_fields = ('id',)
 
     class Meta:
         unique_together = ['group', 'host']
