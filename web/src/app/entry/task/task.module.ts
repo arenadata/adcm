@@ -18,13 +18,13 @@ import { SharedModule } from '@app/shared/shared.module';
 import { HoverDirective } from './hover.directive';
 import { TasksComponent } from './tasks.component';
 import { TaskObjectsComponent } from '@app/components/columns/task-objects/task-objects.component';
-import { ObjectLinkColumnPipe } from '@app/pipes/object-link-column.pipe';
-import { SortObjectsPipe } from '@app/pipes/sort-objects.pipe';
 import { TaskStatusColumnComponent } from '@app/components/columns/task-status-column/task-status-column.component';
 import { JobsComponent } from '@app/components/task/jobs/jobs.component';
 import { JobStatusColumnComponent } from '@app/components/columns/job-status-column/job-status-column.component';
 import { TaskNameComponent } from '@app/components/columns/task-name/task-name.component';
 import { JobNameComponent } from '@app/components/columns/job-name/job-name.component';
+import { SortObjectsPipeModule } from '../../shared/pipes/sort-objects/sort-objects-pipe.module';
+import { ObjectLinkColumnPipeModule } from '../../shared/pipes/object-link-column/object-link-column-pipe.module';
 
 const routes: Routes = [
   {
@@ -39,13 +39,13 @@ const routes: Routes = [
     CommonModule,
     SharedModule,
     RouterModule.forChild(routes),
+    SortObjectsPipeModule,
+    ObjectLinkColumnPipeModule,
   ],
   declarations: [
     TasksComponent,
     HoverDirective,
     TaskObjectsComponent,
-    ObjectLinkColumnPipe,
-    SortObjectsPipe,
     TaskStatusColumnComponent,
     TaskNameComponent,
     JobNameComponent,

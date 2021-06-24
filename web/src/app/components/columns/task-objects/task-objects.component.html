@@ -1,7 +1,7 @@
 <ng-container *ngFor="let obj of (row.objects | sortObjects); last as lastElement">
   <adwp-link-cell
     [row]="row"
-    [column]="obj | objectLinkColumn : row"
+    [column]="obj | objectLinkColumn : row.objects"
   ></adwp-link-cell>
   <span *ngIf="!lastElement"> / </span>
 </ng-container>

@@ -9,17 +9,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 
 import { IDetails } from './navigation.service';
+import { JobObject } from '@app/core/types';
+import { ObjectLinkColumnPipe } from '@app/shared/pipes/object-link-column/object-link-column.pipe';
+import { SortObjectsPipe } from '@app/shared/pipes/sort-objects/sort-objects.pipe';
 
 @Component({
   selector: 'app-details-subtitle',
   template: `
     <ng-container *ngIf="cur">
       <ng-container *ngIf="cur.typeName === 'job'; else link">
-        <ng-container *ngFor="let o of cur.objects; index as i; last as lastElement">
-          <a [routerLink]="getParentLink(cur.objects, i)">{{ o.name }}</a>
+        <ng-container *ngFor="let obj of cur.objects; index as i; last as lastElement">
+          <a [routerLink]="getUrl(obj, jobs(cur.objects))">{{ obj.name }}</a>
           <span *ngIf="!lastElement"> / </span>
         </ng-container>
       </ng-container>
@@ -31,17 +34,26 @@ import { IDetails } from './navigation.service';
       </ng-template>
     </ng-container>
   `,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SubtitleComponent {
   cur: IDetails;
 
   @Input() set current(c: IDetails) {
-    if (c) {
+      if (c) {
       this.cur = c;
     }
   }
 
   getParentLink(objects: { id: number; type: string }[], ind: number) {
     return objects.filter((a, i) => i <= ind).reduce((a, c) => [...a, c.type, c.id], ['/']);
+  }
+
+  getUrl(obj: JobObject, jobs: JobObject[]): string {
+    return new ObjectLinkColumnPipe().transform(obj, jobs).url(null);
+  }
+
+  jobs(jobs: JobObject[]): JobObject[] {
+    return new SortObjectsPipe().transform(jobs);
   }
 }

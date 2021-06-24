@@ -31,6 +31,8 @@ import { ActionsButtonComponent } from '@app/components/actions-button/actions-b
 
 import { NavItemPipe } from '@app/pipes/nav-item.pipe';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { SortObjectsPipeModule } from '@app/shared/pipes/sort-objects/sort-objects-pipe.module';
+import { ObjectLinkColumnPipeModule } from '@app/shared/pipes/object-link-column/object-link-column-pipe.module';
 
 @NgModule({
   imports: [
@@ -44,6 +46,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     MatIconModule,
     MatButtonModule,
     MatTooltipModule,
+    SortObjectsPipeModule,
+    ObjectLinkColumnPipeModule,
   ],
   exports: [
     DetailComponent,

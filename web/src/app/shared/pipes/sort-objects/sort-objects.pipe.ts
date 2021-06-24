@@ -1,7 +1,7 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
-import { JobObject } from '../core/types';
-import { ObjectsHelper } from '../helpers/objects-helper';
+import { JobObject } from '@app/core/types';
+import { ObjectsHelper } from '@app/helpers/objects-helper';
 
 @Pipe({
   name: 'sortObjects'
