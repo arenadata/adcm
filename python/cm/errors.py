@@ -116,6 +116,7 @@ ERRORS = {
         "host already is a member of another group of this object",
         rfs.HTTP_409_CONFLICT,
     ),
+    'NOT_CHANGEABLE_FIELDS': ("fields cannot be changed", rfs.HTTP_400_BAD_REQUEST, ERR),
 }
 
 

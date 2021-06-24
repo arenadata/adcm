@@ -97,6 +97,36 @@ class ADCMModel(models.Model):
     class Meta:
         abstract = True
 
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        # Default implementation of from_db()
+        if len(values) != len(cls._meta.concrete_fields):
+            values_iter = iter(values)
+            values = [
+                next(values_iter) if f.attname in field_names else models.DEFERRED
+                for f in cls._meta.concrete_fields
+            ]
+        instance = cls(*values)
+        instance._state.adding = False
+        instance._state.db = db
+        # customization to store the original field values on the instance
+        # pylint: disable=attribute-defined-outside-init
+        instance._loaded_values = dict(zip(field_names, values))
+        return instance
+
+    def save(self, *args, **kwargs):
+        if not self._state.adding:
+            not_changeable_fields = getattr(self, 'not_changeable_fields', ())
+            for field_name in not_changeable_fields:
+                if isinstance(getattr(self, field_name), models.Model):
+                    field_name = f'{field_name}_id'
+                if getattr(self, field_name) != self._loaded_values[field_name]:
+                    raise AdcmEx(
+                        'NOT_CHANGEABLE_FIELDS',
+                        f'{", ".join(not_changeable_fields)} fields cannot be changed',
+                    )
+        super().save(*args, **kwargs)
+
 
 class Bundle(ADCMModel):
     name = models.CharField(max_length=160)
@@ -431,7 +461,7 @@ class ConfigGroup(ADCMModel):
     hosts = models.ManyToManyField(Host, blank=True, through='HostGroup')
     config = models.JSONField(default=dict)
 
-    api_not_changeable_fields = ('id', 'object_id', 'object_type')
+    not_changeable_fields = ('id', 'object_id', 'object_type')
 
     class Meta:
         unique_together = ['object_id', 'name', 'object_type']
@@ -441,11 +471,11 @@ class ConfigGroup(ADCMModel):
         super().save(*args, **kwargs)
 
 
-class HostGroup(models.Model):
+class HostGroup(ADCMModel):
     group = models.ForeignKey(ConfigGroup, on_delete=models.CASCADE)
     host = models.ForeignKey(Host, on_delete=models.CASCADE)
 
-    api_not_changeable_fields = ('id',)
+    not_changeable_fields = ('id',)
 
     class Meta:
         unique_together = ['group', 'host']

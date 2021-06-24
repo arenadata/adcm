@@ -13,7 +13,6 @@
 from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 
-from api.base_serializers import ADCMBaseSerializer
 from cm.models import ConfigGroup
 
 
@@ -38,7 +37,7 @@ class ObjectTypeField(serializers.Field):
         return ContentType.objects.get(app_label='cm', model=data)
 
 
-class ConfigGroupSerializer(ADCMBaseSerializer):
+class ConfigGroupSerializer(serializers.ModelSerializer):
     object_type = ObjectTypeField()
     url = serializers.HyperlinkedIdentityField(view_name='config-group-detail')
     hosts = serializers.HyperlinkedRelatedField(
