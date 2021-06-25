@@ -10,10 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input } from '@angular/core';
-
 import { IDetails } from './navigation.service';
-import { JobObject } from '@app/core/types';
-import { ObjectsHelper } from '@app/helpers/objects-helper';
 
 @Component({
   selector: 'app-details-subtitle',
@@ -21,7 +18,7 @@ import { ObjectsHelper } from '@app/helpers/objects-helper';
     <ng-container *ngIf="cur">
       <ng-container *ngIf="cur.typeName === 'job'; else link">
         <ng-container *ngFor="let o of cur.objects; index as i; last as lastElement">
-          <a [routerLink]="getParentLink(o, cur.objects)">{{ o.name }}</a>
+          <a [routerLink]="o | objectLinkSubtitle : cur.objects">{{ o.name }}</a>
           <span *ngIf="!lastElement"> / </span>
         </ng-container>
       </ng-container>
@@ -43,7 +40,4 @@ export class SubtitleComponent {
     }
   }
 
-  getParentLink(object: JobObject, objects: JobObject[]): string[] {
-    return ObjectsHelper.getObjectUrl(object, ObjectsHelper.sortObjects(objects));
-  }
 }
