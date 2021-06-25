@@ -237,6 +237,12 @@ class ADCMEntity(ADCMModel):
     state = models.CharField(max_length=64, default='created')
     stack = models.JSONField(default=list)
     issue = models.JSONField(default=dict)
+    config_groups = GenericRelation(
+        'ConfigGroup',
+        object_id_field='object_id',
+        content_type_field='object_type',
+        on_delete=models.CASCADE,
+    )
 
     class Meta:
         abstract = True
@@ -257,6 +263,7 @@ class ADCMEntity(ADCMModel):
 
 class ADCM(ADCMEntity):
     name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
+    config_groups = None
 
     @property
     def bundle_id(self):
@@ -275,12 +282,6 @@ class ADCM(ADCMEntity):
 class Cluster(ADCMEntity):
     name = models.CharField(max_length=80, unique=True)
     description = models.TextField(blank=True)
-    config_groups = GenericRelation(
-        'ConfigGroup',
-        object_id_field='object_id',
-        content_type_field='object_type',
-        on_delete=models.CASCADE,
-    )
 
     __error_code__ = 'CLUSTER_NOT_FOUND'
 
@@ -312,12 +313,6 @@ class Cluster(ADCMEntity):
 class HostProvider(ADCMEntity):
     name = models.CharField(max_length=80, unique=True)
     description = models.TextField(blank=True)
-    config_groups = GenericRelation(
-        'ConfigGroup',
-        object_id_field='object_id',
-        content_type_field='object_type',
-        on_delete=models.CASCADE,
-    )
 
     __error_code__ = 'PROVIDER_NOT_FOUND'
 
@@ -351,6 +346,7 @@ class Host(ADCMEntity):
     description = models.TextField(blank=True)
     provider = models.ForeignKey(HostProvider, on_delete=models.CASCADE, null=True, default=None)
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
+    config_groups = None
 
     __error_code__ = 'HOST_NOT_FOUND'
 
@@ -377,12 +373,6 @@ class Host(ADCMEntity):
 class ClusterObject(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
-    config_groups = GenericRelation(
-        'ConfigGroup',
-        object_id_field='object_id',
-        content_type_field='object_type',
-        on_delete=models.CASCADE,
-    )
 
     __error_code__ = 'CLUSTER_SERVICE_NOT_FOUND'
 
@@ -427,12 +417,6 @@ class ServiceComponent(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE, null=True, default=None)
-    config_groups = GenericRelation(
-        'ConfigGroup',
-        object_id_field='object_id',
-        content_type_field='object_type',
-        on_delete=models.CASCADE,
-    )
 
     __error_code__ = 'COMPONENT_NOT_FOUND'
 
