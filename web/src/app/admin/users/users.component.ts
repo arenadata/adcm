@@ -22,7 +22,7 @@ import { User, UsersService } from './users.service';
 @Component({
   selector: 'app-users',
   templateUrl: './users.component.html',
-  styles: ['.add-button {position: absolute; right: 40px;top: 10px;}', ':host {flex:1; width: 100%}'],
+  styleUrls: ['users.component.scss'],
   providers: [UsersService],
 })
 export class UsersComponent implements OnInit {
