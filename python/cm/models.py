@@ -111,6 +111,9 @@ class ADCMModel(models.Model):
 
     @classmethod
     def from_db(cls, db, field_names, values):
+        """
+        Saving the current instance values from the database for `not_changeable_fields` feature
+        """
         # Default implementation of from_db()
         if len(values) != len(cls._meta.concrete_fields):
             values_iter = iter(values)
@@ -127,6 +130,7 @@ class ADCMModel(models.Model):
         return instance
 
     def save(self, *args, **kwargs):
+        """Checking not changeable fields before saving"""
         if not self._state.adding:
             not_changeable_fields = getattr(self, 'not_changeable_fields', ())
             for field_name in not_changeable_fields:
