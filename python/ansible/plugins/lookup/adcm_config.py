@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=wrong-import-position, unused-import, import-error
+# pylint: disable=wrong-import-position, import-error
 
 import sys
 
@@ -18,14 +18,14 @@ from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
 
 try:
-    from __main__ import display
+    from __main__ import display  # pylint: disable=unused-import
 except ImportError:
     from ansible.utils.display import Display  # pylint: disable=ungrouped-imports
 
     display = Display()
 
 sys.path.append('/adcm/python')
-import adcm.init_django
+import adcm.init_django  # pylint: disable=unused-import
 from cm.logger import log
 from cm.ansible_plugin import (
     set_service_config,

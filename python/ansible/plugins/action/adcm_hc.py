@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=wrong-import-position, unused-import, import-error
+# pylint: disable=wrong-import-position, import-error
 
 from __future__ import absolute_import, division, print_function
 
@@ -54,7 +54,7 @@ from ansible.errors import AnsibleError
 from ansible.plugins.action import ActionBase
 
 sys.path.append('/adcm/python')
-import adcm.init_django
+import adcm.init_django  # pylint: disable=unused-import
 from cm.ansible_plugin import get_object_id_from_context, change_hc
 from cm.errors import AdcmEx
 from cm.logger import log

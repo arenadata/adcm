@@ -130,9 +130,10 @@ def gen_action(name='', bundle=None, prototype=None) -> models.Action:
     """Generate action from specified prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
-        prototype = gen_prototype(bundle, 'action')
+        prototype = gen_prototype(bundle, 'service')
     return models.Action.objects.create(
         **_gen_name(name),
+        display_name=f'Test {prototype.type} action',
         prototype=prototype,
         type='task',
         script='',
@@ -144,6 +145,15 @@ def gen_task_log(obj) -> models.TaskLog:
     return models.TaskLog.objects.create(
         action=gen_action(),
         object_id=obj.pk,
+        status='CREATED',
+        start_date=timezone.now(),
+        finish_date=timezone.now(),
+    )
+
+
+def gen_job_log(task) -> models.JobLog:
+    return models.JobLog.objects.create(
+        task=task,
         status='CREATED',
         start_date=timezone.now(),
         finish_date=timezone.now(),

@@ -54,6 +54,7 @@ ERRORS = {
     'PERMISSION_NOT_FOUND': ("permission is not found", rfs.HTTP_404_NOT_FOUND, ERR),
     'MODULE_NOT_FOUND': ("module doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),
     'FUNCTION_NOT_FOUND': ("function doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),
+    'AGENDAITEM_NOT_FOUND': ("agenda item doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),
     'TASK_GENERATOR_ERROR': ("task generator error", rfs.HTTP_409_CONFLICT, ERR),
     'OBJ_TYPE_ERROR': ("wrong object type", rfs.HTTP_409_CONFLICT, ERR),
     'SERVICE_CONFLICT': ("service already exists in specified cluster", rfs.HTTP_409_CONFLICT, ERR),

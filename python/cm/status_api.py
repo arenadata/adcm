@@ -26,8 +26,11 @@ class Event:
     def __init__(self):
         self.events = []
 
+    def __del__(self):
+        self.send_state()
+
     def send_state(self):
-        for _ in range(len(self.events)):
+        while self.events:
             try:
                 event = self.events.pop(0)
                 func, args = event

@@ -29,6 +29,7 @@ from django.utils import timezone
 from cm import config
 from cm import api, issue, inventory, adcm_config, variant
 from cm.adcm_config import obj_ref, process_file_type
+from cm.api_context import ctx
 from cm.errors import raise_AdcmEx as err
 from cm.hierarchy import Tree
 from cm.inventory import get_obj_config, process_config_and_attr
@@ -53,7 +54,7 @@ from cm.models import (
     get_object_cluster,
     get_model_by_type,
 )
-from cm.status_api import Event, post_event
+from cm.status_api import post_event
 
 
 def start_task(action, obj, conf, attr, hc, hosts, verbose):
@@ -61,11 +62,13 @@ def start_task(action, obj, conf, attr, hc, hosts, verbose):
         msg = f'unknown type "{action.type}" for action: {action}, {action.context}: {obj.name}'
         err('WRONG_ACTION_TYPE', msg)
 
-    event = Event()
-    task = prepare_task(action, obj, conf, attr, hc, hosts, event, verbose)
-    event.send_state()
-    run_task(task, event)
-    event.send_state()
+    task = prepare_task(
+        action,
+        obj,
+        conf, attr, hc, hosts, ctx.event, verbose)
+    ctx.event.send_state()
+    run_task(task, ctx.event)
+    ctx.event.send_state()
     log_rotation()
 
     return task
@@ -121,7 +124,7 @@ def prepare_task(
             create_job(action, None, event, task)
 
         if host_map:
-            api.save_hc(cluster, host_map, task.lock)
+            api.save_hc(cluster, host_map)
 
         if conf:
             new_conf = process_config_and_attr(task, conf, attr, spec)
@@ -133,15 +136,14 @@ def prepare_task(
 
 
 def restart_task(task):
-    event = Event()
     if task.status in (config.Job.CREATED, config.Job.RUNNING):
         err('TASK_ERROR', f'task #{task.id} is running')
     elif task.status == config.Job.SUCCESS:
-        run_task(task, event)
-        event.send_state()
+        run_task(task, ctx.event)
+        ctx.event.send_state()
     elif task.status in (config.Job.FAILED, config.Job.ABORTED):
-        run_task(task, event, 'restart')
-        event.send_state()
+        run_task(task, ctx.event, 'restart')
+        ctx.event.send_state()
     else:
         err('TASK_ERROR', f'task #{task.id} has unexpected status: {task.status}')
 
@@ -166,6 +168,7 @@ def cancel_task(task):
         i += 1
     if i == 10:
         err('NO_JOBS_RUNNING', 'no jobs running')
+    task.unlock_affected(ctx.event)
     os.kill(task.pid, signal.SIGTERM)
 
 
@@ -613,7 +616,7 @@ def restore_hc(task, action, status):
         host_comp_list.append((service, host, comp))
 
     log.warning('task #%s is failed, restore old hc', task.id)
-    api.save_hc(cluster, host_comp_list, task.lock)
+    api.save_hc(cluster, host_comp_list)
 
 
 def finish_task(task, job, status):
@@ -627,15 +630,14 @@ def finish_task(task, job, status):
     except model.DoesNotExist:
         obj = None
     state = get_state(action, job, status)
-    event = Event()
     with transaction.atomic():
         DummyData.objects.filter(id=1).update(date=timezone.now())
         if state is not None:
             set_action_state(action, task, obj, state)
         restore_hc(task, action, status)
-        task.unlock_affected(event)
-        set_task_status(task, status, event)
-    event.send_state()
+        task.unlock_affected(ctx.event)
+        set_task_status(task, status, ctx.event)
+    ctx.event.send_state()
 
 
 def cook_log_name(tag, level, ext='txt'):

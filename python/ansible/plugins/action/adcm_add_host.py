@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=wrong-import-position, unused-import, import-error
+# pylint: disable=wrong-import-position, import-error
 
 from __future__ import absolute_import, division, print_function
 
@@ -54,12 +54,11 @@ from ansible.errors import AnsibleError
 from ansible.plugins.action import ActionBase
 
 sys.path.append('/adcm/python')
-import adcm.init_django
+import adcm.init_django  # pylint: disable=unused-import
 import cm.api
 from cm.ansible_plugin import get_object_id_from_context
 from cm.errors import AdcmEx
 from cm.logger import log
-from cm.models import JobLog
 
 
 class ActionModule(ActionBase):
@@ -81,12 +80,8 @@ class ActionModule(ActionBase):
 
         log.info('ansible module adcm_add_host: provider %s, fqdn %s', provider_id, fqdn)
 
-        job_id = task_vars['job']['id']
-        job = JobLog.objects.get(id=job_id)
-        lock = getattr(job.task, 'lock', None)
-
         try:
-            host = cm.api.add_provider_host(provider_id, fqdn, desc, lock)
+            host = cm.api.add_provider_host(provider_id, fqdn, desc)
         except AdcmEx as e:
             raise AnsibleError(e.code + ":" + e.msg) from e
 

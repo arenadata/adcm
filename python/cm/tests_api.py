@@ -95,10 +95,10 @@ class TestApi(TestCase):
         mock_update_issues.assert_called_once_with(self.cluster)
         mock_load_service_map.assert_called_once()
 
+    @patch('cm.api.ctx')
     @patch('cm.status_api.load_service_map')
     @patch('cm.issue.update_hierarchy_issues')
-    @patch('cm.status_api.post_event')
-    def test_save_hc__big_update__locked_hierarchy(self, mock_post, mock_update, mock_load):
+    def test_save_hc__big_update__locked_hierarchy(self, mock_post, mock_load, ctx):
         """
         Update bigger HC map - move `component_2` from `host_2` to `host_3`
         On locked hierarchy (from ansible task)
@@ -121,6 +121,7 @@ class TestApi(TestCase):
         tree = cm.hierarchy.Tree(self.cluster)
         affected = (node.value for node in tree.get_all_affected(tree.built_from))
         task.lock_affected(affected)
+        ctx.lock = task.lock
 
         # refresh due to new instances were updated in task.lock_affected()
         host_1.refresh_from_db()
@@ -134,7 +135,7 @@ class TestApi(TestCase):
             (service, host_1, component_1),
             (service, host_3, component_2),
         ]
-        api_module.save_hc(self.cluster, new_hc_list, task.lock)
+        api_module.save_hc(self.cluster, new_hc_list)
 
         # refresh due to new instances were updated in save_hc()
         host_1.refresh_from_db()
@@ -146,8 +147,7 @@ class TestApi(TestCase):
 
     @patch('cm.status_api.load_service_map')
     @patch('cm.issue.update_hierarchy_issues')
-    @patch('cm.status_api.post_event')
-    def test_save_hc__big_update__unlocked_hierarchy(self, mock_post, mock_update, mock_load):
+    def test_save_hc__big_update__unlocked_hierarchy(self, mock_update, mock_load):
         """
         Update bigger HC map - move `component_2` from `host_2` to `host_3`
         On unlocked hierarchy (from API)
