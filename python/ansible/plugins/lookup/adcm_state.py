@@ -10,14 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=wrong-import-position, unused-import, import-error
+# pylint: disable=wrong-import-position, import-error
 
 
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
 
 try:
-    from __main__ import display
+    from __main__ import display  # pylint: disable=unused-import
 except ImportError:
     from ansible.utils.display import Display  # pylint: disable=ungrouped-imports
 
@@ -26,10 +26,8 @@ except ImportError:
 import sys
 
 sys.path.append('/adcm/python')
-import adcm.init_django
-import cm.status_api
+import adcm.init_django  # pylint: disable=unused-import
 from cm.logger import log
-from cm.status_api import Event
 from cm.ansible_plugin import (
     set_service_state,
     set_service_state_by_id,
@@ -76,7 +74,6 @@ class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs):  # pylint: disable=too-many-branches
         log.debug('run %s %s', terms, kwargs)
         ret = []
-        event = Event()
         if len(terms) < 2:
             msg = 'not enough arguments to set state ({} of 2)'
             raise AnsibleError(msg.format(len(terms)))
@@ -103,13 +100,12 @@ class LookupModule(LookupBase):
             if 'provider' not in variables:
                 raise AnsibleError('there is no provider in hostvars')
             provider = variables['provider']
-            res = set_provider_state(provider['id'], terms[1], event)
+            res = set_provider_state(provider['id'], terms[1])
         elif terms[0] == 'host':
             if 'adcm_hostid' not in variables:
                 raise AnsibleError('there is no adcm_hostid in hostvars')
             res = set_host_state(variables['adcm_hostid'], terms[1])
         else:
             raise AnsibleError('unknown object type: %s' % terms[0])
-        event.send_state()
         ret.append(res)
         return ret

@@ -12,7 +12,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from itertools import chain
-from typing import Iterable
+from typing import Iterable, Optional
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -246,7 +246,6 @@ class ADCMEntity(ADCMModel):
         if event:
             event.set_object_state(self.prototype.type, self.id, state)
         log.info('set %s state to "%s"', self, state)
-        return self
 
 
 class ADCM(ADCMEntity):
@@ -498,7 +497,7 @@ class Action(ADCMModel):
         return self.prototype.type
 
     def __str__(self):
-        return "{} {}".format(self.prototype, self.name)
+        return "{} {}".format(self.prototype, self.display_name or self.name)
 
     class Meta:
         unique_together = (('prototype', 'name'),)
@@ -642,14 +641,29 @@ class TaskLog(ADCMModel):
     finish_date = models.DateTimeField()
     lock = models.ForeignKey('AgendaItem', null=True, on_delete=models.SET_NULL, default=None)
 
+    def get_target_object(self) -> Optional[ADCMEntity]:
+        obj = None
+        for obj_type, obj_id in self.selector.items():
+            if obj_id == self.object_id:
+                try:
+                    obj = get_model_by_type(obj_type).objects.get(id=obj_id)
+                    break
+                except ObjectDoesNotExist:
+                    pass
+        return obj
+
     def lock_affected(self, objects: Iterable[ADCMEntity], event=None) -> None:
         if self.lock:
             return
 
-        self.lock = AgendaItem.objects.create(
-            name=None,
-            reason=AgendaItem.gen_lock_reason(self),
-        )
+        target = self.get_target_object()
+        reason = {
+            'message': f'Object was locked by running action "{self.action}" on "{target}"',
+            'action_id': self.action and self.action.id,
+            'action target': target and {'type': target.prototype.type, 'id': target.pk},
+            'task_id': self.id,
+        }
+        self.lock = AgendaItem.objects.create(name=None, reason=reason)
         self.save()
         for obj in objects:
             obj.add_to_agenda(self.lock)
@@ -887,20 +901,3 @@ class AgendaItem(ADCMModel):
             self.hostprovider_entities.all(),
             self.host_entities.all(),
         )
-
-    @staticmethod
-    def gen_lock_reason(task: TaskLog) -> dict:
-        action = task.action
-        target = ADCM.obj.get(id=1)  # TODO: fix it
-
-        return {
-            'message': f'Object was locked by running action "{action.display_name}" on "{target}"',
-            'action_id': action.pk,
-            'action target': {'type': target.prototype.type, 'id': target.pk},
-        }
-
-    def gen_issue_reason(self) -> dict:  # TODO: ...
-        ...
-
-    def gen_flag_reason(self) -> dict:  # TODO: ...
-        ...

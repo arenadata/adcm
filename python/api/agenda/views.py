@@ -23,6 +23,9 @@ class AgendaItemList(PageView):
 
     queryset = AgendaItem.objects.all()
     serializer_class = serializers.AgendaItemSerializer
+    serializer_class_ui = serializers.AgendaItemDetailSerializer
+    filterset_fields = ('name',)
+    ordering_fields = ('name',)
 
 
 class AgendaItemDetail(DetailViewRO):

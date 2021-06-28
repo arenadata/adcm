@@ -29,6 +29,7 @@ from cm.adcm_config import (
     read_bundle_file,
     save_obj_config,
 )
+from cm.api_context import ctx
 from cm.errors import AdcmEx, raise_AdcmEx as err
 from cm.logger import log
 from cm.models import (
@@ -41,14 +42,12 @@ from cm.models import (
     Host,
     HostComponent,
     HostProvider,
-    AgendaItem,
     Prototype,
     PrototypeExport,
     PrototypeImport,
     Role,
     ServiceComponent,
 )
-from cm.status_api import Event
 from cm.upgrade import check_license, version_in
 
 
@@ -74,31 +73,30 @@ def add_cluster(proto, name, desc=''):
     return cluster
 
 
-def add_host(proto, provider, fqdn, desc='', lock: AgendaItem = None):
+def add_host(proto, provider, fqdn, desc=''):
     check_proto_type(proto, 'host')
     check_license(proto.bundle)
     if proto.bundle != provider.prototype.bundle:
         msg = 'Host prototype bundle #{} does not match with host provider bundle #{}'
         err('FOREIGN_HOST', msg.format(proto.bundle.id, provider.prototype.bundle.id))
     spec, _, conf, attr = get_prototype_config(proto)
-    event = Event()
     with transaction.atomic():
         obj_conf = init_object_config(spec, conf, attr)
         host = Host(
             prototype=proto, provider=provider, fqdn=fqdn, config=obj_conf, description=desc
         )
         host.save()
-        host.add_to_agenda(lock, event)
+        host.add_to_agenda(ctx.lock, ctx.event)
         process_file_type(host, spec, conf)
         cm.issue.update_hierarchy_issues(host)
-    event.send_state()
+    ctx.event.send_state()
     cm.status_api.post_event('create', 'host', host.id, 'provider', str(provider.id))
     cm.status_api.load_service_map()
     log.info(f'host #{host.id} {host.fqdn} is added')
     return host
 
 
-def add_provider_host(provider_id, fqdn, desc='', lock: AgendaItem = None):
+def add_provider_host(provider_id, fqdn, desc=''):
     """
     add provider host
 
@@ -106,7 +104,7 @@ def add_provider_host(provider_id, fqdn, desc='', lock: AgendaItem = None):
     """
     provider = HostProvider.obj.get(id=provider_id)
     proto = Prototype.objects.get(bundle=provider.prototype.bundle, type='host')
-    return add_host(proto, provider, fqdn, desc, lock)
+    return add_host(proto, provider, fqdn, desc)
 
 
 def add_host_provider(proto, name, desc=''):
@@ -117,8 +115,10 @@ def add_host_provider(proto, name, desc=''):
         obj_conf = init_object_config(spec, conf, attr)
         provider = HostProvider(prototype=proto, name=name, config=obj_conf, description=desc)
         provider.save()
+        provider.add_to_agenda(ctx.lock, ctx.event)
         process_file_type(provider, spec, conf)
         cm.issue.update_hierarchy_issues(provider)
+    ctx.event.send_state()
     cm.status_api.post_event('create', 'provider', provider.id)
     log.info(f'host provider #{provider.id} {provider.name} is added')
     return provider
@@ -145,6 +145,7 @@ def add_host_to_cluster(cluster, host):
     with transaction.atomic():
         host.cluster = cluster
         host.save()
+        host.add_to_agenda(ctx.lock, ctx.event)
         cm.issue.update_hierarchy_issues(host)
     cm.status_api.post_event('add', 'host', host.id, 'cluster', str(cluster.id))
     cm.status_api.load_service_map()
@@ -282,7 +283,9 @@ def remove_host_from_cluster(host):
     with transaction.atomic():
         host.cluster = None
         host.save()
+        host.remove_from_agenda(ctx.lock, ctx.event)
         cm.issue.update_hierarchy_issues(cluster)
+    ctx.event.send_state()
     cm.status_api.post_event('remove', 'host', host.id, 'cluster', str(cluster.id))
     cm.status_api.load_service_map()
     return host
@@ -532,15 +535,14 @@ def check_hc(cluster, hc_in):  # pylint: disable=too-many-branches
     return host_comp_list
 
 
-def save_hc(cluster, host_comp_list, lock: AgendaItem = None):
-    event = Event()
+def save_hc(cluster, host_comp_list):
     hc_queryset = HostComponent.objects.filter(cluster=cluster)
     old_hosts = {i.host for i in hc_queryset.select_related('host').all()}
     new_hosts = {i[1] for i in host_comp_list}
     for removed_host in old_hosts.difference(new_hosts):
-        removed_host.remove_from_agenda(lock, event)
+        removed_host.remove_from_agenda(ctx.lock, ctx.event)
     for added_host in new_hosts.difference(old_hosts):
-        added_host.add_to_agenda(lock, event)
+        added_host.add_to_agenda(ctx.lock, ctx.event)
 
     hc_queryset.delete()
     result = []
@@ -553,18 +555,18 @@ def save_hc(cluster, host_comp_list, lock: AgendaItem = None):
         )
         hc.save()
         result.append(hc)
-    event.send_state()
+    ctx.event.send_state()
     cm.status_api.post_event('change_hostcomponentmap', 'cluster', cluster.id)
     cm.issue.update_hierarchy_issues(cluster)
     cm.status_api.load_service_map()
     return result
 
 
-def add_hc(cluster, hc_in, lock: AgendaItem = None):
+def add_hc(cluster, hc_in):
     host_comp_list = check_hc(cluster, hc_in)
     with transaction.atomic():
         DummyData.objects.filter(id=1).update(date=timezone.now())
-        new_hc = save_hc(cluster, host_comp_list, lock)
+        new_hc = save_hc(cluster, host_comp_list)
     return new_hc
 
 

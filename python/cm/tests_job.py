@@ -169,10 +169,7 @@ class TestJob(TestCase):
         )
 
         job_module.restore_hc(task, action, config.Job.FAILED)
-
-        mock_save_hc.assert_called_once_with(
-            cluster, [(cluster_object, host, service_component)], None
-        )
+        mock_save_hc.assert_called_once_with(cluster, [(cluster_object, host, service_component)])
 
     @patch('cm.job.err')
     def test_check_service_task(self, mock_err):
