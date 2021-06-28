@@ -40,6 +40,8 @@ class APIRoot(routers.APIRootView):
         'host': 'host',
         'service': 'service',
         'component': 'component',
+        'config-group': 'config-group-list',
+        'host-group': 'host-group-list',
         'job': 'job',
         'stack': 'stack',
         'stats': 'stats',

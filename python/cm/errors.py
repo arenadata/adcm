@@ -112,6 +112,11 @@ ERRORS = {
     'NO_JOBS_RUNNING': ("no jobs running", rfs.HTTP_409_CONFLICT, ERR),
     'BAD_QUERY_PARAMS': ("bad query params", rfs.HTTP_400_BAD_REQUEST),
     'DUMP_LOAD_CLUSTER_ERROR': ("Dumping or Loading error", rfs.HTTP_409_CONFLICT),
+    'HOST_GROUP_ERROR': (
+        "host already is a member of another group of this object",
+        rfs.HTTP_409_CONFLICT,
+    ),
+    'NOT_CHANGEABLE_FIELDS': ("fields cannot be changed", rfs.HTTP_400_BAD_REQUEST, ERR),
 }
 
 

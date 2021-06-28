@@ -13,11 +13,12 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.models import User, Group, Permission
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 
 from cm.errors import AdcmEx
-
 
 PROTO_TYPE = (
     ('adcm', 'adcm'),
@@ -95,6 +96,40 @@ class ADCMModel(models.Model):
 
     class Meta:
         abstract = True
+
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        """
+        Saving the current instance values from the database for `not_changeable_fields` feature
+        """
+        # Default implementation of from_db()
+        if len(values) != len(cls._meta.concrete_fields):
+            values_iter = iter(values)
+            values = [
+                next(values_iter) if f.attname in field_names else models.DEFERRED
+                for f in cls._meta.concrete_fields
+            ]
+        instance = cls(*values)
+        instance._state.adding = False
+        instance._state.db = db
+        # customization to store the original field values on the instance
+        # pylint: disable=attribute-defined-outside-init
+        instance._loaded_values = dict(zip(field_names, values))
+        return instance
+
+    def save(self, *args, **kwargs):
+        """Checking not changeable fields before saving"""
+        if not self._state.adding:
+            not_changeable_fields = getattr(self, 'not_changeable_fields', ())
+            for field_name in not_changeable_fields:
+                if isinstance(getattr(self, field_name), models.Model):
+                    field_name = f'{field_name}_id'
+                if getattr(self, field_name) != self._loaded_values[field_name]:
+                    raise AdcmEx(
+                        'NOT_CHANGEABLE_FIELDS',
+                        f'{", ".join(not_changeable_fields)} fields cannot be changed',
+                    )
+        super().save(*args, **kwargs)
 
 
 class Bundle(ADCMModel):
@@ -194,6 +229,12 @@ class ADCMEntity(ADCMModel):
     state = models.CharField(max_length=64, default='created')
     stack = models.JSONField(default=list)
     issue = models.JSONField(default=dict)
+    config_groups = GenericRelation(
+        'ConfigGroup',
+        object_id_field='object_id',
+        content_type_field='object_type',
+        on_delete=models.CASCADE,
+    )
 
     class Meta:
         abstract = True
@@ -201,6 +242,7 @@ class ADCMEntity(ADCMModel):
 
 class ADCM(ADCMEntity):
     name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
+    config_groups = None
 
     @property
     def bundle_id(self):
@@ -283,6 +325,7 @@ class Host(ADCMEntity):
     description = models.TextField(blank=True)
     provider = models.ForeignKey(HostProvider, on_delete=models.CASCADE, null=True, default=None)
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
+    config_groups = None
 
     __error_code__ = 'HOST_NOT_FOUND'
 
@@ -395,6 +438,44 @@ class ServiceComponent(ADCMEntity):
 
     class Meta:
         unique_together = (('cluster', 'service', 'prototype'),)
+
+
+class ConfigGroup(ADCMModel):
+    object_id = models.PositiveIntegerField()
+    object_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object = GenericForeignKey('object_type', 'object_id')
+    name = models.CharField(max_length=30)
+    description = models.TextField(blank=True)
+    hosts = models.ManyToManyField(Host, blank=True, through='HostGroup')
+    config = models.JSONField(default=dict)
+
+    not_changeable_fields = ('id', 'object_id', 'object_type')
+
+    class Meta:
+        unique_together = ['object_id', 'name', 'object_type']
+
+    def save(self, *args, **kwargs):
+        self.object_type.model_class().obj.get(id=self.object_id)
+        super().save(*args, **kwargs)
+
+
+class HostGroup(ADCMModel):
+    group = models.ForeignKey(ConfigGroup, on_delete=models.CASCADE)
+    host = models.ForeignKey(Host, on_delete=models.CASCADE)
+
+    not_changeable_fields = ('id',)
+
+    class Meta:
+        unique_together = ['group', 'host']
+
+    def save(self, *args, **kwargs):
+        groups = ConfigGroup.objects.filter(
+            object_id=self.group.object_id, object_type=self.group.object_type
+        )
+        for group in groups:
+            if self.host in group.hosts.all():
+                raise AdcmEx('HOST_GROUP_ERROR')
+        super().save(*args, **kwargs)
 
 
 ACTION_TYPE = (
