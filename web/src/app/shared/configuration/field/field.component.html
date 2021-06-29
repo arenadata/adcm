@@ -34,8 +34,8 @@
     </ng-container>
 
     <span class="info" style="align-self: baseline;">
-      <mat-icon style="vertical-align: middle;" [ngClass]="'info-icon'" *ngIf="options.description"
-        [appTooltip]="options.description">info_outline</mat-icon>
+      <mat-icon *ngIf="options.description" style="vertical-align: middle;" [ngClass]="'info-icon'"
+                matTooltipClass="info-tooltip" [matTooltip]="options.description">info_outline</mat-icon>
       <button (click)="restore()" [disabled]="options.read_only" mat-icon-button matSuffix color="primary" matTooltip="Reset to default">
         <mat-icon>refresh</mat-icon>
       </button>
