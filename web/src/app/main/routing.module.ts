@@ -11,7 +11,7 @@
 // limitations under the License.
 import { NgModule } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { AuthGuard } from '@app/core';
+import { AuthGuard } from '@app/core/auth/auth.guard';
 import { LogComponent } from '@app/ws-logs/log.component';
 
 import { LoginComponent } from './login/login.component';
@@ -34,10 +34,6 @@ import { SupportComponent } from './support/support.component';
         path: 'admin',
         loadChildren: () => import('app/admin/admin.module').then(m => m.AdminModule),
       },
-      // {
-      //   path: 'wizard',
-      //   loadChildren: () => import('app/wizard/wizard.module').then(m => m.WizardModule),
-      // },
       { path: '**', component: PageNotFoundComponent },
     ]),
   ],

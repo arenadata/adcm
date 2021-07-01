@@ -141,22 +141,22 @@ class TestJob(TestCase):
 
                 mock_push_obj.assert_called_with(obj, state)
 
-    @patch('cm.job.api.set_object_state')
-    def test_unlock_obj(self, mock_set_object_state):
+    def test_unlock_obj(self):
         event = Mock()
+        obj1 = Mock(stack=['running'])
+        obj2 = Mock(stack=[])
+        obj3 = Mock(stack='')
+
         data = [
-            (Mock(stack=['running']), mock_set_object_state.assert_called_once),
-            (Mock(stack=[]), mock_set_object_state.assert_not_called),
-            (Mock(stack=''), mock_set_object_state.assert_not_called),
+            (obj1, obj1.set_state.assert_called_once),
+            (obj2, obj2.set_state.assert_not_called),
+            (obj3, obj3.set_state.assert_not_called),
         ]
 
         for obj, check_assert in data:
             with self.subTest(obj=obj):
-
                 lock_module._unlock_obj(obj, event)
-
                 check_assert()
-                mock_set_object_state.reset_mock()
 
     @patch('cm.lock._unlock_obj')
     def test_unlock_objects(self, mock_unlock_obj):

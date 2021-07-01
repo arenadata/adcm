@@ -19,6 +19,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 
 from cm.errors import AdcmEx
+from cm.logger import log
 
 
 PROTO_TYPE = (
@@ -199,13 +200,32 @@ class ConfigLog(ADCMModel):
     __error_code__ = 'CONFIG_NOT_FOUND'
 
 
-class ADCM(ADCMModel):
+class ADCMEntity(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
-    name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
     stack = models.JSONField(default=list)
     issue = models.JSONField(default=dict)
+
+    class Meta:
+        abstract = True
+
+    def __str__(self):
+        """Legacy `cm.adcm_config.obj_ref()` to avoid cyclic imports"""
+        name = getattr(self, 'name', None) or getattr(self, 'fqdn', self.prototype.name)
+        return '{} #{} "{}"'.format(self.prototype.type, self.id, name)
+
+    def set_state(self, state: str, event=None) -> 'ADCMEntity':
+        """Legacy `cm.api.set_object_state()` to avoid cyclic imports"""
+        self.state = state
+        self.save()
+        event.set_object_state(self.prototype.type, self.id, state)
+        log.info('set %s state to "%s"', self, state)
+        return self
+
+
+class ADCM(ADCMEntity):
+    name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
 
     @property
     def bundle_id(self):
@@ -221,14 +241,9 @@ class ADCM(ADCMModel):
         return result if result['issue'] else {}
 
 
-class Cluster(ADCMModel):
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
+class Cluster(ADCMEntity):
     name = models.CharField(max_length=80, unique=True)
     description = models.TextField(blank=True)
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
 
     __error_code__ = 'CLUSTER_NOT_FOUND'
 
@@ -257,14 +272,9 @@ class Cluster(ADCMModel):
         return result if result['issue'] else {}
 
 
-class HostProvider(ADCMModel):
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
+class HostProvider(ADCMEntity):
     name = models.CharField(max_length=80, unique=True)
     description = models.TextField(blank=True)
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
 
     __error_code__ = 'PROVIDER_NOT_FOUND'
 
@@ -293,16 +303,11 @@ class HostProvider(ADCMModel):
         return result if result['issue'] else {}
 
 
-class Host(ADCMModel):
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
+class Host(ADCMEntity):
     fqdn = models.CharField(max_length=160, unique=True)
     description = models.TextField(blank=True)
     provider = models.ForeignKey(HostProvider, on_delete=models.CASCADE, null=True, default=None)
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
 
     __error_code__ = 'HOST_NOT_FOUND'
 
@@ -326,14 +331,9 @@ class Host(ADCMModel):
         return result if result['issue'] else {}
 
 
-class ClusterObject(ADCMModel):
+class ClusterObject(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     service = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
 
     __error_code__ = 'CLUSTER_SERVICE_NOT_FOUND'
 
@@ -374,14 +374,10 @@ class ClusterObject(ADCMModel):
         unique_together = (('cluster', 'prototype'),)
 
 
-class ServiceComponent(ADCMModel):
+class ServiceComponent(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE, null=True, default=None)
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
 
     __error_code__ = 'COMPONENT_NOT_FOUND'
 

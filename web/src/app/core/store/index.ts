@@ -19,7 +19,8 @@ import { IssueEffect, issueReducer, IssueState } from './issue';
 import { ProfileEffects, profileReducer, ProfileState } from './profile';
 import { SocketEffect } from './sockets/socket.effect';
 import { socketReducer, SocketState } from './sockets/socket.reducer';
-import { NavigationEffects, navigationReducer, NavigationState } from '@app/store/navigation/navigation.store';
+import { navigationReducer, NavigationState } from '@app/store/navigation/navigation.store';
+import { NavigationEffects } from '@app/store/navigation/navigation-effects';
 
 export interface State {
   auth: AuthState;

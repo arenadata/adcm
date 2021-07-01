@@ -9,22 +9,8 @@ import { ObjectsHelper } from '../helpers/objects-helper';
 })
 export class ObjectLinkColumnPipe implements PipeTransform {
 
-  getCluster(task: Task) {
-    return ObjectsHelper.getObject(task.objects, 'cluster');
-  }
-
-  getService(task: Task) {
-    return ObjectsHelper.getObject(task.objects, 'service');
-  }
-
   url(object: JobObject, task: Task): string[] {
-    if (object.type === 'cluster' || !this.getCluster(task)) {
-      return ['/', object.type, `${object.id}`];
-    } else if (object.type === 'component' && this.getService(task)) {
-      return ['/', 'cluster', `${this.getCluster(task).id}`, 'service', `${this.getService(task).id}`, object.type, `${object.id}`];
-    } else {
-      return ['/', 'cluster', `${this.getCluster(task).id}`, object.type, `${object.id}`];
-    }
+    return ObjectsHelper.getObjectUrl(object, task.objects);
   }
 
   transform(object: JobObject, task: Task): ILinkColumn<Task> {
