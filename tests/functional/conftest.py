@@ -4,7 +4,11 @@ import allure
 
 
 @allure.title("Additional ADCM init config")
-@pytest.fixture(scope="session", params=[{}, {"fill_dummy_data": True}], ids=["clean_adcm", "adcm_with_dummy_data"])
+@pytest.fixture(
+    scope="session",
+    params=[{}, {"fill_dummy_data": True}],
+    ids=["clean_adcm", "adcm_with_dummy_data"]
+)
 def additional_adcm_init_config(request) -> dict:
     """
     Add options for ADCM init.
