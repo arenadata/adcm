@@ -472,7 +472,12 @@ class ConfigGroup(ADCMModel):
     name = models.CharField(max_length=30)
     description = models.TextField(blank=True)
     hosts = models.ManyToManyField(Host, blank=True, through='HostGroup')
-    config = models.JSONField(default=dict)
+    config = models.OneToOneField(
+        ObjectConfig, on_delete=models.CASCADE, null=True, related_name='config_group'
+    )
+    config_diff = models.OneToOneField(
+        ObjectConfig, on_delete=models.CASCADE, null=True, related_name='config_group_diff'
+    )
 
     not_changeable_fields = ('id', 'object_id', 'object_type')
 
@@ -480,7 +485,11 @@ class ConfigGroup(ADCMModel):
         unique_together = ['object_id', 'name', 'object_type']
 
     def save(self, *args, **kwargs):
-        self.object_type.model_class().obj.get(id=self.object_id)
+        obj = self.object_type.model_class().obj.get(id=self.object_id)
+        if self.config is None:
+            self.config = obj.config
+        if self.config_diff is None:
+            self.config_diff = ObjectConfig.objects.create(current=0, previous=0)
         super().save(*args, **kwargs)
 
 
