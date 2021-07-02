@@ -578,7 +578,11 @@ def finish_task(task, job, status):
     # GenericForeignKey does not work here (probably because of cashing)
     # obj = task.task_object
     model = get_model_by_type(task.action.prototype.type)
-    obj = model.objects.get(id=task.object_id)
+    # In case object was deleted from ansible plugin in job
+    try:
+        obj = model.objects.get(id=task.object_id)
+    except model.DoesNotExist:
+        obj = None
     state = get_state(action, job, status)
     event = Event()
     with transaction.atomic():
