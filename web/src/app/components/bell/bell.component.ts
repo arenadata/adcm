@@ -124,6 +124,11 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
     return this.taskService.events(['change_job_status']).pipe(this.takeUntil());
   }
 
+  decRunningCount() {
+    const runningCount = this.runningCount.value - 1;
+    this.runningCount.next(runningCount < 0 ? 0 : runningCount);
+  }
+
   listenToJobs() {
     this.getChangeTaskObservable().subscribe((event) => {
       const status = event.object.details.value;
@@ -132,11 +137,11 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
         this.afterCountChanged();
       } else if (status === 'success') {
         this.successCount.next(this.successCount.value + 1);
-        this.runningCount.next(this.runningCount.value - 1);
+        this.decRunningCount();
         this.afterCountChanged();
       } else if (status === 'failed') {
         this.failedCount.next(this.failedCount.value + 1);
-        this.runningCount.next(this.runningCount.value - 1);
+        this.decRunningCount();
         this.afterCountChanged();
       }
     });
