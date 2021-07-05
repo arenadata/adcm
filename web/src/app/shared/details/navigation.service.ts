@@ -79,7 +79,7 @@ const all = [
   { id: 3, title: 'Hosts - Components', url: 'host_component' },
 ];
 
-const [main, license, config, m_status, m_import, actions, services, host_components] = all;
+const [main, license, config, m_status, m_import, actions, services, hosts, host_components] = all;
 
 const components = {
   id: 8,
@@ -89,7 +89,7 @@ const components = {
 
 export const Config = {
   menu: {
-    cluster: [main, config, m_status, m_import, actions, services, host_components].sort((a, b) => a.id - b.id),
+    cluster: [main, config, m_status, m_import, actions, services, hosts, host_components].sort((a, b) => a.id - b.id),
     service: [main, components, config, m_status, m_import, actions],
     host: [main, config, m_status, actions],
     provider: [main, config, actions],
