@@ -23,7 +23,7 @@ from adcm_pytest_plugin.utils import random_string
 @pytest.fixture(scope="session")
 def additional_adcm_init_config() -> dict:
     """
-    This tests are meant to be executed on the clean ADCM ONLY
+    These tests are meant to be executed on the clean ADCM ONLY
     """
     return {}
 

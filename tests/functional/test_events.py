@@ -30,7 +30,7 @@ R_WWW_PREFIX = re.compile(r"https?://(www.\.)?")
 @pytest.fixture(scope="session")
 def additional_adcm_init_config() -> dict:
     """
-    This tests are meant to be executed on the clean ADCM ONLY
+    These tests are meant to be executed on the clean ADCM ONLY
     """
     return {}
 
