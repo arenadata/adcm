@@ -79,7 +79,7 @@ class TestHost:
         for host in sdk_client_fs.host_list():
             actual.append(host.fqdn)
         with allure.step("Check created hosts with the data from the API"):
-            assert actual == expected
+            assert expected in actual
 
     def test_create_hostcomponent(self, sdk_client_fs: ADCMClient, provider: Provider):
         """
