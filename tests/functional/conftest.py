@@ -6,7 +6,10 @@ import allure
 @allure.title("Additional ADCM init config")
 @pytest.fixture(
     scope="session",
-    params=[{}, {"fill_dummy_data": True}],
+    params=[
+        pytest.param({}, id="clean_adcm"),
+        pytest.param({"fill_dummy_data": True}, id="adcm_with_dummy_data", marks=[pytest.mark.full]),
+    ],
     ids=["clean_adcm", "adcm_with_dummy_data"]
 )
 def additional_adcm_init_config(request) -> dict:
