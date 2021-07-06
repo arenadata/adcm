@@ -52,25 +52,12 @@ def write_json_file(f_name, j_data):
     return f_path
 
 
-def pytest_addoption(parser):
-    parser.addoption(
-        "--firefox",
-        action="store_true",
-        default=False,
-        help='Additionally run UI tests on Firefox browser.',
-    )
-
-
 def pytest_generate_tests(metafunc):
     """
     Parametrize web_driver fixture of browser names based on run options
     """
     if 'browser' in metafunc.fixturenames:
-        browsers = ['Chrome']
-        firefox = metafunc.config.getoption('--firefox')
-        if firefox:
-            browsers.append('Firefox')
-
+        browsers = [pytest.param("Chrome"), pytest.param("Firefox", marks=[pytest.mark.full])]
         metafunc.parametrize('browser', browsers, scope='session')
 
 
