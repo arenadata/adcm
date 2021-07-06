@@ -50,9 +50,9 @@ def test_field_validation(sdk_client_fs: ADCMClient, missed_field):
         job = task.job()
         logs = job.log_list()
         current_len = len(logs)
-        assert current_len == params["logs_amount"], (
-            f'Logs count not equal {params["logs_amount"]}, current log count {current_len}'
-        )
+        assert (
+            current_len == params["logs_amount"]
+        ), f'Logs count not equal {params["logs_amount"]}, current log count {current_len}'
 
 
 @pytest.mark.parametrize(
@@ -80,21 +80,21 @@ def test_all_fields(
     with allure.step("Check all fields after action execution"):
         logs = job.log_list()
         content = job.log(job_id=job.id, log_id=logs[2].id).content[0]
-        assert content["message"] == group_msg, (
-            f'Expected message {group_msg}. Current message {content["message"]}'
-        )
+        assert (
+            content["message"] == group_msg
+        ), f'Expected message {group_msg}. Current message {content["message"]}'
         assert content["result"] is group_result
-        assert content["title"] == params["expected_title"], (
-            f'Expected title {params["expected_title"]}. Current title {content["title"]}'
-        )
+        assert (
+            content["title"] == params["expected_title"]
+        ), f'Expected title {params["expected_title"]}. Current title {content["title"]}'
         content_title = content["content"][0]["title"]
-        assert content_title == params["content_title"], (
-            f'Expected title {params["content_title"]}. Current title {content_title}'
-        )
+        assert (
+            content_title == params["content_title"]
+        ), f'Expected title {params["content_title"]}. Current title {content_title}'
         content_message = content["content"][0]["message"]
-        assert content_message == task_msg, (
-            f"Expected message {task_msg}. Current message {content_message}"
-        )
+        assert (
+            content_message == task_msg
+        ), f"Expected message {task_msg}. Current message {content_message}"
         assert content["content"][0]["result"] is task_result
 
 
@@ -124,9 +124,9 @@ def test_message_with_other_field(sdk_client_fs: ADCMClient, name):
         logs = job.log_list()
         log = job.log(log_id=logs[2].id)
         content = log.content[0]
-        assert content["message"] == name, (
-            f'Expected content message {name}. Current {content["message"]}'
-        )
+        assert (
+            content["message"] == name
+        ), f'Expected content message {name}. Current {content["message"]}'
 
 
 def test_success_and_fail_msg_on_success(sdk_client_fs: ADCMClient):
@@ -215,15 +215,15 @@ def test_multiple_tasks(sdk_client_fs: ADCMClient):
     with allure.step("Check log's messages, titles and results."):
         for result in expected_result:
             log_entry = log.content[expected_result.index(result)]
-            assert result[0] == log_entry["message"], (
-                f"Expected message {result[0]}. Actual message {log_entry['message']}"
-            )
-            assert result[1] == log_entry["title"], (
-                f"Expected title {result[1]}. Actual title {log_entry['title']}"
-            )
-            assert result[2] is log_entry["result"], (
-                f"Expected result {result[2]}. Actual result {log_entry['result']}"
-            )
+            assert (
+                result[0] == log_entry["message"]
+            ), f"Expected message {result[0]}. Actual message {log_entry['message']}"
+            assert (
+                result[1] == log_entry["title"]
+            ), f"Expected title {result[1]}. Actual title {log_entry['title']}"
+            assert (
+                result[2] is log_entry["result"]
+            ), f"Expected result {result[2]}. Actual result {log_entry['result']}"
 
 
 def test_multiple_group_tasks(sdk_client_fs: ADCMClient):
@@ -268,40 +268,40 @@ def test_multiple_group_tasks(sdk_client_fs: ADCMClient):
     with allure.step("Check log's messages, titles and results."):
         for result in expected_result_groups:
             log_entry = log.content[expected_result_groups.index(result)]
-            assert result[0] == log_entry["message"], (
-                f"Expected message {result[0]}. Actual message {log_entry['message']}"
-            )
-            assert result[1] == log_entry["title"], (
-                f"Expected title {result[1]}. Actual title {log_entry['title']}"
-            )
-            assert result[2] is log_entry["result"], (
-                f"Expected result {result[2]}. Actual result {log_entry['result']}"
-            )
+            assert (
+                result[0] == log_entry["message"]
+            ), f"Expected message {result[0]}. Actual message {log_entry['message']}"
+            assert (
+                result[1] == log_entry["title"]
+            ), f"Expected title {result[1]}. Actual title {log_entry['title']}"
+            assert (
+                result[2] is log_entry["result"]
+            ), f"Expected result {result[2]}. Actual result {log_entry['result']}"
     with allure.step("Check group content"):
         group1 = log.content[0]["content"]
         group2 = log.content[1]
         for result in group1_expected:
             log_entry = group1[group1_expected.index(result)]
-            assert result[0] == log_entry["title"], (
-                f"Expected title {result[0]}. Actual message {log_entry['title']}"
-            )
-            assert result[1] == log_entry["message"], (
-                f"Expected message {result[1]}. Actual message {log_entry['message']}"
-            )
-            assert result[2] is log_entry["result"], (
-                f"Expected result {result[2]}. Actual result {log_entry['result']}"
-            )
+            assert (
+                result[0] == log_entry["title"]
+            ), f"Expected title {result[0]}. Actual message {log_entry['title']}"
+            assert (
+                result[1] == log_entry["message"]
+            ), f"Expected message {result[1]}. Actual message {log_entry['message']}"
+            assert (
+                result[2] is log_entry["result"]
+            ), f"Expected result {result[2]}. Actual result {log_entry['result']}"
         for result in group2_expected:
             log_entry = group2["content"][group2_expected.index(result)]
-            assert result[0] == log_entry["title"], (
-                f"Expected title {result[0]}. Actual message {log_entry['title']}"
-            )
-            assert result[1] == log_entry["message"], (
-                f"Expected message {result[1]}. Actual message {log_entry['message']}"
-            )
-            assert result[2] is log_entry["result"], (
-                f"Expected result {result[2]}. Actual result {log_entry['result']}"
-            )
+            assert (
+                result[0] == log_entry["title"]
+            ), f"Expected title {result[0]}. Actual message {log_entry['title']}"
+            assert (
+                result[1] == log_entry["message"]
+            ), f"Expected message {result[1]}. Actual message {log_entry['message']}"
+            assert (
+                result[2] is log_entry["result"]
+            ), f"Expected result {result[2]}. Actual result {log_entry['result']}"
 
 
 def test_multiple_group_tasks_without_group_title(sdk_client_fs: ADCMClient):
@@ -322,9 +322,9 @@ def test_multiple_group_tasks_without_group_title(sdk_client_fs: ADCMClient):
         assert len(log.content) == params["logs_amount"], log.content
     with allure.step("Check title and result in log content"):
         for log_entry in log.content:
-            assert log_entry["title"] == "Check log 1", (
-                f"Expected title 'Check log 1'. Current title {log_entry['title']}"
-            )
+            assert (
+                log_entry["title"] == "Check log 1"
+            ), f"Expected title 'Check log 1'. Current title {log_entry['title']}"
             assert log_entry["result"], "Result is False, Expected True"
 
 
