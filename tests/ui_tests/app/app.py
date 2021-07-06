@@ -98,6 +98,8 @@ class ADCMTest:
 
     @allure.step('Open new tab')
     def new_tab(self):
+        self.driver.delete_all_cookies()
+        self.driver.execute_script("window.localStorage.clear();")
         body = self.driver.find_element_by_tag_name("body")
         body.send_keys(Keys.CONTROL + 't')
 
