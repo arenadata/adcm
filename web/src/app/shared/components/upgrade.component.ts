@@ -9,11 +9,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '@app/core/api';
 import { EmmitRow, Issue, isIssue } from '@app/core/types';
-import { concat, Observable, of } from 'rxjs';
+import { BehaviorSubject, concat, Observable, of } from 'rxjs';
 import { filter, map, switchMap } from 'rxjs/operators';
 import { EventHelper } from '@adwp-ui/widgets';
 
@@ -40,29 +40,32 @@ interface Upgrade {
 @Component({
   selector: 'app-upgrade',
   template: `
-    <button
-      mat-icon-button
-      matTooltip="There are a pending upgrades of object here"
-      [appForTest]="'upgrade_btn'"
-      color="warn"
-      [disabled]="!checkIssue()"
-      [matMenuTriggerFor]="menu"
-      (click)="EventHelper.stopPropagation($event)"
-    >
-      <mat-icon>sync_problem</mat-icon>
-    </button>
-    <mat-menu #menu="matMenu" [overlapTrigger]="false" [xPosition]="xPosition" yPosition="below">
-      <ng-template matMenuContent>
-        <button *ngFor="let item of list$ | async" mat-menu-item (click)="runUpgrade(item)">
-          <span>{{ item.name || 'No name' }}</span>
-        </button>
-      </ng-template>
-    </mat-menu>
+    <ng-container *ngIf="(list$ | async) as upgrades">
+      <button *ngIf="!!upgrades.length"
+              mat-icon-button
+              matTooltip="There are a pending upgrades of object here"
+              [appForTest]="'upgrade_btn'"
+              color="warn"
+              [disabled]="!checkIssue()"
+              [matMenuTriggerFor]="menu"
+              (click)="EventHelper.stopPropagation($event)"
+      >
+        <mat-icon>sync_problem</mat-icon>
+      </button>
+      <mat-menu #menu="matMenu" [overlapTrigger]="false" [xPosition]="xPosition" yPosition="below">
+        <ng-template matMenuContent>
+          <button *ngFor="let item of upgrades" mat-menu-item (click)="runUpgrade(item)">
+            <span>{{ item.name || 'No name' }}</span>
+          </button>
+        </ng-template>
+      </mat-menu>
+    </ng-container>
   `
 })
-export class UpgradeComponent extends BaseDirective {
+export class UpgradeComponent extends BaseDirective implements OnChanges {
   EventHelper = EventHelper;
 
+  private _list$: BehaviorSubject<Upgrade[]>;
   list$: Observable<Upgrade[]>;
   pRow: UpgradeItem = { upgradable: false, upgrade: '', issue: null };
 
@@ -71,9 +74,6 @@ export class UpgradeComponent extends BaseDirective {
   @Input()
   set row(row: UpgradeItem) {
     this.pRow = row;
-    if (row.upgrade) {
-      this.list$ = this.api.get(`${row.upgrade}?ordering=-name`).pipe(filter((list: Upgrade[]) => !!list.length));
-    }
   }
 
   @Output()
@@ -81,6 +81,14 @@ export class UpgradeComponent extends BaseDirective {
 
   constructor(private api: ApiService, private dialog: MatDialog) {
     super();
+
+    this._list$ = new BehaviorSubject<Upgrade[]>([]);
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes.row && changes.row.currentValue.upgradable) {
+      this.list$ = this.getUpgrades(changes.row.currentValue.upgrade);
+    }
   }
 
   checkIssue() {
@@ -99,7 +107,10 @@ export class UpgradeComponent extends BaseDirective {
                 title: 'Are you sure you want to upgrade?',
                 text,
                 disabled: !item.upgradable,
-                controls: item.license === 'unaccepted' ? { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] } : ['Yes', 'No']
+                controls: item.license === 'unaccepted' ? {
+                  label: 'Do you accept the license agreement?',
+                  buttons: ['Yes', 'No']
+                } : ['Yes', 'No']
               }
             })
             .beforeClosed()
@@ -116,5 +127,11 @@ export class UpgradeComponent extends BaseDirective {
   fork(item: Upgrade) {
     const flag = item.license === 'unaccepted';
     return flag ? this.api.get<{ text: string }>(item.license_url).pipe(map(a => a.text)) : of(item.description);
+  }
+
+  getUpgrades(upgrade: string): Observable<any> {
+    return this.api.get(`${upgrade}?ordering=-name`).pipe(
+      filter((list: Upgrade[]) => !!list.length)
+    );
   }
 }

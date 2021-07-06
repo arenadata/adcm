@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, ParamMap } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 import { switchMap, tap } from 'rxjs/operators';
@@ -18,8 +18,8 @@ import { switchMap, tap } from 'rxjs/operators';
 import { ChannelService } from '@app/core/services';
 import { keyChannelStrim } from '@app/core/services';
 import { WorkerInstance, ClusterService } from '@app/core/services/cluster.service';
-import { EventMessage, getNavigationPath, SocketState } from '@app/core/store';
-import { Cluster, Host, IAction, Issue, Job, isIssue } from '@app/core/types';
+import { EventMessage, getNavigationPath, setPathOfRoute, SocketState } from '@app/core/store';
+import { Cluster, Host, IAction, Issue, Job, isIssue, EmmitRow } from '@app/core/types';
 import { SocketListenerDirective } from '@app/shared/directives/socketListener.directive';
 import { IDetails } from './navigation.service';
 import { AdcmEntity } from '@app/models/entity';
@@ -38,7 +38,10 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
   current: IDetails;
   currentName = '';
 
-  navigationPath: Observable<AdcmEntity[]> = this.store.select(getNavigationPath).pipe(this.takeUntil());
+  navigationPath: Observable<AdcmEntity[]> = this.store.select(getNavigationPath).pipe(
+    tap((data) => console.log('navigationPath: ', data)),
+    this.takeUntil()
+  );
 
   constructor(
     socket: Store<SocketState>,
@@ -156,5 +159,14 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
 
     // parent
     if (this.service.Cluster?.id === m.object.id && this.Current?.typeName !== 'cluster' && type === 'cluster' && m.event === 'clear_issue') this.issue = {};
+  }
+
+  runCommand(event: EmmitRow): void {
+    const { cmd, row } = event;
+
+    if (cmd === 'refresh') {
+      const params: ParamMap = convertToParamMap({ cluster: row.id });
+      this.store.dispatch(setPathOfRoute({ params }));
+    }
   }
 }
