@@ -38,10 +38,7 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
   current: IDetails;
   currentName = '';
 
-  navigationPath: Observable<AdcmEntity[]> = this.store.select(getNavigationPath).pipe(
-    tap((data) => console.log('navigationPath: ', data)),
-    this.takeUntil()
-  );
+  navigationPath: Observable<AdcmEntity[]> = this.store.select(getNavigationPath).pipe(this.takeUntil());
 
   constructor(
     socket: Store<SocketState>,
