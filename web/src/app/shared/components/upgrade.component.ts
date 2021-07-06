@@ -26,8 +26,9 @@ export interface UpgradeItem {
   issue: Issue;
 }
 
-interface Upgrade {
+export interface Upgrade {
   id: number;
+  bundle_id: number;
   name: string;
   description: string;
   do: string;
@@ -35,6 +36,13 @@ interface Upgrade {
   from_edition: string[];
   license: 'unaccepted' | 'absent';
   license_url: string;
+  max_strict: boolean;
+  max_version: string;
+  min_strict: boolean;
+  min_version: string;
+  state_available: string;
+  state_on_success: string;
+  url: string;
 }
 
 @Component({
