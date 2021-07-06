@@ -11,6 +11,8 @@ export class ObjectsHelper {
       return ['/', object.type, `${object.id}`];
     } else if (object.type === 'component' && ObjectsHelper.getService(objects)) {
       return ['/', 'cluster', `${ObjectsHelper.getCluster(objects).id}`, 'service', `${ObjectsHelper.getService(objects).id}`, object.type, `${object.id}`];
+    } else if (object.type === 'component' && !ObjectsHelper.getService(objects)) {
+      return ['/', 'cluster', `${ObjectsHelper.getCluster(objects).id}`, 'host_component'];
     } else {
       return ['/', 'cluster', `${ObjectsHelper.getCluster(objects).id}`, object.type, `${object.id}`];
     }
@@ -20,8 +22,8 @@ export class ObjectsHelper {
     return [
       ObjectsHelper.getObject(objects, 'host'),
       ObjectsHelper.getObject(objects, 'provider'),
-      ObjectsHelper.getObject(objects, 'component'),
       ObjectsHelper.getObject(objects, 'service'),
+      ObjectsHelper.getObject(objects, 'component'),
       ObjectsHelper.getObject(objects, 'cluster'),
     ].filter(Boolean);
   }
