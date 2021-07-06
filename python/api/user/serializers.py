@@ -81,6 +81,9 @@ class UserSerializer(serializers.Serializer):
                 password=validated_data.get('password'),
                 is_superuser=validated_data.get('is_superuser', True),
             )
+            token = Token(user=user)
+            token.key = token.generate_key()
+            token.save()
             UserProfile.objects.create(login=validated_data.get('username'))
             return user
         except IntegrityError:

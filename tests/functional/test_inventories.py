@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import pytest
 import json
 import allure
 from adcm_pytest_plugin import utils
@@ -16,6 +17,15 @@ from adcm_pytest_plugin.docker_utils import get_file_from_container
 
 # pylint: disable=W0611, W0621
 from adcm_pytest_plugin.utils import random_string
+
+
+@allure.title("Do not upload Dummy data")
+@pytest.fixture(scope="session")
+def additional_adcm_init_config() -> dict:
+    """
+    These tests are meant to be executed on the clean ADCM ONLY
+    """
+    return {}
 
 
 def test_check_inventories_file(adcm_ms, sdk_client_ms):
