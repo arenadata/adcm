@@ -16,30 +16,30 @@ from adcm_pytest_plugin.utils import get_data_dir, fixture_parametrized_by_data_
 
 
 @fixture_parametrized_by_data_subdirs(__file__, 'cluster_and_service', scope='module')
-def cluster(sdk_client_ms: ADCMClient, request):
-    bundle = sdk_client_ms.upload_from_fs(request.param)
+def cluster(sdk_client_fs: ADCMClient, request):
+    bundle = sdk_client_fs.upload_from_fs(request.param)
     cluster = bundle.cluster_create(name=bundle.name)
     cluster.service_add(name='multi')
     return cluster
 
 
-def test_cluster_state_after_multijob(sdk_client_ms: ADCMClient, cluster):
+def test_cluster_state_after_multijob(sdk_client_fs: ADCMClient, cluster):
     with allure.step('Run action: multi'):
         cluster.action(name="multi").run().wait()
     with allure.step('Check cluster state'):
-        assert sdk_client_ms.cluster(name=cluster.name).state == cluster.name
+        assert sdk_client_fs.cluster(name=cluster.name).state == cluster.name
 
 
-def test_service_state_after_multijob(sdk_client_ms: ADCMClient, cluster):
+def test_service_state_after_multijob(sdk_client_fs: ADCMClient, cluster):
     with allure.step('Run action: multi'):
         cluster.service(name='multi').action(name="multi").run().wait()
     with allure.step('Check service state'):
         assert cluster.service(name='multi').state == cluster.name
 
 
-def test_cluster_service_state_locked(sdk_client_ms: ADCMClient):
+def test_cluster_service_state_locked(sdk_client_fs: ADCMClient):
     with allure.step('Create cluster'):
-        bundle = sdk_client_ms.upload_from_fs(get_data_dir(__file__, 'cluster_and_service_lock'))
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_and_service_lock'))
         cluster = bundle.cluster_create(name=bundle.name)
     with allure.step('Add services multi and stab'):
         cluster.service_add(name='multi')
@@ -71,21 +71,21 @@ def test_cluster_service_state_locked(sdk_client_ms: ADCMClient):
 
 
 @fixture_parametrized_by_data_subdirs(__file__, 'provider_and_host', scope='module')
-def provider(sdk_client_ms: ADCMClient, request):
-    bundle = sdk_client_ms.upload_from_fs(request.param)
+def provider(sdk_client_fs: ADCMClient, request):
+    bundle = sdk_client_fs.upload_from_fs(request.param)
     provider = bundle.provider_create(name=bundle.name)
     provider.host_create(fqdn=bundle.name)
     return provider
 
 
-def test_provider_state_after_multijob(sdk_client_ms: ADCMClient, provider):
+def test_provider_state_after_multijob(sdk_client_fs: ADCMClient, provider):
     with allure.step('Run provider action: multi'):
         provider.action(name="multi").run().wait()
     with allure.step('Check provider state'):
-        assert sdk_client_ms.provider(name=provider.name).state == provider.name
+        assert sdk_client_fs.provider(name=provider.name).state == provider.name
 
 
-def test_host_state_after_multijob(sdk_client_ms: ADCMClient, provider):
+def test_host_state_after_multijob(sdk_client_fs: ADCMClient, provider):
     with allure.step('Run host action: multi'):
         provider.host(fqdn=provider.name).action(name="multi").run().wait()
     with allure.step('Check host state'):

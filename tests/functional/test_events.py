@@ -26,13 +26,13 @@ DATADIR = utils.get_data_dir(__file__)
 R_WWW_PREFIX = re.compile(r"https?://(www.\.)?")
 
 
-@allure.title("Do not upload Dummy data")
-@pytest.fixture(scope="session")
-def additional_adcm_init_config() -> dict:
-    """
-    These tests are meant to be executed on the clean ADCM ONLY
-    """
-    return {}
+pytestmark = [
+    pytest.mark.parametrize(
+        "additional_adcm_init_config",
+        [pytest.param({}, id="clean_adcm")],
+        indirect=True,
+    ),
+]
 
 
 def repr_template(event_type, obj_type, obj_id, dtype=None, value=None):

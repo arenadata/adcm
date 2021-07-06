@@ -20,8 +20,8 @@ from adcm_pytest_plugin.utils import get_data_dir
 
 
 @pytest.fixture(scope="module")
-def bundle(sdk_client_ms: ADCMClient) -> Bundle:
-    bundle = sdk_client_ms.upload_from_fs(get_data_dir(__file__))
+def bundle(sdk_client_fs: ADCMClient) -> Bundle:
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__))
     bundle.provider_create(name="first_p")
     bundle.provider_create(name="second_p")
     bundle.provider_create(name="third_p")
