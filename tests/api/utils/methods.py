@@ -9,6 +9,7 @@ import requests
 _OBJECTS_URL_TEMPLATE = "/{name}/"
 _OBJECT_URL_TEMPLATE = "/{name}/{id}/"
 
+
 @attr.dataclass
 class Method:  # pylint: disable=too-few-public-methods
     """Describe possible methods and how they are used in ADCM api"""
