@@ -13,7 +13,7 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from
 import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '@app/core/api';
 import { EmmitRow, Issue, isIssue } from '@app/core/types';
-import { BehaviorSubject, concat, Observable, of } from 'rxjs';
+import { concat, Observable, of } from 'rxjs';
 import { filter, map, switchMap } from 'rxjs/operators';
 import { EventHelper } from '@adwp-ui/widgets';
 
