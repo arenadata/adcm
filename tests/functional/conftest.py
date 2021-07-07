@@ -12,7 +12,6 @@ import allure
             {"fill_dummy_data": True}, id="adcm_with_dummy_data", marks=[pytest.mark.full]
         ),
     ],
-    ids=["clean_adcm", "adcm_with_dummy_data"]
 )
 def additional_adcm_init_config(request) -> dict:
     """
