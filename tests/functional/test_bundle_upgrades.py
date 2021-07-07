@@ -20,14 +20,14 @@ from tests.library.errorcodes import INVALID_VERSION_DEFINITION, UPGRADE_ERROR, 
 import allure
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def cluster_bundles():
     bundle = utils.get_data_dir(__file__, "cluster_bundle_before_upgrade")
     upgrade_bundle = utils.get_data_dir(__file__, "upgradable_cluster_bundle")
     return bundle, upgrade_bundle
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def host_bundles():
     bundle = utils.get_data_dir(__file__, "hostprovider_bundle_before_upgrade")
     upgrade_bundle = utils.get_data_dir(__file__, "upgradable_hostprovider_bundle")
