@@ -73,7 +73,6 @@ export interface Upgrade {
 export class UpgradeComponent extends BaseDirective implements OnChanges {
   EventHelper = EventHelper;
 
-  private _list$: BehaviorSubject<Upgrade[]>;
   list$: Observable<Upgrade[]>;
   pRow: UpgradeItem = { upgradable: false, upgrade: '', issue: null };
 
@@ -89,8 +88,6 @@ export class UpgradeComponent extends BaseDirective implements OnChanges {
 
   constructor(private api: ApiService, private dialog: MatDialog) {
     super();
-
-    this._list$ = new BehaviorSubject<Upgrade[]>([]);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
