@@ -18,7 +18,7 @@ import { IIssues } from '@app/models/issue';
             <a routerLink="{{ item.url }}" [title]="item.title | uppercase">{{ item.title | uppercase }}</a>
           </div>
           <app-actions-button [row]="item?.entity" [issueType]="item?.entity?.typeName"></app-actions-button>
-          <app-upgrade *ngIf="item?.entity?.typeName === 'cluster'" [row]="item?.entity" (refresh)="command.emit($event)"></app-upgrade>
+          <app-upgrade *ngIf="item?.entity?.typeName === 'cluster'" [row]="item?.entity" (refresh)="refresh.emit($event)"></app-upgrade>
         </span>
         <span *ngIf="!isLast">&nbsp;/&nbsp;</span>
       </ng-container>
@@ -127,6 +127,6 @@ export class NavigationComponent extends BaseDirective {
   }
 
   @Output()
-  command: EventEmitter<EmmitRow> = new EventEmitter<EmmitRow>();
+  refresh: EventEmitter<EmmitRow> = new EventEmitter<EmmitRow>();
 
 }

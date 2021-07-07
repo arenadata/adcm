@@ -158,12 +158,11 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
     if (this.service.Cluster?.id === m.object.id && this.Current?.typeName !== 'cluster' && type === 'cluster' && m.event === 'clear_issue') this.issue = {};
   }
 
-  runCommand(event: EmmitRow): void {
-    const { cmd, row } = event;
+  refresh(event: EmmitRow): void {
+    const { row } = event;
 
-    if (cmd === 'refresh') {
-      const params: ParamMap = convertToParamMap({ cluster: row.id });
-      this.store.dispatch(setPathOfRoute({ params }));
-    }
+    const params: ParamMap = convertToParamMap({ cluster: row.id });
+    this.store.dispatch(setPathOfRoute({ params }));
+
   }
 }
