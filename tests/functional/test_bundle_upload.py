@@ -21,6 +21,6 @@ def test_upload_one(sdk_client_fs: ADCMClient, bundle):
     sdk_client_fs.upload_from_fs(bundle)
 
 
-def test_upload_all(sdk_client_ms: ADCMClient):
+def test_upload_all(sdk_client_fs: ADCMClient):
     for c in cases:
-        sdk_client_ms.upload_from_fs(c)
+        sdk_client_fs.upload_from_fs(c)

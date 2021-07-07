@@ -19,25 +19,25 @@ from adcm_pytest_plugin.docker_utils import get_file_from_container
 from adcm_pytest_plugin.utils import random_string
 
 
-@allure.title("Do not upload Dummy data")
-@pytest.fixture(scope="session")
-def additional_adcm_init_config() -> dict:
-    """
-    These tests are meant to be executed on the clean ADCM ONLY
-    """
-    return {}
+pytestmark = [
+    pytest.mark.parametrize(
+        "additional_adcm_init_config",
+        [pytest.param({}, id="clean_adcm")],
+        indirect=True,
+    ),
+]
 
 
-def test_check_inventories_file(adcm_ms, sdk_client_ms):
+def test_check_inventories_file(adcm_fs, sdk_client_fs):
     bundledir = utils.get_data_dir(__file__, 'cluster_inventory_tests')
-    cluster_bundle = sdk_client_ms.upload_from_fs(bundledir)
+    cluster_bundle = sdk_client_fs.upload_from_fs(bundledir)
     with allure.step('Create cluster'):
         cluster_name = random_string()
         cluster = cluster_bundle.cluster_prototype().cluster_create(cluster_name)
         cluster.service_add(name="zookeeper")
         cluster.action(name="install").run().try_wait()
     with allure.step('Get inventory file from container'):
-        text = get_file_from_container(adcm_ms, '/adcm/data/run/1/', 'inventory.json')
+        text = get_file_from_container(adcm_fs, '/adcm/data/run/1/', 'inventory.json')
         inventory = json.loads(text.read().decode('utf8'))
     with allure.step('Check inventory file'):
         template = open(utils.get_data_dir(__file__, 'cluster-inventory.json'), 'rb')
