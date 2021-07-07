@@ -15,7 +15,7 @@ from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import get_data_dir, fixture_parametrized_by_data_subdirs
 
 
-@fixture_parametrized_by_data_subdirs(__file__, 'cluster_and_service', scope='module')
+@fixture_parametrized_by_data_subdirs(__file__, 'cluster_and_service')
 def cluster(sdk_client_fs: ADCMClient, request):
     bundle = sdk_client_fs.upload_from_fs(request.param)
     cluster = bundle.cluster_create(name=bundle.name)
@@ -70,7 +70,7 @@ def test_cluster_service_state_locked(sdk_client_fs: ADCMClient):
         assert bundle.cluster(name=bundle.name).service(name='stab').state == 'created'
 
 
-@fixture_parametrized_by_data_subdirs(__file__, 'provider_and_host', scope='module')
+@fixture_parametrized_by_data_subdirs(__file__, 'provider_and_host')
 def provider(sdk_client_fs: ADCMClient, request):
     bundle = sdk_client_fs.upload_from_fs(request.param)
     provider = bundle.provider_create(name=bundle.name)
