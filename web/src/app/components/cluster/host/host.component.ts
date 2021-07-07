@@ -24,7 +24,7 @@ import { ListFactory } from '@app/factories/list-factory';
       (changeSort)="onChangeSort($event)"
     ></adwp-list>
   `,
-  styles: [':host { flex: 1; }', '.add-button {position:fixed; right: 20px;top:120px;}'],
+  styles: [':host { flex: 1; }', '.add-button { display: flex; right: 20px;top:120px; justify-content: flex-end; }'],
 })
 export class HostComponent extends AdwpListDirective<IHost> {
 
