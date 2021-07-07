@@ -18,6 +18,7 @@ import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive'
 import { ListFactory } from '@app/factories/list-factory';
 
 @Component({
+  selector: 'app-cluster-list',
   template: `
     <mat-toolbar class="toolbar">
       <app-crumbs [navigation]="[{ url: '/cluster', title: 'clusters' }]"></app-crumbs>
