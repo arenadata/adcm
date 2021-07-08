@@ -375,7 +375,7 @@ def test_host_should_be_unlocked_after_service_action_with_ansible_plugin(
     action_with_ansible_plugin: str,
 ):
     cluster, _ = cluster_with_two_hosts
-    dummy_service = cluster.service_add(name="second")
+    dummy_service = cluster.service_add(name="first_service")
     _test_object_action_with_ansible_plugin(
         cluster_with_two_hosts, action_name=action_with_ansible_plugin, obj_for_action=dummy_service
     )
