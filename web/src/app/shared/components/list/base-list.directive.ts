@@ -147,10 +147,10 @@ export class BaseListDirective {
     const checkUpgradable = () => (m.event === 'create' || m.event === 'delete') && m.object.type === 'bundle' && this.typeName === 'cluster';
     const changeList = () => stype(this.typeName) && (m.event === 'create' || m.event === 'delete' || m.event === 'add' || m.event === 'remove');
     const createHostPro = () => stype('host2provider') && m.event === 'create';
-
+    const jobComplete = () => (m.event === 'change_job_status') && m.object.type === 'task' && m.object.details.value === 'success';
     const rewriteRow = (row: Entities) => this.service.checkItem(row).subscribe((item) => Object.keys(row).map((a) => (row[a] = item[a])));
 
-    if (checkUpgradable() || changeList() || createHostPro()) {
+    if (checkUpgradable() || changeList() || createHostPro() || jobComplete()) {
       this.refresh(m.object.id);
       return;
     }
@@ -199,12 +199,6 @@ export class BaseListDirective {
   }
 
   onLoad() {}
-
-  // getActions() {
-  //   this.row.typeName = this.typeName;
-  //   this.service.getActions(this.row);
-  //   // this.parent.dialog.open(DialogComponent, { data: { title: 'Choose action', model: this.row, component: ActionCardComponent } });
-  // }
 
   addCluster(id: number) {
     if (id) this.service.addClusterToHost(id, this.row as AdcmHost);
