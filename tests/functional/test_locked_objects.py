@@ -404,7 +404,7 @@ def test_host_should_be_unlocked_after_cluster_action_with_ansible_plugin(
     action_with_ansible_plugin: str,
 ):
     cluster, _ = cluster_with_two_hosts
-    cluster.service_add(name="second")
+    cluster.service_add(name="first_service")
     _test_object_action_with_ansible_plugin(
         cluster_with_two_hosts, action_name=action_with_ansible_plugin, obj_for_action=cluster
     )
@@ -448,7 +448,7 @@ def _test_shrink_object_action(
 ):
     cluster, hosts = cluster_with_two_hosts
     host1, host2 = hosts
-    first_service_component, second_service_component = _cluster_with_components(cluster, host1)
+    first_service_component, second_service_component = _cluster_with_components(cluster, hosts)
     with allure.step(f"Run {obj_for_action.__class__.__name__} action: shrink component from host"):
         obj_for_action.action(name=action_name,).run(
             hc=[
@@ -475,7 +475,7 @@ def _test_object_action_with_ansible_plugin(
 ):
     cluster, hosts = cluster_with_two_hosts
     host1, host2 = hosts
-    _cluster_with_components(cluster, host1)
+    _cluster_with_components(cluster, hosts)
     with allure.step(f"Run {obj_for_action.__class__.__name__} action {action_name}"):
         obj_for_action.action(name=action_name).run().wait(timeout=30)
 
@@ -483,15 +483,16 @@ def _test_object_action_with_ansible_plugin(
     is_free(host2)
 
 
-def _cluster_with_components(cluster: Cluster, host: Host):
+def _cluster_with_components(cluster: Cluster, hosts: List[Host]):
+    host1, host2 = hosts
     first_service = cluster.service(name="first_service")
     second_service = cluster.service_add(name="second_service")
     first_service_component = first_service.component(name="first_service_component_1")
     second_service_component = second_service.component(name="second_service_component_1")
     cluster.hostcomponent_set(
-        (host, first_service_component),
-        (host, second_service_component),
-        (host, first_service_component),
+        (host1, first_service_component),
+        (host1, second_service_component),
+        (host2, first_service_component),
     )
     return first_service_component, second_service_component
 
