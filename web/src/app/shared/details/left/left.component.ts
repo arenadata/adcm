@@ -15,7 +15,7 @@ import { ApiBase, Issue } from '@app/core/types';
 import { NavigationService, INavItem } from '../navigation.service';
 
 @Component({
-  selector: 'app-details-left',
+  selector: 'app-left',
   template: `
     <mat-nav-list>
       <a mat-list-item

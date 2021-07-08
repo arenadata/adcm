@@ -4,7 +4,8 @@
 
 <mat-drawer-container [style.flex]="1" autosize>
   <mat-drawer disableClose="true" mode="side" opened>
-<!--    <app-details-left [current]="current" [issue]="issue" [status]="status"></app-details-left>-->
+    <!--    <app-details-left [current]="current" [issue]="issue" [status]="status"></app-details-left>-->
+    <app-left-menu [items]="items"></app-left-menu>
   </mat-drawer>
   <mat-drawer-content [style.display]="'flex'">
     <mat-card>

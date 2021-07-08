@@ -52,10 +52,13 @@ const IssueSet: { [key: string]: string[] } = {
 //   name: string;
 // }
 
-export interface INavItem {
-  id?: number;
+export interface NavItem {
   title: string;
   url: string;
+}
+
+export interface INavItem extends NavItem {
+  id?: number;
   issue?: string;
   status?: number;
   statusMessage?: string;

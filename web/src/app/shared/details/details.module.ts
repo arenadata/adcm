@@ -33,6 +33,7 @@ import { DetailsComponent } from '@app/components/details/details.component';
 import { NavItemPipe } from '@app/pipes/nav-item.pipe';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ObjectLinkSubtitlePipe } from './object-link-subtitle.pipe';
+import { LeftMenuComponent } from '@app/components/left-menu/left-menu.component';
 
 @NgModule({
   imports: [
@@ -58,6 +59,7 @@ import { ObjectLinkSubtitlePipe } from './object-link-subtitle.pipe';
     DetailsComponent,
     SubtitleComponent,
     LeftComponent,
+    LeftMenuComponent,
     TopComponent,
     NavigationComponent,
     ActionsColumnComponent,

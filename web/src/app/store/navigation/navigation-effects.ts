@@ -2,10 +2,10 @@ import { Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { concatMap, filter, map, switchMap, take } from 'rxjs/operators';
 import { Observable } from 'rxjs';
-import { AdcmEntity, AdcmTypedEntity } from '@app/models/entity';
-import { TypeName } from '@app/core/types';
-
 import { Action, Store } from '@ngrx/store';
+
+import { AdcmTypedEntity } from '@app/models/entity';
+import { TypeName } from '@app/core/types';
 import { ApiService } from '@app/core/api';
 import { ServiceComponentService } from '@app/services/service-component.service';
 import { ClusterService } from '@app/core/services/cluster.service';
@@ -19,6 +19,7 @@ import {
 } from '@app/store/navigation/navigation.store';
 import { EventMessage, socketResponse } from '@app/core/store/sockets/socket.reducer';
 import { IClusterService } from '@app/models/cluster-service';
+import { EntityHelper } from '@app/helpers/entity-helper';
 
 @Injectable()
 export class NavigationEffects {
@@ -74,27 +75,19 @@ export class NavigationEffects {
   ) {}
 
   entityGetter(type: TypeName, id: number): Observable<AdcmTypedEntity> {
-    const entityToTypedEntity = (getter: Observable<AdcmEntity>, typeName: TypeName) => getter.pipe(
-      map(entity => ({
-        ...entity,
-        typeName,
-      } as AdcmTypedEntity))
-    );
-
-
     if (EntityNames.includes(type)) {
       if (type === 'bundle') {
-        return entityToTypedEntity(
+        return EntityHelper.entityToTypedEntity(
           this.clusterService.one_bundle(id),
           type,
         );
       } else if (type === 'servicecomponent') {
-        return entityToTypedEntity(
+        return EntityHelper.entityToTypedEntity(
           this.serviceComponentService.get(id),
           type,
         );
       } if (type === 'service') {
-        return entityToTypedEntity(
+        return EntityHelper.entityToTypedEntity(
           this.api.getOne<any>(type, id),
           type,
         ).pipe(switchMap((entity) => {
@@ -102,7 +95,7 @@ export class NavigationEffects {
             .pipe(map(cluster => ({...entity, cluster})));
         }));
       } else {
-        return entityToTypedEntity(
+        return EntityHelper.entityToTypedEntity(
           this.api.getOne<any>(type, id),
           type,
         );
