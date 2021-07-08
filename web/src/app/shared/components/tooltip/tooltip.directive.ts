@@ -33,7 +33,7 @@ export class TooltipDirective {
 
   constructor(private el: ElementRef, private tooltip: TooltipService) {}
 
-  @HostListener('mouseenter', ['$event']) menter(e: MouseEvent) {
+  @HostListener('mouseenter', ['$event']) menter(e: MouseEvent): void {
     EventHelper.stopPropagation(e);
     const options = {
       content: this.appTooltip,
@@ -44,7 +44,11 @@ export class TooltipDirective {
     if (this.appTooltip) this.tooltip.show(e, this.el.nativeElement, options);
   }
 
-  @HostListener('mouseleave') mleave() {
+  @HostListener('mouseleave') mleave(): void {
     this.tooltip.hide();
+  }
+
+  @HostListener('click') mclick(): void {
+    this.tooltip.hide(true);
   }
 }

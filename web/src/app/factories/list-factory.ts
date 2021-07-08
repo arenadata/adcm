@@ -115,7 +115,7 @@ export class ListFactory {
   static bundleColumn(): IValueColumn<any> {
     return {
       label: 'Bundle',
-      sort: 'prototype_version',
+      sort: 'prototype_display_name',
       value: (row) => [row.prototype_display_name || row.prototype_name, row.prototype_version, row.edition].join(' '),
     };
   }
