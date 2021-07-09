@@ -30,7 +30,7 @@ SCHEMAS = os.path.join(os.path.dirname(__file__), "schemas/")
 def test_load_host_provider(sdk_client_fs: ADCMClient):
     sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
     with allure.step("Check bundle list"):
-        assert len(sdk_client_fs.bundle_list()) == 1
+        assert "provider_sample" in [bundle.name for bundle in sdk_client_fs.bundle_list()]
 
 
 def test_validate_provider_prototype(sdk_client_fs: ADCMClient):
@@ -46,9 +46,10 @@ def test_validate_provider_prototype(sdk_client_fs: ADCMClient):
 
 def test_should_create_provider_wo_description(sdk_client_fs: ADCMClient):
     bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
-    bundle.provider_create(name=utils.random_string())
+    provider_name = utils.random_string()
+    bundle.provider_create(name=provider_name)
     with allure.step("Check provider list"):
-        assert len(sdk_client_fs.provider_list()) == 1
+        assert provider_name in [provider.name for provider in sdk_client_fs.provider_list()]
 
 
 def test_should_create_provider_w_description(sdk_client_fs: ADCMClient):

@@ -10,9 +10,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, ViewChild } from '@angular/core';
-import { ChannelService, keyChannelStrim } from '@app/core';
-import { DynamicComponent } from '@app/shared/directives';
 
+import { ChannelService } from '@app/core/services';
+import { keyChannelStrim } from '@app/core/services';
+import { DynamicComponent } from '@app/shared/directives';
 import { FormModel } from './add.service';
 import { BaseFormDirective } from './base-form.directive';
 

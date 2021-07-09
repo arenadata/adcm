@@ -2,7 +2,7 @@
 <mat-toolbar>
 
   <app-navigation
-    *ngIf="['servicecomponent', 'service', 'cluster'].includes(current?.typeName); else notServiceComponent"
+    *ngIf="['servicecomponent', 'service', 'cluster'].includes(current?.typeName) || (current?.typeName === 'host' && current?.parent); else notServiceComponent"
     [path]="navigationPath"
   ></app-navigation>
 

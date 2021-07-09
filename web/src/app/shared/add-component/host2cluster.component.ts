@@ -30,16 +30,19 @@ import { DisplayMode } from './provider.component';
 
     <div [@openClose]="!showForm" [style.overflow]="'hidden'">
       <div class="tools">
-        <button
-          mat-icon-button
-          (click)="showForm = !showForm"
-          [color]="showForm ? 'primary' : 'accent'"
-          [matTooltip]="showForm ? 'Hide the form for creating and adding a host' : 'Show the form for creating and adding a host'"
-        >
-          <mat-icon>{{ showForm ? 'clear' : 'add' }}</mat-icon>
-        </button>
-        &nbsp;
-        <mat-checkbox [checked]="false" (click)="selectAllHost(cb.checked)" #cb [matTooltip]="cb.checked ? 'Deselect all' : 'Select all'"></mat-checkbox>
+        <div class="text">All</div>
+        <div class="actions">
+          <button
+            mat-icon-button
+            (click)="showForm = !showForm"
+            [color]="showForm ? 'primary' : 'accent'"
+            [matTooltip]="showForm ? 'Hide the form for creating and adding a host' : 'Show the form for creating and adding a host'"
+          >
+            <mat-icon>{{ showForm ? 'clear' : 'add' }}</mat-icon>
+          </button>
+          &nbsp;
+          <mat-checkbox [checked]="false" (click)="selectAllHost(cb.checked)" #cb [matTooltip]="cb.checked ? 'Deselect all' : 'Select all'"></mat-checkbox>
+        </div>
       </div>
       <mat-selection-list class="add-host2cluster" #listHosts>
         <mat-list-option *ngFor="let host of list" [value]="host.id" [appTooltip]="host.fqdn" [appTooltipShowByCondition]="true">
@@ -50,14 +53,14 @@ import { DisplayMode } from './provider.component';
       <app-add-controls *ngIf="Count" [title]="'Add'" [disabled]="!listHosts?._value?.length" (cancel)="onCancel()" (save)="addHost2Cluster(listHosts._value)"></app-add-controls>
     </div>
   `,
-  styles: ['.add-host2cluster { flex: 1; }', '.tools {text-align: right; margin-right: 16px;}'],
+  styleUrls: ['host2cluster.component.scss'],
   animations: [openClose],
 })
 export class Host2clusterComponent extends BaseFormDirective implements OnInit, OnDestroy {
   list: Host[] = [];
   showForm = false;
   Count = 0;
-  displayMode: DisplayMode = DisplayMode.default;  
+  displayMode: DisplayMode = DisplayMode.default;
   @Output() event = new EventEmitter();
   @ViewChild('form') hostForm: HostComponent;
   @ViewChild('listHosts') listHosts: MatSelectionList;

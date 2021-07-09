@@ -20,7 +20,8 @@ import cm.errors
 import cm.issue
 import cm.config as config
 import cm.status_api
-from cm.logger import log  # pylint: disable=unused-import
+import cm.lock
+from cm.logger import log
 from cm.upgrade import check_license, version_in
 from cm.adcm_config import (
     proto_ref,
@@ -91,7 +92,7 @@ def add_host(proto, provider, fqdn, desc='', lock=False):
         host.save()
         if lock:
             host.stack = ['created']
-            set_object_state(host, config.Job.LOCKED, event)
+            host.set_state(config.Job.LOCKED, event)
         process_file_type(host, spec, conf)
         cm.issue.update_hierarchy_issues(host)
     event.send_state()
@@ -208,16 +209,36 @@ def delete_host_by_id(host_id):
     delete_host(host)
 
 
+def _clean_up_related_hc(service: ClusterObject) -> None:
+    """Unconditional removal of HostComponents related to removing ClusterObject"""
+    qs = (
+        HostComponent.objects.filter(cluster=service.cluster)
+        .exclude(service=service)
+        .select_related('host', 'component')
+    )
+    new_hc_list = []
+    for hc in qs.all():
+        new_hc_list.append((hc.service, hc.host, hc.component))
+    save_hc(service.cluster, new_hc_list)
+
+
+def _clean_up_related_bind(service: ClusterObject) -> None:
+    """Unconditional removal of ClusterBind related to removing ClusterObject"""
+    ClusterBind.objects.filter(source_service=service).delete()
+
+
 def delete_service_by_id(service_id):
     """
     Unconditional removal of service from cluster
 
     This is intended for use in adcm_delete_service ansible plugin only
     """
-    service = ClusterObject.obj.get(id=service_id)
-    service.delete()
-    cm.status_api.post_event('delete', 'service', service_id)
-    cm.status_api.load_service_map()
+    with transaction.atomic():
+        DummyData.objects.filter(id=1).update(date=timezone.now())
+        service = ClusterObject.obj.get(id=service_id)
+        _clean_up_related_hc(service)
+        _clean_up_related_bind(service)
+        delete_service(service)
 
 
 def delete_service_by_name(service_name, cluster_id):
@@ -226,17 +247,18 @@ def delete_service_by_name(service_name, cluster_id):
 
     This is intended for use in adcm_delete_service ansible plugin only
     """
-    service = ClusterObject.obj.get(cluster__id=cluster_id, prototype__name=service_name)
-    service_id = service.id
-    service.delete()
-    cm.status_api.post_event('delete', 'service', service_id)
-    cm.status_api.load_service_map()
+    with transaction.atomic():
+        DummyData.objects.filter(id=1).update(date=timezone.now())
+        service = ClusterObject.obj.get(cluster__id=cluster_id, prototype__name=service_name)
+        _clean_up_related_hc(service)
+        _clean_up_related_bind(service)
+        delete_service(service)
 
 
 def delete_service(service):
-    if HostComponent.objects.filter(cluster=service.cluster, service=service):
+    if HostComponent.objects.filter(cluster=service.cluster, service=service).exists():
         err('SERVICE_CONFLICT', 'Service #{} has component(s) on host(s)'.format(service.id))
-    if ClusterBind.objects.filter(source_service=service):
+    if ClusterBind.objects.filter(source_service=service).exists():
         err('SERVICE_CONFLICT', 'Service #{} has exports(s)'.format(service.id))
     service_id = service.id
     service.delete()
@@ -507,7 +529,21 @@ def check_hc(cluster, hc_in):  # pylint: disable=too-many-branches
 
 
 def save_hc(cluster, host_comp_list):
-    HostComponent.objects.filter(cluster=cluster).delete()
+    event = Event()
+    hc_queryset = HostComponent.objects.filter(cluster=cluster)
+
+    # TODO: double purpose code need to be refactored
+    # HC mapping could be edited with OR without hierarchy locking
+    old_hosts = {i.host for i in hc_queryset.select_related('host').all()}
+    new_hosts = {i[1] for i in host_comp_list}
+    for removed_host in old_hosts.difference(new_hosts):
+        if removed_host.state == config.Job.LOCKED:
+            cm.lock._unlock_obj(removed_host, event)  # pylint: disable=protected-access
+    for added_host in new_hosts.difference(old_hosts):
+        if added_host.cluster.state == config.Job.LOCKED:
+            cm.lock._lock_obj(added_host, event)  # pylint: disable=protected-access
+
+    hc_queryset.delete()
     result = []
     for (proto, host, comp) in host_comp_list:
         hc = HostComponent(
@@ -518,6 +554,7 @@ def save_hc(cluster, host_comp_list):
         )
         hc.save()
         result.append(hc)
+    event.send_state()
     cm.status_api.post_event('change_hostcomponentmap', 'cluster', cluster.id)
     cm.issue.update_hierarchy_issues(cluster)
     cm.status_api.load_service_map()
@@ -806,12 +843,4 @@ def push_obj(obj, state):
         stack[0] = state
     obj.stack = stack
     obj.save()
-    return obj
-
-
-def set_object_state(obj, state, event):
-    obj.state = state
-    obj.save()
-    event.set_object_state(obj.prototype.type, obj.id, state)
-    log.info('set %s state to "%s"', obj_ref(obj), state)
     return obj

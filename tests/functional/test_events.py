@@ -26,6 +26,15 @@ DATADIR = utils.get_data_dir(__file__)
 R_WWW_PREFIX = re.compile(r"https?://(www.\.)?")
 
 
+pytestmark = [
+    pytest.mark.parametrize(
+        "additional_adcm_init_config",
+        [pytest.param({}, id="clean_adcm")],
+        indirect=True,
+    ),
+]
+
+
 def repr_template(event_type, obj_type, obj_id, dtype=None, value=None):
     return {
         'event': event_type,

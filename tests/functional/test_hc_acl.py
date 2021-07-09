@@ -17,5 +17,5 @@ cases, ids = get_data_subdirs_as_parameters(__file__, "syntax", "positive")
 
 
 @pytest.mark.parametrize("bundle", cases, ids=ids)
-def test_posite_upload(sdk_client_ms: ADCMClient, bundle):
-    sdk_client_ms.upload_from_fs(bundle)
+def test_posite_upload(sdk_client_fs: ADCMClient, bundle):
+    sdk_client_fs.upload_from_fs(bundle)

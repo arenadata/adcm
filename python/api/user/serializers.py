@@ -81,6 +81,9 @@ class UserSerializer(serializers.Serializer):
                 password=validated_data.get('password'),
                 is_superuser=validated_data.get('is_superuser', True),
             )
+            token = Token(user=user)
+            token.key = token.generate_key()
+            token.save()
             UserProfile.objects.create(login=validated_data.get('username'))
             return user
         except IntegrityError:
@@ -128,7 +131,7 @@ class UserPasswdSerializer(serializers.Serializer):
     def update(self, user, validated_data):  # pylint: disable=arguments-differ
         user.set_password(validated_data.get('password'))
         user.save()
-        token = Token.obj.get(user=user)
+        token = Token.objects.get(user=user)
         token.delete()
         token.key = token.generate_key()
         token.user = user

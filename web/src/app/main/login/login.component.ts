@@ -16,7 +16,7 @@ import { Observable } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { FormGroup, FormControl, Validators } from '@angular/forms';
 
-import { AuthService } from '@app/core';
+import { AuthService } from '@app/core/auth/auth.service';
 import { authLogin, authLogout, AuthState, getAuthState } from '@app/core/auth/auth.store';
 import { clearProfile } from '@app/core/store';
 import { BaseDirective } from '@app/shared/directives';
