@@ -23,38 +23,40 @@ from selenium.webdriver import ChromeOptions, FirefoxOptions
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
+from selenium.common.exceptions import WebDriverException
 
 from tests.ui_tests.app.pages import Ui, ClustersList
 
 
 class ADCMTest:
 
-    __slots__ = ('opts', 'capabilities', 'driver', 'ui', 'adcm', 'selenoid')
+    __slots__ = ("opts", "capabilities", "driver", "ui", "adcm", "selenoid")
 
-    def __init__(self, browser='Chrome'):
-        self.opts = FirefoxOptions() if browser == 'Firefox' else ChromeOptions()
+    def __init__(self, browser="Chrome"):
+        self.opts = FirefoxOptions() if browser == "Firefox" else ChromeOptions()
         self.opts.headless = True
-        self.opts.add_argument('--no-sandbox')
-        self.opts.add_argument('--disable-extensions')
-        self.opts.add_argument('--ignore-certificate-errors')
-        self.opts.add_argument('--disable-gpu')
+        self.opts.add_argument("--no-sandbox")
+        self.opts.add_argument("--disable-extensions")
+        self.opts.add_argument("--ignore-certificate-errors")
+        self.opts.add_argument("--disable-gpu")
         self.opts.add_argument("--start-maximized")
         self.opts.add_argument("--enable-logging")
         self.opts.add_argument("--enable-automation")
         self.capabilities = self.opts.capabilities.copy()
-        self.capabilities['acceptSslCerts'] = True
-        self.capabilities['acceptInsecureCerts'] = True
-        self.capabilities['goog:loggingPrefs'] = {'browser': 'ALL', 'performance': 'ALL'}
+        self.capabilities["acceptSslCerts"] = True
+        self.capabilities["acceptInsecureCerts"] = True
+        self.capabilities["goog:loggingPrefs"] = {"browser": "ALL", "performance": "ALL"}
         self.selenoid = {
-            'host': os.environ.get("SELENOID_HOST"),
-            'port': os.environ.get("SELENOID_PORT", "4444"),
+            "host": os.environ.get("SELENOID_HOST"),
+            "port": os.environ.get("SELENOID_PORT", "4444"),
         }
         self.driver = None
         self.ui = None
         self.adcm = None
 
+    @allure.step("Init driver")
     def create_driver(self):
-        if self.selenoid['host']:
+        if self.selenoid["host"]:
             self.driver = webdriver.Remote(
                 command_executor=f"http://{self.selenoid['host']}:{self.selenoid['port']}/wd/hub",
                 options=self.opts,
@@ -63,18 +65,18 @@ class ADCMTest:
         else:
             self.driver = (
                 webdriver.Firefox(options=self.opts, desired_capabilities=self.capabilities)
-                if self.capabilities['browserName'] == 'firefox'
+                if self.capabilities["browserName"] == "firefox"
                 else webdriver.Chrome(options=self.opts, desired_capabilities=self.capabilities)
             )
         self.driver.set_window_size(1800, 1000)
         self.driver.implicitly_wait(1)
         self.ui = Ui(self.driver)
 
-    @allure.step('Attache ADCM')
+    @allure.step("Attache ADCM")
     def attache_adcm(self, adcm: ADCM):
         self.adcm = adcm
 
-    @allure.step('Get Clusters List')
+    @allure.step("Get Clusters List")
     def clusters_page(self):
         return ClustersList(self)
 
@@ -84,29 +86,33 @@ class ADCMTest:
 
         return get_element(locator)
 
-    @allure.step('Wait for element displayed')
+    @allure.step("Wait for element displayed")
     def wait_element_present(self, locator: tuple):
         return self.wait_for(EC.presence_of_element_located, locator)
 
-    @allure.step('Wait for contains url: {url}')
+    @allure.step("Wait for contains url: {url}")
     def contains_url(self, url: str, timer=5):
         return WDW(self.driver, timer).until(EC.url_contains(url))
 
-    @allure.step('Open base page')
+    @allure.step("Open base page")
     def base_page(self):
         self.driver.get(self.adcm.url)
 
-    @allure.step('Open new tab')
+    @allure.step("Open new tab")
     def new_tab(self):
         self.driver.delete_all_cookies()
-        self.driver.execute_script("window.localStorage.clear();")
+        try:
+            self.driver.execute_script("window.localStorage.clear();")
+        except WebDriverException:
+            # we skip JS error here since we have no simple way to detect localStorage availability
+            pass
         body = self.driver.find_element_by_tag_name("body")
-        body.send_keys(Keys.CONTROL + 't')
+        body.send_keys(Keys.CONTROL + "t")
 
-    @allure.step('Close tab')
+    @allure.step("Close tab")
     def close_tab(self):
         body = self.driver.find_element_by_tag_name("body")
-        body.send_keys(Keys.CONTROL + 'w')
+        body.send_keys(Keys.CONTROL + "w")
 
     def destroy(self):
         self.driver.quit()
