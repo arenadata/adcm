@@ -15,7 +15,8 @@ import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 import { switchMap, tap } from 'rxjs/operators';
 
-import { ChannelService, keyChannelStrim } from '@app/core';
+import { ChannelService } from '@app/core/services';
+import { keyChannelStrim } from '@app/core/services';
 import { WorkerInstance, ClusterService } from '@app/core/services/cluster.service';
 import { EventMessage, getNavigationPath, SocketState } from '@app/core/store';
 import { Cluster, Host, IAction, Issue, Job, isIssue } from '@app/core/types';

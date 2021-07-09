@@ -9,35 +9,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { filter } from 'rxjs/operators';
 
 import { ClusterService } from '@app/core/services/cluster.service';
 import { Job } from '@app/core/types';
-import { BaseDirective } from '@app/shared/directives';
-import { ListComponent } from '@app/shared/components/list/list.component';
-
-@Component({
-  selector: 'app-job',
-  template: `
-    <mat-toolbar class="toolbar"><app-crumbs [navigation]="[{ path: '/task', name: 'jobs' }]"></app-crumbs></mat-toolbar>
-    <div class="container-entry">
-      <app-list #list class="main" [type]="'job'"></app-list>
-    </div>
-  `,
-})
-export class JobComponent extends BaseDirective implements OnInit, OnDestroy {
-  @ViewChild('list', { static: true }) list: ListComponent;
-  ngOnInit(): void {
-    this.list.listItemEvt
-      .pipe(
-        this.takeUntil(),
-        filter((data) => data.cmd === 'onLoad' && data.row)
-      )
-      .subscribe((data) => localStorage.setItem('lastJob', data.row.id));
-  }
-}
 
 @Component({
   selector: 'app-main',
@@ -49,6 +25,6 @@ export class MainComponent implements OnInit {
   ngOnInit() {
     const logs = (this.details.Current as Job).log_files;
     const log = logs.find((a) => a.type === 'check') || logs[0];
-    if (log) this.router.navigate([`../${log.id}`], { relativeTo: this.route });
+    if (log) this.router.navigate([`../${log.id}`], { relativeTo: this.route, replaceUrl: true });
   }
 }

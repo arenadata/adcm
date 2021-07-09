@@ -54,11 +54,12 @@ def test_bundle_can_be_removed_when_no_object_associated_with(
     sdk_client_fs: ADCMClient,
 ):
     bundle_path = utils.get_data_dir(__file__, "cluster_inventory_tests")
+    init_bundle_count = len(sdk_client_fs.bundle_list())
     bundle = sdk_client_fs.upload_from_fs(bundle_path)
-    with allure.step("Removing bundle"):
+    with allure.step("Remove bundle"):
         bundle.delete()
     with allure.step("Check cluster bundle is removed"):
-        assert not sdk_client_fs.bundle_list()
+        assert len(sdk_client_fs.bundle_list()) == init_bundle_count
 
 
 # TODO: Make this test to cover ADCM-202

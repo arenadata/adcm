@@ -29,14 +29,11 @@ export class TaskService extends EntityService<Task> implements EventableService
   }
 
   events(events: EntityEvent[]): Observable<EventMessage> {
-    const result = this.store.pipe(
+    return this.store.pipe(
       selectMessage,
       filter(event => event?.object?.type === 'task'),
+      filter(event => !events || events.includes(event?.event)),
     );
-    if (events) {
-      result.pipe(filter(event => events.includes(event.event)));
-    }
-    return result;
   }
 
 }

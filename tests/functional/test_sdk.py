@@ -20,13 +20,6 @@ from adcm_pytest_plugin.utils import get_data_dir
 pytestmark = pytest.mark.skip(reason="ADCM-961 That test group should be moved to adcm-client")
 
 
-@pytest.fixture(scope='module')
-def schema():
-    filename = get_data_dir(__file__) + "/schema.yaml"
-    with open(filename, 'r') as f:
-        return yaml.safe_load(f)
-
-
 def test_bundle_upload(sdk_client_fs: ADCMClient):
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__) + "/cluster")
     prototype = bundle.cluster_prototype()
