@@ -97,8 +97,17 @@ export interface Service extends ApiBase {
   cluster_id?: number;
 }
 
-export interface Bundle extends ApiBase {
-  [key: string]: any;
+export interface CanLicensed {
   license: 'unaccepted' | 'accepted' | 'absent';
   license_url: string;
+}
+
+export interface License {
+  accept: string;
+  license: 'unaccepted' | 'accepted' | 'absent';
+  text: string;
+}
+
+export interface Bundle extends ApiBase, CanLicensed {
+  [key: string]: any;
 }

@@ -12,7 +12,7 @@
 import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { NgModule } from '@angular/core';
 
-import { ApiService } from './api/api.service';
+import { ApiService } from '@app/core/api';
 import { AuthGuard } from './auth/auth.guard';
 import { AuthService } from './auth/auth.service';
 import { RequestCacheService, RequestCache } from '@app/core/http-interseptors/request-cache.service';

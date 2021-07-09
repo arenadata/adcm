@@ -15,7 +15,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { IColumns } from '@adwp-ui/widgets';
 
-import { StackService } from '@app/core';
+import { StackService } from '../../core/services';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
 import { ListService } from '@app/shared/components/list/list.service';
@@ -25,13 +25,15 @@ import { IBundle } from '@app/models/bundle';
 import { ListFactory } from '@app/factories/list-factory';
 import { EditionColumnComponent } from '@app/components/columns/edition-column/edition-column.component';
 import { ApiService } from '@app/core/api';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-stack',
   template: `
     <mat-toolbar class="toolbar">
       <app-crumbs [navigation]="[{ url: '/bundle', title: 'bundles' }]"></app-crumbs>
-      <app-button-uploader #uploadBtn [color]="'accent'" [label]="'Upload bundles'" (output)="upload($event)"></app-button-uploader>
+      <app-button-uploader #uploadBtn [color]="'accent'" [label]="'Upload bundles'"
+                           (output)="upload($event)"></app-button-uploader>
     </mat-toolbar>
 
     <adwp-list
@@ -100,23 +102,45 @@ export class StackComponent extends AdwpListDirective<IBundle> {
 @Component({
   selector: 'app-main',
   template: `
-    <table>
-      <tr *ngFor="let prop of keys(model)">
-        <td style="padding: 6px 20px;">{{ prop }}</td>
-        <td>{{ model[prop] }}</td>
-      </tr>
-    </table>
+    <adwp-table
+      [columns]="listColumns"
+      [dataSource]="model | pickKeys:keys | translateKeys | toDataSource"
+    ></adwp-table>
   `,
+  styles: [':host {width: 100%; max-width: 960px}']
 })
 export class MainComponent implements OnInit {
   model: any;
+
+  keys = ['display_name', 'version', 'license_path', 'license'];
+
+  listColumns = [
+    ListFactory.keyColumn(),
+    ListFactory.valueColumn(),
+  ] as IColumns<any>;
+
   constructor(private service: ClusterService) {}
 
   ngOnInit() {
     this.model = this.service.Current;
   }
 
-  keys(model: {}) {
-    return Object.keys(model);
+}
+
+@Component({
+  selector: 'app-license',
+  template: `
+    <pre>{{ text | async }}</pre>
+  `,
+  styles: [':host {width: 100%; max-width: 960px}']
+})
+export class LicenseComponent implements OnInit {
+  text: Observable<string>;
+
+  constructor(private service: ClusterService) {}
+
+  ngOnInit() {
+    this.text = this.service.getBundleLicenseText();
   }
+
 }

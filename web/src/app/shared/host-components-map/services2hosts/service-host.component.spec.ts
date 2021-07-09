@@ -14,7 +14,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterTestingModule } from '@angular/router/testing';
-import { ChannelService } from '@app/core';
+import { ChannelService } from '@app/core/services';
 import { ApiService } from '@app/core/api/api.service';
 import { AddService } from '@app/shared/add-component/add.service';
 import { SharedModule } from '@app/shared/shared.module';

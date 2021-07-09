@@ -156,7 +156,7 @@ class TestClusterService:
     def test_get_cluster_service_list(self, sdk_client_fs: ADCMClient, cluster: Cluster):
         expected = []
         with allure.step("Create a list of services in the cluster"):
-            for prototype in sdk_client_fs.service_prototype_list():
+            for prototype in sdk_client_fs.service_prototype_list(bundle_id=cluster.bundle_id):
                 service = cluster.service_add(prototype_id=prototype.id)
                 expected.append(service._data)
         with allure.step("Get a service list in cluster"):

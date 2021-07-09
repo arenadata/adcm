@@ -30,7 +30,6 @@ import {
 } from './components';
 import { ActionCardComponent } from './components/actions/action-card/action-card.component';
 import { ActionMasterConfigComponent } from './components/actions/master/action-master-config.component';
-import { ListComponent } from './components/list/list.component';
 import { MultiSortDirective } from './components/list/multi-sort.directive';
 import { SimpleTextComponent } from './components/tooltip';
 import { ConfigurationModule } from './configuration/configuration.module';
@@ -46,6 +45,12 @@ import { StateColumnComponent } from '@app/components/columns/state-column/state
 import { EditionColumnComponent } from '@app/components/columns/edition-column/edition-column.component';
 import { ClusterColumnComponent } from '@app/components/columns/cluster-column/cluster-column.component';
 import { ServiceComponentsComponent } from '@app/components/service-components.component';
+import { JobService } from '@app/services/job.service';
+import { TaskService } from '@app/services/task.service';
+import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
+import { TranslateModule } from '@ngx-translate/core';
+import { PickKeysPipe } from '@app/pipes/pick-keys.pipe';
+import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
 
 @NgModule({
   imports: [
@@ -60,13 +65,13 @@ import { ServiceComponentsComponent } from '@app/components/service-components.c
     AddingModule,
     HostComponentsMapModule,
     DetailsModule,
+    TranslateModule,
     AdwpListModule.forRoot({
       itemsPerPage: [10, 25, 50, 100],
     }),
   ],
   declarations: [
     DialogComponent,
-    ListComponent,
     BreakRowPipe,
     HoverDirective,
     DynamicDirective,
@@ -88,8 +93,10 @@ import { ServiceComponentsComponent } from '@app/components/service-components.c
     EditionColumnComponent,
     ClusterColumnComponent,
     ServiceComponentsComponent,
+    ToDataSourcePipe,
+    PickKeysPipe,
+    TranslateKeysPipe
   ],
-  // entryComponents: [DialogComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent, ActionMasterComponent],
   exports: [
     FormsModule,
     ReactiveFormsModule,
@@ -101,7 +108,6 @@ import { ServiceComponentsComponent } from '@app/components/service-components.c
     HostComponentsMapModule,
     DetailsModule,
     DialogComponent,
-    ListComponent,
     BreakRowPipe,
     HoverDirective,
     DynamicDirective,
@@ -120,6 +126,13 @@ import { ServiceComponentsComponent } from '@app/components/service-components.c
     ClusterColumnComponent,
     ServiceComponentsComponent,
     AdwpListModule,
+    ToDataSourcePipe,
+    PickKeysPipe,
+    TranslateKeysPipe,
+  ],
+  providers: [
+    JobService,
+    TaskService,
   ],
 })
 export class SharedModule {}

@@ -13,7 +13,6 @@
 # pylint: disable=too-many-branches,
 
 import cm.config as config
-from cm import api
 from cm.adcm_config import obj_ref
 from cm.hierarchy import Tree
 from cm.logger import log
@@ -36,7 +35,7 @@ def _lock_obj(obj, event):
 
     log.debug('lock %s, stack: %s', obj_ref(obj), stack)
     obj.stack = stack
-    api.set_object_state(obj, config.Job.LOCKED, event)
+    obj.set_state(config.Job.LOCKED, event)
 
 
 def _unlock_obj(obj, event):
@@ -52,7 +51,7 @@ def _unlock_obj(obj, event):
         return
     log.debug('unlock %s, stack: %s, state: %s', obj_ref(obj), stack, state)
     obj.stack = stack
-    api.set_object_state(obj, state, event)
+    obj.set_state(state, event)
 
 
 def lock_objects(obj, event):

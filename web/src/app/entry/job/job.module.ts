@@ -16,14 +16,25 @@ import { RouterModule } from '@angular/router';
 import { SharedModule } from '@app/shared/shared.module';
 import { JobInfoComponent } from './job-info.component';
 import { JobRoutingModule } from './job-routing.module';
-import { JobComponent, MainComponent } from './job.component';
+import { MainComponent } from './job.component';
 import { LogComponent } from './log/log.component';
 import { CheckComponent } from './log/check.component';
 import { TextComponent } from './log/text.component';
 
 
 @NgModule({
-  declarations: [JobComponent, MainComponent, LogComponent, JobInfoComponent, CheckComponent, TextComponent],
-  imports: [CommonModule, SharedModule, RouterModule, JobRoutingModule]
+  declarations: [
+    MainComponent,
+    LogComponent,
+    JobInfoComponent,
+    CheckComponent,
+    TextComponent,
+  ],
+  imports: [
+    CommonModule,
+    SharedModule,
+    RouterModule,
+    JobRoutingModule,
+  ]
 })
 export class JobModule {}

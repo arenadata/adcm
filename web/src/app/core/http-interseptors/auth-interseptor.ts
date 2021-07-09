@@ -15,7 +15,7 @@ import { Router } from '@angular/router';
 import { Observable, throwError } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 
-import { AuthService } from '../auth/auth.service';
+import { AuthService } from '@app/core/auth/auth.service';
 import { ChannelService, keyChannelStrim, PreloaderService } from '../services';
 
 const EXCLUDE_URLS = ['/api/v1/token/', '/assets/config.json'];

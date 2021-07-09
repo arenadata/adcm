@@ -19,9 +19,9 @@ from adcm_client.objects import ADCMClient, Bundle, Provider
 from adcm_pytest_plugin.utils import get_data_dir
 
 
-@pytest.fixture(scope="module")
-def bundle(sdk_client_ms: ADCMClient) -> Bundle:
-    bundle = sdk_client_ms.upload_from_fs(get_data_dir(__file__))
+@pytest.fixture()
+def bundle(sdk_client_fs: ADCMClient) -> Bundle:
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__))
     bundle.provider_create(name="first_p")
     bundle.provider_create(name="second_p")
     bundle.provider_create(name="third_p")
@@ -29,22 +29,22 @@ def bundle(sdk_client_ms: ADCMClient) -> Bundle:
     return bundle
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def first_p(bundle: Bundle):
     return bundle.provider(name="first_p")
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def second_p(bundle: Bundle):
     return bundle.provider(name="second_p")
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def third_p(bundle: Bundle):
     return bundle.provider(name="third_p")
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def forth_p(bundle: Bundle):
     return bundle.provider(name="forth_p")
 
