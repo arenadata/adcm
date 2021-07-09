@@ -1,15 +1,17 @@
+############
 Visual parts
 ############
 
+*********
 Templates
-=========
+*********
 
 There are a number of different templates for different pages in ADCM. Check them all here:
 
 .. _ui_templates_common:
 
 Common
-------
+======
 
 Main template of the application is the following:
 
@@ -34,7 +36,7 @@ Template parts are:
    TODO: We need to provide more information about parts.
 
 Table View
-----------
+==========
 
 .. note::
    TODO: Describe table view here
@@ -100,13 +102,14 @@ Template parts are:
 * List of added services with information according to table fields.
 * Pagination of the list of clusters
 
+*****
 Forms
-=====
+*****
 
 .. _ui_elements_forms_login:
 
-Login Form
-----------
+Login
+=====
 
 There are two variants of login form.
 
@@ -128,6 +131,9 @@ Buttons:
 
 * **Sign in with Google** - is a button that triggers GAuth2 login process
 * **Login** - is a button which that triggers user/password login process
+
+Operation dialogs
+=================
 
 Create cluster
 --------------
