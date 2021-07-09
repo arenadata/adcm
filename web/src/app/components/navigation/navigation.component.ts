@@ -1,9 +1,9 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { Observable } from 'rxjs';
 import { BaseDirective } from '@adwp-ui/widgets';
 
 import { AdcmTypedEntity } from '@app/models/entity';
-import { IAction } from '@app/core/types';
+import { EmmitRow, IAction } from '@app/core/types';
 import { IIssues } from '@app/models/issue';
 
 @Component({
@@ -18,7 +18,7 @@ import { IIssues } from '@app/models/issue';
             <a routerLink="{{ item.url }}" [title]="item.title | uppercase">{{ item.title | uppercase }}</a>
           </div>
           <app-actions-button [row]="item?.entity" [issueType]="item?.entity?.typeName"></app-actions-button>
-          <app-upgrade *ngIf="item?.entity?.typeName === 'cluster'" [row]="item?.entity"></app-upgrade>
+          <app-upgrade *ngIf="item?.entity?.typeName === 'cluster'" [row]="item?.entity" (refresh)="refresh.emit($event)"></app-upgrade>
         </span>
         <span *ngIf="!isLast">&nbsp;/&nbsp;</span>
       </ng-container>
@@ -125,5 +125,8 @@ export class NavigationComponent extends BaseDirective {
   get path(): Observable<AdcmTypedEntity[]> {
     return this.ownPath;
   }
+
+  @Output()
+  refresh: EventEmitter<EmmitRow> = new EventEmitter<EmmitRow>();
 
 }
