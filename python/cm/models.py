@@ -12,11 +12,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from collections.abc import Mapping
+
 from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import models
+from django.db import models, transaction
 
 from cm.errors import AdcmEx
 from cm.logger import log
@@ -464,21 +466,63 @@ class ConfigGroup(ADCMModel):
     config = models.OneToOneField(
         ObjectConfig, on_delete=models.CASCADE, null=True, related_name='config_group'
     )
-    config_diff = models.OneToOneField(
-        ObjectConfig, on_delete=models.CASCADE, null=True, related_name='config_group_diff'
-    )
 
     not_changeable_fields = ('id', 'object_id', 'object_type')
 
     class Meta:
         unique_together = ['object_id', 'name', 'object_type']
 
+    def _init_group_keys(self, origin, group_keys=None):
+        if group_keys is None:
+            group_keys = {}
+        for k, v in origin.items():
+            if isinstance(v, Mapping):
+                group_keys.setdefault(k, {})
+                self._init_group_keys(origin.get(k, {}), group_keys[k])
+            else:
+                group_keys[k] = False
+        return group_keys
+
+    def get_group_config(self):
+        def get_diff(config, group_keys, diff=None):
+            if diff is None:
+                diff = {}
+            for k, v in group_keys.items():
+                if isinstance(v, Mapping):
+                    diff.setdefault(k, {})
+                    get_diff(config[k], group_keys[k], diff[k])
+                    if not diff[k]:
+                        diff.pop(k)
+                else:
+                    if v:
+                        diff[k] = config[k]
+            return diff
+
+        cl = ConfigLog.obj.get(id=self.config.current)
+        config = cl.config
+        group_keys = cl.attr.get('group_keys', {})
+        return get_diff(config, group_keys)
+
+    def sync_config(self):
+        # TODO add sync object config with group config and add in create method for object config
+        pass
+
+    @transaction.atomic()
     def save(self, *args, **kwargs):
         obj = self.object_type.model_class().obj.get(id=self.object_id)
-        if self.config is None:
-            self.config = obj.config
-        if self.config_diff is None:
-            self.config_diff = ObjectConfig.objects.create(current=0, previous=0)
+        if self._state.adding:
+            self.config = ObjectConfig.objects.create(current=0, previous=0)
+            config_log = ConfigLog.obj.get(id=obj.config.current)
+            config_log.pk = None
+            config_log.obj_ref = self.config
+            attr = config_log.attr
+            attr.update({'group_keys': self._init_group_keys(config_log.config)})
+            config_log.attr = attr
+            config_log.save()
+            self.config.current = config_log.pk
+            self.config.save()
+        else:
+            pass
         super().save(*args, **kwargs)
 
 

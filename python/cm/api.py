@@ -441,6 +441,9 @@ def update_obj_config(obj_conf, conf, attr, desc=''):
     elif hasattr(obj_conf, 'hostprovider'):
         obj = obj_conf.hostprovider
         proto = obj_conf.hostprovider.prototype
+    elif hasattr(obj_conf, 'config_group'):
+        obj = obj_conf.config_group.object
+        proto = obj.prototype
     else:
         err('INVALID_CONFIG_UPDATE', 'unknown object type "{}"'.format(obj_conf))
     old_conf = ConfigLog.objects.get(obj_ref=obj_conf, id=obj_conf.current)

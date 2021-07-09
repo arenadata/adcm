@@ -13,7 +13,9 @@
 from django.db.transaction import atomic
 from rest_framework import serializers
 
+import logrotate
 from cm.adcm_config import ui_config
+from cm.api import update_obj_config
 from cm.models import ConfigLog
 
 
@@ -26,11 +28,14 @@ class ConfigLogSerializer(serializers.ModelSerializer):
 
     @atomic
     def create(self, validated_data):
-        instance = super().create(validated_data)
-        object_config = instance.obj_ref
-        object_config.current = instance.id
-        object_config.save()
-        return instance
+        object_config = validated_data.get('obj_ref')
+        config = validated_data.get('config')
+        attr = validated_data.get('attr', {})
+        description = validated_data.get('description', '')
+        cl = update_obj_config(object_config, config, attr, description)
+        if hasattr(object_config, 'adcm'):
+            logrotate.run()
+        return cl
 
 
 class UIConfigLogSerializer(ConfigLogSerializer):
