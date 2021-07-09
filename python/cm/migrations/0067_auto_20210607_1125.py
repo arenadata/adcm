@@ -35,7 +35,15 @@ class Migration(migrations.Migration):
                 ('object_id', models.PositiveIntegerField()),
                 ('name', models.CharField(max_length=30)),
                 ('description', models.TextField(blank=True)),
-                ('config', models.JSONField(default=dict)),
+                (
+                    'config',
+                    models.OneToOneField(
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name='config_group',
+                        to='cm.objectconfig',
+                    ),
+                ),
             ],
             options={
                 'abstract': False,

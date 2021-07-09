@@ -20,8 +20,8 @@ from ansible.parsing.vault import VaultSecret, VaultAES256
 from django.conf import settings
 from django.db.utils import OperationalError
 
-import cm.config as config
 import cm.variant
+from cm import config
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
 from cm.models import ADCM, PrototypeConfig, ObjectConfig, ConfigLog
@@ -404,7 +404,9 @@ def ui_config(obj, cl):
     conf = []
     _, spec, _, _ = get_prototype_config(obj.prototype)
     obj_conf = cl.config
+    obj_attr = cl.attr
     flat_conf = to_flat_dict(obj_conf, spec)
+    flat_group_keys = to_flat_dict(obj_attr.get('group_keys', {}), spec)
     slist = ('name', 'subname', 'type', 'description', 'display_name', 'required')
     for key in spec:
         item = obj_to_dict(spec[key], slist)
@@ -423,6 +425,11 @@ def ui_config(obj, cl):
             item['value'] = flat_conf[key]
         else:
             item['value'] = get_default(spec[key])
+        if flat_group_keys:
+            if spec[key].type == 'group':
+                item['group'] = any((v for k, v in flat_group_keys.items() if k.startswith(key)))
+            else:
+                item['group'] = flat_group_keys[key]
         conf.append(item)
     return conf
 
@@ -502,6 +509,8 @@ def check_attr(proto, attr, spec):
     if not isinstance(attr, dict):
         err('ATTRIBUTE_ERROR', 'Attr should be a map')
     for key in attr:
+        if key == 'group_keys':
+            continue
         if key + '/' not in spec:
             msg = 'There isn\'t group "{}" in config ({})'
             err('ATTRIBUTE_ERROR', msg.format(key, ref))
