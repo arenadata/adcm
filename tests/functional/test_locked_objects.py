@@ -198,7 +198,7 @@ class TestComponentLock:
         Test that no horizontal lock when component locked
         """
         service = complete_cluster.service(name="first_service")
-        _lock_obj(service.component(name="first_service"))
+        _lock_obj(service.component(name="first_service_component_1"))
         is_free(service.component(name="first_service_component_2"))
 
 
