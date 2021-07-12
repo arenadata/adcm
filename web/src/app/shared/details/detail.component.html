@@ -4,6 +4,7 @@
   <app-navigation
     *ngIf="['servicecomponent', 'service', 'cluster'].includes(current?.typeName) || (current?.typeName === 'host' && current?.parent); else notServiceComponent"
     [path]="navigationPath"
+    (refresh)="refresh($event)"
   ></app-navigation>
 
   <ng-template #notServiceComponent>
