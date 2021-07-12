@@ -1,7 +1,7 @@
 """ADCM Endpoints classes and methods"""
 
 # pylint: disable=too-few-public-methods,invalid-name
-from enum import Enum
+from enum import EnumMeta
 from typing import List, Type, Optional
 
 import attr
@@ -28,7 +28,7 @@ class Endpoint:
     :attribute methods: list of allowed methods for endpoint
     :attribute data_class: endpoint fields specification
     :attribute spec_link: link to ADCM specification for endpoint
-    :attribute ignored: reason why this endpoint should not be tested
+    :attribute technical: pass True if need to ignore during collect tests
     """
 
     path: str
@@ -36,10 +36,18 @@ class Endpoint:
     data_class: Type[BaseClass]
     spec_link: str
     technical: bool = False
-    ignored: Optional[str] = None
 
 
-class Endpoints(Enum):
+class EndpointsEnumMeta(EnumMeta):
+    def __iter__(cls):
+        return (
+            cls._member_map_[name]
+            for name in cls._member_names_
+            if not cls._member_map_[name].technical
+        )
+
+
+class Endpoints(metaclass=EndpointsEnumMeta):
     """All current endpoints"""
 
     def __init__(self, endpoint: Endpoint):
@@ -64,11 +72,6 @@ class Endpoints(Enum):
     def spec_link(self):
         """Getter for Endpoint.spec_link attribute"""
         return self.endpoint.spec_link
-
-    @property
-    def ignored(self):
-        """Getter for Endpoint.ignored attribute"""
-        return self.endpoint.ignored
 
     @property
     def technical(self):
