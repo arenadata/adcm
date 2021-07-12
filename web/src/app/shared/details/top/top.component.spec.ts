@@ -18,16 +18,40 @@ import { StuffModule } from '@app/shared/stuff.module';
 
 import { IDetails, NavigationService } from '../navigation.service';
 import { TopComponent } from './top.component';
+import { of } from 'rxjs/internal/observable/of';
+import { Upgrade } from '@app/shared/components';
+
+
+const response: Upgrade[] = [
+  {
+    bundle_id: 1,
+    description: '',
+    do: '',
+    from_edition: [],
+    id: 1,
+    license: 'absent',
+    license_url: '',
+    max_strict: false,
+    max_version: '',
+    min_strict: false,
+    min_version: '',
+    name: '',
+    state_available: '',
+    state_on_success: '',
+    upgradable: true,
+    url: '',
+  }
+];
 
 describe('TopComponent', () => {
   let component: TopComponent;
   let fixture: ComponentFixture<TopComponent>;
 
   beforeEach(async () => {
-    TestBed.configureTestingModule({
+    await TestBed.configureTestingModule({
       imports: [MaterialModule, StuffModule, RouterTestingModule],
       declarations: [TopComponent],
-      providers: [NavigationService, { provide: ApiService, useValue: {} }],
+      providers: [NavigationService, { provide: ApiService, useValue: { get: () => of(response) } }],
     }).compileComponents();
   });
 
@@ -50,7 +74,13 @@ describe('TopComponent', () => {
   });
 
   it('breadcrumbs for service (item with cluster - parent) should contains full path (app->clusters->cluster_name->services->service_name)', () => {
-    component.current = { name: 'service_test', typeName: 'service', id: 1, issue: {}, parent: { id: 1, name: 'cluster_test', issue: {} } as Cluster } as IDetails;
+    component.current = {
+      name: 'service_test',
+      typeName: 'service',
+      id: 1,
+      issue: {},
+      parent: { id: 1, name: 'cluster_test', issue: {} } as Cluster
+    } as IDetails;
     fixture.detectChanges();
     const links = fixture.nativeElement.querySelectorAll('app-crumbs mat-nav-list a');
     // app -- clusters -- cluster_tes -- services -- service_test
@@ -58,7 +88,13 @@ describe('TopComponent', () => {
   });
 
   it('previous element for current in the breadcrumbs should have to name `[current.typeName]s`', () => {
-    component.current = { name: 'service_test', typeName: 'service', id: 1, issue: {}, parent: { id: 1, name: 'cluster_test', issue: {}, typeName: 'cluster' } } as IDetails;
+    component.current = {
+      name: 'service_test',
+      typeName: 'service',
+      id: 1,
+      issue: {},
+      parent: { id: 1, name: 'cluster_test', issue: {}, typeName: 'cluster' }
+    } as IDetails;
     fixture.detectChanges();
     const links = fixture.nativeElement.querySelectorAll('app-crumbs mat-nav-list a');
     // app -- clusters -- cluster_tes -- services -- service_test
