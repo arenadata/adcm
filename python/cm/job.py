@@ -26,7 +26,7 @@ from background_task import background
 from django.db import transaction
 from django.utils import timezone
 
-import cm.config as config
+from cm import config
 from cm import api, issue, inventory, adcm_config, variant
 from cm.adcm_config import obj_ref, process_file_type
 from cm.errors import raise_AdcmEx as err
@@ -405,7 +405,21 @@ def prepare_context(action, obj):
     return context
 
 
-def prepare_job_config(action, sub_action, job_id, obj, conf, verbose):
+def prepare_job_config(
+    action, sub_action, job_id, obj, conf, verbose
+):  # pylint: disable=too-many-branches
+    log.debug(
+        'action: name: %s, type: %s, type_name: %s.',
+        action.name,
+        action.prototype.type,
+        action.prototype.name,
+    )
+    log.debug('obj: %s, type: %s, type_name: %s.', obj, obj.prototype.type, obj.prototype.name)
+
+    if action.prototype.type != obj.prototype.type:
+        msg = 'action "{}" and object "{}" protototype type does not match'
+        err('TASK_ERROR', msg.format(action.prototype.type, obj.prototype.name))
+
     job_conf = {
         'adcm': {'config': get_adcm_config()},
         'context': prepare_context(action, obj),
