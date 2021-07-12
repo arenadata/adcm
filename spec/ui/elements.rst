@@ -132,11 +132,45 @@ Buttons:
 * **Sign in with Google** - is a button that triggers GAuth2 login process
 * **Login** - is a button which that triggers user/password login process
 
-Operation dialogs
-=================
 
-Create cluster
---------------
+.. _ui_form_dialogs_common:
+
+Operation dialog
+================
+
+All operation dialogs has the same unified look:
+
+.. image:: img/form_dialog_create_cluster.png
+
+Elements of the dialog:
+
+* **Title** - this is the top of the dialog text which is the same as a on button clicked to call this dialog
+* **Form Inputs** - there are a number of input fields which is required for action to proceed. Fields can be mandatory.
+* **Cancel Button** - Just a "Cancel" which is the same on dialog. You could click on it to close the dialog without any operation happend.
+* **Positive Button** - A button which triiger the operation (use case** for this dialog. The caption of this button has some variation in different dialogs.
+
+
+.. _ui_form_dialogs_create_cluster:
+
+Create Cluster Dialog
+---------------------
+
+This a subset of :ref:`ui_form_dialogs_common` with the following options:
+
+============== ===============
+Title          Positive Button
+============== ===============
+Create cluster Create
+============== ===============
+
+============== ========= ========== ======================================
+Input Name     Mandatory Type       Meaning
+============== ========= ========== ======================================
+Bundle         True      Drop Down  A list of cluster bundles uploaded to ADCM
+Version        True      Drop Down  A list of versions for selected bundle
+Cluster name   True      String     A short name of future cluster to identified by user
+Description    False     String     Any additional information provided by user.
+============== ========= ========== ======================================
 
 Upload Bundle
 -------------

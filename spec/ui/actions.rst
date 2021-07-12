@@ -44,11 +44,12 @@ GAuth2 login
 .. note::
    TODO: Add later as separate story.
 
-.. _ui_usecases_cluster_list_view:
 
 *******
 Cluster
 *******
+
+.. _ui_usecases_cluster_list_view:
 
 Cluster list view
 =================
@@ -93,6 +94,46 @@ The description of the UI is available by clicking :ref:`ui_templates_clusters`.
 
 .. _ui_usecases_cluster_service_list_view:
 
+Cluster create
+==============
+
+The way user create a cluster in UI.
+
+Actors
+------
+
+* :term:`End User`
+
+User Value
+----------
+
+That is the only way to create cluster.
+
+Pre-Conditions
+--------------
+
+:term:`End User` has ADCM and completed the following use cases:
+
+* :ref:`ui_usecases_login`
+* :ref:`ui_usecases_cluster_list_view`
+
+
+Flow of Events
+--------------
+
+1. :term:`End User` clicks "Create Cluster" button in :ref:`ui_form_dialogs_create_cluster`
+2. :term:`End User` selects bundle from "Bundle" selector in  :ref:`ui_form_dialogs_create_cluster`
+3. :term:`End User` selects version from "Version" selector in  :ref:`ui_form_dialogs_create_cluster`
+4. :term:`End User` fills "Cluster name" field in :ref:`ui_form_dialogs_create_cluster`
+5. :term:`End User` fills "Description" field in :ref:`ui_form_dialogs_create_cluster`
+6. :term:`End User` clicks "Create" button in :ref:`ui_form_dialogs_create_cluster`
+
+Post-Conditions
+---------------
+
+* A Cluster has been created.
+* :ref:`ui_form_dialogs_create_cluster` has bin closed.
+
 Cluster service list view
 =========================
 
@@ -119,7 +160,8 @@ Pre-Conditions
 Post-Conditions
 ---------------
 
-:term:`End User` was able to view the list of cluster services and information on them.
+* :term:`End User` was able to view the list of cluster services and information on them.
+* Dialog has been closed
 
 “Used” Use Cases
 ----------------
@@ -134,4 +176,4 @@ Flow of Events
 User Interface
 --------------
 
-The description of the UI is available by clicking :ref:`ui_templates_cluster-services`.
+The description of the UI is available by clicking :ref:`ui_form_dialogs_create_cluster`.
