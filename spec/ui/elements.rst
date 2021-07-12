@@ -168,9 +168,31 @@ Input Name     Mandatory Type       Meaning
 ============== ========= ========== ======================================
 Bundle         True      Drop Down  A list of cluster bundles uploaded to ADCM
 Version        True      Drop Down  A list of versions for selected bundle
-Cluster name   True      String     A short name of future cluster to identified by user
+Cluster name   True      String     A short name of future cluster to be identified by user
 Description    False     String     Any additional information provided by user.
 ============== ========= ========== ======================================
+
+.. _ui_form_dialogs_create_hostprovider:
+
+Create Host Provider Dialog
+---------------------
+
+This a subset of :ref:`ui_form_dialogs_common` with the following options:
+
+=============== ===============
+Title           Positive Button
+=============== ===============
+Create provider Create
+=============== ===============
+
+================== ========= ========== ======================================
+Input Name         Mandatory Type       Meaning
+================== ========= ========== ======================================
+Bundle             True      Drop Down  A list of Host Provider bundles uploaded to ADCM
+Version            True      Drop Down  A list of versions for selected bundle
+Hostprovider name  True      String     A short name of future Host Provider to be identified by user
+Description        False     String     Any additional information provided by user.
+================== ========= ========== ======================================
 
 Upload Bundle
 -------------

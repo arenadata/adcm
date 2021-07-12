@@ -92,7 +92,7 @@ User Interface
 
 The description of the UI is available by clicking :ref:`ui_templates_clusters`.
 
-.. _ui_usecases_cluster_service_list_view:
+.. _ui_usecases_cluster_create:
 
 Cluster create
 ==============
@@ -132,7 +132,7 @@ Post-Conditions
 ---------------
 
 * A Cluster has been created.
-* :ref:`ui_form_dialogs_create_cluster` has bin closed.
+* :ref:`ui_form_dialogs_create_cluster` has beeen closed.
 
 Cluster service list view
 =========================
@@ -177,3 +177,51 @@ User Interface
 --------------
 
 The description of the UI is available by clicking :ref:`ui_form_dialogs_create_cluster`.
+
+
+*************
+Host Provider
+*************
+
+
+.. _ui_usecases_create_hostprovider:
+
+Host Provider Create
+====================
+
+The way user create a Host Provider in UI.
+
+Actors
+------
+
+* :term:`End User`
+
+User Value
+----------
+
+That is the only way to create Host Provider.
+
+Pre-Conditions
+--------------
+
+:term:`End User` has ADCM and completed the following use cases:
+
+* :ref:`ui_usecases_login`
+* :ref:`ui_usecases_hostprovider_list_view`
+
+
+Flow of Events
+--------------
+
+1. :term:`End User` clicks "Create provider" button in :ref:`ui_form_dialogs_create_hostprovider`
+2. :term:`End User` selects bundle from "Bundle" selector in  :ref:`ui_form_dialogs_create_hostprovider`
+3. :term:`End User` selects version from "Version" selector in  :ref:`ui_form_dialogs_create_hostprovider`
+4. :term:`End User` fills "Hostprovider name" field in :ref:`ui_form_dialogs_create_hostprovider`
+5. :term:`End User` fills "Description" field in :ref:`ui_form_dialogs_create_hostprovider`
+6. :term:`End User` clicks "Create" button in :ref:`ui_form_dialogs_create_hostprovider`
+
+Post-Conditions
+---------------
+
+* A Hostprovider has been created.
+* :ref:`ui_form_dialogs_create_hostprovider` has been closed.
