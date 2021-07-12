@@ -1,7 +1,7 @@
 """ADCM Endpoints classes and methods"""
 
 # pylint: disable=too-few-public-methods,invalid-name
-from enum import EnumMeta
+from enum import Enum
 from typing import List, Type, Optional
 
 import attr
@@ -38,16 +38,7 @@ class Endpoint:
     technical: bool = False
 
 
-class EndpointsEnumMeta(EnumMeta):
-    def __iter__(cls):
-        return (
-            cls._member_map_[name]
-            for name in cls._member_names_
-            if not cls._member_map_[name].technical
-        )
-
-
-class Endpoints(metaclass=EndpointsEnumMeta):
+class Endpoints(Enum):
     """All current endpoints"""
 
     def __init__(self, endpoint: Endpoint):

@@ -80,6 +80,8 @@ def get_data_for_methods_check():
     """
     test_data = []
     for endpoint in Endpoints:
+        if endpoint.technical:
+            continue
         for method in Methods:
             request = Request(
                 method=method,
@@ -107,6 +109,8 @@ def get_data_for_params_check(method=Methods.GET, fields_predicate=None):
     """
     test_data = []
     for endpoint in Endpoints:
+        if endpoint.technical:
+            continue
         if method not in endpoint.methods:
             continue
         if not get_fields(endpoint.data_class, predicate=fields_predicate):
@@ -130,6 +134,8 @@ def get_positive_data_for_post_body_check():
     """
     test_sets = []
     for endpoint in Endpoints:
+        if endpoint.technical:
+            continue
         if Methods.POST in endpoint.methods:
             test_sets.append(
                 (
@@ -186,6 +192,8 @@ def get_negative_data_for_post_body_check():
     """
     test_sets = []
     for endpoint in Endpoints:
+        if endpoint.technical:
+            continue
         if Methods.POST in endpoint.methods:
             test_sets.append(
                 (
@@ -240,6 +248,8 @@ def get_positive_data_for_patch_body_check():
     """
     test_sets = []
     for endpoint in Endpoints:
+        if endpoint.technical:
+            continue
         if Methods.PATCH in endpoint.methods:
             test_sets.append(
                 (
@@ -282,6 +292,8 @@ def get_negative_data_for_patch_body_check():
     """
     test_sets = []
     for endpoint in Endpoints:
+        if endpoint.technical:
+            continue
         if Methods.PATCH in endpoint.methods:
             test_sets.append(
                 (
@@ -315,6 +327,8 @@ def get_positive_data_for_put_body_check():
     """
     test_sets = []
     for endpoint in Endpoints:
+        if endpoint.technical:
+            continue
         if Methods.PUT in endpoint.methods:
             test_sets.append(
                 (
@@ -357,6 +371,8 @@ def get_negative_data_for_put_body_check():
     """
     test_sets = []
     for endpoint in Endpoints:
+        if endpoint.technical:
+            continue
         if Methods.PUT in endpoint.methods:
             test_sets.append(
                 (
@@ -405,6 +421,8 @@ def get_data_for_body_check(method: Methods, endpoints_with_test_sets: List[tupl
     """
     test_data = []
     for endpoint, test_groups in endpoints_with_test_sets:
+        if endpoint.technical:
+            continue
         for test_group, group_name in test_groups:
             values: List[TestDataWithPreparedBody] = []
             for test_set in test_group:
