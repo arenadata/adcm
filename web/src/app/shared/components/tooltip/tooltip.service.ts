@@ -64,8 +64,13 @@ export class TooltipService {
     }
   }
 
-  hide() {
-    this.timeOut = setTimeout(() => this.positionSource.next(), 500);
+  hide(withoutTimout = false, timeout = 500) {
+    if (withoutTimout) {
+      this.positionSource.next();
+      return;
+    }
+
+    this.timeOut = setTimeout(() => this.positionSource.next(), timeout);
   }
 
   mouseEnterTooltip() {
