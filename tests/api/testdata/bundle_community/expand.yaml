@@ -1,0 +1,8 @@
+- name: Dummy expand action
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Expand
+      debug:
+        msg: "Expand success"
