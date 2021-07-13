@@ -1,0 +1,218 @@
+- type: cluster
+  name: Dummy cluster
+  edition: {{ edition }}
+  version: 1.0
+
+  config: &default_config
+    - name: some_str
+      required: false
+      type: string
+
+    - name: some_str_with_default
+      type: string
+      default: default value
+
+  actions:
+    expand:
+      script: expand.yaml
+      script_type: ansible
+      states:
+        available: any
+      type: job
+      hc_acl:
+        - service: service_1
+          component: component_1
+          action: add
+        - service: service_1
+          component: component_2
+          action: add
+        - service: service_4
+          component: component_1
+          action: add
+        - service: service_4
+          component: component_2
+          action: add
+      config: *default_config
+
+- type: service
+  name: service_1
+  display_name: Service 1
+  version: "1.0"
+
+  config: *default_config
+
+  components:
+    component_1:
+      display_name: "Service 1 Component 1"
+      constraint: [1, +]
+    component_2:
+      display_name: "Service 1 Component 2"
+      constraint: [1, +]
+
+
+  actions: &default_service_actions
+    expand:
+      display_name: "Expand components"
+      type: job
+      script_type: ansible
+      script: expand.yaml
+      config: *default_config
+      hc_acl:
+        - component: component_1
+          action: add
+        - component: component_2
+          action: add
+      states:
+        available: any
+
+    shrink:
+      display_name: "Shrink components"
+      type: job
+      script_type: ansible
+      script: shrink.yaml
+      config: *default_config
+      hc_acl:
+        - component: component_1
+          action: remove
+        - component: component_2
+          action: remove
+      states:
+        available: any
+
+    pre_action:
+      display_name: "Pre action"
+      type: job
+      script_type: ansible
+      script: pre_action.yaml
+      states:
+        available: any
+
+    pre_action_with_config:
+      display_name: "Pre action with config"
+      type: job
+      script_type: ansible
+      script: pre_action_with_config.yaml
+      config: *default_config
+      states:
+        available: any
+
+    post_action:
+      display_name: "Post action"
+      type: job
+      script_type: ansible
+      script: pre_action.yaml
+      states:
+        available: any
+
+    post_action_with_config:
+      display_name: "Post action with config"
+      type: job
+      script_type: ansible
+      script: post_action_with_config.yaml
+      config: *default_config
+      states:
+        available: any
+
+
+- type: service
+  name: service_2
+  display_name: Service 2
+  version: "1.0"
+
+  config: *default_config
+
+- type: service
+  name: service_3
+  display_name: Service 3
+  version: "1.0"
+
+  config: *default_config
+
+- type: service
+  name: service_4
+  display_name: Service 4
+  version: "1.0"
+
+  config: *default_config
+
+  components:
+    component_1:
+      display_name: "Service 4 Component 1"
+      constraint: [1, +]
+    component_2:
+      display_name: "Service 4 Component 2"
+      constraint: [1, +]
+
+  actions:
+    expand:
+      display_name: "Expand components"
+      type: job
+      script_type: ansible
+      script: expand.yaml
+      hc_acl:
+        - component: component_1
+          action: add
+        - component: component_2
+          action: add
+      states:
+        available: any
+
+    shrink:
+      display_name: "Shrink components"
+      type: job
+      script_type: ansible
+      script: shrink.yaml
+      config: *default_config
+      hc_acl:
+        - component: component_1
+          action: remove
+        - component: component_2
+          action: remove
+      states:
+        available: any
+
+    pre_action:
+      display_name: "Pre action"
+      type: job
+      script_type: ansible
+      script: pre_action.yaml
+      states:
+        available: any
+
+    pre_action_with_config:
+      display_name: "Pre action with config"
+      type: job
+      script_type: ansible
+      script: pre_action_with_config.yaml
+      config: *default_config
+      states:
+        available: any
+
+    post_action:
+      display_name: "Post action"
+      type: job
+      script_type: ansible
+      script: pre_action.yaml
+      states:
+        available: any
+
+    post_action_with_config:
+      display_name: "Post action with config"
+      type: job
+      script_type: ansible
+      script: post_action_with_config.yaml
+      config: *default_config
+      states:
+        available: any
+
+- type: service
+  name: service_5
+  display_name: Service 5
+  version: "1.0"
+
+  config: *default_config
+
+  components:
+    component_1:
+      display_name: "Service 5 Component 1"
+      constraint: [2]

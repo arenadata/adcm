@@ -1,0 +1,8 @@
+---
+version: "1.0"
+editions:
+  - name: community
+    preprocessors:
+      - type: splitter
+        files:
+          - config.yml.j2

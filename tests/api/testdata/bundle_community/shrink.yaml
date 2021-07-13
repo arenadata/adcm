@@ -1,0 +1,8 @@
+- name: Dummy shrink action
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Shrink
+      debug:
+        msg: "Shrink success"
