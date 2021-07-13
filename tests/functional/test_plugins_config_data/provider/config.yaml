@@ -233,6 +233,48 @@
       params:
         ansible_tags: list
 
+    component_int: &component_action
+      type: job
+      script_type: ansible
+      script: component.yaml
+      states:
+        available: any
+      params:
+        ansible_tags: int
 
+    component_float:
+      <<: *component_action
+      params:
+        ansible_tags: float
+
+    component_text:
+      <<: *component_action
+      params:
+        ansible_tags: text
+
+    component_file:
+      <<: *component_action
+      params:
+        ansible_tags: file
+
+    component_string:
+      <<: *component_action
+      params:
+        ansible_tags: string
+
+    component_json:
+      <<: *component_action
+      params:
+        ansible_tags: json
+
+    component_map:
+      <<: *component_action
+      params:
+        ansible_tags: map
+
+    component_list:
+      <<: *component_action
+      params:
+        ansible_tags: list
 
   config: *config

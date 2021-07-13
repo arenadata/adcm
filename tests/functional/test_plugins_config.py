@@ -11,10 +11,21 @@
 # limitations under the License.
 # pylint: disable=W0611, W0621
 import copy
+from collections import OrderedDict
+from typing import Union
 
 import allure
 import pytest
-from adcm_client.objects import ADCMClient, Bundle
+from adcm_client.objects import (
+    ADCMClient,
+    Bundle,
+    Service,
+    Component,
+    _BaseObject,
+    Cluster,
+    Provider,
+    Host,
+)
 from adcm_pytest_plugin.utils import get_data_dir
 from delayed_assert import assert_expectations, expect
 
@@ -130,6 +141,57 @@ def keys_clusters_services():
     return result
 
 
+@pytest.fixture()
+def initial_config() -> dict:
+    """
+    Get dictionary with default initial configuration for each cluster, service, component
+    """
+    return {
+        "int": 1,
+        "float": 1.0,
+        "text": "xxx\nxxx\n",
+        "file": "yyyy\nyyyy\n",
+        "string": "zzz",
+        "json": [{"x": "y"}, {"y": "z"}],
+        "map": {"one": "two", "two": "three"},
+        "list": ["one", "two", "three"],
+    }
+
+
+@pytest.fixture()
+def expected_config() -> dict:
+    """
+    Get dictionary with expected config values after run of all adcm_config based actions
+    """
+    return {
+        "int": 2,
+        "float": 4.0,
+        "text": "new new\nxxx\n",
+        "file": "new new new\nyyyy\n",
+        "string": "double new",
+        "json": [{"x": "new"}, {"y": "z"}],
+        "map": {"one": "two", "two": "new"},
+        "list": ["one", "new", "three"],
+    }
+
+
+def assert_config_is_correct(
+    unit: Union[Cluster, Service, Component, Provider, Host], expected_config: dict
+):
+    """
+    Assert that unit (Cluster, Provider, Service, etc.) configuration is equal to expected one
+    """
+    # maybe think of something better for naming
+    with allure.step(f"Check configuration of {unit.__class__} {unit.name}"):
+        actual_configuration = unit.config()
+        for key, value in expected_config.items():
+            expect(
+                value == actual_configuration[key],
+                f"{unit.__class__} config '{key}' is '{actual_configuration[key]}' when expected '{value}'",
+            )
+        assert_expectations()
+
+
 def test_cluster_config(cluster_bundle: Bundle, keys_clusters):
     expected_state = copy.deepcopy(INITIAL_CLUSTERS_CONFIG)
     assert_cluster_config(cluster_bundle, expected_state)
@@ -198,6 +260,20 @@ def test_service_config(cluster_bundle: Bundle, keys_clusters_services):
             service.action(name='service_' + key).run().try_wait()
             expected_state[cname]["services"][sname][key] = NEW_VALUES[key]
             assert_cluster_config(cluster_bundle, expected_state)
+
+
+def test_component_config(cluster_bundle: Bundle, initial_config: dict, expected_config: dict):
+    """
+    Component's configuration can be changed with adcm_config plugin action
+    """
+    with allure.step('Check components configuration change'):
+        component: Component = (
+            cluster_bundle.cluster_list()[0].service(name="First").component_list()[0]
+        )
+        assert_config_is_correct(component, initial_config)
+        for config_suffix in expected_config:
+            component.action(name=f"component_{config_suffix}").run().try_wait()
+        assert_config_is_correct(component, expected_config)
 
 
 INITIAL_PROVIDERS_CONFIG = {

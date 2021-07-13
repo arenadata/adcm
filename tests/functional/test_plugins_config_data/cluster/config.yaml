@@ -49,6 +49,46 @@
       params:
         ansible_tags: list
 
+    cluster_multijob:
+      type: task
+      scripts:
+        - &cluster_multi_script
+          name: cint
+          script_type: ansible
+          script: cluster.yaml
+          params:
+            ansible_tags: int
+        - <<: *cluster_multi_script
+          name: cfloat
+          params:
+            ansible_tags: float
+        - <<: *cluster_multi_script
+          name: ctext
+          params:
+            ansible_tags: text
+        - <<: *cluster_multi_script
+          name: cfile
+          params:
+            ansible_tags: file
+        - <<: *cluster_multi_script
+          name: cstring
+          params:
+            ansible_tags: string
+        - <<: *cluster_multi_script
+          name: cjson
+          params:
+            ansible_tags: json
+        - <<: *cluster_multi_script
+          name: cmap
+          params:
+            ansible_tags: map
+        - <<: *cluster_multi_script
+          name: clist
+          params:
+            ansible_tags: list
+      states:
+        available: any
+
     service_name_First_int: &service_name_First_action
       type: job
       script_type: ansible
@@ -93,6 +133,46 @@
       params:
         ansible_tags: list
 
+    service_name_First_multijob:
+      type: task
+      scripts:
+        - &service_name_first_multi_script
+          name: sint
+          script_type: ansible
+          script: service_name_First.yaml
+          params:
+            ansible_tags: int
+        - <<: *service_name_first_multi_script
+          name: sfloat
+          params:
+            ansible_tags: float
+        - <<: *service_name_first_multi_script
+          name: stext
+          params:
+            ansible_tags: text
+        - <<: *service_name_first_multi_script
+          name: sfile
+          params:
+            ansible_tags: file
+        - <<: *service_name_first_multi_script
+          name: sstring
+          params:
+            ansible_tags: string
+        - <<: *service_name_first_multi_script
+          name: sjson
+          params:
+            ansible_tags: json
+        - <<: *service_name_first_multi_script
+          name: smap
+          params:
+            ansible_tags: map
+        - <<: *service_name_first_multi_script
+          name: slist
+          params:
+            ansible_tags: list
+      states:
+        available: any
+
     service_name_Second_int: &service_name_Second_action
       type: job
       script_type: ansible
@@ -136,6 +216,46 @@
       <<: *service_name_Second_action
       params:
         ansible_tags: list
+
+    service_name_Second_multijob:
+      type: task
+      scripts:
+        - &service_name_second_multi_script
+          name: sint
+          script_type: ansible
+          script: service_name_Second.yaml
+          params:
+            ansible_tags: int
+        - <<: *service_name_second_multi_script
+          name: sfloat
+          params:
+            ansible_tags: float
+        - <<: *service_name_second_multi_script
+          name: stext
+          params:
+            ansible_tags: text
+        - <<: *service_name_second_multi_script
+          name: sfile
+          params:
+            ansible_tags: file
+        - <<: *service_name_second_multi_script
+          name: sstring
+          params:
+            ansible_tags: string
+        - <<: *service_name_second_multi_script
+          name: sjson
+          params:
+            ansible_tags: json
+        - <<: *service_name_second_multi_script
+          name: smap
+          params:
+            ansible_tags: map
+        - <<: *service_name_second_multi_script
+          name: slist
+          params:
+            ansible_tags: list
+      states:
+        available: any
 
   config: &config
     int:
@@ -273,9 +393,137 @@
       <<: *service_action
       params:
         ansible_tags: list
+
     <<: *cluster_actions
 
+    service_multijob:
+      type: task
+      scripts:
+        - &service_multi_script
+          name: sint
+          script_type: ansible
+          script: service.yaml
+          params:
+            ansible_tags: int
+        - <<: *service_multi_script
+          name: sfloat
+          params:
+            ansible_tags: float
+        - <<: *service_multi_script
+          name: stext
+          params:
+            ansible_tags: text
+        - <<: *service_multi_script
+          name: sfile
+          params:
+            ansible_tags: file
+        - <<: *service_multi_script
+          name: sstring
+          params:
+            ansible_tags: string
+        - <<: *service_multi_script
+          name: sjson
+          params:
+            ansible_tags: json
+        - <<: *service_multi_script
+          name: smap
+          params:
+            ansible_tags: map
+        - <<: *service_multi_script
+          name: slist
+          params:
+            ansible_tags: list
+      states:
+        available: any
 
+  components:
+    single_component:
+      display_name: Single Component
+      config: *config
+      actions:
+        component_int: &component_action
+          type: job
+          script_type: ansible
+          script: component.yaml
+          states:
+            available: any
+          params:
+            ansible_tags: int
+
+        component_float:
+          <<: *component_action
+          params:
+            ansible_tags: float
+
+        component_text:
+          <<: *component_action
+          params:
+            ansible_tags: text
+
+        component_file:
+          <<: *component_action
+          params:
+            ansible_tags: file
+
+        component_string:
+          <<: *component_action
+          params:
+            ansible_tags: string
+
+        component_json:
+          <<: *component_action
+          params:
+            ansible_tags: json
+
+        component_map:
+          <<: *component_action
+          params:
+            ansible_tags: map
+
+        component_list:
+          <<: *component_action
+          params:
+            ansible_tags: list
+
+        component_multijob:
+          type: task
+          scripts:
+            - &component_multi_script
+              name: cint
+              script_type: ansible
+              script: component.yaml
+              params:
+                ansible_tags: int
+            - <<: *component_multi_script
+              name: cfloat
+              params:
+                ansible_tags: float
+            - <<: *component_multi_script
+              name: ctext
+              params:
+                ansible_tags: text
+            - <<: *component_multi_script
+              name: cfile
+              params:
+                ansible_tags: file
+            - <<: *component_multi_script
+              name: cstring
+              params:
+                ansible_tags: string
+            - <<: *component_multi_script
+              name: cjson
+              params:
+                ansible_tags: json
+            - <<: *component_multi_script
+              name: cmap
+              params:
+                ansible_tags: map
+            - <<: *component_multi_script
+              name: clist
+              params:
+                ansible_tags: list
+          states:
+            available: any
 
   config: *config
 
