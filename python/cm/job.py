@@ -407,19 +407,7 @@ def prepare_context(action, obj):
 
 def prepare_job_config(
     action, sub_action, job_id, obj, conf, verbose
-):  # pylint: disable=too-many-branches
-    log.debug(
-        'action: name: %s, type: %s, type_name: %s.',
-        action.name,
-        action.prototype.type,
-        action.prototype.name,
-    )
-    log.debug('obj: %s, type: %s, type_name: %s.', obj, obj.prototype.type, obj.prototype.name)
-
-    if action.prototype.type != obj.prototype.type:
-        msg = 'action "{}" and object "{}" protototype type does not match'
-        err('TASK_ERROR', msg.format(action.prototype.type, obj.prototype.name))
-
+):  # pylint: disable=too-many-branches,too-many-statements
     job_conf = {
         'adcm': {'config': get_adcm_config()},
         'context': prepare_context(action, obj),
@@ -455,14 +443,28 @@ def prepare_job_config(
         job_conf['job']['cluster_id'] = cluster.id
 
     if action.prototype.type == 'service':
-        job_conf['job']['hostgroup'] = obj.prototype.name
-        job_conf['job']['service_id'] = obj.id
-        job_conf['job']['service_type_id'] = obj.prototype.id
+        if action.host_action:
+            service = ClusterObject.obj.get(prototype=action.prototype, cluster=cluster)
+            job_conf['job']['hostgroup'] = service.name
+            job_conf['job']['service_id'] = service.id
+            job_conf['job']['service_type_id'] = service.prototype.id
+        else:
+            job_conf['job']['hostgroup'] = obj.prototype.name
+            job_conf['job']['service_id'] = obj.id
+            job_conf['job']['service_type_id'] = obj.prototype.id
     elif action.prototype.type == 'component':
-        job_conf['job']['hostgroup'] = f'{obj.service.prototype.name}.{obj.prototype.name}'
-        job_conf['job']['service_id'] = obj.service.id
-        job_conf['job']['component_id'] = obj.id
-        job_conf['job']['component_type_id'] = obj.prototype.id
+        if action.host_action:
+            comp = ServiceComponent.obj.get(prototype=action.prototype, cluster=cluster)
+            service = ClusterObject.obj.get(prototype=comp.prototype.parent, cluster=cluster)
+            job_conf['job']['hostgroup'] = f'{service.name}.{comp.name}'
+            job_conf['job']['service_id'] = service.id
+            job_conf['job']['component_id'] = comp.id
+            job_conf['job']['component_type_id'] = comp.prototype.id
+        else:
+            job_conf['job']['hostgroup'] = f'{obj.service.prototype.name}.{obj.prototype.name}'
+            job_conf['job']['service_id'] = obj.service.id
+            job_conf['job']['component_id'] = obj.id
+            job_conf['job']['component_type_id'] = obj.prototype.id
     elif action.prototype.type == 'cluster':
         job_conf['job']['hostgroup'] = 'CLUSTER'
     elif action.prototype.type == 'host':
