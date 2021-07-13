@@ -49,6 +49,6 @@ export class TooltipDirective {
   }
 
   @HostListener('click') mclick(): void {
-    this.tooltip.hide();
+    this.tooltip.hide(true);
   }
 }
