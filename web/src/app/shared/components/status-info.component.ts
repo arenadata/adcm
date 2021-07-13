@@ -20,7 +20,7 @@ import { ComponentData } from './tooltip/tooltip.service';
 @Component({
   selector: 'app-status-info',
   template: `
-    <div *ngIf="statusInfo$ | async as components">
+    <div *ngIf="statusInfo$ | async as components" (click)="onClick()">
       <ng-container *ngIf="!components.length">Nothing to display</ng-container>
       <a [routerLink]="['/cluster', cluster.id, 'service', c.service_id, 'status']" *ngFor="let c of components" class="component">
         {{ (c.display_name || c.name || c.component_display_name || c.component).toUpperCase() }}&nbsp;<ng-container
@@ -72,5 +72,9 @@ export class StatusInfoComponent implements OnInit {
     }
 
     this.statusInfo$ = req$.pipe(tap(() => this.componentData.emitter.emit('onLoad')));
+  }
+
+  onClick(): void {
+    this.componentData.emitter.emit('onClose');
   }
 }
