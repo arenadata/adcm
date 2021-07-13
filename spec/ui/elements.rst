@@ -20,35 +20,63 @@ Main template of the application is the following:
 Template parts are:
 
 * Main Menu - contains the following sections of ADCM:
- * :ref:`ui_templates_clusters`
- * Hostproviders
- * Hosts
- * Jobs
- * Bundles
- * Job states - displays information about the number of jobs in the process, success jobs, failed jobs.
- * Reference section - displays information about "Ask for help" and documentation.
- * User section - contains user profile settings, settings for working in ADCM, logout functionality from ADCM.
 * Navigation Menu - displays decomposition to active/current section.
 * Right Menu - pop-up window when selecting sections such as "Reference section", "User section". 
 * Left Menu - contains the main sections when selecting a specific object (cluster, hostprovider, hosts etc)
 
+
 .. note::
    TODO: We need to provide more information about parts.
+
+
+Main Menu
+---------
+
+Main menu consist of the following elements:
+
+ * CLUSTERS - link to :ref:`ui_templates_cluster_list_view`:
+ * HOSTPROVIDERS
+ * HOSTS
+ * JOBS
+ * BUNDLES
+ * Job states (three circle in the right corner) - displays information about the number of jobs in the process, success jobs, failed jobs.
+ * Reference section - displays information about "Ask for help" and documentation.
+ * User section - contains user profile settings, settings for working in ADCM, logout functionality from ADCM.
+
+.. _ui_templates_table_view:
 
 Table View
 ==========
 
-.. note::
-   TODO: Describe table view here
-   
-.. _ui_templates_clusters:
+Table view is one of the main view of ADCM, which comes from adwp_ui. Table view is a container inside :ref:`ui_templates_common`.
+
+As example of the table view take a look at cluster list view:
+
+.. image:: img/template_table_view_big.png
+
+Table could be in a nested containers two. For example we could see a table in object details view:
+
+.. image:: img/cluster_services_template.png
+
+Templates parts are:
+
+* **Headers** - just a table headers
+* **Text Cells** - an information in text form. In some cases it could be sorted.
+* **Button Cells** - an action items in form of various icons.
+* **Action Button** - an item related to some action typicly related to a new object creation.
+* **Links** - an element, which is responsible for jumping to related object.
 
 Clusters
-------
+========
 
-The cluster list template looks like this:
+.. _ui_templates_cluster_list_view:
 
-.. image:: img/cluster_template.png
+Cluster List View
+-----------------
+
+Cluster List View is a view based on :ref:`ui_templates_table_view`
+
+"CLUSTERS" element in Navigation Menu marked as selected.
 
 Template parts are:
 
@@ -75,8 +103,7 @@ Template parts are:
 
 The list of cluster services looks like this:
 
-.. image:: img/cluster_services_template.png
- 
+
 Template parts are:
 
 * Navigation Menu with an indication of the decomposition to the selected section, actions that can be performed on the cluster (start, stop, install, update).
