@@ -13,6 +13,7 @@
 from __future__ import unicode_literals
 
 from collections.abc import Mapping
+from copy import deepcopy
 
 from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
@@ -224,6 +225,55 @@ class ConfigLog(ADCMModel):
     description = models.TextField(blank=True)
 
     __error_code__ = 'CONFIG_NOT_FOUND'
+
+    @transaction.atomic()
+    def save(self, *args, **kwargs):
+        """Saving config and updating config groups"""
+
+        def update(origin, renovator):
+            """
+            Updating the original dictionary with a check for the presence of keys in the original
+            """
+            for key, value in renovator.items():
+                if key not in origin:
+                    continue
+                if isinstance(value, Mapping):
+                    origin[key] = update(origin.get(key, {}), value)
+                else:
+                    origin[key] = value
+            return origin
+
+        if hasattr(self.obj_ref, 'cluster'):
+            obj = self.obj_ref.cluster
+        elif hasattr(self.obj_ref, 'clusterobject'):
+            obj = self.obj_ref.clusterobject
+        elif hasattr(self.obj_ref, 'servicecomponent'):
+            obj = self.obj_ref.servicecomponent
+        elif hasattr(self.obj_ref, 'hostprovider'):
+            obj = self.obj_ref.hostprovider
+        else:
+            obj = None
+
+        if obj is not None:
+            # Sync group configs with object config
+            for cg in obj.config_groups.all():
+                diff = cg.get_group_config()
+                group_config = ConfigLog()
+                current_group_config = ConfigLog.objects.get(id=cg.config.current)
+                group_config.obj_ref = cg.config
+                config = deepcopy(self.config)
+                update(config, diff)
+                group_config.config = config
+                attr = deepcopy(self.attr)
+                attr.update({'group_keys': cg.init_group_keys(self.config)})
+                update(attr, current_group_config.attr)
+                group_config.attr = attr
+                group_config.description = current_group_config.description
+                group_config.save()
+                cg.config.previous = cg.config.current
+                cg.config.current = group_config.id
+                cg.config.save()
+        super().save(*args, **kwargs)
 
 
 class ADCMEntity(ADCMModel):
@@ -472,13 +522,14 @@ class ConfigGroup(ADCMModel):
     class Meta:
         unique_together = ['object_id', 'name', 'object_type']
 
-    def _init_group_keys(self, origin, group_keys=None):
+    def init_group_keys(self, origin, group_keys=None):
+        """Creating group keys from origin config"""
         if group_keys is None:
             group_keys = {}
         for k, v in origin.items():
             if isinstance(v, Mapping):
                 group_keys.setdefault(k, {})
-                self._init_group_keys(origin.get(k, {}), group_keys[k])
+                self.init_group_keys(origin.get(k, {}), group_keys[k])
             else:
                 group_keys[k] = False
         return group_keys
@@ -503,10 +554,6 @@ class ConfigGroup(ADCMModel):
         group_keys = cl.attr.get('group_keys', {})
         return get_diff(config, group_keys)
 
-    def sync_config(self):
-        # TODO add sync object config with group config and add in create method for object config
-        pass
-
     @transaction.atomic()
     def save(self, *args, **kwargs):
         obj = self.object_type.model_class().obj.get(id=self.object_id)
@@ -516,7 +563,7 @@ class ConfigGroup(ADCMModel):
             config_log.pk = None
             config_log.obj_ref = self.config
             attr = config_log.attr
-            attr.update({'group_keys': self._init_group_keys(config_log.config)})
+            attr.update({'group_keys': self.init_group_keys(config_log.config)})
             config_log.attr = attr
             config_log.save()
             self.config.current = config_log.pk

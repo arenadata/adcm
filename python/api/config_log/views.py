@@ -24,3 +24,4 @@ class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
     serializer_class = ConfigLogSerializer
     ui_serializer_class = UIConfigLogSerializer
     filterset_fields = ('id', 'obj_ref')
+    ordering_fields = ('id',)
