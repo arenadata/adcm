@@ -47,4 +47,4 @@ class ObjectConfigSerializer(serializers.ModelSerializer):
             request=self.context['request'],
             format=self.context['format'],
         )
-        return f'{url}?obj_ref={obj.pk}'
+        return f'{url}?obj_ref={obj.pk}&ordering=-id'
