@@ -39,7 +39,9 @@ def prepare_patch_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
     for test_data_with_prepared_values in test_data_list:
         test_data, prepared_field_values = deepcopy(test_data_with_prepared_values)
         for field in get_fields(test_data.request.endpoint.data_class):
-            if field.name in prepared_field_values and prepared_field_values[field.name].drop_key:
+            if (
+                field.name in prepared_field_values
+            ) and not prepared_field_values[field.name].drop_key:
 
                 current_field_value = full_item[field.name]
                 if prepared_field_values[field.name].unchanged_value is False:
