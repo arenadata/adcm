@@ -71,8 +71,8 @@ def start_task(action, obj, conf, attr, hc, hosts, verbose):
     return task
 
 
-def check_task(action, obj, conf):
-    check_action_state(action, obj)
+def check_task(action, obj, cluster, conf):
+    check_action_state(action, obj, cluster)
     iss = issue.aggregate_issues(obj)
     if not issue.issue_to_bool(iss):
         err('TASK_ERROR', 'action has issues', iss)
@@ -101,9 +101,9 @@ def check_action_hosts(action, obj, cluster, hosts):
 def prepare_task(
     action, obj, conf, attr, hc, hosts, event, verbose
 ):  # pylint: disable=too-many-locals
-    check_task(action, obj, conf)
-    _, spec = check_action_config(action, obj, conf, attr)
     cluster = get_object_cluster(obj)
+    check_task(action, obj, cluster, conf)
+    _, spec = check_action_config(action, obj, conf, attr)
     host_map, delta = check_hostcomponentmap(cluster, action, hc)
     check_action_hosts(action, obj, cluster, hosts)
     old_hc = api.get_hc(cluster)
@@ -170,7 +170,22 @@ def cancel_task(task):
     os.kill(task.pid, signal.SIGTERM)
 
 
-def check_action_state(action, obj):
+def get_host_object(action, cluster):
+    if action.prototype.type == 'service':
+        obj = ClusterObject.obj.get(cluster=cluster, prototype=action.prototype)
+    elif action.prototype.type == 'component':
+        obj = ServiceComponent.obj.get(cluster=cluster, prototype=action.prototype)
+    elif action.prototype.type == 'cluster':
+        obj = cluster
+    return obj
+
+
+def check_action_state(action, task_object, cluster):
+    if action.host_action:
+        obj = get_host_object(action, cluster)
+    else:
+        obj = task_object
+
     if obj.state == config.Job.LOCKED:
         err('TASK_ERROR', 'object is locked')
     available = action.state_available
@@ -178,6 +193,7 @@ def check_action_state(action, obj):
         return
     if obj.state in available:
         return
+    log.debug('QQ %s', obj)
     err('TASK_ERROR', 'action is disabled')
 
 
