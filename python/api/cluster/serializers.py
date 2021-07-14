@@ -27,13 +27,6 @@ from api.component.serializers import ComponentDetailSerializer
 from api.host.serializers import HostSerializer
 
 
-def get_cluster_id(obj):
-    if hasattr(obj.obj_ref, 'clusterobject'):
-        return obj.obj_ref.clusterobject.cluster.id
-    else:
-        return obj.obj_ref.cluster.id
-
-
 class ClusterSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     prototype_id = serializers.IntegerField(help_text='id of cluster type')

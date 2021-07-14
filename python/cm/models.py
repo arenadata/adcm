@@ -21,7 +21,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction
 
-from cm.errors import AdcmEx
+from cm.errors import AdcmEx, raise_AdcmEx
 from cm.logger import log
 
 PROTO_TYPE = (
@@ -32,7 +32,6 @@ PROTO_TYPE = (
     ('host', 'host'),
     ('provider', 'provider'),
 )
-
 
 LICENSE_STATE = (
     ('absent', 'absent'),
@@ -225,6 +224,38 @@ class ObjectConfig(ADCMModel):
 
     __error_code__ = 'CONFIG_NOT_FOUND'
 
+    def get_object_and_prototype(self, object_types=None, raise_error=False):
+        """
+        Returns object and object prototype for ObjectConfig
+        :param object_types: Types of objects to search, valid types: 'adcm', 'cluster',
+         'clusterobject', 'servicecomponent', 'hostprovider', 'host', 'config_group'
+        :type object_types: list
+        :param raise_error: Raise error or return None
+        :type raise_error: bool
+        """
+        if object_types is None:
+            object_types = [
+                'adcm',
+                'cluster',
+                'clusterobject',
+                'servicecomponent',
+                'hostprovider',
+                'host',
+                'config_group',
+            ]
+        for object_type in object_types:
+            if hasattr(self, object_type):
+                if object_type == 'config_group':
+                    obj = self.config_group.object
+                else:
+                    obj = getattr(self, object_type)
+                prototype = getattr(obj, 'prototype')
+                return obj, prototype
+        if raise_error:
+            return raise_AdcmEx('INVALID_CONFIG_UPDATE', 'unknown object type "{}"'.format(self))
+        else:
+            return None, None
+
 
 class ConfigLog(ADCMModel):
     obj_ref = models.ForeignKey(ObjectConfig, on_delete=models.CASCADE)
@@ -252,16 +283,8 @@ class ConfigLog(ADCMModel):
                     origin[key] = value
             return origin
 
-        if hasattr(self.obj_ref, 'cluster'):
-            obj = self.obj_ref.cluster
-        elif hasattr(self.obj_ref, 'clusterobject'):
-            obj = self.obj_ref.clusterobject
-        elif hasattr(self.obj_ref, 'servicecomponent'):
-            obj = self.obj_ref.servicecomponent
-        elif hasattr(self.obj_ref, 'hostprovider'):
-            obj = self.obj_ref.hostprovider
-        else:
-            obj = None
+        object_types = ['cluster', 'clusterobject', 'servicecomponent', 'hostprovider']
+        obj, _ = self.obj_ref.get_object_and_prototype(object_types=object_types)
 
         if obj is not None:
             # Sync group configs with object config

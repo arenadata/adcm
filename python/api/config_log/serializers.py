@@ -46,20 +46,5 @@ class UIConfigLogSerializer(ConfigLogSerializer):
         fields = ('id', 'date', 'description', 'config', 'attr', 'url')
 
     def get_config(self, config_log):
-        if hasattr(config_log.obj_ref, 'config_group'):
-            obj = config_log.obj_ref.config_group.object
-        elif hasattr(config_log.obj_ref, 'config_group_diff'):
-            obj = config_log.obj_ref.config_group_diff.object
-        elif hasattr(config_log.obj_ref, 'adcm'):
-            obj = config_log.obj_ref.adcm
-        elif hasattr(config_log.obj_ref, 'cluster'):
-            obj = config_log.obj_ref.cluster
-        elif hasattr(config_log.obj_ref, 'hostprovider'):
-            obj = config_log.obj_ref.hostprovider
-        elif hasattr(config_log.obj_ref, 'host'):
-            obj = config_log.obj_ref.host
-        elif hasattr(config_log.obj_ref, 'clusterobject'):
-            obj = config_log.obj_ref.clusterobject
-        elif hasattr(config_log.obj_ref, 'servicecomponent'):
-            obj = config_log.obj_ref.servicecomponent
+        obj, _ = config_log.obj_ref.get_object_and_prototype(raise_error=True)
         return ui_config(obj, config_log)
