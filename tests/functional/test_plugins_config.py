@@ -312,7 +312,7 @@ def test_service_config_from_cluster_by_name(
         for config_key, cluster_name, service_name in keys_clusters_services:
             cluster = cluster_bundle.cluster(name=cluster_name)
             cluster.action(name='service_name_' + service_name + '_' + config_key).run().try_wait()
-            current_expected_state[cluster_name]["services"][service_name][
+            current_expected_state[cluster_name]["services"][service_name]['config'][
                 config_key
             ] = expected_config[config_key]
             assert_cluster_config_is_correct(cluster_bundle, current_expected_state)
@@ -348,7 +348,7 @@ def test_service_config_from_service_by_name(
         for config_key, cluster_name, service_name in keys_clusters_services:
             service = cluster_bundle.cluster(name=cluster_name).service(name=service_name)
             service.action(name='service_name_' + service_name + '_' + config_key).run().try_wait()
-            current_expected_state[cluster_name]["services"][service_name][
+            current_expected_state[cluster_name]["services"][service_name]['config'][
                 config_key
             ] = expected_config[config_key]
             assert_cluster_config_is_correct(cluster_bundle, current_expected_state)
@@ -380,7 +380,7 @@ def test_another_service_from_service_by_name(
     current_expected_state = get_correct_initial_config(cluster_bundle, initial_clusters_config)
     with allure.step('Check another service from service by name'):
         for config_key, cluster_name, service_name in filter(
-            lambda *_, sn: sn != "Second", keys_clusters_services
+            lambda x: x[-1] != "Second", keys_clusters_services
         ):
             second = cluster_bundle.cluster(name=cluster_name).service(name='Second')
             result = (
@@ -402,7 +402,7 @@ def test_service_config(
             cluster = cluster_bundle.cluster(name=cluster_name)
             service = cluster.service(name=service_name)
             service.action(name='service_' + config_key).run().try_wait()
-            current_expected_state[cluster_name]["services"][service_name][
+            current_expected_state[cluster_name]["services"][service_name]['config'][
                 config_key
             ] = expected_config[config_key]
             assert_cluster_config_is_correct(cluster_bundle, current_expected_state)
@@ -573,7 +573,7 @@ def test_provider_config(provider_bundle: Bundle, expected_config: dict):
     expected_state = copy.deepcopy(INITIAL_PROVIDERS_CONFIG)
     assert_provider_config(provider_bundle, expected_state)
     with allure.step('Check provider config'):
-        for key, pname in sparse_matrix(expected_config.keys(), PROVIDERS):
+        for key, pname in sparse_matrix(tuple(expected_config.keys()), PROVIDERS):
             provider = provider_bundle.provider(name=pname)
             provider.action(name='provider_' + key).run().try_wait()
             expected_state[pname]["config"][key] = expected_config[key]
@@ -585,7 +585,7 @@ def test_host_config(provider_bundle: Bundle, expected_config: dict):
     expected_state = copy.deepcopy(INITIAL_PROVIDERS_CONFIG)
     assert_provider_config(provider_bundle, expected_state)
     with allure.step('Check host config'):
-        for key, pname, host_idx in sparse_matrix(expected_config.keys(), PROVIDERS, [0, 1]):
+        for key, pname, host_idx in sparse_matrix(tuple(expected_config.keys()), PROVIDERS, [0, 1]):
             provider = provider_bundle.provider(name=pname)
             fqdn = list(INITIAL_PROVIDERS_CONFIG[pname]['hosts'].keys())[host_idx]
             host = provider.host(fqdn=fqdn)
@@ -598,7 +598,7 @@ def test_host_config_from_provider(provider_bundle: Bundle, expected_config: dic
     expected_state = copy.deepcopy(INITIAL_PROVIDERS_CONFIG)
     assert_provider_config(provider_bundle, expected_state)
     with allure.step('Check host config from provider'):
-        for key, pname, host_idx in sparse_matrix(expected_config.keys(), PROVIDERS, [0, 1]):
+        for key, pname, host_idx in sparse_matrix(tuple(expected_config.keys()), PROVIDERS, [0, 1]):
             provider = provider_bundle.provider(name=pname)
             fqdn = list(INITIAL_PROVIDERS_CONFIG[pname]['hosts'].keys())[host_idx]
             provider.action(name='host_' + key).run(config={"fqdn": fqdn}).try_wait()
