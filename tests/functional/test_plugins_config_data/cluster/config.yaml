@@ -437,7 +437,7 @@
         available: any
 
   components:
-    single_component:
+    single_component:  &component
       display_name: Single Component
       config: *config
       actions:
@@ -533,5 +533,9 @@
 
   actions:
     <<: [*service_actions, *cluster_actions]
+
+  components:
+    another_component: *component
+
 
   config: *config
