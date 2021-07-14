@@ -9,11 +9,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from time import sleep
 
 import allure
-
+from deprecated import deprecated
 # Created by a1wen at 05.03.19
 from selenium.common.exceptions import (
     TimeoutException,
@@ -40,6 +39,7 @@ def element_text(e):
     return text.strip()
 
 
+@deprecated("Use BasePageObj")
 class BasePage:
     ignored_exceptions = (NoSuchElementException, StaleElementReferenceException)
 
@@ -339,6 +339,7 @@ class Details(BasePage):
     pass
 
 
+@deprecated("Use LoginPage(BasePageObject)")
 class LoginPage(BasePage):
     login_locator = bys.by_id('login')
     passwd_locator = bys.by_id('password')
