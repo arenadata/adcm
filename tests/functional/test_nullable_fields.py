@@ -54,11 +54,11 @@ types_list = ['integer', 'float', 'string', 'boolean', 'password', 'text', 'json
 
 
 @pytest.fixture(params=types_list)
-def data(sdk_client_ms: ADCMClient, request):
+def data(sdk_client_fs: ADCMClient, request):
     out_dir = mkdtemp()
     conf = read_conf(TEMPLATE)
     save_conf(render(conf, request.param), out_dir)
-    bundle = sdk_client_ms.upload_from_fs(out_dir)
+    bundle = sdk_client_fs.upload_from_fs(out_dir)
     cluster = bundle.cluster_create(name=request.param)
     yield cluster, request.param
     shutil.rmtree(out_dir)

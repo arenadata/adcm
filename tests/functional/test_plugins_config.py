@@ -114,7 +114,7 @@ def cluster_bundle(sdk_client_fs: ADCMClient):
     return bundle
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def keys_clusters():
     result = []
     for i, key in enumerate(KEYS):
@@ -122,7 +122,7 @@ def keys_clusters():
     return result
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def keys_clusters_services():
     result = []
     for i, key in enumerate(KEYS):

@@ -12,8 +12,8 @@
 import { Injectable } from '@angular/core';
 import { ParamMap } from '@angular/router';
 import { ApiService } from '@app/core/api';
-import { BehaviorSubject, EMPTY, forkJoin, Observable, of } from 'rxjs';
-import { filter, map, switchMap, tap } from 'rxjs/operators';
+import { BehaviorSubject, EMPTY, forkJoin, Observable, of, throwError } from 'rxjs';
+import { catchError, filter, map, switchMap, tap } from 'rxjs/operators';
 import { Store } from '@ngrx/store';
 
 import {
@@ -32,13 +32,12 @@ import { environment } from '@env/environment';
 import { ServiceComponentService } from '@app/services/service-component.service';
 import { setPathOfRoute } from '@app/store/navigation/navigation.store';
 import { EntityNames } from '@app/models/entity-names';
+import { HttpResponseBase } from '@angular/common/http';
 
 export interface WorkerInstance {
   current: Entities;
   cluster: Cluster | null;
 }
-
-type pagesType = 'cluster' | 'host' | 'provider' | 'service' | 'job' | 'bundle';
 
 @Injectable({
   providedIn: 'root',
@@ -47,8 +46,6 @@ export class ClusterService {
   private worker: WorkerInstance | null;
   private workerSubject = new BehaviorSubject<WorkerInstance>(null);
   public worker$ = this.workerSubject.asObservable();
-
-  private _currentParamMap: { [key in pagesType]: number };
 
   get Cluster() {
     return this.worker ? this.worker.cluster : null;
@@ -182,7 +179,14 @@ export class ClusterService {
     return this.api.get<any>(`${this.Current.config}current/`).pipe(
       map((a: any) => a.config.find((b: { name: string }) => b.name === '__main_info')),
       filter((a) => a),
-      map((a) => a.value)
+      map((a) => a.value),
+      catchError((e: HttpResponseBase) => {
+        if (e.status === 404) {
+          return of('Nothing to display');
+        } else {
+          return throwError(e);
+        }
+      }),
     );
   }
 

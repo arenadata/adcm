@@ -303,9 +303,7 @@ def test_host_should_be_unlocked_after_expand_action(
     adcm_object: str,
     expand_action: str,
 ):
-    action_args = {
-        "obj_for_action": None
-    }
+    action_args = {"obj_for_action": None}
     cluster, _ = cluster_with_two_hosts
     dummy_service = cluster.service_add(name="second")
     dummy_component = dummy_service.component(name="dummy")
@@ -316,11 +314,7 @@ def test_host_should_be_unlocked_after_expand_action(
     elif adcm_object == "Component":
         action_args["obj_for_action"] = dummy_component
 
-    _test_expand_object_action(
-        cluster_with_two_hosts,
-        action_name=expand_action,
-        **action_args
-    )
+    _test_expand_object_action(cluster_with_two_hosts, action_name=expand_action, **action_args)
 
 
 @pytest.mark.parametrize("adcm_object", ["Cluster", "Service", "Component"])
@@ -332,9 +326,7 @@ def test_host_should_be_unlocked_after_shrink_action(
     adcm_object: str,
     shrink_action: str,
 ):
-    action_args = {
-        "obj_for_action": None
-    }
+    action_args = {"obj_for_action": None}
     cluster, _ = cluster_with_two_hosts
     dummy_service = cluster.service_add(name="second")
     dummy_component = dummy_service.component(name="dummy")
@@ -345,24 +337,28 @@ def test_host_should_be_unlocked_after_shrink_action(
     elif adcm_object == "Component":
         action_args["obj_for_action"] = dummy_component
 
-    _test_shrink_object_action(
-        cluster_with_two_hosts,
-        action_name=shrink_action,
-        **action_args
-    )
+    _test_shrink_object_action(cluster_with_two_hosts, action_name=shrink_action, **action_args)
 
 
 @pytest.mark.parametrize(
     "action_with_ansible_plugin",
     [
-        "delete_service", "hc_action_remove", "hc_action_add", "hc_and_host_remove",
-        "delete_service_failed", "hc_action_remove_failed", "hc_action_add_failed",
+        "delete_service",
+        "hc_action_remove",
+        "hc_action_add",
+        "hc_and_host_remove",
+        "delete_service_failed",
+        "hc_action_remove_failed",
+        "hc_action_add_failed",
         "hc_and_host_remove_failed",
         # MULTIJOBS
-        "delete_service_multijob", "hc_action_remove_multijob", "hc_action_add_multijob",
-        "delete_service_multijob_failed", "hc_action_remove_multijob_failed",
+        "delete_service_multijob",
+        "hc_action_remove_multijob",
+        "hc_action_add_multijob",
+        "delete_service_multijob_failed",
+        "hc_action_remove_multijob_failed",
         "hc_action_add_multijob_failed",
-    ]
+    ],
 )
 def test_host_should_be_unlocked_after_service_action_with_ansible_plugin(
     sdk_client_fs: ADCMClient,
@@ -373,21 +369,25 @@ def test_host_should_be_unlocked_after_service_action_with_ansible_plugin(
     cluster, _ = cluster_with_two_hosts
     dummy_service = cluster.service_add(name="second")
     _test_object_action_with_ansible_plugin(
-        cluster_with_two_hosts,
-        action_name=action_with_ansible_plugin,
-        obj_for_action=dummy_service
+        cluster_with_two_hosts, action_name=action_with_ansible_plugin, obj_for_action=dummy_service
     )
 
 
 @pytest.mark.parametrize(
     "action_with_ansible_plugin",
     [
-        "hc_action_remove", "hc_action_add", "hc_and_host_remove",
-        "hc_action_remove_failed", "hc_action_add_failed", "hc_and_host_remove_failed",
+        "hc_action_remove",
+        "hc_action_add",
+        "hc_and_host_remove",
+        "hc_action_remove_failed",
+        "hc_action_add_failed",
+        "hc_and_host_remove_failed",
         # MULTIJOBS
-        "hc_action_remove_multijob", "hc_action_add_multijob",
-        "hc_action_remove_multijob_failed", "hc_action_add_multijob_failed",
-    ]
+        "hc_action_remove_multijob",
+        "hc_action_add_multijob",
+        "hc_action_remove_multijob_failed",
+        "hc_action_add_multijob_failed",
+    ],
 )
 def test_host_should_be_unlocked_after_cluster_action_with_ansible_plugin(
     sdk_client_fs: ADCMClient,
@@ -398,16 +398,14 @@ def test_host_should_be_unlocked_after_cluster_action_with_ansible_plugin(
     cluster, _ = cluster_with_two_hosts
     cluster.service_add(name="second")
     _test_object_action_with_ansible_plugin(
-        cluster_with_two_hosts,
-        action_name=action_with_ansible_plugin,
-        obj_for_action=cluster
+        cluster_with_two_hosts, action_name=action_with_ansible_plugin, obj_for_action=cluster
     )
 
 
 def _test_expand_object_action(
     cluster_with_two_hosts: Tuple[Cluster, List[Host]],
     obj_for_action: Union[Cluster, Service, Component],
-    action_name: str
+    action_name: str,
 ):
     cluster, hosts = cluster_with_two_hosts
     host1, host2 = hosts
@@ -417,7 +415,7 @@ def _test_expand_object_action(
         (host1, dummy_component),
     )
     with allure.step(f"Run {obj_for_action.__class__.__name__} action: expand component from host"):
-        obj_for_action.action(name=action_name, ).run(
+        obj_for_action.action(name=action_name,).run(
             hc=[
                 {
                     "host_id": host1.host_id,
@@ -438,7 +436,7 @@ def _test_expand_object_action(
 def _test_shrink_object_action(
     cluster_with_two_hosts: Tuple[Cluster, List[Host]],
     obj_for_action: Union[Cluster, Service, Component],
-    action_name: str
+    action_name: str,
 ):
     cluster, hosts = cluster_with_two_hosts
     host1, host2 = hosts
@@ -449,7 +447,7 @@ def _test_shrink_object_action(
         (host2, dummy_component),
     )
     with allure.step(f"Run {obj_for_action.__class__.__name__} action: shrink component from host"):
-        obj_for_action.action(name=action_name, ).run(
+        obj_for_action.action(name=action_name,).run(
             hc=[
                 {
                     "host_id": host1.host_id,
@@ -465,7 +463,7 @@ def _test_shrink_object_action(
 def _test_object_action_with_ansible_plugin(
     cluster_with_two_hosts: Tuple[Cluster, List[Host]],
     obj_for_action: Union[Cluster, Service, Component],
-    action_name: str
+    action_name: str,
 ):
     cluster, hosts = cluster_with_two_hosts
     host1, host2 = hosts
