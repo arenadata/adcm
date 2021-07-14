@@ -19,7 +19,7 @@ import { ActionsDirective } from './components/actions/actions.directive';
 import { TooltipComponent } from './components/tooltip/tooltip.component';
 import { TooltipDirective } from './components/tooltip/tooltip.directive';
 import { PopoverDirective } from '@app/directives/popover.directive';
-import { BaseDirective, ForTestDirective, InfinityScrollDirective, MTextareaDirective, ScrollDirective, SocketListenerDirective } from './directives';
+import { BaseDirective, ForTestDirective, InfinityScrollDirective, MTextareaDirective, ScrollDirective } from './directives';
 import { MaterialModule } from './material.module';
 import { MenuItemComponent } from './components/actions/action-list/menu-item/menu-item.component';
 import { CardItemComponent } from './components/actions/action-card/card-item/card-item.component';
@@ -36,7 +36,6 @@ import { IssuePathPipe } from '@app/pipes/issue-path.pipe';
     TooltipComponent,
     MTextareaDirective,
     BaseDirective,
-    SocketListenerDirective,
     CrumbsComponent,
     UpgradeComponent,
     ScrollDirective,
@@ -60,7 +59,6 @@ import { IssuePathPipe } from '@app/pipes/issue-path.pipe';
     TooltipComponent,
     MTextareaDirective,
     BaseDirective,
-    SocketListenerDirective,
     CrumbsComponent,
     UpgradeComponent,
     ScrollDirective,

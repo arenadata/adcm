@@ -1,14 +1,14 @@
 import { Directive } from '@angular/core';
-import { BaseDirective } from '@adwp-ui/widgets';
 import { Observable } from 'rxjs';
 
 import { AdcmEntity } from '../models/entity';
 import { NavItem } from '../shared/details/navigation.service';
+import { DetailAbstractDirective } from './detail.abstract.directive';
 
 @Directive({
-  selector: '[appDirective]',
+  selector: '[appDetails]',
 })
-export abstract class DetailsDirective extends BaseDirective {
+export abstract class DetailsDirective extends DetailAbstractDirective {
 
   abstract title: string;
   abstract items: NavItem[];

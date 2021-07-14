@@ -25,7 +25,7 @@ import { ServicesComponent } from '@app/components/cluster/services/services.com
 import { AuthGuard } from '@app/core/auth/auth.guard';
 import { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';
 import { ServiceComponentsComponent } from '@app/components/service-components.component';
-import { ClusterDetailsComponent } from '../../components/cluster/cluster-details/cluster-details.component';
+import { ClusterDetailsComponent } from '@app/components/cluster/cluster-details/cluster-details.component';
 
 
 const clusterRoutes: Routes = [
@@ -42,7 +42,7 @@ const clusterRoutes: Routes = [
     children: [
       { path: '', redirectTo: 'main', pathMatch: 'full' },
       { path: 'main', component: MainInfoComponent },
-      // { path: 'service', component: ServicesComponent },
+      { path: 'service', component: ServicesComponent },
       // { path: 'host', component: HostComponent },
       // { path: 'host_component', component: HcmapComponent },
       // { path: 'config', component: ConfigComponent },

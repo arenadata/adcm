@@ -48,6 +48,7 @@ export class ClusterService {
   public worker$ = this.workerSubject.asObservable();
 
   get Cluster() {
+    console.log('get Cluster', this.worker, this.worker?.cluster);
     return this.worker ? this.worker.cluster : null;
   }
 
@@ -106,6 +107,7 @@ export class ClusterService {
   getContext(param: ParamMap): Observable<WorkerInstance> {
     this.store.dispatch(setPathOfRoute({ params: param }));
 
+    console.log('getContext');
     const typeName = EntityNames.find((a) => param.keys.some((b) => a === b));
     const id = +param.get(typeName);
     const cluster$ = param.has('cluster') ? this.api.getOne<Cluster>('cluster', +param.get('cluster')) : of(null);
@@ -142,6 +144,7 @@ export class ClusterService {
   }
 
   getServices(p: ParamMap) {
+    console.log(this.Cluster);
     return this.api.getList<Service>(this.Cluster.service, p).pipe(
       map((r) => {
         r.results = r.results.map((a) => ({ ...a, cluster: this.Cluster }));

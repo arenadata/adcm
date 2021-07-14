@@ -9,20 +9,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Directive, Injectable, OnDestroy } from '@angular/core';
-import { EventMessage, getMessage, SocketState, clearMessages } from '@app/core/store';
+import { Directive, OnDestroy } from '@angular/core';
 import { select, Store } from '@ngrx/store';
 import { filter, tap } from 'rxjs/operators';
-import { BaseDirective } from './base.directive';
+import { BaseDirective } from '@adwp-ui/widgets';
+
+import { EventMessage, getMessage, SocketState, clearMessages } from '../core/store';
 
 @Directive({
-  selector: '[appBase]',
+  selector: '[appSocketListener]',
 })
-@Injectable()
-export class SocketListenerDirective extends BaseDirective implements OnDestroy {
+export abstract class SocketListenerDirective extends BaseDirective implements OnDestroy {
+
   socket$ = this.socket.pipe(this.takeUntil(), select(getMessage), filter(m => !!m && !!m.object));
 
-  constructor(private socket: Store<SocketState>) {
+  constructor(
+    protected socket: Store<SocketState>,
+  ) {
     super();
   }
 

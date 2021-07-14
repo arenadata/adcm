@@ -29,6 +29,3 @@ export class BaseDirective implements OnDestroy {
     return takeUntil<T>(this.destroy$);
   }
 }
-export interface ISocketListener {
-  socketListener: (m: EventMessage) => void;
-}
