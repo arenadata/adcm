@@ -193,7 +193,6 @@ def check_action_state(action, task_object, cluster):
         return
     if obj.state in available:
         return
-    log.debug('QQ %s', obj)
     err('TASK_ERROR', 'action is disabled')
 
 
