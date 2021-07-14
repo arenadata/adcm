@@ -112,7 +112,7 @@ export class StackComponent extends AdwpListDirective<IBundle> {
 export class MainComponent implements OnInit {
   model: any;
 
-  keys = ['display_name', 'version', 'license_path', 'license'];
+  keys = ['display_name', 'version', 'license', 'license_path'];
 
   listColumns = [
     ListFactory.keyColumn(),
