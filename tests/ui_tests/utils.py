@@ -1,12 +1,16 @@
 # pylint: disable=too-many-ancestors
 
 from collections import UserDict
+from contextlib import contextmanager
 
+import allure
 from adcm_client.objects import ADCMClient, Cluster
 from adcm_pytest_plugin.utils import random_string
+from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait as WDW
 
 from tests.ui_tests.app.configuration import Configuration
-import allure
 
 
 def prepare_cluster(sdk_client: ADCMClient, path) -> Cluster:
@@ -88,3 +92,20 @@ class FieldDefinition(BundleObjectDefinition):
     def __init__(self, prop_type, prop_name=None):
         super().__init__(obj_type=prop_type, name=prop_name)
         self["required"] = False
+
+
+@allure.step('Wait new window to open')
+@contextmanager
+def wait_for_new_window(driver: WebDriver, wait_time: int = 10):
+    tabs = driver.window_handles
+    yield
+    WDW(driver, wait_time).until(EC.new_window_is_opened(tabs))
+    tabs = driver.window_handles
+    driver.switch_to.window(tabs[len(tabs) - 1])
+
+
+@allure.step('Close current tab')
+def close_current_tab(driver: WebDriver):
+    tabs = driver.window_handles
+    driver.close()
+    driver.switch_to.window(tabs[0])

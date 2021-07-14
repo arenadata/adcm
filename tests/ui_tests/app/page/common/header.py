@@ -32,8 +32,9 @@ class CommonHeaderLocators:
 class AuthorizedHeaderLocators(CommonHeaderLocators):
     """ADCM header locators for authorized user"""
 
-    job_block_previous = Locator(By.XPATH, "//app-bell", "Header jobs block previous version")
+    job_block_previous = Locator(By.XPATH, "//app-bell/div", "Header jobs block previous version")
     job_block = Locator(By.CLASS_NAME, "job-status", "Header jobs block")
+    job_popup = Locator(By.XPATH, "//app-popover", "Header jobs pop up")
 
     in_progress_job_button = Locator(By.XPATH, "//button[@mattooltip='Show jobs in progress']",
                                      "Header button for in progress Jobs")
@@ -42,3 +43,10 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
     failed_job_button = Locator(By.XPATH, "//button[@mattooltip='Show failed jobs']", "Header button for failed Jobs")
     help_button = Locator(By.XPATH, "//button[@adcm_test='help']", "Header button for help")
     account_button = Locator(By.XPATH, "//button[@adcm_test='account']", "Header button for account settings")
+
+    class HelpPopup:
+        """ADCM header popup with help links"""
+
+        block = Locator(By.XPATH, "//div[contains(@class, 'mat-menu-content')]", "Header help popup block")
+        ask_link = Locator(By.XPATH, "//a[@adcm_test='ask_for_help']", "Ask for help link")
+        doc_link = Locator(By.XPATH, "//a[@adcm_test='dock']", "Documentation link")

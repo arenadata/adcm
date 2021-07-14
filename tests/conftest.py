@@ -10,25 +10,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=W0621
+import json
+import os
+import sys
 import tarfile
+import tempfile
 from typing import Optional
 
 import allure
-import json
-import os
 import pytest
-import sys
-import tempfile
-
 from _pytest.python import Function
+from adcm_client.wrappers.docker import ADCM
 from allure_commons.model2 import TestResult, Parameter
 from allure_pytest.listener import AllureListener
 from selenium.common.exceptions import WebDriverException
 
-from adcm_client.wrappers.docker import ADCM
-
 from tests.ui_tests.app.app import ADCMTest
-from tests.ui_tests.app.pages import LoginPage
+from tests.ui_tests.app.page.login.login_page import LoginPage
 
 pytest_plugins = "adcm_pytest_plugin"
 
@@ -189,9 +187,8 @@ def login_to_adcm(app_fs, adcm_credentials):
     :param app_fs:
     :param adcm_credentials:
     """
-    app_fs.driver.get(app_fs.adcm.url)
-    login = LoginPage(app_fs.driver)
-    login.login(**adcm_credentials)
+    login = LoginPage(app_fs.driver, app_fs.adcm.url).open()
+    login.login_user(**adcm_credentials)
 
 
 def _pack_bundle(stack_dir, archive_dir):

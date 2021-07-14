@@ -224,8 +224,7 @@ def _test_save_configuration_button(
             value_to_check = _get_test_value(field_type)
             if field_type == "boolean":
                 assert (
-                    config_page.get_checkbox_element_status(config_page.get_field_checkbox(field))
-                    == value_to_check
+                    config_page.get_checkbox_element_status(config_page.get_field_checkbox(field)) == value_to_check
                 )
             else:
                 if field_type == "structure":

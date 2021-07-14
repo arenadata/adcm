@@ -220,6 +220,29 @@ class PageHeader(BasePageObject):
     def click_bundles_tab_in_header(self):
         self.find_and_click(CommonHeaderLocators.bundles)
 
+    def click_job_block_in_header(self):
+        self.find_and_click(AuthorizedHeaderLocators.job_block_previous)
+
+    def click_help_button_in_header(self):
+        self.find_and_click(AuthorizedHeaderLocators.help_button)
+
+    def click_account_button_in_header(self):
+        self.find_and_click(AuthorizedHeaderLocators.account_button)
+
+    def check_job_popup(self):
+        assert self.is_element_displayed(AuthorizedHeaderLocators.job_popup)
+
+    def check_help_popup(self):
+        help_popup = AuthorizedHeaderLocators.HelpPopup
+        self.wait_element_visible(help_popup.block)
+        self.assert_displayed_elements([help_popup.ask_link, help_popup.doc_link])
+
+    def click_ask_link_in_help_popup(self):
+        self.find_and_click(AuthorizedHeaderLocators.HelpPopup.ask_link)
+
+    def click_doc_link_in_help_popup(self):
+        self.find_and_click(AuthorizedHeaderLocators.HelpPopup.doc_link)
+
 
 class PageFooter(BasePageObject):
     """Class for footer manipulating."""
