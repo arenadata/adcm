@@ -21,7 +21,7 @@ import cm.stack
 import cm.status_api
 import cm.config as config
 from cm.errors import AdcmEx
-from cm.models import JobLog, Host, ClusterObject, ServiceComponent
+from cm.models import JobLog, Host, ClusterObject, ServiceComponent, get_object_cluster
 from api.api_views import hlink
 
 
@@ -64,11 +64,12 @@ def get_task_selector(obj, action):
         selector['cluster'] = obj.cluster.id
         selector['service'] = obj.service.id
     if isinstance(obj, Host) and action.host_action:
+        cluster = get_object_cluster(obj)
         if action.prototype.type == 'component':
-            component = ServiceComponent.obj.get(prototype=action.prototype)
+            component = ServiceComponent.obj.get(cluster=cluster, prototype=action.prototype)
             selector['component'] = component.id
         if action.prototype.type == 'service':
-            service = ClusterObject.obj.get(prototype=action.prototype)
+            service = ClusterObject.obj.get(cluster=cluster, prototype=action.prototype)
             selector['service'] = service.id
         if obj.cluster is not None:
             selector['cluster'] = obj.cluster.id

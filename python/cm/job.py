@@ -407,11 +407,12 @@ def prepare_context(action, obj):
         context['service_id'] = obj.service.id
     elif obj_type == 'host':
         if action.host_action:
+            cluster = get_object_cluster(obj)
             if action.prototype.type == 'component':
-                component = ServiceComponent.obj.get(prototype=action.prototype)
+                component = ServiceComponent.obj.get(prototype=action.prototype, cluster=cluster)
                 context['component_id'] = component.id
             if action.prototype.type == 'service':
-                service = ClusterObject.obj.get(prototype=action.prototype)
+                service = ClusterObject.obj.get(prototype=action.prototype, cluster=cluster)
                 context['service_id'] = service.id
             if obj.cluster is not None:
                 context['cluster_id'] = obj.cluster.id
