@@ -52,6 +52,7 @@ from cm.models import (
     ClusterBind,
     DummyData,
     Role,
+    ConfigGroup,
 )
 
 
@@ -423,7 +424,12 @@ def accept_license(bundle):
 def update_obj_config(obj_conf, conf, attr, desc=''):
     if not isinstance(attr, dict):
         err('INVALID_CONFIG_UPDATE', 'attr should be a map')
-    obj, proto = obj_conf.get_object_and_prototype(raise_error=True)
+    obj = obj_conf.object
+    if obj is None:
+        err('INVALID_CONFIG_UPDATE', 'unknown object type "{}"'.format(obj_conf))
+    if isinstance(obj, ConfigGroup):
+        obj = obj.object
+    proto = obj.prototype
     old_conf = ConfigLog.objects.get(obj_ref=obj_conf, id=obj_conf.current)
     if not attr:
         if old_conf.attr:

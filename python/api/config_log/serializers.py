@@ -16,7 +16,8 @@ from rest_framework import serializers
 import logrotate
 from cm.adcm_config import ui_config
 from cm.api import update_obj_config
-from cm.models import ConfigLog
+from cm.errors import raise_AdcmEx
+from cm.models import ConfigLog, ConfigGroup
 
 
 class ConfigLogSerializer(serializers.ModelSerializer):
@@ -46,5 +47,11 @@ class UIConfigLogSerializer(ConfigLogSerializer):
         fields = ('id', 'date', 'description', 'config', 'attr', 'url')
 
     def get_config(self, config_log):
-        obj, _ = config_log.obj_ref.get_object_and_prototype(raise_error=True)
+        obj = config_log.obj_ref.object
+        if obj is None:
+            raise_AdcmEx(
+                'INVALID_CONFIG_UPDATE', 'unknown object type "{}"'.format(config_log.obj_ref)
+            )
+        if isinstance(obj, ConfigGroup):
+            obj = obj.object
         return ui_config(obj, config_log)
