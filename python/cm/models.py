@@ -224,37 +224,24 @@ class ObjectConfig(ADCMModel):
 
     __error_code__ = 'CONFIG_NOT_FOUND'
 
-    def get_object_and_prototype(self, object_types=None, raise_error=False):
-        """
-        Returns object and object prototype for ObjectConfig
-        :param object_types: Types of objects to search, valid types: 'adcm', 'cluster',
-         'clusterobject', 'servicecomponent', 'hostprovider', 'host', 'config_group'
-        :type object_types: list
-        :param raise_error: Raise error or return None
-        :type raise_error: bool
-        """
-        if object_types is None:
-            object_types = [
-                'adcm',
-                'cluster',
-                'clusterobject',
-                'servicecomponent',
-                'hostprovider',
-                'host',
-                'config_group',
-            ]
+    @property
+    def object(self):
+        """Returns object for ObjectConfig"""
+        object_types = [
+            'adcm',
+            'cluster',
+            'clusterobject',
+            'servicecomponent',
+            'hostprovider',
+            'host',
+            'config_group',
+        ]
         for object_type in object_types:
             if hasattr(self, object_type):
-                if object_type == 'config_group':
-                    obj = self.config_group.object
-                else:
-                    obj = getattr(self, object_type)
-                prototype = getattr(obj, 'prototype')
-                return obj, prototype
-        if raise_error:
-            return raise_AdcmEx('INVALID_CONFIG_UPDATE', 'unknown object type "{}"'.format(self))
+                obj = getattr(self, object_type)
+                return obj
         else:
-            return None, None
+            return None
 
 
 class ConfigLog(ADCMModel):
@@ -283,10 +270,8 @@ class ConfigLog(ADCMModel):
                     origin[key] = value
             return origin
 
-        object_types = ['cluster', 'clusterobject', 'servicecomponent', 'hostprovider']
-        obj, _ = self.obj_ref.get_object_and_prototype(object_types=object_types)
-
-        if obj is not None:
+        obj = self.obj_ref.object
+        if isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
             # Sync group configs with object config
             for cg in obj.config_groups.all():
                 diff = cg.get_group_config()
