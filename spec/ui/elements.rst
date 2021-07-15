@@ -98,8 +98,8 @@ Template parts are:
        
 .. _ui_templates_cluster-services:
        
-Сluster services
-------
+Сluster's service list
+----------------------
 
 The list of cluster services looks like this:
 
@@ -128,6 +128,31 @@ Template parts are:
  * **Config** - allows to go to the settings of the selected service.
 * List of added services with information according to table fields.
 * Pagination of the list of clusters
+
+.. _ui_templates_cluster_host_list_view:
+
+Сluster's host list
+--------------------
+
+The list of host include in a cluster based on :ref:`ui_templates_table_view`
+
+Common parameters of template:
+
+* "CLUSTERS" element of "Main Menu" is selected
+* Navigation menu point to a Cluster
+* "Hosts" element of "Left Menu" is selected
+
+:ref:`ui_templates_table_view` columns:
+
+=============== ==============================
+Header          Value
+=============== ==============================
+FQDN            FQDN in string format
+Provider        Link to related HostProvider
+State           State of host
+Action          Action Button
+Config          Link to config of the host
+=============== ==============================
 
 *****
 Forms

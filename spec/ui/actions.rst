@@ -166,17 +166,49 @@ Post-Conditions
 “Used” Use Cases
 ----------------
 
+Cluster host list view
+======================
+
+Use case in which the user can view the list of hosts added clusters.
+
+Actors
+------
+
+* :term:`End User`
+
+User Value
+----------
+
+This the only way to find out list of host included in cluster over UI.
+
+Pre-Conditions
+--------------
+
+:term:`End User` has ADCM and completed the following use cases:
+
+* :ref:`ui_usecases_login`
+* :ref:`ui_usecases_cluster_list_view`
+
+Post-Conditions
+---------------
+
+* :term:`End User` was able to view the list of cluster hosts.
+
+“Used” Use Cases
+----------------
+
+
 Flow of Events
 --------------
 
 1. :term:`End User` selects the required cluster by clicking on it in the list of clusters.
-2. :term:`End User` goes to the "Services" section in the left menu.
-3. :term:`End User` sees a list of cluster services and information on them.
+2. :term:`End User` goes to the "Hosts" section in the Left Menu.
+3. :term:`End User` sees a list of cluster hosts.
 
 User Interface
 --------------
 
-The description of the UI is available by clicking :ref:`ui_form_dialogs_create_cluster`.
+List of host described in :ref:`ui_templates_cluster_host_list_view`.
 
 
 *************
