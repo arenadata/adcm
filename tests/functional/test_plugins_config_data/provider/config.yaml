@@ -100,11 +100,14 @@
       type: task
       states:
         available: any
+      config:
+        - name: fqdn
+          type: string
       scripts:
         - &host_multi_script
           name: hint
           script_type: ansible
-          script: host.yaml
+          script: host_from_provider.yaml
           params:
             ansible_tags: int
         - <<: *host_multi_script

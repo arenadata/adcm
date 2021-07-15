@@ -394,8 +394,6 @@
       params:
         ansible_tags: list
 
-    <<: *cluster_actions
-
     service_multijob:
       type: task
       scripts:
@@ -435,6 +433,9 @@
             ansible_tags: list
       states:
         available: any
+
+    <<: *cluster_actions
+
 
   components:
     single_component:  &component
@@ -526,6 +527,8 @@
           states:
             available: any
 
+        <<: [*cluster_actions, *service_actions]
+
   config: *config
 
 - type: service
@@ -537,6 +540,5 @@
 
   components:
     another_component: *component
-
 
   config: *config
