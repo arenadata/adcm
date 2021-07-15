@@ -474,7 +474,7 @@ def prepare_job_config(
             job_conf['job']['service_type_id'] = obj.prototype.id
     elif action.prototype.type == 'component':
         if action.host_action:
-            service = ClusterObject.obj.get(prototype=comp.prototype.parent, cluster=cluster)
+            service = ClusterObject.obj.get(prototype=action.prototype.parent, cluster=cluster)
             comp = ServiceComponent.obj.get(
                 prototype=action.prototype, cluster=cluster, service=service
             )
