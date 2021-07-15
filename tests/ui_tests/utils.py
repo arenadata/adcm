@@ -1,5 +1,5 @@
 # pylint: disable=too-many-ancestors
-
+import time
 from collections import UserDict
 from contextlib import contextmanager
 
@@ -23,6 +23,7 @@ def prepare_cluster(sdk_client: ADCMClient, path) -> Cluster:
 @allure.step("Prepare cluster and get config")
 def prepare_cluster_and_get_config(sdk_client: ADCMClient, path, app):
     cluster = prepare_cluster(sdk_client, path)
+    time.sleep(2)
     config = Configuration(app.driver, f"{app.adcm.url}/cluster/{cluster.cluster_id}/config")
     return cluster, config
 
