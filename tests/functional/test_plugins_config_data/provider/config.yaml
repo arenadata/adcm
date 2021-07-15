@@ -1,10 +1,57 @@
 ---
 
 - type: provider
-  name: Plugins testing
+  name: Provider plugins testing
   version: 1
 
   actions: &provider_actions
+
+    provider_multijob: &provider_multijob
+      type: task
+      states:
+        available: any
+      scripts:
+        - &provider_multi_script
+          name: pint
+          script_type: ansible
+          script: provider.yaml
+          params:
+            ansible_tags: int
+        - <<: *provider_multi_script
+          name: pfloat
+          params:
+            ansible_tags: float
+        - <<: *provider_multi_script
+          name: plist
+          params:
+            ansible_tags: list
+        - <<: *provider_multi_script
+          name: ptext
+          params:
+            ansible_tags: text
+        - <<: *provider_multi_script
+          name: pfile
+          params:
+            ansible_tags: file
+        - <<: *provider_multi_script
+          name: pjson
+          params:
+            ansible_tags: json
+        - <<: *provider_multi_script
+          name: pstring
+          params:
+            ansible_tags: string
+
+        - <<: *provider_multi_script
+          name: hstring
+          params:
+            ansible_tags: string
+
+        - <<: *provider_multi_script
+          name: hmap
+          params:
+            ansible_tags: map
+
     provider_int: &provider_action
       type: job
       script_type: ansible
@@ -48,6 +95,47 @@
       <<: *provider_action
       params:
         ansible_tags: list
+
+    host_multijob: &host_multijob
+      type: task
+      states:
+        available: any
+      scripts:
+        - &host_multi_script
+          name: hint
+          script_type: ansible
+          script: host.yaml
+          params:
+            ansible_tags: int
+        - <<: *host_multi_script
+          name: hfloat
+          params:
+            ansible_tags: float
+        - <<: *host_multi_script
+          name: hlist
+          params:
+            ansible_tags: list
+        - <<: *host_multi_script
+          name: htext
+          params:
+            ansible_tags: text
+        - <<: *host_multi_script
+          name: hfile
+          params:
+            ansible_tags: file
+        - <<: *host_multi_script
+          name: hjson
+          params:
+            ansible_tags: json
+        - <<: *host_multi_script
+          name: hstring
+          params:
+            ansible_tags: string
+
+        - <<: *host_multi_script
+          name: hmap
+          params:
+            ansible_tags: map
 
     host_int: &host_from_provider_action
       type: job
@@ -151,6 +239,10 @@
   version: 1
 
   actions: &host_actions
+
+    provider_multijob:
+      <<: *provider_multijob
+
     provider_int:
       <<: *provider_action
 
@@ -188,6 +280,9 @@
       <<: *provider_action
       params:
         ansible_tags: list
+
+    host_multijob:
+      <<: *host_multijob
 
     host_int: &host_action
       type: job
@@ -230,50 +325,6 @@
 
     host_list:
       <<: *host_action
-      params:
-        ansible_tags: list
-
-    component_int: &component_action
-      type: job
-      script_type: ansible
-      script: component.yaml
-      states:
-        available: any
-      params:
-        ansible_tags: int
-
-    component_float:
-      <<: *component_action
-      params:
-        ansible_tags: float
-
-    component_text:
-      <<: *component_action
-      params:
-        ansible_tags: text
-
-    component_file:
-      <<: *component_action
-      params:
-        ansible_tags: file
-
-    component_string:
-      <<: *component_action
-      params:
-        ansible_tags: string
-
-    component_json:
-      <<: *component_action
-      params:
-        ansible_tags: json
-
-    component_map:
-      <<: *component_action
-      params:
-        ansible_tags: map
-
-    component_list:
-      <<: *component_action
       params:
         ansible_tags: list
 

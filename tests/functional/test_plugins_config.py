@@ -198,11 +198,20 @@ def assert_cluster_config_is_correct(bundle: Bundle, clusters_expected_config: d
 
 
 @allure.step("Check initial clusters configuration is correct")
-def get_correct_initial_config(cluster_bundle: Bundle, initial_config: dict) -> dict:
+def get_correct_initial_cluster_config(cluster_bundle: Bundle, initial_config: dict) -> dict:
     """
-    Asserts that initial clusters configuration is correct and returns clusters_config
+    Asserts that initial clusters configuration is correct and returns initial_config
     """
     assert_cluster_config_is_correct(cluster_bundle, initial_config)
+    return initial_config
+
+
+@allure.step("Check initial providers configuration is correct")
+def get_correct_initial_provider_config(provider_bundle: Bundle, initial_config: dict) -> dict:
+    """
+    Asserts that initial providers configuration is correct and returns initial_config
+    """
+    assert_provider_config_is_correct(provider_bundle, initial_config)
     return initial_config
 
 
@@ -235,7 +244,7 @@ def test_cluster_config(
     """
     # expected_state will be changing during actions execution
     # from start it's the same as initial clusters configuration
-    current_expected_state = get_correct_initial_config(cluster_bundle, initial_clusters_config)
+    current_expected_state = get_correct_initial_cluster_config(cluster_bundle, initial_clusters_config)
     with allure.step('Check cluster keys'):
         for config_key, cluster_name in keys_clusters:
             cluster = cluster_bundle.cluster(name=cluster_name)
@@ -250,7 +259,7 @@ def test_cluster_multijob(
     """
     Multijob task should successfully change cluster configuration
     """
-    current_expected_state = get_correct_initial_config(cluster_bundle, initial_clusters_config)
+    current_expected_state = get_correct_initial_cluster_config(cluster_bundle, initial_clusters_config)
     cluster_name = random.choice(CLUSTER_NAMES)
     with allure.step(f"Run multijob actions on cluster {cluster_name}"):
         cluster = cluster_bundle.cluster(name=cluster_name)
@@ -269,7 +278,7 @@ def test_cluster_config_from_service(
     """
     Test cluster config change from service adcm_config action
     """
-    current_expected_state = get_correct_initial_config(cluster_bundle, initial_clusters_config)
+    current_expected_state = get_correct_initial_cluster_config(cluster_bundle, initial_clusters_config)
     with allure.step('Check service actions result'):
         for config_key, cluster_name, service_name in keys_clusters_services:
             cluster = cluster_bundle.cluster(name=cluster_name)
@@ -285,7 +294,7 @@ def test_cluster_config_from_service_multijob(
     """
     Multijob task should successfully change cluster configuration
     """
-    current_expected_state = get_correct_initial_config(cluster_bundle, initial_clusters_config)
+    current_expected_state = get_correct_initial_cluster_config(cluster_bundle, initial_clusters_config)
     cluster_name = random.choice(CLUSTER_NAMES)
     service_name = random.choice(SERVICE_NAMES)
     with allure.step(
@@ -307,7 +316,7 @@ def test_service_config_from_cluster_by_name(
     """
     Change service configuration from cluster action
     """
-    current_expected_state = get_correct_initial_config(cluster_bundle, initial_clusters_config)
+    current_expected_state = get_correct_initial_cluster_config(cluster_bundle, initial_clusters_config)
     with allure.step('Check service config from cluster by name'):
         for config_key, cluster_name, service_name in keys_clusters_services:
             cluster = cluster_bundle.cluster(name=cluster_name)
@@ -324,7 +333,7 @@ def test_service_config_from_cluster_by_name_multijob(
     """
     Change service configuration from cluster multijob action
     """
-    current_expected_state = get_correct_initial_config(cluster_bundle, initial_clusters_config)
+    current_expected_state = get_correct_initial_cluster_config(cluster_bundle, initial_clusters_config)
     cluster_name = random.choice(CLUSTER_NAMES)
     service_name = random.choice(SERVICE_NAMES)
     with allure.step(
@@ -343,7 +352,7 @@ def test_service_config_from_service_by_name(
     expected_config: dict,
     keys_clusters_services: Tuple[Tuple[str, str, str], ...],
 ):
-    current_expected_state = get_correct_initial_config(cluster_bundle, initial_clusters_config)
+    current_expected_state = get_correct_initial_cluster_config(cluster_bundle, initial_clusters_config)
     with allure.step('Check service config from service by name'):
         for config_key, cluster_name, service_name in keys_clusters_services:
             service = cluster_bundle.cluster(name=cluster_name).service(name=service_name)
@@ -360,7 +369,7 @@ def test_service_config_from_service_by_name_multijob(
     """
     Change service configuration by service name multijob action
     """
-    current_expected_state = get_correct_initial_config(cluster_bundle, initial_clusters_config)
+    current_expected_state = get_correct_initial_cluster_config(cluster_bundle, initial_clusters_config)
     cluster_name = random.choice(CLUSTER_NAMES)
     service_name = random.choice(SERVICE_NAMES)
     with allure.step(f"Run multijob action on service {service_name}"):
@@ -377,7 +386,7 @@ def test_another_service_from_service_by_name(
     expected_config: dict,
     keys_clusters_services: Tuple[Tuple[str, str, str], ...],
 ):
-    current_expected_state = get_correct_initial_config(cluster_bundle, initial_clusters_config)
+    current_expected_state = get_correct_initial_cluster_config(cluster_bundle, initial_clusters_config)
     with allure.step('Check another service from service by name'):
         for config_key, cluster_name, service_name in filter(
             lambda x: x[-1] != "Second", keys_clusters_services
@@ -396,7 +405,7 @@ def test_service_config(
     expected_config: dict,
     keys_clusters_services: Tuple[Tuple[str, str, str], ...],
 ):
-    current_expected_state = get_correct_initial_config(cluster_bundle, initial_clusters_config)
+    current_expected_state = get_correct_initial_cluster_config(cluster_bundle, initial_clusters_config)
     with allure.step('Check service config change actions'):
         for config_key, cluster_name, service_name in keys_clusters_services:
             cluster = cluster_bundle.cluster(name=cluster_name)
@@ -414,7 +423,7 @@ def test_service_config_multijob(
     """
     Change service configuration by multijob action
     """
-    current_expected_state = get_correct_initial_config(cluster_bundle, initial_clusters_config)
+    current_expected_state = get_correct_initial_cluster_config(cluster_bundle, initial_clusters_config)
     cluster_name = random.choice(CLUSTER_NAMES)
     service_name = random.choice(SERVICE_NAMES)
     with allure.step(f"Run multijob actions on service {service_name}"):
@@ -434,7 +443,7 @@ def test_component_config(
     """
     Component's configuration can be changed with adcm_config plugin action
     """
-    current_expected_state = get_correct_initial_config(cluster_bundle, initial_clusters_config)
+    current_expected_state = get_correct_initial_cluster_config(cluster_bundle, initial_clusters_config)
     with allure.step("Run component config change actions"):
         for (
             config_key,
@@ -465,7 +474,7 @@ def test_component_config_multijob(
     """
     Change component configuration by multijob action
     """
-    current_expected_state = get_correct_initial_config(cluster_bundle, initial_clusters_config)
+    current_expected_state = get_correct_initial_cluster_config(cluster_bundle, initial_clusters_config)
     cluster_name = random.choice(CLUSTER_NAMES)
     service_name, component_name = random.choice(tuple(zip(SERVICE_NAMES, SERVICE_COMPONENT_NAMES)))
 
@@ -522,6 +531,21 @@ INITIAL_PROVIDERS_CONFIG = {
 PROVIDERS = list(INITIAL_PROVIDERS_CONFIG.keys())
 
 
+@pytest.fixture()
+def initial_providers_config(initial_config) -> dict:
+    return {
+        provider_name: {
+            'config': copy.deepcopy(initial_config),
+            'hosts': {
+                # will be like first_First, first_Second
+                f'{provider_name}_{host_suffix}': {'config': copy.deepcopy(initial_config)}
+                for host_suffix in ('First', 'Second')
+            }
+        }
+        for provider_name in ('first', 'second', 'third')
+    }
+
+
 def sparse_matrix(*vectors):
     lengs = []
     for a in vectors:
@@ -559,6 +583,34 @@ def assert_provider_config(bundle: Bundle, statemap: dict):
     assert_expectations()
 
 
+@allure.step('Check providers configuration')
+def assert_provider_config_is_correct(bundle: Bundle, providers_expected_config: dict):
+    """
+    Assert that all providers' and hosts' configuration equal to expected
+
+    Use in test context only
+    :param bundle: provider bundle to load configuration from
+    :param providers_expected_config: dict with expected provider configuration (check initial_providers_config)
+    """
+    # provider dict has `config` and `hosts` keys
+    for provider_name, provider_dict in providers_expected_config.items():
+        actual_provider_config = (provider := bundle.provider(name=provider_name)).config()
+        expected_provider_config = provider_dict['config']
+        expect_configuration(
+            actual_provider_config, expected_provider_config, f'Provider "{provider_name}"'
+        )
+        # host dict has `config` in keys
+        for host_name, host_dict in provider_dict['hosts'].items():
+            actual_host_config = provider.host(fqdn=host_name).config()
+            expected_host_config = host_dict['config']
+            expect_configuration(
+                actual_host_config,
+                expected_host_config,
+                f'Host "{provider_name}" host "{host_name}"',
+            )
+    assert_expectations()
+
+
 @pytest.fixture()
 def provider_bundle(sdk_client_fs: ADCMClient):
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "provider"))
@@ -579,6 +631,19 @@ def test_provider_config(provider_bundle: Bundle, expected_config: dict):
             expected_state[pname]["config"][key] = expected_config[key]
 
     assert_provider_config(provider_bundle, expected_state)
+
+
+def test_provider_multijob(provider_bundle: Bundle, initial_providers_config: dict, expected_config: dict):
+    """
+    Test provider multijob action from provider scope
+    """
+    current_expected_state = get_correct_initial_provider_config(provider_bundle, initial_providers_config)
+    provider_name = random.choice(tuple(initial_providers_config.keys()))
+    with allure.step(f'Check provider config change multijob action on provider "{provider_name}"'):
+        provider = provider_bundle.provider(name=provider_name)
+        provider.action(name='provider_multijob').run().try_wait()
+        current_expected_state[provider_name]['config'] = expected_config
+        assert_provider_config_is_correct(provider_bundle, current_expected_state)
 
 
 def test_host_config(provider_bundle: Bundle, expected_config: dict):
