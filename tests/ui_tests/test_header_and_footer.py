@@ -75,14 +75,14 @@ def test_check_header_help_links_for_authorised_user(app_fs, login_to_adcm):
     header.check_help_popup()
     with wait_for_new_window(app_fs.driver):
         header.click_ask_link_in_help_popup()
-    with allure.step("Check new opened page"):
+    with allure.step(f"Check new opened page: {params['help_link']}"):
         assert params["help_link"] in app_fs.driver.current_url, \
             f"Page {params['help_link']} has not been opened"
         close_current_tab(app_fs.driver)
     header.click_help_button_in_header()
     with wait_for_new_window(app_fs.driver):
         header.click_doc_link_in_help_popup()
-    with allure.step("Check new opened page"):
+    with allure.step(f"Check new opened page: {params['docs_link']}"):
         assert params["docs_link"] in app_fs.driver.current_url, \
             f"Page {params['docs_link']} has not been opened"
 
@@ -109,6 +109,6 @@ def test_check_footer_for_authorised_user(app_fs, login_to_adcm):
     footer.check_all_elements()
     with wait_for_new_window(app_fs.driver):
         footer.click_version_link_in_footer()
-    with allure.step("Check new opened page"):
+    with allure.step(f"Check new opened page: {params['docs']}"):
         assert params["docs"] in app_fs.driver.current_url, \
             f"Page {params['docs']} has not been opened"
