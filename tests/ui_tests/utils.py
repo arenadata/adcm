@@ -94,7 +94,7 @@ class FieldDefinition(BundleObjectDefinition):
         self["required"] = False
 
 
-@allure.step('Wait new window to open')
+@allure.step('Wait for a new window after action')
 @contextmanager
 def wait_for_new_window(driver: WebDriver, wait_time: int = 10):
     tabs = driver.window_handles
