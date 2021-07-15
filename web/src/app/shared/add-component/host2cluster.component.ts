@@ -25,7 +25,8 @@ import { DisplayMode } from './provider.component';
   template: `
     <div [@openClose]="showForm" [style.overflow]="'hidden'">
       <app-add-host #form [displayMode]="1"></app-add-host>
-      <app-add-controls [title]="'Create and add'" [disabled]="!form.form.valid" (cancel)="!Count ? onCancel() : (showForm = false)" (save)="save()"></app-add-controls>
+      <app-add-controls [title]="'Create and add'" [disabled]="!form.form.valid"
+                        (cancel)="!Count ? onCancel() : (showForm = false)" (save)="save()"></app-add-controls>
     </div>
 
     <div [@openClose]="!showForm" [style.overflow]="'hidden'">
@@ -41,16 +42,20 @@ import { DisplayMode } from './provider.component';
             <mat-icon>{{ showForm ? 'clear' : 'add' }}</mat-icon>
           </button>
           &nbsp;
-          <mat-checkbox [checked]="false" (click)="selectAllHost(cb.checked)" #cb [matTooltip]="cb.checked ? 'Deselect all' : 'Select all'"></mat-checkbox>
+          <mat-checkbox [checked]="false" (click)="selectAllHost(cb.checked)" #cb
+                        [matTooltip]="cb.checked ? 'Deselect all' : 'Select all'"></mat-checkbox>
         </div>
       </div>
       <mat-selection-list class="add-host2cluster" #listHosts>
-        <mat-list-option *ngFor="let host of list" [value]="host.id" [appTooltip]="host.fqdn" [appTooltipShowByCondition]="true">
+        <mat-list-option *ngFor="let host of list" [value]="host.id" [appTooltip]="host.fqdn"
+                         [appTooltipShowByCondition]="true">
           {{ host.fqdn }}
         </mat-list-option>
       </mat-selection-list>
-      <mat-paginator *ngIf="Count" [length]="Count" [pageSizeOptions]="[10, 25, 50, 100]" (page)="pageHandler($event)"></mat-paginator>
-      <app-add-controls *ngIf="Count" [title]="'Add'" [disabled]="!listHosts?._value?.length" (cancel)="onCancel()" (save)="addHost2Cluster(listHosts._value)"></app-add-controls>
+      <mat-paginator *ngIf="Count" [length]="Count" [pageSizeOptions]="[10, 25, 50, 100]"
+                     (page)="pageHandler($event)"></mat-paginator>
+      <app-add-controls *ngIf="Count" [title]="'Add'" [disabled]="!listHosts?._value?.length" (cancel)="onCancel()"
+                        (save)="addHost2Cluster(listHosts._value)"></app-add-controls>
     </div>
   `,
   styleUrls: ['host2cluster.component.scss'],
@@ -107,7 +112,10 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
     this.service
       .addHostInCluster(value.filter((a) => !!a))
       .pipe(this.takeUntil())
-      .subscribe(() => this.getAvailableHosts());
+      .subscribe(() => {
+        this.paginator.firstPage();
+        this.getAvailableHosts();
+      });
   }
 
   pageHandler(pageEvent: PageEvent) {
