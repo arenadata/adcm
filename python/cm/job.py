@@ -409,7 +409,11 @@ def prepare_context(action, obj):
         if action.host_action:
             cluster = get_object_cluster(obj)
             if action.prototype.type == 'component':
-                component = ServiceComponent.obj.get(prototype=action.prototype, cluster=cluster)
+                service = ClusterObject.obj.get(prototype=action.prototype.parent, cluster=cluster)
+                component = ServiceComponent.obj.get(
+                    prototype=action.prototype, cluster=cluster, service=service
+                )
+                context['service_id'] = service.id
                 context['component_id'] = component.id
             if action.prototype.type == 'service':
                 service = ClusterObject.obj.get(prototype=action.prototype, cluster=cluster)
@@ -470,8 +474,10 @@ def prepare_job_config(
             job_conf['job']['service_type_id'] = obj.prototype.id
     elif action.prototype.type == 'component':
         if action.host_action:
-            comp = ServiceComponent.obj.get(prototype=action.prototype, cluster=cluster)
             service = ClusterObject.obj.get(prototype=comp.prototype.parent, cluster=cluster)
+            comp = ServiceComponent.obj.get(
+                prototype=action.prototype, cluster=cluster, service=service
+            )
             job_conf['job']['hostgroup'] = f'{service.name}.{comp.name}'
             job_conf['job']['service_id'] = service.id
             job_conf['job']['component_id'] = comp.id

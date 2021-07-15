@@ -19,7 +19,7 @@ from rest_framework.reverse import reverse
 import cm.job
 import cm.stack
 import cm.status_api
-import cm.config as config
+from cm import config
 from cm.errors import AdcmEx
 from cm.models import JobLog, Host, ClusterObject, ServiceComponent, get_object_cluster
 from api.api_views import hlink
@@ -66,7 +66,11 @@ def get_task_selector(obj, action):
     if isinstance(obj, Host) and action.host_action:
         cluster = get_object_cluster(obj)
         if action.prototype.type == 'component':
-            component = ServiceComponent.obj.get(cluster=cluster, prototype=action.prototype)
+            service = ClusterObject.obj.get(cluster=cluster, prototype=action.prototype.parent)
+            component = ServiceComponent.obj.get(
+                cluster=cluster, service=service, prototype=action.prototype
+            )
+            selector['service'] = service.id
             selector['component'] = component.id
         if action.prototype.type == 'service':
             service = ClusterObject.obj.get(cluster=cluster, prototype=action.prototype)
