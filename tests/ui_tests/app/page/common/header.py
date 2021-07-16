@@ -56,4 +56,4 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
 
         settings_link = Locator(By.XPATH, "//a[@adcm_test='settings']", "Settings link")
         profile_link = Locator(By.XPATH, "//button[@adcm_test='profile']", "Profile link")
-        logout = Locator(By.XPATH, "//button[@adcm_test='logout']", "logout link")
+        logout_button = Locator(By.XPATH, "//button[@adcm_test='logout']", "logout button")

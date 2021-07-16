@@ -252,7 +252,7 @@ class PageHeader(BasePageObject):
         self.assert_displayed_elements([
             acc_popup.settings_link,
             acc_popup.profile_link,
-            acc_popup.logout,
+            acc_popup.logout_button,
         ])
 
     def click_settings_link_in_acc_popup(self):
@@ -262,7 +262,7 @@ class PageHeader(BasePageObject):
         self.find_and_click(AuthorizedHeaderLocators.AccountPopup.profile_link)
 
     def click_logout_in_acc_popup(self):
-        self.find_and_click(AuthorizedHeaderLocators.AccountPopup.logout)
+        self.find_and_click(AuthorizedHeaderLocators.AccountPopup.logout_button)
 
 
 class PageFooter(BasePageObject):
