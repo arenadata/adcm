@@ -21,7 +21,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction
 
-from cm.errors import AdcmEx, raise_AdcmEx
+from cm.errors import AdcmEx
 from cm.logger import log
 
 PROTO_TYPE = (
@@ -240,8 +240,7 @@ class ObjectConfig(ADCMModel):
             if hasattr(self, object_type):
                 obj = getattr(self, object_type)
                 return obj
-        else:
-            return None
+        return None
 
 
 class ConfigLog(ADCMModel):
