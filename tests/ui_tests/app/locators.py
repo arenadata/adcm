@@ -11,10 +11,12 @@
 # limitations under the License.
 
 # Created by a1wen at 05.03.19
+from deprecated import deprecated
 
 from tests.ui_tests.app.helpers import bys
 
 
+@deprecated("Use CommonHeaderLocators or AuthorizedHeaderLocators")
 class Menu:
     """Top menu locators"""
 
