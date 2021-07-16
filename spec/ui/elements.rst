@@ -248,3 +248,80 @@ Description        False     String     Any additional information provided by u
 
 Upload Bundle
 -------------
+
+**************
+Other Elements
+**************
+
+Popups
+======
+
+Issue/Flag Popup
+----------------
+
+This popup is for showing flags and issue provided by backend as an "agenda" endpoint. For every object in ADCM there is a way to rise flag.
+
+Format of flag entry in "agenda" endpoint could be seen in this example.
+
+.. code-block:: json
+
+    {
+        "message": "Run ${action1} on on ${component1}.",
+        "id": 2039,
+        "placeholder": {
+                "action1": {
+                    "type": "component_action_run",
+                    "ids" : {
+                        "cluster": 1,
+                        "service": 2,
+                        "component": 2,
+                        "action": 22
+                    },
+                    "name": "Restart"
+                },
+                "component1": {
+                    "type": "component_config",
+                    "ids" : {
+                        "cluster": 1,
+                        "service": 2,
+                        "component": 2
+                    },
+                    "name": "My Component"
+                }
+        }
+    }
+
+Main parts of the format are:
+
+* "message" == The string which is show in UI
+* "placeholder" == The objects which should be replaced in "message"
+
+
+Main idea behind this format is the way to represent a clickable links or other templates  in this format. Most of element like links could not be build on backend because of lack of information about pages, urls and elements.
+
+.. code-block:: json
+
+    {
+        "component1": {
+            "type": "component_config_link",
+            "ids" : {
+                "cluster": 1,
+                "service": 2,
+                "component": 2
+            },
+            "name": "My Component"
+        }
+    }
+
+Here we have the following elements:
+
+* component1 == name of placeholder in a message (see full format above)
+* type == it is a type of list (the way this list should be generated)
+* ids == information required to build full URL in UI
+* name == just a string to be place to <a></a> element.
+
+So for this links we should build the following HTML element
+
+.. code-block:: html
+
+   <a href="http://127.0.0.1:8000/cluster/1/service/2/component/2/config">My Component</a>
