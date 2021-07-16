@@ -546,30 +546,6 @@ def sparse_matrix(*vectors):
         yield tuple(tmp)
 
 
-@allure.step('Check provider config')
-def assert_provider_config(bundle: Bundle, statemap: dict):
-    for pname, plv in statemap.items():
-        actual_cnf = bundle.provider(name=pname).config()
-        expected_cnf = plv['config']
-        for k, v in expected_cnf.items():
-            expect(
-                v == actual_cnf[k],
-                'Provider {} config "{}" is "{}" while expected "{}"'.format(
-                    pname, k, str(actual_cnf[k]), str(v)
-                ),
-            )
-        for hname, host_expected_cnf in plv['hosts'].items():
-            host_actual_cnf = bundle.provider(name=pname).host(fqdn=hname).config()
-            for k, v in host_expected_cnf.items():
-                expect(
-                    v == host_actual_cnf[k],
-                    'Provider {} host {} config {} is {} while expected {}'.format(
-                        pname, hname, k, str(host_actual_cnf[k]), str(v)
-                    ),
-                )
-    assert_expectations()
-
-
 @allure.step('Check providers configuration')
 def assert_provider_config_is_correct(bundle: Bundle, providers_expected_config: dict):
     """
@@ -673,9 +649,9 @@ def test_host_config(
             fqdn = list(initial_providers_config[provider_name]['hosts'].keys())[host_idx]
             host = provider.host(fqdn=fqdn)
             host.action(name='host_' + config_key).run().try_wait()
-            current_expected_state[provider_name]["hosts"][fqdn][config_key] = expected_config[
+            current_expected_state[provider_name]["hosts"][fqdn]['config'][
                 config_key
-            ]
+            ] = expected_config[config_key]
             assert_provider_config_is_correct(provider_bundle, current_expected_state)
 
 
@@ -716,10 +692,10 @@ def test_host_config_from_provider(
             provider = provider_bundle.provider(name=provider_name)
             fqdn = list(initial_providers_config[provider_name]['hosts'].keys())[host_idx]
             provider.action(name='host_' + config_key).run(config={"fqdn": fqdn}).try_wait()
-            current_expected_state[provider_name]["hosts"][fqdn][config_key] = expected_config[
+            current_expected_state[provider_name]["hosts"][fqdn]['config'][
                 config_key
-            ]
-            assert_provider_config(provider_bundle, current_expected_state)
+            ] = expected_config[config_key]
+            assert_provider_config_is_correct(provider_bundle, current_expected_state)
 
 
 def test_host_config_from_provider_multijob(

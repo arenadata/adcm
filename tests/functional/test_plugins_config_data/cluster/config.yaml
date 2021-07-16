@@ -485,7 +485,6 @@
           <<: *component_action
           params:
             ansible_tags: list
-          host_action: true
 
         component_multijob:
           type: task

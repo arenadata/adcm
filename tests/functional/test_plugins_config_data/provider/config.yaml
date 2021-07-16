@@ -285,7 +285,45 @@
         ansible_tags: list
 
     host_multijob:
-      <<: *host_multijob
+      type: task
+      states:
+        available: any
+      scripts:
+        - &host_m_action
+          name: hint
+          script_type: ansible
+          script: host.yaml
+          params:
+            ansible_tags: int
+        - <<: *host_m_action
+          name: hfloat
+          params:
+            ansible_tags: float
+        - <<: *host_m_action
+          name: hlist
+          params:
+            ansible_tags: list
+        - <<: *host_m_action
+          name: htext
+          params:
+            ansible_tags: text
+        - <<: *host_m_action
+          name: hfile
+          params:
+            ansible_tags: file
+        - <<: *host_m_action
+          name: hjson
+          params:
+            ansible_tags: json
+        - <<: *host_m_action
+          name: hstring
+          params:
+            ansible_tags: string
+
+        - <<: *host_m_action
+          name: hmap
+          params:
+            ansible_tags: map
 
     host_int: &host_action
       type: job
