@@ -50,7 +50,21 @@ def get_job_objects(task):
         resp.append(cook_obj('cluster', obj.cluster.id, get_object_name(obj.cluster)))
         resp.append(cook_obj('service', obj.service.id, get_object_name(obj.service)))
     elif obj_type == 'host':
-        resp.append(cook_obj('provider', obj.provider.id, get_object_name(obj.provider)))
+        if task.action.host_action:
+            cluster = get_object_cluster(obj)
+            resp.append(cook_obj('cluster', cluster.id, get_object_name(cluster)))
+            if task.action.prototype.type == 'service':
+                service = ClusterObject.obj.get(cluster=cluster, prototype=task.action.prototype)
+                resp.append(cook_obj('service', service.id, get_object_name(service)))
+            elif task.action.prototype.type == 'component':
+                service = ClusterObject.obj.get(cluster=cluster, prototype=task.action.prototype)
+                component = ServiceComponent.obj.get(
+                    cluster=cluster, service=service, prototype=task.action.prototype
+                )
+                resp.append(cook_obj('service', service.id, get_object_name(service)))
+                resp.append(cook_obj('component', component.id, get_object_name(component)))
+        else:
+            resp.append(cook_obj('provider', obj.provider.id, get_object_name(obj.provider)))
     return resp
 
 
