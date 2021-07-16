@@ -27,7 +27,7 @@ Just a simple use case of auth for user with username and password.
 
 Exceptions:
 
-2. User already logged to ADCM
+2. User has been already logged in to ADCM
     a. There is no :ref:`ui_elements_forms_login`
 
 2. User does not fill *Login* on :ref:`ui_elements_forms_login`
