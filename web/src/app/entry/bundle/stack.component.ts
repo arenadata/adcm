@@ -112,7 +112,7 @@ export class StackComponent extends AdwpListDirective<IBundle> {
 export class MainComponent implements OnInit {
   model: any;
 
-  keys = ['display_name', 'version', 'license_path', 'license'];
+  keys = ['display_name', 'version', 'license', 'license_path'];
 
   listColumns = [
     ListFactory.keyColumn(),
@@ -132,14 +132,21 @@ export class MainComponent implements OnInit {
   template: `
     <pre>{{ text | async }}</pre>
   `,
-  styles: [':host {width: 100%; max-width: 960px}']
+  styles: [`:host {
+    width: 100%;
+    max-width: 960px
+  }
+
+  pre {
+    white-space: pre-wrap;
+  }`]
 })
 export class LicenseComponent implements OnInit {
   text: Observable<string>;
 
   constructor(private service: ClusterService) {}
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.text = this.service.getBundleLicenseText();
   }
 
