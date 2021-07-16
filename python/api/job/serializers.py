@@ -65,6 +65,7 @@ def get_task_selector(obj, action):
         selector['service'] = obj.service.id
     if isinstance(obj, Host) and action.host_action:
         cluster = get_object_cluster(obj)
+        selector['cluster'] = cluster.id
         if action.prototype.type == 'component':
             service = ClusterObject.obj.get(cluster=cluster, prototype=action.prototype.parent)
             component = ServiceComponent.obj.get(
@@ -72,11 +73,9 @@ def get_task_selector(obj, action):
             )
             selector['service'] = service.id
             selector['component'] = component.id
-        if action.prototype.type == 'service':
+        elif action.prototype.type == 'service':
             service = ClusterObject.obj.get(cluster=cluster, prototype=action.prototype)
             selector['service'] = service.id
-        if obj.cluster is not None:
-            selector['cluster'] = obj.cluster.id
     return selector
 
 
