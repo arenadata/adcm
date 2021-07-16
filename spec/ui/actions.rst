@@ -137,7 +137,7 @@ Post-Conditions
 Cluster service list view
 =========================
 
-Use case in which the user can view the list of added clusters and information on them.
+Use case in which the user can view the list of added services for the given cluster and information on them.
 
 Actors
 ------
