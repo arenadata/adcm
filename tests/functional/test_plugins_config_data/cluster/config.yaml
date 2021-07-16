@@ -13,42 +13,9 @@
         available: any
       params:
         ansible_tags: int
-
-    cluster_float:
+    cluster_host:
       <<: *cluster_action
-      params:
-        ansible_tags: float
-
-    cluster_text:
-      <<: *cluster_action
-      params:
-        ansible_tags: text
-
-    cluster_file:
-      <<: *cluster_action
-      params:
-        ansible_tags: file
-
-    cluster_string:
-      <<: *cluster_action
-      params:
-        ansible_tags: string
-
-    cluster_json:
-      <<: *cluster_action
-      params:
-        ansible_tags: json
-
-    cluster_map:
-      <<: *cluster_action
-      params:
-        ansible_tags: map
-
-    cluster_list:
-      <<: *cluster_action
-      params:
-        ansible_tags: list
-
+      host_action: true
     cluster_multijob:
       type: task
       scripts:
@@ -88,7 +55,6 @@
             ansible_tags: list
       states:
         available: any
-
     service_name_First_int: &service_name_First_action
       type: job
       script_type: ansible
@@ -97,42 +63,9 @@
         available: any
       params:
         ansible_tags: int
-
-    service_name_First_float:
+    service_name_First_host:
       <<: *service_name_First_action
-      params:
-        ansible_tags: float
-
-    service_name_First_text:
-      <<: *service_name_First_action
-      params:
-        ansible_tags: text
-
-    service_name_First_file:
-      <<: *service_name_First_action
-      params:
-        ansible_tags: file
-
-    service_name_First_string:
-      <<: *service_name_First_action
-      params:
-        ansible_tags: string
-
-    service_name_First_json:
-      <<: *service_name_First_action
-      params:
-        ansible_tags: json
-
-    service_name_First_map:
-      <<: *service_name_First_action
-      params:
-        ansible_tags: map
-
-    service_name_First_list:
-      <<: *service_name_First_action
-      params:
-        ansible_tags: list
-
+      host_action: true
     service_name_First_multijob:
       type: task
       scripts:
@@ -172,7 +105,6 @@
             ansible_tags: list
       states:
         available: any
-
     service_name_Second_int: &service_name_Second_action
       type: job
       script_type: ansible
@@ -181,42 +113,9 @@
         available: any
       params:
         ansible_tags: int
-
-    service_name_Second_float:
+    service_name_Second_host:
       <<: *service_name_Second_action
-      params:
-        ansible_tags: float
-
-    service_name_Second_text:
-      <<: *service_name_Second_action
-      params:
-        ansible_tags: text
-
-    service_name_Second_file:
-      <<: *service_name_Second_action
-      params:
-        ansible_tags: file
-
-    service_name_Second_string:
-      <<: *service_name_Second_action
-      params:
-        ansible_tags: string
-
-    service_name_Second_json:
-      <<: *service_name_Second_action
-      params:
-        ansible_tags: json
-
-    service_name_Second_map:
-      <<: *service_name_Second_action
-      params:
-        ansible_tags: map
-
-    service_name_Second_list:
-      <<: *service_name_Second_action
-      params:
-        ansible_tags: list
-
+      host_action: true
     service_name_Second_multijob:
       type: task
       scripts:
@@ -251,6 +150,108 @@
           params:
             ansible_tags: map
         - <<: *service_name_second_multi_script
+          name: slist
+          params:
+            ansible_tags: list
+      states:
+        available: any
+    component_First_single_component_int: &First_component
+      type: job
+      script_type: ansible
+      script: component_First_single_component.yaml
+      states:
+        available: any
+      params:
+        ansible_tags: int
+
+    component_First_single_component_host:
+      <<: *First_component
+      host_action: true
+
+    component_First_single_component_multijob:
+      type: task
+      scripts:
+        - &cFscm
+          name: sint
+          script_type: ansible
+          script: component_First_single_component.yaml
+          params:
+            ansible_tags: int
+        - <<: *cFscm
+          name: sfloat
+          params:
+            ansible_tags: float
+        - <<: *cFscm
+          name: stext
+          params:
+            ansible_tags: text
+        - <<: *cFscm
+          name: sfile
+          params:
+            ansible_tags: file
+        - <<: *cFscm
+          name: sstring
+          params:
+            ansible_tags: string
+        - <<: *cFscm
+          name: sjson
+          params:
+            ansible_tags: json
+        - <<: *cFscm
+          name: smap
+          params:
+            ansible_tags: map
+        - <<: *cFscm
+          name: slist
+          params:
+            ansible_tags: list
+      states:
+        available: any
+    component_Second_another_component_int: &Second_component
+      type: job
+      script_type: ansible
+      script: component_Second_another_component.yaml
+      states:
+        available: any
+      params:
+        ansible_tags: int
+    component_Second_another_component_host:
+      <<: *Second_component
+      host_action: true
+    component_Second_another_component_multijob:
+      type: task
+      scripts:
+        - &cSacm
+          name: sint
+          script_type: ansible
+          script: component_Second_another_component.yaml
+          params:
+            ansible_tags: int
+        - <<: *cSacm
+          name: sfloat
+          params:
+            ansible_tags: float
+        - <<: *cSacm
+          name: stext
+          params:
+            ansible_tags: text
+        - <<: *cSacm
+          name: sfile
+          params:
+            ansible_tags: file
+        - <<: *cSacm
+          name: sstring
+          params:
+            ansible_tags: string
+        - <<: *cSacm
+          name: sjson
+          params:
+            ansible_tags: json
+        - <<: *cSacm
+          name: smap
+          params:
+            ansible_tags: map
+        - <<: *cSacm
           name: slist
           params:
             ansible_tags: list
@@ -312,43 +313,7 @@
   version: 1
 
   actions: &service_actions
-    cluster_int:
-      <<: *cluster_action
-
-    cluster_float:
-      <<: *cluster_action
-      params:
-        ansible_tags: float
-
-    cluster_text:
-      <<: *cluster_action
-      params:
-        ansible_tags: text
-
-    cluster_file:
-      <<: *cluster_action
-      params:
-        ansible_tags: file
-
-    cluster_string:
-      <<: *cluster_action
-      params:
-        ansible_tags: string
-
-    cluster_json:
-      <<: *cluster_action
-      params:
-        ansible_tags: json
-
-    cluster_map:
-      <<: *cluster_action
-      params:
-        ansible_tags: map
-
-    cluster_list:
-      <<: *cluster_action
-      params:
-        ansible_tags: list
+    <<: *cluster_actions
 
     service_int: &service_action
       type: job
@@ -359,40 +324,9 @@
       params:
         ansible_tags: int
 
-    service_float:
+    service_host:
       <<: *service_action
-      params:
-        ansible_tags: float
-
-    service_text:
-      <<: *service_action
-      params:
-        ansible_tags: text
-
-    service_file:
-      <<: *service_action
-      params:
-        ansible_tags: file
-
-    service_string:
-      <<: *service_action
-      params:
-        ansible_tags: string
-
-    service_json:
-      <<: *service_action
-      params:
-        ansible_tags: json
-
-    service_map:
-      <<: *service_action
-      params:
-        ansible_tags: map
-
-    service_list:
-      <<: *service_action
-      params:
-        ansible_tags: list
+      host_action: true
 
     service_multijob:
       type: task
@@ -434,8 +368,58 @@
       states:
         available: any
 
-    <<: *cluster_actions
+    component_name_single_component_int: &cnsc
+      type: job
+      script_type: ansible
+      script: component_single.yaml
+      states:
+        available: any
+      params:
+        ansible_tags: int
 
+    component_name_single_component_host:
+      <<: *cnsc
+      host_action: true
+
+    component_name_single_component_multijob:
+      type: task
+      scripts:
+        - &single_component_multitask
+          name: sint
+          script_type: ansible
+          script: component_single.yaml
+          params:
+            ansible_tags: int
+        - <<: *single_component_multitask
+          name: sfloat
+          params:
+            ansible_tags: float
+        - <<: *service_multi_script
+          name: stext
+          params:
+            ansible_tags: text
+        - <<: *service_multi_script
+          name: sfile
+          params:
+            ansible_tags: file
+        - <<: *service_multi_script
+          name: sstring
+          params:
+            ansible_tags: string
+        - <<: *service_multi_script
+          name: sjson
+          params:
+            ansible_tags: json
+        - <<: *service_multi_script
+          name: smap
+          params:
+            ansible_tags: map
+        - <<: *service_multi_script
+          name: slist
+          params:
+            ansible_tags: list
+      states:
+        available: any
 
   components:
     single_component:  &component
@@ -536,6 +520,59 @@
 
   actions:
     <<: [*service_actions, *cluster_actions]
+
+    component_name_another_component_int: &cnac
+      type: job
+      script_type: ansible
+      script: component_another.yaml
+      states:
+        available: any
+      params:
+        ansible_tags: int
+
+    component_name_single_component_host:
+      <<: *cnac
+      host_action: true
+
+    component_name_another_component_multijob:
+      type: task
+      scripts:
+        - &another_component_multitask
+          name: sint
+          script_type: ansible
+          script: component_another.yaml
+          params:
+            ansible_tags: int
+        - <<: *another_component_multitask
+          name: sfloat
+          params:
+            ansible_tags: float
+        - <<: *another_component_multitask
+          name: stext
+          params:
+            ansible_tags: text
+        - <<: *another_component_multitask
+          name: sfile
+          params:
+            ansible_tags: file
+        - <<: *another_component_multitask
+          name: sstring
+          params:
+            ansible_tags: string
+        - <<: *another_component_multitask
+          name: sjson
+          params:
+            ansible_tags: json
+        - <<: *another_component_multitask
+          name: smap
+          params:
+            ansible_tags: map
+        - <<: *another_component_multitask
+          name: slist
+          params:
+            ansible_tags: list
+      states:
+        available: any
 
   components:
     another_component: *component

@@ -37,6 +37,8 @@ ClusterUnitLiteral = Literal['cluster', 'service', 'component']
 ActionSuffix = Literal['int', 'float', 'text', 'file', 'string', 'json', 'map', 'list', 'multijob']
 
 
+PROVIDER_UNITS = ('provider', 'host')
+
 # !===== FIXTURES =====!
 
 
@@ -153,9 +155,7 @@ def correct_initial_cluster_config(cluster_bundle: Bundle, initial_clusters_conf
 
 
 @pytest.fixture()
-def get_correct_initial_provider_config(
-    provider_bundle: Bundle, initial_providers_config: dict
-) -> dict:
+def correct_initial_provider_config(provider_bundle: Bundle, initial_providers_config: dict) -> dict:
     """
     Asserts that initial providers configuration is correct and returns initial_config
     """
@@ -296,8 +296,8 @@ def test_simple_actions(
     current_expected_state = correct_initial_cluster_config
     changer = ClusterBundleConfigChanger(cluster_bundle, current_expected_state, expected_config)
     change_func = getattr(changer, f'change_{change_subject}_config_from_{action_owner}')
-    for config_key in expected_config:
-        change_func(config_key)
+    # other keys are already checked in multijob
+    change_func('int')
     with allure.step("Check simple actions changed configuration"):
         assert_cluster_config_is_correct(cluster_bundle, current_expected_state)
 
@@ -320,118 +320,55 @@ def test_another_service_from_service_by_name(
 
 # !===== PROVIDER BUNDLE TESTS =====!
 
+provider_action_subject = [
+    (action_owner, change_subject)
+    for action_owner in PROVIDER_UNITS
+    for change_subject in PROVIDER_UNITS
+]
 
-def test_provider_config(
+
+@pytest.mark.parametrize(
+    'action_owner, change_subject',
+    provider_action_subject,
+    ids=[
+        f"Change {change_subject} configuration with multijob action on {action_owner}"
+        for action_owner, change_subject in provider_action_subject
+    ],
+)
+def test_provider_bundle_multijob(
     provider_bundle: Bundle,
-    correct_initial_cluster_config: dict,
+    correct_initial_provider_config: dict,
     expected_config: dict,
-    providers_names: Tuple[str],
+    action_owner: str,
+    change_subject: str,
 ):
-    """
-    Test provider config change from provider scope
-    """
-    current_expected_state = correct_initial_cluster_config
-    with allure.step('Check provider config'):
-        for config_key, provider_name in sparse_matrix(
-            tuple(expected_config.keys()), providers_names
-        ):
-            provider = provider_bundle.provider(name=provider_name)
-            provider.action(name='provider_' + config_key).run().try_wait()
-            current_expected_state[provider_name]["config"][config_key] = expected_config[
-                config_key
-            ]
-
+    current_expected_state = correct_initial_provider_config
+    changer = ProviderBundleConfigChanger(provider_bundle, current_expected_state, expected_config)
+    change_func = getattr(changer, f'change_{change_subject}_config_from_{action_owner}')
+    change_func('multijob')
     assert_provider_config_is_correct(provider_bundle, current_expected_state)
 
 
-def test_host_config(
+@pytest.mark.parametrize(
+    'action_owner, change_subject',
+    provider_action_subject,
+    ids=[
+        f"Change {change_subject} configuration with simple action on {action_owner}"
+        for action_owner, change_subject in provider_action_subject
+    ],
+)
+def test_provider_bundle_simple_action(
     provider_bundle: Bundle,
-    correct_initial_cluster_config: dict,
+    correct_initial_provider_config: dict,
     expected_config: dict,
-    providers_names: Tuple[str],
+    action_owner: str,
+    change_subject: str,
 ):
-    current_expected_state = correct_initial_cluster_config
-    with allure.step('Check host config'):
-        for config_key, provider_name, host_idx in sparse_matrix(
-            tuple(expected_config.keys()), providers_names, [0, 1]
-        ):
-            provider = provider_bundle.provider(name=provider_name)
-            fqdn = list(initial_providers_config[provider_name]['hosts'].keys())[host_idx]
-            host = provider.host(fqdn=fqdn)
-            host.action(name='host_' + config_key).run().try_wait()
-            current_expected_state[provider_name]["hosts"][fqdn]['config'][
-                config_key
-            ] = expected_config[config_key]
-            assert_provider_config_is_correct(provider_bundle, current_expected_state)
-
-
-def test_host_config_from_provider(
-    provider_bundle: Bundle,
-    correct_initial_cluster_config: dict,
-    expected_config: dict,
-    providers_names: Tuple[str],
-):
-    current_expected_state = correct_initial_cluster_config
-    with allure.step('Check host config from provider'):
-        for config_key, provider_name, host_idx in sparse_matrix(
-            tuple(expected_config.keys()), providers_names, [0, 1]
-        ):
-            provider = provider_bundle.provider(name=provider_name)
-            fqdn = list(initial_providers_config[provider_name]['hosts'].keys())[host_idx]
-            provider.action(name='host_' + config_key).run(config={"fqdn": fqdn}).try_wait()
-            current_expected_state[provider_name]["hosts"][fqdn]['config'][
-                config_key
-            ] = expected_config[config_key]
-            assert_provider_config_is_correct(provider_bundle, current_expected_state)
-
-
-def test_provider_multijob(
-    provider_bundle: Bundle, correct_initial_cluster_config: dict, expected_config: dict
-):
-    """
-    Test provider multijob action from provider scope
-    """
-    current_expected_state = correct_initial_cluster_config
-    provider_name = random.choice(tuple(initial_providers_config.keys()))
-    with allure.step(f'Check provider config change multijob action on provider "{provider_name}"'):
-        provider = provider_bundle.provider(name=provider_name)
-        provider.action(name='provider_multijob').run().try_wait()
-        current_expected_state[provider_name]['config'] = expected_config
-        assert_provider_config_is_correct(provider_bundle, current_expected_state)
-
-
-def test_host_multijob(
-    provider_bundle: Bundle, correct_initial_cluster_config: dict, expected_config: dict
-):
-    """
-    Test host multijob action from host scope
-    """
-    current_expected_state = correct_initial_cluster_config
-    provider_name = random.choice(tuple(initial_providers_config.keys()))
-    host_fqdn = random.choice(tuple(initial_providers_config[provider_name]['hosts'].keys()))
-    with allure.step(
-        f'Check host config change multijob action on provider {provider_name} on host "{host_fqdn}"'
-    ):
-        host = provider_bundle.provider(name=provider_name).host(fqdn=host_fqdn)
-        host.action(name='host_multijob').run().try_wait()
-        current_expected_state[provider_name]['hosts'][host_fqdn]['config'] = expected_config
-        assert_provider_config_is_correct(provider_bundle, current_expected_state)
-
-
-def test_host_config_from_provider_multijob(
-    provider_bundle: Bundle, correct_initial_cluster_config: dict, expected_config: dict
-):
-    """
-    Test change host config from provider multijob action
-    """
-    current_expected_state = correct_initial_cluster_config
-    provider_name = random.choice(tuple(initial_providers_config.keys()))
-    host_fqdn = random.choice(tuple(initial_providers_config[provider_name]['hosts'].keys()))
-    with allure.step(f'Check provider config change multijob action on provider "{provider_name}"'):
-        provider = provider_bundle.provider(name=provider_name)
-        provider.action(name='host_multijob').run(config={"fqdn": host_fqdn}).try_wait()
-        current_expected_state[provider_name]['hosts'][host_fqdn]['config'] = expected_config
-        assert_provider_config_is_correct(provider_bundle, current_expected_state)
+    current_expected_state = correct_initial_provider_config
+    changer = ProviderBundleConfigChanger(provider_bundle, current_expected_state, expected_config)
+    change_func = getattr(changer, f'change_{change_subject}_config_from_{action_owner}')
+    change_func('int')
+    assert_provider_config_is_correct(provider_bundle, current_expected_state)
 
 
 # !===== UTILITIES =====!
@@ -439,10 +376,12 @@ def test_host_config_from_provider_multijob(
 
 def get_config_key_from_action_name(action_name: str) -> Optional[str]:
     """Get config_key value to pass to _change_x_config in Changers"""
-    return action_name.rsplit('_', maxsplit=1)[0] if 'multijob' not in action_name else None
+    return action_name.rsplit('_', maxsplit=1)[-1] if 'multijob' not in action_name else None
 
 
-def run_action(unit: Union[ClusterUnit, Provider, Host], action_name: str, config: Optional[dict] = None):
+def run_action(
+    unit: Union[ClusterUnit, Provider, Host], action_name: str, config: Optional[dict] = None
+):
     unit.action(name=action_name).run(config=config or {}).try_wait()
 
 
@@ -578,7 +517,9 @@ class ClusterBundleConfigChanger:
 
     def _change_cluster_config(self, cluster_name: str, config_key: Optional[str] = None):
         if config_key:
-            self.clusters_state[cluster_name]['config'][config_key] = self.expected_state[config_key]
+            self.clusters_state[cluster_name]['config'][config_key] = self.expected_state[
+                config_key
+            ]
         else:
             self.clusters_state[cluster_name]['config'] = self.expected_state
 
@@ -612,10 +553,7 @@ def get_random_provider(provider_bundle: Bundle) -> Provider:
 
 
 def get_random_provider_host(provider_bundle: Bundle) -> Tuple[Provider, Host]:
-    return (
-        (provider := get_random_provider(provider_bundle)),
-        random.choice(provider.host_list())
-    )
+    return (provider := get_random_provider(provider_bundle)), random.choice(provider.host_list())
 
 
 class ProviderBundleConfigChanger:
@@ -629,51 +567,52 @@ class ProviderBundleConfigChanger:
         action_name = f'provider_{action_suffix}'
         with allure.step(f'Run "{action_name}" on {provider.name} provider to configure itself'):
             run_action(provider, action_name)
-            self._change_provider_config(provider.name, get_config_key_from_action_name(action_name))
+            self._change_provider_config(
+                provider.name, get_config_key_from_action_name(action_name)
+            )
 
     def change_provider_config_from_host(self, action_suffix: ActionSuffix):
         provider, host = get_random_provider_host(self.bundle)
         action_name = f'provider_{action_suffix}'
         with allure.step(f'Run "{action_name}" on {host.fqdn} host to configure {provider.name}'):
             run_action(provider, action_name)
-            self._change_provider_config(provider.name, get_config_key_from_action_name(action_name))
+            self._change_provider_config(
+                provider.name, get_config_key_from_action_name(action_name)
+            )
 
     def change_host_config_from_provider(self, action_suffix: ActionSuffix):
         provider, host = get_random_provider_host(self.bundle)
         action_name = f'host_{action_suffix}'
-        with allure.step(f'Run "{action_name}" on {provider.name} provider to configure {host.fqdn} host'):
+        with allure.step(
+            f'Run "{action_name}" on {provider.name} provider to configure {host.fqdn} host'
+        ):
             run_action(provider, action_name, config={'fqdn': host.fqdn})
-            self._change_host_config(provider.name, host.fqdn, get_config_key_from_action_name(action_name))
+            self._change_host_config(
+                provider.name, host.fqdn, get_config_key_from_action_name(action_name)
+            )
 
     def change_host_config_from_host(self, action_suffix: ActionSuffix):
         provider, host = get_random_provider_host(self.bundle)
         action_name = f'host_{action_suffix}'
         with allure.step(f'Run "{action_name}" on {host.fqdn} host to configure itself'):
             run_action(provider, action_name, config={'fqdn': host.fqdn})
-            self._change_host_config(provider.name, host.fqdn, get_config_key_from_action_name(action_name))
+            self._change_host_config(
+                provider.name, host.fqdn, get_config_key_from_action_name(action_name)
+            )
 
     def _change_provider_config(self, provider_name: str, config_key: Optional[str] = None):
         if config_key:
-            self.providers_state[provider_name]['config'][config_key] = self.expected_state[config_key]
+            self.providers_state[provider_name]['config'][config_key] = self.expected_state[
+                config_key
+            ]
         else:
             self.providers_state[provider_name]['config'] = self.expected_state
 
-    def _change_host_config(self, provider_name: str, host_fqdn: str, config_key: Optional[str] = None):
+    def _change_host_config(
+        self, provider_name: str, host_fqdn: str, config_key: Optional[str] = None
+    ):
         host_dict = self.providers_state[provider_name]['hosts'][host_fqdn]
         if config_key:
             host_dict['config'][config_key] = self.expected_state[config_key]
         else:
             host_dict['config'] = self.expected_state
-
-
-def sparse_matrix(*vectors):
-    lengs = []
-    for a in vectors:
-        lengs.append(len(a))
-
-    max_lengs_vector_idx = lengs.index(max(lengs))
-    for i, _ in enumerate(vectors[max_lengs_vector_idx]):
-        tmp = []
-        for j, a in enumerate(vectors):
-            tmp.append(a[i % lengs[j]])
-        yield tuple(tmp)
