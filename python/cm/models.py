@@ -216,23 +216,19 @@ class ADCMEntity(ADCMModel):
     def is_locked(self) -> bool:
         return self.agenda.exists()
 
-    def add_to_agenda(self, item: 'AgendaItem', event=None) -> None:
+    def add_to_agenda(self, item: 'AgendaItem') -> None:
         if not item or getattr(item, 'id', None) is None:
             return
 
         if item not in self.agenda.all():
             self.agenda.add(item)
-            if event:
-                event.acquire_lock(self, item)
 
-    def remove_from_agenda(self, item: 'AgendaItem', event=None) -> None:
+    def remove_from_agenda(self, item: 'AgendaItem') -> None:
         if not item or not hasattr(item, 'id'):
             return
 
         if item in self.agenda.all():
             self.agenda.remove(item)
-            if event:
-                event.release_lock(self, item)
 
     def __str__(self):
         own_name = getattr(self, 'name', None)
@@ -652,7 +648,7 @@ class TaskLog(ADCMModel):
                     pass
         return obj
 
-    def lock_affected(self, objects: Iterable[ADCMEntity], event=None) -> None:
+    def lock_affected(self, objects: Iterable[ADCMEntity]) -> None:
         if self.lock:
             return
 
@@ -667,16 +663,10 @@ class TaskLog(ADCMModel):
         self.save()
         for obj in objects:
             obj.add_to_agenda(self.lock)
-            if event:
-                event.acquire_lock(obj, self.lock)
 
-    def unlock_affected(self, event=None) -> None:
+    def unlock_affected(self) -> None:
         if not self.lock:
             return
-
-        if event:
-            for obj in self.lock.attendees:
-                event.release_lock(obj, self.lock)
 
         lock = self.lock
         self.lock = None

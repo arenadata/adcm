@@ -86,7 +86,7 @@ def add_host(proto, provider, fqdn, desc=''):
             prototype=proto, provider=provider, fqdn=fqdn, config=obj_conf, description=desc
         )
         host.save()
-        host.add_to_agenda(ctx.lock, ctx.event)
+        host.add_to_agenda(ctx.lock)
         process_file_type(host, spec, conf)
         cm.issue.update_hierarchy_issues(host)
     ctx.event.send_state()
@@ -115,7 +115,7 @@ def add_host_provider(proto, name, desc=''):
         obj_conf = init_object_config(spec, conf, attr)
         provider = HostProvider(prototype=proto, name=name, config=obj_conf, description=desc)
         provider.save()
-        provider.add_to_agenda(ctx.lock, ctx.event)
+        provider.add_to_agenda(ctx.lock)
         process_file_type(provider, spec, conf)
         cm.issue.update_hierarchy_issues(provider)
     ctx.event.send_state()
@@ -145,7 +145,7 @@ def add_host_to_cluster(cluster, host):
     with transaction.atomic():
         host.cluster = cluster
         host.save()
-        host.add_to_agenda(ctx.lock, ctx.event)
+        host.add_to_agenda(ctx.lock)
         cm.issue.update_hierarchy_issues(host)
     cm.status_api.post_event('add', 'host', host.id, 'cluster', str(cluster.id))
     cm.status_api.load_service_map()
@@ -283,7 +283,7 @@ def remove_host_from_cluster(host):
     with transaction.atomic():
         host.cluster = None
         host.save()
-        host.remove_from_agenda(ctx.lock, ctx.event)
+        host.remove_from_agenda(ctx.lock)
         cm.issue.update_hierarchy_issues(cluster)
     ctx.event.send_state()
     cm.status_api.post_event('remove', 'host', host.id, 'cluster', str(cluster.id))
@@ -540,9 +540,9 @@ def save_hc(cluster, host_comp_list):
     old_hosts = {i.host for i in hc_queryset.select_related('host').all()}
     new_hosts = {i[1] for i in host_comp_list}
     for removed_host in old_hosts.difference(new_hosts):
-        removed_host.remove_from_agenda(ctx.lock, ctx.event)
+        removed_host.remove_from_agenda(ctx.lock)
     for added_host in new_hosts.difference(old_hosts):
-        added_host.add_to_agenda(ctx.lock, ctx.event)
+        added_host.add_to_agenda(ctx.lock)
 
     hc_queryset.delete()
     result = []

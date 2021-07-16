@@ -12,10 +12,9 @@
 
 import json
 import requests
-import simplejson
 
 from cm.logger import log
-from cm.models import HostComponent, ServiceComponent, ClusterObject, Host, ADCMEntity, AgendaItem
+from cm.models import HostComponent, ServiceComponent, ClusterObject, Host, ADCMEntity
 from cm.config import STATUS_SECRET_KEY
 
 API_URL = "http://localhost:8020/api/v1"
@@ -32,8 +31,7 @@ class Event:
     def send_state(self):
         while self.events:
             try:
-                event = self.events.pop(0)
-                func, args = event
+                func, args = self.events.pop(0)
                 func.__call__(*args)
             except IndexError:
                 pass
@@ -47,11 +45,8 @@ class Event:
     def set_task_status(self, task_id, status):
         self.events.append((set_task_status, (task_id, status)))
 
-    def acquire_lock(self, obj: ADCMEntity, lock: AgendaItem):
-        self.events.append((acquire_lock, (obj, lock)))
-
-    def release_lock(self, obj: ADCMEntity, lock: AgendaItem):
-        self.events.append((release_lock, (obj, lock)))
+    def change_agenda(self, obj: ADCMEntity):
+        self.events.append((change_agenda, (obj,)))
 
 
 def api_post(path, data):
@@ -137,7 +132,7 @@ def get_status(url):
         return 32
     try:
         js = r.json()
-    except simplejson.scanner.JSONDecodeError:
+    except ValueError:
         return 8
     if 'status' in js:
         return js['status']
@@ -209,13 +204,11 @@ def load_service_map():
     return api_post('/servicemap/', m)
 
 
-def acquire_lock(obj: ADCMEntity, lock: AgendaItem):
-    # TODO: add more sense
-    details = {'reason': lock.reason}
-    return post_event('acquire_lock', obj.prototype.type, obj.pk, det_type=details)
-
-
-def release_lock(obj: ADCMEntity, lock: AgendaItem):
-    # TODO: add more sense
-    details = {'reason': lock.reason}
-    return post_event('release_lock', obj.prototype.type, obj.pk, det_type=details)
+def change_agenda(obj: ADCMEntity):
+    return post_event(
+        event='agenda_change',
+        obj_type=obj.prototype.type,
+        obj_id=obj.pk,
+        det_type='agenda',
+        det_val=[i.reason for i in obj.agenda.all()],
+    )
