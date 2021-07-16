@@ -80,7 +80,7 @@ def check_for_issue(obj: ADCMModel):
     if obj.prototype.type not in type_check_map:
         err('NOT_IMPLEMENTED', 'unknown object type')
     issue = {k: v for k, v in type_check_map[obj.prototype.type](obj).items() if v is False}
-    log.debug('%s issue: %s', obj_ref(obj), issue)
+    # log.debug('%s issue: %s', obj_ref(obj), issue)
     return issue
 
 
