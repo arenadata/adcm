@@ -43,7 +43,7 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
     failed_job_button = Locator(By.XPATH, "//button[@mattooltip='Show failed jobs']", "Header button for failed Jobs")
     help_button = Locator(By.XPATH, "//button[@adcm_test='help']", "Header button for help")
     account_button = Locator(By.XPATH, "//button[@adcm_test='account']", "Header button for account settings")
-    block = Locator(By.XPATH, "//div[contains(@class, 'mat-menu-content')]", "Header popup block")
+    popup_block = Locator(By.XPATH, "//div[contains(@class, 'mat-menu-content')]", "Header popup block")
 
     class HelpPopup:
         """ADCM header popup with help links"""
