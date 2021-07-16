@@ -1,5 +1,4 @@
 # pylint: disable=W0611, W0621
-import time
 
 import allure
 from adcm_client.objects import ADCMClient
@@ -90,7 +89,6 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm):
     config = Configuration(
         app_fs.driver, "{}/cluster/{}/config".format(app_fs.adcm.url, cluster.cluster_id)
     )
-    time.sleep(5)
 
     groups = config.get_field_groups()
     for group in groups:

@@ -2,7 +2,6 @@
 import itertools
 import os
 import shutil
-import time
 
 import allure
 import pytest
@@ -134,7 +133,6 @@ def cluster(bundle: Bundle) -> Cluster:
 
 @pytest.fixture()
 def cluster_config_page(app_fs, cluster: Cluster, login_to_adcm):
-    time.sleep(2)
     return Configuration(
         app_fs.driver, "{}/cluster/{}/config".format(app_fs.adcm.url, cluster.cluster_id)
     )
@@ -148,7 +146,6 @@ def service(cluster: Cluster, sdk_client_fs: ADCMClient) -> Service:
 
 @pytest.fixture()
 def service_config_page(app_fs, service: Service, login_to_adcm) -> Configuration:
-    time.sleep(2)
     return Configuration(
         app_fs.driver,
         "{}/cluster/{}/service/{}/config".format(app_fs.adcm.url, service.cluster_id, service.id),
@@ -162,7 +159,7 @@ def provider(bundle: Bundle) -> Provider:
 
 @pytest.fixture()
 def provider_config_page(app_fs, provider: Provider, login_to_adcm) -> Configuration:
-    time.sleep(2)
+
     return Configuration(
         app_fs.driver,
         "{}/provider/{}/config".format(app_fs.adcm.url, provider.provider_id),
@@ -176,7 +173,6 @@ def host(provider: Provider) -> Host:
 
 @pytest.fixture()
 def host_config_page(app_fs, host: Host, login_to_adcm) -> Configuration:
-    time.sleep(2)
     return Configuration(
         app_fs.driver,
         "{}/host/{}/config".format(app_fs.adcm.url, host.id),
