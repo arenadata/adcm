@@ -168,7 +168,8 @@ def cancel_task(task):
         i += 1
     if i == 10:
         err('NO_JOBS_RUNNING', 'no jobs running')
-    task.unlock_affected(ctx.event)
+    task.unlock_affected()
+    ctx.event.send_state()
     os.kill(task.pid, signal.SIGTERM)
 
 
@@ -539,7 +540,7 @@ def create_one_job_task(action, obj, conf, attr, hc, hosts, event, verbose):
     task.save()
     tree = Tree(obj)
     affected = (node.value for node in tree.get_all_affected(tree.built_from))
-    task.lock_affected(affected, event)
+    task.lock_affected(affected)
     set_task_status(task, config.Job.CREATED, event)
     return task
 
@@ -635,7 +636,7 @@ def finish_task(task, job, status):
         if state is not None:
             set_action_state(action, task, obj, state)
         restore_hc(task, action, status)
-        task.unlock_affected(ctx.event)
+        task.unlock_affected()
         set_task_status(task, status, ctx.event)
     ctx.event.send_state()
 
@@ -858,6 +859,7 @@ def set_job_status(job_id, status, event, pid=0):
 def abort_all(event):
     for task in TaskLog.objects.filter(status=config.Job.RUNNING):
         set_task_status(task, config.Job.ABORTED, event)
-        task.unlock_affected(event)
+        task.unlock_affected()
     for job in JobLog.objects.filter(status=config.Job.RUNNING):
         set_job_status(job.id, config.Job.ABORTED, event)
+    ctx.event.send_state()
