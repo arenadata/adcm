@@ -213,9 +213,7 @@ def bundle_archive(request, tmp_path):
 
 @pytest.fixture(scope="function")
 def auth_to_adcm(app_fs, adcm_credentials):
-    """Perform login on Login page ADCM
-    :param app_fs:
-    :param adcm_credentials:
-    """
+    """Perform login on Login page ADCM"""
+
     login = LoginPage(app_fs.driver, app_fs.adcm.url).open()
     login.login_user(**adcm_credentials)

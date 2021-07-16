@@ -96,6 +96,8 @@ class FieldDefinition(BundleObjectDefinition):
 @allure.step('Wait for a new window after action')
 @contextmanager
 def wait_for_new_window(driver: WebDriver, wait_time: int = 10):
+    """Wait a new window is opened after some action"""
+
     tabs = driver.window_handles
     yield
     WDW(driver, wait_time).until(EC.new_window_is_opened(tabs))
@@ -105,6 +107,8 @@ def wait_for_new_window(driver: WebDriver, wait_time: int = 10):
 
 @allure.step('Close current tab')
 def close_current_tab(driver: WebDriver):
+    """Close current tab and switch to first tab"""
+
     tabs = driver.window_handles
     driver.close()
     driver.switch_to.window(tabs[0])
