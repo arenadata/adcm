@@ -1,4 +1,5 @@
 import os
+import time
 
 import allure
 import pytest
@@ -37,6 +38,7 @@ def ui_display_names(login_to_adcm, app_fs, ui_hell_fs):
             app_fs.adcm.url, ui_hell_fs.cluster_id, ui_hell_fs.service_id
         ),
     )
+    time.sleep(5)
     return ui_config.get_display_names()
 
 

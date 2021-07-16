@@ -1,4 +1,6 @@
 # pylint: disable=W0611, W0621
+import time
+
 import allure
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import parametrize_by_data_subdirs
@@ -88,6 +90,7 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm):
     config = Configuration(
         app_fs.driver, "{}/cluster/{}/config".format(app_fs.adcm.url, cluster.cluster_id)
     )
+    time.sleep(5)
 
     groups = config.get_field_groups()
     for group in groups:
