@@ -16,7 +16,16 @@ from typing import Tuple, Optional, Dict, Literal, Union
 
 import allure
 import pytest
-from adcm_client.objects import ADCMClient, Bundle, Component, Service, Cluster, Host, Provider
+from adcm_client.objects import (
+    ADCMClient,
+    Bundle,
+    Component,
+    Service,
+    Cluster,
+    Host,
+    Provider,
+    Action,
+)
 from adcm_pytest_plugin.utils import get_data_dir
 from delayed_assert import assert_expectations, expect
 
@@ -34,7 +43,9 @@ CLUSTER_UNITS = ('cluster', 'service', 'component')
 
 ClusterUnit = Union[Cluster, Service, Component]
 ClusterUnitLiteral = Literal['cluster', 'service', 'component']
-ActionSuffix = Literal['int', 'float', 'text', 'file', 'string', 'json', 'map', 'list', 'multijob']
+ActionSuffix = Literal[
+    'int', 'float', 'text', 'file', 'string', 'json', 'map', 'list', 'multijob', 'host'
+]
 
 
 PROVIDER_UNITS = ('provider', 'host')
@@ -155,12 +166,27 @@ def correct_initial_cluster_config(cluster_bundle: Bundle, initial_clusters_conf
 
 
 @pytest.fixture()
-def correct_initial_provider_config(provider_bundle: Bundle, initial_providers_config: dict) -> dict:
+def correct_initial_provider_config(
+    provider_bundle: Bundle, initial_providers_config: dict
+) -> dict:
     """
     Asserts that initial providers configuration is correct and returns initial_config
     """
     assert_provider_config_is_correct(provider_bundle, initial_providers_config)
     return initial_providers_config
+
+
+@allure.title('Link cluster component to host')
+@pytest.fixture()
+def cluster_linked_to_host(
+    cluster_bundle: Bundle, provider_bundle: Bundle
+) -> Tuple[Cluster, Service, Component, Host]:
+    """Get cluster units and host connected with component on host"""
+    cluster, service, component = get_random_cluster_service_component(cluster_bundle)
+    _, host = get_random_provider_host(provider_bundle)
+    cluster.host_add(host)
+    cluster.hostcomponent_set((host, component))
+    return cluster, service, component, host
 
 
 # !===== STEPS AND HELPERS =====!
@@ -173,7 +199,8 @@ def expect_configuration(actual_config: dict, expected_config: dict, config_owne
     Use `assert_expectations` to check results and perform assertion itself
     :param actual_config: dict with cluster / service / component actual configuration
     :param expected_config: dict with cluster / service / component expected configuration
-    :param config_owner: String to represent configuration owner in error message (e.g. Cluster first)
+    :param config_owner: String to represent configuration owner
+                         in error message (e.g. Cluster first)
     """
     for config_key, config_value in expected_config.items():
         assert config_value == actual_config[config_key], (
@@ -188,7 +215,7 @@ def assert_provider_config_is_correct(bundle: Bundle, providers_expected_config:
     Assert that all providers' and hosts' configuration equal to expected
 
     :param bundle: provider bundle to load configuration from
-    :param providers_expected_config: dict with expected provider configuration (check initial_providers_config)
+    :param providers_expected_config: dict with expected provider configuration
     """
     # provider dict has `config` and `hosts` keys
     for provider_name, provider_dict in providers_expected_config.items():
@@ -214,36 +241,35 @@ def assert_cluster_config_is_correct(bundle: Bundle, clusters_expected_config: d
     Assert that all clusters' and it's children's configuration equal to expected
 
     :param bundle: cluster bundle to load configuration from
-    :param clusters_expected_config: dict with expected cluster configuration (check initial_clusters_config)
+    :param clusters_expected_config: dict with expected cluster configuration
+                                     (check initial_clusters_config)
     """
     # cluster dict has `config` and `services` keys
     for cluster_name, cluster_dict in clusters_expected_config.items():
-        actual_cluster_config = (cluster := bundle.cluster(name=cluster_name)).config()
-        expected_cluster_config = cluster_dict['config']
-        expect_configuration(
-            actual_cluster_config, expected_cluster_config, f"Cluster {cluster_name}"
-        )
+        actual_config = (cluster := bundle.cluster(name=cluster_name)).config()
+        expected_config = cluster_dict['config']
+        expect_configuration(actual_config, expected_config, f"Cluster {cluster_name}")
         # service dict has `config` and `components` keys
         for service_name, service_dict in cluster_dict['services'].items():
-            actual_service_config = (service := cluster.service(name=service_name)).config()
-            expected_service_config = service_dict['config']
+            actual_config = (service := cluster.service(name=service_name)).config()
+            expected_config = service_dict['config']
             expect_configuration(
-                actual_service_config,
-                expected_service_config,
+                actual_config,
+                expected_config,
                 f"Cluster {cluster_name} service {service_name}",
             )
             # component dict has `config` key
             for component_name, component_dict in service_dict['components'].items():
-                actual_component_config = service.component(name=component_name).config()
-                expected_component_config = component_dict['config']
+                actual_config = service.component(name=component_name).config()
+                expected_config = component_dict['config']
                 expect_configuration(
-                    actual_component_config,
-                    expected_component_config,
+                    actual_config,
+                    expected_config,
                     f"Cluster {cluster_name} service {service_name} component {component_name}",
                 )
 
 
-# !===== CLUSTER BUNDLE TESTS =====!
+# !===== TESTS =====!
 
 
 cluster_action_subject = [
@@ -314,11 +340,9 @@ def test_another_service_from_service_by_name(
         result = one.action(name=f'service_name_{another.name}_int').run().wait()
         assert (
             result == "failed"
-        ), f"Service {one.name} shouln't be able to change {another.name} config"
+        ), f"Service {one.name} shouldn't be able to change {another.name} config"
         assert_cluster_config_is_correct(cluster_bundle, current_expected_state)
 
-
-# !===== PROVIDER BUNDLE TESTS =====!
 
 provider_action_subject = [
     (action_owner, change_subject)
@@ -342,11 +366,13 @@ def test_provider_bundle_multijob(
     action_owner: str,
     change_subject: str,
 ):
+    """Test multijob action changes config of provider bundle parts"""
     current_expected_state = correct_initial_provider_config
     changer = ProviderBundleConfigChanger(provider_bundle, current_expected_state, expected_config)
     change_func = getattr(changer, f'change_{change_subject}_config_from_{action_owner}')
     change_func('multijob')
-    assert_provider_config_is_correct(provider_bundle, current_expected_state)
+    with allure.step("Check multijob actions changed configuration"):
+        assert_provider_config_is_correct(provider_bundle, current_expected_state)
 
 
 @pytest.mark.parametrize(
@@ -364,11 +390,36 @@ def test_provider_bundle_simple_action(
     action_owner: str,
     change_subject: str,
 ):
+    """Test simple action changes config of provider bundle parts"""
     current_expected_state = correct_initial_provider_config
     changer = ProviderBundleConfigChanger(provider_bundle, current_expected_state, expected_config)
     change_func = getattr(changer, f'change_{change_subject}_config_from_{action_owner}')
     change_func('int')
-    assert_provider_config_is_correct(provider_bundle, current_expected_state)
+    with allure.step("Check multijob actions changed configuration"):
+        assert_provider_config_is_correct(provider_bundle, current_expected_state)
+
+
+def test_host_actions(
+    cluster_bundle: Bundle,
+    cluster_linked_to_host: Tuple[Cluster, Service, Component, Host],
+    correct_initial_cluster_config: dict,
+    expected_config: dict,
+):
+    current_expected_state = correct_initial_cluster_config
+    cluster, service, component, host = cluster_linked_to_host
+    changer = ClusterBundleConfigChanger(cluster_bundle, current_expected_state, expected_config)
+    with allure.step('Check cluster host action'):
+        run_action(host, 'cluster_host', by_display_name=True)
+        changer.change_cluster_config(cluster.name, 'int')
+        assert_cluster_config_is_correct(cluster_bundle, current_expected_state)
+    with allure.step('Check service host action'):
+        run_action(host, 'service_host', by_display_name=True)
+        changer.change_service_config(cluster.name, service.name, 'int')
+        assert_cluster_config_is_correct(cluster_bundle, current_expected_state)
+    with allure.step('Check component host action'):
+        run_action(host, 'component_host', by_display_name=True)
+        changer.change_component_config(cluster.name, service.name, component.name, 'int')
+        assert_cluster_config_is_correct(cluster_bundle, current_expected_state)
 
 
 # !===== UTILITIES =====!
@@ -380,9 +431,17 @@ def get_config_key_from_action_name(action_name: str) -> Optional[str]:
 
 
 def run_action(
-    unit: Union[ClusterUnit, Provider, Host], action_name: str, config: Optional[dict] = None
+    unit: Union[ClusterUnit, Provider, Host],
+    action_name: str,
+    config: Optional[dict] = None,
+    by_display_name: bool = False,
 ):
-    unit.action(name=action_name).run(config=config or {}).try_wait()
+    action = (
+        unit.action(name=action_name)
+        if not by_display_name
+        else unit.action(display_name=action_name)
+    )
+    action.run(config=config or {}).try_wait()
 
 
 def get_random_cluster(cluster_bundle: Bundle) -> Cluster:
@@ -417,7 +476,7 @@ class ClusterBundleConfigChanger:
         action_name = f'cluster_{action_suffix}'
         with allure.step(f"Run {action_name} action on cluster {cluster.name} to configure itself"):
             run_action(cluster, action_name)
-            self._change_cluster_config(cluster.name, get_config_key_from_action_name(action_name))
+            self.change_cluster_config(cluster.name, get_config_key_from_action_name(action_name))
 
     def change_cluster_config_from_service(self, action_suffix: ActionSuffix):
         cluster, service = get_random_cluster_service(self.bundle)
@@ -426,7 +485,7 @@ class ClusterBundleConfigChanger:
             f'Run "{action_name}" on service {service.name} to configure cluster {cluster.service}'
         ):
             run_action(service, action_name)
-            self._change_cluster_config(cluster.name, get_config_key_from_action_name(action_name))
+            self.change_cluster_config(cluster.name, get_config_key_from_action_name(action_name))
 
     def change_cluster_config_from_component(self, action_suffix: ActionSuffix):
         cluster, service, component = get_random_cluster_service_component(self.bundle)
@@ -437,7 +496,7 @@ class ClusterBundleConfigChanger:
             )
         ):
             run_action(component, action_name)
-            self._change_cluster_config(cluster.name, get_config_key_from_action_name(action_name))
+            self.change_cluster_config(cluster.name, get_config_key_from_action_name(action_name))
 
     def change_service_config_from_cluster(self, action_suffix: ActionSuffix):
         cluster, service = get_random_cluster_service(self.bundle)
@@ -446,7 +505,7 @@ class ClusterBundleConfigChanger:
             f'Run "{action_name} on {cluster.name} cluster to configure {service.name} service'
         ):
             run_action(cluster, action_name)
-            self._change_service_config(
+            self.change_service_config(
                 cluster.name, service.name, get_config_key_from_action_name(action_name)
             )
 
@@ -455,7 +514,7 @@ class ClusterBundleConfigChanger:
         action_name = f'service_{action_suffix}'
         with allure.step(f'Run "{action_name}" on {service.name} service to configure itself'):
             run_action(service, action_name)
-            self._change_service_config(
+            self.change_service_config(
                 cluster.name, service.name, get_config_key_from_action_name(action_name)
             )
 
@@ -466,23 +525,20 @@ class ClusterBundleConfigChanger:
             f'Run "{action_name}" on {component.name} component to configure {service.name} service'
         ):
             run_action(component, action_name)
-            self._change_service_config(
+            self.change_service_config(
                 cluster.name, service.name, get_config_key_from_action_name(action_name)
             )
 
     def change_component_config_from_cluster(self, action_suffix: ActionSuffix):
-        raise NotImplemented(
-            'Specification is required on how to call component change from cluster'
-        )
         cluster, service, component = get_random_cluster_service_component(self.bundle)
-        action_name = f'component_{component.name}_{service_name}_{action_suffix}'
+        action_name = f'component_{component.name}_{service.name}_{action_suffix}'
         with allure.step(
             'Run "{}" on {} cluster to configure {} on {} service'.format(
                 action_name, cluster.name, component.name, service.name
             )
         ):
             run_action(cluster, action_name)
-            self._change_component_config(
+            self.change_component_config(
                 cluster.name,
                 service.name,
                 component.name,
@@ -496,7 +552,7 @@ class ClusterBundleConfigChanger:
             f'Run "{action_name}" on {service.name} service to configure {component.name} component'
         ):
             run_action(service, action_name)
-            self._change_component_config(
+            self.change_component_config(
                 cluster.name,
                 service.name,
                 component.name,
@@ -508,14 +564,14 @@ class ClusterBundleConfigChanger:
         action_name = f'component_{action_suffix}'
         with allure.step(f'Run "{action_name}" on {component.name} component to configure itself'):
             run_action(component, action_name)
-            self._change_component_config(
+            self.change_component_config(
                 cluster.name,
                 service.name,
                 component.name,
                 get_config_key_from_action_name(action_name),
             )
 
-    def _change_cluster_config(self, cluster_name: str, config_key: Optional[str] = None):
+    def change_cluster_config(self, cluster_name: str, config_key: Optional[str] = None):
         if config_key:
             self.clusters_state[cluster_name]['config'][config_key] = self.expected_state[
                 config_key
@@ -523,7 +579,7 @@ class ClusterBundleConfigChanger:
         else:
             self.clusters_state[cluster_name]['config'] = self.expected_state
 
-    def _change_service_config(
+    def change_service_config(
         self, cluster_name: str, service_name: str, config_key: Optional[str] = None
     ):
         service_dict = self.clusters_state[cluster_name]['services'][service_name]
@@ -532,7 +588,7 @@ class ClusterBundleConfigChanger:
         else:
             service_dict['config'] = self.expected_state
 
-    def _change_component_config(
+    def change_component_config(
         self,
         cluster_name: str,
         service_name: str,
