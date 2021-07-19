@@ -184,7 +184,6 @@ def check_required_services(cluster):
 
 def check_required_import(cluster, service=None):
     res, code = do_check_import(cluster, service)
-    log.debug('do_check_import result: %s, code: %s', res, code)
     return res
 
 

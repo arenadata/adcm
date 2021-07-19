@@ -78,7 +78,7 @@ def get_config_files(path, bundle_hash):
         for conf_file, conf_type in conf_types:
             if conf_file in files:
                 dirs = root.split('/')
-                path = os.path.join('', *dirs[dirs.index(bundle_hash) + 1:])
+                path = os.path.join('', *dirs[dirs.index(bundle_hash) + 1 :])
                 conf_list.append((path, root + '/' + conf_file, conf_type))
                 break
     if not conf_list:

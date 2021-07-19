@@ -329,7 +329,7 @@ def add_service_to_cluster(cluster, proto):
     cm.status_api.post_event('add', 'service', cs.id, 'cluster', str(cluster.id))
     cm.status_api.load_service_map()
     log.info(
-        'service #{cs.id} {cs.prototype.name} is added to cluster #{cluster.id} {cluster.name}'
+        f'service #{cs.id} {cs.prototype.name} is added to cluster #{cluster.id} {cluster.name}'
     )
     return cs
 

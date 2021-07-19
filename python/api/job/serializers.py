@@ -57,7 +57,9 @@ def get_job_objects(task):
                 service = ClusterObject.obj.get(cluster=cluster, prototype=task.action.prototype)
                 resp.append(cook_obj('service', service.id, get_object_name(service)))
             elif task.action.prototype.type == 'component':
-                service = ClusterObject.obj.get(cluster=cluster, prototype=task.action.prototype)
+                service = ClusterObject.obj.get(
+                    cluster=cluster, prototype=task.action.prototype.parent
+                )
                 component = ServiceComponent.obj.get(
                     cluster=cluster, service=service, prototype=task.action.prototype
                 )
