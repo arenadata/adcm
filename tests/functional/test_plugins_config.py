@@ -24,10 +24,8 @@ from adcm_client.objects import (
     Cluster,
     Host,
     Provider,
-    Action,
 )
 from adcm_pytest_plugin.utils import get_data_dir
-from delayed_assert import assert_expectations, expect
 
 # !===== CONSTANTS =====!
 
@@ -127,6 +125,9 @@ def cluster_bundle(sdk_client_fs: ADCMClient, initial_clusters_config: dict):
 
 @pytest.fixture()
 def provider_bundle(sdk_client_fs: ADCMClient, initial_providers_config: dict):
+    """
+    Load bundle, create providers with hosts from config
+    """
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "provider"))
     for name in initial_providers_config:
         provider = bundle.provider_create(name)
@@ -143,6 +144,10 @@ def providers_names(initial_providers_config: Dict[str, Dict]) -> Tuple[str]:
 
 @pytest.fixture()
 def initial_providers_config(initial_config) -> dict:
+    """
+    Return dict with default configuration info
+    Use it to change provider / host configuration to compare it with actual config
+    """
     return {
         provider_name: {
             'config': copy.deepcopy(initial_config),
@@ -238,7 +243,7 @@ def assert_provider_config_is_correct(bundle: Bundle, providers_expected_config:
 @allure.step('Check clusters configuration')
 def assert_cluster_config_is_correct(bundle: Bundle, clusters_expected_config: dict):
     """
-    Assert that all clusters' and it's children's configuration equal to expected
+    Assert that all clusters' and its children's configuration is equal to expected
 
     :param bundle: cluster bundle to load configuration from
     :param clusters_expected_config: dict with expected cluster configuration
@@ -405,6 +410,7 @@ def test_host_actions(
     correct_initial_cluster_config: dict,
     expected_config: dict,
 ):
+    """Test cluster, service and component "on host" actions"""
     current_expected_state = correct_initial_cluster_config
     cluster, service, component, host = cluster_linked_to_host
     changer = ClusterBundleConfigChanger(cluster_bundle, current_expected_state, expected_config)
@@ -466,6 +472,10 @@ def get_random_cluster_service_component(
 
 
 class ClusterBundleConfigChanger:
+    """
+    Implements actions *on* cluster units *from* cluster units from same or another level
+    """
+
     def __init__(self, cluster_bundle: Bundle, current_state: dict, expected_state: dict):
         self.bundle = cluster_bundle
         self.clusters_state = current_state
@@ -613,6 +623,10 @@ def get_random_provider_host(provider_bundle: Bundle) -> Tuple[Provider, Host]:
 
 
 class ProviderBundleConfigChanger:
+    """
+    Implements actions *on* provider units *from* provider units from same or another level
+    """
+
     def __init__(self, provider_bundle: Bundle, current_state: dict, expected_state: dict):
         self.bundle = provider_bundle
         self.providers_state = current_state

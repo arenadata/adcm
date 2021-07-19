@@ -155,7 +155,7 @@
             ansible_tags: list
       states:
         available: any
-    component_First_single_component_int: &First_component
+    component_single_component_First_int: &First_component
       type: job
       script_type: ansible
       script: component_First_single_component.yaml
@@ -164,11 +164,11 @@
       params:
         ansible_tags: int
 
-    component_First_single_component_host:
+    component_single_component_First_host:
       <<: *First_component
       host_action: true
 
-    component_First_single_component_multijob:
+    component_single_component_First_multijob:
       type: task
       scripts:
         - &cFscm
@@ -207,7 +207,7 @@
             ansible_tags: list
       states:
         available: any
-    component_Second_another_component_int: &Second_component
+    component_another_component_Second_int: &Second_component
       type: job
       script_type: ansible
       script: component_Second_another_component.yaml
@@ -215,10 +215,10 @@
         available: any
       params:
         ansible_tags: int
-    component_Second_another_component_host:
+    component_another_component_Second_host:
       <<: *Second_component
       host_action: true
-    component_Second_another_component_multijob:
+    component_another_component_Second_multijob:
       type: task
       scripts:
         - &cSacm
