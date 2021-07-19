@@ -159,6 +159,7 @@ def provider(bundle: Bundle) -> Provider:
 
 @pytest.fixture()
 def provider_config_page(app_fs, provider: Provider, login_to_adcm) -> Configuration:
+
     return Configuration(
         app_fs.driver,
         "{}/provider/{}/config".format(app_fs.adcm.url, provider.provider_id),
@@ -198,7 +199,7 @@ def _update_config_property(config_page: Configuration, field, field_type: str):
 
 
 def _test_save_configuration_button(
-    config_page: Configuration, prop_types: list, group_name=None, use_advanced=False
+        config_page: Configuration, prop_types: list, group_name=None, use_advanced=False
 ):
     if use_advanced:
         config_page.click_advanced()
@@ -224,8 +225,9 @@ def _test_save_configuration_button(
             value_to_check = _get_test_value(field_type)
             if field_type == "boolean":
                 assert (
-                    config_page.get_checkbox_element_status(config_page.get_field_checkbox(field))
-                    == value_to_check
+                    config_page.get_checkbox_element_status(
+                        config_page.get_field_checkbox(field)
+                    ) == value_to_check
                 )
             else:
                 if field_type == "structure":

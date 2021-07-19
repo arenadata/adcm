@@ -10,13 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from selenium.webdriver.common.by import By
+from tests.ui_tests.app.page.common.base_page import (
+    BasePageObject,
+    PageHeader,
+    PageFooter,
+)
 
-from tests.ui_tests.app.helpers.locator import Locator
 
+class BundleListPage(BasePageObject):
 
-class CommonFooterLocators:
-    """ADCM footer locators"""
-
-    version_link = Locator(By.XPATH, "//footer//a[contains(@href, 'docs')]", "Link to version doc page")
-    logo = Locator(By.XPATH, "//footer//*[contains(text(), 'ARENADATA ©')]", "Footer logo")
+    def __init__(self, driver, base_url):
+        super().__init__(driver, base_url, "/bundle")
+        self.header = PageHeader(self.driver, self.base_url)
+        self.footer = PageFooter(self.driver, self.base_url)

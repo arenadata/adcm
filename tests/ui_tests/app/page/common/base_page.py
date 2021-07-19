@@ -68,6 +68,7 @@ class BasePageObject:
         self.wait_url_contains_path(self.path, timeout=timeout or self.default_page_timeout)
         return self
 
+    @allure.step("Wait url to contain path {path}")
     def wait_url_contains_path(self, path: str, timeout: int = None) -> None:
         """Wait url to contain path."""
 
@@ -220,6 +221,49 @@ class PageHeader(BasePageObject):
     def click_bundles_tab_in_header(self):
         self.find_and_click(CommonHeaderLocators.bundles)
 
+    def click_job_block_in_header(self):
+        self.find_and_click(AuthorizedHeaderLocators.job_block_previous)
+
+    def click_help_button_in_header(self):
+        self.find_and_click(AuthorizedHeaderLocators.help_button)
+
+    def click_account_button_in_header(self):
+        self.find_and_click(AuthorizedHeaderLocators.account_button)
+
+    def check_job_popup(self):
+        assert self.is_element_displayed(AuthorizedHeaderLocators.job_popup)
+
+    def check_help_popup(self):
+        self.wait_element_visible(AuthorizedHeaderLocators.block)
+        self.assert_displayed_elements([
+            AuthorizedHeaderLocators.HelpPopup.ask_link,
+            AuthorizedHeaderLocators.HelpPopup.doc_link
+        ])
+
+    def click_ask_link_in_help_popup(self):
+        self.find_and_click(AuthorizedHeaderLocators.HelpPopup.ask_link)
+
+    def click_doc_link_in_help_popup(self):
+        self.find_and_click(AuthorizedHeaderLocators.HelpPopup.doc_link)
+
+    def check_account_popup(self):
+        self.wait_element_visible(AuthorizedHeaderLocators.block)
+        acc_popup = AuthorizedHeaderLocators.AccountPopup
+        self.assert_displayed_elements([
+            acc_popup.settings_link,
+            acc_popup.profile_link,
+            acc_popup.logout_button,
+        ])
+
+    def click_settings_link_in_acc_popup(self):
+        self.find_and_click(AuthorizedHeaderLocators.AccountPopup.settings_link)
+
+    def click_profile_link_in_acc_popup(self):
+        self.find_and_click(AuthorizedHeaderLocators.AccountPopup.profile_link)
+
+    def click_logout_in_acc_popup(self):
+        self.find_and_click(AuthorizedHeaderLocators.AccountPopup.logout_button)
+
 
 class PageFooter(BasePageObject):
     """Class for footer manipulating."""
@@ -233,3 +277,6 @@ class PageFooter(BasePageObject):
             CommonFooterLocators.version_link,
             CommonFooterLocators.logo,
         ])
+
+    def click_version_link_in_footer(self):
+        self.find_and_click(CommonFooterLocators.version_link)
