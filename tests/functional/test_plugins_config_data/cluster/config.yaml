@@ -398,27 +398,27 @@
           name: sfloat
           params:
             ansible_tags: float
-        - <<: *service_multi_script
+        - <<: *single_component_multitask
           name: stext
           params:
             ansible_tags: text
-        - <<: *service_multi_script
+        - <<: *single_component_multitask
           name: sfile
           params:
             ansible_tags: file
-        - <<: *service_multi_script
+        - <<: *single_component_multitask
           name: sstring
           params:
             ansible_tags: string
-        - <<: *service_multi_script
+        - <<: *single_component_multitask
           name: sjson
           params:
             ansible_tags: json
-        - <<: *service_multi_script
+        - <<: *single_component_multitask
           name: smap
           params:
             ansible_tags: map
-        - <<: *service_multi_script
+        - <<: *single_component_multitask
           name: slist
           params:
             ansible_tags: list
