@@ -183,7 +183,7 @@ def check_required_services(cluster):
 
 
 def check_required_import(cluster, service=None):
-    res, code = do_check_import(cluster, service)
+    res, _ = do_check_import(cluster, service)
     return res
 
 
