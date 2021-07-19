@@ -46376,6 +46376,16 @@
                 "defaultValue": "'[Router] Back'"
             },
             {
+                "name": "Bell",
+                "ctype": "miscellaneous",
+                "subtype": "variable",
+                "file": "src/stories/bell.stories.ts",
+                "deprecated": false,
+                "deprecationMessage": "",
+                "type": "",
+                "defaultValue": "() => ({ })"
+            },
+            {
                 "name": "checkActions",
                 "ctype": "miscellaneous",
                 "subtype": "variable",
@@ -47366,16 +47376,6 @@
                 "deprecationMessage": "",
                 "type": "",
                 "defaultValue": "Template.bind({})"
-            },
-            {
-                "name": "Primary",
-                "ctype": "miscellaneous",
-                "subtype": "variable",
-                "file": "src/stories/test.stories.ts",
-                "deprecated": false,
-                "deprecationMessage": "",
-                "type": "",
-                "defaultValue": "() => ({\n  // moduleMetadata: modules,\n  // template: `\n  //   <button appPopover [component]=\"IssuesComponent\">Wow</button>\n  // `,\n})"
             },
             {
                 "name": "PROFILE_LINK",
@@ -49457,6 +49457,18 @@
                     "defaultValue": "'[Router] Go'"
                 }
             ],
+            "src/stories/bell.stories.ts": [
+                {
+                    "name": "Bell",
+                    "ctype": "miscellaneous",
+                    "subtype": "variable",
+                    "file": "src/stories/bell.stories.ts",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "",
+                    "defaultValue": "() => ({ })"
+                }
+            ],
             "src/app/core/store/issue.ts": [
                 {
                     "name": "checkIssue",
@@ -50575,18 +50587,6 @@
                     "deprecationMessage": "",
                     "type": "number",
                     "defaultValue": "100"
-                }
-            ],
-            "src/stories/test.stories.ts": [
-                {
-                    "name": "Primary",
-                    "ctype": "miscellaneous",
-                    "subtype": "variable",
-                    "file": "src/stories/test.stories.ts",
-                    "deprecated": false,
-                    "deprecationMessage": "",
-                    "type": "",
-                    "defaultValue": "() => ({\n  // moduleMetadata: modules,\n  // template: `\n  //   <button appPopover [component]=\"IssuesComponent\">Wow</button>\n  // `,\n})"
                 }
             ],
             "src/app/core/store/profile/profile.service.ts": [
@@ -57155,6 +57155,16 @@
                 "status": "low"
             },
             {
+                "filePath": "src/stories/bell.stories.ts",
+                "type": "variable",
+                "linktype": "miscellaneous",
+                "linksubtype": "variable",
+                "name": "Bell",
+                "coveragePercent": 0,
+                "coverageCount": "0/1",
+                "status": "low"
+            },
+            {
                 "filePath": "src/stories/button.component.ts",
                 "type": "component",
                 "linktype": "component",
@@ -57179,16 +57189,6 @@
                 "name": "PageComponent",
                 "coveragePercent": 0,
                 "coverageCount": "0/5",
-                "status": "low"
-            },
-            {
-                "filePath": "src/stories/test.stories.ts",
-                "type": "variable",
-                "linktype": "miscellaneous",
-                "linksubtype": "variable",
-                "name": "Primary",
-                "coveragePercent": 0,
-                "coverageCount": "0/1",
                 "status": "low"
             },
             {
