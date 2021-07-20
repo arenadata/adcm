@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from tests.ui_tests.app.page.cluster_list_page.cluster_list_locators import ClusterListLocators
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
     PageHeader,
@@ -23,3 +24,13 @@ class ClusterListPage(BasePageObject):
         super().__init__(driver, base_url, "/cluster")
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
+
+    def download_cluster(self, bundle):
+        self.find_and_click(ClusterListLocators.Tooltip.cluster_add_btn)
+        popup = ClusterListLocators.CreateClusterPopup
+        self.wait_element_visible(popup.block)
+        self.find_element(popup.upload_bundle_btn).send_keys(bundle)
+        self.find_and_click(popup.create_btn)
+
+    def get_all_cluster_rows(self):
+        return self.find_elements(ClusterListLocators.ClusterTable.row)

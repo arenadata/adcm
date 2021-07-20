@@ -27,6 +27,7 @@ from deprecated import deprecated
 from selenium.common.exceptions import WebDriverException
 
 from tests.ui_tests.app.app import ADCMTest
+from tests.ui_tests.app.page.admin_intro.admin_intro_page import AdminIntroPage
 from tests.ui_tests.app.page.login.login_page import LoginPage
 from tests.ui_tests.app.pages import LoginPage as DeprecatedLoginPage
 
@@ -217,3 +218,4 @@ def auth_to_adcm(app_fs, adcm_credentials):
 
     login = LoginPage(app_fs.driver, app_fs.adcm.url).open()
     login.login_user(**adcm_credentials)
+    login.wait_url_contains_path(AdminIntroPage(app_fs.driver, app_fs.adcm.url).path)
