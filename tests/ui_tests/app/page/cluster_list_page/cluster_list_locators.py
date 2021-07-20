@@ -49,3 +49,7 @@ class ClusterListLocators:
             upgrade = Locator(By.XPATH, ".//app-upgrade/button", "Cluster upgrade in row")
             config = Locator(By.XPATH, "./mat-cell[9]/button", "Cluster config in row")
             delete_btn = Locator(By.XPATH, "./mat-cell[10]/button", "Cluster delete button in row")
+
+    class LicensePopup:
+        block = Locator(By.XPATH, "//app-dialog[./h3[contains(text(), 'license')]]", "block with license agreement")
+        agree_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Yes')]]", "Agree button")

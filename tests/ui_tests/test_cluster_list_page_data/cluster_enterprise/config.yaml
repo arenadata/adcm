@@ -13,4 +13,5 @@
 - type: cluster
   name: test_cluster
   version: 1.5
+  license: license.txt
   edition: enterprise
