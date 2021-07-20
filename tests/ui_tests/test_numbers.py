@@ -20,7 +20,7 @@ RANGE_VALUES = [
 
 
 @parametrize_by_data_subdirs(__file__, 'bundles')
-def test_number_validation(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm):
+def test_number_validation(sdk_client_fs: ADCMClient, path, app_fs, api_auth_to_adcm):
     """Check that we have errors and save button is not active
     for number field with values out of range
     """
@@ -45,7 +45,7 @@ def test_number_validation(sdk_client_fs: ADCMClient, path, app_fs, login_to_adc
 
 @pytest.mark.parametrize(("number_type", "value"), RANGE_VALUES)
 def test_number_in_range_values(
-    sdk_client_fs: ADCMClient, value, app_fs, number_type, login_to_adcm
+    sdk_client_fs: ADCMClient, value, app_fs, number_type, api_auth_to_adcm
 ):
     path = get_data_dir(__file__) + "/bundles/{}-positive_and_negative".format(number_type)
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
@@ -56,8 +56,8 @@ def test_number_in_range_values(
         assert config.save_button_status()
 
 
-def test_float_in_integer_field(sdk_client_fs: ADCMClient, app_fs, login_to_adcm):
-    _ = login_to_adcm
+def test_float_in_integer_field(sdk_client_fs: ADCMClient, app_fs, api_auth_to_adcm):
+    _ = api_auth_to_adcm
     path = get_data_dir(__file__) + "/bundles/integer-positive_and_negative"
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     fields = config.get_app_fields()

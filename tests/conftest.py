@@ -12,13 +12,15 @@
 # pylint: disable=W0621
 import json
 import os
-import sys
 import tarfile
-import tempfile
 from typing import Optional
 
 import allure
 import pytest
+import sys
+import tempfile
+
+import requests
 from _pytest.python import Function
 from adcm_client.wrappers.docker import ADCM
 from allure_commons.model2 import TestResult, Parameter
@@ -209,6 +211,18 @@ def bundle_archive(request, tmp_path):
     Prepare tar file from dir without using bundle packer
     """
     return _pack_bundle(request.param, tmp_path)
+
+
+@pytest.fixture(scope="function")
+def api_auth_to_adcm(app_fs, adcm_credentials):
+    """Perform login via API call"""
+    login_endpoint = f'{app_fs.adcm.url.rstrip("/")}/api/v1/token/'
+    app_fs.driver.get(app_fs.adcm.url)
+    token = requests.post(login_endpoint, json=adcm_credentials).json()['token']
+    auth = {'login': adcm_credentials['username'], 'token': token}
+    script = f'localStorage.setItem("auth", JSON.stringify({auth}))'
+    app_fs.driver.execute_script(script)
+    app_fs.driver.get(app_fs.adcm.url)
 
 
 @pytest.fixture(scope="function")
