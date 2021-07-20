@@ -19,11 +19,11 @@ import os
 import allure
 from adcm_client.wrappers.docker import ADCM
 from selenium import webdriver
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver import ChromeOptions, FirefoxOptions
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
-from selenium.common.exceptions import WebDriverException
 
 from tests.ui_tests.app.pages import Ui, ClustersList
 

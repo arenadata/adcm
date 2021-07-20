@@ -11,6 +11,7 @@
 # limitations under the License.
 
 import allure
+from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import (
     NoSuchElementException,
     StaleElementReferenceException,
@@ -62,10 +63,14 @@ class BasePageObject:
         """Open page by its url and path."""
 
         url = self.base_url + self.path
-        if self.driver.current_url != url:
-            with allure.step(f"Open {url}"):
-                self.driver.get(url)
-        self.wait_url_contains_path(self.path, timeout=timeout or self.default_page_timeout)
+
+        def open_page():
+            if self.driver.current_url != url:
+                with allure.step(f"Open {url}"):
+                    self.driver.get(url)
+                    assert self.path in self.driver.current_url
+
+        wait_until_step_succeeds(open_page, period=2, timeout=timeout or self.default_page_timeout)
         return self
 
     @allure.step("Wait url to contain path {path}")
@@ -84,6 +89,15 @@ class BasePageObject:
             return WDW(self.driver, loc_timeout).until(EC.presence_of_element_located([locator.by, locator.value]),
                                                        message=f"Can't find {locator.name} on page "
                                                                f"{self.driver.current_url} for {loc_timeout} seconds")
+
+    def find_child(self, element: Locator, child: Locator, timeout: int = None) -> WebElement:
+        """Find child element on current page."""
+
+        loc_timeout = timeout or self.default_loc_timeout
+        with allure.step(f'Find element "{child.name}" on page'):
+            return WDW(element, loc_timeout).until(EC.presence_of_element_located([child.by, child.value]),
+                                                   message=f"Can't find {child.name} on page "
+                                                           f"{self.driver.current_url} for {loc_timeout} seconds")
 
     def find_elements(self, locator: Locator, timeout: int = None) -> [WebElement]:
         """Find elements on current page."""

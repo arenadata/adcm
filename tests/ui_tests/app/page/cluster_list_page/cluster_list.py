@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from selenium.common.exceptions import (
+    TimeoutException,
+)
 
 from tests.ui_tests.app.page.cluster_list_page.cluster_list_locators import ClusterListLocators
 from tests.ui_tests.app.page.common.base_page import (
@@ -32,5 +35,18 @@ class ClusterListPage(BasePageObject):
         self.find_element(popup.upload_bundle_btn).send_keys(bundle)
         self.find_and_click(popup.create_btn)
 
-    def get_all_cluster_rows(self):
-        return self.find_elements(ClusterListLocators.ClusterTable.row)
+    def get_all_cluster_rows(self) -> list:
+        try:
+            return self.find_elements(ClusterListLocators.ClusterTable.row, timeout=5)
+        except TimeoutException:
+            return []
+
+    def get_cluster_info_from_row(self, row: int) -> dict:
+        row_elements = ClusterListLocators.ClusterTable.ClusterRow
+        cluster_row = self.get_all_cluster_rows()[row]
+        return {
+            "name": self.find_child(cluster_row, row_elements.name).text,
+            "bundle": self.find_child(cluster_row, row_elements.bundle).text,
+            "description": self.find_child(cluster_row, row_elements.description).text,
+            "state": self.find_child(cluster_row, row_elements.state).text,
+        }

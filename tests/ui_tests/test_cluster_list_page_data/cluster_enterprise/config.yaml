@@ -13,4 +13,4 @@
 - type: cluster
   name: test_cluster
   version: 1.5
-  edition: enterprice
+  edition: enterprise
