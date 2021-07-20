@@ -183,17 +183,19 @@ class TestInventory(TestCase):
     @patch('json.dump')
     @patch('cm.inventory.open')
     def test_prepare_job_inventory(self, mock_open, mock_dump):
-        bundle = models.Bundle.objects.create()
-        prototype = models.Prototype.objects.create(bundle=bundle, version="2.2")
-        cluster = models.Cluster.objects.create(prototype=prototype)
-        host_provider = models.HostProvider.objects.create(prototype=prototype)
-        host = models.Host.objects.create(
-            prototype=prototype, cluster=cluster, provider=host_provider
+        bundle = models.Bundle.objects.create(edition='community')
+        proto1 = models.Prototype.objects.create(bundle=bundle, version='2.2', type='cluster')
+        cluster = models.Cluster.objects.create(prototype=proto1)
+        proto2 = models.Prototype.objects.create(bundle=bundle, type='provider')
+        host_provider = models.HostProvider.objects.create(prototype=proto2)
+        proto3 = models.Prototype.objects.create(bundle=bundle, type='host')
+        host = models.Host.objects.create(prototype=proto3, provider=host_provider)
+        host2 = models.Host.objects.create(
+            prototype=proto3, fqdn='h2', cluster=cluster, provider=host_provider
         )
-
-        action = models.Action.objects.create(prototype=prototype)
+        action = models.Action.objects.create(prototype=proto1)
         job = models.JobLog.objects.create(
-            action_id=action.id, start_date=timezone.now(), finish_date=timezone.now()
+            action=action, start_date=timezone.now(), finish_date=timezone.now()
         )
 
         fd = Mock()
@@ -202,14 +204,14 @@ class TestInventory(TestCase):
             'all': {
                 'children': {
                     'CLUSTER': {
-                        'hosts': {'': {'adcm_hostid': 1, 'state': 'created'}},
+                        'hosts': {host2.fqdn: {'adcm_hostid': 2, 'state': 'created'}},
                         'vars': {
                             'cluster': {
                                 'config': {},
-                                'edition': 'community',
                                 'name': '',
                                 'id': 1,
                                 'version': '2.2',
+                                'edition': 'community',
                                 'state': 'created',
                             },
                             'services': {},
@@ -228,7 +230,7 @@ class TestInventory(TestCase):
                                 'config': {},
                                 'name': '',
                                 'id': 1,
-                                'host_prototype_id': 1,
+                                'host_prototype_id': proto3.id,
                                 'state': 'created',
                             }
                         },
@@ -238,13 +240,20 @@ class TestInventory(TestCase):
         }
         provider_inv = {
             'all': {
-                'children': {'PROVIDER': {'hosts': {'': {'adcm_hostid': 1, 'state': 'created'}}}},
+                'children': {
+                    'PROVIDER': {
+                        'hosts': {
+                            '': {'adcm_hostid': 1, 'state': 'created'},
+                            'h2': {'adcm_hostid': 2, 'state': 'created'},
+                        }
+                    }
+                },
                 'vars': {
                     'provider': {
                         'config': {},
                         'name': '',
                         'id': 1,
-                        'host_prototype_id': 1,
+                        'host_prototype_id': proto3.id,
                         'state': 'created',
                     }
                 },
@@ -252,16 +261,13 @@ class TestInventory(TestCase):
         }
 
         data = [
-            ({'cluster': cluster.id}, 'cluster', cluster_inv),
-            ({'host': host.id}, 'host', host_inv),
-            ({'provider': host_provider.id}, 'host', provider_inv),
+            (host, host_inv),
+            (host_provider, provider_inv),
+            (cluster, cluster_inv),
         ]
 
-        for selector, prototype_type, inv in data:
-            with self.subTest(selector=selector, prototype_type=prototype_type, inv=inv):
-                prototype.type = prototype_type
-                prototype.save()
-
-                cm.inventory.prepare_job_inventory(selector, job.id, action, [])
+        for obj, inv in data:
+            with self.subTest(obj=obj, inv=inv):
+                cm.inventory.prepare_job_inventory(obj, job.id, action, [])
                 mock_dump.assert_called_once_with(inv, fd, indent=3)
                 mock_dump.reset_mock()
