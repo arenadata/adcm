@@ -5,14 +5,12 @@
   version: 1
 
   actions: &cluster_actions
-    cluster_int: &cluster_action
+    cluster_all: &cluster_action
       type: job
       script_type: ansible
       script: cluster.yaml
       states:
         available: any
-      params:
-        ansible_tags: int
     cluster_host:
       <<: *cluster_action
       host_action: true
@@ -55,14 +53,12 @@
             ansible_tags: list
       states:
         available: any
-    service_name_First_int: &service_name_First_action
+    service_name_First_all: &service_name_First_action
       type: job
       script_type: ansible
       script: service_name_First.yaml
       states:
         available: any
-      params:
-        ansible_tags: int
     service_name_First_host:
       <<: *service_name_First_action
       host_action: true
@@ -105,14 +101,12 @@
             ansible_tags: list
       states:
         available: any
-    service_name_Second_int: &service_name_Second_action
+    service_name_Second_all: &service_name_Second_action
       type: job
       script_type: ansible
       script: service_name_Second.yaml
       states:
         available: any
-      params:
-        ansible_tags: int
     service_name_Second_host:
       <<: *service_name_Second_action
       host_action: true
@@ -155,14 +149,12 @@
             ansible_tags: list
       states:
         available: any
-    component_single_component_First_int: &First_component
+    component_single_component_First_all: &First_component
       type: job
       script_type: ansible
       script: component_First_single_component.yaml
       states:
         available: any
-      params:
-        ansible_tags: int
 
     component_single_component_First_host:
       <<: *First_component
@@ -207,14 +199,12 @@
             ansible_tags: list
       states:
         available: any
-    component_another_component_Second_int: &Second_component
+    component_another_component_Second_all: &Second_component
       type: job
       script_type: ansible
       script: component_Second_another_component.yaml
       states:
         available: any
-      params:
-        ansible_tags: int
     component_another_component_Second_host:
       <<: *Second_component
       host_action: true
@@ -286,6 +276,11 @@
       default: "zzz"
       required: no
 
+    dummy:
+      type: string
+      default: "donthurtme"
+      required: no
+
     json:
       type: json
       default:
@@ -319,14 +314,12 @@
       <<: *cluster_action
       display_name: "duplicated_host"
 
-    service_int: &service_action
+    service_all: &service_action
       type: job
       script_type: ansible
       script: service.yaml
       states:
         available: any
-      params:
-        ansible_tags: int
 
     service_host:
       <<: *service_action
@@ -372,14 +365,12 @@
       states:
         available: any
 
-    component_name_single_component_int: &cnsc
+    component_name_single_component_all: &cnsc
       type: job
       script_type: ansible
       script: component_single.yaml
       states:
         available: any
-      params:
-        ansible_tags: int
 
     component_name_single_component_host:
       <<: *cnsc
@@ -430,14 +421,12 @@
       display_name: Single Component
       config: *config
       actions:
-        component_int: &component_action
+        component_all: &component_action
           type: job
           script_type: ansible
           script: component.yaml
           states:
             available: any
-          params:
-            ansible_tags: int
 
         component_host:
           <<: *component_action
@@ -502,14 +491,12 @@
   actions:
     <<: [*service_actions, *cluster_actions]
 
-    component_name_another_component_int: &cnac
+    component_name_another_component_all: &cnac
       type: job
       script_type: ansible
       script: component_another.yaml
       states:
         available: any
-      params:
-        ansible_tags: int
 
     component_name_single_component_host:
       <<: *cnac

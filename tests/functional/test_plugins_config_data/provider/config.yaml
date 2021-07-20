@@ -4,7 +4,7 @@
   name: Provider plugins testing
   version: 1
 
-  actions: &provider_actions
+  actions:
 
     provider_multijob: &provider_multijob
       type: task
@@ -52,51 +52,14 @@
           params:
             ansible_tags: map
 
-    provider_int: &provider_action
+    provider_all: &provider_action
       type: job
       script_type: ansible
       script: provider.yaml
       states:
         available: any
-      params:
-        ansible_tags: int
 
-    provider_float:
-      <<: *provider_action
-      params:
-        ansible_tags: float
-
-    provider_text:
-      <<: *provider_action
-      params:
-        ansible_tags: text
-
-    provider_file:
-      <<: *provider_action
-      params:
-        ansible_tags: file
-
-    provider_string:
-      <<: *provider_action
-      params:
-        ansible_tags: string
-
-    provider_json:
-      <<: *provider_action
-      params:
-        ansible_tags: json
-
-    provider_map:
-      <<: *provider_action
-      params:
-        ansible_tags: map
-
-    provider_list:
-      <<: *provider_action
-      params:
-        ansible_tags: list
-
-    host_multijob: &host_multijob
+    host_multijob:
       type: task
       states:
         available: any
@@ -140,52 +103,15 @@
           params:
             ansible_tags: map
 
-    host_int: &host_from_provider_action
+    host_all:
       type: job
       script_type: ansible
       script: host_from_provider.yaml
       states:
         available: any
-      params:
-        ansible_tags: int
       config:
         - name: fqdn
           type: string
-
-    host_float:
-      <<: *host_from_provider_action
-      params:
-        ansible_tags: float
-
-    host_text:
-      <<: *host_from_provider_action
-      params:
-        ansible_tags: text
-
-    host_file:
-      <<: *host_from_provider_action
-      params:
-        ansible_tags: file
-
-    host_string:
-      <<: *host_from_provider_action
-      params:
-        ansible_tags: string
-
-    host_json:
-      <<: *host_from_provider_action
-      params:
-        ansible_tags: json
-
-    host_map:
-      <<: *host_from_provider_action
-      params:
-        ansible_tags: map
-
-    host_list:
-      <<: *host_from_provider_action
-      params:
-        ansible_tags: list
 
   config: &config
     int:
@@ -215,6 +141,11 @@
       default: "zzz"
       required: no
 
+    dummy:
+      type: string
+      default: "donthurtme"
+      required: no
+
     json:
       type: json
       default:
@@ -241,48 +172,13 @@
   name: First
   version: 1
 
-  actions: &host_actions
+  actions:
 
     provider_multijob:
       <<: *provider_multijob
 
-    provider_int:
+    provider_all:
       <<: *provider_action
-
-    provider_float:
-      <<: *provider_action
-      params:
-        ansible_tags: float
-
-    provider_text:
-      <<: *provider_action
-      params:
-        ansible_tags: text
-
-    provider_file:
-      <<: *provider_action
-      params:
-        ansible_tags: file
-
-    provider_string:
-      <<: *provider_action
-      params:
-        ansible_tags: string
-
-    provider_json:
-      <<: *provider_action
-      params:
-        ansible_tags: json
-
-    provider_map:
-      <<: *provider_action
-      params:
-        ansible_tags: map
-
-    provider_list:
-      <<: *provider_action
-      params:
-        ansible_tags: list
 
     host_multijob:
       type: task
@@ -325,48 +221,11 @@
           params:
             ansible_tags: map
 
-    host_int: &host_action
+    host_all:
       type: job
       script_type: ansible
       script: host.yaml
       states:
         available: any
-      params:
-        ansible_tags: int
-
-    host_float:
-      <<: *host_action
-      params:
-        ansible_tags: float
-
-    host_text:
-      <<: *host_action
-      params:
-        ansible_tags: text
-
-    host_file:
-      <<: *host_action
-      params:
-        ansible_tags: file
-
-    host_string:
-      <<: *host_action
-      params:
-        ansible_tags: string
-
-    host_json:
-      <<: *host_action
-      params:
-        ansible_tags: json
-
-    host_map:
-      <<: *host_action
-      params:
-        ansible_tags: map
-
-    host_list:
-      <<: *host_action
-      params:
-        ansible_tags: list
 
   config: *config
