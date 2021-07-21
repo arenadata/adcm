@@ -9,12 +9,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from contextlib import contextmanager
+
 import allure
+from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import (
     TimeoutException,
 )
 
-from tests.ui_tests.app.page.cluster_list_page.cluster_list_locators import ClusterListLocators
+from tests.ui_tests.app.page.cluster_list.locators import ClusterListLocators
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
     PageHeader,
@@ -57,3 +61,24 @@ class ClusterListPage(BasePageObject):
             "description": self.find_child(cluster_row, row_elements.description).text,
             "state": self.find_child(cluster_row, row_elements.state).text,
         }
+
+    def click_first_page(self):
+        self.find_and_click(ClusterListLocators.ClusterTable.Pagination.first_page)
+
+    def click_second_page(self):
+        self.find_and_click(ClusterListLocators.ClusterTable.Pagination.second_page)
+
+    def click_previous_page(self):
+        self.find_and_click(ClusterListLocators.ClusterTable.Pagination.previous_page)
+
+    def click_next_page(self):
+        self.find_and_click(ClusterListLocators.ClusterTable.Pagination.next_page)
+
+    @contextmanager
+    def wait_page_scroll(self):
+        current_amount = len(self.get_all_cluster_rows())
+        yield
+
+        def wait_scroll():
+            assert len(self.get_all_cluster_rows()) != current_amount
+        wait_until_step_succeeds(wait_scroll, period=1, timeout=10)

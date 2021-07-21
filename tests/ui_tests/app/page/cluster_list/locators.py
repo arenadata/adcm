@@ -14,6 +14,7 @@
 from selenium.webdriver.common.by import By
 
 from tests.ui_tests.app.helpers.locator import Locator
+from tests.ui_tests.app.page.common.table import CommonTable
 
 
 class ClusterListLocators:
@@ -34,9 +35,7 @@ class ClusterListLocators:
 
         create_btn = Locator(By.XPATH, "//button[./span[text()='Create']]", "Create button")
 
-    class ClusterTable:
-        header = Locator(By.XPATH, "//mat-header-cell/div", "Cluster table header")
-        row = Locator(By.XPATH, "//mat-row", "Cluster table row")
+    class ClusterTable(CommonTable):
 
         class ClusterRow:
             name = Locator(By.XPATH, "./mat-cell[1]", "Cluster name in row")

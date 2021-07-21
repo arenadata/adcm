@@ -27,8 +27,7 @@ from deprecated import deprecated
 from selenium.common.exceptions import WebDriverException
 
 from tests.ui_tests.app.app import ADCMTest
-from tests.ui_tests.app.page.admin_intro.admin_intro_page import AdminIntroPage
-from tests.ui_tests.app.page.login.login_page import LoginPage
+from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
 from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.app.pages import LoginPage as DeprecatedLoginPage
 
