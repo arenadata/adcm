@@ -10,16 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageHeader,
-    PageFooter,
-)
+---
+- type: provider
+  name: test_provider
+  version: &ver "2.15-dev"
 
+- type: host
+  name: "Test Host"
+  description: "Test Host Description"
+  version: *ver
 
-class ClusterListPage(BasePageObject):
-
-    def __init__(self, driver, base_url):
-        super().__init__(driver, base_url, "/cluster")
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)

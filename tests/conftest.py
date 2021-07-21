@@ -15,7 +15,7 @@ import os
 import sys
 import tarfile
 import tempfile
-from typing import Optional
+from typing import Optional, List
 
 import allure
 import pytest
@@ -212,10 +212,17 @@ def bundle_archive(request, tmp_path):
     return _pack_bundle(request.param, tmp_path)
 
 
+@pytest.fixture()
+def bundle_archives(request, tmp_path) -> List[str]:
+    """
+    Prepare multiple bundles as in bundle_archive fixture
+    """
+    return [_pack_bundle(bundle_path, tmp_path) for bundle_path in request.param]
+
+
 @pytest.fixture(scope="function")
 def auth_to_adcm(app_fs, adcm_credentials):
     """Perform login on Login page ADCM"""
 
     login = LoginPage(app_fs.driver, app_fs.adcm.url).open()
     login.login_user(**adcm_credentials)
-    login.wait_url_contains_path(AdminIntroPage(app_fs.driver, app_fs.adcm.url).path)
