@@ -185,7 +185,7 @@ def adcm_credentials():
     return {'username': 'admin', 'password': 'admin'}
 
 
-@deprecated("Use auth_to_adcm")
+@deprecated("Use login_to_adcm_over_ui or login_to_adcm_over_api")
 @pytest.fixture(scope="function")
 def login_to_adcm(app_fs, adcm_credentials):
     """Perform login on Login page ADCM
@@ -213,8 +213,9 @@ def bundle_archive(request, tmp_path):
     return _pack_bundle(request.param, tmp_path)
 
 
+@allure.title("Login in ADCM over API")
 @pytest.fixture(scope="function")
-def api_auth_to_adcm(app_fs, adcm_credentials):
+def login_to_adcm_over_api(app_fs, adcm_credentials):
     """Perform login via API call"""
     login_endpoint = f'{app_fs.adcm.url.rstrip("/")}/api/v1/token/'
     app_fs.driver.get(app_fs.adcm.url)
@@ -225,8 +226,9 @@ def api_auth_to_adcm(app_fs, adcm_credentials):
     app_fs.driver.get(app_fs.adcm.url)
 
 
+@allure.title("Login in ADCM over UI")
 @pytest.fixture(scope="function")
-def auth_to_adcm(app_fs, adcm_credentials):
+def login_to_adcm_over_ui(app_fs, adcm_credentials):
     """Perform login on Login page ADCM"""
 
     login = LoginPage(app_fs.driver, app_fs.adcm.url).open()
