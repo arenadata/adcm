@@ -9,12 +9,13 @@ from tests.ui_tests.app.page.common.table.locator import CommonTable
 
 
 class CommonTableObj(BasePageObject):
+    """Class for manipulating with common tables elements."""
 
     def __init__(self, driver, base_url, table_class_locators=CommonTable):
         super().__init__(driver, base_url)
         self.table = table_class_locators
 
-    @allure.step("Get all rows")
+    @allure.step("Get all rows from the table")
     def get_all_rows(self) -> list:
         try:
             return self.find_elements(self.table.row, timeout=5)
@@ -28,7 +29,9 @@ class CommonTableObj(BasePageObject):
         self.find_and_click(self.table.Pagination.next_page)
 
     @contextmanager
-    def wait_page_scroll(self):
+    def wait_rows_change(self):
+        """Wait changing rows amount."""
+
         current_amount = len(self.get_all_rows())
         yield
 

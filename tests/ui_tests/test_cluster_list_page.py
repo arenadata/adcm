@@ -67,19 +67,19 @@ def test_check_cluster_list_page_pagination(sdk_client_fs: ADCMClient, app_fs, a
             bundle.cluster_create(name=f"Test cluster {i}")
     cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
     with allure.step("Check pagination"):
-        with cluster_page.table.wait_page_scroll():
+        with cluster_page.table.wait_rows_change():
             cluster_page.table.click_page_by_number(2)
         assert len(cluster_page.table.get_all_rows()) == params["second_page_cluster_amount"], \
             f"Second page should contains {params['second_page_cluster_amount']}"
-        with cluster_page.table.wait_page_scroll():
+        with cluster_page.table.wait_rows_change():
             cluster_page.table.click_page_by_number(1)
         assert len(cluster_page.table.get_all_rows()) == params["fist_page_cluster_amount"], \
             f"First page should contains {params['fist_page_cluster_amount']}"
-        with cluster_page.table.wait_page_scroll():
+        with cluster_page.table.wait_rows_change():
             cluster_page.table.click_next_page()
         assert len(cluster_page.table.get_all_rows()) == params["second_page_cluster_amount"], \
             f"Next page should contains {params['second_page_cluster_amount']}"
-        with cluster_page.table.wait_page_scroll():
+        with cluster_page.table.wait_rows_change():
             cluster_page.table.click_previous_page()
         assert len(cluster_page.table.get_all_rows()) == params["fist_page_cluster_amount"], \
             f"Previous page should contains {params['fist_page_cluster_amount']}"

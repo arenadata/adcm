@@ -17,11 +17,14 @@ from tests.ui_tests.app.helpers.locator import Locator
 
 
 class CommonTable:
+    """Common table locators (eg, cluster list page table)."""
 
     header = Locator(By.XPATH, "//mat-header-cell/div", "Table header")
     row = Locator(By.XPATH, "//mat-row", "Table row")
 
     class Pagination:
+        """Common table pagination locators."""
+
         previous_page = Locator(By.XPATH, "//button[@aria-label='Previous page']", "Previous page button")
         page_btn = Locator(By.XPATH, "//a[contains(@class, 'page-button')]", "Page button")
         next_page = Locator(By.XPATH, "//button[@aria-label='Next page']", "Next page button")
