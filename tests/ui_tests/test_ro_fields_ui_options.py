@@ -68,7 +68,9 @@ def test_all_true(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_ap
 
 
 @parametrize_by_data_subdirs(__file__, "invisible_false_advanced_true")
-def test_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api):
+def test_invisible_false_advanced_true(
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
+):
     """Check RO fields with advanced true and invisible false
     Scenario:
     1. Check that field invisible
@@ -101,7 +103,9 @@ def test_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app_fs, 
 
 
 @parametrize_by_data_subdirs(__file__, "invisible_true_advanced_false")
-def test_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api):
+def test_invisible_true_advanced_false(
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
+):
     """Check RO field with invisible true and advanced false
     Scenario:
     1. Check that field invisible

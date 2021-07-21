@@ -154,7 +154,9 @@ def test_groups_true_fields_false(sdk_client_fs: ADCMClient, path, app_fs, login
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_false_invisible_true_field_advanced_false_invisible_true"
 )
-def test_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api):
+def test_invisible_true_advanced_false(
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
+):
     """Invisible and advanced for groups true for fields false.
     In this case no elements presented on page
     """
@@ -164,7 +166,9 @@ def test_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path, app_fs, 
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_true_invisible_false_field_advanced_true_invisible_false"
 )
-def test_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api):
+def test_invisible_false_advanced_true(
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
+):
     """Fields and groups visible only if advanced enabled."""
     _check_groups_and_fields_visible_if_advanced_enabled(sdk_client_fs, path, app_fs)
 
