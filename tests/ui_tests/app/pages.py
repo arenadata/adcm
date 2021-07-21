@@ -99,8 +99,8 @@ class BasePage:
 
     def _getelement(self, locator: tuple, timer=10):
         return WDW(self.driver, timer, ignored_exceptions=self.ignored_exceptions).until(
-            EC.presence_of_element_located(locator), message=f"Can't find locator on page "
-                                                             f"{self.driver.current_url} for {timer} seconds")
+            EC.presence_of_element_located(locator),
+            message=f"Can't find locator on page {self.driver.current_url} for {timer} seconds")
 
     def _click_element(self, locator: tuple, **kwargs):
         """see _elements"""
@@ -116,9 +116,9 @@ class BasePage:
         self._elements(locator, click, **kwargs)
 
     def _getelements(self, locator: tuple, timer=20):
-        return WDW(self.driver, timer).until(EC.presence_of_all_elements_located(locator),
-                                             message=f"Can't find locators on page "
-                                                     f"{self.driver.current_url} for {timer} seconds")
+        return WDW(self.driver, timer).until(
+            EC.presence_of_all_elements_located(locator),
+            message=f"Can't find locators on page {self.driver.current_url} for {timer} seconds")
 
     def _click_element_in_list(self, element_name):
         for el in self._getelements(Common.list_text):
@@ -203,13 +203,15 @@ class BasePage:
         ).click().perform()
 
     def _contains_url(self, url: str, timer=5):
-        WDW(self.driver, timer).until(EC.url_contains(url), message=f"Page with url '{url}' has not been loaded "
-                                                                    f"for {timer} seconds")
+        WDW(self.driver, timer).until(EC.url_contains(url),
+                                      message=f"Page with url '{url}' has not been loaded "
+                                              f"for {timer} seconds")
         return self.driver.current_url
 
     def _is_element_clickable(self, locator: tuple, timer=5) -> bool:
         return bool(WDW(self.driver, timer).until(EC.element_to_be_clickable(locator),
-                                                  message=f"locator hasn't become clickable for {timer} seconds"))
+                                                  message=f"locator hasn't become clickable "
+                                                          f"for {timer} seconds"))
 
     def _menu_click(self, locator: tuple):
         if self._is_element_clickable(locator):
