@@ -19,11 +19,10 @@ import os
 import allure
 from adcm_client.wrappers.docker import ADCM
 from selenium import webdriver
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver import ChromeOptions, FirefoxOptions
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
-from selenium.common.exceptions import WebDriverException
 
 from tests.ui_tests.app.pages import Ui, ClustersList
 
@@ -106,13 +105,12 @@ class ADCMTest:
         except WebDriverException:
             # we skip JS error here since we have no simple way to detect localStorage availability
             pass
-        body = self.driver.find_element_by_tag_name("body")
-        body.send_keys(Keys.CONTROL + "t")
+        self.driver.execute_script("window.open('');")
 
     @allure.step("Close tab")
     def close_tab(self):
-        body = self.driver.find_element_by_tag_name("body")
-        body.send_keys(Keys.CONTROL + "w")
+        self.driver.close()
+        self.driver.switch_to.window(self.driver.window_handles[-1])
 
     def destroy(self):
         self.driver.quit()
