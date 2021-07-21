@@ -132,7 +132,7 @@ def cluster(bundle: Bundle) -> Cluster:
 
 
 @pytest.fixture()
-def cluster_config_page(app_fs, cluster: Cluster, login_to_adcm_over_api):
+def cluster_config_page(app_fs, cluster: Cluster, login_to_adcm):
     return Configuration(
         app_fs.driver, "{}/cluster/{}/config".format(app_fs.adcm.url, cluster.cluster_id)
     )
