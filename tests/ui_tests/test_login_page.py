@@ -13,8 +13,8 @@
 import allure
 import pytest
 
-from tests.ui_tests.app.page.admin_intro.admin_intro_page import AdminIntroPage
-from tests.ui_tests.app.page.login.login_page import LoginPage
+from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
+from tests.ui_tests.app.page.login.page import LoginPage
 
 
 def test_check_login_to_adcm(app_fs, adcm_credentials):

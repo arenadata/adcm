@@ -18,7 +18,7 @@ from tests.ui_tests.app.page.common.base_page import (
     PageHeader,
     PageFooter,
 )
-from tests.ui_tests.app.page.login.login_page_locators import LoginPageLocators
+from tests.ui_tests.app.page.login.locators import LoginPageLocators
 
 
 class LoginPage(BasePageObject):
