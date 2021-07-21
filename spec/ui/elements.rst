@@ -82,17 +82,23 @@ Template parts are:
 
 * Navigation Menu with an indication of the decomposition to the selected section.
 * Button "Create cluster" - allows you to create a cluster.
-* Tabular section which includes the following fields:
- * **Name** - contains information about the name of the cluster (sorting supported).
- * **Bundle** - contains information about the name of the :term:`Bundle` on the basis of which the cluster was added (sorting supported).
- * **Description** - contains additional information. Filled when adding a cluster.
- * **State** - contains information about the current state of the cluster (sorting supported).
- * **Status** - contains information about the current status of the cluster (sorting supported).
- * **Actions** - provides a choice of what action to perform on the cluster (install, start, stop).
- * **Import** - ???
- * **Upgrade** - allows to update the selected cluster.
- * **Config** - allows to go to the settings of the selected cluster.
-* List of added clusters with information according to table fields.
+* :ref:`ui_templates_table_view` columns:
+
+=============== ==============================
+Header          Value
+=============== ==============================
+Name            Cluster name
+Bundle          The name of the :term:`Bundle` on the basis of which the cluster was added
+Description     Additional information
+State           Сurrent state of the cluster
+Status          Сluster services status
+Actions         Action Button
+Import
+Upgrade         Updating the selected cluster
+Config          Link to config of the cluster
+=============== ==============================
+
+* List of added clusters with information according to :ref:`ui_templates_table_view` columns.
 * Button to delete an entry from the list of clusters
 * Pagination of the list of clusters
        
@@ -101,33 +107,31 @@ Template parts are:
 Сluster's service list
 ----------------------
 
-The list of cluster services looks like this:
+The list of services include in a cluster based on :ref:`ui_templates_table_view`.
 
+Common parameters of template:
 
-Template parts are:
-
-* Navigation Menu with an indication of the decomposition to the selected section, actions that can be performed on the cluster (start, stop, install, update).
+* "CLUSTERS" element of "Main Menu" is selected
+* Navigation menu point to a Cluster
+* "Services" element of "Left Menu" is selected
 * Cluster name information and link to cluster bundle.
 * Button "Add services" - allows you to add services to the cluster.
-* Left menu with the following sections (active partition is highlighted):
- * **Main**
- * **Services**
- * **Hosts**
- * **Host - Components**
- * **Configuration**
- * **Status**
- * **Import**
- * **Actions**
-* Tabular section which includes the following fields:
- * **Name** - contains information about the name of the service (sorting supported).
- * **Version** - contains information about the version of the service.
- * **State** - contains information about the current state of the service (sorting supported).
- * **Status** - contains information about the current status of the service (sorting supported).
- * **Actions** - provides a choice of what action to perform on the service (check, expand, restart, shrink, start, stop).
- * **Import** - ???
- * **Config** - allows to go to the settings of the selected service.
-* List of added services with information according to table fields.
-* Pagination of the list of clusters
+* :ref:`ui_templates_table_view` columns:
+
+=============== ==============================
+Header          Value
+=============== ==============================
+Name            Service name
+Version         Service version
+State           Сurrent state of the service
+Status          Service status
+Actions         Action Button
+Import
+Config          Link to config of the service
+=============== ==============================
+
+* List of added services with information according to :ref:`ui_templates_table_view` columns.
+* Pagination of the list of services.
 
 .. _ui_templates_cluster_host_list_view:
 
@@ -141,8 +145,8 @@ Common parameters of template:
 * "CLUSTERS" element of "Main Menu" is selected
 * Navigation menu point to a Cluster
 * "Hosts" element of "Left Menu" is selected
-
-:ref:`ui_templates_table_view` columns:
+* Button "Add hosts" - allows you to add hosts to the cluster.
+* :ref:`ui_templates_table_view` columns:
 
 =============== ==============================
 Header          Value
@@ -153,6 +157,104 @@ State           State of host
 Action          Action Button
 Config          Link to config of the host
 =============== ==============================
+
+* List of added hosts with information according to :ref:`ui_templates_table_view` columns.
+* Pagination of the list of hosts.
+
+Hostproviders
+========
+
+
+Hostproviders List View
+-----------------
+
+Hostproviders List View is a view based on :ref:`ui_templates_table_view`
+
+"HOSTPROVIDERS" element in Navigation Menu marked as selected.
+
+Template parts are:
+
+* Navigation Menu with an indication of the decomposition to the selected section.
+* Button "Create provider" - allows you to create a provider.
+* :ref:`ui_templates_table_view` columns:
+
+=============== ==============================
+Header          Value
+=============== ==============================
+Name            Contains information about the name of the hostprovider (sorting supported).
+Bundle          Contains information about the name of the :term:`Bundle` on the basis of which the hostprovider was added (sorting supported).
+State           State of hostprovider
+Actions         Action Button
+Upgrade         Allows to update the selected hostprovider.
+Config          Link to config of the host
+=============== ==============================
+
+* List of added hostproviders with information according to :ref:`ui_templates_table_view` columns.
+* Button to delete an entry from the list of hostproviders.
+* Pagination of the list of hostproviders.
+
+Hosts
+========
+
+
+Hosts List View
+-----------------
+
+Hosts List View is a view based on :ref:`ui_templates_table_view`
+
+"HOSTS" element in Navigation Menu marked as selected.
+
+Template parts are:
+
+* Navigation Menu with an indication of the decomposition to the selected section.
+* Button "Create host" - allows you to create a host.
+* :ref:`ui_templates_table_view` columns:
+
+=============== ==============================
+Header          Value
+=============== ==============================
+FQDN            FQDN in string format.
+Provider        Link to related HostProvider.
+Cluster         Link to the cluster for which the host is being created.
+State           State of host
+Status          Contains information about the current status of the host.
+Actions         Action Button.
+Config          Link to config of the host
+=============== ==============================
+
+* List of added hosts with information according to :ref:`ui_templates_table_view` columns.
+* Button to delete an entry from the list of hosts.
+* Pagination of the list of hosts.
+
+Bundles
+========
+
+
+Bundles List View
+-----------------
+
+Bundles List View is a view based on :ref:`ui_templates_table_view`
+
+"BUNDLES" element in Navigation Menu marked as selected.
+
+Template parts are:
+
+* Navigation Menu with an indication of the decomposition to the selected section.
+* Button "Upload bundles" - allows you to select the bundle you need to import.
+* :ref:`ui_templates_table_view` columns:
+
+=============== ==============================
+Header          Value
+=============== ==============================
+Name            Bundle name
+Version         Bundle version
+Edition         Bundle edition
+Description     Additional information
+=============== ==============================
+
+* List of added bundles with information according to :ref:`ui_templates_table_view` columns.
+* Button to delete an entry from the list of bundles.
+* Pagination of the list of bundles.
 
 *****
 Forms

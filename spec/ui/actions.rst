@@ -71,26 +71,15 @@ Pre-Conditions
 
 :term:`End User` has ADCM and completed the use case :ref:`ui_usecases_login`.
 
+Flow of Events
+--------------
+
+1. :term:`End User` goes to the "CLUSTERS" tab of the main menu of the :ref:`ui_templates_common` template.
+
 Post-Conditions
 ---------------
 
 :term:`End User` was able to view the list of clusters and information on them.
-
-“Used” Use Cases
-----------------
-
-* :ref:`ui_usecases_cluster_service_list_view`
-
-Flow of Events
---------------
-
-1. :term:`End User` goes to the "Cluster" tab of the main menu of the :ref:`ui_templates_common` template.
-2. :term:`End User` sees a list of clusters and information on them.
-
-User Interface
---------------
-
-The description of the UI is available by clicking :ref:`ui_templates_clusters`.
 
 .. _ui_usecases_cluster_create:
 
@@ -157,14 +146,17 @@ Pre-Conditions
 * :ref:`ui_usecases_login`
 * :ref:`ui_usecases_cluster_list_view`
 
+Flow of Events
+--------------
+
+1. :term:`End User` select the required cluster by clicking on it in the list of clusters.
+2. :term:`End User` goes to the "Services" section in the Left Menu.
+
 Post-Conditions
 ---------------
 
 * :term:`End User` was able to view the list of cluster services and information on them.
-* Dialog has been closed
 
-“Used” Use Cases
-----------------
 
 Cluster host list view
 ======================
@@ -189,32 +181,53 @@ Pre-Conditions
 * :ref:`ui_usecases_login`
 * :ref:`ui_usecases_cluster_list_view`
 
+Flow of Events
+--------------
+
+1. :term:`End User` select the required cluster by clicking on it in the list of clusters.
+2. :term:`End User` goes to the "Hosts" section in the Left Menu.
+
 Post-Conditions
 ---------------
 
 * :term:`End User` was able to view the list of cluster hosts.
-
-“Used” Use Cases
-----------------
-
-
-Flow of Events
---------------
-
-1. :term:`End User` selects the required cluster by clicking on it in the list of clusters.
-2. :term:`End User` goes to the "Hosts" section in the Left Menu.
-3. :term:`End User` sees a list of cluster hosts.
-
-User Interface
---------------
-
-List of host described in :ref:`ui_templates_cluster_host_list_view`.
 
 
 *************
 Host Provider
 *************
 
+.. _ui_usecases_hostprovider_list_view:
+
+Hostprovider list view
+=================
+
+Use case in which the user can view the list of added hostproviders and information on them.
+
+Actors
+------
+
+* :term:`End User`
+
+User Value
+----------
+
+This use case will allow the :term:`End User` to view the list of added hostproviders.
+
+Pre-Conditions
+--------------
+
+:term:`End User` has ADCM and completed the use case :ref:`ui_usecases_login`.
+
+Flow of Events
+--------------
+
+1. :term:`End User` goes to the "HOSTPROVIDERS" tab of the main menu of the :ref:`ui_templates_common` template.
+
+Post-Conditions
+---------------
+
+:term:`End User` was able to view the list of hostproviders and information on them.
 
 .. _ui_usecases_create_hostprovider:
 
@@ -257,3 +270,75 @@ Post-Conditions
 
 * A Hostprovider has been created.
 * :ref:`ui_form_dialogs_create_hostprovider` has been closed.
+
+*************
+Hosts
+*************
+
+.. _ui_usecases_host_list_view:
+
+Host list view
+=================
+
+Use case in which the user can view the list of added hosts and information on them.
+
+Actors
+------
+
+* :term:`End User`
+
+User Value
+----------
+
+This use case will allow the :term:`End User` to view the list of added hosts.
+
+Pre-Conditions
+--------------
+
+:term:`End User` has ADCM and completed the use case :ref:`ui_usecases_login`.
+
+Flow of Events
+--------------
+
+1. :term:`End User` goes to the "HOSTS" tab of the main menu of the :ref:`ui_templates_common` template.
+
+Post-Conditions
+---------------
+
+:term:`End User` was able to view the list of hosts and information on them.
+
+*************
+Bundles
+*************
+
+.. _ui_usecases_bundle_list_view:
+
+Bundle list view
+=================
+
+Use case in which the user can view the list of added bundles and information on them.
+
+Actors
+------
+
+* :term:`End User`
+
+User Value
+----------
+
+This use case will allow the :term:`End User` to view the list of added bundles.
+
+Pre-Conditions
+--------------
+
+:term:`End User` has ADCM and completed the use case :ref:`ui_usecases_login`.
+
+Flow of Events
+--------------
+
+1. :term:`End User` goes to the "BUNDLES" tab of the main menu of the :ref:`ui_templates_common` template.
+
+Post-Conditions
+---------------
+
+:term:`End User` was able to view the list of bundles and information on them.
