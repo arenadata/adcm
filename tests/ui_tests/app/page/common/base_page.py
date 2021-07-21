@@ -43,7 +43,8 @@ class BasePageObject:
     :param default_loc_timeout: default timeout for actions with locators, eg wait to display
     """
 
-    __slots__ = {"driver", "base_url", "path", "header", "footer", "default_page_timeout", "default_loc_timeout"}
+    __slots__ = {"driver", "base_url", "path", "header", "footer", "table",
+                 "default_page_timeout", "default_loc_timeout"}
 
     def __init__(
             self,
@@ -90,7 +91,7 @@ class BasePageObject:
                                                        message=f"Can't find {locator.name} on page "
                                                                f"{self.driver.current_url} for {loc_timeout} seconds")
 
-    def find_child(self, element: Locator, child: Locator, timeout: int = None) -> WebElement:
+    def find_child(self, element: WebElement, child: Locator, timeout: int = None) -> WebElement:
         """Find child element on current page."""
 
         loc_timeout = timeout or self.default_loc_timeout
