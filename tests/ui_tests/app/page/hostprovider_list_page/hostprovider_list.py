@@ -18,7 +18,6 @@ from tests.ui_tests.app.page.common.base_page import (
 
 
 class ProviderListPage(BasePageObject):
-
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/provider")
         self.header = PageHeader(self.driver, self.base_url)

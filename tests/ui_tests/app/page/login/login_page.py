@@ -22,7 +22,6 @@ from tests.ui_tests.app.page.login.login_page_locators import LoginPageLocators
 
 
 class LoginPage(BasePageObject):
-
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/login")
         self.header = PageHeader(self.driver, self.base_url)
@@ -31,18 +30,21 @@ class LoginPage(BasePageObject):
     @allure.step('Check elements on login page')
     def check_all_elements(self):
         self.header.check_unauth_page_elements()
-        self.assert_displayed_elements([
-            LoginPageLocators.login_form_block,
-            LoginPageLocators.login_input,
-            LoginPageLocators.password_input,
-            LoginPageLocators.login_btn,
-        ])
+        self.assert_displayed_elements(
+            [
+                LoginPageLocators.login_form_block,
+                LoginPageLocators.login_input,
+                LoginPageLocators.password_input,
+                LoginPageLocators.login_btn,
+            ]
+        )
         self.footer.check_all_elements()
 
     @allure.step('Get warning text on login page')
     def get_login_warning_text(self, timeout: int = None) -> str:
         def get_text():
             assert self.find_element(LoginPageLocators.login_warning).text != ""
+
         wait_until_step_succeeds(get_text, period=1, timeout=timeout or self.default_loc_timeout)
         return self.find_element(LoginPageLocators.login_warning).text
 
@@ -51,7 +53,9 @@ class LoginPage(BasePageObject):
         self.wait_element_visible(LoginPageLocators.login_warning)
         current_error = self.get_login_warning_text()
         with allure.step(f"Check message '{message}'"):
-            assert current_error == message, f"There should be error '{message}' and not '{current_error}'"
+            assert (
+                current_error == message
+            ), f"There should be error '{message}' and not '{current_error}'"
 
     @allure.step('Check login button unavailable')
     def check_check_login_button_unavailable(self):

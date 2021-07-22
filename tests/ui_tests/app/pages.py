@@ -13,6 +13,7 @@ from time import sleep
 
 import allure
 from deprecated import deprecated
+
 # Created by a1wen at 05.03.19
 from selenium.common.exceptions import (
     TimeoutException,

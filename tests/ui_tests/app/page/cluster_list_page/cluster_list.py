@@ -18,7 +18,6 @@ from tests.ui_tests.app.page.common.base_page import (
 
 
 class ClusterListPage(BasePageObject):
-
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/cluster")
         self.header = PageHeader(self.driver, self.base_url)
