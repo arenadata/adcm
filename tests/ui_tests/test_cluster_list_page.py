@@ -43,9 +43,8 @@ def test_check_cluster_list_page_with_cluster_creating(app_fs, auth_to_adcm, bun
     cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
     with allure.step("Check no cluster rows"):
         assert len(cluster_page.table.get_all_rows()) == 0, "There should be no row with clusters"
-    # pylint: disable=simplifiable-if-expression
-    cluster_page.upload_cluster(bundle_archive, cluster_params['description'],
-                                is_license=True if edition == "enterprise" else False)
+    cluster_page.create_cluster(bundle_archive, cluster_params['description'],
+                                is_license=bool(edition == "enterprise"))
     with allure.step("Check uploaded cluster"):
         assert len(cluster_page.table.get_all_rows()) == 1, "There should be 1 row with cluster"
         uploaded_cluster = cluster_page.get_cluster_info_from_row(0)

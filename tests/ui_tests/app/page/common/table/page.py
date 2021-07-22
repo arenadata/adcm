@@ -3,6 +3,8 @@ from contextlib import contextmanager
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait as WDW
 
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.table.locator import CommonTable
@@ -41,7 +43,8 @@ class CommonTableObj(BasePageObject):
 
     @allure.step("Click on page number {number}")
     def click_page_by_number(self, number: int):
-        pages = self.find_elements(self.table.Pagination.page_btn)
-        for page in pages:
-            if int(page.text) == number:
-                page.click()
+        page_loc = self.table.Pagination.page_to_choose_btn
+        WDW(self.driver, self.default_loc_timeout).until(
+            EC.presence_of_element_located([page_loc.by, page_loc.value.format(number)]),
+            message=f"Can't find page {number} in table on page {self.driver.current_url} "
+                    f"for {self.default_loc_timeout} seconds").click()

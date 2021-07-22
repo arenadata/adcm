@@ -30,7 +30,7 @@ class ClusterListPage(BasePageObject):
         self.table = CommonTableObj(self.driver, self.base_url, ClusterListLocators.ClusterTable)
 
     @allure.step("Create cluster from bundle")
-    def upload_cluster(self, bundle: str, description: str = None, is_license: bool = False):
+    def create_cluster(self, bundle: str, description: str = None, is_license: bool = False):
         self.find_and_click(ClusterListLocators.Tooltip.cluster_add_btn)
         popup = ClusterListLocators.CreateClusterPopup
         self.wait_element_visible(popup.block)

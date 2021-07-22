@@ -71,7 +71,7 @@ class BasePageObject:
                     self.driver.get(url)
                     assert self.path in self.driver.current_url
 
-        wait_until_step_succeeds(open_page, period=2, timeout=timeout or self.default_page_timeout)
+        wait_until_step_succeeds(open_page, period=0.5, timeout=timeout or self.default_page_timeout)
         return self
 
     @allure.step("Wait url to contain path {path}")

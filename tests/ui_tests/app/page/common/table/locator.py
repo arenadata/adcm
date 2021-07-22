@@ -27,4 +27,5 @@ class CommonTable:
 
         previous_page = Locator(By.XPATH, "//button[@aria-label='Previous page']", "Previous page button")
         page_btn = Locator(By.XPATH, "//a[contains(@class, 'page-button')]", "Page button")
+        page_to_choose_btn = Locator(By.XPATH, "//a[contains(@class, 'page-button') and text()='{}']", "Page button")
         next_page = Locator(By.XPATH, "//button[@aria-label='Next page']", "Next page button")
