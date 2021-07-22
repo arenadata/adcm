@@ -36,7 +36,7 @@ def old_adcm_images():
 
 @allure.title("[FS] Upgradable ADCM Container")
 @pytest.fixture()
-def adcm_fs(image, cmd_opts, request, adcm_api_credentials) -> Generator[ADCM, None, None]:
+def adcm_fs(image, cmd_opts, request, adcm_api_credentials) -> Generator[ADCM, None, None]:  # noqa: PT004
     """Runs adcm container from the previously initialized image.
     Operates '--dontstop' option.
     Returns authorized instance of ADCM object

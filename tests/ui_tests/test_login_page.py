@@ -31,7 +31,7 @@ def test_check_login_to_adcm(app_fs, adcm_credentials):
 
 
 @pytest.mark.parametrize(
-    "name, password", [("", "admin"), ("admin", "")], ids=("no_name", "no_password")
+    ("name", "password"), [("", "admin"), ("admin", "")], ids=("no_name", "no_password")
 )
 def test_check_login_button_unavailable(app_fs, name, password):
     login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
@@ -40,7 +40,7 @@ def test_check_login_button_unavailable(app_fs, name, password):
 
 
 @pytest.mark.parametrize(
-    "name, password", [("admin1", "admin"), ("admin", "admin1")], ids=("wrong_name", "wrong_pass")
+    ("name", "password"), [("admin1", "admin"), ("admin", "admin1")], ids=("wrong_name", "wrong_pass")
 )
 def test_check_error_in_login(app_fs, name, password):
     params = {"error_text": "Incorrect password or user."}

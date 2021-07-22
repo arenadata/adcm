@@ -12,7 +12,6 @@
 # pylint: disable=W0611, W0621, W0404, W0212, C1801
 import allure
 import pytest
-import yaml
 from adcm_client.base import ObjectNotFound, Paging
 from adcm_client.objects import ADCMClient, HostList, TaskFailed
 from adcm_pytest_plugin.utils import get_data_dir
