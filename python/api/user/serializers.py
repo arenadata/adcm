@@ -65,7 +65,7 @@ class GroupDetailSerializer(GroupSerializer):
 
 
 class UserSerializer(serializers.Serializer):
-    username = serializers.CharField()
+    username = serializers.CharField(max_length=150)
     password = serializers.CharField(write_only=True)
     url = hlink('user-details', 'username', 'username')
     change_group = hlink('add-user-group', 'username', 'username')
