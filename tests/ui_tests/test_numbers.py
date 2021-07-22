@@ -57,7 +57,6 @@ def test_number_in_range_values(
 
 
 def test_float_in_integer_field(sdk_client_fs: ADCMClient, app_fs, login_to_adcm_over_api):
-    _ = login_to_adcm_over_api
     path = get_data_dir(__file__) + "/bundles/integer-positive_and_negative"
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     fields = config.get_app_fields()
