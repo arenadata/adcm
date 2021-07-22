@@ -65,6 +65,7 @@ def test_check_cluster_list_page_pagination(sdk_client_fs: ADCMClient, app_fs, a
         for i in range(11):
             bundle.cluster_create(name=f"Test cluster {i}")
     cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+    cluster_page.close_info_popup()
     with allure.step("Check pagination"):
         with cluster_page.table.wait_rows_change():
             cluster_page.table.click_page_by_number(2)

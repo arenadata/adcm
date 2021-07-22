@@ -29,6 +29,7 @@ from tests.ui_tests.app.page.common.header import (
     CommonHeaderLocators,
     AuthorizedHeaderLocators,
 )
+from tests.ui_tests.app.page.common.popups import CommonPopupLocators
 
 
 class BasePageObject:
@@ -73,6 +74,11 @@ class BasePageObject:
 
         wait_until_step_succeeds(open_page, period=0.5, timeout=timeout or self.default_page_timeout)
         return self
+
+    @allure.step("Close popup at the bottom of the page")
+    def close_info_popup(self):
+        if self.is_element_displayed(CommonPopupLocators.block, timeout=2):
+            self.find_and_click(CommonPopupLocators.hide_btn)
 
     @allure.step("Wait url to contain path {path}")
     def wait_url_contains_path(self, path: str, timeout: int = None) -> None:
