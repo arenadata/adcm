@@ -230,11 +230,14 @@ class ADCMEntity(ADCMModel):
         if item in self.agenda.all():
             self.agenda.remove(item)
 
-    def __str__(self):
+    @property
+    def display_name(self):
         own_name = getattr(self, 'name', None)
         fqdn = getattr(self, 'fqdn', None)
-        name = own_name or fqdn or self.prototype.name
-        return '{} #{} "{}"'.format(self.prototype.type, self.id, name)
+        return own_name or fqdn or self.prototype.display_name or self.prototype.name
+
+    def __str__(self):
+        return '{} #{} "{}"'.format(self.prototype.type, self.id, self.display_name)
 
     def set_state(self, state: str, event=None) -> 'ADCMEntity':
         self.state = state or self.state
@@ -242,6 +245,22 @@ class ADCMEntity(ADCMModel):
         if event:
             event.set_object_state(self.prototype.type, self.id, state)
         log.info('set %s state to "%s"', self, state)
+
+    def get_id_chain(self) -> dict:
+        """Get object ID chain for front-end URL generation in message templates"""
+        ids = {}
+        ids[self.prototype.type] = self.pk
+        for attr in ['cluster', 'service', 'provider']:
+            value = getattr(self, attr, None)
+            if value:
+                ids[attr] = value.pk
+
+        result = {
+            'type_prefix': self.prototype.type,  # use for `type` generation depending on usage
+            'name': self.display_name,
+            'ids': ids,
+        }
+        return result
 
 
 class ADCM(ADCMEntity):
@@ -370,10 +389,6 @@ class ClusterObject(ADCMEntity):
         return self.prototype.name
 
     @property
-    def display_name(self):
-        return self.prototype.display_name or self.name
-
-    @property
     def description(self):
         return self.prototype.description
 
@@ -404,10 +419,6 @@ class ServiceComponent(ADCMEntity):
     @property
     def name(self):
         return self.prototype.name
-
-    @property
-    def display_name(self):
-        return self.prototype.display_name or self.name
 
     @property
     def description(self):
@@ -497,6 +508,16 @@ class Action(ADCMModel):
 
     class Meta:
         unique_together = (('prototype', 'name'),)
+
+    def get_id_chain(self, target_ids: dict) -> dict:
+        """Get action ID chain for front-end URL generation in message templates"""
+        target_ids['action'] = self.pk
+        result = {
+            'type': self.prototype.type + '_action_run',
+            'name': self.display_name or self.name,
+            'ids': target_ids,
+        }
+        return result
 
 
 class SubAction(ADCMModel):
@@ -653,12 +674,7 @@ class TaskLog(ADCMModel):
             return
 
         target = self.get_target_object()
-        reason = {
-            'message': f'Object was locked by running action "{self.action}" on "{target}"',
-            'action_id': self.action and self.action.id,
-            'action target': target and {'type': target.prototype.type, 'id': target.pk},
-            'task_id': self.id,
-        }
+        reason = MessageTemplate.get_lock_reason(self.action, target)
         self.lock = AgendaItem.objects.create(name=None, reason=reason)
         self.save()
         for obj in objects:
@@ -863,6 +879,39 @@ class DummyData(ADCMModel):
     date = models.DateTimeField(auto_now=True)
 
 
+class MessageTemplate(ADCMModel):
+    """
+    Templates for `AgendaItem.reason
+    There are two sources of templates - they are pre-created in migrations or loaded from bundles
+    TODO: load from bundle
+    TODO: check consistency on creation
+    TODO: check if enum with names will be useful
+    """
+
+    name = models.CharField(max_length=160, unique=True)
+    template = models.JSONField()
+
+    @classmethod
+    def get_lock_reason(cls, action: Action, target: ADCMEntity) -> dict:
+        name = 'locked by action on target'
+        tpl = cls.objects.get(name=name).template
+        assert 'placeholder' in tpl
+        assert isinstance(tpl['placeholder'], dict)
+        assert {'action', 'target'}.difference(tpl['placeholder'].keys()) == set()
+
+        if target:
+            target_placeholder = target.get_id_chain()
+            type_prefix = target_placeholder.pop('type_prefix')
+            target_placeholder['type'] = ''.join((type_prefix, '_main_link'))
+            tpl['placeholder']['target'] = target_placeholder
+        else:
+            target_placeholder = {'type': 'no_object', 'name': 'No object', 'ids': {}}
+
+        tpl['placeholder']['action'] = action.get_id_chain(target_placeholder['ids'])
+
+        return tpl
+
+
 class AgendaItem(ADCMModel):
     """
     Representation for object's lock/issue/flag
@@ -872,10 +921,8 @@ class AgendaItem(ADCMModel):
 
     `name` is used for (un)setting flags from ansible playbooks
     `attendees` are back-refs from affected ADCMEntities.agenda
-    `reason` is used to display/notify in front-end, text template and data for URL generation
-        for lock - "locked by Action(id) TaskLog(id) JobLog(id)"
-        for issue - "source(id) has issue with config| imports| not-deployed services"
-        for flag - TODO: depends on use cases
+    `reason` is used to display/notify on front-end, text template and data for URL generation
+        should be generated from pre-created templates model `MessageTemplate`
     """
 
     name = models.CharField(max_length=160, null=True)
