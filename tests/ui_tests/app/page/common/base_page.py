@@ -11,6 +11,7 @@
 # limitations under the License.
 
 import allure
+from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import (
     NoSuchElementException,
     StaleElementReferenceException,
@@ -28,6 +29,7 @@ from tests.ui_tests.app.page.common.header import (
     CommonHeaderLocators,
     AuthorizedHeaderLocators,
 )
+from tests.ui_tests.app.page.common.popups import CommonPopupLocators
 
 
 class BasePageObject:
@@ -42,7 +44,8 @@ class BasePageObject:
     :param default_loc_timeout: default timeout for actions with locators, eg wait to display
     """
 
-    __slots__ = {"driver", "base_url", "path", "header", "footer", "default_page_timeout", "default_loc_timeout"}
+    __slots__ = {"driver", "base_url", "path", "header", "footer", "table",
+                 "default_page_timeout", "default_loc_timeout"}
 
     def __init__(
             self,
@@ -62,11 +65,20 @@ class BasePageObject:
         """Open page by its url and path."""
 
         url = self.base_url + self.path
-        if self.driver.current_url != url:
-            with allure.step(f"Open {url}"):
-                self.driver.get(url)
-        self.wait_url_contains_path(self.path, timeout=timeout or self.default_page_timeout)
+
+        def open_page():
+            if self.driver.current_url != url:
+                with allure.step(f"Open {url}"):
+                    self.driver.get(url)
+                    assert self.path in self.driver.current_url
+
+        wait_until_step_succeeds(open_page, period=0.5, timeout=timeout or self.default_page_timeout)
         return self
+
+    @allure.step("Close popup at the bottom of the page")
+    def close_info_popup(self):
+        if self.is_element_displayed(CommonPopupLocators.block, timeout=2):
+            self.find_and_click(CommonPopupLocators.hide_btn)
 
     @allure.step("Wait url to contain path {path}")
     def wait_url_contains_path(self, path: str, timeout: int = None) -> None:
@@ -84,6 +96,15 @@ class BasePageObject:
             return WDW(self.driver, loc_timeout).until(EC.presence_of_element_located([locator.by, locator.value]),
                                                        message=f"Can't find {locator.name} on page "
                                                                f"{self.driver.current_url} for {loc_timeout} seconds")
+
+    def find_child(self, element: WebElement, child: Locator, timeout: int = None) -> WebElement:
+        """Find child element on current page."""
+
+        loc_timeout = timeout or self.default_loc_timeout
+        with allure.step(f'Find element "{child.name}" on page'):
+            return WDW(element, loc_timeout).until(EC.presence_of_element_located([child.by, child.value]),
+                                                   message=f"Can't find {child.name} on page "
+                                                           f"{self.driver.current_url} for {loc_timeout} seconds")
 
     def find_elements(self, locator: Locator, timeout: int = None) -> [WebElement]:
         """Find elements on current page."""
