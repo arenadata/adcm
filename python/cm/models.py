@@ -14,6 +14,7 @@ from __future__ import unicode_literals
 
 from collections.abc import Mapping
 from copy import deepcopy
+from typing import Dict
 
 from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
@@ -272,7 +273,7 @@ class ConfigLog(ADCMModel):
                 update(config, diff)
                 group_config.config = config
                 attr = deepcopy(self.attr)
-                attr.update({'group_keys': cg.init_group_keys(self.config)})
+                attr.update({'group_keys': cg.create_group_keys(self.config)})
                 update(attr, current_group_config.attr)
                 group_config.attr = attr
                 group_config.description = current_group_config.description
@@ -529,14 +530,14 @@ class ConfigGroup(ADCMModel):
     class Meta:
         unique_together = ['object_id', 'name', 'object_type']
 
-    def init_group_keys(self, origin, group_keys=None):
+    def create_group_keys(self, config: dict, group_keys: Dict[str, bool] = None):
         """Creating group keys from origin config"""
         if group_keys is None:
             group_keys = {}
-        for k, v in origin.items():
+        for k, v in config.items():
             if isinstance(v, Mapping):
                 group_keys.setdefault(k, {})
-                self.init_group_keys(origin.get(k, {}), group_keys[k])
+                self.create_group_keys(config.get(k, {}), group_keys[k])
             else:
                 group_keys[k] = False
         return group_keys
@@ -566,17 +567,17 @@ class ConfigGroup(ADCMModel):
         obj = self.object_type.model_class().obj.get(id=self.object_id)
         if self._state.adding:
             self.config = ObjectConfig.objects.create(current=0, previous=0)
-            config_log = ConfigLog.obj.get(id=obj.config.current)
-            config_log.pk = None
+            parent_config_log = ConfigLog.obj.get(id=obj.config.current)
+            config_log = ConfigLog()
             config_log.obj_ref = self.config
-            attr = config_log.attr
-            attr.update({'group_keys': self.init_group_keys(config_log.config)})
+            config_log.config = deepcopy(parent_config_log.config)
+            attr = deepcopy(parent_config_log.attr)
+            attr.update({'group_keys': self.create_group_keys(config_log.config)})
             config_log.attr = attr
+            config_log.description = parent_config_log.description
             config_log.save()
             self.config.current = config_log.pk
             self.config.save()
-        else:
-            pass
         super().save(*args, **kwargs)
 
 
