@@ -12,7 +12,7 @@
 
 from uuid import uuid4
 
-import cm.models as models
+from cm import models
 
 
 def _gen_name(prefix: str, name='name'):
@@ -117,3 +117,16 @@ def gen_host_component(component, host):
         service=component.service,
         component=component,
     )
+
+
+def gen_config(config: dict = None, attr: dict = None):
+    """Generate config, creating `ObjectConfig` object and `ConfigLog` object"""
+    if config is None:
+        config = {}
+    if attr is None:
+        attr = {}
+    oc = models.ObjectConfig.objects.create(current=0, previous=0)
+    cl = models.ConfigLog.objects.create(obj_ref=oc, description='init', config=config, attr=attr)
+    oc.current = cl.id
+    oc.save()
+    return oc

@@ -15,9 +15,9 @@
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
-from api.api_views import hlink, filter_actions, get_api_url_kwargs, CommonAPIURL
 from api.action.serializers import ActionShort
-
+from api.api_views import hlink, filter_actions, get_api_url_kwargs, CommonAPIURL
+from api.config_group.serializers import ConfigGroupSerializer
 from cm import issue
 from cm import status_api
 from cm.models import Action
@@ -66,6 +66,7 @@ class ComponentDetailSerializer(ComponentSerializer):
 class ComponentUISerializer(ComponentDetailSerializer):
     actions = serializers.SerializerMethodField()
     version = serializers.SerializerMethodField()
+    config_groups = ConfigGroupSerializer(many=True, read_only=True)
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)

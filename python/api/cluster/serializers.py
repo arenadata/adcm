@@ -16,15 +16,21 @@ from rest_framework import serializers
 import cm.api
 import cm.job
 import cm.status_api
-from cm.logger import log  # pylint: disable=unused-import
+from api.action.serializers import ActionShort
+from api.api_views import (
+    UrlField,
+    CommonAPIURL,
+    ObjectURL,
+    check_obj,
+    hlink,
+    filter_actions,
+    get_upgradable_func,
+)
+from api.component.serializers import ComponentDetailSerializer
+from api.config_group.serializers import ConfigGroupSerializer
+from api.host.serializers import HostSerializer
 from cm.errors import AdcmEx
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
-
-from api.api_views import check_obj, hlink, filter_actions, get_upgradable_func
-from api.api_views import UrlField, CommonAPIURL, ObjectURL
-from api.action.serializers import ActionShort
-from api.component.serializers import ComponentDetailSerializer
-from api.host.serializers import HostSerializer
 
 
 class ClusterSerializer(serializers.Serializer):
@@ -95,6 +101,7 @@ class ClusterUISerializer(ClusterDetailSerializer):
     prototype_display_name = serializers.SerializerMethodField()
     upgradable = serializers.SerializerMethodField()
     get_upgradable = get_upgradable_func
+    config_groups = ConfigGroupSerializer(many=True, read_only=True)
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
@@ -240,11 +247,11 @@ class HCComponentSerializer(ComponentDetailSerializer):
 
         process_requires(obj.requires)
         out = []
-        for service_name in comp_list:
+        for service_name, params in comp_list.items():
             comp_out = []
-            service = comp_list[service_name]['service']
-            for comp_name in comp_list[service_name]['components']:
-                comp = comp_list[service_name]['components'][comp_name]
+            service = params['service']
+            for comp_name in params['components']:
+                comp = params['components'][comp_name]
                 comp_out.append(
                     {
                         'prototype_id': comp.id,
