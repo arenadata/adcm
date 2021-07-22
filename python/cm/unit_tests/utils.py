@@ -140,11 +140,13 @@ def gen_action(name='', bundle=None, prototype=None) -> models.Action:
     )
 
 
-def gen_task_log(obj) -> models.TaskLog:
+def gen_task_log(obj: models.ADCMEntity) -> models.TaskLog:
+    selector = obj.get_id_chain()['ids']
     return models.TaskLog.objects.create(
         action=gen_action(),
         object_id=obj.pk,
         status='CREATED',
+        selector=selector,
         start_date=timezone.now(),
         finish_date=timezone.now(),
     )
