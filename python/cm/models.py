@@ -12,13 +12,15 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.contenttypes.models import ContentType
+from collections.abc import Mapping
+from copy import deepcopy
+from typing import Dict
+
 from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import models
+from django.db import models, transaction
 
 from cm.errors import AdcmEx
 from cm.logger import log
@@ -31,7 +33,6 @@ PROTO_TYPE = (
     ('host', 'host'),
     ('provider', 'provider'),
 )
-
 
 LICENSE_STATE = (
     ('absent', 'absent'),
@@ -224,6 +225,24 @@ class ObjectConfig(ADCMModel):
 
     __error_code__ = 'CONFIG_NOT_FOUND'
 
+    @property
+    def object(self):
+        """Returns object for ObjectConfig"""
+        object_types = [
+            'adcm',
+            'cluster',
+            'clusterobject',
+            'servicecomponent',
+            'hostprovider',
+            'host',
+            'config_group',
+        ]
+        for object_type in object_types:
+            if hasattr(self, object_type):
+                obj = getattr(self, object_type)
+                return obj
+        return None
+
 
 class ConfigLog(ADCMModel):
     obj_ref = models.ForeignKey(ObjectConfig, on_delete=models.CASCADE)
@@ -233,6 +252,45 @@ class ConfigLog(ADCMModel):
     description = models.TextField(blank=True)
 
     __error_code__ = 'CONFIG_NOT_FOUND'
+
+    @transaction.atomic()
+    def save(self, *args, **kwargs):
+        """Saving config and updating config groups"""
+
+        def update(origin, renovator):
+            """
+            Updating the original dictionary with a check for the presence of keys in the original
+            """
+            for key, value in renovator.items():
+                if key not in origin:
+                    continue
+                if isinstance(value, Mapping):
+                    origin[key] = update(origin.get(key, {}), value)
+                else:
+                    origin[key] = value
+            return origin
+
+        obj = self.obj_ref.object
+        if isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
+            # Sync group configs with object config
+            for cg in obj.config_groups.all():
+                diff = cg.get_group_config()
+                group_config = ConfigLog()
+                current_group_config = ConfigLog.objects.get(id=cg.config.current)
+                group_config.obj_ref = cg.config
+                config = deepcopy(self.config)
+                update(config, diff)
+                group_config.config = config
+                attr = deepcopy(self.attr)
+                attr.update({'group_keys': cg.create_group_keys(self.config)})
+                update(attr, current_group_config.attr)
+                group_config.attr = attr
+                group_config.description = current_group_config.description
+                group_config.save()
+                cg.config.previous = cg.config.current
+                cg.config.current = group_config.id
+                cg.config.save()
+        super().save(*args, **kwargs)
 
 
 class ADCMEntity(ADCMModel):
@@ -472,15 +530,64 @@ class ConfigGroup(ADCMModel):
     name = models.CharField(max_length=30)
     description = models.TextField(blank=True)
     hosts = models.ManyToManyField(Host, blank=True, through='HostGroup')
-    config = models.JSONField(default=dict)
+    config = models.OneToOneField(
+        ObjectConfig, on_delete=models.CASCADE, null=True, related_name='config_group'
+    )
 
     not_changeable_fields = ('id', 'object_id', 'object_type')
 
     class Meta:
         unique_together = ['object_id', 'name', 'object_type']
 
+    def create_group_keys(self, config: dict, group_keys: Dict[str, bool] = None):
+        """Creating group keys from origin config"""
+        if group_keys is None:
+            group_keys = {}
+        for k, v in config.items():
+            if isinstance(v, Mapping):
+                group_keys.setdefault(k, {})
+                self.create_group_keys(config.get(k, {}), group_keys[k])
+            else:
+                group_keys[k] = False
+        return group_keys
+
+    def get_group_config(self):
+        def get_diff(config, group_keys, diff=None):
+            if diff is None:
+                diff = {}
+            for k, v in group_keys.items():
+                if isinstance(v, Mapping):
+                    diff.setdefault(k, {})
+                    get_diff(config[k], group_keys[k], diff[k])
+                    if not diff[k]:
+                        diff.pop(k)
+                else:
+                    if v:
+                        diff[k] = config[k]
+            return diff
+
+        cl = ConfigLog.obj.get(id=self.config.current)
+        config = cl.config
+        group_keys = cl.attr.get('group_keys', {})
+        return get_diff(config, group_keys)
+
+    @transaction.atomic()
     def save(self, *args, **kwargs):
-        self.object_type.model_class().obj.get(id=self.object_id)
+        obj = self.object_type.model_class().obj.get(id=self.object_id)
+        if self._state.adding:
+            if obj.config is not None:
+                parent_config_log = ConfigLog.obj.get(id=obj.config.current)
+                self.config = ObjectConfig.objects.create(current=0, previous=0)
+                config_log = ConfigLog()
+                config_log.obj_ref = self.config
+                config_log.config = deepcopy(parent_config_log.config)
+                attr = deepcopy(parent_config_log.attr)
+                attr.update({'group_keys': self.create_group_keys(config_log.config)})
+                config_log.attr = attr
+                config_log.description = parent_config_log.description
+                config_log.save()
+                self.config.current = config_log.pk
+                self.config.save()
         super().save(*args, **kwargs)
 
 

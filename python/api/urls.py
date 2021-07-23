@@ -41,6 +41,8 @@ urlpatterns = [
     path('adcm/', include('api.adcm.urls')),
     path('config-group/', include('api.config_group.urls')),
     path('host-group/', include('api.host_group.urls')),
+    path('object-config/', include('api.object_config.urls')),
+    path('config-log/', include('api.config_log.urls')),
     path('task/', include('api.job.task_urls')),
     path('job/', include('api.job.urls')),
     # path('docs/', include_docs_urls(title='ArenaData Chapel API')),

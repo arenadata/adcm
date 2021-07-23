@@ -47,6 +47,7 @@ class ConfigGroupSerializer(serializers.ModelSerializer):
         lookup_field='pk',
         lookup_url_kwarg='host_id',
     )
+    config = serializers.HyperlinkedRelatedField(view_name='config-detail', read_only=True)
 
     class Meta:
         model = ConfigGroup

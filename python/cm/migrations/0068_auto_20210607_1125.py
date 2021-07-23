@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('contenttypes', '0002_remove_content_type_name'),
-        ('cm', '0066_auto_20210427_0853'),
+        ('cm', '0067_tasklog_object_type'),
     ]
 
     operations = [
@@ -35,7 +35,15 @@ class Migration(migrations.Migration):
                 ('object_id', models.PositiveIntegerField()),
                 ('name', models.CharField(max_length=30)),
                 ('description', models.TextField(blank=True)),
-                ('config', models.JSONField(default=dict)),
+                (
+                    'config',
+                    models.OneToOneField(
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name='config_group',
+                        to='cm.objectconfig',
+                    ),
+                ),
             ],
             options={
                 'abstract': False,
