@@ -207,28 +207,28 @@ class ADCMEntity(ADCMModel):
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
     issue = models.JSONField(default=dict)
-    agenda = models.ManyToManyField('AgendaItem', blank=True, related_name='%(class)s_entities')
+    concern = models.ManyToManyField('ConcernItem', blank=True, related_name='%(class)s_entities')
 
     class Meta:
         abstract = True
 
     @property
     def is_locked(self) -> bool:
-        return self.agenda.exists()
+        return self.concern.exists()
 
-    def add_to_agenda(self, item: 'AgendaItem') -> None:
+    def add_to_concern(self, item: 'ConcernItem') -> None:
         if not item or getattr(item, 'id', None) is None:
             return
 
-        if item not in self.agenda.all():
-            self.agenda.add(item)
+        if item not in self.concern.all():
+            self.concern.add(item)
 
-    def remove_from_agenda(self, item: 'AgendaItem') -> None:
+    def remove_from_concern(self, item: 'ConcernItem') -> None:
         if not item or not hasattr(item, 'id'):
             return
 
-        if item in self.agenda.all():
-            self.agenda.remove(item)
+        if item in self.concern.all():
+            self.concern.remove(item)
 
     @property
     def display_name(self):
@@ -656,7 +656,7 @@ class TaskLog(ADCMModel):
     verbose = models.BooleanField(default=False)
     start_date = models.DateTimeField()
     finish_date = models.DateTimeField()
-    lock = models.ForeignKey('AgendaItem', null=True, on_delete=models.SET_NULL, default=None)
+    lock = models.ForeignKey('ConcernItem', null=True, on_delete=models.SET_NULL, default=None)
 
     def get_target_object(self) -> Optional[ADCMEntity]:
         obj = None
@@ -675,10 +675,10 @@ class TaskLog(ADCMModel):
 
         target = self.get_target_object()
         reason = MessageTemplate.get_lock_reason(self.action, target)
-        self.lock = AgendaItem.objects.create(name=None, reason=reason)
+        self.lock = ConcernItem.objects.create(name=None, reason=reason)
         self.save()
         for obj in objects:
-            obj.add_to_agenda(self.lock)
+            obj.add_to_concern(self.lock)
 
     def unlock_affected(self) -> None:
         if not self.lock:
@@ -881,7 +881,7 @@ class DummyData(ADCMModel):
 
 class MessageTemplate(ADCMModel):
     """
-    Templates for `AgendaItem.reason
+    Templates for `ConcernItem.reason
     There are two sources of templates - they are pre-created in migrations or loaded from bundles
     TODO: load from bundle
     TODO: check consistency on creation
@@ -912,7 +912,7 @@ class MessageTemplate(ADCMModel):
         return tpl
 
 
-class AgendaItem(ADCMModel):
+class ConcernItem(ADCMModel):
     """
     Representation for object's lock/issue/flag
     Man-to-many from ADCMEntities
@@ -920,7 +920,7 @@ class AgendaItem(ADCMModel):
     ...
 
     `name` is used for (un)setting flags from ansible playbooks
-    `attendees` are back-refs from affected ADCMEntities.agenda
+    `related_objects` are back-refs from affected ADCMEntities.concern
     `reason` is used to display/notify on front-end, text template and data for URL generation
         should be generated from pre-created templates model `MessageTemplate`
     """
@@ -929,7 +929,7 @@ class AgendaItem(ADCMModel):
     reason = models.JSONField(default=dict)
 
     @property
-    def attendees(self) -> Iterable[ADCMEntity]:
+    def related_objects(self) -> Iterable[ADCMEntity]:
         return chain(
             self.adcm_entities.all(),
             self.cluster_entities.all(),

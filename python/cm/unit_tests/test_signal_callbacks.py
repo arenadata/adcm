@@ -18,8 +18,8 @@ from cm.api_context import ctx
 from cm.unit_tests import utils
 
 
-class AgendaSignalTest(TestCase):
-    """Tests for obj.agenda change signals"""
+class ConcernSignalTest(TestCase):
+    """Tests for obj.concern change signals"""
 
     @classmethod
     def setUpClass(cls):
@@ -28,26 +28,26 @@ class AgendaSignalTest(TestCase):
 
     def setUp(self):
         self.hierarchy = utils.generate_hierarchy()
-        self.lock = utils.gen_agenda_item()
+        self.lock = utils.gen_concern_item()
 
     def test_addition(self):
         event_queue = ctx.event.events
         for obj in self.hierarchy.values():
             event_queue.clear()
-            obj.agenda.add(self.lock)
+            obj.concern.add(self.lock)
             self.assertEqual(len(event_queue), 1)
 
     def test_removal(self):
         event_queue = ctx.event.events
         for obj in self.hierarchy.values():
             event_queue.clear()
-            obj.agenda.remove(self.lock)
+            obj.concern.remove(self.lock)
             self.assertEqual(len(event_queue), 1)
 
-    def test_agenda_item_delete(self):
+    def test_concern_item_delete(self):
         event_queue = ctx.event.events
         for obj in self.hierarchy.values():
-            obj.agenda.add(self.lock)
+            obj.concern.add(self.lock)
         event_queue.clear()
 
         self.lock.delete()

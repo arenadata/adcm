@@ -24,7 +24,7 @@ from cm import models
 from cm.api_context import ctx
 
 
-def on_agenda_change(sender, **kwargs):
+def on_concern_change(sender, **kwargs):
     assert 'action' in kwargs
     action = kwargs.get('action')
     if action not in ('post_add', 'pre_remove'):
@@ -35,26 +35,26 @@ def on_agenda_change(sender, **kwargs):
     assert isinstance(instance, models.ADCMEntity)
 
     assert 'model' in kwargs
-    assert kwargs['model'] == models.AgendaItem
+    assert kwargs['model'] == models.ConcernItem
 
-    ctx.event.change_agenda(instance)
-
-
-signals.m2m_changed.connect(on_agenda_change, sender=models.ADCM.agenda.through)
-signals.m2m_changed.connect(on_agenda_change, sender=models.Cluster.agenda.through)
-signals.m2m_changed.connect(on_agenda_change, sender=models.ClusterObject.agenda.through)
-signals.m2m_changed.connect(on_agenda_change, sender=models.ServiceComponent.agenda.through)
-signals.m2m_changed.connect(on_agenda_change, sender=models.HostProvider.agenda.through)
-signals.m2m_changed.connect(on_agenda_change, sender=models.Host.agenda.through)
+    ctx.event.change_concern(instance)
 
 
-def on_agenda_item_delete(sender, **kwargs):
+signals.m2m_changed.connect(on_concern_change, sender=models.ADCM.concern.through)
+signals.m2m_changed.connect(on_concern_change, sender=models.Cluster.concern.through)
+signals.m2m_changed.connect(on_concern_change, sender=models.ClusterObject.concern.through)
+signals.m2m_changed.connect(on_concern_change, sender=models.ServiceComponent.concern.through)
+signals.m2m_changed.connect(on_concern_change, sender=models.HostProvider.concern.through)
+signals.m2m_changed.connect(on_concern_change, sender=models.Host.concern.through)
+
+
+def on_concern_item_delete(sender, **kwargs):
     assert 'instance' in kwargs
     instance = kwargs['instance']
-    assert isinstance(instance, models.AgendaItem)
+    assert isinstance(instance, models.ConcernItem)
 
-    for obj in instance.attendees:
-        obj.remove_from_agenda(instance)  # to issue `change_agenda` events
+    for obj in instance.related_objects:
+        obj.remove_from_concern(instance)  # to issue `change_concern` events
 
 
-signals.pre_delete.connect(on_agenda_item_delete, sender=models.AgendaItem)
+signals.pre_delete.connect(on_concern_item_delete, sender=models.ConcernItem)

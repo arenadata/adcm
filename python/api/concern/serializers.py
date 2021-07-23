@@ -16,19 +16,19 @@ from rest_framework import serializers
 from api.api_views import hlink, get_api_url_kwargs
 
 
-class AgendaItemSerializer(serializers.Serializer):
+class ConcernItemSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
-    url = hlink('agenda-details', 'id', 'agenda_id')
+    url = hlink('concern-details', 'id', 'concern_id')
 
 
-class AgendaItemDetailSerializer(AgendaItemSerializer):
+class ConcernItemDetailSerializer(ConcernItemSerializer):
     name = serializers.CharField(help_text='Flag name')
     reason = serializers.JSONField()
-    attendees = serializers.SerializerMethodField()
+    related_objects = serializers.SerializerMethodField()
 
-    def get_attendees(self, item):
+    def get_related_objects(self, item):
         result = []
-        for obj in item.attendees:
+        for obj in item.related_objects:
             view_name = f'{obj.prototype.type}-details'
             request = self.context.get('request', None)
             kwargs = get_api_url_kwargs(obj, request, no_obj_type=True)

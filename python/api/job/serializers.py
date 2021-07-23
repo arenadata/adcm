@@ -23,7 +23,7 @@ from cm import config
 from cm.errors import AdcmEx
 from cm.models import JobLog, Host, ClusterObject, ServiceComponent, get_object_cluster
 from api.api_views import hlink
-from api.agenda.serializers import AgendaItemSerializer
+from api.concern.serializers import ConcernItemSerializer
 
 
 def get_object_name(obj):
@@ -165,7 +165,7 @@ class TaskSerializer(TaskListSerializer):
     terminatable = serializers.SerializerMethodField()
     cancel = hlink('task-cancel', 'id', 'task_id')
     object_type = serializers.SerializerMethodField()
-    lock = AgendaItemSerializer(read_only=True)
+    lock = ConcernItemSerializer(read_only=True)
 
     get_action_url = get_action_url
 

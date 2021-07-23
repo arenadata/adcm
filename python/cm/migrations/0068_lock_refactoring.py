@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='AgendaItem',
+            name='ConcernItem',
             fields=[
                 (
                     'id',
@@ -64,44 +64,44 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='adcm',
-            name='agenda',
+            name='concern',
             field=models.ManyToManyField(
-                blank=True, related_name='adcm_entities', to='cm.AgendaItem'
+                blank=True, related_name='adcm_entities', to='cm.ConcernItem'
             ),
         ),
         migrations.AddField(
             model_name='cluster',
-            name='agenda',
+            name='concern',
             field=models.ManyToManyField(
-                blank=True, related_name='cluster_entities', to='cm.AgendaItem'
+                blank=True, related_name='cluster_entities', to='cm.ConcernItem'
             ),
         ),
         migrations.AddField(
             model_name='clusterobject',
-            name='agenda',
+            name='concern',
             field=models.ManyToManyField(
-                blank=True, related_name='clusterobject_entities', to='cm.AgendaItem'
+                blank=True, related_name='clusterobject_entities', to='cm.ConcernItem'
             ),
         ),
         migrations.AddField(
             model_name='host',
-            name='agenda',
+            name='concern',
             field=models.ManyToManyField(
-                blank=True, related_name='host_entities', to='cm.AgendaItem'
+                blank=True, related_name='host_entities', to='cm.ConcernItem'
             ),
         ),
         migrations.AddField(
             model_name='hostprovider',
-            name='agenda',
+            name='concern',
             field=models.ManyToManyField(
-                blank=True, related_name='hostprovider_entities', to='cm.AgendaItem'
+                blank=True, related_name='hostprovider_entities', to='cm.ConcernItem'
             ),
         ),
         migrations.AddField(
             model_name='servicecomponent',
-            name='agenda',
+            name='concern',
             field=models.ManyToManyField(
-                blank=True, related_name='servicecomponent_entities', to='cm.AgendaItem'
+                blank=True, related_name='servicecomponent_entities', to='cm.ConcernItem'
             ),
         ),
         migrations.AddField(
@@ -111,7 +111,7 @@ class Migration(migrations.Migration):
                 default=None,
                 null=True,
                 on_delete=django.db.models.deletion.SET_NULL,
-                to='cm.agendaitem',
+                to='cm.concernitem',
             ),
         ),
     ]
