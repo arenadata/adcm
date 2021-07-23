@@ -575,18 +575,19 @@ class ConfigGroup(ADCMModel):
     def save(self, *args, **kwargs):
         obj = self.object_type.model_class().obj.get(id=self.object_id)
         if self._state.adding:
-            self.config = ObjectConfig.objects.create(current=0, previous=0)
-            parent_config_log = ConfigLog.obj.get(id=obj.config.current)
-            config_log = ConfigLog()
-            config_log.obj_ref = self.config
-            config_log.config = deepcopy(parent_config_log.config)
-            attr = deepcopy(parent_config_log.attr)
-            attr.update({'group_keys': self.create_group_keys(config_log.config)})
-            config_log.attr = attr
-            config_log.description = parent_config_log.description
-            config_log.save()
-            self.config.current = config_log.pk
-            self.config.save()
+            if obj.config is not None:
+                parent_config_log = ConfigLog.obj.get(id=obj.config.current)
+                self.config = ObjectConfig.objects.create(current=0, previous=0)
+                config_log = ConfigLog()
+                config_log.obj_ref = self.config
+                config_log.config = deepcopy(parent_config_log.config)
+                attr = deepcopy(parent_config_log.attr)
+                attr.update({'group_keys': self.create_group_keys(config_log.config)})
+                config_log.attr = attr
+                config_log.description = parent_config_log.description
+                config_log.save()
+                self.config.current = config_log.pk
+                self.config.save()
         super().save(*args, **kwargs)
 
 
