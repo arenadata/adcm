@@ -40,7 +40,9 @@ def test_check_login_button_unavailable(app_fs, name, password):
 
 
 @pytest.mark.parametrize(
-    ("name", "password"), [("admin1", "admin"), ("admin", "admin1")], ids=("wrong_name", "wrong_pass")
+    ("name", "password"),
+    [("admin1", "admin"), ("admin", "admin1")],
+    ids=("wrong_name", "wrong_pass"),
 )
 def test_check_error_in_login(app_fs, name, password):
     params = {"error_text": "Incorrect password or user."}
