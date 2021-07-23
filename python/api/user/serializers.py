@@ -65,7 +65,8 @@ class GroupDetailSerializer(GroupSerializer):
 
 
 class UserSerializer(serializers.Serializer):
-    username = serializers.CharField(max_length=32)
+    USERNAME_LENGTH = 150
+    username = serializers.CharField(max_length=USERNAME_LENGTH)
     password = serializers.CharField(write_only=True)
     url = hlink('user-details', 'username', 'username')
     change_group = hlink('add-user-group', 'username', 'username')
@@ -74,8 +75,11 @@ class UserSerializer(serializers.Serializer):
     is_superuser = serializers.BooleanField(required=False)
 
     def validate_username(self, name):
-        if len(name) > 32:
-            raise AdcmEx('LONG_NAME', 'name is too long')
+        if len(name) > self.USERNAME_LENGTH:
+            raise AdcmEx(
+                'LONG_NAME',
+                f'Username is too long, up to {self.USERNAME_LENGTH} symbols required',
+            )
         return name
 
     @transaction.atomic
