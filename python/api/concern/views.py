@@ -11,31 +11,31 @@
 # limitations under the License.
 
 from api.api_views import PageView, DetailViewRO
-from cm.models import AgendaItem
+from cm.models import ConcernItem
 from . import serializers
 
 
-class AgendaItemList(PageView):
+class ConcernItemList(PageView):
     """
     get:
-    List of all existing agenda items
+    List of all existing concern items
     """
 
-    queryset = AgendaItem.objects.all()
-    serializer_class = serializers.AgendaItemSerializer
-    serializer_class_ui = serializers.AgendaItemDetailSerializer
+    queryset = ConcernItem.objects.all()
+    serializer_class = serializers.ConcernItemSerializer
+    serializer_class_ui = serializers.ConcernItemDetailSerializer
     filterset_fields = ('name',)
     ordering_fields = ('name',)
 
 
-class AgendaItemDetail(DetailViewRO):
+class ConcernItemDetail(DetailViewRO):
     """
     get:
-    Show agenda item
+    Show concern item
     """
 
-    queryset = AgendaItem.objects.all()
-    serializer_class = serializers.AgendaItemDetailSerializer
+    queryset = ConcernItem.objects.all()
+    serializer_class = serializers.ConcernItemDetailSerializer
     lookup_field = 'id'
-    lookup_url_kwarg = 'agenda_id'
-    error_code = 'AGENDAITEM_NOT_FOUND'
+    lookup_url_kwarg = 'concern_id'
+    error_code = 'CONCERNITEM_NOT_FOUND'

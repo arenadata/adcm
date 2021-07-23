@@ -35,7 +35,7 @@ class _Context:
         self.event = Event()
         self.task: Optional[models.TaskLog] = None
         self.job: Optional[models.JobLog] = None
-        self.lock: Optional[models.AgendaItem] = None
+        self.lock: Optional[models.ConcernItem] = None
         self.get_job_data()
 
     def get_job_data(self):

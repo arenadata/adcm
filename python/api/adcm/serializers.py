@@ -12,7 +12,7 @@
 
 from rest_framework import serializers
 from api.api_views import hlink, CommonAPIURL
-from api.agenda.serializers import AgendaItemSerializer
+from api.concern.serializers import ConcernItemSerializer
 
 
 class AdcmSerializer(serializers.Serializer):
@@ -28,7 +28,7 @@ class AdcmDetailSerializer(AdcmSerializer):
     bundle_id = serializers.IntegerField(read_only=True)
     config = CommonAPIURL(view_name='object-config')
     action = CommonAPIURL(view_name='object-action')
-    agenda = AgendaItemSerializer(many=True, read_only=True)
+    concern = ConcernItemSerializer(many=True, read_only=True)
 
     def get_prototype_version(self, obj):
         return obj.prototype.version

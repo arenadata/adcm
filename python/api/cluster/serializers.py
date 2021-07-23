@@ -25,7 +25,7 @@ from api.api_views import UrlField, CommonAPIURL, ObjectURL
 from api.action.serializers import ActionShort
 from api.component.serializers import ComponentDetailSerializer
 from api.host.serializers import HostSerializer
-from api.agenda.serializers import AgendaItemSerializer
+from api.concern.serializers import ConcernItemSerializer
 
 
 def get_cluster_id(obj):
@@ -85,7 +85,7 @@ class ClusterDetailSerializer(ClusterSerializer):
     imports = hlink('cluster-import', 'id', 'cluster_id')
     bind = hlink('cluster-bind', 'id', 'cluster_id')
     prototype = hlink('cluster-type-details', 'prototype_id', 'prototype_id')
-    agenda = AgendaItemSerializer(many=True, read_only=True)
+    concern = ConcernItemSerializer(many=True, read_only=True)
 
     def get_issue(self, obj):
         return cm.issue.aggregate_issues(obj)

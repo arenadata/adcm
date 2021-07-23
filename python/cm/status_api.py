@@ -45,8 +45,8 @@ class Event:
     def set_task_status(self, task_id, status):
         self.events.append((set_task_status, (task_id, status)))
 
-    def change_agenda(self, obj: ADCMEntity):
-        self.events.append((change_agenda, (obj,)))
+    def change_concern(self, obj: ADCMEntity):
+        self.events.append((change_concern, (obj,)))
 
 
 def api_post(path, data):
@@ -204,11 +204,11 @@ def load_service_map():
     return api_post('/servicemap/', m)
 
 
-def change_agenda(obj: ADCMEntity):
+def change_concern(obj: ADCMEntity):
     return post_event(
-        event='agenda_change',
+        event='concern_change',
         obj_type=obj.prototype.type,
         obj_id=obj.pk,
-        det_type='agenda',
-        det_val=[i.reason for i in obj.agenda.all()],
+        det_type='concern',
+        det_val=[i.reason for i in obj.concern.all()],
     )

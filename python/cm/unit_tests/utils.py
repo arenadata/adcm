@@ -120,9 +120,9 @@ def gen_host_component(component, host) -> models.HostComponent:
     )
 
 
-def gen_agenda_item(name=None, reason='Test') -> models.AgendaItem:
-    """Generate AgendaItem object"""
-    return models.AgendaItem.objects.create(name=name, reason=reason)
+def gen_concern_item(name=None, reason='Test') -> models.ConcernItem:
+    """Generate ConcernItem object"""
+    return models.ConcernItem.objects.create(name=name, reason=reason)
 
 
 def gen_action(name='', bundle=None, prototype=None) -> models.Action:
