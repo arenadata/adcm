@@ -14,6 +14,8 @@ from typing import Optional
 import allure
 
 from dataclasses import dataclass
+
+from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
@@ -24,6 +26,7 @@ from tests.ui_tests.app.page.common.base_page import (
     PageHeader,
     PageFooter,
 )
+from tests.ui_tests.app.page.common.dialogs import DeleteDialog, ActionDialog
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
 
@@ -106,17 +109,37 @@ class HostListPage(BasePageObject):
         # because we don't pass provider name
         return provider_name
 
+    @allure.step('Run action "{action_display_name}" on host in row {host_row_num}')
+    def run_action(self, host_row_num: int, action_display_name: str):
+        host_row = HostListLocators.HostTable.HostRow
+        self.click_on_row_child(host_row_num, host_row.actions)
+        init_action = self.wait_element_visible(host_row.action_option(action_display_name))
+        init_action.click()
+        self.wait_element_visible(ActionDialog.body)
+        self.find_and_click(ActionDialog.run)
+
+    @allure.step('Delete host in row {host_row_num}')
     def delete_host(self, host_row_num: int):
         """Delete host from table row"""
         self.click_on_row_child(host_row_num, HostListLocators.HostTable.HostRow.delete_btn)
-        self.wait_element_visible(HostListLocators.DeleteDialog.body)
-        self.find_and_click(HostListLocators.DeleteDialog.yes)
-        self.wait_element_hide(HostListLocators.DeleteDialog.body)
+        self.wait_element_visible(DeleteDialog.body)
+        self.find_and_click(DeleteDialog.yes)
+        self.wait_element_hide(DeleteDialog.body)
 
+    @allure.step('Assign host in row {host_row_num} to cluster "{cluster_name}"')
     def assign_host_to_cluster(self, host_row_num: int, cluster_name: str):
         """Assign host to cluster in host list table"""
         self.click_on_row_child(host_row_num, HostListLocators.HostTable.HostRow.cluster)
         self._wait_and_click_on_cluster_option(cluster_name, HostListLocators.HostTable.option)
+
+    @allure.step('Assert host in row {row_num} has state "{state}"')
+    def wait_for_host_state(self, row_num: int, state: str):
+        def assert_host_state(page: HostListPage, row: WebElement):
+            real_state = page.find_child(row, HostListLocators.HostTable.HostRow.state).text
+            assert state == real_state
+
+        host_row = self.get_host_row(row_num)
+        wait_until_step_succeeds(assert_host_state, timeout=10, period=0.5, page=self, row=host_row)
 
     # HELPERS
 

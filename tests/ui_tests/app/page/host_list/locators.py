@@ -13,7 +13,7 @@
 
 from selenium.webdriver.common.by import By
 
-from tests.ui_tests.app.helpers.locator import Locator
+from tests.ui_tests.app.helpers.locator import Locator, TemplateLocator
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 
 
@@ -62,21 +62,28 @@ class HostListLocators:
         cluster_select = Locator(
             By.XPATH, "//mat-select[@formcontrolname='cluster_id']", "Cluster choice select"
         )
-        cluster_option = Locator(By.XPATH, "//mat-option//span[text()='{}']", "Cluster select option")
+        cluster_option = TemplateLocator(
+            By.XPATH, "//mat-option//span[text()='{}']", "Cluster select option"
+        )
 
     class DeleteDialog:
         body = Locator(By.XPATH, "//mat-dialog-container", "Dialog with choices")
         yes = Locator(By.XPATH, "//button//span[contains(text(), 'Yes')]", "Yes button in dialog")
 
     class HostTable(CommonTable):
-        option = Locator(By.XPATH, "//mat-option//span[contains(text(), '{}')]", "Table dropdown option")
+        option = TemplateLocator(
+            By.XPATH, "//mat-option//span[contains(text(), '{}')]", "Table dropdown option"
+        )
 
         class HostRow:
             fqdn = Locator(By.XPATH, "./mat-cell[1]", "Host FQDN in row")
             provider = Locator(By.XPATH, "./mat-cell[2]", "Host provider in row")
             cluster = Locator(By.XPATH, "./mat-cell[3]", "Host cluster in row")
-            state = Locator(By.XPATH, "./mat-cell[4]", "Host state in row")
+            state = Locator(By.XPATH, ".//app-state-column", "Host state in row")
             status = Locator(By.XPATH, ".//app-status-column/button", "Host status in row")
-            actions = Locator(By.XPATH, ".//app-actions-button/button", "Host actions in row")
+            actions = Locator(By.XPATH, ".//app-action-list/button", "Host actions in row")
             config = Locator(By.XPATH, "./mat-cell[7]/button", "Host config in row")
             delete_btn = Locator(By.XPATH, "./mat-cell[8]/button", "Host delete button in row")
+            action_option = TemplateLocator(
+                By.XPATH, "//button/span[text()='{}']", "Action dropdown option"
+            )

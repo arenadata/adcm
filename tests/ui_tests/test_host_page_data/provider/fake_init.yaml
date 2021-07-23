@@ -11,30 +11,11 @@
 # limitations under the License.
 
 ---
-- type: provider
-  name: test_provider
-  version: &ver "2.15-dev"
-
-- type: host
-  name: "Test Host"
-  description: "Test Host Description"
-  version: *ver
-  actions:
-    init: &job
-      type: job
-      script_type: ansible
-      script: ./fake_init.yaml
-      display_name: "Init"
-      states:
-        available:
-          - created
-        on_success: running
-        on_fail: created
-    reinit:
-      <<: *job
-      display_name: "Reinit"
-      states:
-        available:
-          - running
-        on_success: created
-        on_fail: running
+- name: "Hello stuff"
+  hosts: localhost
+  tasks:
+    - name: "Echo Hello"
+      assert:
+        that:
+          - 1 == 1
+        msg: "Never gonna give you up"

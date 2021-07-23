@@ -11,6 +11,7 @@ from adcm_client.objects import ADCMClient, Bundle, Provider, Cluster
 from adcm_pytest_plugin import utils
 
 from tests.ui_tests.app.app import ADCMTest
+from tests.ui_tests.app.page.host.locators import HostLocators
 from tests.ui_tests.app.page.host.page import HostPage
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
 from tests.ui_tests.app.page.host_list.page import HostListPage, HostRowInfo
@@ -91,7 +92,10 @@ def _check_menu(
 
 
 @pytest.mark.parametrize(
-    "bundle_archive", [utils.get_data_dir(__file__, "provider")], indirect=True
+    "bundle_archive",
+    [utils.get_data_dir(__file__, "provider")],
+    indirect=True,
+    ids=['provider_bundle'],
 )
 def test_create_host_with_bundle_upload(page: HostListPage, bundle_archive: str):
     """Upload bundle and create host"""
@@ -105,6 +109,7 @@ def test_create_host_with_bundle_upload(page: HostListPage, bundle_archive: str)
     "bundle_archives",
     [(utils.get_data_dir(__file__, "provider"), utils.get_data_dir(__file__, "cluster"))],
     indirect=True,
+    ids=['provider_cluster_bundles'],
 )
 def test_create_bonded_to_cluster_host(
     sdk_client_fs: ADCMClient,
@@ -129,6 +134,7 @@ def test_host_list_pagination():
     "bundle_archives",
     [(utils.get_data_dir(__file__, "provider"), utils.get_data_dir(__file__, "cluster"))],
     indirect=True,
+    ids=['provider_cluster_bundles'],
 )
 def test_open_cluster_from_host_list(
     sdk_client_fs: ADCMClient,
@@ -147,28 +153,47 @@ def test_open_cluster_from_host_list(
     check_host_info(host_info, host_fqdn, provider_name, cluster_name, 'created')
 
 
-def test_run_action_on_new_host():
-    """Create host and run action on it"""
-
-
-@pytest.mark.full
-def test_open_config_from_host_list():
-    """Create host and open configuration from host list"""
-
-
-@pytest.mark.full
-def test_open_status_from_host_list():
-    """Create host and open status page from host list"""
-
-
-def test_open_host_from_host_list():
-    """Create host and open host page from host list"""
+@pytest.mark.parametrize(
+    "bundle_archive",
+    [utils.get_data_dir(__file__, "provider")],
+    indirect=True,
+    ids=['provider_bundle'],
+)
+@pytest.mark.parametrize(
+    'row_child_name, menu_item_name',
+    [
+        pytest.param('fqdn', 'main', id='Host main page from host list'),
+        pytest.param('status', 'status', id='Status menu from host list', marks=pytest.mark.full),
+        pytest.param('config', 'config', id='Config menu from host list', marks=pytest.mark.full),
+    ],
+)
+def test_open_host_from_host_list(
+    sdk_client_fs: ADCMClient,
+    page: HostListPage,
+    bundle_archive: str,
+    row_child_name: str,
+    menu_item_name: str,
+):
+    """Test open host page from host list"""
+    host_fqdn, provider_name = 'openair', 'Single Singer'
+    row_child = getattr(HostListLocators.HostTable.HostRow, row_child_name)
+    menu_item_locator = getattr(HostLocators.MenuNavigation, menu_item_name)
+    upload_and_create_provider(sdk_client_fs, bundle_archive, provider_name)
+    page.create_host(host_fqdn)
+    page.click_on_row_child(0, row_child)
+    main_host_page = HostPage(page.driver, page.base_url)
+    with allure.step('Check correct menu is opened'):
+        assert (
+            page_fqdn := main_host_page.get_fqdn()
+        ) == host_fqdn, f'Expected FQDN is {host_fqdn}, but FQDN in menu is {page_fqdn}'
+        assert main_host_page.active_menu_is(menu_item_locator)
 
 
 @pytest.mark.parametrize(
     "bundle_archive",
     [utils.get_data_dir(__file__, "provider")],
     indirect=True,
+    ids=['provider_bundle'],
 )
 def test_delete_host(
     sdk_client_fs: ADCMClient,
@@ -190,6 +215,7 @@ def test_delete_host(
     "bundle_archive",
     [utils.get_data_dir(__file__, "provider")],
     indirect=True,
+    ids=['provider_bundle'],
 )
 @pytest.mark.parametrize('menu', ['main', 'config', 'status', 'action'])
 def test_open_menu(
@@ -203,17 +229,53 @@ def test_open_menu(
     _check_menu(menu, page, app_fs, sdk_client_fs, bundle_archive)
 
 
-def test_run_action_from_menu():
+@pytest.mark.parametrize(
+    "bundle_archive",
+    [utils.get_data_dir(__file__, "provider")],
+    indirect=True,
+    ids=['provider_bundle'],
+)
+def test_run_action_on_new_host(
+    bundle_archive,
+    sdk_client_fs: ADCMClient,
+    page: HostListPage,
+):
+    """Create host and run action on it"""
+    upload_and_create_provider(sdk_client_fs, bundle_archive, 'prov')
+    page.create_host('fqdn')
+    page.wait_for_host_state(0, 'created')
+    page.run_action(0, 'Init')
+    page.wait_for_host_state(0, 'running')
+
+
+@pytest.mark.parametrize(
+    "bundle_archive",
+    [utils.get_data_dir(__file__, "provider")],
+    indirect=True,
+    ids=['provider_bundle'],
+)
+def test_run_action_from_menu(
+    bundle_archive,
+    sdk_client_fs: ADCMClient,
+    page: HostListPage,
+):
     """Run action from host actions menu"""
+    upload_and_create_provider(sdk_client_fs, bundle_archive, 'prov')
+    page.create_host('fqdn')
+    page.click_on_row_child(0, HostListLocators.HostTable.HostRow.fqdn)
+    host_main_page = HostPage(page.driver, page.base_url)
+    actions_before = host_main_page.get_action_names()
+    with allure.step('Run action "Init" from host Actions menu'):
+        host_main_page.run_action_from_menu('Init', open_menu=False)
+        host_main_page.wait_element_clickable(HostLocators.Actions.action_run_btn, timeout=10)
+    actions_after = host_main_page.get_action_names(open_menu=False)
+    with allure.step('Assert available actions set changed'):
+        assert actions_before != actions_after, 'Action set did not change after "Init" action'
 
 
 @pytest.mark.full
 def test_filter_config():
     """Use filters on host configuration page"""
-
-
-def test_set_custom_name_in_config():
-    """Change name in host configuration"""
 
 
 @pytest.mark.full
