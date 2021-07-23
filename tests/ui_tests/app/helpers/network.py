@@ -6,7 +6,7 @@ from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webdriver import WebDriver
 
 
-@allure.step('Wait for requests to stop')
+@allure.step('Wait for all network requests to stop')
 @contextmanager
 def wait_all_requests_stop(driver: WebDriver):
     yield
