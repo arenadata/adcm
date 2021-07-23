@@ -27,7 +27,7 @@ from deprecated import deprecated
 from selenium.common.exceptions import WebDriverException
 
 from tests.ui_tests.app.app import ADCMTest
-from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
+from tests.ui_tests.app.helpers.network import wait_all_requests_stop
 from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.app.pages import LoginPage as DeprecatedLoginPage
 
@@ -124,6 +124,7 @@ def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
     Collect logs on failure and close browser tab after test is done
     """
     try:
+        web_driver.close_tab()
         web_driver.new_tab()
     # Recreate session on WebDriverException
     except WebDriverException:
@@ -171,7 +172,6 @@ def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
     except AttributeError:
         # rep_setup and rep_call attributes are generated in runtime and can be absent
         pass
-    web_driver.close_tab()
 
 
 @pytest.fixture(scope='session')
@@ -217,5 +217,5 @@ def auth_to_adcm(app_fs, adcm_credentials):
     """Perform login on Login page ADCM"""
 
     login = LoginPage(app_fs.driver, app_fs.adcm.url).open()
-    login.login_user(**adcm_credentials)
-    login.wait_url_contains_path(AdminIntroPage(app_fs.driver, app_fs.adcm.url).path)
+    with wait_all_requests_stop(app_fs.driver):
+        login.login_user(**adcm_credentials)

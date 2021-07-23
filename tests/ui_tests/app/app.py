@@ -99,18 +99,18 @@ class ADCMTest:
 
     @allure.step("Open new tab")
     def new_tab(self):
+        self.driver.execute_script("window.open('');")
+        self.driver.switch_to.window(self.driver.window_handles[-1])
         self.driver.delete_all_cookies()
         try:
             self.driver.execute_script("window.localStorage.clear();")
         except WebDriverException:
             # we skip JS error here since we have no simple way to detect localStorage availability
             pass
-        self.driver.execute_script("window.open('');")
 
     @allure.step("Close tab")
     def close_tab(self):
         self.driver.close()
-        self.driver.switch_to.window(self.driver.window_handles[-1])
 
     def destroy(self):
         self.driver.quit()
