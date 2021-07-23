@@ -1,0 +1,14 @@
+.action-link {
+  color: #1ee564;
+  cursor: pointer;
+}
+
+.action-button {
+  position: relative;
+  top: -1px;
+}
+
+:host {
+  display: flex;
+  align-items: center;
+}

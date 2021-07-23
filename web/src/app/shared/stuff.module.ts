@@ -16,8 +16,8 @@ import { RouterModule } from '@angular/router';
 import { ActionsComponent, CrumbsComponent, UpgradeComponent } from './components';
 import { ActionListComponent } from './components/actions/action-list/action-list.component';
 import { ActionsDirective } from './components/actions/actions.directive';
-import { TooltipComponent } from './components/tooltip/tooltip.component';
-import { TooltipDirective } from './components/tooltip/tooltip.directive';
+import { TooltipComponent } from '@app/shared/components/tooltip';
+import { TooltipDirective } from '@app/shared/components/tooltip';
 import { PopoverDirective } from '@app/directives/popover.directive';
 import { BaseDirective, ForTestDirective, InfinityScrollDirective, MTextareaDirective, ScrollDirective, SocketListenerDirective } from './directives';
 import { MaterialModule } from './material.module';
@@ -28,6 +28,10 @@ import { IssuesComponent } from '@app/components/issues/issues.component';
 import { KeysPipe } from '@app/pipes/keys.pipe';
 import { IsArrayPipe } from '@app/pipes/is-array.pipe';
 import { IssuePathPipe } from '@app/pipes/issue-path.pipe';
+import { IssueMessageComponent } from '@app/components/issue-message/issue-message.component';
+import { IssueMessageService } from '@app/services/issue-message.service';
+import { IssueMessageItemComponent } from '@app/components/issue-message/issue-message-item/issue-message-item.component';
+import { IssueMessagePlaceholderPipe } from '@app/pipes/issue-message-placeholder.pipe';
 
 @NgModule({
   declarations: [
@@ -49,11 +53,18 @@ import { IssuePathPipe } from '@app/pipes/issue-path.pipe';
     PopoverDirective,
     PopoverComponent,
     IssuesComponent,
+    IssueMessageComponent,
+    IssueMessageItemComponent,
+    IssueMessagePlaceholderPipe,
     KeysPipe,
     IsArrayPipe,
     IssuePathPipe,
   ],
-  imports: [CommonModule, MaterialModule, RouterModule],
+  imports: [
+    CommonModule,
+    MaterialModule,
+    RouterModule,
+  ],
   exports: [
     ForTestDirective,
     TooltipDirective,
@@ -73,9 +84,15 @@ import { IssuePathPipe } from '@app/pipes/issue-path.pipe';
     PopoverDirective,
     PopoverComponent,
     IssuesComponent,
+    IssueMessageComponent,
+    IssueMessageItemComponent,
+    IssueMessagePlaceholderPipe,
     KeysPipe,
     IsArrayPipe,
     IssuePathPipe,
+  ],
+  providers: [
+    IssueMessageService,
   ],
 })
 export class StuffModule {}
