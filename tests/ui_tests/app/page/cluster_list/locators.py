@@ -43,7 +43,7 @@ class ClusterListLocators:
             description = Locator(By.XPATH, "./mat-cell[3]", "Cluster description in row")
             state = Locator(By.XPATH, "./mat-cell[4]", "Cluster state in row")
             status = Locator(By.XPATH, ".//app-status-column/button", "Cluster status in row")
-            actions = Locator(By.XPATH, ".//app-actions-button/button", "Cluster actions in row")
+            actions = Locator(By.XPATH, ".//app-actions-button//button", "Cluster actions in row")
             imports = Locator(By.XPATH, "./mat-cell[7]/button", "Cluster imports in row")
             upgrade = Locator(By.XPATH, ".//app-upgrade/button", "Cluster upgrade in row")
             config = Locator(By.XPATH, "./mat-cell[9]/button", "Cluster config in row")

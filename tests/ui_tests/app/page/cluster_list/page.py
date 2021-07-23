@@ -19,6 +19,7 @@ from tests.ui_tests.app.page.common.base_page import (
     PageFooter,
 )
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
+from selenium.webdriver.remote.webdriver import WebElement
 
 
 class ClusterListPage(BasePageObject):
@@ -52,3 +53,6 @@ class ClusterListPage(BasePageObject):
             "description": self.find_child(cluster_row, row_elements.description).text,
             "state": self.find_child(cluster_row, row_elements.state).text,
         }
+
+    def click_action_in_row(self, row: WebElement):
+        self.find_child(row, self.table.table.ClusterRow.actions).click()

@@ -83,3 +83,12 @@ def test_check_cluster_list_page_pagination(sdk_client_fs: ADCMClient, app_fs, a
             cluster_page.table.click_previous_page()
         assert len(cluster_page.table.get_all_rows()) == params["fist_page_cluster_amount"], \
             f"Previous page should contains {params['fist_page_cluster_amount']}"
+
+
+def test_check_cluster_list_page_action_run(sdk_client_fs: ADCMClient, app_fs, auth_to_adcm):
+    bundle = cluster_bundle(sdk_client_fs, 'cluster_community')
+    bundle.cluster_create(name=f"Test cluster")
+    cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+    row = cluster_page.table.get_all_rows()[0]
+    cluster_page.click_action_in_row(row)
+    cluster_page
