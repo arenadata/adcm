@@ -15,4 +15,5 @@ def wait_all_requests_stop(driver: WebDriver):
         requests_before = driver.get_log('performance')
         time.sleep(1)
         assert requests_before == driver.get_log('performance')
+
     wait_until_step_succeeds(is_stopped, period=1, timeout=30)
