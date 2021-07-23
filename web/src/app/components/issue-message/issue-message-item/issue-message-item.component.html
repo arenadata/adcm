@@ -1,0 +1,17 @@
+<ng-container [ngSwitch]="placeholder.type">
+  <ng-container *ngSwitchCase="IMPlaceholderItemType.ComponentActionRun">
+    <button
+      mat-icon-button
+      color="accent"
+      matTooltip="Run action"
+      class="action-button"
+      (click)="runAction()"
+    >
+      <mat-icon>play_circle_outline</mat-icon>
+    </button>
+    <a (click)="runAction()" class="action-link">{{placeholder.name}}</a>
+  </ng-container>
+  <a routerLink="/" *ngSwitchDefault>{{placeholder.name}}</a>
+</ng-container>
+
+
