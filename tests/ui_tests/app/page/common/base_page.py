@@ -221,7 +221,8 @@ class BasePageObject:
     def wait_config_loaded(self):
         """
         Wait for hidden elements in DOM.
-        Without this waiting and after the config finally is loaded there will be redirection on greeting page.
+        Without this waiting and after the config finally is loaded
+        there will be redirection to the greeting page.
         """
 
         self.find_element(CommonLocators.socket, timeout=30)
