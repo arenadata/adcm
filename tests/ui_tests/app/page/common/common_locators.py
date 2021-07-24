@@ -1,4 +1,3 @@
-
 from selenium.webdriver.common.by import By
 
 from tests.ui_tests.app.helpers.locator import Locator
