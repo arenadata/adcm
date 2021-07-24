@@ -27,7 +27,6 @@ from deprecated import deprecated
 from selenium.common.exceptions import WebDriverException
 
 from tests.ui_tests.app.app import ADCMTest
-from tests.ui_tests.app.helpers.network import wait_all_requests_stop
 from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.app.pages import LoginPage as DeprecatedLoginPage
 
@@ -124,8 +123,8 @@ def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
     Collect logs on failure and close browser tab after test is done
     """
     try:
-        web_driver.close_tab()
         web_driver.new_tab()
+        web_driver.close_first_tab()
     # Recreate session on WebDriverException
     except WebDriverException:
         web_driver.create_driver()
@@ -217,5 +216,4 @@ def auth_to_adcm(app_fs, adcm_credentials):
     """Perform login on Login page ADCM"""
 
     login = LoginPage(app_fs.driver, app_fs.adcm.url).open()
-    with wait_all_requests_stop(app_fs.driver):
-        login.login_user(**adcm_credentials)
+    login.login_user(**adcm_credentials)
