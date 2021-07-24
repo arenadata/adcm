@@ -73,4 +73,3 @@ class LoginPage(BasePageObject):
     def login_user(self, username, password):
         self.fill_login_user_form(username, password)
         self.find_and_click(locator=LoginPageLocators.login_btn)
-        self.wait_config_loaded()

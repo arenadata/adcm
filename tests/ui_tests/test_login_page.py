@@ -24,6 +24,7 @@ def test_check_login_to_adcm(app_fs, adcm_credentials):
     with allure.step("Check if user has been authorized"):
         intro_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url)
         login_page.wait_url_contains_path(intro_page.path)
+        login_page.wait_config_loaded()
         assert (
             intro_page.path in app_fs.driver.current_url
         ), f"Page '{intro_page.path}' has not been opened"

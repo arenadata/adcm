@@ -219,3 +219,4 @@ def auth_to_adcm(app_fs, adcm_credentials):
     login = LoginPage(app_fs.driver, app_fs.adcm.url).open()
     login.login_user(**adcm_credentials)
     login.wait_url_contains_path(AdminIntroPage(app_fs.driver, app_fs.adcm.url).path)
+    login.wait_config_loaded()
