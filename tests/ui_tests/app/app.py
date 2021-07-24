@@ -108,9 +108,9 @@ class ADCMTest:
             # we skip JS error here since we have no simple way to detect localStorage availability
             pass
 
-    @allure.step("Close first tab")
-    def close_first_tab(self):
-        self.driver.switch_to.window(self.driver.window_handles[0])
+    @allure.step("Close {index} tab")
+    def close_tab_by_index(self, index: int):
+        self.driver.switch_to.window(self.driver.window_handles[index])
         self.driver.close()
         self.driver.switch_to.window(self.driver.window_handles[-1])
 

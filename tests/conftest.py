@@ -124,7 +124,7 @@ def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
     """
     try:
         web_driver.new_tab()
-        web_driver.close_first_tab()
+        web_driver.close_tab_by_index(index=0)
     # Recreate session on WebDriverException
     except WebDriverException:
         web_driver.create_driver()
