@@ -30,6 +30,8 @@ class TemplateLocator(Locator):
     and ability to generate Locators from template
     """
 
-    def __call__(self, format_value: str) -> Locator:
-        """Get regular Locator"""
-        return Locator(by=self.by, value=self.value.format(format_value), name=self.name)
+    def __call__(self, *args) -> Locator:
+        """Get regular Locator by passing arguments to format function"""
+        return Locator(
+            by=self.by, value=self.value.format(*args), name=self.name.format(*args)
+        )

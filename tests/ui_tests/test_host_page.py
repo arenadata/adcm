@@ -11,10 +11,22 @@ from adcm_client.objects import ADCMClient, Bundle, Provider, Cluster
 from adcm_pytest_plugin import utils
 
 from tests.ui_tests.app.app import ADCMTest
+from tests.ui_tests.app.helpers.locator import Locator
+from tests.ui_tests.app.page.common.base_page import BasePageObject
+from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.host.locators import HostLocators
 from tests.ui_tests.app.page.host.page import HostPage
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
 from tests.ui_tests.app.page.host_list.page import HostListPage, HostRowInfo
+
+# pylint: disable=W0621
+
+
+@allure.step("Check elements aren't visible")
+def elements_should_be_hidden(page: BasePageObject, locators: List[Locator]):
+    # should be faster than alternatives to not is_visible and stuff
+    for loc in locators:
+        page.wait_element_hide(loc)
 
 
 @allure.step("Upload provider bundle")
@@ -56,9 +68,8 @@ def check_host_value(key: str, actual_value: Any, expected_value: Any):
     Argument `key` is used in failed assertion message
     """
     assert (
-        actual_value == expected_value,
-        f"Host {key} should be {expected_value}, not {actual_value}",
-    )
+        actual_value == expected_value
+    ), f"Host {key} should be {expected_value}, not {actual_value}"
 
 
 def check_host_info(
@@ -71,6 +82,13 @@ def check_host_info(
     check_host_value('state', host_info.state, state)
 
 
+def check_rows_amount(page, expected_amount: int, page_num: int):
+    """Check rows count is equal to expected"""
+    assert (
+        page.table.row_count == expected_amount
+    ), f'Page #{page_num}  should contain {expected_amount}'
+
+
 def _check_menu(
     menu_name: str,
     list_page: HostListPage,
@@ -79,7 +97,7 @@ def _check_menu(
     bundle_archive: str,
 ):
     host_fqdn, provider_name = 'menu-host', 'Most Wanted'
-    bundle, provider = upload_and_create_provider(sdk_client_fs, bundle_archive, provider_name)
+    bundle, _ = upload_and_create_provider(sdk_client_fs, bundle_archive, provider_name)
     list_page.create_host(host_fqdn)
     list_page.click_on_row_child(0, HostListLocators.HostTable.HostRow.fqdn)
     host_page = HostPage(list_page.driver, app_fs.adcm.url)
@@ -126,8 +144,36 @@ def test_create_bonded_to_cluster_host(
 
 
 @pytest.mark.full
-def test_host_list_pagination():
-    """Create 10 hosts and check pagination"""
+@pytest.mark.parametrize(
+    "bundle_archive",
+    [utils.get_data_dir(__file__, "provider")],
+    indirect=True,
+    ids=['provider_bundle'],
+)
+def test_host_list_pagination(
+    page: HostListPage,
+    bundle_archive: str,
+    sdk_client_fs: ADCMClient,
+):
+    """Create more than 10 hosts and check pagination"""
+    _, provider = upload_and_create_provider(sdk_client_fs, bundle_archive, 'many-hosts')
+    with allure.step("Create 12 hosts"):
+        for i in range(12):
+            provider.host_create(f'host-number-{i}')
+    hosts_on_first_page, hosts_on_second_page = 10, 2
+    with allure.step("Check pagination"):
+        with page.table.wait_rows_change():
+            page.table.click_page_by_number(2)
+        check_rows_amount(page, hosts_on_second_page, 2)
+        with page.table.wait_rows_change():
+            page.table.click_previous_page()
+        check_rows_amount(page, hosts_on_first_page, 1)
+        with page.table.wait_rows_change():
+            page.table.click_next_page()
+        check_rows_amount(page, hosts_on_second_page, 2)
+        with page.table.wait_rows_change():
+            page.table.click_page_by_number(1)
+        check_rows_amount(page, hosts_on_first_page, 1)
 
 
 @pytest.mark.parametrize(
@@ -162,9 +208,9 @@ def test_open_cluster_from_host_list(
 @pytest.mark.parametrize(
     'row_child_name, menu_item_name',
     [
-        pytest.param('fqdn', 'main', id='Host main page from host list'),
-        pytest.param('status', 'status', id='Status menu from host list', marks=pytest.mark.full),
-        pytest.param('config', 'config', id='Config menu from host list', marks=pytest.mark.full),
+        pytest.param('fqdn', 'main', id='open_host_main'),
+        pytest.param('status', 'status', id='open_status_menu', marks=pytest.mark.full),
+        pytest.param('config', 'config', id='open_config_menu', marks=pytest.mark.full),
     ],
 )
 def test_open_host_from_host_list(
@@ -202,7 +248,7 @@ def test_delete_host(
 ):
     """Create host and delete it"""
     host_fqdn, provider_name = 'doomed-host', 'Stuff Handler'
-    _, provider = upload_and_create_provider(sdk_client_fs, bundle_archive, provider_name)
+    upload_and_create_provider(sdk_client_fs, bundle_archive, provider_name)
     page.create_host(host_fqdn)
     host_info = page.get_host_info_from_row(0)
     check_host_info(host_info, host_fqdn, provider_name, None, 'created')
@@ -264,9 +310,12 @@ def test_run_action_from_menu(
     page.create_host('fqdn')
     page.click_on_row_child(0, HostListLocators.HostTable.HostRow.fqdn)
     host_main_page = HostPage(page.driver, page.base_url)
+    action_name = 'Init'
     actions_before = host_main_page.get_action_names()
+    assert action_name in actions_before, f'Action {action_name} should be listed in Actions menu'
     with allure.step('Run action "Init" from host Actions menu'):
-        host_main_page.run_action_from_menu('Init', open_menu=False)
+        host_main_page.run_action_from_menu(action_name, open_menu=False)
+        host_main_page.wait_element_hide(HostLocators.Actions.action_btn(action_name))
         host_main_page.wait_element_clickable(HostLocators.Actions.action_run_btn, timeout=10)
     actions_after = host_main_page.get_action_names(open_menu=False)
     with allure.step('Assert available actions set changed'):
@@ -274,8 +323,82 @@ def test_run_action_from_menu(
 
 
 @pytest.mark.full
-def test_filter_config():
+@pytest.mark.parametrize(
+    "bundle_archive",
+    [utils.get_data_dir(__file__, "provider")],
+    indirect=True,
+    ids=['provider_bundle'],
+)
+def test_filter_config(
+    bundle_archive,
+    sdk_client_fs: ADCMClient,
+    page: HostListPage,
+):
     """Use filters on host configuration page"""
+    upload_and_create_provider(sdk_client_fs, bundle_archive, 'prov')
+    page.create_host('config-host')
+    with allure.step('Open host config menu from host list'):
+        page.click_on_row_child(0, HostListLocators.HostTable.HostRow.config)
+        host_page = HostPage(page.driver, page.base_url)
+    field_input = CommonConfigMenu.field_input
+    not_required_option = field_input('item_1_g1/item_1_g1')
+    required_option = field_input('item_2_g1/item_2_g1')
+    password_fields = CommonConfigMenu.password_inputs('important_password')
+    advanced_option = field_input('advanced_one')
+    with allure.step('Check unfiltered configuration'):
+        host_page.assert_displayed_elements([not_required_option, required_option, password_fields])
+        assert not host_page.is_element_displayed(advanced_option), \
+            'Advanced option should not be visible'
+    with allure.step('Check group roll up'):
+        host_page.config.click_on_group('group_one')
+        elements_should_be_hidden(host_page, [not_required_option, required_option])
+        host_page.is_element_displayed(password_fields)
+        host_page.config.click_on_group('group_one')
+        host_page.wait_element_visible(not_required_option)
+    with allure.step('Check configuration with "Advanced" turned on'):
+        host_page.find_and_click(CommonConfigMenu.advanced_label)
+        host_page.wait_element_visible(advanced_option)
+        host_page.assert_displayed_elements([not_required_option, required_option, password_fields])
+    with allure.step('Check search filtration'):
+        host_page.config.search('Adv')
+        host_page.is_element_displayed(advanced_option)
+        elements_should_be_hidden(
+            host_page, [not_required_option, required_option, password_fields]
+        )
+        host_page.find_and_click(CommonConfigMenu.advanced_label)
+        host_page.wait_element_hide(advanced_option)
+
+
+@pytest.mark.parametrize(
+    "bundle_archive",
+    [utils.get_data_dir(__file__, "provider")],
+    indirect=True,
+    ids=['provider_bundle'],
+)
+def test_custom_name_config(
+    bundle_archive,
+    sdk_client_fs: ADCMClient,
+    page: HostListPage,
+):
+    """Change configuration, save with custom name, compare changes"""
+    upload_and_create_provider(sdk_client_fs, bundle_archive, 'prov')
+    page.create_host('config-host')
+    with allure.step('Open host config menu from host list'):
+        page.click_on_row_child(0, HostListLocators.HostTable.HostRow.config)
+        host_page = HostPage(page.driver, page.base_url)
+    with allure.step('Change config description'):
+        new_config_desc = 'my own config description'
+        init_config_desc = host_page.config.set_description(new_config_desc)
+    with allure.step('Change config values'):
+        host_page.config.send_to_config_field('12', 'item_2_g1/item_2_g1')
+        host_page.config.fill_password_and_confirm_fields(
+            'awesomepass', 'awesomepass', adcm_test='important_password'
+        )
+        host_page.config.save_config()
+    with allure.step('Compare configurations'):
+        host_page.config.compare_current_to(init_config_desc)
+        host_page.config.config_diff_is_presented('null', 'item_2_g1/item_2_g1')
+        host_page.config.config_diff_is_presented('***', 'important_password')
 
 
 @pytest.mark.full
@@ -286,3 +409,8 @@ def test_reset_configuration():
 @pytest.mark.full
 def test_field_validation():
     """Inputs are validated correctly"""
+
+
+@pytest.mark.full
+def test_open_adcm_main_menu():
+    """Open main menu by clicking on the menu icon in toolbar"""

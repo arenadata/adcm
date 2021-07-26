@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import List
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -130,12 +131,12 @@ class BasePageObject:
                 TimeoutError,
         ):
             return False
-
+        
     def assert_displayed_elements(self, locators: list) -> None:
         """Asserts that list of elements is displayed."""
 
         for loc in locators:
-            assert self.is_element_displayed(loc), f"Locator {loc.name} doesn't displayed on page"
+            assert self.is_element_displayed(loc), f"Locator {loc.name} isn't displayed on page"
 
     def find_and_click(self, locator: Locator, is_js: bool = False) -> None:
         """Find element on current page and click on it."""

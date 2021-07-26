@@ -17,6 +17,11 @@ class CommonTableObj(BasePageObject):
         super().__init__(driver, base_url)
         self.table = table_class_locators
 
+    @property
+    def row_count(self) -> int:
+        """Get amount of rows on page"""
+        return len(self.get_all_rows())
+
     @allure.step("Get all rows from the table")
     def get_all_rows(self) -> list:
         try:

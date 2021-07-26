@@ -13,6 +13,7 @@ from typing import Set
 
 from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.common.base_page import BasePageObject, PageHeader, PageFooter
+from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.dialogs import ActionDialog
 from tests.ui_tests.app.page.host.locators import HostLocators
 
@@ -22,6 +23,7 @@ class HostPage(BasePageObject):
         super().__init__(driver, base_url, "/host")
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
+        self.config = CommonConfigMenuObj(self.driver, self.base_url)
 
     def get_fqdn(self) -> str:
         return self.find_element(HostLocators.Header.fqdn).text

@@ -19,6 +19,30 @@
   name: "Test Host"
   description: "Test Host Description"
   version: *ver
+  config:
+    - name: group_one
+      type: group
+      subs:
+        - name: item_1_g1
+          display_name: "Just item"
+          type: float
+          required: no
+        - name: item_2_g1
+          display_name: "Required item"
+          type: integer
+          required: yes
+    - name: important_password
+      display_name: "Important password"
+      type: password
+      required: yes
+    - name: advanced_one
+      display_name: "Advanced option"
+      type: string
+      default: "Hello there"
+      required: yes
+      ui_options:
+        advanced: true
+
   actions:
     init: &job
       type: job
