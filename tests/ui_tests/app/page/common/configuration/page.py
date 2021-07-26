@@ -58,8 +58,24 @@ class CommonConfigMenuObj(BasePageObject):
         loc = self.config.config_diff(adcm_test, value)
         self.wait_element_visible(loc)
 
+    def get_input_value(self, adcm_test: str, is_password: bool = False):
+        """
+        Get value from field input
+
+        If is_password is True, then special field is used for search
+        You can't get password confirmation method
+        """
+        template = (
+            CommonConfigMenu.field_input if not is_password else CommonConfigMenu.password_inputs
+        )
+        return self.find_element(template(adcm_test)).get_property("value")
+
+    def reset_to_default(self, adcm_test: str):
+        """Click reset button"""
+        self.find_and_click(self.config.reset_btn(adcm_test))
+
     @allure.step('Type "{value}" to {adcm_test} field')
-    def send_to_config_field(self, value: str, adcm_test: str, clear: bool = False):
+    def type_in_config_field(self, value: str, adcm_test: str, clear: bool = False):
         """
         Send keys to config value input
 
@@ -93,3 +109,32 @@ class CommonConfigMenuObj(BasePageObject):
         search = self.find_element(self.config.search_input)
         search.clear()
         search.send_keys(keys)
+
+    @allure.step("Check {name} required error is presented")
+    def check_field_is_required(self, name: str):
+        """
+        Assert that message "Field [{name}] is required!" is presented
+        """
+        message = f'Field [{name}] is required!'
+        assert self.is_element_displayed(
+            self.config.field_error(message)
+        ), f'Error "{message}" is not presented'
+
+    @allure.step("Check {name} invalid error is presented")
+    def check_field_is_invalid(self, name: str):
+        """
+        Assert that message "Field [{name}] is invalid!" is presented
+        """
+        message = f'Field [{name}] is invalid!'
+        assert self.is_element_displayed(
+            self.config.field_error(message)
+        ), f'Error "{message}" is not presented'
+
+    @allure.step("Check {name} confirmation error is presented")
+    def check_password_confirm_required(self, name: str):
+        """
+        Assert that message "Confirm [{name}] is required!" is presented
+        """
+        message = f'Confirm [{name}] is required!'
+        loc = self.config.field_error(message)
+        assert self.is_element_displayed(loc), f'Error "{message}" is not presented'

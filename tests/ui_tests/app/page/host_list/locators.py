@@ -21,6 +21,7 @@ class HostListLocators:
     """Cluster List page elements locators"""
 
     class Tooltip:
+        apps_btn = Locator(By.XPATH, "//mat-icon[text()='apps']/ancestor::a", "Apps button")
         host_add_btn = Locator(By.XPATH, "//button[@adcm_test='create-btn']", "Host add button")
 
     class CreateHostPopup:

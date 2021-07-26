@@ -61,3 +61,5 @@ class CommonConfigMenu:
         "//div[@adcm_test='{}']/ancestor::app-field//app-fields-password/div[not(contains(@style, 'none'))]//input",
         "Password inputs",
     )
+    field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
+    reset_btn = TemplateLocator(By.XPATH, "//div[@adcm_test='{}']//mat-icon[text()='refresh']/ancestor::button", "Resfresh button of {}")
