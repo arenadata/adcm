@@ -74,13 +74,14 @@ class UserSerializer(serializers.Serializer):
     change_role = hlink('change-user-role', 'username', 'username')
     is_superuser = serializers.BooleanField(required=False)
 
-    def validate_username(self, name):
-        if len(name) > MAX_NAME_LENGTH:
+    def to_internal_value(self, data):
+        username = data['username']
+        if len(username) > MAX_NAME_LENGTH:
             raise AdcmEx(
                 'LONG_NAME',
-                f'Username is too long, up to {MAX_NAME_LENGTH} symbols required',
+                f'User name is too long, up to {MAX_NAME_LENGTH} symbols required',
             )
-        return name
+        return super().to_internal_value(data)
 
     @transaction.atomic
     def create(self, validated_data):
