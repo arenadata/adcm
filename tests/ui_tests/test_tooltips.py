@@ -52,7 +52,7 @@ def test_tooltip_presented(tooltips):
         assert len(tooltips[0]) == 8
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail()
 def test_tooltip_text(tooltips):
     with allure.step('Check description in tooltip'):
         assert set(tooltips[0]).issubset(set(tooltips[1]))
