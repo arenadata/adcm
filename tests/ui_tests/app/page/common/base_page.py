@@ -131,7 +131,7 @@ class BasePageObject:
                 TimeoutError,
         ):
             return False
-        
+
     def assert_displayed_elements(self, locators: list) -> None:
         """Asserts that list of elements is displayed."""
 
