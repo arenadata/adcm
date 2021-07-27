@@ -66,7 +66,7 @@ def test_check_header_tabs_for_authorised_user(app_fs, login_to_adcm_over_ui):
     header.check_job_popup()
 
 
-def test_check_header_help_links_for_authorised_user(app_fs, auth_to_adcm_over_ui):
+def test_check_header_help_links_for_authorised_user(app_fs, login_to_adcm_over_api):
     params = {"help_link": "t.me/joinchat/", "docs_link": "docs.arenadata.io/adcm/"}
     header = PageHeader(app_fs.driver, app_fs.adcm.url)
     header.click_help_button_in_header()

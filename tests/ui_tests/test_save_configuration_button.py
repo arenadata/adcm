@@ -132,7 +132,7 @@ def cluster(bundle: Bundle) -> Cluster:
 
 
 @pytest.fixture()
-def cluster_config_page(app_fs, cluster: Cluster, login_to_adcm):
+def cluster_config_page(app_fs, cluster: Cluster, login_to_adcm_over_ui):
     return Configuration(
         app_fs.driver, "{}/cluster/{}/config".format(app_fs.adcm.url, cluster.cluster_id)
     )
@@ -145,7 +145,7 @@ def service(cluster: Cluster, sdk_client_fs: ADCMClient) -> Service:
 
 
 @pytest.fixture()
-def service_config_page(app_fs, service: Service, login_to_adcm) -> Configuration:
+def service_config_page(app_fs, service: Service, login_to_adcm_over_ui) -> Configuration:
     return Configuration(
         app_fs.driver,
         "{}/cluster/{}/service/{}/config".format(app_fs.adcm.url, service.cluster_id, service.id),
@@ -158,7 +158,7 @@ def provider(bundle: Bundle) -> Provider:
 
 
 @pytest.fixture()
-def provider_config_page(app_fs, provider: Provider, login_to_adcm) -> Configuration:
+def provider_config_page(app_fs, provider: Provider, login_to_adcm_over_ui) -> Configuration:
 
     return Configuration(
         app_fs.driver,
@@ -172,7 +172,7 @@ def host(provider: Provider) -> Host:
 
 
 @pytest.fixture()
-def host_config_page(app_fs, host: Host, login_to_adcm) -> Configuration:
+def host_config_page(app_fs, host: Host, login_to_adcm_over_ui) -> Configuration:
     return Configuration(
         app_fs.driver,
         "{}/host/{}/config".format(app_fs.adcm.url, host.id),
