@@ -1,17 +1,18 @@
 import os
 
 
-VARIABLES = [("less-equal", "2.2", "3.0", 'max', 'min', "2.1"),
-             ("less-equal", "2.2", "3.0", 'max', 'min_strict', "2.2"),
-             ("greater-equal", "2.2", "3.0", 'max', 'min', "3.1"),
-             ("greater-equal", "2.2", "3.0", 'max_strict', 'min', "3.0"),
-             ("equal", "2.2", "3.0", 'max_strict', 'min_strict', "2.2"),
-             ("equal", "2.2", "3.0", 'max_strict', 'min', "3.0"),
-             ("less", "2.2", "3.0", 'max', 'min', "2.1"),
-             ("less", "2.2", "3.0", 'max', 'min_strict', "2.2"),
-             ("greater", "2.2", "3.0", 'max', 'min', "3.1"),
-             ("greater", "2.2", "3.0", 'max_strict', 'min_strict', "3.0")
-             ]
+VARIABLES = [
+    ("less-equal", "2.2", "3.0", 'max', 'min', "2.1"),
+    ("less-equal", "2.2", "3.0", 'max', 'min_strict', "2.2"),
+    ("greater-equal", "2.2", "3.0", 'max', 'min', "3.1"),
+    ("greater-equal", "2.2", "3.0", 'max_strict', 'min', "3.0"),
+    ("equal", "2.2", "3.0", 'max_strict', 'min_strict', "2.2"),
+    ("equal", "2.2", "3.0", 'max_strict', 'min', "3.0"),
+    ("less", "2.2", "3.0", 'max', 'min', "2.1"),
+    ("less", "2.2", "3.0", 'max', 'min_strict', "2.2"),
+    ("greater", "2.2", "3.0", 'max', 'min', "3.1"),
+    ("greater", "2.2", "3.0", 'max_strict', 'min_strict', "3.0"),
+]
 
 
 TEMPLATE_SERVICE = """
@@ -82,14 +83,14 @@ for variable in VARIABLES:
     d_name = "service_import_check_negative/{}_{}_{}".format(variable[0], variable[3], variable[4])
     os.makedirs(d_name)
     with open("{}/config.yaml".format(d_name), "w+") as f:
-        f.write(TEMPLATE_SERVICE.format(variable[1], variable[2],
-                                        variable[3], variable[4],
-                                        variable[5]))
+        f.write(
+            TEMPLATE_SERVICE.format(variable[1], variable[2], variable[3], variable[4], variable[5])
+        )
 
 for variable in VARIABLES:
     d_name = "cluster_import_check_negative/{}_{}_{}".format(variable[0], variable[3], variable[4])
     os.makedirs(d_name)
     with open("{}/config.yaml".format(d_name), "w+") as f:
-        f.write(TEMPLATE_CLUSTER.format(variable[1], variable[2],
-                                        variable[3], variable[4],
-                                        variable[5]))
+        f.write(
+            TEMPLATE_CLUSTER.format(variable[1], variable[2], variable[3], variable[4], variable[5])
+        )

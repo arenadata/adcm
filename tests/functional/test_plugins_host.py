@@ -94,7 +94,7 @@ def test_create_multi_host_and_delete_one(first_p: Provider, third_p: Provider):
 def _wait_for_object(f, timeout=10, **kwargs):
     t = 0
     obj = None
-    while (t < 10 and obj is None):
+    while t < 10 and obj is None:
         try:
             obj = f(**kwargs)
         except adcm_client.base.ObjectNotFound:

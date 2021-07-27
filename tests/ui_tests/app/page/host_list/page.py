@@ -17,9 +17,8 @@ from tests.ui_tests.app.page.common.base_page import (
 )
 
 
-class JobListPage(BasePageObject):
-
+class HostListPage(BasePageObject):
     def __init__(self, driver, base_url):
-        super().__init__(driver, base_url, "/task")
+        super().__init__(driver, base_url, "/host")
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)

@@ -13,20 +13,20 @@
 
 import allure
 
-from tests.ui_tests.app.page.admin_intro.admin_intro_page import AdminIntroPage
-from tests.ui_tests.app.page.admin_setttings_page.admin_settings import AdminSettingsPage
-from tests.ui_tests.app.page.bundle_list_page.bundle_list import BundleListPage
-from tests.ui_tests.app.page.cluster_list_page.cluster_list import ClusterListPage
+from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
+from tests.ui_tests.app.page.admin_setttings.page import AdminSettingsPage
+from tests.ui_tests.app.page.bundle_list.page import BundleListPage
+from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
     PageHeader,
     PageFooter,
 )
-from tests.ui_tests.app.page.host_list_page.host_list import HostListPage
-from tests.ui_tests.app.page.hostprovider_list_page.hostprovider_list import ProviderListPage
-from tests.ui_tests.app.page.job_list_page.job_list import JobListPage
-from tests.ui_tests.app.page.login.login_page import LoginPage
-from tests.ui_tests.app.page.profile_page.profile import ProfilePage
+from tests.ui_tests.app.page.host_list.page import HostListPage
+from tests.ui_tests.app.page.hostprovider_list.page import ProviderListPage
+from tests.ui_tests.app.page.job_list.page import JobListPage
+from tests.ui_tests.app.page.login.page import LoginPage
+from tests.ui_tests.app.page.profile.page import ProfilePage
 from tests.ui_tests.utils import (
     wait_for_new_window,
     close_current_tab,
@@ -66,11 +66,8 @@ def test_check_header_tabs_for_authorised_user(app_fs, login_to_adcm_over_ui):
     header.check_job_popup()
 
 
-def test_check_header_help_links_for_authorised_user(app_fs, login_to_adcm_over_ui):
-    params = {
-        "help_link": "t.me/joinchat/",
-        "docs_link": "docs.arenadata.io/adcm/"
-    }
+def test_check_header_help_links_for_authorised_user(app_fs, auth_to_adcm_over_ui):
+    params = {"help_link": "t.me/joinchat/", "docs_link": "docs.arenadata.io/adcm/"}
     header = PageHeader(app_fs.driver, app_fs.adcm.url)
     header.click_help_button_in_header()
     header.check_help_popup()

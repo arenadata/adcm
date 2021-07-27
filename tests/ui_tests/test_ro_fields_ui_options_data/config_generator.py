@@ -1,8 +1,24 @@
 import os
 
-DATA = [("invisible", "true", "advanced", "true"), ("invisible", "false", "advanced", "false"),
-        ("invisible", "false", "advanced", "true"), ('invisible', "true", "advanced", "false")]
-TYPES = ("string", "password", "integer", "text", 'boolean', 'float', 'option', 'list', 'map', 'json', 'file')
+DATA = [
+    ("invisible", "true", "advanced", "true"),
+    ("invisible", "false", "advanced", "false"),
+    ("invisible", "false", "advanced", "true"),
+    ('invisible', "true", "advanced", "false"),
+]
+TYPES = (
+    "string",
+    "password",
+    "integer",
+    "text",
+    'boolean',
+    'float',
+    'option',
+    'list',
+    'map',
+    'json',
+    'file',
+)
 template_textboxes = """
 - type: cluster
   name: {0}_{1}_{2}_{3}_{4}
@@ -277,10 +293,19 @@ template_option = """
         on_success: installed
         on_fail: created
 """
-TEMPLATES = {"string": template_textboxes, "password": template_password, "integer": template_numbers,
-             "text": template_text, 'boolean': template_boolean, 'float': template_numbers,
-             'option': template_option, 'list': template_list, 'map': template_map,
-             'json': template_json, 'file': template_file}
+TEMPLATES = {
+    "string": template_textboxes,
+    "password": template_password,
+    "integer": template_numbers,
+    "text": template_text,
+    'boolean': template_boolean,
+    'float': template_numbers,
+    'option': template_option,
+    'list': template_list,
+    'map': template_map,
+    'json': template_json,
+    'file': template_file,
+}
 INSTALL = """
 ---
 - name: Do nothing playbook
@@ -299,11 +324,9 @@ INSTALL = """
 
 for t in TYPES:
     for config in DATA:
-        d_name = "{}_{}_{}_{}/{}".format(
-            config[0], config[1], config[2], config[3], t)
+        d_name = "{}_{}_{}_{}/{}".format(config[0], config[1], config[2], config[3], t)
         os.makedirs(d_name)
-        os.makedirs("{}_{}_{}_{}/{}/ansible".format(
-            config[0], config[1], config[2], config[3], t))
+        os.makedirs("{}_{}_{}_{}/{}/ansible".format(config[0], config[1], config[2], config[3], t))
         tmpl = ''
         with open("{}/config.yaml".format(d_name), "w+") as f:
             f.write(TEMPLATES[t].format(config[0], config[1], config[2], config[3], t))
