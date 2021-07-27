@@ -153,9 +153,7 @@ class HostListPage(BasePageObject):
 
     # HELPERS
 
-    def _insert_new_host_info(
-        self, fqdn: str, cluster: Optional[str] = None
-    ):
+    def _insert_new_host_info(self, fqdn: str, cluster: Optional[str] = None):
         """Insert new host info in fields of opened popup"""
         popup = HostListLocators.CreateHostPopup
         self.find_element(popup.fqdn_input).send_keys(fqdn)
