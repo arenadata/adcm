@@ -48,13 +48,13 @@ class HostListPage(BasePageObject):
         self.table = CommonTableObj(self.driver, self.base_url, HostListLocators.HostTable)
 
     def get_host_row(self, row_num: int = 0) -> WebElement:
-        def row_in_table():
+        def table_has_enough_rows():
             current_row_count = self.table.row_count
             assert (
                 row_num + 1 <= current_row_count
             ), f"Host table has only {current_row_count} rows when row #{row_num} was requested"
 
-        wait_until_step_succeeds(row_in_table, timeout=5, period=0.1)
+        wait_until_step_succeeds(table_has_enough_rows, timeout=5, period=0.1)
         rows = self.table.get_all_rows()
         return rows[row_num]
 
@@ -134,14 +134,23 @@ class HostListPage(BasePageObject):
         self.click_on_row_child(host_row_num, HostListLocators.HostTable.HostRow.cluster)
         self._wait_and_click_on_cluster_option(cluster_name, HostListLocators.HostTable.option)
 
-    @allure.step('Assert host in row {row_num} has state "{state}"')
-    def wait_for_host_state(self, row_num: int, state: str):
-        def assert_host_state(page: HostListPage, row: WebElement):
-            real_state = page.find_child(row, HostListLocators.HostTable.HostRow.state).text
-            assert state == real_state
+    @allure.step('Assert host in row {row_num} is assigned to cluster {cluster_name}')
+    def assert_host_cluster(self, row_num: int, cluster_name: str):
+        def check_host_cluster(page: HostListPage, row: WebElement):
+            real_cluster = page.find_child(row, HostListLocators.HostTable.HostRow.cluster).text
+            assert real_cluster == cluster_name
 
         host_row = self.get_host_row(row_num)
-        wait_until_step_succeeds(assert_host_state, timeout=10, period=0.5, page=self, row=host_row)
+        wait_until_step_succeeds(check_host_cluster, timeout=5, period=0.1, page=self, row=host_row)
+
+    @allure.step('Assert host in row {row_num} has state "{state}"')
+    def assert_host_state(self, row_num: int, state: str):
+        def check_host_state(page: HostListPage, row: WebElement):
+            real_state = page.find_child(row, HostListLocators.HostTable.HostRow.state).text
+            assert real_state == state
+
+        host_row = self.get_host_row(row_num)
+        wait_until_step_succeeds(check_host_state, timeout=10, period=0.5, page=self, row=host_row)
 
     def open_host_creation_popup(self):
         self.find_and_click(HostListLocators.Tooltip.host_add_btn)

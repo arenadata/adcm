@@ -94,8 +94,9 @@ class CommonConfigMenuObj(BasePageObject):
         Fill password in clean fields and confirm password fields
         """
         # there are invisible inputs, so we need special locator
-        password_input, confirm_input = self.find_elements(self.config.password_inputs(adcm_test))
+        password_input = self.find_elements(self.config.password_inputs(adcm_test))[0]
         password_input.send_keys(password)
+        confirm_input = self.find_elements(self.config.password_inputs(adcm_test))[1]
         confirm_input.send_keys(confirmation)
 
     def click_on_group(self, title: str):

@@ -205,8 +205,7 @@ def test_open_cluster_from_host_list(
     host_info = page.get_host_info_from_row(0)
     check_host_info(host_info, HOST_FQDN, PROVIDER_NAME, None, 'created')
     page.assign_host_to_cluster(0, CLUSTER_NAME)
-    host_info = page.get_host_info_from_row(0)
-    check_host_info(host_info, HOST_FQDN, PROVIDER_NAME, CLUSTER_NAME, 'created')
+    page.assert_host_cluster(0, CLUSTER_NAME)
 
 
 @pytest.mark.parametrize(
@@ -264,9 +263,9 @@ def test_run_action_on_new_host(
     page: HostListPage,
 ):
     """Create host and run action on it"""
-    page.wait_for_host_state(0, 'created')
+    page.assert_host_state(0, 'created')
     page.run_action(0, 'Init')
-    page.wait_for_host_state(0, 'running')
+    page.assert_host_state(0, 'running')
 
 
 @pytest.mark.usefixtures('_create_host')
@@ -343,7 +342,7 @@ def test_custom_name_config(
         host_page.config.save_config()
     with allure.step('Compare configurations'):
         host_page.config.compare_current_to(init_config_desc)
-        host_page.config.config_diff_is_presented('null', REQUIRED_FIELD_ADCM_TEST)
+        host_page.config.config_diff_is_presented('42', REQUIRED_FIELD_ADCM_TEST)
         host_page.config.config_diff_is_presented('***', PASSWORD_FIELD_ADCM_TEST)
 
 
