@@ -28,6 +28,12 @@ HOST_FQDN = 'best-host'
 CLUSTER_NAME = 'Best Cluster Ever'
 PROVIDER_NAME = 'Black Mark'
 
+# config fields
+REGULAR_FIELD_ADCM_TEST = 'item_1_g1/item_1_g1'
+REQUIRED_FIELD_ADCM_TEST = 'item_2_g1/item_2_g1'
+PASSWORD_FIELD_ADCM_TEST = 'important_password'
+ADVANCED_FIELD_ADCM_TEST = 'advanced_one'
+
 
 @pytest.fixture()
 @allure.title("Upload provider bundle")
@@ -288,10 +294,10 @@ def test_filter_config(
     """Use filters on host configuration page"""
     host_page = open_config(page)
     field_input = CommonConfigMenu.field_input
-    not_required_option = field_input('item_1_g1/item_1_g1')
-    required_option = field_input('item_2_g1/item_2_g1')
-    password_fields = CommonConfigMenu.password_inputs('important_password')
-    advanced_option = field_input('advanced_one')
+    not_required_option = field_input(REGULAR_FIELD_ADCM_TEST)
+    required_option = field_input(REQUIRED_FIELD_ADCM_TEST)
+    password_fields = CommonConfigMenu.password_inputs(PASSWORD_FIELD_ADCM_TEST)
+    advanced_option = field_input(ADVANCED_FIELD_ADCM_TEST)
     with allure.step('Check unfiltered configuration'):
         host_page.assert_displayed_elements([not_required_option, required_option, password_fields])
         assert not host_page.is_element_displayed(
@@ -327,15 +333,15 @@ def test_custom_name_config(
         new_config_desc = 'my own config description'
         init_config_desc = host_page.config.set_description(new_config_desc)
     with allure.step('Change config values'):
-        host_page.config.type_in_config_field('12', 'item_2_g1/item_2_g1')
+        host_page.config.type_in_config_field('12', REQUIRED_FIELD_ADCM_TEST)
         host_page.config.fill_password_and_confirm_fields(
-            'awesomepass', 'awesomepass', adcm_test='important_password'
+            'awesomepass', 'awesomepass', adcm_test=PASSWORD_FIELD_ADCM_TEST
         )
         host_page.config.save_config()
     with allure.step('Compare configurations'):
         host_page.config.compare_current_to(init_config_desc)
-        host_page.config.config_diff_is_presented('null', 'item_2_g1/item_2_g1')
-        host_page.config.config_diff_is_presented('***', 'important_password')
+        host_page.config.config_diff_is_presented('null', REQUIRED_FIELD_ADCM_TEST)
+        host_page.config.config_diff_is_presented('***', PASSWORD_FIELD_ADCM_TEST)
 
 
 @pytest.mark.full
@@ -344,7 +350,7 @@ def test_reset_configuration(
     page: HostListPage,
 ):
     """Change configuration, save, reset to defaults"""
-    password_adcm_test, field_adcm_test = 'important_password', 'item_2_g1/item_2_g1'
+    password_adcm_test, field_adcm_test = PASSWORD_FIELD_ADCM_TEST, REQUIRED_FIELD_ADCM_TEST
     host_page = open_config(page)
     host_page.config.fill_password_and_confirm_fields('pass', 'pass', adcm_test=password_adcm_test)
     host_page.config.type_in_config_field('42', adcm_test=field_adcm_test)
@@ -364,10 +370,10 @@ def test_field_validation(
 ):
     """Inputs are validated correctly"""
     host_page = open_config(page)
-    host_page.wait_element_visible(host_page.config.config.field_input('item_1_g1/item_1_g1'))
+    host_page.wait_element_visible(host_page.config.config.field_input(REGULAR_FIELD_ADCM_TEST))
     host_page.config.check_password_confirm_required('Important password')
     host_page.config.check_field_is_required('Required item')
-    host_page.config.type_in_config_field('etonechislo', 'item_1_g1/item_1_g1')
+    host_page.config.type_in_config_field('etonechislo', REGULAR_FIELD_ADCM_TEST)
     host_page.config.check_field_is_invalid('Just item')
 
 

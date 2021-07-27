@@ -48,7 +48,7 @@ class CommonConfigMenu:
     config_diff = TemplateLocator(
         By.XPATH,
         "//div[@adcm_test='{}']/ancestor::app-field//mat-list-item//span[contains(text(), '{}')]",
-        'Config diff of option "{}" with "{}" in text'
+        'Config diff of option "{}" with "{}" in text',
     )
 
     field_input = TemplateLocator(
@@ -62,4 +62,8 @@ class CommonConfigMenu:
         "Password inputs",
     )
     field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
-    reset_btn = TemplateLocator(By.XPATH, "//div[@adcm_test='{}']//mat-icon[text()='refresh']/ancestor::button", "Resfresh button of {}")
+    reset_btn = TemplateLocator(
+        By.XPATH,
+        "//div[@adcm_test='{}']//mat-icon[text()='refresh']/ancestor::button",
+        "Resfresh button of {}",
+    )

@@ -75,12 +75,11 @@ class HostListPage(BasePageObject):
     def create_host(
         self,
         fqdn: str,
-        provider: Optional[str] = None,
         cluster: Optional[str] = None,
     ):
         """Create host in popup"""
         self.open_host_creation_popup()
-        self.insert_new_host_info(fqdn, provider, cluster)
+        self._insert_new_host_info(fqdn, cluster)
         self.click_create_host_in_popup()
         self.close_host_creation_popup()
 
@@ -89,7 +88,6 @@ class HostListPage(BasePageObject):
         self,
         bundle_path: str,
         fqdn: str,
-        provider: Optional[str] = None,
         cluster: Optional[str] = None,
     ) -> str:
         """
@@ -101,9 +99,9 @@ class HostListPage(BasePageObject):
         :returns: Name of created provider
         """
         self.open_host_creation_popup()
-        self.upload_bundle(bundle_path)
+        self._upload_bundle(bundle_path)
         provider_name = self._get_hostprovider_name()
-        self.insert_new_host_info(fqdn, provider, cluster)
+        self._insert_new_host_info(fqdn, cluster)
         self.click_create_host_in_popup()
         self.close_host_creation_popup()
         # because we don't pass provider name
@@ -141,8 +139,6 @@ class HostListPage(BasePageObject):
         host_row = self.get_host_row(row_num)
         wait_until_step_succeeds(assert_host_state, timeout=10, period=0.5, page=self, row=host_row)
 
-    # HELPERS
-
     def open_host_creation_popup(self):
         self.find_and_click(HostListLocators.Tooltip.host_add_btn)
         self.wait_element_visible(HostListLocators.CreateHostPopup.block)
@@ -155,18 +151,18 @@ class HostListPage(BasePageObject):
         """Click create host button in popup"""
         self.find_and_click(HostListLocators.CreateHostPopup.create_btn)
 
-    def insert_new_host_info(
-        self, fqdn: str, provider: Optional[str] = None, cluster: Optional[str] = None
+    # HELPERS
+
+    def _insert_new_host_info(
+        self, fqdn: str, cluster: Optional[str] = None
     ):
         """Insert new host info in fields of opened popup"""
         popup = HostListLocators.CreateHostPopup
         self.find_element(popup.fqdn_input).send_keys(fqdn)
-        if provider:
-            ...  # TODO implement
         if cluster:
             self._choose_cluster_in_popup(cluster)
 
-    def upload_bundle(self, bundle_path: str):
+    def _upload_bundle(self, bundle_path: str):
         """
         Add new host provider
         Popup should be opened
