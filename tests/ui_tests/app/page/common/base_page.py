@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import (
@@ -24,6 +23,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
 
 from tests.ui_tests.app.helpers.locator import Locator
+from tests.ui_tests.app.page.common.common_locators import CommonLocators
 from tests.ui_tests.app.page.common.footer import CommonFooterLocators
 from tests.ui_tests.app.page.common.header import (
     CommonHeaderLocators,
@@ -216,6 +216,17 @@ class BasePageObject:
         element = self.find_element(locator)
         element.send_keys(Keys.CONTROL + "a")
         element.send_keys(Keys.BACK_SPACE)
+
+    @allure.step('Wait Config has been loaded after authentication')
+    def wait_config_loaded(self):
+        """
+        Wait for hidden elements in DOM.
+        Without this waiting and after the config finally is loaded
+        there will be redirection to the greeting page.
+        """
+
+        self.find_element(CommonLocators.socket, timeout=30)
+        self.find_element(CommonLocators.profile, timeout=30)
 
 
 class PageHeader(BasePageObject):
