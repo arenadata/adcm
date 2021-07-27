@@ -168,11 +168,9 @@ def test_create_bonded_to_cluster_host(
 
 
 @pytest.mark.full()
-@pytest.mark.parametrize("create_many_hosts", [12], indirect=True)
-def test_host_list_pagination(
-    page: HostListPage,
-    _create_many_hosts,
-):
+@pytest.mark.parametrize("_create_many_hosts", [12], indirect=True)
+@pytest.mark.usefixtures("_create_many_hosts")
+def test_host_list_pagination(page: HostListPage):
     """Create more than 10 hosts and check pagination"""
     hosts_on_first_page, hosts_on_second_page = 10, 2
     with allure.step("Check pagination"):
@@ -190,9 +188,9 @@ def test_host_list_pagination(
         check_rows_amount(page, hosts_on_first_page, 1)
 
 
+@pytest.mark.usefixtures('_create_host')
 def test_open_cluster_from_host_list(
     page: HostListPage,
-    _create_host,
     upload_and_create_cluster: Tuple[Bundle, Provider],
 ):
     """Create host and go to cluster from host list"""
@@ -211,11 +209,11 @@ def test_open_cluster_from_host_list(
         pytest.param('config', 'config', id='open_config_menu', marks=pytest.mark.full),
     ],
 )
+@pytest.mark.usefixtures('_create_host')
 def test_open_host_from_host_list(
     page: HostListPage,
     row_child_name: str,
     menu_item_name: str,
-    _create_host,
 ):
     """Test open host page from host list"""
     row_child = getattr(HostListLocators.HostTable.HostRow, row_child_name)
@@ -246,10 +244,10 @@ def test_delete_host(
 
 @pytest.mark.full()
 @pytest.mark.parametrize('menu', ['main', 'config', 'status', 'action'])
+@pytest.mark.usefixtures('_create_host')
 def test_open_menu(
     upload_and_create_provider: Tuple[Bundle, Provider],
     upload_and_create_cluster,
-    _create_host,
     page: HostListPage,
     menu: str,
 ):
@@ -257,8 +255,8 @@ def test_open_menu(
     _check_menu(menu, upload_and_create_provider[0], page)
 
 
+@pytest.mark.usefixtures('_create_host')
 def test_run_action_on_new_host(
-    _create_host,
     page: HostListPage,
 ):
     """Create host and run action on it"""
@@ -267,8 +265,8 @@ def test_run_action_on_new_host(
     page.wait_for_host_state(0, 'running')
 
 
+@pytest.mark.usefixtures('_create_host')
 def test_run_action_from_menu(
-    _create_host,
     page: HostListPage,
 ):
     """Run action from host actions menu"""
@@ -287,8 +285,8 @@ def test_run_action_from_menu(
 
 
 @pytest.mark.full()
+@pytest.mark.usefixtures('_create_host')
 def test_filter_config(
-    _create_host,
     page: HostListPage,
 ):
     """Use filters on host configuration page"""
@@ -323,8 +321,8 @@ def test_filter_config(
         host_page.wait_element_hide(advanced_option)
 
 
+@pytest.mark.usefixtures('_create_host')
 def test_custom_name_config(
-    _create_host,
     page: HostListPage,
 ):
     """Change configuration, save with custom name, compare changes"""
@@ -345,8 +343,8 @@ def test_custom_name_config(
 
 
 @pytest.mark.full()
+@pytest.mark.usefixtures('_create_host')
 def test_reset_configuration(
-    _create_host,
     page: HostListPage,
 ):
     """Change configuration, save, reset to defaults"""
@@ -364,8 +362,8 @@ def test_reset_configuration(
 
 
 @pytest.mark.full()
+@pytest.mark.usefixtures('_create_host')
 def test_field_validation(
-    _create_host,
     page: HostListPage,
 ):
     """Inputs are validated correctly"""
@@ -378,7 +376,8 @@ def test_field_validation(
 
 
 @pytest.mark.full()
-def test_open_adcm_main_menu(page, _create_host):
+@pytest.mark.usefixtures('_create_host')
+def test_open_adcm_main_menu(page: HostListPage):
     """Open main menu by clicking on the menu icon in toolbar"""
     page.find_and_click(HostListLocators.Tooltip.apps_btn)
     AdminIntroPage(page.driver, page.base_url).wait_url_contains_path("/admin/intro")
