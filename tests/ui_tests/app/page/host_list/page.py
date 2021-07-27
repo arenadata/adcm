@@ -48,10 +48,14 @@ class HostListPage(BasePageObject):
         self.table = CommonTableObj(self.driver, self.base_url, HostListLocators.HostTable)
 
     def get_host_row(self, row_num: int = 0) -> WebElement:
+        def row_in_table():
+            current_row_count = self.table.row_count
+            assert (
+                row_num + 1 <= current_row_count
+            ), f"Host table has only {current_row_count} rows when row #{row_num} was requested"
+
+        wait_until_step_succeeds(row_in_table, timeout=5, period=0.1)
         rows = self.table.get_all_rows()
-        assert (rows_count := len(rows)) >= (
-            row_num + 1
-        ), f"Host table has only {rows_count} rows when row #{row_num} was requested"
         return rows[row_num]
 
     def get_host_info_from_row(self, row_num: int = 0) -> HostRowInfo:

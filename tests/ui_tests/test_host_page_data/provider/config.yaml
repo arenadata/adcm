@@ -31,10 +31,11 @@
           display_name: "Required item"
           type: integer
           required: yes
+          default: 40
     - name: important_password
       display_name: "Important password"
       type: password
-      required: yes
+      required: no
     - name: advanced_one
       display_name: "Advanced option"
       type: string

@@ -11,6 +11,8 @@
 # limitations under the License.
 from typing import Set
 
+from adcm_pytest_plugin.utils import wait_until_step_succeeds
+
 from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.common.base_page import BasePageObject, PageHeader, PageFooter
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
@@ -25,8 +27,15 @@ class HostPage(BasePageObject):
         self.footer = PageFooter(self.driver, self.base_url)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
 
-    def get_fqdn(self) -> str:
-        return self.find_element(HostLocators.Header.fqdn).text
+    def assert_fqdn_is(self, fqdn: str):
+        """Check if fqdn on page is equal to given one"""
+
+        def check(element):
+            real_fqdn = element.text
+            assert real_fqdn == fqdn, f'Expected FQDN is {fqdn}, but FQDN in menu is {real_fqdn}'
+
+        fqdn_element = self.find_element(HostLocators.Header.fqdn)
+        wait_until_step_succeeds(check, timeout=5, period=0.1, element=fqdn_element)
 
     def get_bundle_label(self) -> str:
         """Get text from label below FQDN"""
@@ -62,5 +71,5 @@ class HostPage(BasePageObject):
         :param menu_locator: Menu locator from HostLocators.Menu
         """
         menu_link = self.find_element(menu_locator)
-        menu_class = menu_link.get_property("class")
+        menu_class = menu_link.get_attribute("class")
         return 'active' in menu_class

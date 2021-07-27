@@ -1,6 +1,14 @@
-"""
-Smoke tests for /host
-"""
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from typing import Any, List, Tuple, Optional
 
 import os
@@ -87,7 +95,7 @@ def page(app_fs: ADCMTest, auth_to_adcm) -> HostListPage:
 def elements_should_be_hidden(page: BasePageObject, locators: List[Locator]):
     # should be faster than alternatives to not is_visible and stuff
     for loc in locators:
-        page.wait_element_hide(loc)
+        page.element_should_be_hidden(loc)
 
 
 @allure.step('Open host config menu from host list')
@@ -131,7 +139,7 @@ def _check_menu(
     list_page.click_on_row_child(0, HostListLocators.HostTable.HostRow.fqdn)
     host_page = HostPage(list_page.driver, list_page.base_url)
     getattr(host_page, f'open_{menu_name}_menu')()
-    assert host_page.get_fqdn() == HOST_FQDN
+    host_page.assert_fqdn_is(HOST_FQDN)
     bundle_label = host_page.get_bundle_label()
     # Test Host is name of host in config.yaml
     assert 'Test Host' in bundle_label
@@ -202,7 +210,7 @@ def test_open_cluster_from_host_list(
 
 
 @pytest.mark.parametrize(
-    'row_child_name,menu_item_name',
+    ('row_child_name', 'menu_item_name'),
     [
         pytest.param('fqdn', 'main', id='open_host_main'),
         pytest.param('status', 'status', id='open_status_menu', marks=pytest.mark.full),
@@ -221,25 +229,21 @@ def test_open_host_from_host_list(
     page.click_on_row_child(0, row_child)
     main_host_page = HostPage(page.driver, page.base_url)
     with allure.step('Check correct menu is opened'):
-        assert (
-            page_fqdn := main_host_page.get_fqdn()
-        ) == HOST_FQDN, f'Expected FQDN is {HOST_FQDN}, but FQDN in menu is {page_fqdn}'
+        main_host_page.assert_fqdn_is(HOST_FQDN)
         assert main_host_page.active_menu_is(menu_item_locator)
 
 
+@pytest.mark.usefixtures("_create_host")
 def test_delete_host(
     sdk_client_fs: ADCMClient,
     page: HostListPage,
     upload_and_create_provider: Tuple[Bundle, Provider],
-    bundle_archive: str,
 ):
     """Create host and delete it"""
-    host_fqdn = 'doomed-host'
-    page.create_host(host_fqdn)
     host_info = page.get_host_info_from_row(0)
-    check_host_info(host_info, host_fqdn, PROVIDER_NAME, None, 'created')
+    check_host_info(host_info, HOST_FQDN, PROVIDER_NAME, None, 'created')
     page.delete_host(0)
-    page.wait_element_hide(HostListLocators.HostTable.row)
+    page.element_should_be_hidden(HostListLocators.HostTable.row)
 
 
 @pytest.mark.full()
@@ -272,6 +276,7 @@ def test_run_action_from_menu(
     """Run action from host actions menu"""
     page.click_on_row_child(0, HostListLocators.HostTable.HostRow.fqdn)
     host_main_page = HostPage(page.driver, page.base_url)
+    host_main_page.open_action_menu()
     action_name = 'Init'
     actions_before = host_main_page.get_action_names()
     assert action_name in actions_before, f'Action {action_name} should be listed in Actions menu'
@@ -306,10 +311,10 @@ def test_filter_config(
         elements_should_be_hidden(host_page, [not_required_option, required_option])
         host_page.is_element_displayed(password_fields)
         host_page.config.click_on_group('group_one')
-        host_page.wait_element_visible(not_required_option)
+        host_page.element_should_be_visible(not_required_option)
     with allure.step('Check configuration with "Advanced" turned on'):
         host_page.find_and_click(CommonConfigMenu.advanced_label)
-        host_page.wait_element_visible(advanced_option)
+        host_page.element_should_be_visible(advanced_option)
         host_page.assert_displayed_elements([not_required_option, required_option, password_fields])
     with allure.step('Check search filtration'):
         host_page.config.search('Adv')
@@ -318,7 +323,7 @@ def test_filter_config(
             host_page, [not_required_option, required_option, password_fields]
         )
         host_page.find_and_click(CommonConfigMenu.advanced_label)
-        host_page.wait_element_hide(advanced_option)
+        host_page.element_should_be_hidden(advanced_option)
 
 
 @pytest.mark.usefixtures('_create_host')
@@ -351,13 +356,13 @@ def test_reset_configuration(
     password_adcm_test, field_adcm_test = PASSWORD_FIELD_ADCM_TEST, REQUIRED_FIELD_ADCM_TEST
     host_page = open_config(page)
     host_page.config.fill_password_and_confirm_fields('pass', 'pass', adcm_test=password_adcm_test)
-    host_page.config.type_in_config_field('42', adcm_test=field_adcm_test)
+    host_page.config.type_in_config_field('42', adcm_test=field_adcm_test, clear=True)
     host_page.config.save_config()
     host_page.config.reset_to_default(field_adcm_test)
     host_page.config.reset_to_default(password_adcm_test)
     field_value = host_page.config.get_input_value(field_adcm_test)
     password_value = host_page.config.get_input_value(password_adcm_test, is_password=True)
-    assert field_value == '', 'Value in Required field should be empty after reset'
+    assert field_value == '40', 'Value in Required field should be empty after reset'
     assert password_value == '', 'Value in Password field should be empty after reset'
 
 
@@ -370,6 +375,7 @@ def test_field_validation(
     host_page = open_config(page)
     host_page.wait_element_visible(host_page.config.config.field_input(REGULAR_FIELD_ADCM_TEST))
     host_page.config.check_password_confirm_required('Important password')
+    host_page.clear_by_keys(host_page.config.config.field_input(REQUIRED_FIELD_ADCM_TEST))
     host_page.config.check_field_is_required('Required item')
     host_page.config.type_in_config_field('etonechislo', REGULAR_FIELD_ADCM_TEST)
     host_page.config.check_field_is_invalid('Just item')

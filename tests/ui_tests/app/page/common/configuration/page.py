@@ -91,12 +91,10 @@ class CommonConfigMenuObj(BasePageObject):
     @allure.step("Filling in {adcm_test} field's password {} and confirmation {}")
     def fill_password_and_confirm_fields(self, password: str, confirmation: str, adcm_test: str):
         """
-        Fill password and confirm password fields
+        Fill password in clean fields and confirm password fields
         """
         # there are invisible inputs, so we need special locator
         password_input, confirm_input = self.find_elements(self.config.password_inputs(adcm_test))
-        password_input.clear()
-        confirm_input.clear()
         password_input.send_keys(password)
         confirm_input.send_keys(confirmation)
 
@@ -116,9 +114,7 @@ class CommonConfigMenuObj(BasePageObject):
         Assert that message "Field [{name}] is required!" is presented
         """
         message = f'Field [{name}] is required!'
-        assert self.is_element_displayed(
-            self.config.field_error(message)
-        ), f'Error "{message}" is not presented'
+        self.element_should_be_visible(self.config.field_error(message))
 
     @allure.step("Check {name} invalid error is presented")
     def check_field_is_invalid(self, name: str):
@@ -126,9 +122,7 @@ class CommonConfigMenuObj(BasePageObject):
         Assert that message "Field [{name}] is invalid!" is presented
         """
         message = f'Field [{name}] is invalid!'
-        assert self.is_element_displayed(
-            self.config.field_error(message)
-        ), f'Error "{message}" is not presented'
+        self.element_should_be_visible(self.config.field_error(message))
 
     @allure.step("Check {name} confirmation error is presented")
     def check_password_confirm_required(self, name: str):
@@ -136,5 +130,4 @@ class CommonConfigMenuObj(BasePageObject):
         Assert that message "Confirm [{name}] is required!" is presented
         """
         message = f'Confirm [{name}] is required!'
-        loc = self.config.field_error(message)
-        assert self.is_element_displayed(loc), f'Error "{message}" is not presented'
+        self.element_should_be_visible(self.config.field_error(message))
