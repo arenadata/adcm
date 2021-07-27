@@ -100,6 +100,10 @@ class ADCMTest:
     @allure.step("Open new tab")
     def new_tab(self):
         self.driver.execute_script("window.open('');")
+        # close the *old* window
+        self.driver.switch_to.window(self.driver.window_handles[0])
+        self.driver.close()
+        # set focus to the newly created window
         self.driver.switch_to.window(self.driver.window_handles[-1])
         self.driver.delete_all_cookies()
         try:
@@ -107,12 +111,6 @@ class ADCMTest:
         except WebDriverException:
             # we skip JS error here since we have no simple way to detect localStorage availability
             pass
-
-    @allure.step("Close {index} tab")
-    def close_tab_by_index(self, index: int):
-        self.driver.switch_to.window(self.driver.window_handles[index])
-        self.driver.close()
-        self.driver.switch_to.window(self.driver.window_handles[-1])
 
     def destroy(self):
         self.driver.quit()
