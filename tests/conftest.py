@@ -187,25 +187,6 @@ def adcm_credentials():
     return {'username': 'admin', 'password': 'admin'}
 
 
-@deprecated("Use login_to_adcm_over_ui or login_to_adcm_over_api")
-@pytest.fixture(scope="function")
-def login_to_adcm(app_fs, adcm_credentials):
-    """Perform login on Login page ADCM
-    :param app_fs:
-    :param adcm_credentials:
-    """
-    app_fs.driver.get(app_fs.adcm.url)
-    login = DeprecatedLoginPage(app_fs.driver)
-    login.login(**adcm_credentials)
-
-
-@deprecated("Use login_to_adcm_over_ui")
-@pytest.fixture(scope="function")
-def auth_to_adcm(login_to_adcm_over_ui):
-    """Same as login_to_adcm_over_ui"""
-    ...
-
-
 def _pack_bundle(stack_dir, archive_dir):
     archive_name = os.path.join(archive_dir, os.path.basename(stack_dir) + ".tar")
     with tarfile.open(archive_name, "w") as tar:
