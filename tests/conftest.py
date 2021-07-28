@@ -203,7 +203,7 @@ def login_to_adcm(app_fs, adcm_credentials):
 @pytest.fixture(scope="function")
 def auth_to_adcm(login_to_adcm_over_ui):
     """Same as login_to_adcm_over_ui"""
-    pass
+    ...
 
 
 def _pack_bundle(stack_dir, archive_dir):
