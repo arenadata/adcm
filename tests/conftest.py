@@ -199,6 +199,13 @@ def login_to_adcm(app_fs, adcm_credentials):
     login.login(**adcm_credentials)
 
 
+@deprecated("Use login_to_adcm_over_ui")
+@pytest.fixture(scope="function")
+def auth_to_adcm(login_to_adcm_over_ui):
+    """Same as login_to_adcm_over_ui"""
+    pass
+
+
 def _pack_bundle(stack_dir, archive_dir):
     archive_name = os.path.join(archive_dir, os.path.basename(stack_dir) + ".tar")
     with tarfile.open(archive_name, "w") as tar:
@@ -225,7 +232,7 @@ def login_to_adcm_over_api(app_fs, adcm_credentials):
     auth = {'login': adcm_credentials['username'], 'token': token}
     script = f'localStorage.setItem("auth", JSON.stringify({auth}))'
     app_fs.driver.execute_script(script)
-    app_fs.driver.get(app_fs.adcm.url)
+    AdminIntroPage(app_fs.driver, app_fs.adcm.url).open().wait_config_loaded()
 
 
 @allure.title("Login in ADCM over UI")

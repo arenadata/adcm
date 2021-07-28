@@ -30,7 +30,7 @@ def prototype_display_names(ui_hell_fs):
 
 @pytest.fixture()
 @allure.step('Open Configuration page')
-def ui_display_names(login_to_adcm_over_ui, app_fs, ui_hell_fs):
+def ui_display_names(login_to_adcm_over_api, app_fs, ui_hell_fs):
     ui_config = Configuration(
         app_fs.driver,
         "{}/cluster/{}/service/{}/config".format(
