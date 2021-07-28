@@ -1,18 +1,19 @@
 import { Meta, moduleMetadata } from '@storybook/angular';
-import { NotificationsComponent } from '../app/components/notifications/notifications.component';
 import { APP_BASE_HREF, CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
+import { provideMockStore } from '@ngrx/store/testing';
+import { HttpClientModule } from '@angular/common/http';
+
+import { NotificationsComponent } from '../app/components/notifications/notifications.component';
 import { BellComponent } from '../app/components/bell/bell.component';
 import { TaskService } from '../app/services/task.service';
-import { provideMockStore } from '@ngrx/store/testing';
 import { ApiService } from '../app/core/api';
-import { HttpClientModule } from '@angular/common/http';
 import { AuthService } from '../app/core/auth/auth.service';
 import { PopoverDirective } from '../app/directives/popover.directive';
 
 export default {
-  title: 'Custom components',
+  title: 'ADCM/Custom components',
   decorators: [
     moduleMetadata({
       providers: [
