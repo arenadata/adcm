@@ -46,6 +46,7 @@ def test_check_cluster_list_page_with_cluster_creating(
         "state": "created",
     }
     cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+    cluster_page.close_info_popup()
     with allure.step("Check no cluster rows"):
         assert len(cluster_page.table.get_all_rows()) == 0, "There should be no row with clusters"
     cluster_page.create_cluster(
