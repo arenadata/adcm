@@ -128,14 +128,14 @@ class HostListPage(BasePageObject):
         self.find_and_click(DeleteDialog.yes)
         self.wait_element_hide(DeleteDialog.body)
 
-    @allure.step('Assign host in row {host_row_num} to cluster "{cluster_name}"')
-    def assign_host_to_cluster(self, host_row_num: int, cluster_name: str):
+    @allure.step('Bind host in row {host_row_num} to cluster "{cluster_name}"')
+    def bind_host_to_cluster(self, host_row_num: int, cluster_name: str):
         """Assign host to cluster in host list table"""
         self.click_on_row_child(host_row_num, HostListLocators.HostTable.HostRow.cluster)
         self._wait_and_click_on_cluster_option(cluster_name, HostListLocators.HostTable.option)
 
     @allure.step('Assert host in row {row_num} is assigned to cluster {cluster_name}')
-    def assert_host_cluster(self, row_num: int, cluster_name: str):
+    def assert_host_bonded_to_cluster(self, row_num: int, cluster_name: str):
         def check_host_cluster(page: HostListPage, row: WebElement):
             real_cluster = page.find_child(row, HostListLocators.HostTable.HostRow.cluster).text
             assert real_cluster == cluster_name
@@ -164,12 +164,11 @@ class HostListPage(BasePageObject):
         """Click create host button in popup"""
         self.find_and_click(HostListLocators.CreateHostPopup.create_btn)
 
-    # HELPERS
-
     def _insert_new_host_info(self, fqdn: str, cluster: Optional[str] = None):
         """Insert new host info in fields of opened popup"""
         popup = HostListLocators.CreateHostPopup
-        self.find_element(popup.fqdn_input).send_keys(fqdn)
+        fqdn_input = self.find_element(popup.fqdn_input)
+        fqdn_input.send_keys(fqdn)
         if cluster:
             self._choose_cluster_in_popup(cluster)
 
@@ -184,6 +183,7 @@ class HostListPage(BasePageObject):
         self.wait_element_visible(popup.new_provider_block)
         self.find_element(popup.upload_bundle_btn).send_keys(bundle_path)
         self.find_and_click(popup.new_provider_add_btn)
+        self.wait_element_hide(popup.new_provider_block)
 
     def _get_hostprovider_name(self) -> str:
         """Get chosen provider from opened new host popup"""
@@ -193,6 +193,7 @@ class HostListPage(BasePageObject):
         self.find_and_click(HostListLocators.CreateHostPopup.cluster_select)
         option = HostListLocators.CreateHostPopup.cluster_option
         self._wait_and_click_on_cluster_option(cluster_name, option)
+        self.wait_element_hide(option)
 
     def _wait_and_click_on_cluster_option(self, cluster_name: str, option_locator: Locator):
         WDW(self.driver, self.default_loc_timeout).until(

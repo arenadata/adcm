@@ -14,6 +14,7 @@ from typing import Any, List, Tuple, Optional
 import os
 import allure
 import pytest
+from _pytest.fixtures import SubRequest
 
 from adcm_client.objects import ADCMClient, Bundle, Provider, Cluster
 from adcm_pytest_plugin import utils
@@ -43,10 +44,10 @@ PASSWORD_FIELD_ADCM_TEST = 'important_password'
 ADVANCED_FIELD_ADCM_TEST = 'advanced_one'
 
 
-@pytest.fixture()
+@pytest.fixture(params=["provider"])
 @allure.title("Upload provider bundle")
-def provider_bundle(sdk_client_fs: ADCMClient) -> Bundle:
-    return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), "provider"))
+def provider_bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
+    return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), request.param))
 
 
 @pytest.fixture()
@@ -181,6 +182,7 @@ def test_create_bonded_to_cluster_host(
 def test_host_list_pagination(page: HostListPage):
     """Create more than 10 hosts and check pagination"""
     hosts_on_first_page, hosts_on_second_page = 10, 2
+    page.close_info_popup()
     with allure.step("Check pagination"):
         with page.table.wait_rows_change():
             page.table.click_page_by_number(2)
@@ -196,16 +198,18 @@ def test_host_list_pagination(page: HostListPage):
         check_rows_amount(page, hosts_on_first_page, 1)
 
 
-@pytest.mark.usefixtures('_create_host')
-def test_open_cluster_from_host_list(
+def test_bind_host_to_cluster(
     page: HostListPage,
+    upload_and_create_provider: Tuple[Bundle, Provider],
     upload_and_create_cluster: Tuple[Bundle, Provider],
 ):
     """Create host and go to cluster from host list"""
-    host_info = page.get_host_info_from_row(0)
-    check_host_info(host_info, HOST_FQDN, PROVIDER_NAME, None, 'created')
-    page.assign_host_to_cluster(0, CLUSTER_NAME)
-    page.assert_host_cluster(0, CLUSTER_NAME)
+    page.create_host(HOST_FQDN)
+    with allure.step("Check host created and isn't bound to a cluster"):
+        host_info = page.get_host_info_from_row(0)
+        check_host_info(host_info, HOST_FQDN, PROVIDER_NAME, None, 'created')
+    page.bind_host_to_cluster(0, CLUSTER_NAME)
+    page.assert_host_bonded_to_cluster(0, CLUSTER_NAME)
 
 
 @pytest.mark.parametrize(
@@ -243,6 +247,18 @@ def test_delete_host(
     check_host_info(host_info, HOST_FQDN, PROVIDER_NAME, None, 'created')
     page.delete_host(0)
     page.element_should_be_hidden(HostListLocators.HostTable.row)
+
+
+def test_delete_bonded_host(
+    sdk_client_fs: ADCMClient,
+    page: HostListPage,
+    upload_and_create_provider: Tuple[Bundle, Provider],
+    upload_and_create_cluster: Tuple[Bundle, Provider],
+):
+    """Host shouldn't be deleted"""
+    page.create_host(HOST_FQDN, cluster=CLUSTER_NAME)
+    page.delete_host(0)
+    page.element_should_be_visible(HostListLocators.HostTable.row)
 
 
 @pytest.mark.full()
@@ -289,6 +305,7 @@ def test_run_action_from_menu(
 
 
 @pytest.mark.full()
+@pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
 @pytest.mark.usefixtures('_create_host')
 def test_filter_config(
     page: HostListPage,
@@ -325,6 +342,7 @@ def test_filter_config(
         host_page.element_should_be_hidden(advanced_option)
 
 
+@pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
 @pytest.mark.usefixtures('_create_host')
 def test_custom_name_config(
     page: HostListPage,
@@ -342,11 +360,12 @@ def test_custom_name_config(
         host_page.config.save_config()
     with allure.step('Compare configurations'):
         host_page.config.compare_current_to(init_config_desc)
-        host_page.config.config_diff_is_presented('42', REQUIRED_FIELD_ADCM_TEST)
+        host_page.config.config_diff_is_presented('', REQUIRED_FIELD_ADCM_TEST)
         host_page.config.config_diff_is_presented('***', PASSWORD_FIELD_ADCM_TEST)
 
 
 @pytest.mark.full()
+@pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
 @pytest.mark.usefixtures('_create_host')
 def test_reset_configuration(
     page: HostListPage,
@@ -361,11 +380,12 @@ def test_reset_configuration(
     host_page.config.reset_to_default(password_adcm_test)
     field_value = host_page.config.get_input_value(field_adcm_test)
     password_value = host_page.config.get_input_value(password_adcm_test, is_password=True)
-    assert field_value == '40', 'Value in Required field should be empty after reset'
+    assert field_value == '', 'Value in Required field should be empty after reset'
     assert password_value == '', 'Value in Password field should be empty after reset'
 
 
 @pytest.mark.full()
+@pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
 @pytest.mark.usefixtures('_create_host')
 def test_field_validation(
     page: HostListPage,
@@ -374,7 +394,6 @@ def test_field_validation(
     host_page = open_config(page)
     host_page.wait_element_visible(host_page.config.config.field_input(REGULAR_FIELD_ADCM_TEST))
     host_page.config.check_password_confirm_required('Important password')
-    host_page.clear_by_keys(host_page.config.config.field_input(REQUIRED_FIELD_ADCM_TEST))
     host_page.config.check_field_is_required('Required item')
     host_page.config.type_in_config_field('etonechislo', REGULAR_FIELD_ADCM_TEST)
     host_page.config.check_field_is_invalid('Just item')

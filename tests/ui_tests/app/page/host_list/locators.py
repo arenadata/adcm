@@ -46,7 +46,7 @@ class HostListLocators:
             By.XPATH, "//input[@value='upload_bundle_file']", "Upload bundle button"
         )
         new_provider_add_btn = Locator(
-            By.XPATH, "//mat-icon[text()='add_box']", "Add new provider button"
+            By.XPATH, "//button[@mattooltip='Create hostprovider']", "Add new provider button"
         )
 
         # HOST
