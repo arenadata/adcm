@@ -13,8 +13,8 @@
 import allure
 import pytest
 
-from tests.ui_tests.app.page.admin_intro.admin_intro_page import AdminIntroPage
-from tests.ui_tests.app.page.login.login_page import LoginPage
+from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
+from tests.ui_tests.app.page.login.page import LoginPage
 
 
 def test_check_login_to_adcm(app_fs, adcm_credentials):
@@ -24,21 +24,27 @@ def test_check_login_to_adcm(app_fs, adcm_credentials):
     with allure.step("Check if user has been authorized"):
         intro_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url)
         login_page.wait_url_contains_path(intro_page.path)
-        assert intro_page.path in app_fs.driver.current_url, \
-            f"Page '{intro_page.path}' has not been opened"
+        login_page.wait_config_loaded()
+        assert (
+            intro_page.path in app_fs.driver.current_url
+        ), f"Page '{intro_page.path}' has not been opened"
         intro_page.header.check_auth_page_elements()
 
 
-@pytest.mark.parametrize("name, password", [("", "admin"), ("admin", "")],
-                         ids=("no_name", "no_password"))
+@pytest.mark.parametrize(
+    ("name", "password"), [("", "admin"), ("admin", "")], ids=("no_name", "no_password")
+)
 def test_check_login_button_unavailable(app_fs, name, password):
     login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
     login_page.fill_login_user_form(name, password)
     login_page.check_check_login_button_unavailable()
 
 
-@pytest.mark.parametrize("name, password", [("admin1", "admin"), ("admin", "admin1")],
-                         ids=("wrong_name", "wrong_pass"))
+@pytest.mark.parametrize(
+    ("name", "password"),
+    [("admin1", "admin"), ("admin", "admin1")],
+    ids=("wrong_name", "wrong_pass"),
+)
 def test_check_error_in_login(app_fs, name, password):
     params = {"error_text": "Incorrect password or user."}
     login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()

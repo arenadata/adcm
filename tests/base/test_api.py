@@ -666,9 +666,7 @@ class TestAPI(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(r1.json()['code'], 'TASK_ERROR')
         self.assertEqual(r1.json()['desc'], 'action has issues')
 
-        r1 = self.api_post(
-            f'/cluster/{cluster_id}/config/history/', {'config': {'required': 42}}
-        )
+        r1 = self.api_post(f'/cluster/{cluster_id}/config/history/', {'config': {'required': 42}})
         self.assertEqual(r1.status_code, 201)
 
         r1 = self.api_post(f'/cluster/{cluster_id}/action/{action_id}/run/', {})

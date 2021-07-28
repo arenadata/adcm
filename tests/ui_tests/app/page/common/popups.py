@@ -10,16 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageHeader,
-    PageFooter,
-)
+from selenium.webdriver.common.by import By
+
+from tests.ui_tests.app.helpers.locator import Locator
 
 
-class ProfilePage(BasePageObject):
+class CommonPopupLocators:
+    """ADCM ppopu locators"""
 
-    def __init__(self, driver, base_url):
-        super().__init__(driver, base_url, "/profile")
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
+    block = Locator(By.XPATH, "//simple-snack-bar", "Popup block")
+    hide_btn = Locator(By.XPATH, "//button[./span[text()='Hide']]", "Hide pop up button")

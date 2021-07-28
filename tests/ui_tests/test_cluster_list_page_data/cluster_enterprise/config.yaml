@@ -10,16 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageHeader,
-    PageFooter,
-)
-
-
-class HostListPage(BasePageObject):
-
-    def __init__(self, driver, base_url):
-        super().__init__(driver, base_url, "/host")
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
+- type: cluster
+  name: test_cluster
+  version: 1.5
+  license: license.txt
+  edition: enterprise

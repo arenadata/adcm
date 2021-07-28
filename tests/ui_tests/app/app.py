@@ -19,11 +19,10 @@ import os
 import allure
 from adcm_client.wrappers.docker import ADCM
 from selenium import webdriver
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver import ChromeOptions, FirefoxOptions
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
-from selenium.common.exceptions import WebDriverException
 
 from tests.ui_tests.app.pages import Ui, ClustersList
 
@@ -100,19 +99,18 @@ class ADCMTest:
 
     @allure.step("Open new tab")
     def new_tab(self):
+        self.driver.execute_script("window.open('');")
+        # close the *old* window
+        self.driver.switch_to.window(self.driver.window_handles[0])
+        self.driver.close()
+        # set focus to the newly created window
+        self.driver.switch_to.window(self.driver.window_handles[-1])
         self.driver.delete_all_cookies()
         try:
             self.driver.execute_script("window.localStorage.clear();")
         except WebDriverException:
             # we skip JS error here since we have no simple way to detect localStorage availability
             pass
-        body = self.driver.find_element_by_tag_name("body")
-        body.send_keys(Keys.CONTROL + "t")
-
-    @allure.step("Close tab")
-    def close_tab(self):
-        body = self.driver.find_element_by_tag_name("body")
-        body.send_keys(Keys.CONTROL + "w")
 
     def destroy(self):
         self.driver.quit()
