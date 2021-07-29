@@ -80,7 +80,7 @@ const all = [
   { id: 3, title: 'Hosts - Components', url: 'host_component' },
 ];
 
-const [main, license, config, m_status, m_import, actions, services, hosts, host_components, config_group] = all;
+const [main, license, config, config_group, m_status, m_import, actions, services, hosts, host_components] = all;
 
 const components = {
   id: 8,
