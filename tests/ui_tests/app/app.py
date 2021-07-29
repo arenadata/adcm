@@ -41,6 +41,8 @@ class ADCMTest:
         self.opts.add_argument("--start-maximized")
         self.opts.add_argument("--enable-logging")
         self.opts.add_argument("--enable-automation")
+        if browser == "Chrome":
+            self.opts.add_argument("--window-size=1366,768")
         self.capabilities = self.opts.capabilities.copy()
         self.capabilities["acceptSslCerts"] = True
         self.capabilities["acceptInsecureCerts"] = True
