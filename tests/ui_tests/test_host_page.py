@@ -181,21 +181,21 @@ def test_create_bonded_to_cluster_host(
 @pytest.mark.usefixtures("_create_many_hosts")
 def test_host_list_pagination(page: HostListPage):
     """Create more than 10 hosts and check pagination"""
-    hosts_on_first_page, hosts_on_second_page = 10, 2
+    params = {'hosts_on_first_page': 10, 'hosts_on_second_page': 2}
     page.close_info_popup()
     with allure.step("Check pagination"):
         with page.table.wait_rows_change():
             page.table.click_page_by_number(2)
-        check_rows_amount(page, hosts_on_second_page, 2)
+        check_rows_amount(page, params['hosts_on_second_page'], 2)
         with page.table.wait_rows_change():
             page.table.click_previous_page()
-        check_rows_amount(page, hosts_on_first_page, 1)
+        check_rows_amount(page, params['hosts_on_first_page'], 1)
         with page.table.wait_rows_change():
             page.table.click_next_page()
-        check_rows_amount(page, hosts_on_second_page, 2)
+        check_rows_amount(page, params['hosts_on_second_page'], 2)
         with page.table.wait_rows_change():
             page.table.click_page_by_number(1)
-        check_rows_amount(page, hosts_on_first_page, 1)
+        check_rows_amount(page, params['hosts_on_first_page'], 1)
 
 
 def test_bind_host_to_cluster(
@@ -311,6 +311,7 @@ def test_filter_config(
     page: HostListPage,
 ):
     """Use filters on host configuration page"""
+    params = {'group': 'group_one', 'search_text': 'Adv'}
     host_page = open_config(page)
     field_input = CommonConfigMenu.field_input
     not_required_option = field_input(REGULAR_FIELD_ADCM_TEST)
@@ -323,17 +324,17 @@ def test_filter_config(
             advanced_option
         ), 'Advanced option should not be visible'
     with allure.step('Check group roll up'):
-        host_page.config.click_on_group('group_one')
+        host_page.config.click_on_group(params['group'])
         elements_should_be_hidden(host_page, [not_required_option, required_option])
         host_page.is_element_displayed(password_fields)
-        host_page.config.click_on_group('group_one')
+        host_page.config.click_on_group(params['group'])
         host_page.element_should_be_visible(not_required_option)
     with allure.step('Check configuration with "Advanced" turned on'):
         host_page.find_and_click(CommonConfigMenu.advanced_label)
         host_page.element_should_be_visible(advanced_option)
         host_page.assert_displayed_elements([not_required_option, required_option, password_fields])
     with allure.step('Check search filtration'):
-        host_page.config.search('Adv')
+        host_page.config.search(params['search_text'])
         host_page.is_element_displayed(advanced_option)
         elements_should_be_hidden(
             host_page, [not_required_option, required_option, password_fields]
@@ -348,20 +349,30 @@ def test_custom_name_config(
     page: HostListPage,
 ):
     """Change configuration, save with custom name, compare changes"""
+    params = {
+        'password': 'awesomepass',
+        'description': 'my own config description',
+        'type_in_required': '12',
+        'required_expected': '',
+        'password_expected': '***',
+    }
     host_page = open_config(page)
     with allure.step('Change config description'):
-        new_config_desc = 'my own config description'
-        init_config_desc = host_page.config.set_description(new_config_desc)
+        init_config_desc = host_page.config.set_description(params['description'])
     with allure.step('Change config values'):
-        host_page.config.type_in_config_field('12', REQUIRED_FIELD_ADCM_TEST)
+        host_page.config.type_in_config_field(params['type_in_required'], REQUIRED_FIELD_ADCM_TEST)
         host_page.config.fill_password_and_confirm_fields(
-            'awesomepass', 'awesomepass', adcm_test=PASSWORD_FIELD_ADCM_TEST
+            params['password'], params['password'], adcm_test=PASSWORD_FIELD_ADCM_TEST
         )
         host_page.config.save_config()
     with allure.step('Compare configurations'):
         host_page.config.compare_current_to(init_config_desc)
-        host_page.config.config_diff_is_presented('', REQUIRED_FIELD_ADCM_TEST)
-        host_page.config.config_diff_is_presented('***', PASSWORD_FIELD_ADCM_TEST)
+        host_page.config.config_diff_is_presented(
+            params['required_expected'], REQUIRED_FIELD_ADCM_TEST
+        )
+        host_page.config.config_diff_is_presented(
+            params['password_expected'], PASSWORD_FIELD_ADCM_TEST
+        )
 
 
 @pytest.mark.full()
@@ -371,17 +382,31 @@ def test_reset_configuration(
     page: HostListPage,
 ):
     """Change configuration, save, reset to defaults"""
-    password_adcm_test, field_adcm_test = PASSWORD_FIELD_ADCM_TEST, REQUIRED_FIELD_ADCM_TEST
+    params = {
+        'pass_adcm_test': PASSWORD_FIELD_ADCM_TEST,
+        'req_field_adcm_test': REQUIRED_FIELD_ADCM_TEST,
+        'password': 'pass',
+        'type_in_req_field': '42',
+        'init_value': '',
+    }
     host_page = open_config(page)
-    host_page.config.fill_password_and_confirm_fields('pass', 'pass', adcm_test=password_adcm_test)
-    host_page.config.type_in_config_field('42', adcm_test=field_adcm_test, clear=True)
+    host_page.config.fill_password_and_confirm_fields(
+        params['password'], params['password'], adcm_test=params['pass_adcm_test']
+    )
+    host_page.config.type_in_config_field(
+        params['type_in_req_field'], adcm_test=params['req_field_adcm_test'], clear=True
+    )
     host_page.config.save_config()
-    host_page.config.reset_to_default(field_adcm_test)
-    host_page.config.reset_to_default(password_adcm_test)
-    field_value = host_page.config.get_input_value(field_adcm_test)
-    password_value = host_page.config.get_input_value(password_adcm_test, is_password=True)
-    assert field_value == '', 'Value in Required field should be empty after reset'
-    assert password_value == '', 'Value in Password field should be empty after reset'
+    host_page.config.reset_to_default(params['req_field_adcm_test'])
+    host_page.config.reset_to_default(params['pass_adcm_test'])
+    field_value = host_page.config.get_input_value(params['req_field_adcm_test'])
+    password_value = host_page.config.get_input_value(params['pass_adcm_test'], is_password=True)
+    assert (
+        field_value == params['init_value']
+    ), 'Value in Required field should be empty after reset'
+    assert (
+        password_value == params['init_value']
+    ), 'Value in Password field should be empty after reset'
 
 
 @pytest.mark.full()
@@ -391,12 +416,18 @@ def test_field_validation(
     page: HostListPage,
 ):
     """Inputs are validated correctly"""
+    params = {
+        'pass_name': 'Important password',
+        'req_name': 'Required item',
+        'not_req_name': 'Just item',
+        'wrong_value': 'etonechislo',
+    }
     host_page = open_config(page)
     host_page.wait_element_visible(host_page.config.config.field_input(REGULAR_FIELD_ADCM_TEST))
-    host_page.config.check_password_confirm_required('Important password')
-    host_page.config.check_field_is_required('Required item')
-    host_page.config.type_in_config_field('etonechislo', REGULAR_FIELD_ADCM_TEST)
-    host_page.config.check_field_is_invalid('Just item')
+    host_page.config.check_password_confirm_required(params['pass_name'])
+    host_page.config.check_field_is_required(params['req_name'])
+    host_page.config.type_in_config_field(params['wrong_value'], REGULAR_FIELD_ADCM_TEST)
+    host_page.config.check_field_is_invalid(params['not_req_name'])
 
 
 @pytest.mark.full()
