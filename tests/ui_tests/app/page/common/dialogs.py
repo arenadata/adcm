@@ -10,27 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
-
 from selenium.webdriver.common.by import By
 
-
-@dataclass
-class Locator:
-    """Describes a locator on a webpage"""
-
-    by: By
-    value: str
-    name: str
+from tests.ui_tests.app.helpers.locator import Locator
 
 
-@dataclass
-class TemplateLocator(Locator):
-    """
-    Similar to Locator, but with template in `value`
-    and ability to generate Locators from template
-    """
+class DeleteDialog:
+    body = Locator(By.XPATH, "//mat-dialog-container", "Dialog with choices")
+    yes = Locator(By.XPATH, "//button//span[contains(text(), 'Yes')]", "Yes button in delete dialog")
 
-    def __call__(self, *args) -> Locator:
-        """Get regular Locator by passing arguments to format function"""
-        return Locator(by=self.by, value=self.value.format(*args), name=self.name.format(*args))
+
+class ActionDialog:
+    body = Locator(By.XPATH, "//mat-dialog-container", "Dialog with choices")
+    run = Locator(By.XPATH, "//span[contains(text(), 'Run')]/parent::button", "Run button in action dialog")

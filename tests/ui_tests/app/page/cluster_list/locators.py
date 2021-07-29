@@ -52,7 +52,7 @@ class ClusterListLocators:
             name = Locator(By.XPATH, "./mat-cell[1]", "Cluster name in row")
             bundle = Locator(By.XPATH, "./mat-cell[2]", "Cluster bundle in row")
             description = Locator(By.XPATH, "./mat-cell[3]", "Cluster description in row")
-            state = Locator(By.XPATH, "./mat-cell[4]", "Cluster state in row")
+            state = Locator(By.XPATH, ".//app-state-column", "Cluster state in row")
             status = Locator(By.XPATH, ".//app-status-column/button", "Cluster status in row")
             actions = Locator(By.XPATH, ".//app-actions-button//button", "Cluster actions in row")
             imports = Locator(By.XPATH, "./mat-cell[7]/button", "Cluster imports in row")

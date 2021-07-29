@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import (
@@ -16,6 +17,7 @@ from selenium.common.exceptions import (
     StaleElementReferenceException,
     TimeoutException,
 )
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webdriver import WebElement
@@ -228,6 +230,10 @@ class BasePageObject:
         self.find_element(CommonLocators.socket, timeout=30)
         self.find_element(CommonLocators.profile, timeout=30)
 
+    def hover_element(self, locator: Locator):
+        hover = ActionChains(self.driver).move_to_element(self.find_element(locator))
+        hover.perform()
+
 
 class PageHeader(BasePageObject):
     """Class for header manipulating."""
@@ -329,6 +335,11 @@ class PageHeader(BasePageObject):
 
     def click_logout_in_acc_popup(self):
         self.find_and_click(AuthorizedHeaderLocators.AccountPopup.logout_button)
+
+    def get_success_job_amount_from_header(self):
+        self.hover_element(AuthorizedHeaderLocators.job_block_previous)
+        self.wait_element_visible(AuthorizedHeaderLocators.job_popup)
+        return self.find_element(AuthorizedHeaderLocators.JobPopup.success_jobs).text.split("\n")[1]
 
 
 class PageFooter(BasePageObject):

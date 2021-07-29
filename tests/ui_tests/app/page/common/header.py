@@ -57,6 +57,11 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
         By.XPATH, "//div[contains(@class, 'mat-menu-content')]", "Header popup block"
     )
 
+    class JobPopup:
+        """ADCM header popup with jobs"""
+
+        success_jobs = Locator(By.XPATH, "//div[@mattooltip='Show success jobs']", "Success jobs")
+
     class HelpPopup:
         """ADCM header popup with help links"""
 

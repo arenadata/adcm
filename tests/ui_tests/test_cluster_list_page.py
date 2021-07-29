@@ -20,7 +20,25 @@ from adcm_client.objects import (
 )
 from adcm_pytest_plugin import utils
 
+from tests.ui_tests.app.page.cluster.page import (
+    ClusterImportPage,
+    ClusterConfigPage,
+    ClusterMainPage,
+)
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
+
+BUNDLE_COMMUNITY = "cluster_community"
+BUNDLE_ENTERPRISE = "cluster_enterprise"
+BUNDLE_IMPORT = "cluster_to_import"
+BUNDLE_UPGRADE = "upgradable_cluster"
+
+
+@pytest.fixture()
+def open_cluster_page_with_community_cluster(sdk_client_fs: ADCMClient, app_fs, auth_to_adcm):
+    params = {"cluster_name": "Test cluster"}
+    bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
+    bundle.cluster_create(name=params["cluster_name"])
+    return ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
 
 
 @allure.step("Upload cluster bundle")
@@ -31,8 +49,8 @@ def cluster_bundle(sdk_client_fs: ADCMClient, data_dir_name: str) -> Bundle:
 @pytest.mark.parametrize(
     "bundle_archive",
     [
-        pytest.param(utils.get_data_dir(__file__, "cluster_community"), id="community"),
-        pytest.param(utils.get_data_dir(__file__, "cluster_enterprise"), id="enterprise"),
+        pytest.param(utils.get_data_dir(__file__, BUNDLE_COMMUNITY), id="community"),
+        pytest.param(utils.get_data_dir(__file__, BUNDLE_ENTERPRISE), id="enterprise"),
     ],
     indirect=True,
 )
@@ -68,7 +86,7 @@ def test_check_cluster_list_page_with_cluster_creating(app_fs, auth_to_adcm, bun
 def test_check_cluster_list_page_pagination(sdk_client_fs: ADCMClient, app_fs, auth_to_adcm):
     params = {"fist_page_cluster_amount": 10, "second_page_cluster_amount": 1}
     with allure.step("Create 11 clusters"):
-        bundle = cluster_bundle(sdk_client_fs, 'cluster_community')
+        bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
         for i in range(11):
             bundle.cluster_create(name=f"Test cluster {i}")
     cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
@@ -96,10 +114,62 @@ def test_check_cluster_list_page_pagination(sdk_client_fs: ADCMClient, app_fs, a
         ), f"Previous page should contains {params['fist_page_cluster_amount']}"
 
 
-def test_check_cluster_list_page_action_run(sdk_client_fs: ADCMClient, app_fs, auth_to_adcm):
-    bundle = cluster_bundle(sdk_client_fs, 'cluster_community')
-    bundle.cluster_create(name=f"Test cluster")
-    cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+def test_check_cluster_list_page_action_run(open_cluster_page_with_community_cluster):
+    params = {
+        "cluster_name": "Test cluster",
+        "action_name": "test_action",
+        "expected_state": "installed"
+    }
+    cluster_page = open_cluster_page_with_community_cluster
     row = cluster_page.table.get_all_rows()[0]
-    cluster_page.click_action_in_row(row)
-    cluster_page
+    with cluster_page.wait_cluster_state_change(row):
+        cluster_page.run_action_in_cluster_row(row, params["action_name"])
+    with allure.step("Check state has changed"):
+        assert cluster_page.get_cluster_state_from_row(row) == params["expected_state"], \
+            f"Cluster state should be {params['expected_state']}"
+    with allure.step("Check success job"):
+        assert cluster_page.header.get_success_job_amount_from_header() == "1", \
+            "There should be 1 success job in header"
+
+
+def test_check_cluster_list_page_import_run(sdk_client_fs: ADCMClient, app_fs, auth_to_adcm):
+    params = {
+        "main_cluster_name": "Test cluster",
+        "import_cluster_name": "Import cluster",
+    }
+    with allure.step("Create main cluster"):
+        bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
+        bundle.cluster_create(name=params["main_cluster_name"])
+    with allure.step("Create cluster to import"):
+        bundle = cluster_bundle(sdk_client_fs, BUNDLE_IMPORT)
+        bundle.cluster_create(name=params["import_cluster_name"])
+    cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+    row = cluster_page.get_row_by_cluster_name(params["main_cluster_name"])
+    cluster_page.click_import_btn_in_row(row)
+    import_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, "1")
+    cluster_page.header.wait_url_contains_path(import_page.path)
+    with allure.step("Check import on import page"):
+        assert len(import_page.get_import_items()) == 1, "Cluster import page should contain 1 import"
+
+
+def test_check_cluster_list_page_open_cluster_config(open_cluster_page_with_community_cluster, app_fs):
+    cluster_page = open_cluster_page_with_community_cluster
+    row = cluster_page.table.get_all_rows()[0]
+    cluster_page.click_config_button_in_row(row)
+    cluster_page.header.wait_url_contains_path(ClusterConfigPage(app_fs.driver, app_fs.adcm.url, "1").path)
+
+
+def test_check_cluster_list_page_open_cluster_main(open_cluster_page_with_community_cluster, app_fs):
+    cluster_page = open_cluster_page_with_community_cluster
+    row = cluster_page.table.get_all_rows()[0]
+    cluster_page.click_cluster_name_in_row(row)
+    cluster_page.header.wait_url_contains_path(ClusterMainPage(app_fs.driver, app_fs.adcm.url, "1").path)
+
+
+def test_check_cluster_list_page_delete_cluster(open_cluster_page_with_community_cluster, app_fs):
+    cluster_page = open_cluster_page_with_community_cluster
+    row = cluster_page.table.get_all_rows()[0]
+    with cluster_page.table.wait_rows_change():
+        cluster_page.delete_cluster_by_row(row)
+    with allure.step("Check there are no rows"):
+        assert len(cluster_page.table.get_all_rows()) == 0, "Cluster table should be empty"

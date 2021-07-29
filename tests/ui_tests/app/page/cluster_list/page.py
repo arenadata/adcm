@@ -9,8 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from contextlib import contextmanager
 
 import allure
+from adcm_pytest_plugin.utils import wait_until_step_succeeds
+from selenium.webdriver.remote.webdriver import WebElement
 
 from tests.ui_tests.app.page.cluster_list.locators import ClusterListLocators
 from tests.ui_tests.app.page.common.base_page import (
@@ -18,8 +21,11 @@ from tests.ui_tests.app.page.common.base_page import (
     PageHeader,
     PageFooter,
 )
+from tests.ui_tests.app.page.common.dialogs import (
+    ActionDialog,
+    DeleteDialog,
+)
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
-from selenium.webdriver.remote.webdriver import WebElement
 
 
 class ClusterListPage(BasePageObject):
@@ -53,5 +59,52 @@ class ClusterListPage(BasePageObject):
             "state": self.find_child(cluster_row, row_elements.state).text,
         }
 
-    def click_action_in_row(self, row: WebElement):
+    def click_action_btn_in_row(self, row: WebElement):
         self.find_child(row, self.table.table.ClusterRow.actions).click()
+
+    def click_import_btn_in_row(self, row: WebElement):
+        self.find_child(row, self.table.table.ClusterRow.imports).click()
+
+    @allure.step("Run action {action_name} for cluster")
+    def run_action_in_cluster_row(self, row: WebElement, action_name: str):
+        self.click_action_btn_in_row(row)
+        self.wait_element_visible(self.table.table.ActionPopup.block)
+        self.find_and_click(self.table.table.ActionPopup.button(action_name))
+        self.wait_element_visible(ActionDialog.body)
+        self.find_and_click(ActionDialog.run)
+
+    @contextmanager
+    def wait_cluster_state_change(self, row: WebElement):
+        state_before = self.find_child(row, self.table.table.ClusterRow.state).text
+        yield
+
+        def wait_state():
+            state_after = self.find_child(row, self.table.table.ClusterRow.state).text
+            assert state_after != state_before and state_after != self.table.loading_state_text
+
+        wait_until_step_succeeds(wait_state, period=1, timeout=self.default_loc_timeout)
+
+    @allure.step("Get cluster state")
+    def get_cluster_state_from_row(self, row: WebElement):
+        return self.find_child(row, self.table.table.ClusterRow.state).text
+
+    @allure.step("Get row by cluster name '{cluster_name}'")
+    def get_row_by_cluster_name(self, cluster_name: str) -> list:
+        rows = self.table.get_all_rows()
+        for row in rows:
+            if self.find_child(row, self.table.table.ClusterRow.name).text == cluster_name:
+                return row
+        raise AssertionError(f"Cluster '{cluster_name}' not found in table rows")
+
+    def click_config_button_in_row(self, row: WebElement):
+        self.find_child(row, self.table.table.ClusterRow.config).click()
+
+    def click_cluster_name_in_row(self, row: WebElement):
+        self.find_child(row, self.table.table.ClusterRow.name).click()
+
+    @allure.step("Delete cluster")
+    def delete_cluster_by_row(self, row: WebElement):
+        self.find_child(row, self.table.table.ClusterRow.delete_btn).click()
+        self.wait_element_visible(DeleteDialog.body)
+        self.find_and_click(DeleteDialog.yes)
+        self.wait_element_hide(DeleteDialog.body)
