@@ -23,7 +23,8 @@ import {
   Host,
   IAction,
   IImport,
-  Job, License,
+  Job,
+  License,
   LogFile,
   Provider,
   Service

@@ -11,8 +11,7 @@
 // limitations under the License.
 import { Component, ViewChild } from '@angular/core';
 
-import { ChannelService } from '@app/core/services';
-import { keyChannelStrim } from '@app/core/services';
+import { ChannelService, keyChannelStrim } from '@app/core/services';
 import { DynamicComponent } from '@app/shared/directives';
 import { FormModel } from './add.service';
 import { BaseFormDirective } from './base-form.directive';
@@ -37,12 +36,16 @@ import { BaseFormDirective } from './base-form.directive';
         <ng-container *ngSwitchCase="'host2cluster'">
           <app-add-host2cluster (event)="message($event)" #cc></app-add-host2cluster>
         </ng-container>
+        <ng-container *ngSwitchCase="'config_group'">
+          <app-add-config-group #cc></app-add-config-group>
+        </ng-container>
       </ng-container>
     </div>
   `,
 })
 export class AddFormComponent implements DynamicComponent {
   model: FormModel;
+
   constructor(private channel: ChannelService) {}
 
   @ViewChild('cc') container: BaseFormDirective;

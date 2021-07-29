@@ -14,16 +14,16 @@ import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { convertToParamMap, Params } from '@angular/router';
 import { environment } from '@env/environment';
-import { Observable, of, throwError, forkJoin } from 'rxjs';
-import { concatAll, filter, map, switchMap, catchError } from 'rxjs/operators';
+import { forkJoin, Observable, of, throwError } from 'rxjs';
+import { catchError, concatAll, filter, map, switchMap } from 'rxjs/operators';
 
-import { StackInfo } from '@app/core/services';
-import { StackService } from '@app/core/services';
+import { StackInfo, StackService } from '@app/core/services';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { ApiService } from '@app/core/api';
 import { Host, Prototype, ServicePrototype, StackBase, TypeName } from '@app/core/types';
 import { DialogComponent } from '@app/shared/components/dialog.component';
 import { GenName } from './naming';
+import { MainService } from '@app/shared/configuration/main/main.service';
 
 export interface FormModel {
   name: string;
@@ -35,6 +35,12 @@ export interface FormModel {
 const fromBundle = () =>
   new FormGroup({
     prototype_id: new FormControl('', Validators.required),
+    name: new FormControl('', Validators.required),
+    description: new FormControl(),
+  });
+
+const formConfigGroup = () =>
+  new FormGroup({
     name: new FormControl('', Validators.required),
     description: new FormControl(),
   });
@@ -64,6 +70,11 @@ const MODELS: { [key: string]: FormModel } = {
     name: 'host2cluster',
     title: 'hosts',
   },
+  config_group: {
+    name: 'config_group',
+    title: 'Config group',
+    form: formConfigGroup(),
+  },
 };
 
 @Injectable({
@@ -74,11 +85,17 @@ export class AddService {
   set currentPrototype(a: StackBase) {
     this._currentPrototype = a;
   }
+
   get currentPrototype(): StackBase {
     return this._currentPrototype;
   }
 
-  constructor(private api: ApiService, private stack: StackService, private cluster: ClusterService, public dialog: MatDialog) {}
+  constructor(private api: ApiService,
+              private stack: StackService,
+              private cluster: ClusterService,
+              public dialog: MatDialog,
+              private main: MainService
+  ) {}
 
   model(name: string) {
     return MODELS[name];
@@ -86,6 +103,10 @@ export class AddService {
 
   get Cluster() {
     return this.cluster.Cluster;
+  }
+
+  get Current() {
+    return this.main.Current;
   }
 
   genName(form: FormGroup) {
@@ -170,5 +191,14 @@ export class AddService {
 
   upload(data: FormData[]) {
     return this.stack.upload(data).pipe(catchError((e) => throwError(e)));
+  }
+
+  addConfigGroup<T>(data: Partial<T>): Observable<any> {
+    const object_type = this.Current.typeName;
+    const object_id = this.Current.id;
+
+    const params = { object_type, object_id, ...data };
+
+    return this.api.post<T>(`${environment.apiRoot}config-group/`, params);
   }
 }
