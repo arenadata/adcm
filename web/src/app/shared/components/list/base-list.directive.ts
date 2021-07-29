@@ -14,9 +14,8 @@ import { ParamMap } from '@angular/router';
 import { clearMessages, EventMessage, getMessage, SocketState } from '@app/core/store';
 import { Bundle, Cluster, EmmitRow, Entities, Host as AdcmHost, TypeName } from '@app/core/types';
 import { select, Store } from '@ngrx/store';
-import { filter, mergeMap, switchMap, tap } from 'rxjs/operators';
+import { filter, mergeMap, switchMap, takeUntil, tap } from 'rxjs/operators';
 import { IListResult } from '@adwp-ui/widgets';
-import { takeUntil } from 'rxjs/operators';
 import { Sort } from '@angular/material/sort';
 import { Observable, Subject } from 'rxjs';
 

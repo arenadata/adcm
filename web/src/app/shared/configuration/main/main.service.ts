@@ -43,7 +43,9 @@ export const historyAnime = [
   ]),
 ];
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class MainService {
   constructor(private fields: FieldService, private api: ApiService, private current: ClusterService) {}
 

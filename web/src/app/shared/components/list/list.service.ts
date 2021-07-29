@@ -10,8 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Injectable } from '@angular/core';
-import { ParamMap, Params, convertToParamMap } from '@angular/router';
-import { switchMap, tap, map } from 'rxjs/operators';
+import { convertToParamMap, ParamMap, Params } from '@angular/router';
+import { map, switchMap, tap } from 'rxjs/operators';
 import { Observable } from 'rxjs';
 
 import { environment } from '@env/environment';
@@ -61,6 +61,9 @@ export class ListService {
     }
 
     switch (typeName) {
+      case 'config_group':
+        // ToDo replace for current URL for this entity
+        return this.api.getList(`${environment.apiRoot}config-group/`, p);
       case 'host2cluster':
         return this.detail.getHosts(p);
       case 'service2cluster':

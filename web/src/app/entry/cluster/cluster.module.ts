@@ -15,7 +15,7 @@ import { RouterModule, Routes } from '@angular/router';
 
 import { DetailComponent } from '@app/shared/details/detail.component';
 import { ConfigComponent } from '@app/shared/configuration/main/main.component';
-import { MainInfoComponent, StatusComponent, ImportComponent } from '@app/shared/components';
+import { ImportComponent, MainInfoComponent, StatusComponent } from '@app/shared/components';
 import { SharedModule } from '@app/shared/shared.module';
 
 import { ClusterListComponent } from './cluster.component';
@@ -25,6 +25,7 @@ import { ServicesComponent } from '@app/components/cluster/services/services.com
 import { AuthGuard } from '../../core/auth/auth.guard';
 import { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';
 import { ServiceComponentsComponent } from '@app/components/service-components.component';
+import { ConfigGroupsComponent } from '../../shared/configuration/groups/groups.component';
 
 
 const clusterRoutes: Routes = [
@@ -45,6 +46,7 @@ const clusterRoutes: Routes = [
       { path: 'host', component: HostComponent },
       { path: 'host_component', component: HcmapComponent },
       { path: 'config', component: ConfigComponent },
+      { path: 'config_group', component: ConfigGroupsComponent },
       { path: 'status', component: StatusComponent },
       { path: 'import', component: ImportComponent },
       { path: 'action', component: ActionCardComponent },
@@ -59,6 +61,7 @@ const clusterRoutes: Routes = [
       { path: '', redirectTo: 'main', pathMatch: 'full' },
       { path: 'main', component: MainInfoComponent },
       { path: 'config', component: ConfigComponent },
+      { path: 'config_group', component: ConfigGroupsComponent },
       { path: 'status', component: StatusComponent },
       { path: 'import', component: ImportComponent },
       { path: 'action', component: ActionCardComponent },
@@ -99,10 +102,12 @@ const clusterRoutes: Routes = [
   ],
   exports: [RouterModule],
 })
-export class ClusterRoutingModule {}
+export class ClusterRoutingModule {
+}
 
 @NgModule({
   imports: [CommonModule, SharedModule, RouterModule, ClusterRoutingModule],
   declarations: [ClusterListComponent, ServicesComponent, HostComponent, HcmapComponent],
 })
-export class ClusterModule {}
+export class ClusterModule {
+}
