@@ -34008,7 +34008,7 @@
             "assetsDirs": [],
             "styleUrlsData": [
                 {
-                    "data": ":host {\n  display: flex;\n  align-items: center;\n}\n",
+                    "data": "",
                     "styleUrl": "./issue-message.component.scss"
                 }
             ],
@@ -34077,7 +34077,7 @@
                     }
                 }
             },
-            "templateData": "<ng-container *ngFor=\"let item of preparedMessage\">\n  <app-issue-message-item\n    *ngIf=\"item.charAt(0) === '$'; else regularString\"\n    [item]=\"item | issueMessagePlaceholder\"\n    [placeholder]=\"message.placeholder[item | issueMessagePlaceholder]\"\n  ></app-issue-message-item>\n  <ng-template #regularString><span>{{item}}</span></ng-template>\n  &nbsp;\n</ng-container>\n"
+            "templateData": "<ng-container *ngFor=\"let item of preparedMessage\">\n  <app-issue-message-item\n    *ngIf=\"item.charAt(0) === '$'; else regularString\"\n    [item]=\"item | issueMessagePlaceholder\"\n    [placeholder]=\"message.placeholder[item | issueMessagePlaceholder]\"\n  ></app-issue-message-item>\n  <ng-template #regularString><span>{{item}}</span></ng-template>\n</ng-container>\n"
         },
         {
             "name": "IssueMessageItemComponent",
@@ -34149,12 +34149,12 @@
             "assetsDirs": [],
             "styleUrlsData": [
                 {
-                    "data": ".action-link {\n  color: #1ee564;\n  cursor: pointer;\n}\n\n.action-button {\n  position: relative;\n  top: -1px;\n}\n\n:host {\n  display: flex;\n  align-items: center;\n}\n",
+                    "data": ".action-link {\n  color: #1ee564;\n  cursor: pointer;\n}\n\n.action-button {\n  padding: 0;\n  min-width: auto;\n  line-height: normal;\n}\n\na {\n  cursor: pointer;\n}\n",
                     "styleUrl": "./issue-message-item.component.scss"
                 }
             ],
             "stylesData": "",
-            "templateData": "<ng-container [ngSwitch]=\"placeholder.type\">\n  <ng-container *ngSwitchCase=\"IMPlaceholderItemType.ComponentActionRun\">\n    <button\n      mat-icon-button\n      color=\"accent\"\n      matTooltip=\"Run action\"\n      class=\"action-button\"\n      (click)=\"runAction()\"\n    >\n      <mat-icon>play_circle_outline</mat-icon>\n    </button>\n    <a (click)=\"runAction()\" class=\"action-link\">{{placeholder.name}}</a>\n  </ng-container>\n  <a routerLink=\"/\" *ngSwitchDefault>{{placeholder.name}}</a>\n</ng-container>\n\n\n"
+            "templateData": "<ng-container [ngSwitch]=\"placeholder.type\">\n  <ng-container *ngSwitchCase=\"IMPlaceholderItemType.ComponentActionRun\">\n    <button\n      mat-button\n      color=\"accent\"\n      matTooltip=\"Run action\"\n      class=\"action-button\"\n      (click)=\"runAction()\"\n    >\n      <mat-icon>play_circle_outline</mat-icon> {{placeholder.name}}\n    </button>\n  </ng-container>\n  <a routerLink=\"/\" *ngSwitchDefault>{{placeholder.name}}</a>\n</ng-container>\n\n\n"
         },
         {
             "name": "IssuesComponent",
@@ -47936,6 +47936,16 @@
                 "defaultValue": "`${environment.apiRoot}user/`"
             },
             {
+                "name": "VeryLongMessage",
+                "ctype": "miscellaneous",
+                "subtype": "variable",
+                "file": "src/stories/issue-messages.stories.ts",
+                "deprecated": false,
+                "deprecationMessage": "",
+                "type": "",
+                "defaultValue": "Template.bind({})"
+            },
+            {
                 "ctype": "miscellaneous",
                 "subtype": "variable",
                 "file": "src/app/shared/details/navigation.service.ts",
@@ -49985,6 +49995,16 @@
                     "deprecationMessage": "",
                     "type": "Story",
                     "defaultValue": "args => ({\n  props: {\n    ...args,\n  }\n})"
+                },
+                {
+                    "name": "VeryLongMessage",
+                    "ctype": "miscellaneous",
+                    "subtype": "variable",
+                    "file": "src/stories/issue-messages.stories.ts",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "",
+                    "defaultValue": "Template.bind({})"
                 }
             ],
             "src/app/models/entity-names.ts": [
@@ -57254,6 +57274,16 @@
                 "linktype": "miscellaneous",
                 "linksubtype": "variable",
                 "name": "Template",
+                "coveragePercent": 0,
+                "coverageCount": "0/1",
+                "status": "low"
+            },
+            {
+                "filePath": "src/stories/issue-messages.stories.ts",
+                "type": "variable",
+                "linktype": "miscellaneous",
+                "linksubtype": "variable",
+                "name": "VeryLongMessage",
                 "coveragePercent": 0,
                 "coverageCount": "0/1",
                 "status": "low"

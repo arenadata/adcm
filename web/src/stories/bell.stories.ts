@@ -40,6 +40,11 @@ export default {
     }),
   ],
   component: BellComponent,
+  parameters: {
+    docs: {
+      page: null
+    }
+  },
 } as Meta;
 
 export const Bell = () => ({ });

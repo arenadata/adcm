@@ -7,6 +7,7 @@ import Flow from './assets/flow.svg';
 import Plugin from './assets/plugin.svg';
 import Repo from './assets/repo.svg';
 import StackAlt from './assets/stackalt.svg';
+import GlassesImg from './assets/glasses.jpg';
 
 <Meta title="ADCM/Introduction" />
 
@@ -114,7 +115,25 @@ import StackAlt from './assets/stackalt.svg';
 
 `}</style>
 
-# Welcome to Storybook
+# Welcome to ADCM
+
+<div className="subheading">Links</div>
+
+<div className="link-list">
+  <a
+    className="link-item"
+    href="https://spec.adsw.io/adcm_core/"
+    target="_blank"
+  >
+    <img src={GlassesImg} alt="spec" />
+    <span>
+      <strong>ADCM Specs</strong>
+      How ADCM works
+    </span>
+  </a>
+</div>
+
+# About Storybook
 
 Storybook helps you build UI components in isolation from your app's business logic, data, and context.
 That makes it easy to develop hard-to-reach states. Save these UI states as **stories** to revisit during development, testing, or QA.

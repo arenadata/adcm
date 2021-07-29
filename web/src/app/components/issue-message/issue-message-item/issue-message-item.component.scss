@@ -4,11 +4,11 @@
 }
 
 .action-button {
-  position: relative;
-  top: -1px;
+  padding: 0;
+  min-width: auto;
+  line-height: normal;
 }
 
-:host {
-  display: flex;
-  align-items: center;
+a {
+  cursor: pointer;
 }
