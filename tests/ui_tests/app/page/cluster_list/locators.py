@@ -21,22 +21,33 @@ class ClusterListLocators:
     """Cluster List page elements locators"""
 
     class Tooltip:
-        cluster_add_btn = Locator(By.XPATH, "//button[@adcm_test='create-btn']", "Cluster add button")
+        cluster_add_btn = Locator(
+            By.XPATH, "//button[@adcm_test='create-btn']", "Cluster add button"
+        )
 
     class CreateClusterPopup:
         block = Locator(By.XPATH, "//mat-dialog-container", "Popup block")
-        bundle_select_btn = Locator(By.XPATH, "//mat-select[@placeholder='Bundle']", "Select bundle")
-        version_select_btn = Locator(By.XPATH, "//mat-select[@formcontrolname='bundle_id'']", "Select bundle version")
+        bundle_select_btn = Locator(
+            By.XPATH, "//mat-select[@placeholder='Bundle']", "Select bundle"
+        )
+        version_select_btn = Locator(
+            By.XPATH, "//mat-select[@formcontrolname='bundle_id'']", "Select bundle version"
+        )
         select_option = Locator(By.XPATH, "//mat-option", "Select option")
 
-        upload_bundle_btn = Locator(By.XPATH, "//input[@value='upload_bundle_file']", "Upload bundle button")
-        cluster_name_input = Locator(By.XPATH, "//input[@data-placeholder='Cluster name']", "Cluster name input")
-        description_input = Locator(By.XPATH, "//input[@data-placeholder='Description']", "Description input")
+        upload_bundle_btn = Locator(
+            By.XPATH, "//input[@value='upload_bundle_file']", "Upload bundle button"
+        )
+        cluster_name_input = Locator(
+            By.XPATH, "//input[@data-placeholder='Cluster name']", "Cluster name input"
+        )
+        description_input = Locator(
+            By.XPATH, "//input[@data-placeholder='Description']", "Description input"
+        )
 
         create_btn = Locator(By.XPATH, "//button[./span[text()='Create']]", "Create button")
 
     class ClusterTable(CommonTable):
-
         class ClusterRow:
             name = Locator(By.XPATH, "./mat-cell[1]", "Cluster name in row")
             bundle = Locator(By.XPATH, "./mat-cell[2]", "Cluster bundle in row")
@@ -50,5 +61,9 @@ class ClusterListLocators:
             delete_btn = Locator(By.XPATH, "./mat-cell[10]/button", "Cluster delete button in row")
 
     class LicensePopup:
-        block = Locator(By.XPATH, "//app-dialog[./h3[contains(text(), 'license')]]", "block with license agreement")
+        block = Locator(
+            By.XPATH,
+            "//app-dialog[./h3[contains(text(), 'license')]]",
+            "block with license agreement",
+        )
         agree_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Yes')]]", "Agree button")

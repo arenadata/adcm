@@ -39,6 +39,7 @@ class CommonTableObj(BasePageObject):
 
         def wait_scroll():
             assert len(self.get_all_rows()) != current_amount
+
         wait_until_step_succeeds(wait_scroll, period=1, timeout=10)
 
     @allure.step("Click on page number {number}")
@@ -47,4 +48,5 @@ class CommonTableObj(BasePageObject):
         WDW(self.driver, self.default_loc_timeout).until(
             EC.presence_of_element_located([page_loc.by, page_loc.value.format(number)]),
             message=f"Can't find page {number} in table on page {self.driver.current_url} "
-                    f"for {self.default_loc_timeout} seconds").click()
+            f"for {self.default_loc_timeout} seconds",
+        ).click()

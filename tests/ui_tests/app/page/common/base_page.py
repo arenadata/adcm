@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import (
@@ -24,6 +23,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
 
 from tests.ui_tests.app.helpers.locator import Locator
+from tests.ui_tests.app.page.common.common_locators import CommonLocators
 from tests.ui_tests.app.page.common.footer import CommonFooterLocators
 from tests.ui_tests.app.page.common.header import (
     CommonHeaderLocators,
@@ -44,16 +44,24 @@ class BasePageObject:
     :param default_loc_timeout: default timeout for actions with locators, eg wait to display
     """
 
-    __slots__ = {"driver", "base_url", "path", "header", "footer", "table",
-                 "default_page_timeout", "default_loc_timeout"}
+    __slots__ = {
+        "driver",
+        "base_url",
+        "path",
+        "header",
+        "footer",
+        "table",
+        "default_page_timeout",
+        "default_loc_timeout",
+    }
 
     def __init__(
-            self,
-            driver: WebDriver,
-            base_url: str,
-            path: str = "",
-            default_page_timeout: int = 10,
-            default_loc_timeout: int = 15,
+        self,
+        driver: WebDriver,
+        base_url: str,
+        path: str = "",
+        default_page_timeout: int = 10,
+        default_loc_timeout: int = 15,
     ):
         self.driver = driver
         self.base_url = base_url
@@ -72,7 +80,9 @@ class BasePageObject:
                     self.driver.get(url)
                     assert self.path in self.driver.current_url
 
-        wait_until_step_succeeds(open_page, period=0.5, timeout=timeout or self.default_page_timeout)
+        wait_until_step_succeeds(
+            open_page, period=0.5, timeout=timeout or self.default_page_timeout
+        )
         return self
 
     @allure.step("Close popup at the bottom of the page")
@@ -85,35 +95,43 @@ class BasePageObject:
         """Wait url to contain path."""
 
         url_timeout = timeout or self.default_page_timeout
-        WDW(self.driver, url_timeout).until(EC.url_contains(path), message=f"Page with path '{path}' has not been "
-                                                                           f"loaded for {url_timeout} seconds")
+        WDW(self.driver, url_timeout).until(
+            EC.url_contains(path),
+            message=f"Page with path '{path}' has not been " f"loaded for {url_timeout} seconds",
+        )
 
     def find_element(self, locator: Locator, timeout: int = None) -> WebElement:
         """Find element on current page."""
 
         loc_timeout = timeout or self.default_loc_timeout
         with allure.step(f'Find element "{locator.name}" on page'):
-            return WDW(self.driver, loc_timeout).until(EC.presence_of_element_located([locator.by, locator.value]),
-                                                       message=f"Can't find {locator.name} on page "
-                                                               f"{self.driver.current_url} for {loc_timeout} seconds")
+            return WDW(self.driver, loc_timeout).until(
+                EC.presence_of_element_located([locator.by, locator.value]),
+                message=f"Can't find {locator.name} on page "
+                f"{self.driver.current_url} for {loc_timeout} seconds",
+            )
 
     def find_child(self, element: WebElement, child: Locator, timeout: int = None) -> WebElement:
         """Find child element on current page."""
 
         loc_timeout = timeout or self.default_loc_timeout
         with allure.step(f'Find element "{child.name}" on page'):
-            return WDW(element, loc_timeout).until(EC.presence_of_element_located([child.by, child.value]),
-                                                   message=f"Can't find {child.name} on page "
-                                                           f"{self.driver.current_url} for {loc_timeout} seconds")
+            return WDW(element, loc_timeout).until(
+                EC.presence_of_element_located([child.by, child.value]),
+                message=f"Can't find {child.name} on page "
+                f"{self.driver.current_url} for {loc_timeout} seconds",
+            )
 
     def find_elements(self, locator: Locator, timeout: int = None) -> [WebElement]:
         """Find elements on current page."""
 
         loc_timeout = timeout or self.default_loc_timeout
         with allure.step(f'Find elements "{locator.name}" on page'):
-            return WDW(self.driver, loc_timeout).until(EC.presence_of_all_elements_located([locator.by, locator.value]),
-                                                       message=f"Can't find {locator.name} on page "
-                                                               f"{self.driver.current_url} for {loc_timeout} seconds")
+            return WDW(self.driver, loc_timeout).until(
+                EC.presence_of_all_elements_located([locator.by, locator.value]),
+                message=f"Can't find {locator.name} on page "
+                f"{self.driver.current_url} for {loc_timeout} seconds",
+            )
 
     def is_element_displayed(self, locator: Locator, timeout: int = None) -> bool:
         """Checks if element is displayed.
@@ -122,12 +140,14 @@ class BasePageObject:
 
         try:
             with allure.step(f'Check "{locator.name}"'):
-                return self.find_element(locator, timeout=timeout or self.default_loc_timeout).is_displayed()
+                return self.find_element(
+                    locator, timeout=timeout or self.default_loc_timeout
+                ).is_displayed()
         except (
-                TimeoutException,
-                NoSuchElementException,
-                StaleElementReferenceException,
-                TimeoutError,
+            TimeoutException,
+            NoSuchElementException,
+            StaleElementReferenceException,
+            TimeoutError,
         ):
             return False
 
@@ -154,26 +174,32 @@ class BasePageObject:
 
         loc_timeout = timeout or self.default_loc_timeout
         with allure.step(f'Wait "{locator.name}" clickable'):
-            return WDW(self.driver, loc_timeout).until(EC.element_to_be_clickable([locator.by, locator.value]),
-                                                       message=f"locator {locator.name} hasn't become clickable for "
-                                                               f"{loc_timeout} seconds")
+            return WDW(self.driver, loc_timeout).until(
+                EC.element_to_be_clickable([locator.by, locator.value]),
+                message=f"locator {locator.name} hasn't become clickable for "
+                f"{loc_timeout} seconds",
+            )
 
     def wait_element_visible(self, locator: Locator, timeout: int = None) -> WebElement:
         """Wait for the element visibility."""
 
         loc_timeout = timeout or self.default_loc_timeout
         with allure.step(f'Wait "{locator.name}" presence'):
-            return WDW(self.driver, loc_timeout).until(EC.visibility_of_element_located([locator.by, locator.value]),
-                                                       message=f"locator {locator.name} hasn't become visible for "
-                                                               f"{loc_timeout} seconds")
+            return WDW(self.driver, loc_timeout).until(
+                EC.visibility_of_element_located([locator.by, locator.value]),
+                message=f"locator {locator.name} hasn't become visible for "
+                f"{loc_timeout} seconds",
+            )
 
     def wait_element_hide(self, locator: Locator, timeout: int = None) -> None:
         """Wait the element to hide."""
 
         loc_timeout = timeout or self.default_loc_timeout
         with allure.step(f'Wait "{locator.name}" to hide'):
-            WDW(self.driver, loc_timeout).until(EC.invisibility_of_element_located([locator.by, locator.value]),
-                                                message=f"locator {locator.name} hasn't hide for {loc_timeout} seconds")
+            WDW(self.driver, loc_timeout).until(
+                EC.invisibility_of_element_located([locator.by, locator.value]),
+                message=f"locator {locator.name} hasn't hide for {loc_timeout} seconds",
+            )
 
     def set_locator_value(self, locator: Locator, value: str) -> None:
         """Fill locator with value."""
@@ -191,6 +217,17 @@ class BasePageObject:
         element.send_keys(Keys.CONTROL + "a")
         element.send_keys(Keys.BACK_SPACE)
 
+    @allure.step('Wait Config has been loaded after authentication')
+    def wait_config_loaded(self):
+        """
+        Wait for hidden elements in DOM.
+        Without this waiting and after the config finally is loaded
+        there will be redirection to the greeting page.
+        """
+
+        self.find_element(CommonLocators.socket, timeout=30)
+        self.find_element(CommonLocators.profile, timeout=30)
+
 
 class PageHeader(BasePageObject):
     """Class for header manipulating."""
@@ -200,29 +237,33 @@ class PageHeader(BasePageObject):
 
     @allure.step('Check elements in header for authorized user')
     def check_auth_page_elements(self):
-        self.assert_displayed_elements([
-            AuthorizedHeaderLocators.arenadata_logo,
-            AuthorizedHeaderLocators.clusters,
-            AuthorizedHeaderLocators.hostproviders,
-            AuthorizedHeaderLocators.hosts,
-            AuthorizedHeaderLocators.jobs,
-            AuthorizedHeaderLocators.bundles,
-            AuthorizedHeaderLocators.job_block_previous,
-            AuthorizedHeaderLocators.help_button,
-            AuthorizedHeaderLocators.account_button,
-        ])
+        self.assert_displayed_elements(
+            [
+                AuthorizedHeaderLocators.arenadata_logo,
+                AuthorizedHeaderLocators.clusters,
+                AuthorizedHeaderLocators.hostproviders,
+                AuthorizedHeaderLocators.hosts,
+                AuthorizedHeaderLocators.jobs,
+                AuthorizedHeaderLocators.bundles,
+                AuthorizedHeaderLocators.job_block_previous,
+                AuthorizedHeaderLocators.help_button,
+                AuthorizedHeaderLocators.account_button,
+            ]
+        )
 
     @allure.step('Check elements in header for unauthorized user')
     def check_unauth_page_elements(self):
         self.wait_element_visible(CommonHeaderLocators.block)
-        self.assert_displayed_elements([
-            CommonHeaderLocators.arenadata_logo,
-            CommonHeaderLocators.clusters,
-            CommonHeaderLocators.hostproviders,
-            CommonHeaderLocators.hosts,
-            CommonHeaderLocators.jobs,
-            CommonHeaderLocators.bundles,
-        ])
+        self.assert_displayed_elements(
+            [
+                CommonHeaderLocators.arenadata_logo,
+                CommonHeaderLocators.clusters,
+                CommonHeaderLocators.hostproviders,
+                CommonHeaderLocators.hosts,
+                CommonHeaderLocators.jobs,
+                CommonHeaderLocators.bundles,
+            ]
+        )
 
     def click_arenadata_logo_in_header(self):
         self.find_and_click(CommonHeaderLocators.arenadata_logo)
@@ -256,10 +297,12 @@ class PageHeader(BasePageObject):
 
     def check_help_popup(self):
         self.wait_element_visible(AuthorizedHeaderLocators.block)
-        self.assert_displayed_elements([
-            AuthorizedHeaderLocators.HelpPopup.ask_link,
-            AuthorizedHeaderLocators.HelpPopup.doc_link
-        ])
+        self.assert_displayed_elements(
+            [
+                AuthorizedHeaderLocators.HelpPopup.ask_link,
+                AuthorizedHeaderLocators.HelpPopup.doc_link,
+            ]
+        )
 
     def click_ask_link_in_help_popup(self):
         self.find_and_click(AuthorizedHeaderLocators.HelpPopup.ask_link)
@@ -270,11 +313,13 @@ class PageHeader(BasePageObject):
     def check_account_popup(self):
         self.wait_element_visible(AuthorizedHeaderLocators.block)
         acc_popup = AuthorizedHeaderLocators.AccountPopup
-        self.assert_displayed_elements([
-            acc_popup.settings_link,
-            acc_popup.profile_link,
-            acc_popup.logout_button,
-        ])
+        self.assert_displayed_elements(
+            [
+                acc_popup.settings_link,
+                acc_popup.profile_link,
+                acc_popup.logout_button,
+            ]
+        )
 
     def click_settings_link_in_acc_popup(self):
         self.find_and_click(AuthorizedHeaderLocators.AccountPopup.settings_link)
@@ -294,10 +339,12 @@ class PageFooter(BasePageObject):
 
     @allure.step('Check elements in footer')
     def check_all_elements(self):
-        self.assert_displayed_elements([
-            CommonFooterLocators.version_link,
-            CommonFooterLocators.logo,
-        ])
+        self.assert_displayed_elements(
+            [
+                CommonFooterLocators.version_link,
+                CommonFooterLocators.logo,
+            ]
+        )
 
     def click_version_link_in_footer(self):
         self.find_and_click(CommonFooterLocators.version_link)
