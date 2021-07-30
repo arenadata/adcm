@@ -129,7 +129,7 @@ def adcm_credentials():
 
 
 @deprecated("Use auth_to_adcm")
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def login_to_adcm(app_fs, adcm_credentials):
     """Perform login on Login page ADCM
     :param app_fs:
@@ -140,7 +140,7 @@ def login_to_adcm(app_fs, adcm_credentials):
     login.login(**adcm_credentials)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def auth_to_adcm(app_fs, adcm_credentials):
     """Perform login on Login page ADCM"""
 
