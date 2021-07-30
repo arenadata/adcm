@@ -53,6 +53,16 @@ const clusterRoutes: Routes = [
     ],
   },
   {
+    path: ':cluster/config_group/:config_group',
+    component: DetailComponent,
+    canActivate: [AuthGuard],
+    canActivateChild: [AuthGuard],
+    children: [
+      { path: '', redirectTo: 'main', pathMatch: 'full' },
+      { path: 'main', component: MainInfoComponent },
+    ],
+  },
+  {
     path: ':cluster/service/:service',
     component: DetailComponent,
     canActivate: [AuthGuard],
