@@ -80,7 +80,7 @@ class ClusterListPage(BasePageObject):
 
         def wait_state():
             state_after = self.find_child(row, self.table.table.ClusterRow.state).text
-            assert state_after != state_before and state_after != self.table.loading_state_text
+            assert state_after != state_before and state_after != self.table.LOADING_STATE_TEXT
 
         wait_until_step_succeeds(wait_state, period=1, timeout=self.default_loc_timeout)
 

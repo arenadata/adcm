@@ -35,10 +35,9 @@ CLUSTER_NAME = "Test cluster"
 
 
 @pytest.fixture()
-def _open_cluster_page_with_community_cluster(sdk_client_fs: ADCMClient, app_fs, auth_to_adcm):
+def _create_community_cluster(sdk_client_fs: ADCMClient, app_fs, auth_to_adcm):
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
     bundle.cluster_create(name=CLUSTER_NAME)
-    return ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
 
 
 @allure.step("Upload cluster bundle")
@@ -114,9 +113,10 @@ def test_check_cluster_list_page_pagination(sdk_client_fs: ADCMClient, app_fs, a
         ), f"Previous page should contains {params['fist_page_cluster_amount']}"
 
 
-def test_check_cluster_list_page_action_run(_open_cluster_page_with_community_cluster):
+@pytest.mark.usefixtures("_create_community_cluster")
+def test_check_cluster_list_page_action_run(app_fs):
     params = {"action_name": "test_action", "expected_state": "installed"}
-    cluster_page = _open_cluster_page_with_community_cluster
+    cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
     row = cluster_page.table.get_all_rows()[0]
     with cluster_page.wait_cluster_state_change(row):
         cluster_page.run_action_in_cluster_row(row, params["action_name"])
@@ -149,10 +149,9 @@ def test_check_cluster_list_page_import_run(sdk_client_fs: ADCMClient, app_fs, a
         ), "Cluster import page should contain 1 import"
 
 
-def test_check_cluster_list_page_open_cluster_config(
-    _open_cluster_page_with_community_cluster, app_fs
-):
-    cluster_page = _open_cluster_page_with_community_cluster
+@pytest.mark.usefixtures("_create_community_cluster")
+def test_check_cluster_list_page_open_cluster_config(app_fs):
+    cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
     row = cluster_page.table.get_all_rows()[0]
     cluster_page.click_config_button_in_row(row)
     cluster_page.header.wait_url_contains_path(
@@ -160,10 +159,9 @@ def test_check_cluster_list_page_open_cluster_config(
     )
 
 
-def test_check_cluster_list_page_open_cluster_main(
-    _open_cluster_page_with_community_cluster, app_fs
-):
-    cluster_page = _open_cluster_page_with_community_cluster
+@pytest.mark.usefixtures("_create_community_cluster")
+def test_check_cluster_list_page_open_cluster_main(app_fs):
+    cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
     row = cluster_page.table.get_all_rows()[0]
     cluster_page.click_cluster_name_in_row(row)
     cluster_page.header.wait_url_contains_path(
@@ -171,8 +169,9 @@ def test_check_cluster_list_page_open_cluster_main(
     )
 
 
-def test_check_cluster_list_page_delete_cluster(_open_cluster_page_with_community_cluster):
-    cluster_page = _open_cluster_page_with_community_cluster
+@pytest.mark.usefixtures("_create_community_cluster")
+def test_check_cluster_list_page_delete_cluster(app_fs):
+    cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
     row = cluster_page.table.get_all_rows()[0]
     with cluster_page.table.wait_rows_change():
         cluster_page.delete_cluster_by_row(row)
