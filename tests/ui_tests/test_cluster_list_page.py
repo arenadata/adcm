@@ -115,20 +115,19 @@ def test_check_cluster_list_page_pagination(sdk_client_fs: ADCMClient, app_fs, a
 
 
 def test_check_cluster_list_page_action_run(_open_cluster_page_with_community_cluster):
-    params = {
-        "action_name": "test_action",
-        "expected_state": "installed"
-    }
+    params = {"action_name": "test_action", "expected_state": "installed"}
     cluster_page = _open_cluster_page_with_community_cluster
     row = cluster_page.table.get_all_rows()[0]
     with cluster_page.wait_cluster_state_change(row):
         cluster_page.run_action_in_cluster_row(row, params["action_name"])
     with allure.step("Check state has changed"):
-        assert cluster_page.get_cluster_state_from_row(row) == params["expected_state"], \
-            f"Cluster state should be {params['expected_state']}"
+        assert (
+            cluster_page.get_cluster_state_from_row(row) == params["expected_state"]
+        ), f"Cluster state should be {params['expected_state']}"
     with allure.step("Check success job"):
-        assert cluster_page.header.get_success_job_amount_from_header() == "1", \
-            "There should be 1 success job in header"
+        assert (
+            cluster_page.header.get_success_job_amount_from_header() == "1"
+        ), "There should be 1 success job in header"
 
 
 def test_check_cluster_list_page_import_run(sdk_client_fs: ADCMClient, app_fs, auth_to_adcm):
@@ -145,12 +144,13 @@ def test_check_cluster_list_page_import_run(sdk_client_fs: ADCMClient, app_fs, a
     import_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, "1")
     cluster_page.header.wait_url_contains_path(import_page.path)
     with allure.step("Check import on import page"):
-        assert len(import_page.get_import_items()) == 1, \
-            "Cluster import page should contain 1 import"
+        assert (
+            len(import_page.get_import_items()) == 1
+        ), "Cluster import page should contain 1 import"
 
 
 def test_check_cluster_list_page_open_cluster_config(
-        _open_cluster_page_with_community_cluster, app_fs
+    _open_cluster_page_with_community_cluster, app_fs
 ):
     cluster_page = _open_cluster_page_with_community_cluster
     row = cluster_page.table.get_all_rows()[0]
@@ -161,7 +161,7 @@ def test_check_cluster_list_page_open_cluster_config(
 
 
 def test_check_cluster_list_page_open_cluster_main(
-        _open_cluster_page_with_community_cluster, app_fs
+    _open_cluster_page_with_community_cluster, app_fs
 ):
     cluster_page = _open_cluster_page_with_community_cluster
     row = cluster_page.table.get_all_rows()[0]
