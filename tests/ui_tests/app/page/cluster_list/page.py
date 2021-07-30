@@ -73,7 +73,6 @@ class ClusterListPage(BasePageObject):
         self.wait_element_visible(ActionDialog.body)
         self.find_and_click(ActionDialog.run)
 
-    # noqa: PT018
     @contextmanager
     def wait_cluster_state_change(self, row: WebElement):
         state_before = self.get_cluster_state_from_row(row)
