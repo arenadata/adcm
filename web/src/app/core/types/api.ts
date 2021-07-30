@@ -13,6 +13,7 @@ import { IAction } from './actions';
 import { IComponent } from './host-component';
 import { Issue } from './issue';
 import { Job, Task } from './task-job';
+import { ConfigGroup } from '@app/config-groups/config-group.model';
 
 export type TypeName =
   'bundle' |
@@ -32,7 +33,7 @@ export type TypeName =
   'servicecomponent' |
   'component' |
   'config_group';
-export type Entities = Cluster | Service | Host | Provider | Job | Task | Bundle;
+export type Entities = Cluster | Service | Host | Provider | Job | Task | Bundle | ConfigGroup;
 
 /**
  *```
@@ -63,6 +64,22 @@ export interface ApiBase {
   prototype_version: string;
   bundle_id: number;
   status: number | string;
+}
+
+export interface IApiFlat {
+  id: number;
+  object_id: number;
+  object_type: TypeName;
+  url: string;
+}
+
+export class ApiFlat implements IApiFlat {
+  constructor(
+    public id: number,
+    public object_id: number,
+    public object_type: TypeName,
+    public url: string,
+  ) {}
 }
 
 export interface Cluster extends ApiBase {
@@ -97,6 +114,17 @@ export interface Service extends ApiBase {
   hostcomponent: string;
   display_name: string;
   cluster_id?: number;
+}
+
+export interface IConfigGroup extends ApiFlat {
+  name: string;
+  description?: string;
+  hosts: unknown[];
+  config: string;
+
+  display_name: string;
+  action: string;
+  typeName: string;
 }
 
 export interface CanLicensed {
