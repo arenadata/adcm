@@ -16,6 +16,7 @@ from rest_framework_swagger.views import get_swagger_view
 from rest_framework.schemas import get_schema_view
 
 from api import views, docs
+from api.search.views import Search
 
 
 register_converter(views.NameConverter, 'name')
@@ -42,6 +43,7 @@ urlpatterns = [
     path('task/', include('api.job.task_urls')),
     path('job/', include('api.job.urls')),
     # path('docs/', include_docs_urls(title='ArenaData Chapel API')),
+    path('search/', Search.as_view()),
     path('swagger/', swagger_view),
     path('schema/', schema_view),
     path('auth/', include('rest_framework.urls', namespace='rest_framework')),

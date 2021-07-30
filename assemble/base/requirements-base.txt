@@ -8,6 +8,8 @@ django-rest-swagger
 djangorestframework
 django-background-tasks
 social-auth-app-django
+django-haystack
+pysolr
 git+git://github.com/arenadata/django-generate-secret-key.git
 jinja2
 markdown
