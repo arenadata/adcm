@@ -1,0 +1,4 @@
+{{ object.name }}
+{{ object.description }}
+{{ object.prototype.name }}
+{{ object.prototype.display_name }}

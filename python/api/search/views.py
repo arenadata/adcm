@@ -20,11 +20,13 @@ from haystack.query import SearchQuerySet
 from api.api_views import create
 from cm.errors import AdcmEx
 from cm.logger import log
+from cm.models import Cluster
 
 
 def search(query):
     res  = []
-    r = SearchQuerySet().filter(content=query)
+    #r = SearchQuerySet().filter(content=query)
+    r = SearchQuerySet().filter(content=query).models(Cluster)
     for item in r:
         log.debug('QQ %s %s', item.get_additional_fields(), item.get_stored_fields())
         obj = item.object
