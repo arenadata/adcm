@@ -29,8 +29,11 @@ class CommonTable:
         """Common popup for action in tables."""
 
         block = Locator(By.XPATH, "//div[@role='menu']", "Action popup block")
-        button = TemplateLocator(By.XPATH, "//button[@adcm_test='action_btn' and ./span[text()='{}']]",
-                                 "Button with action {}")
+        button = TemplateLocator(
+            By.XPATH,
+            "//button[@adcm_test='action_btn' and ./span[text()='{}']]",
+            "Button with action {}",
+        )
 
     class Pagination:
         """Common table pagination locators."""
