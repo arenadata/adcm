@@ -149,21 +149,30 @@ def test_check_cluster_list_page_import_run(sdk_client_fs: ADCMClient, app_fs, a
     import_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, "1")
     cluster_page.header.wait_url_contains_path(import_page.path)
     with allure.step("Check import on import page"):
-        assert len(import_page.get_import_items()) == 1, "Cluster import page should contain 1 import"
+        assert len(import_page.get_import_items()) == 1, \
+            "Cluster import page should contain 1 import"
 
 
-def test_check_cluster_list_page_open_cluster_config(open_cluster_page_with_community_cluster, app_fs):
+def test_check_cluster_list_page_open_cluster_config(
+        open_cluster_page_with_community_cluster, app_fs
+):
     cluster_page = open_cluster_page_with_community_cluster
     row = cluster_page.table.get_all_rows()[0]
     cluster_page.click_config_button_in_row(row)
-    cluster_page.header.wait_url_contains_path(ClusterConfigPage(app_fs.driver, app_fs.adcm.url, "1").path)
+    cluster_page.header.wait_url_contains_path(
+        ClusterConfigPage(app_fs.driver, app_fs.adcm.url, "1").path
+    )
 
 
-def test_check_cluster_list_page_open_cluster_main(open_cluster_page_with_community_cluster, app_fs):
+def test_check_cluster_list_page_open_cluster_main(
+        open_cluster_page_with_community_cluster, app_fs
+):
     cluster_page = open_cluster_page_with_community_cluster
     row = cluster_page.table.get_all_rows()[0]
     cluster_page.click_cluster_name_in_row(row)
-    cluster_page.header.wait_url_contains_path(ClusterMainPage(app_fs.driver, app_fs.adcm.url, "1").path)
+    cluster_page.header.wait_url_contains_path(
+        ClusterMainPage(app_fs.driver, app_fs.adcm.url, "1").path
+    )
 
 
 def test_check_cluster_list_page_delete_cluster(open_cluster_page_with_community_cluster, app_fs):
