@@ -34,6 +34,7 @@ import { ServiceComponentService } from '@app/services/service-component.service
 import { setPathOfRoute } from '@app/store/navigation/navigation.store';
 import { EntityNames } from '@app/models/entity-names';
 import { HttpResponseBase } from '@angular/common/http';
+import { ConfigGroupService } from '@app/config-groups/config-group.service';
 
 export interface WorkerInstance {
   current: Entities;
@@ -66,6 +67,7 @@ export class ClusterService {
     protected api: ApiService,
     protected serviceComponentService: ServiceComponentService,
     protected store: Store,
+    protected configGroups: ConfigGroupService
   ) {}
 
   clearWorker() {
@@ -117,16 +119,17 @@ export class ClusterService {
         switchMap((cluster) => {
           if (cluster && typeName === 'servicecomponent') {
             return this.serviceComponentService.get(id);
+          } else if (cluster && typeName === 'config_group') {
+            return this.configGroups.get(id);
           } else if (cluster && typeName !== 'cluster') {
             return this.api.get<Entities>(`${cluster[typeName]}${id}/`);
           } else {
             return this[`one_${typeName}`](id);
           }
-        })
+        }),
       )
       .pipe(
         map((a: Entities) => {
-          a.typeName = typeName;
           this.worker.current = { ...a, name: a.display_name || a.name || (a as Host).fqdn };
           this.workerSubject.next(this.worker);
           return this.worker;
