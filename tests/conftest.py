@@ -85,3 +85,19 @@ def _get_listener_by_item_if_present(item: Function) -> Optional[AllureListener]
         )
         return listener
     return None
+
+
+@pytest.fixture()
+def bundle_archive(request, tmp_path):
+    """
+    Prepare tar file from dir without using bundle packer
+    """
+    return _pack_bundle(request.param, tmp_path)
+
+
+def _pack_bundle(stack_dir, archive_dir):
+    archive_name = os.path.join(archive_dir, os.path.basename(stack_dir) + ".tar")
+    with tarfile.open(archive_name, "w") as tar:
+        for sub in os.listdir(stack_dir):
+            tar.add(os.path.join(stack_dir, sub), arcname=sub)
+    return archive_name

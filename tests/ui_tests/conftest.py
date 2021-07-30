@@ -141,13 +141,6 @@ def login_to_adcm(app_fs, adcm_credentials):
     login = DeprecatedLoginPage(app_fs.driver)
     login.login(**adcm_credentials)
 
-@pytest.fixture()
-def bundle_archive(request, tmp_path):
-    """
-    Prepare tar file from dir without using bundle packer
-    """
-    return _pack_bundle(request.param, tmp_path)
-
 
 @pytest.fixture(scope="function")
 def auth_to_adcm(app_fs, adcm_credentials):
@@ -157,14 +150,6 @@ def auth_to_adcm(app_fs, adcm_credentials):
     login.login_user(**adcm_credentials)
     login.wait_url_contains_path(AdminIntroPage(app_fs.driver, app_fs.adcm.url).path)
     login.wait_config_loaded()
-
-
-def _pack_bundle(stack_dir, archive_dir):
-    archive_name = os.path.join(archive_dir, os.path.basename(stack_dir) + ".tar")
-    with tarfile.open(archive_name, "w") as tar:
-        for sub in os.listdir(stack_dir):
-            tar.add(os.path.join(stack_dir, sub), arcname=sub)
-    return archive_name
 
 
 def _process_browser_log_entry(entry):
