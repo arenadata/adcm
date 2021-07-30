@@ -11,8 +11,6 @@
 # limitations under the License.
 # pylint: disable=W0621
 import json
-import os
-import tarfile
 import tempfile
 
 import allure
