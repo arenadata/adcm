@@ -31,13 +31,13 @@ BUNDLE_COMMUNITY = "cluster_community"
 BUNDLE_ENTERPRISE = "cluster_enterprise"
 BUNDLE_IMPORT = "cluster_to_import"
 BUNDLE_UPGRADE = "upgradable_cluster"
+CLUSTER_NAME = "Test cluster"
 
 
 @pytest.fixture()
-def open_cluster_page_with_community_cluster(sdk_client_fs: ADCMClient, app_fs, auth_to_adcm):
-    params = {"cluster_name": "Test cluster"}
+def _open_cluster_page_with_community_cluster(sdk_client_fs: ADCMClient, app_fs, auth_to_adcm):
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
-    bundle.cluster_create(name=params["cluster_name"])
+    bundle.cluster_create(name=CLUSTER_NAME)
     return ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
 
 
@@ -114,13 +114,12 @@ def test_check_cluster_list_page_pagination(sdk_client_fs: ADCMClient, app_fs, a
         ), f"Previous page should contains {params['fist_page_cluster_amount']}"
 
 
-def test_check_cluster_list_page_action_run(open_cluster_page_with_community_cluster):
+def test_check_cluster_list_page_action_run(_open_cluster_page_with_community_cluster):
     params = {
-        "cluster_name": "Test cluster",
         "action_name": "test_action",
         "expected_state": "installed"
     }
-    cluster_page = open_cluster_page_with_community_cluster
+    cluster_page = _open_cluster_page_with_community_cluster
     row = cluster_page.table.get_all_rows()[0]
     with cluster_page.wait_cluster_state_change(row):
         cluster_page.run_action_in_cluster_row(row, params["action_name"])
@@ -133,18 +132,15 @@ def test_check_cluster_list_page_action_run(open_cluster_page_with_community_clu
 
 
 def test_check_cluster_list_page_import_run(sdk_client_fs: ADCMClient, app_fs, auth_to_adcm):
-    params = {
-        "main_cluster_name": "Test cluster",
-        "import_cluster_name": "Import cluster",
-    }
+    params = {"import_cluster_name": "Import cluster"}
     with allure.step("Create main cluster"):
         bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
-        bundle.cluster_create(name=params["main_cluster_name"])
+        bundle.cluster_create(name=CLUSTER_NAME)
     with allure.step("Create cluster to import"):
         bundle = cluster_bundle(sdk_client_fs, BUNDLE_IMPORT)
         bundle.cluster_create(name=params["import_cluster_name"])
     cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
-    row = cluster_page.get_row_by_cluster_name(params["main_cluster_name"])
+    row = cluster_page.get_row_by_cluster_name(CLUSTER_NAME)
     cluster_page.click_import_btn_in_row(row)
     import_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, "1")
     cluster_page.header.wait_url_contains_path(import_page.path)
@@ -154,9 +150,9 @@ def test_check_cluster_list_page_import_run(sdk_client_fs: ADCMClient, app_fs, a
 
 
 def test_check_cluster_list_page_open_cluster_config(
-        open_cluster_page_with_community_cluster, app_fs
+        _open_cluster_page_with_community_cluster, app_fs
 ):
-    cluster_page = open_cluster_page_with_community_cluster
+    cluster_page = _open_cluster_page_with_community_cluster
     row = cluster_page.table.get_all_rows()[0]
     cluster_page.click_config_button_in_row(row)
     cluster_page.header.wait_url_contains_path(
@@ -165,9 +161,9 @@ def test_check_cluster_list_page_open_cluster_config(
 
 
 def test_check_cluster_list_page_open_cluster_main(
-        open_cluster_page_with_community_cluster, app_fs
+        _open_cluster_page_with_community_cluster, app_fs
 ):
-    cluster_page = open_cluster_page_with_community_cluster
+    cluster_page = _open_cluster_page_with_community_cluster
     row = cluster_page.table.get_all_rows()[0]
     cluster_page.click_cluster_name_in_row(row)
     cluster_page.header.wait_url_contains_path(
@@ -175,8 +171,8 @@ def test_check_cluster_list_page_open_cluster_main(
     )
 
 
-def test_check_cluster_list_page_delete_cluster(open_cluster_page_with_community_cluster, app_fs):
-    cluster_page = open_cluster_page_with_community_cluster
+def test_check_cluster_list_page_delete_cluster(_open_cluster_page_with_community_cluster):
+    cluster_page = _open_cluster_page_with_community_cluster
     row = cluster_page.table.get_all_rows()[0]
     with cluster_page.table.wait_rows_change():
         cluster_page.delete_cluster_by_row(row)
