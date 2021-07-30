@@ -231,6 +231,9 @@ class BasePageObject:
         self.find_element(CommonLocators.profile, timeout=30)
 
     def hover_element(self, locator: Locator):
+        """
+        Moves the cursor over an element and hovers it.
+        """
         hover = ActionChains(self.driver).move_to_element(self.find_element(locator))
         hover.perform()
 

@@ -75,11 +75,11 @@ class ClusterListPage(BasePageObject):
 
     @contextmanager
     def wait_cluster_state_change(self, row: WebElement):
-        state_before = self.find_child(row, self.table.table.ClusterRow.state).text
+        state_before = self.get_cluster_state_from_row(row)
         yield
 
         def wait_state():
-            state_after = self.find_child(row, self.table.table.ClusterRow.state).text
+            state_after = self.get_cluster_state_from_row(row)
             assert state_after != state_before and state_after != self.table.LOADING_STATE_TEXT
 
         wait_until_step_succeeds(wait_state, period=1, timeout=self.default_loc_timeout)
@@ -89,7 +89,7 @@ class ClusterListPage(BasePageObject):
         return self.find_child(row, self.table.table.ClusterRow.state).text
 
     @allure.step("Get row by cluster name '{cluster_name}'")
-    def get_row_by_cluster_name(self, cluster_name: str) -> list:
+    def get_row_by_cluster_name(self, cluster_name: str) -> WebElement:
         rows = self.table.get_all_rows()
         for row in rows:
             if self.find_child(row, self.table.table.ClusterRow.name).text == cluster_name:
