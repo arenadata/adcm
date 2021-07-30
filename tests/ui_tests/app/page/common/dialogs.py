@@ -17,9 +17,13 @@ from tests.ui_tests.app.helpers.locator import Locator
 
 class DeleteDialog:
     body = Locator(By.XPATH, "//mat-dialog-container", "Dialog with choices")
-    yes = Locator(By.XPATH, "//button//span[contains(text(), 'Yes')]", "Yes button in delete dialog")
+    yes = Locator(
+        By.XPATH, "//button//span[contains(text(), 'Yes')]", "Yes button in delete dialog"
+    )
 
 
 class ActionDialog:
     body = Locator(By.XPATH, "//mat-dialog-container", "Dialog with choices")
-    run = Locator(By.XPATH, "//span[contains(text(), 'Run')]/parent::button", "Run button in action dialog")
+    run = Locator(
+        By.XPATH, "//span[contains(text(), 'Run')]/parent::button", "Run button in action dialog"
+    )
