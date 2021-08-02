@@ -89,7 +89,7 @@ class BasePageObject:
 
     @allure.step("Close popup at the bottom of the page")
     def close_info_popup(self):
-        if self.is_element_displayed(CommonPopupLocators.block, timeout=2):
+        if self.is_element_displayed(CommonPopupLocators.block, timeout=5):
             self.find_and_click(CommonPopupLocators.hide_btn)
 
     @allure.step("Wait url to contain path {path}")
