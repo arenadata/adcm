@@ -15,7 +15,6 @@ import { SocketListenerDirective } from '@app/shared/directives';
 import { Store } from '@ngrx/store';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { catchError, finalize, tap } from 'rxjs/operators';
-import { ActivatedRoute } from '@angular/router';
 
 import { ConfigFieldsComponent } from '../fields/fields.component';
 import { HistoryComponent } from '../tools/history.component';
@@ -66,7 +65,6 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
     private service: MainService,
     public cd: ChangeDetectorRef,
     socket: Store<SocketState>,
-    private route: ActivatedRoute,
     private clusterService: ClusterService,
   ) {
     super(socket);

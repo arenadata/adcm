@@ -17,7 +17,8 @@ import { FullyRenderedService } from '@app/core/services';
 import { TextBoxComponent } from '@app/shared/form-elements/text-box.component';
 import { SharedModule } from '@app/shared/shared.module';
 import { provideMockStore } from '@ngrx/store/testing';
-import { EMPTY, of } from 'rxjs';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { EMPTY } from 'rxjs';
 
 import { FieldService } from '../field.service';
 import { FieldComponent } from '../field/field.component';
@@ -27,6 +28,7 @@ import { ToolsComponent } from '../tools/tools.component';
 import { IConfig } from '../types';
 import { ConfigComponent } from './config.component';
 import { MainService } from './main.service';
+import { ApiService } from '@app/core/api';
 
 const rawConfig: IConfig = {
   attr: {},
@@ -86,9 +88,21 @@ describe('Configuration : ConfigComponent >> ', () => {
   beforeEach(async () => {
     FieldServiceStub = new FieldService(new FormBuilder());
     TestBed.configureTestingModule({
-      imports: [NoopAnimationsModule, SharedModule],
+      imports: [
+        NoopAnimationsModule,
+        SharedModule,
+        HttpClientTestingModule,
+      ],
       declarations: [ConfigComponent, ToolsComponent, ConfigFieldsComponent, GroupFieldsComponent, FieldComponent, TextBoxComponent],
-      providers: [provideMockStore({ initialState }), { provide: FieldService, useValue: FieldServiceStub }, { provide: FullyRenderedService, useValue: { stableView: () => { } } }],
+      providers: [
+        provideMockStore({ initialState }),
+        { provide: FieldService, useValue: FieldServiceStub },
+        {
+          provide: FullyRenderedService,
+          useValue: { stableView: () => { } }
+        },
+        ApiService,
+      ],
       schemas: [NO_ERRORS_SCHEMA],
     })
       .overrideComponent(ConfigComponent, {
