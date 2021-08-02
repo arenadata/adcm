@@ -105,12 +105,12 @@ describe('Configuration : ConfigComponent >> ', () => {
       ],
       schemas: [NO_ERRORS_SCHEMA],
     })
-      .overrideComponent(ConfigComponent, {
-        set: {
-          providers: [{ provide: MainService, useClass: MockMainService }],
-        },
-      })
-      .compileComponents();
+    .overrideComponent(ConfigComponent, {
+      set: {
+        providers: [{ provide: MainService, useClass: MockMainService }],
+      },
+    })
+    .compileComponents();
   });
 
   beforeEach(() => {
