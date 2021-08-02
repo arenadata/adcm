@@ -25,7 +25,7 @@ import { ConfigFieldsComponent } from '../fields/fields.component';
 import { GroupFieldsComponent } from '../group-fields/group-fields.component';
 import { ToolsComponent } from '../tools/tools.component';
 import { IConfig } from '../types';
-import { ConfigComponent } from './main.component';
+import { ConfigComponent } from './config.component';
 import { MainService } from './main.service';
 
 const rawConfig: IConfig = {
@@ -70,7 +70,7 @@ const rawConfig: IConfig = {
   ],
 };
 
-describe('Configuration : MainComponent >> ', () => {
+describe('Configuration : ConfigComponent >> ', () => {
   let component: ConfigComponent;
   let fixture: ComponentFixture<ConfigComponent>;
   let FieldServiceStub: Partial<FieldService>;
@@ -129,8 +129,7 @@ describe('Configuration : MainComponent >> ', () => {
 
   it('the save button click should initialize form again', () => {
     fixture.detectChanges();
-    component.rawConfig = rawConfig;
-    component.config$ = of(rawConfig);
+    component.rawConfig.next(rawConfig);
     component.cd.detectChanges();
     component.tools.disabledSave = component.fields.form.invalid;
     component.cd.detectChanges();
