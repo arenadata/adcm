@@ -159,14 +159,18 @@ class BasePageObject:
         for loc in locators:
             assert self.is_element_displayed(loc), f"Locator {loc.name} isn't displayed on page"
 
-    def element_should_be_hidden(self, locator: Locator, timeout: Optional[int] = None) -> None:
+    def check_element_should_be_hidden(
+        self, locator: Locator, timeout: Optional[int] = None
+    ) -> None:
         """Raises assertion error if element is still visible after timeout"""
         try:
             self.wait_element_hide(locator, timeout)
         except TimeoutException as e:
             raise AssertionError(e.msg)
 
-    def element_should_be_visible(self, locator: Locator, timeout: Optional[int] = None) -> None:
+    def check_element_should_be_visible(
+        self, locator: Locator, timeout: Optional[int] = None
+    ) -> None:
         """Raises assertion error if element is not visible after timeout"""
         try:
             self.wait_element_visible(locator, timeout)
@@ -216,6 +220,17 @@ class BasePageObject:
                 EC.invisibility_of_element_located([locator.by, locator.value]),
                 message=f"locator {locator.name} hasn't hide for {loc_timeout} seconds",
             )
+
+    def wait_page_is_opened(self, timeout: int = None):
+        """Wait for current page to be opened"""
+        timeout = timeout or self.default_page_timeout
+
+        def assert_page_is_opened():
+            assert (
+                self.path in self.driver.current_url
+            ), f'Page is not opened at path {self.path} in {timeout}'
+
+        wait_until_step_succeeds(assert_page_is_opened, period=0.5, timeout=timeout)
 
     def set_locator_value(self, locator: Locator, value: str) -> None:
         """Fill locator with value."""

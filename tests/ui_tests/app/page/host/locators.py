@@ -17,18 +17,6 @@ from tests.ui_tests.app.helpers.locator import Locator, TemplateLocator
 class HostLocators:
     """Host main page elements locators"""
 
-    class Header:
-        fqdn = Locator(
-            By.XPATH,
-            "//mat-drawer-content/mat-card/mat-card-header/div/mat-card-title",
-            "Host FQDN",
-        )
-        provider = Locator(
-            By.XPATH,
-            "//mat-drawer-content/mat-card/mat-card-header/div/mat-card-subtitle",
-            "Host provider",
-        )
-
     class MenuNavigation:
         main = Locator(By.XPATH, "//a[@adcm_test='tab_main']", "Main link in side menu")
         config = Locator(
@@ -37,13 +25,16 @@ class HostLocators:
         status = Locator(By.XPATH, "//a[@adcm_test='tab_status']", "Status in side menu")
         actions = Locator(By.XPATH, "//a[@adcm_test='tab_action']", "Actions in side menu")
 
-    class Actions:
-        action_name = Locator(
-            By.XPATH, "//app-action-card//mat-card-title", "Action title in Actions menu"
-        )
-        action_btn = TemplateLocator(
-            By.XPATH,
-            "//mat-card-title[text()='{}']/ancestor::mat-card-header//button",
-            "Action in Actions menu",
-        )
-        action_run_btn = Locator(By.XPATH, "//app-action-list/button", "Action run button")
+
+class HostActionsLocators(HostLocators):
+    """Locators for Actions menu on host page"""
+
+    action_name = Locator(
+        By.XPATH, "//app-action-card//mat-card-title", "Action title in Actions menu"
+    )
+    action_btn = TemplateLocator(
+        By.XPATH,
+        "//mat-card-title[text()='{}']/ancestor::mat-card-header//button",
+        "Action in Actions menu",
+    )
+    action_run_btn = Locator(By.XPATH, "//app-action-list/button", "Action run button")

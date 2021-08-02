@@ -24,5 +24,5 @@ class DeleteDialog:
 class ActionDialog:
     body = Locator(By.XPATH, "//mat-dialog-container", "Dialog with choices")
     run = Locator(
-        By.XPATH, "//span[contains(text(), 'Run')]/parent::button", "Run button in action dialog"
+        By.XPATH, "//button[./span[contains(text(), 'Run')]]", "Run button in action dialog"
     )

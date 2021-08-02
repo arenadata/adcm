@@ -116,7 +116,7 @@ class CommonConfigMenuObj(BasePageObject):
         Assert that message "Field [{name}] is required!" is presented
         """
         message = f'Field [{name}] is required!'
-        self.element_should_be_visible(self.config.field_error(message))
+        self.check_element_should_be_visible(self.config.field_error(message))
 
     @allure.step("Check {name} invalid error is presented")
     def check_field_is_invalid(self, name: str):
@@ -124,7 +124,7 @@ class CommonConfigMenuObj(BasePageObject):
         Assert that message "Field [{name}] is invalid!" is presented
         """
         message = f'Field [{name}] is invalid!'
-        self.element_should_be_visible(self.config.field_error(message))
+        self.check_element_should_be_visible(self.config.field_error(message))
 
     @allure.step("Check {name} confirmation error is presented")
     def check_password_confirm_required(self, name: str):
@@ -132,4 +132,4 @@ class CommonConfigMenuObj(BasePageObject):
         Assert that message "Confirm [{name}] is required!" is presented
         """
         message = f'Confirm [{name}] is required!'
-        self.element_should_be_visible(self.config.field_error(message))
+        self.check_element_should_be_visible(self.config.field_error(message))

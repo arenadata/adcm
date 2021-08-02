@@ -21,7 +21,7 @@ class CommonConfigMenu:
 
     group_btn = TemplateLocator(
         By.XPATH,
-        "//span[text()='{}']/ancestor::mat-expansion-panel-header",
+        "//mat-expansion-panel-header[.//span[text()='{}']]",
         'Group "{}" button',
     )
     advanced_label = Locator(By.XPATH, "//mat-checkbox//span[text()='Advanced']", "Advanced label")
@@ -32,10 +32,10 @@ class CommonConfigMenu:
         "Config description input",
     )
     save_btn = Locator(
-        By.XPATH, "//span[text()='Save']/ancestor::button", "Save configuration button"
+        By.XPATH, "//button[.//span[text()='Save']]", "Save configuration button"
     )
     history_btn = Locator(
-        By.XPATH, "//mat-icon[text()='history']/ancestor::button", "History button"
+        By.XPATH, "//button[.//mat-icon[text()='history']]", "History button"
     )
 
     compare_to_select = Locator(
@@ -47,18 +47,18 @@ class CommonConfigMenu:
     # use it to check config diff existence by finding text entry
     config_diff = TemplateLocator(
         By.XPATH,
-        "//div[@adcm_test='{}']/ancestor::app-field//mat-list-item//span[contains(text(), '{}')]",
+        "//app-field[.//div[@adcm_test='{}']]//mat-list-item//span[contains(text(), '{}')]",
         'Config diff of option "{}" with "{}" in text',
     )
 
     field_input = TemplateLocator(
         By.XPATH,
-        "//div[@adcm_test='{}']/ancestor::app-field//input",
+        "//app-field[.//div[@adcm_test='{}']]//input",
         'Input of option "{}" in group',
     )
     password_inputs = TemplateLocator(
         By.XPATH,
-        "//div[@adcm_test='{}']/ancestor::app-field//app-fields-password/div[not(contains(@style, 'none'))]//input",
+        "//app-field[.//div[@adcm_test='{}']]//app-fields-password/div[not(contains(@style, 'none'))]//input",
         "Password inputs",
     )
     field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')

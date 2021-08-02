@@ -27,12 +27,16 @@ from tests.ui_tests.app.page.common.base_page import (
     PageFooter,
 )
 from tests.ui_tests.app.page.common.dialogs import DeleteDialog, ActionDialog
+from tests.ui_tests.app.page.common.popups import HostCreationLocators
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
 
 
 @dataclass
 class HostRowInfo:
+    """Information from host row about host"""
+
+    # helper to check if any cluster is assigned
     UNASSIGNED_CLUSTER_VALUE = 'Assign to cluster'
     fqdn: str
     provider: str
@@ -49,13 +53,11 @@ class HostListPage(BasePageObject):
 
     def get_host_row(self, row_num: int = 0) -> WebElement:
         def table_has_enough_rows():
-            current_row_count = self.table.row_count
-            assert (
-                row_num + 1 <= current_row_count
-            ), f"Host table has only {current_row_count} rows when row #{row_num} was requested"
+            self.__assert_enough_rows(row_num, self.table.row_count)
 
         wait_until_step_succeeds(table_has_enough_rows, timeout=5, period=0.1)
         rows = self.table.get_all_rows()
+        self.__assert_enough_rows(row_num, len(rows))
         return rows[row_num]
 
     def get_host_info_from_row(self, row_num: int = 0) -> HostRowInfo:
@@ -132,7 +134,9 @@ class HostListPage(BasePageObject):
     def bind_host_to_cluster(self, host_row_num: int, cluster_name: str):
         """Assign host to cluster in host list table"""
         self.click_on_row_child(host_row_num, HostListLocators.HostTable.HostRow.cluster)
-        self._wait_and_click_on_cluster_option(cluster_name, HostListLocators.HostTable.option)
+        self._wait_and_click_on_cluster_option(
+            cluster_name, HostListLocators.HostTable.cluster_option
+        )
 
     @allure.step('Assert host in row {row_num} is assigned to cluster {cluster_name}')
     def assert_host_bonded_to_cluster(self, row_num: int, cluster_name: str):
@@ -154,20 +158,19 @@ class HostListPage(BasePageObject):
 
     def open_host_creation_popup(self):
         self.find_and_click(HostListLocators.Tooltip.host_add_btn)
-        self.wait_element_visible(HostListLocators.CreateHostPopup.block)
+        self.wait_element_visible(HostCreationLocators.block)
 
     def close_host_creation_popup(self):
         """Close popup with `Cancel` button"""
-        self.find_and_click(HostListLocators.CreateHostPopup.cancel_btn)
+        self.find_and_click(HostCreationLocators.cancel_btn)
 
     def click_create_host_in_popup(self):
         """Click create host button in popup"""
-        self.find_and_click(HostListLocators.CreateHostPopup.create_btn)
+        self.find_and_click(HostCreationLocators.create_btn)
 
     def _insert_new_host_info(self, fqdn: str, cluster: Optional[str] = None):
         """Insert new host info in fields of opened popup"""
-        popup = HostListLocators.CreateHostPopup
-        fqdn_input = self.find_element(popup.fqdn_input)
+        fqdn_input = self.find_element(HostCreationLocators.fqdn_input)
         fqdn_input.send_keys(fqdn)
         if cluster:
             self._choose_cluster_in_popup(cluster)
@@ -178,20 +181,20 @@ class HostListPage(BasePageObject):
         Popup should be opened
         Popup is not closed at the end
         """
-        popup = HostListLocators.CreateHostPopup
-        self.find_and_click(popup.provider_add_btn)
-        self.wait_element_visible(popup.new_provider_block)
-        self.find_element(popup.upload_bundle_btn).send_keys(bundle_path)
-        self.find_and_click(popup.new_provider_add_btn)
-        self.wait_element_hide(popup.new_provider_block)
+        provider_section = HostCreationLocators.Provider
+        self.find_and_click(provider_section.add_btn)
+        self.wait_element_visible(provider_section.new_provider_block)
+        self.find_element(provider_section.upload_bundle_btn).send_keys(bundle_path)
+        self.find_and_click(provider_section.new_provider_add_btn)
+        self.wait_element_hide(provider_section.new_provider_block)
 
     def _get_hostprovider_name(self) -> str:
         """Get chosen provider from opened new host popup"""
-        return self.find_element(HostListLocators.CreateHostPopup.chosen_provider).text
+        return self.find_element(HostCreationLocators.Provider.chosen_provider).text
 
     def _choose_cluster_in_popup(self, cluster_name: str):
-        self.find_and_click(HostListLocators.CreateHostPopup.cluster_select)
-        option = HostListLocators.CreateHostPopup.cluster_option
+        self.find_and_click(HostCreationLocators.Cluster.cluster_select)
+        option = HostCreationLocators.Cluster.cluster_option
         self._wait_and_click_on_cluster_option(cluster_name, option)
         self.wait_element_hide(option)
 
@@ -203,3 +206,13 @@ class HostListPage(BasePageObject):
             message=f"Can't find cluster with name {cluster_name} in dropdown on page {self.driver.current_url} "
             f"for {self.default_loc_timeout} seconds",
         ).click()
+
+    @staticmethod
+    def __assert_enough_rows(required_row_num: int, row_count: int):
+        """
+        Assert that row "is presented" by comparing row index and amount of rows
+        Provide row as index (starting with 0)
+        """
+        assert (
+            required_row_num + 1 <= row_count
+        ), f"Host table has only {row_count} rows when row #{required_row_num} was requested"

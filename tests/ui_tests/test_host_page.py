@@ -14,8 +14,8 @@ from typing import Any, List, Tuple, Optional
 import os
 import allure
 import pytest
-from _pytest.fixtures import SubRequest
 
+from _pytest.fixtures import SubRequest
 from adcm_client.objects import ADCMClient, Bundle, Provider, Cluster
 from adcm_pytest_plugin import utils
 
@@ -24,8 +24,8 @@ from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
-from tests.ui_tests.app.page.host.locators import HostLocators
-from tests.ui_tests.app.page.host.page import HostPage
+from tests.ui_tests.app.page.host.locators import HostLocators, HostActionsLocators
+from tests.ui_tests.app.page.host.page import HostMainPage, HostActionsPage, HostConfigPage
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
 from tests.ui_tests.app.page.host_list.page import HostListPage, HostRowInfo
 
@@ -37,9 +37,11 @@ HOST_FQDN = 'best-host'
 CLUSTER_NAME = 'Best Cluster Ever'
 PROVIDER_NAME = 'Black Mark'
 
+INIT_ACTION = 'Init'
+
 # config fields
-REGULAR_FIELD_ADCM_TEST = 'item_1_g1/item_1_g1'
-REQUIRED_FIELD_ADCM_TEST = 'item_2_g1/item_2_g1'
+REGULAR_FIELD_ADCM_TEST = 'just_item/just_item'
+REQUIRED_FIELD_ADCM_TEST = 'required_item/required_item'
 PASSWORD_FIELD_ADCM_TEST = 'important_password'
 ADVANCED_FIELD_ADCM_TEST = 'advanced_one'
 
@@ -96,13 +98,22 @@ def page(app_fs: ADCMTest, auth_to_adcm) -> HostListPage:
 def elements_should_be_hidden(page: BasePageObject, locators: List[Locator]):
     # should be faster than alternatives to not is_visible and stuff
     for loc in locators:
-        page.element_should_be_hidden(loc)
+        page.check_element_should_be_hidden(loc)
 
 
 @allure.step('Open host config menu from host list')
-def open_config(page) -> HostPage:
+def open_config(page) -> HostConfigPage:
     page.click_on_row_child(0, HostListLocators.HostTable.HostRow.config)
-    return HostPage(page.driver, page.base_url)
+    return HostConfigPage(page.driver, page.base_url, 1)
+
+
+def check_job_name(sdk: ADCMClient, action_display_name: str):
+    """Check job with correct name is launched"""
+    jobs_display_names = {job.display_name for job in sdk.job_list()}
+    assert action_display_name in jobs_display_names, (
+        f'Action with name "{action_display_name}" was not ran. '
+        f'Job names found: {jobs_display_names}'
+    )
 
 
 def check_host_value(key: str, actual_value: Any, expected_value: Any):
@@ -138,9 +149,9 @@ def _check_menu(
     list_page: HostListPage,
 ):
     list_page.click_on_row_child(0, HostListLocators.HostTable.HostRow.fqdn)
-    host_page = HostPage(list_page.driver, list_page.base_url)
+    host_page = HostMainPage(list_page.driver, list_page.base_url, 1)
     getattr(host_page, f'open_{menu_name}_menu')()
-    host_page.assert_fqdn_is(HOST_FQDN)
+    host_page.check_fqdn_equal_to(HOST_FQDN)
     bundle_label = host_page.get_bundle_label()
     # Test Host is name of host in config.yaml
     assert 'Test Host' in bundle_label
@@ -230,9 +241,9 @@ def test_open_host_from_host_list(
     row_child = getattr(HostListLocators.HostTable.HostRow, row_child_name)
     menu_item_locator = getattr(HostLocators.MenuNavigation, menu_item_name)
     page.click_on_row_child(0, row_child)
-    main_host_page = HostPage(page.driver, page.base_url)
+    main_host_page = HostMainPage(page.driver, page.base_url, 1)
     with allure.step('Check correct menu is opened'):
-        main_host_page.assert_fqdn_is(HOST_FQDN)
+        main_host_page.check_fqdn_equal_to(HOST_FQDN)
         assert main_host_page.active_menu_is(menu_item_locator)
 
 
@@ -246,7 +257,7 @@ def test_delete_host(
     host_info = page.get_host_info_from_row(0)
     check_host_info(host_info, HOST_FQDN, PROVIDER_NAME, None, 'created')
     page.delete_host(0)
-    page.element_should_be_hidden(HostListLocators.HostTable.row)
+    page.check_element_should_be_hidden(HostListLocators.HostTable.row)
 
 
 def test_delete_bonded_host(
@@ -258,7 +269,7 @@ def test_delete_bonded_host(
     """Host shouldn't be deleted"""
     page.create_host(HOST_FQDN, cluster=CLUSTER_NAME)
     page.delete_host(0)
-    page.element_should_be_visible(HostListLocators.HostTable.row)
+    page.check_element_should_be_visible(HostListLocators.HostTable.row)
 
 
 @pytest.mark.full()
@@ -280,26 +291,29 @@ def test_run_action_on_new_host(
 ):
     """Create host and run action on it"""
     page.assert_host_state(0, 'created')
-    page.run_action(0, 'Init')
+    page.run_action(0, INIT_ACTION)
     page.assert_host_state(0, 'running')
 
 
 @pytest.mark.usefixtures('_create_host')
 def test_run_action_from_menu(
+    sdk_client_fs: ADCMClient,
     page: HostListPage,
 ):
     """Run action from host actions menu"""
     page.click_on_row_child(0, HostListLocators.HostTable.HostRow.fqdn)
-    host_main_page = HostPage(page.driver, page.base_url)
-    host_main_page.open_action_menu()
-    action_name = 'Init'
-    actions_before = host_main_page.get_action_names()
-    assert action_name in actions_before, f'Action {action_name} should be listed in Actions menu'
+    host_main_page = HostMainPage(page.driver, page.base_url, 1)
+    actions_page: HostActionsPage = host_main_page.open_action_menu()
+    actions_before = actions_page.get_action_names()
+    assert INIT_ACTION in actions_before, f'Action {INIT_ACTION} should be listed in Actions menu'
     with allure.step('Run action "Init" from host Actions menu'):
-        host_main_page.run_action_from_menu(action_name, open_menu=False)
-        host_main_page.wait_element_hide(HostLocators.Actions.action_btn(action_name))
-        host_main_page.wait_element_clickable(HostLocators.Actions.action_run_btn, timeout=10)
-    actions_after = host_main_page.get_action_names(open_menu=False)
+        actions_page.open_action_menu()
+        actions_page.run_action_from_menu(INIT_ACTION)
+        actions_page.wait_element_hide(HostActionsLocators.action_btn(INIT_ACTION))
+        check_job_name(sdk_client_fs, INIT_ACTION)
+        actions_page.wait_element_clickable(HostActionsLocators.action_run_btn, timeout=10)
+    actions_page.open_action_menu()
+    actions_after = actions_page.get_action_names()
     with allure.step('Assert available actions set changed'):
         assert actions_before != actions_after, 'Action set did not change after "Init" action'
 
@@ -328,10 +342,10 @@ def test_filter_config(
         elements_should_be_hidden(host_page, [not_required_option, required_option])
         host_page.is_element_displayed(password_fields)
         host_page.config.click_on_group(params['group'])
-        host_page.element_should_be_visible(not_required_option)
+        host_page.check_element_should_be_visible(not_required_option)
     with allure.step('Check configuration with "Advanced" turned on'):
         host_page.find_and_click(CommonConfigMenu.advanced_label)
-        host_page.element_should_be_visible(advanced_option)
+        host_page.check_element_should_be_visible(advanced_option)
         host_page.assert_displayed_elements([not_required_option, required_option, password_fields])
     with allure.step('Check search filtration'):
         host_page.config.search(params['search_text'])
@@ -340,7 +354,7 @@ def test_filter_config(
             host_page, [not_required_option, required_option, password_fields]
         )
         host_page.find_and_click(CommonConfigMenu.advanced_label)
-        host_page.element_should_be_hidden(advanced_option)
+        host_page.check_element_should_be_hidden(advanced_option)
 
 
 @pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
