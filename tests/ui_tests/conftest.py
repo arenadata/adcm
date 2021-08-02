@@ -164,7 +164,7 @@ def _write_json_file(f_name, j_data):
 
 
 @allure.title("Login in ADCM over API")
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def login_to_adcm_over_api(app_fs, adcm_credentials):
     """Perform login via API call"""
     login_endpoint = f'{app_fs.adcm.url.rstrip("/")}/api/v1/token/'
@@ -177,7 +177,7 @@ def login_to_adcm_over_api(app_fs, adcm_credentials):
 
 
 @allure.title("Login in ADCM over UI")
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def login_to_adcm_over_ui(app_fs, adcm_credentials):
     """Perform login on Login page ADCM"""
 
