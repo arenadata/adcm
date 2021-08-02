@@ -28,6 +28,7 @@ const COLUMNS_SET = {
   job: ['action', 'objects', 'start_date', 'finish_date', 'status'],
   task: ['id', 'start_date', 'finish_date', 'status'],
   bundle: ['name', 'version', 'edition', 'description', 'controls'],
+  config_group: ['name', 'description', 'remove'],
 };
 
 
