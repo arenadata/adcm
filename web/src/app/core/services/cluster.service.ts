@@ -130,7 +130,7 @@ export class ClusterService {
       )
       .pipe(
         map((a: Entities) => {
-          this.worker.current = { ...a, name: a.display_name || a.name || (a as Host).fqdn };
+          this.worker.current = { ...a, name: a.display_name || a.name || (a as Host).fqdn, typeName };
           this.workerSubject.next(this.worker);
           return this.worker;
         })

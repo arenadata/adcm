@@ -60,6 +60,10 @@ const clusterRoutes: Routes = [
     children: [
       { path: '', redirectTo: 'main', pathMatch: 'full' },
       { path: 'main', component: MainInfoComponent },
+      // ToDo hosts from config group
+      { path: 'host', component: HostComponent },
+      // ToDo Config from config group
+      { path: 'config', component: ConfigComponent },
     ],
   },
   {
