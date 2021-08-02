@@ -13,7 +13,6 @@
 import os
 import sys
 import tarfile
-import tempfile
 from typing import Optional, List
 
 
