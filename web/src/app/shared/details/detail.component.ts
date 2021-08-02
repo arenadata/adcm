@@ -15,11 +15,10 @@ import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 import { switchMap, tap } from 'rxjs/operators';
 
-import { ChannelService } from '@app/core/services';
-import { keyChannelStrim } from '@app/core/services';
-import { WorkerInstance, ClusterService } from '@app/core/services/cluster.service';
+import { ChannelService, keyChannelStrim } from '@app/core/services';
+import { ClusterService, WorkerInstance } from '@app/core/services/cluster.service';
 import { EventMessage, getNavigationPath, setPathOfRoute, SocketState } from '@app/core/store';
-import { Cluster, Host, IAction, Issue, Job, isIssue, EmmitRow } from '@app/core/types';
+import { Cluster, EmmitRow, Host, IAction, isIssue, Issue, Job } from '@app/core/types';
 import { SocketListenerDirective } from '@app/shared/directives/socketListener.directive';
 import { IDetails } from './navigation.service';
 import { AdcmEntity } from '@app/models/entity';

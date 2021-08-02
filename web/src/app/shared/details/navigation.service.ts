@@ -127,7 +127,7 @@ export class NavigationService {
     const issue = (i: Issue) => (isIssue(i) ? ISSUE_MESSAGE : '');
     const link = (p: { typeName: string; id: number }) => (p ? `/${p.typeName}/${p.id}` : '');
     const typeObj = (type: string, prev: string) => ({ url: `${prev}/${type}`, title: `${type}s` });
-    const fullLink = (c: { parent?: Cluster; typeName: TypeName; id: number; name: string; issue: Issue }): INavItem[] => [
+    const fullLink = (c: { parent?: Cluster; typeName: TypeName; id: number; name: string; issue?: Issue }): INavItem[] => [
       typeObj(c.typeName === 'job' ? 'task' : c.typeName, link(c.parent)),
       {
         id: c.id,
