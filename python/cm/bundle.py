@@ -570,6 +570,7 @@ def copy_stage(bundle_hash, bundle_proto):
     try:
         bundle.save()
     except IntegrityError:
+        shutil.rmtree(os.path.join(config.BUNDLE_DIR, bundle.hash))
         msg = 'Bundle "{}" {} already installed'
         err('BUNDLE_ERROR', msg.format(bundle_proto.name, bundle_proto.version))
 
