@@ -16,17 +16,10 @@ from typing import Optional
 
 import pytest
 import sys
-import tempfile
 
-import requests
 from _pytest.python import Function
 from allure_commons.model2 import TestResult, Parameter
 from allure_pytest.listener import AllureListener
-from selenium.common.exceptions import WebDriverException
-
-from tests.ui_tests.app.app import ADCMTest
-from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
-from tests.ui_tests.app.page.login.page import LoginPage
 
 
 pytest_plugins = "adcm_pytest_plugin"
@@ -99,27 +92,3 @@ def _pack_bundle(stack_dir, archive_dir):
         for sub in os.listdir(stack_dir):
             tar.add(os.path.join(stack_dir, sub), arcname=sub)
     return archive_name
-
-
-@allure.title("Login in ADCM over API")
-@pytest.fixture(scope="function")
-def login_to_adcm_over_api(app_fs, adcm_credentials):
-    """Perform login via API call"""
-    login_endpoint = f'{app_fs.adcm.url.rstrip("/")}/api/v1/token/'
-    app_fs.driver.get(app_fs.adcm.url)
-    token = requests.post(login_endpoint, json=adcm_credentials).json()['token']
-    auth = {'login': adcm_credentials['username'], 'token': token}
-    script = f'localStorage.setItem("auth", JSON.stringify({auth}))'
-    app_fs.driver.execute_script(script)
-    AdminIntroPage(app_fs.driver, app_fs.adcm.url).open().wait_config_loaded()
-
-
-@allure.title("Login in ADCM over UI")
-@pytest.fixture(scope="function")
-def login_to_adcm_over_ui(app_fs, adcm_credentials):
-    """Perform login on Login page ADCM"""
-
-    login = LoginPage(app_fs.driver, app_fs.adcm.url).open()
-    login.login_user(**adcm_credentials)
-    login.wait_url_contains_path(AdminIntroPage(app_fs.driver, app_fs.adcm.url).path)
-    login.wait_config_loaded()

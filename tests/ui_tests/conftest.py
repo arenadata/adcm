@@ -12,9 +12,10 @@
 # pylint: disable=W0621
 import json
 import tempfile
-
+import requests
 import allure
 import pytest
+
 from adcm_client.wrappers.docker import ADCM
 from deprecated import deprecated
 from selenium.common.exceptions import WebDriverException
@@ -160,3 +161,27 @@ def _write_json_file(f_name, j_data):
     with open(f_path, 'w') as f:
         json.dump(j_data, f, indent=2)
     return f_path
+
+
+@allure.title("Login in ADCM over API")
+@pytest.fixture(scope="function")
+def login_to_adcm_over_api(app_fs, adcm_credentials):
+    """Perform login via API call"""
+    login_endpoint = f'{app_fs.adcm.url.rstrip("/")}/api/v1/token/'
+    app_fs.driver.get(app_fs.adcm.url)
+    token = requests.post(login_endpoint, json=adcm_credentials).json()['token']
+    auth = {'login': adcm_credentials['username'], 'token': token}
+    script = f'localStorage.setItem("auth", JSON.stringify({auth}))'
+    app_fs.driver.execute_script(script)
+    AdminIntroPage(app_fs.driver, app_fs.adcm.url).open().wait_config_loaded()
+
+
+@allure.title("Login in ADCM over UI")
+@pytest.fixture(scope="function")
+def login_to_adcm_over_ui(app_fs, adcm_credentials):
+    """Perform login on Login page ADCM"""
+
+    login = LoginPage(app_fs.driver, app_fs.adcm.url).open()
+    login.login_user(**adcm_credentials)
+    login.wait_url_contains_path(AdminIntroPage(app_fs.driver, app_fs.adcm.url).path)
+    login.wait_config_loaded()
