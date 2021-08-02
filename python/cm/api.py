@@ -18,9 +18,9 @@ from django.utils import timezone
 
 import cm.errors
 import cm.issue
-import cm.config as config
 import cm.status_api
 import cm.lock
+from cm import config
 from cm.logger import log
 from cm.upgrade import check_license, version_in
 from cm.adcm_config import (
@@ -73,6 +73,7 @@ def add_cluster(proto, name, desc=''):
         cm.issue.update_hierarchy_issues(cluster)
     cm.status_api.post_event('create', 'cluster', cluster.id)
     cm.status_api.load_service_map()
+    log.info(f'cluster #{cluster.id} {cluster.name} is added')
     return cluster
 
 
@@ -98,6 +99,7 @@ def add_host(proto, provider, fqdn, desc='', lock=False):
     event.send_state()
     cm.status_api.post_event('create', 'host', host.id, 'provider', str(provider.id))
     cm.status_api.load_service_map()
+    log.info(f'host #{host.id} {host.fqdn} is added')
     return host
 
 
@@ -123,6 +125,7 @@ def add_host_provider(proto, name, desc=''):
         process_file_type(provider, spec, conf)
         cm.issue.update_hierarchy_issues(provider)
     cm.status_api.post_event('create', 'provider', provider.id)
+    log.info(f'host provider #{provider.id} {provider.name} is added')
     return provider
 
 
@@ -134,6 +137,7 @@ def delete_host_provider(provider):
     provider_id = provider.id
     provider.delete()
     cm.status_api.post_event('delete', 'provider', provider_id)
+    log.info(f'host provider #{provider_id} is deleted')
 
 
 def add_host_to_cluster(cluster, host):
@@ -197,6 +201,7 @@ def delete_host(host):
     host.delete()
     cm.status_api.post_event('delete', 'host', host_id)
     cm.status_api.load_service_map()
+    log.info(f'host #{host_id} is deleted')
 
 
 def delete_host_by_id(host_id):
@@ -264,6 +269,7 @@ def delete_service(service):
     service.delete()
     cm.status_api.post_event('delete', 'service', service_id)
     cm.status_api.load_service_map()
+    log.info(f'service #{service_id} is deleted')
 
 
 def delete_cluster(cluster):
@@ -322,6 +328,9 @@ def add_service_to_cluster(cluster, proto):
         cm.issue.update_hierarchy_issues(cs)
     cm.status_api.post_event('add', 'service', cs.id, 'cluster', str(cluster.id))
     cm.status_api.load_service_map()
+    log.info(
+        f'service #{cs.id} {cs.prototype.name} is added to cluster #{cluster.id} {cluster.name}'
+    )
     return cs
 
 

@@ -18,6 +18,7 @@ from rest_framework.authtoken.models import Token
 import cm
 from cm.errors import AdcmEx
 from cm.models import UserProfile, Role
+from cm.stack import MAX_NAME_LENGTH
 from api.api_views import check_obj, hlink
 from api.serializers import UrlField
 
@@ -65,13 +66,22 @@ class GroupDetailSerializer(GroupSerializer):
 
 
 class UserSerializer(serializers.Serializer):
-    username = serializers.CharField()
+    username = serializers.CharField(max_length=MAX_NAME_LENGTH)
     password = serializers.CharField(write_only=True)
     url = hlink('user-details', 'username', 'username')
     change_group = hlink('add-user-group', 'username', 'username')
     change_password = hlink('user-passwd', 'username', 'username')
     change_role = hlink('change-user-role', 'username', 'username')
     is_superuser = serializers.BooleanField(required=False)
+
+    def to_internal_value(self, data):
+        username = data['username']
+        if len(username) > MAX_NAME_LENGTH:
+            raise AdcmEx(
+                'LONG_NAME',
+                f'User name is too long, up to {MAX_NAME_LENGTH} symbols required',
+            )
+        return super().to_internal_value(data)
 
     @transaction.atomic
     def create(self, validated_data):

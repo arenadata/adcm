@@ -159,6 +159,7 @@ def provider(bundle: Bundle) -> Provider:
 
 @pytest.fixture()
 def provider_config_page(app_fs, provider: Provider, login_to_adcm) -> Configuration:
+
     return Configuration(
         app_fs.driver,
         "{}/provider/{}/config".format(app_fs.adcm.url, provider.provider_id),
