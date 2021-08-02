@@ -10,15 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.http import HttpResponse
 from rest_framework import serializers, status
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
 from haystack.query import SearchQuerySet
 
-from api.api_views import create
-from cm.errors import AdcmEx
 from cm.logger import log
 from cm.models import Cluster
 
@@ -41,7 +38,7 @@ def search(query):
 
 class SearchPostSerializer(serializers.Serializer):
     query = serializers.CharField()
-    
+
 
 class Search(GenericAPIView):
     serializer_class = SearchPostSerializer
