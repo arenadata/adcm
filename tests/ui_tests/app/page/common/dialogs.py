@@ -24,6 +24,4 @@ class DeleteDialog:
 
 class ActionDialog:
     body = Locator(By.XPATH, "//mat-dialog-container", "Dialog with choices")
-    run = Locator(
-        By.XPATH, "//app-dialog//button[@color='accent']", "Run button in action dialog"
-    )
+    run = Locator(By.XPATH, "//app-dialog//button[@color='accent']", "Run button in action dialog")

@@ -60,11 +60,9 @@ class ClusterMainPage(BasePageObject):
 
     @allure.step("Check all elements are displayed")
     def check_all_elements(self):
-        self.assert_displayed_elements([
-            ClusterMainLocators.title,
-            ClusterMainLocators.bundle_link,
-            ClusterMainLocators.text
-        ])
+        self.assert_displayed_elements(
+            [ClusterMainLocators.title, ClusterMainLocators.bundle_link, ClusterMainLocators.text]
+        )
 
 
 class ClusterImportPage(BasePageObject):

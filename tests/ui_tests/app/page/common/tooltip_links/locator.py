@@ -24,11 +24,19 @@ class CommonToolbarLocators:
 
     admin_link = Locator(By.XPATH, "//a[@routerlink='/admin']", "Link to /admin")
     text_link = TemplateLocator(By.XPATH, "//a[text()='{}']", "Link to {}")
-    action_btn = TemplateLocator(By.XPATH, "//span[.//a[text()='{}']]//app-action-list/button", "Action button to {}")
-    upgrade_btn = TemplateLocator(By.XPATH, "//span[.//a[text()='{}']]//app-upgrade/button", "Upgrade button to {}")
+    action_btn = TemplateLocator(
+        By.XPATH, "//span[.//a[text()='{}']]//app-action-list/button", "Action button to {}"
+    )
+    upgrade_btn = TemplateLocator(
+        By.XPATH, "//span[.//a[text()='{}']]//app-upgrade/button", "Upgrade button to {}"
+    )
 
     class Popup:
         """Popup to choose action or import"""
 
-        popup_block = Locator(By.XPATH, "//div[contains(@class, 'mat-menu-content')]", "Header popup block")
-        item = TemplateLocator(By.XPATH, "//button[@role='menuitem' and ./*[text()='{}']]", "Item {}")
+        popup_block = Locator(
+            By.XPATH, "//div[contains(@class, 'mat-menu-content')]", "Header popup block"
+        )
+        item = TemplateLocator(
+            By.XPATH, "//button[@role='menuitem' and ./*[text()='{}']]", "Item {}"
+        )

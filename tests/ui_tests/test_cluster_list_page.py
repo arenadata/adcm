@@ -212,7 +212,11 @@ def test_check_cluster_main_page_open_by_toolbar(app_fs):
 
 
 def test_check_cluster_run_upgrade_on_cluster_page_by_toolbar(sdk_client_fs, app_fs, auth_to_adcm):
-    params = {"upgrade_cluster_name": "upgrade cluster", "upgrade": "upgrade 2", "state": "upgradated"}
+    params = {
+        "upgrade_cluster_name": "upgrade cluster",
+        "upgrade": "upgrade 2",
+        "state": "upgradated",
+    }
     with allure.step("Create main cluster"):
         bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
         bundle.cluster_create(name=CLUSTER_NAME)
@@ -225,16 +229,17 @@ def test_check_cluster_run_upgrade_on_cluster_page_by_toolbar(sdk_client_fs, app
     with allure.step("Check that cluster has been upgraded"):
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         row = cluster_page.get_row_by_cluster_name(params["upgrade_cluster_name"])
-        assert cluster_page.get_cluster_state_from_row(row) == params["state"], \
-            f"Cluster state should be {params['state']}"
+        assert (
+            cluster_page.get_cluster_state_from_row(row) == params["state"]
+        ), f"Cluster state should be {params['state']}"
 
 
 @pytest.mark.usefixtures("_create_community_cluster")
 def test_check_cluster_run_action_on_cluster_page_by_toolbar(app_fs):
-    params = {"action_name": "Dummy action"}
+    params = {"action_name": "test_action"}
     cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, "1").open()
     CommonToolbar(app_fs.driver, app_fs.adcm.url).run_action(CLUSTER_NAME, params["action_name"])
     with allure.step("Check success job"):
         assert (
-            cluster_main_page.header.get_success_job_amount_from_header() == "1"
-        ), "There should be 1 success job in header"
+            cluster_main_page.header.get_in_progress_job_amount_from_header() == "1"
+        ), "There should be 1 in progress job in header"

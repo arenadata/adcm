@@ -1,11 +1,10 @@
 import allure
 
 from tests.ui_tests.app.page.common.base_page import BasePageObject
-from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
 from tests.ui_tests.app.page.common.dialogs import (
     ActionDialog,
-    DeleteDialog,
 )
+from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
 
 
 class CommonToolbar(BasePageObject):
@@ -26,6 +25,8 @@ class CommonToolbar(BasePageObject):
         self.find_and_click(CommonToolbarLocators.action_btn(tab_name.upper().strip("_")))
         self.wait_element_visible(CommonToolbarLocators.Popup.popup_block)
         self.find_and_click(CommonToolbarLocators.Popup.item(action_name))
+        self.wait_element_visible(ActionDialog.body)
+        self.find_and_click(ActionDialog.run)
 
     @allure.step("Run upgrade {upgrade_name} in {tab_name}")
     def run_upgrade(self, tab_name: str, upgrade_name: str):
