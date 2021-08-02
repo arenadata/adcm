@@ -132,14 +132,21 @@ export class MainComponent implements OnInit {
   template: `
     <pre>{{ text | async }}</pre>
   `,
-  styles: [':host {width: 100%; max-width: 960px}']
+  styles: [`:host {
+    width: 100%;
+    max-width: 960px
+  }
+
+  pre {
+    white-space: pre-wrap;
+  }`]
 })
 export class LicenseComponent implements OnInit {
   text: Observable<string>;
 
   constructor(private service: ClusterService) {}
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.text = this.service.getBundleLicenseText();
   }
 

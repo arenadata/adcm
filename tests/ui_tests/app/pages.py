@@ -13,6 +13,7 @@ from time import sleep
 
 import allure
 from deprecated import deprecated
+
 # Created by a1wen at 05.03.19
 from selenium.common.exceptions import (
     TimeoutException,
@@ -99,7 +100,8 @@ class BasePage:
 
     def _getelement(self, locator: tuple, timer=10):
         return WDW(self.driver, timer, ignored_exceptions=self.ignored_exceptions).until(
-            EC.presence_of_element_located(locator)
+            EC.presence_of_element_located(locator),
+            message=f"Can't find locator on page {self.driver.current_url} for {timer} seconds",
         )
 
     def _click_element(self, locator: tuple, **kwargs):
@@ -116,7 +118,10 @@ class BasePage:
         self._elements(locator, click, **kwargs)
 
     def _getelements(self, locator: tuple, timer=20):
-        return WDW(self.driver, timer).until(EC.presence_of_all_elements_located(locator))
+        return WDW(self.driver, timer).until(
+            EC.presence_of_all_elements_located(locator),
+            message=f"Can't find locators on page {self.driver.current_url} for {timer} seconds",
+        )
 
     def _click_element_in_list(self, element_name):
         for el in self._getelements(Common.list_text):
@@ -130,18 +135,30 @@ class BasePage:
         return self._getelements(Common.mat_error)
 
     def _wait_element_present(self, locator: tuple, timer=5):
-        WDW(self.driver, timer).until(EC.presence_of_element_located(locator))
+        WDW(self.driver, timer).until(
+            EC.presence_of_element_located(locator),
+            message=f"Can't find locator on page " f"{self.driver.current_url} for {timer} seconds",
+        )
         return self.driver.find_element(*locator)
 
     def _wait_element_hide(self, locator: tuple, timer=5):
-        WDW(self.driver, timer).until(EC.invisibility_of_element_located(locator))
+        WDW(self.driver, timer).until(
+            EC.invisibility_of_element_located(locator),
+            message=f"locator hasn't hide for {timer} seconds",
+        )
 
     def _wait_element_present_in_sublement(self, subel, locator: tuple, timer=5):
-        WDW(subel, timer).until(EC.presence_of_element_located(locator))
+        WDW(subel, timer).until(
+            EC.presence_of_element_located(locator),
+            message=f"Can't find locator on page " f"{self.driver.current_url} for {timer} seconds",
+        )
         return subel.find_element(*locator)
 
     def _wait_text_element_in_element(self, element, locator: tuple, timer=5, text=""):
-        WDW(element, timer).until(EC.text_to_be_present_in_element(locator, text))
+        WDW(element, timer).until(
+            EC.text_to_be_present_in_element(locator, text),
+            message=f"Can't find text in locator for {timer} seconds",
+        )
         return element.find_element(*locator)
 
     def _set_field_value(self, field: tuple, value):
@@ -195,11 +212,19 @@ class BasePage:
         ).click().perform()
 
     def _contains_url(self, url: str, timer=5):
-        WDW(self.driver, timer).until(EC.url_contains(url))
+        WDW(self.driver, timer).until(
+            EC.url_contains(url),
+            message=f"Page with url '{url}' has not been loaded " f"for {timer} seconds",
+        )
         return self.driver.current_url
 
     def _is_element_clickable(self, locator: tuple, timer=5) -> bool:
-        return bool(WDW(self.driver, timer).until(EC.element_to_be_clickable(locator)))
+        return bool(
+            WDW(self.driver, timer).until(
+                EC.element_to_be_clickable(locator),
+                message=f"locator hasn't become clickable " f"for {timer} seconds",
+            )
+        )
 
     def _menu_click(self, locator: tuple):
         if self._is_element_clickable(locator):

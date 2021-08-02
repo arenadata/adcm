@@ -18,5 +18,7 @@ from tests.ui_tests.app.helpers.locator import Locator
 class CommonFooterLocators:
     """ADCM footer locators"""
 
-    version_link = Locator(By.XPATH, "//a[contains(@href, 'docs')]", "Link to version doc page")
+    version_link = Locator(
+        By.XPATH, "//footer//a[contains(@href, 'docs')]", "Link to version doc page"
+    )
     logo = Locator(By.XPATH, "//footer//*[contains(text(), 'ARENADATA ©')]", "Footer logo")

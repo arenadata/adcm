@@ -647,39 +647,29 @@ class TestAPI(unittest.TestCase):  # pylint: disable=too-many-public-methods
         r1 = self.api_post('/cluster/', {'name': self.cluster, 'prototype_id': cluster_proto})
         cluster_id = r1.json()['id']
 
-        r1 = self.api_post('/cluster/' + str(cluster_id) + '/host/', {'host_id': host_id})
+        r1 = self.api_post(f'/cluster/{cluster_id}/host/', {'host_id': host_id})
         self.assertEqual(r1.status_code, 201)
 
-        r1 = self.api_post(
-            '/cluster/' + str(cluster_id) + '/service/', {'prototype_id': service_id}
-        )
+        r1 = self.api_post(f'/cluster/{cluster_id}/service/', {'prototype_id': service_id})
         self.assertEqual(r1.status_code, 201)
         service_id = r1.json()['id']
 
         comp_id = self.get_component_id(cluster_id, service_id, self.component)
         r1 = self.api_post(
-            '/cluster/' + str(cluster_id) + '/hostcomponent/',
+            f'/cluster/{cluster_id}/hostcomponent/',
             {'hc': [{'service_id': service_id, 'host_id': host_id, 'component_id': comp_id}]},
         )
         self.assertEqual(r1.status_code, 201)
 
-        r1 = self.api_post('/task/', {'selector': {"cluster": cluster_id}, 'action_id': 100500})
-        self.assertEqual(r1.status_code, 404)
-
-        r1 = self.api_post('/task/', {'selector': {"cluster": 100500}, 'action_id': action_id})
-        self.assertEqual(r1.status_code, 404)
-
-        r1 = self.api_post('/task/', {'selector': {"cluster": cluster_id}, 'action_id': action_id})
+        r1 = self.api_post(f'/cluster/{cluster_id}/action/{action_id}/run/', {})
         self.assertEqual(r1.status_code, 409)
         self.assertEqual(r1.json()['code'], 'TASK_ERROR')
         self.assertEqual(r1.json()['desc'], 'action has issues')
 
-        r1 = self.api_post(
-            '/cluster/' + str(cluster_id) + '/config/history/', {'config': {'required': 42}}
-        )
+        r1 = self.api_post(f'/cluster/{cluster_id}/config/history/', {'config': {'required': 42}})
         self.assertEqual(r1.status_code, 201)
 
-        r1 = self.api_post('/task/', {'selector': {"cluster": cluster_id}, 'action_id': action_id})
+        r1 = self.api_post(f'/cluster/{cluster_id}/action/{action_id}/run/', {})
         self.assertEqual(r1.status_code, 201)
         task_id = r1.json()['id']
         job_id = task_id
