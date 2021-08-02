@@ -16,6 +16,27 @@ from selenium.webdriver.common.by import By
 from tests.ui_tests.app.helpers.locator import Locator
 
 
+class ClusterMenuLocators:
+    """Cluster menu elements locators"""
+
+    main_tab = Locator(By.XPATH, "//a[@adcm_test='tab_main']", "Tab main")
+    services_tab = Locator(By.XPATH, "//a[@adcm_test='tab_service']", "Tab services")
+    hosts_tab = Locator(By.XPATH, "//a[@adcm_test='tab_host']", "Tab hosts")
+    components_tab = Locator(By.XPATH, "//a[@adcm_test='tab_host_component']", "Tab components")
+    config_tab = Locator(By.XPATH, "//a[@adcm_test='tab_config']", "Tab config")
+    status_tab = Locator(By.XPATH, "//a[@adcm_test='tab_status']", "Tab status")
+    import_tab = Locator(By.XPATH, "//a[@adcm_test='tab_import']", "Tab import")
+    actions_tab = Locator(By.XPATH, "//a[@adcm_test='tab_action']", "Tab actions")
+
+
+class ClusterMainLocators:
+    """Cluster main page elements locators"""
+
+    title = Locator(By.CLASS_NAME, "mat-card-title", "Cluster main page title")
+    bundle_link = Locator(By.XPATH, "//app-details-subtitle//a", "Cluster main page bundle link")
+    text = Locator(By.XPATH, "//mat-card-content", "Cluster main page text")
+
+
 class ClusterImportLocators:
     """Cluster import page elements locators"""
 
