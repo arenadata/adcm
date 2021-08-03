@@ -49,9 +49,9 @@ Name                Type    Default Nullable :term:`Required` :term:`POSTable`  
 id                  integer auto    False    False            False              False              Object id.
 date                date    auto    False    False            False              False              Object creation date
 obj_ref             FK      null    False    True             True               False              FK on `ObjectConfig` object
-description         string  ''      True     False            True               True               Description
-config              json    {}      False    False            True               True               Configuration
-attr                json    {}      False    False            True               True               Additional attributes
+description         string  ''      True     False            True               False              Description
+config              json    {}      False    False            True               False              Configuration
+attr                json    {}      False    False            True               False              Additional attributes
 url                 link    null    False    False            False              False              Reference to this object
 =================== ======= ======= ======== ================ ================== ================== ===========
 
