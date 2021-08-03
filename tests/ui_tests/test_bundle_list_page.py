@@ -36,7 +36,7 @@ def check_bundle_info_is_equal(actual_info: BundleInfo, expected_info: BundleInf
 
 # pylint: disable=redefined-outer-name
 @pytest.fixture()
-def page(app_fs: ADCMTest, auth_to_adcm) -> BundleListPage:
+def page(app_fs: ADCMTest, login_to_adcm_over_api) -> BundleListPage:
     """Get BundleListPage after authorization"""
     return BundleListPage(app_fs.driver, app_fs.adcm.url).open()
 
