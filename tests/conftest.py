@@ -12,7 +12,8 @@
 # pylint: disable=W0621
 import os
 import tarfile
-from typing import Optional
+from typing import Optional, List
+
 
 import pytest
 import sys
@@ -92,3 +93,11 @@ def _pack_bundle(stack_dir, archive_dir):
         for sub in os.listdir(stack_dir):
             tar.add(os.path.join(stack_dir, sub), arcname=sub)
     return archive_name
+
+
+@pytest.fixture()
+def bundle_archives(request, tmp_path) -> List[str]:
+    """
+    Prepare multiple bundles as in bundle_archive fixture
+    """
+    return [_pack_bundle(bundle_path, tmp_path) for bundle_path in request.param]
