@@ -33,7 +33,7 @@ from tests.ui_tests.utils import (
 )
 
 
-def test_check_header_tabs_for_authorised_user(app_fs, auth_to_adcm):
+def test_check_header_tabs_for_authorised_user(app_fs, login_to_adcm_over_api):
     header = PageHeader(app_fs.driver, app_fs.adcm.url)
 
     header.click_arenadata_logo_in_header()
@@ -66,7 +66,7 @@ def test_check_header_tabs_for_authorised_user(app_fs, auth_to_adcm):
     header.check_job_popup()
 
 
-def test_check_header_help_links_for_authorised_user(app_fs, auth_to_adcm):
+def test_check_header_help_links_for_authorised_user(app_fs, login_to_adcm_over_api):
     params = {"help_link": "t.me/joinchat/", "docs_link": "docs.arenadata.io/adcm/"}
     header = PageHeader(app_fs.driver, app_fs.adcm.url)
     header.click_help_button_in_header()
@@ -83,7 +83,7 @@ def test_check_header_help_links_for_authorised_user(app_fs, auth_to_adcm):
         BasePageObject(app_fs.driver, app_fs.adcm.url).wait_url_contains_path(params["docs_link"])
 
 
-def test_check_header_user_settings_for_authorised_user(app_fs, auth_to_adcm):
+def test_check_header_user_settings_for_authorised_user(app_fs, login_to_adcm_over_api):
     header = PageHeader(app_fs.driver, app_fs.adcm.url)
     header.click_account_button_in_header()
     header.check_account_popup()
@@ -99,7 +99,7 @@ def test_check_header_user_settings_for_authorised_user(app_fs, auth_to_adcm):
     header.wait_url_contains_path(LoginPage(app_fs.driver, app_fs.adcm.url).path)
 
 
-def test_check_footer_for_authorised_user(app_fs, auth_to_adcm):
+def test_check_footer_for_authorised_user(app_fs, login_to_adcm_over_api):
     params = {"docs": "docs.arenadata.io/adcm/notes"}
     footer = PageFooter(app_fs.driver, app_fs.adcm.url)
     footer.check_all_elements()

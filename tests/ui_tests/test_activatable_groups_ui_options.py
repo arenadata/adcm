@@ -148,7 +148,7 @@ def _check_that_all_field_is_invisible(sdk_client: ADCMClient, path, app):
     "group_advanced_false_invisible_false_field_advanced_false_invisible_false_activiatable_false",
 )
 def test_group_advanced_false_invisible_false_field_advanced_false_invisible_false_active_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that group not active and field is invisible until group is not active."""
 
@@ -185,7 +185,7 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_fal
     "group_advanced_false_invisible_false_field_advanced_false_invisible_false_activiatable_true",
 )
 def test_group_advanced_false_invisible_false_field_advanced_false_invisible_false_active_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that group active and all fields always visible."""
 
@@ -222,7 +222,7 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_fal
     "group_advanced_false_invisible_false_field_advanced_false_invisible_true_activiatable_false",
 )
 def test_group_advanced_false_invisible_false_field_advanced_false_invisible_true_active_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that field is invisible if group is active or not."""
 
@@ -234,7 +234,7 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_tru
     "group_advanced_false_invisible_false_field_advanced_false_invisible_true_activiatable_true",
 )
 def test_group_advanced_false_invisible_false_field_advanced_false_invisible_true_active_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that field invisible if activatable group active and not."""
 
@@ -246,7 +246,7 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_tru
     "group_advanced_false_invisible_false_field_advanced_true_invisible_false_activiatable_false",
 )
 def test_group_advanced_false_invisible_false_field_advanced_true_invisible_false_active_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that field visible if advanced group is enabled."""
 
@@ -283,7 +283,7 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_fals
     "group_advanced_false_invisible_false_field_advanced_true_invisible_false_activiatable_true",
 )
 def test_group_advanced_false_invisible_false_field_advanced_true_invisible_false_active_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that field is visible if group active and advanced enabled."""
 
@@ -320,7 +320,7 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_fals
     "group_advanced_false_invisible_false_field_advanced_true_invisible_true_activiatable_false",
 )
 def test_group_advanced_false_invisible_false_field_advanced_true_invisible_true_active_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that field is invisible if group is active or not."""
 
@@ -332,7 +332,7 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_true
     "group_advanced_false_invisible_false_field_advanced_true_invisible_true_activiatable_true",
 )
 def test_group_advanced_false_invisible_false_field_advanced_true_invisible_true_active_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that field invisible if activatable group active and not."""
 
@@ -344,7 +344,7 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_true
     "group_advanced_false_invisible_true_field_advanced_false_invisible_false_activiatable_false",
 )
 def test_group_advanced_false_invisible_true_field_advanced_false_invisible_false_active_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that all fields and groups invisible."""
 
@@ -356,7 +356,7 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_fals
     "group_advanced_false_invisible_true_field_advanced_false_invisible_false_activiatable_true",
 )
 def test_group_advanced_false_invisible_true_field_advanced_false_invisible_false_active_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that all fields and groups invisible."""
 
@@ -368,7 +368,7 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_fals
     "group_advanced_false_invisible_true_field_advanced_false_invisible_true_activiatable_false",
 )
 def test_group_advanced_false_invisible_true_field_advanced_false_invisible_true_active_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that all fields and groups invisible."""
 
@@ -380,7 +380,7 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_true
     "group_advanced_false_invisible_true_field_advanced_false_invisible_true_activiatable_true",
 )
 def test_group_advanced_false_invisible_true_field_advanced_false_invisible_true_active_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that all fields and groups invisible."""
 
@@ -392,7 +392,7 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_true
     "group_advanced_false_invisible_true_field_advanced_true_invisible_false_activiatable_false",
 )
 def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false_active_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that all fields and groups invisible."""
 
@@ -404,7 +404,7 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false
     "group_advanced_false_invisible_true_field_advanced_true_invisible_false_activiatable_true",
 )
 def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false_active_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that all fields and groups invisible."""
 
@@ -416,7 +416,7 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false
     "group_advanced_false_invisible_true_field_advanced_true_invisible_true_activiatable_false",
 )
 def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true_active_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that all fields and groups invisible."""
 
@@ -428,7 +428,7 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true_
     "group_advanced_false_invisible_true_field_advanced_true_invisible_true_activiatable_true",
 )
 def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true_active_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that all fields and groups invisible."""
 
@@ -440,7 +440,7 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true_
     "group_advanced_true_invisible_false_field_advanced_false_invisible_false_activiatable_false",
 )
 def test_group_advanced_true_invisible_false_field_advanced_false_invisible_false_active_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Field visible if advanced and activatable true."""
 
@@ -452,7 +452,7 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_fals
     "group_advanced_true_invisible_false_field_advanced_false_invisible_false_activiatable_true",
 )
 def test_group_advanced_true_invisible_false_field_advanced_false_invisible_false_active_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Field visible if advanced and activatable true."""
 
@@ -464,7 +464,7 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_fals
     "group_advanced_true_invisible_false_field_advanced_false_invisible_true_activiatable_false",
 )
 def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true_active_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Field invisible, group visible if advanced."""
 
@@ -494,7 +494,7 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true
     "group_advanced_true_invisible_false_field_advanced_false_invisible_true_activiatable_true",
 )
 def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true_active_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that field invisible."""
 
@@ -506,7 +506,7 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true
     "group_advanced_true_invisible_false_field_advanced_true_invisible_false_activiatable_false",
 )
 def test_group_advanced_true_invisible_false_field_advanced_true_invisible_false_active_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that field and group visible if advanced button clicked."""
 
@@ -536,7 +536,7 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_false
     "group_advanced_true_invisible_false_field_advanced_true_invisible_false_activiatable_true",
 )
 def test_group_advanced_true_invisible_false_field_advanced_true_invisible_false_active_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that field visible if advanced clicked."""
 
@@ -563,7 +563,7 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_false
     "group_advanced_true_invisible_false_field_advanced_true_invisible_true_activiatable_false",
 )
 def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true_active_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Field always invisible."""
 
@@ -591,7 +591,7 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true_
     "group_advanced_true_invisible_false_field_advanced_true_invisible_true_activiatable_true",
 )
 def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true_active_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that field invisible."""
 
@@ -603,7 +603,7 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true_
     "group_advanced_true_invisible_true_field_advanced_false_invisible_false_activiatable_false",
 )
 def test_group_advanced_true_invisible_true_field_advanced_false_invisible_false_active_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that all fields and groups invisible.."""
 
@@ -615,7 +615,7 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_false
     "group_advanced_true_invisible_true_field_advanced_false_invisible_false_activiatable_true",
 )
 def test_group_advanced_true_invisible_true_field_advanced_false_invisible_false_active_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that all fields and groups invisible."""
 
@@ -627,7 +627,7 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_false
     "group_advanced_true_invisible_true_field_advanced_false_invisible_true_activiatable_false",
 )
 def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true_active_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that all fields and groups invisible."""
 
@@ -639,7 +639,7 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true_
     "group_advanced_true_invisible_true_field_advanced_true_invisible_false_activiatable_false",
 )
 def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false_active_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that all fields and groups invisible."""
 
@@ -651,7 +651,7 @@ def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false_
     "group_advanced_true_invisible_true_field_advanced_false_invisible_true_activiatable_true",
 )
 def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true_active_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that all fields and groups invisible."""
 
@@ -663,7 +663,7 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true_
     "group_advanced_true_invisible_true_field_advanced_true_invisible_false_activiatable_true",
 )
 def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false_active_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that all fields and groups invisible."""
 
@@ -675,7 +675,7 @@ def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false_
     "group_advanced_true_invisible_true_field_advanced_true_invisible_true_activiatable_false",
 )
 def test_group_advanced_true_invisible_true_field_advanced_true_invisible_true_active_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that all fields and groups invisible."""
 
@@ -687,7 +687,7 @@ def test_group_advanced_true_invisible_true_field_advanced_true_invisible_true_a
     "group_advanced_true_invisible_true_field_advanced_true_invisible_true_activiatable_true",
 )
 def test_group_advanced_true_invisible_true_field_advanced_true_invisible_true_active_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Check that all fields and groups invisible."""
 
