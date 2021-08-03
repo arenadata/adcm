@@ -57,7 +57,9 @@ def cluster_bundle(sdk_client_fs: ADCMClient, data_dir_name: str) -> Bundle:
     ],
     indirect=True,
 )
-def test_check_cluster_list_page_with_cluster_creating(app_fs, auth_to_adcm, bundle_archive):
+def test_check_cluster_list_page_with_cluster_creating(
+    app_fs, login_to_adcm_over_api, bundle_archive
+):
     edition = bundle_archive.split("cluster_")[2][:-4]
     cluster_params = {
         "bundle": f"test_cluster 1.5 {edition}",
@@ -86,7 +88,9 @@ def test_check_cluster_list_page_with_cluster_creating(app_fs, auth_to_adcm, bun
         ), f"Cluster state should be {cluster_params['state']} and not {uploaded_cluster['state']}"
 
 
-def test_check_cluster_list_page_pagination(sdk_client_fs: ADCMClient, app_fs, auth_to_adcm):
+def test_check_cluster_list_page_pagination(
+    sdk_client_fs: ADCMClient, app_fs, login_to_adcm_over_api
+):
     params = {"fist_page_cluster_amount": 10, "second_page_cluster_amount": 1}
     with allure.step("Create 11 clusters"):
         bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
@@ -145,8 +149,8 @@ def test_check_cluster_list_page_import_run(sdk_client_fs: ADCMClient, app_fs, a
     cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
     row = cluster_page.get_row_by_cluster_name(CLUSTER_NAME)
     cluster_page.click_import_btn_in_row(row)
-    import_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, "1")
-    cluster_page.header.wait_url_contains_path(import_page.path)
+    import_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, 1)
+    import_page.wait_page_is_opened()
     with allure.step("Check import on import page"):
         assert (
             len(import_page.get_import_items()) == 1
@@ -158,9 +162,7 @@ def test_check_cluster_list_page_open_cluster_config(app_fs):
     cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
     row = cluster_page.table.get_all_rows()[0]
     cluster_page.click_config_button_in_row(row)
-    cluster_page.header.wait_url_contains_path(
-        ClusterConfigPage(app_fs.driver, app_fs.adcm.url, "1").path
-    )
+    ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1).wait_page_is_opened()
 
 
 @pytest.mark.usefixtures("_create_community_cluster")
@@ -168,9 +170,7 @@ def test_check_cluster_list_page_open_cluster_main(app_fs):
     cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
     row = cluster_page.table.get_all_rows()[0]
     cluster_page.click_cluster_name_in_row(row)
-    cluster_page.header.wait_url_contains_path(
-        ClusterMainPage(app_fs.driver, app_fs.adcm.url, "1").path
-    )
+    ClusterMainPage(app_fs.driver, app_fs.adcm.url, 1).wait_page_is_opened()
 
 
 @pytest.mark.usefixtures("_create_community_cluster")
