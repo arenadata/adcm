@@ -19,6 +19,13 @@ export class IssueMessageComponent {
     return this.ownMessage;
   }
 
+  @Input() set data(data: { message: IssueMessage }) {
+    if (data?.message) {
+      this.ownMessage = data.message;
+      this.preparedMessage = this.issueMessageService.parse(this.message.message);
+    }
+  }
+
   preparedMessage: string[];
 
   constructor(

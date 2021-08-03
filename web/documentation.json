@@ -33947,7 +33947,7 @@
         },
         {
             "name": "IssueMessageComponent",
-            "id": "component-IssueMessageComponent-839b13f6b95e26a43dcb7c8655a1972d",
+            "id": "component-IssueMessageComponent-f601c55f47b488c2cc19efcd35f021ce",
             "file": "src/app/components/issue-message/issue-message.component.ts",
             "encapsulation": [],
             "entryComponents": [],
@@ -33964,6 +33964,13 @@
             ],
             "viewProviders": [],
             "inputsClass": [
+                {
+                    "name": "data",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "line": 22,
+                    "type": "literal type"
+                },
                 {
                     "name": "message",
                     "deprecated": false,
@@ -33993,7 +34000,7 @@
                     "type": "string[]",
                     "optional": false,
                     "description": "",
-                    "line": 22
+                    "line": 29
                 }
             ],
             "methodsClass": [],
@@ -34004,7 +34011,7 @@
             "description": "",
             "rawdescription": "\n",
             "type": "component",
-            "sourceCode": "import { Component, Input } from '@angular/core';\n\nimport { IssueMessage } from '@app/models/issue-message';\nimport { IssueMessageService } from '@app/services/issue-message.service';\n\n@Component({\n  selector: 'app-issue-message',\n  templateUrl: './issue-message.component.html',\n  styleUrls: ['./issue-message.component.scss']\n})\nexport class IssueMessageComponent {\n\n  private ownMessage: IssueMessage;\n  @Input() set message(message: IssueMessage) {\n    this.ownMessage = message;\n    this.preparedMessage = this.issueMessageService.parse(this.message.message);\n  }\n  get message(): IssueMessage {\n    return this.ownMessage;\n  }\n\n  preparedMessage: string[];\n\n  constructor(\n    private issueMessageService: IssueMessageService,\n  ) { }\n\n}\n",
+            "sourceCode": "import { Component, Input } from '@angular/core';\n\nimport { IssueMessage } from '@app/models/issue-message';\nimport { IssueMessageService } from '@app/services/issue-message.service';\n\n@Component({\n  selector: 'app-issue-message',\n  templateUrl: './issue-message.component.html',\n  styleUrls: ['./issue-message.component.scss']\n})\nexport class IssueMessageComponent {\n\n  private ownMessage: IssueMessage;\n  @Input() set message(message: IssueMessage) {\n    this.ownMessage = message;\n    this.preparedMessage = this.issueMessageService.parse(this.message.message);\n  }\n  get message(): IssueMessage {\n    return this.ownMessage;\n  }\n\n  @Input() set data(data: { message: IssueMessage }) {\n    if (data?.message) {\n      this.ownMessage = data.message;\n      this.preparedMessage = this.issueMessageService.parse(this.message.message);\n    }\n  }\n\n  preparedMessage: string[];\n\n  constructor(\n    private issueMessageService: IssueMessageService,\n  ) { }\n\n}\n",
             "assetsDirs": [],
             "styleUrlsData": [
                 {
@@ -34026,7 +34033,7 @@
                         "deprecationMessage": ""
                     }
                 ],
-                "line": 22,
+                "line": 29,
                 "jsdoctags": [
                     {
                         "name": "issueMessageService",
@@ -34074,6 +34081,36 @@
                         "type": "",
                         "returnType": "IssueMessage",
                         "line": 18
+                    }
+                },
+                "data": {
+                    "name": "data",
+                    "setSignature": {
+                        "name": "data",
+                        "type": "void",
+                        "deprecated": false,
+                        "deprecationMessage": "",
+                        "args": [
+                            {
+                                "name": "data",
+                                "type": "literal type",
+                                "deprecated": false,
+                                "deprecationMessage": ""
+                            }
+                        ],
+                        "returnType": "void",
+                        "line": 22,
+                        "jsdoctags": [
+                            {
+                                "name": "data",
+                                "type": "literal type",
+                                "deprecated": false,
+                                "deprecationMessage": "",
+                                "tagName": {
+                                    "text": "param"
+                                }
+                            }
+                        ]
                     }
                 }
             },
@@ -34155,6 +34192,72 @@
             ],
             "stylesData": "",
             "templateData": "<ng-container [ngSwitch]=\"placeholder.type\">\n  <ng-container *ngSwitchCase=\"IMPlaceholderItemType.ComponentActionRun\">\n    <button\n      mat-button\n      color=\"accent\"\n      matTooltip=\"Run action\"\n      class=\"action-button\"\n      (click)=\"runAction()\"\n    >\n      <mat-icon>play_circle_outline</mat-icon> {{placeholder.name}}\n    </button>\n  </ng-container>\n  <a routerLink=\"/\" *ngSwitchDefault>{{placeholder.name}}</a>\n</ng-container>\n\n\n"
+        },
+        {
+            "name": "IssueMessageRefComponent",
+            "id": "component-IssueMessageRefComponent-21aa846f3547512d1d22d0bdc63e3152",
+            "file": "src/app/components/issue-message/issue-message-ref/issue-message-ref.component.ts",
+            "encapsulation": [],
+            "entryComponents": [],
+            "inputs": [],
+            "outputs": [],
+            "providers": [],
+            "selector": "app-issue-message-ref",
+            "styleUrls": [
+                "./issue-message-ref.component.scss"
+            ],
+            "styles": [],
+            "templateUrl": [
+                "./issue-message-ref.component.html"
+            ],
+            "viewProviders": [],
+            "inputsClass": [
+                {
+                    "name": "data",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "line": 16,
+                    "type": "literal type"
+                },
+                {
+                    "name": "message",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "line": 15,
+                    "type": "IssueMessage"
+                }
+            ],
+            "outputsClass": [],
+            "propertiesClass": [
+                {
+                    "name": "IssueMessageComponent",
+                    "defaultValue": "IssueMessageComponent",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "",
+                    "optional": false,
+                    "description": "",
+                    "line": 13
+                }
+            ],
+            "methodsClass": [],
+            "deprecated": false,
+            "deprecationMessage": "",
+            "hostBindings": [],
+            "hostListeners": [],
+            "description": "",
+            "rawdescription": "\n",
+            "type": "component",
+            "sourceCode": "import { Component, Input } from '@angular/core';\n\nimport { IssueMessageComponent } from '@app/components/issue-message/issue-message.component';\nimport { IssueMessage } from '@app/models/issue-message';\n\n@Component({\n  selector: 'app-issue-message-ref',\n  templateUrl: './issue-message-ref.component.html',\n  styleUrls: ['./issue-message-ref.component.scss']\n})\nexport class IssueMessageRefComponent {\n\n  IssueMessageComponent = IssueMessageComponent;\n\n  @Input() message: IssueMessage;\n  @Input() data: { messages: IssueMessage };\n\n\n}\n",
+            "assetsDirs": [],
+            "styleUrlsData": [
+                {
+                    "data": "",
+                    "styleUrl": "./issue-message-ref.component.scss"
+                }
+            ],
+            "stylesData": "",
+            "templateData": "<button\n  appPopover\n  mat-icon-button\n  color=\"warn\"\n  [component]=\"IssueMessageComponent\"\n  [data]=\"{ message: message }\"\n>\n  <mat-icon>priority_hight</mat-icon>\n</button>\n"
         },
         {
             "name": "IssuesComponent",
@@ -46243,13 +46346,13 @@
         },
         {
             "name": "StuffModule",
-            "id": "module-StuffModule-cf72cf33afd51128bac5940c7b7af72e",
+            "id": "module-StuffModule-b4ec2adceb822f91a670b7753889ea42",
             "description": "",
             "deprecationMessage": "",
             "deprecated": false,
             "file": "src/app/shared/stuff.module.ts",
             "methods": [],
-            "sourceCode": "// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//      http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\nimport { CommonModule } from '@angular/common';\nimport { NgModule } from '@angular/core';\nimport { RouterModule } from '@angular/router';\n\nimport { ActionsComponent, CrumbsComponent, UpgradeComponent } from './components';\nimport { ActionListComponent } from './components/actions/action-list/action-list.component';\nimport { ActionsDirective } from './components/actions/actions.directive';\nimport { TooltipComponent } from '@app/shared/components/tooltip';\nimport { TooltipDirective } from '@app/shared/components/tooltip';\nimport { PopoverDirective } from '@app/directives/popover.directive';\nimport { BaseDirective, ForTestDirective, InfinityScrollDirective, MTextareaDirective, ScrollDirective, SocketListenerDirective } from './directives';\nimport { MaterialModule } from './material.module';\nimport { MenuItemComponent } from './components/actions/action-list/menu-item/menu-item.component';\nimport { CardItemComponent } from './components/actions/action-card/card-item/card-item.component';\nimport { PopoverComponent } from '@app/components/popover/popover.component';\nimport { IssuesComponent } from '@app/components/issues/issues.component';\nimport { KeysPipe } from '@app/pipes/keys.pipe';\nimport { IsArrayPipe } from '@app/pipes/is-array.pipe';\nimport { IssuePathPipe } from '@app/pipes/issue-path.pipe';\nimport { IssueMessageComponent } from '@app/components/issue-message/issue-message.component';\nimport { IssueMessageService } from '@app/services/issue-message.service';\nimport { IssueMessageItemComponent } from '@app/components/issue-message/issue-message-item/issue-message-item.component';\nimport { IssueMessagePlaceholderPipe } from '@app/pipes/issue-message-placeholder.pipe';\n\n@NgModule({\n  declarations: [\n    ForTestDirective,\n    TooltipDirective,\n    TooltipComponent,\n    MTextareaDirective,\n    BaseDirective,\n    SocketListenerDirective,\n    CrumbsComponent,\n    UpgradeComponent,\n    ScrollDirective,\n    InfinityScrollDirective,\n    ActionsComponent,\n    ActionsDirective,\n    ActionListComponent,\n    MenuItemComponent,\n    CardItemComponent,\n    PopoverDirective,\n    PopoverComponent,\n    IssuesComponent,\n    IssueMessageComponent,\n    IssueMessageItemComponent,\n    IssueMessagePlaceholderPipe,\n    KeysPipe,\n    IsArrayPipe,\n    IssuePathPipe,\n  ],\n  imports: [\n    CommonModule,\n    MaterialModule,\n    RouterModule,\n  ],\n  exports: [\n    ForTestDirective,\n    TooltipDirective,\n    TooltipComponent,\n    MTextareaDirective,\n    BaseDirective,\n    SocketListenerDirective,\n    CrumbsComponent,\n    UpgradeComponent,\n    ScrollDirective,\n    InfinityScrollDirective,\n    ActionsComponent,\n    ActionsDirective,\n    ActionListComponent,\n    MenuItemComponent,\n    CardItemComponent,\n    PopoverDirective,\n    PopoverComponent,\n    IssuesComponent,\n    IssueMessageComponent,\n    IssueMessageItemComponent,\n    IssueMessagePlaceholderPipe,\n    KeysPipe,\n    IsArrayPipe,\n    IssuePathPipe,\n  ],\n  providers: [\n    IssueMessageService,\n  ],\n})\nexport class StuffModule {}\n",
+            "sourceCode": "// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//      http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\nimport { CommonModule } from '@angular/common';\nimport { NgModule } from '@angular/core';\nimport { RouterModule } from '@angular/router';\n\nimport { ActionsComponent, CrumbsComponent, UpgradeComponent } from './components';\nimport { ActionListComponent } from './components/actions/action-list/action-list.component';\nimport { ActionsDirective } from './components/actions/actions.directive';\nimport { TooltipComponent } from '@app/shared/components/tooltip';\nimport { TooltipDirective } from '@app/shared/components/tooltip';\nimport { PopoverDirective } from '@app/directives/popover.directive';\nimport { BaseDirective, ForTestDirective, InfinityScrollDirective, MTextareaDirective, ScrollDirective, SocketListenerDirective } from './directives';\nimport { MaterialModule } from './material.module';\nimport { MenuItemComponent } from './components/actions/action-list/menu-item/menu-item.component';\nimport { CardItemComponent } from './components/actions/action-card/card-item/card-item.component';\nimport { PopoverComponent } from '@app/components/popover/popover.component';\nimport { IssuesComponent } from '@app/components/issues/issues.component';\nimport { KeysPipe } from '@app/pipes/keys.pipe';\nimport { IsArrayPipe } from '@app/pipes/is-array.pipe';\nimport { IssuePathPipe } from '@app/pipes/issue-path.pipe';\nimport { IssueMessageComponent } from '@app/components/issue-message/issue-message.component';\nimport { IssueMessageService } from '@app/services/issue-message.service';\nimport { IssueMessageItemComponent } from '@app/components/issue-message/issue-message-item/issue-message-item.component';\nimport { IssueMessagePlaceholderPipe } from '@app/pipes/issue-message-placeholder.pipe';\nimport { IssueMessageRefComponent } from '@app/components/issue-message/issue-message-ref/issue-message-ref.component';\n\n@NgModule({\n  declarations: [\n    ForTestDirective,\n    TooltipDirective,\n    TooltipComponent,\n    MTextareaDirective,\n    BaseDirective,\n    SocketListenerDirective,\n    CrumbsComponent,\n    UpgradeComponent,\n    ScrollDirective,\n    InfinityScrollDirective,\n    ActionsComponent,\n    ActionsDirective,\n    ActionListComponent,\n    MenuItemComponent,\n    CardItemComponent,\n    PopoverDirective,\n    PopoverComponent,\n    IssuesComponent,\n    IssueMessageComponent,\n    IssueMessageItemComponent,\n    IssueMessagePlaceholderPipe,\n    IssueMessageRefComponent,\n    KeysPipe,\n    IsArrayPipe,\n    IssuePathPipe,\n  ],\n  imports: [\n    CommonModule,\n    MaterialModule,\n    RouterModule,\n  ],\n  exports: [\n    ForTestDirective,\n    TooltipDirective,\n    TooltipComponent,\n    MTextareaDirective,\n    BaseDirective,\n    SocketListenerDirective,\n    CrumbsComponent,\n    UpgradeComponent,\n    ScrollDirective,\n    InfinityScrollDirective,\n    ActionsComponent,\n    ActionsDirective,\n    ActionListComponent,\n    MenuItemComponent,\n    CardItemComponent,\n    PopoverDirective,\n    PopoverComponent,\n    IssuesComponent,\n    IssueMessageComponent,\n    IssueMessageItemComponent,\n    IssueMessagePlaceholderPipe,\n    IssueMessageRefComponent,\n    KeysPipe,\n    IsArrayPipe,\n    IssuePathPipe,\n  ],\n  providers: [\n    IssueMessageService,\n  ],\n})\nexport class StuffModule {}\n",
             "children": [
                 {
                     "type": "providers",
@@ -46297,6 +46400,9 @@
                         },
                         {
                             "name": "IssueMessagePlaceholderPipe"
+                        },
+                        {
+                            "name": "IssueMessageRefComponent"
                         },
                         {
                             "name": "IssuePathPipe"
@@ -46382,6 +46488,9 @@
                         },
                         {
                             "name": "IssueMessagePlaceholderPipe"
+                        },
+                        {
+                            "name": "IssueMessageRefComponent"
                         },
                         {
                             "name": "IssuePathPipe"
@@ -46755,16 +46864,6 @@
                 "deprecationMessage": "",
                 "type": "",
                 "defaultValue": "require.context('./', true, /\\.spec\\.ts$/)"
-            },
-            {
-                "name": "Default",
-                "ctype": "miscellaneous",
-                "subtype": "variable",
-                "file": "src/stories/issue-messages.stories.ts",
-                "deprecated": false,
-                "deprecationMessage": "",
-                "type": "",
-                "defaultValue": "Template.bind({})"
             },
             {
                 "name": "disableHost",
@@ -47357,6 +47456,26 @@
                 "defaultValue": "'Something is wrong with your cluster configuration, please review it.'"
             },
             {
+                "name": "ISSUE_MESSAGES_DEFAULT_MOCK",
+                "ctype": "miscellaneous",
+                "subtype": "variable",
+                "file": "src/stories/issue-messages/mock.ts",
+                "deprecated": false,
+                "deprecationMessage": "",
+                "type": "object",
+                "defaultValue": "{\n  message: {\n    message: 'Run ${action1} action on ${component1}.',\n    id: 2039,\n    placeholder: {\n      action1: {\n        type: IMPlaceholderItemType.ComponentActionRun,\n        ids : {\n          cluster: 1,\n          service: 2,\n          component: 2,\n          action: 22\n        },\n        name: 'Restart'\n      },\n      component1: {\n        type: IMPlaceholderItemType.ComponentConfig,\n        ids : {\n          cluster: 1,\n          service: 2,\n          component: 2\n        },\n        name: 'My Component'\n      }\n    }\n  }\n}"
+            },
+            {
+                "name": "ISSUE_MESSAGES_VERY_LONG_MOCK",
+                "ctype": "miscellaneous",
+                "subtype": "variable",
+                "file": "src/stories/issue-messages/mock.ts",
+                "deprecated": false,
+                "deprecationMessage": "",
+                "type": "object",
+                "defaultValue": "{\n  message: {\n    message: 'Run ${action1} action on ${component1}. This is a very very very very very very very very very very very very' +\n      ' very very very very very very very very very very very very very very very very very very very very very very very' +\n      ' very very very very very very very very very very very very very very very very very very very very very very very' +\n      ' very very very very very very very very very very very very very very very very very very very very very very very' +\n      ' very very very very very very very very very very very very very very very very very very very very very very very' +\n      ' very very very very very very very very very very very very very very very very very very very very very very very' +\n      ' very very very very very very very very very very very very very very very very very very very very very very very' +\n      ' very very very very very very very very very very very very very very very very very very very very very very very' +\n      ' very very very very very very very very very very very very very very very very very very very very very very very' +\n      ' very very very very very very very very very very very very very very very very very very very very very very very' +\n      ' very very very very very very very very very very very very very very very very very very very very very very very' +\n      ' long message. Bonus ${action2}!',\n    id: 2039,\n    placeholder: {\n      action1: {\n        type: IMPlaceholderItemType.ComponentActionRun,\n        ids : {\n          cluster: 1,\n          service: 2,\n          component: 2,\n          action: 22\n        },\n        name: 'Restart'\n      },\n      component1: {\n        type: IMPlaceholderItemType.ComponentConfig,\n        ids : {\n          cluster: 1,\n          service: 2,\n          component: 2\n        },\n        name: 'My Component'\n      },\n      action2: {\n        type: IMPlaceholderItemType.ComponentActionRun,\n        ids: {\n          cluster: 1,\n          service: 2,\n          component: 2,\n          action: 22\n        },\n        name: ''\n      }\n    }\n  }\n}"
+            },
+            {
                 "name": "IssueSet",
                 "ctype": "miscellaneous",
                 "subtype": "variable",
@@ -47487,6 +47606,16 @@
                 "defaultValue": "trigger('notify', [\n  state('show', style({ opacity: 1 })),\n  state('hide', style({ opacity: 0 })),\n  transition('hide => show', [animate('.2s')]),\n  transition('show => hide', [animate('2s')]),\n])"
             },
             {
+                "name": "OnlyMessage",
+                "ctype": "miscellaneous",
+                "subtype": "variable",
+                "file": "src/stories/issue-messages/issue-messages.stories.ts",
+                "deprecated": false,
+                "deprecationMessage": "",
+                "type": "",
+                "defaultValue": "Template.bind({})"
+            },
+            {
                 "name": "openClose",
                 "ctype": "miscellaneous",
                 "subtype": "variable",
@@ -47557,6 +47686,26 @@
                 "defaultValue": "100"
             },
             {
+                "name": "PopUp",
+                "ctype": "miscellaneous",
+                "subtype": "variable",
+                "file": "src/stories/issue-messages/issue-messages-popup.stories.ts",
+                "deprecated": false,
+                "deprecationMessage": "",
+                "type": "",
+                "defaultValue": "Template.bind({})"
+            },
+            {
+                "name": "PopUpVeryLongMessage",
+                "ctype": "miscellaneous",
+                "subtype": "variable",
+                "file": "src/stories/issue-messages/issue-messages-popup.stories.ts",
+                "deprecated": false,
+                "deprecationMessage": "",
+                "type": "",
+                "defaultValue": "Template.bind({})"
+            },
+            {
                 "name": "POSITION_MARGIN",
                 "ctype": "miscellaneous",
                 "subtype": "variable",
@@ -47590,21 +47739,21 @@
                 "name": "reducer",
                 "ctype": "miscellaneous",
                 "subtype": "variable",
-                "file": "src/app/core/api/api.reducer.ts",
-                "deprecated": false,
-                "deprecationMessage": "",
-                "type": "",
-                "defaultValue": "createReducer(\n  InitState,\n  on(rootSuccess, (state, { root }) => ({ ...state, root })),\n  on(rootError, state => ({ root: null, stack: null })),\n  on(stackSuccess, (state, { stack }) => ({ ...state, stack }))\n)"
-            },
-            {
-                "name": "reducer",
-                "ctype": "miscellaneous",
-                "subtype": "variable",
                 "file": "src/app/core/auth/auth.store.ts",
                 "deprecated": false,
                 "deprecationMessage": "",
                 "type": "",
                 "defaultValue": "createReducer(\n  initialState,\n  on(authSuccess, state => ({ isValid: true, message: 'Auth is success.' })),\n  on(authFaled, (state, { message }) => ({ isValid: false, message })),\n  on(authLogout, state => ({ isValid: false, message: '' }))\n)"
+            },
+            {
+                "name": "reducer",
+                "ctype": "miscellaneous",
+                "subtype": "variable",
+                "file": "src/app/core/api/api.reducer.ts",
+                "deprecated": false,
+                "deprecationMessage": "",
+                "type": "",
+                "defaultValue": "createReducer(\n  InitState,\n  on(rootSuccess, (state, { root }) => ({ ...state, root })),\n  on(rootError, state => ({ root: null, stack: null })),\n  on(stackSuccess, (state, { stack }) => ({ ...state, stack }))\n)"
             },
             {
                 "name": "reducer",
@@ -47859,7 +48008,17 @@
                 "name": "Template",
                 "ctype": "miscellaneous",
                 "subtype": "variable",
-                "file": "src/stories/issue-messages.stories.ts",
+                "file": "src/stories/issue-messages/issue-messages-popup.stories.ts",
+                "deprecated": false,
+                "deprecationMessage": "",
+                "type": "Story",
+                "defaultValue": "args => ({\n  props: {\n    ...args,\n  }\n})"
+            },
+            {
+                "name": "Template",
+                "ctype": "miscellaneous",
+                "subtype": "variable",
+                "file": "src/stories/issue-messages/issue-messages.stories.ts",
                 "deprecated": false,
                 "deprecationMessage": "",
                 "type": "Story",
@@ -47939,7 +48098,7 @@
                 "name": "VeryLongMessage",
                 "ctype": "miscellaneous",
                 "subtype": "variable",
-                "file": "src/stories/issue-messages.stories.ts",
+                "file": "src/stories/issue-messages/issue-messages.stories.ts",
                 "deprecated": false,
                 "deprecationMessage": "",
                 "type": "",
@@ -49975,38 +50134,6 @@
                     "defaultValue": "'/assets/config.json'"
                 }
             ],
-            "src/stories/issue-messages.stories.ts": [
-                {
-                    "name": "Default",
-                    "ctype": "miscellaneous",
-                    "subtype": "variable",
-                    "file": "src/stories/issue-messages.stories.ts",
-                    "deprecated": false,
-                    "deprecationMessage": "",
-                    "type": "",
-                    "defaultValue": "Template.bind({})"
-                },
-                {
-                    "name": "Template",
-                    "ctype": "miscellaneous",
-                    "subtype": "variable",
-                    "file": "src/stories/issue-messages.stories.ts",
-                    "deprecated": false,
-                    "deprecationMessage": "",
-                    "type": "Story",
-                    "defaultValue": "args => ({\n  props: {\n    ...args,\n  }\n})"
-                },
-                {
-                    "name": "VeryLongMessage",
-                    "ctype": "miscellaneous",
-                    "subtype": "variable",
-                    "file": "src/stories/issue-messages.stories.ts",
-                    "deprecated": false,
-                    "deprecationMessage": "",
-                    "type": "",
-                    "defaultValue": "Template.bind({})"
-                }
-            ],
             "src/app/models/entity-names.ts": [
                 {
                     "name": "EntityNames",
@@ -50551,6 +50678,28 @@
                     "defaultValue": "(issue: Issue): boolean => !!(issue && Object.keys(issue).length)"
                 }
             ],
+            "src/stories/issue-messages/mock.ts": [
+                {
+                    "name": "ISSUE_MESSAGES_DEFAULT_MOCK",
+                    "ctype": "miscellaneous",
+                    "subtype": "variable",
+                    "file": "src/stories/issue-messages/mock.ts",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "object",
+                    "defaultValue": "{\n  message: {\n    message: 'Run ${action1} action on ${component1}.',\n    id: 2039,\n    placeholder: {\n      action1: {\n        type: IMPlaceholderItemType.ComponentActionRun,\n        ids : {\n          cluster: 1,\n          service: 2,\n          component: 2,\n          action: 22\n        },\n        name: 'Restart'\n      },\n      component1: {\n        type: IMPlaceholderItemType.ComponentConfig,\n        ids : {\n          cluster: 1,\n          service: 2,\n          component: 2\n        },\n        name: 'My Component'\n      }\n    }\n  }\n}"
+                },
+                {
+                    "name": "ISSUE_MESSAGES_VERY_LONG_MOCK",
+                    "ctype": "miscellaneous",
+                    "subtype": "variable",
+                    "file": "src/stories/issue-messages/mock.ts",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "object",
+                    "defaultValue": "{\n  message: {\n    message: 'Run ${action1} action on ${component1}. This is a very very very very very very very very very very very very' +\n      ' very very very very very very very very very very very very very very very very very very very very very very very' +\n      ' very very very very very very very very very very very very very very very very very very very very very very very' +\n      ' very very very very very very very very very very very very very very very very very very very very very very very' +\n      ' very very very very very very very very very very very very very very very very very very very very very very very' +\n      ' very very very very very very very very very very very very very very very very very very very very very very very' +\n      ' very very very very very very very very very very very very very very very very very very very very very very very' +\n      ' very very very very very very very very very very very very very very very very very very very very very very very' +\n      ' very very very very very very very very very very very very very very very very very very very very very very very' +\n      ' very very very very very very very very very very very very very very very very very very very very very very very' +\n      ' very very very very very very very very very very very very very very very very very very very very very very very' +\n      ' long message. Bonus ${action2}!',\n    id: 2039,\n    placeholder: {\n      action1: {\n        type: IMPlaceholderItemType.ComponentActionRun,\n        ids : {\n          cluster: 1,\n          service: 2,\n          component: 2,\n          action: 22\n        },\n        name: 'Restart'\n      },\n      component1: {\n        type: IMPlaceholderItemType.ComponentConfig,\n        ids : {\n          cluster: 1,\n          service: 2,\n          component: 2\n        },\n        name: 'My Component'\n      },\n      action2: {\n        type: IMPlaceholderItemType.ComponentActionRun,\n        ids: {\n          cluster: 1,\n          service: 2,\n          component: 2,\n          action: 22\n        },\n        name: ''\n      }\n    }\n  }\n}"
+                }
+            ],
             "src/app/shared/components/tooltip/tooltip.component.ts": [
                 {
                     "name": "kit",
@@ -50651,6 +50800,38 @@
                     "defaultValue": "trigger('openClose', [\n  state('true', style({ height: '*', opacity: 1 })),\n  state('false', style({ height: '0px', opacity: 0 })),\n  transition('true <=> false', [animate('0.5s')]),\n])"
                 }
             ],
+            "src/stories/issue-messages/issue-messages.stories.ts": [
+                {
+                    "name": "OnlyMessage",
+                    "ctype": "miscellaneous",
+                    "subtype": "variable",
+                    "file": "src/stories/issue-messages/issue-messages.stories.ts",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "",
+                    "defaultValue": "Template.bind({})"
+                },
+                {
+                    "name": "Template",
+                    "ctype": "miscellaneous",
+                    "subtype": "variable",
+                    "file": "src/stories/issue-messages/issue-messages.stories.ts",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "Story",
+                    "defaultValue": "args => ({\n  props: {\n    ...args,\n  }\n})"
+                },
+                {
+                    "name": "VeryLongMessage",
+                    "ctype": "miscellaneous",
+                    "subtype": "variable",
+                    "file": "src/stories/issue-messages/issue-messages.stories.ts",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "",
+                    "defaultValue": "Template.bind({})"
+                }
+            ],
             "src/app/shared/form-elements/boolean.component.ts": [
                 {
                     "name": "options",
@@ -50685,6 +50866,38 @@
                     "deprecationMessage": "",
                     "type": "number",
                     "defaultValue": "100"
+                }
+            ],
+            "src/stories/issue-messages/issue-messages-popup.stories.ts": [
+                {
+                    "name": "PopUp",
+                    "ctype": "miscellaneous",
+                    "subtype": "variable",
+                    "file": "src/stories/issue-messages/issue-messages-popup.stories.ts",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "",
+                    "defaultValue": "Template.bind({})"
+                },
+                {
+                    "name": "PopUpVeryLongMessage",
+                    "ctype": "miscellaneous",
+                    "subtype": "variable",
+                    "file": "src/stories/issue-messages/issue-messages-popup.stories.ts",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "",
+                    "defaultValue": "Template.bind({})"
+                },
+                {
+                    "name": "Template",
+                    "ctype": "miscellaneous",
+                    "subtype": "variable",
+                    "file": "src/stories/issue-messages/issue-messages-popup.stories.ts",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "Story",
+                    "defaultValue": "args => ({\n  props: {\n    ...args,\n  }\n})"
                 }
             ],
             "src/app/core/store/profile/profile.service.ts": [
@@ -53012,12 +53225,21 @@
                 "status": "low"
             },
             {
+                "filePath": "src/app/components/issue-message/issue-message-ref/issue-message-ref.component.ts",
+                "type": "component",
+                "linktype": "component",
+                "name": "IssueMessageRefComponent",
+                "coveragePercent": 0,
+                "coverageCount": "0/4",
+                "status": "low"
+            },
+            {
                 "filePath": "src/app/components/issue-message/issue-message.component.ts",
                 "type": "component",
                 "linktype": "component",
                 "name": "IssueMessageComponent",
                 "coveragePercent": 0,
-                "coverageCount": "0/5",
+                "coverageCount": "0/6",
                 "status": "low"
             },
             {
@@ -57259,17 +57481,27 @@
                 "status": "low"
             },
             {
-                "filePath": "src/stories/issue-messages.stories.ts",
+                "filePath": "src/stories/issue-messages/issue-messages-popup.stories.ts",
                 "type": "variable",
                 "linktype": "miscellaneous",
                 "linksubtype": "variable",
-                "name": "Default",
+                "name": "PopUp",
                 "coveragePercent": 0,
                 "coverageCount": "0/1",
                 "status": "low"
             },
             {
-                "filePath": "src/stories/issue-messages.stories.ts",
+                "filePath": "src/stories/issue-messages/issue-messages-popup.stories.ts",
+                "type": "variable",
+                "linktype": "miscellaneous",
+                "linksubtype": "variable",
+                "name": "PopUpVeryLongMessage",
+                "coveragePercent": 0,
+                "coverageCount": "0/1",
+                "status": "low"
+            },
+            {
+                "filePath": "src/stories/issue-messages/issue-messages-popup.stories.ts",
                 "type": "variable",
                 "linktype": "miscellaneous",
                 "linksubtype": "variable",
@@ -57279,11 +57511,51 @@
                 "status": "low"
             },
             {
-                "filePath": "src/stories/issue-messages.stories.ts",
+                "filePath": "src/stories/issue-messages/issue-messages.stories.ts",
+                "type": "variable",
+                "linktype": "miscellaneous",
+                "linksubtype": "variable",
+                "name": "OnlyMessage",
+                "coveragePercent": 0,
+                "coverageCount": "0/1",
+                "status": "low"
+            },
+            {
+                "filePath": "src/stories/issue-messages/issue-messages.stories.ts",
+                "type": "variable",
+                "linktype": "miscellaneous",
+                "linksubtype": "variable",
+                "name": "Template",
+                "coveragePercent": 0,
+                "coverageCount": "0/1",
+                "status": "low"
+            },
+            {
+                "filePath": "src/stories/issue-messages/issue-messages.stories.ts",
                 "type": "variable",
                 "linktype": "miscellaneous",
                 "linksubtype": "variable",
                 "name": "VeryLongMessage",
+                "coveragePercent": 0,
+                "coverageCount": "0/1",
+                "status": "low"
+            },
+            {
+                "filePath": "src/stories/issue-messages/mock.ts",
+                "type": "variable",
+                "linktype": "miscellaneous",
+                "linksubtype": "variable",
+                "name": "ISSUE_MESSAGES_DEFAULT_MOCK",
+                "coveragePercent": 0,
+                "coverageCount": "0/1",
+                "status": "low"
+            },
+            {
+                "filePath": "src/stories/issue-messages/mock.ts",
+                "type": "variable",
+                "linktype": "miscellaneous",
+                "linksubtype": "variable",
+                "name": "ISSUE_MESSAGES_VERY_LONG_MOCK",
                 "coveragePercent": 0,
                 "coverageCount": "0/1",
                 "status": "low"

@@ -32,6 +32,7 @@ import { IssueMessageComponent } from '@app/components/issue-message/issue-messa
 import { IssueMessageService } from '@app/services/issue-message.service';
 import { IssueMessageItemComponent } from '@app/components/issue-message/issue-message-item/issue-message-item.component';
 import { IssueMessagePlaceholderPipe } from '@app/pipes/issue-message-placeholder.pipe';
+import { IssueMessageRefComponent } from '@app/components/issue-message/issue-message-ref/issue-message-ref.component';
 
 @NgModule({
   declarations: [
@@ -56,6 +57,7 @@ import { IssueMessagePlaceholderPipe } from '@app/pipes/issue-message-placeholde
     IssueMessageComponent,
     IssueMessageItemComponent,
     IssueMessagePlaceholderPipe,
+    IssueMessageRefComponent,
     KeysPipe,
     IsArrayPipe,
     IssuePathPipe,
@@ -87,6 +89,7 @@ import { IssueMessagePlaceholderPipe } from '@app/pipes/issue-message-placeholde
     IssueMessageComponent,
     IssueMessageItemComponent,
     IssueMessagePlaceholderPipe,
+    IssueMessageRefComponent,
     KeysPipe,
     IsArrayPipe,
     IssuePathPipe,
