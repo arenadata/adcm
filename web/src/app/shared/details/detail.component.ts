@@ -149,7 +149,10 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
         this.reset();
         return;
       }
-      if (m.event === 'clear_issue') this.issue = {};
+      if (m.event === 'clear_issue') {
+        this.issue = {};
+        this.Current.issue = this.issue;
+      }
       if (m.event === 'raise_issue') this.issue = m.object.details.value;
       if (m.event === 'change_status') this.status = +m.object.details.value;
     }

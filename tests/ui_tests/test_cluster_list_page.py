@@ -53,7 +53,9 @@ def cluster_bundle(sdk_client_fs: ADCMClient, data_dir_name: str) -> Bundle:
     ],
     indirect=True,
 )
-def test_check_cluster_list_page_with_cluster_creating(app_fs, auth_to_adcm, bundle_archive):
+def test_check_cluster_list_page_with_cluster_creating(
+    app_fs, login_to_adcm_over_api, bundle_archive
+):
     edition = bundle_archive.split("cluster_")[2][:-4]
     cluster_params = {
         "bundle": f"test_cluster 1.5 {edition}",
@@ -82,7 +84,9 @@ def test_check_cluster_list_page_with_cluster_creating(app_fs, auth_to_adcm, bun
         ), f"Cluster state should be {cluster_params['state']} and not {uploaded_cluster['state']}"
 
 
-def test_check_cluster_list_page_pagination(sdk_client_fs: ADCMClient, app_fs, auth_to_adcm):
+def test_check_cluster_list_page_pagination(
+    sdk_client_fs: ADCMClient, app_fs, login_to_adcm_over_api
+):
     params = {"fist_page_cluster_amount": 10, "second_page_cluster_amount": 1}
     with allure.step("Create 11 clusters"):
         bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
