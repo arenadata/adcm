@@ -89,6 +89,13 @@ class HostListPage(BasePageObject):
         self.click_create_host_in_popup()
         self.close_host_creation_popup()
 
+    @allure.step("Upload bundle from host creation popup")
+    def upload_bundle(self, bundle_path: str):
+        """Upload bundle in host creation popup and close popup"""
+        self.open_host_creation_popup()
+        self._upload_bundle(bundle_path)
+        self.close_host_creation_popup()
+
     @allure.step("Create new provider and host")
     def create_provider_and_host(
         self,

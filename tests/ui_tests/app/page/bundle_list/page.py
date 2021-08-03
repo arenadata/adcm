@@ -74,3 +74,9 @@ class BundleListPage(BasePageObject):
         self.wait_element_visible(BundleListLocators.LicensePopup.block)
         self.find_and_click(BundleListLocators.LicensePopup.agree_btn)
         self.wait_element_hide(BundleListLocators.LicensePopup.block)
+
+    def click_bundle_in_row(self, row_num: int = 0):
+        """Click on bundle name"""
+        row = self.table.get_row(row_num)
+        bundle_name = self.find_child(row, BundleListLocators.Table.Row.name)
+        bundle_name.click()
