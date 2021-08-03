@@ -1,35 +1,38 @@
 """Module contains api objects for executing and checking requests"""
+from dataclasses import field, dataclass
 from typing import Optional
 from urllib.parse import urlencode
 
 import allure
-import attr
 from adcm_client.wrappers.api import ADCMApiWrapper
 
 from .endpoints import Endpoints
 from .methods import Methods
 from .tools import attach_request_log
-from ..steps.asserts import status_code_should_be, body_should_be
+from ..steps.asserts import status_code_should_be, body_should_be, ExpectedBody
 
 
-@attr.dataclass
+@dataclass
 class Request:  # pylint: disable=too-few-public-methods
     """Request for a specific endpoint"""
 
     method: Methods
     endpoint: Endpoints
     object_id: Optional[int] = None
-    url_params: dict = {}
-    headers: dict = {}
-    data: dict = {}
+    url_params: dict = field(default_factory=dict)
+    headers: dict = field(default_factory=dict)
+    data: dict = field(default_factory=dict)
 
 
-@attr.dataclass
+@dataclass
 class ExpectedResponse:  # pylint: disable=too-few-public-methods
-    """Response to be expected. Checking the status code and body if present"""
+    """
+    Response to be expected.
+    Checking the status code and body or some fields values if present
+    """
 
     status_code: int
-    body: Optional[dict] = None
+    body: Optional[ExpectedBody] = None
 
 
 class ADCMTestApiWrapper:

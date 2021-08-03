@@ -99,8 +99,8 @@ class PreparedFieldValue:  # pylint: disable=too-few-public-methods,function-red
 class Relation(NamedTuple):
     """Named tuple for relates_on attribute"""
 
-    data_class: Type["data_classes.BaseClass"]
     field: "Field"
+    data_class: Type["data_classes.BaseClass"] = None
 
 
 @attr.dataclass
@@ -256,15 +256,17 @@ class DateTime(BaseType):
 class Json(BaseType):
     """Json field type"""
 
+    schema = None
     is_huge = True
 
-    def __init__(self, **kwargs):
+    def __init__(self, schema=None, **kwargs):
+        self.schema = schema
         super().__init__(**kwargs)
         self._sp_vals_negative = []
         self.error_message_invalid_data = ""
 
     def generate(self, **kwargs):
-        return generate_json_from_schema(json_schema=kwargs.get("related_value", None))
+        return generate_json_from_schema(json_schema=self.schema)
 
 
 class Enum(BaseType):
@@ -304,9 +306,7 @@ class Enum(BaseType):
 class ForeignKey(BaseType):
     """Foreign key field type"""
 
-    fk_link: Optional[Type["data_classes.BaseClass"]] = None
-
-    def __init__(self, fk_link: Type["data_classes.BaseClass"], **kwargs):
+    def __init__(self, fk_link: Type["data_classes.BaseClass"] = None, **kwargs):
         self.fk_link = fk_link
         super().__init__(**kwargs)
         self._sp_vals_negative = [
@@ -325,14 +325,6 @@ class ForeignKey(BaseType):
     def generate(self, **kwargs):
         """You can't just generate a new FK. This is done inside db_filler"""
         pass  # pylint: disable=unnecessary-pass
-
-
-class ADCMObjectFK(ForeignKey):
-    object_type_field: "Field" = None
-
-    def __init__(self, object_type_field: "Field", **kwargs):
-        self.object_type_field = object_type_field
-        super().__init__(**kwargs)
 
 
 class BackReferenceFK(BaseType):
@@ -400,6 +392,11 @@ def is_fk_field_only(field):
 
 def is_fk_or_back_ref(field: Field) -> bool:
     """Predicate for fk and back reference fields"""
+    return isinstance(field.f_type, (ForeignKey, BackReferenceFK))
+
+
+def is_back_ref_fk(field: Field) -> bool:
+    """Predicate for back reference fields"""
     return isinstance(field.f_type, (ForeignKey, BackReferenceFK))
 
 

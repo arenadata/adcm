@@ -3,6 +3,7 @@ Dummy data generators
 """
 
 from random import randint, choice
+from genson import SchemaBuilder
 
 import allure
 from rstr.xeger import Xeger
@@ -124,9 +125,9 @@ def gen_object(prop=None):
     output = {}
     prop_key = "properties"
     if prop.get("properties", None) is None:
-        if prop["additionalProperties"] is True or prop["additionalProperties"] == {}:
+        if prop.get("additionalProperties") is True or prop.get("additionalProperties") == {}:
             return _gen_any_obj()
-        return {key: gen_string() for key in prop["additionalProperties"]}
+        return {key: gen_string() for key in prop.get("additionalProperties", {})}
 
     for k in prop[prop_key].keys():
         json_prop = prop[prop_key][k]
@@ -189,6 +190,15 @@ def generate_json_from_schema(json_schema):
     if not json_schema:
         return _gen_any_obj()
     return _get_generator(json_schema)
+
+
+def build_schema_by_json(json):
+    """
+    Build Json Schema by json value
+    """
+    sch_builder = SchemaBuilder()
+    sch_builder.add_object(json)
+    return sch_builder.to_schema()
 
 
 class JsonTypeError(Exception):

@@ -3,6 +3,7 @@
 
 import random
 from collections import defaultdict
+from copy import deepcopy
 
 import allure
 
@@ -10,6 +11,7 @@ from tests.api.steps.common import assume_step
 from tests.api.testdata.getters import get_endpoint_data, get_object_data
 from tests.api.utils.api_objects import Request, ExpectedResponse
 from tests.api.utils.endpoints import Endpoints
+from tests.api.utils.fake_data import build_schema_by_json
 from tests.api.utils.methods import Methods
 from tests.api.utils.types import (
     get_fields,
@@ -18,7 +20,6 @@ from tests.api.utils.types import (
     ForeignKeyM2M,
     ForeignKey,
     get_field_name_by_fk_dataclass,
-    ADCMObjectFK,
 )
 
 
@@ -69,10 +70,6 @@ class DbFiller:
             changed_fields = {}
             for field in get_fields(endpoint.data_class, predicate=lambda x: x.changeable):
                 if isinstance(field.f_type, ForeignKey):
-                    if isinstance(field.f_type, ADCMObjectFK):
-                        field.f_type.fk_link = Endpoints.get_by_path(
-                            full_item[field.f_type.object_type_field.name]
-                        ).data_class
                     fk_data = self._get_or_create_data_for_endpoint(
                         endpoint=Endpoints.get_by_data_class(field.f_type.fk_link), force=True
                     )
@@ -141,22 +138,8 @@ class DbFiller:
             return [response.json()]
         return [data]
 
-    def _prepare_data_for_object_creation(self, endpoint: Endpoints, force=False):
-        data = {}
-        for field in get_fields(
-            data_class=endpoint.data_class,
-            predicate=lambda x: x.name != "id" and x.postable and not is_fk_field(x),
-        ):
-            data[field.name] = self._generate_field_value(field=field)
-        for field in get_fields(
-            data_class=endpoint.data_class,
-            predicate=lambda x: x.name != "id" and x.postable and is_fk_field(x),
-        ):
-            if isinstance(field.f_type, ADCMObjectFK):
-                field.f_type.fk_link = Endpoints.get_by_path(
-                    data[field.f_type.object_type_field.name]
-                ).data_class
-
+    def _prepare_field_value_for_object_creation(self, field, force=False):
+        if is_fk_field(field):
             fk_data = get_endpoint_data(
                 adcm=self.adcm, endpoint=Endpoints.get_by_data_class(field.f_type.fk_link)
             )
@@ -164,7 +147,74 @@ class DbFiller:
                 fk_data = self._get_or_create_data_for_endpoint(
                     endpoint=Endpoints.get_by_data_class(field.f_type.fk_link), force=force
                 )
-            data[field.name] = self._choose_fk_field_value(field=field, fk_data=fk_data)
+            return self._choose_fk_field_value(field=field, fk_data=fk_data)
+        else:
+            return self._generate_field_value(field=field)
+
+    def _solve_field_relations(self, endpoint: Endpoints, data: dict, field: Field, force=False):
+        """
+        If field has relations, relate logic should be described in this place
+        """
+        _data = deepcopy(data)
+        related_field_name = field.f_type.relates_on.field.name
+        if not field.f_type.relates_on.data_class:
+            if related_field_name not in _data:
+                _data[related_field_name] = self._prepare_field_value_for_object_creation(
+                    field=field.f_type.relates_on.field, force=force
+                )
+        else:
+            related_object_data = get_object_data(  # pylint: disable=unused-variable
+                adcm=self.adcm,
+                endpoint=Endpoints.get_by_data_class(field.f_type.relates_on.data_class),
+                object_id=self._used_fkeys[field.f_type.relates_on.data_class.__name__],
+            )[related_field_name]
+            raise NotImplementedError(
+                "Logic when field has relations with field from another endpoint "
+                "has not yet been implemented"
+            )
+
+        if endpoint == Endpoints.ConfigGroup:
+            if field.name == "object_id":
+                field.f_type.fk_link = Endpoints.get_by_path(data[related_field_name]).data_class
+
+        elif endpoint == Endpoints.ConfigLog:
+            if field.name in ["config", "attr"]:
+                config_url = get_object_data(
+                    adcm=self.adcm,
+                    endpoint=Endpoints.get_by_data_class(
+                        field.f_type.relates_on.field.f_type.fk_link
+                    ),
+                    object_id=_data[related_field_name],
+                )["current"]  # get current config link
+                split_url = config_url.strip("/").split("/")
+                path = split_url[-2]
+                object_id = int(split_url[-1])
+                reference_json = get_object_data(
+                    adcm=self.adcm,
+                    endpoint=Endpoints.get_by_path(path),
+                    object_id=object_id,
+                )[field.name]
+                field.f_type.schema = build_schema_by_json(reference_json)
+
+        else:
+            raise NotImplementedError(
+                f"Relations logic needs to be implemented for {endpoint} for field {field.name}"
+            )
+
+        return _data, field
+
+    def _prepare_data_for_object_creation(self, endpoint: Endpoints = None, force=False):
+        data = {}
+        for field in get_fields(
+            data_class=endpoint.data_class,
+            predicate=lambda x: x.name != "id" and x.postable,
+        ):
+            if field.name in data:
+                continue
+            if field.f_type.relates_on:
+                data_with_relates, field = self._solve_field_relations(endpoint, data, field, force)
+                data.update(data_with_relates)
+            data[field.name] = self._prepare_field_value_for_object_creation(field, force)
         return data
 
     def _get_or_create_multiple_data_for_endpoint(self, endpoint: Endpoints, count: int):
@@ -225,18 +275,12 @@ class DbFiller:
             return [new_data]
         raise NotImplementedError(f"There is no special generator for {endpoint}")
 
-    def _generate_field_value(self, field: Field, old_value=None):
+    @staticmethod
+    def _generate_field_value(field: Field, old_value=None):
         """Generate field value. If old_value is passed new value will be generated"""
-        related_value = None
-        if field.f_type.relates_on:
-            related_value = get_object_data(
-                adcm=self.adcm,
-                endpoint=Endpoints.get_by_data_class(field.f_type.relates_on.data_class),
-                object_id=self._used_fkeys[field.f_type.relates_on.data_class.__name__],
-            )[field.f_type.relates_on.field.name]
         if old_value is not None:
-            return field.f_type.generate_new(old_value=old_value, related_value=related_value)
-        return field.f_type.generate(related_value=related_value)
+            return field.f_type.generate_new(old_value=old_value)
+        return field.f_type.generate()
 
     def _choose_fk_field_value(self, field: Field, fk_data: list):
         """Choose a random fk value for the specified field"""

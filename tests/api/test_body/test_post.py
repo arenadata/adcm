@@ -17,7 +17,7 @@ from tests.api.testdata.db_filler import DbFiller
 from tests.api.utils.methods import Methods
 from tests.api.utils.types import get_fields
 
-from tests.api.utils.api_objects import ADCMTestApiWrapper
+from tests.api.utils.api_objects import ADCMTestApiWrapper, ExpectedBody
 
 pytestmark = [
     allure.suite("POST"),
@@ -66,6 +66,12 @@ def test_post_body_positive(prepare_post_body_data):
     """
     adcm, test_data_list = prepare_post_body_data
     for test_data in test_data_list:
+        # Set expected response fields values
+        test_data.response.body = ExpectedBody()
+        for field in get_fields(test_data.request.endpoint.data_class):
+            test_data.response.body.fields.append(field.name)
+            if (expected_field_value := test_data.request.data.get(field.name)) and field.postable:
+                test_data.response.body.fields_values[field.name] = expected_field_value
         with allure.step(f'Assert - {test_data.description}'):
             adcm.exec_request(request=test_data.request, expected_response=test_data.response)
 
