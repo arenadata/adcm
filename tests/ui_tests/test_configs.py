@@ -319,7 +319,7 @@ def prepare_group_config(config):
 
 
 @pytest.mark.parametrize("config_dict", configs)
-def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs, login_to_adcm):
+def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs, login_to_adcm_over_api):
     """Test UI configuration page without groups. Before start test actions
     we always create configuration and expected result. All logic for test
     expected result in functions before this test function.
@@ -371,7 +371,7 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs, login_to
 
 @pytest.mark.parametrize(("config_dict", "expected_results"), group_configs)
 def test_group_configs_field(
-    sdk_client_fs: ADCMClient, config_dict, expected_results, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, config_dict, expected_results, app_fs, login_to_adcm_over_api
 ):
     """Test for configuration fields with groups. Before start test actions
     we always create configuration and expected result. All logic for test

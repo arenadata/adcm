@@ -11,14 +11,16 @@
 # limitations under the License.
 # pylint: disable=W0621
 import os
-import sys
 import tarfile
 from typing import Optional, List
 
 import pytest
+import sys
+
 from _pytest.python import Function
 from allure_commons.model2 import TestResult, Parameter
 from allure_pytest.listener import AllureListener
+
 
 pytest_plugins = "adcm_pytest_plugin"
 
