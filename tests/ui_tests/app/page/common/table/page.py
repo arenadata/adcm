@@ -32,10 +32,11 @@ class CommonTableObj(BasePageObject):
 
     def get_row(self, row_num: int = 0) -> WebElement:
         """Get exactly one row"""
+
         def table_has_enough_rows():
             current_row_count = self.row_count
             assert (
-                    row_num + 1 <= current_row_count
+                row_num + 1 <= current_row_count
             ), f"Table has only {current_row_count} rows when row #{row_num} was requested"
 
         wait_until_step_succeeds(table_has_enough_rows, timeout=5, period=0.1)
