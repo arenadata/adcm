@@ -28,7 +28,7 @@ Operation     Allowed
 ============= =======
 GET           True
 LIST          True
-POST          True
+POST          False
 PUT           False
 PATCH         False
 DELETE        False
@@ -63,7 +63,7 @@ Operation     Allowed
 ============= =======
 GET           True
 LIST          True
-POST          False
+POST          True
 PUT           False
 PATCH         False
 DELETE        False
