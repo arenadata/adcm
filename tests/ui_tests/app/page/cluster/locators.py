@@ -32,8 +32,6 @@ class ClusterMenuLocators:
 class ClusterMainLocators:
     """Cluster main page elements locators"""
 
-    title = Locator(By.CLASS_NAME, "mat-card-title", "Cluster main page title")
-    bundle_link = Locator(By.XPATH, "//app-details-subtitle//a", "Cluster main page bundle link")
     text = Locator(By.XPATH, "//mat-card-content", "Cluster main page text")
 
 
