@@ -9,6 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import Optional
+
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import (
@@ -89,6 +91,7 @@ class BasePageObject:
     def close_info_popup(self):
         if self.is_element_displayed(CommonPopupLocators.block, timeout=2):
             self.find_and_click(CommonPopupLocators.hide_btn)
+            self.wait_element_hide(CommonPopupLocators.block)
 
     @allure.step("Wait url to contain path {path}")
     def wait_url_contains_path(self, path: str, timeout: int = None) -> None:
@@ -155,7 +158,25 @@ class BasePageObject:
         """Asserts that list of elements is displayed."""
 
         for loc in locators:
-            assert self.is_element_displayed(loc), f"Locator {loc.name} doesn't displayed on page"
+            assert self.is_element_displayed(loc), f"Locator {loc.name} isn't displayed on page"
+
+    def check_element_should_be_hidden(
+        self, locator: Locator, timeout: Optional[int] = None
+    ) -> None:
+        """Raises assertion error if element is still visible after timeout"""
+        try:
+            self.wait_element_hide(locator, timeout)
+        except TimeoutException as e:
+            raise AssertionError(e.msg)
+
+    def check_element_should_be_visible(
+        self, locator: Locator, timeout: Optional[int] = None
+    ) -> None:
+        """Raises assertion error if element is not visible after timeout"""
+        try:
+            self.wait_element_visible(locator, timeout)
+        except TimeoutException as e:
+            raise AssertionError(e.msg)
 
     def find_and_click(self, locator: Locator, is_js: bool = False) -> None:
         """Find element on current page and click on it."""
@@ -200,6 +221,17 @@ class BasePageObject:
                 EC.invisibility_of_element_located([locator.by, locator.value]),
                 message=f"locator {locator.name} hasn't hide for {loc_timeout} seconds",
             )
+
+    def wait_page_is_opened(self, timeout: int = None):
+        """Wait for current page to be opened"""
+        timeout = timeout or self.default_page_timeout
+
+        def assert_page_is_opened():
+            assert (
+                self.path in self.driver.current_url
+            ), f'Page is not opened at path {self.path} in {timeout}'
+
+        wait_until_step_succeeds(assert_page_is_opened, period=0.5, timeout=timeout)
 
     def set_locator_value(self, locator: Locator, value: str) -> None:
         """Fill locator with value."""

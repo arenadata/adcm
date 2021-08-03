@@ -9,7 +9,7 @@ from .utils import prepare_cluster_and_get_config
 
 @parametrize_by_data_subdirs(__file__, "invisible_true", 'advanced_true')
 def test_ui_option_invisible_true_advanced_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     groups = config.get_field_groups()
@@ -20,7 +20,7 @@ def test_ui_option_invisible_true_advanced_true(
 
 @parametrize_by_data_subdirs(__file__, "invisible_true", 'advanced_false')
 def test_ui_option_invisible_true_advanced_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     if not config.advanced:
@@ -34,7 +34,7 @@ def test_ui_option_invisible_true_advanced_false(
 
 @parametrize_by_data_subdirs(__file__, "invisible_false", 'advanced_true')
 def test_ui_option_invisible_false_advanced_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     groups = config.get_field_groups()
@@ -55,7 +55,7 @@ def test_ui_option_invisible_false_advanced_true(
 
 @parametrize_by_data_subdirs(__file__, "invisible_false", 'advanced_false')
 def test_ui_option_invisible_false_advanced_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     groups = config.get_field_groups()

@@ -41,6 +41,11 @@ class ADCMTest:
         self.opts.add_argument("--start-maximized")
         self.opts.add_argument("--enable-logging")
         self.opts.add_argument("--enable-automation")
+        if browser == "Chrome":
+            self.opts.add_argument("--window-size=1366,768")
+        else:
+            self.opts.add_argument("--width=1366")
+            self.opts.add_argument("--height=768")
         self.capabilities = self.opts.capabilities.copy()
         self.capabilities["acceptSslCerts"] = True
         self.capabilities["acceptInsecureCerts"] = True
@@ -67,7 +72,6 @@ class ADCMTest:
                 if self.capabilities["browserName"] == "firefox"
                 else webdriver.Chrome(options=self.opts, desired_capabilities=self.capabilities)
             )
-        self.driver.set_window_size(1800, 1000)
         self.driver.implicitly_wait(1)
         self.ui = Ui(self.driver)
 

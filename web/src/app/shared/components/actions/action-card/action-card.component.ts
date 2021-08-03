@@ -32,25 +32,29 @@ export class ActionCardComponent extends SocketListenerDirective implements OnIn
   model: Entities;
   actions$: Observable<any[]> = of([]);
 
-  constructor(private details: ClusterService, private service: ActionsService, socket: Store<SocketState>) {
+  constructor(
+    private clusterService: ClusterService,
+    private service: ActionsService,
+    socket: Store<SocketState>,
+  ) {
     super(socket);
   }
 
   ngOnInit(): void {
-    if (!isIssue(this.details.Current.issue))
-      this.actions$ = this.service.getActions(this.details.Current.action);
+    if (!isIssue(this.clusterService.Current.issue))
+      this.actions$ = this.service.getActions(this.clusterService.Current.action);
     super.startListenSocket();
   }
 
   socketListener(m: EventMessage) {
     const type = m.object.type === 'component' ? 'servicecomponent' : m.object.type;
-    if (this.details.Current?.typeName === type && this.details.Current?.id === m.object.id && (m.event === 'change_state' || m.event === 'clear_issue')) {
-      this.actions$ = this.service.getActions(this.details.Current.action);
+    if (this.clusterService.Current?.typeName === type && this.clusterService.Current?.id === m.object.id && (m.event === 'change_state' || m.event === 'clear_issue')) {
+      this.actions$ = this.service.getActions(this.clusterService.Current.action);
     }
   }
 
   get clusterData() {
-    const { id, hostcomponent } = this.details.Cluster || (this.details.Current as Cluster);
+    const { id, hostcomponent } = this.clusterService.Cluster || (this.clusterService.Current as Cluster);
     return { id, hostcomponent };
   }
 }
