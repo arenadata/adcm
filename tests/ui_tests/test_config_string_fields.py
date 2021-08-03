@@ -51,7 +51,7 @@ def service(sdk_client_fs):
 
 @pytest.fixture()
 @allure.step("Open ADCM tab Configuration")
-def ui_config(app_fs, login_to_adcm, service):
+def ui_config(app_fs, login_to_adcm_over_api, service):
     return Configuration(
         app_fs.driver,
         "{}/cluster/{}/service/{}/config".format(

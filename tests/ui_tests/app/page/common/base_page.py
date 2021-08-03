@@ -91,6 +91,7 @@ class BasePageObject:
     def close_info_popup(self):
         if self.is_element_displayed(CommonPopupLocators.block, timeout=2):
             self.find_and_click(CommonPopupLocators.hide_btn)
+            self.wait_element_hide(CommonPopupLocators.block)
 
     @allure.step("Wait url to contain path {path}")
     def wait_url_contains_path(self, path: str, timeout: int = None) -> None:
