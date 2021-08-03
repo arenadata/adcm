@@ -90,7 +90,7 @@ def upload_and_create_cluster(cluster_bundle: Bundle) -> Tuple[Bundle, Cluster]:
 
 
 @pytest.fixture()
-def page(app_fs: ADCMTest, auth_to_adcm) -> HostListPage:
+def page(app_fs: ADCMTest, login_to_adcm_over_api) -> HostListPage:
     return HostListPage(app_fs.driver, app_fs.adcm.url).open()
 
 
