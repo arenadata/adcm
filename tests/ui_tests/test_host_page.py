@@ -412,15 +412,11 @@ def test_reset_configuration(
     )
     host_page.config.save_config()
     host_page.config.reset_to_default(params['req_field_adcm_test'])
+    host_page.config.assert_input_value_is(params['init_value'], params['req_field_adcm_test'])
     host_page.config.reset_to_default(params['pass_adcm_test'])
-    field_value = host_page.config.get_input_value(params['req_field_adcm_test'])
-    password_value = host_page.config.get_input_value(params['pass_adcm_test'], is_password=True)
-    assert (
-        field_value == params['init_value']
-    ), 'Value in Required field should be empty after reset'
-    assert (
-        password_value == params['init_value']
-    ), 'Value in Password field should be empty after reset'
+    host_page.config.assert_input_value_is(
+        params['init_value'], params['pass_adcm_test'], is_password=True
+    )
 
 
 @pytest.mark.full()

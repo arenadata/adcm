@@ -9,8 +9,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import time
+
 import allure
+
 from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import StaleElementReferenceException
+from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
@@ -70,9 +75,26 @@ class CommonConfigMenuObj(BasePageObject):
         )
         return self.find_element(template(adcm_test)).get_property("value")
 
+    @allure.step('Check input of field "{adcm_test}" has value "{expected_value}"')
+    def assert_input_value_is(self, expected_value: str, adcm_test: str, is_password: bool = False):
+        """Assert that value in field is expected_value (using retries)"""
+
+        def assert_value():
+            assert expected_value == self.get_input_value(
+                adcm_test, is_password
+            ), f'Value in {adcm_test} field should be empty after reset'
+
+        wait_until_step_succeeds(assert_value, timeout=10, period=0.5)
+
     def reset_to_default(self, adcm_test: str):
         """Click reset button"""
-        self.find_and_click(self.config.reset_btn(adcm_test))
+        try:
+            self.find_and_click(self.config.reset_btn(adcm_test))
+        except StaleElementReferenceException:
+            # sometimes it occurs, probably because of previous actions
+            # like config saving
+            time.sleep(1)
+            self.find_and_click(self.config.reset_btn(adcm_test))
 
     @allure.step('Type "{value}" to {adcm_test} field')
     def type_in_config_field(self, value: str, adcm_test: str, clear: bool = False):
