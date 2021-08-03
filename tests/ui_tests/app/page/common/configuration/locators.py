@@ -31,12 +31,8 @@ class CommonConfigMenu:
         "//input[@data-placeholder='Description configuration']",
         "Config description input",
     )
-    save_btn = Locator(
-        By.XPATH, "//button[.//span[text()='Save']]", "Save configuration button"
-    )
-    history_btn = Locator(
-        By.XPATH, "//button[.//mat-icon[text()='history']]", "History button"
-    )
+    save_btn = Locator(By.XPATH, "//button[.//span[text()='Save']]", "Save configuration button")
+    history_btn = Locator(By.XPATH, "//button[.//mat-icon[text()='history']]", "History button")
 
     compare_to_select = Locator(
         By.XPATH, "//mat-select[@placeholder='Compare to']", "Compare to select"

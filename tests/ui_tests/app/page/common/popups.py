@@ -24,6 +24,7 @@ class CommonPopupLocators:
 
 class HostCreationLocators:
     """Host creation popup without cluster selection"""
+
     block = Locator(By.XPATH, "//mat-dialog-container", "Popup block")
     fqdn_input = Locator(
         By.XPATH, "//input[@data-placeholder='Fully qualified domain name']", "Host FQDN input"
@@ -33,6 +34,7 @@ class HostCreationLocators:
 
     class Provider:
         """Provider creation and selection section"""
+
         bundle_select_btn = Locator(
             By.XPATH, "//mat-select[@placeholder='Bundle']", "Select bundle"
         )
@@ -59,6 +61,7 @@ class HostCreationLocators:
         Cluster selection locators
         ! May not be presented (e.g. create host from cluster) !
         """
+
         cluster_select = Locator(
             By.XPATH, "//mat-select[@formcontrolname='cluster_id']", "Cluster choice select"
         )
