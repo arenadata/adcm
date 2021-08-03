@@ -16,27 +16,47 @@ from tests.ui_tests.app.page.common.base_page import (
     PageHeader,
     PageFooter,
 )
+from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 
 
-class ClusterMainPage(BasePageObject):
-    def __init__(self, driver, base_url, path):
-        super().__init__(driver, base_url, f"/cluster/{path}/main")
+class ClusterPageMixin(BasePageObject):
+    """Helpers for working with cluster page"""
+
+    # /action /main etc.
+    MENU_SUFFIX: str
+    cluster_id: int
+    header: PageHeader
+    footer: PageFooter
+    config: CommonConfigMenuObj
+
+    __ACTIVE_MENU_CLASS = 'active'
+
+    def __init__(self, driver, base_url, cluster_id: int):
+        if self.MENU_SUFFIX is None:
+            raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
+        super().__init__(driver, base_url, f"/cluster/{cluster_id}/{self.MENU_SUFFIX}")
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
+        self.config = CommonConfigMenuObj(self.driver, self.base_url)
+        self.cluster_id = cluster_id
 
 
-class ClusterImportPage(BasePageObject):
-    def __init__(self, driver, base_url, path):
-        super().__init__(driver, base_url, f"/cluster/{path}/import")
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
+class ClusterMainPage(ClusterPageMixin):
+    """Cluster page Main menu"""
+
+    MENU_SUFFIX = 'main'
+
+
+class ClusterImportPage(ClusterPageMixin):
+    """Cluster page import menu"""
+
+    MENU_SUFFIX = 'import'
 
     def get_import_items(self):
         return self.find_elements(ClusterImportLocators.import_item_block)
 
 
-class ClusterConfigPage(BasePageObject):
-    def __init__(self, driver, base_url, path):
-        super().__init__(driver, base_url, f"/cluster/{path}/config")
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
+class ClusterConfigPage(ClusterPageMixin):
+    """Cluster page config menu"""
+
+    MENU_SUFFIX = 'config'
