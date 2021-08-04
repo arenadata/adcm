@@ -9,6 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+
 import allure
 
 from tests.ui_tests.app.page.cluster.locators import (
@@ -123,7 +125,9 @@ class ClusterServicesPage(ClusterPageMixin):
         self.find_and_click(ClusterServicesLocators.add_services_btn)
         self.wait_element_visible(ClusterServicesLocators.AddServicePopup.block)
         for service in self.find_elements(ClusterServicesLocators.AddServicePopup.service_row):
-            service_text = self.find_child(service, ClusterServicesLocators.AddServicePopup.ServiceRow.text)
+            service_text = self.find_child(
+                service, ClusterServicesLocators.AddServicePopup.ServiceRow.text
+            )
             if service_text.text == service_name:
                 service_text.click()
         self.find_and_click(ClusterServicesLocators.AddServicePopup.create_btn)
