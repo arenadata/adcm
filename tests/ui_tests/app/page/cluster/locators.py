@@ -35,6 +35,12 @@ class ClusterMainLocators:
     text = Locator(By.XPATH, "//mat-card-content", "Cluster main page text")
 
 
+class ClusterServicesLocators:
+    """Cluster main page elements locators"""
+
+    add_services_btn = Locator(By.XPATH, "//button[@adcm_test='create-btn']", "Add services button")
+
+
 class ClusterImportLocators:
     """Cluster import page elements locators"""
 

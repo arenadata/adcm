@@ -14,6 +14,7 @@ from tests.ui_tests.app.page.cluster.locators import (
     ClusterImportLocators,
     ClusterMenuLocators,
     ClusterMainLocators,
+    ClusterServicesLocators,
 )
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
@@ -22,6 +23,8 @@ from tests.ui_tests.app.page.common.base_page import (
 )
 from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
+from tests.ui_tests.app.page.common.table.locator import CommonTable
+from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
 
 
@@ -35,6 +38,7 @@ class ClusterPageMixin(BasePageObject):
     footer: PageFooter
     config: CommonConfigMenuObj
     toolbar: CommonToolbar
+    table: CommonTableObj
 
     __ACTIVE_MENU_CLASS = 'active'
 
@@ -47,6 +51,7 @@ class ClusterPageMixin(BasePageObject):
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
         self.cluster_id = cluster_id
         self.toolbar = CommonToolbar(self.driver, self.base_url)
+        self.table = CommonTableObj(self.driver, self.base_url)
 
     def open_main_tab(self):
         self.find_and_click(ClusterMenuLocators.main_tab)
@@ -86,6 +91,25 @@ class ClusterMainPage(ClusterPageMixin):
                 ClusterMainLocators.text,
             ]
         )
+
+
+class ClusterServicesPage(ClusterPageMixin):
+    """Cluster page config menu"""
+
+    MENU_SUFFIX = 'service'
+
+    def check_all_elements(self):
+        self.assert_displayed_elements(
+            [
+                ObjectPageLocators.title,
+                ObjectPageLocators.subtitle,
+                ClusterServicesLocators.add_services_btn,
+                CommonTable.header,
+                CommonTable.Pagination.next_page,
+                CommonTable.Pagination.previous_page,
+            ]
+        )
+
 
 class ClusterImportPage(ClusterPageMixin):
     """Cluster page import menu"""

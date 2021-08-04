@@ -25,6 +25,7 @@ from tests.ui_tests.app.page.cluster.page import (
     ClusterImportPage,
     ClusterConfigPage,
     ClusterMainPage,
+    ClusterServicesPage,
 )
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 
@@ -238,3 +239,12 @@ def test_check_cluster_run_action_on_cluster_page_by_toolbar(app_fs):
         assert (
             cluster_main_page.header.get_in_progress_job_amount_from_header() == "1"
         ), "There should be 1 in progress job in header"
+
+
+@pytest.mark.usefixtures("_create_community_cluster")
+def test_check_cluster_service_page_open_by_tab(app_fs):
+    cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    cluster_config_page.open_services_tab()
+    cluster_main_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, 1)
+    cluster_main_page.wait_page_is_opened()
+    cluster_main_page.check_all_elements()
