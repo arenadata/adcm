@@ -87,7 +87,7 @@ object_type         string  null    False    True             True              
 name                string  null    False    True             True               True               Name of object.
 description         text    null    True     False            True               True               Extended information provided by user.
 hosts               M2M     null    True     False            False              False              M2M link to Host object.
-config              FK      null    True     False            False              True               FK field on ObjectConfig object
+config              FK      null    True     False            False              False              FK field on ObjectConfig object
 url                 link    null    False    False            False              False              Reference to this object
 =================== ======= ======= ======== ================ ================== ================== ===========
 
