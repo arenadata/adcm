@@ -104,7 +104,7 @@ export class NavigationEffects {
           return this.api.getOne<any>('cluster', (entity as any as IClusterService).cluster_id)
             .pipe(map(cluster => ({ ...entity, cluster })));
         }));
-      } else if (type === 'config_group') {
+      } else if (type === 'configgroup') {
         return entityToTypedEntity(
           this.configGroupService.get(id),
           type,

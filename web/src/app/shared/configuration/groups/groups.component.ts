@@ -25,7 +25,7 @@ import { ListFactory } from '@app/factories/list-factory';
   styles: [':host { flex: 1; }', '.add-button {position:fixed; right: 20px;top:120px;}'],
 })
 export class ConfigGroupsComponent extends AdwpListDirective<any> {
-  type: TypeName = 'config_group';
+  type: TypeName = 'configgroup';
 
   listColumns: IColumns<any> = [
     ListFactory.nameColumn(),

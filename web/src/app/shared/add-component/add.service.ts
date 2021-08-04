@@ -24,6 +24,7 @@ import { Host, Prototype, ServicePrototype, StackBase, TypeName } from '@app/cor
 import { DialogComponent } from '@app/shared/components/dialog.component';
 import { GenName } from './naming';
 import { MainService } from '@app/shared/configuration/main/main.service';
+import { ConfigGroupService } from '@app/config-groups/config-group.service';
 
 export interface FormModel {
   name: string;
@@ -70,10 +71,14 @@ const MODELS: { [key: string]: FormModel } = {
     name: 'host2cluster',
     title: 'hosts',
   },
-  config_group: {
-    name: 'config_group',
+  configgroup: {
+    name: 'configgroup',
     title: 'Config group',
     form: formConfigGroup(),
+  },
+  host2configgroup: {
+    name: 'host2configgroup',
+    title: 'hosts',
   },
 };
 
@@ -94,7 +99,8 @@ export class AddService {
               private stack: StackService,
               private cluster: ClusterService,
               public dialog: MatDialog,
-              private main: MainService
+              private main: MainService,
+              private configGroup: ConfigGroupService
   ) {}
 
   model(name: string) {
@@ -197,8 +203,23 @@ export class AddService {
     const object_type = this.Current.typeName;
     const object_id = this.Current.id;
 
-    const params = { object_type, object_id, ...data };
-
-    return this.api.post<T>(`${environment.apiRoot}config-group/`, params);
+    return this.configGroup.add(object_type, object_id, data);
   }
+
+  getHostListForCurrentCluster() {
+    return this.api.get<Host[]>(this.cluster.Cluster.host).pipe(
+      map((hosts: Host[]) =>
+        hosts
+          .map((host) => ({
+            ...host,
+            name: host.fqdn,
+          }))
+      )
+    );
+  }
+
+  addHostToConfigGroup(data: { host: number, group: number }[]) {
+    return this.configGroup.addHosts(data);
+  }
+
 }

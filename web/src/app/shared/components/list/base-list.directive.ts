@@ -66,7 +66,12 @@ export class BaseListDirective {
   initListItemEvent() {
     this.parent.listItemEvt
       .pipe(this.takeUntil())
-      .subscribe({ next: (event: EmmitRow) => this.listEvents(event) });
+      .subscribe({
+        next: (event: EmmitRow) => {
+          console.log('initListItemEvent event: ', event);
+          this.listEvents(event);
+        }
+      });
   }
 
   calcSort(ordering: string): Sort {
@@ -185,7 +190,7 @@ export class BaseListDirective {
     const nav = (a: string[]) => this.parent.router.navigateByUrl(createUrl(a));
 
     this.row = event.row;
-    const { cmd, item } = event;
+    const { cmd, row, item } = event;
 
     if (['title', 'status', 'config', 'import'].includes(cmd)) {
       nav(cmd === 'title' ? [] : [cmd]);
@@ -193,7 +198,7 @@ export class BaseListDirective {
       const url = this.parent.router.serializeUrl(createUrl([]));
       window.open(url, '_blank');
     } else {
-      this[cmd](item);
+      this[cmd](row || item);
     }
   }
 
@@ -226,9 +231,11 @@ export class BaseListDirective {
     this.service.getLicenseInfo(row.license_url).pipe(this.takeUntil(), mergeMap(showDialog)).subscribe();
   }
 
-  delete() {
+  delete(item?: Entities) {
+    console.log('delete | item: ', item);
+
     this.service
-      .delete(this.row)
+      .delete(item ?? this.row)
       .pipe(this.takeUntil())
       .subscribe(() => (this.parent.current = null));
   }

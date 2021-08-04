@@ -67,7 +67,7 @@ export class ClusterService {
     protected api: ApiService,
     protected serviceComponentService: ServiceComponentService,
     protected store: Store,
-    protected configGroups: ConfigGroupService
+    public configGroups: ConfigGroupService
   ) {}
 
   clearWorker() {
@@ -119,7 +119,7 @@ export class ClusterService {
         switchMap((cluster) => {
           if (cluster && typeName === 'servicecomponent') {
             return this.serviceComponentService.get(id);
-          } else if (cluster && typeName === 'config_group') {
+          } else if (cluster && typeName === 'configgroup') {
             return this.configGroups.get(id);
           } else if (cluster && typeName !== 'cluster') {
             return this.api.get<Entities>(`${cluster[typeName]}${id}/`);
@@ -227,5 +227,9 @@ export class ClusterService {
     const a = new Date(sdn);
     const b = new Date(fdn);
     return { start: a.toLocaleTimeString(), end: status !== 'running' ? b.toLocaleTimeString() : '', time };
+  }
+
+  addHostsToConfigGroup(data: { host: number, group: number }[]) {
+    return forkJoin(data.map((o) => this.api.post<unknown>('http://localhost:8000/api/v1/host-group/', o)));
   }
 }

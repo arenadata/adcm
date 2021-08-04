@@ -28,7 +28,7 @@ const COLUMNS_SET = {
   job: ['action', 'objects', 'start_date', 'finish_date', 'status'],
   task: ['id', 'start_date', 'finish_date', 'status'],
   bundle: ['name', 'version', 'edition', 'description', 'controls'],
-  config_group: ['name', 'description', 'remove'],
+  configgroup: ['name', 'description', 'remove'],
 };
 
 
@@ -62,7 +62,7 @@ export class ListService {
     }
 
     switch (typeName) {
-      case 'config_group':
+      case 'configgroup':
         // ToDo replace for current URL for this entity
         return this.api.getList(`${environment.apiRoot}config-group/`, p);
       case 'host2cluster':

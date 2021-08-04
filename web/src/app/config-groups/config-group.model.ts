@@ -11,7 +11,7 @@ export class ConfigGroup implements IConfigGroup {
   public hosts: unknown[] = [];
   public config: string;
 
-  typeName: TypeName = 'config_group';
+  typeName: TypeName = 'configgroup';
 
   constructor(options) {
     this.name = options.name;
