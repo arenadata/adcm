@@ -9,12 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import time
-
 import allure
 
 from selenium.webdriver.common.keys import Keys
-from selenium.common.exceptions import StaleElementReferenceException
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
 from tests.ui_tests.app.page.common.base_page import BasePageObject
@@ -32,6 +29,7 @@ class CommonConfigMenuObj(BasePageObject):
     def save_config(self):
         """Save current configuration"""
         self.find_and_click(self.config.save_btn)
+        self.wait_element_hide(self.config.loading_text, timeout=2)
 
     @allure.step('Setting configuration description to {description}')
     def set_description(self, description: str) -> str:
@@ -88,13 +86,7 @@ class CommonConfigMenuObj(BasePageObject):
 
     def reset_to_default(self, adcm_test: str):
         """Click reset button"""
-        try:
-            self.find_and_click(self.config.reset_btn(adcm_test))
-        except StaleElementReferenceException:
-            # sometimes it occurs, probably because of previous actions
-            # like config saving
-            time.sleep(1)
-            self.find_and_click(self.config.reset_btn(adcm_test))
+        self.find_and_click(self.config.reset_btn(adcm_test))
 
     @allure.step('Type "{value}" to {adcm_test} field')
     def type_in_config_field(self, value: str, adcm_test: str, clear: bool = False):
