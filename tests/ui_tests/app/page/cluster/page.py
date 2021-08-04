@@ -9,10 +9,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import allure
 
 from tests.ui_tests.app.page.cluster.locators import (
     ClusterImportLocators,
-    ClusterMenuLocators,
     ClusterMainLocators,
     ClusterServicesLocators,
 )
@@ -21,7 +21,10 @@ from tests.ui_tests.app.page.common.base_page import (
     PageHeader,
     PageFooter,
 )
-from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators
+from tests.ui_tests.app.page.common.common_locators import (
+    ObjectPageLocators,
+    ObjectPageMenuLocators,
+)
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
@@ -54,28 +57,28 @@ class ClusterPageMixin(BasePageObject):
         self.table = CommonTableObj(self.driver, self.base_url)
 
     def open_main_tab(self):
-        self.find_and_click(ClusterMenuLocators.main_tab)
+        self.find_and_click(ObjectPageMenuLocators.main_tab)
 
     def open_services_tab(self):
-        self.find_and_click(ClusterMenuLocators.services_tab)
+        self.find_and_click(ObjectPageMenuLocators.services_tab)
 
     def open_hosts_tab(self):
-        self.find_and_click(ClusterMenuLocators.hosts_tab)
+        self.find_and_click(ObjectPageMenuLocators.hosts_tab)
 
     def open_components_tab(self):
-        self.find_and_click(ClusterMenuLocators.components_tab)
+        self.find_and_click(ObjectPageMenuLocators.components_tab)
 
     def open_config_tab(self):
-        self.find_and_click(ClusterMenuLocators.config_tab)
+        self.find_and_click(ObjectPageMenuLocators.config_tab)
 
     def open_status_tab(self):
-        self.find_and_click(ClusterMenuLocators.status_tab)
+        self.find_and_click(ObjectPageMenuLocators.status_tab)
 
     def open_import_tab(self):
-        self.find_and_click(ClusterMenuLocators.import_tab)
+        self.find_and_click(ObjectPageMenuLocators.import_tab)
 
     def open_actions_tab(self):
-        self.find_and_click(ClusterMenuLocators.actions_tab)
+        self.find_and_click(ObjectPageMenuLocators.actions_tab)
 
 
 class ClusterMainPage(ClusterPageMixin):
@@ -83,6 +86,7 @@ class ClusterMainPage(ClusterPageMixin):
 
     MENU_SUFFIX = 'main'
 
+    @allure.step("Check main elements on page")
     def check_all_elements(self):
         self.assert_displayed_elements(
             [
@@ -98,6 +102,7 @@ class ClusterServicesPage(ClusterPageMixin):
 
     MENU_SUFFIX = 'service'
 
+    @allure.step("Check main elements on page")
     def check_all_elements(self):
         self.assert_displayed_elements(
             [
@@ -109,6 +114,19 @@ class ClusterServicesPage(ClusterPageMixin):
                 CommonTable.Pagination.previous_page,
             ]
         )
+
+    def click_add_service_btn(self):
+        self.find_and_click(ClusterServicesLocators.add_services_btn)
+
+    @allure.step("Check service {service_name} in cluster")
+    def add_service_by_name(self, service_name: str):
+        self.find_and_click(ClusterServicesLocators.add_services_btn)
+        self.wait_element_visible(ClusterServicesLocators.AddServicePopup.block)
+        for service in self.find_elements(ClusterServicesLocators.AddServicePopup.service_row):
+            service_text = self.find_child(service, ClusterServicesLocators.AddServicePopup.ServiceRow.text)
+            if service_text.text == service_name:
+                service_text.click()
+        self.find_and_click(ClusterServicesLocators.AddServicePopup.create_btn)
 
 
 class ClusterImportPage(ClusterPageMixin):

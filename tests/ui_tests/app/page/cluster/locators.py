@@ -16,19 +16,6 @@ from selenium.webdriver.common.by import By
 from tests.ui_tests.app.helpers.locator import Locator
 
 
-class ClusterMenuLocators:
-    """Cluster menu elements locators"""
-
-    main_tab = Locator(By.XPATH, "//a[@adcm_test='tab_main']", "Tab main")
-    services_tab = Locator(By.XPATH, "//a[@adcm_test='tab_service']", "Tab services")
-    hosts_tab = Locator(By.XPATH, "//a[@adcm_test='tab_host']", "Tab hosts")
-    components_tab = Locator(By.XPATH, "//a[@adcm_test='tab_host_component']", "Tab components")
-    config_tab = Locator(By.XPATH, "//a[@adcm_test='tab_config']", "Tab config")
-    status_tab = Locator(By.XPATH, "//a[@adcm_test='tab_status']", "Tab status")
-    import_tab = Locator(By.XPATH, "//a[@adcm_test='tab_import']", "Tab import")
-    actions_tab = Locator(By.XPATH, "//a[@adcm_test='tab_action']", "Tab actions")
-
-
 class ClusterMainLocators:
     """Cluster main page elements locators"""
 
@@ -39,6 +26,19 @@ class ClusterServicesLocators:
     """Cluster main page elements locators"""
 
     add_services_btn = Locator(By.XPATH, "//button[@adcm_test='create-btn']", "Add services button")
+
+    class AddServicePopup:
+        """Popup for adding services"""
+
+        block = Locator(By.XPATH, "//mat-dialog-container", "Popup block")
+        service_row = Locator(By.XPATH, "//mat-list-option", "Service row")
+        create_btn = Locator(By.XPATH, "//button[./span[text()='Add']]", "Add button")
+        cancel_btn = Locator(By.XPATH, "//button[./span[text()='Cancel']]", "Cancel button")
+
+        class ServiceRow:
+            """Locators for services row"""
+
+            text = Locator(By.XPATH, ".//div[@class='mat-list-text']", "Service name")
 
 
 class ClusterImportLocators:

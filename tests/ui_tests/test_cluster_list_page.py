@@ -28,6 +28,7 @@ from tests.ui_tests.app.page.cluster.page import (
     ClusterServicesPage,
 )
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
+from tests.ui_tests.app.page.service.page import ServiceMainPage
 
 BUNDLE_COMMUNITY = "cluster_community"
 BUNDLE_ENTERPRISE = "cluster_enterprise"
@@ -208,7 +209,9 @@ def test_check_cluster_main_page_open_by_toolbar(app_fs):
     cluster_main_page.wait_page_is_opened()
 
 
-def test_check_cluster_run_upgrade_on_cluster_page_by_toolbar(sdk_client_fs, app_fs, auth_to_adcm):
+def test_check_cluster_run_upgrade_on_cluster_page_by_toolbar(
+    sdk_client_fs, app_fs, login_to_adcm_over_api
+):
     params = {
         "upgrade_cluster_name": "upgrade cluster",
         "upgrade": "upgrade 2",
@@ -245,6 +248,16 @@ def test_check_cluster_run_action_on_cluster_page_by_toolbar(app_fs):
 def test_check_cluster_service_page_open_by_tab(app_fs):
     cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1).open()
     cluster_config_page.open_services_tab()
-    cluster_main_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, 1)
-    cluster_main_page.wait_page_is_opened()
-    cluster_main_page.check_all_elements()
+    cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, 1)
+    cluster_service_page.wait_page_is_opened()
+    cluster_service_page.check_all_elements()
+
+
+@pytest.mark.usefixtures("_create_community_cluster")
+def test_check_create_and_open_service_page_from_cluster_page(app_fs):
+    params = {"service_name": "test_service - 1.2"}
+    cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    cluster_service_page.add_service_by_name(params["service_name"])
+    service_row = cluster_service_page.table.get_all_rows()[0]
+    service_row.click()
+    ServiceMainPage(app_fs.driver, app_fs.adcm.url, 1, 1).wait_page_is_opened()
