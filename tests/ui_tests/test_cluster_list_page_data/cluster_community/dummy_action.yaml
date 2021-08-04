@@ -9,22 +9,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+---
+- name: Dummy action
+  hosts: all
+  connection: local
+  gather_facts: no
 
-- type: cluster
-  name: test_cluster
-  version: 1.5
-  edition: community
-  actions:
-    test_action:
-      type: job
-      script: dummy_action.yaml
-      script_type: ansible
-      states:
-        available:
-          - created
-        on_success: installed
-  import:
-     Pre-uploaded Dummy cluster to import:
-          versions:
-             max: 3.0
-             min: 2.2
+  tasks:
+    - name: Dummy?
+      debug:
+        msg: "Some message"

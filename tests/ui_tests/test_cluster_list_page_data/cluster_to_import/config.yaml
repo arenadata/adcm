@@ -10,21 +10,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- type: cluster
-  name: test_cluster
-  version: 1.5
-  edition: community
-  actions:
-    test_action:
-      type: job
-      script: dummy_action.yaml
-      script_type: ansible
-      states:
-        available:
-          - created
-        on_success: installed
-  import:
-     Pre-uploaded Dummy cluster to import:
-          versions:
-             max: 3.0
-             min: 2.2
+-   type: cluster
+    name: Pre-uploaded Dummy cluster to import
+    version: 2.5
+    config:
+      required:
+        type: integer
+        required: true
+        default: 15
+      str-key:
+        default: value
+        type: string
+        required: false
+      int_key:
+        type: integer
+        required: false
+        default: 150
+
+    export:
+      - required
+      - str-key
+      - int_key
