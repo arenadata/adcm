@@ -26,6 +26,7 @@ import { AuthGuard } from '../../core/auth/auth.guard';
 import { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';
 import { ServiceComponentsComponent } from '@app/components/service-components.component';
 import { ConfigGroupsComponent } from '../../shared/configuration/groups/groups.component';
+import { ConfigGroupHostComponent } from '../../config-groups/host/host.component';
 
 
 const clusterRoutes: Routes = [
@@ -46,14 +47,14 @@ const clusterRoutes: Routes = [
       { path: 'host', component: HostComponent },
       { path: 'host_component', component: HcmapComponent },
       { path: 'config', component: ConfigComponent },
-      { path: 'config_group', component: ConfigGroupsComponent },
+      { path: 'configgroup', component: ConfigGroupsComponent },
       { path: 'status', component: StatusComponent },
       { path: 'import', component: ImportComponent },
       { path: 'action', component: ActionCardComponent },
     ],
   },
   {
-    path: ':cluster/config_group/:config_group',
+    path: ':cluster/configgroup/:configgroup',
     component: DetailComponent,
     canActivate: [AuthGuard],
     canActivateChild: [AuthGuard],
@@ -61,7 +62,7 @@ const clusterRoutes: Routes = [
       { path: '', redirectTo: 'main', pathMatch: 'full' },
       { path: 'main', component: MainInfoComponent },
       // ToDo hosts from config group
-      { path: 'host', component: HostComponent },
+      { path: 'host', component: ConfigGroupHostComponent },
       // ToDo Config from config group
       { path: 'config', component: ConfigComponent },
     ],
@@ -75,7 +76,7 @@ const clusterRoutes: Routes = [
       { path: '', redirectTo: 'main', pathMatch: 'full' },
       { path: 'main', component: MainInfoComponent },
       { path: 'config', component: ConfigComponent },
-      { path: 'config_group', component: ConfigGroupsComponent },
+      { path: 'configgroup', component: ConfigGroupsComponent },
       { path: 'status', component: StatusComponent },
       { path: 'import', component: ImportComponent },
       { path: 'action', component: ActionCardComponent },
@@ -121,7 +122,7 @@ export class ClusterRoutingModule {
 
 @NgModule({
   imports: [CommonModule, SharedModule, RouterModule, ClusterRoutingModule],
-  declarations: [ClusterListComponent, ServicesComponent, HostComponent, HcmapComponent],
+  declarations: [ClusterListComponent, ServicesComponent, HostComponent, HcmapComponent, ConfigGroupHostComponent],
 })
 export class ClusterModule {
 }

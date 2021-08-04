@@ -28,7 +28,7 @@ import { take } from 'rxjs/operators';
 export class AddConfigGroupComponent extends BaseFormDirective implements OnInit {
 
   ngOnInit(): void {
-    this.form = this.service.model('config_group').form;
+    this.form = this.service.model('configgroup').form;
   }
 
   save(): void {
