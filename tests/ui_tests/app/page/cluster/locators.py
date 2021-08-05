@@ -16,6 +16,31 @@ from selenium.webdriver.common.by import By
 from tests.ui_tests.app.helpers.locator import Locator
 
 
+class ClusterMainLocators:
+    """Cluster main page elements locators"""
+
+    text = Locator(By.XPATH, "//mat-card-content", "Cluster main page text")
+
+
+class ClusterServicesLocators:
+    """Cluster main page elements locators"""
+
+    add_services_btn = Locator(By.XPATH, "//button[@adcm_test='create-btn']", "Add services button")
+
+    class AddServicePopup:
+        """Popup for adding services"""
+
+        block = Locator(By.XPATH, "//mat-dialog-container", "Popup block")
+        service_row = Locator(By.XPATH, "//mat-list-option", "Service row")
+        create_btn = Locator(By.XPATH, "//button[./span[text()='Add']]", "Add button")
+        cancel_btn = Locator(By.XPATH, "//button[./span[text()='Cancel']]", "Cancel button")
+
+        class ServiceRow:
+            """Locators for services row"""
+
+            text = Locator(By.XPATH, ".//div[@class='mat-list-text']", "Service name")
+
+
 class ClusterImportLocators:
     """Cluster import page elements locators"""
 

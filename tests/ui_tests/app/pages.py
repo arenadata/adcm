@@ -407,6 +407,7 @@ class LoginPage(BasePage):
                 self.driver.refresh()
 
 
+@deprecated("Use ClusterListPage")
 class ClustersList(ListPage):
     @allure.step('Add new cluster')
     def add_new_cluster(self, name=None, description=None):
@@ -436,6 +437,7 @@ class ClustersList(ListPage):
         return ClusterDetails(self.driver)
 
 
+@deprecated("Use ClusterMainPage")
 class ClusterDetails(Details, ListPage):
 
     _host = bys.by_class('add-host2cluster')
@@ -519,6 +521,7 @@ class ProvidersList(ListPage):
         return self._delete_first_element()
 
 
+@deprecated("Use HostListPage")
 class HostsList(ListPage):
     @allure.step('Add new host')
     def add_new_host(self, fqdn=None, description=None):
