@@ -38,6 +38,7 @@ class ClusterPageMixin(BasePageObject):
 
     # /action /main etc.
     MENU_SUFFIX: str
+    MAIN_ELEMENTS: list
     cluster_id: int
     header: PageHeader
     footer: PageFooter
@@ -82,40 +83,34 @@ class ClusterPageMixin(BasePageObject):
     def open_actions_tab(self):
         self.find_and_click(ObjectPageMenuLocators.actions_tab)
 
+    @allure.step("Check all main elements on the page are presented")
+    def check_all_elements(self):
+        self.assert_displayed_elements(self.MAIN_ELEMENTS)
+
 
 class ClusterMainPage(ClusterPageMixin):
     """Cluster page Main menu"""
 
     MENU_SUFFIX = 'main'
-
-    @allure.step("Check all main elements on the page are presented")
-    def check_all_elements(self):
-        self.assert_displayed_elements(
-            [
-                ObjectPageLocators.title,
-                ObjectPageLocators.subtitle,
-                ClusterMainLocators.text,
-            ]
-        )
+    MAIN_ELEMENTS = [
+        ObjectPageLocators.title,
+        ObjectPageLocators.subtitle,
+        ClusterMainLocators.text,
+    ]
 
 
 class ClusterServicesPage(ClusterPageMixin):
     """Cluster page config menu"""
 
     MENU_SUFFIX = 'service'
-
-    @allure.step("Check all main elements on the page are presented")
-    def check_all_elements(self):
-        self.assert_displayed_elements(
-            [
-                ObjectPageLocators.title,
-                ObjectPageLocators.subtitle,
-                ClusterServicesLocators.add_services_btn,
-                CommonTable.header,
-                CommonTable.Pagination.next_page,
-                CommonTable.Pagination.previous_page,
-            ]
-        )
+    MAIN_ELEMENTS = [
+        ObjectPageLocators.title,
+        ObjectPageLocators.subtitle,
+        ClusterServicesLocators.add_services_btn,
+        CommonTable.header,
+        CommonTable.Pagination.next_page,
+        CommonTable.Pagination.previous_page,
+    ]
 
     def click_add_service_btn(self):
         self.find_and_click(ClusterServicesLocators.add_services_btn)
