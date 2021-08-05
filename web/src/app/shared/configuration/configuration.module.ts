@@ -31,7 +31,7 @@ import { FieldService } from './field.service';
 import { FieldComponent } from './field/field.component';
 import { ConfigFieldsComponent } from './fields/fields.component';
 import { GroupFieldsComponent } from './group-fields/group-fields.component';
-import { ConfigComponent } from './main/main.component';
+import { ConfigComponent } from './main/config.component';
 import { ItemComponent } from './scheme/item.component';
 import { RootComponent } from './scheme/root.component';
 import { SchemeComponent } from './scheme/scheme.component';
