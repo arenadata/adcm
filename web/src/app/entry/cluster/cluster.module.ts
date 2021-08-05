@@ -25,8 +25,9 @@ import { ServicesComponent } from '@app/components/cluster/services/services.com
 import { AuthGuard } from '../../core/auth/auth.guard';
 import { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';
 import { ServiceComponentsComponent } from '@app/components/service-components.component';
-import { ConfigGroupsComponent } from '../../shared/configuration/groups/groups.component';
+import { ConfigGroupsComponent } from '../../config-groups/pages/groups.component';
 import { ConfigGroupHostComponent } from '../../config-groups/host/host.component';
+import { loadConfigGroup } from '../../config-groups/loder';
 
 
 const clusterRoutes: Routes = [
@@ -47,24 +48,10 @@ const clusterRoutes: Routes = [
       { path: 'host', component: HostComponent },
       { path: 'host_component', component: HcmapComponent },
       { path: 'config', component: ConfigComponent },
-      { path: 'configgroup', component: ConfigGroupsComponent },
+      { path: 'configgroup', loadChildren: loadConfigGroup },
       { path: 'status', component: StatusComponent },
       { path: 'import', component: ImportComponent },
       { path: 'action', component: ActionCardComponent },
-    ],
-  },
-  {
-    path: ':cluster/configgroup/:configgroup',
-    component: DetailComponent,
-    canActivate: [AuthGuard],
-    canActivateChild: [AuthGuard],
-    children: [
-      { path: '', redirectTo: 'main', pathMatch: 'full' },
-      { path: 'main', component: MainInfoComponent },
-      // ToDo hosts from config group
-      { path: 'host', component: ConfigGroupHostComponent },
-      // ToDo Config from config group
-      { path: 'config', component: ConfigComponent },
     ],
   },
   {

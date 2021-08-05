@@ -33,7 +33,7 @@ import { environment } from '@env/environment';
 import { ServiceComponentService } from '@app/services/service-component.service';
 import { EntityNames } from '@app/models/entity-names';
 import { HttpResponseBase } from '@angular/common/http';
-import { ConfigGroupService } from '@app/config-groups/config-group.service';
+import { ConfigGroupService } from '@app/config-groups/service/config-group.service';
 import { setPathOfRoute } from '@app/store/navigation/navigation.store';
 
 export interface WorkerInstance {
