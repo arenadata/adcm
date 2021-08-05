@@ -151,8 +151,9 @@ class BasePageObject:
         expected_value = element.get_property('value') + text
 
         def send_keys_and_check():
-            element.send_keys(text)
-            assert self.find_element(locator, timeout).get_property('value') == expected_value
+            input_element = self.find_element(locator, timeout)
+            input_element.send_keys(text)
+            assert input_element.get_property('value') == expected_value
 
         wait_until_step_succeeds(send_keys_and_check, period=0.5, timeout=1.5)
 
