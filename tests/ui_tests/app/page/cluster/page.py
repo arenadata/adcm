@@ -88,7 +88,7 @@ class ClusterMainPage(ClusterPageMixin):
 
     MENU_SUFFIX = 'main'
 
-    @allure.step("Check main elements on page")
+    @allure.step("Check all main elements on the page are presented")
     def check_all_elements(self):
         self.assert_displayed_elements(
             [
@@ -104,7 +104,7 @@ class ClusterServicesPage(ClusterPageMixin):
 
     MENU_SUFFIX = 'service'
 
-    @allure.step("Check main elements on page")
+    @allure.step("Check all main elements on the page are presented")
     def check_all_elements(self):
         self.assert_displayed_elements(
             [
@@ -120,7 +120,7 @@ class ClusterServicesPage(ClusterPageMixin):
     def click_add_service_btn(self):
         self.find_and_click(ClusterServicesLocators.add_services_btn)
 
-    @allure.step("Check service {service_name} in cluster")
+    @allure.step("Add service {service_name} in cluster")
     def add_service_by_name(self, service_name: str):
         self.find_and_click(ClusterServicesLocators.add_services_btn)
         self.wait_element_visible(ClusterServicesLocators.AddServicePopup.block)
