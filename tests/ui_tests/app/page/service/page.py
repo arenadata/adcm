@@ -44,6 +44,7 @@ class ServicePageMixin(BasePageObject):
         self.footer = PageFooter(self.driver, self.base_url)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
         self.cluster_id = cluster_id
+        self.service_id = service_id
         self.toolbar = CommonToolbar(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url)
 
