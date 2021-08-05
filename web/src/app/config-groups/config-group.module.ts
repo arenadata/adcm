@@ -9,6 +9,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { Host2configgroupComponent } from '@app/config-groups/components/config-group-host-add/host2configgroup.component';
 import { MatListModule } from '@angular/material/list';
 import { AddingModule } from '@app/shared/add-component/adding.module';
+import { FormElementsModule } from '@app/shared/form-elements/form-elements.module';
 
 
 @NgModule({
@@ -19,7 +20,8 @@ import { AddingModule } from '@app/shared/add-component/adding.module';
     ConfigGroupRoutingModule,
     AdwpListModule,
     MatListModule,
-    AddingModule
+    AddingModule,
+    FormElementsModule
   ],
   exports: [
     AddConfigGroupComponent,
