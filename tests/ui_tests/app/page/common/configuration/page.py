@@ -82,7 +82,7 @@ class CommonConfigMenuObj(BasePageObject):
                 adcm_test, is_password
             ), f'Value in {adcm_test} field should be empty after reset'
 
-        wait_until_step_succeeds(assert_value, timeout=10, period=0.5)
+        wait_until_step_succeeds(assert_value, timeout=4, period=0.5)
 
     def reset_to_default(self, adcm_test: str):
         """Click reset button"""
