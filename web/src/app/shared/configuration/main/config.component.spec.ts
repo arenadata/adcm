@@ -17,7 +17,8 @@ import { FullyRenderedService } from '@app/core/services';
 import { TextBoxComponent } from '@app/shared/form-elements/text-box.component';
 import { SharedModule } from '@app/shared/shared.module';
 import { provideMockStore } from '@ngrx/store/testing';
-import { EMPTY, of } from 'rxjs';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { EMPTY } from 'rxjs';
 
 import { FieldService } from '../field.service';
 import { FieldComponent } from '../field/field.component';
@@ -25,8 +26,9 @@ import { ConfigFieldsComponent } from '../fields/fields.component';
 import { GroupFieldsComponent } from '../group-fields/group-fields.component';
 import { ToolsComponent } from '../tools/tools.component';
 import { IConfig } from '../types';
-import { ConfigComponent } from './main.component';
+import { ConfigComponent } from './config.component';
 import { MainService } from './main.service';
+import { ApiService } from '@app/core/api';
 
 const rawConfig: IConfig = {
   attr: {},
@@ -70,7 +72,7 @@ const rawConfig: IConfig = {
   ],
 };
 
-describe('Configuration : MainComponent >> ', () => {
+describe('Configuration : ConfigComponent >> ', () => {
   let component: ConfigComponent;
   let fixture: ComponentFixture<ConfigComponent>;
   let FieldServiceStub: Partial<FieldService>;
@@ -86,17 +88,29 @@ describe('Configuration : MainComponent >> ', () => {
   beforeEach(async () => {
     FieldServiceStub = new FieldService(new FormBuilder());
     TestBed.configureTestingModule({
-      imports: [NoopAnimationsModule, SharedModule],
+      imports: [
+        NoopAnimationsModule,
+        SharedModule,
+        HttpClientTestingModule,
+      ],
       declarations: [ConfigComponent, ToolsComponent, ConfigFieldsComponent, GroupFieldsComponent, FieldComponent, TextBoxComponent],
-      providers: [provideMockStore({ initialState }), { provide: FieldService, useValue: FieldServiceStub }, { provide: FullyRenderedService, useValue: { stableView: () => { } } }],
+      providers: [
+        provideMockStore({ initialState }),
+        { provide: FieldService, useValue: FieldServiceStub },
+        {
+          provide: FullyRenderedService,
+          useValue: { stableView: () => { } }
+        },
+        ApiService,
+      ],
       schemas: [NO_ERRORS_SCHEMA],
     })
-      .overrideComponent(ConfigComponent, {
-        set: {
-          providers: [{ provide: MainService, useClass: MockMainService }],
-        },
-      })
-      .compileComponents();
+    .overrideComponent(ConfigComponent, {
+      set: {
+        providers: [{ provide: MainService, useClass: MockMainService }],
+      },
+    })
+    .compileComponents();
   });
 
   beforeEach(() => {
@@ -129,8 +143,7 @@ describe('Configuration : MainComponent >> ', () => {
 
   it('the save button click should initialize form again', () => {
     fixture.detectChanges();
-    component.rawConfig = rawConfig;
-    component.config$ = of(rawConfig);
+    component.rawConfig.next(rawConfig);
     component.cd.detectChanges();
     component.tools.disabledSave = component.fields.form.invalid;
     component.cd.detectChanges();

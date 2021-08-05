@@ -13,30 +13,31 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, In
 import { EventMessage, SocketState } from '@app/core/store';
 import { SocketListenerDirective } from '@app/shared/directives';
 import { Store } from '@ngrx/store';
-import { Observable, of } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { BehaviorSubject, Observable, of } from 'rxjs';
+import { catchError, finalize, tap } from 'rxjs/operators';
 
 import { ConfigFieldsComponent } from '../fields/fields.component';
 import { HistoryComponent } from '../tools/history.component';
 import { ToolsComponent } from '../tools/tools.component';
 import { IConfig } from '../types';
 import { historyAnime, ISearchParam, MainService } from './main.service';
+import { ClusterService } from '@app/core/services/cluster.service';
 
 @Component({
   selector: 'app-config-form',
-  templateUrl: './main.component.html',
-  styleUrls: ['./main.component.scss'],
+  templateUrl: './config.component.html',
+  styleUrls: ['./config.component.scss'],
   animations: historyAnime,
   providers: [MainService],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConfigComponent extends SocketListenerDirective implements OnInit {
   loadingStatus = 'Loading...';
-  rawConfig: IConfig;
+  rawConfig = new BehaviorSubject<IConfig>(null);
   saveFlag = false;
   historyShow = false;
   isLock = false;
-  config$: Observable<IConfig>;
+  isLoading = false;
 
   @ViewChild('fls') fields: ConfigFieldsComponent;
   @ViewChild('history') historyComponent: HistoryComponent;
@@ -46,7 +47,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
   @Input()
   set configUrl(url: string) {
     this.url = url;
-    this.config$ = this.getConfig();
+    this.getConfig().subscribe();
   }
 
   @Output()
@@ -60,20 +61,29 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
     return `${this.url}history/`;
   }
 
-  constructor(private service: MainService, public cd: ChangeDetectorRef, socket: Store<SocketState>) {
+  constructor(
+    private service: MainService,
+    public cd: ChangeDetectorRef,
+    socket: Store<SocketState>,
+    private clusterService: ClusterService,
+  ) {
     super(socket);
   }
 
   ngOnInit() {
-    if (!this.url) this.configUrl = this.service.Current?.config;
+    if (!this.url) {
+      this.clusterService.worker$
+        .pipe(this.takeUntil())
+        .subscribe(() => this.configUrl = this.service.Current?.config);
+    }
     super.startListenSocket();
   }
 
   onReady() {
     this.tools.isAdvanced = this.fields.isAdvanced;
-    this.tools.description.setValue(this.rawConfig.description);
+    this.tools.description.setValue(this.rawConfig.value.description);
     this.filter(this.tools.filterParams);
-    this.service.getHistoryList(this.saveUrl, this.rawConfig.id).subscribe((h) => {
+    this.service.getHistoryList(this.saveUrl, this.rawConfig.value.id).subscribe((h) => {
       this.historyComponent.compareConfig = h;
       this.tools.disabledHistory = !h.length;
       this.cd.detectChanges();
@@ -93,13 +103,15 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
     ) {
       this.isLock = m.object.details.value === 'locked';
       this.reset();
-      this.config$ = this.getConfig();
+      this.getConfig().subscribe();
     }
   }
 
   getConfig(url = this.cUrl): Observable<IConfig> {
+    this.isLoading = true;
     return this.service.getConfig(url).pipe(
-      tap((c) => (this.rawConfig = c)),
+      tap((c) => this.rawConfig.next(c)),
+      finalize(() => this.isLoading = false),
       catchError(() => {
         this.loadingStatus = 'There is no config for this object.';
         return of(null);
@@ -112,16 +124,18 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
     if (form.valid) {
       this.saveFlag = true;
       this.historyComponent.reset();
-      const config = this.service.parseValue(this.fields.form.value, this.rawConfig.config);
+      const config = this.service.parseValue(this.fields.form.value, this.rawConfig.value.config);
       const send = { config, attr: this.fields.attr, description: this.tools.description.value };
-      this.config$ = this.service.send(this.saveUrl, send).pipe(
+      this.isLoading = true;
+      this.service.send(this.saveUrl, send).pipe(
         tap((c) => {
           this.saveFlag = false;
-          this.rawConfig = c;
+          this.rawConfig.next(c);
           this.cd.detectChanges();
           this.event.emit({ name: 'send', data: this.fields });
-        })
-      );
+        }),
+        finalize(() => this.isLoading = false),
+      ).subscribe();
     } else {
       Object.keys(form.controls).forEach((controlName) => form.controls[controlName].markAsTouched());
     }
@@ -129,7 +143,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
 
   changeVersion(id: number) {
     this.reset();
-    this.config$ = this.getConfig(`${this.saveUrl}${id}/`);
+    this.getConfig(`${this.saveUrl}${id}/`).subscribe();
   }
 
   compareVersion(ids: number[]) {

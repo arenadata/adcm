@@ -14,3 +14,29 @@
   name: test_cluster
   version: 1.5
   edition: community
+  actions:
+    test_action:
+      type: job
+      script: dummy_action.yaml
+      script_type: ansible
+      states:
+        available:
+          - created
+        on_success: installed
+  import:
+     Pre-uploaded Dummy cluster to import:
+          versions:
+             max: 3.0
+             min: 2.2
+
+- type: service
+  name: test_service
+  description: Test service
+  version: '1.2'
+  actions:
+    test_action:
+      type: job
+      script: dummy_action.yaml
+      script_type: ansible
+      states:
+          available: any

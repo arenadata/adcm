@@ -36,3 +36,16 @@ class ObjectPageLocators:
         "//mat-drawer-content/mat-card/mat-card-header/div/mat-card-subtitle",
         "Subtitle on object page",
     )
+
+
+class ObjectPageMenuLocators:
+    """Menu elements locators"""
+
+    main_tab = Locator(By.XPATH, "//a[@adcm_test='tab_main']", "Tab main")
+    services_tab = Locator(By.XPATH, "//a[@adcm_test='tab_service']", "Tab services")
+    hosts_tab = Locator(By.XPATH, "//a[@adcm_test='tab_host']", "Tab hosts")
+    components_tab = Locator(By.XPATH, "//a[@adcm_test='tab_host_component']", "Tab components")
+    config_tab = Locator(By.XPATH, "//a[@adcm_test='tab_config']", "Tab config")
+    status_tab = Locator(By.XPATH, "//a[@adcm_test='tab_status']", "Tab status")
+    import_tab = Locator(By.XPATH, "//a[@adcm_test='tab_import']", "Tab import")
+    actions_tab = Locator(By.XPATH, "//a[@adcm_test='tab_action']", "Tab actions")
