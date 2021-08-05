@@ -7,7 +7,9 @@ from tests.ui_tests.app.locators import Common
 from .utils import prepare_cluster_and_get_config
 
 
-def test_password_noconfirm_false_required_false(sdk_client_fs: ADCMClient, app_fs, login_to_adcm):
+def test_password_noconfirm_false_required_false(
+    sdk_client_fs: ADCMClient, app_fs, login_to_adcm_over_api
+):
     path = get_data_dir(__file__) + "/password_no_confirm_false_required_false"
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     with allure.step(
@@ -16,7 +18,9 @@ def test_password_noconfirm_false_required_false(sdk_client_fs: ADCMClient, app_
         assert config.save_button_status()
 
 
-def test_password_noconfirm_false_required_true(sdk_client_fs: ADCMClient, app_fs, login_to_adcm):
+def test_password_noconfirm_false_required_true(
+    sdk_client_fs: ADCMClient, app_fs, login_to_adcm_over_api
+):
     path = get_data_dir(__file__) + "/password_no_confirm_false_required_true"
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     with allure.step(
@@ -33,7 +37,9 @@ def test_password_noconfirm_false_required_true(sdk_client_fs: ADCMClient, app_f
         assert 'Confirm [password] is required!' in forms, forms
 
 
-def test_password_noconfirm_true_required_false(sdk_client_fs: ADCMClient, app_fs, login_to_adcm):
+def test_password_noconfirm_true_required_false(
+    sdk_client_fs: ADCMClient, app_fs, login_to_adcm_over_api
+):
     path = get_data_dir(__file__) + "/password_no_confirm_true_required_false"
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     with allure.step(
@@ -45,7 +51,9 @@ def test_password_noconfirm_true_required_false(sdk_client_fs: ADCMClient, app_f
         assert len(forms) == 1, forms
 
 
-def test_password_noconfirm_true_required_true(sdk_client_fs: ADCMClient, app_fs, login_to_adcm):
+def test_password_noconfirm_true_required_true(
+    sdk_client_fs: ADCMClient, app_fs, login_to_adcm_over_api
+):
     path = get_data_dir(__file__) + "/password_no_confirm_true_required_true"
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     with allure.step(
