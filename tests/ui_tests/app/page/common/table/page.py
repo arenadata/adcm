@@ -25,6 +25,8 @@ from tests.ui_tests.app.page.common.table.locator import CommonTable
 class CommonTableObj(BasePageObject):
     """Class for manipulating with common tables elements."""
 
+    LOADING_STATE_TEXT = 'autorenew'
+
     def __init__(self, driver, base_url, table_class_locators=CommonTable):
         super().__init__(driver, base_url)
         self.table = table_class_locators
