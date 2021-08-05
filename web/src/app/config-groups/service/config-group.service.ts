@@ -3,14 +3,13 @@ import { forkJoin, Observable } from 'rxjs';
 import { EntityService } from '../../abstract/entity-service';
 import { ApiService } from '../../core/api';
 import { environment } from '../../../environments/environment';
-import { ConfigGroupModule } from '@app/config-groups/config-group.module';
 import { ConfigGroup } from '@app/config-groups/model/config-group.model';
 import { Host } from '@app/core/types';
 import { map } from 'rxjs/operators';
 
 
 @Injectable({
-  providedIn: ConfigGroupModule
+  providedIn: 'root'
 })
 export class ConfigGroupService extends EntityService<ConfigGroup> {
 

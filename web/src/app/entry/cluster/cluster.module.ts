@@ -25,7 +25,6 @@ import { ServicesComponent } from '@app/components/cluster/services/services.com
 import { AuthGuard } from '../../core/auth/auth.guard';
 import { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';
 import { ServiceComponentsComponent } from '@app/components/service-components.component';
-import { ConfigGroupsComponent } from '../../config-groups/pages/groups.component';
 import { ConfigGroupHostComponent } from '../../config-groups/host/host.component';
 import { loadConfigGroup } from '../../config-groups/loder';
 
@@ -63,7 +62,6 @@ const clusterRoutes: Routes = [
       { path: '', redirectTo: 'main', pathMatch: 'full' },
       { path: 'main', component: MainInfoComponent },
       { path: 'config', component: ConfigComponent },
-      { path: 'configgroup', component: ConfigGroupsComponent },
       { path: 'status', component: StatusComponent },
       { path: 'import', component: ImportComponent },
       { path: 'action', component: ActionCardComponent },
