@@ -11,14 +11,17 @@
 # limitations under the License.
 # pylint: disable=W0621
 import os
-import sys
 import tarfile
-from typing import Optional
+from typing import Optional, List
+
 
 import pytest
+import sys
+
 from _pytest.python import Function
 from allure_commons.model2 import TestResult, Parameter
 from allure_pytest.listener import AllureListener
+
 
 pytest_plugins = "adcm_pytest_plugin"
 
@@ -90,3 +93,11 @@ def _pack_bundle(stack_dir, archive_dir):
         for sub in os.listdir(stack_dir):
             tar.add(os.path.join(stack_dir, sub), arcname=sub)
     return archive_name
+
+
+@pytest.fixture()
+def bundle_archives(request, tmp_path) -> List[str]:
+    """
+    Prepare multiple bundles as in bundle_archive fixture
+    """
+    return [_pack_bundle(bundle_path, tmp_path) for bundle_path in request.param]
