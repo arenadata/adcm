@@ -41,7 +41,7 @@ import { HistoryComponent } from './tools/history.component';
 import { SearchComponent } from './tools/search.component';
 import { ToolsComponent } from './tools/tools.component';
 import { YspecService } from './yspec/yspec.service';
-import { ConfigGroupsComponent } from './groups/groups.component';
+import { ConfigGroupsComponent } from '../../config-groups/pages/groups.component';
 import { AdwpListModule } from '@adwp-ui/widgets';
 import { AddingModule } from '@app/shared/add-component/adding.module';
 

@@ -33,7 +33,7 @@ export type TypeName =
   'component' |
   'configgroup' |
   'host2configgroup';
-export type Entities = Cluster | Service | Host | Provider | Job | Task | Bundle | IConfigGroup;
+export type Entities = Cluster | Service | Host | Provider | Job | Task | Bundle;
 
 /**
  *```
@@ -66,7 +66,7 @@ export interface ApiBase {
   status?: number | string;
 }
 
-export interface ApiFlat extends ApiBase {
+export interface ApiFlat {
   id: number;
   object_id: number;
   object_type: TypeName;
@@ -105,14 +105,6 @@ export interface Service extends ApiBase {
   hostcomponent: string;
   display_name: string;
   cluster_id?: number;
-}
-
-export interface IConfigGroup extends ApiFlat {
-  name: string;
-  description?: string;
-  hosts: unknown[];
-  config: string;
-  typeName: TypeName;
 }
 
 export interface CanLicensed {

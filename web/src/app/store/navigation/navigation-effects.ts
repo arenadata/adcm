@@ -19,7 +19,7 @@ import {
 } from '@app/store/navigation/navigation.store';
 import { EventMessage, socketResponse } from '@app/core/store/sockets/socket.reducer';
 import { IClusterService } from '@app/models/cluster-service';
-import { ConfigGroupService } from '@app/config-groups/config-group.service';
+import { ConfigGroupService } from '@app/config-groups/service/config-group.service';
 
 @Injectable()
 export class NavigationEffects {

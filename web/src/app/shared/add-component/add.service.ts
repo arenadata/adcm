@@ -24,7 +24,8 @@ import { Host, Prototype, ServicePrototype, StackBase, TypeName } from '@app/cor
 import { DialogComponent } from '@app/shared/components/dialog.component';
 import { GenName } from './naming';
 import { MainService } from '@app/shared/configuration/main/main.service';
-import { ConfigGroupService } from '@app/config-groups/config-group.service';
+import { ConfigGroupService } from '@app/config-groups/service/config-group.service';
+import { ConfigGroup } from '@app/config-groups/model/config-group.model';
 
 export interface FormModel {
   name: string;
@@ -199,23 +200,12 @@ export class AddService {
     return this.stack.upload(data).pipe(catchError((e) => throwError(e)));
   }
 
-  addConfigGroup<T>(data: Partial<T>): Observable<any> {
-    const object_type = this.Current.typeName;
-    const object_id = this.Current.id;
-
-    return this.configGroup.add(object_type, object_id, data);
+  addConfigGroup(data: ConfigGroup): Observable<unknown> {
+    return this.configGroup.add(data);
   }
 
   getHostListForCurrentCluster() {
-    return this.api.get<Host[]>(this.cluster.Cluster.host).pipe(
-      map((hosts: Host[]) =>
-        hosts
-          .map((host) => ({
-            ...host,
-            name: host.fqdn,
-          }))
-      )
-    );
+    return this.configGroup.getHostListForCurrentCluster(this.cluster.Cluster.host);
   }
 
   addHostToConfigGroup(data: { host: number, group: number }[]) {

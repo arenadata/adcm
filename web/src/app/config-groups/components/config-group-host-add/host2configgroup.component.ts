@@ -11,13 +11,13 @@
 // limitations under the License.
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatSelectionList, MatSelectionListChange } from '@angular/material/list';
-import { SelectOption } from '@app/core/types';
+import { SelectOption } from '../../../core/types';
 import { Observable } from 'rxjs';
 
-import { BaseFormDirective } from './base-form.directive';
+import { BaseFormDirective } from '../../../shared/add-component/base-form.directive';
 
 @Component({
-  selector: 'app-add-host2configgroup',
+  selector: 'app-config-group-host-add',
   template: `
     <ng-container *ngIf="options$ | async as hosts">
       <mat-selection-list #listServices (selectionChange)="selectAll($event)">
@@ -43,18 +43,18 @@ export class Host2configgroupComponent extends BaseFormDirective implements OnIn
   @ViewChild('listServices')
   private listServices: MatSelectionList;
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.options$ = this.service.getHostListForCurrentCluster();
   }
 
-  selectAll(e: MatSelectionListChange) {
+  selectAll(e: MatSelectionListChange): void {
     if (!e.option.value) {
       if (e.option.selected) this.listServices.selectAll();
       else this.listServices.deselectAll();
     }
   }
 
-  save() {
+  save(): void {
     const groupId = this.service.Current.id;
     const result = this.listServices.selectedOptions.selected.filter(a => a.value).map(a => ({
       host: +a.value.id,

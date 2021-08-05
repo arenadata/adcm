@@ -25,8 +25,6 @@ import { Host2clusterComponent } from './host2cluster.component';
 import { ProviderComponent } from './provider.component';
 import { ServiceComponent } from './service.component';
 import { ControlsComponent } from './controls.component';
-import { AddConfigGroupComponent } from '@app/shared/add-component/config-group.component';
-import { Host2configgroupComponent } from '@app/shared/add-component/host2configgroup.component';
 
 @NgModule({
   declarations: [
@@ -39,8 +37,6 @@ import { Host2configgroupComponent } from '@app/shared/add-component/host2config
     ServiceComponent,
     BaseFormDirective,
     ControlsComponent,
-    AddConfigGroupComponent,
-    Host2configgroupComponent
   ],
   imports: [CommonModule, MaterialModule, StuffModule, FormsModule, ReactiveFormsModule, FormElementsModule],
   exports: [
@@ -51,7 +47,7 @@ import { Host2configgroupComponent } from '@app/shared/add-component/host2config
     ServiceComponent,
     Host2clusterComponent,
     BaseFormDirective,
-    Host2configgroupComponent
+    ControlsComponent,
   ],
   entryComponents: [AddFormComponent]
 })

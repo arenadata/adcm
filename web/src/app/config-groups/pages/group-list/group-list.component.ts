@@ -1,13 +1,13 @@
 import { Component } from '@angular/core';
-import { TypeName } from '@app/core/types';
-import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
+import { TypeName } from '../../../core/types';
+import { AdwpListDirective } from '../../../abstract-directives/adwp-list.directive';
 import { IColumns } from '@adwp-ui/widgets';
-import { ListFactory } from '@app/factories/list-factory';
+import { ListFactory } from '../../../factories/list-factory';
 
 @Component({
-  selector: 'app-config-groups',
+  selector: 'app-config-group-list',
   template: `
-    <app-add-button [name]="type" class="add-button">Add config group</app-add-button>
+    <!--    <app-add-button [name]="type" class="add-button">Add config group</app-add-button>-->
 
     <adwp-list
       [columns]="listColumns"
@@ -24,7 +24,7 @@ import { ListFactory } from '@app/factories/list-factory';
   `,
   styles: [':host { flex: 1; }', '.add-button {position:fixed; right: 20px;top:120px;}'],
 })
-export class ConfigGroupsComponent extends AdwpListDirective<any> {
+export class ConfigGroupListComponent extends AdwpListDirective<any> {
   type: TypeName = 'configgroup';
 
   listColumns: IColumns<any> = [

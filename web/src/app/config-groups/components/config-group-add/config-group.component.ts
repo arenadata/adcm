@@ -11,12 +11,13 @@
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
 
-import { BaseFormDirective } from './base-form.directive';
-import { clearEmptyField } from '@app/core/types';
+import { BaseFormDirective } from '../../../shared/add-component/base-form.directive';
+import { clearEmptyField } from '../../../core/types';
 import { take } from 'rxjs/operators';
+import { ConfigGroup } from '../../model/config-group.model';
 
 @Component({
-  selector: 'app-add-config-group',
+  selector: 'app-config-group-add',
   template: `
     <ng-container [formGroup]="form">
       <app-input [form]="form" [label]="'Name'" [controlName]="'name'" [isRequired]="true"></app-input>
@@ -32,7 +33,7 @@ export class AddConfigGroupComponent extends BaseFormDirective implements OnInit
   }
 
   save(): void {
-    const data = clearEmptyField(this.form.value);
+    const data = clearEmptyField(this.form.value) as ConfigGroup;
 
     this.service
       .addConfigGroup(data)
