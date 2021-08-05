@@ -8,7 +8,6 @@ import { IssueMessageComponent } from '../../app/components/issue-message/issue-
 import { IssueMessageItemComponent } from '../../app/components/issue-message/issue-message-item/issue-message-item.component';
 import { IssueMessagePlaceholderPipe } from '../../app/pipes/issue-message-placeholder.pipe';
 import { IssueMessageRefComponent } from '../../app/components/issue-message/issue-message-ref/issue-message-ref.component';
-import { IMPlaceholderItemType } from '../../app/models/issue-message';
 import { PopoverDirective } from '../../app/directives/popover.directive';
 import { ISSUE_MESSAGES_DEFAULT_MOCK, ISSUE_MESSAGES_VERY_LONG_MOCK } from './mock';
 

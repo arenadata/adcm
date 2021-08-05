@@ -5,7 +5,6 @@ import { MatButtonModule } from '@angular/material/button';
 
 import { IssueMessageComponent } from '../../app/components/issue-message/issue-message.component';
 import { IssueMessageService } from '../../app/services/issue-message.service';
-import { IMPlaceholderItemType } from '../../app/models/issue-message';
 import { IssueMessageItemComponent } from '../../app/components/issue-message/issue-message-item/issue-message-item.component';
 import { IssueMessagePlaceholderPipe } from '../../app/pipes/issue-message-placeholder.pipe';
 import { IssueMessageRefComponent } from '../../app/components/issue-message/issue-message-ref/issue-message-ref.component';

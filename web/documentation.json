@@ -24145,7 +24145,7 @@
     "components": [
         {
             "name": "ActionCardComponent",
-            "id": "component-ActionCardComponent-17a6cabcf01769f3ed4953934c00e8d1",
+            "id": "component-ActionCardComponent-3dd836074a9398d24b79c08bfe1be3c1",
             "file": "src/app/shared/components/actions/action-card/action-card.component.ts",
             "encapsulation": [],
             "entryComponents": [],
@@ -24214,7 +24214,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 39,
+                    "line": 43,
                     "deprecated": false,
                     "deprecationMessage": ""
                 },
@@ -24231,7 +24231,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 45,
+                    "line": 49,
                     "deprecated": false,
                     "deprecationMessage": "",
                     "jsdoctags": [
@@ -24298,7 +24298,7 @@
             "description": "",
             "rawdescription": "\n",
             "type": "component",
-            "sourceCode": "import { Component, OnInit } from '@angular/core';\nimport { Store } from '@ngrx/store';\nimport { Observable, of } from 'rxjs';\n\nimport { ClusterService } from '@app/core/services/cluster.service';\nimport { EventMessage, SocketState } from '@app/core/store';\nimport { Cluster, Entities, isIssue } from '@app/core/types';\nimport { SocketListenerDirective } from '@app/shared/directives';\nimport { ActionsService } from '../actions.service';\n\n@Component({\n  selector: 'app-action-card',\n  template: `\n    <ng-container *ngIf=\"actions$ | async as actions\">\n      <p *ngIf=\"!actions.length\">Nothing to display.</p>\n      <app-card-item [items]=\"actions\" [cluster]=\"clusterData\"></app-card-item>\n    </ng-container>\n  `,\n})\nexport class ActionCardComponent extends SocketListenerDirective implements OnInit {\n  model: Entities;\n  actions$: Observable<any[]> = of([]);\n\n  constructor(private details: ClusterService, private service: ActionsService, socket: Store<SocketState>) {\n    super(socket);\n  }\n\n  ngOnInit(): void {\n    if (!isIssue(this.details.Current.issue))\n      this.actions$ = this.service.getActions(this.details.Current.action);\n    super.startListenSocket();\n  }\n\n  socketListener(m: EventMessage) {\n    const type = m.object.type === 'component' ? 'servicecomponent' : m.object.type;\n    if (this.details.Current?.typeName === type && this.details.Current?.id === m.object.id && (m.event === 'change_state' || m.event === 'clear_issue')) {\n      this.actions$ = this.service.getActions(this.details.Current.action);\n    }\n  }\n\n  get clusterData() {\n    const { id, hostcomponent } = this.details.Cluster || (this.details.Current as Cluster);\n    return { id, hostcomponent };\n  }\n}\n",
+            "sourceCode": "import { Component, OnInit } from '@angular/core';\nimport { Store } from '@ngrx/store';\nimport { Observable, of } from 'rxjs';\n\nimport { ClusterService } from '@app/core/services/cluster.service';\nimport { EventMessage, SocketState } from '@app/core/store';\nimport { Cluster, Entities, isIssue } from '@app/core/types';\nimport { SocketListenerDirective } from '@app/shared/directives';\nimport { ActionsService } from '../actions.service';\n\n@Component({\n  selector: 'app-action-card',\n  template: `\n    <ng-container *ngIf=\"actions$ | async as actions\">\n      <p *ngIf=\"!actions.length\">Nothing to display.</p>\n      <app-card-item [items]=\"actions\" [cluster]=\"clusterData\"></app-card-item>\n    </ng-container>\n  `,\n})\nexport class ActionCardComponent extends SocketListenerDirective implements OnInit {\n  model: Entities;\n  actions$: Observable<any[]> = of([]);\n\n  constructor(\n    private clusterService: ClusterService,\n    private service: ActionsService,\n    socket: Store<SocketState>,\n  ) {\n    super(socket);\n  }\n\n  ngOnInit(): void {\n    if (!isIssue(this.clusterService.Current.issue))\n      this.actions$ = this.service.getActions(this.clusterService.Current.action);\n    super.startListenSocket();\n  }\n\n  socketListener(m: EventMessage) {\n    const type = m.object.type === 'component' ? 'servicecomponent' : m.object.type;\n    if (this.clusterService.Current?.typeName === type && this.clusterService.Current?.id === m.object.id && (m.event === 'change_state' || m.event === 'clear_issue')) {\n      this.actions$ = this.service.getActions(this.clusterService.Current.action);\n    }\n  }\n\n  get clusterData() {\n    const { id, hostcomponent } = this.clusterService.Cluster || (this.clusterService.Current as Cluster);\n    return { id, hostcomponent };\n  }\n}\n",
             "assetsDirs": [],
             "styleUrlsData": "",
             "stylesData": "",
@@ -24309,7 +24309,7 @@
                 "deprecationMessage": "",
                 "args": [
                     {
-                        "name": "details",
+                        "name": "clusterService",
                         "type": "ClusterService",
                         "deprecated": false,
                         "deprecationMessage": ""
@@ -24330,7 +24330,7 @@
                 "line": 33,
                 "jsdoctags": [
                     {
-                        "name": "details",
+                        "name": "clusterService",
                         "type": "ClusterService",
                         "deprecated": false,
                         "deprecationMessage": "",
@@ -24369,7 +24369,7 @@
                         "name": "clusterData",
                         "type": "",
                         "returnType": "",
-                        "line": 52
+                        "line": 56
                     }
                 }
             }
@@ -29138,7 +29138,7 @@
         },
         {
             "name": "DetailComponent",
-            "id": "component-DetailComponent-36316d953187ff148d248b147e25ecdb",
+            "id": "component-DetailComponent-7ae39bc1ae953104bf2c12a9bd645450",
             "file": "src/app/shared/details/detail.component.ts",
             "encapsulation": [],
             "entryComponents": [],
@@ -29297,7 +29297,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 161,
+                    "line": 164,
                     "deprecated": false,
                     "deprecationMessage": "",
                     "jsdoctags": [
@@ -29445,7 +29445,7 @@
             "description": "",
             "rawdescription": "\n",
             "type": "component",
-            "sourceCode": "import { Component, OnDestroy, OnInit } from '@angular/core';\nimport { ActivatedRoute, convertToParamMap, ParamMap } from '@angular/router';\nimport { Store } from '@ngrx/store';\nimport { Observable } from 'rxjs';\nimport { switchMap, tap } from 'rxjs/operators';\n\nimport { ChannelService } from '@app/core/services';\nimport { keyChannelStrim } from '@app/core/services';\nimport { WorkerInstance, ClusterService } from '@app/core/services/cluster.service';\nimport { EventMessage, getNavigationPath, setPathOfRoute, SocketState } from '@app/core/store';\nimport { Cluster, Host, IAction, Issue, Job, isIssue, EmmitRow } from '@app/core/types';\nimport { SocketListenerDirective } from '@app/shared/directives/socketListener.directive';\nimport { IDetails } from './navigation.service';\nimport { AdcmEntity } from '@app/models/entity';\n\n@Component({\n  selector: 'app-detail',\n  templateUrl: './detail.component.html',\n  styleUrls: ['./detail.component.scss'],\n})\nexport class DetailComponent extends SocketListenerDirective implements OnInit, OnDestroy {\n  request$: Observable<WorkerInstance>;\n  upgradable = false;\n  actions: IAction[] = [];\n  status: number | string;\n  issue: Issue;\n  current: IDetails;\n  currentName = '';\n\n  navigationPath: Observable<AdcmEntity[]> = this.store.select(getNavigationPath).pipe(this.takeUntil());\n\n  constructor(\n    socket: Store<SocketState>,\n    private route: ActivatedRoute,\n    private service: ClusterService,\n    private channel: ChannelService,\n    private store: Store,\n  ) {\n    super(socket);\n  }\n\n  get Current() {\n    return this.service.Current;\n  }\n\n  ngOnInit(): void {\n    this.request$ = this.route.paramMap.pipe(\n      switchMap((param) => this.service.getContext(param)),\n      tap((w) => this.run(w))\n    );\n\n    super.startListenSocket();\n  }\n\n  ngOnDestroy(): void {\n    this.service.clearWorker();\n  }\n\n  get isIssue() {\n    return isIssue(this.issue);\n  }\n\n  run(w: WorkerInstance) {\n    const {\n      id,\n      name,\n      typeName,\n      action,\n      actions,\n      issue,\n      status,\n      prototype_name,\n      prototype_display_name,\n      prototype_version,\n      bundle_id,\n      state,\n    } = w.current;\n    const { upgradable, upgrade, hostcomponent } = w.current as Cluster;\n    const { log_files, objects } = w.current as Job;\n    const { provider_id } = w.current as Host;\n\n    this.currentName = name;\n    this.actions = actions;\n    this.upgradable = upgradable;\n    this.status = status;\n\n    const parent = w.current.typeName === 'cluster' ? null : w.cluster;\n    this.issue = issue;\n\n    this.current = {\n      parent,\n      id,\n      name,\n      typeName,\n      actions,\n      action,\n      issue,\n      upgradable,\n      upgrade,\n      status,\n      state,\n      log_files,\n      objects,\n      prototype_name,\n      prototype_display_name,\n      prototype_version,\n      provider_id,\n      bundle_id,\n      hostcomponent,\n    };\n  }\n\n  scroll(stop: { direct: -1 | 1 | 0; screenTop: number }) {\n    this.channel.next(keyChannelStrim.scroll, stop);\n  }\n\n  reset() {\n    this.request$ = this.service.reset().pipe(\n      this.takeUntil(),\n      tap((a) => this.run(a))\n    );\n  }\n\n  socketListener(m: EventMessage) {\n    if ((m.event === 'create' || m.event === 'delete') && m.object.type === 'bundle') {\n      this.reset();\n      return;\n    }\n\n    const type = m.object.type === 'component' ? 'servicecomponent' : m.object.type;\n    if (this.Current?.typeName === type && this.Current?.id === m.object.id) {\n      if (this.service.Current.typeName === 'job' && (m.event === 'change_job_status' || m.event === 'add_job_log')) {\n        this.reset();\n        return;\n      }\n\n      if (m.event === 'change_state' || m.event === 'upgrade') {\n        this.reset();\n        return;\n      }\n      if (m.event === 'clear_issue') this.issue = {};\n      if (m.event === 'raise_issue') this.issue = m.object.details.value;\n      if (m.event === 'change_status') this.status = +m.object.details.value;\n    }\n\n    // parent\n    if (this.service.Cluster?.id === m.object.id && this.Current?.typeName !== 'cluster' && type === 'cluster' && m.event === 'clear_issue') this.issue = {};\n  }\n\n  refresh(event: EmmitRow): void {\n    const { row } = event;\n\n    const params: ParamMap = convertToParamMap({ cluster: row.id });\n    this.store.dispatch(setPathOfRoute({ params }));\n\n  }\n}\n",
+            "sourceCode": "import { Component, OnDestroy, OnInit } from '@angular/core';\nimport { ActivatedRoute, convertToParamMap, ParamMap } from '@angular/router';\nimport { Store } from '@ngrx/store';\nimport { Observable } from 'rxjs';\nimport { switchMap, tap } from 'rxjs/operators';\n\nimport { ChannelService } from '@app/core/services';\nimport { keyChannelStrim } from '@app/core/services';\nimport { WorkerInstance, ClusterService } from '@app/core/services/cluster.service';\nimport { EventMessage, getNavigationPath, setPathOfRoute, SocketState } from '@app/core/store';\nimport { Cluster, Host, IAction, Issue, Job, isIssue, EmmitRow } from '@app/core/types';\nimport { SocketListenerDirective } from '@app/shared/directives/socketListener.directive';\nimport { IDetails } from './navigation.service';\nimport { AdcmEntity } from '@app/models/entity';\n\n@Component({\n  selector: 'app-detail',\n  templateUrl: './detail.component.html',\n  styleUrls: ['./detail.component.scss'],\n})\nexport class DetailComponent extends SocketListenerDirective implements OnInit, OnDestroy {\n  request$: Observable<WorkerInstance>;\n  upgradable = false;\n  actions: IAction[] = [];\n  status: number | string;\n  issue: Issue;\n  current: IDetails;\n  currentName = '';\n\n  navigationPath: Observable<AdcmEntity[]> = this.store.select(getNavigationPath).pipe(this.takeUntil());\n\n  constructor(\n    socket: Store<SocketState>,\n    private route: ActivatedRoute,\n    private service: ClusterService,\n    private channel: ChannelService,\n    private store: Store,\n  ) {\n    super(socket);\n  }\n\n  get Current() {\n    return this.service.Current;\n  }\n\n  ngOnInit(): void {\n    this.request$ = this.route.paramMap.pipe(\n      switchMap((param) => this.service.getContext(param)),\n      tap((w) => this.run(w))\n    );\n\n    super.startListenSocket();\n  }\n\n  ngOnDestroy(): void {\n    this.service.clearWorker();\n  }\n\n  get isIssue() {\n    return isIssue(this.issue);\n  }\n\n  run(w: WorkerInstance) {\n    const {\n      id,\n      name,\n      typeName,\n      action,\n      actions,\n      issue,\n      status,\n      prototype_name,\n      prototype_display_name,\n      prototype_version,\n      bundle_id,\n      state,\n    } = w.current;\n    const { upgradable, upgrade, hostcomponent } = w.current as Cluster;\n    const { log_files, objects } = w.current as Job;\n    const { provider_id } = w.current as Host;\n\n    this.currentName = name;\n    this.actions = actions;\n    this.upgradable = upgradable;\n    this.status = status;\n\n    const parent = w.current.typeName === 'cluster' ? null : w.cluster;\n    this.issue = issue;\n\n    this.current = {\n      parent,\n      id,\n      name,\n      typeName,\n      actions,\n      action,\n      issue,\n      upgradable,\n      upgrade,\n      status,\n      state,\n      log_files,\n      objects,\n      prototype_name,\n      prototype_display_name,\n      prototype_version,\n      provider_id,\n      bundle_id,\n      hostcomponent,\n    };\n  }\n\n  scroll(stop: { direct: -1 | 1 | 0; screenTop: number }) {\n    this.channel.next(keyChannelStrim.scroll, stop);\n  }\n\n  reset() {\n    this.request$ = this.service.reset().pipe(\n      this.takeUntil(),\n      tap((a) => this.run(a))\n    );\n  }\n\n  socketListener(m: EventMessage) {\n    if ((m.event === 'create' || m.event === 'delete') && m.object.type === 'bundle') {\n      this.reset();\n      return;\n    }\n\n    const type = m.object.type === 'component' ? 'servicecomponent' : m.object.type;\n    if (this.Current?.typeName === type && this.Current?.id === m.object.id) {\n      if (this.service.Current.typeName === 'job' && (m.event === 'change_job_status' || m.event === 'add_job_log')) {\n        this.reset();\n        return;\n      }\n\n      if (m.event === 'change_state' || m.event === 'upgrade') {\n        this.reset();\n        return;\n      }\n      if (m.event === 'clear_issue') {\n        this.issue = {};\n        this.Current.issue = this.issue;\n      }\n      if (m.event === 'raise_issue') this.issue = m.object.details.value;\n      if (m.event === 'change_status') this.status = +m.object.details.value;\n    }\n\n    // parent\n    if (this.service.Cluster?.id === m.object.id && this.Current?.typeName !== 'cluster' && type === 'cluster' && m.event === 'clear_issue') this.issue = {};\n  }\n\n  refresh(event: EmmitRow): void {\n    const { row } = event;\n\n    const params: ParamMap = convertToParamMap({ cluster: row.id });\n    this.store.dispatch(setPathOfRoute({ params }));\n\n  }\n}\n",
             "assetsDirs": [],
             "styleUrlsData": [
                 {
@@ -47739,21 +47739,21 @@
                 "name": "reducer",
                 "ctype": "miscellaneous",
                 "subtype": "variable",
-                "file": "src/app/core/auth/auth.store.ts",
-                "deprecated": false,
-                "deprecationMessage": "",
-                "type": "",
-                "defaultValue": "createReducer(\n  initialState,\n  on(authSuccess, state => ({ isValid: true, message: 'Auth is success.' })),\n  on(authFaled, (state, { message }) => ({ isValid: false, message })),\n  on(authLogout, state => ({ isValid: false, message: '' }))\n)"
-            },
-            {
-                "name": "reducer",
-                "ctype": "miscellaneous",
-                "subtype": "variable",
                 "file": "src/app/core/api/api.reducer.ts",
                 "deprecated": false,
                 "deprecationMessage": "",
                 "type": "",
                 "defaultValue": "createReducer(\n  InitState,\n  on(rootSuccess, (state, { root }) => ({ ...state, root })),\n  on(rootError, state => ({ root: null, stack: null })),\n  on(stackSuccess, (state, { stack }) => ({ ...state, stack }))\n)"
+            },
+            {
+                "name": "reducer",
+                "ctype": "miscellaneous",
+                "subtype": "variable",
+                "file": "src/app/core/auth/auth.store.ts",
+                "deprecated": false,
+                "deprecationMessage": "",
+                "type": "",
+                "defaultValue": "createReducer(\n  initialState,\n  on(authSuccess, state => ({ isValid: true, message: 'Auth is success.' })),\n  on(authFaled, (state, { message }) => ({ isValid: false, message })),\n  on(authLogout, state => ({ isValid: false, message: '' }))\n)"
             },
             {
                 "name": "reducer",
