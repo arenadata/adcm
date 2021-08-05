@@ -10,13 +10,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
 import logging
+import time
 import os
 
-import cm.config as config
+from cm import config
 
 log = logging.getLogger('adcm')
 log.setLevel(logging.DEBUG)
+
+
+def timeit(func):
+    @functools.wraps(func)
+    def newfunc(*args, **kwargs):
+        startTime = time.time()
+        func(*args, **kwargs)
+        elapsedTime = time.time() - startTime
+        log.debug('function [%s] - %s ms', func.__name__, int(elapsedTime * 1000))
+    return newfunc
 
 
 def get_log_handler(fname):

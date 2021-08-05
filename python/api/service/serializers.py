@@ -27,6 +27,8 @@ from cm.api import add_service_to_cluster, multi_bind, bind
 from cm.errors import AdcmEx
 from cm.models import Prototype, Action, ServiceComponent, Cluster
 
+from cm.logger import timeit
+
 
 class ServiceSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
@@ -81,9 +83,11 @@ class ServiceDetailSerializer(ServiceSerializer):
         lookup_url_kwarg='prototype_id',
     )
 
+    @timeit
     def get_issue(self, obj):
         return issue.aggregate_issues(obj)
 
+    @timeit
     def get_status(self, obj):
         return status_api.get_service_status(obj.cluster.id, obj.id)
 
@@ -96,6 +100,7 @@ class ServiceUISerializer(ServiceDetailSerializer):
     action = CommonAPIURL(view_name='object-action')
     config = CommonAPIURL(view_name='object-config')
 
+    @timeit
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
         self.context['object'] = obj
@@ -104,6 +109,7 @@ class ServiceUISerializer(ServiceDetailSerializer):
         acts = ActionShort(actions, many=True, context=self.context)
         return acts.data
 
+    @timeit
     def get_components(self, obj):
         comps = ServiceComponent.objects.filter(service=obj, cluster=obj.cluster)
         return ComponentUISerializer(comps, many=True, context=self.context).data

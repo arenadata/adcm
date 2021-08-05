@@ -22,6 +22,8 @@ from cm import issue
 from cm import status_api
 from cm.models import Action
 
+from cm.logger import timeit
+
 
 class ComponentObjectUrlField(serializers.HyperlinkedIdentityField):
     def get_url(self, obj, view_name, request, format):
@@ -53,9 +55,11 @@ class ComponentDetailSerializer(ComponentSerializer):
     config = CommonAPIURL(read_only=True, view_name='object-config')
     prototype = hlink('component-type-details', 'prototype_id', 'prototype_id')
 
+    @timeit
     def get_issue(self, obj):
         return issue.aggregate_issues(obj)
 
+    @timeit
     def get_status(self, obj):
         return status_api.get_component_status(obj.id)
 
