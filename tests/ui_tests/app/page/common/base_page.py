@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from typing import Optional
+from typing import Union
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -138,16 +139,19 @@ class BasePageObject:
                 f"{self.driver.current_url} for {loc_timeout} seconds",
             )
 
-    def is_element_displayed(self, locator: Locator, timeout: int = None) -> bool:
-        """Checks if element is displayed.
-        in case you'll need to divide methods for input params element and locator use dispatch decorator
-        """
+    def is_element_displayed(
+        self, locator: Union[Locator, WebElement], timeout: int = None
+    ) -> bool:
+        """Checks if element is displayed."""
 
         try:
             with allure.step(f'Check "{locator.name}"'):
-                return self.find_element(
-                    locator, timeout=timeout or self.default_loc_timeout
-                ).is_displayed()
+                if isinstance(locator, Locator):
+                    return self.find_element(
+                        locator, timeout=timeout or self.default_loc_timeout
+                    ).is_displayed()
+                else:
+                    return locator.is_displayed()
         except (
             TimeoutException,
             NoSuchElementException,
@@ -163,7 +167,7 @@ class BasePageObject:
             assert self.is_element_displayed(loc), f"Locator {loc.name} isn't displayed on page"
 
     def check_element_should_be_hidden(
-        self, locator: Locator, timeout: Optional[int] = None
+        self, locator: Union[Locator, WebElement], timeout: Optional[int] = None
     ) -> None:
         """Raises assertion error if element is still visible after timeout"""
         try:
@@ -214,15 +218,21 @@ class BasePageObject:
                 f"{loc_timeout} seconds",
             )
 
-    def wait_element_hide(self, locator: Locator, timeout: int = None) -> None:
+    def wait_element_hide(self, locator: Union[Locator, WebElement], timeout: int = None) -> None:
         """Wait the element to hide."""
 
         loc_timeout = timeout or self.default_loc_timeout
         with allure.step(f'Wait "{locator.name}" to hide'):
-            WDW(self.driver, loc_timeout).until(
-                EC.invisibility_of_element_located([locator.by, locator.value]),
-                message=f"locator {locator.name} hasn't hide for {loc_timeout} seconds",
-            )
+            if isinstance(locator, Locator):
+                WDW(self.driver, loc_timeout).until(
+                    EC.invisibility_of_element_located([locator.by, locator.value]),
+                    message=f"locator {locator.name} hasn't hide for {loc_timeout} seconds",
+                )
+            else:
+                WDW(self.driver, loc_timeout).until(
+                    EC.invisibility_of_element_located(locator),
+                    message=f"locator hasn't hide for {loc_timeout} seconds",
+                )
 
     def wait_page_is_opened(self, timeout: int = None):
         """Wait for current page to be opened"""
@@ -262,12 +272,16 @@ class BasePageObject:
         self.find_element(CommonLocators.socket, timeout=30)
         self.find_element(CommonLocators.profile, timeout=30)
 
-    def hover_element(self, locator: Locator):
+    def hover_element(self, locator: Union[Locator, WebElement]):
         """
         Moves the cursor over an element and hovers it.
         """
-        hover = ActionChains(self.driver).move_to_element(self.find_element(locator))
-        hover.perform()
+        if isinstance(locator, Locator):
+            hover = ActionChains(self.driver).move_to_element(self.find_element(locator))
+            hover.perform()
+        else:
+            hover = ActionChains(self.driver).move_to_element(locator)
+            hover.perform()
 
 
 class PageHeader(BasePageObject):

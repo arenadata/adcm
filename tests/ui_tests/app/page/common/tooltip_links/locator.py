@@ -22,6 +22,11 @@ from tests.ui_tests.app.helpers.locator import (
 class CommonToolbarLocators:
     """Common toolbar elements locators"""
 
+    progress_bar = Locator(
+        By.XPATH,
+        "//mat-progress-bar/div[contains(@class, 'mat-progress-bar-secondary')]",
+        "Loading info",
+    )
     admin_link = Locator(By.XPATH, "//a[@routerlink='/admin']", "Link to /admin")
     text_link = TemplateLocator(By.XPATH, "//a[text()='{}']", "Link to {}")
     action_btn = TemplateLocator(

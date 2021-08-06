@@ -28,19 +28,48 @@ from tests.ui_tests.app.page.cluster.page import (
     ClusterServicesPage,
 )
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
-from tests.ui_tests.app.page.service.page import ServiceMainPage
+from tests.ui_tests.app.page.service.page import (
+    ServiceMainPage,
+    ServiceConfigPage,
+    ServiceImportPage,
+)
 
 BUNDLE_COMMUNITY = "cluster_community"
 BUNDLE_ENTERPRISE = "cluster_enterprise"
 BUNDLE_IMPORT = "cluster_to_import"
 BUNDLE_UPGRADE = "upgradable_cluster"
+BUNDLE_REQUIRED_FIELDS = "cluster_and_service_with_required_string"
+BUNDLE_WITH_SERVICES = "cluster_with_services"
 CLUSTER_NAME = "Test cluster"
+SERVICE_NAME = "test_service"
 
 
 @pytest.fixture()
 def _create_community_cluster(sdk_client_fs: ADCMClient, app_fs, auth_to_adcm):
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
     bundle.cluster_create(name=CLUSTER_NAME)
+
+
+@pytest.fixture()
+def _create_community_cluster_with_service(sdk_client_fs: ADCMClient, app_fs, auth_to_adcm):
+    bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
+    bundle.cluster_create(name=CLUSTER_NAME).service_add(name=SERVICE_NAME)
+
+
+@pytest.fixture()
+def _create_import_cluster_with_service(sdk_client_fs: ADCMClient, app_fs, auth_to_adcm):
+    params = {
+        "import_cluster_name": "Import cluster",
+        "import_service_name": "Pre-uploaded Dummy service to import",
+    }
+    with allure.step("Create main cluster"):
+        bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
+        bundle.cluster_create(name=CLUSTER_NAME).service_add(name=SERVICE_NAME)
+    with allure.step("Create cluster to import"):
+        bundle = cluster_bundle(sdk_client_fs, BUNDLE_IMPORT)
+        bundle.cluster_create(name=params["import_cluster_name"]).service_add(
+            name=params["import_service_name"]
+        )
 
 
 @allure.step("Upload cluster bundle")
@@ -90,34 +119,13 @@ def test_check_cluster_list_page_with_cluster_creating(
 def test_check_cluster_list_page_pagination(
     sdk_client_fs: ADCMClient, app_fs, login_to_adcm_over_api
 ):
-    params = {"fist_page_cluster_amount": 10, "second_page_cluster_amount": 1}
     with allure.step("Create 11 clusters"):
         bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
         for i in range(11):
             bundle.cluster_create(name=f"Test cluster {i}")
     cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
     cluster_page.close_info_popup()
-    with allure.step("Check pagination"):
-        with cluster_page.table.wait_rows_change():
-            cluster_page.table.click_page_by_number(2)
-        assert (
-            len(cluster_page.table.get_all_rows()) == params["second_page_cluster_amount"]
-        ), f"Second page should contains {params['second_page_cluster_amount']}"
-        with cluster_page.table.wait_rows_change():
-            cluster_page.table.click_page_by_number(1)
-        assert (
-            len(cluster_page.table.get_all_rows()) == params["fist_page_cluster_amount"]
-        ), f"First page should contains {params['fist_page_cluster_amount']}"
-        with cluster_page.table.wait_rows_change():
-            cluster_page.table.click_next_page()
-        assert (
-            len(cluster_page.table.get_all_rows()) == params["second_page_cluster_amount"]
-        ), f"Next page should contains {params['second_page_cluster_amount']}"
-        with cluster_page.table.wait_rows_change():
-            cluster_page.table.click_previous_page()
-        assert (
-            len(cluster_page.table.get_all_rows()) == params["fist_page_cluster_amount"]
-        ), f"Previous page should contains {params['fist_page_cluster_amount']}"
+    cluster_page.table.check_pagination(second_page_item_amount=1)
 
 
 @pytest.mark.usefixtures("_create_community_cluster")
@@ -137,14 +145,8 @@ def test_check_cluster_list_page_action_run(app_fs):
         ), "There should be 1 success job in header"
 
 
+@pytest.mark.usefixtures("_create_import_cluster_with_service")
 def test_check_cluster_list_page_import_run(sdk_client_fs: ADCMClient, app_fs, auth_to_adcm):
-    params = {"import_cluster_name": "Import cluster"}
-    with allure.step("Create main cluster"):
-        bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
-        bundle.cluster_create(name=CLUSTER_NAME)
-    with allure.step("Create cluster to import"):
-        bundle = cluster_bundle(sdk_client_fs, BUNDLE_IMPORT)
-        bundle.cluster_create(name=params["import_cluster_name"])
     cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
     row = cluster_page.get_row_by_cluster_name(CLUSTER_NAME)
     cluster_page.click_import_btn_in_row(row)
@@ -261,3 +263,75 @@ def test_check_create_and_open_service_page_from_cluster_page(app_fs):
     service_row = cluster_service_page.table.get_all_rows()[0]
     service_row.click()
     ServiceMainPage(app_fs.driver, app_fs.adcm.url, 1, 1).wait_page_is_opened()
+
+
+def test_check_required_fields_from_cluster_list_page(
+    sdk_client_fs: ADCMClient, app_fs, login_to_adcm_over_api
+):
+    params = {"issue_name": "Configuration"}
+    bundle = cluster_bundle(sdk_client_fs, BUNDLE_REQUIRED_FIELDS)
+    bundle.cluster_create(name=CLUSTER_NAME)
+    cluster_list_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+    row = cluster_list_page.table.get_all_rows()[0]
+    cluster_list_page.click_on_issue_by_name(row, params["issue_name"])
+    ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1).wait_page_is_opened()
+
+
+def test_check_required_fields_from_service_list_page(
+    sdk_client_fs: ADCMClient, app_fs, login_to_adcm_over_api
+):
+    params = {"service_name": "test_service", "issue_name": "Configuration"}
+    bundle = cluster_bundle(sdk_client_fs, BUNDLE_REQUIRED_FIELDS)
+    bundle.cluster_create(name=CLUSTER_NAME).service_add(name=params["service_name"])
+    cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    row = cluster_service_page.table.get_all_rows()[0]
+    cluster_service_page.click_on_issue_by_name(row, params["issue_name"])
+    ServiceConfigPage(app_fs.driver, app_fs.adcm.url, 1, 1).wait_page_is_opened()
+
+
+@pytest.mark.usefixtures("_create_community_cluster_with_service")
+def test_check_actions_from_service_list_page(app_fs):
+    params = {"action_name": "test_action", "expected_state": "installed"}
+    cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    row = cluster_service_page.table.get_all_rows()[0]
+    with cluster_service_page.wait_service_state_change(row):
+        cluster_service_page.run_action_in_service_row(row, params["action_name"])
+    with allure.step("Check state has changed"):
+        assert (
+            cluster_service_page.get_service_state_from_row(row) == params["expected_state"]
+        ), f"Cluster state should be {params['expected_state']}"
+    with allure.step("Check success job"):
+        assert (
+            cluster_service_page.header.get_success_job_amount_from_header() == "1"
+        ), "There should be 1 success job in header"
+
+
+@pytest.mark.usefixtures("_create_import_cluster_with_service")
+def test_check_service_list_page_import_run(app_fs):
+    cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    row = cluster_service_page.table.get_all_rows()[0]
+    cluster_service_page.click_import_btn_in_row(row)
+    import_page = ServiceImportPage(app_fs.driver, app_fs.adcm.url, 1, 1)
+    import_page.wait_page_is_opened()
+    with allure.step("Check import on import page"):
+        assert (
+            len(import_page.get_import_items()) == 1
+        ), "Service import page should contain 1 import"
+
+
+@pytest.mark.usefixtures("_create_community_cluster_with_service")
+def test_check_service_list_page_open_service_config(app_fs):
+    cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    row = cluster_service_page.table.get_all_rows()[0]
+    cluster_service_page.click_config_btn_in_row(row)
+    ServiceConfigPage(app_fs.driver, app_fs.adcm.url, 1, 1).wait_page_is_opened()
+
+
+def test_check_pagination_on_service_list_page(
+    sdk_client_fs: ADCMClient, app_fs, login_to_adcm_over_api
+):
+    bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_SERVICES)
+    bundle.cluster_create(name=CLUSTER_NAME)
+    cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    cluster_service_page.add_service_by_name(service_name="All")
+    cluster_service_page.table.check_pagination(second_page_item_amount=2)

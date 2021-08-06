@@ -68,3 +68,10 @@ class HostCreationLocators:
         cluster_option = TemplateLocator(
             By.XPATH, "//mat-option//span[text()='{}']", "Cluster select option"
         )
+
+
+class IssuePopupLocators:
+    """ADCM popup locators for issues"""
+
+    block = Locator(By.XPATH, "//app-popover", "Popup block")
+    link_to_issue = Locator(By.XPATH, "//app-popover//a", "Link to issue")
