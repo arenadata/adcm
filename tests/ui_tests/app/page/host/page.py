@@ -12,7 +12,6 @@
 from typing import Set
 
 import allure
-
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
 from tests.ui_tests.app.helpers.locator import Locator
@@ -61,28 +60,28 @@ class HostPageMixin(BasePageObject):
 
     @allure.step('Open "Main" menu')
     def open_main_menu(self) -> 'HostMainPage':
-        self.find_and_click(HostLocators.MenuNavigation.main)
+        self.find_and_click(HostLocators.MenuNavigation.main_tab)
         page = HostMainPage(self.driver, self.base_url, self.host_id)
         page.wait_page_is_opened()
         return page
 
     @allure.step('Open "Configuration" menu')
     def open_config_menu(self) -> 'HostConfigPage':
-        self.find_and_click(HostLocators.MenuNavigation.config)
+        self.find_and_click(HostLocators.MenuNavigation.config_tab)
         page = HostConfigPage(self.driver, self.base_url, self.host_id)
         page.wait_page_is_opened()
         return page
 
     @allure.step('Open "Status" menu')
     def open_status_menu(self) -> 'HostStatusPage':
-        self.find_and_click(HostLocators.MenuNavigation.status)
+        self.find_and_click(HostLocators.MenuNavigation.status_tab)
         page = HostStatusPage(self.driver, self.base_url, self.host_id)
         page.wait_page_is_opened()
         return page
 
     @allure.step('Open "Actions" menu')
     def open_action_menu(self) -> 'HostActionsPage':
-        self.find_and_click(HostLocators.MenuNavigation.actions)
+        self.find_and_click(HostLocators.MenuNavigation.actions_tab)
         page = HostActionsPage(self.driver, self.base_url, self.host_id)
         page.wait_page_is_opened()
         return page
