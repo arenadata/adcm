@@ -11,7 +11,7 @@ import { map } from 'rxjs/operators';
 @Injectable({
   providedIn: 'root'
 })
-export class ConfigGroupService extends EntityService<ConfigGroup> {
+export class ConfigGroupListService extends EntityService<ConfigGroup> {
 
   constructor(
     protected api: ApiService,

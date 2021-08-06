@@ -19,7 +19,7 @@ import {
 } from '@app/store/navigation/navigation.store';
 import { EventMessage, socketResponse } from '@app/core/store/sockets/socket.reducer';
 import { IClusterService } from '@app/models/cluster-service';
-import { ConfigGroupService } from '@app/config-groups/service/config-group.service';
+import { ConfigGroupListService } from '@app/config-groups/service/config-group-list.service';
 
 @Injectable()
 export class NavigationEffects {
@@ -72,7 +72,7 @@ export class NavigationEffects {
     private serviceComponentService: ServiceComponentService,
     private store: Store,
     private clusterService: ClusterService,
-    private configGroupService: ConfigGroupService
+    private configGroupService: ConfigGroupListService
   ) {}
 
   entityGetter(type: TypeName, id: number): Observable<AdcmTypedEntity> {

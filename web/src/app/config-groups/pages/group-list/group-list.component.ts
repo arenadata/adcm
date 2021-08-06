@@ -1,8 +1,10 @@
-import { Component } from '@angular/core';
-import { TypeName } from '../../../core/types';
+import { Component, OnInit } from '@angular/core';
+import { EmmitRow, TypeName } from '../../../core/types';
 import { AdwpListDirective } from '../../../abstract-directives/adwp-list.directive';
 import { IColumns } from '@adwp-ui/widgets';
 import { ListFactory } from '../../../factories/list-factory';
+import { LIST_SERVICE_PROVIDER } from '../../../abstract-directives/list.directive';
+import { ConfigGroupListService } from '../../service/config-group-list.service';
 
 @Component({
   selector: 'app-config-group-list',
@@ -23,8 +25,9 @@ import { ListFactory } from '../../../factories/list-factory';
     ></adwp-list>
   `,
   styles: [':host { flex: 1; }', '.add-button {position:fixed; right: 20px;top:120px;}'],
+  providers: [{ provide: LIST_SERVICE_PROVIDER, useClass: ConfigGroupListService }],
 })
-export class ConfigGroupListComponent extends AdwpListDirective<any> {
+export class ConfigGroupListComponent extends AdwpListDirective<any> implements OnInit {
   type: TypeName = 'configgroup';
 
   listColumns: IColumns<any> = [
@@ -33,4 +36,23 @@ export class ConfigGroupListComponent extends AdwpListDirective<any> {
     ListFactory.deleteColumn(this),
   ];
 
+  ngOnInit() {
+    super.ngOnInit();
+    this.baseListDirective.listEvents = this.listEvents;
+  }
+
+  listEvents(event: EmmitRow) {
+    // this.service.
+    console.log(event);
+  }
+
+
+  // deleteGroup(item: ConfigGroup) {
+  //   console.log('deleteGroup | item: ', item);
+  //
+  //   this.service
+  //     .delete(item)
+  //     .pipe(this.takeUntil())
+  //     .subscribe();
+  // }
 }

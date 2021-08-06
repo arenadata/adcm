@@ -66,12 +66,7 @@ export class BaseListDirective {
   initListItemEvent() {
     this.parent.listItemEvt
       .pipe(this.takeUntil())
-      .subscribe({
-        next: (event: EmmitRow) => {
-          console.log('initListItemEvent event: ', event);
-          this.listEvents(event);
-        }
-      });
+      .subscribe({ next: (event: EmmitRow) => this.listEvents(event) });
   }
 
   calcSort(ordering: string): Sort {

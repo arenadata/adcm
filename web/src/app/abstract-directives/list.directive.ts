@@ -1,4 +1,4 @@
-import { Directive, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Directive, EventEmitter, Inject, InjectionToken, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { filter } from 'rxjs/operators';
 import { Store } from '@ngrx/store';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -11,7 +11,7 @@ import { BaseDirective, EventHelper } from '@adwp-ui/widgets';
 import { EmmitRow, TypeName } from '@app/core/types';
 import { BaseListDirective } from '@app/shared/components/list/base-list.directive';
 import { SocketState } from '@app/core/store';
-import { ListService } from '@app/shared/components/list/list.service';
+import { IListService, ListService } from '@app/shared/components/list/list.service';
 import { DialogComponent } from '@app/shared/components';
 import { StatusData } from '@app/components/columns/status-column/status-column.component';
 import { ICluster } from '@app/models/cluster';
@@ -22,6 +22,9 @@ enum Direction {
   'asc' = '',
   'desc' = '-',
 }
+
+export const LIST_SERVICE_PROVIDER = new InjectionToken<IListService>('ListDirective');
+
 
 @Directive({
   selector: '[appAbstractList]',
@@ -63,7 +66,7 @@ export abstract class ListDirective extends BaseDirective implements OnInit, OnD
   sortParam = '';
 
   constructor(
-    protected service: ListService,
+    @Inject(LIST_SERVICE_PROVIDER) protected service: ListService,
     protected store: Store<SocketState>,
     public route: ActivatedRoute,
     public router: Router,
