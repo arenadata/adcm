@@ -18,14 +18,14 @@ from tests.ui_tests.app.helpers.locator import Locator, TemplateLocator
 class CommonPopupLocators:
     """ADCM popup locators"""
 
-    block = Locator(By.XPATH, "//simple-snack-bar", "Popup block")
+    block = Locator(By.XPATH, "//simple-snack-bar", "Common popup block")
     hide_btn = Locator(By.XPATH, "//button[./span[text()='Hide']]", "Hide pop up button")
 
 
 class HostCreationLocators:
     """Host creation popup without cluster selection"""
 
-    block = Locator(By.XPATH, "//mat-dialog-container", "Popup block")
+    block = Locator(By.XPATH, "//mat-dialog-container", "Host creation popup block")
     fqdn_input = Locator(
         By.XPATH, "//input[@data-placeholder='Fully qualified domain name']", "Host FQDN input"
     )

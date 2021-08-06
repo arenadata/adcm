@@ -139,7 +139,7 @@ def test_check_cluster_list_page_action_run(app_fs):
         assert (
             cluster_page.get_cluster_state_from_row(row) == params["expected_state"]
         ), f"Cluster state should be {params['expected_state']}"
-    with allure.step("Check success job"):
+    with allure.step("Check success cluster job"):
         assert (
             cluster_page.header.get_success_job_amount_from_header() == "1"
         ), "There should be 1 success job in header"
@@ -300,7 +300,7 @@ def test_check_actions_from_service_list_page(app_fs):
         assert (
             cluster_service_page.get_service_state_from_row(row) == params["expected_state"]
         ), f"Cluster state should be {params['expected_state']}"
-    with allure.step("Check success job"):
+    with allure.step("Check success service job"):
         assert (
             cluster_service_page.header.get_success_job_amount_from_header() == "1"
         ), "There should be 1 success job in header"
