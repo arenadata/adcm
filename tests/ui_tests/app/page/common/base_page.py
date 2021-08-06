@@ -376,6 +376,13 @@ class PageHeader(BasePageObject):
         self.wait_element_visible(AuthorizedHeaderLocators.job_popup)
         return self.find_element(AuthorizedHeaderLocators.JobPopup.success_jobs).text.split("\n")[1]
 
+    def get_in_progress_job_amount_from_header(self):
+        self.hover_element(AuthorizedHeaderLocators.job_block_previous)
+        self.wait_element_visible(AuthorizedHeaderLocators.job_popup)
+        return self.find_element(AuthorizedHeaderLocators.JobPopup.in_progress_jobs).text.split(
+            "\n"
+        )[1]
+
 
 class PageFooter(BasePageObject):
     """Class for footer manipulating."""

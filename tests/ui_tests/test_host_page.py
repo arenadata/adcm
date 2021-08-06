@@ -226,9 +226,9 @@ def test_bind_host_to_cluster(
 @pytest.mark.parametrize(
     ('row_child_name', 'menu_item_name'),
     [
-        pytest.param('fqdn', 'main', id='open_host_main'),
-        pytest.param('status', 'status', id='open_status_menu', marks=pytest.mark.full),
-        pytest.param('config', 'config', id='open_config_menu', marks=pytest.mark.full),
+        pytest.param('fqdn', 'main_tab', id='open_host_main'),
+        pytest.param('status', 'status_tab', id='open_status_menu', marks=pytest.mark.full),
+        pytest.param('config', 'config_tab', id='open_config_menu', marks=pytest.mark.full),
     ],
 )
 @pytest.mark.usefixtures('_create_host')
