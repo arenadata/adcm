@@ -56,12 +56,10 @@ class CommonTableObj(BasePageObject):
         current_amount = len(self.get_all_rows())
         yield
 
-        self.wait_element_hide(CommonToolbarLocators.progress_bar)
-        self.wait_element_visible(self.table.row)
-
         def wait_scroll():
             assert len(self.get_all_rows()) != current_amount, "Pade has not changed"
 
+        self.wait_element_hide(CommonToolbarLocators.progress_bar)
         wait_until_step_succeeds(wait_scroll, period=1, timeout=10)
 
     @allure.step("Click on page number {number}")

@@ -45,19 +45,19 @@ SERVICE_NAME = "test_service"
 
 
 @pytest.fixture()
-def _create_community_cluster(sdk_client_fs: ADCMClient, app_fs, auth_to_adcm):
+def _create_community_cluster(sdk_client_fs: ADCMClient, app_fs):
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
     bundle.cluster_create(name=CLUSTER_NAME)
 
 
 @pytest.fixture()
-def _create_community_cluster_with_service(sdk_client_fs: ADCMClient, app_fs, auth_to_adcm):
+def _create_community_cluster_with_service(sdk_client_fs: ADCMClient, app_fs):
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
     bundle.cluster_create(name=CLUSTER_NAME).service_add(name=SERVICE_NAME)
 
 
 @pytest.fixture()
-def _create_import_cluster_with_service(sdk_client_fs: ADCMClient, app_fs, auth_to_adcm):
+def _create_import_cluster_with_service(sdk_client_fs: ADCMClient, app_fs):
     params = {
         "import_cluster_name": "Import cluster",
         "import_service_name": "Pre-uploaded Dummy service to import",
@@ -129,7 +129,7 @@ def test_check_cluster_list_page_pagination(
 
 
 @pytest.mark.usefixtures("_create_community_cluster")
-def test_check_cluster_list_page_action_run(app_fs):
+def test_check_cluster_list_page_action_run(app_fs, login_to_adcm_over_api):
     params = {"action_name": "test_action", "expected_state": "installed"}
     cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
     row = cluster_page.table.get_all_rows()[0]
@@ -146,7 +146,7 @@ def test_check_cluster_list_page_action_run(app_fs):
 
 
 @pytest.mark.usefixtures("_create_import_cluster_with_service")
-def test_check_cluster_list_page_import_run(sdk_client_fs: ADCMClient, app_fs, auth_to_adcm):
+def test_check_cluster_list_page_import_run(sdk_client_fs: ADCMClient, app_fs, login_to_adcm_over_api):
     cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
     row = cluster_page.get_row_by_cluster_name(CLUSTER_NAME)
     cluster_page.click_import_btn_in_row(row)
@@ -159,7 +159,7 @@ def test_check_cluster_list_page_import_run(sdk_client_fs: ADCMClient, app_fs, a
 
 
 @pytest.mark.usefixtures("_create_community_cluster")
-def test_check_cluster_list_page_open_cluster_config(app_fs):
+def test_check_cluster_list_page_open_cluster_config(app_fs, login_to_adcm_over_api):
     cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
     row = cluster_page.table.get_all_rows()[0]
     cluster_page.click_config_button_in_row(row)
@@ -167,7 +167,7 @@ def test_check_cluster_list_page_open_cluster_config(app_fs):
 
 
 @pytest.mark.usefixtures("_create_community_cluster")
-def test_check_cluster_list_page_open_cluster_main(app_fs):
+def test_check_cluster_list_page_open_cluster_main(app_fs, login_to_adcm_over_api):
     cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
     row = cluster_page.table.get_all_rows()[0]
     cluster_page.click_cluster_name_in_row(row)
@@ -175,7 +175,7 @@ def test_check_cluster_list_page_open_cluster_main(app_fs):
 
 
 @pytest.mark.usefixtures("_create_community_cluster")
-def test_check_cluster_list_page_delete_cluster(app_fs):
+def test_check_cluster_list_page_delete_cluster(app_fs, login_to_adcm_over_api):
     cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
     row = cluster_page.table.get_all_rows()[0]
     with cluster_page.table.wait_rows_change():
@@ -185,7 +185,7 @@ def test_check_cluster_list_page_delete_cluster(app_fs):
 
 
 @pytest.mark.usefixtures("_create_community_cluster")
-def test_check_cluster_main_page_open_by_tab(app_fs):
+def test_check_cluster_main_page_open_by_tab(app_fs, login_to_adcm_over_api):
     cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1).open()
     cluster_config_page.open_main_tab()
     cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, 1)
@@ -194,14 +194,14 @@ def test_check_cluster_main_page_open_by_tab(app_fs):
 
 
 @pytest.mark.usefixtures("_create_community_cluster")
-def test_check_cluster_admin_page_open_by_toolbar(app_fs):
+def test_check_cluster_admin_page_open_by_toolbar(app_fs, login_to_adcm_over_api):
     cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, 1).open()
     cluster_main_page.toolbar.click_admin_link()
     AdminIntroPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
 
 
 @pytest.mark.usefixtures("_create_community_cluster")
-def test_check_cluster_main_page_open_by_toolbar(app_fs):
+def test_check_cluster_main_page_open_by_toolbar(app_fs, login_to_adcm_over_api):
     params = {"cluster_list_name": "CLUSTERS"}
     cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, 1).open()
     cluster_main_page.toolbar.click_link_by_name(params["cluster_list_name"])
@@ -236,7 +236,7 @@ def test_check_cluster_run_upgrade_on_cluster_page_by_toolbar(
 
 
 @pytest.mark.usefixtures("_create_community_cluster")
-def test_check_cluster_run_action_on_cluster_page_by_toolbar(app_fs):
+def test_check_cluster_run_action_on_cluster_page_by_toolbar(app_fs, login_to_adcm_over_api):
     params = {"action_name": "test_action"}
     cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, 1).open()
     cluster_main_page.toolbar.run_action(CLUSTER_NAME, params["action_name"])
@@ -247,7 +247,7 @@ def test_check_cluster_run_action_on_cluster_page_by_toolbar(app_fs):
 
 
 @pytest.mark.usefixtures("_create_community_cluster")
-def test_check_cluster_service_page_open_by_tab(app_fs):
+def test_check_cluster_service_page_open_by_tab(app_fs, login_to_adcm_over_api):
     cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1).open()
     cluster_config_page.open_services_tab()
     cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, 1)
@@ -256,7 +256,7 @@ def test_check_cluster_service_page_open_by_tab(app_fs):
 
 
 @pytest.mark.usefixtures("_create_community_cluster")
-def test_check_create_and_open_service_page_from_cluster_page(app_fs):
+def test_check_create_and_open_service_page_from_cluster_page(app_fs, login_to_adcm_over_api):
     params = {"service_name": "test_service - 1.2"}
     cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, 1).open()
     cluster_service_page.add_service_by_name(params["service_name"])
@@ -290,7 +290,7 @@ def test_check_required_fields_from_service_list_page(
 
 
 @pytest.mark.usefixtures("_create_community_cluster_with_service")
-def test_check_actions_from_service_list_page(app_fs):
+def test_check_actions_from_service_list_page(app_fs, login_to_adcm_over_api):
     params = {"action_name": "test_action", "expected_state": "installed"}
     cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, 1).open()
     row = cluster_service_page.table.get_all_rows()[0]
@@ -307,7 +307,7 @@ def test_check_actions_from_service_list_page(app_fs):
 
 
 @pytest.mark.usefixtures("_create_import_cluster_with_service")
-def test_check_service_list_page_import_run(app_fs):
+def test_check_service_list_page_import_run(app_fs, login_to_adcm_over_api):
     cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, 1).open()
     row = cluster_service_page.table.get_all_rows()[0]
     cluster_service_page.click_import_btn_in_row(row)
@@ -320,7 +320,7 @@ def test_check_service_list_page_import_run(app_fs):
 
 
 @pytest.mark.usefixtures("_create_community_cluster_with_service")
-def test_check_service_list_page_open_service_config(app_fs):
+def test_check_service_list_page_open_service_config(app_fs, login_to_adcm_over_api):
     cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, 1).open()
     row = cluster_service_page.table.get_all_rows()[0]
     cluster_service_page.click_config_btn_in_row(row)
