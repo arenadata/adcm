@@ -146,7 +146,9 @@ def test_check_cluster_list_page_action_run(app_fs, login_to_adcm_over_api):
 
 
 @pytest.mark.usefixtures("_create_import_cluster_with_service")
-def test_check_cluster_list_page_import_run(sdk_client_fs: ADCMClient, app_fs, login_to_adcm_over_api):
+def test_check_cluster_list_page_import_run(
+    sdk_client_fs: ADCMClient, app_fs, login_to_adcm_over_api
+):
     cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
     row = cluster_page.get_row_by_cluster_name(CLUSTER_NAME)
     cluster_page.click_import_btn_in_row(row)
