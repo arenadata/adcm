@@ -9,13 +9,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, EventEmitter, Input, OnDestroy, Output } from '@angular/core';
+import { Component, EventEmitter, Inject, Input, OnDestroy, Output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 
 import { DialogComponent } from '../components/dialog.component';
 import { BaseDirective } from '../directives/base.directive';
 import { AddFormComponent } from './add-form.component';
 import { AddService } from './add.service';
+import { ADD_SERVICE_PROVIDER } from '@app/shared/add-component/add-service-token';
 
 @Component({
   selector: 'app-add-button',
@@ -38,16 +39,15 @@ export class AddButtonComponent extends BaseDirective implements OnDestroy {
   @Input() name: string;
   @Output() added = new EventEmitter();
 
-  constructor(private dialog: MatDialog, private service: AddService) {
+  constructor(@Inject(ADD_SERVICE_PROVIDER) private service: AddService,
+              private dialog: MatDialog) {
     super();
   }
 
   showForm() {
     const model = this.service.model(this.name);
-
-    console.log('showForm: ', model);
     const name = model.title || model.name;
-    const title = ['cluster', 'provider', 'host', 'configgroup'];
+    const title = ['cluster', 'provider', 'host'];
     this.dialog.open(DialogComponent, {
       width: '75%',
       maxWidth: '1400px',

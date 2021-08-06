@@ -9,18 +9,36 @@ import { map } from 'rxjs/operators';
 import { IListService, ListInstance } from '@app/shared/components/list/list-service-token';
 import { ParamMap } from '@angular/router';
 import { ListResult } from '@app/models/list-result';
+import { IAddService } from '@app/shared/add-component/add-service-token';
+import { FormModel } from '@app/shared/add-component/add.service';
+import { FormControl, FormGroup, Validators } from '@angular/forms';
 
+
+const formConfigGroup = () =>
+  new FormGroup({
+    name: new FormControl('', Validators.required),
+    description: new FormControl(),
+  });
 
 @Injectable({
   providedIn: 'root'
 })
-export class ConfigGroupListService extends EntityService<ConfigGroup> implements IListService<ConfigGroup> {
+export class ConfigGroupListService extends EntityService<ConfigGroup>
+  implements IListService<ConfigGroup>, IAddService {
   current: ListInstance;
 
   constructor(
     protected api: ApiService,
   ) {
     super(api);
+  }
+
+  model(name: string): FormModel {
+    return {
+      name: 'configgroup',
+      title: 'Config group',
+      form: formConfigGroup(),
+    };
   }
 
   getList(p: ParamMap): Observable<ListResult<ConfigGroup>> {

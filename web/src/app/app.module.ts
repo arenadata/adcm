@@ -32,6 +32,8 @@ import { appInitializer, translateLoader } from '@app/shared/translate/intialize
 import { AppRoutingModule } from '@app/app-routing.module';
 import { ListService } from '@app/shared/components/list/list.service';
 import { LIST_SERVICE_PROVIDER } from '@app/shared/components/list/list-service-token';
+import { ADD_SERVICE_PROVIDER } from '@app/shared/add-component/add-service-token';
+import { AddService } from '@app/shared/add-component/add.service';
 
 @NgModule({
   declarations: [
@@ -76,7 +78,12 @@ import { LIST_SERVICE_PROVIDER } from '@app/shared/components/list/list-service-
     {
       provide: LIST_SERVICE_PROVIDER,
       useClass: ListService
+    },
+    {
+      provide: ADD_SERVICE_PROVIDER,
+      useClass: AddService
     }
   ],
 })
-export class AppModule {}
+export class AppModule {
+}
