@@ -105,11 +105,10 @@ describe('LeftComponent', () => {
     component.current = { typeName: 'job', log_files: [{ name: 'Test', type: 'type_test', id: 1, download_url: 'download_url_test' }] } as Job;
     fixture.detectChanges();
     const list = fixture.nativeElement.querySelectorAll('a');
-    expect(list.length).toBe(2); // main, test
-    expect(list[0].querySelector('div span').innerText).toBe('Main');
-    expect(list[1].querySelector('div span').innerText).toBe('Test [ type_test ]');
-    expect(list[1].querySelector('div button')).toBeTruthy();
-    expect(list[1].querySelector('div button span mat-icon').innerText).toBe('cloud_download');
+    expect(list.length).toBe(1); // main, test
+    expect(list[0].querySelector('div span').innerText).toBe('Test [ type_test ]');
+    expect(list[0].querySelector('div button')).toBeTruthy();
+    expect(list[0].querySelector('div button span mat-icon').innerText).toBe('cloud_download');
   });
 
   it('if the item has an action, then this property should be a function and a click should call this function', () => {
@@ -117,7 +116,7 @@ describe('LeftComponent', () => {
     fixture.detectChanges();
     const list = fixture.nativeElement.querySelectorAll('a');
     spyOn(component, 'btnClick');
-    list[1].querySelector('div button').click();
+    list[0].querySelector('div button').click();
     expect(component.btnClick).toHaveBeenCalledWith(jasmine.any(Function));
   });
 });
