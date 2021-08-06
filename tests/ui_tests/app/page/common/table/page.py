@@ -12,6 +12,7 @@
 from contextlib import contextmanager
 
 import allure
+
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support import expected_conditions as EC
@@ -45,16 +46,12 @@ class CommonTableObj(BasePageObject):
             return []
 
     def get_row(self, row_num: int = 0) -> WebElement:
-        """Get exactly one row"""
-
         def table_has_enough_rows():
-            current_row_count = self.row_count
-            assert (
-                row_num + 1 <= current_row_count
-            ), f"Table has only {current_row_count} rows when row #{row_num} was requested"
+            self.__assert_enough_rows(row_num, self.row_count)
 
         wait_until_step_succeeds(table_has_enough_rows, timeout=5, period=0.1)
         rows = self.get_all_rows()
+        self.__assert_enough_rows(row_num, len(rows))
         return rows[row_num]
 
     def click_previous_page(self):
@@ -111,3 +108,13 @@ class CommonTableObj(BasePageObject):
         assert (
             self.row_count == params["fist_page_cluster_amount"]
         ), f"Previous page should contains {params['fist_page_cluster_amount']} items"
+
+    @staticmethod
+    def __assert_enough_rows(required_row_num: int, row_count: int):
+        """
+        Assert that row "is presented" by comparing row index and amount of rows
+        Provide row as index (starting with 0)
+        """
+        assert (
+            required_row_num + 1 <= row_count
+        ), f"Table has only {row_count} rows when row #{required_row_num} was requested"
