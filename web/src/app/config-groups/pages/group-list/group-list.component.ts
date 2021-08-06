@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { EmmitRow, TypeName } from '../../../core/types';
+import { TypeName } from '../../../core/types';
 import { AdwpListDirective } from '../../../abstract-directives/adwp-list.directive';
 import { IColumns } from '@adwp-ui/widgets';
 import { ListFactory } from '../../../factories/list-factory';
@@ -35,24 +35,4 @@ export class ConfigGroupListComponent extends AdwpListDirective<any> implements 
     ListFactory.descriptionColumn(),
     ListFactory.deleteColumn(this),
   ];
-
-  ngOnInit() {
-    super.ngOnInit();
-    this.baseListDirective.listEvents = this.listEvents;
-  }
-
-  listEvents(event: EmmitRow) {
-    // this.service.
-    console.log(event);
-  }
-
-
-  // deleteGroup(item: ConfigGroup) {
-  //   console.log('deleteGroup | item: ', item);
-  //
-  //   this.service
-  //     .delete(item)
-  //     .pipe(this.takeUntil())
-  //     .subscribe();
-  // }
 }

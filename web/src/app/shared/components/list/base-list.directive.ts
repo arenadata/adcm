@@ -227,8 +227,6 @@ export class BaseListDirective {
   }
 
   delete(item?: Entities) {
-    console.log('delete | item: ', item);
-
     this.service
       .delete(item ?? this.row)
       .pipe(this.takeUntil())
