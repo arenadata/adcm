@@ -3,8 +3,8 @@ import { EmmitRow, TypeName } from '../../../core/types';
 import { AdwpListDirective } from '../../../abstract-directives/adwp-list.directive';
 import { IColumns } from '@adwp-ui/widgets';
 import { ListFactory } from '../../../factories/list-factory';
-import { LIST_SERVICE_PROVIDER } from '../../../abstract-directives/list.directive';
 import { ConfigGroupListService } from '../../service/config-group-list.service';
+import { LIST_SERVICE_PROVIDER } from '../../../shared/components/list/list-service-token';
 
 @Component({
   selector: 'app-config-group-list',

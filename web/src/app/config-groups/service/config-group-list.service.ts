@@ -6,17 +6,24 @@ import { environment } from '../../../environments/environment';
 import { ConfigGroup } from '@app/config-groups/model/config-group.model';
 import { Host } from '@app/core/types';
 import { map } from 'rxjs/operators';
+import { IListService, ListInstance } from '@app/shared/components/list/list-service-token';
 
 
 @Injectable({
   providedIn: 'root'
 })
-export class ConfigGroupListService extends EntityService<ConfigGroup> {
+export class ConfigGroupListService extends EntityService<ConfigGroup> implements IListService {
+  current: ListInstance;
 
   constructor(
     protected api: ApiService,
   ) {
     super(api);
+  }
+
+  initInstance(): ListInstance {
+    this.current = { typeName: 'configgroup', columns: ['name', 'description', 'remove'] };
+    return this.current;
   }
 
   get(id: number): Observable<ConfigGroup> {
