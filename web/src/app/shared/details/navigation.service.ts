@@ -105,11 +105,11 @@ export class NavigationService {
 
   getLeft(current: Partial<ApiBase>): INavItem[] {
     const getMenu = (c: Partial<ApiBase>) => {
-      const forJob = (job: Job) => [main, ...job.log_files.map((a) => ({
+      const forJob = (job: Job) => job.log_files.map((a) => ({
         title: `${a.name} [ ${a.type} ]`,
         url: `${a.id}`,
         action: () => (location.href = a.download_url)
-      }))];
+      }));
       const def = (typeName: TypeName, issue: Issue, status: number) =>
         Config.menu[typeName].map((i: INavItem) => ({
           ...i,
