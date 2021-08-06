@@ -37,10 +37,7 @@ import { BaseFormDirective } from './base-form.directive';
           <app-add-host2cluster (event)="message($event)" #cc></app-add-host2cluster>
         </ng-container>
         <ng-container *ngSwitchCase="'configgroup'">
-          <app-add-config-group #cc></app-add-config-group>
-        </ng-container>
-        <ng-container *ngSwitchCase="'host2configgroup'">
-          <app-add-host2configgroup #cc></app-add-host2configgroup>
+          <app-config-group-add #cc></app-config-group-add>
         </ng-container>
       </ng-container>
     </div>

@@ -26,6 +26,7 @@ import { GenName } from './naming';
 import { MainService } from '@app/shared/configuration/main/main.service';
 import { ConfigGroup } from '@app/config-groups/model/config-group.model';
 import { ConfigGroupListService } from '@app/config-groups/service/config-group-list.service';
+import { IAddService } from '@app/shared/add-component/add-service-token';
 
 export interface FormModel {
   name: string;
@@ -72,21 +73,12 @@ const MODELS: { [key: string]: FormModel } = {
     name: 'host2cluster',
     title: 'hosts',
   },
-  configgroup: {
-    name: 'configgroup',
-    title: 'Config group',
-    form: formConfigGroup(),
-  },
-  host2configgroup: {
-    name: 'host2configgroup',
-    title: 'hosts',
-  },
 };
 
 @Injectable({
   providedIn: 'root',
 })
-export class AddService {
+export class AddService implements IAddService {
   private _currentPrototype: StackBase;
   set currentPrototype(a: StackBase) {
     this._currentPrototype = a;
