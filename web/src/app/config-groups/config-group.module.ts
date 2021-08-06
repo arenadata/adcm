@@ -9,6 +9,8 @@ import { Host2configgroupComponent } from '@app/config-groups/components/config-
 import { MatListModule } from '@angular/material/list';
 import { AddingModule } from '@app/shared/add-component/adding.module';
 import { FormElementsModule } from '@app/shared/form-elements/form-elements.module';
+import { ListService } from '../shared/components/list/list.service';
+import { LIST_SERVICE_PROVIDER } from '../shared/components/list/list-service-token';
 
 
 @NgModule({
@@ -26,6 +28,12 @@ import { FormElementsModule } from '@app/shared/form-elements/form-elements.modu
     AddConfigGroupComponent,
     Host2configgroupComponent
   ],
+  providers: [
+    {
+      provide: LIST_SERVICE_PROVIDER,
+      useClass: ListService
+    }
+  ]
 })
 export class ConfigGroupModule {
 }

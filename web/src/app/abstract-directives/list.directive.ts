@@ -11,20 +11,18 @@ import { BaseDirective, EventHelper } from '@adwp-ui/widgets';
 import { EmmitRow, TypeName } from '@app/core/types';
 import { BaseListDirective } from '@app/shared/components/list/base-list.directive';
 import { SocketState } from '@app/core/store';
-import { IListService, ListService } from '@app/shared/components/list/list.service';
+import { ListService } from '@app/shared/components/list/list.service';
 import { DialogComponent } from '@app/shared/components';
 import { StatusData } from '@app/components/columns/status-column/status-column.component';
 import { ICluster } from '@app/models/cluster';
 import { ApiService } from '@app/core/api';
+import { LIST_SERVICE_PROVIDER } from '@app/shared/components/list/list-service-token';
 
 enum Direction {
   '' = '',
   'asc' = '',
   'desc' = '-',
 }
-
-export const LIST_SERVICE_PROVIDER = new InjectionToken<IListService>('ListDirective');
-
 
 @Directive({
   selector: '[appAbstractList]',

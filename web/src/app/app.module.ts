@@ -30,6 +30,8 @@ import { SharedModule } from './shared/shared.module';
 import { LogComponent } from './ws-logs/log.component';
 import { appInitializer, translateLoader } from '@app/shared/translate/intializer';
 import { AppRoutingModule } from '@app/app-routing.module';
+import { ListService } from '@app/shared/components/list/list.service';
+import { LIST_SERVICE_PROVIDER } from '@app/shared/components/list/list-service-token';
 
 @NgModule({
   declarations: [
@@ -70,6 +72,10 @@ import { AppRoutingModule } from '@app/app-routing.module';
       useFactory: appInitializer,
       deps: [TranslateService, Injector],
       multi: true
+    },
+    {
+      provide: LIST_SERVICE_PROVIDER,
+      useClass: ListService
     }
   ],
 })

@@ -18,6 +18,7 @@ import { environment } from '@env/environment';
 import { ApiService } from '@app/core/api';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { Bundle, Cluster, Entities, Host, IAction, Service, TypeName } from '@app/core/types';
+import { IListService, ListInstance } from '@app/shared/components/list/list-service-token';
 
 const COLUMNS_SET = {
   cluster: ['name', 'prototype_version', 'description', 'state', 'status', 'actions', 'import', 'upgrade', 'config', 'controls'],
@@ -30,16 +31,6 @@ const COLUMNS_SET = {
   bundle: ['name', 'version', 'edition', 'description', 'controls'],
   configgroup: ['name', 'description', 'remove'],
 };
-
-
-export interface ListInstance {
-  typeName: TypeName;
-  columns: string[];
-}
-
-export interface IListService {
-
-}
 
 @Injectable({
   providedIn: 'root',
