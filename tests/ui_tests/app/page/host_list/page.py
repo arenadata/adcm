@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Optional
+from typing import Optional, ClassVar
 
 import allure
 
@@ -37,7 +37,7 @@ class HostRowInfo:
     """Information from host row about host"""
 
     # helper to check if any cluster is assigned
-    UNASSIGNED_CLUSTER_VALUE = 'Assign to cluster'
+    UNASSIGNED_CLUSTER_VALUE: ClassVar[str] = 'Assign to cluster'
     fqdn: str
     provider: str
     cluster: Optional[str]
@@ -51,17 +51,8 @@ class HostListPage(BasePageObject):
         self.footer = PageFooter(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url, HostListLocators.HostTable)
 
-    def get_host_row(self, row_num: int = 0) -> WebElement:
-        def table_has_enough_rows():
-            self.__assert_enough_rows(row_num, self.table.row_count)
-
-        wait_until_step_succeeds(table_has_enough_rows, timeout=5, period=0.1)
-        rows = self.table.get_all_rows()
-        self.__assert_enough_rows(row_num, len(rows))
-        return rows[row_num]
-
     def get_host_info_from_row(self, row_num: int = 0) -> HostRowInfo:
-        row = self.get_host_row(row_num)
+        row = self.table.get_row(row_num)
         row_elements = HostListLocators.HostTable.HostRow
         cluster_value = self.find_child(row, row_elements.cluster).text
         return HostRowInfo(
@@ -74,7 +65,7 @@ class HostListPage(BasePageObject):
         )
 
     def click_on_row_child(self, row_num: int, child_locator: Locator):
-        row = self.get_host_row(row_num)
+        row = self.table.get_row(row_num)
         self.find_child(row, child_locator).click()
 
     @allure.step("Create new host")
@@ -144,7 +135,7 @@ class HostListPage(BasePageObject):
             real_cluster = page.find_child(row, HostListLocators.HostTable.HostRow.cluster).text
             assert real_cluster == cluster_name
 
-        host_row = self.get_host_row(row_num)
+        host_row = self.table.get_row(row_num)
         wait_until_step_succeeds(check_host_cluster, timeout=5, period=0.1, page=self, row=host_row)
 
     @allure.step('Assert host in row {row_num} has state "{state}"')
@@ -153,7 +144,7 @@ class HostListPage(BasePageObject):
             real_state = page.find_child(row, HostListLocators.HostTable.HostRow.state).text
             assert real_state == state
 
-        host_row = self.get_host_row(row_num)
+        host_row = self.table.get_row(row_num)
         wait_until_step_succeeds(check_host_state, timeout=10, period=0.5, page=self, row=host_row)
 
     def open_host_creation_popup(self):
@@ -206,13 +197,3 @@ class HostListPage(BasePageObject):
             message=f"Can't find cluster with name {cluster_name} in dropdown on page {self.driver.current_url} "
             f"for {self.default_loc_timeout} seconds",
         ).click()
-
-    @staticmethod
-    def __assert_enough_rows(required_row_num: int, row_count: int):
-        """
-        Assert that row "is presented" by comparing row index and amount of rows
-        Provide row as index (starting with 0)
-        """
-        assert (
-            required_row_num + 1 <= row_count
-        ), f"Host table has only {row_count} rows when row #{required_row_num} was requested"

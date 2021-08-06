@@ -12,6 +12,8 @@
 from contextlib import contextmanager
 
 import allure
+
+from selenium.webdriver.remote.webelement import WebElement
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support import expected_conditions as EC
@@ -42,6 +44,15 @@ class CommonTableObj(BasePageObject):
         except TimeoutException:
             return []
 
+    def get_row(self, row_num: int = 0) -> WebElement:
+        def table_has_enough_rows():
+            self.__assert_enough_rows(row_num, self.row_count)
+
+        wait_until_step_succeeds(table_has_enough_rows, timeout=5, period=0.1)
+        rows = self.get_all_rows()
+        self.__assert_enough_rows(row_num, len(rows))
+        return rows[row_num]
+
     def click_previous_page(self):
         self.find_and_click(self.table.Pagination.previous_page)
 
@@ -68,3 +79,13 @@ class CommonTableObj(BasePageObject):
             message=f"Can't find page {number} in table on page {self.driver.current_url} "
             f"for {self.default_loc_timeout} seconds",
         ).click()
+
+    @staticmethod
+    def __assert_enough_rows(required_row_num: int, row_count: int):
+        """
+        Assert that row "is presented" by comparing row index and amount of rows
+        Provide row as index (starting with 0)
+        """
+        assert (
+            required_row_num + 1 <= row_count
+        ), f"Table has only {row_count} rows when row #{required_row_num} was requested"
