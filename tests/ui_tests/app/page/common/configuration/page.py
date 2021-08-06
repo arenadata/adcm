@@ -61,26 +61,38 @@ class CommonConfigMenuObj(BasePageObject):
         loc = self.config.config_diff(adcm_test, value)
         self.wait_element_visible(loc)
 
-    def get_input_value(self, adcm_test: str, is_password: bool = False):
+    def get_input_value(self, adcm_test_attr_value: str, is_password: bool = False) -> str:
         """
         Get value from field input
 
         If is_password is True, then special field is used for search
         You can't get password confirmation method
+
+        :param adcm_test_attr_value: Value of attribute "adcm_test" to generate Locator
+        :param is_password: Is field password/confirmation
+        :returns: Value of input
         """
         template = (
             CommonConfigMenu.field_input if not is_password else CommonConfigMenu.password_inputs
         )
-        return self.find_element(template(adcm_test)).get_property("value")
+        return self.find_element(template(adcm_test_attr_value)).get_property("value")
 
-    @allure.step('Check input of field "{adcm_test}" has value "{expected_value}"')
-    def assert_input_value_is(self, expected_value: str, adcm_test: str, is_password: bool = False):
-        """Assert that value in field is expected_value (using retries)"""
+    @allure.step('Check input of field "{adcm_test_attr_value}" has value "{expected_value}"')
+    def assert_input_value_is(
+        self, expected_value: str, adcm_test_attr_value: str, is_password: bool = False
+    ):
+        """
+        Assert that value in field is expected_value (using retries)
+
+        :param expected_value: Value expected to be in input field
+        :param adcm_test_attr_value: Value of attribute "adcm_test" to generate Locator
+        :param is_password: Is field password/confirmation
+        """
 
         def assert_value():
             assert expected_value == self.get_input_value(
-                adcm_test, is_password
-            ), f'Value in {adcm_test} field should be empty after reset'
+                adcm_test_attr_value, is_password
+            ), f'Value in {adcm_test_attr_value} field should be empty after reset'
 
         wait_until_step_succeeds(assert_value, timeout=4, period=0.5)
 
