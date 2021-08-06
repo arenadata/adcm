@@ -15,6 +15,15 @@
 from django.db import migrations, models
 import django.db.models.deletion
 
+def fix_joblog(apps, schema_editor):
+    JobLog = apps.get_model('cm', 'JobLog')
+    for job in JobLog.objects.all():
+        if job.task_id is None:
+            try:
+                job.delete()
+            except JobLog.DoesNotExist:
+                pass
+
 
 class Migration(migrations.Migration):
 
@@ -33,4 +42,5 @@ class Migration(migrations.Migration):
                 to='cm.action',
             ),
         ),
+        migrations.RunPython(fix_joblog),
     ]
