@@ -12,13 +12,14 @@
 import { Injectable } from '@angular/core';
 import { convertToParamMap, ParamMap, Params } from '@angular/router';
 import { map, switchMap, tap } from 'rxjs/operators';
-import { forkJoin, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 
 import { environment } from '@env/environment';
 import { ApiService } from '@app/core/api';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { Bundle, Cluster, Entities, Host, IAction, Service, TypeName } from '@app/core/types';
 import { IListService, ListInstance } from '@app/shared/components/list/list-service-token';
+import { ListResult } from '@app/models/list-result';
 
 const COLUMNS_SET = {
   cluster: ['name', 'prototype_version', 'description', 'state', 'status', 'actions', 'import', 'upgrade', 'config', 'controls'],
@@ -29,13 +30,12 @@ const COLUMNS_SET = {
   job: ['action', 'objects', 'start_date', 'finish_date', 'status'],
   task: ['id', 'start_date', 'finish_date', 'status'],
   bundle: ['name', 'version', 'edition', 'description', 'controls'],
-  configgroup: ['name', 'description', 'remove'],
 };
 
 @Injectable({
   providedIn: 'root',
 })
-export class ListService implements IListService {
+export class ListService implements IListService<Entities> {
   current: ListInstance;
 
   constructor(private api: ApiService, private detail: ClusterService) {}
@@ -45,7 +45,7 @@ export class ListService implements IListService {
     return this.current;
   }
 
-  getList(p: ParamMap, typeName: string) {
+  getList(p: ParamMap, typeName: string): Observable<ListResult<Entities>> {
     const listParamStr = localStorage.getItem('list:param');
     if (p?.keys.length) {
       const param = p.keys.reduce((a, c) => ({ ...a, [c]: p.get(c) }), {});
@@ -57,17 +57,6 @@ export class ListService implements IListService {
     }
 
     switch (typeName) {
-      case 'configgroup':
-        return this.api.getList(`${environment.apiRoot}config-group/`, p);
-      case 'host2configgroup':
-        return this.api.getList(`${environment.apiRoot}host-group/`, p).pipe(
-          switchMap((response) => {
-            return forkJoin([...response.results.map(({ url }) => this.api.get(url))]).pipe(
-              map((hosts) => ({ ...response, results: hosts }))
-            );
-          }),
-          tap((response) => console.log('as', response)),
-        );
       case 'host2cluster':
         return this.detail.getHosts(p);
       case 'service2cluster':
