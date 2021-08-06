@@ -1,4 +1,4 @@
-import { ApiFlat } from '../../core/types';
+import { ApiFlat } from '@app/core/types';
 
 export interface ConfigGroup extends ApiFlat {
   name: string;

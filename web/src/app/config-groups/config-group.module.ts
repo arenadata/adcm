@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ConfigGroupService } from './service/config-group.service';
 import { ConfigGroupRoutingModule } from './config-group-routing.module';
 import { ConfigGroupListComponent } from './pages';
 import { AdwpListModule } from '@adwp-ui/widgets';
@@ -27,9 +26,6 @@ import { FormElementsModule } from '@app/shared/form-elements/form-elements.modu
     AddConfigGroupComponent,
     Host2configgroupComponent
   ],
-  providers: [
-    ConfigGroupService,
-  ]
 })
 export class ConfigGroupModule {
 }

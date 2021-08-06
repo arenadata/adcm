@@ -37,10 +37,14 @@ export interface ListInstance {
   columns: string[];
 }
 
+export interface IListService {
+
+}
+
 @Injectable({
   providedIn: 'root',
 })
-export class ListService {
+export class ListService implements IListService {
   current: ListInstance;
 
   constructor(private api: ApiService, private detail: ClusterService) {}
@@ -61,19 +65,12 @@ export class ListService {
       } else localStorage.setItem('list:param', JSON.stringify({ [typeName]: param }));
     }
 
-    console.log('getList | listParamStr: ', typeName);
-    console.log('getList | listParamStr: ', listParamStr);
-    console.log('getList | current: ', this.detail.Current);
-
-
     switch (typeName) {
       case 'configgroup':
         return this.api.getList(`${environment.apiRoot}config-group/`, p);
       case 'host2configgroup':
         return this.api.getList(`${environment.apiRoot}host-group/`, p).pipe(
           switchMap((response) => {
-            console.log('switchMap | results: ', response.results);
-
             return forkJoin([...response.results.map(({ url }) => this.api.get(url))]).pipe(
               map((hosts) => ({ ...response, results: hosts }))
             );

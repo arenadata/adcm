@@ -24,8 +24,8 @@ import { Host, Prototype, ServicePrototype, StackBase, TypeName } from '@app/cor
 import { DialogComponent } from '@app/shared/components/dialog.component';
 import { GenName } from './naming';
 import { MainService } from '@app/shared/configuration/main/main.service';
-import { ConfigGroupService } from '@app/config-groups/service/config-group.service';
 import { ConfigGroup } from '@app/config-groups/model/config-group.model';
+import { ConfigGroupListService } from '@app/config-groups/service/config-group-list.service';
 
 export interface FormModel {
   name: string;
@@ -101,7 +101,7 @@ export class AddService {
               private cluster: ClusterService,
               public dialog: MatDialog,
               private main: MainService,
-              private configGroup: ConfigGroupService
+              private configGroup: ConfigGroupListService
   ) {}
 
   model(name: string) {

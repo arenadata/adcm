@@ -33,8 +33,8 @@ import { environment } from '@env/environment';
 import { ServiceComponentService } from '@app/services/service-component.service';
 import { EntityNames } from '@app/models/entity-names';
 import { HttpResponseBase } from '@angular/common/http';
-import { ConfigGroupService } from '@app/config-groups/service/config-group.service';
 import { setPathOfRoute } from '@app/store/navigation/navigation.store';
+import { ConfigGroupListService } from '@app/config-groups/service/config-group-list.service';
 
 export interface WorkerInstance {
   current: Entities;
@@ -67,7 +67,7 @@ export class ClusterService {
     protected api: ApiService,
     protected serviceComponentService: ServiceComponentService,
     protected store: Store,
-    public configGroups: ConfigGroupService
+    public configGroups: ConfigGroupListService
   ) {}
 
   clearWorker() {
