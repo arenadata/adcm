@@ -10,12 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rest_framework import serializers
 
-from rest_framework.routers import DefaultRouter
+from cm.models import HostGroup
 
-from . import views
 
-router = DefaultRouter()
-router.register(r'', views.HostGroupViewSet, basename='host-group')
+class HostGroupSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='group-config-host-detail')
 
-urlpatterns = router.urls
+    class Meta:
+        model = HostGroup
+        fields = ('id', 'host', 'group', 'url')

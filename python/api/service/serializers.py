@@ -20,7 +20,7 @@ from api.action.serializers import ActionShort
 from api.api_views import check_obj, filter_actions, CommonAPIURL, ObjectURL
 from api.cluster.serializers import BindSerializer
 from api.component.serializers import ComponentUISerializer
-from api.config_group.serializers import ConfigGroupSerializer
+from api.group_config.serializers import ConfigGroupSerializer
 from cm import issue
 from cm import status_api
 from cm.api import add_service_to_cluster, multi_bind, bind
@@ -81,7 +81,7 @@ class ServiceDetailSerializer(ServiceSerializer):
         lookup_url_kwarg='prototype_id',
     )
     config_groups = serializers.HyperlinkedRelatedField(
-        many=True, read_only=True, view_name='config-group-detail'
+        many=True, read_only=True, view_name='group-config-detail'
     )
 
     def get_issue(self, obj):

@@ -27,7 +27,7 @@ from api.api_views import (
     get_upgradable_func,
 )
 from api.component.serializers import ComponentDetailSerializer
-from api.config_group.serializers import ConfigGroupSerializer
+from api.group_config.serializers import ConfigGroupSerializer
 from api.host.serializers import HostSerializer
 from cm.errors import AdcmEx
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
@@ -84,7 +84,7 @@ class ClusterDetailSerializer(ClusterSerializer):
     bind = hlink('cluster-bind', 'id', 'cluster_id')
     prototype = hlink('cluster-type-details', 'prototype_id', 'prototype_id')
     config_groups = serializers.HyperlinkedRelatedField(
-        many=True, read_only=True, view_name='config-group-detail'
+        many=True, read_only=True, view_name='group-config-detail'
     )
 
     def get_issue(self, obj):

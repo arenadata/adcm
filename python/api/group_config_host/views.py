@@ -10,14 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework import serializers
+
+from rest_framework.viewsets import ModelViewSet
 
 from cm.models import HostGroup
+from .serializers import HostGroupSerializer
 
 
-class HostGroupSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='host-group-detail')
-
-    class Meta:
-        model = HostGroup
-        fields = ('id', 'host', 'group', 'url')
+class HostGroupViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
+    queryset = HostGroup.objects.all()
+    serializer_class = HostGroupSerializer
+    filterset_fields = ('group', 'host')

@@ -23,7 +23,7 @@ from api.api_views import (
     CommonAPIURL,
     ObjectURL,
 )
-from api.config_group.serializers import ConfigGroupSerializer
+from api.group_config.serializers import ConfigGroupSerializer
 from api.serializers import UpgradeSerializer, UrlField
 from cm.errors import AdcmEx
 from cm.models import Action, Prototype
@@ -65,7 +65,7 @@ class ProviderDetailSerializer(ProviderSerializer):
     upgrade = hlink('provider-upgrade', 'id', 'provider_id')
     host = ObjectURL(read_only=True, view_name='host')
     config_groups = serializers.HyperlinkedRelatedField(
-        many=True, read_only=True, view_name='config-group-detail'
+        many=True, read_only=True, view_name='group-config-detail'
     )
 
     def get_issue(self, obj):

@@ -17,7 +17,7 @@ from rest_framework.reverse import reverse
 
 from api.action.serializers import ActionShort
 from api.api_views import hlink, filter_actions, get_api_url_kwargs, CommonAPIURL
-from api.config_group.serializers import ConfigGroupSerializer
+from api.group_config.serializers import ConfigGroupSerializer
 from cm import issue
 from cm import status_api
 from cm.models import Action
@@ -53,7 +53,7 @@ class ComponentDetailSerializer(ComponentSerializer):
     config = CommonAPIURL(read_only=True, view_name='object-config')
     prototype = hlink('component-type-details', 'prototype_id', 'prototype_id')
     config_groups = serializers.HyperlinkedRelatedField(
-        many=True, read_only=True, view_name='config-group-detail'
+        many=True, read_only=True, view_name='group-config-detail'
     )
 
     def get_issue(self, obj):

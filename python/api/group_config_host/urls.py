@@ -11,12 +11,11 @@
 # limitations under the License.
 
 
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.routers import DefaultRouter
 
-from cm.models import HostGroup
-from .serializers import HostGroupSerializer
+from . import views
 
+router = DefaultRouter()
+router.register(r'', views.HostGroupViewSet, basename='group-config-host')
 
-class HostGroupViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
-    queryset = HostGroup.objects.all()
-    serializer_class = HostGroupSerializer
+urlpatterns = router.urls

@@ -40,7 +40,7 @@ class Migration(migrations.Migration):
                     models.OneToOneField(
                         null=True,
                         on_delete=django.db.models.deletion.CASCADE,
-                        related_name='config_group',
+                        related_name='group_config',
                         to='cm.objectconfig',
                     ),
                 ),

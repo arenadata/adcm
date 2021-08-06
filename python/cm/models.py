@@ -235,7 +235,7 @@ class ObjectConfig(ADCMModel):
             'servicecomponent',
             'hostprovider',
             'host',
-            'config_group',
+            'group_config',
         ]
         for object_type in object_types:
             if hasattr(self, object_type):
@@ -531,7 +531,7 @@ class ConfigGroup(ADCMModel):
     description = models.TextField(blank=True)
     hosts = models.ManyToManyField(Host, blank=True, through='HostGroup')
     config = models.OneToOneField(
-        ObjectConfig, on_delete=models.CASCADE, null=True, related_name='config_group'
+        ObjectConfig, on_delete=models.CASCADE, null=True, related_name='group_config'
     )
 
     not_changeable_fields = ('id', 'object_id', 'object_type')
