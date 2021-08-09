@@ -72,6 +72,7 @@ def _assert_bundle_info_value(attribute: str, actual_info: BundleInfo, expected_
     ), f"Bundle's {attribute} should be {expected_value}, not {actual_value}"
 
 
+# pylint: disable=redefined-outer-name
 @allure.step('Check bundle list is empty')
 def _check_bundle_list_is_empty(page: BundleListPage):
     assert (
@@ -98,7 +99,6 @@ def check_bundle_info_is_equal(actual_info: BundleInfo, expected_info: BundleInf
         _assert_bundle_info_value(attr, actual_info, expected_info)
 
 
-# pylint: disable=redefined-outer-name
 @pytest.fixture()
 def page(app_fs: ADCMTest, login_to_adcm_over_api) -> BundleListPage:
     """Get BundleListPage after authorization"""
