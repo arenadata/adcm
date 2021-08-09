@@ -17,7 +17,6 @@ import pytest
 import allure
 import tarfile
 
-from _pytest.fixtures import SubRequest
 from pathlib import PosixPath
 from adcm_pytest_plugin import utils
 from adcm_client.objects import ADCMClient, Bundle
@@ -30,6 +29,39 @@ from tests.ui_tests.app.page.bundle_list.page import BundleListPage, BundleInfo
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.host_list.page import HostListPage
 from tests.ui_tests.utils import check_rows_amount
+
+CLUSTER_CE_CONFIG = [
+    {
+        'type': 'cluster',
+        'name': 'test_cluster',
+        'description': 'community description',
+        'version': '1.5',
+        'edition': 'community',
+    }
+]
+
+CLUSTER_EE_CONFIG = [
+    {
+        **CLUSTER_CE_CONFIG[0],
+        'description': 'enterprise description',
+        'license': 'license.txt',
+        'edition': 'enterprise',
+    }
+]
+
+PROVIDER_CONFIG = [
+    {
+        'type': 'provider',
+        'name': 'test_provider',
+        'version': '2.15-dev',
+    },
+    {
+        'type': 'host',
+        'name': 'Test Host',
+        'description': 'Test Host Description',
+        'version': '2.15-dev',
+    },
+]
 
 
 def _assert_bundle_info_value(attribute: str, actual_info: BundleInfo, expected_info: BundleInfo):
@@ -73,94 +105,70 @@ def page(app_fs: ADCMTest, login_to_adcm_over_api) -> BundleListPage:
     return BundleListPage(app_fs.driver, app_fs.adcm.url).open()
 
 
-@pytest.fixture(params=["cluster_community"])
-@allure.title("Upload bundle")
-def upload_bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
-    return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), request.param))
-
-
-@pytest.fixture()
-def _create_cluster(upload_bundle: Bundle):
-    """Upload bundle and create cluster"""
-    upload_bundle.cluster_create('Best Cluster Ever')
-
-
-@pytest.fixture(params=[12])
+@pytest.fixture(params=[[CLUSTER_CE_CONFIG]])
 def create_bundle_archives(request, tmp_path: PosixPath) -> List[str]:
     """
     Create dummy bundle archives to test pagination
     :returns: list with paths to archives
     """
     archives = []
-    for i in range(request.param):
+    for i, config in enumerate(request.param):
         archive_path = tmp_path / f'spam_bundle_{i}.tar'
         config_fp = (bundle_dir := tmp_path / f'spam_bundle_{i}') / 'config.yaml'
         bundle_dir.mkdir()
-        config = [
-            {
-                'type': 'cluster',
-                'name': f'spam_cluster_{i}',
-                'version': str(i),
-            }
-        ]
         with open(config_fp, 'w') as config_file:
             yaml.safe_dump(config, config_file)
         with tarfile.open(archive_path, 'w') as archive:
             archive.add(config_fp, arcname='config.yaml')
+            # assume that ist is declared in first item
+            if 'license' in config[0]:
+                license_fp = os.path.join(utils.get_data_dir(__file__), 'license.txt')
+                archive.add(license_fp, arcname=config[0]['license'])
         archives.append(str(archive_path))
     return archives
 
 
+@allure.title("Upload bundle")
 @pytest.fixture()
-def _upload_bundles(sdk_client_fs: ADCMClient, create_bundle_archives):
-    """Upload many "dummy" bundle archives"""
-    for bundle in create_bundle_archives:
-        sdk_client_fs.upload_from_fs(bundle)
+def upload_bundles(create_bundle_archives: List[str], sdk_client_fs: ADCMClient) -> List[Bundle]:
+    return [sdk_client_fs.upload_from_fs(path) for path in create_bundle_archives]
 
 
-@pytest.mark.parametrize(
-    "bundle_archive",
-    [pytest.param(utils.get_data_dir(__file__, "cluster_community"), id="community")],
-    indirect=True,
-)
-def test_ce_bundle_upload(bundle_archive: str, page: BundleListPage):
+@pytest.fixture()
+def _create_cluster(upload_bundles: List[Bundle]):
+    """Upload bundles and create cluster from first bundle"""
+    upload_bundles[0].cluster_create('Best Cluster Ever')
+
+
+def test_ce_bundle_upload(create_bundle_archives: List[str], page: BundleListPage):
     """Upload community bundle"""
     bundle_params = BundleInfo(
         name="test_cluster", version="1.5", edition="community", description="community description"
     )
-    page.upload_bundle(bundle_archive)
+    page.upload_bundle(create_bundle_archives[0])
     bundle_info = page.get_bundle_info()
     check_bundle_info_is_equal(bundle_info, bundle_params)
 
 
-@pytest.mark.parametrize(
-    "bundle_archive",
-    [pytest.param(utils.get_data_dir(__file__, "cluster_enterprise"), id="enterprise")],
-    indirect=True,
-)
-def test_ee_bundle_upload(bundle_archive: str, page: BundleListPage):
+@pytest.mark.parametrize("create_bundle_archives", [[CLUSTER_EE_CONFIG]], indirect=True)
+def test_ee_bundle_upload(create_bundle_archives: List[str], page: BundleListPage):
     """Upload enterprise bundle and accept licence"""
     bundle_params = BundleInfo(
-        name="test_cluster",
-        version="1.5",
-        edition="enterprise",
-        description="enterprise description",
+        name='test_cluster',
+        version='1.5',
+        edition='enterprise',
+        description='enterprise description',
     )
-    page.upload_bundle(bundle_archive)
+    page.upload_bundle(create_bundle_archives[0])
     page.accept_licence()
     bundle_info = page.get_bundle_info()
     check_bundle_info_is_equal(bundle_info, bundle_params)
 
 
-@pytest.mark.parametrize(
-    "bundle_archive",
-    [pytest.param(utils.get_data_dir(__file__, "cluster_enterprise"), id="enterprise")],
-    indirect=True,
-)
-def test_delete_bundle(bundle_archive: str, page: BundleListPage):
+def test_delete_bundle(create_bundle_archives: List[str], page: BundleListPage):
     """Upload bundle and delete it"""
     with allure.step('Upload bundle'):
-        page.upload_bundle(bundle_archive)
+        page.upload_bundle(create_bundle_archives[0])
         assert page.table.row_count == 1, 'One bundle should be uploaded'
     with allure.step('Delete bundle'):
         page.delete_bundle()
@@ -169,48 +177,39 @@ def test_delete_bundle(bundle_archive: str, page: BundleListPage):
 
 @pytest.mark.full()
 @pytest.mark.parametrize(
-    "bundle_archives",
-    [
-        pytest.param(
-            (
-                utils.get_data_dir(__file__, "cluster_community"),
-                utils.get_data_dir(__file__, "cluster_enterprise"),
-            )
-        ),
-    ],
-    indirect=True,
+    "create_bundle_archives", [[CLUSTER_CE_CONFIG, CLUSTER_EE_CONFIG]], indirect=True
 )
-def test_two_bundles(bundle_archives: List[str], page: BundleListPage):
+def test_two_bundles(create_bundle_archives: List[str], page: BundleListPage):
     """Upload two bundles"""
     with page.table.wait_rows_change():
-        page.upload_bundle(bundle_archives[0])
+        page.upload_bundle(create_bundle_archives[0])
     with page.table.wait_rows_change():
-        page.upload_bundle(bundle_archives[1])
+        page.upload_bundle(create_bundle_archives[1])
     with allure.step('Check amount of rows'):
         rows = page.table.row_count
         assert rows == 2, f'Row amount should be 2, but only {rows} is presented'
 
 
-def test_open_bundle_from_table(page: BundleListPage, upload_bundle: Bundle):
+def test_open_bundle_from_table(page: BundleListPage, upload_bundles: List[Bundle]):
     """Test open bundle object page from list of bundles"""
     with allure.step('Open bundle object page from bundle list'):
         page.click_bundle_in_row()
     with allure.step('Check object page is opened'):
-        object_page = BundlePage(page.driver, page.base_url, upload_bundle.id)
+        object_page = BundlePage(page.driver, page.base_url, upload_bundles[0].id)
         object_page.wait_page_is_opened()
 
 
-def test_open_main_menu_on_bundle_page(page: BundleListPage, upload_bundle: Bundle):
+def test_open_main_menu_on_bundle_page(page: BundleListPage, upload_bundles: List[Bundle]):
     """Open main menu on bundle detailed page"""
     with allure.step('Open bundle object page'):
-        object_page = BundlePage(page.driver, page.base_url, upload_bundle.id)
+        object_page = BundlePage(page.driver, page.base_url, upload_bundles[0].id)
         object_page.open()
     object_page.open_main_menu()
     object_page.check_all_fields_presented()
 
 
 @pytest.mark.full()
-@pytest.mark.usefixtures('upload_bundle')
+@pytest.mark.usefixtures('upload_bundles')
 def test_open_adcm_main_menu(page: BundleListPage):
     """Open main menu by clicking on the menu icon in toolbar"""
     page.find_and_click(BundleListLocators.Tooltip.apps_btn)
@@ -229,13 +228,13 @@ def test_delete_bundle_with_created_cluster(page: BundleListPage):
 
 
 @pytest.mark.parametrize(
-    "bundle_archive",
-    [utils.get_data_dir(__file__, "provider")],
+    "create_bundle_archives",
+    [[PROVIDER_CONFIG]],
     indirect=True,
     ids=['provider_bundle'],
 )
 def test_upload_provider_bundle_from_another_page(
-    page: BundleListPage, app_fs: ADCMTest, bundle_archive: str
+    page: BundleListPage, app_fs: ADCMTest, create_bundle_archives: List[str]
 ):
     """
     Upload bundle from host list and check it is presented in table
@@ -246,18 +245,18 @@ def test_upload_provider_bundle_from_another_page(
     _check_bundle_list_is_empty(page)
     with allure.step('Create bundle from host creation popup'):
         host_list_page = HostListPage(app_fs.driver, app_fs.adcm.url).open()
-        host_list_page.upload_bundle(bundle_archive)
+        host_list_page.upload_bundle(create_bundle_archives[0])
     _open_bundle_list_and_check_info(page, expected_info)
 
 
 @pytest.mark.parametrize(
-    "bundle_archive",
-    [utils.get_data_dir(__file__, "cluster_community")],
+    "create_bundle_archives",
+    [[CLUSTER_CE_CONFIG]],
     indirect=True,
     ids=['cluster_bundle'],
 )
 def test_upload_cluster_bundle_from_another_page(
-    page: BundleListPage, app_fs: ADCMTest, bundle_archive: str
+    page: BundleListPage, app_fs: ADCMTest, create_bundle_archives: List[str]
 ):
     """Upload bundle from cluster list and check it is presented in table"""
     expected_info = BundleInfo(
@@ -266,11 +265,21 @@ def test_upload_cluster_bundle_from_another_page(
     _check_bundle_list_is_empty(page)
     with allure.step('Create bundle from cluster creation popup'):
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
-        cluster_page.upload_bundle_in_popup(bundle_archive)
+        cluster_page.upload_bundle_in_popup(create_bundle_archives[0])
     _open_bundle_list_and_check_info(page, expected_info)
 
 
-@pytest.mark.usefixtures("_upload_bundles")
+@pytest.mark.parametrize(
+    "create_bundle_archives",
+    [
+        [
+            [{'type': 'cluster', 'name': f'ihavetodance-{i}', 'version': f'{i}-ver'}]
+            for i in range(12)
+        ]
+    ],
+    indirect=True,
+)
+@pytest.mark.usefixtures("upload_bundles")
 def test_bundle_list_pagination(page: BundleListPage):
     """Upload 12 bundles and check pagination"""
     params = {'on_first_page': 10, 'on_second_page': 2}
