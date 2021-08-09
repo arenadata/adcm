@@ -48,6 +48,15 @@ class ClusterListPage(BasePageObject):
             self.wait_element_visible(ClusterListLocators.LicensePopup.block)
             self.find_and_click(ClusterListLocators.LicensePopup.agree_btn)
 
+    @allure.step("Upload bundle without creating a cluster")
+    def upload_bundle_in_popup(self, bundle: str):
+        self.find_and_click(ClusterListLocators.Tooltip.cluster_add_btn)
+        popup = ClusterListLocators.CreateClusterPopup
+        self.wait_element_visible(popup.block)
+        self.find_element(popup.upload_bundle_btn).send_keys(bundle)
+        self.find_and_click(popup.cancel_btn)
+        self.wait_element_hide(popup.block)
+
     @allure.step("Get cluster info from row {row}")
     def get_cluster_info_from_row(self, row: int) -> dict:
         row_elements = ClusterListLocators.ClusterTable.ClusterRow

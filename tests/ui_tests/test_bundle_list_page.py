@@ -27,6 +27,7 @@ from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
 from tests.ui_tests.app.page.bundle.page import BundlePage
 from tests.ui_tests.app.page.bundle_list.locators import BundleListLocators
 from tests.ui_tests.app.page.bundle_list.page import BundleListPage, BundleInfo
+from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.host_list.page import HostListPage
 from tests.ui_tests.utils import check_rows_amount
 
@@ -37,6 +38,26 @@ def _assert_bundle_info_value(attribute: str, actual_info: BundleInfo, expected_
     assert (
         actual_value == expected_value
     ), f"Bundle's {attribute} should be {expected_value}, not {actual_value}"
+
+
+@allure.step('Check bundle list is empty')
+def _check_bundle_list_is_empty(page: BundleListPage):
+    assert (
+        row_count := page.table.row_count
+    ) == 0, f'Bundle list should be empty, but {row_count} records was found'
+
+
+@allure.step('Check bundle is listed in table')
+def _open_bundle_list_and_check_info(page: BundleListPage, expected_info: BundleInfo):
+    """
+    Open bundle list page, check that exactly 1 row is presented and check it's info
+    """
+    page.open()
+    assert (
+        row_count := page.table.row_count
+    ) == 1, f'Bundle list should has exactly 1 record, but {row_count} was found'
+    bundle_info = page.get_bundle_info()
+    check_bundle_info_is_equal(bundle_info, expected_info)
 
 
 @allure.step('Check bundle info')
@@ -59,13 +80,13 @@ def upload_bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
 
 
 @pytest.fixture()
-def _create_connected_objects(upload_bundle: Bundle):
+def _create_cluster(upload_bundle: Bundle):
     """Upload bundle and create cluster"""
     upload_bundle.cluster_create('Best Cluster Ever')
 
 
 @pytest.fixture(params=[12])
-def spam_bundles(request, tmp_path: PosixPath) -> List[str]:
+def create_bundle_archives(request, tmp_path: PosixPath) -> List[str]:
     """
     Create dummy bundle archives to test pagination
     :returns: list with paths to archives
@@ -91,9 +112,9 @@ def spam_bundles(request, tmp_path: PosixPath) -> List[str]:
 
 
 @pytest.fixture()
-def _upload_spam_bundles(sdk_client_fs: ADCMClient, spam_bundles: List[str]):
-    """Upload spam bundles"""
-    for bundle in spam_bundles:
+def _upload_bundles(sdk_client_fs: ADCMClient, create_bundle_archives):
+    """Upload many "dummy" bundle archives"""
+    for bundle in create_bundle_archives:
         sdk_client_fs.upload_from_fs(bundle)
 
 
@@ -180,6 +201,7 @@ def test_open_bundle_from_table(page: BundleListPage, upload_bundle: Bundle):
 
 
 def test_open_main_menu_on_bundle_page(page: BundleListPage, upload_bundle: Bundle):
+    """Open main menu on bundle detailed page"""
     with allure.step('Open bundle object page'):
         object_page = BundlePage(page.driver, page.base_url, upload_bundle.id)
         object_page.open()
@@ -196,8 +218,8 @@ def test_open_adcm_main_menu(page: BundleListPage):
 
 
 @pytest.mark.full()
-@pytest.mark.usefixtures("_create_connected_objects")
-def test_delete_provider_with_created_cluster(page: BundleListPage):
+@pytest.mark.usefixtures("_create_cluster")
+def test_delete_bundle_with_created_cluster(page: BundleListPage):
     """
     Bundle should not be deleted if an object defined in it is created
     """
@@ -212,7 +234,7 @@ def test_delete_provider_with_created_cluster(page: BundleListPage):
     indirect=True,
     ids=['provider_bundle'],
 )
-def test_create_bundle_from_another_page(
+def test_upload_provider_bundle_from_another_page(
     page: BundleListPage, app_fs: ADCMTest, bundle_archive: str
 ):
     """
@@ -221,23 +243,34 @@ def test_create_bundle_from_another_page(
     expected_info = BundleInfo(
         name='test_provider', version='2.15-dev', edition='community', description=''
     )
-    with allure.step('Check bundle list is empty'):
-        assert (
-            row_count := page.table.row_count
-        ) == 0, f'Bundle list should be empty, but {row_count} records was found'
+    _check_bundle_list_is_empty(page)
     with allure.step('Create bundle from host creation popup'):
         host_list_page = HostListPage(app_fs.driver, app_fs.adcm.url).open()
         host_list_page.upload_bundle(bundle_archive)
-    with allure.step('Check bundle is listed in table'):
-        page.open()
-        assert (
-            row_count := page.table.row_count
-        ) == 1, f'Bundle list should has exactly 1 record, but {row_count} was found'
-        bundle_info = page.get_bundle_info()
-        check_bundle_info_is_equal(bundle_info, expected_info)
+    _open_bundle_list_and_check_info(page, expected_info)
 
 
-@pytest.mark.usefixtures("_upload_spam_bundles")
+@pytest.mark.parametrize(
+    "bundle_archive",
+    [utils.get_data_dir(__file__, "cluster_community")],
+    indirect=True,
+    ids=['cluster_bundle'],
+)
+def test_upload_cluster_bundle_from_another_page(
+    page: BundleListPage, app_fs: ADCMTest, bundle_archive: str
+):
+    """Upload bundle from cluster list and check it is presented in table"""
+    expected_info = BundleInfo(
+        name='test_cluster', version='1.5', edition='community', description='community description'
+    )
+    _check_bundle_list_is_empty(page)
+    with allure.step('Create bundle from cluster creation popup'):
+        cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+        cluster_page.upload_bundle_in_popup(bundle_archive)
+    _open_bundle_list_and_check_info(page, expected_info)
+
+
+@pytest.mark.usefixtures("_upload_bundles")
 def test_bundle_list_pagination(page: BundleListPage):
     """Upload 12 bundles and check pagination"""
     params = {'on_first_page': 10, 'on_second_page': 2}
