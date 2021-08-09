@@ -8,8 +8,8 @@ data = [
         'template': {
             'message': 'Object was locked by running action ${action} on ${target}',
             'placeholder': {
-                'action': {},
-                'target': {},
+                'action': {'type': 'action'},
+                'target': {'type': 'adcm_entity'},
             },
         },
     },

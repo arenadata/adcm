@@ -1,3 +1,5 @@
+# pylint: disable=too-many-lines
+
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -9,11 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-from itertools import chain
-from typing import Iterable, Optional
 
+from __future__ import unicode_literals
+from enum import Enum
+from itertools import chain
+from typing import Iterable
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User, Group, Permission
@@ -247,20 +249,18 @@ class ADCMEntity(ADCMModel):
         log.info('set %s state to "%s"', self, state)
 
     def get_id_chain(self) -> dict:
-        """Get object ID chain for front-end URL generation in message templates"""
-        ids = {}
+        """
+        Get object ID chain for front-end URL generation in message templates
+        result looks like {'cluster': 12, 'service': 34, 'component': 45}
+        """
+        ids = dict()
         ids[self.prototype.type] = self.pk
         for attr in ['cluster', 'service', 'provider']:
             value = getattr(self, attr, None)
             if value:
                 ids[attr] = value.pk
 
-        result = {
-            'type_prefix': self.prototype.type,  # use for `type` generation depending on usage
-            'name': self.display_name,
-            'ids': ids,
-        }
-        return result
+        return ids
 
 
 class ADCM(ADCMEntity):
@@ -658,23 +658,15 @@ class TaskLog(ADCMModel):
     finish_date = models.DateTimeField()
     lock = models.ForeignKey('ConcernItem', null=True, on_delete=models.SET_NULL, default=None)
 
-    def get_target_object(self) -> Optional[ADCMEntity]:
-        obj = None
-        for obj_type, obj_id in self.selector.items():
-            if obj_id == self.object_id:
-                try:
-                    obj = get_model_by_type(obj_type).objects.get(id=obj_id)
-                    break
-                except ObjectDoesNotExist:
-                    pass
-        return obj
-
     def lock_affected(self, objects: Iterable[ADCMEntity]) -> None:
         if self.lock:
             return
 
-        target = self.get_target_object()
-        reason = MessageTemplate.get_lock_reason(self.action, target)
+        reason = MessageTemplate.get_message_from_template(
+            MessageTemplate.KnownNames.LockedByAction.value,
+            action=self.action,
+            target=self.task_object,
+        )
         self.lock = ConcernItem.objects.create(name=None, reason=reason)
         self.save()
         for obj in objects:
@@ -883,13 +875,43 @@ class MessageTemplate(ADCMModel):
     """
     Templates for `ConcernItem.reason
     There are two sources of templates - they are pre-created in migrations or loaded from bundles
+
+    expected template format is
+        {
+            'message': 'Lorem ${ipsum} dolor sit ${amet}',
+            'placeholder': {
+                'lorem': {'type': 'cluster'},
+                'amet': {'type': 'action'}
+            }
+        }
+
+    placeholder fill functions have unified common interface:
+      @classmethod
+      def _func(cls, *args, **kwargs) -> dict
+
     TODO: load from bundle
     TODO: check consistency on creation
-    TODO: check if enum with names will be useful
     """
 
     name = models.CharField(max_length=160, unique=True)
     template = models.JSONField()
+
+    class KnownNames(Enum):
+        LockedByAction = 'locked by action on target'
+        # ConfigIssue = 'object config issue'
+        # RequiredServiceIssue = 'required service issue'
+        # RequiredImportIssue = 'required import issue'
+        # HostComponentIssue = 'host component issue'
+
+    class PlaceHolderType(Enum):
+        Action = 'action'
+        ADCMEntity = 'adcm_entity'
+        ADCM = 'adcm'
+        Cluster = 'cluster'
+        Service = 'service'
+        Component = 'component'
+        Provider = 'privider'
+        Host = 'host'
 
     @classmethod
     def get_lock_reason(cls, action: Action, target: ADCMEntity) -> dict:
@@ -910,6 +932,61 @@ class MessageTemplate(ADCMModel):
         tpl['placeholder']['action'] = action.get_id_chain(target_placeholder['ids'])
 
         return tpl
+
+    @classmethod
+    def get_message_from_template(cls, name: str, **kwargs) -> dict:
+        """Find message template by its name and fill placeholders"""
+        tpl = cls.obj.get(name=name).template
+        filled_placeholders = {}
+        try:
+            for ph_name, ph_data in tpl['placeholder'].items():
+                filled_placeholders[ph_name] = cls._fill_placeholder(ph_name, ph_data, **kwargs)
+        except (KeyError, AttributeError, TypeError, AssertionError) as ex:
+            raise AdcmEx('Unexpected message template format') from ex
+        tpl['placeholder'] = filled_placeholders
+        return tpl
+
+    @classmethod
+    def _fill_placeholder(cls, ph_name: str, ph_data: dict, **ph_source_data) -> dict:
+        type_map = {
+            cls.PlaceHolderType.Action.value: cls._action_placeholder,
+            cls.PlaceHolderType.ADCMEntity.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.ADCM.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.Cluster.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.Service.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.Component.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.Provider.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.Host.value: cls._adcm_entity_placeholder,
+        }
+        return type_map[ph_data['type']](ph_name, **ph_source_data)
+
+    @classmethod
+    def _action_placeholder(cls, *args, **kwargs) -> dict:
+        action = kwargs.get('action')
+        assert action
+        target = kwargs.get('target')
+        assert target
+
+        ids = target.get_id_chain()
+        ids['action'] = action.pk
+        return {
+            'type': cls.PlaceHolderType.Action.value,
+            'name': action.display_name,
+            'ids': ids,
+        }
+
+    @classmethod
+    def _adcm_entity_placeholder(cls, *args, **kwargs) -> dict:
+        ph_name = args[0]
+        assert ph_name
+        obj = kwargs.get(ph_name)
+        assert obj
+
+        return {
+            'type': obj.prototype.type,
+            'name': obj.display_name,
+            'ids': obj.get_id_chain(),
+        }
 
 
 class ConcernItem(ADCMModel):
