@@ -24,4 +24,5 @@ class BundleLocators:
 
 class BundleMainMenuLocators(ObjectPageLocators):
     """Bundle object page main menu locators"""
+
     text = Locator(By.XPATH, "//mat-card-content", "Bundle main page text")
