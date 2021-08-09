@@ -8,6 +8,8 @@ import { Observable } from 'rxjs';
 import { of } from 'rxjs/internal/observable/of';
 import { AddConfigGroupComponent } from '../components/config-group-add/config-group-add.component';
 import { ApiService } from '../../core/api';
+import { environment } from '../../../environments/environment';
+import { ConfigGroup } from '../model/config-group.model';
 
 const newConfigGroupForm = () =>
   new FormGroup({
@@ -35,11 +37,11 @@ export class ConfigGroupAddService implements IAddService {
     };
   }
 
-  add(group: any): Observable<any> {
+  add(group: Partial<ConfigGroup>): Observable<any> {
     const params = { ...group };
-    console.log(params);
-    // return this.api.post<unknown>(`${environment.apiRoot}config-group/`, params);
-    return of(null);
+    params.object_type = 'cluster';
+    params.object_id = this.Cluster.id;
+    return this.api.post<unknown>(`${environment.apiRoot}config-group/`, params);
   }
 
   getList<T>(type: TypeName, param: Params = {}): Observable<T[]> {

@@ -38,9 +38,8 @@ export class AddConfigGroupComponent extends BaseFormDirective implements OnInit
   }
 
   save(): void {
-    console.log('asdasd');
     const data = clearEmptyField(this.form.value) as ConfigGroup;
-
+    this.service.Cluster.id
     this.service
       .add(data)
       .pipe(take(1))
