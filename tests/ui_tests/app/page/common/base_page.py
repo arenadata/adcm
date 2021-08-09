@@ -140,18 +140,19 @@ class BasePageObject:
             )
 
     def is_element_displayed(
-        self, locator: Union[Locator, WebElement], timeout: int = None
+        self, element: Union[Locator, WebElement], timeout: int = None
     ) -> bool:
         """Checks if element is displayed."""
 
         try:
-            with allure.step(f'Check "{locator.name}"'):
-                element = (
-                    locator
-                    if isinstance(locator, WebElement)
-                    else self.find_element(locator, timeout=timeout or self.default_loc_timeout)
-                )
-                element.is_displayed()
+            with allure.step(
+                f'Check {element.name if isinstance(element, Locator) else element.text}'
+            ):
+                (
+                    element
+                    if isinstance(element, WebElement)
+                    else self.find_element(element, timeout=timeout or self.default_loc_timeout)
+                ).is_displayed()
         except (
             TimeoutException,
             NoSuchElementException,
@@ -167,11 +168,11 @@ class BasePageObject:
             assert self.is_element_displayed(loc), f"Locator {loc.name} isn't displayed on page"
 
     def check_element_should_be_hidden(
-        self, locator: Union[Locator, WebElement], timeout: Optional[int] = None
+        self, element: Union[Locator, WebElement], timeout: Optional[int] = None
     ) -> None:
         """Raises assertion error if element is still visible after timeout"""
         try:
-            self.wait_element_hide(locator, timeout)
+            self.wait_element_hide(element, timeout)
         except TimeoutException as e:
             raise AssertionError(e.msg)
 
@@ -218,21 +219,18 @@ class BasePageObject:
                 f"{loc_timeout} seconds",
             )
 
-    def wait_element_hide(self, locator: Union[Locator, WebElement], timeout: int = None) -> None:
+    def wait_element_hide(self, element: Union[Locator, WebElement], timeout: int = None) -> None:
         """Wait the element to hide."""
 
         loc_timeout = timeout or self.default_loc_timeout
-        with allure.step(f'Wait "{locator.name}" to hide'):
-            if isinstance(locator, Locator):
-                WDW(self.driver, loc_timeout).until(
-                    EC.invisibility_of_element_located([locator.by, locator.value]),
-                    message=f"locator {locator.name} hasn't hide for {loc_timeout} seconds",
-                )
-            else:
-                WDW(self.driver, loc_timeout).until(
-                    EC.invisibility_of_element_located(locator),
-                    message=f"locator hasn't hide for {loc_timeout} seconds",
-                )
+        el_name = element.name if isinstance(element, Locator) else element.text
+        with allure.step(f'Check {el_name} to hide'):
+            WDW(self.driver, loc_timeout).until(
+                EC.invisibility_of_element_located(
+                    [element.by, element.value] if isinstance(element, Locator) else element
+                ),
+                message=f"locator {el_name} hasn't hide for {loc_timeout} seconds",
+            )
 
     def wait_page_is_opened(self, timeout: int = None):
         """Wait for current page to be opened"""
