@@ -1,8 +1,9 @@
-import { EventEmitter, InjectionToken } from '@angular/core';
+import { EventEmitter, InjectionToken, Type } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { Observable, Subscription } from 'rxjs';
 import { Cluster, Host, Service, TypeName } from '@app/core/types';
 import { Params } from '@angular/router';
+import { BaseFormDirective } from '@app/shared/add-component/base-form.directive';
 
 export const ADD_SERVICE_PROVIDER = new InjectionToken<IAddService>('AddService');
 
@@ -11,6 +12,7 @@ export interface FormModel {
   title?: string;
   form?: FormGroup;
   success?: EventEmitter<{ flag: boolean; obj: any }>;
+  component?: Type<BaseFormDirective>;
 }
 
 export interface IAddService {
