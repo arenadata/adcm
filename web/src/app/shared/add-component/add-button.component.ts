@@ -15,8 +15,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { DialogComponent } from '../components/dialog.component';
 import { BaseDirective } from '../directives/base.directive';
 import { AddFormComponent } from './add-form.component';
-import { AddService } from './add.service';
-import { ADD_SERVICE_PROVIDER } from '@app/shared/add-component/add-service-token';
+import { ADD_SERVICE_PROVIDER, IAddService } from '@app/shared/add-component/add-service-token';
 
 @Component({
   selector: 'app-add-button',
@@ -39,7 +38,7 @@ export class AddButtonComponent extends BaseDirective implements OnDestroy {
   @Input() name: string;
   @Output() added = new EventEmitter();
 
-  constructor(@Inject(ADD_SERVICE_PROVIDER) private service: AddService,
+  constructor(@Inject(ADD_SERVICE_PROVIDER) private service: IAddService,
               private dialog: MatDialog) {
     super();
   }

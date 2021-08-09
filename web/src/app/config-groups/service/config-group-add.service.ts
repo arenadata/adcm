@@ -6,6 +6,7 @@ import { Host, TypeName } from '../../core/types';
 import { Params } from '@angular/router';
 import { Observable } from 'rxjs';
 import { of } from 'rxjs/internal/observable/of';
+import { AddConfigGroupComponent } from '../components/config-group-add/config-group-add.component';
 
 const newConfigGroupForm = () =>
   new FormGroup({
@@ -29,6 +30,7 @@ export class ConfigGroupAddService implements IAddService {
       name: 'configgroup',
       title: 'Config group',
       form: newConfigGroupForm(),
+      component: AddConfigGroupComponent
     };
   }
 

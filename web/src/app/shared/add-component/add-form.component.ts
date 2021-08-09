@@ -37,8 +37,8 @@ import { FormModel } from '@app/shared/add-component/add-service-token';
           <app-add-host2cluster (event)="message($event)" #cc></app-add-host2cluster>
         </ng-container>
         <ng-container *ngSwitchDefault>
-          <ng-container *ngIf="!!model.addComponent">
-            <ng-container #cc *ngComponentOutlet="model.addComponent"></ng-container>
+          <ng-container *ngIf="!!model.component">
+            <ng-container #cc *ngComponentOutlet="model.component"></ng-container>
           </ng-container>
         </ng-container>
       </ng-container>
