@@ -26,7 +26,7 @@ import { AuthGuard } from '../../core/auth/auth.guard';
 import { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';
 import { ServiceComponentsComponent } from '@app/components/service-components.component';
 import { ConfigGroupHostComponent } from '../../config-groups/host/host.component';
-import { loadConfigGroup } from '../../config-groups/loder';
+import { loadConfigGroup } from '../../config-groups/loader';
 
 
 const clusterRoutes: Routes = [

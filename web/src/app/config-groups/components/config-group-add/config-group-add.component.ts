@@ -9,12 +9,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit } from '@angular/core';
+import { Component, forwardRef, OnInit } from '@angular/core';
 
 import { BaseFormDirective } from '../../../shared/add-component/base-form.directive';
-import { clearEmptyField } from '../../../core/types';
-import { take } from 'rxjs/operators';
-import { ConfigGroup } from '../../model/config-group.model';
+import { ADD_SERVICE_PROVIDER } from '../../../shared/add-component/add-service-token';
+import { ConfigGroupAddService } from '../../service/config-group-add.service';
 
 @Component({
   selector: 'app-config-group-add',
@@ -25,19 +24,22 @@ import { ConfigGroup } from '../../model/config-group.model';
       <app-add-controls [disabled]="!form.valid" (cancel)="onCancel()" (save)="save()"></app-add-controls>
     </ng-container>
   `,
+  providers: [
+    { provide: ADD_SERVICE_PROVIDER, useExisting: forwardRef(() => ConfigGroupAddService) }
+  ],
 })
 export class AddConfigGroupComponent extends BaseFormDirective implements OnInit {
 
   ngOnInit(): void {
-    this.form = this.service.model('configgroup').form;
+    this.form = this.service.model().form;
   }
 
   save(): void {
-    const data = clearEmptyField(this.form.value) as ConfigGroup;
-
-    this.service
-      .addConfigGroup(data)
-      .pipe(take(1))
-      .subscribe((_) => this.onCancel());
+    // const data = clearEmptyField(this.form.value) as ConfigGroup;
+    //
+    // this.service
+    //   .addConfigGroup(data)
+    //   .pipe(take(1))
+    //   .subscribe((_) => this.onCancel());
   }
 }

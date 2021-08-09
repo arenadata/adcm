@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ConfigGroupRoutingModule } from './config-group-routing.module';
 import { ConfigGroupListComponent } from './pages';
 import { AdwpListModule } from '@adwp-ui/widgets';
-import { AddConfigGroupComponent } from '@app/config-groups/components/config-group-add/config-group.component';
+import { AddConfigGroupComponent } from './components/config-group-add/config-group-add.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { Host2configgroupComponent } from '@app/config-groups/components/config-group-host-add/host2configgroup.component';
 import { MatListModule } from '@angular/material/list';
