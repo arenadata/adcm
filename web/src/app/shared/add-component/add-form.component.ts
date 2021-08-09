@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, ViewChild } from '@angular/core';
+import { Component, ViewChild, ViewContainerRef } from '@angular/core';
 
 import { ChannelService, keyChannelStrim } from '@app/core/services';
 import { DynamicComponent } from '@app/shared/directives';
@@ -48,16 +48,16 @@ import { FormModel } from '@app/shared/add-component/add-service-token';
 export class AddFormComponent implements DynamicComponent {
   model: FormModel;
 
-  constructor(private channel: ChannelService) {}
+  constructor(private channel: ChannelService, public viewContainer: ViewContainerRef) {}
 
   @ViewChild('cc') container: BaseFormDirective;
 
   onEnterKey() {
-    console.log('onEnterKey: ', this.container);
-    // if (this.container.form.valid) this.container.save();
+    if (this.container.form.valid) this.container.save();
   }
 
   message(m: string) {
     this.channel.next(keyChannelStrim.notifying, m);
   }
+
 }
