@@ -10,8 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from contextlib import contextmanager
 
 import allure
+from adcm_pytest_plugin.utils import wait_until_step_succeeds
+from selenium.webdriver.remote.webdriver import WebElement
 
 from tests.ui_tests.app.page.cluster.locators import (
     ClusterImportLocators,
@@ -28,6 +31,10 @@ from tests.ui_tests.app.page.common.common_locators import (
     ObjectPageMenuLocators,
 )
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
+from tests.ui_tests.app.page.common.dialogs import (
+    ActionDialog,
+)
+from tests.ui_tests.app.page.common.popups import IssuePopupLocators
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
@@ -126,6 +133,48 @@ class ClusterServicesPage(ClusterPageMixin):
             if service_text.text == service_name:
                 service_text.click()
         self.find_and_click(ClusterServicesLocators.AddServicePopup.create_btn)
+
+    def click_on_issue_by_name(self, row: WebElement, issue_name: str):
+        self.hover_element(self.find_child(row, ClusterServicesLocators.ServiceTableRow.actions))
+        self.wait_element_visible(IssuePopupLocators.block)
+        for issue in self.find_elements(IssuePopupLocators.link_to_issue):
+            if issue.text == issue_name:
+                issue.click()
+                return
+        raise AssertionError(f"Issue name '{issue_name}' not found in issues")
+
+    def click_action_btn_in_row(self, row: WebElement):
+        self.find_child(row, ClusterServicesLocators.ServiceTableRow.actions).click()
+
+    def click_import_btn_in_row(self, row: WebElement):
+        self.find_child(row, ClusterServicesLocators.ServiceTableRow.service_import).click()
+
+    def click_config_btn_in_row(self, row: WebElement):
+        self.find_child(row, ClusterServicesLocators.ServiceTableRow.config).click()
+
+    @allure.step("Get service state")
+    def get_service_state_from_row(self, row: WebElement):
+        return self.find_child(row, ClusterServicesLocators.ServiceTableRow.state).text
+
+    @allure.step("Run action {action_name} for service")
+    def run_action_in_service_row(self, row: WebElement, action_name: str):
+        self.click_action_btn_in_row(row)
+        self.wait_element_visible(self.table.table.ActionPopup.block)
+        self.find_and_click(self.table.table.ActionPopup.button(action_name))
+        self.wait_element_visible(ActionDialog.body)
+        self.find_and_click(ActionDialog.run)
+
+    @contextmanager
+    def wait_service_state_change(self, row: WebElement):
+        state_before = self.get_service_state_from_row(row)
+        yield
+
+        def wait_state():
+            state_after = self.get_service_state_from_row(row)
+            assert state_after != state_before
+            assert state_after != self.table.LOADING_STATE_TEXT
+
+        wait_until_step_succeeds(wait_state, period=1, timeout=self.default_loc_timeout)
 
 
 class ClusterImportPage(ClusterPageMixin):

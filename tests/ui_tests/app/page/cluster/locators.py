@@ -26,6 +26,7 @@ class ClusterServicesLocators:
     """Cluster main page elements locators"""
 
     add_services_btn = Locator(By.XPATH, "//button[@adcm_test='create-btn']", "Add services button")
+    service_row = Locator(By.XPATH, "//mat-row", "Service row")
 
     class AddServicePopup:
         """Popup for adding services"""
@@ -39,6 +40,17 @@ class ClusterServicesLocators:
             """Locators for services row"""
 
             text = Locator(By.XPATH, ".//div[@class='mat-list-text']", "Service name")
+
+    class ServiceTableRow:
+        """Services table roe locators"""
+
+        name = Locator(By.XPATH, ".//mat-cell[1]", "Service name")
+        version = Locator(By.XPATH, ".//mat-cell[2]", "Service version")
+        state = Locator(By.XPATH, ".//app-state-column", "Service state")
+        status = Locator(By.XPATH, ".//app-status-column//button", "Service status")
+        actions = Locator(By.XPATH, ".//app-actions-button//button", "Service actions")
+        service_import = Locator(By.XPATH, ".//mat-cell[6]//button", "Service import")
+        config = Locator(By.XPATH, ".//mat-cell[7]//button", "Service config")
 
 
 class ClusterImportLocators:
