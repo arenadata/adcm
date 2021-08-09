@@ -18,7 +18,7 @@ from tests.ui_tests.app.helpers.locator import Locator, TemplateLocator
 class CommonPopupLocators:
     """ADCM popup locators"""
 
-    block = Locator(By.XPATH, "//simple-snack-bar", "Common popup block")
+    block = Locator(By.XPATH, "//simple-snack-bar", "Popup block")
     hide_btn = Locator(By.XPATH, "//button[./span[text()='Hide']]", "Hide pop up button")
 
 

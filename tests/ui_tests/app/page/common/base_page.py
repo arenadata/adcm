@@ -146,12 +146,12 @@ class BasePageObject:
 
         try:
             with allure.step(f'Check "{locator.name}"'):
-                if isinstance(locator, Locator):
-                    return self.find_element(
-                        locator, timeout=timeout or self.default_loc_timeout
-                    ).is_displayed()
-                else:
-                    return locator.is_displayed()
+                element = (
+                    locator
+                    if isinstance(locator, WebElement)
+                    else self.find_element(locator, timeout=timeout or self.default_loc_timeout)
+                )
+                element.is_displayed()
         except (
             TimeoutException,
             NoSuchElementException,
@@ -276,12 +276,9 @@ class BasePageObject:
         """
         Moves the cursor over an element and hovers it.
         """
-        if isinstance(locator, Locator):
-            hover = ActionChains(self.driver).move_to_element(self.find_element(locator))
-            hover.perform()
-        else:
-            hover = ActionChains(self.driver).move_to_element(locator)
-            hover.perform()
+        element = locator if isinstance(locator, Locator) else self.find_element(locator)
+        hover = ActionChains(self.driver).move_to_element(element)
+        hover.perform()
 
 
 class PageHeader(BasePageObject):
