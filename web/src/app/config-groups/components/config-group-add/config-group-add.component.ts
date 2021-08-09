@@ -14,6 +14,9 @@ import { Component, forwardRef, OnInit } from '@angular/core';
 import { BaseFormDirective } from '../../../shared/add-component/base-form.directive';
 import { ADD_SERVICE_PROVIDER } from '../../../shared/add-component/add-service-token';
 import { ConfigGroupAddService } from '../../service/config-group-add.service';
+import { clearEmptyField } from '../../../core/types';
+import { ConfigGroup } from '../../model/config-group.model';
+import { take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-config-group-add',
@@ -35,11 +38,12 @@ export class AddConfigGroupComponent extends BaseFormDirective implements OnInit
   }
 
   save(): void {
-    // const data = clearEmptyField(this.form.value) as ConfigGroup;
-    //
-    // this.service
-    //   .addConfigGroup(data)
-    //   .pipe(take(1))
-    //   .subscribe((_) => this.onCancel());
+    console.log('asdasd');
+    const data = clearEmptyField(this.form.value) as ConfigGroup;
+
+    this.service
+      .add(data)
+      .pipe(take(1))
+      .subscribe((_) => this.onCancel());
   }
 }

@@ -24,8 +24,6 @@ import { Host, Prototype, ServicePrototype, StackBase, TypeName } from '@app/cor
 import { DialogComponent } from '@app/shared/components/dialog.component';
 import { GenName } from './naming';
 import { MainService } from '@app/shared/configuration/main/main.service';
-import { ConfigGroup } from '@app/config-groups/model/config-group.model';
-import { ConfigGroupListService } from '@app/config-groups/service/config-group-list.service';
 import { FormModel, IAddService } from '@app/shared/add-component/add-service-token';
 
 
@@ -81,7 +79,6 @@ export class AddService implements IAddService {
               private cluster: ClusterService,
               public dialog: MatDialog,
               private main: MainService,
-              private configGroup: ConfigGroupListService
   ) {}
 
   model(name: string) {
@@ -180,16 +177,16 @@ export class AddService implements IAddService {
     return this.stack.upload(data).pipe(catchError((e) => throwError(e)));
   }
 
-  addConfigGroup(data: ConfigGroup): Observable<unknown> {
-    return this.configGroup.add(data);
-  }
-
   getHostListForCurrentCluster() {
-    return this.configGroup.getHostListForCurrentCluster(this.cluster.Cluster.host);
-  }
-
-  addHostToConfigGroup(data: { host: number, group: number }[]) {
-    return this.configGroup.addHosts(data);
+    return this.api.get<Host[]>(this.cluster.Cluster.host).pipe(
+      map((hosts) =>
+        hosts
+          .map((host) => ({
+            ...host,
+            name: host.fqdn,
+          }))
+      )
+    );
   }
 
 }

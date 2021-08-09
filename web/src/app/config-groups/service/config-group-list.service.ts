@@ -51,12 +51,6 @@ export class ConfigGroupListService extends EntityService<ConfigGroup>
     return this.api.get<ConfigGroup>(`${environment.apiRoot}config-group/${id}`);
   }
 
-  add(group: ConfigGroup): Observable<unknown> {
-    const params = { ...group };
-
-    return this.api.post<unknown>(`${environment.apiRoot}config-group/`, params);
-  }
-
   delete(row: ConfigGroup): Observable<Object> {
     return this.api.delete(row.url);
   }

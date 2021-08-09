@@ -7,6 +7,7 @@ import { Params } from '@angular/router';
 import { Observable } from 'rxjs';
 import { of } from 'rxjs/internal/observable/of';
 import { AddConfigGroupComponent } from '../components/config-group-add/config-group-add.component';
+import { ApiService } from '../../core/api';
 
 const newConfigGroupForm = () =>
   new FormGroup({
@@ -23,7 +24,7 @@ export class ConfigGroupAddService implements IAddService {
     return this.cluster.Cluster;
   }
 
-  constructor(private cluster: ClusterService) {}
+  constructor(private cluster: ClusterService, protected api: ApiService) {}
 
   model(name?: string): FormModel {
     return {
@@ -32,6 +33,13 @@ export class ConfigGroupAddService implements IAddService {
       form: newConfigGroupForm(),
       component: AddConfigGroupComponent
     };
+  }
+
+  add(group: any): Observable<any> {
+    const params = { ...group };
+    console.log(params);
+    // return this.api.post<unknown>(`${environment.apiRoot}config-group/`, params);
+    return of(null);
   }
 
   getList<T>(type: TypeName, param: Params = {}): Observable<T[]> {
