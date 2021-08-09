@@ -34,7 +34,6 @@ import { ServiceComponentService } from '@app/services/service-component.service
 import { EntityNames } from '@app/models/entity-names';
 import { HttpResponseBase } from '@angular/common/http';
 import { setPathOfRoute } from '@app/store/navigation/navigation.store';
-import { ConfigGroupListService } from '@app/config-groups/service/config-group-list.service';
 
 export interface WorkerInstance {
   current: Entities;
@@ -67,7 +66,6 @@ export class ClusterService {
     protected api: ApiService,
     protected serviceComponentService: ServiceComponentService,
     protected store: Store,
-    public configGroups: ConfigGroupListService
   ) {}
 
   clearWorker() {
@@ -119,8 +117,6 @@ export class ClusterService {
         switchMap((cluster) => {
           if (cluster && typeName === 'servicecomponent') {
             return this.serviceComponentService.get(id);
-          } else if (cluster && typeName === 'configgroup') {
-            return this.configGroups.get(id);
           } else if (cluster && typeName !== 'cluster') {
             return this.api.get<Entities>(`${cluster[typeName]}${id}/`);
           } else {
@@ -227,9 +223,5 @@ export class ClusterService {
     const a = new Date(sdn);
     const b = new Date(fdn);
     return { start: a.toLocaleTimeString(), end: status !== 'running' ? b.toLocaleTimeString() : '', time };
-  }
-
-  addHostsToConfigGroup(data: { host: number, group: number }[]) {
-    return forkJoin(data.map((o) => this.api.post<unknown>('http://localhost:8000/api/v1/host-group/', o)));
   }
 }

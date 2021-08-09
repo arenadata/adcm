@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { EventEmitter, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { convertToParamMap, Params } from '@angular/router';
@@ -26,24 +26,12 @@ import { GenName } from './naming';
 import { MainService } from '@app/shared/configuration/main/main.service';
 import { ConfigGroup } from '@app/config-groups/model/config-group.model';
 import { ConfigGroupListService } from '@app/config-groups/service/config-group-list.service';
-import { IAddService } from '@app/shared/add-component/add-service-token';
+import { FormModel, IAddService } from '@app/shared/add-component/add-service-token';
 
-export interface FormModel {
-  name: string;
-  title?: string;
-  form?: FormGroup;
-  success?: EventEmitter<{ flag: boolean; obj: any }>;
-}
 
 const fromBundle = () =>
   new FormGroup({
     prototype_id: new FormControl('', Validators.required),
-    name: new FormControl('', Validators.required),
-    description: new FormControl(),
-  });
-
-const formConfigGroup = () =>
-  new FormGroup({
     name: new FormControl('', Validators.required),
     description: new FormControl(),
   });

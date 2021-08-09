@@ -13,8 +13,8 @@ import { Component, ViewChild } from '@angular/core';
 
 import { ChannelService, keyChannelStrim } from '@app/core/services';
 import { DynamicComponent } from '@app/shared/directives';
-import { FormModel } from './add.service';
 import { BaseFormDirective } from './base-form.directive';
+import { FormModel } from '@app/shared/add-component/add-service-token';
 
 @Component({
   selector: 'app-add-form',
@@ -36,8 +36,10 @@ import { BaseFormDirective } from './base-form.directive';
         <ng-container *ngSwitchCase="'host2cluster'">
           <app-add-host2cluster (event)="message($event)" #cc></app-add-host2cluster>
         </ng-container>
-        <ng-container *ngSwitchCase="'configgroup'">
-          <app-config-group-add #cc></app-config-group-add>
+        <ng-container *ngSwitchDefault>
+          <ng-container *ngIf="!!model.addComponent">
+            <ng-container #cc *ngComponentOutlet="model.addComponent"></ng-container>
+          </ng-container>
         </ng-container>
       </ng-container>
     </div>

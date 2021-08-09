@@ -6,6 +6,7 @@ import { ListFactory } from '../../../factories/list-factory';
 import { ConfigGroupListService } from '../../service/config-group-list.service';
 import { LIST_SERVICE_PROVIDER } from '../../../shared/components/list/list-service-token';
 import { ADD_SERVICE_PROVIDER } from '../../../shared/add-component/add-service-token';
+import { ConfigGroupAddService } from '../../service/config-group-add.service';
 
 @Component({
   selector: 'app-config-group-list',
@@ -28,7 +29,7 @@ import { ADD_SERVICE_PROVIDER } from '../../../shared/add-component/add-service-
   styles: [':host { flex: 1; }', '.add-button {position:fixed; right: 20px;top:120px;}'],
   providers: [
     { provide: LIST_SERVICE_PROVIDER, useClass: ConfigGroupListService },
-    { provide: ADD_SERVICE_PROVIDER, useClass: ConfigGroupListService }
+    { provide: ADD_SERVICE_PROVIDER, useClass: ConfigGroupAddService }
   ],
 })
 export class ConfigGroupListComponent extends AdwpListDirective<any> implements OnInit {

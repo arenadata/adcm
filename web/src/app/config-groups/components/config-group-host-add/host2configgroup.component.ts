@@ -44,7 +44,7 @@ export class Host2configgroupComponent extends BaseFormDirective implements OnIn
   private listServices: MatSelectionList;
 
   ngOnInit(): void {
-    this.options$ = this.service.getHostListForCurrentCluster();
+    // this.options$ = this.service.getHostListForCurrentCluster();
   }
 
   selectAll(e: MatSelectionListChange): void {
@@ -55,15 +55,15 @@ export class Host2configgroupComponent extends BaseFormDirective implements OnIn
   }
 
   save(): void {
-    const groupId = this.service.Current.id;
-    const result = this.listServices.selectedOptions.selected.filter(a => a.value).map(a => ({
-      host: +a.value.id,
-      group: groupId
-    }));
-
-    this.service
-      .addHostToConfigGroup(result)
-      .pipe(this.takeUntil())
-      .subscribe(() => this.dialog.closeAll());
+    // const groupId = this.service.Current.id;
+    // const result = this.listServices.selectedOptions.selected.filter(a => a.value).map(a => ({
+    //   host: +a.value.id,
+    //   group: groupId
+    // }));
+    //
+    // this.service
+    //   .addHostToConfigGroup(result)
+    //   .pipe(this.takeUntil())
+    //   .subscribe(() => this.dialog.closeAll());
   }
 }
