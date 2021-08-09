@@ -13,7 +13,7 @@ from .types import (
     Enum,
     ForeignKey,
     BackReferenceFK,
-    ADCMObjectFK,
+    DateTime, Relation,
 )
 
 
@@ -71,6 +71,14 @@ class HostFields(BaseClass):
     fqdn = Field(name="fqdn", f_type=String(max_length=255))
 
 
+class ObjectConfigFields(BaseClass):
+    """
+    Data type class for ObjectConfig object
+    """
+    id = Field(name="id", f_type=PositiveInt(), default_value="auto")
+    url = Field(name="url", f_type=String(), default_value="auto")
+
+
 class ConfigGroupFields(BaseClass):
     """
     Data type class for Config Group object
@@ -86,21 +94,69 @@ class ConfigGroupFields(BaseClass):
     )
     object_id = Field(
         name="object_id",
-        f_type=ADCMObjectFK(
-            fk_link=None,  # will be set later by object_type field value
-            object_type_field=object_type
-        ),
+        f_type=ForeignKey(relates_on=Relation(field=object_type)),
         required=True,
         postable=True,
     )
-
     name = Field(
         name="name", f_type=String(max_length=30), required=True, postable=True, changeable=True
     )
     description = Field(
         name="description", f_type=Text(), nullable=True, postable=True, changeable=True
     )
-    config = Field(name="config", f_type=Json(), required=True, postable=True, changeable=True)
+    config = Field(
+        name="config", f_type=ForeignKey(fk_link=ObjectConfigFields), nullable=True, changeable=True
+    )
+    url = Field(name="url", f_type=String(), default_value="auto")
+
+
+class ConfigLogFields(BaseClass):
+    """
+    Data type class for ConfigLog object
+    """
+    id = Field(name="id", f_type=PositiveInt(), default_value="auto")
+    date = Field(name="date", f_type=DateTime(), default_value="auto")
+    obj_ref = Field(
+        name="obj_ref", f_type=ForeignKey(fk_link=ObjectConfigFields), required=True, postable=True
+    )
+    description = Field(
+        name="description",
+        f_type=Text(),
+        default_value="",
+        nullable=True,
+        postable=True,
+    )
+    config = Field(
+        name="config",
+        f_type=Json(relates_on=Relation(field=obj_ref)),
+        default_value={},
+        postable=True,
+    )
+    attr = Field(
+        name="attr",
+        f_type=Json(relates_on=Relation(field=obj_ref)),
+        default_value={},
+        postable=True
+    )
+    url = Field(name="url", f_type=String(), default_value="auto")
+
+
+# Back-reference from ConfigLogFields
+ObjectConfigFields.current = Field(
+    name="current",
+    f_type=BackReferenceFK(fk_link=ConfigLogFields),
+    default_value="auto",
+)
+ObjectConfigFields.previous = Field(
+    name="previous",
+    f_type=BackReferenceFK(fk_link=ConfigLogFields),
+    default_value="auto",
+)
+ObjectConfigFields.history = Field(
+    name="history",
+    f_type=BackReferenceFK(fk_link=ConfigLogFields),
+    default_value="auto",
+)
 
 
 class HostGroupFields(BaseClass):
@@ -124,9 +180,10 @@ class HostGroupFields(BaseClass):
         postable=True,
         changeable=True
     )
+    url = Field(name="url", f_type=String(), default_value="auto")
 
 
-# Back-reference from ClusterCapacity
+# Back-reference from HostGroupFields
 ConfigGroupFields.hosts = Field(
     name="hosts",
     f_type=BackReferenceFK(fk_link=HostGroupFields),

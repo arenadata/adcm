@@ -11,6 +11,13 @@ import allure
 from requests_toolbelt.utils import dump
 
 
+class NotSet:
+    pass
+
+
+not_set = NotSet()
+
+
 def wait_for_url(url: str, timeout=120) -> None:
     """Wait until url becomes available"""
     for _ in range(timeout):
