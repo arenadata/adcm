@@ -61,6 +61,10 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
         """ADCM header popup with jobs"""
 
         success_jobs = Locator(By.XPATH, "//div[@mattooltip='Show success jobs']", "Success jobs")
+        in_progress_jobs = Locator(
+            By.XPATH, "//div[@mattooltip='Show jobs in progress']", "In progress jobs"
+        )
+        failed_jobs = Locator(By.XPATH, "//div[@mattooltip='Show failed jobs']", "Failed jobs")
 
     class HelpPopup:
         """ADCM header popup with help links"""

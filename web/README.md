@@ -1,10 +1,18 @@
-# Adcm web client
+# ADCM Web Client
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 1.5.5.
 
+## Storybook
+
+1. Run `npm run storybook` for start the Storybook.
+2. Navigate to http://localhost:6006/.
+
 ## Development server
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+1. Run `ng serve` for a dev server.
+2. Navigate to http://localhost:4200/.
+
+**Tip:** The app will automatically reload if you change any of the source files.
 
 ## Code scaffolding
 
