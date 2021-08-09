@@ -148,7 +148,7 @@ class BasePageObject:
             with allure.step(
                 f'Check {element.name if isinstance(element, Locator) else element.text}'
             ):
-                (
+                return (
                     element
                     if isinstance(element, WebElement)
                     else self.find_element(element, timeout=timeout or self.default_loc_timeout)
@@ -165,7 +165,9 @@ class BasePageObject:
         """Asserts that list of elements is displayed."""
 
         for loc in locators:
-            assert self.is_element_displayed(loc), f"Locator {loc.name} isn't displayed on page"
+            assert self.is_element_displayed(
+                loc
+            ), f"Locator {loc.name} isn't displayed on page {self.driver.current_url}"
 
     def check_element_should_be_hidden(
         self, element: Union[Locator, WebElement], timeout: Optional[int] = None
@@ -270,12 +272,13 @@ class BasePageObject:
         self.find_element(CommonLocators.socket, timeout=30)
         self.find_element(CommonLocators.profile, timeout=30)
 
-    def hover_element(self, locator: Union[Locator, WebElement]):
+    def hover_element(self, element: Union[Locator, WebElement]):
         """
         Moves the cursor over an element and hovers it.
         """
-        element = locator if isinstance(locator, Locator) else self.find_element(locator)
-        hover = ActionChains(self.driver).move_to_element(element)
+        hover = ActionChains(self.driver).move_to_element(
+            element if isinstance(element, WebElement) else self.find_element(element)
+        )
         hover.perform()
 
 
