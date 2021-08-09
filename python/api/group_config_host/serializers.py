@@ -12,12 +12,12 @@
 
 from rest_framework import serializers
 
-from cm.models import HostGroup
+from cm.models import GroupConfigHost
 
 
-class HostGroupSerializer(serializers.ModelSerializer):
+class GroupConfigHostSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='group-config-host-detail')
 
     class Meta:
-        model = HostGroup
+        model = GroupConfigHost
         fields = ('id', 'host', 'group', 'url')

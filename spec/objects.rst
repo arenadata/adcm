@@ -1,14 +1,14 @@
 Objects
 =======
 
-.. _object-config-group:
+.. _object-group-config:
 
-Config Group
+Group Config
 ~~~~~~~~~~~~
 
 Group is an entity wich is capable to hold some number of host in it and connect it to some objects. Besides the group allow to pin a subset of object config and provide a way to change the config.
 
-Endpoint: */config-group*
+Endpoint: */group-config*
 
 =================== ======= ======= ======== ================ ================== ================== ===========
 Name                Type    Default Nullable :term:`Required` :term:`POSTable`   :term:`Changeable` Description
@@ -41,14 +41,19 @@ DELETE        True
 ============= =======
 
 
-Endpoint: */host-group*
+Group Config Host
+~~~~~~~~~~~~
+
+.. _object-group-config-host:
+
+Endpoint: */group-config-host*
 
 =================== ======= ======= ======== ================ ================== ================== ===========
 Name                Type    Default Nullable :term:`Required` :term:`POSTable`   :term:`Changeable` Description
 =================== ======= ======= ======== ================ ================== ================== ===========
 id                  integer auto    False    False            False              False              Object ID.
 host                FK      null    False    True             True               True               `Host` object ID
-group               FK      null    False    True             True               True               `ConfigGroup` object ID
+group               FK      null    False    True             True               True               `GroupConfig` object ID
 =================== ======= ======= ======== ================ ================== ================== ===========
 
 .. note::

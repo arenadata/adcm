@@ -14,7 +14,7 @@ from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
-from cm.models import ConfigGroup
+from cm.models import GroupConfig
 
 
 class ObjectTypeField(serializers.Field):
@@ -38,14 +38,14 @@ class ObjectTypeField(serializers.Field):
         return ContentType.objects.get(app_label='cm', model=data)
 
 
-class ConfigGroupSerializer(serializers.ModelSerializer):
+class GroupConfigSerializer(serializers.ModelSerializer):
     object_type = ObjectTypeField()
     url = serializers.HyperlinkedIdentityField(view_name='group-config-detail')
     hosts = serializers.SerializerMethodField()
     config = serializers.HyperlinkedRelatedField(view_name='config-detail', read_only=True)
 
     class Meta:
-        model = ConfigGroup
+        model = GroupConfig
         fields = (
             'id',
             'object_id',
@@ -63,8 +63,6 @@ class ConfigGroupSerializer(serializers.ModelSerializer):
             request=self.context['request'],
             format=self.context['format'],
         )
-        ids = [h.id for h in obj.hosts.all()]
         view = self.context['view']
-        limit = view.paginator.limit
-        offset = view.paginator.offset
-        return f'{url}?ids={",".join(map(str, ids))}&limit={limit}&offset={offset}'
+        limit = view.paginator.default_limit
+        return f'{url}?group_config={obj.id}&limit={limit}&offset=0'

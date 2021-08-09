@@ -13,12 +13,12 @@
 from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
 
-from cm.models import ConfigGroup, ConfigLog
+from cm.models import GroupConfig, ConfigLog
 from cm.unit_tests import utils
 
 
-class ConfigGroupTest(TestCase):
-    """Tests `ConfigGroup` model"""
+class GroupConfigTest(TestCase):
+    """Tests `GroupConfig` model"""
 
     def setUp(self) -> None:
         config = {'group': {'string': 'string'}, 'activatable_group': {'integer': 1}}
@@ -29,7 +29,7 @@ class ConfigGroupTest(TestCase):
 
     @staticmethod
     def create_group(name, object_id, model_name):
-        return ConfigGroup.objects.create(
+        return GroupConfig.objects.create(
             object_id=object_id, object_type=ContentType.objects.get(model=model_name), name=name
         )
 

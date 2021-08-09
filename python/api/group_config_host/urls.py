@@ -16,6 +16,6 @@ from rest_framework.routers import DefaultRouter
 from . import views
 
 router = DefaultRouter()
-router.register(r'', views.HostGroupViewSet, basename='group-config-host')
+router.register(r'', views.GroupConfigHostViewSet, basename='group-config-host')
 
 urlpatterns = router.urls

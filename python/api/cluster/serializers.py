@@ -27,7 +27,7 @@ from api.api_views import (
     get_upgradable_func,
 )
 from api.component.serializers import ComponentDetailSerializer
-from api.group_config.serializers import ConfigGroupSerializer
+from api.group_config.serializers import GroupConfigSerializer
 from api.host.serializers import HostSerializer
 from cm.errors import AdcmEx
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
@@ -83,7 +83,7 @@ class ClusterDetailSerializer(ClusterSerializer):
     imports = hlink('cluster-import', 'id', 'cluster_id')
     bind = hlink('cluster-bind', 'id', 'cluster_id')
     prototype = hlink('cluster-type-details', 'prototype_id', 'prototype_id')
-    config_groups = serializers.HyperlinkedRelatedField(
+    group_configs = serializers.HyperlinkedRelatedField(
         many=True, read_only=True, view_name='group-config-detail'
     )
 
@@ -101,7 +101,7 @@ class ClusterUISerializer(ClusterDetailSerializer):
     prototype_display_name = serializers.SerializerMethodField()
     upgradable = serializers.SerializerMethodField()
     get_upgradable = get_upgradable_func
-    config_groups = ConfigGroupSerializer(many=True, read_only=True)
+    group_configs = GroupConfigSerializer(many=True, read_only=True)
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)

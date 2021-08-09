@@ -13,11 +13,11 @@
 
 from rest_framework.viewsets import ModelViewSet
 
-from cm.models import HostGroup
-from .serializers import HostGroupSerializer
+from cm.models import GroupConfigHost
+from .serializers import GroupConfigHostSerializer
 
 
-class HostGroupViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
-    queryset = HostGroup.objects.all()
-    serializer_class = HostGroupSerializer
+class GroupConfigHostViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
+    queryset = GroupConfigHost.objects.all()
+    serializer_class = GroupConfigHostSerializer
     filterset_fields = ('group', 'host')

@@ -13,10 +13,10 @@
 
 from rest_framework.viewsets import ModelViewSet
 
-from cm.models import ConfigGroup
-from .serializers import ConfigGroupSerializer
+from cm.models import GroupConfig
+from .serializers import GroupConfigSerializer
 
 
-class ConfigGroupViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
-    queryset = ConfigGroup.objects.all()
-    serializer_class = ConfigGroupSerializer
+class GroupConfigViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
+    queryset = GroupConfig.objects.all()
+    serializer_class = GroupConfigSerializer

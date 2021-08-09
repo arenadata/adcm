@@ -17,7 +17,7 @@ import logrotate
 from cm.adcm_config import ui_config
 from cm.api import update_obj_config
 from cm.errors import raise_AdcmEx
-from cm.models import ConfigLog, ConfigGroup
+from cm.models import ConfigLog, GroupConfig
 
 
 class ConfigLogSerializer(serializers.ModelSerializer):
@@ -52,6 +52,6 @@ class UIConfigLogSerializer(ConfigLogSerializer):
             raise_AdcmEx(
                 'INVALID_CONFIG_UPDATE', 'unknown object type "{}"'.format(config_log.obj_ref)
             )
-        if isinstance(obj, ConfigGroup):
+        if isinstance(obj, GroupConfig):
             obj = obj.object
         return ui_config(obj, config_log)

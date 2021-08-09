@@ -273,7 +273,7 @@ class ConfigLog(ADCMModel):
         obj = self.obj_ref.object
         if isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
             # Sync group configs with object config
-            for cg in obj.config_groups.all():
+            for cg in obj.group_configs.all():
                 diff = cg.get_group_config()
                 group_config = ConfigLog()
                 current_group_config = ConfigLog.objects.get(id=cg.config.current)
@@ -299,8 +299,8 @@ class ADCMEntity(ADCMModel):
     state = models.CharField(max_length=64, default='created')
     stack = models.JSONField(default=list)
     issue = models.JSONField(default=dict)
-    config_groups = GenericRelation(
-        'ConfigGroup',
+    group_configs = GenericRelation(
+        'GroupConfig',
         object_id_field='object_id',
         content_type_field='object_type',
         on_delete=models.CASCADE,
@@ -325,7 +325,7 @@ class ADCMEntity(ADCMModel):
 
 class ADCM(ADCMEntity):
     name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
-    config_groups = None
+    group_configs = None
 
     @property
     def bundle_id(self):
@@ -408,7 +408,7 @@ class Host(ADCMEntity):
     description = models.TextField(blank=True)
     provider = models.ForeignKey(HostProvider, on_delete=models.CASCADE, null=True, default=None)
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
-    config_groups = None
+    group_configs = None
 
     __error_code__ = 'HOST_NOT_FOUND'
 
@@ -523,16 +523,18 @@ class ServiceComponent(ADCMEntity):
         unique_together = (('cluster', 'service', 'prototype'),)
 
 
-class ConfigGroup(ADCMModel):
+class GroupConfig(ADCMModel):
     object_id = models.PositiveIntegerField()
     object_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object = GenericForeignKey('object_type', 'object_id')
     name = models.CharField(max_length=30)
     description = models.TextField(blank=True)
-    hosts = models.ManyToManyField(Host, blank=True, through='HostGroup')
+    hosts = models.ManyToManyField(Host, blank=True, through='GroupConfigHost')
     config = models.OneToOneField(
         ObjectConfig, on_delete=models.CASCADE, null=True, related_name='group_config'
     )
+
+    __error_code__ = 'GROUP_CONFIG_NOT_FOUND'
 
     not_changeable_fields = ('id', 'object_id', 'object_type')
 
@@ -591,9 +593,11 @@ class ConfigGroup(ADCMModel):
         super().save(*args, **kwargs)
 
 
-class HostGroup(ADCMModel):
-    group = models.ForeignKey(ConfigGroup, on_delete=models.CASCADE)
+class GroupConfigHost(ADCMModel):
+    group = models.ForeignKey(GroupConfig, on_delete=models.CASCADE)
     host = models.ForeignKey(Host, on_delete=models.CASCADE)
+
+    __error_code__ = 'GROUP_CONFIG_HOST_NOT_FOUND'
 
     not_changeable_fields = ('id',)
 
@@ -601,7 +605,7 @@ class HostGroup(ADCMModel):
         unique_together = ['group', 'host']
 
     def save(self, *args, **kwargs):
-        groups = ConfigGroup.objects.filter(
+        groups = GroupConfig.objects.filter(
             object_id=self.group.object_id, object_type=self.group.object_type
         )
         for group in groups:

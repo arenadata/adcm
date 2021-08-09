@@ -16,7 +16,7 @@ from rest_framework import status
 
 import cm
 from cm.errors import AdcmEx
-from cm.models import Cluster, HostProvider, Host
+from cm.models import Cluster, HostProvider, Host, GroupConfig
 from api.api_views import PageView, DetailViewDelete, create, check_obj
 from . import serializers
 
@@ -60,9 +60,10 @@ class HostList(PageView):
     )
 
     def get_queryset(self):
-        ids = self.request.query_params.get('ids')
-        if ids is not None:
-            return Host.objects.filter(id__in=map(int, ids.split(',')))
+        group_config = self.request.query_params.get('group_config')
+        if group_config is not None:
+            group_config = int(group_config)
+            return GroupConfig.obj.get(id=group_config).hosts.all()
         else:
             return Host.objects.all()
 
