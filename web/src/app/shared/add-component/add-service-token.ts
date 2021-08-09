@@ -20,7 +20,7 @@ export interface IAddService {
 
   Cluster: Cluster;
 
-  add?<T>(data: Partial<T>, name: TypeName): Observable<T>;
+  add?<T>(data: Partial<T>, name?: TypeName): Observable<T>;
 
   getList<T>(type: TypeName, param: Params): Observable<T[]>;
 
