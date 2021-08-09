@@ -23,17 +23,21 @@ export interface NotificationsData {
   selector: 'app-bell',
   template: `
     <div
-      class="circle"
-      [ngStyle]="{ background: bellGradient }"
-      routerLink="/task"
       appPopover
       [component]="NotificationsComponent"
       [event]="bindedPopoverEvent"
       [data]="{ counts: counts, tasks: tasks }"
+      class="bell-wrapper"
     >
-      <div class="animation hide" (animationstart)="onAnimationStart()" (animationend)="onAnimationEnd()" #animation></div>
-      <div class="insider">
-        <mat-icon>notifications</mat-icon>
+      <div
+        class="circle"
+        [ngStyle]="{ background: bellGradient }"
+        routerLink="/task"
+      >
+        <div class="animation hide" (animationstart)="onAnimationStart()" (animationend)="onAnimationEnd()" #animation></div>
+        <div class="insider">
+          <mat-icon>notifications</mat-icon>
+        </div>
       </div>
     </div>
   `,
