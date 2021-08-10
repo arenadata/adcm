@@ -1,13 +1,17 @@
 import { Component } from '@angular/core';
 import { IColumns, RowEventData } from '@adwp-ui/widgets';
-import { AdwpListDirective } from '../../abstract-directives/adwp-list.directive';
-import { IHost } from '../../models/host';
-import { TypeName } from '../../core/types';
-import { ListFactory } from '../../factories/list-factory';
+import { AdwpListDirective } from '../../../abstract-directives/adwp-list.directive';
+import { TypeName } from '../../../core/types';
+import { ListFactory } from '../../../factories/list-factory';
+import { IHost } from '../../../models/host';
+import { LIST_SERVICE_PROVIDER } from '../../../shared/components/list/list-service-token';
+import { ADD_SERVICE_PROVIDER } from '../../../shared/add-component/add-service-token';
+import { ConfigGroupHostListService } from '../../service/config-group-host-list.service';
+import { ConfigGroupHostAddService } from '../../service/config-group-host-add.service';
 
 
 @Component({
-  selector: 'app-config-group-host',
+  selector: 'app-config-group-host-list',
   template: `
     <app-add-button [name]="type" class="add-button">Add hosts</app-add-button>
 
@@ -24,8 +28,12 @@ import { ListFactory } from '../../factories/list-factory';
     ></adwp-list>
   `,
   styles: [':host { flex: 1; }', '.add-button {position:fixed; right: 20px;top:120px;}'],
+  providers: [
+    { provide: LIST_SERVICE_PROVIDER, useClass: ConfigGroupHostListService },
+    { provide: ADD_SERVICE_PROVIDER, useClass: ConfigGroupHostAddService }
+  ],
 })
-export class ConfigGroupHostComponent extends AdwpListDirective<IHost> {
+export class ConfigGroupHostListComponent extends AdwpListDirective<IHost> {
 
   type: TypeName = 'host2configgroup';
 

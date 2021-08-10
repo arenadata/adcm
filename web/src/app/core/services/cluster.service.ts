@@ -34,6 +34,7 @@ import { ServiceComponentService } from '@app/services/service-component.service
 import { EntityNames } from '@app/models/entity-names';
 import { HttpResponseBase } from '@angular/common/http';
 import { setPathOfRoute } from '@app/store/navigation/navigation.store';
+import { ConfigGroupListService } from '@app/config-groups/service/config-group-list.service';
 
 export interface WorkerInstance {
   current: Entities;
@@ -65,6 +66,7 @@ export class ClusterService {
   constructor(
     protected api: ApiService,
     protected serviceComponentService: ServiceComponentService,
+    protected configGroupService: ConfigGroupListService,
     protected store: Store,
   ) {}
 
@@ -110,12 +112,13 @@ export class ClusterService {
     const typeName = EntityNames.find((a) => param.keys.some((b) => a === b));
     const id = +param.get(typeName);
     const cluster$ = param.has('cluster') ? this.api.getOne<Cluster>('cluster', +param.get('cluster')) : of(null);
-
     return cluster$
       .pipe(
         tap((cluster) => (this.Cluster = cluster)),
         switchMap((cluster) => {
-          if (cluster && typeName === 'servicecomponent') {
+          if (cluster && typeName === 'configgroup') {
+            return this.configGroupService.get(id)
+          } else if (cluster && typeName === 'servicecomponent') {
             return this.serviceComponentService.get(id);
           } else if (cluster && typeName !== 'cluster') {
             return this.api.get<Entities>(`${cluster[typeName]}${id}/`);
