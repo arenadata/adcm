@@ -181,7 +181,7 @@ Input fields:
 
 Buttons:
 
-* **Sign in with Google** - is a button that triggers GAuth2 login process
+* **Sign in with Google** - is a button that triggers GAuth2 login process. It shows with special condition only (will be clarified lately).
 * **Login** - is a button which that triggers user/password login process
 
 
