@@ -187,8 +187,10 @@ class TestComponentLock:
         Test that component lock also locks child objects:
             - Host
         """
-        task = _lock_obj(complete_cluster.service(name="first_service").component(
-            name="first_service_component_1")
+        task = _lock_obj(
+            complete_cluster.service(name="first_service").component(
+                name="first_service_component_1"
+            )
         )
         is_locked(host)
         task.wait()
@@ -299,9 +301,8 @@ def test_service_should_be_unlocked_when_ansible_task_killed(complete_cluster: C
 
 @pytest.mark.parametrize("adcm_object", ["Cluster", "Service", "Component"])
 @pytest.mark.parametrize(
-    "expand_action", [
-        "expand_success", "expand_failed", "expand_success_multijob", "expand_failed_multijob"
-    ]
+    "expand_action",
+    ["expand_success", "expand_failed", "expand_success_multijob", "expand_failed_multijob"],
 )
 def test_host_should_be_unlocked_after_expand_action(
     cluster_with_two_hosts: Tuple[Cluster, List[Host]],
@@ -323,9 +324,8 @@ def test_host_should_be_unlocked_after_expand_action(
 
 @pytest.mark.parametrize("adcm_object", ["Cluster", "Service", "Component"])
 @pytest.mark.parametrize(
-    "shrink_action", [
-        "shrink_success", "shrink_failed", "shrink_success_multijob", "shrink_failed_multijob"
-    ]
+    "shrink_action",
+    ["shrink_success", "shrink_failed", "shrink_success_multijob", "shrink_failed_multijob"],
 )
 def test_host_should_be_unlocked_after_shrink_action(
     cluster_with_two_hosts: Tuple[Cluster, List[Host]],
@@ -404,19 +404,21 @@ def test_host_should_be_unlocked_after_cluster_action_with_ansible_plugin(
 
 @pytest.mark.parametrize("adcm_object", ["Cluster", "Service", "Component"])
 @pytest.mark.parametrize(
-    "host_action_postfix", [
+    "host_action_postfix",
+    [
         "host_action_success",
         "host_action_failed",
         "host_action_multijob_success",
         "host_action_multijob_failed",
-    ]
+    ],
 )
 @pytest.mark.parametrize(
-    "run_on_host", [
+    "run_on_host",
+    [
         "host_with_two_components",
         "host_with_one_component",
         "host_with_different_services",
-    ]
+    ],
 )
 def test_host_should_be_unlocked_after_host_action(
     cluster: Cluster,
@@ -506,7 +508,7 @@ def _test_shrink_object_action(
                     "host_id": host2.host_id,
                     "service_id": first_service_component.service_id,
                     "component_id": first_service_component.component_id,
-                }
+                },
             ]
         ).wait()
     is_free(host1)
