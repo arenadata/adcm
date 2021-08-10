@@ -17,6 +17,7 @@ from tests.ui_tests.app.page.common.base_page import (
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
+from tests.ui_tests.app.page.service.locators import ServiceImportLocators
 
 
 class ServicePageMixin(BasePageObject):
@@ -53,3 +54,18 @@ class ServiceMainPage(ServicePageMixin):
     """Service page Main menu"""
 
     MENU_SUFFIX = 'main'
+
+
+class ServiceConfigPage(ServicePageMixin):
+    """Service page Main menu"""
+
+    MENU_SUFFIX = 'config'
+
+
+class ServiceImportPage(ServicePageMixin):
+    """Service page Main menu"""
+
+    MENU_SUFFIX = 'import'
+
+    def get_import_items(self):
+        return self.find_elements(ServiceImportLocators.import_item_block)
