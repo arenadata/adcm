@@ -19,9 +19,8 @@ import django.db.models.deletion
 def fix_joblog(apps, schema_editor):
     JobLog = apps.get_model('cm', 'JobLog')
     LogStorage = apps.get_model('cm', 'LogStorage')
-    for job in JobLog.objects.filter(task_id__isnull=True):
-        LogStorage.objects.filter(job_id=job.id).delete()
-        job.delete()
+    LogStorage.objects.filter(job__task_id__isnull=True).delete()
+    JobLog.objects.filter(task_id__isnull=True).delete()
 
 
 class Migration(migrations.Migration):
