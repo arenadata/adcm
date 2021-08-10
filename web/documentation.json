@@ -1431,6 +1431,62 @@
             "extends": "IConfig"
         },
         {
+            "name": "CountedStatusTree",
+            "id": "interface-CountedStatusTree-89e1dd3df429979959b7675084b49211",
+            "file": "src/app/components/status-tree/status-tree.component.ts",
+            "deprecated": false,
+            "deprecationMessage": "",
+            "type": "interface",
+            "sourceCode": "import { Component, Input } from '@angular/core';\nimport { FlatTreeControl } from '@angular/cdk/tree';\nimport { MatTreeFlatDataSource, MatTreeFlattener } from '@angular/material/tree';\n\nimport { StatusTree, StatusTreeSubject, SubjectStatus } from '@app/models/status-tree';\n\ninterface ExampleFlatNode {\n  expandable: boolean;\n  subject: StatusTreeSubject;\n  level: number;\n}\n\ninterface Counts {\n  total: number;\n  succeed: number;\n}\n\ninterface CountedStatusTree extends StatusTree {\n  counts?: Counts;\n}\n\nexport enum Folding {\n  Collapsed,\n  Expanded,\n}\n\n@Component({\n  selector: 'app-status-tree',\n  templateUrl: './status-tree.component.html',\n  styleUrls: ['./status-tree.component.scss']\n})\nexport class StatusTreeComponent {\n\n  SubjectStatus = SubjectStatus;\n\n  private calcCounts = (children: CountedStatusTree[]): Counts => {\n    return children.reduce((acc: Counts, child: CountedStatusTree) => {\n        acc.total++;\n        if (child.subject.status === SubjectStatus.Success) {\n          acc.succeed++;\n        }\n        return acc;\n      },\n      { total: 0, succeed: 0 } as Counts,\n    ) as Counts;\n  }\n\n  private transformer = (node: StatusTree, level: number) => {\n    return {\n      expandable: !!node.children && node.children.length > 0,\n      subject: node.subject,\n      level: level,\n      counts: node.children ? this.calcCounts(node.children) : { total: 0, succeed: 0 },\n    };\n  }\n\n  treeControl = new FlatTreeControl<ExampleFlatNode>(\n  node => node.level,\n  node => node.expandable,\n  );\n\n  treeFlattener = new MatTreeFlattener(\n    this.transformer, node => node.level, node => node.expandable, node => node.children);\n\n  dataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);\n\n  private ownTree: StatusTree[];\n  @Input() set tree(tree: StatusTree[]) {\n    this.ownTree = tree;\n    this.dataSource.data = tree;\n\n    if (this.folding === Folding.Expanded) {\n      this.treeControl.expandAll();\n    }\n\n    if (this.folding === Folding.Collapsed) {\n      this.treeControl.collapseAll();\n    }\n  }\n  get tree(): StatusTree[] {\n    return this.ownTree;\n  }\n\n  hasChild = (_: number, node: ExampleFlatNode) => node.expandable;\n\n  private ownFolding: Folding;\n  @Input() set folding(folding: Folding) {\n    this.ownFolding = folding;\n    this.tree = this.tree;\n  }\n  get folding(): Folding {\n    return this.ownFolding;\n  }\n\n}\n",
+            "properties": [
+                {
+                    "name": "counts",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "Counts",
+                    "optional": true,
+                    "description": "",
+                    "line": 20
+                }
+            ],
+            "indexSignatures": [],
+            "kind": 163,
+            "methods": [],
+            "extends": "StatusTree"
+        },
+        {
+            "name": "Counts",
+            "id": "interface-Counts-89e1dd3df429979959b7675084b49211",
+            "file": "src/app/components/status-tree/status-tree.component.ts",
+            "deprecated": false,
+            "deprecationMessage": "",
+            "type": "interface",
+            "sourceCode": "import { Component, Input } from '@angular/core';\nimport { FlatTreeControl } from '@angular/cdk/tree';\nimport { MatTreeFlatDataSource, MatTreeFlattener } from '@angular/material/tree';\n\nimport { StatusTree, StatusTreeSubject, SubjectStatus } from '@app/models/status-tree';\n\ninterface ExampleFlatNode {\n  expandable: boolean;\n  subject: StatusTreeSubject;\n  level: number;\n}\n\ninterface Counts {\n  total: number;\n  succeed: number;\n}\n\ninterface CountedStatusTree extends StatusTree {\n  counts?: Counts;\n}\n\nexport enum Folding {\n  Collapsed,\n  Expanded,\n}\n\n@Component({\n  selector: 'app-status-tree',\n  templateUrl: './status-tree.component.html',\n  styleUrls: ['./status-tree.component.scss']\n})\nexport class StatusTreeComponent {\n\n  SubjectStatus = SubjectStatus;\n\n  private calcCounts = (children: CountedStatusTree[]): Counts => {\n    return children.reduce((acc: Counts, child: CountedStatusTree) => {\n        acc.total++;\n        if (child.subject.status === SubjectStatus.Success) {\n          acc.succeed++;\n        }\n        return acc;\n      },\n      { total: 0, succeed: 0 } as Counts,\n    ) as Counts;\n  }\n\n  private transformer = (node: StatusTree, level: number) => {\n    return {\n      expandable: !!node.children && node.children.length > 0,\n      subject: node.subject,\n      level: level,\n      counts: node.children ? this.calcCounts(node.children) : { total: 0, succeed: 0 },\n    };\n  }\n\n  treeControl = new FlatTreeControl<ExampleFlatNode>(\n  node => node.level,\n  node => node.expandable,\n  );\n\n  treeFlattener = new MatTreeFlattener(\n    this.transformer, node => node.level, node => node.expandable, node => node.children);\n\n  dataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);\n\n  private ownTree: StatusTree[];\n  @Input() set tree(tree: StatusTree[]) {\n    this.ownTree = tree;\n    this.dataSource.data = tree;\n\n    if (this.folding === Folding.Expanded) {\n      this.treeControl.expandAll();\n    }\n\n    if (this.folding === Folding.Collapsed) {\n      this.treeControl.collapseAll();\n    }\n  }\n  get tree(): StatusTree[] {\n    return this.ownTree;\n  }\n\n  hasChild = (_: number, node: ExampleFlatNode) => node.expandable;\n\n  private ownFolding: Folding;\n  @Input() set folding(folding: Folding) {\n    this.ownFolding = folding;\n    this.tree = this.tree;\n  }\n  get folding(): Folding {\n    return this.ownFolding;\n  }\n\n}\n",
+            "properties": [
+                {
+                    "name": "succeed",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "number",
+                    "optional": false,
+                    "description": "",
+                    "line": 16
+                },
+                {
+                    "name": "total",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "number",
+                    "optional": false,
+                    "description": "",
+                    "line": 15
+                }
+            ],
+            "indexSignatures": [],
+            "kind": 163,
+            "methods": []
+        },
+        {
             "name": "DialogData",
             "id": "interface-DialogData-068900a1cc4916fa3b799a2be53b23f7",
             "file": "src/app/shared/components/dialog.component.ts",
@@ -1693,6 +1749,47 @@
                     "optional": true,
                     "description": "",
                     "line": 56
+                }
+            ],
+            "indexSignatures": [],
+            "kind": 163,
+            "methods": []
+        },
+        {
+            "name": "ExampleFlatNode",
+            "id": "interface-ExampleFlatNode-89e1dd3df429979959b7675084b49211",
+            "file": "src/app/components/status-tree/status-tree.component.ts",
+            "deprecated": false,
+            "deprecationMessage": "",
+            "type": "interface",
+            "sourceCode": "import { Component, Input } from '@angular/core';\nimport { FlatTreeControl } from '@angular/cdk/tree';\nimport { MatTreeFlatDataSource, MatTreeFlattener } from '@angular/material/tree';\n\nimport { StatusTree, StatusTreeSubject, SubjectStatus } from '@app/models/status-tree';\n\ninterface ExampleFlatNode {\n  expandable: boolean;\n  subject: StatusTreeSubject;\n  level: number;\n}\n\ninterface Counts {\n  total: number;\n  succeed: number;\n}\n\ninterface CountedStatusTree extends StatusTree {\n  counts?: Counts;\n}\n\nexport enum Folding {\n  Collapsed,\n  Expanded,\n}\n\n@Component({\n  selector: 'app-status-tree',\n  templateUrl: './status-tree.component.html',\n  styleUrls: ['./status-tree.component.scss']\n})\nexport class StatusTreeComponent {\n\n  SubjectStatus = SubjectStatus;\n\n  private calcCounts = (children: CountedStatusTree[]): Counts => {\n    return children.reduce((acc: Counts, child: CountedStatusTree) => {\n        acc.total++;\n        if (child.subject.status === SubjectStatus.Success) {\n          acc.succeed++;\n        }\n        return acc;\n      },\n      { total: 0, succeed: 0 } as Counts,\n    ) as Counts;\n  }\n\n  private transformer = (node: StatusTree, level: number) => {\n    return {\n      expandable: !!node.children && node.children.length > 0,\n      subject: node.subject,\n      level: level,\n      counts: node.children ? this.calcCounts(node.children) : { total: 0, succeed: 0 },\n    };\n  }\n\n  treeControl = new FlatTreeControl<ExampleFlatNode>(\n  node => node.level,\n  node => node.expandable,\n  );\n\n  treeFlattener = new MatTreeFlattener(\n    this.transformer, node => node.level, node => node.expandable, node => node.children);\n\n  dataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);\n\n  private ownTree: StatusTree[];\n  @Input() set tree(tree: StatusTree[]) {\n    this.ownTree = tree;\n    this.dataSource.data = tree;\n\n    if (this.folding === Folding.Expanded) {\n      this.treeControl.expandAll();\n    }\n\n    if (this.folding === Folding.Collapsed) {\n      this.treeControl.collapseAll();\n    }\n  }\n  get tree(): StatusTree[] {\n    return this.ownTree;\n  }\n\n  hasChild = (_: number, node: ExampleFlatNode) => node.expandable;\n\n  private ownFolding: Folding;\n  @Input() set folding(folding: Folding) {\n    this.ownFolding = folding;\n    this.tree = this.tree;\n  }\n  get folding(): Folding {\n    return this.ownFolding;\n  }\n\n}\n",
+            "properties": [
+                {
+                    "name": "expandable",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "boolean",
+                    "optional": false,
+                    "description": "",
+                    "line": 9
+                },
+                {
+                    "name": "level",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "number",
+                    "optional": false,
+                    "description": "",
+                    "line": 11
+                },
+                {
+                    "name": "subject",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "StatusTreeSubject",
+                    "optional": false,
+                    "description": "",
+                    "line": 10
                 }
             ],
             "indexSignatures": [],
@@ -3289,12 +3386,12 @@
         },
         {
             "name": "IDetails",
-            "id": "interface-IDetails-1a4ce3c0fbb37f803f12ffde3461612e",
+            "id": "interface-IDetails-e35ad095e00ce853941380dd0a219b27",
             "file": "src/app/shared/details/navigation.service.ts",
             "deprecated": false,
             "deprecationMessage": "",
             "type": "interface",
-            "sourceCode": "import { Injectable } from '@angular/core';\nimport { ApiBase, Cluster, isIssue, Issue, Job, TypeName, IAction, LogFile, JobObject } from '@app/core/types';\nimport { AdcmTypedEntity } from '@app/models/entity';\n\nexport const ISSUE_MESSAGE = 'Something is wrong with your cluster configuration, please review it.';\n\nexport interface IDetails {\n  parent?: Cluster;\n  typeName: TypeName;\n  id: number;\n  name: string;\n  upgradable: boolean;\n  upgrade: string;\n  status: string | number;\n  /** link to actionss */\n  action: string;\n  actions: IAction[];\n  issue: Issue;\n  log_files?: LogFile[];\n  objects: JobObject[];\n  prototype_name: string;\n  prototype_display_name: string;\n  prototype_version: string;\n  provider_id: number;\n  bundle_id: number;\n  hostcomponent: string;\n  state: string;\n}\n\nconst IssueSet: { [key: string]: string[] } = {\n  service: ['required_service'],\n  import: ['required_import'],\n};\n\n// type IconMenu = 'issue' | 'status';\n\n// interface Icon {\n//   id: IconMenu;\n//   isShow: boolean;\n//   color: ThemePalette;\n//   name: string;\n// }\n\nexport interface INavItem {\n  id?: number;\n  title: string;\n  url: string;\n  issue?: string;\n  status?: number;\n  statusMessage?: string;\n  action?: () => void;\n}\n\nexport interface IStyledNavItem {\n  class?: string;\n  entity?: AdcmTypedEntity;\n}\n\nconst all = [\n  { id: 0, title: 'Main', url: 'main' },\n  { id: 8, title: 'License', url: 'license' },\n  { id: 4, title: 'Configuration', url: 'config' },\n  { id: 5, title: 'Status', url: 'status' },\n  { id: 6, title: 'Import', url: 'import' },\n  { id: 7, title: 'Actions', url: 'action' },\n  { id: 1, title: 'Services', url: 'service' },\n  { id: 2, title: 'Hosts', url: 'host' },\n  { id: 3, title: 'Hosts - Components', url: 'host_component' },\n];\n\nconst [main, license, config, m_status, m_import, actions, services, hosts, host_components] = all;\n\nconst components = {\n  id: 8,\n  title: 'Components',\n  url: 'component',\n};\n\nexport const Config = {\n  menu: {\n    cluster: [main, config, m_status, m_import, actions, services, hosts, host_components].sort((a, b) => a.id - b.id),\n    service: [main, components, config, m_status, m_import, actions],\n    host: [main, config, m_status, actions],\n    provider: [main, config, actions],\n    bundle: [main, license],\n    servicecomponent: [main, config, m_status, actions],\n  },\n};\n\n@Injectable()\nexport class NavigationService {\n  findIssue = (url: string, issue: Issue) => Object.keys(issue).some((p) => p === url || (IssueSet[url] && IssueSet[url].some((a) => a === p)));\n  getIssueMessage = (flag: boolean) => (flag ? ISSUE_MESSAGE : '');\n\n  getLeft(current: Partial<ApiBase>): INavItem[] {\n    const getMenu = (c: Partial<ApiBase>) => {\n      const forJob = (job: Job) => [main, ...job.log_files.map((a) => ({\n        title: `${a.name} [ ${a.type} ]`,\n        url: `${a.id}`,\n        action: () => (location.href = a.download_url)\n      }))];\n      const def = (typeName: TypeName, issue: Issue, status: number) =>\n        Config.menu[typeName].map((i: INavItem) => ({\n          ...i,\n          issue: this.findIssue(i.url, issue),\n          status,\n        }));\n      return c.typeName === 'job' ? forJob(c as Job) : def(c.typeName, c.issue || {}, +c.status);\n    };\n    return getMenu(current);\n  }\n\n  getTop(current: IDetails): INavItem[] {\n    const issue = (i: Issue) => (isIssue(i) ? ISSUE_MESSAGE : '');\n    const link = (p: { typeName: string; id: number }) => (p ? `/${p.typeName}/${p.id}` : '');\n    const typeObj = (type: string, prev: string) => ({ url: `${prev}/${type}`, title: `${type}s` });\n    const fullLink = (c: { parent?: Cluster; typeName: TypeName; id: number; name: string; issue: Issue }): INavItem[] => [\n      typeObj(c.typeName === 'job' ? 'task' : c.typeName, link(c.parent)),\n      {\n        id: c.id,\n        url: `${link(c.parent)}${link(c)}`,\n        title: c.name,\n        issue: issue(c.issue),\n      },\n    ];\n    return [current.parent, current].reduce((p, c) => [...p, ...(c ? fullLink(c) : [])], []);\n  }\n}\n",
+            "sourceCode": "import { Injectable } from '@angular/core';\nimport { ApiBase, Cluster, isIssue, Issue, Job, TypeName, IAction, LogFile, JobObject } from '@app/core/types';\nimport { AdcmTypedEntity } from '@app/models/entity';\n\nexport const ISSUE_MESSAGE = 'Something is wrong with your cluster configuration, please review it.';\n\nexport interface IDetails {\n  parent?: Cluster;\n  typeName: TypeName;\n  id: number;\n  name: string;\n  upgradable: boolean;\n  upgrade: string;\n  status: string | number;\n  /** link to actionss */\n  action: string;\n  actions: IAction[];\n  issue: Issue;\n  log_files?: LogFile[];\n  objects: JobObject[];\n  prototype_name: string;\n  prototype_display_name: string;\n  prototype_version: string;\n  provider_id: number;\n  bundle_id: number;\n  hostcomponent: string;\n  state: string;\n}\n\nconst IssueSet: { [key: string]: string[] } = {\n  service: ['required_service'],\n  import: ['required_import'],\n};\n\n// type IconMenu = 'issue' | 'status';\n\n// interface Icon {\n//   id: IconMenu;\n//   isShow: boolean;\n//   color: ThemePalette;\n//   name: string;\n// }\n\nexport interface INavItem {\n  id?: number;\n  title: string;\n  url: string;\n  issue?: string;\n  status?: number;\n  statusMessage?: string;\n  action?: () => void;\n}\n\nexport interface IStyledNavItem {\n  class?: string;\n  entity?: AdcmTypedEntity;\n}\n\nconst all = [\n  { id: 0, title: 'Main', url: 'main' },\n  { id: 8, title: 'License', url: 'license' },\n  { id: 4, title: 'Configuration', url: 'config' },\n  { id: 5, title: 'Status', url: 'status' },\n  { id: 6, title: 'Import', url: 'import' },\n  { id: 7, title: 'Actions', url: 'action' },\n  { id: 1, title: 'Services', url: 'service' },\n  { id: 2, title: 'Hosts', url: 'host' },\n  { id: 3, title: 'Hosts - Components', url: 'host_component' },\n];\n\nconst [main, license, config, m_status, m_import, actions, services, hosts, host_components] = all;\n\nconst components = {\n  id: 8,\n  title: 'Components',\n  url: 'component',\n};\n\nexport const Config = {\n  menu: {\n    cluster: [main, config, m_status, m_import, actions, services, hosts, host_components].sort((a, b) => a.id - b.id),\n    service: [main, components, config, m_status, m_import, actions],\n    host: [main, config, m_status, actions],\n    provider: [main, config, actions],\n    bundle: [main, license],\n    servicecomponent: [main, config, m_status, actions],\n  },\n};\n\n@Injectable()\nexport class NavigationService {\n  findIssue = (url: string, issue: Issue) => Object.keys(issue).some((p) => p === url || (IssueSet[url] && IssueSet[url].some((a) => a === p)));\n  getIssueMessage = (flag: boolean) => (flag ? ISSUE_MESSAGE : '');\n\n  getLeft(current: Partial<ApiBase>): INavItem[] {\n    const getMenu = (c: Partial<ApiBase>) => {\n      const forJob = (job: Job) => job.log_files.map((a) => ({\n        title: `${a.name} [ ${a.type} ]`,\n        url: `${a.id}`,\n        action: () => (location.href = a.download_url)\n      }));\n      const def = (typeName: TypeName, issue: Issue, status: number) =>\n        Config.menu[typeName].map((i: INavItem) => ({\n          ...i,\n          issue: this.findIssue(i.url, issue),\n          status,\n        }));\n      return c.typeName === 'job' ? forJob(c as Job) : def(c.typeName, c.issue || {}, +c.status);\n    };\n    return getMenu(current);\n  }\n\n  getTop(current: IDetails): INavItem[] {\n    const issue = (i: Issue) => (isIssue(i) ? ISSUE_MESSAGE : '');\n    const link = (p: { typeName: string; id: number }) => (p ? `/${p.typeName}/${p.id}` : '');\n    const typeObj = (type: string, prev: string) => ({ url: `${prev}/${type}`, title: `${type}s` });\n    const fullLink = (c: { parent?: Cluster; typeName: TypeName; id: number; name: string; issue: Issue }): INavItem[] => [\n      typeObj(c.typeName === 'job' ? 'task' : c.typeName, link(c.parent)),\n      {\n        id: c.id,\n        url: `${link(c.parent)}${link(c)}`,\n        title: c.name,\n        issue: issue(c.issue),\n      },\n    ];\n    return [current.parent, current].reduce((p, c) => [...p, ...(c ? fullLink(c) : [])], []);\n  }\n}\n",
             "properties": [
                 {
                     "name": "action",
@@ -4490,12 +4587,12 @@
         },
         {
             "name": "INavItem",
-            "id": "interface-INavItem-1a4ce3c0fbb37f803f12ffde3461612e",
+            "id": "interface-INavItem-e35ad095e00ce853941380dd0a219b27",
             "file": "src/app/shared/details/navigation.service.ts",
             "deprecated": false,
             "deprecationMessage": "",
             "type": "interface",
-            "sourceCode": "import { Injectable } from '@angular/core';\nimport { ApiBase, Cluster, isIssue, Issue, Job, TypeName, IAction, LogFile, JobObject } from '@app/core/types';\nimport { AdcmTypedEntity } from '@app/models/entity';\n\nexport const ISSUE_MESSAGE = 'Something is wrong with your cluster configuration, please review it.';\n\nexport interface IDetails {\n  parent?: Cluster;\n  typeName: TypeName;\n  id: number;\n  name: string;\n  upgradable: boolean;\n  upgrade: string;\n  status: string | number;\n  /** link to actionss */\n  action: string;\n  actions: IAction[];\n  issue: Issue;\n  log_files?: LogFile[];\n  objects: JobObject[];\n  prototype_name: string;\n  prototype_display_name: string;\n  prototype_version: string;\n  provider_id: number;\n  bundle_id: number;\n  hostcomponent: string;\n  state: string;\n}\n\nconst IssueSet: { [key: string]: string[] } = {\n  service: ['required_service'],\n  import: ['required_import'],\n};\n\n// type IconMenu = 'issue' | 'status';\n\n// interface Icon {\n//   id: IconMenu;\n//   isShow: boolean;\n//   color: ThemePalette;\n//   name: string;\n// }\n\nexport interface INavItem {\n  id?: number;\n  title: string;\n  url: string;\n  issue?: string;\n  status?: number;\n  statusMessage?: string;\n  action?: () => void;\n}\n\nexport interface IStyledNavItem {\n  class?: string;\n  entity?: AdcmTypedEntity;\n}\n\nconst all = [\n  { id: 0, title: 'Main', url: 'main' },\n  { id: 8, title: 'License', url: 'license' },\n  { id: 4, title: 'Configuration', url: 'config' },\n  { id: 5, title: 'Status', url: 'status' },\n  { id: 6, title: 'Import', url: 'import' },\n  { id: 7, title: 'Actions', url: 'action' },\n  { id: 1, title: 'Services', url: 'service' },\n  { id: 2, title: 'Hosts', url: 'host' },\n  { id: 3, title: 'Hosts - Components', url: 'host_component' },\n];\n\nconst [main, license, config, m_status, m_import, actions, services, hosts, host_components] = all;\n\nconst components = {\n  id: 8,\n  title: 'Components',\n  url: 'component',\n};\n\nexport const Config = {\n  menu: {\n    cluster: [main, config, m_status, m_import, actions, services, hosts, host_components].sort((a, b) => a.id - b.id),\n    service: [main, components, config, m_status, m_import, actions],\n    host: [main, config, m_status, actions],\n    provider: [main, config, actions],\n    bundle: [main, license],\n    servicecomponent: [main, config, m_status, actions],\n  },\n};\n\n@Injectable()\nexport class NavigationService {\n  findIssue = (url: string, issue: Issue) => Object.keys(issue).some((p) => p === url || (IssueSet[url] && IssueSet[url].some((a) => a === p)));\n  getIssueMessage = (flag: boolean) => (flag ? ISSUE_MESSAGE : '');\n\n  getLeft(current: Partial<ApiBase>): INavItem[] {\n    const getMenu = (c: Partial<ApiBase>) => {\n      const forJob = (job: Job) => [main, ...job.log_files.map((a) => ({\n        title: `${a.name} [ ${a.type} ]`,\n        url: `${a.id}`,\n        action: () => (location.href = a.download_url)\n      }))];\n      const def = (typeName: TypeName, issue: Issue, status: number) =>\n        Config.menu[typeName].map((i: INavItem) => ({\n          ...i,\n          issue: this.findIssue(i.url, issue),\n          status,\n        }));\n      return c.typeName === 'job' ? forJob(c as Job) : def(c.typeName, c.issue || {}, +c.status);\n    };\n    return getMenu(current);\n  }\n\n  getTop(current: IDetails): INavItem[] {\n    const issue = (i: Issue) => (isIssue(i) ? ISSUE_MESSAGE : '');\n    const link = (p: { typeName: string; id: number }) => (p ? `/${p.typeName}/${p.id}` : '');\n    const typeObj = (type: string, prev: string) => ({ url: `${prev}/${type}`, title: `${type}s` });\n    const fullLink = (c: { parent?: Cluster; typeName: TypeName; id: number; name: string; issue: Issue }): INavItem[] => [\n      typeObj(c.typeName === 'job' ? 'task' : c.typeName, link(c.parent)),\n      {\n        id: c.id,\n        url: `${link(c.parent)}${link(c)}`,\n        title: c.name,\n        issue: issue(c.issue),\n      },\n    ];\n    return [current.parent, current].reduce((p, c) => [...p, ...(c ? fullLink(c) : [])], []);\n  }\n}\n",
+            "sourceCode": "import { Injectable } from '@angular/core';\nimport { ApiBase, Cluster, isIssue, Issue, Job, TypeName, IAction, LogFile, JobObject } from '@app/core/types';\nimport { AdcmTypedEntity } from '@app/models/entity';\n\nexport const ISSUE_MESSAGE = 'Something is wrong with your cluster configuration, please review it.';\n\nexport interface IDetails {\n  parent?: Cluster;\n  typeName: TypeName;\n  id: number;\n  name: string;\n  upgradable: boolean;\n  upgrade: string;\n  status: string | number;\n  /** link to actionss */\n  action: string;\n  actions: IAction[];\n  issue: Issue;\n  log_files?: LogFile[];\n  objects: JobObject[];\n  prototype_name: string;\n  prototype_display_name: string;\n  prototype_version: string;\n  provider_id: number;\n  bundle_id: number;\n  hostcomponent: string;\n  state: string;\n}\n\nconst IssueSet: { [key: string]: string[] } = {\n  service: ['required_service'],\n  import: ['required_import'],\n};\n\n// type IconMenu = 'issue' | 'status';\n\n// interface Icon {\n//   id: IconMenu;\n//   isShow: boolean;\n//   color: ThemePalette;\n//   name: string;\n// }\n\nexport interface INavItem {\n  id?: number;\n  title: string;\n  url: string;\n  issue?: string;\n  status?: number;\n  statusMessage?: string;\n  action?: () => void;\n}\n\nexport interface IStyledNavItem {\n  class?: string;\n  entity?: AdcmTypedEntity;\n}\n\nconst all = [\n  { id: 0, title: 'Main', url: 'main' },\n  { id: 8, title: 'License', url: 'license' },\n  { id: 4, title: 'Configuration', url: 'config' },\n  { id: 5, title: 'Status', url: 'status' },\n  { id: 6, title: 'Import', url: 'import' },\n  { id: 7, title: 'Actions', url: 'action' },\n  { id: 1, title: 'Services', url: 'service' },\n  { id: 2, title: 'Hosts', url: 'host' },\n  { id: 3, title: 'Hosts - Components', url: 'host_component' },\n];\n\nconst [main, license, config, m_status, m_import, actions, services, hosts, host_components] = all;\n\nconst components = {\n  id: 8,\n  title: 'Components',\n  url: 'component',\n};\n\nexport const Config = {\n  menu: {\n    cluster: [main, config, m_status, m_import, actions, services, hosts, host_components].sort((a, b) => a.id - b.id),\n    service: [main, components, config, m_status, m_import, actions],\n    host: [main, config, m_status, actions],\n    provider: [main, config, actions],\n    bundle: [main, license],\n    servicecomponent: [main, config, m_status, actions],\n  },\n};\n\n@Injectable()\nexport class NavigationService {\n  findIssue = (url: string, issue: Issue) => Object.keys(issue).some((p) => p === url || (IssueSet[url] && IssueSet[url].some((a) => a === p)));\n  getIssueMessage = (flag: boolean) => (flag ? ISSUE_MESSAGE : '');\n\n  getLeft(current: Partial<ApiBase>): INavItem[] {\n    const getMenu = (c: Partial<ApiBase>) => {\n      const forJob = (job: Job) => job.log_files.map((a) => ({\n        title: `${a.name} [ ${a.type} ]`,\n        url: `${a.id}`,\n        action: () => (location.href = a.download_url)\n      }));\n      const def = (typeName: TypeName, issue: Issue, status: number) =>\n        Config.menu[typeName].map((i: INavItem) => ({\n          ...i,\n          issue: this.findIssue(i.url, issue),\n          status,\n        }));\n      return c.typeName === 'job' ? forJob(c as Job) : def(c.typeName, c.issue || {}, +c.status);\n    };\n    return getMenu(current);\n  }\n\n  getTop(current: IDetails): INavItem[] {\n    const issue = (i: Issue) => (isIssue(i) ? ISSUE_MESSAGE : '');\n    const link = (p: { typeName: string; id: number }) => (p ? `/${p.typeName}/${p.id}` : '');\n    const typeObj = (type: string, prev: string) => ({ url: `${prev}/${type}`, title: `${type}s` });\n    const fullLink = (c: { parent?: Cluster; typeName: TypeName; id: number; name: string; issue: Issue }): INavItem[] => [\n      typeObj(c.typeName === 'job' ? 'task' : c.typeName, link(c.parent)),\n      {\n        id: c.id,\n        url: `${link(c.parent)}${link(c)}`,\n        title: c.name,\n        issue: issue(c.issue),\n      },\n    ];\n    return [current.parent, current].reduce((p, c) => [...p, ...(c ? fullLink(c) : [])], []);\n  }\n}\n",
             "properties": [
                 {
                     "name": "action",
@@ -5405,12 +5502,12 @@
         },
         {
             "name": "IStyledNavItem",
-            "id": "interface-IStyledNavItem-1a4ce3c0fbb37f803f12ffde3461612e",
+            "id": "interface-IStyledNavItem-e35ad095e00ce853941380dd0a219b27",
             "file": "src/app/shared/details/navigation.service.ts",
             "deprecated": false,
             "deprecationMessage": "",
             "type": "interface",
-            "sourceCode": "import { Injectable } from '@angular/core';\nimport { ApiBase, Cluster, isIssue, Issue, Job, TypeName, IAction, LogFile, JobObject } from '@app/core/types';\nimport { AdcmTypedEntity } from '@app/models/entity';\n\nexport const ISSUE_MESSAGE = 'Something is wrong with your cluster configuration, please review it.';\n\nexport interface IDetails {\n  parent?: Cluster;\n  typeName: TypeName;\n  id: number;\n  name: string;\n  upgradable: boolean;\n  upgrade: string;\n  status: string | number;\n  /** link to actionss */\n  action: string;\n  actions: IAction[];\n  issue: Issue;\n  log_files?: LogFile[];\n  objects: JobObject[];\n  prototype_name: string;\n  prototype_display_name: string;\n  prototype_version: string;\n  provider_id: number;\n  bundle_id: number;\n  hostcomponent: string;\n  state: string;\n}\n\nconst IssueSet: { [key: string]: string[] } = {\n  service: ['required_service'],\n  import: ['required_import'],\n};\n\n// type IconMenu = 'issue' | 'status';\n\n// interface Icon {\n//   id: IconMenu;\n//   isShow: boolean;\n//   color: ThemePalette;\n//   name: string;\n// }\n\nexport interface INavItem {\n  id?: number;\n  title: string;\n  url: string;\n  issue?: string;\n  status?: number;\n  statusMessage?: string;\n  action?: () => void;\n}\n\nexport interface IStyledNavItem {\n  class?: string;\n  entity?: AdcmTypedEntity;\n}\n\nconst all = [\n  { id: 0, title: 'Main', url: 'main' },\n  { id: 8, title: 'License', url: 'license' },\n  { id: 4, title: 'Configuration', url: 'config' },\n  { id: 5, title: 'Status', url: 'status' },\n  { id: 6, title: 'Import', url: 'import' },\n  { id: 7, title: 'Actions', url: 'action' },\n  { id: 1, title: 'Services', url: 'service' },\n  { id: 2, title: 'Hosts', url: 'host' },\n  { id: 3, title: 'Hosts - Components', url: 'host_component' },\n];\n\nconst [main, license, config, m_status, m_import, actions, services, hosts, host_components] = all;\n\nconst components = {\n  id: 8,\n  title: 'Components',\n  url: 'component',\n};\n\nexport const Config = {\n  menu: {\n    cluster: [main, config, m_status, m_import, actions, services, hosts, host_components].sort((a, b) => a.id - b.id),\n    service: [main, components, config, m_status, m_import, actions],\n    host: [main, config, m_status, actions],\n    provider: [main, config, actions],\n    bundle: [main, license],\n    servicecomponent: [main, config, m_status, actions],\n  },\n};\n\n@Injectable()\nexport class NavigationService {\n  findIssue = (url: string, issue: Issue) => Object.keys(issue).some((p) => p === url || (IssueSet[url] && IssueSet[url].some((a) => a === p)));\n  getIssueMessage = (flag: boolean) => (flag ? ISSUE_MESSAGE : '');\n\n  getLeft(current: Partial<ApiBase>): INavItem[] {\n    const getMenu = (c: Partial<ApiBase>) => {\n      const forJob = (job: Job) => [main, ...job.log_files.map((a) => ({\n        title: `${a.name} [ ${a.type} ]`,\n        url: `${a.id}`,\n        action: () => (location.href = a.download_url)\n      }))];\n      const def = (typeName: TypeName, issue: Issue, status: number) =>\n        Config.menu[typeName].map((i: INavItem) => ({\n          ...i,\n          issue: this.findIssue(i.url, issue),\n          status,\n        }));\n      return c.typeName === 'job' ? forJob(c as Job) : def(c.typeName, c.issue || {}, +c.status);\n    };\n    return getMenu(current);\n  }\n\n  getTop(current: IDetails): INavItem[] {\n    const issue = (i: Issue) => (isIssue(i) ? ISSUE_MESSAGE : '');\n    const link = (p: { typeName: string; id: number }) => (p ? `/${p.typeName}/${p.id}` : '');\n    const typeObj = (type: string, prev: string) => ({ url: `${prev}/${type}`, title: `${type}s` });\n    const fullLink = (c: { parent?: Cluster; typeName: TypeName; id: number; name: string; issue: Issue }): INavItem[] => [\n      typeObj(c.typeName === 'job' ? 'task' : c.typeName, link(c.parent)),\n      {\n        id: c.id,\n        url: `${link(c.parent)}${link(c)}`,\n        title: c.name,\n        issue: issue(c.issue),\n      },\n    ];\n    return [current.parent, current].reduce((p, c) => [...p, ...(c ? fullLink(c) : [])], []);\n  }\n}\n",
+            "sourceCode": "import { Injectable } from '@angular/core';\nimport { ApiBase, Cluster, isIssue, Issue, Job, TypeName, IAction, LogFile, JobObject } from '@app/core/types';\nimport { AdcmTypedEntity } from '@app/models/entity';\n\nexport const ISSUE_MESSAGE = 'Something is wrong with your cluster configuration, please review it.';\n\nexport interface IDetails {\n  parent?: Cluster;\n  typeName: TypeName;\n  id: number;\n  name: string;\n  upgradable: boolean;\n  upgrade: string;\n  status: string | number;\n  /** link to actionss */\n  action: string;\n  actions: IAction[];\n  issue: Issue;\n  log_files?: LogFile[];\n  objects: JobObject[];\n  prototype_name: string;\n  prototype_display_name: string;\n  prototype_version: string;\n  provider_id: number;\n  bundle_id: number;\n  hostcomponent: string;\n  state: string;\n}\n\nconst IssueSet: { [key: string]: string[] } = {\n  service: ['required_service'],\n  import: ['required_import'],\n};\n\n// type IconMenu = 'issue' | 'status';\n\n// interface Icon {\n//   id: IconMenu;\n//   isShow: boolean;\n//   color: ThemePalette;\n//   name: string;\n// }\n\nexport interface INavItem {\n  id?: number;\n  title: string;\n  url: string;\n  issue?: string;\n  status?: number;\n  statusMessage?: string;\n  action?: () => void;\n}\n\nexport interface IStyledNavItem {\n  class?: string;\n  entity?: AdcmTypedEntity;\n}\n\nconst all = [\n  { id: 0, title: 'Main', url: 'main' },\n  { id: 8, title: 'License', url: 'license' },\n  { id: 4, title: 'Configuration', url: 'config' },\n  { id: 5, title: 'Status', url: 'status' },\n  { id: 6, title: 'Import', url: 'import' },\n  { id: 7, title: 'Actions', url: 'action' },\n  { id: 1, title: 'Services', url: 'service' },\n  { id: 2, title: 'Hosts', url: 'host' },\n  { id: 3, title: 'Hosts - Components', url: 'host_component' },\n];\n\nconst [main, license, config, m_status, m_import, actions, services, hosts, host_components] = all;\n\nconst components = {\n  id: 8,\n  title: 'Components',\n  url: 'component',\n};\n\nexport const Config = {\n  menu: {\n    cluster: [main, config, m_status, m_import, actions, services, hosts, host_components].sort((a, b) => a.id - b.id),\n    service: [main, components, config, m_status, m_import, actions],\n    host: [main, config, m_status, actions],\n    provider: [main, config, actions],\n    bundle: [main, license],\n    servicecomponent: [main, config, m_status, actions],\n  },\n};\n\n@Injectable()\nexport class NavigationService {\n  findIssue = (url: string, issue: Issue) => Object.keys(issue).some((p) => p === url || (IssueSet[url] && IssueSet[url].some((a) => a === p)));\n  getIssueMessage = (flag: boolean) => (flag ? ISSUE_MESSAGE : '');\n\n  getLeft(current: Partial<ApiBase>): INavItem[] {\n    const getMenu = (c: Partial<ApiBase>) => {\n      const forJob = (job: Job) => job.log_files.map((a) => ({\n        title: `${a.name} [ ${a.type} ]`,\n        url: `${a.id}`,\n        action: () => (location.href = a.download_url)\n      }));\n      const def = (typeName: TypeName, issue: Issue, status: number) =>\n        Config.menu[typeName].map((i: INavItem) => ({\n          ...i,\n          issue: this.findIssue(i.url, issue),\n          status,\n        }));\n      return c.typeName === 'job' ? forJob(c as Job) : def(c.typeName, c.issue || {}, +c.status);\n    };\n    return getMenu(current);\n  }\n\n  getTop(current: IDetails): INavItem[] {\n    const issue = (i: Issue) => (isIssue(i) ? ISSUE_MESSAGE : '');\n    const link = (p: { typeName: string; id: number }) => (p ? `/${p.typeName}/${p.id}` : '');\n    const typeObj = (type: string, prev: string) => ({ url: `${prev}/${type}`, title: `${type}s` });\n    const fullLink = (c: { parent?: Cluster; typeName: TypeName; id: number; name: string; issue: Issue }): INavItem[] => [\n      typeObj(c.typeName === 'job' ? 'task' : c.typeName, link(c.parent)),\n      {\n        id: c.id,\n        url: `${link(c.parent)}${link(c)}`,\n        title: c.name,\n        issue: issue(c.issue),\n      },\n    ];\n    return [current.parent, current].reduce((p, c) => [...p, ...(c ? fullLink(c) : [])], []);\n  }\n}\n",
             "properties": [
                 {
                     "name": "class",
@@ -6419,12 +6516,12 @@
         },
         {
             "name": "NotificationsData",
-            "id": "interface-NotificationsData-16ef003b95f777451d13f0ab2353a270",
+            "id": "interface-NotificationsData-2f70d21e7fd0400018bae797330700ae",
             "file": "src/app/components/bell/bell.component.ts",
             "deprecated": false,
             "deprecationMessage": "",
             "type": "interface",
-            "sourceCode": "import { AfterViewInit, Component, ElementRef, Renderer2, ViewChild } from '@angular/core';\nimport { BaseDirective } from '@adwp-ui/widgets';\nimport { BehaviorSubject, combineLatest, interval, Observable, zip } from 'rxjs';\nimport { filter, map, mergeMap, take, takeWhile } from 'rxjs/operators';\n\nimport { TaskService } from '@app/services/task.service';\nimport { ACKNOWLEDGE_EVENT, NotificationsComponent } from '@app/components/notifications/notifications.component';\nimport { Task, TaskRaw } from '@app/core/types';\nimport { EventMessage, ProfileService } from '@app/core/store';\nimport { Stats, StatsService } from '@app/services/stats.service';\n\nconst RUNNING_COLOR = '#FFEA00';\nconst SUCCESS_COLOR = '#1EE564';\nconst FAILED_COLOR = '#FF8A80';\n\nexport interface NotificationsData {\n  runningCount: number;\n  successCount: number;\n  failedCount: number;\n}\n\n@Component({\n  selector: 'app-bell',\n  template: `\n    <div\n      class=\"circle\"\n      [ngStyle]=\"{ background: bellGradient }\"\n      routerLink=\"/task\"\n      appPopover\n      [component]=\"NotificationsComponent\"\n      [event]=\"bindedPopoverEvent\"\n      [data]=\"{ counts: counts, tasks: tasks }\"\n    >\n      <div class=\"animation hide\" (animationstart)=\"onAnimationStart()\" (animationend)=\"onAnimationEnd()\" #animation></div>\n      <div class=\"insider\">\n        <mat-icon>notifications</mat-icon>\n      </div>\n    </div>\n  `,\n  styleUrls: ['./bell.component.scss']\n})\nexport class BellComponent extends BaseDirective implements AfterViewInit {\n\n  NotificationsComponent = NotificationsComponent;\n\n  @ViewChild('animation', { static: false }) animationRef: ElementRef;\n\n  runningCount = new BehaviorSubject<number>(0);\n  successCount = new BehaviorSubject<number>(0);\n  failedCount = new BehaviorSubject<number>(0);\n\n  bellGradient = '';\n\n  isAnimationRunning = new BehaviorSubject<boolean>(false);\n  animationElem = new BehaviorSubject<Element>(null);\n\n  counts = new BehaviorSubject<NotificationsData>(null);\n  tasks = new BehaviorSubject<TaskRaw[]>([]);\n\n  readonly bindedPopoverEvent = this.popoverEvent.bind(this);\n\n  constructor(\n    private taskService: TaskService,\n    private renderer: Renderer2,\n    private profileService: ProfileService,\n    private statsService: StatsService,\n  ) {\n    super();\n  }\n\n  popoverEvent(event: any) {\n    if (event === ACKNOWLEDGE_EVENT) {\n      const lastTaskId = this.tasks.value[0]?.id;\n      if (lastTaskId) {\n        this.profileService.setLastViewedTask(lastTaskId).subscribe();\n      }\n      this.tasks.next([]);\n      this.successCount.next(0);\n      this.runningCount.next(0);\n      this.failedCount.next(0);\n    }\n  }\n\n  onAnimationStart() {\n    this.isAnimationRunning.next(true);\n  }\n\n  onAnimationEnd() {\n    this.isAnimationRunning.next(false);\n  }\n\n  startAnimation() {\n    if (this.animationElem.value && !this.isAnimationRunning.value) {\n      this.renderer.removeClass(this.animationElem.value, 'hide');\n      this.renderer.addClass(this.animationElem.value, 'animated');\n    }\n  }\n\n  endAnimation() {\n    if (this.animationElem.value) {\n      this.renderer.addClass(this.animationElem.value, 'hide');\n      this.renderer.removeClass(this.animationElem.value, 'animated');\n    }\n  }\n\n  afterCountChanged() {\n    const total =  this.runningCount.value + this.successCount.value + this.failedCount.value;\n    if (total > 0) {\n      const degOne = 360 / total;\n      const degRunning = this.runningCount.value * degOne;\n      const degSuccess = this.successCount.value * degOne;\n      this.bellGradient =\n        `conic-gradient(`\n        + `${RUNNING_COLOR} 0deg ${degRunning}deg,`\n        + `${SUCCESS_COLOR} ${degRunning}deg ${degRunning + degSuccess}deg,`\n        + `${FAILED_COLOR} ${degRunning + degSuccess}deg 360deg)`;\n    } else {\n      this.bellGradient = 'transparent';\n    }\n    this.startAnimation();\n  }\n\n  getChangeTaskObservable(): Observable<EventMessage> {\n    return this.taskService.events(['change_job_status']).pipe(this.takeUntil());\n  }\n\n  decRunningCount() {\n    const runningCount = this.runningCount.value - 1;\n    this.runningCount.next(runningCount < 0 ? 0 : runningCount);\n  }\n\n  listenToJobs() {\n    this.getChangeTaskObservable().subscribe((event) => {\n      const status = event.object.details.value;\n      if (status === 'running') {\n        this.runningCount.next(this.runningCount.value + 1);\n        this.afterCountChanged();\n      } else if (status === 'success') {\n        this.successCount.next(this.successCount.value + 1);\n        this.decRunningCount();\n        this.afterCountChanged();\n      } else if (status === 'failed') {\n        this.failedCount.next(this.failedCount.value + 1);\n        this.decRunningCount();\n        this.afterCountChanged();\n      }\n    });\n\n    this.getChangeTaskObservable().pipe(\n      filter(event => event.object.details.type === 'status'),\n      filter(event => event.object.details.value !== 'created'),\n    ).subscribe((event) => {\n      const tasks: TaskRaw[] = this.tasks.value.slice();\n      const index = tasks.findIndex(item => item.id === event.object.id);\n      if (index >= 0) {\n        const task: TaskRaw = Object.assign({}, tasks[index]);\n        task.status = event.object.details.value;\n        tasks.splice(index, 1, task);\n        this.tasks.next(tasks);\n      } else {\n        this.taskService.get(event.object.id).subscribe((task) => {\n          task.status = event.object.details.value;\n          tasks.unshift(task);\n          this.tasks.next(tasks.slice(0, 5));\n        });\n      }\n    });\n  }\n\n  getCurrentCounts(): Observable<Stats> {\n    return this.profileService.getProfile().pipe(\n      take(1),\n      mergeMap((user) => this.statsService.tasks(user.profile?.lastViewedTask?.id)),\n    );\n  }\n\n  getLastTasks(): Observable<Task[]> {\n    return zip(\n      this.taskService.list({ ordering: '-finish_date', status: 'failed', limit: '5' }),\n      this.taskService.list({ ordering: '-finish_date', status: 'success', limit: '5' }),\n      this.taskService.list({ ordering: '-start_date', status: 'running', limit: '5' }),\n    ).pipe(map(([failed, succeed, running]) => {\n      return [...failed.results, ...succeed.results, ...running.results].sort((a, b) => {\n        const getDateField = (task: Task) => task.status === 'failed' || task.status === 'success' ? task.finish_date : task.start_date;\n        const aDate = new Date(getDateField(a));\n        const bDate = new Date(getDateField(b));\n        return aDate.getDate() - bDate.getDate();\n      }).slice(0, 5);\n    }));\n  }\n\n  ngAfterViewInit(): void {\n    interval(200).pipe(\n      this.takeUntil(),\n      takeWhile(() => !this.animationElem.value),\n    ).subscribe(() => {\n      this.animationElem.next(this.animationRef ? this.animationRef.nativeElement : null);\n    });\n\n    this.animationElem.pipe(\n      this.takeUntil(),\n      filter((elem) => !!elem),\n      take(1),\n    ).subscribe(() => {\n      zip(this.getCurrentCounts(), this.getLastTasks())\n        .subscribe(([stats, tasks]) => {\n          this.runningCount.next(stats.running);\n          this.successCount.next(stats.success);\n          this.failedCount.next(stats.failed);\n          this.afterCountChanged();\n          this.tasks.next(tasks);\n          this.listenToJobs();\n        });\n    });\n\n    this.isAnimationRunning.pipe(\n      this.takeUntil(),\n      filter(isRunning => !isRunning),\n    ).subscribe(() => this.endAnimation());\n\n    combineLatest(this.runningCount, this.successCount, this.failedCount)\n    .pipe(this.takeUntil())\n    .subscribe(\n      ([runningCount, successCount, failedCount]) => this.counts.next({\n        runningCount,\n        successCount,\n        failedCount,\n      })\n    );\n  }\n\n}\n",
+            "sourceCode": "import { AfterViewInit, Component, ElementRef, Renderer2, ViewChild } from '@angular/core';\nimport { BaseDirective } from '@adwp-ui/widgets';\nimport { BehaviorSubject, combineLatest, interval, Observable, zip } from 'rxjs';\nimport { filter, map, mergeMap, take, takeWhile } from 'rxjs/operators';\n\nimport { TaskService } from '@app/services/task.service';\nimport { ACKNOWLEDGE_EVENT, NotificationsComponent } from '@app/components/notifications/notifications.component';\nimport { Task, TaskRaw } from '@app/core/types';\nimport { EventMessage, ProfileService } from '@app/core/store';\nimport { Stats, StatsService } from '@app/services/stats.service';\n\nconst RUNNING_COLOR = '#FFEA00';\nconst SUCCESS_COLOR = '#1EE564';\nconst FAILED_COLOR = '#FF8A80';\n\nexport interface NotificationsData {\n  runningCount: number;\n  successCount: number;\n  failedCount: number;\n}\n\n@Component({\n  selector: 'app-bell',\n  template: `\n    <div\n      class=\"circle\"\n      [ngStyle]=\"{ background: bellGradient }\"\n      routerLink=\"/task\"\n      appPopover\n      [component]=\"NotificationsComponent\"\n      [event]=\"bindedPopoverEvent\"\n      [data]=\"{ counts: counts, tasks: tasks }\"\n    >\n      <div class=\"animation hide\" (animationstart)=\"onAnimationStart()\" (animationend)=\"onAnimationEnd()\" #animation></div>\n      <div class=\"insider\">\n        <mat-icon>notifications</mat-icon>\n      </div>\n    </div>\n  `,\n  styleUrls: ['./bell.component.scss']\n})\nexport class BellComponent extends BaseDirective implements AfterViewInit {\n\n  NotificationsComponent = NotificationsComponent;\n\n  @ViewChild('animation', { static: false }) animationRef: ElementRef;\n\n  runningCount = new BehaviorSubject<number>(0);\n  successCount = new BehaviorSubject<number>(0);\n  failedCount = new BehaviorSubject<number>(0);\n\n  bellGradient = '';\n\n  isAnimationRunning = new BehaviorSubject<boolean>(false);\n  animationElem = new BehaviorSubject<Element>(null);\n\n  counts = new BehaviorSubject<NotificationsData>(null);\n  tasks = new BehaviorSubject<TaskRaw[]>([]);\n\n  readonly bindedPopoverEvent = this.popoverEvent.bind(this);\n\n  constructor(\n    private taskService: TaskService,\n    private renderer: Renderer2,\n    private profileService: ProfileService,\n    private statsService: StatsService,\n  ) {\n    super();\n  }\n\n  popoverEvent(event: any) {\n    if (event === ACKNOWLEDGE_EVENT) {\n      const lastTaskId = this.tasks.value[0]?.id;\n      if (lastTaskId) {\n        this.profileService.setLastViewedTask(lastTaskId).subscribe();\n      }\n      this.tasks.next([]);\n      this.successCount.next(0);\n      this.runningCount.next(0);\n      this.failedCount.next(0);\n      this.afterCountChanged(false);\n    }\n  }\n\n  onAnimationStart() {\n    this.isAnimationRunning.next(true);\n  }\n\n  onAnimationEnd() {\n    this.isAnimationRunning.next(false);\n  }\n\n  startAnimation() {\n    if (this.animationElem.value && !this.isAnimationRunning.value) {\n      this.renderer.removeClass(this.animationElem.value, 'hide');\n      this.renderer.addClass(this.animationElem.value, 'animated');\n    }\n  }\n\n  endAnimation() {\n    if (this.animationElem.value) {\n      this.renderer.addClass(this.animationElem.value, 'hide');\n      this.renderer.removeClass(this.animationElem.value, 'animated');\n    }\n  }\n\n  afterCountChanged(animationNeeds = true) {\n    const total =  this.runningCount.value + this.successCount.value + this.failedCount.value;\n    if (total > 0) {\n      const degOne = 360 / total;\n      const degRunning = this.runningCount.value * degOne;\n      const degSuccess = this.successCount.value * degOne;\n      this.bellGradient =\n        `conic-gradient(`\n        + `${RUNNING_COLOR} 0deg ${degRunning}deg,`\n        + `${SUCCESS_COLOR} ${degRunning}deg ${degRunning + degSuccess}deg,`\n        + `${FAILED_COLOR} ${degRunning + degSuccess}deg 360deg)`;\n    } else {\n      this.bellGradient = 'transparent';\n    }\n    if (animationNeeds) {\n      this.startAnimation();\n    }\n  }\n\n  getChangeTaskObservable(): Observable<EventMessage> {\n    return this.taskService.events(['change_job_status']).pipe(this.takeUntil());\n  }\n\n  decRunningCount() {\n    const runningCount = this.runningCount.value - 1;\n    this.runningCount.next(runningCount < 0 ? 0 : runningCount);\n  }\n\n  listenToJobs() {\n    this.getChangeTaskObservable().subscribe((event) => {\n      const status = event.object.details.value;\n      if (status === 'running') {\n        this.runningCount.next(this.runningCount.value + 1);\n        this.afterCountChanged();\n      } else if (status === 'success') {\n        this.successCount.next(this.successCount.value + 1);\n        this.decRunningCount();\n        this.afterCountChanged();\n      } else if (status === 'failed') {\n        this.failedCount.next(this.failedCount.value + 1);\n        this.decRunningCount();\n        this.afterCountChanged();\n      }\n    });\n\n    this.getChangeTaskObservable().pipe(\n      filter(event => event.object.details.type === 'status'),\n      filter(event => event.object.details.value !== 'created'),\n    ).subscribe((event) => {\n      const tasks: TaskRaw[] = this.tasks.value.slice();\n      const index = tasks.findIndex(item => item.id === event.object.id);\n      if (index >= 0) {\n        const task: TaskRaw = Object.assign({}, tasks[index]);\n        task.status = event.object.details.value;\n        tasks.splice(index, 1, task);\n        this.tasks.next(tasks);\n      } else {\n        this.taskService.get(event.object.id).subscribe((task) => {\n          task.status = event.object.details.value;\n          tasks.unshift(task);\n          this.tasks.next(tasks.slice(0, 5));\n        });\n      }\n    });\n  }\n\n  getCurrentCounts(): Observable<Stats> {\n    return this.profileService.getProfile().pipe(\n      take(1),\n      mergeMap((user) => this.statsService.tasks(user.profile?.lastViewedTask?.id)),\n    );\n  }\n\n  getLastTasks(): Observable<Task[]> {\n    return zip(\n      this.taskService.list({ ordering: '-finish_date', status: 'failed', limit: '5' }),\n      this.taskService.list({ ordering: '-finish_date', status: 'success', limit: '5' }),\n      this.taskService.list({ ordering: '-start_date', status: 'running', limit: '5' }),\n      this.profileService.getProfile(),\n    ).pipe(map(([failed, succeed, running, user]) => {\n      let tasks = [...failed.results, ...succeed.results, ...running.results].sort((a, b) => {\n        const getDateField = (task: Task) => task.status === 'failed' || task.status === 'success' ? task.finish_date : task.start_date;\n        const aDate = new Date(getDateField(a));\n        const bDate = new Date(getDateField(b));\n        return aDate.getDate() - bDate.getDate();\n      }).slice(0, 5);\n\n      if (user.profile?.lastViewedTask?.id) {\n        tasks = tasks.filter(task => task.id > user.profile.lastViewedTask.id);\n      }\n\n      return tasks;\n    }));\n  }\n\n  ngAfterViewInit(): void {\n    interval(200).pipe(\n      this.takeUntil(),\n      takeWhile(() => !this.animationElem.value),\n    ).subscribe(() => {\n      this.animationElem.next(this.animationRef ? this.animationRef.nativeElement : null);\n    });\n\n    this.animationElem.pipe(\n      this.takeUntil(),\n      filter((elem) => !!elem),\n      take(1),\n    ).subscribe(() => {\n      zip(this.getCurrentCounts(), this.getLastTasks())\n        .subscribe(([stats, tasks]) => {\n          this.runningCount.next(stats.running);\n          this.successCount.next(stats.success);\n          this.failedCount.next(stats.failed);\n          this.afterCountChanged(!!(stats.running || stats.success || stats.failed));\n          this.tasks.next(tasks);\n          this.listenToJobs();\n        });\n    });\n\n    this.isAnimationRunning.pipe(\n      this.takeUntil(),\n      filter(isRunning => !isRunning),\n    ).subscribe(() => this.endAnimation());\n\n    combineLatest(this.runningCount, this.successCount, this.failedCount)\n    .pipe(this.takeUntil())\n    .subscribe(\n      ([runningCount, successCount, failedCount]) => this.counts.next({\n        runningCount,\n        successCount,\n        failedCount,\n      })\n    );\n  }\n\n}\n",
             "properties": [
                 {
                     "name": "failedCount",
@@ -7015,6 +7112,70 @@
                     "optional": false,
                     "description": "",
                     "line": 21
+                }
+            ],
+            "indexSignatures": [],
+            "kind": 163,
+            "methods": []
+        },
+        {
+            "name": "StatusTree",
+            "id": "interface-StatusTree-89e9c9204788561dc36fa5b98c055711",
+            "file": "src/app/models/status-tree.ts",
+            "deprecated": false,
+            "deprecationMessage": "",
+            "type": "interface",
+            "sourceCode": "export enum SubjectStatus {\n  Success,\n  Fail,\n}\n\nexport interface StatusTreeSubject {\n  name: string;\n  status: SubjectStatus;\n}\n\nexport interface StatusTree {\n  subject: StatusTreeSubject;\n  children: StatusTree[];\n}\n",
+            "properties": [
+                {
+                    "name": "children",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "StatusTree[]",
+                    "optional": false,
+                    "description": "",
+                    "line": 13
+                },
+                {
+                    "name": "subject",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "StatusTreeSubject",
+                    "optional": false,
+                    "description": "",
+                    "line": 12
+                }
+            ],
+            "indexSignatures": [],
+            "kind": 163,
+            "methods": []
+        },
+        {
+            "name": "StatusTreeSubject",
+            "id": "interface-StatusTreeSubject-89e9c9204788561dc36fa5b98c055711",
+            "file": "src/app/models/status-tree.ts",
+            "deprecated": false,
+            "deprecationMessage": "",
+            "type": "interface",
+            "sourceCode": "export enum SubjectStatus {\n  Success,\n  Fail,\n}\n\nexport interface StatusTreeSubject {\n  name: string;\n  status: SubjectStatus;\n}\n\nexport interface StatusTree {\n  subject: StatusTreeSubject;\n  children: StatusTree[];\n}\n",
+            "properties": [
+                {
+                    "name": "name",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "string",
+                    "optional": false,
+                    "description": "",
+                    "line": 7
+                },
+                {
+                    "name": "status",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "SubjectStatus",
+                    "optional": false,
+                    "description": "",
+                    "line": 8
                 }
             ],
             "indexSignatures": [],
@@ -12130,7 +12291,7 @@
         },
         {
             "name": "NavigationService",
-            "id": "injectable-NavigationService-1a4ce3c0fbb37f803f12ffde3461612e",
+            "id": "injectable-NavigationService-e35ad095e00ce853941380dd0a219b27",
             "file": "src/app/shared/details/navigation.service.ts",
             "properties": [
                 {
@@ -12216,7 +12377,7 @@
             "deprecationMessage": "",
             "description": "",
             "rawdescription": "\n",
-            "sourceCode": "import { Injectable } from '@angular/core';\nimport { ApiBase, Cluster, isIssue, Issue, Job, TypeName, IAction, LogFile, JobObject } from '@app/core/types';\nimport { AdcmTypedEntity } from '@app/models/entity';\n\nexport const ISSUE_MESSAGE = 'Something is wrong with your cluster configuration, please review it.';\n\nexport interface IDetails {\n  parent?: Cluster;\n  typeName: TypeName;\n  id: number;\n  name: string;\n  upgradable: boolean;\n  upgrade: string;\n  status: string | number;\n  /** link to actionss */\n  action: string;\n  actions: IAction[];\n  issue: Issue;\n  log_files?: LogFile[];\n  objects: JobObject[];\n  prototype_name: string;\n  prototype_display_name: string;\n  prototype_version: string;\n  provider_id: number;\n  bundle_id: number;\n  hostcomponent: string;\n  state: string;\n}\n\nconst IssueSet: { [key: string]: string[] } = {\n  service: ['required_service'],\n  import: ['required_import'],\n};\n\n// type IconMenu = 'issue' | 'status';\n\n// interface Icon {\n//   id: IconMenu;\n//   isShow: boolean;\n//   color: ThemePalette;\n//   name: string;\n// }\n\nexport interface INavItem {\n  id?: number;\n  title: string;\n  url: string;\n  issue?: string;\n  status?: number;\n  statusMessage?: string;\n  action?: () => void;\n}\n\nexport interface IStyledNavItem {\n  class?: string;\n  entity?: AdcmTypedEntity;\n}\n\nconst all = [\n  { id: 0, title: 'Main', url: 'main' },\n  { id: 8, title: 'License', url: 'license' },\n  { id: 4, title: 'Configuration', url: 'config' },\n  { id: 5, title: 'Status', url: 'status' },\n  { id: 6, title: 'Import', url: 'import' },\n  { id: 7, title: 'Actions', url: 'action' },\n  { id: 1, title: 'Services', url: 'service' },\n  { id: 2, title: 'Hosts', url: 'host' },\n  { id: 3, title: 'Hosts - Components', url: 'host_component' },\n];\n\nconst [main, license, config, m_status, m_import, actions, services, hosts, host_components] = all;\n\nconst components = {\n  id: 8,\n  title: 'Components',\n  url: 'component',\n};\n\nexport const Config = {\n  menu: {\n    cluster: [main, config, m_status, m_import, actions, services, hosts, host_components].sort((a, b) => a.id - b.id),\n    service: [main, components, config, m_status, m_import, actions],\n    host: [main, config, m_status, actions],\n    provider: [main, config, actions],\n    bundle: [main, license],\n    servicecomponent: [main, config, m_status, actions],\n  },\n};\n\n@Injectable()\nexport class NavigationService {\n  findIssue = (url: string, issue: Issue) => Object.keys(issue).some((p) => p === url || (IssueSet[url] && IssueSet[url].some((a) => a === p)));\n  getIssueMessage = (flag: boolean) => (flag ? ISSUE_MESSAGE : '');\n\n  getLeft(current: Partial<ApiBase>): INavItem[] {\n    const getMenu = (c: Partial<ApiBase>) => {\n      const forJob = (job: Job) => [main, ...job.log_files.map((a) => ({\n        title: `${a.name} [ ${a.type} ]`,\n        url: `${a.id}`,\n        action: () => (location.href = a.download_url)\n      }))];\n      const def = (typeName: TypeName, issue: Issue, status: number) =>\n        Config.menu[typeName].map((i: INavItem) => ({\n          ...i,\n          issue: this.findIssue(i.url, issue),\n          status,\n        }));\n      return c.typeName === 'job' ? forJob(c as Job) : def(c.typeName, c.issue || {}, +c.status);\n    };\n    return getMenu(current);\n  }\n\n  getTop(current: IDetails): INavItem[] {\n    const issue = (i: Issue) => (isIssue(i) ? ISSUE_MESSAGE : '');\n    const link = (p: { typeName: string; id: number }) => (p ? `/${p.typeName}/${p.id}` : '');\n    const typeObj = (type: string, prev: string) => ({ url: `${prev}/${type}`, title: `${type}s` });\n    const fullLink = (c: { parent?: Cluster; typeName: TypeName; id: number; name: string; issue: Issue }): INavItem[] => [\n      typeObj(c.typeName === 'job' ? 'task' : c.typeName, link(c.parent)),\n      {\n        id: c.id,\n        url: `${link(c.parent)}${link(c)}`,\n        title: c.name,\n        issue: issue(c.issue),\n      },\n    ];\n    return [current.parent, current].reduce((p, c) => [...p, ...(c ? fullLink(c) : [])], []);\n  }\n}\n",
+            "sourceCode": "import { Injectable } from '@angular/core';\nimport { ApiBase, Cluster, isIssue, Issue, Job, TypeName, IAction, LogFile, JobObject } from '@app/core/types';\nimport { AdcmTypedEntity } from '@app/models/entity';\n\nexport const ISSUE_MESSAGE = 'Something is wrong with your cluster configuration, please review it.';\n\nexport interface IDetails {\n  parent?: Cluster;\n  typeName: TypeName;\n  id: number;\n  name: string;\n  upgradable: boolean;\n  upgrade: string;\n  status: string | number;\n  /** link to actionss */\n  action: string;\n  actions: IAction[];\n  issue: Issue;\n  log_files?: LogFile[];\n  objects: JobObject[];\n  prototype_name: string;\n  prototype_display_name: string;\n  prototype_version: string;\n  provider_id: number;\n  bundle_id: number;\n  hostcomponent: string;\n  state: string;\n}\n\nconst IssueSet: { [key: string]: string[] } = {\n  service: ['required_service'],\n  import: ['required_import'],\n};\n\n// type IconMenu = 'issue' | 'status';\n\n// interface Icon {\n//   id: IconMenu;\n//   isShow: boolean;\n//   color: ThemePalette;\n//   name: string;\n// }\n\nexport interface INavItem {\n  id?: number;\n  title: string;\n  url: string;\n  issue?: string;\n  status?: number;\n  statusMessage?: string;\n  action?: () => void;\n}\n\nexport interface IStyledNavItem {\n  class?: string;\n  entity?: AdcmTypedEntity;\n}\n\nconst all = [\n  { id: 0, title: 'Main', url: 'main' },\n  { id: 8, title: 'License', url: 'license' },\n  { id: 4, title: 'Configuration', url: 'config' },\n  { id: 5, title: 'Status', url: 'status' },\n  { id: 6, title: 'Import', url: 'import' },\n  { id: 7, title: 'Actions', url: 'action' },\n  { id: 1, title: 'Services', url: 'service' },\n  { id: 2, title: 'Hosts', url: 'host' },\n  { id: 3, title: 'Hosts - Components', url: 'host_component' },\n];\n\nconst [main, license, config, m_status, m_import, actions, services, hosts, host_components] = all;\n\nconst components = {\n  id: 8,\n  title: 'Components',\n  url: 'component',\n};\n\nexport const Config = {\n  menu: {\n    cluster: [main, config, m_status, m_import, actions, services, hosts, host_components].sort((a, b) => a.id - b.id),\n    service: [main, components, config, m_status, m_import, actions],\n    host: [main, config, m_status, actions],\n    provider: [main, config, actions],\n    bundle: [main, license],\n    servicecomponent: [main, config, m_status, actions],\n  },\n};\n\n@Injectable()\nexport class NavigationService {\n  findIssue = (url: string, issue: Issue) => Object.keys(issue).some((p) => p === url || (IssueSet[url] && IssueSet[url].some((a) => a === p)));\n  getIssueMessage = (flag: boolean) => (flag ? ISSUE_MESSAGE : '');\n\n  getLeft(current: Partial<ApiBase>): INavItem[] {\n    const getMenu = (c: Partial<ApiBase>) => {\n      const forJob = (job: Job) => job.log_files.map((a) => ({\n        title: `${a.name} [ ${a.type} ]`,\n        url: `${a.id}`,\n        action: () => (location.href = a.download_url)\n      }));\n      const def = (typeName: TypeName, issue: Issue, status: number) =>\n        Config.menu[typeName].map((i: INavItem) => ({\n          ...i,\n          issue: this.findIssue(i.url, issue),\n          status,\n        }));\n      return c.typeName === 'job' ? forJob(c as Job) : def(c.typeName, c.issue || {}, +c.status);\n    };\n    return getMenu(current);\n  }\n\n  getTop(current: IDetails): INavItem[] {\n    const issue = (i: Issue) => (isIssue(i) ? ISSUE_MESSAGE : '');\n    const link = (p: { typeName: string; id: number }) => (p ? `/${p.typeName}/${p.id}` : '');\n    const typeObj = (type: string, prev: string) => ({ url: `${prev}/${type}`, title: `${type}s` });\n    const fullLink = (c: { parent?: Cluster; typeName: TypeName; id: number; name: string; issue: Issue }): INavItem[] => [\n      typeObj(c.typeName === 'job' ? 'task' : c.typeName, link(c.parent)),\n      {\n        id: c.id,\n        url: `${link(c.parent)}${link(c)}`,\n        title: c.name,\n        issue: issue(c.issue),\n      },\n    ];\n    return [current.parent, current].reduce((p, c) => [...p, ...(c ? fullLink(c) : [])], []);\n  }\n}\n",
             "type": "injectable"
         },
         {
@@ -13388,7 +13549,7 @@
         },
         {
             "name": "SocketListenerDirective",
-            "id": "injectable-SocketListenerDirective-4b9412425a7814e72cf97dc3e76c56be",
+            "id": "injectable-SocketListenerDirective-fa0c54661488f8a796fa76d8835736e4",
             "file": "src/app/shared/directives/socketListener.directive.ts",
             "properties": [
                 {
@@ -13399,7 +13560,7 @@
                     "type": "",
                     "optional": false,
                     "description": "",
-                    "line": 23
+                    "line": 24
                 }
             ],
             "methods": [
@@ -13409,7 +13570,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 29,
+                    "line": 30,
                     "deprecated": false,
                     "deprecationMessage": ""
                 },
@@ -13426,7 +13587,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 40,
+                    "line": 41,
                     "deprecated": false,
                     "deprecationMessage": "",
                     "jsdoctags": [
@@ -13447,7 +13608,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 34,
+                    "line": 35,
                     "deprecated": false,
                     "deprecationMessage": ""
                 }
@@ -13456,7 +13617,7 @@
             "deprecationMessage": "",
             "description": "",
             "rawdescription": "\n",
-            "sourceCode": "import { Directive, Injectable, OnDestroy } from '@angular/core';\nimport { EventMessage, getMessage, SocketState, clearMessages } from '@app/core/store';\nimport { select, Store } from '@ngrx/store';\nimport { filter, tap } from 'rxjs/operators';\nimport { BaseDirective } from './base.directive';\n\n@Directive({\n  selector: '[appBase]',\n})\n@Injectable()\nexport class SocketListenerDirective extends BaseDirective implements OnDestroy {\n  socket$ = this.socket.pipe(this.takeUntil(), select(getMessage), filter(m => !!m && !!m.object));\n\n  constructor(private socket: Store<SocketState>) {\n    super();\n  }\n\n  ngOnDestroy() {\n    super.ngOnDestroy();\n    this.socket.dispatch(clearMessages());\n  }\n\n  startListenSocket(): void {\n    this.socket$.pipe(\n      tap(m => this.socketListener(m))\n    ).subscribe();\n  }\n\n  socketListener(m: EventMessage) {\n    console.warn('No implemented socketListener method', m);\n  }\n}\n",
+            "sourceCode": "import { Directive, Injectable, OnDestroy } from '@angular/core';\nimport { select, Store } from '@ngrx/store';\nimport { filter, tap } from 'rxjs/operators';\nimport { BaseDirective } from '@adwp-ui/widgets';\n\nimport { EventMessage, getMessage, SocketState, clearMessages } from '@app/core/store';\n\n@Directive({\n  selector: '[appBase]',\n})\n@Injectable()\nexport class SocketListenerDirective extends BaseDirective implements OnDestroy {\n  socket$ = this.socket.pipe(this.takeUntil(), select(getMessage), filter(m => !!m && !!m.object));\n\n  constructor(private socket: Store<SocketState>) {\n    super();\n  }\n\n  ngOnDestroy() {\n    super.ngOnDestroy();\n    this.socket.dispatch(clearMessages());\n  }\n\n  startListenSocket(): void {\n    this.socket$.pipe(\n      tap(m => this.socketListener(m))\n    ).subscribe();\n  }\n\n  socketListener(m: EventMessage) {\n    console.warn('No implemented socketListener method', m);\n  }\n}\n",
             "constructorObj": {
                 "name": "constructor",
                 "description": "",
@@ -13470,7 +13631,7 @@
                         "deprecationMessage": ""
                     }
                 ],
-                "line": 23,
+                "line": 24,
                 "jsdoctags": [
                     {
                         "name": "socket",
@@ -23842,12 +24003,12 @@
         },
         {
             "name": "SocketListenerDirective",
-            "id": "directive-SocketListenerDirective-4b9412425a7814e72cf97dc3e76c56be",
+            "id": "directive-SocketListenerDirective-fa0c54661488f8a796fa76d8835736e4",
             "file": "src/app/shared/directives/socketListener.directive.ts",
             "type": "directive",
             "description": "",
             "rawdescription": "\n",
-            "sourceCode": "import { Directive, Injectable, OnDestroy } from '@angular/core';\nimport { EventMessage, getMessage, SocketState, clearMessages } from '@app/core/store';\nimport { select, Store } from '@ngrx/store';\nimport { filter, tap } from 'rxjs/operators';\nimport { BaseDirective } from './base.directive';\n\n@Directive({\n  selector: '[appBase]',\n})\n@Injectable()\nexport class SocketListenerDirective extends BaseDirective implements OnDestroy {\n  socket$ = this.socket.pipe(this.takeUntil(), select(getMessage), filter(m => !!m && !!m.object));\n\n  constructor(private socket: Store<SocketState>) {\n    super();\n  }\n\n  ngOnDestroy() {\n    super.ngOnDestroy();\n    this.socket.dispatch(clearMessages());\n  }\n\n  startListenSocket(): void {\n    this.socket$.pipe(\n      tap(m => this.socketListener(m))\n    ).subscribe();\n  }\n\n  socketListener(m: EventMessage) {\n    console.warn('No implemented socketListener method', m);\n  }\n}\n",
+            "sourceCode": "import { Directive, Injectable, OnDestroy } from '@angular/core';\nimport { select, Store } from '@ngrx/store';\nimport { filter, tap } from 'rxjs/operators';\nimport { BaseDirective } from '@adwp-ui/widgets';\n\nimport { EventMessage, getMessage, SocketState, clearMessages } from '@app/core/store';\n\n@Directive({\n  selector: '[appBase]',\n})\n@Injectable()\nexport class SocketListenerDirective extends BaseDirective implements OnDestroy {\n  socket$ = this.socket.pipe(this.takeUntil(), select(getMessage), filter(m => !!m && !!m.object));\n\n  constructor(private socket: Store<SocketState>) {\n    super();\n  }\n\n  ngOnDestroy() {\n    super.ngOnDestroy();\n    this.socket.dispatch(clearMessages());\n  }\n\n  startListenSocket(): void {\n    this.socket$.pipe(\n      tap(m => this.socketListener(m))\n    ).subscribe();\n  }\n\n  socketListener(m: EventMessage) {\n    console.warn('No implemented socketListener method', m);\n  }\n}\n",
             "selector": "[appBase]",
             "providers": [],
             "inputsClass": [],
@@ -23865,7 +24026,7 @@
                     "type": "",
                     "optional": false,
                     "description": "",
-                    "line": 23
+                    "line": 24
                 }
             ],
             "methodsClass": [
@@ -23875,7 +24036,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 29,
+                    "line": 30,
                     "deprecated": false,
                     "deprecationMessage": ""
                 },
@@ -23892,7 +24053,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 40,
+                    "line": 41,
                     "deprecated": false,
                     "deprecationMessage": "",
                     "jsdoctags": [
@@ -23913,7 +24074,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 34,
+                    "line": 35,
                     "deprecated": false,
                     "deprecationMessage": ""
                 }
@@ -23934,7 +24095,7 @@
                         "deprecationMessage": ""
                     }
                 ],
-                "line": 23,
+                "line": 24,
                 "jsdoctags": [
                     {
                         "name": "socket",
@@ -24188,7 +24349,7 @@
                     "type": "",
                     "optional": false,
                     "description": "",
-                    "line": 23,
+                    "line": 24,
                     "inheritance": {
                         "file": "SocketListenerDirective"
                     }
@@ -24255,7 +24416,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 29,
+                    "line": 30,
                     "deprecated": false,
                     "deprecationMessage": "",
                     "inheritance": {
@@ -24268,7 +24429,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 34,
+                    "line": 35,
                     "deprecated": false,
                     "deprecationMessage": "",
                     "inheritance": {
@@ -25987,7 +26148,7 @@
         },
         {
             "name": "BellComponent",
-            "id": "component-BellComponent-16ef003b95f777451d13f0ab2353a270",
+            "id": "component-BellComponent-2f70d21e7fd0400018bae797330700ae",
             "file": "src/app/components/bell/bell.component.ts",
             "encapsulation": [],
             "entryComponents": [],
@@ -26140,13 +26301,33 @@
             "methodsClass": [
                 {
                     "name": "afterCountChanged",
-                    "args": [],
+                    "args": [
+                        {
+                            "name": "animationNeeds",
+                            "type": "",
+                            "deprecated": false,
+                            "deprecationMessage": "",
+                            "defaultValue": "true"
+                        }
+                    ],
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 106,
+                    "line": 107,
                     "deprecated": false,
-                    "deprecationMessage": ""
+                    "deprecationMessage": "",
+                    "jsdoctags": [
+                        {
+                            "name": "animationNeeds",
+                            "type": "",
+                            "deprecated": false,
+                            "deprecationMessage": "",
+                            "defaultValue": "true",
+                            "tagName": {
+                                "text": "param"
+                            }
+                        }
+                    ]
                 },
                 {
                     "name": "decRunningCount",
@@ -26154,7 +26335,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 127,
+                    "line": 130,
                     "deprecated": false,
                     "deprecationMessage": ""
                 },
@@ -26164,7 +26345,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 99,
+                    "line": 100,
                     "deprecated": false,
                     "deprecationMessage": ""
                 },
@@ -26174,7 +26355,7 @@
                     "optional": false,
                     "returnType": "Observable<EventMessage>",
                     "typeParameters": [],
-                    "line": 123,
+                    "line": 126,
                     "deprecated": false,
                     "deprecationMessage": ""
                 },
@@ -26184,7 +26365,7 @@
                     "optional": false,
                     "returnType": "Observable<Stats>",
                     "typeParameters": [],
-                    "line": 170,
+                    "line": 173,
                     "deprecated": false,
                     "deprecationMessage": ""
                 },
@@ -26194,7 +26375,7 @@
                     "optional": false,
                     "returnType": "Observable<Task[]>",
                     "typeParameters": [],
-                    "line": 177,
+                    "line": 180,
                     "deprecated": false,
                     "deprecationMessage": ""
                 },
@@ -26204,7 +26385,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 132,
+                    "line": 135,
                     "deprecated": false,
                     "deprecationMessage": ""
                 },
@@ -26214,7 +26395,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 192,
+                    "line": 202,
                     "deprecated": false,
                     "deprecationMessage": ""
                 },
@@ -26224,7 +26405,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 88,
+                    "line": 89,
                     "deprecated": false,
                     "deprecationMessage": ""
                 },
@@ -26234,7 +26415,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 84,
+                    "line": 85,
                     "deprecated": false,
                     "deprecationMessage": ""
                 },
@@ -26272,7 +26453,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 92,
+                    "line": 93,
                     "deprecated": false,
                     "deprecationMessage": ""
                 },
@@ -26312,7 +26493,7 @@
             "description": "",
             "rawdescription": "\n",
             "type": "component",
-            "sourceCode": "import { AfterViewInit, Component, ElementRef, Renderer2, ViewChild } from '@angular/core';\nimport { BaseDirective } from '@adwp-ui/widgets';\nimport { BehaviorSubject, combineLatest, interval, Observable, zip } from 'rxjs';\nimport { filter, map, mergeMap, take, takeWhile } from 'rxjs/operators';\n\nimport { TaskService } from '@app/services/task.service';\nimport { ACKNOWLEDGE_EVENT, NotificationsComponent } from '@app/components/notifications/notifications.component';\nimport { Task, TaskRaw } from '@app/core/types';\nimport { EventMessage, ProfileService } from '@app/core/store';\nimport { Stats, StatsService } from '@app/services/stats.service';\n\nconst RUNNING_COLOR = '#FFEA00';\nconst SUCCESS_COLOR = '#1EE564';\nconst FAILED_COLOR = '#FF8A80';\n\nexport interface NotificationsData {\n  runningCount: number;\n  successCount: number;\n  failedCount: number;\n}\n\n@Component({\n  selector: 'app-bell',\n  template: `\n    <div\n      class=\"circle\"\n      [ngStyle]=\"{ background: bellGradient }\"\n      routerLink=\"/task\"\n      appPopover\n      [component]=\"NotificationsComponent\"\n      [event]=\"bindedPopoverEvent\"\n      [data]=\"{ counts: counts, tasks: tasks }\"\n    >\n      <div class=\"animation hide\" (animationstart)=\"onAnimationStart()\" (animationend)=\"onAnimationEnd()\" #animation></div>\n      <div class=\"insider\">\n        <mat-icon>notifications</mat-icon>\n      </div>\n    </div>\n  `,\n  styleUrls: ['./bell.component.scss']\n})\nexport class BellComponent extends BaseDirective implements AfterViewInit {\n\n  NotificationsComponent = NotificationsComponent;\n\n  @ViewChild('animation', { static: false }) animationRef: ElementRef;\n\n  runningCount = new BehaviorSubject<number>(0);\n  successCount = new BehaviorSubject<number>(0);\n  failedCount = new BehaviorSubject<number>(0);\n\n  bellGradient = '';\n\n  isAnimationRunning = new BehaviorSubject<boolean>(false);\n  animationElem = new BehaviorSubject<Element>(null);\n\n  counts = new BehaviorSubject<NotificationsData>(null);\n  tasks = new BehaviorSubject<TaskRaw[]>([]);\n\n  readonly bindedPopoverEvent = this.popoverEvent.bind(this);\n\n  constructor(\n    private taskService: TaskService,\n    private renderer: Renderer2,\n    private profileService: ProfileService,\n    private statsService: StatsService,\n  ) {\n    super();\n  }\n\n  popoverEvent(event: any) {\n    if (event === ACKNOWLEDGE_EVENT) {\n      const lastTaskId = this.tasks.value[0]?.id;\n      if (lastTaskId) {\n        this.profileService.setLastViewedTask(lastTaskId).subscribe();\n      }\n      this.tasks.next([]);\n      this.successCount.next(0);\n      this.runningCount.next(0);\n      this.failedCount.next(0);\n    }\n  }\n\n  onAnimationStart() {\n    this.isAnimationRunning.next(true);\n  }\n\n  onAnimationEnd() {\n    this.isAnimationRunning.next(false);\n  }\n\n  startAnimation() {\n    if (this.animationElem.value && !this.isAnimationRunning.value) {\n      this.renderer.removeClass(this.animationElem.value, 'hide');\n      this.renderer.addClass(this.animationElem.value, 'animated');\n    }\n  }\n\n  endAnimation() {\n    if (this.animationElem.value) {\n      this.renderer.addClass(this.animationElem.value, 'hide');\n      this.renderer.removeClass(this.animationElem.value, 'animated');\n    }\n  }\n\n  afterCountChanged() {\n    const total =  this.runningCount.value + this.successCount.value + this.failedCount.value;\n    if (total > 0) {\n      const degOne = 360 / total;\n      const degRunning = this.runningCount.value * degOne;\n      const degSuccess = this.successCount.value * degOne;\n      this.bellGradient =\n        `conic-gradient(`\n        + `${RUNNING_COLOR} 0deg ${degRunning}deg,`\n        + `${SUCCESS_COLOR} ${degRunning}deg ${degRunning + degSuccess}deg,`\n        + `${FAILED_COLOR} ${degRunning + degSuccess}deg 360deg)`;\n    } else {\n      this.bellGradient = 'transparent';\n    }\n    this.startAnimation();\n  }\n\n  getChangeTaskObservable(): Observable<EventMessage> {\n    return this.taskService.events(['change_job_status']).pipe(this.takeUntil());\n  }\n\n  decRunningCount() {\n    const runningCount = this.runningCount.value - 1;\n    this.runningCount.next(runningCount < 0 ? 0 : runningCount);\n  }\n\n  listenToJobs() {\n    this.getChangeTaskObservable().subscribe((event) => {\n      const status = event.object.details.value;\n      if (status === 'running') {\n        this.runningCount.next(this.runningCount.value + 1);\n        this.afterCountChanged();\n      } else if (status === 'success') {\n        this.successCount.next(this.successCount.value + 1);\n        this.decRunningCount();\n        this.afterCountChanged();\n      } else if (status === 'failed') {\n        this.failedCount.next(this.failedCount.value + 1);\n        this.decRunningCount();\n        this.afterCountChanged();\n      }\n    });\n\n    this.getChangeTaskObservable().pipe(\n      filter(event => event.object.details.type === 'status'),\n      filter(event => event.object.details.value !== 'created'),\n    ).subscribe((event) => {\n      const tasks: TaskRaw[] = this.tasks.value.slice();\n      const index = tasks.findIndex(item => item.id === event.object.id);\n      if (index >= 0) {\n        const task: TaskRaw = Object.assign({}, tasks[index]);\n        task.status = event.object.details.value;\n        tasks.splice(index, 1, task);\n        this.tasks.next(tasks);\n      } else {\n        this.taskService.get(event.object.id).subscribe((task) => {\n          task.status = event.object.details.value;\n          tasks.unshift(task);\n          this.tasks.next(tasks.slice(0, 5));\n        });\n      }\n    });\n  }\n\n  getCurrentCounts(): Observable<Stats> {\n    return this.profileService.getProfile().pipe(\n      take(1),\n      mergeMap((user) => this.statsService.tasks(user.profile?.lastViewedTask?.id)),\n    );\n  }\n\n  getLastTasks(): Observable<Task[]> {\n    return zip(\n      this.taskService.list({ ordering: '-finish_date', status: 'failed', limit: '5' }),\n      this.taskService.list({ ordering: '-finish_date', status: 'success', limit: '5' }),\n      this.taskService.list({ ordering: '-start_date', status: 'running', limit: '5' }),\n    ).pipe(map(([failed, succeed, running]) => {\n      return [...failed.results, ...succeed.results, ...running.results].sort((a, b) => {\n        const getDateField = (task: Task) => task.status === 'failed' || task.status === 'success' ? task.finish_date : task.start_date;\n        const aDate = new Date(getDateField(a));\n        const bDate = new Date(getDateField(b));\n        return aDate.getDate() - bDate.getDate();\n      }).slice(0, 5);\n    }));\n  }\n\n  ngAfterViewInit(): void {\n    interval(200).pipe(\n      this.takeUntil(),\n      takeWhile(() => !this.animationElem.value),\n    ).subscribe(() => {\n      this.animationElem.next(this.animationRef ? this.animationRef.nativeElement : null);\n    });\n\n    this.animationElem.pipe(\n      this.takeUntil(),\n      filter((elem) => !!elem),\n      take(1),\n    ).subscribe(() => {\n      zip(this.getCurrentCounts(), this.getLastTasks())\n        .subscribe(([stats, tasks]) => {\n          this.runningCount.next(stats.running);\n          this.successCount.next(stats.success);\n          this.failedCount.next(stats.failed);\n          this.afterCountChanged();\n          this.tasks.next(tasks);\n          this.listenToJobs();\n        });\n    });\n\n    this.isAnimationRunning.pipe(\n      this.takeUntil(),\n      filter(isRunning => !isRunning),\n    ).subscribe(() => this.endAnimation());\n\n    combineLatest(this.runningCount, this.successCount, this.failedCount)\n    .pipe(this.takeUntil())\n    .subscribe(\n      ([runningCount, successCount, failedCount]) => this.counts.next({\n        runningCount,\n        successCount,\n        failedCount,\n      })\n    );\n  }\n\n}\n",
+            "sourceCode": "import { AfterViewInit, Component, ElementRef, Renderer2, ViewChild } from '@angular/core';\nimport { BaseDirective } from '@adwp-ui/widgets';\nimport { BehaviorSubject, combineLatest, interval, Observable, zip } from 'rxjs';\nimport { filter, map, mergeMap, take, takeWhile } from 'rxjs/operators';\n\nimport { TaskService } from '@app/services/task.service';\nimport { ACKNOWLEDGE_EVENT, NotificationsComponent } from '@app/components/notifications/notifications.component';\nimport { Task, TaskRaw } from '@app/core/types';\nimport { EventMessage, ProfileService } from '@app/core/store';\nimport { Stats, StatsService } from '@app/services/stats.service';\n\nconst RUNNING_COLOR = '#FFEA00';\nconst SUCCESS_COLOR = '#1EE564';\nconst FAILED_COLOR = '#FF8A80';\n\nexport interface NotificationsData {\n  runningCount: number;\n  successCount: number;\n  failedCount: number;\n}\n\n@Component({\n  selector: 'app-bell',\n  template: `\n    <div\n      class=\"circle\"\n      [ngStyle]=\"{ background: bellGradient }\"\n      routerLink=\"/task\"\n      appPopover\n      [component]=\"NotificationsComponent\"\n      [event]=\"bindedPopoverEvent\"\n      [data]=\"{ counts: counts, tasks: tasks }\"\n    >\n      <div class=\"animation hide\" (animationstart)=\"onAnimationStart()\" (animationend)=\"onAnimationEnd()\" #animation></div>\n      <div class=\"insider\">\n        <mat-icon>notifications</mat-icon>\n      </div>\n    </div>\n  `,\n  styleUrls: ['./bell.component.scss']\n})\nexport class BellComponent extends BaseDirective implements AfterViewInit {\n\n  NotificationsComponent = NotificationsComponent;\n\n  @ViewChild('animation', { static: false }) animationRef: ElementRef;\n\n  runningCount = new BehaviorSubject<number>(0);\n  successCount = new BehaviorSubject<number>(0);\n  failedCount = new BehaviorSubject<number>(0);\n\n  bellGradient = '';\n\n  isAnimationRunning = new BehaviorSubject<boolean>(false);\n  animationElem = new BehaviorSubject<Element>(null);\n\n  counts = new BehaviorSubject<NotificationsData>(null);\n  tasks = new BehaviorSubject<TaskRaw[]>([]);\n\n  readonly bindedPopoverEvent = this.popoverEvent.bind(this);\n\n  constructor(\n    private taskService: TaskService,\n    private renderer: Renderer2,\n    private profileService: ProfileService,\n    private statsService: StatsService,\n  ) {\n    super();\n  }\n\n  popoverEvent(event: any) {\n    if (event === ACKNOWLEDGE_EVENT) {\n      const lastTaskId = this.tasks.value[0]?.id;\n      if (lastTaskId) {\n        this.profileService.setLastViewedTask(lastTaskId).subscribe();\n      }\n      this.tasks.next([]);\n      this.successCount.next(0);\n      this.runningCount.next(0);\n      this.failedCount.next(0);\n      this.afterCountChanged(false);\n    }\n  }\n\n  onAnimationStart() {\n    this.isAnimationRunning.next(true);\n  }\n\n  onAnimationEnd() {\n    this.isAnimationRunning.next(false);\n  }\n\n  startAnimation() {\n    if (this.animationElem.value && !this.isAnimationRunning.value) {\n      this.renderer.removeClass(this.animationElem.value, 'hide');\n      this.renderer.addClass(this.animationElem.value, 'animated');\n    }\n  }\n\n  endAnimation() {\n    if (this.animationElem.value) {\n      this.renderer.addClass(this.animationElem.value, 'hide');\n      this.renderer.removeClass(this.animationElem.value, 'animated');\n    }\n  }\n\n  afterCountChanged(animationNeeds = true) {\n    const total =  this.runningCount.value + this.successCount.value + this.failedCount.value;\n    if (total > 0) {\n      const degOne = 360 / total;\n      const degRunning = this.runningCount.value * degOne;\n      const degSuccess = this.successCount.value * degOne;\n      this.bellGradient =\n        `conic-gradient(`\n        + `${RUNNING_COLOR} 0deg ${degRunning}deg,`\n        + `${SUCCESS_COLOR} ${degRunning}deg ${degRunning + degSuccess}deg,`\n        + `${FAILED_COLOR} ${degRunning + degSuccess}deg 360deg)`;\n    } else {\n      this.bellGradient = 'transparent';\n    }\n    if (animationNeeds) {\n      this.startAnimation();\n    }\n  }\n\n  getChangeTaskObservable(): Observable<EventMessage> {\n    return this.taskService.events(['change_job_status']).pipe(this.takeUntil());\n  }\n\n  decRunningCount() {\n    const runningCount = this.runningCount.value - 1;\n    this.runningCount.next(runningCount < 0 ? 0 : runningCount);\n  }\n\n  listenToJobs() {\n    this.getChangeTaskObservable().subscribe((event) => {\n      const status = event.object.details.value;\n      if (status === 'running') {\n        this.runningCount.next(this.runningCount.value + 1);\n        this.afterCountChanged();\n      } else if (status === 'success') {\n        this.successCount.next(this.successCount.value + 1);\n        this.decRunningCount();\n        this.afterCountChanged();\n      } else if (status === 'failed') {\n        this.failedCount.next(this.failedCount.value + 1);\n        this.decRunningCount();\n        this.afterCountChanged();\n      }\n    });\n\n    this.getChangeTaskObservable().pipe(\n      filter(event => event.object.details.type === 'status'),\n      filter(event => event.object.details.value !== 'created'),\n    ).subscribe((event) => {\n      const tasks: TaskRaw[] = this.tasks.value.slice();\n      const index = tasks.findIndex(item => item.id === event.object.id);\n      if (index >= 0) {\n        const task: TaskRaw = Object.assign({}, tasks[index]);\n        task.status = event.object.details.value;\n        tasks.splice(index, 1, task);\n        this.tasks.next(tasks);\n      } else {\n        this.taskService.get(event.object.id).subscribe((task) => {\n          task.status = event.object.details.value;\n          tasks.unshift(task);\n          this.tasks.next(tasks.slice(0, 5));\n        });\n      }\n    });\n  }\n\n  getCurrentCounts(): Observable<Stats> {\n    return this.profileService.getProfile().pipe(\n      take(1),\n      mergeMap((user) => this.statsService.tasks(user.profile?.lastViewedTask?.id)),\n    );\n  }\n\n  getLastTasks(): Observable<Task[]> {\n    return zip(\n      this.taskService.list({ ordering: '-finish_date', status: 'failed', limit: '5' }),\n      this.taskService.list({ ordering: '-finish_date', status: 'success', limit: '5' }),\n      this.taskService.list({ ordering: '-start_date', status: 'running', limit: '5' }),\n      this.profileService.getProfile(),\n    ).pipe(map(([failed, succeed, running, user]) => {\n      let tasks = [...failed.results, ...succeed.results, ...running.results].sort((a, b) => {\n        const getDateField = (task: Task) => task.status === 'failed' || task.status === 'success' ? task.finish_date : task.start_date;\n        const aDate = new Date(getDateField(a));\n        const bDate = new Date(getDateField(b));\n        return aDate.getDate() - bDate.getDate();\n      }).slice(0, 5);\n\n      if (user.profile?.lastViewedTask?.id) {\n        tasks = tasks.filter(task => task.id > user.profile.lastViewedTask.id);\n      }\n\n      return tasks;\n    }));\n  }\n\n  ngAfterViewInit(): void {\n    interval(200).pipe(\n      this.takeUntil(),\n      takeWhile(() => !this.animationElem.value),\n    ).subscribe(() => {\n      this.animationElem.next(this.animationRef ? this.animationRef.nativeElement : null);\n    });\n\n    this.animationElem.pipe(\n      this.takeUntil(),\n      filter((elem) => !!elem),\n      take(1),\n    ).subscribe(() => {\n      zip(this.getCurrentCounts(), this.getLastTasks())\n        .subscribe(([stats, tasks]) => {\n          this.runningCount.next(stats.running);\n          this.successCount.next(stats.success);\n          this.failedCount.next(stats.failed);\n          this.afterCountChanged(!!(stats.running || stats.success || stats.failed));\n          this.tasks.next(tasks);\n          this.listenToJobs();\n        });\n    });\n\n    this.isAnimationRunning.pipe(\n      this.takeUntil(),\n      filter(isRunning => !isRunning),\n    ).subscribe(() => this.endAnimation());\n\n    combineLatest(this.runningCount, this.successCount, this.failedCount)\n    .pipe(this.takeUntil())\n    .subscribe(\n      ([runningCount, successCount, failedCount]) => this.counts.next({\n        runningCount,\n        successCount,\n        failedCount,\n      })\n    );\n  }\n\n}\n",
             "assetsDirs": [],
             "styleUrlsData": [
                 {
@@ -28019,8 +28200,8 @@
         },
         {
             "name": "ConfigComponent",
-            "id": "component-ConfigComponent-18194bd294bf024d5a497d3e9902e28d",
-            "file": "src/app/shared/configuration/main/main.component.ts",
+            "id": "component-ConfigComponent-48788a15be8a613f0ab134c3f4969363",
+            "file": "src/app/shared/configuration/main/config.component.ts",
             "changeDetection": "ChangeDetectionStrategy.OnPush",
             "encapsulation": [],
             "entryComponents": [],
@@ -28033,11 +28214,11 @@
             ],
             "selector": "app-config-form",
             "styleUrls": [
-                "./main.component.scss"
+                "./config.component.scss"
             ],
             "styles": [],
             "templateUrl": [
-                "./main.component.html"
+                "./config.component.html"
             ],
             "viewProviders": [],
             "inputsClass": [
@@ -28045,7 +28226,7 @@
                     "name": "configUrl",
                     "deprecated": false,
                     "deprecationMessage": "",
-                    "line": 47,
+                    "line": 48,
                     "type": "string"
                 }
             ],
@@ -28055,7 +28236,7 @@
                     "defaultValue": "new EventEmitter<{ name: string; data?: any }>()",
                     "deprecated": false,
                     "deprecationMessage": "",
-                    "line": 53,
+                    "line": 54,
                     "type": "EventEmitter"
                 }
             ],
@@ -28067,19 +28248,10 @@
                     "type": "ChangeDetectorRef",
                     "optional": false,
                     "description": "",
-                    "line": 63,
+                    "line": 66,
                     "modifierKind": [
                         122
                     ]
-                },
-                {
-                    "name": "config$",
-                    "deprecated": false,
-                    "deprecationMessage": "",
-                    "type": "Observable<IConfig>",
-                    "optional": false,
-                    "description": "",
-                    "line": 39
                 },
                 {
                     "name": "fields",
@@ -28088,7 +28260,7 @@
                     "type": "ConfigFieldsComponent",
                     "optional": false,
                     "description": "",
-                    "line": 41,
+                    "line": 42,
                     "decorators": [
                         {
                             "name": "ViewChild",
@@ -28103,7 +28275,7 @@
                     "type": "HistoryComponent",
                     "optional": false,
                     "description": "",
-                    "line": 42,
+                    "line": 43,
                     "decorators": [
                         {
                             "name": "ViewChild",
@@ -28119,7 +28291,17 @@
                     "type": "",
                     "optional": false,
                     "description": "",
-                    "line": 37
+                    "line": 38
+                },
+                {
+                    "name": "isLoading",
+                    "defaultValue": "false",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "",
+                    "optional": false,
+                    "description": "",
+                    "line": 40
                 },
                 {
                     "name": "isLock",
@@ -28129,7 +28311,7 @@
                     "type": "",
                     "optional": false,
                     "description": "",
-                    "line": 38
+                    "line": 39
                 },
                 {
                     "name": "loadingStatus",
@@ -28139,16 +28321,17 @@
                     "type": "string",
                     "optional": false,
                     "description": "",
-                    "line": 34
+                    "line": 35
                 },
                 {
                     "name": "rawConfig",
+                    "defaultValue": "new BehaviorSubject<IConfig>(null)",
                     "deprecated": false,
                     "deprecationMessage": "",
-                    "type": "IConfig",
+                    "type": "",
                     "optional": false,
                     "description": "",
-                    "line": 35
+                    "line": 36
                 },
                 {
                     "name": "saveFlag",
@@ -28158,7 +28341,7 @@
                     "type": "",
                     "optional": false,
                     "description": "",
-                    "line": 36
+                    "line": 37
                 },
                 {
                     "name": "tools",
@@ -28167,7 +28350,7 @@
                     "type": "ToolsComponent",
                     "optional": false,
                     "description": "",
-                    "line": 43,
+                    "line": 44,
                     "decorators": [
                         {
                             "name": "ViewChild",
@@ -28183,7 +28366,7 @@
                     "type": "string",
                     "optional": false,
                     "description": "",
-                    "line": 45,
+                    "line": 46,
                     "modifierKind": [
                         120
                     ]
@@ -28196,7 +28379,7 @@
                     "type": "",
                     "optional": false,
                     "description": "",
-                    "line": 23,
+                    "line": 24,
                     "inheritance": {
                         "file": "SocketListenerDirective"
                     }
@@ -28229,7 +28412,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 130,
+                    "line": 144,
                     "deprecated": false,
                     "deprecationMessage": "",
                     "jsdoctags": [
@@ -28257,7 +28440,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 135,
+                    "line": 149,
                     "deprecated": false,
                     "deprecationMessage": "",
                     "jsdoctags": [
@@ -28285,7 +28468,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 83,
+                    "line": 93,
                     "deprecated": false,
                     "deprecationMessage": "",
                     "jsdoctags": [
@@ -28314,7 +28497,7 @@
                     "optional": false,
                     "returnType": "Observable<IConfig>",
                     "typeParameters": [],
-                    "line": 100,
+                    "line": 110,
                     "deprecated": false,
                     "deprecationMessage": "",
                     "jsdoctags": [
@@ -28336,7 +28519,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 67,
+                    "line": 73,
                     "deprecated": false,
                     "deprecationMessage": ""
                 },
@@ -28346,7 +28529,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 72,
+                    "line": 82,
                     "deprecated": false,
                     "deprecationMessage": ""
                 },
@@ -28356,7 +28539,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 139,
+                    "line": 153,
                     "deprecated": false,
                     "deprecationMessage": ""
                 },
@@ -28366,7 +28549,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 110,
+                    "line": 122,
                     "deprecated": false,
                     "deprecationMessage": ""
                 },
@@ -28383,7 +28566,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 87,
+                    "line": 97,
                     "deprecated": false,
                     "deprecationMessage": "",
                     "jsdoctags": [
@@ -28407,7 +28590,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 29,
+                    "line": 30,
                     "deprecated": false,
                     "deprecationMessage": "",
                     "inheritance": {
@@ -28420,7 +28603,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 34,
+                    "line": 35,
                     "deprecated": false,
                     "deprecationMessage": "",
                     "inheritance": {
@@ -28450,12 +28633,12 @@
             "description": "",
             "rawdescription": "\n",
             "type": "component",
-            "sourceCode": "import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';\nimport { EventMessage, SocketState } from '@app/core/store';\nimport { SocketListenerDirective } from '@app/shared/directives';\nimport { Store } from '@ngrx/store';\nimport { Observable, of } from 'rxjs';\nimport { catchError, tap } from 'rxjs/operators';\n\nimport { ConfigFieldsComponent } from '../fields/fields.component';\nimport { HistoryComponent } from '../tools/history.component';\nimport { ToolsComponent } from '../tools/tools.component';\nimport { IConfig } from '../types';\nimport { historyAnime, ISearchParam, MainService } from './main.service';\n\n@Component({\n  selector: 'app-config-form',\n  templateUrl: './main.component.html',\n  styleUrls: ['./main.component.scss'],\n  animations: historyAnime,\n  providers: [MainService],\n  changeDetection: ChangeDetectionStrategy.OnPush,\n})\nexport class ConfigComponent extends SocketListenerDirective implements OnInit {\n  loadingStatus = 'Loading...';\n  rawConfig: IConfig;\n  saveFlag = false;\n  historyShow = false;\n  isLock = false;\n  config$: Observable<IConfig>;\n\n  @ViewChild('fls') fields: ConfigFieldsComponent;\n  @ViewChild('history') historyComponent: HistoryComponent;\n  @ViewChild('tools') tools: ToolsComponent;\n\n  private url = '';\n  @Input()\n  set configUrl(url: string) {\n    this.url = url;\n    this.config$ = this.getConfig();\n  }\n\n  @Output()\n  event = new EventEmitter<{ name: string; data?: any }>();\n\n  get cUrl() {\n    return `${this.url}current/`;\n  }\n\n  get saveUrl(): string {\n    return `${this.url}history/`;\n  }\n\n  constructor(private service: MainService, public cd: ChangeDetectorRef, socket: Store<SocketState>) {\n    super(socket);\n  }\n\n  ngOnInit() {\n    if (!this.url) this.configUrl = this.service.Current?.config;\n    super.startListenSocket();\n  }\n\n  onReady() {\n    this.tools.isAdvanced = this.fields.isAdvanced;\n    this.tools.description.setValue(this.rawConfig.description);\n    this.filter(this.tools.filterParams);\n    this.service.getHistoryList(this.saveUrl, this.rawConfig.id).subscribe((h) => {\n      this.historyComponent.compareConfig = h;\n      this.tools.disabledHistory = !h.length;\n      this.cd.detectChanges();\n    });\n  }\n\n  filter(c: ISearchParam) {\n    this.service.filterApply(this.fields.dataOptions, c);\n  }\n\n  socketListener(m: EventMessage) {\n    if (\n      m.object.type === this.service.Current?.typeName &&\n      m.object.id === this.service.Current.id &&\n      !this.saveFlag &&\n      (m.event === 'change_config' || m.event === 'change_state')\n    ) {\n      this.isLock = m.object.details.value === 'locked';\n      this.reset();\n      this.config$ = this.getConfig();\n    }\n  }\n\n  getConfig(url = this.cUrl): Observable<IConfig> {\n    return this.service.getConfig(url).pipe(\n      tap((c) => (this.rawConfig = c)),\n      catchError(() => {\n        this.loadingStatus = 'There is no config for this object.';\n        return of(null);\n      })\n    );\n  }\n\n  save() {\n    const form = this.fields.form;\n    if (form.valid) {\n      this.saveFlag = true;\n      this.historyComponent.reset();\n      const config = this.service.parseValue(this.fields.form.value, this.rawConfig.config);\n      const send = { config, attr: this.fields.attr, description: this.tools.description.value };\n      this.config$ = this.service.send(this.saveUrl, send).pipe(\n        tap((c) => {\n          this.saveFlag = false;\n          this.rawConfig = c;\n          this.cd.detectChanges();\n          this.event.emit({ name: 'send', data: this.fields });\n        })\n      );\n    } else {\n      Object.keys(form.controls).forEach((controlName) => form.controls[controlName].markAsTouched());\n    }\n  }\n\n  changeVersion(id: number) {\n    this.reset();\n    this.config$ = this.getConfig(`${this.saveUrl}${id}/`);\n  }\n\n  compareVersion(ids: number[]) {\n    if (ids) this.service.compareConfig(ids, this.fields.dataOptions, this.historyComponent.compareConfig);\n  }\n\n  reset() {\n    this.fields.form.reset();\n    this.fields.dataOptions = [];\n    this.historyComponent.reset();\n  }\n}\n",
+            "sourceCode": "import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';\nimport { EventMessage, SocketState } from '@app/core/store';\nimport { SocketListenerDirective } from '@app/shared/directives';\nimport { Store } from '@ngrx/store';\nimport { BehaviorSubject, Observable, of } from 'rxjs';\nimport { catchError, finalize, tap } from 'rxjs/operators';\n\nimport { ConfigFieldsComponent } from '../fields/fields.component';\nimport { HistoryComponent } from '../tools/history.component';\nimport { ToolsComponent } from '../tools/tools.component';\nimport { IConfig } from '../types';\nimport { historyAnime, ISearchParam, MainService } from './main.service';\nimport { ClusterService } from '@app/core/services/cluster.service';\n\n@Component({\n  selector: 'app-config-form',\n  templateUrl: './config.component.html',\n  styleUrls: ['./config.component.scss'],\n  animations: historyAnime,\n  providers: [MainService],\n  changeDetection: ChangeDetectionStrategy.OnPush,\n})\nexport class ConfigComponent extends SocketListenerDirective implements OnInit {\n  loadingStatus = 'Loading...';\n  rawConfig = new BehaviorSubject<IConfig>(null);\n  saveFlag = false;\n  historyShow = false;\n  isLock = false;\n  isLoading = false;\n\n  @ViewChild('fls') fields: ConfigFieldsComponent;\n  @ViewChild('history') historyComponent: HistoryComponent;\n  @ViewChild('tools') tools: ToolsComponent;\n\n  private url = '';\n  @Input()\n  set configUrl(url: string) {\n    this.url = url;\n    this.getConfig().subscribe();\n  }\n\n  @Output()\n  event = new EventEmitter<{ name: string; data?: any }>();\n\n  get cUrl() {\n    return `${this.url}current/`;\n  }\n\n  get saveUrl(): string {\n    return `${this.url}history/`;\n  }\n\n  constructor(\n    private service: MainService,\n    public cd: ChangeDetectorRef,\n    socket: Store<SocketState>,\n    private clusterService: ClusterService,\n  ) {\n    super(socket);\n  }\n\n  ngOnInit() {\n    if (!this.url) {\n      this.clusterService.worker$\n        .pipe(this.takeUntil())\n        .subscribe(() => this.configUrl = this.service.Current?.config);\n    }\n    super.startListenSocket();\n  }\n\n  onReady() {\n    this.tools.isAdvanced = this.fields.isAdvanced;\n    this.tools.description.setValue(this.rawConfig.value.description);\n    this.filter(this.tools.filterParams);\n    this.service.getHistoryList(this.saveUrl, this.rawConfig.value.id).subscribe((h) => {\n      this.historyComponent.compareConfig = h;\n      this.tools.disabledHistory = !h.length;\n      this.cd.detectChanges();\n    });\n  }\n\n  filter(c: ISearchParam) {\n    this.service.filterApply(this.fields.dataOptions, c);\n  }\n\n  socketListener(m: EventMessage) {\n    if (\n      m.object.type === this.service.Current?.typeName &&\n      m.object.id === this.service.Current.id &&\n      !this.saveFlag &&\n      (m.event === 'change_config' || m.event === 'change_state')\n    ) {\n      this.isLock = m.object.details.value === 'locked';\n      this.reset();\n      this.getConfig().subscribe();\n    }\n  }\n\n  getConfig(url = this.cUrl): Observable<IConfig> {\n    this.isLoading = true;\n    return this.service.getConfig(url).pipe(\n      tap((c) => this.rawConfig.next(c)),\n      finalize(() => this.isLoading = false),\n      catchError(() => {\n        this.loadingStatus = 'There is no config for this object.';\n        return of(null);\n      })\n    );\n  }\n\n  save() {\n    const form = this.fields.form;\n    if (form.valid) {\n      this.saveFlag = true;\n      this.historyComponent.reset();\n      const config = this.service.parseValue(this.fields.form.value, this.rawConfig.value.config);\n      const send = { config, attr: this.fields.attr, description: this.tools.description.value };\n      this.isLoading = true;\n      this.service.send(this.saveUrl, send).pipe(\n        tap((c) => {\n          this.saveFlag = false;\n          this.rawConfig.next(c);\n          this.cd.detectChanges();\n          this.event.emit({ name: 'send', data: this.fields });\n        }),\n        finalize(() => this.isLoading = false),\n      ).subscribe();\n    } else {\n      Object.keys(form.controls).forEach((controlName) => form.controls[controlName].markAsTouched());\n    }\n  }\n\n  changeVersion(id: number) {\n    this.reset();\n    this.getConfig(`${this.saveUrl}${id}/`).subscribe();\n  }\n\n  compareVersion(ids: number[]) {\n    if (ids) this.service.compareConfig(ids, this.fields.dataOptions, this.historyComponent.compareConfig);\n  }\n\n  reset() {\n    this.fields.form.reset();\n    this.fields.dataOptions = [];\n    this.historyComponent.reset();\n  }\n}\n",
             "assetsDirs": [],
             "styleUrlsData": [
                 {
                     "data": ":host {\n  flex: 1;\n  position: relative;\n}\n\n.na-hu {\n  position: absolute;\n  top: -80000px;\n}\n\n.fields {\n  position: absolute;\n  top: 70px;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  overflow: auto;\n  z-index: 2;\n  padding: 0 10px;\n}\n\n.pre-load {\n  position: absolute;\n  top: 60px;\n  width: 100%;\n  text-align: center;\n}\n",
-                    "styleUrl": "./main.component.scss"
+                    "styleUrl": "./config.component.scss"
                 }
             ],
             "stylesData": "",
@@ -28482,9 +28665,15 @@
                         "type": "Store<SocketState>",
                         "deprecated": false,
                         "deprecationMessage": ""
+                    },
+                    {
+                        "name": "clusterService",
+                        "type": "ClusterService",
+                        "deprecated": false,
+                        "deprecationMessage": ""
                     }
                 ],
-                "line": 61,
+                "line": 62,
                 "jsdoctags": [
                     {
                         "name": "service",
@@ -28507,6 +28696,15 @@
                     {
                         "name": "socket",
                         "type": "Store<SocketState>",
+                        "deprecated": false,
+                        "deprecationMessage": "",
+                        "tagName": {
+                            "text": "param"
+                        }
+                    },
+                    {
+                        "name": "clusterService",
+                        "type": "ClusterService",
                         "deprecated": false,
                         "deprecationMessage": "",
                         "tagName": {
@@ -28536,7 +28734,7 @@
                             }
                         ],
                         "returnType": "void",
-                        "line": 47,
+                        "line": 48,
                         "jsdoctags": [
                             {
                                 "name": "url",
@@ -28556,7 +28754,7 @@
                         "name": "cUrl",
                         "type": "",
                         "returnType": "",
-                        "line": 55
+                        "line": 56
                     }
                 },
                 "saveUrl": {
@@ -28565,11 +28763,11 @@
                         "name": "saveUrl",
                         "type": "string",
                         "returnType": "string",
-                        "line": 59
+                        "line": 60
                     }
                 }
             },
-            "templateData": "<div class=\"na-hu\"><input type=\"text\" /><input type=\"password\" /><input type=\"password\" /></div>\n<app-tools #tools (applyFilter)=\"filter($event)\" (save)=\"save()\" (showHistory)=\"historyShow=$event\"\n  [disabledSave]=\"isLock || fls.form.invalid\"></app-tools>\n<div [@history]=\"historyShow ? 'showTools' : 'hideTools'\">\n  <app-history #history (compare)=\"compareVersion($event)\" (version)=\"changeVersion($event)\"></app-history>\n</div>\n<ng-container *ngIf=\"config$ | async; else dumb\"></ng-container>\n<ng-template #dumb><div class=\"pre-load\"><span>{{ loadingStatus }}</span></div></ng-template>\n<div class=\"fields\" [@history]=\"historyShow ? 'show' : 'hide'\">\n  <app-config-fields #fls [model]=\"rawConfig\" (event)=\"onReady()\"></app-config-fields>\n</div>\n\n"
+            "templateData": "<div class=\"na-hu\"><input type=\"text\" /><input type=\"password\" /><input type=\"password\" /></div>\n<app-tools #tools (applyFilter)=\"filter($event)\" (save)=\"save()\" (showHistory)=\"historyShow=$event\"\n  [disabledSave]=\"isLock || fls.form.invalid\"></app-tools>\n<div [@history]=\"historyShow ? 'showTools' : 'hideTools'\">\n  <app-history #history (compare)=\"compareVersion($event)\" (version)=\"changeVersion($event)\"></app-history>\n</div>\n<div class=\"pre-load\" *ngIf=\"isLoading\"><span>{{ loadingStatus }}</span></div>\n<div class=\"fields\" [@history]=\"historyShow ? 'show' : 'hide'\">\n  <app-config-fields #fls [model]=\"rawConfig | async\" (event)=\"onReady()\"></app-config-fields>\n</div>\n\n"
         },
         {
             "name": "ConfigFieldsComponent",
@@ -29241,7 +29439,7 @@
                     "type": "",
                     "optional": false,
                     "description": "",
-                    "line": 23,
+                    "line": 24,
                     "inheritance": {
                         "file": "SocketListenerDirective"
                     }
@@ -29415,7 +29613,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 34,
+                    "line": 35,
                     "deprecated": false,
                     "deprecationMessage": "",
                     "inheritance": {
@@ -35581,7 +35779,7 @@
                     "type": "",
                     "optional": false,
                     "description": "",
-                    "line": 23,
+                    "line": 24,
                     "inheritance": {
                         "file": "SocketListenerDirective"
                     }
@@ -35658,7 +35856,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 29,
+                    "line": 30,
                     "deprecated": false,
                     "deprecationMessage": "",
                     "inheritance": {
@@ -35671,7 +35869,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 34,
+                    "line": 35,
                     "deprecated": false,
                     "deprecationMessage": "",
                     "inheritance": {
@@ -39594,7 +39792,7 @@
                     "type": "",
                     "optional": false,
                     "description": "",
-                    "line": 23,
+                    "line": 24,
                     "inheritance": {
                         "file": "SocketListenerDirective"
                     }
@@ -39927,7 +40125,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 29,
+                    "line": 30,
                     "deprecated": false,
                     "deprecationMessage": "",
                     "inheritance": {
@@ -39940,7 +40138,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 34,
+                    "line": 35,
                     "deprecated": false,
                     "deprecationMessage": "",
                     "inheritance": {
@@ -40476,7 +40674,7 @@
         },
         {
             "name": "SettingsComponent",
-            "id": "component-SettingsComponent-4fee76a9a2223e858f4ea2366f036679",
+            "id": "component-SettingsComponent-b3295fe621ab76d794b41cda45f61225",
             "file": "src/app/admin/settings.component.ts",
             "encapsulation": [],
             "entryComponents": [],
@@ -40551,7 +40749,7 @@
             "description": "",
             "rawdescription": "\n",
             "type": "component",
-            "sourceCode": "import { Component, OnInit } from '@angular/core';\nimport { ApiService } from '@app/core/api';\nimport { settingsSave, State } from '@app/core/store';\nimport { ApiBase } from '@app/core/types/api';\nimport { DynamicEvent } from '@app/shared/directives';\nimport { Store } from '@ngrx/store';\nimport { Observable } from 'rxjs';\nimport { map, switchMap } from 'rxjs/operators';\n\n\n@Component({\n  selector: 'app-settings',\n  template: '<app-config-form *ngIf=\"set$ | async as set\" [configUrl]=\"set.config\" (event)=\"onEvent($event)\"></app-config-form>',\n  styles: [':host {flex:1; display: flex;}'],\n})\nexport class SettingsComponent implements OnInit {\n  set$: Observable<any>;\n\n  constructor(private api: ApiService, private store: Store<State>) {}\n\n  ngOnInit() {\n    this.set$ = this.api.root.pipe(\n      switchMap((root) => this.api.get<ApiBase>(root.adcm)),\n      map((adcm) => adcm[0])\n    );\n  }\n\n  onEvent(e: DynamicEvent) {\n    if (e.name === 'send') this.store.dispatch(settingsSave({ isSet: true }));\n  }\n}\n",
+            "sourceCode": "import { Component, OnInit } from '@angular/core';\nimport { Store } from '@ngrx/store';\nimport { Observable } from 'rxjs';\nimport { map, switchMap } from 'rxjs/operators';\n\nimport { ApiService } from '@app/core/api';\nimport { settingsSave, State } from '@app/core/store';\nimport { ApiBase } from '@app/core/types/api';\nimport { DynamicEvent } from '@app/shared/directives';\n\n@Component({\n  selector: 'app-settings',\n  template: '<app-config-form *ngIf=\"set$ | async as set\" [configUrl]=\"set.config\" (event)=\"onEvent($event)\"></app-config-form>',\n  styles: [':host {flex:1; display: flex;}'],\n})\nexport class SettingsComponent implements OnInit {\n  set$: Observable<any>;\n\n  constructor(private api: ApiService, private store: Store<State>) {}\n\n  ngOnInit() {\n    this.set$ = this.api.root.pipe(\n      switchMap((root) => this.api.get<ApiBase>(root.adcm)),\n      map((adcm) => adcm[0]),\n    );\n  }\n\n  onEvent(e: DynamicEvent) {\n    if (e.name === 'send') this.store.dispatch(settingsSave({ isSet: true }));\n  }\n}\n",
             "assetsDirs": [],
             "styleUrlsData": "",
             "stylesData": ":host {flex:1; display: flex;}\n",
@@ -41503,7 +41701,7 @@
                     "type": "",
                     "optional": false,
                     "description": "",
-                    "line": 23,
+                    "line": 24,
                     "inheritance": {
                         "file": "SocketListenerDirective"
                     }
@@ -41656,7 +41854,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 29,
+                    "line": 30,
                     "deprecated": false,
                     "deprecationMessage": "",
                     "inheritance": {
@@ -41669,7 +41867,7 @@
                     "optional": false,
                     "returnType": "void",
                     "typeParameters": [],
-                    "line": 34,
+                    "line": 35,
                     "deprecated": false,
                     "deprecationMessage": "",
                     "inheritance": {
@@ -41906,6 +42104,236 @@
             "implements": [
                 "OnInit"
             ]
+        },
+        {
+            "name": "StatusTreeComponent",
+            "id": "component-StatusTreeComponent-89e1dd3df429979959b7675084b49211",
+            "file": "src/app/components/status-tree/status-tree.component.ts",
+            "encapsulation": [],
+            "entryComponents": [],
+            "inputs": [],
+            "outputs": [],
+            "providers": [],
+            "selector": "app-status-tree",
+            "styleUrls": [
+                "./status-tree.component.scss"
+            ],
+            "styles": [],
+            "templateUrl": [
+                "./status-tree.component.html"
+            ],
+            "viewProviders": [],
+            "inputsClass": [
+                {
+                    "name": "folding",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "line": 88,
+                    "type": ""
+                },
+                {
+                    "name": "tree",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "line": 69,
+                    "type": "[]"
+                }
+            ],
+            "outputsClass": [],
+            "propertiesClass": [
+                {
+                    "name": "calcCounts",
+                    "defaultValue": "() => {...}",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "",
+                    "optional": false,
+                    "description": "",
+                    "line": 37,
+                    "modifierKind": [
+                        120
+                    ]
+                },
+                {
+                    "name": "dataSource",
+                    "defaultValue": "new MatTreeFlatDataSource(this.treeControl, this.treeFlattener)",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "",
+                    "optional": false,
+                    "description": "",
+                    "line": 66
+                },
+                {
+                    "name": "hasChild",
+                    "defaultValue": "() => {...}",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "",
+                    "optional": false,
+                    "description": "",
+                    "line": 85
+                },
+                {
+                    "name": "ownFolding",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "Folding",
+                    "optional": false,
+                    "description": "",
+                    "line": 87,
+                    "modifierKind": [
+                        120
+                    ]
+                },
+                {
+                    "name": "ownTree",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "StatusTree[]",
+                    "optional": false,
+                    "description": "",
+                    "line": 68,
+                    "modifierKind": [
+                        120
+                    ]
+                },
+                {
+                    "name": "SubjectStatus",
+                    "defaultValue": "SubjectStatus",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "",
+                    "optional": false,
+                    "description": "",
+                    "line": 35
+                },
+                {
+                    "name": "transformer",
+                    "defaultValue": "() => {...}",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "",
+                    "optional": false,
+                    "description": "",
+                    "line": 49,
+                    "modifierKind": [
+                        120
+                    ]
+                },
+                {
+                    "name": "treeControl",
+                    "defaultValue": "new FlatTreeControl<ExampleFlatNode>(\n  node => node.level,\n  node => node.expandable,\n  )",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "",
+                    "optional": false,
+                    "description": "",
+                    "line": 58
+                },
+                {
+                    "name": "treeFlattener",
+                    "defaultValue": "new MatTreeFlattener(\n    this.transformer, node => node.level, node => node.expandable, node => node.children)",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "",
+                    "optional": false,
+                    "description": "",
+                    "line": 63
+                }
+            ],
+            "methodsClass": [],
+            "deprecated": false,
+            "deprecationMessage": "",
+            "hostBindings": [],
+            "hostListeners": [],
+            "description": "",
+            "rawdescription": "\n",
+            "type": "component",
+            "sourceCode": "import { Component, Input } from '@angular/core';\nimport { FlatTreeControl } from '@angular/cdk/tree';\nimport { MatTreeFlatDataSource, MatTreeFlattener } from '@angular/material/tree';\n\nimport { StatusTree, StatusTreeSubject, SubjectStatus } from '@app/models/status-tree';\n\ninterface ExampleFlatNode {\n  expandable: boolean;\n  subject: StatusTreeSubject;\n  level: number;\n}\n\ninterface Counts {\n  total: number;\n  succeed: number;\n}\n\ninterface CountedStatusTree extends StatusTree {\n  counts?: Counts;\n}\n\nexport enum Folding {\n  Collapsed,\n  Expanded,\n}\n\n@Component({\n  selector: 'app-status-tree',\n  templateUrl: './status-tree.component.html',\n  styleUrls: ['./status-tree.component.scss']\n})\nexport class StatusTreeComponent {\n\n  SubjectStatus = SubjectStatus;\n\n  private calcCounts = (children: CountedStatusTree[]): Counts => {\n    return children.reduce((acc: Counts, child: CountedStatusTree) => {\n        acc.total++;\n        if (child.subject.status === SubjectStatus.Success) {\n          acc.succeed++;\n        }\n        return acc;\n      },\n      { total: 0, succeed: 0 } as Counts,\n    ) as Counts;\n  }\n\n  private transformer = (node: StatusTree, level: number) => {\n    return {\n      expandable: !!node.children && node.children.length > 0,\n      subject: node.subject,\n      level: level,\n      counts: node.children ? this.calcCounts(node.children) : { total: 0, succeed: 0 },\n    };\n  }\n\n  treeControl = new FlatTreeControl<ExampleFlatNode>(\n  node => node.level,\n  node => node.expandable,\n  );\n\n  treeFlattener = new MatTreeFlattener(\n    this.transformer, node => node.level, node => node.expandable, node => node.children);\n\n  dataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);\n\n  private ownTree: StatusTree[];\n  @Input() set tree(tree: StatusTree[]) {\n    this.ownTree = tree;\n    this.dataSource.data = tree;\n\n    if (this.folding === Folding.Expanded) {\n      this.treeControl.expandAll();\n    }\n\n    if (this.folding === Folding.Collapsed) {\n      this.treeControl.collapseAll();\n    }\n  }\n  get tree(): StatusTree[] {\n    return this.ownTree;\n  }\n\n  hasChild = (_: number, node: ExampleFlatNode) => node.expandable;\n\n  private ownFolding: Folding;\n  @Input() set folding(folding: Folding) {\n    this.ownFolding = folding;\n    this.tree = this.tree;\n  }\n  get folding(): Folding {\n    return this.ownFolding;\n  }\n\n}\n",
+            "assetsDirs": [],
+            "styleUrlsData": [
+                {
+                    "data": ".expandable {\n  font-weight: bold;\n}\n\n.counts {\n  color: #ff9800;\n}\n\n.success {\n  color: #00e676;\n}\n\nbutton {\n  width: 35px;\n  height: 35px;\n}\n\nmat-tree-node {\n  min-height: 35px;\n}\n",
+                    "styleUrl": "./status-tree.component.scss"
+                }
+            ],
+            "stylesData": "",
+            "accessors": {
+                "tree": {
+                    "name": "tree",
+                    "setSignature": {
+                        "name": "tree",
+                        "type": "void",
+                        "deprecated": false,
+                        "deprecationMessage": "",
+                        "args": [
+                            {
+                                "name": "tree",
+                                "type": "StatusTree[]",
+                                "deprecated": false,
+                                "deprecationMessage": ""
+                            }
+                        ],
+                        "returnType": "void",
+                        "line": 69,
+                        "jsdoctags": [
+                            {
+                                "name": "tree",
+                                "type": "StatusTree[]",
+                                "deprecated": false,
+                                "deprecationMessage": "",
+                                "tagName": {
+                                    "text": "param"
+                                }
+                            }
+                        ]
+                    },
+                    "getSignature": {
+                        "name": "tree",
+                        "type": "[]",
+                        "returnType": "StatusTree[]",
+                        "line": 81
+                    }
+                },
+                "folding": {
+                    "name": "folding",
+                    "setSignature": {
+                        "name": "folding",
+                        "type": "void",
+                        "deprecated": false,
+                        "deprecationMessage": "",
+                        "args": [
+                            {
+                                "name": "folding",
+                                "type": "Folding",
+                                "deprecated": false,
+                                "deprecationMessage": ""
+                            }
+                        ],
+                        "returnType": "void",
+                        "line": 88,
+                        "jsdoctags": [
+                            {
+                                "name": "folding",
+                                "type": "Folding",
+                                "deprecated": false,
+                                "deprecationMessage": "",
+                                "tagName": {
+                                    "text": "param"
+                                }
+                            }
+                        ]
+                    },
+                    "getSignature": {
+                        "name": "folding",
+                        "type": "",
+                        "returnType": "Folding",
+                        "line": 92
+                    }
+                }
+            },
+            "templateData": "<mat-tree [dataSource]=\"dataSource\" [treeControl]=\"treeControl\">\n  <mat-tree-node *matTreeNodeDef=\"let node\" matTreeNodePadding>\n    <button mat-icon-button disabled></button>\n\n    <ng-container\n      [ngTemplateOutlet]=\"statusNode\"\n      [ngTemplateOutletContext]=\"{ node: node }\"\n    ></ng-container>\n\n  </mat-tree-node>\n  <mat-tree-node *matTreeNodeDef=\"let node; when: hasChild\" matTreeNodePadding>\n    <button mat-icon-button matTreeNodeToggle>\n      <mat-icon class=\"mat-icon-rtl-mirror\">\n        {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}\n      </mat-icon>\n    </button>\n\n    <ng-container\n      [ngTemplateOutlet]=\"statusNode\"\n      [ngTemplateOutletContext]=\"{ node: node }\"\n    ></ng-container>\n\n  </mat-tree-node>\n</mat-tree>\n\n<ng-template #statusNode let-node=\"node\">\n  <mat-icon *ngIf=\"node.subject.status === SubjectStatus.Success; else failed\" color=\"accent\">check_circle_outline</mat-icon>\n  <ng-template #failed>\n    <mat-icon color=\"warn\">error_outline</mat-icon>\n  </ng-template>\n  &nbsp;\n  <span [ngClass]=\"{ expandable: node.expandable }\">{{node.subject.name}}</span>\n  &nbsp;\n  <span\n    *ngIf=\"node.counts.total\"\n    class=\"counts\"\n    [ngClass]=\"{ success: node.counts.succeed === node.counts.total }\"\n  >\n    successful {{node.counts.succeed}}/{{node.counts.total}}\n  </span>\n</ng-template>\n"
         },
         {
             "name": "SubtitleComponent",
@@ -45223,13 +45651,13 @@
         },
         {
             "name": "AppRoutingModule",
-            "id": "module-AppRoutingModule-4c13f0909bf7f8d16c24f4d73110dd20",
+            "id": "module-AppRoutingModule-6e9245397713f176f233959512a17cc6",
             "description": "",
             "deprecationMessage": "",
             "deprecated": false,
             "file": "src/app/app-routing.module.ts",
             "methods": [],
-            "sourceCode": "import { NgModule } from '@angular/core';\nimport { RouterModule } from '@angular/router';\nimport { Routes } from '@angular/router';\n\nimport { LogComponent } from '@app/ws-logs/log.component';\nimport { AuthGuard } from '@app/core/auth/auth.guard';\nimport { LoginComponent } from '@app/main/login/login.component';\nimport { ProfileComponent } from '@app/main/profile/profile.component';\nimport { SupportComponent } from '@app/main/support/support.component';\nimport { FatalErrorComponent, GatewayTimeoutComponent, PageNotFoundComponent } from '@app/main/server-status.component';\nimport { HostListComponent } from '@app/components/host-list/host-list.component';\nimport { DetailComponent } from '@app/shared/details/detail.component';\nimport { MainInfoComponent, StatusComponent } from '@app/shared/components';\nimport { ConfigComponent } from '@app/shared/configuration/main/main.component';\nimport { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';\nimport { HostproviderComponent } from '@app/components/hostprovider/hostprovider.component';\n\nconst routes: Routes = [\n  {\n    path: 'cluster',\n    loadChildren: () => \"import('app/entry/cluster/cluster.module').then(m => m.ClusterModule)\",\n  },\n  {\n    path: 'job',\n    loadChildren: () => \"import('app/entry/job/job.module').then(m => m.JobModule)\",\n  },\n  {\n    path: 'task',\n    loadChildren: () => \"import('app/entry/task/task.module').then(m => m.TaskModule)\",\n  },\n  {\n    path: 'bundle',\n    loadChildren: () => \"import('app/entry/bundle/bundle.module').then(m => m.BundleModule)\",\n  },\n  {\n    path: 'host',\n    component: HostListComponent,\n    canActivate: [AuthGuard],\n  },\n  {\n    path: 'host/:host',\n    component: DetailComponent,\n    canActivate: [AuthGuard],\n    children: [\n      { path: '', redirectTo: 'main', pathMatch: 'full' },\n      { path: 'main', component: MainInfoComponent },\n      { path: 'config', component: ConfigComponent },\n      { path: 'status', component: StatusComponent },\n      { path: 'action', component: ActionCardComponent },\n    ],\n  },\n  {\n    path: 'cluster/:cluster/host/:host/provider/:provider',\n    redirectTo: 'provider/:provider',\n  },\n  {\n    path: 'host/:host/provider/:provider',\n    redirectTo: 'provider/:provider',\n  },\n  {\n    path: 'provider',\n    canActivate: [AuthGuard],\n    component: HostproviderComponent,\n  },\n  {\n    path: 'provider/:provider',\n    canActivate: [AuthGuard],\n    component: DetailComponent,\n    children: [\n      { path: '', redirectTo: 'main', pathMatch: 'full' },\n      { path: 'main', component: MainInfoComponent },\n      { path: 'config', component: ConfigComponent },\n      { path: 'action', component: ActionCardComponent },\n    ],\n  },\n\n  { path: '', redirectTo: 'admin', pathMatch: 'full' },\n  { path: 'log', component: LogComponent, canActivate: [AuthGuard]  },\n  { path: 'login', component: LoginComponent },\n  { path: 'profile', component: ProfileComponent, canActivate: [AuthGuard] },\n  { path: 'support', component: SupportComponent },\n  { path: '404', component: PageNotFoundComponent },\n  { path: '500', component: FatalErrorComponent },\n  { path: '504', component: GatewayTimeoutComponent },\n  {\n    path: 'admin',\n    loadChildren: () => \"import('app/admin/admin.module').then(m => m.AdminModule)\",\n  },\n  { path: '**', component: PageNotFoundComponent },\n];\n\n@NgModule({\n  imports: [RouterModule.forRoot(routes, { relativeLinkResolution: 'legacy' })],\n  exports: [RouterModule]\n})\nexport class AppRoutingModule { }\n",
+            "sourceCode": "import { NgModule } from '@angular/core';\nimport { RouterModule } from '@angular/router';\nimport { Routes } from '@angular/router';\n\nimport { LogComponent } from '@app/ws-logs/log.component';\nimport { AuthGuard } from '@app/core/auth/auth.guard';\nimport { LoginComponent } from '@app/main/login/login.component';\nimport { ProfileComponent } from '@app/main/profile/profile.component';\nimport { SupportComponent } from '@app/main/support/support.component';\nimport { FatalErrorComponent, GatewayTimeoutComponent, PageNotFoundComponent } from '@app/main/server-status.component';\nimport { HostListComponent } from '@app/components/host-list/host-list.component';\nimport { DetailComponent } from '@app/shared/details/detail.component';\nimport { MainInfoComponent, StatusComponent } from '@app/shared/components';\nimport { ConfigComponent } from '@app/shared/configuration/main/config.component';\nimport { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';\nimport { HostproviderComponent } from '@app/components/hostprovider/hostprovider.component';\n\nconst routes: Routes = [\n  {\n    path: 'cluster',\n    loadChildren: () => \"import('app/entry/cluster/cluster.module').then(m => m.ClusterModule)\",\n  },\n  {\n    path: 'job',\n    loadChildren: () => \"import('app/entry/job/job.module').then(m => m.JobModule)\",\n  },\n  {\n    path: 'task',\n    loadChildren: () => \"import('app/entry/task/task.module').then(m => m.TaskModule)\",\n  },\n  {\n    path: 'bundle',\n    loadChildren: () => \"import('app/entry/bundle/bundle.module').then(m => m.BundleModule)\",\n  },\n  {\n    path: 'host',\n    component: HostListComponent,\n    canActivate: [AuthGuard],\n  },\n  {\n    path: 'host/:host',\n    component: DetailComponent,\n    canActivate: [AuthGuard],\n    children: [\n      { path: '', redirectTo: 'main', pathMatch: 'full' },\n      { path: 'main', component: MainInfoComponent },\n      { path: 'config', component: ConfigComponent },\n      { path: 'status', component: StatusComponent },\n      { path: 'action', component: ActionCardComponent },\n    ],\n  },\n  {\n    path: 'cluster/:cluster/host/:host/provider/:provider',\n    redirectTo: 'provider/:provider',\n  },\n  {\n    path: 'host/:host/provider/:provider',\n    redirectTo: 'provider/:provider',\n  },\n  {\n    path: 'provider',\n    canActivate: [AuthGuard],\n    component: HostproviderComponent,\n  },\n  {\n    path: 'provider/:provider',\n    canActivate: [AuthGuard],\n    component: DetailComponent,\n    children: [\n      { path: '', redirectTo: 'main', pathMatch: 'full' },\n      { path: 'main', component: MainInfoComponent },\n      { path: 'config', component: ConfigComponent },\n      { path: 'action', component: ActionCardComponent },\n    ],\n  },\n\n  { path: '', redirectTo: 'admin', pathMatch: 'full' },\n  { path: 'log', component: LogComponent, canActivate: [AuthGuard]  },\n  { path: 'login', component: LoginComponent },\n  { path: 'profile', component: ProfileComponent, canActivate: [AuthGuard] },\n  { path: 'support', component: SupportComponent },\n  { path: '404', component: PageNotFoundComponent },\n  { path: '500', component: FatalErrorComponent },\n  { path: '504', component: GatewayTimeoutComponent },\n  {\n    path: 'admin',\n    loadChildren: () => \"import('app/admin/admin.module').then(m => m.AdminModule)\",\n  },\n  { path: '**', component: PageNotFoundComponent },\n];\n\n@NgModule({\n  imports: [RouterModule.forRoot(routes, { relativeLinkResolution: 'legacy' })],\n  exports: [RouterModule]\n})\nexport class AppRoutingModule { }\n",
             "children": [
                 {
                     "type": "providers",
@@ -45351,13 +45779,13 @@
         },
         {
             "name": "ClusterModule",
-            "id": "module-ClusterModule-0397327e695c0afce6c8e09c19be35c4",
+            "id": "module-ClusterModule-ecb52308aedc9e68e52155284a53b5f1",
             "description": "",
             "deprecationMessage": "",
             "deprecated": false,
             "file": "src/app/entry/cluster/cluster.module.ts",
             "methods": [],
-            "sourceCode": "// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//      http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\nimport { CommonModule } from '@angular/common';\nimport { NgModule } from '@angular/core';\nimport { RouterModule, Routes } from '@angular/router';\n\nimport { DetailComponent } from '@app/shared/details/detail.component';\nimport { ConfigComponent } from '@app/shared/configuration/main/main.component';\nimport { MainInfoComponent, StatusComponent, ImportComponent } from '@app/shared/components';\nimport { SharedModule } from '@app/shared/shared.module';\n\nimport { ClusterListComponent } from './cluster.component';\nimport { HcmapComponent } from '@app/components/cluster/hcmap/hcmap.component';\nimport { HostComponent } from '@app/components/cluster/host/host.component';\nimport { ServicesComponent } from '@app/components/cluster/services/services.component';\nimport { AuthGuard } from '../../core/auth/auth.guard';\nimport { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';\nimport { ServiceComponentsComponent } from '@app/components/service-components.component';\n\n\nconst clusterRoutes: Routes = [\n  {\n    path: '',\n    component: ClusterListComponent,\n    canActivate: [AuthGuard],\n  },\n  {\n    path: ':cluster',\n    component: DetailComponent,\n    canActivate: [AuthGuard],\n    canActivateChild: [AuthGuard],\n    children: [\n      { path: '', redirectTo: 'main', pathMatch: 'full' },\n      { path: 'main', component: MainInfoComponent },\n      { path: 'service', component: ServicesComponent },\n      { path: 'host', component: HostComponent },\n      { path: 'host_component', component: HcmapComponent },\n      { path: 'config', component: ConfigComponent },\n      { path: 'status', component: StatusComponent },\n      { path: 'import', component: ImportComponent },\n      { path: 'action', component: ActionCardComponent },\n    ],\n  },\n  {\n    path: ':cluster/service/:service',\n    component: DetailComponent,\n    canActivate: [AuthGuard],\n    canActivateChild: [AuthGuard],\n    children: [\n      { path: '', redirectTo: 'main', pathMatch: 'full' },\n      { path: 'main', component: MainInfoComponent },\n      { path: 'config', component: ConfigComponent },\n      { path: 'status', component: StatusComponent },\n      { path: 'import', component: ImportComponent },\n      { path: 'action', component: ActionCardComponent },\n      { path: 'component', component: ServiceComponentsComponent },\n    ],\n  },\n  {\n    path: ':cluster/service/:service/component/:servicecomponent',\n    component: DetailComponent,\n    canActivate: [AuthGuard],\n    canActivateChild: [AuthGuard],\n    children: [\n      { path: '', redirectTo: 'main', pathMatch: 'full' },\n      { path: 'main', component: MainInfoComponent },\n      { path: 'config', component: ConfigComponent },\n      { path: 'status', component: StatusComponent },\n      { path: 'action', component: ActionCardComponent },\n    ],\n  },\n  {\n    path: ':cluster/host/:host',\n    component: DetailComponent,\n    canActivate: [AuthGuard],\n    canActivateChild: [AuthGuard],\n    children: [\n      { path: '', redirectTo: 'main', pathMatch: 'full' },\n      { path: 'main', component: MainInfoComponent },\n      { path: 'config', component: ConfigComponent },\n      { path: 'status', component: StatusComponent },\n      { path: 'action', component: ActionCardComponent },\n    ],\n  },\n];\n\n@NgModule({\n  imports: [\n    RouterModule.forChild(clusterRoutes),\n  ],\n  exports: [RouterModule],\n})\nexport class ClusterRoutingModule {}\n\n@NgModule({\n  imports: [CommonModule, SharedModule, RouterModule, ClusterRoutingModule],\n  declarations: [ClusterListComponent, ServicesComponent, HostComponent, HcmapComponent],\n})\nexport class ClusterModule {}\n",
+            "sourceCode": "// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//      http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\nimport { CommonModule } from '@angular/common';\nimport { NgModule } from '@angular/core';\nimport { RouterModule, Routes } from '@angular/router';\n\nimport { DetailComponent } from '@app/shared/details/detail.component';\nimport { ConfigComponent } from '../../shared/configuration/main/config.component';\nimport { MainInfoComponent, StatusComponent, ImportComponent } from '@app/shared/components';\nimport { SharedModule } from '@app/shared/shared.module';\n\nimport { ClusterListComponent } from './cluster.component';\nimport { HcmapComponent } from '@app/components/cluster/hcmap/hcmap.component';\nimport { HostComponent } from '@app/components/cluster/host/host.component';\nimport { ServicesComponent } from '@app/components/cluster/services/services.component';\nimport { AuthGuard } from '../../core/auth/auth.guard';\nimport { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';\nimport { ServiceComponentsComponent } from '@app/components/service-components.component';\n\n\nconst clusterRoutes: Routes = [\n  {\n    path: '',\n    component: ClusterListComponent,\n    canActivate: [AuthGuard],\n  },\n  {\n    path: ':cluster',\n    component: DetailComponent,\n    canActivate: [AuthGuard],\n    canActivateChild: [AuthGuard],\n    children: [\n      { path: '', redirectTo: 'main', pathMatch: 'full' },\n      { path: 'main', component: MainInfoComponent },\n      { path: 'service', component: ServicesComponent },\n      { path: 'host', component: HostComponent },\n      { path: 'host_component', component: HcmapComponent },\n      { path: 'config', component: ConfigComponent },\n      { path: 'status', component: StatusComponent },\n      { path: 'import', component: ImportComponent },\n      { path: 'action', component: ActionCardComponent },\n    ],\n  },\n  {\n    path: ':cluster/service/:service',\n    component: DetailComponent,\n    canActivate: [AuthGuard],\n    canActivateChild: [AuthGuard],\n    children: [\n      { path: '', redirectTo: 'main', pathMatch: 'full' },\n      { path: 'main', component: MainInfoComponent },\n      { path: 'config', component: ConfigComponent },\n      { path: 'status', component: StatusComponent },\n      { path: 'import', component: ImportComponent },\n      { path: 'action', component: ActionCardComponent },\n      { path: 'component', component: ServiceComponentsComponent },\n    ],\n  },\n  {\n    path: ':cluster/service/:service/component/:servicecomponent',\n    component: DetailComponent,\n    canActivate: [AuthGuard],\n    canActivateChild: [AuthGuard],\n    children: [\n      { path: '', redirectTo: 'main', pathMatch: 'full' },\n      { path: 'main', component: MainInfoComponent },\n      { path: 'config', component: ConfigComponent },\n      { path: 'status', component: StatusComponent },\n      { path: 'action', component: ActionCardComponent },\n    ],\n  },\n  {\n    path: ':cluster/host/:host',\n    component: DetailComponent,\n    canActivate: [AuthGuard],\n    canActivateChild: [AuthGuard],\n    children: [\n      { path: '', redirectTo: 'main', pathMatch: 'full' },\n      { path: 'main', component: MainInfoComponent },\n      { path: 'config', component: ConfigComponent },\n      { path: 'status', component: StatusComponent },\n      { path: 'action', component: ActionCardComponent },\n    ],\n  },\n];\n\n@NgModule({\n  imports: [\n    RouterModule.forChild(clusterRoutes),\n  ],\n  exports: [RouterModule],\n})\nexport class ClusterRoutingModule {}\n\n@NgModule({\n  imports: [CommonModule, SharedModule, RouterModule, ClusterRoutingModule],\n  declarations: [ClusterListComponent, ServicesComponent, HostComponent, HcmapComponent],\n})\nexport class ClusterModule {}\n",
             "children": [
                 {
                     "type": "providers",
@@ -45407,13 +45835,13 @@
         },
         {
             "name": "ClusterRoutingModule",
-            "id": "module-ClusterRoutingModule-0397327e695c0afce6c8e09c19be35c4",
+            "id": "module-ClusterRoutingModule-ecb52308aedc9e68e52155284a53b5f1",
             "description": "",
             "deprecationMessage": "",
             "deprecated": false,
             "file": "src/app/entry/cluster/cluster.module.ts",
             "methods": [],
-            "sourceCode": "// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//      http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\nimport { CommonModule } from '@angular/common';\nimport { NgModule } from '@angular/core';\nimport { RouterModule, Routes } from '@angular/router';\n\nimport { DetailComponent } from '@app/shared/details/detail.component';\nimport { ConfigComponent } from '@app/shared/configuration/main/main.component';\nimport { MainInfoComponent, StatusComponent, ImportComponent } from '@app/shared/components';\nimport { SharedModule } from '@app/shared/shared.module';\n\nimport { ClusterListComponent } from './cluster.component';\nimport { HcmapComponent } from '@app/components/cluster/hcmap/hcmap.component';\nimport { HostComponent } from '@app/components/cluster/host/host.component';\nimport { ServicesComponent } from '@app/components/cluster/services/services.component';\nimport { AuthGuard } from '../../core/auth/auth.guard';\nimport { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';\nimport { ServiceComponentsComponent } from '@app/components/service-components.component';\n\n\nconst clusterRoutes: Routes = [\n  {\n    path: '',\n    component: ClusterListComponent,\n    canActivate: [AuthGuard],\n  },\n  {\n    path: ':cluster',\n    component: DetailComponent,\n    canActivate: [AuthGuard],\n    canActivateChild: [AuthGuard],\n    children: [\n      { path: '', redirectTo: 'main', pathMatch: 'full' },\n      { path: 'main', component: MainInfoComponent },\n      { path: 'service', component: ServicesComponent },\n      { path: 'host', component: HostComponent },\n      { path: 'host_component', component: HcmapComponent },\n      { path: 'config', component: ConfigComponent },\n      { path: 'status', component: StatusComponent },\n      { path: 'import', component: ImportComponent },\n      { path: 'action', component: ActionCardComponent },\n    ],\n  },\n  {\n    path: ':cluster/service/:service',\n    component: DetailComponent,\n    canActivate: [AuthGuard],\n    canActivateChild: [AuthGuard],\n    children: [\n      { path: '', redirectTo: 'main', pathMatch: 'full' },\n      { path: 'main', component: MainInfoComponent },\n      { path: 'config', component: ConfigComponent },\n      { path: 'status', component: StatusComponent },\n      { path: 'import', component: ImportComponent },\n      { path: 'action', component: ActionCardComponent },\n      { path: 'component', component: ServiceComponentsComponent },\n    ],\n  },\n  {\n    path: ':cluster/service/:service/component/:servicecomponent',\n    component: DetailComponent,\n    canActivate: [AuthGuard],\n    canActivateChild: [AuthGuard],\n    children: [\n      { path: '', redirectTo: 'main', pathMatch: 'full' },\n      { path: 'main', component: MainInfoComponent },\n      { path: 'config', component: ConfigComponent },\n      { path: 'status', component: StatusComponent },\n      { path: 'action', component: ActionCardComponent },\n    ],\n  },\n  {\n    path: ':cluster/host/:host',\n    component: DetailComponent,\n    canActivate: [AuthGuard],\n    canActivateChild: [AuthGuard],\n    children: [\n      { path: '', redirectTo: 'main', pathMatch: 'full' },\n      { path: 'main', component: MainInfoComponent },\n      { path: 'config', component: ConfigComponent },\n      { path: 'status', component: StatusComponent },\n      { path: 'action', component: ActionCardComponent },\n    ],\n  },\n];\n\n@NgModule({\n  imports: [\n    RouterModule.forChild(clusterRoutes),\n  ],\n  exports: [RouterModule],\n})\nexport class ClusterRoutingModule {}\n\n@NgModule({\n  imports: [CommonModule, SharedModule, RouterModule, ClusterRoutingModule],\n  declarations: [ClusterListComponent, ServicesComponent, HostComponent, HcmapComponent],\n})\nexport class ClusterModule {}\n",
+            "sourceCode": "// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//      http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\nimport { CommonModule } from '@angular/common';\nimport { NgModule } from '@angular/core';\nimport { RouterModule, Routes } from '@angular/router';\n\nimport { DetailComponent } from '@app/shared/details/detail.component';\nimport { ConfigComponent } from '../../shared/configuration/main/config.component';\nimport { MainInfoComponent, StatusComponent, ImportComponent } from '@app/shared/components';\nimport { SharedModule } from '@app/shared/shared.module';\n\nimport { ClusterListComponent } from './cluster.component';\nimport { HcmapComponent } from '@app/components/cluster/hcmap/hcmap.component';\nimport { HostComponent } from '@app/components/cluster/host/host.component';\nimport { ServicesComponent } from '@app/components/cluster/services/services.component';\nimport { AuthGuard } from '../../core/auth/auth.guard';\nimport { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';\nimport { ServiceComponentsComponent } from '@app/components/service-components.component';\n\n\nconst clusterRoutes: Routes = [\n  {\n    path: '',\n    component: ClusterListComponent,\n    canActivate: [AuthGuard],\n  },\n  {\n    path: ':cluster',\n    component: DetailComponent,\n    canActivate: [AuthGuard],\n    canActivateChild: [AuthGuard],\n    children: [\n      { path: '', redirectTo: 'main', pathMatch: 'full' },\n      { path: 'main', component: MainInfoComponent },\n      { path: 'service', component: ServicesComponent },\n      { path: 'host', component: HostComponent },\n      { path: 'host_component', component: HcmapComponent },\n      { path: 'config', component: ConfigComponent },\n      { path: 'status', component: StatusComponent },\n      { path: 'import', component: ImportComponent },\n      { path: 'action', component: ActionCardComponent },\n    ],\n  },\n  {\n    path: ':cluster/service/:service',\n    component: DetailComponent,\n    canActivate: [AuthGuard],\n    canActivateChild: [AuthGuard],\n    children: [\n      { path: '', redirectTo: 'main', pathMatch: 'full' },\n      { path: 'main', component: MainInfoComponent },\n      { path: 'config', component: ConfigComponent },\n      { path: 'status', component: StatusComponent },\n      { path: 'import', component: ImportComponent },\n      { path: 'action', component: ActionCardComponent },\n      { path: 'component', component: ServiceComponentsComponent },\n    ],\n  },\n  {\n    path: ':cluster/service/:service/component/:servicecomponent',\n    component: DetailComponent,\n    canActivate: [AuthGuard],\n    canActivateChild: [AuthGuard],\n    children: [\n      { path: '', redirectTo: 'main', pathMatch: 'full' },\n      { path: 'main', component: MainInfoComponent },\n      { path: 'config', component: ConfigComponent },\n      { path: 'status', component: StatusComponent },\n      { path: 'action', component: ActionCardComponent },\n    ],\n  },\n  {\n    path: ':cluster/host/:host',\n    component: DetailComponent,\n    canActivate: [AuthGuard],\n    canActivateChild: [AuthGuard],\n    children: [\n      { path: '', redirectTo: 'main', pathMatch: 'full' },\n      { path: 'main', component: MainInfoComponent },\n      { path: 'config', component: ConfigComponent },\n      { path: 'status', component: StatusComponent },\n      { path: 'action', component: ActionCardComponent },\n    ],\n  },\n];\n\n@NgModule({\n  imports: [\n    RouterModule.forChild(clusterRoutes),\n  ],\n  exports: [RouterModule],\n})\nexport class ClusterRoutingModule {}\n\n@NgModule({\n  imports: [CommonModule, SharedModule, RouterModule, ClusterRoutingModule],\n  declarations: [ClusterListComponent, ServicesComponent, HostComponent, HcmapComponent],\n})\nexport class ClusterModule {}\n",
             "children": [
                 {
                     "type": "providers",
@@ -45443,13 +45871,13 @@
         },
         {
             "name": "ConfigurationModule",
-            "id": "module-ConfigurationModule-a5b3cab40e74f991d0ec1e0f3c5508bd",
+            "id": "module-ConfigurationModule-3a59ef4f3bbec503b25d5fa4e72c3af4",
             "description": "",
             "deprecationMessage": "",
             "deprecated": false,
             "file": "src/app/shared/configuration/configuration.module.ts",
             "methods": [],
-            "sourceCode": "// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//      http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\nimport { CommonModule } from '@angular/common';\nimport { NgModule } from '@angular/core';\nimport { FormsModule, ReactiveFormsModule } from '@angular/forms';\nimport { MatButtonModule } from '@angular/material/button';\nimport { MatCheckboxModule } from '@angular/material/checkbox';\nimport { MatOptionModule } from '@angular/material/core';\nimport { MatExpansionModule } from '@angular/material/expansion';\nimport { MatFormFieldModule } from '@angular/material/form-field';\nimport { MatIconModule } from '@angular/material/icon';\nimport { MatInputModule } from '@angular/material/input';\nimport { MatListModule } from '@angular/material/list';\nimport { MatSelectModule } from '@angular/material/select';\nimport { MatSlideToggleModule } from '@angular/material/slide-toggle';\nimport { MatToolbarModule } from '@angular/material/toolbar';\nimport { MatTooltipModule } from '@angular/material/tooltip';\n\nimport { FormElementsModule } from '../form-elements/form-elements.module';\nimport { StuffModule } from '../stuff.module';\nimport { FieldService } from './field.service';\nimport { FieldComponent } from './field/field.component';\nimport { ConfigFieldsComponent } from './fields/fields.component';\nimport { GroupFieldsComponent } from './group-fields/group-fields.component';\nimport { ConfigComponent } from './main/main.component';\nimport { ItemComponent } from './scheme/item.component';\nimport { RootComponent } from './scheme/root.component';\nimport { SchemeComponent } from './scheme/scheme.component';\nimport { SchemeService } from './scheme/scheme.service';\nimport { ColorOptionDirective } from './tools/color-option.directive';\nimport { HistoryComponent } from './tools/history.component';\nimport { SearchComponent } from './tools/search.component';\nimport { ToolsComponent } from './tools/tools.component';\nimport { YspecService } from './yspec/yspec.service';\n\nconst material = [\n  MatIconModule,\n  MatInputModule,\n  MatButtonModule,\n  MatSelectModule,\n  MatOptionModule,\n  MatCheckboxModule,\n  MatTooltipModule,\n  MatToolbarModule,\n  MatFormFieldModule,\n  MatExpansionModule,\n  MatSlideToggleModule,\n  MatListModule,\n];\n\n@NgModule({\n  declarations: [\n    FieldComponent,\n    ConfigFieldsComponent,\n    GroupFieldsComponent,\n    ConfigComponent,\n    HistoryComponent,\n    SearchComponent,\n    ColorOptionDirective,\n    ToolsComponent,\n    SchemeComponent,\n    RootComponent,\n    ItemComponent,\n  ],\n  imports: [CommonModule, FormsModule, ReactiveFormsModule, StuffModule, FormElementsModule, ...material],\n  exports: [ConfigComponent, ConfigFieldsComponent],\n  providers: [FieldService, YspecService, SchemeService],\n})\nexport class ConfigurationModule {}\n",
+            "sourceCode": "// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//      http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\nimport { CommonModule } from '@angular/common';\nimport { NgModule } from '@angular/core';\nimport { FormsModule, ReactiveFormsModule } from '@angular/forms';\nimport { MatButtonModule } from '@angular/material/button';\nimport { MatCheckboxModule } from '@angular/material/checkbox';\nimport { MatOptionModule } from '@angular/material/core';\nimport { MatExpansionModule } from '@angular/material/expansion';\nimport { MatFormFieldModule } from '@angular/material/form-field';\nimport { MatIconModule } from '@angular/material/icon';\nimport { MatInputModule } from '@angular/material/input';\nimport { MatListModule } from '@angular/material/list';\nimport { MatSelectModule } from '@angular/material/select';\nimport { MatSlideToggleModule } from '@angular/material/slide-toggle';\nimport { MatToolbarModule } from '@angular/material/toolbar';\nimport { MatTooltipModule } from '@angular/material/tooltip';\n\nimport { FormElementsModule } from '../form-elements/form-elements.module';\nimport { StuffModule } from '../stuff.module';\nimport { FieldService } from './field.service';\nimport { FieldComponent } from './field/field.component';\nimport { ConfigFieldsComponent } from './fields/fields.component';\nimport { GroupFieldsComponent } from './group-fields/group-fields.component';\nimport { ConfigComponent } from './main/config.component';\nimport { ItemComponent } from './scheme/item.component';\nimport { RootComponent } from './scheme/root.component';\nimport { SchemeComponent } from './scheme/scheme.component';\nimport { SchemeService } from './scheme/scheme.service';\nimport { ColorOptionDirective } from './tools/color-option.directive';\nimport { HistoryComponent } from './tools/history.component';\nimport { SearchComponent } from './tools/search.component';\nimport { ToolsComponent } from './tools/tools.component';\nimport { YspecService } from './yspec/yspec.service';\n\nconst material = [\n  MatIconModule,\n  MatInputModule,\n  MatButtonModule,\n  MatSelectModule,\n  MatOptionModule,\n  MatCheckboxModule,\n  MatTooltipModule,\n  MatToolbarModule,\n  MatFormFieldModule,\n  MatExpansionModule,\n  MatSlideToggleModule,\n  MatListModule,\n];\n\n@NgModule({\n  declarations: [\n    FieldComponent,\n    ConfigFieldsComponent,\n    GroupFieldsComponent,\n    ConfigComponent,\n    HistoryComponent,\n    SearchComponent,\n    ColorOptionDirective,\n    ToolsComponent,\n    SchemeComponent,\n    RootComponent,\n    ItemComponent,\n  ],\n  imports: [CommonModule, FormsModule, ReactiveFormsModule, StuffModule, FormElementsModule, ...material],\n  exports: [ConfigComponent, ConfigFieldsComponent],\n  providers: [FieldService, YspecService, SchemeService],\n})\nexport class ConfigurationModule {}\n",
             "children": [
                 {
                     "type": "providers",
@@ -46126,13 +46554,13 @@
         },
         {
             "name": "SharedModule",
-            "id": "module-SharedModule-8b87da2a156f09103f7e61d2e309c1ef",
+            "id": "module-SharedModule-2de4edad8da1b70650960198ef72d18e",
             "description": "",
             "deprecationMessage": "",
             "deprecated": false,
             "file": "src/app/shared/shared.module.ts",
             "methods": [],
-            "sourceCode": "// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//      http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\nimport { CommonModule } from '@angular/common';\nimport { NgModule } from '@angular/core';\nimport { FormsModule, ReactiveFormsModule } from '@angular/forms';\nimport { RouterModule } from '@angular/router';\nimport { AdwpListModule } from '@adwp-ui/widgets';\n\nimport { AddingModule } from './add-component/adding.module';\nimport {\n  ActionMasterComponent,\n  ButtonSpinnerComponent,\n  DialogComponent,\n  ExportComponent,\n  ImportComponent,\n  IssueInfoComponent,\n  MainInfoComponent,\n  StatusComponent,\n  StatusInfoComponent,\n  UpgradeComponent,\n} from './components';\nimport { ActionCardComponent } from './components/actions/action-card/action-card.component';\nimport { ActionMasterConfigComponent } from './components/actions/master/action-master-config.component';\nimport { MultiSortDirective } from './components/list/multi-sort.directive';\nimport { SimpleTextComponent } from './components/tooltip';\nimport { ConfigurationModule } from './configuration/configuration.module';\nimport { DetailsModule } from './details/details.module';\nimport { DynamicDirective, HoverDirective } from './directives';\nimport { FormElementsModule } from './form-elements/form-elements.module';\nimport { HostComponentsMapModule } from './host-components-map/host-components-map.module';\nimport { MaterialModule } from './material.module';\nimport { BreakRowPipe, TagEscPipe } from './pipes';\nimport { StuffModule } from './stuff.module';\nimport { StatusColumnComponent } from '@app/components/columns/status-column/status-column.component';\nimport { StateColumnComponent } from '@app/components/columns/state-column/state-column.component';\nimport { EditionColumnComponent } from '@app/components/columns/edition-column/edition-column.component';\nimport { ClusterColumnComponent } from '@app/components/columns/cluster-column/cluster-column.component';\nimport { ServiceComponentsComponent } from '@app/components/service-components.component';\nimport { JobService } from '@app/services/job.service';\nimport { TaskService } from '@app/services/task.service';\nimport { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';\nimport { TranslateModule } from '@ngx-translate/core';\nimport { PickKeysPipe } from '@app/pipes/pick-keys.pipe';\nimport { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';\n\n@NgModule({\n  imports: [\n    CommonModule,\n    MaterialModule,\n    FormsModule,\n    ReactiveFormsModule,\n    RouterModule,\n    StuffModule,\n    FormElementsModule,\n    ConfigurationModule,\n    AddingModule,\n    HostComponentsMapModule,\n    DetailsModule,\n    TranslateModule,\n    AdwpListModule.forRoot({\n      itemsPerPage: [10, 25, 50, 100],\n    }),\n  ],\n  declarations: [\n    DialogComponent,\n    BreakRowPipe,\n    HoverDirective,\n    DynamicDirective,\n    ButtonSpinnerComponent,\n    TagEscPipe,\n    IssueInfoComponent,\n    SimpleTextComponent,\n    StatusComponent,\n    StatusInfoComponent,\n    MainInfoComponent,\n    MultiSortDirective,\n    ImportComponent,\n    ExportComponent,\n    ActionMasterComponent,\n    ActionMasterConfigComponent,\n    ActionCardComponent,\n    StatusColumnComponent,\n    StateColumnComponent,\n    EditionColumnComponent,\n    ClusterColumnComponent,\n    ServiceComponentsComponent,\n    ToDataSourcePipe,\n    PickKeysPipe,\n    TranslateKeysPipe\n  ],\n  exports: [\n    FormsModule,\n    ReactiveFormsModule,\n    MaterialModule,\n    StuffModule,\n    FormElementsModule,\n    ConfigurationModule,\n    AddingModule,\n    HostComponentsMapModule,\n    DetailsModule,\n    DialogComponent,\n    BreakRowPipe,\n    HoverDirective,\n    DynamicDirective,\n    ButtonSpinnerComponent,\n    UpgradeComponent,\n    TagEscPipe,\n    StatusComponent,\n    StatusInfoComponent,\n    MainInfoComponent,\n    ImportComponent,\n    ExportComponent,\n    ActionCardComponent,\n    StatusColumnComponent,\n    StateColumnComponent,\n    EditionColumnComponent,\n    ClusterColumnComponent,\n    ServiceComponentsComponent,\n    AdwpListModule,\n    ToDataSourcePipe,\n    PickKeysPipe,\n    TranslateKeysPipe,\n  ],\n  providers: [\n    JobService,\n    TaskService,\n  ],\n})\nexport class SharedModule {}\n",
+            "sourceCode": "// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//      http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\nimport { CommonModule } from '@angular/common';\nimport { NgModule } from '@angular/core';\nimport { FormsModule, ReactiveFormsModule } from '@angular/forms';\nimport { RouterModule } from '@angular/router';\nimport { AdwpListModule } from '@adwp-ui/widgets';\n\nimport { AddingModule } from './add-component/adding.module';\nimport {\n  ActionMasterComponent,\n  ButtonSpinnerComponent,\n  DialogComponent,\n  ExportComponent,\n  ImportComponent,\n  IssueInfoComponent,\n  MainInfoComponent,\n  StatusComponent,\n  StatusInfoComponent,\n  UpgradeComponent,\n} from './components';\nimport { ActionCardComponent } from './components/actions/action-card/action-card.component';\nimport { ActionMasterConfigComponent } from './components/actions/master/action-master-config.component';\nimport { MultiSortDirective } from './components/list/multi-sort.directive';\nimport { SimpleTextComponent } from './components/tooltip';\nimport { ConfigurationModule } from './configuration/configuration.module';\nimport { DetailsModule } from './details/details.module';\nimport { DynamicDirective, HoverDirective } from './directives';\nimport { FormElementsModule } from './form-elements/form-elements.module';\nimport { HostComponentsMapModule } from './host-components-map/host-components-map.module';\nimport { MaterialModule } from './material.module';\nimport { BreakRowPipe, TagEscPipe } from './pipes';\nimport { StuffModule } from './stuff.module';\nimport { StatusColumnComponent } from '@app/components/columns/status-column/status-column.component';\nimport { StateColumnComponent } from '@app/components/columns/state-column/state-column.component';\nimport { EditionColumnComponent } from '@app/components/columns/edition-column/edition-column.component';\nimport { ClusterColumnComponent } from '@app/components/columns/cluster-column/cluster-column.component';\nimport { ServiceComponentsComponent } from '@app/components/service-components.component';\nimport { JobService } from '@app/services/job.service';\nimport { TaskService } from '@app/services/task.service';\nimport { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';\nimport { TranslateModule } from '@ngx-translate/core';\nimport { PickKeysPipe } from '@app/pipes/pick-keys.pipe';\nimport { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';\nimport { MatTreeModule } from '@angular/material/tree';\nimport { StatusTreeComponent } from '@app/components/status-tree/status-tree.component';\n\n@NgModule({\n  imports: [\n    CommonModule,\n    MaterialModule,\n    FormsModule,\n    ReactiveFormsModule,\n    RouterModule,\n    StuffModule,\n    FormElementsModule,\n    ConfigurationModule,\n    AddingModule,\n    HostComponentsMapModule,\n    DetailsModule,\n    TranslateModule,\n    AdwpListModule.forRoot({\n      itemsPerPage: [10, 25, 50, 100],\n    }),\n    MatTreeModule,\n  ],\n  declarations: [\n    DialogComponent,\n    BreakRowPipe,\n    HoverDirective,\n    DynamicDirective,\n    ButtonSpinnerComponent,\n    TagEscPipe,\n    IssueInfoComponent,\n    SimpleTextComponent,\n    StatusComponent,\n    StatusInfoComponent,\n    MainInfoComponent,\n    MultiSortDirective,\n    ImportComponent,\n    ExportComponent,\n    ActionMasterComponent,\n    ActionMasterConfigComponent,\n    ActionCardComponent,\n    StatusColumnComponent,\n    StateColumnComponent,\n    EditionColumnComponent,\n    ClusterColumnComponent,\n    ServiceComponentsComponent,\n    ToDataSourcePipe,\n    PickKeysPipe,\n    TranslateKeysPipe,\n    StatusTreeComponent,\n  ],\n  exports: [\n    FormsModule,\n    ReactiveFormsModule,\n    MaterialModule,\n    StuffModule,\n    FormElementsModule,\n    ConfigurationModule,\n    AddingModule,\n    HostComponentsMapModule,\n    DetailsModule,\n    DialogComponent,\n    BreakRowPipe,\n    HoverDirective,\n    DynamicDirective,\n    ButtonSpinnerComponent,\n    UpgradeComponent,\n    TagEscPipe,\n    StatusComponent,\n    StatusInfoComponent,\n    MainInfoComponent,\n    ImportComponent,\n    ExportComponent,\n    ActionCardComponent,\n    StatusColumnComponent,\n    StateColumnComponent,\n    EditionColumnComponent,\n    ClusterColumnComponent,\n    ServiceComponentsComponent,\n    AdwpListModule,\n    ToDataSourcePipe,\n    PickKeysPipe,\n    TranslateKeysPipe,\n  ],\n  providers: [\n    JobService,\n    TaskService,\n  ],\n})\nexport class SharedModule {}\n",
             "children": [
                 {
                     "type": "providers",
@@ -46213,6 +46641,9 @@
                         },
                         {
                             "name": "StatusInfoComponent"
+                        },
+                        {
+                            "name": "StatusTreeComponent"
                         },
                         {
                             "name": "TagEscPipe"
@@ -47806,6 +48237,16 @@
                 "defaultValue": "{\n  auth: authReducer,\n  socket: socketReducer,\n  api: apiReducer,\n  profile: profileReducer,\n  issue: issueReducer,\n  navigation: navigationReducer,\n}"
             },
             {
+                "name": "RegularTree",
+                "ctype": "miscellaneous",
+                "subtype": "variable",
+                "file": "src/stories/status-tree/status-tree.stories.ts",
+                "deprecated": false,
+                "deprecationMessage": "",
+                "type": "",
+                "defaultValue": "Template.bind({})"
+            },
+            {
                 "name": "require",
                 "ctype": "miscellaneous",
                 "subtype": "variable",
@@ -48023,6 +48464,16 @@
                 "deprecationMessage": "",
                 "type": "Story",
                 "defaultValue": "args => ({\n  props: {\n    ...args,\n  }\n})"
+            },
+            {
+                "name": "Template",
+                "ctype": "miscellaneous",
+                "subtype": "variable",
+                "file": "src/stories/status-tree/status-tree.stories.ts",
+                "deprecated": false,
+                "deprecationMessage": "",
+                "type": "Story",
+                "defaultValue": "args => ({\n  props: {\n    ...args,\n  },\n})"
             },
             {
                 "name": "toField",
@@ -49342,6 +49793,27 @@
                 "file": "src/app/app.component.ts"
             },
             {
+                "name": "Folding",
+                "childs": [
+                    {
+                        "name": "Collapsed",
+                        "deprecated": false,
+                        "deprecationMessage": ""
+                    },
+                    {
+                        "name": "Expanded",
+                        "deprecated": false,
+                        "deprecationMessage": ""
+                    }
+                ],
+                "ctype": "miscellaneous",
+                "subtype": "enum",
+                "deprecated": false,
+                "deprecationMessage": "",
+                "description": "",
+                "file": "src/app/components/status-tree/status-tree.component.ts"
+            },
+            {
                 "name": "IMPlaceholderItemType",
                 "childs": [
                     {
@@ -49389,6 +49861,27 @@
                 "deprecationMessage": "",
                 "description": "",
                 "file": "src/app/core/services/channel.service.ts"
+            },
+            {
+                "name": "SubjectStatus",
+                "childs": [
+                    {
+                        "name": "Success",
+                        "deprecated": false,
+                        "deprecationMessage": ""
+                    },
+                    {
+                        "name": "Fail",
+                        "deprecated": false,
+                        "deprecationMessage": ""
+                    }
+                ],
+                "ctype": "miscellaneous",
+                "subtype": "enum",
+                "deprecated": false,
+                "deprecationMessage": "",
+                "description": "",
+                "file": "src/app/models/status-tree.ts"
             },
             {
                 "name": "whatShow",
@@ -50912,6 +51405,28 @@
                     "defaultValue": "`${environment.apiRoot}profile/`"
                 }
             ],
+            "src/stories/status-tree/status-tree.stories.ts": [
+                {
+                    "name": "RegularTree",
+                    "ctype": "miscellaneous",
+                    "subtype": "variable",
+                    "file": "src/stories/status-tree/status-tree.stories.ts",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "",
+                    "defaultValue": "Template.bind({})"
+                },
+                {
+                    "name": "Template",
+                    "ctype": "miscellaneous",
+                    "subtype": "variable",
+                    "file": "src/stories/status-tree/status-tree.stories.ts",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "type": "Story",
+                    "defaultValue": "args => ({\n  props: {\n    ...args,\n  },\n})"
+                }
+            ],
             "src/app/shared/components/import/import.component.ts": [
                 {
                     "name": "requiredObject",
@@ -51910,6 +52425,29 @@
                     "file": "src/app/app.component.ts"
                 }
             ],
+            "src/app/components/status-tree/status-tree.component.ts": [
+                {
+                    "name": "Folding",
+                    "childs": [
+                        {
+                            "name": "Collapsed",
+                            "deprecated": false,
+                            "deprecationMessage": ""
+                        },
+                        {
+                            "name": "Expanded",
+                            "deprecated": false,
+                            "deprecationMessage": ""
+                        }
+                    ],
+                    "ctype": "miscellaneous",
+                    "subtype": "enum",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "description": "",
+                    "file": "src/app/components/status-tree/status-tree.component.ts"
+                }
+            ],
             "src/app/models/issue-message.ts": [
                 {
                     "name": "IMPlaceholderItemType",
@@ -51961,6 +52499,29 @@
                     "deprecationMessage": "",
                     "description": "",
                     "file": "src/app/core/services/channel.service.ts"
+                }
+            ],
+            "src/app/models/status-tree.ts": [
+                {
+                    "name": "SubjectStatus",
+                    "childs": [
+                        {
+                            "name": "Success",
+                            "deprecated": false,
+                            "deprecationMessage": ""
+                        },
+                        {
+                            "name": "Fail",
+                            "deprecated": false,
+                            "deprecationMessage": ""
+                        }
+                    ],
+                    "ctype": "miscellaneous",
+                    "subtype": "enum",
+                    "deprecated": false,
+                    "deprecationMessage": "",
+                    "description": "",
+                    "file": "src/app/models/status-tree.ts"
                 }
             ],
             "src/app/shared/components/actions/master/master.service.ts": [
@@ -53304,6 +53865,42 @@
                 "name": "ServiceComponentsComponent",
                 "coveragePercent": 0,
                 "coverageCount": "0/21",
+                "status": "low"
+            },
+            {
+                "filePath": "src/app/components/status-tree/status-tree.component.ts",
+                "type": "component",
+                "linktype": "component",
+                "name": "StatusTreeComponent",
+                "coveragePercent": 0,
+                "coverageCount": "0/12",
+                "status": "low"
+            },
+            {
+                "filePath": "src/app/components/status-tree/status-tree.component.ts",
+                "type": "interface",
+                "linktype": "interface",
+                "name": "CountedStatusTree",
+                "coveragePercent": 0,
+                "coverageCount": "0/2",
+                "status": "low"
+            },
+            {
+                "filePath": "src/app/components/status-tree/status-tree.component.ts",
+                "type": "interface",
+                "linktype": "interface",
+                "name": "Counts",
+                "coveragePercent": 0,
+                "coverageCount": "0/3",
+                "status": "low"
+            },
+            {
+                "filePath": "src/app/components/status-tree/status-tree.component.ts",
+                "type": "interface",
+                "linktype": "interface",
+                "name": "ExampleFlatNode",
+                "coveragePercent": 0,
+                "coverageCount": "0/4",
                 "status": "low"
             },
             {
@@ -55169,6 +55766,24 @@
                 "status": "low"
             },
             {
+                "filePath": "src/app/models/status-tree.ts",
+                "type": "interface",
+                "linktype": "interface",
+                "name": "StatusTree",
+                "coveragePercent": 0,
+                "coverageCount": "0/3",
+                "status": "low"
+            },
+            {
+                "filePath": "src/app/models/status-tree.ts",
+                "type": "interface",
+                "linktype": "interface",
+                "name": "StatusTreeSubject",
+                "coveragePercent": 0,
+                "coverageCount": "0/3",
+                "status": "low"
+            },
+            {
                 "filePath": "src/app/models/universal-adcm-event-data.ts",
                 "type": "interface",
                 "linktype": "interface",
@@ -56178,7 +56793,7 @@
                 "status": "low"
             },
             {
-                "filePath": "src/app/shared/configuration/main/main.component.ts",
+                "filePath": "src/app/shared/configuration/main/config.component.ts",
                 "type": "component",
                 "linktype": "component",
                 "name": "ConfigComponent",
@@ -57556,6 +58171,26 @@
                 "linktype": "miscellaneous",
                 "linksubtype": "variable",
                 "name": "ISSUE_MESSAGES_VERY_LONG_MOCK",
+                "coveragePercent": 0,
+                "coverageCount": "0/1",
+                "status": "low"
+            },
+            {
+                "filePath": "src/stories/status-tree/status-tree.stories.ts",
+                "type": "variable",
+                "linktype": "miscellaneous",
+                "linksubtype": "variable",
+                "name": "RegularTree",
+                "coveragePercent": 0,
+                "coverageCount": "0/1",
+                "status": "low"
+            },
+            {
+                "filePath": "src/stories/status-tree/status-tree.stories.ts",
+                "type": "variable",
+                "linktype": "miscellaneous",
+                "linksubtype": "variable",
+                "name": "Template",
                 "coveragePercent": 0,
                 "coverageCount": "0/1",
                 "status": "low"

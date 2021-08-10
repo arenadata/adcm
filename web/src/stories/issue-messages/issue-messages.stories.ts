@@ -11,7 +11,7 @@ import { IssueMessageRefComponent } from '../../app/components/issue-message/iss
 import { ISSUE_MESSAGES_DEFAULT_MOCK, ISSUE_MESSAGES_VERY_LONG_MOCK } from './mock';
 
 export default {
-  title: 'ADCM/Issue messages',
+  title: 'ADCM/Issue Messages',
   decorators: [
     moduleMetadata({
       providers: [

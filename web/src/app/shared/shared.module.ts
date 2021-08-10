@@ -51,6 +51,8 @@ import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
 import { TranslateModule } from '@ngx-translate/core';
 import { PickKeysPipe } from '@app/pipes/pick-keys.pipe';
 import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
+import { MatTreeModule } from '@angular/material/tree';
+import { StatusTreeComponent } from '@app/components/status-tree/status-tree.component';
 
 @NgModule({
   imports: [
@@ -69,6 +71,7 @@ import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
     AdwpListModule.forRoot({
       itemsPerPage: [10, 25, 50, 100],
     }),
+    MatTreeModule,
   ],
   declarations: [
     DialogComponent,
@@ -95,7 +98,8 @@ import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
     ServiceComponentsComponent,
     ToDataSourcePipe,
     PickKeysPipe,
-    TranslateKeysPipe
+    TranslateKeysPipe,
+    StatusTreeComponent,
   ],
   exports: [
     FormsModule,

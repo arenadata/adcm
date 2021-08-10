@@ -1,0 +1,41 @@
+<mat-tree [dataSource]="dataSource" [treeControl]="treeControl">
+  <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
+    <button mat-icon-button disabled></button>
+
+    <ng-container
+      [ngTemplateOutlet]="statusNode"
+      [ngTemplateOutletContext]="{ node: node }"
+    ></ng-container>
+
+  </mat-tree-node>
+  <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodePadding>
+    <button mat-icon-button matTreeNodeToggle>
+      <mat-icon class="mat-icon-rtl-mirror">
+        {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
+      </mat-icon>
+    </button>
+
+    <ng-container
+      [ngTemplateOutlet]="statusNode"
+      [ngTemplateOutletContext]="{ node: node }"
+    ></ng-container>
+
+  </mat-tree-node>
+</mat-tree>
+
+<ng-template #statusNode let-node="node">
+  <mat-icon *ngIf="node.subject.status === SubjectStatus.Success; else failed" color="accent">check_circle_outline</mat-icon>
+  <ng-template #failed>
+    <mat-icon color="warn">error_outline</mat-icon>
+  </ng-template>
+  &nbsp;
+  <span [ngClass]="{ expandable: node.expandable }">{{node.subject.name}}</span>
+  &nbsp;
+  <span
+    *ngIf="node.counts.total"
+    class="counts"
+    [ngClass]="{ success: node.counts.succeed === node.counts.total }"
+  >
+    successful {{node.counts.succeed}}/{{node.counts.total}}
+  </span>
+</ng-template>
