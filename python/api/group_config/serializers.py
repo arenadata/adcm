@@ -63,6 +63,4 @@ class GroupConfigSerializer(serializers.ModelSerializer):
             request=self.context['request'],
             format=self.context['format'],
         )
-        view = self.context['view']
-        limit = view.paginator.default_limit
-        return f'{url}?group_config={obj.id}&limit={limit}&offset=0'
+        return f'{url}?group_config={obj.id}'
