@@ -37,3 +37,17 @@ class TaskListLocators:
             # span for done_all and mat-icon for running
             # but in both cases we can identify status by class
             status = Locator(By.XPATH, ".//app-task-status-column/*", "Status span in row")
+
+            expand_task = Locator(
+                By.XPATH, ".//mat-icon[contains(text(), 'expand_more')]", "Expand task button"
+            )
+
+        class ExpandedTask:
+            block = Locator(By.XPATH, "//app-jobs", "Expanded task block")
+            row = Locator(By.XPATH, "//app-jobs//mat-row", "Job row in expanded Task")
+
+            class Row:
+                job_name = Locator(By.XPATH, ".//app-job-name//a", "Job name")
+                job_start_date = Locator(By.XPATH, "./mat-cell[2]", "Job start date")
+                job_finish_date = Locator(By.XPATH, "./mat-cell[3]", "Job finish date")
+                job_status = Locator(By.XPATH, ".//app-job-status-column/mat-icon", "Job status")

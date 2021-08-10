@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import TypedDict, TypeVar, Union
+from typing import TypedDict, TypeVar, Union, List
 
 import allure
 
@@ -42,7 +42,7 @@ class PopupTaskInfo(TypedDict):
 
 
 class TableTaskInfo(PopupTaskInfo):
-    """Info about the job from table row"""
+    """Info about the task from table row"""
 
     object: str
     start_date: str
@@ -50,6 +50,13 @@ class TableTaskInfo(PopupTaskInfo):
 
 
 TaskInfo = TypeVar('TaskInfo', bound=Union[PopupTaskInfo, TableTaskInfo])
+
+
+class SubTaskJobInfo(TypedDict):
+    """Information about job in task's list of jobs"""
+
+    name: str
+    status: JobStatus
 
 
 class JobListPage(BasePageObject):
@@ -82,6 +89,39 @@ class JobListPage(BasePageObject):
             ),
         }
 
+    @allure.step('Expand task in row {row_num}')
+    def expand_task_in_row(self, row_num: int = 0):
+        """Click on expand jobs button"""
+        table_locators = TaskListLocators.Table
+        row = self.table.get_row(row_num)
+        self.find_child(row, table_locators.Row.expand_task).click()
+        self.wait_element_visible(table_locators.ExpandedTask.block)
+
+    @allure.step("Click on job in task's job list")
+    def click_on_job(self, job_num: int = 0):
+        """Click on job in expanded first task's job list"""
+        expand_task_locators = TaskListLocators.Table.ExpandedTask
+        job_rows = self.find_elements(expand_task_locators.row)
+        assert job_num < len(job_rows), 'Not enough jobs in this task'
+        self.find_child(job_rows[job_num], expand_task_locators.Row.job_name).click()
+
+    def get_all_jobs_info(self) -> List[SubTaskJobInfo]:
+        """
+        Returns information about all jobs
+        from expanded first task's jobs list
+        """
+        expand_task_locators = TaskListLocators.Table.ExpandedTask
+        job_rows = self.find_elements(expand_task_locators.row)
+        return [
+            SubTaskJobInfo(
+                name=self.find_child(job, expand_task_locators.Row.job_name).text,
+                status=self._get_status_from_class_string(
+                    self.find_child(job, expand_task_locators.Row.job_status)
+                ),
+            )
+            for job in job_rows
+        ]
+
     @allure.step('Select the "All" filter tab')
     def select_filter_all_tab(self):
         """Show all tasks"""
@@ -101,6 +141,11 @@ class JobListPage(BasePageObject):
     def select_filter_failed_tab(self):
         """Show only failed tasks"""
         self._select_filter(TaskListLocators.Filter.failed)
+
+    @allure.step('Click on action name')
+    def click_on_action_name_in_row(self, row: WebElement):
+        """Click on action name in row"""
+        self.find_child_and_click(row, TaskListLocators.Table.Row.action_name)
 
     def _select_filter(self, filter_locator: Locator):
         """Click on filter tab and wait it is pressed"""

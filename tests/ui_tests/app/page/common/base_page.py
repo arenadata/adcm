@@ -219,6 +219,12 @@ class BasePageObject:
                 self.wait_element_clickable(locator)
                 self.find_element(locator).click()
 
+    @allure.step('Click on {child}')
+    def find_child_and_click(self, parent: WebElement, child: Locator):
+        """Find child of element on current page and click on it"""
+        child = self.find_child(parent, child)
+        child.click()
+
     def wait_element_clickable(self, locator: Locator, timeout: int = None) -> WebElement:
         """Wait for the element to become clickable."""
 
@@ -255,18 +261,25 @@ class BasePageObject:
             )
 
     def wait_element_attribute(
-        self, locator: Locator, attribute: str, expected_value: str, timeout: int = 5
+        self,
+        locator: Locator,
+        attribute: str,
+        expected_value: str,
+        exact_match: bool = True,
+        timeout: int = 5,
     ):
         """
-        Wait for element to has `expected_value` in locator's attribute
+        Wait for element to has locator's attribute equals to `expected_value`
+
+        If exact match is False then __contains__ is used
         """
+        comparator = '__eq__' if exact_match else '__contains__'
 
         def assert_attribute_value():
-            assert (
-                actual_value := self.find_element(locator).get_attribute(attribute)
-            ) == expected_value, (
+            actual_value = self.find_element(locator).get_attribute(attribute)
+            assert getattr(actual_value, comparator)(expected_value), (
                 f'Attribute {attribute} of element "{locator}" '
-                f'should be {expected_value}, not {actual_value}'
+                f'should be/has "{expected_value}", but "{actual_value}" was found'
             )
 
         wait_until_step_succeeds(assert_attribute_value, period=0.5, timeout=timeout)

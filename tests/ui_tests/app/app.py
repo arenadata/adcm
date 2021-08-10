@@ -31,7 +31,7 @@ class ADCMTest:
 
     __slots__ = ("opts", "capabilities", "driver", "ui", "adcm", "selenoid")
 
-    def __init__(self, browser="Chrome"):
+    def __init__(self, browser="Chrome", downloads: os.PathLike = None):
         self.opts = FirefoxOptions() if browser == "Firefox" else ChromeOptions()
         self.opts.headless = True
         self.opts.add_argument("--no-sandbox")
@@ -54,6 +54,8 @@ class ADCMTest:
             "host": os.environ.get("SELENOID_HOST"),
             "port": os.environ.get("SELENOID_PORT", "4444"),
         }
+        if downloads:
+            self._configure_downloads(browser, downloads)
         self.driver = None
         self.ui = None
         self.adcm = None
@@ -118,3 +120,15 @@ class ADCMTest:
 
     def destroy(self):
         self.driver.quit()
+
+    def _configure_downloads(self, browser: str, downloads_directory: os.PathLike):
+        if browser == "Chrome":
+            self.opts.add_experimental_option(
+                "prefs", {"download.default_directory": str(downloads_directory)}
+            )
+        else:
+            # do not use default download directory
+            self.opts.set_preference("browser.download.folderList", 2)
+            self.opts.set_preference("browser.download.dir", str(downloads_directory))
+            # allow documents to be saved without asking what to do
+            self.opts.set_preference("browser.helperApps.neverAsk.saveToDisk", "text/plain")

@@ -1,10 +1,12 @@
 # pylint: disable=too-many-ancestors
+import os
 from collections import UserDict
 from contextlib import contextmanager
+from typing import Union
 
 import allure
 from adcm_client.objects import ADCMClient, Cluster
-from adcm_pytest_plugin.utils import random_string
+from adcm_pytest_plugin.utils import random_string, wait_until_step_succeeds
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
@@ -126,3 +128,18 @@ def check_rows_amount(page, expected_amount: int, table_page_num: int):
     ) == expected_amount, (
         f'Page #{table_page_num} should contain {expected_amount}, not {row_count}'
     )
+
+
+@allure.step('Wait file {filename} is presented in directory {dirname}')
+def wait_file_is_presented(
+    filename: str,
+    dirname: os.PathLike,
+    timeout: Union[int, float] = 70,
+    period: Union[int, float] = 1,
+):
+    """Checks if file is presented in directory"""
+
+    def check_file_is_presented():
+        assert filename in os.listdir(dirname), f'File {filename} not found in {dirname}'
+
+    wait_until_step_succeeds(check_file_is_presented, timeout=timeout, period=period)

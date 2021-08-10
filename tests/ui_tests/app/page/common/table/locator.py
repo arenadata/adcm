@@ -24,6 +24,7 @@ class CommonTable:
 
     header = Locator(By.XPATH, "//mat-header-cell/div", "Table header")
     row = Locator(By.XPATH, "//mat-row", "Table row")
+    visible_row = Locator(By.XPATH, "//mat-row[@adwphover]", "Visible table row")
 
     class ActionPopup:
         """Common popup for action in tables."""
