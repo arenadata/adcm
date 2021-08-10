@@ -63,4 +63,4 @@ class GroupConfigSerializer(serializers.ModelSerializer):
             request=self.context['request'],
             format=self.context['format'],
         )
-        return f'{url}?group_config={obj.id}'
+        return f'{url}?groupconfig={obj.id}'

@@ -24,10 +24,13 @@ from . import serializers
 class HostFilter(drf_filters.FilterSet):
     cluster_is_null = drf_filters.BooleanFilter(field_name='cluster_id', lookup_expr='isnull')
     provider_is_null = drf_filters.BooleanFilter(field_name='provider_id', lookup_expr='isnull')
+    groupconfig = drf_filters.ModelChoiceFilter(
+        queryset=GroupConfig.objects.all(), field_name='groupconfig', label='GroupConfig'
+    )
 
     class Meta:
         model = Host
-        fields = ['cluster_id', 'prototype_id', 'provider_id', 'fqdn']
+        fields = ['cluster_id', 'prototype_id', 'provider_id', 'fqdn', 'groupconfig']
 
 
 class HostList(PageView):
@@ -39,6 +42,7 @@ class HostList(PageView):
     Create new host
     """
 
+    queryset = Host.objects.all()
     serializer_class = serializers.HostSerializer
     serializer_class_ui = serializers.HostUISerializer
     filterset_class = HostFilter
@@ -47,6 +51,7 @@ class HostList(PageView):
         'prototype_id',
         'provider_id',
         'fqdn',
+        'groupconfig',
         'cluster_is_null',
         'provider_is_null',
     )  # just for documentation
@@ -58,14 +63,6 @@ class HostList(PageView):
         'prototype__display_name',
         'prototype__version_order',
     )
-
-    def get_queryset(self):
-        group_config = self.request.query_params.get('group_config')
-        if group_config is not None:
-            group_config = int(group_config)
-            return GroupConfig.obj.get(id=group_config).hosts.all()
-        else:
-            return Host.objects.all()
 
     def get(self, request, *args, **kwargs):
         """
