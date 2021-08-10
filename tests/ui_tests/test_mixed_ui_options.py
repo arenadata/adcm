@@ -1,4 +1,5 @@
 # pylint: disable=W0611, W0621
+
 import allure
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import parametrize_by_data_subdirs
@@ -70,7 +71,7 @@ def _check_groups_and_fields_visible_if_advanced_enabled(sdk_client: ADCMClient,
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_false_invisible_false_field_advanced_false_invisible_false"
 )
-def test_all_false(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm):
+def test_all_false(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api):
     """Check group and field ui options when advanced and invisible is false
     Scenario:
     1. Create cluster
@@ -113,7 +114,7 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm):
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_true_invisible_true_field_advanced_true_invisible_true"
 )
-def test_all_true(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm):
+def test_all_true(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api):
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     groups = config.get_field_groups()
     for group in groups:
@@ -134,7 +135,7 @@ def test_all_true(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm):
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_false_invisible_false_field_advanced_true_invisible_true"
 )
-def test_groups_false_fields_true(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm):
+def test_groups_false_fields_true(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api):
     """Invisible and advanced for groups false for fields true."""
 
     _check_invisible_and_advanced_for_groups_false_for_fields_true(sdk_client_fs, path, app_fs)
@@ -143,7 +144,7 @@ def test_groups_false_fields_true(sdk_client_fs: ADCMClient, path, app_fs, login
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_true_invisible_true_field_advanced_false_invisible_false"
 )
-def test_groups_true_fields_false(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm):
+def test_groups_true_fields_false(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api):
     """Invisible and advanced for groups true for fields false.
     In this case no elements presented on page
     """
@@ -153,7 +154,9 @@ def test_groups_true_fields_false(sdk_client_fs: ADCMClient, path, app_fs, login
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_false_invisible_true_field_advanced_false_invisible_true"
 )
-def test_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm):
+def test_invisible_true_advanced_false(
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
+):
     """Invisible and advanced for groups true for fields false.
     In this case no elements presented on page
     """
@@ -163,7 +166,9 @@ def test_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path, app_fs, 
 @parametrize_by_data_subdirs(
     __file__, "group_advanced_true_invisible_false_field_advanced_true_invisible_false"
 )
-def test_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm):
+def test_invisible_false_advanced_true(
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
+):
     """Fields and groups visible only if advanced enabled."""
     _check_groups_and_fields_visible_if_advanced_enabled(sdk_client_fs, path, app_fs)
 
@@ -172,7 +177,7 @@ def test_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app_fs, 
     __file__, "group_advanced_false_invisible_false_field_advanced_false_invisible_true"
 )
 def test_group_advanced_false_invisible_false_field_advanced_false_invisible_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Invisible and advanced for groups false for fields true"""
     _check_invisible_and_advanced_for_groups_false_for_fields_true(sdk_client_fs, path, app_fs)
@@ -182,7 +187,7 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_tru
     __file__, "group_advanced_false_invisible_false_field_advanced_true_invisible_false"
 )
 def test_group_advanced_false_invisible_false_field_advanced_true_invisible_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     fields = config.get_field_groups()
@@ -205,7 +210,7 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_fals
     __file__, "group_advanced_false_invisible_true_field_advanced_false_invisible_false"
 )
 def test_group_advanced_false_invisible_true_field_advanced_false_invisible_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Invisible and advanced for groups true for fields false.
     In this case no elements presented on page
@@ -217,7 +222,7 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_fals
     __file__, "group_advanced_false_invisible_true_field_advanced_true_invisible_false"
 )
 def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Invisible and advanced for groups true for fields false.
     In this case no elements presented on page
@@ -229,7 +234,7 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false
     __file__, "group_advanced_false_invisible_true_field_advanced_true_invisible_true"
 )
 def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Invisible and advanced for groups true for fields false.
     In this case no elements presented on page
@@ -241,7 +246,7 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true(
     __file__, "group_advanced_true_invisible_false_field_advanced_false_invisible_false"
 )
 def test_group_advanced_true_invisible_false_field_advanced_false_invisible_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Fields and groups visible only if advanced enabled."""
     _check_groups_and_fields_visible_if_advanced_enabled(sdk_client_fs, path, app_fs)
@@ -251,7 +256,7 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_fals
     __file__, "group_advanced_true_invisible_false_field_advanced_false_invisible_true"
 )
 def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     fields = config.get_field_groups()
@@ -274,7 +279,7 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true
     __file__, "group_advanced_true_invisible_false_field_advanced_true_invisible_true"
 )
 def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
 
@@ -298,7 +303,7 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true(
     __file__, "group_advanced_true_invisible_true_field_advanced_false_invisible_true"
 )
 def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Invisible and advanced for groups true for fields false.
     In this case no elements presented on page
@@ -310,7 +315,7 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true(
     __file__, "group_advanced_true_invisible_true_field_advanced_true_invisible_false"
 )
 def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm
+    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
 ):
     """Invisible and advanced for groups true for fields false.
     In this case no elements presented on page

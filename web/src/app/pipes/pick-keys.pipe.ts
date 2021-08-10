@@ -5,10 +5,8 @@ import { Pipe, PipeTransform } from '@angular/core';
 })
 export class PickKeysPipe implements PipeTransform {
 
-  transform(model: { [key: string]: any }, keys: string[]): { [key: string]: any } {
-    return Object.keys(model)
-      .filter(key => keys.indexOf(key) >= 0)
-      .reduce((obj, key) => (obj[key] = model[key], obj), {});
+  transform(object: { [key: string]: any }, keys: string[]): { [key: string]: any } {
+    return keys.reduce((result, key) => ({ ...result, [key]: object[key] }), {});
   }
 
 }
