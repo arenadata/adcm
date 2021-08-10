@@ -276,10 +276,90 @@
   version: 1.0.10
   components:
     second_service_component_1:
-      actions: *component_actions
+      actions:
+        <<: *component_actions
+        Component_host_action_success:
+          host_action: True
+          type: job
+          script: ansible/dummy.yaml
+          script_type: ansible
+          states:
+            available: any
+        Component_host_action_failed:
+          host_action: True
+          type: job
+          script: ansible/failed.yaml
+          script_type: ansible
+          states:
+            available: any
+        Component_host_action_multijob_success:
+          host_action: True
+          type: task
+          scripts:
+            - name: part1
+              script_type: ansible
+              script: ansible/dummy.yaml
+            - name: part2
+              script_type: ansible
+              script: ansible/dummy.yaml
+          states:
+            available: any
+        Component_host_action_multijob_failed:
+          host_action: True
+          type: task
+          scripts:
+            - name: part1
+              script_type: ansible
+              script: ansible/dummy.yaml
+            - name: part2
+              script_type: ansible
+              script: ansible/failed.yaml
+          states:
+            available: any
+
     second_service_component_2:
       actions: *component_actions
-  actions: *service_actions
+
+  actions:
+    <<: *service_actions
+    Service_host_action_success:
+      host_action: True
+      type: job
+      script: ansible/dummy.yaml
+      script_type: ansible
+      states:
+        available: any
+    Service_host_action_failed:
+      host_action: True
+      type: job
+      script: ansible/failed.yaml
+      script_type: ansible
+      states:
+        available: any
+    Service_host_action_multijob_success:
+      host_action: True
+      type: task
+      scripts:
+        - name: part1
+          script_type: ansible
+          script: ansible/dummy.yaml
+        - name: part2
+          script_type: ansible
+          script: ansible/dummy.yaml
+      states:
+        available: any
+    Service_host_action_multijob_failed:
+      host_action: True
+      type: task
+      scripts:
+        - name: part1
+          script_type: ansible
+          script: ansible/dummy.yaml
+        - name: part2
+          script_type: ansible
+          script: ansible/failed.yaml
+      states:
+        available: any
 
 - type: cluster
   name: locking
@@ -294,3 +374,41 @@
         available: any
         on_success: terminated
         on_fail: terminate_failed
+    Cluster_host_action_success:
+      host_action: True
+      type: job
+      script: ansible/dummy.yaml
+      script_type: ansible
+      states:
+        available: any
+    Cluster_host_action_failed:
+      host_action: True
+      type: job
+      script: ansible/failed.yaml
+      script_type: ansible
+      states:
+        available: any
+    Cluster_host_action_multijob_success:
+      host_action: True
+      type: task
+      scripts:
+        - name: part1
+          script_type: ansible
+          script: ansible/dummy.yaml
+        - name: part2
+          script_type: ansible
+          script: ansible/dummy.yaml
+      states:
+        available: any
+    Cluster_host_action_multijob_failed:
+      host_action: True
+      type: task
+      scripts:
+        - name: part1
+          script_type: ansible
+          script: ansible/dummy.yaml
+        - name: part2
+          script_type: ansible
+          script: ansible/failed.yaml
+      states:
+        available: any
