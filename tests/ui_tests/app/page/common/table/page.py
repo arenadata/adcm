@@ -13,7 +13,6 @@ from contextlib import contextmanager
 
 import allure
 
-from selenium.webdriver.remote.webelement import WebElement
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support import expected_conditions as EC
