@@ -6,12 +6,12 @@ import { Host, TypeName } from '../../core/types';
 import { Params } from '@angular/router';
 import { Observable } from 'rxjs';
 import { of } from 'rxjs/internal/observable/of';
-import { AddConfigGroupComponent } from '../components/config-group-add/config-group-add.component';
 import { ApiService } from '../../core/api';
 import { environment } from '../../../environments/environment';
 import { ConfigGroup } from '../model/config-group.model';
+import { AddHostToConfigGroupComponent } from '@app/config-groups/components/config-group-host-add/host2configgroup.component';
 
-const newConfigGroupForm = () =>
+const newConfigGroupHostForm = () =>
   new FormGroup({
     name: new FormControl('', Validators.required),
     description: new FormControl(),
@@ -30,10 +30,10 @@ export class ConfigGroupHostAddService implements IAddService {
 
   model(name?: string): FormModel {
     return {
-      name: 'configgroup',
-      title: 'Config group',
-      form: newConfigGroupForm(),
-      component: AddConfigGroupComponent
+      name: 'host2configgroup',
+      title: 'Config group hosts',
+      form: newConfigGroupHostForm(),
+      component: AddHostToConfigGroupComponent
     };
   }
 
@@ -45,7 +45,20 @@ export class ConfigGroupHostAddService implements IAddService {
   }
 
   getList<T>(type: TypeName, param: Params = {}): Observable<T[]> {
+    console.log('asdasdasdasd');
+
+    // return this.api.get<Host[]>(`${environment.apiRoot}config-group/`).pipe(
+    //   map((hosts) =>
+    //     hosts
+    //       .map((host) => ({
+    //         ...host,
+    //         name: host.fqdn,
+    //       }))
+    //   )
+    // );
+
     return of([]);
+
   }
 
   addHost(host: Partial<Host>): Observable<Host> {
