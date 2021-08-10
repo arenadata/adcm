@@ -7,13 +7,14 @@ import { ConfigGroup } from '../model/config-group.model';
 import { IListService, ListInstance } from '../../shared/components/list/list-service-token';
 import { ListResult } from '../../models/list-result';
 import { of } from 'rxjs/internal/observable/of';
+import { Host } from '../../core/types';
 
 
 @Injectable({
   providedIn: 'root'
 })
-export class ConfigGroupHostListService extends EntityService<ConfigGroup>
-  implements IListService<ConfigGroup> {
+export class ConfigGroupHostListService extends EntityService<Host>
+  implements IListService<Host> {
 
   current: ListInstance;
 
@@ -24,7 +25,7 @@ export class ConfigGroupHostListService extends EntityService<ConfigGroup>
   }
 
 
-  getList(p: ParamMap): Observable<ListResult<ConfigGroup>> {
+  getList(p: ParamMap): Observable<ListResult<Host>> {
     // ToDo remove from here
 
     const listParamStr = localStorage.getItem('list:param');
@@ -48,15 +49,15 @@ export class ConfigGroupHostListService extends EntityService<ConfigGroup>
     return this.current;
   }
 
-  get(id: number): Observable<ConfigGroup> {
+  get(id: number): Observable<Host> {
     // ToDo
 
     return of(null);
   }
 
-  delete(row: ConfigGroup): Observable<Object> {
+  delete(row: Host): Observable<Object> {
     // ToDo
-    
+
     return of(null);
   }
 

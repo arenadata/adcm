@@ -15,6 +15,9 @@ import { SelectOption } from '../../../core/types';
 import { Observable } from 'rxjs';
 
 import { BaseFormDirective } from '../../../shared/add-component/base-form.directive';
+import { MatDialog } from '@angular/material/dialog';
+import { ClusterService } from '@app/core/services/cluster.service';
+import { ConfigGroupHostAddService } from '@app/config-groups/service/config-group-host-add.service';
 
 @Component({
   selector: 'app-config-group-host-add',
@@ -38,13 +41,20 @@ import { BaseFormDirective } from '../../../shared/add-component/base-form.direc
     </ng-template>
   `
 })
-export class Host2configgroupComponent extends BaseFormDirective implements OnInit {
+export class AddHostToConfigGroupComponent extends BaseFormDirective implements OnInit {
   options$: Observable<SelectOption[]>;
   @ViewChild('listServices')
   private listServices: MatSelectionList;
 
+  constructor(service: ConfigGroupHostAddService, dialog: MatDialog, private cluster: ClusterService) {
+    super(service, dialog);
+  }
+
   ngOnInit(): void {
-    // this.options$ = this.service.getHostListForCurrentCluster();
+    console.log('AddHostToConfigGroupComponent | ngOnInit');
+    const { typeName } = this.cluster.Current;
+    console.log(this.cluster.Current);
+    this.options$ = this.service.getList(typeName, {});
   }
 
   selectAll(e: MatSelectionListChange): void {

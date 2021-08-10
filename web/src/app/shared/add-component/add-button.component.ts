@@ -16,6 +16,9 @@ import { DialogComponent } from '../components/dialog.component';
 import { BaseDirective } from '../directives/base.directive';
 import { AddFormComponent } from './add-form.component';
 import { ADD_SERVICE_PROVIDER, IAddService } from '@app/shared/add-component/add-service-token';
+import { LIST_SERVICE_PROVIDER } from '@app/shared/components/list/list-service-token';
+import { ConfigGroupHostListService } from '@app/config-groups/service/config-group-host-list.service';
+import { ConfigGroupHostAddService } from '@app/config-groups/service/config-group-host-add.service';
 
 @Component({
   selector: 'app-add-button',
@@ -32,6 +35,10 @@ import { ADD_SERVICE_PROVIDER, IAddService } from '@app/shared/add-component/add
     </ng-template>
   `,
   styles: ['button {margin-right: 6px;}'],
+  providers: [
+    { provide: LIST_SERVICE_PROVIDER, useClass: ConfigGroupHostListService },
+    { provide: ADD_SERVICE_PROVIDER, useClass: ConfigGroupHostAddService }
+  ],
 })
 export class AddButtonComponent extends BaseDirective implements OnDestroy {
   @Input() asIcon = false;
