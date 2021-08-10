@@ -411,11 +411,19 @@ def test_host_should_be_unlocked_after_cluster_action_with_ansible_plugin(
         "host_action_multijob_failed",
     ]
 )
+@pytest.mark.parametrize(
+    "run_on_host", [
+        "host_with_two_components",
+        "host_with_one_component",
+        "host_with_different_services",
+    ]
+)
 def test_host_should_be_unlocked_after_host_action(
     cluster: Cluster,
     host_provider: Provider,
     adcm_object: str,
     host_action_postfix: str,
+    run_on_host: str,
 ):
     action_name = f"{adcm_object}_{host_action_postfix}"
     first_service = cluster.service_add(name="first_service")
@@ -440,13 +448,9 @@ def test_host_should_be_unlocked_after_host_action(
         (host_with_different_services, first_service.component(name="first_service_component_2")),
         (host_with_different_services, second_service.component(name="second_service_component_1")),
     )
-    for host in cluster_hosts:
-        try:
-            action = host.action(name=action_name)
-        except ObjectNotFound:
-            continue
-        with allure.step(f"Run action {action_name} on {host}"):
-            action.run().wait(timeout=30)
+    host = cluster.host(fqdn=run_on_host)
+    with allure.step(f"Run action {action_name} on {host}"):
+        host.action(name=action_name).run().wait(timeout=30)
     for host in cluster_hosts:
         is_free(host)
 
