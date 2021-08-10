@@ -55,6 +55,7 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
 
   ngOnInit(): void {
     this.request$ = this.route.paramMap.pipe(
+      // tap((data) => console.log('this.request$ = : ', data)),
       switchMap((param) => this.service.getContext(param)),
       tap((w) => this.run(w))
     );
