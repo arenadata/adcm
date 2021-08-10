@@ -17,3 +17,4 @@ requests-toolbelt
 selenium
 multipledispatch
 rstr
+genson

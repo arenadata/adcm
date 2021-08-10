@@ -14,7 +14,7 @@ from .data_classes import (
     ClusterFields,
     ServiceFields,
     ComponentFields,
-    ProviderFields
+    ProviderFields, ObjectConfigFields, ConfigLogFields
 )
 from .methods import Methods
 from .types import get_fields
@@ -137,13 +137,31 @@ class Endpoints(Enum):
         technical=True
     )
 
+    ObjectConfig = Endpoint(
+        path="object-config",
+        methods=[
+            Methods.GET, Methods.LIST
+        ],
+        data_class=ObjectConfigFields,
+        spec_link="https://spec.adsw.io/adcm_core/objects.html#object-config",
+    )
+
+    ConfigLog = Endpoint(
+        path="config-log",
+        methods=[
+            Methods.GET, Methods.LIST, Methods.POST
+        ],
+        data_class=ConfigLogFields,
+        spec_link="https://spec.adsw.io/adcm_core/objects.html#object-config",
+    )
+
     ConfigGroup = Endpoint(
         path="config-group",
         methods=[
             Methods.GET, Methods.LIST, Methods.POST, Methods.PUT, Methods.PATCH, Methods.DELETE
         ],
         data_class=ConfigGroupFields,
-        spec_link="https://spec.adsw.io/adcm_core/objects.html#group",
+        spec_link="https://spec.adsw.io/adcm_core/objects.html#config-group",
     )
 
     HostGroup = Endpoint(
@@ -152,5 +170,5 @@ class Endpoints(Enum):
             Methods.GET, Methods.LIST, Methods.POST, Methods.PUT, Methods.PATCH, Methods.DELETE
         ],
         data_class=HostGroupFields,
-        spec_link="https://spec.adsw.io/adcm_core/objects.html#group",
+        spec_link="https://spec.adsw.io/adcm_core/objects.html#host-group",
     )

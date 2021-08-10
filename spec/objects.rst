@@ -1,6 +1,74 @@
 Objects
 =======
 
+.. _object-config:
+
+Config
+~~~~~~
+
+ObjectConfig is an object that contains the ID of the current and previous config
+
+Endpoint: */config*
+
+=================== ======= ======= ======== ================ ================== ================== ===========
+Name                Type    Default Nullable :term:`Required` :term:`POSTable`   :term:`Changeable` Description
+=================== ======= ======= ======== ================ ================== ================== ===========
+id                  integer auto    False    False            False              False              Object id.
+current             FK      null    False    False            False              False              FK on `ConfigLog` object
+previous            FK      null    False    False            False              False              FK on `ConfigLog` object
+history             link    null    False    False            False              False              Link on list `ConfigLog` object for this object
+url                 link    null    False    False            False              False              Reference to this object
+=================== ======= ======= ======== ================ ================== ================== ===========
+
+API Calls Allowed
+^^^^^^^^^^^^^^^^^
+
+============= =======
+Operation     Allowed
+============= =======
+GET           True
+LIST          True
+POST          False
+PUT           False
+PATCH         False
+DELETE        False
+============= =======
+
+.. _object-config-log:
+
+Config Log
+~~~~~~~~~~
+
+ObjectLog is an object that contains object configurations
+
+Endpoint: */config-log*
+
+=================== ======= ======= ======== ================ ================== ================== ===========
+Name                Type    Default Nullable :term:`Required` :term:`POSTable`   :term:`Changeable` Description
+=================== ======= ======= ======== ================ ================== ================== ===========
+id                  integer auto    False    False            False              False              Object id.
+date                date    auto    False    False            False              False              Object creation date
+obj_ref             FK      null    False    True             True               False              FK on `ObjectConfig` object
+description         string  ''      True     False            True               False              Description
+config              json    {}      False    False            True               False              Configuration
+attr                json    {}      False    False            True               False              Additional attributes
+url                 link    null    False    False            False              False              Reference to this object
+=================== ======= ======= ======== ================ ================== ================== ===========
+
+API Calls Allowed
+^^^^^^^^^^^^^^^^^
+
+============= =======
+Operation     Allowed
+============= =======
+GET           True
+LIST          True
+POST          True
+PUT           False
+PATCH         False
+DELETE        False
+============= =======
+
 .. _object-group-config:
 
 Group Config
@@ -19,7 +87,8 @@ object_type         string  null    False    True             True              
 name                string  null    False    True             True               True               Name of object.
 description         text    null    True     False            True               True               Extended information provided by user.
 hosts               M2M     null    True     False            False              False              M2M link to Host object.
-config              json    ?       ?        False            True               True               JSON field with config
+config              FK      null    True     False            False              False              FK field on ObjectConfig object
+url                 link    null    False    False            False              False              Reference to this object
 =================== ======= ======= ======== ================ ================== ================== ===========
 
 .. note::
@@ -40,11 +109,10 @@ PATCH         True
 DELETE        True
 ============= =======
 
+.. _object-group-config-host:
 
 Group Config Host
 ~~~~~~~~~~~~
-
-.. _object-group-config-host:
 
 Endpoint: */group-config-host*
 

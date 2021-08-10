@@ -10,7 +10,7 @@ import attr
 import pytest
 from _pytest.mark.structures import ParameterSet
 
-from tests.api.utils.api_objects import Request, ExpectedResponse
+from tests.api.utils.api_objects import Request, ExpectedResponse, ExpectedBody
 from tests.api.utils.endpoints import Endpoints
 from tests.api.utils.methods import Methods
 from tests.api.utils.tools import fill_lists_by_longest
@@ -498,7 +498,8 @@ def _prepare_test_data_with_one_by_one_fields(
         request_data = {}
         if not param_value.error_messages:
             continue
-        body = {param_name: param_value.get_error_data()}
+        body = ExpectedBody()
+        body.fields_values = {param_name: param_value.get_error_data()}
         request_data[param_name] = param_value
         request = Request(method=method, endpoint=endpoint)
         response = ExpectedResponse(status_code=status_code, body=body)

@@ -13,7 +13,8 @@ from tests.api.testdata.generators import (
     TestDataWithPreparedBody,
 )
 from tests.api.testdata.db_filler import DbFiller
-from tests.api.utils.api_objects import ADCMTestApiWrapper
+from tests.api.utils.api_objects import ADCMTestApiWrapper, ExpectedBody
+from tests.api.utils.tools import not_set
 
 from tests.api.utils.types import get_fields
 from tests.api.utils.methods import Methods
@@ -42,7 +43,6 @@ def prepare_patch_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
             if (
                 field.name in prepared_field_values
             ) and not prepared_field_values[field.name].drop_key:
-
                 current_field_value = full_item[field.name]
                 if prepared_field_values[field.name].unchanged_value is False:
                     changed_field_value = changed_fields.get(field.name, None)
@@ -68,6 +68,12 @@ def test_patch_body_positive(prepare_patch_body_data):
     """
     adcm, test_data_list = prepare_patch_body_data
     for test_data in test_data_list:
+        # Set expected response fields
+        test_data.response.body = ExpectedBody()
+        for field in get_fields(test_data.request.endpoint.data_class):
+            test_data.response.body.fields[field.name] = not_set
+            if expected_field_value := test_data.request.data.get(field.name):
+                test_data.response.body.fields[field.name] = expected_field_value
         with allure.step(f'Assert - {test_data.description}'):
             adcm.exec_request(request=test_data.request, expected_response=test_data.response)
 
