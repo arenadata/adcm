@@ -147,7 +147,7 @@ Actors
 User Value
 ----------
 
-This use case will allow the :term:`End User` view the list of services included to cluster.
+This use case will allow the :term:`End User` to view the list of services included in the cluster.
 
 Pre-Conditions
 --------------
