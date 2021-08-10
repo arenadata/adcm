@@ -11,7 +11,7 @@ import { FatalErrorComponent, GatewayTimeoutComponent, PageNotFoundComponent } f
 import { HostListComponent } from '@app/components/host-list/host-list.component';
 import { DetailComponent } from '@app/shared/details/detail.component';
 import { MainInfoComponent, StatusComponent } from '@app/shared/components';
-import { ConfigComponent } from '@app/shared/configuration/main/main.component';
+import { ConfigComponent } from '@app/shared/configuration/main/config.component';
 import { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';
 import { HostproviderComponent } from '@app/components/hostprovider/hostprovider.component';
 

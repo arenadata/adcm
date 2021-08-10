@@ -1,17 +1,18 @@
 import os
 
 
-VARIABLES = [("less-equal", "2.2", "3.0", 'max', 'min', "2.1"),
-             ("less-equal", "2.2", "3.0", 'max', 'min_strict', "2.2"),
-             ("greater-equal", "2.2", "3.0", 'max', 'min', "3.1"),
-             ("greater-equal", "2.2", "3.0", 'max_strict', 'min', "3.0"),
-             ("equal", "2.2", "3.0", 'max_strict', 'min_strict', "2.2"),
-             ("equal", "2.2", "3.0", 'max_strict', 'min', "3.0"),
-             ("less", "2.2", "3.0", 'max', 'min', "2.1"),
-             ("less", "2.2", "3.0", 'max', 'min_strict', "2.2"),
-             ("greater", "2.2", "3.0", 'max', 'min', "3.1"),
-             ("greater", "2.2", "3.0", 'max_strict', 'min_strict', "3.0")
-             ]
+VARIABLES = [
+    ("less-equal", "2.2", "3.0", 'max', 'min', "2.1"),
+    ("less-equal", "2.2", "3.0", 'max', 'min_strict', "2.2"),
+    ("greater-equal", "2.2", "3.0", 'max', 'min', "3.1"),
+    ("greater-equal", "2.2", "3.0", 'max_strict', 'min', "3.0"),
+    ("equal", "2.2", "3.0", 'max_strict', 'min_strict', "2.2"),
+    ("equal", "2.2", "3.0", 'max_strict', 'min', "3.0"),
+    ("less", "2.2", "3.0", 'max', 'min', "2.1"),
+    ("less", "2.2", "3.0", 'max', 'min_strict', "2.2"),
+    ("greater", "2.2", "3.0", 'max', 'min', "3.1"),
+    ("greater", "2.2", "3.0", 'max_strict', 'min_strict', "3.0"),
+]
 
 TEMPLATE_EXPORT_CLUSTER = """
 # Licensed under the Apache License, Version 2.0 (the "License");

@@ -29,6 +29,7 @@ from cm.models import (
     HostProvider,
     Prototype,
     PrototypeImport,
+    get_object_cluster,
 )
 
 
@@ -222,19 +223,20 @@ def get_target_host(host_id):
     return groups
 
 
-def prepare_job_inventory(selector, job_id, action, delta, action_host=None):
-    log.info('prepare inventory for job #%s, selector: %s', job_id, selector)
+def prepare_job_inventory(obj, job_id, action, delta, action_host=None):
+    log.info('prepare inventory for job #%s, object: %s', job_id, obj)
     fd = open(os.path.join(config.RUN_DIR, f'{job_id}/inventory.json'), 'w')
     inv = {'all': {'children': {}}}
-    if 'cluster' in selector:
-        inv['all']['children'].update(get_cluster_hosts(selector['cluster'], action_host))
-        inv['all']['children'].update(get_host_groups(selector['cluster'], delta, action_host))
-    if 'host' in selector:
-        inv['all']['children'].update(get_host(selector['host']))
+    cluster = get_object_cluster(obj)
+    if cluster:
+        inv['all']['children'].update(get_cluster_hosts(cluster.id, action_host))
+        inv['all']['children'].update(get_host_groups(cluster.id, delta, action_host))
+    if obj.prototype.type == 'host':
+        inv['all']['children'].update(get_host(obj.id))
         if action.host_action:
-            inv['all']['children'].update(get_target_host(selector['host']))
-    if 'provider' in selector:
-        inv['all']['children'].update(get_provider_hosts(selector['provider'], action_host))
-        inv['all']['vars'] = get_provider_config(selector['provider'])
+            inv['all']['children'].update(get_target_host(obj.id))
+    if obj.prototype.type == 'provider':
+        inv['all']['children'].update(get_provider_hosts(obj.id, action_host))
+        inv['all']['vars'] = get_provider_config(obj.id)
     json.dump(inv, fd, indent=3)
     fd.close()

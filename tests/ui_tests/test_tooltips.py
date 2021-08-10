@@ -24,7 +24,7 @@ def service(sdk_client_fs):
 
 @pytest.fixture()
 @allure.step('Open Configuration page')
-def ui_config(app_fs, login_to_adcm, service):
+def ui_config(app_fs, login_to_adcm_over_api, service):
     return Configuration(
         app_fs.driver,
         "{}/cluster/{}/service/{}/config".format(
@@ -52,7 +52,7 @@ def test_tooltip_presented(tooltips):
         assert len(tooltips[0]) == 8
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail()
 def test_tooltip_text(tooltips):
     with allure.step('Check description in tooltip'):
         assert set(tooltips[0]).issubset(set(tooltips[1]))
