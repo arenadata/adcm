@@ -18,6 +18,7 @@ from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
+from selenium.webdriver.remote.webelement import WebElement
 
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.table.locator import CommonTable
@@ -45,6 +46,8 @@ class CommonTableObj(BasePageObject):
             return []
 
     def get_row(self, row_num: int = 0) -> WebElement:
+        """Get exactly one row"""
+
         def table_has_enough_rows():
             self.__assert_enough_rows(row_num, self.row_count)
 
