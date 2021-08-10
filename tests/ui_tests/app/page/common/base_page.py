@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from contextlib import contextmanager
-from typing import Optional, List
+from typing import Optional, List, Union
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -138,15 +138,19 @@ class BasePageObject:
                 f"{self.driver.current_url} for {loc_timeout} seconds",
             )
 
-    def is_element_displayed(self, locator: Locator, timeout: int = None) -> bool:
-        """Checks if element is displayed.
-        in case you'll need to divide methods for input params element and locator use dispatch decorator
-        """
+    def is_element_displayed(
+        self, element: Union[Locator, WebElement], timeout: int = None
+    ) -> bool:
+        """Checks if element is displayed."""
 
         try:
-            with allure.step(f'Check "{locator.name}"'):
-                return self.find_element(
-                    locator, timeout=timeout or self.default_loc_timeout
+            with allure.step(
+                f'Check {element.name if isinstance(element, Locator) else element.text}'
+            ):
+                return (
+                    element
+                    if isinstance(element, WebElement)
+                    else self.find_element(element, timeout=timeout or self.default_loc_timeout)
                 ).is_displayed()
         except (
             TimeoutException,
@@ -160,14 +164,16 @@ class BasePageObject:
         """Asserts that list of elements is displayed."""
 
         for loc in locators:
-            assert self.is_element_displayed(loc), f"Locator {loc.name} isn't displayed on page"
+            assert self.is_element_displayed(
+                loc
+            ), f"Locator {loc.name} isn't displayed on page {self.driver.current_url}"
 
     def check_element_should_be_hidden(
-        self, locator: Locator, timeout: Optional[int] = None
+        self, element: Union[Locator, WebElement], timeout: Optional[int] = None
     ) -> None:
         """Raises assertion error if element is still visible after timeout"""
         try:
-            self.wait_element_hide(locator, timeout)
+            self.wait_element_hide(element, timeout)
         except TimeoutException as e:
             raise AssertionError(e.msg)
 
@@ -214,14 +220,17 @@ class BasePageObject:
                 f"{loc_timeout} seconds",
             )
 
-    def wait_element_hide(self, locator: Locator, timeout: int = None) -> None:
+    def wait_element_hide(self, element: Union[Locator, WebElement], timeout: int = None) -> None:
         """Wait the element to hide."""
 
         loc_timeout = timeout or self.default_loc_timeout
-        with allure.step(f'Wait "{locator.name}" to hide'):
+        el_name = element.name if isinstance(element, Locator) else element.text
+        with allure.step(f'Check {el_name} to hide'):
             WDW(self.driver, loc_timeout).until(
-                EC.invisibility_of_element_located([locator.by, locator.value]),
-                message=f"locator {locator.name} hasn't hide for {loc_timeout} seconds",
+                EC.invisibility_of_element_located(
+                    [element.by, element.value] if isinstance(element, Locator) else element
+                ),
+                message=f"locator {el_name} hasn't hide for {loc_timeout} seconds",
             )
 
     def wait_element_attribute(
@@ -279,11 +288,13 @@ class BasePageObject:
         self.find_element(CommonLocators.socket, timeout=30)
         self.find_element(CommonLocators.profile, timeout=30)
 
-    def hover_element(self, locator: Locator):
+    def hover_element(self, element: Union[Locator, WebElement]):
         """
         Moves the cursor over an element and hovers it.
         """
-        hover = ActionChains(self.driver).move_to_element(self.find_element(locator))
+        hover = ActionChains(self.driver).move_to_element(
+            element if isinstance(element, WebElement) else self.find_element(element)
+        )
         hover.perform()
 
 

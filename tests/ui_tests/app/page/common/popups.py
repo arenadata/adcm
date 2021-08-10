@@ -25,7 +25,7 @@ class CommonPopupLocators:
 class HostCreationLocators:
     """Host creation popup without cluster selection"""
 
-    block = Locator(By.XPATH, "//mat-dialog-container", "Popup block")
+    block = Locator(By.XPATH, "//mat-dialog-container", "Host creation popup block")
     fqdn_input = Locator(
         By.XPATH, "//input[@data-placeholder='Fully qualified domain name']", "Host FQDN input"
     )
@@ -68,3 +68,10 @@ class HostCreationLocators:
         cluster_option = TemplateLocator(
             By.XPATH, "//mat-option//span[text()='{}']", "Cluster select option"
         )
+
+
+class IssuePopupLocators:
+    """ADCM popup locators for issues"""
+
+    block = Locator(By.XPATH, "//app-popover", "Popup block")
+    link_to_issue = Locator(By.XPATH, "//app-popover//a", "Link to issue")
