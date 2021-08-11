@@ -98,8 +98,7 @@ class BasePageObject:
 
     @allure.step("Get text from info popup")
     def get_info_popup_text(self):
-        self.wait_element_visible(CommonPopupLocators.block, timeout=5)
-        return self.find_element(CommonPopupLocators.text).text
+        return self.wait_element_visible(CommonPopupLocators.text, timeout=5).text
 
     @allure.step("Wait url to contain path {path}")
     def wait_url_contains_path(self, path: str, timeout: int = None) -> None:

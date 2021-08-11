@@ -428,6 +428,7 @@ def test_check_create_host_from_cluster_host_page(
 def test_check_create_host_error_from_cluster_host_page(app_fs, login_to_adcm_over_api):
     cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
     cluster_host_page.wait_page_is_opened()
+    cluster_host_page.close_info_popup()
     cluster_host_page.click_add_host_btn()
     cluster_host_page.host_popup.create_host(HOST_NAME)
     with allure.step("Check error message"):
