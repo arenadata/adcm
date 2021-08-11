@@ -13,6 +13,7 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
+
 import { DetailComponent } from '@app/shared/details/detail.component';
 import { ConfigComponent } from '../../shared/configuration/main/config.component';
 import { ImportComponent, MainInfoComponent, StatusComponent } from '@app/shared/components';
