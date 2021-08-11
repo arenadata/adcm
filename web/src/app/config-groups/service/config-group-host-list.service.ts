@@ -2,11 +2,13 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { EntityService } from '../../abstract/entity-service';
 import { ApiService } from '../../core/api';
-import { ParamMap } from '@angular/router';
+import { convertToParamMap, ParamMap } from '@angular/router';
 import { IListService, ListInstance } from '../../shared/components/list/list-service-token';
 import { ListResult } from '../../models/list-result';
 import { of } from 'rxjs/internal/observable/of';
 import { Host } from '../../core/types';
+import { ClusterService } from '../../core/services/cluster.service';
+import { environment } from '../../../environments/environment';
 
 
 @Injectable({
@@ -18,12 +20,13 @@ export class ConfigGroupHostListService extends EntityService<Host> implements I
 
   constructor(
     protected api: ApiService,
+    protected cluster: ClusterService
   ) {
     super(api);
   }
 
 
-  getList(p: ParamMap): Observable<ListResult<Host>> {
+  getList(p: ParamMap, typeName): Observable<ListResult<Host>> {
     const listParamStr = localStorage.getItem('list:param');
     if (p?.keys.length) {
       const param = p.keys.reduce((a, c) => ({ ...a, [c]: p.get(c) }), {});
@@ -34,27 +37,14 @@ export class ConfigGroupHostListService extends EntityService<Host> implements I
       } else localStorage.setItem('list:param', JSON.stringify({ ['configgroup']: param }));
     }
 
-    return of({
-      count: 1,
-      next: null,
-      previous: null,
-      results: [
-        {
-          typeName: 'host',
-          id: 1,
-          name: 'MOCK host1',
-          url: 'MOCK host1_url',
-          config: 'string',
-          fqdn: 'MOCK  host1_fqdn',
-          provider_id: 1,
-          cluster: 'cluster'
-        }
-      ]
-    });
+    const configGroupId = this.cluster.Current.id;
+    const params = convertToParamMap({ ...p, groupconfig: configGroupId });
+
+    return this.api.getList(`${environment.apiRoot}host/`, params);
   }
 
   initInstance(): ListInstance {
-    this.current = { typeName: 'configgroup', columns: ['name', 'remove'] };
+    this.current = { typeName: 'host2configgroup', columns: ['name', 'remove'] };
     return this.current;
   }
 
@@ -63,6 +53,7 @@ export class ConfigGroupHostListService extends EntityService<Host> implements I
   }
 
   delete(row: Host): Observable<Object> {
+    console.log('delete');
     return of(null);
   }
 

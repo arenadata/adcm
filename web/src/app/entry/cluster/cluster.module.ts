@@ -69,20 +69,9 @@ const clusterRoutes: Routes = [
     children: [
       { path: '', redirectTo: 'main', pathMatch: 'full' },
       { path: 'main', component: MainInfoComponent },
-      // ToDo hosts from config group
       { path: 'host', component: ConfigGroupHostListComponent },
       // ToDo Config from config group
       // { path: 'config', component: ConfigGroupConfigComponent },
-    ],
-  },
-  {
-    path: ':cluster/configgroup/:configgroup/host/:host',
-    canActivate: [AuthGuard],
-    canActivateChild: [AuthGuard],
-    component: DetailComponent,
-    children: [
-      { path: '', redirectTo: 'main', pathMatch: 'full' },
-      { path: 'main', component: MainInfoComponent },
     ],
   },
   {
