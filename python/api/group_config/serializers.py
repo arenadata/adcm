@@ -11,10 +11,17 @@
 # limitations under the License.
 
 from django.contrib.contenttypes.models import ContentType
+from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
-from cm.models import GroupConfig
+from cm.models import GroupConfig, Host
+
+
+class HostFlexFieldsSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = Host
+        fields = ('id', 'cluster_id', 'prototype_id', 'provider_id', 'config_id', 'fqdn', 'state')
 
 
 class ObjectTypeField(serializers.Field):
@@ -38,7 +45,7 @@ class ObjectTypeField(serializers.Field):
         return ContentType.objects.get(app_label='cm', model=data)
 
 
-class GroupConfigSerializer(serializers.ModelSerializer):
+class GroupConfigSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
     object_type = ObjectTypeField()
     url = serializers.HyperlinkedIdentityField(view_name='group-config-detail')
     hosts = serializers.SerializerMethodField()
@@ -56,6 +63,7 @@ class GroupConfigSerializer(serializers.ModelSerializer):
             'config',
             'url',
         )
+        expandable_fields = {'hosts': (HostFlexFieldsSerializer, {'many': True})}
 
     def get_hosts(self, obj):
         url = reverse(
