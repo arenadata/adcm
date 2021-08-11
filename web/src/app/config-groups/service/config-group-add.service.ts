@@ -45,7 +45,7 @@ export class ConfigGroupAddService implements IAddService {
     const params = { ...group };
     params.object_type = 'cluster';
     params.object_id = this.Cluster.id;
-    return this.api.post<unknown>(`${environment.apiRoot}config-group/`, params);
+    return this.api.post<unknown>(`${environment.apiRoot}group-config/`, params);
   }
 
   getList<T>(type: TypeName, param: Params = {}): Observable<T[]> {

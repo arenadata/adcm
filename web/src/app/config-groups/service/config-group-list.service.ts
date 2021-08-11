@@ -35,7 +35,9 @@ export class ConfigGroupListService extends EntityService<ConfigGroup> implement
       } else localStorage.setItem('list:param', JSON.stringify({ ['configgroup']: param }));
     }
 
-    return this.api.getList(`${environment.apiRoot}config-group/`, p);
+    console.log('ConfigGroupListService | p: ', p);
+
+    return this.api.getList(`${environment.apiRoot}group-config/`, p);
   }
 
   initInstance(): ListInstance {
@@ -44,7 +46,7 @@ export class ConfigGroupListService extends EntityService<ConfigGroup> implement
   }
 
   get(id: number): Observable<ConfigGroup> {
-    return this.api.get<ConfigGroup>(`${environment.apiRoot}config-group/${id}`);
+    return this.api.get<ConfigGroup>(`${environment.apiRoot}group-config/${id}`);
   }
 
   delete(row: ConfigGroup): Observable<Object> {
