@@ -11,7 +11,6 @@
 # limitations under the License.
 
 import os
-from typing import Tuple
 
 import allure
 import pytest
@@ -96,17 +95,16 @@ def provider_bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
 
 
 @pytest.fixture()
+@pytest.mark.usefixtures("provider_bundle")
 @allure.title("Create provider")
-def upload_and_create_provider(provider_bundle) -> Tuple[Bundle, Provider]:
-    provider = provider_bundle.provider_create(PROVIDER_NAME)
-    return provider_bundle, provider
+def upload_and_create_provider() -> Provider:
+    return provider_bundle.provider_create(PROVIDER_NAME)
 
 
 @pytest.fixture()
-def _create_community_cluster_with_host(
-    sdk_client_fs: ADCMClient, app_fs, upload_and_create_provider
-):
-    _, provider = upload_and_create_provider
+@pytest.mark.usefixtures("upload_and_create_provider")
+def _create_community_cluster_with_host(sdk_client_fs: ADCMClient, app_fs):
+    provider = upload_and_create_provider
     host = provider.host_create(fqdn=HOST_NAME)
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
     bundle.cluster_create(name=CLUSTER_NAME).host_add(host)
@@ -114,9 +112,10 @@ def _create_community_cluster_with_host(
 
 @pytest.fixture()
 @allure.title("Create host")
-def _create_host(upload_and_create_provider: Tuple[Bundle, Provider]):
+@pytest.mark.usefixtures("upload_and_create_provider")
+def _create_host():
     """Create default host using API"""
-    _, provider = upload_and_create_provider
+    provider = upload_and_create_provider
     provider.host_create(HOST_NAME)
 
 
@@ -409,9 +408,8 @@ def test_check_create_host_and_hostprovider_from_cluster_host_page(
 
 
 @pytest.mark.usefixtures("_create_community_cluster_with_service")
-def test_check_create_host_from_cluster_host_page(
-    app_fs, login_to_adcm_over_api, upload_and_create_provider
-):
+@pytest.mark.usefixtures("upload_and_create_provider")
+def test_check_create_host_from_cluster_host_page(app_fs, login_to_adcm_over_api):
     cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
     cluster_host_page.wait_page_is_opened()
     cluster_host_page.click_add_host_btn(is_not_first_host=False)
@@ -485,11 +483,10 @@ def test_open_host_config_from_cluster_host_page(app_fs, login_to_adcm_over_api)
 
 
 @pytest.mark.usefixtures("_create_community_cluster")
-def test_check_pagination_on_cluster_host_page(
-    app_fs, login_to_adcm_over_api, upload_and_create_provider, _create_community_cluster
-):
+@pytest.mark.usefixtures("upload_and_create_provider")
+def test_check_pagination_on_cluster_host_page(app_fs, login_to_adcm_over_api):
     cluster = _create_community_cluster
-    _, provider = upload_and_create_provider
+    provider = upload_and_create_provider
     for i in range(11):
         host = provider.host_create(f"{HOST_NAME}_{i}")
         cluster.host_add(host)
