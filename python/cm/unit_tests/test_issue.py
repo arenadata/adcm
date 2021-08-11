@@ -18,34 +18,6 @@ from cm import issue
 from cm.hierarchy import Tree
 
 
-def generate_hierarchy():  # pylint: disable=too-many-locals,too-many-statements
-    """
-    Generates hierarchy:
-        cluster - service - component - host - provider
-    """
-    utils.gen_adcm()
-    cluster_bundle = utils.gen_bundle()
-    provider_bundle = utils.gen_bundle()
-    cluster_pt = utils.gen_prototype(cluster_bundle, 'cluster')
-    cluster = utils.gen_cluster(prototype=cluster_pt)
-    service_pt = utils.gen_prototype(cluster_bundle, 'service')
-    service = utils.gen_service(cluster, prototype=service_pt)
-    component_pt = utils.gen_prototype(cluster_bundle, 'component')
-    component = utils.gen_component(service, prototype=component_pt)
-    provider_pt = utils.gen_prototype(provider_bundle, 'provider')
-    provider = utils.gen_provider(prototype=provider_pt)
-    host_pt = utils.gen_prototype(provider_bundle, 'host')
-    host = utils.gen_host(provider, prototype=host_pt)
-    utils.gen_host_component(component, host)
-    return dict(
-        cluster=cluster,
-        service=service,
-        component=component,
-        provider=provider,
-        host=host,
-    )
-
-
 class AggregateIssuesTest(TestCase):
     """
     Tests for `cm.issue.aggregate_issues()`
@@ -53,7 +25,7 @@ class AggregateIssuesTest(TestCase):
     """
 
     def setUp(self) -> None:
-        self.hierarchy = generate_hierarchy()
+        self.hierarchy = utils.generate_hierarchy()
         self.tree = Tree(self.hierarchy['cluster'])
 
     def test_no_issues(self):
@@ -107,7 +79,7 @@ class AggregateIssuesTest(TestCase):
 class IssueReporterTest(TestCase):
     @patch('cm.status_api.post_event')
     def test_update__no_issue_changes(self, mock_evt_post):
-        hierarchy = generate_hierarchy()
+        hierarchy = utils.generate_hierarchy()
         issue.update_hierarchy_issues(hierarchy['cluster'])
         mock_evt_post.assert_not_called()
 
@@ -115,7 +87,7 @@ class IssueReporterTest(TestCase):
     @patch('cm.issue.check_cluster_issue')
     def test_update__raise_issue(self, mock_check, mock_evt_post):
         mock_check.return_value = {'config': False}
-        hierarchy = generate_hierarchy()
+        hierarchy = utils.generate_hierarchy()
 
         issue.update_hierarchy_issues(hierarchy['cluster'])
 
@@ -131,7 +103,7 @@ class IssueReporterTest(TestCase):
     @patch('cm.issue.check_cluster_issue')
     def test_update__clear_issue(self, mock_check, mock_evt_post):
         mock_check.return_value = {}
-        hierarchy = generate_hierarchy()
+        hierarchy = utils.generate_hierarchy()
         hierarchy['cluster'].issue = {'config': False}
         hierarchy['cluster'].save()
 

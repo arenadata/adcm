@@ -12,10 +12,9 @@
 
 import json
 import requests
-import simplejson
 
 from cm.logger import log
-from cm.models import HostComponent, ServiceComponent, ClusterObject, Host
+from cm.models import HostComponent, ServiceComponent, ClusterObject, Host, ADCMEntity
 from cm.config import STATUS_SECRET_KEY
 
 API_URL = "http://localhost:8020/api/v1"
@@ -26,11 +25,13 @@ class Event:
     def __init__(self):
         self.events = []
 
+    def __del__(self):
+        self.send_state()
+
     def send_state(self):
-        for _ in range(len(self.events)):
+        while self.events:
             try:
-                event = self.events.pop(0)
-                func, args = event
+                func, args = self.events.pop(0)
                 func.__call__(*args)
             except IndexError:
                 pass
@@ -43,6 +44,9 @@ class Event:
 
     def set_task_status(self, task_id, status):
         self.events.append((set_task_status, (task_id, status)))
+
+    def change_concern(self, obj: ADCMEntity):
+        self.events.append((change_concern, (obj,)))
 
 
 def api_post(path, data):
@@ -128,7 +132,7 @@ def get_status(url):
         return 32
     try:
         js = r.json()
-    except simplejson.scanner.JSONDecodeError:
+    except ValueError:
         return 8
     if 'status' in js:
         return js['status']
@@ -198,3 +202,13 @@ def load_service_map():
     }
     log.debug("service map: %s", m)
     return api_post('/servicemap/', m)
+
+
+def change_concern(obj: ADCMEntity):
+    return post_event(
+        event='concern_change',
+        obj_type=obj.prototype.type,
+        obj_id=obj.pk,
+        det_type='concern',
+        det_val=[i.reason for i in obj.concern.all()],
+    )

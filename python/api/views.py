@@ -50,6 +50,7 @@ class APIRoot(routers.APIRootView):
         'group': 'group-list',
         'role': 'role-list',
         'info': 'adcm-info',
+        'concern': 'concern',
     }
 
 
