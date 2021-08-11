@@ -4,7 +4,7 @@ This project was generated with [Angular CLI](https://github.com/angular/angular
 
 ## Storybook
 
-1. Run `npm run storybook` for start the Storybook.
+1. Run `yarn run storybook` for start the Storybook.
 2. Navigate to http://localhost:6006/.
 
 ## Development server
