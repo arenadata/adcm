@@ -90,7 +90,7 @@ class HostListPage(BasePageObject):
         self.close_host_creation_popup()
 
     @allure.step("Upload bundle from host creation popup")
-    def upload_bundle(self, bundle_path: str):
+    def upload_bundle_from_host_create_popup(self, bundle_path: str):
         """Upload bundle in host creation popup and close popup"""
         self.open_host_creation_popup()
         self._upload_bundle(bundle_path)
@@ -210,7 +210,8 @@ class HostListPage(BasePageObject):
             EC.presence_of_element_located(
                 [option_locator.by, option_locator.value.format(cluster_name)]
             ),
-            message=f"Can't find cluster with name {cluster_name} in dropdown on page {self.driver.current_url} "
+            message=f"Can't find cluster with name {cluster_name} "
+            f"in dropdown on page {self.driver.current_url} "
             f"for {self.default_loc_timeout} seconds",
         ).click()
 

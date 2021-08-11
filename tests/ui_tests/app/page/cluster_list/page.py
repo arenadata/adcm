@@ -50,7 +50,7 @@ class ClusterListPage(BasePageObject):
             self.find_and_click(ClusterListLocators.LicensePopup.agree_btn)
 
     @allure.step("Upload bundle without creating a cluster")
-    def upload_bundle_in_popup(self, bundle: str):
+    def upload_bundle_from_cluster_create_popup(self, bundle: str):
         self.find_and_click(ClusterListLocators.Tooltip.cluster_add_btn)
         popup = ClusterListLocators.CreateClusterPopup
         self.wait_element_visible(popup.block)

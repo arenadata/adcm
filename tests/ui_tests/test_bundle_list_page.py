@@ -12,15 +12,13 @@
 from typing import List
 
 import os
-import yaml
 import pytest
 import allure
-import tarfile
 
-from pathlib import PosixPath
 from adcm_pytest_plugin import utils
 from adcm_client.objects import ADCMClient, Bundle
 
+from tests.conftest import DUMMY_CLUSTER_BUNDLE
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
 from tests.ui_tests.app.page.bundle.page import BundlePage
@@ -30,15 +28,9 @@ from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.host_list.page import HostListPage
 from tests.ui_tests.utils import check_rows_amount
 
-CLUSTER_CE_CONFIG = [
-    {
-        'type': 'cluster',
-        'name': 'test_cluster',
-        'description': 'community description',
-        'version': '1.5',
-        'edition': 'community',
-    }
-]
+LICENSE_FP = os.path.join(utils.get_data_dir(__file__), 'license.txt')
+
+CLUSTER_CE_CONFIG = DUMMY_CLUSTER_BUNDLE
 
 CLUSTER_EE_CONFIG = [
     {
@@ -88,7 +80,7 @@ def _open_bundle_list_and_check_info(page: BundleListPage, expected_info: Bundle
     page.open()
     assert (
         row_count := page.table.row_count
-    ) == 1, f'Bundle list should has exactly 1 record, but {row_count} was found'
+    ) == 1, f'Bundle list should have exactly 1 record, but {row_count} was found'
     bundle_info = page.get_bundle_info()
     check_bundle_info_is_equal(bundle_info, expected_info)
 
@@ -103,29 +95,6 @@ def check_bundle_info_is_equal(actual_info: BundleInfo, expected_info: BundleInf
 def page(app_fs: ADCMTest, login_to_adcm_over_api) -> BundleListPage:
     """Get BundleListPage after authorization"""
     return BundleListPage(app_fs.driver, app_fs.adcm.url).open()
-
-
-@pytest.fixture(params=[[CLUSTER_CE_CONFIG]])
-def create_bundle_archives(request, tmp_path: PosixPath) -> List[str]:
-    """
-    Create dummy bundle archives to test pagination
-    :returns: list with paths to archives
-    """
-    archives = []
-    for i, config in enumerate(request.param):
-        archive_path = tmp_path / f'spam_bundle_{i}.tar'
-        config_fp = (bundle_dir := tmp_path / f'spam_bundle_{i}') / 'config.yaml'
-        bundle_dir.mkdir()
-        with open(config_fp, 'w') as config_file:
-            yaml.safe_dump(config, config_file)
-        with tarfile.open(archive_path, 'w') as archive:
-            archive.add(config_fp, arcname='config.yaml')
-            # assume that ist is declared in first item
-            if 'license' in config[0]:
-                license_fp = os.path.join(utils.get_data_dir(__file__), 'license.txt')
-                archive.add(license_fp, arcname=config[0]['license'])
-        archives.append(str(archive_path))
-    return archives
 
 
 @allure.title("Upload bundle")
@@ -150,7 +119,9 @@ def test_ce_bundle_upload(create_bundle_archives: List[str], page: BundleListPag
     check_bundle_info_is_equal(bundle_info, bundle_params)
 
 
-@pytest.mark.parametrize("create_bundle_archives", [[CLUSTER_EE_CONFIG]], indirect=True)
+@pytest.mark.parametrize(
+    "create_bundle_archives", [([CLUSTER_EE_CONFIG], LICENSE_FP)], indirect=True
+)
 def test_ee_bundle_upload(create_bundle_archives: List[str], page: BundleListPage):
     """Upload enterprise bundle and accept licence"""
     bundle_params = BundleInfo(
@@ -177,7 +148,7 @@ def test_delete_bundle(create_bundle_archives: List[str], page: BundleListPage):
 
 @pytest.mark.full()
 @pytest.mark.parametrize(
-    "create_bundle_archives", [[CLUSTER_CE_CONFIG, CLUSTER_EE_CONFIG]], indirect=True
+    "create_bundle_archives", [([CLUSTER_CE_CONFIG, CLUSTER_EE_CONFIG], LICENSE_FP)], indirect=True
 )
 def test_two_bundles(create_bundle_archives: List[str], page: BundleListPage):
     """Upload two bundles"""
@@ -205,7 +176,7 @@ def test_open_main_menu_on_bundle_page(page: BundleListPage, upload_bundles: Lis
         object_page = BundlePage(page.driver, page.base_url, upload_bundles[0].id)
         object_page.open()
     object_page.open_main_menu()
-    object_page.check_all_fields_presented()
+    object_page.check_all_main_menu_fields_are_presented()
 
 
 @pytest.mark.full()
@@ -245,7 +216,7 @@ def test_upload_provider_bundle_from_another_page(
     _check_bundle_list_is_empty(page)
     with allure.step('Create bundle from host creation popup'):
         host_list_page = HostListPage(app_fs.driver, app_fs.adcm.url).open()
-        host_list_page.upload_bundle(create_bundle_archives[0])
+        host_list_page.upload_bundle_from_host_create_popup(create_bundle_archives[0])
     _open_bundle_list_and_check_info(page, expected_info)
 
 
@@ -265,7 +236,7 @@ def test_upload_cluster_bundle_from_another_page(
     _check_bundle_list_is_empty(page)
     with allure.step('Create bundle from cluster creation popup'):
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
-        cluster_page.upload_bundle_in_popup(create_bundle_archives[0])
+        cluster_page.upload_bundle_from_cluster_create_popup(create_bundle_archives[0])
     _open_bundle_list_and_check_info(page, expected_info)
 
 
