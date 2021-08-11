@@ -95,15 +95,13 @@ def provider_bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
 
 
 @pytest.fixture()
-@pytest.mark.usefixtures("provider_bundle")
 @allure.title("Create provider")
-def upload_and_create_provider() -> Provider:
+def upload_and_create_provider(provider_bundle) -> Provider:
     return provider_bundle.provider_create(PROVIDER_NAME)
 
 
 @pytest.fixture()
-@pytest.mark.usefixtures("upload_and_create_provider")
-def _create_community_cluster_with_host(sdk_client_fs: ADCMClient, app_fs):
+def _create_community_cluster_with_host(sdk_client_fs: ADCMClient, app_fs, upload_and_create_provider):
     provider = upload_and_create_provider
     host = provider.host_create(fqdn=HOST_NAME)
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
@@ -112,8 +110,7 @@ def _create_community_cluster_with_host(sdk_client_fs: ADCMClient, app_fs):
 
 @pytest.fixture()
 @allure.title("Create host")
-@pytest.mark.usefixtures("upload_and_create_provider")
-def _create_host():
+def _create_host(upload_and_create_provider):
     """Create default host using API"""
     provider = upload_and_create_provider
     provider.host_create(HOST_NAME)
@@ -438,7 +435,7 @@ def test_check_create_host_error_from_cluster_host_page(app_fs, login_to_adcm_ov
 
 @pytest.mark.parametrize('provider_bundle', [PROVIDER_WITH_ISSUE_NAME], indirect=True)
 @pytest.mark.usefixtures("_create_community_cluster_with_host")
-def test_check_open_host_issue_from_cluster_host_page(app_fs, login_to_adcm_over_api):
+def test_check_open_host_issue_from_cluster_host_page(app_fs, login_to_adcm_over_api, provider_bundle):
     params = {"issue_name": "Configuration"}
     cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
     cluster_host_page.wait_page_is_opened()
@@ -482,9 +479,7 @@ def test_open_host_config_from_cluster_host_page(app_fs, login_to_adcm_over_api)
     HostConfigPage(app_fs.driver, app_fs.adcm.url, 1, 1).wait_page_is_opened()
 
 
-@pytest.mark.usefixtures("create_community_cluster")
-@pytest.mark.usefixtures("upload_and_create_provider")
-def test_check_pagination_on_cluster_host_page(app_fs, login_to_adcm_over_api):
+def test_check_pagination_on_cluster_host_page(app_fs, login_to_adcm_over_api, upload_and_create_provider, create_community_cluster):
     cluster = create_community_cluster
     provider = upload_and_create_provider
     for i in range(11):
