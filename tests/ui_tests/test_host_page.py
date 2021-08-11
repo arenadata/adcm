@@ -78,6 +78,18 @@ def _create_many_hosts(request, upload_and_create_provider):
 
 
 @pytest.fixture()
+def _create_bonded_host(
+    upload_and_create_cluster: Tuple[Bundle, Cluster],
+    upload_and_create_provider: Tuple[Bundle, Provider],
+):
+    """Create host bonded to cluster"""
+    provider = upload_and_create_provider[1]
+    host = provider.host_create(HOST_FQDN)
+    cluster = upload_and_create_cluster[1]
+    cluster.host_add(host)
+
+
+@pytest.fixture()
 @allure.title("Upload cluster bundle")
 def cluster_bundle(sdk_client_fs: ADCMClient) -> Bundle:
     return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), "cluster"))
@@ -254,14 +266,13 @@ def test_delete_host(
     page.check_element_should_be_hidden(HostListLocators.HostTable.row)
 
 
+@pytest.mark.usefixtures("_create_bonded_host")
 def test_delete_bonded_host(
     sdk_client_fs: ADCMClient,
     page: HostListPage,
-    upload_and_create_provider: Tuple[Bundle, Provider],
-    upload_and_create_cluster: Tuple[Bundle, Provider],
 ):
     """Host shouldn't be deleted"""
-    page.create_host(HOST_FQDN, cluster=CLUSTER_NAME)
+    page.check_element_should_be_visible(HostListLocators.HostTable.row)
     page.delete_host(0)
     page.check_element_should_be_visible(HostListLocators.HostTable.row)
 
@@ -406,15 +417,11 @@ def test_reset_configuration(
     )
     host_page.config.save_config()
     host_page.config.reset_to_default(params['req_field_adcm_test'])
+    host_page.config.assert_input_value_is(params['init_value'], params['req_field_adcm_test'])
     host_page.config.reset_to_default(params['pass_adcm_test'])
-    field_value = host_page.config.get_input_value(params['req_field_adcm_test'])
-    password_value = host_page.config.get_input_value(params['pass_adcm_test'], is_password=True)
-    assert (
-        field_value == params['init_value']
-    ), 'Value in Required field should be empty after reset'
-    assert (
-        password_value == params['init_value']
-    ), 'Value in Password field should be empty after reset'
+    host_page.config.assert_input_value_is(
+        params['init_value'], params['pass_adcm_test'], is_password=True
+    )
 
 
 @pytest.mark.full()
