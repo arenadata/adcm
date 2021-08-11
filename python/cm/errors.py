@@ -113,6 +113,7 @@ ERRORS = {
     'NO_JOBS_RUNNING': ("no jobs running", rfs.HTTP_409_CONFLICT, ERR),
     'BAD_QUERY_PARAMS': ("bad query params", rfs.HTTP_400_BAD_REQUEST),
     'DUMP_LOAD_CLUSTER_ERROR': ("Dumping or Loading error", rfs.HTTP_409_CONFLICT),
+    'MESSAGE_TEMPLATING_ERROR': ("Message templating error", rfs.HTTP_409_CONFLICT, ERR),
 }
 
 
