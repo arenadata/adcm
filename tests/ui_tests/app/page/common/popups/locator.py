@@ -87,12 +87,12 @@ class HostAddPopupLocators:
 class ListIssuePopupLocators:
     """ADCM popup locators for issues in list pages"""
 
-    block = Locator(By.XPATH, "//app-popover", "Popup block")
+    block = Locator(By.XPATH, "//app-popover", "list pages popup block")
     link_to_issue = Locator(By.XPATH, "//app-popover//a", "Link to issue")
 
 
 class PageIssuePopupLocators:
     """ADCM popup locators for issues in common pages"""
 
-    block = Locator(By.XPATH, "//app-issue-info", "Popup block")
+    block = Locator(By.XPATH, "//app-issue-info", "common pages popup block")
     link_to_issue = Locator(By.XPATH, "//app-issue-info//a", "Link to issue")

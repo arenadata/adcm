@@ -177,14 +177,14 @@ def test_check_cluster_list_page_action_run(app_fs, login_to_adcm_over_api):
     row = cluster_page.table.get_all_rows()[0]
     with cluster_page.wait_cluster_state_change(row):
         cluster_page.run_action_in_cluster_row(row, params["action_name"])
-    with allure.step("Check state has changed"):
+    with allure.step("Check cluster state has changed"):
         assert (
             cluster_page.get_cluster_state_from_row(row) == params["expected_state"]
         ), f"Cluster state should be {params['expected_state']}"
     with allure.step("Check success cluster job"):
         assert (
             cluster_page.header.get_success_job_amount_from_header() == "1"
-        ), "There should be 1 success job in header"
+        ), "There should be 1 success cluster job in header"
 
 
 @pytest.mark.usefixtures("_create_import_cluster_with_service")
@@ -340,14 +340,14 @@ def test_check_actions_from_service_list_page(app_fs, login_to_adcm_over_api):
     row = cluster_service_page.table.get_all_rows()[0]
     with cluster_service_page.wait_service_state_change(row):
         cluster_service_page.run_action_in_service_row(row, params["action_name"])
-    with allure.step("Check state has changed"):
+    with allure.step("Check service state has changed"):
         assert (
             cluster_service_page.get_service_state_from_row(row) == params["expected_state"]
         ), f"Cluster state should be {params['expected_state']}"
     with allure.step("Check success service job"):
         assert (
             cluster_service_page.header.get_success_job_amount_from_header() == "1"
-        ), "There should be 1 success job in header"
+        ), "There should be 1 success service job in header"
 
 
 @pytest.mark.usefixtures("_create_import_cluster_with_service")
@@ -454,14 +454,14 @@ def test_check_host_action_run_from_cluster(app_fs, login_to_adcm_over_api):
     row = cluster_host_page.table.get_all_rows()[0]
     with cluster_host_page.wait_host_state_change(row):
         cluster_host_page.run_action_in_host_row(row, params["action_name"])
-    with allure.step("Check state has changed"):
+    with allure.step("Check host state has changed"):
         assert (
             cluster_host_page.get_host_state_from_row(row) == params["expected_state"]
         ), f"Cluster state should be {params['expected_state']}"
-    with allure.step("Check success cluster job"):
+    with allure.step("Check success host job"):
         assert (
             cluster_host_page.header.get_success_job_amount_from_header() == "1"
-        ), "There should be 1 success job in header"
+        ), "There should be 1 success host job in header"
 
 
 @pytest.mark.usefixtures("_create_community_cluster_with_host")
