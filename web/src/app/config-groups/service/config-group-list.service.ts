@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
 import { EntityService } from '../../abstract/entity-service';
 import { ApiService } from '../../core/api';
@@ -8,12 +8,13 @@ import { IListService, ListInstance } from '@app/shared/components/list/list-ser
 import { ParamMap } from '@angular/router';
 import { ListResult } from '@app/models/list-result';
 
+export const CONFIG_GROUP_LIST_SERVICE = new InjectionToken<EntityService<ConfigGroup>>('EntityService');
+
 
 @Injectable({
   providedIn: 'root'
 })
-export class ConfigGroupListService extends EntityService<ConfigGroup>
-  implements IListService<ConfigGroup> {
+export class ConfigGroupListService extends EntityService<ConfigGroup> implements IListService<ConfigGroup> {
 
   current: ListInstance;
 
@@ -24,8 +25,6 @@ export class ConfigGroupListService extends EntityService<ConfigGroup>
   }
 
   getList(p: ParamMap): Observable<ListResult<ConfigGroup>> {
-    // ToDo remove from here
-
     const listParamStr = localStorage.getItem('list:param');
     if (p?.keys.length) {
       const param = p.keys.reduce((a, c) => ({ ...a, [c]: p.get(c) }), {});

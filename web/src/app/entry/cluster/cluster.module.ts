@@ -28,6 +28,10 @@ import { ServiceComponentsComponent } from '@app/components/service-components.c
 import { ConfigGroupListComponent } from '../../config-groups/pages';
 import { ConfigGroupModule } from '../../config-groups/config-group.module';
 import { ConfigGroupHostListComponent } from '../../config-groups/pages/host-list/host-list.component';
+import {
+  CONFIG_GROUP_LIST_SERVICE,
+  ConfigGroupListService
+} from '../../config-groups/service/config-group-list.service';
 
 
 const clusterRoutes: Routes = [
@@ -59,6 +63,9 @@ const clusterRoutes: Routes = [
     canActivate: [AuthGuard],
     canActivateChild: [AuthGuard],
     component: DetailComponent,
+    data: {
+      entityService: CONFIG_GROUP_LIST_SERVICE
+    },
     children: [
       { path: '', redirectTo: 'main', pathMatch: 'full' },
       { path: 'main', component: MainInfoComponent },
@@ -133,6 +140,12 @@ export class ClusterRoutingModule {
 @NgModule({
   imports: [CommonModule, SharedModule, RouterModule, ConfigGroupModule, ClusterRoutingModule],
   declarations: [ClusterListComponent, ServicesComponent, HostComponent, HcmapComponent],
+  providers: [
+    {
+      provide: CONFIG_GROUP_LIST_SERVICE,
+      useClass: ConfigGroupListService
+    },
+  ]
 })
 export class ClusterModule {
 }
