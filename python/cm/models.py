@@ -885,19 +885,20 @@ class MessageTemplate(ADCMModel):
             }
         }
 
-    placeholder fill functions have unified common interface:
+    placeholder fill functions have unified interface:
       @classmethod
-      def _func(cls, *args, **kwargs) -> dict
+      def _func(cls, placeholder_name, **kwargs) -> dict
 
     TODO: load from bundle
     TODO: check consistency on creation
+    TODO: separate JSON processing logic from model
     """
 
     name = models.CharField(max_length=160, unique=True)
     template = models.JSONField()
 
     class KnownNames(Enum):
-        LockedByAction = 'locked by action on target'
+        LockedByAction = 'locked by action on target'  # kwargs=(action, target)
         # ConfigIssue = 'object config issue'
         # RequiredServiceIssue = 'required service issue'
         # RequiredImportIssue = 'required import issue'
@@ -914,26 +915,6 @@ class MessageTemplate(ADCMModel):
         Host = 'host'
 
     @classmethod
-    def get_lock_reason(cls, action: Action, target: ADCMEntity) -> dict:
-        name = 'locked by action on target'
-        tpl = cls.objects.get(name=name).template
-        assert 'placeholder' in tpl
-        assert isinstance(tpl['placeholder'], dict)
-        assert {'action', 'target'}.difference(tpl['placeholder'].keys()) == set()
-
-        if target:
-            target_placeholder = target.get_id_chain()
-            type_prefix = target_placeholder.pop('type_prefix')
-            target_placeholder['type'] = ''.join((type_prefix, '_main_link'))
-            tpl['placeholder']['target'] = target_placeholder
-        else:
-            target_placeholder = {'type': 'no_object', 'name': 'No object', 'ids': {}}
-
-        tpl['placeholder']['action'] = action.get_id_chain(target_placeholder['ids'])
-
-        return tpl
-
-    @classmethod
     def get_message_from_template(cls, name: str, **kwargs) -> dict:
         """Find message template by its name and fill placeholders"""
         tpl = cls.obj.get(name=name).template
@@ -942,7 +923,17 @@ class MessageTemplate(ADCMModel):
             for ph_name, ph_data in tpl['placeholder'].items():
                 filled_placeholders[ph_name] = cls._fill_placeholder(ph_name, ph_data, **kwargs)
         except (KeyError, AttributeError, TypeError, AssertionError) as ex:
-            raise AdcmEx('Unexpected message template format') from ex
+            if isinstance(ex, KeyError):
+                msg = f'Message templating KeyError: "{ex.args[0]}" not found'
+            elif isinstance(ex, AttributeError):
+                msg = f'Message templating AttributeError: "{ex.args[0]}"'
+            elif isinstance(ex, TypeError):
+                msg = f'Message templating TypeError: "{ex.args[0]}"'
+            elif isinstance(ex, AssertionError):
+                msg = 'Message templating AssertionError: expected kwarg were not found'
+            else:
+                msg = None
+            raise AdcmEx('MESSAGE_TEMPLATING_ERROR', msg=msg) from ex
         tpl['placeholder'] = filled_placeholders
         return tpl
 
@@ -961,7 +952,7 @@ class MessageTemplate(ADCMModel):
         return type_map[ph_data['type']](ph_name, **ph_source_data)
 
     @classmethod
-    def _action_placeholder(cls, *args, **kwargs) -> dict:
+    def _action_placeholder(cls, _, **kwargs) -> dict:
         action = kwargs.get('action')
         assert action
         target = kwargs.get('target')
@@ -976,9 +967,7 @@ class MessageTemplate(ADCMModel):
         }
 
     @classmethod
-    def _adcm_entity_placeholder(cls, *args, **kwargs) -> dict:
-        ph_name = args[0]
-        assert ph_name
+    def _adcm_entity_placeholder(cls, ph_name, **kwargs) -> dict:
         obj = kwargs.get(ph_name)
         assert obj
 
