@@ -61,6 +61,6 @@ class GroupConfigSerializer(serializers.ModelSerializer):
         url = reverse(
             viewname='host',
             request=self.context['request'],
-            format=self.context['format'],
+            format=self.context.get('format'),
         )
         return f'{url}?groupconfig={obj.id}'
