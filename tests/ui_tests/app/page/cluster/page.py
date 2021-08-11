@@ -216,12 +216,14 @@ class ClusterHostPage(ClusterPageMixin):
         CommonTable.Pagination.previous_page,
     ]
 
+    @allure.step("Click on add host button")
     def click_add_host_btn(self, is_not_first_host: bool = True):
         self.find_and_click(ClusterHostLocators.add_host_btn)
         self.wait_element_visible(HostCreationLocators.block)
         if is_not_first_host:
             self.wait_element_visible(HostAddPopupLocators.add_new_host_btn).click()
 
+    @allure.step("Get info about host row")
     def get_host_info_from_row(
         self, is_cluster_value: bool = True, row_num: int = 0
     ) -> HostRowInfo:
@@ -241,15 +243,19 @@ class ClusterHostPage(ClusterPageMixin):
             state=self.find_child(row, row_elements.state).text,
         )
 
+    @allure.step("Click on host name in row")
     def click_on_host_name_in_host_row(self, row):
         self.find_child(row, ClusterHostLocators.HostTable.HostRow.fqdn).click()
 
+    @allure.step("Click on action in host row")
     def click_on_action_btn_in_host_row(self, row):
         self.find_child(row, ClusterHostLocators.HostTable.HostRow.actions).click()
 
+    @allure.step("Click on config in host row")
     def click_config_btn_in_row(self, row: WebElement):
         self.find_child(row, ClusterHostLocators.HostTable.HostRow.config).click()
 
+    @allure.step("Click on issue '{issue_name}' in host issues")
     def click_on_issue_by_name(self, row: WebElement, issue_name: str):
         self.hover_element(self.find_child(row, ClusterHostLocators.HostTable.HostRow.actions))
         self.wait_element_visible(PageIssuePopupLocators.block)

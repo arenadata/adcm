@@ -25,14 +25,17 @@ from tests.ui_tests.app.page.common.popups.locator import HostCreationLocators
 class HostCreatePopupObj(BasePageObject):
     """Class for manipulating with create host popup."""
 
+    @allure.step("Close popup with `Cancel` button")
     def close_host_creation_popup(self):
         """Close popup with `Cancel` button"""
         self.find_and_click(HostCreationLocators.cancel_btn)
 
+    @allure.step("Click create host button in popup")
     def click_create_host_in_popup(self):
         """Click create host button in popup"""
         self.find_and_click(HostCreationLocators.create_btn)
 
+    @allure.step("Insert new host info '{fqdn}' in fields of opened popup")
     def insert_new_host_info(self, fqdn: str, cluster: Optional[str] = None):
         """Insert new host info in fields of opened popup"""
         fqdn_input = self.find_element(HostCreationLocators.fqdn_input)
@@ -40,6 +43,7 @@ class HostCreatePopupObj(BasePageObject):
         if cluster:
             self.choose_cluster_in_popup(cluster)
 
+    @allure.step("Add host provider")
     def upload_bundle(self, bundle_path: str):
         """
         Add new host provider
@@ -57,6 +61,7 @@ class HostCreatePopupObj(BasePageObject):
         """Get chosen provider from opened new host popup"""
         return self.find_element(HostCreationLocators.Provider.chosen_provider).text
 
+    @allure.step("Select cluster '{cluster_name}' in popup")
     def choose_cluster_in_popup(self, cluster_name: str):
         self.find_and_click(HostCreationLocators.Cluster.cluster_select)
         option = HostCreationLocators.Cluster.cluster_option
