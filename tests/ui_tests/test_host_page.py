@@ -9,14 +9,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any, List, Tuple, Optional
-
 import os
+from typing import (
+    Any,
+    List,
+    Tuple,
+    Optional,
+)
+
 import allure
 import pytest
-
 from _pytest.fixtures import SubRequest
-from adcm_client.objects import ADCMClient, Bundle, Provider, Cluster
+from adcm_client.objects import (
+    ADCMClient,
+    Bundle,
+    Provider,
+    Cluster,
+)
 from adcm_pytest_plugin import utils
 
 from tests.ui_tests.app.app import ADCMTest
@@ -24,10 +33,20 @@ from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
-from tests.ui_tests.app.page.host.locators import HostLocators, HostActionsLocators
-from tests.ui_tests.app.page.host.page import HostMainPage, HostActionsPage, HostConfigPage
+from tests.ui_tests.app.page.host.locators import (
+    HostLocators,
+    HostActionsLocators,
+)
+from tests.ui_tests.app.page.host.page import (
+    HostMainPage,
+    HostActionsPage,
+    HostConfigPage,
+)
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
-from tests.ui_tests.app.page.host_list.page import HostListPage, HostRowInfo
+from tests.ui_tests.app.page.host_list.page import (
+    HostListPage,
+    HostRowInfo,
+)
 
 # pylint: disable=W0621
 
@@ -170,7 +189,8 @@ def _check_menu(
 def test_create_host_with_bundle_upload(page: HostListPage, bundle_archive: str):
     """Upload bundle and create host"""
     host_fqdn = 'howdy-host-fqdn'
-    new_provider_name = page.create_provider_and_host(bundle_archive, host_fqdn)
+    page.open_host_creation_popup()
+    new_provider_name = page.host_popup.create_provider_and_host(bundle_archive, host_fqdn)
     host_info = page.get_host_info_from_row(0)
     check_host_info(host_info, host_fqdn, new_provider_name, None, 'created')
 
@@ -182,7 +202,8 @@ def test_create_bonded_to_cluster_host(
 ):
     """Create host bonded to cluster"""
     host_fqdn = 'cluster-host'
-    page.create_host(host_fqdn, cluster=CLUSTER_NAME)
+    page.open_host_creation_popup()
+    page.host_popup.create_host(host_fqdn, cluster=CLUSTER_NAME)
     host_info = page.get_host_info_from_row(0)
     check_host_info(host_info, host_fqdn, PROVIDER_NAME, CLUSTER_NAME, 'created')
 
@@ -215,7 +236,8 @@ def test_bind_host_to_cluster(
     upload_and_create_cluster: Tuple[Bundle, Provider],
 ):
     """Create host and go to cluster from host list"""
-    page.create_host(HOST_FQDN)
+    page.open_host_creation_popup()
+    page.host_popup.create_host(HOST_FQDN)
     with allure.step("Check host created and isn't bound to a cluster"):
         host_info = page.get_host_info_from_row(0)
         check_host_info(host_info, HOST_FQDN, PROVIDER_NAME, None, 'created')
@@ -267,7 +289,8 @@ def test_delete_bonded_host(
     upload_and_create_cluster: Tuple[Bundle, Provider],
 ):
     """Host shouldn't be deleted"""
-    page.create_host(HOST_FQDN, cluster=CLUSTER_NAME)
+    page.open_host_creation_popup()
+    page.host_popup.create_host(HOST_FQDN, cluster=CLUSTER_NAME)
     page.delete_host(0)
     page.check_element_should_be_visible(HostListLocators.HostTable.row)
 

@@ -9,16 +9,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from dataclasses import dataclass
 from typing import Optional
 
 import allure
-
-from dataclasses import dataclass
-
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webelement import WebElement
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait as WDW
 
 from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.common.base_page import (
@@ -27,7 +23,8 @@ from tests.ui_tests.app.page.common.base_page import (
     PageFooter,
 )
 from tests.ui_tests.app.page.common.dialogs import DeleteDialog, ActionDialog
-from tests.ui_tests.app.page.common.popups import HostCreationLocators
+from tests.ui_tests.app.page.common.popups.locator import HostCreationLocators
+from tests.ui_tests.app.page.common.popups.page import HostCreatePopupObj
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
 
@@ -50,6 +47,7 @@ class HostListPage(BasePageObject):
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url, HostListLocators.HostTable)
+        self.host_popup = HostCreatePopupObj(self.driver, self.base_url)
 
     def get_host_row(self, row_num: int = 0) -> WebElement:
         def table_has_enough_rows():
@@ -77,42 +75,6 @@ class HostListPage(BasePageObject):
         row = self.get_host_row(row_num)
         self.find_child(row, child_locator).click()
 
-    @allure.step("Create new host")
-    def create_host(
-        self,
-        fqdn: str,
-        cluster: Optional[str] = None,
-    ):
-        """Create host in popup"""
-        self.open_host_creation_popup()
-        self._insert_new_host_info(fqdn, cluster)
-        self.click_create_host_in_popup()
-        self.close_host_creation_popup()
-
-    @allure.step("Create new provider and host")
-    def create_provider_and_host(
-        self,
-        bundle_path: str,
-        fqdn: str,
-        cluster: Optional[str] = None,
-    ) -> str:
-        """
-        Open host creation popup
-        Upload bundle and create provider
-        Fill in information about new host
-        Create host
-        Close popup
-        :returns: Name of created provider
-        """
-        self.open_host_creation_popup()
-        self._upload_bundle(bundle_path)
-        provider_name = self._get_hostprovider_name()
-        self._insert_new_host_info(fqdn, cluster)
-        self.click_create_host_in_popup()
-        self.close_host_creation_popup()
-        # because we don't pass provider name
-        return provider_name
-
     @allure.step('Run action "{action_display_name}" on host in row {host_row_num}')
     def run_action(self, host_row_num: int, action_display_name: str):
         host_row = HostListLocators.HostTable.HostRow
@@ -134,7 +96,7 @@ class HostListPage(BasePageObject):
     def bind_host_to_cluster(self, host_row_num: int, cluster_name: str):
         """Assign host to cluster in host list table"""
         self.click_on_row_child(host_row_num, HostListLocators.HostTable.HostRow.cluster)
-        self._wait_and_click_on_cluster_option(
+        self.host_popup.wait_and_click_on_cluster_option(
             cluster_name, HostListLocators.HostTable.cluster_option
         )
 
@@ -159,53 +121,6 @@ class HostListPage(BasePageObject):
     def open_host_creation_popup(self):
         self.find_and_click(HostListLocators.Tooltip.host_add_btn)
         self.wait_element_visible(HostCreationLocators.block)
-
-    def close_host_creation_popup(self):
-        """Close popup with `Cancel` button"""
-        self.find_and_click(HostCreationLocators.cancel_btn)
-
-    def click_create_host_in_popup(self):
-        """Click create host button in popup"""
-        self.find_and_click(HostCreationLocators.create_btn)
-
-    def _insert_new_host_info(self, fqdn: str, cluster: Optional[str] = None):
-        """Insert new host info in fields of opened popup"""
-        fqdn_input = self.find_element(HostCreationLocators.fqdn_input)
-        fqdn_input.send_keys(fqdn)
-        if cluster:
-            self._choose_cluster_in_popup(cluster)
-
-    def _upload_bundle(self, bundle_path: str):
-        """
-        Add new host provider
-        Popup should be opened
-        Popup is not closed at the end
-        """
-        provider_section = HostCreationLocators.Provider
-        self.find_and_click(provider_section.add_btn)
-        self.wait_element_visible(provider_section.new_provider_block)
-        self.find_element(provider_section.upload_bundle_btn).send_keys(bundle_path)
-        self.find_and_click(provider_section.new_provider_add_btn)
-        self.wait_element_hide(provider_section.new_provider_block)
-
-    def _get_hostprovider_name(self) -> str:
-        """Get chosen provider from opened new host popup"""
-        return self.find_element(HostCreationLocators.Provider.chosen_provider).text
-
-    def _choose_cluster_in_popup(self, cluster_name: str):
-        self.find_and_click(HostCreationLocators.Cluster.cluster_select)
-        option = HostCreationLocators.Cluster.cluster_option
-        self._wait_and_click_on_cluster_option(cluster_name, option)
-        self.wait_element_hide(option)
-
-    def _wait_and_click_on_cluster_option(self, cluster_name: str, option_locator: Locator):
-        WDW(self.driver, self.default_loc_timeout).until(
-            EC.presence_of_element_located(
-                [option_locator.by, option_locator.value.format(cluster_name)]
-            ),
-            message=f"Can't find cluster with name {cluster_name} in dropdown on page {self.driver.current_url} "
-            f"for {self.default_loc_timeout} seconds",
-        ).click()
 
     @staticmethod
     def __assert_enough_rows(required_row_num: int, row_count: int):

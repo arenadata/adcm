@@ -11,12 +11,15 @@
 # limitations under the License.
 
 import os
+from typing import Tuple
 
 import allure
 import pytest
+from _pytest.fixtures import SubRequest
 from adcm_client.objects import (
     ADCMClient,
     Bundle,
+    Provider,
 )
 from adcm_pytest_plugin import utils
 
@@ -25,14 +28,20 @@ from tests.ui_tests.app.page.cluster.page import (
     ClusterImportPage,
     ClusterConfigPage,
     ClusterMainPage,
+    ClusterHostPage,
     ClusterServicesPage,
 )
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
+from tests.ui_tests.app.page.host.page import (
+    HostMainPage,
+    HostConfigPage,
+)
 from tests.ui_tests.app.page.service.page import (
     ServiceMainPage,
     ServiceConfigPage,
     ServiceImportPage,
 )
+from tests.ui_tests.test_host_page import check_host_info
 
 BUNDLE_COMMUNITY = "cluster_community"
 BUNDLE_ENTERPRISE = "cluster_enterprise"
@@ -42,12 +51,15 @@ BUNDLE_REQUIRED_FIELDS = "cluster_and_service_with_required_string"
 BUNDLE_WITH_SERVICES = "cluster_with_services"
 CLUSTER_NAME = "Test cluster"
 SERVICE_NAME = "test_service"
+PROVIDER_NAME = 'test_provider'
+HOST_NAME = 'test-host'
+PROVIDER_WITH_ISSUE_NAME = 'provider_with_issue'
 
 
 @pytest.fixture()
 def _create_community_cluster(sdk_client_fs: ADCMClient, app_fs):
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
-    bundle.cluster_create(name=CLUSTER_NAME)
+    return bundle.cluster_create(name=CLUSTER_NAME)
 
 
 @pytest.fixture()
@@ -75,6 +87,37 @@ def _create_import_cluster_with_service(sdk_client_fs: ADCMClient, app_fs):
 @allure.step("Upload cluster bundle")
 def cluster_bundle(sdk_client_fs: ADCMClient, data_dir_name: str) -> Bundle:
     return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), data_dir_name))
+
+
+@pytest.fixture(params=["provider"])
+@allure.title("Upload provider bundle")
+def provider_bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
+    return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), request.param))
+
+
+@pytest.fixture()
+@allure.title("Create provider")
+def upload_and_create_provider(provider_bundle) -> Tuple[Bundle, Provider]:
+    provider = provider_bundle.provider_create(PROVIDER_NAME)
+    return provider_bundle, provider
+
+
+@pytest.fixture()
+def _create_community_cluster_with_host(
+    sdk_client_fs: ADCMClient, app_fs, upload_and_create_provider
+):
+    _, provider = upload_and_create_provider
+    host = provider.host_create(fqdn=HOST_NAME)
+    bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
+    bundle.cluster_create(name=CLUSTER_NAME).host_add(host)
+
+
+@pytest.fixture()
+@allure.title("Create host")
+def _create_host(upload_and_create_provider: Tuple[Bundle, Provider]):
+    """Create default host using API"""
+    _, provider = upload_and_create_provider
+    provider.host_create(HOST_NAME)
 
 
 @pytest.mark.parametrize(
@@ -337,3 +380,117 @@ def test_check_pagination_on_service_list_page(
     cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, 1).open()
     cluster_service_page.add_service_by_name(service_name="All")
     cluster_service_page.table.check_pagination(second_page_item_amount=2)
+
+
+@pytest.mark.usefixtures("_create_community_cluster_with_service")
+def test_check_required_fields_from_cluster_host_page(app_fs, login_to_adcm_over_api):
+    cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    cluster_main_page.open_hosts_tab()
+    cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1)
+    cluster_host_page.wait_page_is_opened()
+    cluster_host_page.check_all_elements()
+
+
+@pytest.mark.parametrize(
+    "bundle_archive", [utils.get_data_dir(__file__, "provider")], indirect=True
+)
+@pytest.mark.usefixtures("_create_community_cluster_with_service")
+def test_check_create_host_and_hostprovider_from_cluster_host_page(
+    app_fs, login_to_adcm_over_api, bundle_archive: str
+):
+    cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    cluster_host_page.wait_page_is_opened()
+    cluster_host_page.click_add_host_btn(is_not_first_host=False)
+    new_provider_name = cluster_host_page.host_popup.create_provider_and_host(
+        bundle_archive, HOST_NAME
+    )
+    host_info = cluster_host_page.get_host_info_from_row(0)
+    check_host_info(host_info, HOST_NAME, new_provider_name, None, 'created')
+
+
+@pytest.mark.usefixtures("_create_community_cluster_with_service")
+def test_check_create_host_from_cluster_host_page(
+    app_fs, login_to_adcm_over_api, upload_and_create_provider
+):
+    cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    cluster_host_page.wait_page_is_opened()
+    cluster_host_page.click_add_host_btn(is_not_first_host=False)
+    cluster_host_page.host_popup.create_host(HOST_NAME)
+    host_info = cluster_host_page.get_host_info_from_row(0)
+    check_host_info(host_info, HOST_NAME, PROVIDER_NAME, None, 'created')
+    host_row = cluster_host_page.table.get_all_rows()[0]
+    cluster_host_page.click_on_host_name_in_host_row(host_row)
+    HostMainPage(app_fs.driver, app_fs.adcm.url, 1, 1).wait_page_is_opened()
+
+
+@pytest.mark.usefixtures("_create_community_cluster_with_service")
+@pytest.mark.usefixtures('_create_host')
+def test_check_create_host_error_from_cluster_host_page(app_fs, login_to_adcm_over_api):
+    cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    cluster_host_page.wait_page_is_opened()
+    cluster_host_page.click_add_host_btn()
+    cluster_host_page.host_popup.create_host(HOST_NAME)
+    with allure.step("Check error message"):
+        assert (
+            cluster_host_page.get_info_popup_text()
+            == '[ CONFLICT ] HOST_CONFLICT -- duplicate host'
+        ), "No message about host duplication"
+
+
+@pytest.mark.parametrize('provider_bundle', [PROVIDER_WITH_ISSUE_NAME], indirect=True)
+@pytest.mark.usefixtures("_create_community_cluster_with_host")
+def test_check_open_host_issue_from_cluster_host_page(app_fs, login_to_adcm_over_api):
+    params = {"issue_name": "Configuration"}
+    cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    cluster_host_page.wait_page_is_opened()
+    row = cluster_host_page.table.get_all_rows()[0]
+    cluster_host_page.click_on_issue_by_name(row, params["issue_name"])
+    HostConfigPage(app_fs.driver, app_fs.adcm.url, 1, 1).wait_page_is_opened()
+
+
+@pytest.mark.usefixtures("_create_community_cluster_with_host")
+def test_check_host_action_run_from_cluster(app_fs, login_to_adcm_over_api):
+    params = {"action_name": "test_action", "expected_state": "installed"}
+    cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    row = cluster_host_page.table.get_all_rows()[0]
+    with cluster_host_page.wait_host_state_change(row):
+        cluster_host_page.run_action_in_host_row(row, params["action_name"])
+    with allure.step("Check state has changed"):
+        assert (
+            cluster_host_page.get_host_state_from_row(row) == params["expected_state"]
+        ), f"Cluster state should be {params['expected_state']}"
+    with allure.step("Check success cluster job"):
+        assert (
+            cluster_host_page.header.get_success_job_amount_from_header() == "1"
+        ), "There should be 1 success job in header"
+
+
+@pytest.mark.usefixtures("_create_community_cluster_with_host")
+def test_check_delete_host_from_cluster_host_page(app_fs, login_to_adcm_over_api):
+    cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    row = cluster_host_page.table.get_all_rows()[0]
+    with cluster_host_page.table.wait_rows_change():
+        cluster_host_page.delete_host_by_row(row)
+    with allure.step("Check there are no rows"):
+        assert len(cluster_host_page.table.get_all_rows()) == 0, "Host table should be empty"
+
+
+@pytest.mark.usefixtures("_create_community_cluster_with_host")
+def test_open_host_config_from_cluster_host_page(app_fs, login_to_adcm_over_api):
+    cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    row = cluster_host_page.table.get_all_rows()[0]
+    cluster_host_page.click_config_btn_in_row(row)
+    HostConfigPage(app_fs.driver, app_fs.adcm.url, 1, 1).wait_page_is_opened()
+
+
+@pytest.mark.usefixtures("_create_community_cluster")
+def test_check_pagination_on_cluster_host_page(
+    app_fs, login_to_adcm_over_api, upload_and_create_provider, _create_community_cluster
+):
+    cluster = _create_community_cluster
+    _, provider = upload_and_create_provider
+    for i in range(11):
+        host = provider.host_create(f"{HOST_NAME}_{i}")
+        cluster.host_add(host)
+    cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    cluster_host_page.table.check_pagination(1)

@@ -20,6 +20,7 @@ from tests.ui_tests.app.page.cluster.locators import (
     ClusterImportLocators,
     ClusterMainLocators,
     ClusterServicesLocators,
+    ClusterHostLocators,
 )
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
@@ -33,11 +34,19 @@ from tests.ui_tests.app.page.common.common_locators import (
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.dialogs import (
     ActionDialog,
+    DeleteDialog,
 )
-from tests.ui_tests.app.page.common.popups import IssuePopupLocators
+from tests.ui_tests.app.page.common.popups.locator import HostAddPopupLocators
+from tests.ui_tests.app.page.common.popups.locator import HostCreationLocators
+from tests.ui_tests.app.page.common.popups.locator import (
+    PageIssuePopupLocators,
+    ListIssuePopupLocators,
+)
+from tests.ui_tests.app.page.common.popups.page import HostCreatePopupObj
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
+from tests.ui_tests.app.page.host_list.page import HostRowInfo
 
 
 class ClusterPageMixin(BasePageObject):
@@ -52,6 +61,7 @@ class ClusterPageMixin(BasePageObject):
     config: CommonConfigMenuObj
     toolbar: CommonToolbar
     table: CommonTableObj
+    host_popup: HostCreatePopupObj
 
     __ACTIVE_MENU_CLASS = 'active'
 
@@ -65,6 +75,7 @@ class ClusterPageMixin(BasePageObject):
         self.cluster_id = cluster_id
         self.toolbar = CommonToolbar(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url)
+        self.host_popup = HostCreatePopupObj(self.driver, self.base_url)
 
     def open_main_tab(self):
         self.find_and_click(ObjectPageMenuLocators.main_tab)
@@ -136,8 +147,8 @@ class ClusterServicesPage(ClusterPageMixin):
 
     def click_on_issue_by_name(self, row: WebElement, issue_name: str):
         self.hover_element(self.find_child(row, ClusterServicesLocators.ServiceTableRow.actions))
-        self.wait_element_visible(IssuePopupLocators.block)
-        for issue in self.find_elements(IssuePopupLocators.link_to_issue):
+        self.wait_element_visible(ListIssuePopupLocators.block)
+        for issue in self.find_elements(ListIssuePopupLocators.link_to_issue):
             if issue.text == issue_name:
                 issue.click()
                 return
@@ -190,3 +201,91 @@ class ClusterConfigPage(ClusterPageMixin):
     """Cluster page config menu"""
 
     MENU_SUFFIX = 'config'
+
+
+class ClusterHostPage(ClusterPageMixin):
+    """Cluster page host menu"""
+
+    MENU_SUFFIX = 'host'
+    MAIN_ELEMENTS = [
+        ObjectPageLocators.title,
+        ObjectPageLocators.subtitle,
+        ClusterHostLocators.add_host_btn,
+        CommonTable.header,
+        CommonTable.Pagination.next_page,
+        CommonTable.Pagination.previous_page,
+    ]
+
+    def click_add_host_btn(self, is_not_first_host: bool = True):
+        self.find_and_click(ClusterHostLocators.add_host_btn)
+        self.wait_element_visible(HostCreationLocators.block)
+        if is_not_first_host:
+            self.wait_element_visible(HostAddPopupLocators.add_new_host_btn).click()
+
+    def get_host_info_from_row(
+        self, is_cluster_value: bool = True, row_num: int = 0
+    ) -> HostRowInfo:
+        row = self.table.get_all_rows()[row_num]
+        row_elements = ClusterHostLocators.HostTable.HostRow
+        cluster_value = (
+            self.find_child(row, row_elements.cluster).text
+            if is_cluster_value
+            else HostRowInfo.UNASSIGNED_CLUSTER_VALUE
+        )
+        return HostRowInfo(
+            fqdn=self.find_child(row, row_elements.fqdn).text,
+            provider=self.find_child(row, row_elements.provider).text,
+            cluster=cluster_value
+            if cluster_value != HostRowInfo.UNASSIGNED_CLUSTER_VALUE
+            else None,
+            state=self.find_child(row, row_elements.state).text,
+        )
+
+    def click_on_host_name_in_host_row(self, row):
+        self.find_child(row, ClusterHostLocators.HostTable.HostRow.fqdn).click()
+
+    def click_on_action_btn_in_host_row(self, row):
+        self.find_child(row, ClusterHostLocators.HostTable.HostRow.actions).click()
+
+    def click_config_btn_in_row(self, row: WebElement):
+        self.find_child(row, ClusterHostLocators.HostTable.HostRow.config).click()
+
+    def click_on_issue_by_name(self, row: WebElement, issue_name: str):
+        self.hover_element(self.find_child(row, ClusterHostLocators.HostTable.HostRow.actions))
+        self.wait_element_visible(PageIssuePopupLocators.block)
+        for issue in self.find_elements(PageIssuePopupLocators.link_to_issue):
+            if issue.text == issue_name:
+                issue.click()
+                return
+        raise AssertionError(f"Issue name '{issue_name}' not found in issues")
+
+    @allure.step("Get host state")
+    def get_host_state_from_row(self, row: WebElement):
+        return self.find_child(row, ClusterHostLocators.HostTable.HostRow.state).text
+
+    @contextmanager
+    def wait_host_state_change(self, row: WebElement):
+        state_before = self.get_host_state_from_row(row)
+        yield
+
+        def wait_state():
+            state_after = self.get_host_state_from_row(row)
+            assert state_after != state_before
+            assert state_after != self.table.LOADING_STATE_TEXT
+
+        wait_until_step_succeeds(wait_state, period=1, timeout=self.default_loc_timeout)
+
+    @allure.step("Run action {action_name} for host")
+    def run_action_in_host_row(self, row: WebElement, action_name: str):
+        self.click_on_action_btn_in_host_row(row)
+        self.wait_element_visible(self.table.table.ActionPopup.block)
+        self.find_and_click(self.table.table.ActionPopup.button(action_name))
+        self.wait_element_visible(ActionDialog.body)
+        self.find_and_click(ActionDialog.run)
+
+    @allure.step("Delete host")
+    def delete_host_by_row(self, row: WebElement):
+        self.find_child(row, ClusterHostLocators.HostTable.HostRow.link_off_btn).click()
+        self.wait_element_visible(DeleteDialog.body)
+        self.find_and_click(DeleteDialog.yes)
+        self.wait_element_hide(DeleteDialog.body)

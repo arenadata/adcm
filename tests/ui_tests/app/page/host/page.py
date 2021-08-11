@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import Optional
 from typing import Set
 
 import allure
@@ -28,16 +29,19 @@ class HostPageMixin(BasePageObject):
     # /action /main etc.
     MENU_SUFFIX: str
     host_id: int
+    cluster_id: int
     header: PageHeader
     footer: PageFooter
     config: CommonConfigMenuObj
 
     __ACTIVE_MENU_CLASS = 'active'
 
-    def __init__(self, driver, base_url, host_id: int):
+    def __init__(self, driver, base_url, host_id: int, cluster_id: Optional[int]):
         if self.MENU_SUFFIX is None:
             raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
-        super().__init__(driver, base_url, f"/host/{host_id}/{self.MENU_SUFFIX}")
+        super().__init__(driver, base_url,
+                         f"/cluster/{cluster_id}/host/{host_id}/{self.MENU_SUFFIX}" if cluster_id else
+                         f"/host/{host_id}/{self.MENU_SUFFIX}")
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
