@@ -35,7 +35,7 @@ import { ConfigGroupHostAddService } from '@app/config-groups/service/config-gro
     <ng-template #not>
       <p>
         <i>
-          There are no new services. You cluster already has all of them.
+          There are no new hosts. You config group already has all of them.
         </i>
       </p>
     </ng-template>
@@ -51,7 +51,6 @@ export class AddHostToConfigGroupComponent extends BaseFormDirective implements 
   }
 
   ngOnInit(): void {
-    console.log('AddHostToConfigGroupComponent | ngOnInit');
     const { typeName } = this.cluster.Current;
     console.log(this.cluster.Current);
     this.options$ = this.service.getList(typeName, {});
@@ -65,15 +64,15 @@ export class AddHostToConfigGroupComponent extends BaseFormDirective implements 
   }
 
   save(): void {
-    // const groupId = this.service.Current.id;
-    // const result = this.listServices.selectedOptions.selected.filter(a => a.value).map(a => ({
-    //   host: +a.value.id,
-    //   group: groupId
-    // }));
-    //
-    // this.service
-    //   .addHostToConfigGroup(result)
-    //   .pipe(this.takeUntil())
-    //   .subscribe(() => this.dialog.closeAll());
+    const groupId = this.service.Current.id;
+    const result = this.listServices.selectedOptions.selected.filter(a => a.value).map(a => ({
+      host: +a.value.id,
+      group: groupId
+    }));
+
+    this.service
+      .add(result)
+      .pipe(this.takeUntil())
+      .subscribe(() => this.dialog.closeAll());
   }
 }

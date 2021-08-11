@@ -23,10 +23,14 @@ const newConfigGroupForm = () =>
 export class ConfigGroupAddService implements IAddService {
 
   get Cluster() {
-    return this.cluster.Cluster;
+    return this.service.Cluster;
   }
 
-  constructor(private cluster: ClusterService, protected api: ApiService) {}
+  get Current() {
+    return this.service.Current;
+  }
+
+  constructor(private service: ClusterService, protected api: ApiService) {}
 
   model(name?: string): FormModel {
     return {

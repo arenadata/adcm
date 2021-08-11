@@ -20,11 +20,13 @@ export interface IAddService {
 
   Cluster: Cluster;
 
-  add?<T>(data: Partial<T>, name?: TypeName): Observable<T>;
+  Current: any;
+
+  add?<T>(data: any, name?: TypeName): Observable<T>;
 
   getList<T>(type: TypeName, param: Params): Observable<T[]>;
 
-  addHost(host: Partial<Host>): Observable<Host>;
+  addHost?(host: Partial<Host>): Observable<Host>;
 
   genName?(form: FormGroup): Subscription;
 

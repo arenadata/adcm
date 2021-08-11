@@ -35,6 +35,7 @@ import { EntityNames } from '@app/models/entity-names';
 import { HttpResponseBase } from '@angular/common/http';
 import { setPathOfRoute } from '@app/store/navigation/navigation.store';
 import { ConfigGroupListService } from '@app/config-groups/service/config-group-list.service';
+import { EntityService } from '@app/abstract/entity-service';
 
 export interface WorkerInstance {
   current: Entities;
@@ -106,7 +107,7 @@ export class ClusterService {
     return this.api.get<Bundle>(`${environment.apiRoot}stack/bundle/${id}/`);
   }
 
-  getContext(param: ParamMap): Observable<WorkerInstance> {
+  getContext(param: ParamMap, service?: EntityService<any>): Observable<WorkerInstance> {
     this.store.dispatch(setPathOfRoute({ params: param }));
 
     const typeName = EntityNames.find((a) => param.keys.some((b) => a === b));
@@ -116,8 +117,8 @@ export class ClusterService {
       .pipe(
         tap((cluster) => (this.Cluster = cluster)),
         switchMap((cluster) => {
-          if (cluster && typeName === 'configgroup') {
-            return this.configGroupService.get(id)
+          if (cluster && !!service) {
+            return service.get(id);
           } else if (cluster && typeName === 'servicecomponent') {
             return this.serviceComponentService.get(id);
           } else if (cluster && typeName !== 'cluster') {
@@ -128,8 +129,8 @@ export class ClusterService {
         }),
       )
       .pipe(
-        map((a: Entities) => {
-          this.worker.current = { ...a, name: a.display_name || a.name || (a as Host).fqdn, typeName };
+        map((a: any) => {
+          this.worker.current = { ...a, name: (a?.display_name || a?.name || (a as Host)?.fqdn) ?? '', typeName };
           this.workerSubject.next(this.worker);
           return this.worker;
         })
