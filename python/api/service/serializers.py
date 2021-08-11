@@ -20,7 +20,7 @@ from api.action.serializers import ActionShort
 from api.api_views import check_obj, filter_actions, CommonAPIURL, ObjectURL
 from api.cluster.serializers import BindSerializer
 from api.component.serializers import ComponentUISerializer
-from api.config_group.serializers import ConfigGroupSerializer
+from api.group_config.serializers import GroupConfigSerializer
 from cm import issue
 from cm import status_api
 from cm.api import add_service_to_cluster, multi_bind, bind
@@ -80,8 +80,8 @@ class ServiceDetailSerializer(ServiceSerializer):
         lookup_field='prototype_id',
         lookup_url_kwarg='prototype_id',
     )
-    config_groups = serializers.HyperlinkedRelatedField(
-        many=True, read_only=True, view_name='config-group-detail'
+    group_configs = serializers.HyperlinkedRelatedField(
+        many=True, read_only=True, view_name='group-config-detail'
     )
 
     def get_issue(self, obj):
@@ -98,7 +98,7 @@ class ServiceUISerializer(ServiceDetailSerializer):
     version = serializers.SerializerMethodField()
     action = CommonAPIURL(view_name='object-action')
     config = CommonAPIURL(view_name='object-config')
-    config_groups = ConfigGroupSerializer(many=True, read_only=True)
+    group_configs = GroupConfigSerializer(many=True, read_only=True)
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)

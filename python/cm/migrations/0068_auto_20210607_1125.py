@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='ConfigGroup',
+            name='GroupConfig',
             fields=[
                 (
                     'id',
@@ -40,7 +40,7 @@ class Migration(migrations.Migration):
                     models.OneToOneField(
                         null=True,
                         on_delete=django.db.models.deletion.CASCADE,
-                        related_name='config_group',
+                        related_name='group_config',
                         to='cm.objectconfig',
                     ),
                 ),
@@ -50,7 +50,7 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.CreateModel(
-            name='HostGroup',
+            name='GroupConfigHost',
             fields=[
                 (
                     'id',
@@ -61,7 +61,7 @@ class Migration(migrations.Migration):
                 (
                     'group',
                     models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, to='cm.configgroup'
+                        on_delete=django.db.models.deletion.CASCADE, to='cm.groupconfig'
                     ),
                 ),
                 (
@@ -71,23 +71,23 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.AlterUniqueTogether(
-            name='hostgroup',
+            name='groupconfighost',
             unique_together={('group', 'host')},
         ),
         migrations.AddField(
-            model_name='configgroup',
+            model_name='groupconfig',
             name='hosts',
-            field=models.ManyToManyField(blank=True, through='cm.HostGroup', to='cm.Host'),
+            field=models.ManyToManyField(blank=True, through='cm.GroupConfigHost', to='cm.Host'),
         ),
         migrations.AddField(
-            model_name='configgroup',
+            model_name='groupconfig',
             name='object_type',
             field=models.ForeignKey(
                 on_delete=django.db.models.deletion.CASCADE, to='contenttypes.contenttype'
             ),
         ),
         migrations.AlterUniqueTogether(
-            name='configgroup',
+            name='groupconfig',
             unique_together={('object_id', 'name', 'object_type')},
         ),
     ]

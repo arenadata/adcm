@@ -52,7 +52,7 @@ from cm.models import (
     ClusterBind,
     DummyData,
     Role,
-    ConfigGroup,
+    GroupConfig,
 )
 
 
@@ -436,7 +436,7 @@ def update_obj_config(obj_conf, conf, attr, desc=''):
     obj = obj_conf.object
     if obj is None:
         err('INVALID_CONFIG_UPDATE', 'unknown object type "{}"'.format(obj_conf))
-    if isinstance(obj, ConfigGroup):
+    if isinstance(obj, GroupConfig):
         obj = obj.object
     proto = obj.prototype
     old_conf = ConfigLog.objects.get(obj_ref=obj_conf, id=obj_conf.current)

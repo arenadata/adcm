@@ -11,11 +11,12 @@
 # limitations under the License.
 
 
-from rest_framework.routers import DefaultRouter
+from rest_framework.viewsets import ModelViewSet
 
-from . import views
+from cm.models import GroupConfig
+from .serializers import GroupConfigSerializer
 
-router = DefaultRouter()
-router.register(r'', views.ConfigGroupViewSet, basename='config-group')
 
-urlpatterns = router.urls
+class GroupConfigViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
+    queryset = GroupConfig.objects.all()
+    serializer_class = GroupConfigSerializer

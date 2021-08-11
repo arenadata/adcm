@@ -12,8 +12,9 @@
 
 from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
+from rest_framework.reverse import reverse
 
-from cm.models import ConfigGroup
+from cm.models import GroupConfig
 
 
 class ObjectTypeField(serializers.Field):
@@ -37,20 +38,14 @@ class ObjectTypeField(serializers.Field):
         return ContentType.objects.get(app_label='cm', model=data)
 
 
-class ConfigGroupSerializer(serializers.ModelSerializer):
+class GroupConfigSerializer(serializers.ModelSerializer):
     object_type = ObjectTypeField()
-    url = serializers.HyperlinkedIdentityField(view_name='config-group-detail')
-    hosts = serializers.HyperlinkedRelatedField(
-        view_name='host-details',
-        many=True,
-        read_only=True,
-        lookup_field='pk',
-        lookup_url_kwarg='host_id',
-    )
+    url = serializers.HyperlinkedIdentityField(view_name='group-config-detail')
+    hosts = serializers.SerializerMethodField()
     config = serializers.HyperlinkedRelatedField(view_name='config-detail', read_only=True)
 
     class Meta:
-        model = ConfigGroup
+        model = GroupConfig
         fields = (
             'id',
             'object_id',
@@ -61,3 +56,11 @@ class ConfigGroupSerializer(serializers.ModelSerializer):
             'config',
             'url',
         )
+
+    def get_hosts(self, obj):
+        url = reverse(
+            viewname='host',
+            request=self.context['request'],
+            format=self.context['format'],
+        )
+        return f'{url}?groupconfig={obj.id}'

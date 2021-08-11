@@ -1,14 +1,14 @@
 Objects
 =======
 
-.. _object-object-config:
+.. _object-config:
 
-Object Config
-~~~~~~~~~~~~~
+Config
+~~~~~~
 
 ObjectConfig is an object that contains the ID of the current and previous config
 
-Endpoint: */object-config*
+Endpoint: */config*
 
 =================== ======= ======= ======== ================ ================== ================== ===========
 Name                Type    Default Nullable :term:`Required` :term:`POSTable`   :term:`Changeable` Description
@@ -37,7 +37,7 @@ DELETE        False
 .. _object-config-log:
 
 Config Log
-~~~~~~~~~~~~~
+~~~~~~~~~~
 
 ObjectLog is an object that contains object configurations
 
@@ -69,14 +69,14 @@ PATCH         False
 DELETE        False
 ============= =======
 
-.. _object-config-group:
+.. _object-group-config:
 
-Config Group
+Group Config
 ~~~~~~~~~~~~
 
 Group is an entity wich is capable to hold some number of host in it and connect it to some objects. Besides the group allow to pin a subset of object config and provide a way to change the config.
 
-Endpoint: */config-group*
+Endpoint: */group-config*
 
 =================== ======= ======= ======== ================ ================== ================== ===========
 Name                Type    Default Nullable :term:`Required` :term:`POSTable`   :term:`Changeable` Description
@@ -109,19 +109,19 @@ PATCH         True
 DELETE        True
 ============= =======
 
-Host Group
+.. _object-group-config-host:
+
+Group Config Host
 ~~~~~~~~~~~~
 
-.. _object-host-group:
-
-Endpoint: */host-group*
+Endpoint: */group-config-host*
 
 =================== ======= ======= ======== ================ ================== ================== ===========
 Name                Type    Default Nullable :term:`Required` :term:`POSTable`   :term:`Changeable` Description
 =================== ======= ======= ======== ================ ================== ================== ===========
 id                  integer auto    False    False            False              False              Object ID.
 host                FK      null    False    True             True               True               `Host` object ID
-group               FK      null    False    True             True               True               `ConfigGroup` object ID
+group               FK      null    False    True             True               True               `GroupConfig` object ID
 =================== ======= ======= ======== ================ ================== ================== ===========
 
 .. note::

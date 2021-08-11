@@ -16,7 +16,7 @@ from rest_framework import status
 
 import cm
 from cm.errors import AdcmEx
-from cm.models import Cluster, HostProvider, Host
+from cm.models import Cluster, HostProvider, Host, GroupConfig
 from api.api_views import PageView, DetailViewDelete, create, check_obj
 from . import serializers
 
@@ -24,10 +24,13 @@ from . import serializers
 class HostFilter(drf_filters.FilterSet):
     cluster_is_null = drf_filters.BooleanFilter(field_name='cluster_id', lookup_expr='isnull')
     provider_is_null = drf_filters.BooleanFilter(field_name='provider_id', lookup_expr='isnull')
+    groupconfig = drf_filters.ModelChoiceFilter(
+        queryset=GroupConfig.objects.all(), field_name='groupconfig', label='GroupConfig'
+    )
 
     class Meta:
         model = Host
-        fields = ['cluster_id', 'prototype_id', 'provider_id', 'fqdn']
+        fields = ['cluster_id', 'prototype_id', 'provider_id', 'fqdn', 'groupconfig']
 
 
 class HostList(PageView):
@@ -38,16 +41,27 @@ class HostList(PageView):
     post:
     Create new host
     """
+
     queryset = Host.objects.all()
     serializer_class = serializers.HostSerializer
     serializer_class_ui = serializers.HostUISerializer
     filterset_class = HostFilter
     filterset_fields = (
-        'cluster_id', 'prototype_id', 'provider_id', 'fqdn', 'cluster_is_null', 'provider_is_null'
-    )   # just for documentation
+        'cluster_id',
+        'prototype_id',
+        'provider_id',
+        'fqdn',
+        'groupconfig',
+        'cluster_is_null',
+        'provider_is_null',
+    )  # just for documentation
     ordering_fields = (
-        'fqdn', 'state', 'provider__name', 'cluster__name',
-        'prototype__display_name', 'prototype__version_order',
+        'fqdn',
+        'state',
+        'provider__name',
+        'cluster__name',
+        'prototype__display_name',
+        'prototype__version_order',
     )
 
     def get(self, request, *args, **kwargs):
@@ -55,7 +69,7 @@ class HostList(PageView):
         List all hosts
         """
         queryset = self.get_queryset()
-        if 'cluster_id' in kwargs:   # List cluster hosts
+        if 'cluster_id' in kwargs:  # List cluster hosts
             cluster = check_obj(Cluster, kwargs['cluster_id'])
             queryset = self.get_queryset().filter(cluster=cluster)
         if 'provider_id' in kwargs:  # List provider hosts
@@ -67,11 +81,14 @@ class HostList(PageView):
         """
         Create host
         """
-        serializer = self.serializer_class(data=request.data, context={
-            'request': request,
-            'cluster_id': kwargs.get('cluster_id', None),
-            'provider_id': kwargs.get('provider_id', None)
-        })
+        serializer = self.serializer_class(
+            data=request.data,
+            context={
+                'request': request,
+                'cluster_id': kwargs.get('cluster_id', None),
+                'provider_id': kwargs.get('provider_id', None),
+            },
+        )
         return create(serializer)
 
 
@@ -94,6 +111,7 @@ class HostDetail(DetailViewDelete):
     get:
     Show host
     """
+
     queryset = Host.objects.all()
     serializer_class = serializers.HostDetailSerializer
     serializer_class_ui = serializers.HostUISerializer
@@ -101,7 +119,7 @@ class HostDetail(DetailViewDelete):
     lookup_url_kwarg = 'host_id'
     error_code = 'HOST_NOT_FOUND'
 
-    def get(self, request, host_id, **kwargs):   # pylint: disable=arguments-differ)
+    def get(self, request, host_id, **kwargs):  # pylint: disable=arguments-differ)
         host = check_obj(Host, host_id)
         if 'cluster_id' in kwargs:
             cluster = check_obj(Cluster, kwargs['cluster_id'])
@@ -110,7 +128,7 @@ class HostDetail(DetailViewDelete):
         serializer = serial_class(host, context={'request': request})
         return Response(serializer.data)
 
-    def delete(self, request, host_id, **kwargs):   # pylint: disable=arguments-differ
+    def delete(self, request, host_id, **kwargs):  # pylint: disable=arguments-differ
         """
         Delete host
         """

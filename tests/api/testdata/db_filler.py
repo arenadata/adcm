@@ -98,8 +98,8 @@ class DbFiller:
         """
         Get data for endpoint with data preparation
         """
-        # ConfigGroup should be filled using custom algorithm
-        if endpoint in (Endpoints.ConfigGroup,):
+        # GroupConfig should be filled using custom algorithm
+        if endpoint in (Endpoints.GroupConfig,):
             return self._generate_data_for_special_endpoints(
                 endpoint=endpoint, prepare_data_only=prepare_data_only
             )
