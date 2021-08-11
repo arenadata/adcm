@@ -55,6 +55,7 @@ HOST_NAME = 'test-host'
 PROVIDER_WITH_ISSUE_NAME = 'provider_with_issue'
 
 
+# pylint: disable=redefined-outer-name
 @pytest.fixture()
 def create_community_cluster(sdk_client_fs: ADCMClient, app_fs):
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
@@ -101,7 +102,9 @@ def upload_and_create_provider(provider_bundle) -> Provider:
 
 
 @pytest.fixture()
-def _create_community_cluster_with_host(sdk_client_fs: ADCMClient, app_fs, upload_and_create_provider):
+def _create_community_cluster_with_host(
+    sdk_client_fs: ADCMClient, app_fs, upload_and_create_provider
+):
     provider = upload_and_create_provider
     host = provider.host_create(fqdn=HOST_NAME)
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
@@ -435,7 +438,9 @@ def test_check_create_host_error_from_cluster_host_page(app_fs, login_to_adcm_ov
 
 @pytest.mark.parametrize('provider_bundle', [PROVIDER_WITH_ISSUE_NAME], indirect=True)
 @pytest.mark.usefixtures("_create_community_cluster_with_host")
-def test_check_open_host_issue_from_cluster_host_page(app_fs, login_to_adcm_over_api, provider_bundle):
+def test_check_open_host_issue_from_cluster_host_page(
+    app_fs, login_to_adcm_over_api, provider_bundle
+):
     params = {"issue_name": "Configuration"}
     cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
     cluster_host_page.wait_page_is_opened()
@@ -479,7 +484,9 @@ def test_open_host_config_from_cluster_host_page(app_fs, login_to_adcm_over_api)
     HostConfigPage(app_fs.driver, app_fs.adcm.url, 1, 1).wait_page_is_opened()
 
 
-def test_check_pagination_on_cluster_host_page(app_fs, login_to_adcm_over_api, upload_and_create_provider, create_community_cluster):
+def test_check_pagination_on_cluster_host_page(
+    app_fs, login_to_adcm_over_api, upload_and_create_provider, create_community_cluster
+):
     cluster = create_community_cluster
     provider = upload_and_create_provider
     for i in range(11):
