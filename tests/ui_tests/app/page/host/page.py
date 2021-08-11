@@ -39,9 +39,13 @@ class HostPageMixin(BasePageObject):
     def __init__(self, driver, base_url, host_id: int, cluster_id: Optional[int]):
         if self.MENU_SUFFIX is None:
             raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
-        super().__init__(driver, base_url,
-                         f"/cluster/{cluster_id}/host/{host_id}/{self.MENU_SUFFIX}" if cluster_id else
-                         f"/host/{host_id}/{self.MENU_SUFFIX}")
+        super().__init__(
+            driver,
+            base_url,
+            f"/cluster/{cluster_id}/host/{host_id}/{self.MENU_SUFFIX}"
+            if cluster_id
+            else f"/host/{host_id}/{self.MENU_SUFFIX}",
+        )
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
