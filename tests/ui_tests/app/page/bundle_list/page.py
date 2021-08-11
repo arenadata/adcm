@@ -12,6 +12,7 @@
 import allure
 
 from dataclasses import dataclass
+from selenium.webdriver.remote.webelement import WebElement
 
 from tests.ui_tests.app.page.bundle_list.locators import BundleListLocators
 from tests.ui_tests.app.page.common.base_page import (
@@ -75,8 +76,18 @@ class BundleListPage(BasePageObject):
         self.find_and_click(BundleListLocators.LicensePopup.agree_btn)
         self.wait_element_hide(BundleListLocators.LicensePopup.block)
 
-    def click_bundle_in_row(self, row_num: int = 0):
+    @allure.step('Click bundle name in row')
+    def click_bundle_in_row(self, row: WebElement):
         """Click on bundle name"""
-        row = self.table.get_row(row_num)
         bundle_name = self.find_child(row, BundleListLocators.Table.Row.name)
         bundle_name.click()
+
+    @allure.step('Click on "home" button on tooltip')
+    def click_on_home_button_on_tooltip(self):
+        """Click on home button (a.k.a. "apps") in tooltip to open into page"""
+        self.find_and_click(BundleListLocators.Tooltip.apps_btn)
+
+    @allure.step('Check bundle is visible')
+    def check_at_least_one_bundle_is_presented(self):
+        """Check that at least one row is visible in table"""
+        self.check_element_should_be_visible(BundleListLocators.Table.row)

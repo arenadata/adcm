@@ -40,6 +40,10 @@ class BundlePage(BasePageObject):
     @allure.step('Check all fields are presented on Main page')
     def check_all_main_menu_fields_are_presented(self):
         """Check all fields on main menu page are presented"""
-        self.is_element_displayed(BundleMainMenuLocators.title)
-        self.is_element_displayed(BundleMainMenuLocators.subtitle)
-        self.is_element_displayed(BundleMainMenuLocators.text)
+        self.assert_displayed_elements(
+            [
+                BundleMainMenuLocators.title,
+                BundleMainMenuLocators.subtitle,
+                BundleMainMenuLocators.text,
+            ]
+        )

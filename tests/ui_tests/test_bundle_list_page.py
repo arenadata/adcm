@@ -22,11 +22,9 @@ from tests.conftest import DUMMY_CLUSTER_BUNDLE
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
 from tests.ui_tests.app.page.bundle.page import BundlePage
-from tests.ui_tests.app.page.bundle_list.locators import BundleListLocators
 from tests.ui_tests.app.page.bundle_list.page import BundleListPage, BundleInfo
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.host_list.page import HostListPage
-from tests.ui_tests.utils import check_rows_amount
 
 LICENSE_FP = os.path.join(utils.get_data_dir(__file__), 'license.txt')
 
@@ -164,7 +162,7 @@ def test_two_bundles(create_bundle_archives: List[str], page: BundleListPage):
 def test_open_bundle_from_table(page: BundleListPage, upload_bundles: List[Bundle]):
     """Test open bundle object page from list of bundles"""
     with allure.step('Open bundle object page from bundle list'):
-        page.click_bundle_in_row()
+        page.click_bundle_in_row(page.table.get_row())
     with allure.step('Check object page is opened'):
         object_page = BundlePage(page.driver, page.base_url, upload_bundles[0].id)
         object_page.wait_page_is_opened()
@@ -183,7 +181,7 @@ def test_open_main_menu_on_bundle_page(page: BundleListPage, upload_bundles: Lis
 @pytest.mark.usefixtures('upload_bundles')
 def test_open_adcm_main_menu(page: BundleListPage):
     """Open main menu by clicking on the menu icon in toolbar"""
-    page.find_and_click(BundleListLocators.Tooltip.apps_btn)
+    page.click_on_home_button_on_tooltip()
     AdminIntroPage(page.driver, page.base_url).wait_page_is_opened()
 
 
@@ -194,8 +192,7 @@ def test_delete_bundle_with_created_cluster(page: BundleListPage):
     Bundle should not be deleted if an object defined in it is created
     """
     page.delete_bundle()
-    with allure.step('Check bundle is visible'):
-        page.check_element_should_be_visible(BundleListLocators.Table.row)
+    page.check_at_least_one_bundle_is_presented()
 
 
 @pytest.mark.parametrize(
@@ -255,16 +252,4 @@ def test_bundle_list_pagination(page: BundleListPage):
     """Upload 12 bundles and check pagination"""
     params = {'on_first_page': 10, 'on_second_page': 2}
     page.close_info_popup()
-    with allure.step("Check pagination"):
-        with page.table.wait_rows_change():
-            page.table.click_page_by_number(2)
-        check_rows_amount(page, params['on_second_page'], 2)
-        with page.table.wait_rows_change():
-            page.table.click_previous_page()
-        check_rows_amount(page, params['on_first_page'], 1)
-        with page.table.wait_rows_change():
-            page.table.click_next_page()
-        check_rows_amount(page, params['on_second_page'], 2)
-        with page.table.wait_rows_change():
-            page.table.click_page_by_number(1)
-        check_rows_amount(page, params['on_first_page'], 1)
+    page.table.check_pagination(params['on_second_page'])
