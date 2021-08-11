@@ -12,21 +12,21 @@
 
 from itertools import chain
 
+from django.contrib.contenttypes.models import ContentType
 from rest_framework import status
 from rest_framework.response import Response
 
-import cm.job
+import api.serializers
 import cm.api
 import cm.bundle
+import cm.job
 import cm.status_api
+from api.api_views import ListView, PageView, PageViewAdd, InterfaceView, DetailViewDelete
+from api.api_views import create, update, check_obj, GenericAPIPermView
+from api.group_config.serializers import GroupConfigSerializer
 from cm.errors import AdcmEx
 from cm.models import Cluster, HostComponent, Prototype
-from cm.models import ClusterObject, Upgrade, ClusterBind
-from cm.logger import log  # pylint: disable=unused-import
-
-import api.serializers
-from api.api_views import create, update, check_obj, GenericAPIPermView
-from api.api_views import ListView, PageView, PageViewAdd, InterfaceView, DetailViewDelete
+from cm.models import ClusterObject, Upgrade, ClusterBind, GroupConfig
 from . import serializers
 
 
@@ -59,6 +59,16 @@ class ClusterList(PageViewAdd):
     serializer_class_post = serializers.ClusterDetailSerializer
     filterset_fields = ('name', 'prototype_id')
     ordering_fields = ('name', 'state', 'prototype__display_name', 'prototype__version_order')
+
+
+class ClusterGroupConfigs(PageView):
+    queryset = GroupConfig.objects.all()
+    serializer_class = GroupConfigSerializer
+
+    def get(self, request, cluster_id=None):  # pylint: disable=arguments-differ
+        object_type = ContentType.objects.get(app_label='cm', model='cluster')
+        objects = self.get_queryset().filter(object_id=cluster_id, object_type=object_type)
+        return self.get_page(self.filter_queryset(objects), request)
 
 
 class ClusterDetail(DetailViewDelete):

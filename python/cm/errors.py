@@ -119,6 +119,11 @@ ERRORS = {
         rfs.HTTP_409_CONFLICT,
     ),
     'NOT_CHANGEABLE_FIELDS': ("fields cannot be changed", rfs.HTTP_400_BAD_REQUEST, ERR),
+    'GROUP_CONFIG_TYPE_ERROR': (
+        "invalid type object for group config",
+        rfs.HTTP_400_BAD_REQUEST,
+        ERR,
+    ),
 }
 
 

@@ -14,28 +14,47 @@ from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
+from cm.errors import AdcmEx
 from cm.models import GroupConfig
+
+
+def check_object_type(type_name):
+    """Object type checking"""
+    if type_name not in ['cluster', 'service', 'component', 'provider']:
+        raise AdcmEx('GROUP_CONFIG_TYPE_ERROR')
+
+
+def translate_model_name(model_name):
+    """Translating model name to display model name"""
+    if model_name == 'clusterobject':
+        return 'service'
+    elif model_name == 'servicecomponent':
+        return 'component'
+    elif model_name == 'hostprovider':
+        return 'provider'
+    else:
+        return model_name
+
+
+def revert_model_name(name):
+    """Translating display model name to model name"""
+    if name == 'service':
+        return 'clusterobject'
+    elif name == 'component':
+        return 'servicecomponent'
+    elif name == 'provider':
+        return 'hostprovider'
+    else:
+        return name
 
 
 class ObjectTypeField(serializers.Field):
     def to_representation(self, value):
-        if value.model == 'clusterobject':
-            return 'service'
-        elif value.model == 'servicecomponent':
-            return 'component'
-        elif value.model == 'hostprovider':
-            return 'provider'
-        else:
-            return value.model
+        return translate_model_name(value.model)
 
     def to_internal_value(self, data):
-        if data == 'service':
-            data = 'clusterobject'
-        elif data == 'component':
-            data = 'servicecomponent'
-        elif data == 'provider':
-            data = 'hostprovider'
-        return ContentType.objects.get(app_label='cm', model=data)
+        check_object_type(data)
+        return ContentType.objects.get(app_label='cm', model=revert_model_name(data))
 
 
 class GroupConfigSerializer(serializers.ModelSerializer):

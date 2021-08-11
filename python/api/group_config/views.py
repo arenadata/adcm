@@ -14,9 +14,27 @@
 from rest_framework.viewsets import ModelViewSet
 
 from cm.models import GroupConfig
-from .serializers import GroupConfigSerializer
+from .serializers import GroupConfigSerializer, revert_model_name
+from django_filters.rest_framework import FilterSet, CharFilter
+from django.contrib.contenttypes.models import ContentType
+
+
+class GroupConfigFilterSet(FilterSet):
+    object_type = CharFilter(
+        field_name='object_type', label='object_type', method='filter_object_type'
+    )
+
+    def filter_object_type(self, queryset, name, value):
+        value = revert_model_name(value)
+        object_type = ContentType.objects.get(app_label='cm', model=value)
+        return queryset.filter(**{name: object_type})
+
+    class Meta:
+        model = GroupConfig
+        fields = ('object_id', 'object_type')
 
 
 class GroupConfigViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
     queryset = GroupConfig.objects.all()
     serializer_class = GroupConfigSerializer
+    filterset_class = GroupConfigFilterSet
