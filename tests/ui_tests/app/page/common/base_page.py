@@ -143,6 +143,27 @@ class BasePageObject:
                 f"{self.driver.current_url} for {loc_timeout} seconds",
             )
 
+    def send_text_to_element(self, locator: Locator, text: str, timeout: Optional[int] = None):
+        """
+        Writes text to input element found by locator
+
+        If value of input before and after is the same, then retries to send keys again,
+        because sometimes text doesn't appear in input
+
+        :param locator: Locator of element to write into (should be input)
+        :param text: Text to use in .send_keys method
+        :param timeout: Timeout on finding element
+        """
+        element = self.find_element(locator, timeout)
+        expected_value = element.get_property('value') + text
+
+        def send_keys_and_check():
+            input_element = self.find_element(locator, timeout)
+            input_element.send_keys(text)
+            assert input_element.get_property('value') == expected_value
+
+        wait_until_step_succeeds(send_keys_and_check, period=0.5, timeout=1.5)
+
     def is_element_displayed(
         self, element: Union[Locator, WebElement], timeout: int = None
     ) -> bool:

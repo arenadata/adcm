@@ -122,6 +122,53 @@ class HostListPage(BasePageObject):
         self.find_and_click(HostListLocators.Tooltip.host_add_btn)
         self.wait_element_visible(HostCreationLocators.block)
 
+    def close_host_creation_popup(self):
+        """Close popup with `Cancel` button"""
+        self.find_and_click(HostCreationLocators.cancel_btn)
+
+    def click_create_host_in_popup(self):
+        """Click create host button in popup"""
+        self.find_and_click(HostCreationLocators.create_btn)
+
+    def _insert_new_host_info(self, fqdn: str, cluster: Optional[str] = None):
+        """Insert new host info in fields of opened popup"""
+        self.wait_element_visible(HostCreationLocators.fqdn_input)
+        self.send_text_to_element(HostCreationLocators.fqdn_input, fqdn)
+        if cluster:
+            self._choose_cluster_in_popup(cluster)
+
+    def _upload_bundle(self, bundle_path: str):
+        """
+        Add new host provider
+        Popup should be opened
+        Popup is not closed at the end
+        """
+        provider_section = HostCreationLocators.Provider
+        self.find_and_click(provider_section.add_btn)
+        self.wait_element_visible(provider_section.new_provider_block)
+        self.find_element(provider_section.upload_bundle_btn).send_keys(bundle_path)
+        self.find_and_click(provider_section.new_provider_add_btn)
+        self.wait_element_hide(provider_section.new_provider_block)
+
+    def _get_hostprovider_name(self) -> str:
+        """Get chosen provider from opened new host popup"""
+        return self.find_element(HostCreationLocators.Provider.chosen_provider).text
+
+    def _choose_cluster_in_popup(self, cluster_name: str):
+        self.find_and_click(HostCreationLocators.Cluster.cluster_select)
+        option = HostCreationLocators.Cluster.cluster_option
+        self._wait_and_click_on_cluster_option(cluster_name, option)
+        self.wait_element_hide(option)
+
+    def _wait_and_click_on_cluster_option(self, cluster_name: str, option_locator: Locator):
+        WDW(self.driver, self.default_loc_timeout).until(
+            EC.presence_of_element_located(
+                [option_locator.by, option_locator.value.format(cluster_name)]
+            ),
+            message=f"Can't find cluster with name {cluster_name} in dropdown on page {self.driver.current_url} "
+            f"for {self.default_loc_timeout} seconds",
+        ).click()
+
     @staticmethod
     def __assert_enough_rows(required_row_num: int, row_count: int):
         """
