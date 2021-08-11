@@ -123,7 +123,7 @@ def elements_should_be_hidden(page: BasePageObject, locators: List[Locator]):
 @allure.step('Open host config menu from host list')
 def open_config(page) -> HostConfigPage:
     page.click_on_row_child(0, HostListLocators.HostTable.HostRow.config)
-    return HostConfigPage(page.driver, page.base_url, 1)
+    return HostConfigPage(page.driver, page.base_url, 1, None)
 
 
 def check_job_name(sdk: ADCMClient, action_display_name: str):
@@ -168,7 +168,7 @@ def _check_menu(
     list_page: HostListPage,
 ):
     list_page.click_on_row_child(0, HostListLocators.HostTable.HostRow.fqdn)
-    host_page = HostMainPage(list_page.driver, list_page.base_url, 1)
+    host_page = HostMainPage(list_page.driver, list_page.base_url, 1, None)
     getattr(host_page, f'open_{menu_name}_menu')()
     host_page.check_fqdn_equal_to(HOST_FQDN)
     bundle_label = host_page.get_bundle_label()
@@ -263,7 +263,7 @@ def test_open_host_from_host_list(
     row_child = getattr(HostListLocators.HostTable.HostRow, row_child_name)
     menu_item_locator = getattr(HostLocators.MenuNavigation, menu_item_name)
     page.click_on_row_child(0, row_child)
-    main_host_page = HostMainPage(page.driver, page.base_url, 1)
+    main_host_page = HostMainPage(page.driver, page.base_url, 1, None)
     with allure.step('Check correct menu is opened'):
         main_host_page.check_fqdn_equal_to(HOST_FQDN)
         assert main_host_page.active_menu_is(menu_item_locator)
@@ -325,7 +325,7 @@ def test_run_action_from_menu(
 ):
     """Run action from host actions menu"""
     page.click_on_row_child(0, HostListLocators.HostTable.HostRow.fqdn)
-    host_main_page = HostMainPage(page.driver, page.base_url, 1)
+    host_main_page = HostMainPage(page.driver, page.base_url, 1, None)
     actions_page: HostActionsPage = host_main_page.open_action_menu()
     actions_before = actions_page.get_action_names()
     assert INIT_ACTION in actions_before, f'Action {INIT_ACTION} should be listed in Actions menu'

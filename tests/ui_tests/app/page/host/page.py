@@ -65,28 +65,28 @@ class HostPageMixin(BasePageObject):
     @allure.step('Open "Main" menu')
     def open_main_menu(self) -> 'HostMainPage':
         self.find_and_click(HostLocators.MenuNavigation.main_tab)
-        page = HostMainPage(self.driver, self.base_url, self.host_id)
+        page = HostMainPage(self.driver, self.base_url, self.host_id, None)
         page.wait_page_is_opened()
         return page
 
     @allure.step('Open "Configuration" menu')
     def open_config_menu(self) -> 'HostConfigPage':
         self.find_and_click(HostLocators.MenuNavigation.config_tab)
-        page = HostConfigPage(self.driver, self.base_url, self.host_id)
+        page = HostConfigPage(self.driver, self.base_url, self.host_id, None)
         page.wait_page_is_opened()
         return page
 
     @allure.step('Open "Status" menu')
     def open_status_menu(self) -> 'HostStatusPage':
         self.find_and_click(HostLocators.MenuNavigation.status_tab)
-        page = HostStatusPage(self.driver, self.base_url, self.host_id)
+        page = HostStatusPage(self.driver, self.base_url, self.host_id, None)
         page.wait_page_is_opened()
         return page
 
     @allure.step('Open "Actions" menu')
     def open_action_menu(self) -> 'HostActionsPage':
         self.find_and_click(HostLocators.MenuNavigation.actions_tab)
-        page = HostActionsPage(self.driver, self.base_url, self.host_id)
+        page = HostActionsPage(self.driver, self.base_url, self.host_id, None)
         page.wait_page_is_opened()
         return page
 
