@@ -161,8 +161,8 @@ class HostListPage(BasePageObject):
 
     def _insert_new_host_info(self, fqdn: str, cluster: Optional[str] = None):
         """Insert new host info in fields of opened popup"""
-        fqdn_input = self.find_element(HostCreationLocators.fqdn_input)
-        fqdn_input.send_keys(fqdn)
+        self.wait_element_visible(HostCreationLocators.fqdn_input)
+        self.send_text_to_element(HostCreationLocators.fqdn_input, fqdn)
         if cluster:
             self._choose_cluster_in_popup(cluster)
 
