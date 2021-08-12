@@ -28,6 +28,7 @@ from tests.ui_tests.app.page.host.locators import HostLocators, HostActionsLocat
 from tests.ui_tests.app.page.host.page import HostMainPage, HostActionsPage, HostConfigPage
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
 from tests.ui_tests.app.page.host_list.page import HostListPage, HostRowInfo
+from tests.ui_tests.utils import check_rows_amount
 
 # pylint: disable=W0621
 
