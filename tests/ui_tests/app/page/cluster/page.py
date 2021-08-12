@@ -234,21 +234,17 @@ class ClusterHostPage(ClusterPageMixin):
             self.wait_element_visible(HostAddPopupLocators.add_new_host_btn).click()
 
     @allure.step("Get info about host row")
-    def get_host_info_from_row(
-        self, is_cluster_value: bool = True, row_num: int = 0
-    ) -> HostRowInfo:
+    def get_host_info_from_row(self, row_num: int = 0) -> HostRowInfo:
         """
         Compile the values of the fields describing the host.
 
-        :param is_cluster_value: flag to define if there is a cluster column in the table
-        (e.g. there are no such column in cluster host page).
         :param row_num: row number in the table.
         """
         row = self.table.get_all_rows()[row_num]
         row_elements = ClusterHostLocators.HostTable.HostRow
         cluster_value = (
             self.find_child(row, row_elements.cluster).text
-            if is_cluster_value
+            if self.is_element_displayed(row_elements.cluster)
             else HostRowInfo.UNASSIGNED_CLUSTER_VALUE
         )
         return HostRowInfo(
