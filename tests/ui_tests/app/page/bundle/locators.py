@@ -9,10 +9,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from selenium.webdriver.common.by import By
 
-- type: cluster
-  name: test_cluster
-  description: "enterprise description"
-  version: 1.5
-  license: license.txt
-  edition: enterprise
+from tests.ui_tests.app.helpers.locator import Locator
+from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators
+
+
+class BundleLocators:
+    """Bundle main page elements locators"""
+
+    class MenuNavigation:
+        main = Locator(By.XPATH, "//a[@adcm_test='tab_main']", "Main link in side menu")
+
+
+class BundleMainMenuLocators(ObjectPageLocators):
+    """Bundle object page main menu locators"""
+
+    text = Locator(By.XPATH, "//mat-card-content", "Bundle main page text")
