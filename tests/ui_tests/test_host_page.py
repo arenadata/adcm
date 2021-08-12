@@ -47,6 +47,8 @@ from tests.ui_tests.app.page.host_list.page import (
     HostListPage,
     HostRowInfo,
 )
+from tests.ui_tests.app.page.host_list.page import HostListPage, HostRowInfo
+from tests.ui_tests.utils import check_rows_amount
 
 # pylint: disable=W0621
 
@@ -165,13 +167,6 @@ def check_host_info(
     check_host_value('provider', host_info.provider, provider)
     check_host_value('cluster', host_info.cluster, cluster)
     check_host_value('state', host_info.state, state)
-
-
-def check_rows_amount(page, expected_amount: int, page_num: int):
-    """Check rows count is equal to expected"""
-    assert (
-        page.table.row_count == expected_amount
-    ), f'Page #{page_num}  should contain {expected_amount}'
 
 
 def _check_menu(

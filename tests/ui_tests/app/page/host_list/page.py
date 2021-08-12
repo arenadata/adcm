@@ -77,6 +77,49 @@ class HostListPage(BasePageObject):
         row = self.get_host_row(row_num)
         self.find_child(row, child_locator).click()
 
+    @allure.step("Create new host")
+    def create_host(
+        self,
+        fqdn: str,
+        cluster: Optional[str] = None,
+    ):
+        """Create host in popup"""
+        self.open_host_creation_popup()
+        self._insert_new_host_info(fqdn, cluster)
+        self.click_create_host_in_popup()
+        self.close_host_creation_popup()
+
+    @allure.step("Upload bundle from host creation popup")
+    def upload_bundle_from_host_create_popup(self, bundle_path: str):
+        """Upload bundle in host creation popup and close popup"""
+        self.open_host_creation_popup()
+        self._upload_bundle(bundle_path)
+        self.close_host_creation_popup()
+
+    @allure.step("Create new provider and host")
+    def create_provider_and_host(
+        self,
+        bundle_path: str,
+        fqdn: str,
+        cluster: Optional[str] = None,
+    ) -> str:
+        """
+        Open host creation popup
+        Upload bundle and create provider
+        Fill in information about new host
+        Create host
+        Close popup
+        :returns: Name of created provider
+        """
+        self.open_host_creation_popup()
+        self._upload_bundle(bundle_path)
+        provider_name = self._get_hostprovider_name()
+        self._insert_new_host_info(fqdn, cluster)
+        self.click_create_host_in_popup()
+        self.close_host_creation_popup()
+        # because we don't pass provider name
+        return provider_name
+
     @allure.step('Run action "{action_display_name}" on host in row {host_row_num}')
     def run_action(self, host_row_num: int, action_display_name: str):
         host_row = HostListLocators.HostTable.HostRow
@@ -167,7 +210,8 @@ class HostListPage(BasePageObject):
             EC.presence_of_element_located(
                 [option_locator.by, option_locator.value.format(cluster_name)]
             ),
-            message=f"Can't find cluster with name {cluster_name} in dropdown on page {self.driver.current_url} "
+            message=f"Can't find cluster with name {cluster_name} "
+            f"in dropdown on page {self.driver.current_url} "
             f"for {self.default_loc_timeout} seconds",
         ).click()
 
