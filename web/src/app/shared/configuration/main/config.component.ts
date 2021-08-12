@@ -92,13 +92,13 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     if (!firstChange || !url) this.getConfigFromWorker();
   }
 
-  ngOnInit() {
+  ngOnInit(): void {
     if (!this.configUrl) this.getConfigFromWorker();
     this.getConfig(this.configUrl).subscribe();
     super.startListenSocket();
   }
 
-  onReady(url: string) {
+  onReady(url: string): void {
     this.tools.isAdvanced = this.fields.isAdvanced;
     this.tools.description.setValue(this.rawConfig.value.description);
     this.filter(this.tools.filterParams);
@@ -109,11 +109,11 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     });
   }
 
-  filter(c: ISearchParam) {
+  filter(c: ISearchParam): void {
     this.service.filterApply(this.fields.dataOptions, c);
   }
 
-  socketListener(m: EventMessage) {
+  socketListener(m: EventMessage): void {
     if (
       m.object.type === this.service.Current?.typeName &&
       m.object.id === this.service.Current.id &&
@@ -140,16 +140,11 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
 
   getConfigFromWorker(): void {
     this._workerSubscription.unsubscribe();
-
     this._workerSubscription = this.worker$
-      .subscribe((ddd) => {
-        console.log('asdsad', ddd);
-
-        this.configUrl = this.service.Current?.config;
-      });
+      .subscribe((ddd) => this.configUrl = this.service.Current?.config);
   }
 
-  save(url: string) {
+  save(url: string): void {
     const form = this.fields.form;
     if (form.valid) {
       this.saveFlag = true;
@@ -171,16 +166,16 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     }
   }
 
-  changeVersion(url: string, id: number) {
+  changeVersion(url: string, id: number): void {
     this.reset();
     this.getConfig(`${url}${id}/`).subscribe();
   }
 
-  compareVersion(ids: number[]) {
+  compareVersion(ids: number[]): void {
     if (ids) this.service.compareConfig(ids, this.fields.dataOptions, this.historyComponent.compareConfig);
   }
 
-  reset() {
+  reset(): void {
     this.fields.form.reset();
     this.fields.dataOptions = [];
     this.historyComponent.reset();
