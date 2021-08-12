@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Type } from '@angular/core';
 import { TypeName } from '../../../core/types';
 import { AdwpListDirective } from '../../../abstract-directives/adwp-list.directive';
 import { IColumns } from '@adwp-ui/widgets';
@@ -7,11 +7,13 @@ import { ConfigGroupListService } from '../../service/config-group-list.service'
 import { LIST_SERVICE_PROVIDER } from '../../../shared/components/list/list-service-token';
 import { ADD_SERVICE_PROVIDER } from '../../../shared/add-component/add-service-token';
 import { ConfigGroupAddService } from '../../service/config-group-add.service';
+import { BaseFormDirective } from '../../../shared/add-component';
+import { AddConfigGroupComponent } from '../../components/config-group-add/config-group-add.component';
 
 @Component({
   selector: 'app-config-group-list',
   template: `
-    <app-add-button [name]="type" class="add-button">Add config group</app-add-button>
+    <app-add-button [name]="type" [component]="addComponent" class="add-button">Add config group</app-add-button>
 
     <adwp-list
       [columns]="listColumns"
@@ -34,6 +36,7 @@ import { ConfigGroupAddService } from '../../service/config-group-add.service';
 })
 export class ConfigGroupListComponent extends AdwpListDirective<any> implements OnInit {
   type: TypeName = 'configgroup';
+  addComponent: Type<BaseFormDirective> = AddConfigGroupComponent;
 
   listColumns: IColumns<any> = [
     ListFactory.nameColumn(),

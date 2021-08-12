@@ -7,7 +7,6 @@ import { convertToParamMap, Params } from '@angular/router';
 import { forkJoin, Observable } from 'rxjs';
 import { ApiService } from '../../core/api';
 import { environment } from '../../../environments/environment';
-import { AddHostToConfigGroupComponent } from '../components/config-group-host-add/config-group-host-add.component';
 import { map } from 'rxjs/operators';
 
 const newConfigGroupHostForm = () =>
@@ -35,8 +34,7 @@ export class ConfigGroupHostAddService implements IAddService {
     return {
       name: 'host2configgroup',
       title: 'Config group hosts',
-      form: newConfigGroupHostForm(),
-      component: AddHostToConfigGroupComponent
+      form: newConfigGroupHostForm()
     };
   }
 

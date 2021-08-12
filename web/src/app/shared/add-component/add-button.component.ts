@@ -9,13 +9,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, EventEmitter, Inject, Input, OnDestroy, Output } from '@angular/core';
+import { Component, EventEmitter, Inject, Input, OnDestroy, Output, Type } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 
-import { DialogComponent } from '../components/dialog.component';
-import { BaseDirective } from '../directives/base.directive';
+import { DialogComponent } from '@app/shared/components';
+import { BaseDirective } from '@app/shared/directives';
 import { AddFormComponent } from './add-form.component';
 import { ADD_SERVICE_PROVIDER, IAddService } from '@app/shared/add-component/add-service-token';
+import { BaseFormDirective } from '@app/shared/add-component/base-form.directive';
 
 @Component({
   selector: 'app-add-button',
@@ -36,6 +37,7 @@ import { ADD_SERVICE_PROVIDER, IAddService } from '@app/shared/add-component/add
 export class AddButtonComponent extends BaseDirective implements OnDestroy {
   @Input() asIcon = false;
   @Input() name: string;
+  @Input() component: Type<BaseFormDirective>;
   @Output() added = new EventEmitter();
 
   constructor(@Inject(ADD_SERVICE_PROVIDER) private service: IAddService,
@@ -45,6 +47,9 @@ export class AddButtonComponent extends BaseDirective implements OnDestroy {
 
   showForm() {
     const model = this.service.model(this.name);
+    model.component = this.component;
+    console.log('asdasd', model.component);
+
     const name = model.title || model.name;
     const title = ['cluster', 'provider', 'host'];
     this.dialog.open(DialogComponent, {

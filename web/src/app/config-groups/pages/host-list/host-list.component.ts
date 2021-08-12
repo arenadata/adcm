@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Type } from '@angular/core';
 import { IColumns, RowEventData } from '@adwp-ui/widgets';
 import { AdwpListDirective } from '../../../abstract-directives/adwp-list.directive';
 import { TypeName } from '../../../core/types';
@@ -8,12 +8,14 @@ import { LIST_SERVICE_PROVIDER } from '../../../shared/components/list/list-serv
 import { ADD_SERVICE_PROVIDER } from '../../../shared/add-component/add-service-token';
 import { ConfigGroupHostListService } from '../../service/config-group-host-list.service';
 import { ConfigGroupHostAddService } from '../../service/config-group-host-add.service';
+import { BaseFormDirective } from '../../../shared/add-component';
+import { AddHostToConfigGroupComponent } from '../../components/config-group-host-add/config-group-host-add.component';
 
 
 @Component({
   selector: 'app-config-group-host-list',
   template: `
-    <app-add-button [name]="type" class="add-button">Add hosts</app-add-button>
+    <app-add-button [name]="type" [component]="addComponent" class="add-button">Add hosts</app-add-button>
 
     <adwp-list
       [columns]="listColumns"
@@ -34,13 +36,8 @@ import { ConfigGroupHostAddService } from '../../service/config-group-host-add.s
   ],
 })
 export class ConfigGroupHostListComponent extends AdwpListDirective<IHost> {
-
   type: TypeName = 'host2configgroup';
-
-  clickRow(data: RowEventData): void {
-    console.log('clickRow');
-    return;
-  }
+  addComponent: Type<BaseFormDirective> = AddHostToConfigGroupComponent;
 
   listColumns = [
     ListFactory.fqdnColumn(),
@@ -55,5 +52,10 @@ export class ConfigGroupHostListComponent extends AdwpListDirective<IHost> {
       }],
     }
   ] as IColumns<IHost>;
+
+  clickRow(data: RowEventData): void {
+    console.log('clickRow');
+    return;
+  }
 
 }
