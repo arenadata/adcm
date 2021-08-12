@@ -61,16 +61,6 @@ class ClusterList(PageViewAdd):
     ordering_fields = ('name', 'state', 'prototype__display_name', 'prototype__version_order')
 
 
-class ClusterGroupConfigs(PageView):
-    queryset = GroupConfig.objects.all()
-    serializer_class = GroupConfigSerializer
-
-    def get(self, request, cluster_id=None):  # pylint: disable=arguments-differ
-        object_type = ContentType.objects.get(app_label='cm', model='cluster')
-        objects = self.get_queryset().filter(object_id=cluster_id, object_type=object_type)
-        return self.get_page(self.filter_queryset(objects), request)
-
-
 class ClusterDetail(DetailViewDelete):
     """
     get:

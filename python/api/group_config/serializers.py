@@ -57,6 +57,14 @@ class ObjectTypeField(serializers.Field):
         return ContentType.objects.get(app_label='cm', model=revert_model_name(data))
 
 
+class GroupConfigsHyperlinkedIdentityField(serializers.HyperlinkedIdentityField):
+    """Return url for group_configs for Cluster, Provider, Component or Service"""
+
+    def get_url(self, obj, view_name, request, format):  # pylint: disable=redefined-builtin
+        url = reverse(viewname=view_name, request=request, format=format)
+        return f'{url}?object_id={obj.id}&object_type={obj.prototype.type}'
+
+
 class GroupConfigSerializer(serializers.ModelSerializer):
     object_type = ObjectTypeField()
     url = serializers.HyperlinkedIdentityField(view_name='group-config-detail')

@@ -23,7 +23,7 @@ from api.api_views import (
     CommonAPIURL,
     ObjectURL,
 )
-from api.group_config.serializers import GroupConfigSerializer
+from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.serializers import UpgradeSerializer, UrlField
 from cm.errors import AdcmEx
 from cm.models import Action, Prototype
@@ -64,9 +64,7 @@ class ProviderDetailSerializer(ProviderSerializer):
     action = CommonAPIURL(view_name='object-action')
     upgrade = hlink('provider-upgrade', 'id', 'provider_id')
     host = ObjectURL(read_only=True, view_name='host')
-    group_configs = serializers.HyperlinkedRelatedField(
-        many=True, read_only=True, view_name='group-config-detail'
-    )
+    group_configs = GroupConfigsHyperlinkedIdentityField(view_name='group-config-list')
 
     def get_issue(self, obj):
         return cm.issue.aggregate_issues(obj)
@@ -79,7 +77,6 @@ class ProviderUISerializer(ProviderDetailSerializer):
     prototype_display_name = serializers.SerializerMethodField()
     upgradable = serializers.SerializerMethodField()
     get_upgradable = get_upgradable_func
-    group_configs = GroupConfigSerializer(many=True, read_only=True)
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)

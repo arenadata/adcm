@@ -12,7 +12,6 @@
 
 from django.db import IntegrityError
 from rest_framework import serializers
-from rest_framework.reverse import reverse
 
 import cm.api
 import cm.job
@@ -28,6 +27,7 @@ from api.api_views import (
     get_upgradable_func,
 )
 from api.component.serializers import ComponentDetailSerializer
+from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.host.serializers import HostSerializer
 from cm.errors import AdcmEx
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
@@ -83,16 +83,7 @@ class ClusterDetailSerializer(ClusterSerializer):
     imports = hlink('cluster-import', 'id', 'cluster_id')
     bind = hlink('cluster-bind', 'id', 'cluster_id')
     prototype = hlink('cluster-type-details', 'prototype_id', 'prototype_id')
-    group_configs = hlink('cluster-group-configs', 'id', 'cluster_id')
-    group_configs_new = serializers.SerializerMethodField()
-
-    def get_group_configs_new(self, obj):
-        url = reverse(
-            viewname='group-config-list',
-            request=self.context['request'],
-            format=self.context.get('format'),
-        )
-        return f'{url}?object_id={obj.id}&object_type=cluster'
+    group_configs = GroupConfigsHyperlinkedIdentityField(view_name='group-config-list')
 
     def get_issue(self, obj):
         return cm.issue.aggregate_issues(obj)

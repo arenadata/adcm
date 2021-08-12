@@ -18,7 +18,6 @@ urlpatterns = [
     path('', views.ClusterList.as_view(), name='cluster'),
     path('<int:cluster_id>/', include([
         path('', views.ClusterDetail.as_view(), name='cluster-details'),
-        path('group-configs/', views.ClusterGroupConfigs.as_view(), name='cluster-group-configs'),
         path('import/', views.ClusterImport.as_view(), name='cluster-import'),
         path('status/', views.StatusList.as_view(), name='cluster-status'),
         path('serviceprototype/', views.ClusterBundle.as_view(), name='cluster-service-prototype'),
