@@ -12,7 +12,7 @@
 
 from uuid import uuid4
 
-import cm.models as models
+from cm import models
 
 
 def _gen_name(prefix: str, name='name'):

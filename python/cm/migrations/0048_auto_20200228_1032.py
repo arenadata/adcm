@@ -18,7 +18,7 @@ import os
 from django.db import migrations, models
 import django.db.models.deletion
 
-import cm.config as config
+from cm import config
 
 
 def get_body(job, name, type_log, format_log):
