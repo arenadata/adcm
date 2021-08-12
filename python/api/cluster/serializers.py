@@ -16,16 +16,22 @@ from rest_framework import serializers
 import cm.api
 import cm.job
 import cm.status_api
-from cm.logger import log  # pylint: disable=unused-import
+from api.action.serializers import ActionShort
+from api.api_views import (
+    CommonAPIURL,
+    ObjectURL,
+    UrlField,
+    check_obj,
+    filter_actions,
+    get_upgradable_func,
+    hlink,
+)
+from api.component.serializers import ComponentDetailSerializer
+from api.concern.serializers import ConcernItemSerializer
+from api.host.serializers import HostSerializer
+from api.serializers import StringListSerializer
 from cm.errors import AdcmEx
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
-
-from api.api_views import check_obj, hlink, filter_actions, get_upgradable_func
-from api.api_views import UrlField, CommonAPIURL, ObjectURL
-from api.action.serializers import ActionShort
-from api.component.serializers import ComponentDetailSerializer
-from api.host.serializers import HostSerializer
-from api.concern.serializers import ConcernItemSerializer
 
 
 def get_cluster_id(obj):
@@ -85,6 +91,7 @@ class ClusterDetailSerializer(ClusterSerializer):
     imports = hlink('cluster-import', 'id', 'cluster_id')
     bind = hlink('cluster-bind', 'id', 'cluster_id')
     prototype = hlink('cluster-type-details', 'prototype_id', 'prototype_id')
+    multi_state = StringListSerializer(read_only=True)
     concern = ConcernItemSerializer(many=True, read_only=True)
 
     def get_issue(self, obj):
