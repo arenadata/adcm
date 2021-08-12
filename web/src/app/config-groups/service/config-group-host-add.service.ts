@@ -7,7 +7,7 @@ import { convertToParamMap, Params } from '@angular/router';
 import { forkJoin, Observable } from 'rxjs';
 import { ApiService } from '../../core/api';
 import { environment } from '../../../environments/environment';
-import { AddHostToConfigGroupComponent } from '@app/config-groups/components/config-group-host-add/host2configgroup.component';
+import { AddHostToConfigGroupComponent } from '../components/config-group-host-add/config-group-host-add.component';
 import { map } from 'rxjs/operators';
 
 const newConfigGroupHostForm = () =>

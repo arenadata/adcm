@@ -11,7 +11,7 @@
 // limitations under the License.
 import { Component, forwardRef, OnInit } from '@angular/core';
 
-import { BaseFormDirective } from '../../../shared/add-component/base-form.directive';
+import { BaseFormDirective } from '../../../shared/add-component';
 import { ADD_SERVICE_PROVIDER } from '../../../shared/add-component/add-service-token';
 import { ConfigGroupAddService } from '../../service/config-group-add.service';
 import { clearEmptyField } from '../../../core/types';

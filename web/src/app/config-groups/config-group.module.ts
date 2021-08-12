@@ -10,7 +10,7 @@ import { FormElementsModule } from '@app/shared/form-elements/form-elements.modu
 import { ListService } from '../shared/components/list/list.service';
 import { LIST_SERVICE_PROVIDER } from '../shared/components/list/list-service-token';
 import { ConfigGroupHostListComponent } from './pages/host-list/host-list.component';
-import { AddHostToConfigGroupComponent } from './components/config-group-host-add/host2configgroup.component';
+import { AddHostToConfigGroupComponent } from './components/config-group-host-add/config-group-host-add.component';
 
 
 @NgModule({
