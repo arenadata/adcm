@@ -12,6 +12,14 @@ export interface IConfigResponse {
   previous: string;
 }
 
+export interface IConfigListResponse {
+  count: 1;
+  next: null;
+  previous: null;
+  results: IConfig[];
+}
+
+
 export interface IConfigService {
   getConfig(url: string): Observable<IConfig>;
 
@@ -35,7 +43,9 @@ export class ConfigService implements IConfigService {
 
   getHistoryList(url: string, currentVersionId: number): Observable<CompareConfig[]> {
     return this.api.get<IConfigResponse>(url).pipe(
-      switchMap((config) => this.api.get<IConfig[]>(config.history)),
+      switchMap((config) => this.api.get<IConfigListResponse | IConfig[]>(config.history)),
+      // ToDo remove it when API will be consistent
+      map((value) => Array.isArray(value) ? value as IConfig[] : value.results),
       map((h) => h.filter((a) => a.id !== currentVersionId).map((b) => ({
         ...b,
         color: getRandomColor()
