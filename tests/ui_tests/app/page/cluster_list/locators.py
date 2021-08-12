@@ -46,6 +46,7 @@ class ClusterListLocators:
         )
 
         create_btn = Locator(By.XPATH, "//button[./span[text()='Create']]", "Create button")
+        cancel_btn = Locator(By.XPATH, "//button[./span[text()='Cancel']]", "Cancel button")
 
     class ClusterTable(CommonTable):
         class ClusterRow:
