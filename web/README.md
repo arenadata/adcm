@@ -4,6 +4,11 @@ This project was generated with [Angular CLI](https://github.com/angular/angular
 
 ## Storybook
 
+1. Move to ADCM web root directory (usually <some_path>/adcm/web)
+2. Run `docker run -it --rm -v ${pwd}:/web -p 6006:6006 ci.arenadata.io/storybook:latest`
+
+## Storybook (development)
+
 1. Run `yarn run storybook` for start the Storybook.
 2. Navigate to http://localhost:6006/.
 
