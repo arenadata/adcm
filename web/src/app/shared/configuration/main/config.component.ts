@@ -16,6 +16,7 @@ import {
   EventEmitter,
   Input,
   OnChanges,
+  OnInit,
   Output,
   SimpleChanges,
   ViewChild
@@ -40,7 +41,7 @@ import { historyAnime, ISearchParam, MainService } from './main.service';
   providers: [MainService],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ConfigComponent extends SocketListenerDirective implements OnChanges {
+export class ConfigComponent extends SocketListenerDirective implements OnChanges, OnInit {
   loadingStatus = 'Loading...';
   rawConfig = new BehaviorSubject<IConfig>(null);
   saveFlag = false;
@@ -84,21 +85,21 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    const url = changes['url'];
+    const url = changes['configUrl'];
+    const firstChange = url?.firstChange;
 
-    if (!url) {
+    if (!firstChange || !url) {
       this._workerSubscription.unsubscribe();
 
       this._workerSubscription = this.service.worker$
         .pipe(this.takeUntil())
-        .subscribe(() => {
-          console.log('this.service.Current: ', this.service.Current);
-          this.configUrl = this.service.Current?.config;
-        });
+        .subscribe(() => this.configUrl = this.service.Current?.config);
     }
   }
 
   ngOnInit() {
+    this.getConfig(this.configUrl).subscribe();
+
     super.startListenSocket();
   }
 
