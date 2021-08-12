@@ -100,12 +100,8 @@ export class BaseListDirective {
   }
 
   initRouteListener() {
-    console.log('initRouteListener');
-    console.log(this.parent);
-
     this.parent.route.paramMap
       .pipe(
-        tap((qq) => console.log('qq', qq)),
         this.takeUntil(),
         filter((p) => this.checkParam(p))
       )

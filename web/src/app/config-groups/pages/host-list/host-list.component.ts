@@ -39,6 +39,7 @@ export class ConfigGroupHostListComponent extends AdwpListDirective<IHost> {
 
   clickRow(data: RowEventData): void {
     console.log('clickRow');
+    return;
   }
 
   listColumns = [

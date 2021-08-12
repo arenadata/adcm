@@ -49,11 +49,16 @@ export class ConfigGroupHostListService extends EntityService<Host> implements I
   }
 
   get(id: number): Observable<Host> {
+    // ToDo
+    console.log('delete');
+
     return of(null);
   }
 
   delete(row: Host): Observable<Object> {
+    // ToDo
     console.log('delete');
+
     return of(null);
   }
 
