@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from dataclasses import dataclass
 from typing import TypedDict, TypeVar, Union, List
 
 import allure
@@ -16,6 +17,7 @@ import allure
 from enum import Enum
 from selenium.webdriver.remote.webelement import WebElement
 
+from tests.ui_tests.app.helpers.ui_info import UIEntityInfo, UIField
 from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
@@ -34,19 +36,21 @@ class JobStatus(Enum):
     FAILED = 'failed'
 
 
-class PopupTaskInfo(TypedDict):
+@dataclass
+class PopupTaskInfo(UIEntityInfo):
     """Info about the job from popup"""
 
-    action_name: str
-    status: JobStatus
+    action_name: str = UIField('Task action name from popup')
+    status: JobStatus = UIField('Task status from popup')
 
 
+@dataclass
 class TableTaskInfo(PopupTaskInfo):
     """Info about the task from table row"""
 
-    object: str
-    start_date: str
-    finish_date: str
+    object: str = UIField('Name of object invoked action')
+    start_date: str = UIField('Task start date')
+    finish_date: str = UIField('Task finish date')
 
 
 TaskInfo = TypeVar('TaskInfo', bound=Union[PopupTaskInfo, TableTaskInfo])
@@ -70,24 +74,24 @@ class JobListPage(BasePageObject):
         """Get job information from row"""
         row = self.table.get_row(row_num)
         row_locators = TaskListLocators.Table.Row
-        return {
-            'action_name': self.find_child(row, row_locators.action_name).text,
-            'object': self.find_child(row, row_locators.object).text,
-            'start_date': self.find_child(row, row_locators.start_date).text,
-            'finish_date': self.find_child(row, row_locators.finish_date).text,
-            'status': self._get_status_from_class_string(self.find_child(row, row_locators.status)),
-        }
+        return TableTaskInfo(
+            action_name=self.find_child(row, row_locators.action_name).text,
+            object=self.find_child(row, row_locators.object).text,
+            start_date=self.find_child(row, row_locators.start_date).text,
+            finish_date=self.find_child(row, row_locators.finish_date).text,
+            status=self._get_status_from_class_string(self.find_child(row, row_locators.status)),
+        )
 
     def get_task_info_from_popup(self, row_num: int = 0) -> PopupTaskInfo:
         """Get job information from list in popup"""
         job = self.header.get_single_job_row_from_popup(row_num)
         popup_locators = AuthorizedHeaderLocators.JobPopup
-        return {
-            'action_name': self.find_child(job, popup_locators.job_name).text,
-            'status': self._get_status_from_class_string(
+        return PopupTaskInfo(
+            action_name=self.find_child(job, popup_locators.job_name).text,
+            status=self._get_status_from_class_string(
                 self.find_child(job, popup_locators.job_status)
             ),
-        }
+        )
 
     @allure.step('Expand task in row {row_num}')
     def expand_task_in_row(self, row_num: int = 0):

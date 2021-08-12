@@ -9,26 +9,29 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import TypedDict, Literal
+from dataclasses import dataclass
+from typing import Literal
 
 import allure
 
+from tests.ui_tests.app.helpers.ui_info import UIEntityInfo, UIField, UIComparator
 from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.common.base_page import BasePageObject, PageHeader, PageFooter
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
 from tests.ui_tests.app.page.job.locators import JobPageLocators
 
 
-class DetailedPageJobInfo(TypedDict):
+@dataclass
+class DetailedPageJobInfo(UIEntityInfo):
     """Job info from detailed page"""
 
     # name of action / job
-    name: str
+    name: str = UIField('Job name on detailed page')
     # name of object who invoked this job
-    caller_name: str
-    execution_time: str
-    start_date: str
-    finish_date: str
+    caller_name: str = UIField('Name of object invoked action')
+    execution_time: str = UIField('Job execution time')
+    start_date: str = UIField('Job start date', UIComparator.EMPTY)
+    finish_date: str = UIField('Job finish date', UIComparator.EMPTY)
 
 
 class JobPage(BasePageObject):

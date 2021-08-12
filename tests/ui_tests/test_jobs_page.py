@@ -100,38 +100,42 @@ def test_host_action_job(provider: Provider, page: JobListPage):
 
 def test_run_successful_job(cluster: Cluster, page: JobListPage):
     """Run action that finishes successfully and check it is displayed correctly"""
-    expected_info = {
+    popup_expected_info = {
         'status': JobStatus.SUCCESS,
         'action_name': SUCCESS_ACTION_DISPLAY_NAME,
-        'object': cluster.name,
     }
+    expected_info = {**popup_expected_info, 'object': cluster.name}
+    expected_empty = ('finish_date', 'start_date')
     with allure.step('Run action and wait it succeeded'):
         action = cluster.action(display_name=SUCCESS_ACTION_DISPLAY_NAME)
         run_cluster_action_and_assert_result(cluster, action.name)
-    _check_finished_job_info_in_table(page, expected_info)
+    job_info = page.get_task_info_from_table()
+    job_info.compare(expected_info, expected_not_empty=expected_empty)
     page.select_filter_success_tab()
-    _check_finished_job_info_in_table(page, expected_info)
-    _check_job_info_in_popup(
-        page, {'status': expected_info['status'], 'action_name': expected_info['action_name']}
-    )
+    job_info = page.get_task_info_from_table()
+    job_info.compare(expected_info, expected_not_empty=expected_empty)
+    with page.header.open_jobs_popup():
+        job_info = page.get_task_info_from_popup()
+        job_info.compare(popup_expected_info)
 
 
 def test_run_fail_job(cluster: Cluster, page: JobListPage):
     """Run action that fails and check it is displayed correctly"""
-    expected_info = {
+    popup_expected_info = {
         'status': JobStatus.FAILED,
         'action_name': FAIL_ACTION_DISPLAY_NAME,
-        'object': cluster.name,
     }
+    expected_info = {**popup_expected_info, 'object': cluster.name}
+    expected_empty = ('finish_date', 'start_date')
     with allure.step('Run action and wait it succeeded'):
         action = cluster.action(display_name=FAIL_ACTION_DISPLAY_NAME)
         run_cluster_action_and_assert_result(cluster, action.name, status='failed')
-    _check_finished_job_info_in_table(page, expected_info)
+    job_info = page.get_task_info_from_table()
+    job_info.compare(expected_info, expected_not_empty=expected_empty)
     page.select_filter_failed_tab()
-    _check_finished_job_info_in_table(page, expected_info)
-    _check_job_info_in_popup(
-        page, {'status': expected_info['status'], 'action_name': expected_info['action_name']}
-    )
+    job_info = page.get_task_info_from_table()
+    job_info.compare(expected_info, expected_not_empty=expected_empty)
+    _check_job_info_in_popup(page, popup_expected_info)
 
 
 def test_run_multijob(cluster: Cluster, page: JobListPage):
@@ -195,15 +199,14 @@ def test_open_task_by_click_on_name(cluster: Cluster, page: JobListPage):
 @pytest.mark.usefixtures('login_to_adcm_over_api')
 def test_open_log_menu(log_type: str, cluster: Cluster, app_fs: ADCMTest):
     """Open stdout/stderr log menu and check info"""
+    expected_info = {'name': SUCCESS_ACTION_DISPLAY_NAME, 'caller_name': cluster.name}
     action = cluster.action(display_name=SUCCESS_ACTION_DISPLAY_NAME)
     task = run_cluster_action_and_assert_result(cluster, action.name)
     job_page = _open_detailed_job_page(task.jobs[0]['id'], app_fs)
     with allure.step(f'Open menu with {log_type} logs and check all info is presented'):
         getattr(job_page, f'open_{log_type}_menu')()
         job_info = job_page.get_job_info()
-        __check_detail_page_job_info_is_presented(
-            job_info, SUCCESS_ACTION_DISPLAY_NAME, cluster.name
-        )
+        job_info.compare(expected_info)
 
 
 @pytest.mark.usefixtures("login_to_adcm_over_api", "clean_downloads_fs")
@@ -242,6 +245,7 @@ def _test_run_action(page: JobListPage, action_owner: Union[Cluster, Service, Pr
         'action_name': LONG_ACTION_DISPLAY_NAME,
         'object': owner_name,
     }
+    expected_empty, expected_not_empty = ('finish_date', ), ('start_date', )
     with allure.step(
         f'Run action "{LONG_ACTION_DISPLAY_NAME}" on {action_owner.__class__}'
     ), page.table.wait_rows_change():
@@ -250,25 +254,11 @@ def _test_run_action(page: JobListPage, action_owner: Union[Cluster, Service, Pr
     _check_job_info_in_popup(
         page, {'status': expected_info['status'], 'action_name': expected_info['action_name']}
     )
-    _check_running_job_info_in_table(page, expected_info)
+    job_info = page.get_task_info_from_table()
+    job_info.compare(expected_info, expected_empty, expected_not_empty)
     page.select_filter_running_tab()
-    _check_running_job_info_in_table(page, expected_info)
-
-
-@allure.step('Check running job information in table')
-def _check_running_job_info_in_table(page: JobListPage, expected_info: dict):
-    """Get info about job from table and check it"""
     job_info = page.get_task_info_from_table()
-    __check_basic_job_info(job_info, expected_info)
-    __check_only_finish_date_is_empty(job_info)
-
-
-@allure.step('Check finished job information in table')
-def _check_finished_job_info_in_table(page: JobListPage, expected_info: dict):
-    """Get and check info about successfully finished job from table"""
-    job_info = page.get_task_info_from_table()
-    __check_basic_job_info(job_info, expected_info)
-    __check_both_dates_not_empty(job_info)
+    job_info.compare(expected_info, expected_empty, expected_not_empty)
 
 
 @allure.step('Check job information in popup')
@@ -276,7 +266,7 @@ def _check_job_info_in_popup(page: JobListPage, expected_info: dict):
     """Get job info from popup and check it"""
     with page.header.open_jobs_popup():
         job_info = page.get_task_info_from_popup()
-        __check_basic_job_info(job_info, expected_info)
+        job_info.compare(expected_info)
 
 
 @allure.step('Run 6 success and 5 failed actions on 11 hosts')
@@ -297,42 +287,3 @@ def _run_actions_on_hosts(hosts: List[Host]):
 def _open_detailed_job_page(job_id: int, app_fs: ADCMTest) -> JobPage:
     """Open detailed job page"""
     return JobPage(app_fs.driver, app_fs.adcm.url, job_id).open()
-
-
-def __check_basic_job_info(job_info: TaskInfo, expected_info: dict):
-    """Check job info is same as expected (excluding start/finish date check)"""
-    for key in expected_info.keys():
-        assert (
-            job_info[key] == expected_info[key]
-        ), f'Field "{key}" should be {expected_info[key]}, not {job_info[key]}'
-
-
-def __check_only_finish_date_is_empty(job_info: TableTaskInfo):
-    """Check finish date is empty, start date is not"""
-    assert job_info['finish_date'] == '', 'Finish date should be empty'
-    assert job_info['start_date'] != '', 'Start date should not be empty'
-
-
-def __check_both_dates_not_empty(job_info: TableTaskInfo):
-    """Check both start and finish dates are not empty"""
-    assert job_info['finish_date'] != '', 'Finish date should not be empty'
-    assert job_info['start_date'] != '', 'Start date should not be empty'
-
-
-def __check_detail_page_job_info_is_presented(
-    job_info: DetailedPageJobInfo, job_name: str, caller_name: str
-):
-    """
-    Check that all info is presented on detail page:
-    - caller_name and job_name (job/action name) are correct
-    - time fields aren't empty
-    """
-    assert (
-        job_info['name'] == job_name
-    ), f'Job name on detailed page should be {job_name}, not {job_info["name"]}'
-    assert (
-        job_info['caller_name'] == caller_name
-    ), f'Job caller name on detailed page should be {caller_name}, not {job_info["caller_name"]}'
-    assert job_info['finish_date'] != '', 'Finish date on detailed page should not be empty'
-    assert job_info['start_date'] != '', 'Start date on detailed page should not be empty'
-    assert job_info['execution_time'] != '', 'Execution time on detailed page should not be empty'
