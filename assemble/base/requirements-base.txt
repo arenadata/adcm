@@ -20,6 +20,7 @@ uwsgi
 version_utils
 ruyaml
 yspec
+drf-flex-fields
 # Custom bundle libs
 apache-libcloud
 jmespath
