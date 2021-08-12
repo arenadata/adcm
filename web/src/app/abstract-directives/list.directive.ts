@@ -1,4 +1,4 @@
-import { Directive, EventEmitter, Inject, InjectionToken, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Directive, EventEmitter, Inject, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { filter } from 'rxjs/operators';
 import { Store } from '@ngrx/store';
 import { ActivatedRoute, Router } from '@angular/router';

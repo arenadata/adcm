@@ -32,7 +32,6 @@ import { ActionsButtonComponent } from '@app/components/actions-button/actions-b
 import { NavItemPipe } from '@app/pipes/nav-item.pipe';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ObjectLinkSubtitlePipe } from './object-link-subtitle.pipe';
-import { CONFIG_GROUP_LIST_SERVICE } from '@app/config-groups/service/config-group-list.service';
 
 @NgModule({
   imports: [
