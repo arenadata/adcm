@@ -14,14 +14,14 @@ from django.db import IntegrityError
 from rest_framework import serializers
 
 import cm
+from api.action.serializers import ActionShort
+from api.api_views import CommonAPIURL, ObjectURL
+from api.api_views import hlink, check_obj, filter_actions, get_upgradable_func
+from api.concern.serializers import ConcernItemSerializer
+from api.serializers import StringListSerializer
+from api.serializers import UpgradeSerializer, UrlField
 from cm.errors import AdcmEx
 from cm.models import Action, Prototype
-
-from api.api_views import hlink, check_obj, filter_actions, get_upgradable_func
-from api.api_views import CommonAPIURL, ObjectURL
-from api.serializers import UpgradeSerializer, UrlField
-from api.action.serializers import ActionShort
-from api.concern.serializers import ConcernItemSerializer
 
 
 class ProviderSerializer(serializers.Serializer):
@@ -59,6 +59,7 @@ class ProviderDetailSerializer(ProviderSerializer):
     action = CommonAPIURL(view_name='object-action')
     upgrade = hlink('provider-upgrade', 'id', 'provider_id')
     host = ObjectURL(read_only=True, view_name='host')
+    multi_state = StringListSerializer(read_only=True)
     concern = ConcernItemSerializer(many=True, read_only=True)
 
     def get_issue(self, obj):

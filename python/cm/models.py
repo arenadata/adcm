@@ -1,4 +1,5 @@
-# pylint: disable=too-many-lines
+# pylint: disable=too-many-lines,unsupported-membership-test,unsupported-delete-operation
+#   pylint could not understand that JSON fields are dicts
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,18 +14,19 @@
 # limitations under the License.
 
 from __future__ import unicode_literals
+
 from enum import Enum
 from itertools import chain
-from typing import Iterable
+from typing import Iterable, List
+
+from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.auth.models import User, Group, Permission
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 
 from cm.errors import AdcmEx
 from cm.logger import log
-
 
 PROTO_TYPE = (
     ('adcm', 'adcm'),
@@ -208,6 +210,7 @@ class ADCMEntity(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
+    _multi_state = models.JSONField(default=dict, db_column='multi_state')
     issue = models.JSONField(default=dict)
     concern = models.ManyToManyField('ConcernItem', blank=True, related_name='%(class)s_entities')
 
@@ -241,7 +244,7 @@ class ADCMEntity(ADCMModel):
     def __str__(self):
         return '{} #{} "{}"'.format(self.prototype.type, self.id, self.display_name)
 
-    def set_state(self, state: str, event=None) -> 'ADCMEntity':
+    def set_state(self, state: str, event=None) -> None:
         self.state = state or self.state
         self.save()
         if event:
@@ -261,6 +264,33 @@ class ADCMEntity(ADCMModel):
                 ids[attr] = value.pk
 
         return ids
+
+    @property
+    def multi_state(self) -> List[str]:
+        return sorted(self._multi_state.keys())
+
+    def set_multi_state(self, multi_state: str, event=None) -> None:
+        if multi_state in self._multi_state:
+            return
+
+        self._multi_state.update({multi_state: 1})
+        self.save()
+        if event:
+            event.set_object_multi_state(self.prototype.type, self.id)
+        log.info('add "%s" to "%s" multi_state', multi_state, self)
+
+    def unset_multi_state(self, multi_state: str, event=None) -> None:
+        if multi_state not in self._multi_state:
+            return
+
+        del self._multi_state[multi_state]
+        self.save()
+        if event:
+            event.unset_object_multistate(self.prototype.type, self.id)
+        log.info('remove "%s" from "%s" multi_state', multi_state, self)
+
+    def has_multi_state_intersection(self, multi_states: List[str]) -> bool:
+        return bool(set(self._multi_state).intersection(multi_states))
 
 
 class ADCM(ADCMEntity):

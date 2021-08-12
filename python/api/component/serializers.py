@@ -15,10 +15,10 @@
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
-from api.api_views import hlink, filter_actions, get_api_url_kwargs, CommonAPIURL
 from api.action.serializers import ActionShort
+from api.api_views import hlink, filter_actions, get_api_url_kwargs, CommonAPIURL
 from api.concern.serializers import ConcernItemSerializer
-
+from api.serializers import StringListSerializer
 from cm import issue, status_api
 from cm.models import Action
 
@@ -52,6 +52,7 @@ class ComponentDetailSerializer(ComponentSerializer):
     action = CommonAPIURL(read_only=True, view_name='object-action')
     config = CommonAPIURL(read_only=True, view_name='object-config')
     prototype = hlink('component-type-details', 'prototype_id', 'prototype_id')
+    multi_state = StringListSerializer(read_only=True)
     concern = ConcernItemSerializer(many=True, read_only=True)
 
     def get_issue(self, obj):

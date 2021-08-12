@@ -14,11 +14,12 @@ from django.db import IntegrityError
 from rest_framework import serializers
 
 import cm
+from api.action.serializers import ActionShort
+from api.api_views import hlink, check_obj, filter_actions, CommonAPIURL, ObjectURL
+from api.concern.serializers import ConcernItemSerializer
+from api.serializers import StringListSerializer
 from cm.errors import AdcmEx
 from cm.models import Cluster, Host, HostProvider, Prototype, Action
-from api.api_views import hlink, check_obj, filter_actions, CommonAPIURL, ObjectURL
-from api.action.serializers import ActionShort
-from api.concern.serializers import ConcernItemSerializer
 
 
 class HostSerializer(serializers.Serializer):
@@ -63,6 +64,7 @@ class HostDetailSerializer(HostSerializer):
     config = CommonAPIURL(view_name='object-config')
     action = CommonAPIURL(view_name='object-action')
     prototype = hlink('host-type-details', 'prototype_id', 'prototype_id')
+    multi_state = StringListSerializer(read_only=True)
     concern = ConcernItemSerializer(many=True, read_only=True)
 
     def get_issue(self, obj):

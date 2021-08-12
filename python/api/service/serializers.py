@@ -16,12 +16,12 @@ from django.db.utils import IntegrityError
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
+from api.action.serializers import ActionShort
 from api.api_views import check_obj, filter_actions, CommonAPIURL, ObjectURL
 from api.cluster.serializers import BindSerializer
-from api.action.serializers import ActionShort
 from api.component.serializers import ComponentUISerializer
 from api.concern.serializers import ConcernItemSerializer
-
+from api.serializers import StringListSerializer
 from cm import issue
 from cm import status_api
 from cm.api import add_service_to_cluster, multi_bind, bind
@@ -81,6 +81,7 @@ class ServiceDetailSerializer(ServiceSerializer):
         lookup_field='prototype_id',
         lookup_url_kwarg='prototype_id',
     )
+    multi_state = StringListSerializer(read_only=True)
     concern = ConcernItemSerializer(many=True, read_only=True)
 
     def get_issue(self, obj):
