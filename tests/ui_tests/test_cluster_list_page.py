@@ -402,7 +402,7 @@ def test_check_create_host_and_hostprovider_from_cluster_host_page(
     new_provider_name = cluster_host_page.host_popup.create_provider_and_host(
         bundle_archive, HOST_NAME
     )
-    host_info = cluster_host_page.get_host_info_from_row(0)
+    host_info = cluster_host_page.get_host_info_from_row(table_has_cluster_column=False)
     check_host_info(host_info, HOST_NAME, new_provider_name, None, 'created')
 
 
@@ -413,7 +413,7 @@ def test_check_create_host_from_cluster_host_page(app_fs, login_to_adcm_over_api
     cluster_host_page.wait_page_is_opened()
     cluster_host_page.click_add_host_btn(is_not_first_host=False)
     cluster_host_page.host_popup.create_host(HOST_NAME)
-    host_info = cluster_host_page.get_host_info_from_row(0)
+    host_info = cluster_host_page.get_host_info_from_row(table_has_cluster_column=False)
     check_host_info(host_info, HOST_NAME, PROVIDER_NAME, None, 'created')
     host_row = cluster_host_page.table.get_all_rows()[0]
     cluster_host_page.click_on_host_name_in_host_row(host_row)
