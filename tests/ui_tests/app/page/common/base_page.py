@@ -305,7 +305,7 @@ class PageHeader(BasePageObject):
         super().__init__(driver, base_url)
 
     @property
-    def row_count(self):
+    def popup_jobs_row_count(self):
         return len(self.get_job_rows_from_popup())
 
     @allure.step('Check elements in header for authorized user')
@@ -417,6 +417,7 @@ class PageHeader(BasePageObject):
 
     @contextmanager
     def open_jobs_popup(self):
+        """Open jobs popup by hovering icon and hover JOBS menu item afterwards"""
         self.hover_element(AuthorizedHeaderLocators.job_block_previous)
         yield
         self.hover_element(AuthorizedHeaderLocators.jobs)
@@ -430,7 +431,7 @@ class PageHeader(BasePageObject):
         """Get single job row from *opened* popup"""
 
         def popup_table_has_enough_rows():
-            self.__assert_enough_rows(row_num, self.row_count)
+            self.__assert_enough_rows(row_num, self.popup_jobs_row_count)
 
         wait_until_step_succeeds(popup_table_has_enough_rows, timeout=5, period=0.1)
         rows = self.get_job_rows_from_popup()

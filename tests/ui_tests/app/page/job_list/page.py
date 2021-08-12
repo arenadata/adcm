@@ -34,14 +34,14 @@ class JobStatus(Enum):
     FAILED = 'failed'
 
 
-class PopupJobInfo(TypedDict):
+class PopupTaskInfo(TypedDict):
     """Info about the job from popup"""
 
     action_name: str
     status: JobStatus
 
 
-class TableJobInfo(PopupJobInfo):
+class TableTaskInfo(PopupTaskInfo):
     """Info about the job from table row"""
 
     object: str
@@ -49,7 +49,7 @@ class TableJobInfo(PopupJobInfo):
     finish_date: str
 
 
-JobInfo = TypeVar('JobInfo', bound=Union[PopupJobInfo, TableJobInfo])
+TaskInfo = TypeVar('TaskInfo', bound=Union[PopupTaskInfo, TableTaskInfo])
 
 
 class JobListPage(BasePageObject):
@@ -59,7 +59,7 @@ class JobListPage(BasePageObject):
         self.footer = PageFooter(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url, TaskListLocators.Table)
 
-    def get_job_info(self, row_num: int = 0) -> TableJobInfo:
+    def get_task_info_from_table(self, row_num: int = 0) -> TableTaskInfo:
         """Get job information from row"""
         row = self.table.get_row(row_num)
         row_locators = TaskListLocators.Table.Row
@@ -71,7 +71,7 @@ class JobListPage(BasePageObject):
             'status': self._get_status_from_class_string(self.find_child(row, row_locators.status)),
         }
 
-    def get_job_info_from_popup(self, row_num: int = 0) -> PopupJobInfo:
+    def get_task_info_from_popup(self, row_num: int = 0) -> PopupTaskInfo:
         """Get job information from list in popup"""
         job = self.header.get_single_job_row_from_popup(row_num)
         popup_locators = AuthorizedHeaderLocators.JobPopup

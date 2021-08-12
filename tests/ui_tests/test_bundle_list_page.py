@@ -83,9 +83,9 @@ def test_ee_bundle_upload(bundle_archive: str, page: BundleListPage):
 def test_delete_bundle(bundle_archive: str, page: BundleListPage):
     """Upload bundle and delete it"""
     page.upload_bundle(bundle_archive)
-    assert page.table.row_count == 1, 'One bundle should be uploaded'
+    assert page.table.popup_jobs_row_count == 1, 'One bundle should be uploaded'
     page.delete_bundle()
-    assert page.table.row_count == 0, 'No bundle should be listed in the table'
+    assert page.table.popup_jobs_row_count == 0, 'No bundle should be listed in the table'
 
 
 @pytest.mark.full()
@@ -107,5 +107,5 @@ def test_two_bundles(bundle_archives: List[str], page: BundleListPage):
         page.upload_bundle(bundle_archives[0])
     with page.table.wait_rows_change():
         page.upload_bundle(bundle_archives[1])
-    rows = page.table.row_count
+    rows = page.table.popup_jobs_row_count
     assert rows == 2, f'Row amount should be 2, but only {rows} is presented'

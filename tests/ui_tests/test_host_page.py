@@ -139,7 +139,7 @@ def check_host_info(
 def check_rows_amount(page, expected_amount: int, page_num: int):
     """Check rows count is equal to expected"""
     assert (
-        page.table.row_count == expected_amount
+        page.table.popup_jobs_row_count == expected_amount
     ), f'Page #{page_num}  should contain {expected_amount}'
 
 

@@ -23,9 +23,8 @@ from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.job_list.page import (
     JobListPage,
     JobStatus,
-    TableJobInfo,
-    JobInfo,
-    PopupJobInfo,
+    TableTaskInfo,
+    TaskInfo,
 )
 
 
@@ -93,13 +92,11 @@ def test_host_action_job(provider: Provider, page: JobListPage):
 
 def test_run_successful_job(cluster: Cluster, page: JobListPage):
     """Run action that finishes successfully and check it is displayed correctly"""
-    expected_info = TableJobInfo(
-        status=JobStatus.SUCCESS,
-        action_name=SUCCESS_ACTION_DISPLAY_NAME,
-        object=cluster.name,
-        start_date='DoNotCompareMe',
-        finish_date='DoNotCompareMe',
-    )
+    expected_info = {
+        'status': JobStatus.SUCCESS,
+        'action_name': SUCCESS_ACTION_DISPLAY_NAME,
+        'object': cluster.name,
+    }
     with allure.step('Run action and wait it succeeded'):
         action = cluster.action(display_name=SUCCESS_ACTION_DISPLAY_NAME)
         run_cluster_action_and_assert_result(cluster, action.name)
@@ -113,13 +110,11 @@ def test_run_successful_job(cluster: Cluster, page: JobListPage):
 
 def test_run_fail_job(cluster: Cluster, page: JobListPage):
     """Run action that fails and check it is displayed correctly"""
-    expected_info = TableJobInfo(
-        status=JobStatus.FAILED,
-        action_name=FAIL_ACTION_DISPLAY_NAME,
-        object=cluster.name,
-        start_date='DoNotCompareMe',
-        finish_date='DoNotCompareMe',
-    )
+    expected_info = {
+        'status': JobStatus.FAILED,
+        'action_name': FAIL_ACTION_DISPLAY_NAME,
+        'object': cluster.name,
+    }
     with allure.step('Run action and wait it succeeded'):
         action = cluster.action(display_name=FAIL_ACTION_DISPLAY_NAME)
         run_cluster_action_and_assert_result(cluster, action.name, status='failed')
@@ -140,13 +135,11 @@ def _test_run_action(page: JobListPage, action_owner: Union[Cluster, Service, Pr
     Check table info
     """
     owner_name = action_owner.name if action_owner.__class__ != Host else action_owner.fqdn
-    expected_info = TableJobInfo(
-        status=JobStatus.RUNNING,
-        action_name=LONG_ACTION_DISPLAY_NAME,
-        object=owner_name,
-        start_date='DoNotCompareMe',
-        finish_date='',
-    )
+    expected_info = {
+        'status': JobStatus.RUNNING,
+        'action_name': LONG_ACTION_DISPLAY_NAME,
+        'object': owner_name,
+    }
     with allure.step(
         f'Run action "{LONG_ACTION_DISPLAY_NAME}" on {action_owner.__class__}'
     ), page.table.wait_rows_change():
@@ -161,45 +154,44 @@ def _test_run_action(page: JobListPage, action_owner: Union[Cluster, Service, Pr
 
 
 @allure.step('Check running job information in table')
-def _check_running_job_info_in_table(page: JobListPage, expected_info: TableJobInfo):
+def _check_running_job_info_in_table(page: JobListPage, expected_info: dict):
     """Get info about job from table and check it"""
-    job_info = page.get_job_info()
+    job_info = page.get_task_info_from_table()
     __check_basic_job_info(job_info, expected_info)
     __check_only_finish_date_is_empty(job_info)
 
 
 @allure.step('Check finished job information in table')
-def _check_finished_job_info_in_table(page: JobListPage, expected_info: TableJobInfo):
+def _check_finished_job_info_in_table(page: JobListPage, expected_info: dict):
     """Get and check info about successfully finished job from table"""
-    job_info = page.get_job_info()
+    job_info = page.get_task_info_from_table()
     __check_basic_job_info(job_info, expected_info)
     __check_both_dates_not_empty(job_info)
 
 
 @allure.step('Check job information in popup')
-def _check_job_info_in_popup(page: JobListPage, expected_info: PopupJobInfo):
+def _check_job_info_in_popup(page: JobListPage, expected_info: dict):
     """Get job info from popup and check it"""
     with page.header.open_jobs_popup():
-        job_info = page.get_job_info_from_popup()
+        job_info = page.get_task_info_from_popup()
         __check_basic_job_info(job_info, expected_info)
 
 
-def __check_basic_job_info(job_info: JobInfo, expected_info: JobInfo):
+def __check_basic_job_info(job_info: TaskInfo, expected_info: dict):
     """Check job info is same as expected (excluding start/finish date check)"""
-    non_date_fields = {k for k in expected_info.keys() if k not in ('finish_date', 'start_date')}
-    for key in non_date_fields:
+    for key in expected_info.keys():
         assert (
             job_info[key] == expected_info[key]
         ), f'Field "{key}" should be {expected_info[key]}, not {job_info[key]}'
 
 
-def __check_only_finish_date_is_empty(job_info: TableJobInfo):
+def __check_only_finish_date_is_empty(job_info: TableTaskInfo):
     """Check finish date is empty, start date is not"""
     assert job_info['finish_date'] == '', 'Finish date should be empty'
     assert job_info['start_date'] != '', 'Start date should not be empty'
 
 
-def __check_both_dates_not_empty(job_info: TableJobInfo):
+def __check_both_dates_not_empty(job_info: TableTaskInfo):
     """Check both start and finish dates are not empty"""
     assert job_info['finish_date'] != '', 'Finish date should not be empty'
     assert job_info['start_date'] != '', 'Start date should not be empty'
