@@ -14,6 +14,7 @@ from typing import Union, Tuple, List
 
 import allure
 import pytest
+from adcm_client.base import ObjectNotFound
 from adcm_client.objects import (
     Provider,
     Cluster,
@@ -48,8 +49,8 @@ def host(host_provider: Provider) -> Host:
 @pytest.fixture()
 def complete_cluster(cluster: Cluster, host: Host) -> Cluster:
     cluster.host_add(host)
-    service = cluster.service_add(name="dummy")
-    cluster.hostcomponent_set((host, service.component(name="dummy")))
+    service = cluster.service_add(name="first_service")
+    cluster.hostcomponent_set((host, service.component(name="first_service_component_1")))
     return cluster
 
 
@@ -112,7 +113,7 @@ class TestServiceLock:
         Test that service locked when action running and unlocked when action ends
         """
         cluster.host_add(host)
-        service = cluster.service_add(name="dummy")
+        service = cluster.service_add(name="first_service")
         is_free(service)
         task = _lock_obj(service)
         is_locked(service)
@@ -124,7 +125,7 @@ class TestServiceLock:
         Test that service lock also locks parent objects:
             - Cluster
         """
-        task = _lock_obj(complete_cluster.service(name="dummy"))
+        task = _lock_obj(complete_cluster.service(name="first_service"))
         is_locked(complete_cluster)
         task.wait()
         is_free(complete_cluster)
@@ -135,7 +136,7 @@ class TestServiceLock:
             - Components
             - Hosts
         """
-        service = complete_cluster.service(name="dummy")
+        service = complete_cluster.service(name="first_service")
         task = _lock_obj(service)
         for component in service.component_list():
             is_locked(component)
@@ -149,8 +150,8 @@ class TestServiceLock:
         """
         Test that no horizontal lock when service locked
         """
-        second_service = complete_cluster.service_add(name="second")
-        _lock_obj(complete_cluster.service(name="dummy"))
+        second_service = complete_cluster.service_add(name="second_service")
+        _lock_obj(complete_cluster.service(name="first_service"))
         is_free(second_service)
 
 
@@ -159,8 +160,8 @@ class TestComponentLock:
         """
         Test that component locked when action running and unlocked when action ends
         """
-        service = complete_cluster.service(name="dummy")
-        component = service.component(name="dummy")
+        service = complete_cluster.service(name="first_service")
+        component = service.component(name="first_service_component_1")
 
         is_free(component)
         task = _lock_obj(component)
@@ -173,8 +174,8 @@ class TestComponentLock:
             - Service
             - Cluster
         """
-        service = complete_cluster.service(name="dummy")
-        task = _lock_obj(service.component(name="dummy"))
+        service = complete_cluster.service(name="first_service")
+        task = _lock_obj(service.component(name="first_service_component_1"))
         is_locked(service)
         is_locked(complete_cluster)
         task.wait()
@@ -186,7 +187,11 @@ class TestComponentLock:
         Test that component lock also locks child objects:
             - Host
         """
-        task = _lock_obj(complete_cluster.service(name="dummy").component(name="dummy"))
+        task = _lock_obj(
+            complete_cluster.service(name="first_service").component(
+                name="first_service_component_1"
+            )
+        )
         is_locked(host)
         task.wait()
         is_free(host)
@@ -195,9 +200,9 @@ class TestComponentLock:
         """
         Test that no horizontal lock when component locked
         """
-        service = complete_cluster.service(name="dummy")
-        _lock_obj(service.component(name="dummy"))
-        is_free(service.component(name="second"))
+        service = complete_cluster.service(name="first_service")
+        _lock_obj(service.component(name="first_service_component_1"))
+        is_free(service.component(name="first_service_component_2"))
 
 
 class TestHostLock:
@@ -218,8 +223,8 @@ class TestHostLock:
             - Service
             - Cluster
         """
-        service = complete_cluster.service(name="dummy")
-        component = service.component(name="dummy")
+        service = complete_cluster.service(name="first_service")
+        component = service.component(name="first_service_component_1")
         task = _lock_obj(host)
         is_locked(component)
         is_locked(service)
@@ -286,7 +291,7 @@ def test_host_should_be_unlocked_when_ansible_task_killed(complete_cluster: Clus
 
 
 def test_service_should_be_unlocked_when_ansible_task_killed(complete_cluster: Cluster):
-    service = complete_cluster.service(name="dummy")
+    service = complete_cluster.service(name="first_service")
     with allure.step("Run action: lock-terminate for cluster"):
         task = complete_cluster.action(name="lock-terminate").run()
     is_locked(service)
@@ -295,47 +300,47 @@ def test_service_should_be_unlocked_when_ansible_task_killed(complete_cluster: C
 
 
 @pytest.mark.parametrize("adcm_object", ["Cluster", "Service", "Component"])
-@pytest.mark.parametrize("expand_action", ["expand_success", "expand_failed"])
+@pytest.mark.parametrize(
+    "expand_action",
+    ["expand_success", "expand_failed", "expand_success_multijob", "expand_failed_multijob"],
+)
 def test_host_should_be_unlocked_after_expand_action(
-    sdk_client_fs: ADCMClient,
     cluster_with_two_hosts: Tuple[Cluster, List[Host]],
-    host_provider: Provider,
     adcm_object: str,
     expand_action: str,
 ):
     action_args = {"obj_for_action": None}
     cluster, _ = cluster_with_two_hosts
-    dummy_service = cluster.service_add(name="second")
-    dummy_component = dummy_service.component(name="dummy")
+    first_service = cluster.service_add(name="first_service")
     if adcm_object == "Cluster":
         action_args["obj_for_action"] = cluster
     elif adcm_object == "Service":
-        action_args["obj_for_action"] = dummy_service
+        action_args["obj_for_action"] = first_service
     elif adcm_object == "Component":
-        action_args["obj_for_action"] = dummy_component
+        action_args["obj_for_action"] = first_service.component(name="first_service_component_1")
 
     _test_expand_object_action(cluster_with_two_hosts, action_name=expand_action, **action_args)
 
 
 @pytest.mark.parametrize("adcm_object", ["Cluster", "Service", "Component"])
-@pytest.mark.parametrize("shrink_action", ["shrink_success", "shrink_failed"])
+@pytest.mark.parametrize(
+    "shrink_action",
+    ["shrink_success", "shrink_failed", "shrink_success_multijob", "shrink_failed_multijob"],
+)
 def test_host_should_be_unlocked_after_shrink_action(
-    sdk_client_fs: ADCMClient,
     cluster_with_two_hosts: Tuple[Cluster, List[Host]],
-    host_provider: Provider,
     adcm_object: str,
     shrink_action: str,
 ):
     action_args = {"obj_for_action": None}
     cluster, _ = cluster_with_two_hosts
-    dummy_service = cluster.service_add(name="second")
-    dummy_component = dummy_service.component(name="dummy")
+    first_service = cluster.service_add(name="first_service")
     if adcm_object == "Cluster":
         action_args["obj_for_action"] = cluster
     elif adcm_object == "Service":
-        action_args["obj_for_action"] = dummy_service
+        action_args["obj_for_action"] = first_service
     elif adcm_object == "Component":
-        action_args["obj_for_action"] = dummy_component
+        action_args["obj_for_action"] = first_service.component(name="first_service_component_1")
 
     _test_shrink_object_action(cluster_with_two_hosts, action_name=shrink_action, **action_args)
 
@@ -361,13 +366,11 @@ def test_host_should_be_unlocked_after_shrink_action(
     ],
 )
 def test_host_should_be_unlocked_after_service_action_with_ansible_plugin(
-    sdk_client_fs: ADCMClient,
     cluster_with_two_hosts: Tuple[Cluster, List[Host]],
-    host_provider: Provider,
     action_with_ansible_plugin: str,
 ):
     cluster, _ = cluster_with_two_hosts
-    dummy_service = cluster.service_add(name="second")
+    dummy_service = cluster.service_add(name="first_service")
     _test_object_action_with_ansible_plugin(
         cluster_with_two_hosts, action_name=action_with_ansible_plugin, obj_for_action=dummy_service
     )
@@ -390,16 +393,68 @@ def test_host_should_be_unlocked_after_service_action_with_ansible_plugin(
     ],
 )
 def test_host_should_be_unlocked_after_cluster_action_with_ansible_plugin(
-    sdk_client_fs: ADCMClient,
     cluster_with_two_hosts: Tuple[Cluster, List[Host]],
-    host_provider: Provider,
     action_with_ansible_plugin: str,
 ):
     cluster, _ = cluster_with_two_hosts
-    cluster.service_add(name="second")
     _test_object_action_with_ansible_plugin(
         cluster_with_two_hosts, action_name=action_with_ansible_plugin, obj_for_action=cluster
     )
+
+
+@pytest.mark.parametrize("adcm_object", ["Cluster", "Service", "Component"])
+@pytest.mark.parametrize(
+    "host_action_postfix",
+    [
+        "host_action_success",
+        "host_action_failed",
+        "host_action_multijob_success",
+        "host_action_multijob_failed",
+    ],
+)
+@pytest.mark.parametrize(
+    "run_on_host",
+    [
+        "host_with_two_components",
+        "host_with_one_component",
+        "host_with_different_services",
+    ],
+)
+def test_host_should_be_unlocked_after_host_action(
+    cluster: Cluster,
+    host_provider: Provider,
+    adcm_object: str,
+    host_action_postfix: str,
+    run_on_host: str,
+):
+    action_name = f"{adcm_object}_{host_action_postfix}"
+    first_service = cluster.service_add(name="first_service")
+    second_service = cluster.service_add(name="second_service")
+
+    host_with_two_components = host_provider.host_create("host_with_two_components")
+    host_with_one_component = host_provider.host_create("host_with_one_component")
+    host_with_different_services = host_provider.host_create("host_with_different_services")
+
+    cluster_hosts = [
+        host_with_two_components,
+        host_with_one_component,
+        host_with_different_services,
+    ]
+    for host in cluster_hosts:
+        cluster.host_add(host)
+
+    cluster.hostcomponent_set(
+        (host_with_two_components, second_service.component(name="second_service_component_1")),
+        (host_with_two_components, second_service.component(name="second_service_component_2")),
+        (host_with_one_component, second_service.component(name="second_service_component_1")),
+        (host_with_different_services, first_service.component(name="first_service_component_2")),
+        (host_with_different_services, second_service.component(name="second_service_component_1")),
+    )
+    host = cluster.host(fqdn=run_on_host)
+    with allure.step(f"Run action {action_name} on {host}"):
+        host.action(name=action_name).run().wait(timeout=30)
+    for host in cluster_hosts:
+        is_free(host)
 
 
 def _test_expand_object_action(
@@ -409,23 +464,23 @@ def _test_expand_object_action(
 ):
     cluster, hosts = cluster_with_two_hosts
     host1, host2 = hosts
-    dummy_service = cluster.service(name="second")
-    dummy_component = dummy_service.component(name="dummy")
+    first_service = cluster.service(name="first_service")
+    first_service_component = first_service.component(name="first_service_component_1")
     cluster.hostcomponent_set(
-        (host1, dummy_component),
+        (host1, first_service_component),
     )
     with allure.step(f"Run {obj_for_action.__class__.__name__} action: expand component from host"):
         obj_for_action.action(name=action_name,).run(
             hc=[
                 {
                     "host_id": host1.host_id,
-                    "service_id": dummy_component.service_id,
-                    "component_id": dummy_component.component_id,
+                    "service_id": first_service_component.service_id,
+                    "component_id": first_service_component.component_id,
                 },
                 {
                     "host_id": host2.host_id,
-                    "service_id": dummy_component.service_id,
-                    "component_id": dummy_component.component_id,
+                    "service_id": first_service_component.service_id,
+                    "component_id": first_service_component.component_id,
                 },
             ]
         ).wait()
@@ -440,20 +495,20 @@ def _test_shrink_object_action(
 ):
     cluster, hosts = cluster_with_two_hosts
     host1, host2 = hosts
-    dummy_service = cluster.service(name="second")
-    dummy_component = dummy_service.component(name="dummy")
-    cluster.hostcomponent_set(
-        (host1, dummy_component),
-        (host2, dummy_component),
-    )
+    first_service_component, second_service_component = _cluster_with_components(cluster, hosts)
     with allure.step(f"Run {obj_for_action.__class__.__name__} action: shrink component from host"):
         obj_for_action.action(name=action_name,).run(
             hc=[
                 {
                     "host_id": host1.host_id,
-                    "service_id": dummy_component.service_id,
-                    "component_id": dummy_component.component_id,
-                }
+                    "service_id": second_service_component.service_id,
+                    "component_id": second_service_component.component_id,
+                },
+                {
+                    "host_id": host2.host_id,
+                    "service_id": first_service_component.service_id,
+                    "component_id": first_service_component.component_id,
+                },
             ]
         ).wait()
     is_free(host1)
@@ -467,16 +522,29 @@ def _test_object_action_with_ansible_plugin(
 ):
     cluster, hosts = cluster_with_two_hosts
     host1, host2 = hosts
-    dummy_service = cluster.service(name="second")
-    dummy_component = dummy_service.component(name="dummy")
-    cluster.hostcomponent_set(
-        (host1, dummy_component),
-    )
+    _cluster_with_components(cluster, hosts)
     with allure.step(f"Run {obj_for_action.__class__.__name__} action {action_name}"):
         obj_for_action.action(name=action_name).run().wait(timeout=30)
 
     is_free(host1)
     is_free(host2)
+
+
+def _cluster_with_components(cluster: Cluster, hosts: List[Host]):
+    host1, host2 = hosts
+    try:
+        first_service = cluster.service(name="first_service")
+    except ObjectNotFound:
+        first_service = cluster.service_add(name="first_service")
+    second_service = cluster.service_add(name="second_service")
+    first_service_component = first_service.component(name="first_service_component_1")
+    second_service_component = second_service.component(name="second_service_component_1")
+    cluster.hostcomponent_set(
+        (host1, first_service_component),
+        (host1, second_service_component),
+        (host2, first_service_component),
+    )
+    return first_service_component, second_service_component
 
 
 def _lock_obj(obj: Union[Cluster, Service, Component, Provider, Host]) -> Task:
