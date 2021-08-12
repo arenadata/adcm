@@ -55,7 +55,6 @@ HOST_NAME = 'test-host'
 PROVIDER_WITH_ISSUE_NAME = 'provider_with_issue'
 
 
-# pylint: disable=redefined-outer-name
 @pytest.fixture()
 def create_community_cluster(sdk_client_fs: ADCMClient, app_fs):
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)

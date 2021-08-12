@@ -51,7 +51,7 @@ confidence=
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
 
-disable=missing-docstring,invalid-name,no-self-use,abstract-method,unused-argument,no-else-return,duplicate-code,fixme,no-member,too-few-public-methods,wrong-import-order,useless-import-alias,consider-using-with
+disable=missing-docstring,invalid-name,no-self-use,abstract-method,unused-argument,no-else-return,duplicate-code,fixme,no-member,too-few-public-methods,wrong-import-order,useless-import-alias,consider-using-with,redefined-outer-name
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

@@ -218,6 +218,16 @@ class ClusterHostPage(ClusterPageMixin):
 
     @allure.step("Click on add host button")
     def click_add_host_btn(self, is_not_first_host: bool = True):
+        """
+        Click on the button 'Add host' under the host table.
+        In case there are any hosts that have been added earlier (no matter from this popup or from host list page)
+        there will be a popup with the list of the existing hosts,
+        so to open creating host popup you need again to click on a special button for creating hosts.
+        In case there are no hosts at all, creating hosts popup will be open instantly.
+
+        :param is_not_first_host: flag to indicate if there are any created hosts in adcm.
+        """
+
         self.find_and_click(ClusterHostLocators.add_host_btn)
         self.wait_element_visible(HostCreationLocators.block)
         if is_not_first_host:
@@ -227,6 +237,13 @@ class ClusterHostPage(ClusterPageMixin):
     def get_host_info_from_row(
         self, is_cluster_value: bool = True, row_num: int = 0
     ) -> HostRowInfo:
+        """
+        Compile the values of the fields describing the host.
+
+        :param is_cluster_value: flag to define if there is a cluster column in the table
+        (e.g. there are no such column in cluster host page).
+        :param row_num: row number in the table.
+        """
         row = self.table.get_all_rows()[row_num]
         row_elements = ClusterHostLocators.HostTable.HostRow
         cluster_value = (
@@ -244,11 +261,11 @@ class ClusterHostPage(ClusterPageMixin):
         )
 
     @allure.step("Click on host name in row")
-    def click_on_host_name_in_host_row(self, row):
+    def click_on_host_name_in_host_row(self, row: WebElement):
         self.find_child(row, ClusterHostLocators.HostTable.HostRow.fqdn).click()
 
     @allure.step("Click on action in host row")
-    def click_on_action_btn_in_host_row(self, row):
+    def click_on_action_btn_in_host_row(self, row: WebElement):
         self.find_child(row, ClusterHostLocators.HostTable.HostRow.actions).click()
 
     @allure.step("Click on config in host row")
