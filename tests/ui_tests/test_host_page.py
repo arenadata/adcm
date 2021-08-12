@@ -149,13 +149,6 @@ def check_host_info(
     check_host_value('state', host_info.state, state)
 
 
-def check_rows_amount(page, expected_amount: int, page_num: int):
-    """Check rows count is equal to expected"""
-    assert (
-        page.table.popup_jobs_row_count == expected_amount
-    ), f'Page #{page_num}  should contain {expected_amount}'
-
-
 def _check_menu(
     menu_name: str,
     provider_bundle: Bundle,
