@@ -14,8 +14,20 @@ import { Injectable } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { isEmptyObject } from '@app/core/types';
 
-import { ISearchParam } from './main/main.service';
-import { controlType, IConfig, IConfigAttr, IFieldOptions, IFieldStack, ILimits, IPanelOptions, IValidator, resultTypes, TNBase, TNForm } from './types';
+import { ISearchParam } from '../main/main.service';
+import {
+  controlType,
+  IConfig,
+  IConfigAttr,
+  IFieldOptions,
+  IFieldStack,
+  ILimits,
+  IPanelOptions,
+  IValidator,
+  resultTypes,
+  TNBase,
+  TNForm
+} from '../types';
 
 export type TFormOptions = IFieldOptions | IPanelOptions;
 
@@ -147,8 +159,8 @@ export class FieldService {
     const check = (a: TFormOptions): boolean =>
       'options' in a
         ? a.activatable
-          ? isVisibleField(a) // if group.activatable - only visible
-          : isVisibleField(a) && !a.read_only // else visible an not read_only
+        ? isVisibleField(a) // if group.activatable - only visible
+        : isVisibleField(a) && !a.read_only // else visible an not read_only
           ? a.options.some((b) => check(b)) // check inner fields
           : false
         : isVisibleField(a) && !a.read_only; // for fields in group
@@ -186,6 +198,7 @@ export class FieldService {
   /**
    * External use (scheme.service) to set validator for FormControl by type
    * @param field Partial<FieldOptions>{ ValidatorInfo, controlType }
+   * @param controlToCompare
    */
   public setValidator(field: { validator: IValidator; controlType: controlType }, controlToCompare?: AbstractControl) {
     const v: ValidatorFn[] = [];

@@ -27,7 +27,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { FormElementsModule } from '../form-elements/form-elements.module';
 import { StuffModule } from '../stuff.module';
-import { FieldService } from './field.service';
+import { FieldService } from './services/field.service';
 import { FieldComponent } from './field/field.component';
 import { ConfigFieldsComponent } from './fields/fields.component';
 import { GroupFieldsComponent } from './group-fields/group-fields.component';
@@ -43,7 +43,11 @@ import { ToolsComponent } from './tools/tools.component';
 import { YspecService } from './yspec/yspec.service';
 import { AdwpListModule } from '@adwp-ui/widgets';
 import { AddingModule } from '@app/shared/add-component/adding.module';
-import { ConfigService } from '@app/shared/configuration/main/config.service';
+import { ConfigService } from '@app/shared/configuration/services/config.service';
+import {
+  ConfigComponentChannelService,
+  ConfigComponentEvents
+} from '@app/shared/configuration/services/events.service';
 
 const material = [
   MatIconModule,
@@ -76,7 +80,7 @@ const material = [
   ],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, StuffModule, FormElementsModule, ...material, AdwpListModule, AddingModule],
   exports: [ConfigComponent, ConfigFieldsComponent],
-  providers: [FieldService, YspecService, SchemeService, ConfigService],
+  providers: [FieldService, YspecService, SchemeService, ConfigService, ConfigComponentChannelService, ConfigComponentEvents],
 })
 export class ConfigurationModule {
 }

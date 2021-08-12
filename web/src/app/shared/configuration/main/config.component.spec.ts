@@ -20,7 +20,7 @@ import { provideMockStore } from '@ngrx/store/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { EMPTY } from 'rxjs';
 
-import { FieldService } from '../field.service';
+import { FieldService } from '../services/field.service';
 import { FieldComponent } from '../field/field.component';
 import { ConfigFieldsComponent } from '../fields/fields.component';
 import { GroupFieldsComponent } from '../group-fields/group-fields.component';

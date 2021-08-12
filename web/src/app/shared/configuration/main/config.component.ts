@@ -50,6 +50,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   isLoading = false;
 
   worker$ = this.service.worker$.pipe(this.takeUntil());
+  isReady$: Observable<void>;
 
   @ViewChild('fls') fields: ConfigFieldsComponent;
   @ViewChild('history') historyComponent: HistoryComponent;
@@ -57,24 +58,9 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
 
   @Input()
   configUrl: string;
-  // private url = '';
-  //
-  // @Input()
-  // set configUrl(url: string) {
-  //   this.url = url;
-  //   this.getConfig().subscribe();
-  // }
 
   @Output()
   event = new EventEmitter<{ name: string; data?: any }>();
-
-  // get cUrl() {
-  //   return `${this.url}current/`;
-  // }
-  //
-  // get saveUrl(): string {
-  //   return `${this.url}history/`;
-  // }
 
   private _workerSubscription: Subscription = Subscription.EMPTY;
 
@@ -84,6 +70,8 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     socket: Store<SocketState>,
   ) {
     super(socket);
+
+    this.isReady$ = service.events.isReady$.pipe(this.takeUntil());
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -95,19 +83,21 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   ngOnInit(): void {
     if (!this.configUrl) this.getConfigFromWorker();
     this.getConfig(this.configUrl).subscribe();
+
+    this.isReady$.subscribe(this.onReady);
     super.startListenSocket();
   }
 
-  onReady(url: string): void {
+  onReady = (): void => {
     this.tools.isAdvanced = this.fields.isAdvanced;
     this.tools.description.setValue(this.rawConfig.value.description);
     this.filter(this.tools.filterParams);
-    this.service.getHistoryList(url, this.rawConfig.value.id).subscribe((h) => {
+    this.service.getHistoryList(this.configUrl, this.rawConfig.value.id).subscribe((h) => {
       this.historyComponent.compareConfig = h;
       this.tools.disabledHistory = !h.length;
       this.cd.detectChanges();
     });
-  }
+  };
 
   filter(c: ISearchParam): void {
     this.service.filterApply(this.fields.dataOptions, c);
@@ -141,7 +131,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   getConfigFromWorker(): void {
     this._workerSubscription.unsubscribe();
     this._workerSubscription = this.worker$
-      .subscribe((ddd) => this.configUrl = this.service.Current?.config);
+      .subscribe(_ => this.configUrl = this.service.Current?.config);
   }
 
   save(url: string): void {

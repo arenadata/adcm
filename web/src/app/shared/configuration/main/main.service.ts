@@ -12,9 +12,9 @@
 import { animate, state, style, transition, trigger } from '@angular/animations';
 import { Injectable } from '@angular/core';
 import { isObject } from '@app/core/types';
-import { FieldService, IOutput, TFormOptions } from '../field.service';
+import { FieldService, IOutput, TFormOptions } from '../services/field.service';
 import { CompareConfig, IFieldOptions, IFieldStack } from '../types';
-import { ConfigService } from '@app/shared/configuration/main/config.service';
+import { ConfigService } from '@app/shared/configuration/services/config.service';
 
 /**
  *```
@@ -52,6 +52,10 @@ export class MainService {
 
   get Current() {
     return this.configService.cluster.Current;
+  }
+
+  get events() {
+    return this.configService.events;
   }
 
   getConfig(url: string) {

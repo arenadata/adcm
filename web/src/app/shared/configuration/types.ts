@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { IYspec } from './yspec/yspec.service';
-import { TFormOptions } from './field.service';
+import { TFormOptions } from './services/field.service';
 
 export type stateType = 'created' | 'locked';
 

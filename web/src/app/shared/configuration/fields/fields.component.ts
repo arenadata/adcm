@@ -9,15 +9,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, EventEmitter, Input, Output, QueryList, ViewChildren } from '@angular/core';
+import { Component, Input, QueryList, ViewChildren } from '@angular/core';
 
-import { ChannelService } from '@app/core/services';
-import { FullyRenderedService } from '@app/core/services';
-import { keyChannelStrim } from '@app/core/services';
-import { FieldService, TFormOptions } from '../field.service';
+import { ChannelService, FullyRenderedService, keyChannelStrim } from '@app/core/services';
+import { FieldService, TFormOptions } from '../services/field.service';
 import { FieldComponent } from '../field/field.component';
 import { GroupFieldsComponent } from '../group-fields/group-fields.component';
 import { IConfig, IPanelOptions } from '../types';
+import { BaseDirective } from '@adwp-ui/widgets';
+import { MainService } from '@app/shared/configuration/main/main.service';
 
 @Component({
   selector: 'app-config-fields',
@@ -25,20 +25,25 @@ import { IConfig, IPanelOptions } from '../types';
     <ng-container *ngFor="let item of dataOptions; trackBy: trackBy">
       <app-group-fields *ngIf="isPanel(item); else one" [panel]="item" [form]="form"></app-group-fields>
       <ng-template #one>
-        <app-field *ngIf="!item.hidden" [form]="form" [options]="item" [ngClass]="{ 'read-only': item.read_only }"></app-field>
+        <div class="row d-flex">
+          <div class="group-checkbox d-flex" style="padding: 5px">
+            <mat-checkbox></mat-checkbox>
+          </div>
+          <app-field class="w100" *ngIf="!item.hidden" [form]="form" [options]="item"
+                     [ngClass]="{ 'read-only': item.read_only }"></app-field>
+        </div>
       </ng-template>
     </ng-container>
   `,
 })
-export class ConfigFieldsComponent {
+export class ConfigFieldsComponent extends BaseDirective {
+
   @Input() dataOptions: TFormOptions[] = [];
   @Input() form = this.service.toFormGroup();
   rawConfig: IConfig;
   shapshot: any;
   isAdvanced = false;
 
-  @Output()
-  event = new EventEmitter<{ name: string; data?: any }>();
 
   @Input()
   set model(data: IConfig) {
@@ -48,7 +53,7 @@ export class ConfigFieldsComponent {
     this.form = this.service.toFormGroup(this.dataOptions);
     this.isAdvanced = data.config.some((a) => a.ui_options && a.ui_options.advanced);
     this.shapshot = { ...this.form.value };
-    this.event.emit({ name: 'load', data: { form: this.form } });
+    this.main.events.isLoaded();
     this.stableView();
   }
 
@@ -58,10 +63,16 @@ export class ConfigFieldsComponent {
   @ViewChildren(GroupFieldsComponent)
   groups: QueryList<GroupFieldsComponent>;
 
-  constructor(private service: FieldService, private fr: FullyRenderedService, private radio: ChannelService) {}
+  constructor(private service: FieldService,
+              private fr: FullyRenderedService,
+              private radio: ChannelService,
+              private main: MainService) {super();}
 
   get attr() {
-    return this.dataOptions.filter((a) => a.type === 'group' && (a as IPanelOptions).activatable).reduce((p, c: IPanelOptions) => ({ ...p, [c.name]: { active: c.active } }), {});
+    return this.dataOptions.filter((a) => a.type === 'group' && (a as IPanelOptions).activatable).reduce((p, c: IPanelOptions) => ({
+      ...p,
+      [c.name]: { active: c.active }
+    }), {});
   }
 
   isPanel(item: TFormOptions) {

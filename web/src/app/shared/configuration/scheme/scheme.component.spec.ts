@@ -13,7 +13,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MaterialModule } from '@app/shared/material.module';
 
-import { FieldService } from '../field.service';
+import { FieldService } from '../services/field.service';
 import { IFieldOptions, TNForm } from '../types';
 import { YspecService } from '../yspec/yspec.service';
 import { RootComponent } from './root.component';
