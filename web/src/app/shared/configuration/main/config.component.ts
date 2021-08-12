@@ -49,6 +49,8 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   isLock = false;
   isLoading = false;
 
+  worker$ = this.service.worker$.pipe(this.takeUntil());
+
   @ViewChild('fls') fields: ConfigFieldsComponent;
   @ViewChild('history') historyComponent: HistoryComponent;
   @ViewChild('tools') tools: ToolsComponent;
@@ -87,19 +89,12 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   ngOnChanges(changes: SimpleChanges): void {
     const url = changes['configUrl'];
     const firstChange = url?.firstChange;
-
-    if (!firstChange || !url) {
-      this._workerSubscription.unsubscribe();
-
-      this._workerSubscription = this.service.worker$
-        .pipe(this.takeUntil())
-        .subscribe(() => this.configUrl = this.service.Current?.config);
-    }
+    if (!firstChange || !url) this.getConfigFromWorker();
   }
 
   ngOnInit() {
+    if (!this.configUrl) this.getConfigFromWorker();
     this.getConfig(this.configUrl).subscribe();
-
     super.startListenSocket();
   }
 
@@ -141,6 +136,17 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
         return of(null);
       })
     );
+  }
+
+  getConfigFromWorker(): void {
+    this._workerSubscription.unsubscribe();
+
+    this._workerSubscription = this.worker$
+      .subscribe((ddd) => {
+        console.log('asdsad', ddd);
+
+        this.configUrl = this.service.Current?.config;
+      });
   }
 
   save(url: string) {
