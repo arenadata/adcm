@@ -72,7 +72,7 @@ const clusterRoutes: Routes = [
       { path: 'main', component: MainInfoComponent },
       { path: 'host', component: ConfigGroupHostListComponent },
       // ToDo Config from config group
-      // { path: 'config', component: ConfigGroupConfigComponent },
+      { path: 'config', component: ConfigComponent },
     ],
   },
   {

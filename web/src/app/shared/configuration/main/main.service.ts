@@ -11,20 +11,16 @@
 // limitations under the License.
 import { animate, state, style, transition, trigger } from '@angular/animations';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
-
-import { ApiService } from '@app/core/api';
-import { ClusterService } from '@app/core/services/cluster.service';
-import { getRandomColor, isObject } from '@app/core/types';
+import { isObject } from '@app/core/types';
 import { FieldService, IOutput, TFormOptions } from '../field.service';
-import { CompareConfig, IConfig, IFieldOptions, IFieldStack } from '../types';
+import { CompareConfig, IFieldOptions, IFieldStack } from '../types';
+import { ConfigService } from '@app/shared/configuration/main/config.service';
 
 /**
  *```
-  advanced: boolean;
-  search: string;
-  ```
+ advanced: boolean;
+ search: string;
+ ```
  */
 export interface ISearchParam {
   advanced: boolean;
@@ -47,14 +43,19 @@ export const historyAnime = [
   providedIn: 'root'
 })
 export class MainService {
-  constructor(private fields: FieldService, private api: ApiService, private current: ClusterService) {}
+  constructor(private fields: FieldService,
+              private configService: ConfigService) {}
 
-  get Current() {
-    return this.current.Current;
+  get worker$() {
+    return this.configService.cluster.worker$;
   }
 
-  getConfig(url: string): Observable<IConfig> {
-    return this.api.get<IConfig>(url);
+  get Current() {
+    return this.configService.cluster.Current;
+  }
+
+  getConfig(url: string) {
+    return this.configService.getConfig(url);
   }
 
   filterApply(options: TFormOptions[], search: ISearchParam) {
@@ -66,11 +67,11 @@ export class MainService {
   }
 
   send(url: string, data: any) {
-    return this.api.post<IConfig>(url, data);
+    return this.configService.send(url, data);
   }
 
   getHistoryList(url: string, currentVersionId: number) {
-    return this.api.get<IConfig[]>(url).pipe(map((h) => h.filter((a) => a.id !== currentVersionId).map((b) => ({ ...b, color: getRandomColor() }))));
+    return this.configService.getHistoryList(url, currentVersionId);
   }
 
   compareConfig(ids: number[], dataOptions: TFormOptions[], compareConfig: CompareConfig[]) {
@@ -97,13 +98,24 @@ export class MainService {
       .map((c) => {
         const co = this.findFieldiCompare(a.key, c);
         if (!co) {
-          if (String(a.value) && String(a.value) !== 'null') a.compare.push({ id: c.id, date: c.date, color: c.color, value: 'null' });
+          if (String(a.value) && String(a.value) !== 'null') a.compare.push({
+            id: c.id,
+            date: c.date,
+            color: c.color,
+            value: 'null'
+          });
         } else {
           if (isObject(co.value)) {
             if (isObject(a.value)) {
-              if (JSON.stringify(a.value) !== JSON.stringify(co.value)) a.compare.push({ ...co, value: JSON.stringify(co.value) });
+              if (JSON.stringify(a.value) !== JSON.stringify(co.value)) a.compare.push({
+                ...co,
+                value: JSON.stringify(co.value)
+              });
             } else if (typeof a.value === 'string') {
-              if (JSON.stringify(JSON.parse(a.value)) !== JSON.stringify(co.value)) a.compare.push({ ...co, value: JSON.stringify(co.value) });
+              if (JSON.stringify(JSON.parse(a.value)) !== JSON.stringify(co.value)) a.compare.push({
+                ...co,
+                value: JSON.stringify(co.value)
+              });
             }
           } else if (String(co.value) !== String(a.value)) a.compare.push(co);
         }

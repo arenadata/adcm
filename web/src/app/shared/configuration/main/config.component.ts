@@ -9,11 +9,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  EventEmitter,
+  Input,
+  OnChanges,
+  Output,
+  SimpleChanges,
+  ViewChild
+} from '@angular/core';
 import { EventMessage, SocketState } from '@app/core/store';
 import { SocketListenerDirective } from '@app/shared/directives';
 import { Store } from '@ngrx/store';
-import { BehaviorSubject, Observable, of } from 'rxjs';
+import { BehaviorSubject, Observable, of, Subscription } from 'rxjs';
 import { catchError, finalize, tap } from 'rxjs/operators';
 
 import { ConfigFieldsComponent } from '../fields/fields.component';
@@ -21,7 +31,6 @@ import { HistoryComponent } from '../tools/history.component';
 import { ToolsComponent } from '../tools/tools.component';
 import { IConfig } from '../types';
 import { historyAnime, ISearchParam, MainService } from './main.service';
-import { ClusterService } from '@app/core/services/cluster.service';
 
 @Component({
   selector: 'app-config-form',
@@ -31,7 +40,7 @@ import { ClusterService } from '@app/core/services/cluster.service';
   providers: [MainService],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ConfigComponent extends SocketListenerDirective implements OnInit {
+export class ConfigComponent extends SocketListenerDirective implements OnChanges {
   loadingStatus = 'Loading...';
   rawConfig = new BehaviorSubject<IConfig>(null);
   saveFlag = false;
@@ -43,47 +52,61 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
   @ViewChild('history') historyComponent: HistoryComponent;
   @ViewChild('tools') tools: ToolsComponent;
 
-  private url = '';
   @Input()
-  set configUrl(url: string) {
-    this.url = url;
-    this.getConfig().subscribe();
-  }
+  configUrl: string;
+  // private url = '';
+  //
+  // @Input()
+  // set configUrl(url: string) {
+  //   this.url = url;
+  //   this.getConfig().subscribe();
+  // }
 
   @Output()
   event = new EventEmitter<{ name: string; data?: any }>();
 
-  get cUrl() {
-    return `${this.url}current/`;
-  }
+  // get cUrl() {
+  //   return `${this.url}current/`;
+  // }
+  //
+  // get saveUrl(): string {
+  //   return `${this.url}history/`;
+  // }
 
-  get saveUrl(): string {
-    return `${this.url}history/`;
-  }
+  private _workerSubscription: Subscription = Subscription.EMPTY;
 
   constructor(
     private service: MainService,
     public cd: ChangeDetectorRef,
     socket: Store<SocketState>,
-    private clusterService: ClusterService,
   ) {
     super(socket);
   }
 
-  ngOnInit() {
-    if (!this.url) {
-      this.clusterService.worker$
+  ngOnChanges(changes: SimpleChanges): void {
+    const url = changes['url'];
+
+    if (!url) {
+      this._workerSubscription.unsubscribe();
+
+      this._workerSubscription = this.service.worker$
         .pipe(this.takeUntil())
-        .subscribe(() => this.configUrl = this.service.Current?.config);
+        .subscribe(() => {
+          console.log('this.service.Current: ', this.service.Current);
+          this.configUrl = this.service.Current?.config;
+        });
     }
+  }
+
+  ngOnInit() {
     super.startListenSocket();
   }
 
-  onReady() {
+  onReady(url: string) {
     this.tools.isAdvanced = this.fields.isAdvanced;
     this.tools.description.setValue(this.rawConfig.value.description);
     this.filter(this.tools.filterParams);
-    this.service.getHistoryList(this.saveUrl, this.rawConfig.value.id).subscribe((h) => {
+    this.service.getHistoryList(url, this.rawConfig.value.id).subscribe((h) => {
       this.historyComponent.compareConfig = h;
       this.tools.disabledHistory = !h.length;
       this.cd.detectChanges();
@@ -103,11 +126,11 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
     ) {
       this.isLock = m.object.details.value === 'locked';
       this.reset();
-      this.getConfig().subscribe();
+      this.getConfig(this.configUrl).subscribe();
     }
   }
 
-  getConfig(url = this.cUrl): Observable<IConfig> {
+  getConfig(url: string): Observable<IConfig> {
     this.isLoading = true;
     return this.service.getConfig(url).pipe(
       tap((c) => this.rawConfig.next(c)),
@@ -119,7 +142,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
     );
   }
 
-  save() {
+  save(url: string) {
     const form = this.fields.form;
     if (form.valid) {
       this.saveFlag = true;
@@ -127,7 +150,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
       const config = this.service.parseValue(this.fields.form.value, this.rawConfig.value.config);
       const send = { config, attr: this.fields.attr, description: this.tools.description.value };
       this.isLoading = true;
-      this.service.send(this.saveUrl, send).pipe(
+      this.service.send(url, send).pipe(
         tap((c) => {
           this.saveFlag = false;
           this.rawConfig.next(c);
@@ -141,9 +164,9 @@ export class ConfigComponent extends SocketListenerDirective implements OnInit {
     }
   }
 
-  changeVersion(id: number) {
+  changeVersion(url: string, id: number) {
     this.reset();
-    this.getConfig(`${this.saveUrl}${id}/`).subscribe();
+    this.getConfig(`${url}${id}/`).subscribe();
   }
 
   compareVersion(ids: number[]) {
