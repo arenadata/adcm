@@ -48,6 +48,7 @@ import {
   ConfigComponentChannelService,
   ConfigComponentEvents
 } from '@app/shared/configuration/services/events.service';
+import { ConfigGroupsService } from '@app/shared/configuration/services/config-groups.service';
 
 const material = [
   MatIconModule,
@@ -80,7 +81,7 @@ const material = [
   ],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, StuffModule, FormElementsModule, ...material, AdwpListModule, AddingModule],
   exports: [ConfigComponent, ConfigFieldsComponent],
-  providers: [FieldService, YspecService, SchemeService, ConfigService, ConfigComponentChannelService, ConfigComponentEvents],
+  providers: [FieldService, YspecService, SchemeService, ConfigService, ConfigComponentChannelService, ConfigComponentEvents, ConfigGroupsService],
 })
 export class ConfigurationModule {
 }

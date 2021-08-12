@@ -6,6 +6,7 @@ import { getRandomColor } from '@app/core/types';
 import { ApiService } from '@app/core/api';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { ConfigComponentEvents } from '@app/shared/configuration/services/events.service';
+import { ConfigGroupsService } from '@app/shared/configuration/services/config-groups.service';
 
 export interface IConfigResponse {
   current: string;
@@ -35,7 +36,8 @@ export interface IConfigService {
 export class ConfigService implements IConfigService {
   constructor(private api: ApiService,
               public cluster: ClusterService,
-              public events: ConfigComponentEvents) { }
+              public events: ConfigComponentEvents,
+              public groups: ConfigGroupsService) { }
 
   getConfig(url: string): Observable<IConfig> {
     return this.api.get<IConfigResponse>(url).pipe(

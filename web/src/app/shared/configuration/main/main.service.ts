@@ -44,7 +44,12 @@ export const historyAnime = [
 })
 export class MainService {
   constructor(private fields: FieldService,
-              private configService: ConfigService) {}
+              private configService: ConfigService) {
+  }
+
+  get groupKeys$() {
+    return this.configService.groups.groupKeys$;
+  }
 
   get worker$() {
     return this.configService.cluster.worker$;
@@ -136,5 +141,9 @@ export class MainService {
       const { id, date, color } = { ...cc };
       return { id, date, color, value };
     }
+  }
+
+  initGroups(groupKeys: { [key: string]: any }): void {
+    this.configService.groups.next(groupKeys);
   }
 }

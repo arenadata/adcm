@@ -32,6 +32,7 @@ import { HistoryComponent } from '../tools/history.component';
 import { ToolsComponent } from '../tools/tools.component';
 import { IConfig } from '../types';
 import { historyAnime, ISearchParam, MainService } from './main.service';
+import { WorkerInstance } from '@app/core/services/cluster.service';
 
 @Component({
   selector: 'app-config-form',
@@ -49,8 +50,9 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   isLock = false;
   isLoading = false;
 
-  worker$ = this.service.worker$.pipe(this.takeUntil());
+  worker$: Observable<WorkerInstance>;
   isReady$: Observable<void>;
+  groupKeys$: Observable<{ [key: string]: boolean }>;
 
   @ViewChild('fls') fields: ConfigFieldsComponent;
   @ViewChild('history') historyComponent: HistoryComponent;
@@ -63,6 +65,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   event = new EventEmitter<{ name: string; data?: any }>();
 
   private _workerSubscription: Subscription = Subscription.EMPTY;
+  private _groupsSubscription: Subscription = Subscription.EMPTY;
 
   constructor(
     private service: MainService,
@@ -72,20 +75,28 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     super(socket);
 
     this.isReady$ = service.events.isReady$.pipe(this.takeUntil());
+    this.groupKeys$ = service.groupKeys$.pipe(this.takeUntil());
+    this.worker$ = service.worker$.pipe(this.takeUntil());
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     const url = changes['configUrl'];
     const firstChange = url?.firstChange;
-    if (!firstChange || !url) this.getConfigFromWorker();
+    if (!firstChange || !url) this.getConfigUrlFromWorker();
   }
 
   ngOnInit(): void {
-    if (!this.configUrl) this.getConfigFromWorker();
-    this.getConfig(this.configUrl).subscribe();
+    if (!this.configUrl) this.getConfigUrlFromWorker();
+    this._getConfig(this.configUrl).subscribe();
 
     this.isReady$.subscribe(this.onReady);
     super.startListenSocket();
+  }
+
+  ngOnDestroy() {
+    super.ngOnDestroy();
+    this._workerSubscription.unsubscribe();
+    this._groupsSubscription.unsubscribe();
   }
 
   onReady = (): void => {
@@ -112,23 +123,11 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     ) {
       this.isLock = m.object.details.value === 'locked';
       this.reset();
-      this.getConfig(this.configUrl).subscribe();
+      this._getConfig(this.configUrl).subscribe();
     }
   }
 
-  getConfig(url: string): Observable<IConfig> {
-    this.isLoading = true;
-    return this.service.getConfig(url).pipe(
-      tap((c) => this.rawConfig.next(c)),
-      finalize(() => this.isLoading = false),
-      catchError(() => {
-        this.loadingStatus = 'There is no config for this object.';
-        return of(null);
-      })
-    );
-  }
-
-  getConfigFromWorker(): void {
+  getConfigUrlFromWorker(): void {
     this._workerSubscription.unsubscribe();
     this._workerSubscription = this.worker$
       .subscribe(_ => this.configUrl = this.service.Current?.config);
@@ -142,15 +141,17 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
       const config = this.service.parseValue(this.fields.form.value, this.rawConfig.value.config);
       const send = { config, attr: this.fields.attr, description: this.tools.description.value };
       this.isLoading = true;
-      this.service.send(url, send).pipe(
-        tap((c) => {
-          this.saveFlag = false;
-          this.rawConfig.next(c);
-          this.cd.detectChanges();
-          this.event.emit({ name: 'send', data: this.fields });
-        }),
-        finalize(() => this.isLoading = false),
-      ).subscribe();
+
+
+      // this.service.send(url, send).pipe(
+      //   tap((c) => {
+      //     this.saveFlag = false;
+      //     this.rawConfig.next(c);
+      //     this.cd.detectChanges();
+      //     this.event.emit({ name: 'send', data: this.fields });
+      //   }),
+      //   finalize(() => this.isLoading = false),
+      // ).subscribe();
     } else {
       Object.keys(form.controls).forEach((controlName) => form.controls[controlName].markAsTouched());
     }
@@ -158,7 +159,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
 
   changeVersion(url: string, id: number): void {
     this.reset();
-    this.getConfig(`${url}${id}/`).subscribe();
+    this._getConfig(`${url}${id}/`).subscribe();
   }
 
   compareVersion(ids: number[]): void {
@@ -169,5 +170,27 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     this.fields.form.reset();
     this.fields.dataOptions = [];
     this.historyComponent.reset();
+  }
+
+
+  private _getConfig(url: string): Observable<IConfig> {
+    this.isLoading = true;
+    return this.service.getConfig(url).pipe(
+      tap((c) => this.rawConfig.next(c)),
+      tap((c) => this._initGroups(c.attr.group_keys)),
+      finalize(() => this.isLoading = false),
+      catchError(() => {
+        this.loadingStatus = 'There is no config for this object.';
+        return of(null);
+      })
+    );
+  }
+
+  private _initGroups(groupKeys: { [key: string]: any }): void {
+    this._groupsSubscription.unsubscribe();
+    this.service.initGroups(groupKeys);
+    this._groupsSubscription = this.groupKeys$.subscribe((keys) => {
+      console.log('this.groupKeys$.subscribe | keys: ', keys);
+    });
   }
 }

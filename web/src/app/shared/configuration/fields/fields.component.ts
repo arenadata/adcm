@@ -15,7 +15,7 @@ import { ChannelService, FullyRenderedService, keyChannelStrim } from '@app/core
 import { FieldService, TFormOptions } from '../services/field.service';
 import { FieldComponent } from '../field/field.component';
 import { GroupFieldsComponent } from '../group-fields/group-fields.component';
-import { IConfig, IPanelOptions } from '../types';
+import { IConfig, IFieldOptions, IPanelOptions } from '../types';
 import { BaseDirective } from '@adwp-ui/widgets';
 import { MainService } from '@app/shared/configuration/main/main.service';
 
@@ -27,7 +27,7 @@ import { MainService } from '@app/shared/configuration/main/main.service';
       <ng-template #one>
         <div class="row d-flex">
           <div class="group-checkbox d-flex" style="padding: 5px">
-            <mat-checkbox></mat-checkbox>
+            <mat-checkbox (change)="onToggle(item)"></mat-checkbox>
           </div>
           <app-field class="w100" *ngIf="!item.hidden" [form]="form" [options]="item"
                      [ngClass]="{ 'read-only': item.read_only }"></app-field>
@@ -35,6 +35,7 @@ import { MainService } from '@app/shared/configuration/main/main.service';
       </ng-template>
     </ng-container>
   `,
+  styles: [`.group-checkbox { justify-content: center; align-items: center }`]
 })
 export class ConfigFieldsComponent extends BaseDirective {
 
@@ -83,6 +84,8 @@ export class ConfigFieldsComponent extends BaseDirective {
     return item.name;
   }
 
+  onToggleCheckbox;
+
   /**
    * This method detects the moment rendering final of all fields and groups (with internal fields) on the page
    * it's need for test
@@ -91,5 +94,9 @@ export class ConfigFieldsComponent extends BaseDirective {
    */
   stableView() {
     this.fr.stableView(() => this.radio.next(keyChannelStrim.load_complete, 'Config has been loaded'));
+  }
+
+  onToggle(item: (IPanelOptions & IFieldOptions) | IPanelOptions): void {
+    this.main.events.toggleInGroup(item);
   }
 }
