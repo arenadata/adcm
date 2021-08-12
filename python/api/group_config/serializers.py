@@ -11,11 +11,18 @@
 # limitations under the License.
 
 from django.contrib.contenttypes.models import ContentType
+from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
 from cm.errors import AdcmEx
-from cm.models import GroupConfig
+from cm.models import GroupConfig, Host
+
+
+class HostFlexFieldsSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = Host
+        fields = ('id', 'cluster_id', 'prototype_id', 'provider_id', 'config_id', 'fqdn', 'state')
 
 
 def check_object_type(type_name):
@@ -65,7 +72,7 @@ class GroupConfigsHyperlinkedIdentityField(serializers.HyperlinkedIdentityField)
         return f'{url}?object_id={obj.id}&object_type={obj.prototype.type}'
 
 
-class GroupConfigSerializer(serializers.ModelSerializer):
+class GroupConfigSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
     object_type = ObjectTypeField()
     url = serializers.HyperlinkedIdentityField(view_name='group-config-detail')
     hosts = serializers.SerializerMethodField()
@@ -83,6 +90,7 @@ class GroupConfigSerializer(serializers.ModelSerializer):
             'config',
             'url',
         )
+        expandable_fields = {'hosts': (HostFlexFieldsSerializer, {'many': True})}
 
     def get_hosts(self, obj):
         url = reverse(
