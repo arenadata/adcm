@@ -4,8 +4,23 @@ This project was generated with [Angular CLI](https://github.com/angular/angular
 
 ## Storybook
 
-1. Move to ADCM web root directory (usually <some_path>/adcm/web)
-2. Run `docker run -it --rm -v ${pwd}:/web -p 6006:6006 ci.arenadata.io/storybook:latest`
+**Before starting:**
+To run Storybook, you need to have been installed Docker (https://www.docker.com/).
+
+**Starting:**
+
+1. Make sure that you have been connected to ADCM VPN
+2. Move to ADCM web root directory (usually <some_path>/adcm/web)
+3. Run the following command for your OS:
+
+**Linux:**
+`docker run -it --rm -v ${pwd}:/web -p 6006:6006 node:14-alpine ./web/storybook.sh`
+
+**Mac OS:**
+`docker run -it --rm -v $(pwd):/web -p 6006:6006 node:14-alpine ./web/storybook.sh`
+
+4. Installing dependencies and launching the Storybook will take a couple of minutes
+5. Navigate to http://localhost:6006/
 
 ## Storybook (development)
 
