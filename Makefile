@@ -57,31 +57,31 @@ unittests: ## Run unittests
 	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/tests/base $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /bin/sh -e ./run_test.sh
 
 pytest: ## Run functional tests
-	docker pull ci.arenadata.io/functest:3.8.6.slim.buster-x64
+	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster-x64
 	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host -v $(CURDIR)/:/adcm -w /adcm/ \
 	-e BUILD_TAG=${BUILD_TAG} -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
 	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" \
-	ci.arenadata.io/functest:3.8.6.slim.buster-x64 /bin/sh -e \
+	hub.adsw.io/library/functest:3.8.6.slim.buster-x64 /bin/sh -e \
 	./pytest.sh -m "not full" --adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))'
 
 pytest_release: ## Run functional tests on release
-	docker pull ci.arenadata.io/functest:3.8.6.slim.buster.firefox-x64
+	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster.firefox-x64
 	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host -v $(CURDIR)/:/adcm -w /adcm/ \
 	-e BUILD_TAG=${BUILD_TAG} -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
 	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" \
-	ci.arenadata.io/functest:3.8.6.slim.buster.firefox-x64 /bin/sh -e \
+	hub.adsw.io/library/functest:3.8.6.slim.buster.firefox-x64 /bin/sh -e \
 	./pytest.sh --adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))'
 
 ng_tests: ## Run Angular tests
-	docker pull ci.arenadata.io/functest:3.8.6.slim.buster-x64
-	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web ci.arenadata.io/functest:3.8.6.slim.buster-x64 ./ng_test.sh
+	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster-x64
+	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web hub.adsw.io/library/functest:3.8.6.slim.buster-x64 ./ng_test.sh
 
 linters : ## Run linters
-	docker pull ci.arenadata.io/pr-builder:3-x64
-	docker run -i --rm -v $(CURDIR)/:/source -w /source ci.arenadata.io/pr-builder:3-x64 /linters.sh shellcheck pylint pep8
-	docker run -i --rm -v $(CURDIR)/:/source -w /source ci.arenadata.io/pr-builder:3-x64 /linters.sh -f ./tests black
-	docker run -i --rm -v $(CURDIR)/:/source -w /source ci.arenadata.io/pr-builder:3-x64 /linters.sh -f ./tests/functional flake8_pytest_style
-	docker run -i --rm -v $(CURDIR)/:/source -w /source ci.arenadata.io/pr-builder:3-x64 /linters.sh -f ./tests/ui_tests flake8_pytest_style
+	docker pull hub.adsw.io/library/pr-builder:3-x64
+	docker run -i --rm -v $(CURDIR)/:/source -w /source hub.adsw.io/library/pr-builder:3-x64 /linters.sh shellcheck pylint pep8
+	docker run -i --rm -v $(CURDIR)/:/source -w /source hub.adsw.io/library/pr-builder:3-x64 /linters.sh -f ./tests black
+	docker run -i --rm -v $(CURDIR)/:/source -w /source hub.adsw.io/library/pr-builder:3-x64 /linters.sh -f ./tests/functional flake8_pytest_style
+	docker run -i --rm -v $(CURDIR)/:/source -w /source hub.adsw.io/library/pr-builder:3-x64 /linters.sh -f ./tests/ui_tests flake8_pytest_style
 
 npm_check: ## Run npm-check
 	docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:12-alpine ./npm_check.sh
