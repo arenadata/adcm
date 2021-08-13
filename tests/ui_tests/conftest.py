@@ -114,7 +114,7 @@ def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
                 allure.attach.file(
                     events_json, name="all_events_log", attachment_type=allure.attachment_type.TEXT
                 )
-        else:
+        elif web_driver.capabilities['browserName'] != 'firefox':
             with allure.step("Flush browser logs so as not to affect next tests"):
                 web_driver.driver.get_log('browser')
                 web_driver.driver.get_log("performance")
