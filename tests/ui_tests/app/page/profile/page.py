@@ -33,8 +33,8 @@ class ProfilePage(BasePageObject):
         """
         Insert password into password and password confirmation fields and click on save button
         """
-        self.find_element(ProfileLocators.password).send_keys(password)
-        self.find_element(ProfileLocators.confirm_password).send_keys(password)
+        self.send_text_to_element(ProfileLocators.password, password)
+        self.send_text_to_element(ProfileLocators.confirm_password, password)
         self.find_and_click(ProfileLocators.save_password_btn)
 
     @allure.step('Check required fields are presented on Profile page')
