@@ -11,10 +11,8 @@
 # limitations under the License.
 import os
 from typing import (
-    Any,
     List,
     Tuple,
-    Optional,
 )
 
 import allure
@@ -44,7 +42,7 @@ from tests.ui_tests.app.page.host.page import (
 )
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
 from tests.ui_tests.app.page.host_list.page import HostListPage, HostRowInfo
-from tests.ui_tests.utils import check_rows_amount
+from tests.ui_tests.utils import wait_and_assert_ui_info
 
 # pylint: disable=W0621
 
@@ -145,24 +143,12 @@ def check_job_name(sdk: ADCMClient, action_display_name: str):
     )
 
 
-def check_host_value(key: str, actual_value: Any, expected_value: Any):
-    """
-    Assert that actual value equals to expected value
-    Argument `key` is used in failed assertion message
-    """
-    assert (
-        actual_value == expected_value
-    ), f"Host {key} should be {expected_value}, not {actual_value}"
-
-
-def check_host_info(
-    host_info: HostRowInfo, fqdn: str, provider: str, cluster: Optional[str], state: str
-):
+def check_host_info(host_info: HostRowInfo, expected_values: dict):
     """Check all values in host info"""
-    check_host_value('FQDN', host_info.fqdn, fqdn)
-    check_host_value('provider', host_info.provider, provider)
-    check_host_value('cluster', host_info.cluster, cluster)
-    check_host_value('state', host_info.state, state)
+    for field in expected_values:
+        assert (actual_value := getattr(host_info, field)) == (
+            expected_value := expected_values[field]
+        ), f"Host's '{field}' should be {expected_value}, not {actual_value}"
 
 
 def _check_menu(
@@ -194,8 +180,17 @@ def test_create_host_with_bundle_upload(page: HostListPage, bundle_archive: str)
     host_fqdn = 'howdy-host-fqdn'
     page.open_host_creation_popup()
     new_provider_name = page.host_popup.create_provider_and_host(bundle_archive, host_fqdn)
-    host_info = page.get_host_info_from_row(0)
-    check_host_info(host_info, host_fqdn, new_provider_name, None, 'created')
+    expected_values = {
+        'fqdn': host_fqdn,
+        'provider': new_provider_name,
+        'cluster': None,
+        'state': 'created',
+    }
+    wait_and_assert_ui_info(
+        page.get_host_info_from_row,
+        check_host_info,
+        expected_values,
+    )
 
 
 def test_create_bonded_to_cluster_host(
@@ -205,10 +200,19 @@ def test_create_bonded_to_cluster_host(
 ):
     """Create host bonded to cluster"""
     host_fqdn = 'cluster-host'
+    expected_values = {
+        'fqdn': host_fqdn,
+        'provider': PROVIDER_NAME,
+        'cluster': CLUSTER_NAME,
+        'state': 'created',
+    }
     page.open_host_creation_popup()
     page.host_popup.create_host(host_fqdn, cluster=CLUSTER_NAME)
-    host_info = page.get_host_info_from_row(0)
-    check_host_info(host_info, host_fqdn, PROVIDER_NAME, CLUSTER_NAME, 'created')
+    wait_and_assert_ui_info(
+        page.get_host_info_from_row,
+        check_host_info,
+        expected_values,
+    )
 
 
 @pytest.mark.full()
@@ -216,21 +220,9 @@ def test_create_bonded_to_cluster_host(
 @pytest.mark.usefixtures("_create_many_hosts")
 def test_host_list_pagination(page: HostListPage):
     """Create more than 10 hosts and check pagination"""
-    params = {'hosts_on_first_page': 10, 'hosts_on_second_page': 2}
+    hosts_on_second_page = 2
     page.close_info_popup()
-    with allure.step("Check pagination"):
-        with page.table.wait_rows_change():
-            page.table.click_page_by_number(2)
-        check_rows_amount(page, params['hosts_on_second_page'], 2)
-        with page.table.wait_rows_change():
-            page.table.click_previous_page()
-        check_rows_amount(page, params['hosts_on_first_page'], 1)
-        with page.table.wait_rows_change():
-            page.table.click_next_page()
-        check_rows_amount(page, params['hosts_on_second_page'], 2)
-        with page.table.wait_rows_change():
-            page.table.click_page_by_number(1)
-        check_rows_amount(page, params['hosts_on_first_page'], 1)
+    page.table.check_pagination(hosts_on_second_page)
 
 
 def test_bind_host_to_cluster(
@@ -239,11 +231,20 @@ def test_bind_host_to_cluster(
     upload_and_create_cluster: Tuple[Bundle, Provider],
 ):
     """Create host and go to cluster from host list"""
+    expected_values = {
+        'fqdn': HOST_FQDN,
+        'provider': PROVIDER_NAME,
+        'cluster': None,
+        'state': 'created',
+    }
     page.open_host_creation_popup()
     page.host_popup.create_host(HOST_FQDN)
-    with allure.step("Check host created and isn't bound to a cluster"):
-        host_info = page.get_host_info_from_row(0)
-        check_host_info(host_info, HOST_FQDN, PROVIDER_NAME, None, 'created')
+    with allure.step("Check host is created and isn't bound to a cluster"):
+        wait_and_assert_ui_info(
+            page.get_host_info_from_row,
+            check_host_info,
+            expected_values,
+        )
     page.bind_host_to_cluster(0, CLUSTER_NAME)
     page.assert_host_bonded_to_cluster(0, CLUSTER_NAME)
 
@@ -279,8 +280,13 @@ def test_delete_host(
     upload_and_create_provider: Tuple[Bundle, Provider],
 ):
     """Create host and delete it"""
-    host_info = page.get_host_info_from_row(0)
-    check_host_info(host_info, HOST_FQDN, PROVIDER_NAME, None, 'created')
+    expected_values = {
+        'fqdn': HOST_FQDN,
+        'provider': PROVIDER_NAME,
+        'cluster': None,
+        'state': 'created',
+    }
+    wait_and_assert_ui_info(page.get_host_info_from_row, check_host_info, expected_values)
     page.delete_host(0)
     page.check_element_should_be_hidden(HostListLocators.HostTable.row)
 

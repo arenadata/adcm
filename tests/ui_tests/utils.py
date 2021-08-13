@@ -1,15 +1,20 @@
 # pylint: disable=too-many-ancestors
 from collections import UserDict
 from contextlib import contextmanager
+from typing import Callable, TypeVar, Any, Union, Optional
 
 import allure
+
 from adcm_client.objects import ADCMClient, Cluster
-from adcm_pytest_plugin.utils import random_string
+from adcm_pytest_plugin.utils import random_string, wait_until_step_succeeds
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
 
 from tests.ui_tests.app.configuration import Configuration
+
+T = TypeVar('T')
+D = TypeVar('D')
 
 
 def prepare_cluster(sdk_client: ADCMClient, path) -> Cluster:
@@ -126,3 +131,38 @@ def check_rows_amount(page, expected_amount: int, table_page_num: int):
     ) == expected_amount, (
         f'Page #{table_page_num} should contain {expected_amount}, not {row_count}'
     )
+
+
+def wait_and_assert_ui_info(
+    get_info_func: Union[Callable[[Any], T]],
+    assert_info_func: Callable[[T, D, Any], Any],
+    expected_values: D,
+    timeout: Union[int, float] = 5,
+    period: Union[int, float] = 0.5,
+    get_info_kwargs: Optional[dict] = None,
+    assert_info_kwargs: Optional[dict] = None,
+):
+    """
+    Wait for some information on UI to be correct.
+    Use it to avoid getting data from UI a bit earlier than it is fully loaded.
+
+    :param get_info_func: Function that gets data from UI
+                          and composes it into some object of type T
+    :param assert_info_func: Function that takes object of type T as first argument,
+                             expected values of type D as second argument
+                             and asserts that fields are exactly as they're expected to be
+    :param expected_values: Expected values to pass as second
+    :param timeout: Timeout for wait_until_step_succeeds
+    :param period: Period for wait_until_step_succeeds
+    :param get_info_kwargs: Keyword arguments to pass into get_info_func
+    :param assert_info_kwargs: Keyword arguments to pass into assert_info_func
+    """
+    get_info_kwargs = get_info_kwargs or {}
+    assert_info_kwargs = assert_info_kwargs or {}
+
+    def check_info_from_ui():
+        ui_info = get_info_func(**get_info_kwargs)
+        assert_info_func(ui_info, expected_values, **assert_info_kwargs)
+
+    with allure.step('Check information is correct on UI'):
+        wait_until_step_succeeds(check_info_from_ui, timeout=timeout, period=period)
