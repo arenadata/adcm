@@ -83,7 +83,9 @@ class BasePageObject:
             if self.driver.current_url != url:
                 with allure.step(f"Open {url}"):
                     self.driver.get(url)
-                    assert self.path in self.driver.current_url
+                    assert (
+                        self.path in self.driver.current_url
+                    ), f"Page url from {self.driver.current_url} to {url} wasn't changed"
 
         wait_until_step_succeeds(
             open_page, period=0.5, timeout=timeout or self.default_page_timeout
