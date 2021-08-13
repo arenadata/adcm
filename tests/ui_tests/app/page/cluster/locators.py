@@ -14,6 +14,7 @@
 from selenium.webdriver.common.by import By
 
 from tests.ui_tests.app.helpers.locator import Locator
+from tests.ui_tests.app.page.host_list.locators import HostListLocators
 
 
 class ClusterMainLocators:
@@ -57,3 +58,12 @@ class ClusterImportLocators:
     """Cluster import page elements locators"""
 
     import_item_block = Locator(By.XPATH, "//div[@class='items']/div", "Import item block")
+
+
+class ClusterHostLocators:
+    """Cluster host page elements locators"""
+
+    add_host_btn = Locator(By.XPATH, "//button[@adcm_test='create-btn']", "Add host button")
+
+    class HostTable(HostListLocators.HostTable):
+        ...

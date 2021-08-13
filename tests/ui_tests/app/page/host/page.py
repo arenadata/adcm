@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import Optional
 from typing import Set
 
 import allure
@@ -28,16 +29,23 @@ class HostPageMixin(BasePageObject):
     # /action /main etc.
     MENU_SUFFIX: str
     host_id: int
+    cluster_id: int
     header: PageHeader
     footer: PageFooter
     config: CommonConfigMenuObj
 
     __ACTIVE_MENU_CLASS = 'active'
 
-    def __init__(self, driver, base_url, host_id: int):
+    def __init__(self, driver, base_url, host_id: int, cluster_id: Optional[int]):
         if self.MENU_SUFFIX is None:
             raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
-        super().__init__(driver, base_url, f"/host/{host_id}/{self.MENU_SUFFIX}")
+        super().__init__(
+            driver,
+            base_url,
+            f"/cluster/{cluster_id}/host/{host_id}/{self.MENU_SUFFIX}"
+            if cluster_id
+            else f"/host/{host_id}/{self.MENU_SUFFIX}",
+        )
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
@@ -61,28 +69,28 @@ class HostPageMixin(BasePageObject):
     @allure.step('Open "Main" menu')
     def open_main_menu(self) -> 'HostMainPage':
         self.find_and_click(HostLocators.MenuNavigation.main_tab)
-        page = HostMainPage(self.driver, self.base_url, self.host_id)
+        page = HostMainPage(self.driver, self.base_url, self.host_id, None)
         page.wait_page_is_opened()
         return page
 
     @allure.step('Open "Configuration" menu')
     def open_config_menu(self) -> 'HostConfigPage':
         self.find_and_click(HostLocators.MenuNavigation.config_tab)
-        page = HostConfigPage(self.driver, self.base_url, self.host_id)
+        page = HostConfigPage(self.driver, self.base_url, self.host_id, None)
         page.wait_page_is_opened()
         return page
 
     @allure.step('Open "Status" menu')
     def open_status_menu(self) -> 'HostStatusPage':
         self.find_and_click(HostLocators.MenuNavigation.status_tab)
-        page = HostStatusPage(self.driver, self.base_url, self.host_id)
+        page = HostStatusPage(self.driver, self.base_url, self.host_id, None)
         page.wait_page_is_opened()
         return page
 
     @allure.step('Open "Actions" menu')
     def open_action_menu(self) -> 'HostActionsPage':
         self.find_and_click(HostLocators.MenuNavigation.actions_tab)
-        page = HostActionsPage(self.driver, self.base_url, self.host_id)
+        page = HostActionsPage(self.driver, self.base_url, self.host_id, None)
         page.wait_page_is_opened()
         return page
 

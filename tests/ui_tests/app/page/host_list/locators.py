@@ -13,7 +13,10 @@
 
 from selenium.webdriver.common.by import By
 
-from tests.ui_tests.app.helpers.locator import Locator, TemplateLocator
+from tests.ui_tests.app.helpers.locator import (
+    Locator,
+    TemplateLocator,
+)
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 
 
@@ -32,12 +35,19 @@ class HostListLocators:
         class HostRow:
             fqdn = Locator(By.XPATH, "./mat-cell[1]", "Host FQDN in row")
             provider = Locator(By.XPATH, "./mat-cell[2]", "Host provider in row")
-            cluster = Locator(By.XPATH, "./mat-cell[3]", "Host cluster in row")
+            cluster = Locator(By.XPATH, ".//app-cluster-column", "Host cluster in row")
             state = Locator(By.XPATH, ".//app-state-column", "Host state in row")
             status = Locator(By.XPATH, ".//app-status-column/button", "Host status in row")
-            actions = Locator(By.XPATH, ".//app-action-list/button", "Host actions in row")
-            config = Locator(By.XPATH, "./mat-cell[7]/button", "Host config in row")
-            delete_btn = Locator(By.XPATH, "./mat-cell[8]/button", "Host delete button in row")
+            actions = Locator(By.XPATH, ".//app-actions-column//button", "Host actions in row")
+            config = Locator(
+                By.XPATH, ".//button[.//mat-icon[text()='settings']]", "Host config in row"
+            )
+            delete_btn = Locator(
+                By.XPATH, ".//button[.//mat-icon[text()='delete']]", "Host delete button in row"
+            )
+            link_off_btn = Locator(
+                By.XPATH, ".//button[.//mat-icon[text()='link_off']]", "Host link off button in row"
+            )
             action_option = TemplateLocator(
                 By.XPATH, "//button/span[text()='{}']", "Action dropdown option"
             )
