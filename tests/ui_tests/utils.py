@@ -3,12 +3,14 @@ from collections import UserDict
 from contextlib import contextmanager
 
 import allure
+
 from adcm_client.objects import ADCMClient, Cluster
 from adcm_pytest_plugin.utils import random_string
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
 
+from tests.ui_tests.app.api import APIRequester
 from tests.ui_tests.app.configuration import Configuration
 
 
@@ -126,3 +128,20 @@ def check_rows_amount(page, expected_amount: int, table_page_num: int):
     ) == expected_amount, (
         f'Page #{table_page_num} should contain {expected_amount}, not {row_count}'
     )
+
+
+@contextmanager
+def restore_admin_password(new_password: str, default_admin_credentials: dict, base_url: str):
+    """
+    Restores password after leaving context to default's admin
+
+    Yields new credentials as dict
+    """
+    api = APIRequester(base_url, default_admin_credentials)
+    new_credentials = {**default_admin_credentials, 'password': new_password}
+    yield new_credentials
+    # to get token correctly
+    api.credentials = new_credentials
+    api.change_admin_password(default_admin_credentials)
+    # ensure that authorization as default admin user works correctly
+    api.get_authorization_header()
