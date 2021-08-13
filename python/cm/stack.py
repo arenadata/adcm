@@ -520,7 +520,7 @@ def validate_name(value, name):
     if p.fullmatch(value) is None:
         err("WRONG_NAME", msg1.format(name))
     if len(value) > MAX_NAME_LENGTH:
-        raise err("LONG_NAME", f'{name} is too long. Max length is {MAX_NAME_LENGTH}') # pylint: disable=raising-bad-type
+        raise err("LONG_NAME", f'{name} is too long. Max length is {MAX_NAME_LENGTH}')  # pylint: disable=raising-bad-type
     return value
 
 
