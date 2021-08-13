@@ -22,6 +22,8 @@ To run Storybook, you need to have been installed Docker (https://www.docker.com
 4. Installing dependencies and launching the Storybook will take a couple of minutes
 5. Navigate to http://localhost:6006/
 
+**Tip:** The first starting may take about 15 minutes.
+
 ## Storybook (development)
 
 1. Run `npm run storybook` for start the Storybook.
