@@ -81,7 +81,7 @@ class ConfigSerializer(serializers.Serializer):
     ui_options = serializers.JSONField(required=False)
     required = serializers.BooleanField()
 
-    def get_default(self, obj):  # pylint: disable=arguments-renamed
+    def get_default(self, obj):  # pylint: disable=arguments-renamed, arguments-differ
         return cm.adcm_config.get_default(obj)
 
     def get_value(self, obj):  # pylint: disable=arguments-renamed
