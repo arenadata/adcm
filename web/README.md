@@ -13,12 +13,14 @@ To run Storybook, you need to have been installed Docker (https://www.docker.com
 2. Move to ADCM web root directory (usually <some_path>/adcm/web)
 3. Run the following command:
 
-`docker run -it --rm -v $(pwd):/web -u $(id -u ${USER}):$(id -g ${USER}) -p 6006:6006 node:14-alpine ./web/storybook.sh`
+`docker run -it --rm -v $(pwd):/web -p 6006:6006 node:14-alpine ./web/storybook.sh`
 
 4. Installing dependencies and launching the Storybook will take a couple of minutes
 5. Navigate to http://localhost:6006/
 
 **Tip:** The first starting may take about 15 minutes.
+
+**Tip:** To stop container just hit ctrl-c.
 
 ## Storybook (development)
 
