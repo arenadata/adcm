@@ -19,8 +19,8 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
-from cm import config
 from api.api_views import DetailViewRO, check_obj, PageView
+from cm import config
 from cm.errors import AdcmEx
 from cm.job import get_log, restart_task, cancel_task
 from cm.models import JobLog, TaskLog, LogStorage
