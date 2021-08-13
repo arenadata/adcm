@@ -25,7 +25,7 @@ from tests.ui_tests.app.page.common.dialogs import (
     ActionDialog,
     DeleteDialog,
 )
-from tests.ui_tests.app.page.common.popups import IssuePopupLocators
+from tests.ui_tests.app.page.common.popups.locator import ListIssuePopupLocators
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 
 
@@ -122,8 +122,8 @@ class ClusterListPage(BasePageObject):
 
     def click_on_issue_by_name(self, row: WebElement, issue_name: str):
         self.hover_element(self.find_child(row, self.table.table.ClusterRow.actions))
-        self.wait_element_visible(IssuePopupLocators.block)
-        for issue in self.find_elements(IssuePopupLocators.link_to_issue):
+        self.wait_element_visible(ListIssuePopupLocators.block)
+        for issue in self.find_elements(ListIssuePopupLocators.link_to_issue):
             if issue.text == issue_name:
                 issue.click()
                 return
