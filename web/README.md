@@ -11,13 +11,9 @@ To run Storybook, you need to have been installed Docker (https://www.docker.com
 
 1. Make sure that you have been connected to ADCM VPN
 2. Move to ADCM web root directory (usually <some_path>/adcm/web)
-3. Run the following command for your OS:
+3. Run the following command:
 
-**Linux:**
-`docker run -it --rm -v ${pwd}:/web -p 6006:6006 node:14-alpine ./web/storybook.sh`
-
-**Mac OS:**
-`docker run -it --rm -v $(pwd):/web -p 6006:6006 node:14-alpine ./web/storybook.sh`
+`docker run -it --rm -v $(pwd):/web -u $(id -u ${USER}):$(id -g ${USER}) -p 6006:6006 node:14-alpine ./web/storybook.sh`
 
 4. Installing dependencies and launching the Storybook will take a couple of minutes
 5. Navigate to http://localhost:6006/
