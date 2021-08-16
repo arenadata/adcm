@@ -120,13 +120,18 @@ class BasePageObject:
                 f"{self.driver.current_url} for {loc_timeout} seconds",
             )
 
-    def find_child(self, element: WebElement, child: Locator, timeout: int = None) -> WebElement:
-        """Find child element on current page."""
+    def find_child(
+        self, element: WebElement, child: Locator, timeout: int = None, all_children: bool = False
+    ) -> Union[WebElement, List[WebElement]]:
+        """Find child (or children) element on current page."""
 
         loc_timeout = timeout or self.default_loc_timeout
+        search_method = (
+            EC.presence_of_all_elements_located if all_children else EC.presence_of_element_located
+        )
         with allure.step(f'Find element "{child.name}" on page'):
             return WDW(element, loc_timeout).until(
-                EC.presence_of_element_located([child.by, child.value]),
+                search_method([child.by, child.value]),
                 message=f"Can't find {child.name} on page "
                 f"{self.driver.current_url} for {loc_timeout} seconds",
             )
@@ -262,7 +267,7 @@ class BasePageObject:
         self, locator: Locator, attribute: str, expected_value: str, timeout: int = 5
     ):
         """
-        Wait for element to has `expected_value` in locator's attribute
+        Wait for the element to have `expected_value` in the locator's attribute
         """
 
         def assert_attribute_value():

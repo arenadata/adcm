@@ -15,11 +15,23 @@ import os
 import pytest
 import allure
 
-from adcm_client.objects import ADCMClient, Cluster, Bundle, Provider, Service, Host
+from adcm_client.objects import (
+    ADCMClient,
+    Cluster,
+    Bundle,
+    Provider,
+    Service,
+    Host,
+    Component,
+    Action,
+)
 from adcm_pytest_plugin import utils
-from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
+from adcm_pytest_plugin.steps.actions import (
+    run_cluster_action_and_assert_result,
+)
 
 from tests.ui_tests.app.app import ADCMTest
+from tests.ui_tests.app.page.job.page import JobPage
 from tests.ui_tests.app.page.job_list.page import (
     JobListPage,
     JobStatus,
@@ -31,9 +43,12 @@ from tests.ui_tests.app.page.job_list.page import (
 LONG_ACTION_DISPLAY_NAME = 'Long action'
 SUCCESS_ACTION_DISPLAY_NAME = 'Success action'
 FAIL_ACTION_DISPLAY_NAME = 'Fail action'
+ON_HOST_ACTION_DISPLAY_NAME = 'Component host action'
+COMPONENT_ACTION_DISPLAY_NAME = 'Component action'
 
-CLUSTER_NAME = 'Great Cluster'
-SERVICE_NAME = 'Serviceno'
+CLUSTER_NAME = 'test_cluster'
+SERVICE_NAME = 'test_service'
+COMPONENT_NAME = 'test_component'
 
 # pylint: disable=redefined-outer-name
 
@@ -90,40 +105,58 @@ def test_host_action_job(provider: Provider, page: JobListPage):
     _test_run_action(page, provider.host_create('some-fqdn'))
 
 
-def test_run_successful_job(cluster: Cluster, page: JobListPage):
-    """Run action that finishes successfully and check it is displayed correctly"""
-    expected_info = {
-        'status': JobStatus.SUCCESS,
-        'action_name': SUCCESS_ACTION_DISPLAY_NAME,
-        'object': cluster.name,
-    }
-    with allure.step('Run action and wait it succeeded'):
-        action = cluster.action(display_name=SUCCESS_ACTION_DISPLAY_NAME)
-        run_cluster_action_and_assert_result(cluster, action.name)
-    _check_finished_job_info_in_table(page, expected_info)
-    page.select_filter_success_tab()
-    _check_finished_job_info_in_table(page, expected_info)
-    _check_job_info_in_popup(
-        page, {'status': expected_info['status'], 'action_name': expected_info['action_name']}
-    )
+@pytest.mark.parametrize(
+    'job_info',
+    [
+        {
+            'expected_status': 'success',
+            'status': JobStatus.SUCCESS,
+            'action_name': SUCCESS_ACTION_DISPLAY_NAME,
+        },
+        {
+            'expected_status': 'failed',
+            'status': JobStatus.FAILED,
+            'action_name': FAIL_ACTION_DISPLAY_NAME,
+        },
+    ],
+    ids=['success_job', 'failed_job'],
+)
+def test_finished_job_has_correct_info(job_info: dict, cluster: Cluster, page: JobListPage):
+    """Run action that finishes (success/failed) and check it is displayed correctly"""
+    expected_info_in_popup = {**job_info}
+    expected_status = expected_info_in_popup.pop('expected_status')
+    expected_info_in_table = {**expected_info_in_popup, 'invoker_objects': cluster.name}
+    with allure.step(f'Run action and wait for "{expected_status}" status'):
+        action = cluster.action(display_name=expected_info_in_popup['action_name'])
+        run_cluster_action_and_assert_result(cluster, action.name, status=expected_status)
+    _check_finished_job_info_in_table(page, expected_info_in_table)
+    open_filter_on_page = getattr(page, f'select_filter_{expected_status}_tab')
+    open_filter_on_page()
+    _check_finished_job_info_in_table(page, expected_info_in_table)
+    _check_job_info_in_popup(page, expected_info_in_popup)
 
 
-def test_run_fail_job(cluster: Cluster, page: JobListPage):
-    """Run action that fails and check it is displayed correctly"""
-    expected_info = {
-        'status': JobStatus.FAILED,
-        'action_name': FAIL_ACTION_DISPLAY_NAME,
-        'object': cluster.name,
-    }
-    with allure.step('Run action and wait it succeeded'):
-        action = cluster.action(display_name=FAIL_ACTION_DISPLAY_NAME)
-        run_cluster_action_and_assert_result(cluster, action.name, status='failed')
-    _check_finished_job_info_in_table(page, expected_info)
-    page.select_filter_failed_tab()
-    _check_finished_job_info_in_table(page, expected_info)
-    _check_job_info_in_popup(
-        page, {'status': expected_info['status'], 'action_name': expected_info['action_name']}
-    )
+def test_invoker_object_url(cluster: Cluster, provider: Provider, page: JobListPage):
+    """Check link to object that invoked action is correct"""
+    host_fqdn = 'run-on-me'
+    host_job_link = f'{host_fqdn}/{provider.name}'
+    component_link = f'{COMPONENT_NAME}/{SERVICE_NAME}/{CLUSTER_NAME}'
+    host_component_link = f'{host_fqdn}/{component_link}'
+    with allure.step('Run action on component and check job link to it'):
+        service: Service = cluster.service(name=SERVICE_NAME)
+        component: Component = service.component(name=COMPONENT_NAME)
+        component_action = component.action(display_name=COMPONENT_ACTION_DISPLAY_NAME)
+        _check_link_to_invoker_object_in_table('component', component_link, page, component_action)
+    with allure.step('Create host, run action on host and check job link to it'):
+        host = provider.host_create(host_fqdn)
+        host_action = host.action(display_name=FAIL_ACTION_DISPLAY_NAME)
+        _check_link_to_invoker_object_in_table('host', host_job_link, page, host_action)
+    with allure.step('Add host to the cluster, assign component on it'):
+        cluster.host_add(host)
+        cluster.hostcomponent_set((host, component))
+    with allure.step('Run component host action on host and check job link to it'):
+        host_action = host.action(display_name=ON_HOST_ACTION_DISPLAY_NAME)
+        _check_link_to_invoker_object_in_table('host', host_component_link, page, host_action)
 
 
 def _test_run_action(page: JobListPage, action_owner: Union[Cluster, Service, Provider, Host]):
@@ -138,7 +171,7 @@ def _test_run_action(page: JobListPage, action_owner: Union[Cluster, Service, Pr
     expected_info = {
         'status': JobStatus.RUNNING,
         'action_name': LONG_ACTION_DISPLAY_NAME,
-        'object': owner_name,
+        'invoker_objects': owner_name,
     }
     with allure.step(
         f'Run action "{LONG_ACTION_DISPLAY_NAME}" on {action_owner.__class__}'
@@ -177,21 +210,48 @@ def _check_job_info_in_popup(page: JobListPage, expected_info: dict):
         __check_basic_job_info(job_info, expected_info)
 
 
+def _check_link_to_invoker_object_in_table(
+    link_object_name: str, expected_link: str, page: JobListPage, action: Action
+):
+    """
+    Check that link to object invoked action is correct
+
+    :param link_object_name: Name of object to add in assertion message like 'host', 'component'
+    :param expected_link: "Link" to invoker objects
+    :param page: Page with jobs table
+    :param action: Action to run
+    """
+    with page.table.wait_rows_change():
+        action.run()
+    task_info: TableTaskInfo = page.get_task_info_from_table(full_invoker_objects_link=True)
+    assert (actual_link := task_info.invoker_objects) == expected_link, (
+        f'Link to {link_object_name} object in jobs table '
+        f'should be "{expected_link}", not "{actual_link}"'
+    )
+    detail_page = JobPage(page.driver, page.base_url, action.task_list()[0].id).open()
+    actual_link = detail_page.get_job_info().invoker_objects
+    assert actual_link == expected_link, (
+        f'Link to {link_object_name} object on detailed job page '
+        f'should be "{expected_link}", not "{actual_link}"'
+    )
+    page.open()
+
+
 def __check_basic_job_info(job_info: TaskInfo, expected_info: dict):
     """Check job info is same as expected (excluding start/finish date check)"""
     for key in expected_info.keys():
-        assert (
-            job_info[key] == expected_info[key]
-        ), f'Field "{key}" should be {expected_info[key]}, not {job_info[key]}'
+        assert (actual_value := getattr(job_info, key)) == expected_info[
+            key
+        ], f'Value of field "{key}" should be {expected_info[key]}, not {actual_value}'
 
 
 def __check_only_finish_date_is_empty(job_info: TableTaskInfo):
     """Check finish date is empty, start date is not"""
-    assert job_info['finish_date'] == '', 'Finish date should be empty'
-    assert job_info['start_date'] != '', 'Start date should not be empty'
+    assert job_info.finish_date == '', 'Finish date should be empty'
+    assert job_info.start_date != '', 'Start date should not be empty'
 
 
 def __check_both_dates_not_empty(job_info: TableTaskInfo):
     """Check both start and finish dates are not empty"""
-    assert job_info['finish_date'] != '', 'Finish date should not be empty'
-    assert job_info['start_date'] != '', 'Start date should not be empty'
+    assert job_info.finish_date != '', 'Finish date should not be empty'
+    assert job_info.start_date != '', 'Start date should not be empty'

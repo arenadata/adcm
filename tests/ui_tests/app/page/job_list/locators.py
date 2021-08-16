@@ -30,10 +30,16 @@ class TaskListLocators:
 
     class Table(CommonTable):
         class Row:
-            action_name = Locator(By.XPATH, "./mat-cell[2]//a", "Action name in row")
-            object = Locator(By.XPATH, "./mat-cell[3]//a", "Objects in row")
-            start_date = Locator(By.XPATH, "./mat-cell[4]", "Start date in row")
-            finish_date = Locator(By.XPATH, "./mat-cell[5]", "Finish date in row")
+            action_name = Locator(By.XPATH, ".//app-task-name//a", "Action name in row")
+            invoker_objects = Locator(
+                By.XPATH, ".//app-task-objects//a", "Object that invoked action in row"
+            )
+            start_date = Locator(
+                By.XPATH, ".//mat-cell[contains(@class, 'action_date')][1]", "Start date in row"
+            )
+            finish_date = Locator(
+                By.XPATH, ".//mat-cell[contains(@class, 'action_date')][2]", "Finish date in row"
+            )
             # span for done_all and mat-icon for running
             # but in both cases we can identify status by class
             status = Locator(By.XPATH, ".//app-task-status-column/*", "Status span in row")

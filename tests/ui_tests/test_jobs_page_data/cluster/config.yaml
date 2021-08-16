@@ -41,7 +41,23 @@
         ansible_tags: fail
 
 - type: service
-  name: Serviceno
+  name: test_service
   version: 1
+
+  components:
+    test_component:
+      constraint: [0,+]
+      actions:
+        component_success:
+          <<: *job
+          display_name: "Component action"
+          params:
+            ansible_tags: success
+        component_host:
+          <<: *job
+          host_action: true
+          display_name: "Component host action"
+          params:
+            ansible_tags: success
 
   actions: *actions
