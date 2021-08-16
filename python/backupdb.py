@@ -22,7 +22,7 @@ from django.db import DEFAULT_DB_ALIAS, connections
 from django.db.migrations.executor import MigrationExecutor
 
 from cm.logger import log
-import cm.config as config
+from cm import config
 from adcm.settings import DATABASES
 
 

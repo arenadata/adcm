@@ -19,7 +19,7 @@ import subprocess
 import sys
 
 import adcm.init_django  # DO NOT DELETE !!!
-import cm.config as config
+from cm import config
 import cm.job
 import cm.lock
 from cm.logger import log
