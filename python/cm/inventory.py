@@ -14,7 +14,7 @@ import json
 import os
 from itertools import chain
 
-import cm.config as config
+from cm import config
 from cm.adcm_config import get_prototype_config, process_config
 from cm.logger import log
 from cm.models import (

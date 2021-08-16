@@ -20,7 +20,7 @@ from ansible.parsing.vault import VaultSecret, VaultAES256
 from django.conf import settings
 from django.db.utils import OperationalError
 
-import cm.config as config
+from cm import config
 import cm.variant
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
@@ -248,14 +248,14 @@ def switch_config(
 
     # go from flat config to 2-level dictionary
     unflat_conf = {}
-    for key in new_conf:
+    for key, value in new_conf.items():
         k1, k2 = key.split('/')
         if k2 == '':
-            unflat_conf[k1] = new_conf[key]
+            unflat_conf[k1] = value
         else:
             if k1 not in unflat_conf:
                 unflat_conf[k1] = {}
-            unflat_conf[k1][k2] = new_conf[key]
+            unflat_conf[k1][k2] = value
 
     # skip inactive groups and set attributes for new config
     for key in unflat_conf:
