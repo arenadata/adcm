@@ -166,7 +166,7 @@ def wait_and_assert_ui_info(
     get_info_kwargs = get_info_kwargs or {}
     info = get_info_func(**get_info_kwargs)
     # to make assertion message more verbal
-    ui_info_classname = info.__class__.__name__.replace('Info', '')
+    ui_info_classname = info.__class__.__name__
     human_key_names = {k: k.replace("_", " ").capitalize() for k in expected_values.keys()}
 
     def check_info_from_ui():
