@@ -112,3 +112,17 @@ def close_current_tab(driver: WebDriver):
     tabs = driver.window_handles
     driver.close()
     driver.switch_to.window(tabs[0])
+
+
+def check_rows_amount(page, expected_amount: int, table_page_num: int):
+    """
+    Check rows count is equal to expected
+    :param page: Page object with table attribute
+    :param expected_amount: Expected amount of rows in table on that page
+    :param table_page_num: Number of the current page (for assertion error message)
+    """
+    assert (
+        row_count := page.table.row_count
+    ) == expected_amount, (
+        f'Page #{table_page_num} should contain {expected_amount}, not {row_count}'
+    )
