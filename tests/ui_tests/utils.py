@@ -1,7 +1,7 @@
 # pylint: disable=too-many-ancestors
 from collections import UserDict
 from contextlib import contextmanager
-from typing import Callable, TypeVar, Any, Union, Optional
+from typing import Callable, TypeVar, Any, Union, Optional, Dict, Tuple
 
 import allure
 
@@ -133,36 +133,55 @@ def check_rows_amount(page, expected_amount: int, table_page_num: int):
     )
 
 
+# !===== UI Information Comparator Function =====!
+
+
+def is_equal(first_value: T, second_value: T) -> bool:
+    """Check if two values are equal (==)"""
+    return first_value == second_value
+
+
 def wait_and_assert_ui_info(
-    get_info_func: Union[Callable[[Any], T]],
-    assert_info_func: Callable[[T, D, Any], Any],
-    expected_values: D,
+    expected_values: Dict[str, Union[T, Tuple[T, Callable[[T, T], bool]]]],
+    get_info_func: Union[Callable[[Any], D]],
+    get_info_kwargs: Optional[dict] = None,
     timeout: Union[int, float] = 5,
     period: Union[int, float] = 0.5,
-    get_info_kwargs: Optional[dict] = None,
-    assert_info_kwargs: Optional[dict] = None,
 ):
     """
     Wait for some information on UI to be correct.
     Use it to avoid getting data from UI a bit earlier than it is fully loaded.
 
-    :param get_info_func: Function that gets data from UI
-                          and composes it into some object of type T
-    :param assert_info_func: Function that takes object of type T as first argument,
-                             expected values of type D as second argument
-                             and asserts that fields are exactly as they're expected to be
-    :param expected_values: Expected values to pass as second
-    :param timeout: Timeout for wait_until_step_succeeds
-    :param period: Period for wait_until_step_succeeds
-    :param get_info_kwargs: Keyword arguments to pass into get_info_func
-    :param assert_info_kwargs: Keyword arguments to pass into assert_info_func
+    :param expected_values: Dictionary with values that are expected to be found
+                            in UI information object.
+                            You can provide simple value or tuple with value and callable,
+                            that works as comparator: takes two arguments
+                            (first is actual value, second is expected value)
+                            and returns boolean.
+    :param get_info_func: Function to get UI information object.
+    :param get_info_kwargs: Dictionary with keyword arguments to pass to `get_info_func`.
+    :param timeout: Timeout for retries.
+    :param period: Period between retries.
     """
     get_info_kwargs = get_info_kwargs or {}
-    assert_info_kwargs = assert_info_kwargs or {}
+    info = get_info_func(**get_info_kwargs)
+    # to make assertion message more verbal
+    ui_info_classname = info.__class__.__name__.replace('Info', '')
+    human_key_names = {k: k.replace("_", " ").capitalize() for k in expected_values.keys()}
 
     def check_info_from_ui():
-        ui_info = get_info_func(**get_info_kwargs)
-        assert_info_func(ui_info, expected_values, **assert_info_kwargs)
+        ui_info: D = get_info_func(**get_info_kwargs)
+        for key, value in expected_values.items():
+            if isinstance(value, tuple):
+                expected_value, compare_func = value
+            else:
+                expected_value = value
+                compare_func = is_equal
+            actual_value = ui_info[key] if isinstance(ui_info, dict) else getattr(ui_info, key)
+            assert compare_func(actual_value, expected_value), (
+                f'{human_key_names[key]} in {ui_info_classname} '
+                f'should be {expected_value}, not {actual_value}'
+            )
 
     with allure.step('Check information is correct on UI'):
         wait_until_step_succeeds(check_info_from_ui, timeout=timeout, period=period)

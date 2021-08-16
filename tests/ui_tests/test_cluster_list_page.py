@@ -40,7 +40,6 @@ from tests.ui_tests.app.page.service.page import (
     ServiceConfigPage,
     ServiceImportPage,
 )
-from tests.ui_tests.test_host_page import check_host_info
 from tests.ui_tests.utils import wait_and_assert_ui_info
 
 BUNDLE_COMMUNITY = "cluster_community"
@@ -413,9 +412,8 @@ def test_check_create_host_and_hostprovider_from_cluster_host_page(
         'state': 'created',
     }
     wait_and_assert_ui_info(
-        cluster_host_page.get_host_info_from_row,
-        check_host_info,
         expected_values,
+        cluster_host_page.get_host_info_from_row,
         get_info_kwargs={'table_has_cluster_column': False},
     )
 
@@ -434,9 +432,8 @@ def test_check_create_host_from_cluster_host_page(app_fs, login_to_adcm_over_api
     cluster_host_page.click_add_host_btn(is_not_first_host=False)
     cluster_host_page.host_popup.create_host(HOST_NAME)
     wait_and_assert_ui_info(
-        cluster_host_page.get_host_info_from_row,
-        check_host_info,
         expected_values,
+        cluster_host_page.get_host_info_from_row,
         get_info_kwargs={'table_has_cluster_column': False},
     )
     host_row = cluster_host_page.table.get_all_rows()[0]

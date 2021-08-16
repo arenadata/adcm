@@ -41,7 +41,7 @@ from tests.ui_tests.app.page.host.page import (
     HostConfigPage,
 )
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
-from tests.ui_tests.app.page.host_list.page import HostListPage, HostRowInfo
+from tests.ui_tests.app.page.host_list.page import HostListPage
 from tests.ui_tests.utils import wait_and_assert_ui_info
 
 # pylint: disable=W0621
@@ -143,14 +143,6 @@ def check_job_name(sdk: ADCMClient, action_display_name: str):
     )
 
 
-def check_host_info(host_info: HostRowInfo, expected_values: dict):
-    """Check all values in host info"""
-    for field in expected_values:
-        assert (actual_value := getattr(host_info, field)) == (
-            expected_value := expected_values[field]
-        ), f"Host's '{field}' should be {expected_value}, not {actual_value}"
-
-
 def _check_menu(
     menu_name: str,
     provider_bundle: Bundle,
@@ -187,9 +179,8 @@ def test_create_host_with_bundle_upload(page: HostListPage, bundle_archive: str)
         'state': 'created',
     }
     wait_and_assert_ui_info(
-        page.get_host_info_from_row,
-        check_host_info,
         expected_values,
+        page.get_host_info_from_row,
     )
 
 
@@ -209,9 +200,8 @@ def test_create_bonded_to_cluster_host(
     page.open_host_creation_popup()
     page.host_popup.create_host(host_fqdn, cluster=CLUSTER_NAME)
     wait_and_assert_ui_info(
-        page.get_host_info_from_row,
-        check_host_info,
         expected_values,
+        page.get_host_info_from_row,
     )
 
 
@@ -241,9 +231,8 @@ def test_bind_host_to_cluster(
     page.host_popup.create_host(HOST_FQDN)
     with allure.step("Check host is created and isn't bound to a cluster"):
         wait_and_assert_ui_info(
-            page.get_host_info_from_row,
-            check_host_info,
             expected_values,
+            page.get_host_info_from_row,
         )
     page.bind_host_to_cluster(0, CLUSTER_NAME)
     page.assert_host_bonded_to_cluster(0, CLUSTER_NAME)
@@ -286,7 +275,7 @@ def test_delete_host(
         'cluster': None,
         'state': 'created',
     }
-    wait_and_assert_ui_info(page.get_host_info_from_row, check_host_info, expected_values)
+    wait_and_assert_ui_info(expected_values, page.get_host_info_from_row)
     page.delete_host(0)
     page.check_element_should_be_hidden(HostListLocators.HostTable.row)
 
