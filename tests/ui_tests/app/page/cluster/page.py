@@ -51,6 +51,14 @@ from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
 from tests.ui_tests.app.page.host_list.page import HostRowInfo
 
 
+@dataclass
+class ComponentsHostRowInfo:
+    """Information from host row about host on Components page"""
+
+    name: str
+    components: str
+
+
 class ClusterPageMixin(BasePageObject):
     """Helpers for working with cluster page"""
 
@@ -318,14 +326,6 @@ class ClusterHostPage(ClusterPageMixin):
         self.wait_element_hide(DeleteDialog.body)
 
 
-@dataclass
-class ComponentsHostRowInfo:
-    """Information from host row about host on Components page"""
-
-    name: str
-    components: str
-
-
 class ClusterComponentsPage(ClusterPageMixin):
     """Cluster page components menu"""
 
@@ -367,17 +367,19 @@ class ClusterComponentsPage(ClusterPageMixin):
         )
 
     def find_host_row_by_name(self, host_name: str):
-        for host in self.get_host_rows():
-            host_name_loc = self.find_child(host, ClusterComponentsLocators.Row.name)
-            if host_name_loc.text == host_name:
-                return host
+        for host_row in self.get_host_rows():
+            host_name_element = self.find_child(host_row, ClusterComponentsLocators.Row.name)
+            if host_name_element.text == host_name:
+                return host_row
         raise AssertionError(f"There are no host with name '{host_name}'")
 
     def find_component_row_by_name(self, component_name: str):
-        for component in self.get_components_rows():
-            component_name_loc = self.find_child(component, ClusterComponentsLocators.Row.name)
-            if component_name_loc.text == component_name:
-                return component
+        for component_row in self.get_components_rows():
+            component_name_element = self.find_child(
+                component_row, ClusterComponentsLocators.Row.name
+            )
+            if component_name_element.text == component_name:
+                return component_row
         raise AssertionError(f"There are no component with name '{component_name}'")
 
     @allure.step("Click on host row")
@@ -401,10 +403,14 @@ class ClusterComponentsPage(ClusterPageMixin):
     @allure.step("Delete item {item_name} from row")
     def delete_related_item_in_row_by_name(self, row: WebElement, item_name: str):
         self.wait_element_visible(ClusterComponentsLocators.Row.relations_row)
-        for item in self.find_children(row, ClusterComponentsLocators.Row.relations_row):
-            item_name_loc = self.find_child(item, ClusterComponentsLocators.Row.RelationsRow.name)
-            if item_name_loc.text == item_name:
-                self.find_child(item, ClusterComponentsLocators.Row.RelationsRow.delete_btn).click()
+        for item_row in self.find_children(row, ClusterComponentsLocators.Row.relations_row):
+            item_name_element = self.find_child(
+                item_row, ClusterComponentsLocators.Row.RelationsRow.name
+            )
+            if item_name_element.text == item_name:
+                self.find_child(
+                    item_row, ClusterComponentsLocators.Row.RelationsRow.delete_btn
+                ).click()
                 return
         raise AssertionError(f"There are no item with name '{item_name}'")
 

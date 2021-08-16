@@ -175,9 +175,10 @@ class TestClusterListPage:
                 f"Cluster description should be {cluster_params['description']} and "
                 f"not {uploaded_cluster['description']}"
             )
-            assert (
-                cluster_params['state'] == uploaded_cluster['state']
-            ), f"Cluster state should be {cluster_params['state']} and not {uploaded_cluster['state']}"
+            assert cluster_params['state'] == uploaded_cluster['state'], (
+                f"Cluster state should be {cluster_params['state']} "
+                f"and not {uploaded_cluster['state']}"
+            )
 
     def test_check_cluster_list_page_pagination(self, sdk_client_fs: ADCMClient, app_fs):
         with allure.step("Create 11 clusters"):
@@ -528,9 +529,7 @@ class TestClusterComponentsPage:
             bundle_path=bundle_archive, fqdn=HOST_NAME
         )
         host_row = cluster_components_page.get_host_rows()[0]
-        check_components_host_info(
-            cluster_components_page.get_row_info(host_row), HOST_NAME, "0"
-        )
+        check_components_host_info(cluster_components_page.get_row_info(host_row), HOST_NAME, "0")
 
     @pytest.mark.usefixtures("create_community_cluster_with_host_and_service")
     def test_check_cluster_components_page_create_components(self, app_fs):
