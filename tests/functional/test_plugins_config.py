@@ -267,9 +267,9 @@ def assert_provider_config(bundle: Bundle, statemap: dict):
 @pytest.fixture()
 def provider_bundle(sdk_client_fs: ADCMClient):
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "provider"))
-    for name in INITIAL_PROVIDERS_CONFIG:
+    for name, value in INITIAL_PROVIDERS_CONFIG.items():
         provider = bundle.provider_create(name)
-        for fqdn in INITIAL_PROVIDERS_CONFIG[name]['hosts']:
+        for fqdn in value['hosts']:
             provider.host_create(fqdn=fqdn)
     return bundle
 
