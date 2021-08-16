@@ -15,6 +15,7 @@ from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
+from cm.errors import AdcmEx
 from cm.models import GroupConfig, Host
 
 
@@ -24,25 +25,51 @@ class HostFlexFieldsSerializer(FlexFieldsSerializerMixin, serializers.ModelSeria
         fields = ('id', 'cluster_id', 'prototype_id', 'provider_id', 'config_id', 'fqdn', 'state')
 
 
+def check_object_type(type_name):
+    """Object type checking"""
+    if type_name not in ['cluster', 'service', 'component', 'provider']:
+        raise AdcmEx('GROUP_CONFIG_TYPE_ERROR')
+
+
+def translate_model_name(model_name):
+    """Translating model name to display model name"""
+    if model_name == 'clusterobject':
+        return 'service'
+    elif model_name == 'servicecomponent':
+        return 'component'
+    elif model_name == 'hostprovider':
+        return 'provider'
+    else:
+        return model_name
+
+
+def revert_model_name(name):
+    """Translating display model name to model name"""
+    if name == 'service':
+        return 'clusterobject'
+    elif name == 'component':
+        return 'servicecomponent'
+    elif name == 'provider':
+        return 'hostprovider'
+    else:
+        return name
+
+
 class ObjectTypeField(serializers.Field):
     def to_representation(self, value):
-        if value.model == 'clusterobject':
-            return 'service'
-        elif value.model == 'servicecomponent':
-            return 'component'
-        elif value.model == 'hostprovider':
-            return 'provider'
-        else:
-            return value.model
+        return translate_model_name(value.model)
 
     def to_internal_value(self, data):
-        if data == 'service':
-            data = 'clusterobject'
-        elif data == 'component':
-            data = 'servicecomponent'
-        elif data == 'provider':
-            data = 'hostprovider'
-        return ContentType.objects.get(app_label='cm', model=data)
+        check_object_type(data)
+        return ContentType.objects.get(app_label='cm', model=revert_model_name(data))
+
+
+class GroupConfigsHyperlinkedIdentityField(serializers.HyperlinkedIdentityField):
+    """Return url for group_configs for Cluster, Provider, Component or Service"""
+
+    def get_url(self, obj, view_name, request, format):  # pylint: disable=redefined-builtin
+        url = reverse(viewname=view_name, request=request, format=format)
+        return f'{url}?object_id={obj.id}&object_type={obj.prototype.type}'
 
 
 class GroupConfigSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
