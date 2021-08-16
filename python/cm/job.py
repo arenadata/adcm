@@ -254,22 +254,22 @@ def cook_delta(cluster, new_hc, action_hc, old=None):  # pylint: disable=too-man
             add_to_dict(old, key, hc.host.fqdn, hc.host)
 
     delta = {'add': {}, 'remove': {}}
-    for key in new:
+    for key, value in new.items():
         if key in old:
-            for host in new[key]:
+            for host in value:
                 if host not in old[key]:
-                    add_delta(delta, 'add', key, host, new[key][host])
+                    add_delta(delta, 'add', key, host, value[host])
             for host in old[key]:
-                if host not in new[key]:
+                if host not in value:
                     add_delta(delta, 'remove', key, host, old[key][host])
         else:
-            for host in new[key]:
-                add_delta(delta, 'add', key, host, new[key][host])
+            for host in value:
+                add_delta(delta, 'add', key, host, value[host])
 
-    for key in old:
+    for key, value in old.items():
         if key not in new:
-            for host in old[key]:
-                add_delta(delta, 'remove', key, host, old[key][host])
+            for host in value:
+                add_delta(delta, 'remove', key, host, value[host])
 
     log.debug('OLD: %s', old)
     log.debug('NEW: %s', new)
