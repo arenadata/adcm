@@ -10,7 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import allure
+
 from selenium.webdriver.common.keys import Keys
+from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
@@ -27,6 +29,7 @@ class CommonConfigMenuObj(BasePageObject):
     def save_config(self):
         """Save current configuration"""
         self.find_and_click(self.config.save_btn)
+        self.wait_element_hide(self.config.loading_text, timeout=2)
 
     @allure.step('Setting configuration description to {description}')
     def set_description(self, description: str) -> str:
@@ -58,17 +61,40 @@ class CommonConfigMenuObj(BasePageObject):
         loc = self.config.config_diff(adcm_test, value)
         self.wait_element_visible(loc)
 
-    def get_input_value(self, adcm_test: str, is_password: bool = False):
+    def get_input_value(self, adcm_test_attr_value: str, is_password: bool = False) -> str:
         """
         Get value from field input
 
         If is_password is True, then special field is used for search
         You can't get password confirmation method
+
+        :param adcm_test_attr_value: Value of attribute "adcm_test" to generate Locator
+        :param is_password: Is field password/confirmation
+        :returns: Value of input
         """
         template = (
             CommonConfigMenu.field_input if not is_password else CommonConfigMenu.password_inputs
         )
-        return self.find_element(template(adcm_test)).get_property("value")
+        return self.find_element(template(adcm_test_attr_value)).get_property("value")
+
+    @allure.step('Check input of field "{adcm_test_attr_value}" has value "{expected_value}"')
+    def assert_input_value_is(
+        self, expected_value: str, adcm_test_attr_value: str, is_password: bool = False
+    ):
+        """
+        Assert that value in field is expected_value (using retries)
+
+        :param expected_value: Value expected to be in input field
+        :param adcm_test_attr_value: Value of attribute "adcm_test" to generate Locator
+        :param is_password: Is field password/confirmation
+        """
+
+        def assert_value():
+            assert expected_value == self.get_input_value(
+                adcm_test_attr_value, is_password
+            ), f'Value in {adcm_test_attr_value} field should be empty after reset'
+
+        wait_until_step_succeeds(assert_value, timeout=4, period=0.5)
 
     def reset_to_default(self, adcm_test: str):
         """Click reset button"""

@@ -12,7 +12,7 @@
 
 from rest_framework.response import Response
 
-import cm.config as config
+from cm import config
 from cm.models import JobLog, TaskLog
 from api.serializers import EmptySerializer
 from api.api_views import GenericAPIPermView

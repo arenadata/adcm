@@ -144,9 +144,9 @@ def check_config_issue(obj):
 def check_config(obj):  # pylint: disable=too-many-branches
     spec, _, _, _ = get_prototype_config(obj.prototype)
     conf, attr = get_obj_config(obj)
-    for key in spec:  # pylint: disable=too-many-nested-blocks
-        if 'required' in spec[key]:
-            if spec[key]['required']:
+    for key, value in spec.items():  # pylint: disable=too-many-nested-blocks
+        if 'required' in value:
+            if value['required']:
                 if key in conf and conf[key] is None:
                     log.debug('required config key %s of %s is missing', key, obj_ref(obj))
                     return False
@@ -154,8 +154,8 @@ def check_config(obj):  # pylint: disable=too-many-branches
             if key in attr:
                 if 'active' in attr[key] and not attr[key]['active']:
                     continue
-            for subkey in spec[key]:
-                if spec[key][subkey]['required']:
+            for subkey in value:
+                if value[subkey]['required']:
                     if key not in conf:
                         log.debug('required config group %s of %s is missing', key, obj_ref(obj))
                         return False
