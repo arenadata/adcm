@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=line-too-long
 
 import os
 import re
@@ -24,7 +25,7 @@ from rest_framework import status
 
 from cm.logger import log
 from cm.errors import raise_AdcmEx as err
-import cm.config as config
+from cm import config
 import cm.checker
 
 from cm.adcm_config import proto_ref, check_config_type, type_is_complex, read_bundle_file
@@ -519,7 +520,7 @@ def validate_name(value, name):
     if p.fullmatch(value) is None:
         err("WRONG_NAME", msg1.format(name))
     if len(value) > MAX_NAME_LENGTH:
-        raise err("LONG_NAME", f'{name} is too long. Max length is {MAX_NAME_LENGTH}')
+        raise err("LONG_NAME", f'{name} is too long. Max length is {MAX_NAME_LENGTH}')  # pylint: disable=raising-bad-type
     return value
 
 
