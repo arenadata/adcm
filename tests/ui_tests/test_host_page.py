@@ -11,7 +11,6 @@
 # limitations under the License.
 import os
 from typing import (
-    Any,
     List,
     Tuple,
     Optional,
@@ -45,6 +44,7 @@ from tests.ui_tests.app.page.host.page import (
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
 from tests.ui_tests.app.page.host_list.page import HostListPage, HostRowInfo
 from tests.ui_tests.utils import check_rows_amount
+from .utils import check_host_value
 
 # pylint: disable=W0621
 
@@ -143,16 +143,6 @@ def check_job_name(sdk: ADCMClient, action_display_name: str):
         f'Action with name "{action_display_name}" was not ran. '
         f'Job names found: {jobs_display_names}'
     )
-
-
-def check_host_value(key: str, actual_value: Any, expected_value: Any):
-    """
-    Assert that actual value equals to expected value
-    Argument `key` is used in failed assertion message
-    """
-    assert (
-        actual_value == expected_value
-    ), f"Host {key} should be {expected_value}, not {actual_value}"
 
 
 def check_host_info(

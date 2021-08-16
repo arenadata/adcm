@@ -1,6 +1,7 @@
 # pylint: disable=too-many-ancestors
 from collections import UserDict
 from contextlib import contextmanager
+from typing import Any
 
 import allure
 from adcm_client.objects import ADCMClient, Cluster
@@ -126,3 +127,13 @@ def check_rows_amount(page, expected_amount: int, table_page_num: int):
     ) == expected_amount, (
         f'Page #{table_page_num} should contain {expected_amount}, not {row_count}'
     )
+
+
+def check_host_value(key: str, actual_value: Any, expected_value: Any):
+    """
+    Assert that actual value equals to expected value
+    Argument `key` is used in failed assertion message
+    """
+    assert (
+        actual_value == expected_value
+    ), f"Host {key} should be {expected_value}, not {actual_value}"

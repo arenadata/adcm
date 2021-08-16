@@ -132,6 +132,17 @@ class BasePageObject:
                 f"{self.driver.current_url} for {loc_timeout} seconds",
             )
 
+    def find_children(self, element: WebElement, child: Locator, timeout: int = None) -> WebElement:
+        """Find children element on current page."""
+
+        loc_timeout = timeout or self.default_loc_timeout
+        with allure.step(f'Find element "{child.name}" on page'):
+            return WDW(element, loc_timeout).until(
+                EC.presence_of_all_elements_located([child.by, child.value]),
+                message=f"Can't find {child.name} on page "
+                f"{self.driver.current_url} for {loc_timeout} seconds",
+            )
+
     def find_elements(self, locator: Locator, timeout: int = None) -> [WebElement]:
         """Find elements on current page."""
 
