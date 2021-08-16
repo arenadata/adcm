@@ -11,8 +11,8 @@
 // limitations under the License.
 
 import { Injectable } from '@angular/core';
-import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
-import { isEmptyObject } from '@app/core/types';
+import { AbstractControl, FormBuilder, FormControl, FormGroup, ValidatorFn, Validators } from '@angular/forms';
+import { isBoolean, isEmptyObject } from '@app/core/types';
 
 import { ISearchParam } from '../main/main.service';
 import {
@@ -173,6 +173,19 @@ export class FieldService {
     );
   }
 
+  toGroupsFormGroup(params: { [group: string]: any } = {}): FormGroup {
+    console.log('group_keys: ', params);
+
+
+    return this.fb.group(Object.entries(params).map(([key, value]) => [key, value]).reduce((acc, [key, value]) => {
+      if (isBoolean(value) || isEmptyObject(value)) {
+        return { ...acc, [key]: value };
+      } else if (!isEmptyObject(value)) {
+        return { ...acc, [key]: this.toGroupsFormGroup(value) };
+      }
+    }, {}));
+  }
+
   // TODO:
   private runByTree(field: TFormOptions, controls: { [key: string]: {} }): { [key: string]: {} } {
     if ('options' in field) {
@@ -325,5 +338,20 @@ export class FieldService {
       }
 
     return value;
+  }
+
+  groupsFormControl(value: string, groupsForm: FormGroup): FormControl {
+    const keys = value.split('/').reverse();
+    let control;
+
+    keys.forEach((key) => {
+      const formControl = groupsForm?.get(key);
+      if (formControl) {
+        control = formControl;
+      }
+    });
+
+
+    return control;
   }
 }

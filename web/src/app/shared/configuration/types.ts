@@ -100,13 +100,15 @@ export interface IConfig {
 
 /**
  *```
-{
+ {
     [group: string]: { active: boolean };
 }
-```
+ ```
  */
 export interface IConfigAttr {
-  [group: string]: { active: boolean };
+  [group: string]: { active?: boolean };
+
+  'group_keys'?: any;
 }
 
 //#region Modified data for ngForm build
@@ -114,15 +116,26 @@ export interface IConfigAttr {
 /**
  * Mark for rendering required component
  */
-export type controlType = 'boolean' | 'textbox' | 'textarea' | 'json' | 'password' | 'list' | 'map' | 'dropdown' | 'file' | 'text' | 'structure';
+export type controlType =
+  'boolean'
+  | 'textbox'
+  | 'textarea'
+  | 'json'
+  | 'password'
+  | 'list'
+  | 'map'
+  | 'dropdown'
+  | 'file'
+  | 'text'
+  | 'structure';
 
 /**
-  *```
-    pattern?: string | RegExp;
-    required?: boolean;
-    max?: number;
-    min?: number;
-```
+ *```
+ pattern?: string | RegExp;
+ required?: boolean;
+ max?: number;
+ min?: number;
+ ```
  */
 export interface IValidator {
   pattern?: string | RegExp;
@@ -157,4 +170,5 @@ export interface IFieldOptions extends IFormOptions {
   validator: IValidator;
   compare: ICompare[];
 }
+
 //#endregion
