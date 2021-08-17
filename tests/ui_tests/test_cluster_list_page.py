@@ -44,6 +44,7 @@ from tests.ui_tests.app.page.service.page import (
 )
 from tests.ui_tests.test_host_page import check_host_info
 from .utils import check_host_value
+from tests.ui_tests.utils import wait_and_assert_ui_info
 
 BUNDLE_COMMUNITY = "cluster_community"
 BUNDLE_ENTERPRISE = "cluster_enterprise"
@@ -402,6 +403,31 @@ class TestClusterHostPage:
         host_info = cluster_host_page.get_host_info_from_row(table_has_cluster_column=False)
         check_host_info(host_info, HOST_NAME, new_provider_name, None, 'created')
 
+@pytest.mark.parametrize(
+    "bundle_archive", [utils.get_data_dir(__file__, "provider")], indirect=True
+)
+@pytest.mark.usefixtures("_create_community_cluster_with_service")
+def test_check_create_host_and_hostprovider_from_cluster_host_page(
+    app_fs, login_to_adcm_over_api, bundle_archive: str
+):
+    cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    cluster_host_page.wait_page_is_opened()
+    cluster_host_page.click_add_host_btn(is_not_first_host=False)
+    new_provider_name = cluster_host_page.host_popup.create_provider_and_host(
+        bundle_archive, HOST_NAME
+    )
+    expected_values = {
+        'fqdn': HOST_NAME,
+        'provider': new_provider_name,
+        'cluster': None,
+        'state': 'created',
+    }
+    wait_and_assert_ui_info(
+        expected_values,
+        cluster_host_page.get_host_info_from_row,
+        get_info_kwargs={'table_has_cluster_column': False},
+    )
+
     @pytest.mark.usefixtures("_create_community_cluster_with_service")
     @pytest.mark.usefixtures("upload_and_create_provider")
     def test_check_create_host_from_cluster_host_page(self, app_fs):
@@ -414,6 +440,28 @@ class TestClusterHostPage:
         host_row = cluster_host_page.table.get_all_rows()[0]
         cluster_host_page.click_on_host_name_in_host_row(host_row)
         HostMainPage(app_fs.driver, app_fs.adcm.url, 1, 1).wait_page_is_opened()
+
+@pytest.mark.usefixtures("_create_community_cluster_with_service")
+@pytest.mark.usefixtures("upload_and_create_provider")
+def test_check_create_host_from_cluster_host_page(app_fs, login_to_adcm_over_api):
+    expected_values = {
+        'fqdn': HOST_NAME,
+        'provider': PROVIDER_NAME,
+        'cluster': None,
+        'state': 'created',
+    }
+    cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    cluster_host_page.wait_page_is_opened()
+    cluster_host_page.click_add_host_btn(is_not_first_host=False)
+    cluster_host_page.host_popup.create_host(HOST_NAME)
+    wait_and_assert_ui_info(
+        expected_values,
+        cluster_host_page.get_host_info_from_row,
+        get_info_kwargs={'table_has_cluster_column': False},
+    )
+    host_row = cluster_host_page.table.get_all_rows()[0]
+    cluster_host_page.click_on_host_name_in_host_row(host_row)
+    HostMainPage(app_fs.driver, app_fs.adcm.url, 1, 1).wait_page_is_opened()
 
     @pytest.mark.usefixtures("_create_community_cluster_with_service")
     @pytest.mark.usefixtures('create_host')
