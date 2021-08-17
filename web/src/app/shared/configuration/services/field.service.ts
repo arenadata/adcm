@@ -97,7 +97,9 @@ export const getValidator = (required: boolean, min: number, max: number, type: 
 });
 
 
-export const getGroupControl = (item: IFieldStack, group: FormGroup): FormControl => {
+export const getGroupControl = (item: IFieldStack, group: FormGroup): FormControl | null => {
+  if (Object.keys(group.controls)) return null;
+
   if (item.subname) {
     return group.get(item.name).get(item.subname) as FormControl;
   }
@@ -347,21 +349,5 @@ export class FieldService {
       }
 
     return value;
-  }
-
-  groupsFormControl(value: string, groupsForm: FormGroup): FormControl {
-    const resolveControl = (key, groups): AbstractControl => groups.get(key);
-
-    const keys = value.split('/').reverse();
-    let control;
-    keys.forEach((key) => {
-      const formControl = resolveControl(key, groupsForm);
-      if (formControl instanceof FormGroup) {
-        control = resolveControl(key, formControl);
-      }
-    });
-
-
-    return control;
   }
 }

@@ -14,7 +14,12 @@ import { AddHostToConfigGroupComponent } from './components/config-group-host-ad
 
 
 @NgModule({
-  declarations: [ConfigGroupListComponent, AddConfigGroupComponent, ConfigGroupHostListComponent, AddHostToConfigGroupComponent],
+  declarations: [
+    ConfigGroupListComponent,
+    AddConfigGroupComponent,
+    ConfigGroupHostListComponent,
+    AddHostToConfigGroupComponent
+  ],
   imports: [
     CommonModule,
     ReactiveFormsModule,

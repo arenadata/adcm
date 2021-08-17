@@ -149,17 +149,15 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
       };
       this.isLoading = true;
 
-      console.log(send);
-
-      // this.service.send(url, send).pipe(
-      //   tap((c) => {
-      //     this.saveFlag = false;
-      //     this.rawConfig.next(c);
-      //     this.cd.detectChanges();
-      //     this.event.emit({ name: 'send', data: this.fields });
-      //   }),
-      //   finalize(() => this.isLoading = false),
-      // ).subscribe();
+      this.service.send(url, send).pipe(
+        tap((c) => {
+          this.saveFlag = false;
+          this.rawConfig.next(c);
+          this.cd.detectChanges();
+          this.event.emit({ name: 'send', data: this.fields });
+        }),
+        finalize(() => this.isLoading = false),
+      ).subscribe();
     } else {
       Object.keys(form.controls).forEach((controlName) => form.controls[controlName].markAsTouched());
     }
@@ -184,9 +182,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   private _getConfig(url: string): Observable<IConfig> {
     this.isLoading = true;
     return this.service.getConfig(url).pipe(
-      // tap((data) => console.log('getConfig | data', data)),
       tap((c) => this.rawConfig.next(c)),
-      // tap((c) => this._initGroups(c.attr.group_keys)),
       finalize(() => this.isLoading = false),
       catchError(() => {
         this.loadingStatus = 'There is no config for this object.';
@@ -194,18 +190,4 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
       })
     );
   }
-
-  // private _initGroups(groupKeys: { [key: string]: any }): void {
-  //   this._groupsSubscription.unsubscribe();
-  //   this.service.initGroups(groupKeys);
-  //   this._groupsSubscription = this.groupKeys$.subscribe((groupKeys) => {
-  //     this.rawConfig.next({
-  //       ...this.rawConfig.value,
-  //       attr: {
-  //         ...this.rawConfig.value.attr,
-  //         group_keys: { ...groupKeys }
-  //       }
-  //     });
-  //   });
-  // }
 }
