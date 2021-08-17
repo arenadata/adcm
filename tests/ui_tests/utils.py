@@ -129,7 +129,7 @@ def check_rows_amount(page, expected_amount: int, table_page_num: int):
     )
 
 
-def check_host_value(key: str, actual_value: Any, expected_value: Any):
+def check_host_value(key: str, actual_value, expected_value):
     """
     Assert that actual value equals to expected value
     Argument `key` is used in failed assertion message

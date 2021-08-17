@@ -10,8 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional
-from typing import Union
+from typing import (
+    Optional,
+    List,
+    Union,
+)
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -132,7 +135,7 @@ class BasePageObject:
                 f"{self.driver.current_url} for {loc_timeout} seconds",
             )
 
-    def find_children(self, element: WebElement, child: Locator, timeout: int = None) -> WebElement:
+    def find_children(self, element: WebElement, child: Locator, timeout: int = None) -> List[WebElement]:
         """Find children element on current page."""
 
         loc_timeout = timeout or self.default_loc_timeout
