@@ -96,30 +96,42 @@ export const getValidator = (required: boolean, min: number, max: number, type: 
   pattern: getPattern(type),
 });
 
-const getField = (item: IFieldStack): IFieldOptions => ({
-  ...item,
-  key: getKey(item.name, item.subname),
-  value: getValue(item.type)(item.value, item.default, item.required),
-  validator: getValidator(item.required, item.limits?.min, item.limits?.max, item.type),
-  controlType: getControlType(item.type),
-  hidden: item.name === '__main_info' || isHidden(item),
-  compare: [],
-});
+
+export const getGroupControl = (item: IFieldStack, group: FormGroup): FormControl => {
+  if (item.subname) {
+    return group.get(item.name).get(item.subname) as FormControl;
+  }
+
+  return group.get(item.name) as FormControl;
+};
+
+const getField = (item: IFieldStack, group?: FormGroup): IFieldOptions => {
+  return {
+    ...item,
+    key: getKey(item.name, item.subname),
+    value: getValue(item.type)(item.value, item.default, item.required),
+    validator: getValidator(item.required, item.limits?.min, item.limits?.max, item.type),
+    controlType: getControlType(item.type),
+    hidden: item.name === '__main_info' || isHidden(item),
+    compare: [],
+    configGroup: getGroupControl(item, group)
+  };
+};
 
 const fo = (n: string) => (b: IFieldStack) => b.type !== 'group' && b.subname && b.name === n;
 const isActive = (a: IConfigAttr, n: string) => a[n]?.active;
-export const getOptions = (a: IFieldStack, d: IConfig) =>
+export const getOptions = (a: IFieldStack, d: IConfig, group?: FormGroup) =>
   d.config
     .filter(fo(a.name))
-    .map(getField)
+    .map((f) => getField(f, group))
     // switch off validation for field if !(activatable: true && active: false) - line: 146
     .map((c) => ({ ...c, name: c.subname, activatable: a.activatable && !isActive(d.attr, a.name) }));
 
-const getPanel = (a: IFieldStack, d: IConfig): IPanelOptions => ({
+const getPanel = (a: IFieldStack, d: IConfig, group?: FormGroup): IPanelOptions => ({
   ...a,
   hidden: isHidden(a),
   active: a.activatable ? isActive(d.attr, a.name) : true,
-  options: getOptions(a, d),
+  options: getOptions(a, d, group),
 });
 
 const handleTree = (c: ISearchParam): ((a: TFormOptions) => TFormOptions) => (a: TFormOptions): TFormOptions => {
@@ -141,13 +153,13 @@ export class FieldService {
   /**
    * Parse and prepare source data from backend
    */
-  public getPanels(data: IConfig): TFormOptions[] {
+  public getPanels(data: IConfig, group?: FormGroup): TFormOptions[] {
     return data?.config
       ?.filter((a) => a.name !== '__main_info')
       .reduce((p, c) => {
         if (c.subname) return p;
-        if (c.type !== 'group') return [...p, getField(c)];
-        else return [...p, getPanel(c, data)];
+        if (c.type !== 'group') return [...p, getField(c, group)];
+        else return [...p, getPanel(c, data, group)];
       }, []);
   }
 
@@ -174,9 +186,6 @@ export class FieldService {
   }
 
   toGroupsFormGroup(params: { [group: string]: any } = {}): FormGroup {
-    console.log('group_keys: ', params);
-
-
     return this.fb.group(Object.entries(params).map(([key, value]) => [key, value]).reduce((acc, [key, value]) => {
       if (isBoolean(value) || isEmptyObject(value)) {
         return { ...acc, [key]: value };
@@ -341,13 +350,14 @@ export class FieldService {
   }
 
   groupsFormControl(value: string, groupsForm: FormGroup): FormControl {
+    const resolveControl = (key, groups): AbstractControl => groups.get(key);
+
     const keys = value.split('/').reverse();
     let control;
-
     keys.forEach((key) => {
-      const formControl = groupsForm?.get(key);
-      if (formControl) {
-        control = formControl;
+      const formControl = resolveControl(key, groupsForm);
+      if (formControl instanceof FormGroup) {
+        control = resolveControl(key, formControl);
       }
     });
 

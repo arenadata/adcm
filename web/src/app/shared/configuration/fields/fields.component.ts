@@ -18,19 +18,19 @@ import { GroupFieldsComponent } from '../group-fields/group-fields.component';
 import { IConfig, IPanelOptions } from '../types';
 import { BaseDirective } from '@adwp-ui/widgets';
 import { MainService } from '@app/shared/configuration/main/main.service';
-import { FormControl } from '@angular/forms';
+import { FormControl, FormGroup } from '@angular/forms';
 
 @Component({
   selector: 'app-config-fields',
   template: `
     <ng-container *ngFor="let item of dataOptions; trackBy: trackBy">
-      <app-group-fields *ngIf="isPanel(item); else one" [panel]="item" [form]="form"></app-group-fields>
+      <app-group-fields *ngIf="isPanel(item); else one" [panel]="item" [form]="form"
+                        [groupForm]="groupsForm"></app-group-fields>
       <ng-template #one>
         <div class="row d-flex">
           <div class="group-checkbox d-flex" style="padding: 5px">
-            <!--            <mat-checkbox (change)="onToggle(item)"></mat-checkbox>-->
-            <ng-container *ngIf="groupsFormControl(item.key) as groupControl">
-              <mat-checkbox [formControl]="groupControl">{{ item.key  }}</mat-checkbox>
+            <ng-container *ngIf="item.configGroup as ConfigGroupControl">
+              <mat-checkbox [formControl]="ConfigGroupControl">{{ item.key  }}</mat-checkbox>
             </ng-container>
           </div>
           <app-field class="w100" *ngIf="!item.hidden" [form]="form" [options]="item"
@@ -48,7 +48,7 @@ export class ConfigFieldsComponent extends BaseDirective {
 
   @Input() dataOptions: TFormOptions[] = [];
   @Input() form = this.service.toFormGroup();
-  @Input() groupsForm;
+  @Input() groupsForm: FormGroup;
   rawConfig: IConfig;
   shapshot: any;
   isAdvanced = false;
@@ -57,11 +57,10 @@ export class ConfigFieldsComponent extends BaseDirective {
   @Input()
   set model(data: IConfig) {
     if (!data) return;
-    console.log('model | data: ', data);
     this.rawConfig = data;
-    this.dataOptions = this.service.getPanels(data);
-    this.form = this.service.toFormGroup(this.dataOptions);
     this.groupsForm = this.service.toGroupsFormGroup(data.attr.group_keys);
+    this.dataOptions = this.service.getPanels(data, this.groupsForm);
+    this.form = this.service.toFormGroup(this.dataOptions);
     this.isAdvanced = data.config.some((a) => a.ui_options && a.ui_options.advanced);
     this.shapshot = { ...this.form.value };
     this.main.events.isLoaded();
@@ -104,14 +103,5 @@ export class ConfigFieldsComponent extends BaseDirective {
    */
   stableView() {
     this.fr.stableView(() => this.radio.next(keyChannelStrim.load_complete, 'Config has been loaded'));
-  }
-
-  // onToggle(item: (IPanelOptions & IFieldOptions) | IPanelOptions): void {
-  //   this.main.events.toggleInGroup(item);
-  // }
-  groupsFormControl(key: string): FormControl {
-    const test = this.service.groupsFormControl(key, this.groupsForm);
-    // console.log('test: ', test);
-    return test;
   }
 }
