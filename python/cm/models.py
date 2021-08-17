@@ -541,14 +541,31 @@ class GroupConfig(ADCMModel):
     class Meta:
         unique_together = ['object_id', 'name', 'object_type']
 
-    def create_group_keys(self, config: dict, group_keys: Dict[str, bool] = None):
+    def get_config_spec(self):
+        """Return spec for config"""
+        spec = {}
+        for field in PrototypeConfig.objects.filter(
+            prototype=self.object.prototype, action__isnull=True
+        ).order_by('id'):
+            if field.subname == '':
+                if field.type == 'group':
+                    spec[field.name] = {'type': field.type, 'fields': {}}
+                else:
+                    spec[field.name] = {'type': field.type}
+            else:
+                spec[field.name]['fields'][field.subname] = {'type': field.type}
+        return spec
+
+    def create_group_keys(
+        self, config: dict, config_spec: dict, group_keys: Dict[str, bool] = None
+    ):
         """Creating group keys from origin config"""
         if group_keys is None:
             group_keys = {}
         for k, v in config.items():
-            if isinstance(v, Mapping):
+            if config_spec[k]['type'] == 'group':
                 group_keys.setdefault(k, {})
-                self.create_group_keys(config.get(k, {}), group_keys[k])
+                self.create_group_keys(config.get(k, {}), config_spec[k]['fields'], group_keys[k])
             else:
                 group_keys[k] = False
         return group_keys
@@ -584,7 +601,8 @@ class GroupConfig(ADCMModel):
                 config_log.obj_ref = self.config
                 config_log.config = deepcopy(parent_config_log.config)
                 attr = deepcopy(parent_config_log.attr)
-                attr.update({'group_keys': self.create_group_keys(config_log.config)})
+                config_spec = self.get_config_spec()
+                attr.update({'group_keys': self.create_group_keys(config_log.config, config_spec)})
                 config_log.attr = attr
                 config_log.description = parent_config_log.description
                 config_log.save()
