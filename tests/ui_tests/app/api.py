@@ -11,7 +11,6 @@
 # limitations under the License.
 import json
 import allure
-import inspect
 import requests
 
 
@@ -30,6 +29,7 @@ class APIRequester:
         self.user_delete_ep_template = f'{base_url}/api/v1/user/' + '{}/'
         self.password_endpoint = f'{base_url}/api/v1/profile/admin/password/'
 
+    @allure.step('Get authorization token over API')
     def get_authorization_token(self) -> str:
         """Returns authorization token for "admin" user"""
         response = requests.post(self.login_endpoint, json=self.credentials)
@@ -70,13 +70,10 @@ class APIRequester:
     def _check_response(response: requests.Response):
         if (status_code := response.status_code) < 400:
             return
-        caller_function_name = inspect.stack()[1][3].replace('_', ' ')
         try:
             response_content = response.json()
         except json.JSONDecodeError:
             response_content = response.text
         raise RequestFailedException(
-            f'Failed to {caller_function_name} over API. '
-            f'Request finished with status {status_code} '
-            f'and json body: {response_content}',
+            f'Request finished with status {status_code} ' f'and json body: {response_content}',
         )

@@ -179,3 +179,14 @@ def another_user(app_fs: ADCMTest, adcm_credentials: dict) -> Generator[dict, No
     api.create_new_user(user_credentials)
     yield user_credentials
     api.delete_user(user_credentials['username'])
+
+
+@pytest.fixture(params=[{'username': 'admin', 'password': 'new_password'}])
+def restore_admin_password(request, adcm_credentials: dict, adcm_fs: ADCM):
+    """Restores password after test"""
+    new_credentials = request.param
+    yield
+    api = APIRequester(adcm_fs.url, new_credentials)
+    api.change_admin_password(adcm_credentials)
+    # ensure that authorization as default admin user works correctly
+    api.get_authorization_header()

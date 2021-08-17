@@ -150,11 +150,11 @@ def test_delete_bundle(create_bundle_archives: List[str], page: BundleListPage):
 )
 def test_two_bundles(create_bundle_archives: List[str], page: BundleListPage):
     """Upload two bundles"""
-    with page.table.wait_rows_change():
+    with allure.step('Upload 1st bundle'), page.table.wait_rows_change():
         page.upload_bundle(create_bundle_archives[0])
-    with page.table.wait_rows_change():
+    with allure.step('Upload 2nd bundle'), page.table.wait_rows_change():
         page.upload_bundle(create_bundle_archives[1])
-    with allure.step('Check amount of rows'):
+    with allure.step('Check there are exactly 2 rows'):
         rows = page.table.row_count
         assert rows == 2, f'Row amount should be 2, but only {rows} is presented'
 

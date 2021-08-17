@@ -114,7 +114,9 @@ class CommonConfigMenuObj(BasePageObject):
             field.clear()
         field.send_keys(value)
 
-    @allure.step("Filling in {adcm_test} field's password {} and confirmation {}")
+    @allure.step(
+        "Filling in {adcm_test} field's password {password} and confirmation {confirmation}"
+    )
     def fill_password_and_confirm_fields(self, password: str, confirmation: str, adcm_test: str):
         """
         Fill password in clean fields and confirm password fields

@@ -11,6 +11,8 @@
 # limitations under the License.
 import allure
 
+from adcm_pytest_plugin.utils import wait_until_step_succeeds
+
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
     PageHeader,
@@ -48,3 +50,16 @@ class ProfilePage(BasePageObject):
                 ProfileLocators.save_password_btn,
             ]
         )
+
+    @allure.step('Check that username is {expected_username}')
+    def check_username(self, expected_username: str):
+        """Wait for username to be what it is expected on opened profile page"""
+
+        def check_username_on_profile_page():
+            assert (
+                username := self.get_username()
+            ) == expected_username, (
+                f'Expected username is {expected_username}, got {username} instead'
+            )
+
+        wait_until_step_succeeds(check_username_on_profile_page, timeout=5, period=0.5)
