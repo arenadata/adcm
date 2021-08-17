@@ -21,6 +21,7 @@ version_utils
 ruyaml
 yspec
 drf-flex-fields
+casestyle
 # Custom bundle libs
 apache-libcloud
 jmespath

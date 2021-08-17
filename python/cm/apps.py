@@ -10,10 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+
+import casestyle
 
 from django.apps import AppConfig
-from django.db.models.signals import post_migrate
+from django.db.models.signals import post_save, post_delete, post_migrate
+
+from cm.status_api import post_event
 
 
 ops_model_list = [
@@ -75,8 +78,49 @@ def fill_role(apps, **kwargs):
     fill_admin_role(Role, Permission)
 
 
+def get_names(sender, **kwargs):
+    '''getting model name, module name and object'''
+    if hasattr(sender, 'get_endpoint'):
+        name = sender.get_endpoint()
+    else:
+        name = casestyle.kebabcase(sender.__name__)
+    return (name, sender.__module__, kwargs['instance'])
+
+
+def filter_out_event(module, name):
+    # We filter the sending of events only for the cm application
+    if module[0:2] != 'cm':
+        return True
+    if name not in ('group-config', 'group-config-host'):
+        return True
+    return False
+
+
+def model_change(sender, **kwargs):
+    '''post_save handler'''
+    name, module, obj = get_names(sender, **kwargs)
+    if filter_out_event(module, name):
+        return
+    action = 'update'
+    if kwargs['created']:
+        action = 'create'
+    post_event(action, name, obj.pk, {'module': module})
+
+
+def model_delete(sender, **kwargs):
+    '''post_delete handler'''
+    name, module, obj = get_names(sender, **kwargs)
+    # We filter the sending of events only for the adss project and adwp applications
+    if filter_out_event(module, name):
+        return
+    action = 'delete'
+    post_event(action, name, obj.pk, {'module': module})
+
+
 class CmConfig(AppConfig):
     name = 'cm'
 
     def ready(self):
         post_migrate.connect(fill_role, sender=self)
+        post_save.connect(model_change, dispatch_uid='model_change')
+        post_delete.connect(model_delete, dispatch_uid='model_delete')
