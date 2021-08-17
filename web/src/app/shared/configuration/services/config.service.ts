@@ -34,10 +34,7 @@ export interface IConfigService {
   providedIn: 'root'
 })
 export class ConfigService implements IConfigService {
-  constructor(private api: ApiService,
-              public cluster: ClusterService,
-              public events: ConfigComponentEvents,
-              public groups: ConfigGroupsService) { }
+  constructor(private api: ApiService) { }
 
   getConfig(url: string): Observable<IConfig> {
     return this.api.get<IConfigResponse>(url).pipe(
