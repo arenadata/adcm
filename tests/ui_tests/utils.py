@@ -4,7 +4,6 @@ from contextlib import contextmanager
 from typing import Callable, TypeVar, Any, Union, Optional, Dict, Tuple
 
 import allure
-
 from adcm_client.objects import ADCMClient, Cluster
 from adcm_pytest_plugin.utils import random_string, wait_until_step_succeeds
 from selenium.webdriver.remote.webdriver import WebDriver

@@ -42,11 +42,10 @@ from tests.ui_tests.app.page.host.page import (
     HostConfigPage,
 )
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
-from tests.ui_tests.app.page.host_list.page import HostListPage, HostRowInfo
-from tests.ui_tests.utils import check_rows_amount
-from .utils import check_host_value
 from tests.ui_tests.app.page.host_list.page import HostListPage
+from tests.ui_tests.app.page.host_list.page import HostRowInfo
 from tests.ui_tests.utils import wait_and_assert_ui_info
+from .utils import check_host_value
 
 # pylint: disable=W0621
 
