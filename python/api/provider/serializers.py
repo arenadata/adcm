@@ -50,7 +50,6 @@ class ProviderSerializer(serializers.Serializer):
 
 
 class ProviderDetailSerializer(ProviderSerializer):
-    issue = serializers.SerializerMethodField()
     edition = serializers.CharField(read_only=True)
     license = serializers.CharField(read_only=True)
     bundle_id = serializers.IntegerField(read_only=True)
@@ -61,9 +60,6 @@ class ProviderDetailSerializer(ProviderSerializer):
     host = ObjectURL(read_only=True, view_name='host')
     multi_state = StringListSerializer(read_only=True)
     concern = ConcernItemSerializer(many=True, read_only=True)
-
-    def get_issue(self, obj):
-        return cm.issue.aggregate_issues(obj)
 
 
 class ProviderUISerializer(ProviderDetailSerializer):

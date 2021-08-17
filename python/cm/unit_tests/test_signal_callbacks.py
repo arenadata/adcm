@@ -14,12 +14,13 @@ from unittest.mock import Mock
 from django.test import TestCase
 
 import cm.signal_callbacks  # pylint: disable=unused-import
+from cm import models
 from cm.api_context import ctx
 from cm.unit_tests import utils
 
 
 class ConcernSignalTest(TestCase):
-    """Tests for obj.concern change signals"""
+    """Tests for obj.concerns change signals"""
 
     @classmethod
     def setUpClass(cls):
@@ -28,26 +29,26 @@ class ConcernSignalTest(TestCase):
 
     def setUp(self):
         self.hierarchy = utils.generate_hierarchy()
-        self.lock = utils.gen_concern_item()
+        self.lock = utils.gen_concern_item(models.ConcernType.Lock)
 
     def test_addition(self):
         event_queue = ctx.event.events
         for obj in self.hierarchy.values():
             event_queue.clear()
-            obj.concern.add(self.lock)
+            obj.concerns.add(self.lock)
             self.assertEqual(len(event_queue), 1)
 
     def test_removal(self):
         event_queue = ctx.event.events
         for obj in self.hierarchy.values():
             event_queue.clear()
-            obj.concern.remove(self.lock)
+            obj.concerns.remove(self.lock)
             self.assertEqual(len(event_queue), 1)
 
     def test_concern_item_delete(self):
         event_queue = ctx.event.events
         for obj in self.hierarchy.values():
-            obj.concern.add(self.lock)
+            obj.concerns.add(self.lock)
         event_queue.clear()
 
         self.lock.delete()

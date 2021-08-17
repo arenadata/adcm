@@ -19,7 +19,7 @@ from typing import Iterable, Optional
 
 from enum import Enum
 from itertools import chain
-from typing import Iterable, List
+from typing import Iterable, List, Optional
 
 from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -29,6 +29,16 @@ from django.db import models
 
 from cm.errors import AdcmEx
 from cm.logger import log
+
+
+class PrototypeEnum(Enum):
+    ADCM = 'adcm'
+    Cluster = 'cluster'
+    Service = 'service'
+    Component = 'component'
+    Provider = 'provider'
+    Host = 'host'
+
 
 PROTO_TYPE = (
     ('adcm', 'adcm'),
@@ -213,32 +223,45 @@ class ADCMEntity(ADCMModel):
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
     _multi_state = models.JSONField(default=dict, db_column='multi_state')
-    issue = models.JSONField(default=dict)
-    concern = models.ManyToManyField('ConcernItem', blank=True, related_name='%(class)s_entities')
+    concerns = models.ManyToManyField('ConcernItem', blank=True, related_name='%(class)s_entities')
 
     class Meta:
         abstract = True
 
     @property
     def is_locked(self) -> bool:
-        return self.concern.exists()
+        """Check if actions could be run over entity"""
+        return self.concerns.filter(blocking=True).exists()
 
-    def add_to_concern(self, item: 'ConcernItem') -> None:
+    def add_to_concerns(self, item: 'ConcernItem') -> None:
+        """Attach entity to ConcernItem to keep up with it"""
         if not item or getattr(item, 'id', None) is None:
             return
 
-        if item not in self.concern.all():
-            self.concern.add(item)
+        if item in self.concerns.all():
+            return
 
-    def remove_from_concern(self, item: 'ConcernItem') -> None:
+        self.concerns.add(item)
+
+    def remove_from_concerns(self, item: 'ConcernItem') -> None:
+        """Detach entity from ConcernItem when it outdated"""
         if not item or not hasattr(item, 'id'):
             return
 
-        if item in self.concern.all():
-            self.concern.remove(item)
+        if item not in self.concerns.all():
+            return
+
+        self.concerns.remove(item)
+
+    def get_own_issue(self, issue_type: 'IssueType') -> Optional['ConcernItem']:
+        """Get object's issue of specified type or None"""
+        issue_name = issue_type.gen_issue_name(self)
+        for issue in self.concerns.filter(type=ConcernType.Issue, name=issue_name):
+            return issue
 
     @property
     def display_name(self):
+        """Unified `display name` for object's string representation"""
         own_name = getattr(self, 'name', None)
         fqdn = getattr(self, 'fqdn', None)
         return own_name or fqdn or self.prototype.display_name or self.prototype.name
@@ -272,9 +295,11 @@ class ADCMEntity(ADCMModel):
 
     @property
     def multi_state(self) -> List[str]:
+        """Easy to operate self._multi_state representation"""
         return sorted(self._multi_state.keys())
 
     def set_multi_state(self, multi_state: str, event=None) -> None:
+        """Append new unique multi_state to entity._multi_state"""
         if multi_state in self._multi_state:
             return
 
@@ -285,6 +310,7 @@ class ADCMEntity(ADCMModel):
         log.info('add "%s" to "%s" multi_state', multi_state, self)
 
     def unset_multi_state(self, multi_state: str, event=None) -> None:
+        """Remove specified multi_state from entity._multi_state"""
         if multi_state not in self._multi_state:
             return
 
@@ -295,6 +321,7 @@ class ADCMEntity(ADCMModel):
         log.info('remove "%s" from "%s" multi_state', multi_state, self)
 
     def has_multi_state_intersection(self, multi_states: List[str]) -> bool:
+        """Check if entity._multi_state has an intersection with list of multi_states"""
         return bool(set(self._multi_state).intersection(multi_states))
 
 
@@ -702,10 +729,12 @@ class TaskLog(ADCMModel):
             action=self.action,
             target=self.task_object,
         )
-        self.lock = ConcernItem.objects.create(name=None, reason=reason)
+        self.lock = ConcernItem.objects.create(
+            type=ConcernType.Lock.value, name=None, reason=reason, blocking=True
+        )
         self.save()
         for obj in objects:
-            obj.add_to_concern(self.lock)
+            obj.add_to_concerns(self.lock)
 
     def unlock_affected(self) -> None:
         if not self.lock:
@@ -934,10 +963,10 @@ class MessageTemplate(ADCMModel):
 
     class KnownNames(Enum):
         LockedByAction = 'locked by action on target'  # kwargs=(action, target)
-        # ConfigIssue = 'object config issue'
-        # RequiredServiceIssue = 'required service issue'
-        # RequiredImportIssue = 'required import issue'
-        # HostComponentIssue = 'host component issue'
+        ConfigIssue = 'object config issue'  # kwargs=(source, )
+        RequiredServiceIssue = 'required service issue'  # kwargs=(source, )
+        RequiredImportIssue = 'required import issue'  # kwargs=(source, )
+        HostComponentIssue = 'host component issue'  # kwargs=(source, )
 
     class PlaceHolderType(Enum):
         Action = 'action'
@@ -946,7 +975,7 @@ class MessageTemplate(ADCMModel):
         Cluster = 'cluster'
         Service = 'service'
         Component = 'component'
-        Provider = 'privider'
+        Provider = 'provider'
         Host = 'host'
 
     @classmethod
@@ -1013,6 +1042,23 @@ class MessageTemplate(ADCMModel):
         }
 
 
+class IssueType(Enum):
+    Config = 'config'
+    RequiredService = 'required_service'
+    RequiredImport = 'required_import'
+    HostComponent = 'host_component'
+
+    def gen_issue_name(self, obj: ADCMEntity) -> str:
+        """Generate unique issue name for object"""
+        return f'{self.name} issue on {obj.prototype.type} {obj.pk}'
+
+
+class ConcernType(models.TextChoices):
+    Lock = 'lock', 'lock'
+    Issue = 'issue', 'issue'
+    Flag = 'flag', 'flag'
+
+
 class ConcernItem(ADCMModel):
     """
     Representation for object's lock/issue/flag
@@ -1020,17 +1066,22 @@ class ConcernItem(ADCMModel):
     One-to-one from TaskLog
     ...
 
+    `type` is literally type of concern
     `name` is used for (un)setting flags from ansible playbooks
-    `related_objects` are back-refs from affected ADCMEntities.concern
     `reason` is used to display/notify on front-end, text template and data for URL generation
         should be generated from pre-created templates model `MessageTemplate`
+    `blocking` blocks actions from running
+    `related_objects` are back-refs from affected ADCMEntities.concerns
     """
 
-    name = models.CharField(max_length=160, null=True)
+    type = models.CharField(max_length=8, choices=ConcernType.choices, default=ConcernType.Lock)
+    name = models.CharField(max_length=160, null=True, unique=True)
     reason = models.JSONField(default=dict)
+    blocking = models.BooleanField(default=True)
 
     @property
     def related_objects(self) -> Iterable[ADCMEntity]:
+        """List of objects that has that item in concerns"""
         return chain(
             self.adcm_entities.all(),
             self.cluster_entities.all(),

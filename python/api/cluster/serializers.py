@@ -74,8 +74,6 @@ class ClusterSerializer(serializers.Serializer):
 
 
 class ClusterDetailSerializer(ClusterSerializer):
-    # stack = serializers.JSONField(read_only=True)
-    issue = serializers.SerializerMethodField()
     bundle_id = serializers.IntegerField(read_only=True)
     edition = serializers.CharField(read_only=True)
     license = serializers.CharField(read_only=True)
@@ -93,9 +91,6 @@ class ClusterDetailSerializer(ClusterSerializer):
     prototype = hlink('cluster-type-details', 'prototype_id', 'prototype_id')
     multi_state = StringListSerializer(read_only=True)
     concern = ConcernItemSerializer(many=True, read_only=True)
-
-    def get_issue(self, obj):
-        return cm.issue.aggregate_issues(obj)
 
     def get_status(self, obj):
         return cm.status_api.get_cluster_status(obj.id)

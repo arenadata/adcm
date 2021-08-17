@@ -32,9 +32,6 @@ class HostSerializer(serializers.Serializer):
     state = serializers.CharField(read_only=True)
     url = ObjectURL(read_only=True, view_name='host-details')
 
-    def get_issue(self, obj):
-        return cm.issue.aggregate_issues(obj)
-
     def validate_prototype_id(self, prototype_id):
         return check_obj(Prototype, {'id': prototype_id, 'type': 'host'})
 
@@ -57,8 +54,6 @@ class HostSerializer(serializers.Serializer):
 
 
 class HostDetailSerializer(HostSerializer):
-    # stack = serializers.JSONField(read_only=True)
-    issue = serializers.SerializerMethodField()
     bundle_id = serializers.IntegerField(read_only=True)
     status = serializers.SerializerMethodField()
     config = CommonAPIURL(view_name='object-config')
@@ -66,9 +61,6 @@ class HostDetailSerializer(HostSerializer):
     prototype = hlink('host-type-details', 'prototype_id', 'prototype_id')
     multi_state = StringListSerializer(read_only=True)
     concern = ConcernItemSerializer(many=True, read_only=True)
-
-    def get_issue(self, obj):
-        return cm.issue.aggregate_issues(obj)
 
     def get_status(self, obj):
         return cm.status_api.get_host_status(obj.id)

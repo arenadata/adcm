@@ -40,12 +40,12 @@ def on_concern_change(sender, **kwargs):
     ctx.event.change_concern(instance)
 
 
-signals.m2m_changed.connect(on_concern_change, sender=models.ADCM.concern.through)
-signals.m2m_changed.connect(on_concern_change, sender=models.Cluster.concern.through)
-signals.m2m_changed.connect(on_concern_change, sender=models.ClusterObject.concern.through)
-signals.m2m_changed.connect(on_concern_change, sender=models.ServiceComponent.concern.through)
-signals.m2m_changed.connect(on_concern_change, sender=models.HostProvider.concern.through)
-signals.m2m_changed.connect(on_concern_change, sender=models.Host.concern.through)
+signals.m2m_changed.connect(on_concern_change, sender=models.ADCM.concerns.through)
+signals.m2m_changed.connect(on_concern_change, sender=models.Cluster.concerns.through)
+signals.m2m_changed.connect(on_concern_change, sender=models.ClusterObject.concerns.through)
+signals.m2m_changed.connect(on_concern_change, sender=models.ServiceComponent.concerns.through)
+signals.m2m_changed.connect(on_concern_change, sender=models.HostProvider.concerns.through)
+signals.m2m_changed.connect(on_concern_change, sender=models.Host.concerns.through)
 
 
 def on_concern_item_delete(sender, **kwargs):
@@ -54,7 +54,7 @@ def on_concern_item_delete(sender, **kwargs):
     assert isinstance(instance, models.ConcernItem)
 
     for obj in instance.related_objects:
-        obj.remove_from_concern(instance)  # to issue `change_concern` events
+        obj.remove_from_concerns(instance)  # to issue `change_concern` events
 
 
 signals.pre_delete.connect(on_concern_item_delete, sender=models.ConcernItem)
