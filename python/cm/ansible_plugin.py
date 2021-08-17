@@ -134,6 +134,9 @@ class ContextActionModule(ActionBase):
     def _do_component_by_name(self, task_vars, context):
         raise NotImplementedError
 
+    def _do_component_by_service_and_component_name(self, task_vars, context):
+        raise NotImplementedError
+
     def run(self, tmp=None, task_vars=None):  # pylint: disable=too-many-branches
         self._check_mandatory()
         obj_type = self._task.args["type"]
@@ -238,6 +241,12 @@ def _set_object_state(obj: ADCMEntity, state: str) -> ADCMEntity:
     return obj
 
 
+def _set_object_multi_state(obj: ADCMEntity, multi_state: str) -> ADCMEntity:
+    obj.set_multi_state(multi_state, ctx.event)
+    ctx.event.send_state()
+    return obj
+
+
 def set_cluster_state(cluster_id, state):
     obj = Cluster.obj.get(id=cluster_id)
     return _set_object_state(obj, state)
@@ -271,6 +280,41 @@ def set_service_state(cluster_id, service_name, state):
 def set_service_state_by_id(cluster_id, service_id, state):
     obj = ClusterObject.obj.get(id=service_id, cluster__id=cluster_id, prototype__type='service')
     return _set_object_state(obj, state)
+
+
+def set_cluster_multi_state(cluster_id, multi_state):
+    obj = Cluster.obj.get(id=cluster_id)
+    return _set_object_multi_state(obj, multi_state)
+
+
+def set_service_multi_state(cluster_id, service_name, multi_state):
+    obj = get_service_by_name(cluster_id, service_name)
+    return _set_object_multi_state(obj, multi_state)
+
+
+def set_service_multi_state_by_id(cluster_id, service_id, multi_state):
+    obj = ClusterObject.obj.get(id=service_id, cluster__id=cluster_id, prototype__type='service')
+    return _set_object_multi_state(obj, multi_state)
+
+
+def set_component_multi_state_by_name(cluster_id, service_id, component_name, service_name, multi_state):
+    obj = get_component_by_name(cluster_id, service_id, component_name, service_name)
+    return _set_object_multi_state(obj, multi_state)
+
+
+def set_component_multi_state(component_id, multi_state):
+    obj = ServiceComponent.obj.get(id=component_id)
+    return _set_object_multi_state(obj, multi_state)
+
+
+def set_provider_multi_state(provider_id, multi_state):
+    obj = HostProvider.obj.get(id=provider_id)
+    return _set_object_multi_state(obj, multi_state)
+
+
+def set_host_multi_state(host_id, multi_state):
+    obj = Host.obj.get(id=host_id)
+    return _set_object_multi_state(obj, multi_state)
 
 
 def change_hc(job_id, cluster_id, operations):  # pylint: disable=too-many-branches
