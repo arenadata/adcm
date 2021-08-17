@@ -15,10 +15,7 @@ import { isObject } from '@app/core/types';
 import { FieldService, IOutput, TFormOptions } from '../services/field.service';
 import { CompareConfig, IFieldOptions, IFieldStack } from '../types';
 import { ConfigService } from '@app/shared/configuration/services/config.service';
-import { ApiService } from '@app/core/api';
 import { ClusterService } from '@app/core/services/cluster.service';
-import { ConfigComponentEvents } from '@app/shared/configuration/services/events.service';
-import { ConfigGroupsService } from '@app/shared/configuration/services/config-groups.service';
 
 /**
  *```
@@ -49,13 +46,7 @@ export const historyAnime = [
 export class MainService {
   constructor(private fields: FieldService,
               private configService: ConfigService,
-              public cluster: ClusterService,
-              public events: ConfigComponentEvents,
-              public groups: ConfigGroupsService) {
-  }
-
-  get groupKeys$() {
-    return this.groups.groupKeys$;
+              public cluster: ClusterService) {
   }
 
   get worker$() {
@@ -146,7 +137,4 @@ export class MainService {
     }
   }
 
-  initGroups(groupKeys: { [key: string]: any }): void {
-    this.groups.next(groupKeys);
-  }
 }

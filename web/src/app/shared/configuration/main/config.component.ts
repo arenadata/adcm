@@ -33,6 +33,7 @@ import { ToolsComponent } from '../tools/tools.component';
 import { IConfig } from '../types';
 import { historyAnime, ISearchParam, MainService } from './main.service';
 import { WorkerInstance } from '@app/core/services/cluster.service';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-config-form',
@@ -51,8 +52,6 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   isLoading = false;
 
   worker$: Observable<WorkerInstance>;
-  isReady$: Observable<void>;
-  groupKeys$: Observable<{ [key: string]: boolean }>;
 
   @ViewChild('fls') fields: ConfigFieldsComponent;
   @ViewChild('history') historyComponent: HistoryComponent;
@@ -61,9 +60,11 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   @Input()
   configUrl: string;
 
+  @Input()
+  isGroupConfig: boolean;
+
   @Output()
   event = new EventEmitter<{ name: string; data?: any }>();
-
   private _workerSubscription: Subscription = Subscription.EMPTY;
   private _groupsSubscription: Subscription = Subscription.EMPTY;
 
@@ -71,11 +72,11 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     private service: MainService,
     public cd: ChangeDetectorRef,
     socket: Store<SocketState>,
+    route: ActivatedRoute,
   ) {
     super(socket);
-
-    this.isReady$ = service.events.isReady$.pipe(this.takeUntil());
-    this.groupKeys$ = service.groupKeys$.pipe(this.takeUntil());
+    this.isGroupConfig = route.snapshot.data['isGroupConfig'];
+    console.log('cons ', this.isGroupConfig);
     this.worker$ = service.worker$.pipe(this.takeUntil());
   }
 
@@ -89,7 +90,6 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     if (!this.configUrl) this.getConfigUrlFromWorker();
     this._getConfig(this.configUrl).subscribe();
 
-    this.isReady$.subscribe(this.onReady);
     super.startListenSocket();
   }
 
@@ -99,7 +99,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     this._groupsSubscription.unsubscribe();
   }
 
-  onReady = (): void => {
+  onReady(): void {
     this.tools.isAdvanced = this.fields.isAdvanced;
     this.tools.description.setValue(this.rawConfig.value.description);
     this.filter(this.tools.filterParams);

@@ -44,11 +44,6 @@ import { YspecService } from './yspec/yspec.service';
 import { AdwpListModule } from '@adwp-ui/widgets';
 import { AddingModule } from '@app/shared/add-component/adding.module';
 import { ConfigService } from '@app/shared/configuration/services/config.service';
-import {
-  ConfigComponentChannelService,
-  ConfigComponentEvents
-} from '@app/shared/configuration/services/events.service';
-import { ConfigGroupsService } from '@app/shared/configuration/services/config-groups.service';
 
 const material = [
   MatIconModule,
@@ -81,7 +76,7 @@ const material = [
   ],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, StuffModule, FormElementsModule, ...material, AdwpListModule, AddingModule],
   exports: [ConfigComponent, ConfigFieldsComponent],
-  providers: [FieldService, YspecService, SchemeService, ConfigService, ConfigComponentChannelService, ConfigComponentEvents, ConfigGroupsService],
+  providers: [FieldService, YspecService, SchemeService, ConfigService],
 })
 export class ConfigurationModule {
 }

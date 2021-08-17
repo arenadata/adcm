@@ -4,9 +4,6 @@ import { CompareConfig, IConfig } from '../types';
 import { map, switchMap } from 'rxjs/operators';
 import { getRandomColor } from '@app/core/types';
 import { ApiService } from '@app/core/api';
-import { ClusterService } from '@app/core/services/cluster.service';
-import { ConfigComponentEvents } from '@app/shared/configuration/services/events.service';
-import { ConfigGroupsService } from '@app/shared/configuration/services/config-groups.service';
 
 export interface IConfigResponse {
   current: string;

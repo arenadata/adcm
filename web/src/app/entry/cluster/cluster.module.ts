@@ -71,8 +71,11 @@ const clusterRoutes: Routes = [
       { path: '', redirectTo: 'main', pathMatch: 'full' },
       { path: 'main', component: MainInfoComponent },
       { path: 'host', component: ConfigGroupHostListComponent },
-      // ToDo Config from config group
-      { path: 'config', component: ConfigComponent },
+      {
+        path: 'config', component: ConfigComponent, data: {
+          isGroupConfig: true
+        }
+      },
     ],
   },
   {

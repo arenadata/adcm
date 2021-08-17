@@ -98,10 +98,10 @@ export const getValidator = (required: boolean, min: number, max: number, type: 
 
 
 export const getGroupControl = (item: IFieldStack, group: FormGroup): FormControl | null => {
-  if (Object.keys(group.controls)) return null;
+  if (!Object.keys(group.controls)) return null;
 
   if (item.subname) {
-    return group.get(item.name).get(item.subname) as FormControl;
+    return group.get(item.name)?.get(item.subname) as FormControl;
   }
 
   return group.get(item.name) as FormControl;

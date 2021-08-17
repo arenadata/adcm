@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, Input, QueryList, ViewChildren } from '@angular/core';
+import { Component, EventEmitter, Input, Output, QueryList, ViewChildren } from '@angular/core';
 
 import { ChannelService, FullyRenderedService, keyChannelStrim } from '@app/core/services';
 import { FieldService, TFormOptions } from '../services/field.service';
@@ -17,7 +17,6 @@ import { FieldComponent } from '../field/field.component';
 import { GroupFieldsComponent } from '../group-fields/group-fields.component';
 import { IConfig, IPanelOptions } from '../types';
 import { BaseDirective } from '@adwp-ui/widgets';
-import { MainService } from '@app/shared/configuration/main/main.service';
 import { FormGroup } from '@angular/forms';
 
 @Component({
@@ -29,7 +28,7 @@ import { FormGroup } from '@angular/forms';
       <ng-template #one>
         <div class="row d-flex">
           <div class="group-checkbox d-flex" style="padding: 5px">
-            <ng-container *ngIf="item.configGroup as ConfigGroupControl">
+            <ng-container *ngIf="showCheckbox && item.configGroup as ConfigGroupControl">
               <mat-checkbox [formControl]="ConfigGroupControl"></mat-checkbox>
             </ng-container>
           </div>
@@ -49,6 +48,12 @@ export class ConfigFieldsComponent extends BaseDirective {
   @Input() dataOptions: TFormOptions[] = [];
   @Input() form = this.service.toFormGroup();
   @Input() groupsForm: FormGroup;
+  @Input() showCheckbox: boolean = false;
+
+  @Output()
+  event: EventEmitter<{ name: string; data?: any }> = new EventEmitter<{ name: string; data?: any }>();
+
+
   rawConfig: IConfig;
   shapshot: any;
   isAdvanced = false;
@@ -58,12 +63,17 @@ export class ConfigFieldsComponent extends BaseDirective {
   set model(data: IConfig) {
     if (!data) return;
     this.rawConfig = data;
+    console.log('1. ', data);
     this.groupsForm = this.service.toGroupsFormGroup(data.attr.group_keys);
+    console.log('2. ', this.groupsForm);
+
     this.dataOptions = this.service.getPanels(data, this.groupsForm);
+    console.log('3. ', this.dataOptions);
+
     this.form = this.service.toFormGroup(this.dataOptions);
     this.isAdvanced = data.config.some((a) => a.ui_options && a.ui_options.advanced);
     this.shapshot = { ...this.form.value };
-    this.main.events.isLoaded();
+    this.event.emit({ name: 'isLoad' });
     this.stableView();
   }
 
@@ -75,8 +85,7 @@ export class ConfigFieldsComponent extends BaseDirective {
 
   constructor(private service: FieldService,
               private fr: FullyRenderedService,
-              private radio: ChannelService,
-              private main: MainService) {super();}
+              private radio: ChannelService) {super();}
 
   get attr() {
     return this.dataOptions.filter((a) => a.type === 'group' && (a as IPanelOptions).activatable).reduce((p, c: IPanelOptions) => ({
