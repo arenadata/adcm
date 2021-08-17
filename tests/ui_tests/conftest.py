@@ -115,6 +115,10 @@ def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
                 allure.attach.file(
                     events_json, name="all_events_log", attachment_type=allure.attachment_type.TEXT
                 )
+        elif web_driver.capabilities['browserName'] != 'firefox':
+            with allure.step("Flush browser logs so as not to affect next tests"):
+                web_driver.driver.get_log('browser')
+                web_driver.driver.get_log("performance")
     except AttributeError:
         # rep_setup and rep_call attributes are generated in runtime and can be absent
         pass
@@ -149,9 +153,10 @@ def login_to_adcm_over_api(app_fs, adcm_credentials):
     login_endpoint = f'{app_fs.adcm.url.rstrip("/")}/api/v1/token/'
     app_fs.driver.get(app_fs.adcm.url)
     token = requests.post(login_endpoint, json=adcm_credentials).json()['token']
-    auth = {'login': adcm_credentials['username'], 'token': token}
-    script = f'localStorage.setItem("auth", JSON.stringify({auth}))'
-    app_fs.driver.execute_script(script)
+    with allure.step("Set token to localStorage"):
+        auth = {'login': adcm_credentials['username'], 'token': token}
+        script = f'localStorage.setItem("auth", JSON.stringify({auth}))'
+        app_fs.driver.execute_script(script)
     AdminIntroPage(app_fs.driver, app_fs.adcm.url).open().wait_config_loaded()
 
 

@@ -47,8 +47,9 @@ class Configuration(BasePage):
                 assert set(map_config.keys()) == set(map_config.keys())
                 assert set(map_config.values()) == set(map_config.values())
             else:
-                err_message = "Default value wrong. Current value {}".format(current_value)
-                assert current_value == expected_value, err_message
+                assert (
+                    current_value == expected_value
+                ), f"Field value with type {field_type} doesn't equal expected"
 
     @allure.step('Check that frontend errors presented on screen and error type in text')
     def assert_alerts_presented(self, field_type):
@@ -63,9 +64,11 @@ class Configuration(BasePage):
     @allure.step('Check that group active or not')
     def assert_group_status(self, group_element, status=True):
         if status:
-            assert self.group_is_active_by_element(group_element)
+            assert self.group_is_active_by_element(group_element), "Group element should be active"
         else:
-            assert not self.group_is_active_by_element(group_element)
+            assert not self.group_is_active_by_element(
+                group_element
+            ), "Group element should not be active"
 
     @allure.step('Check that mat form field text have expected value: {expected_text}')
     def assert_form_field_text_equal(self, form_field_element: WebElement, expected_text: str):
@@ -186,8 +189,8 @@ class Configuration(BasePage):
 
     @allure.step('Check if mat slide toggle is checked')
     def group_is_active_by_element(self, group_element):
-        toogle = group_element.find_element(*Common.mat_slide_toggle)
-        if 'mat-checked' in toogle.get_attribute("class"):
+        toggle = group_element.find_element(*Common.mat_slide_toggle)
+        if 'mat-checked' in toggle.get_attribute("class"):
             return True
         return False
 
