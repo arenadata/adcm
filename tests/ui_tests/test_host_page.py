@@ -13,6 +13,7 @@ import os
 from typing import (
     List,
     Tuple,
+    Optional,
 )
 
 import allure
@@ -42,7 +43,9 @@ from tests.ui_tests.app.page.host.page import (
 )
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
 from tests.ui_tests.app.page.host_list.page import HostListPage
+from tests.ui_tests.app.page.host_list.page import HostRowInfo
 from tests.ui_tests.utils import wait_and_assert_ui_info
+from .utils import check_host_value
 
 # pylint: disable=W0621
 
@@ -141,6 +144,16 @@ def check_job_name(sdk: ADCMClient, action_display_name: str):
         f'Action with name "{action_display_name}" was not ran. '
         f'Job names found: {jobs_display_names}'
     )
+
+
+def check_host_info(
+    host_info: HostRowInfo, fqdn: str, provider: str, cluster: Optional[str], state: str
+):
+    """Check all values in host info"""
+    check_host_value('FQDN', host_info.fqdn, fqdn)
+    check_host_value('provider', host_info.provider, provider)
+    check_host_value('cluster', host_info.cluster, cluster)
+    check_host_value('state', host_info.state, state)
 
 
 def _check_menu(

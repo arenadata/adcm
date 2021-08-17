@@ -48,7 +48,9 @@ class HostCreationLocators:
             "//mat-select[contains(@placeholder, 'Hostprovider')]",
             "Chosen provider field",
         )
-        add_btn = Locator(By.XPATH, "//mat-icon[text()='add']", "Add host provider button")
+        add_btn = Locator(
+            By.XPATH, "//mat-form-field//mat-icon[text()='add']", "Add host provider button"
+        )
         new_provider_block = Locator(By.XPATH, "//app-add-provider", "Host provider creation block")
         new_provider_name = Locator(
             By.XPATH, "//input[@formcontrolname='name']", "New host provider name"

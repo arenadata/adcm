@@ -55,3 +55,14 @@
           versions:
              max: 3.0
              min: 2.2
+  components:
+    first:
+      actions:
+        switch_component_state:
+          type: job
+          script: dummy_action.yaml
+          script_type: ansible
+          states:
+              available:
+                - created
+              on_success: installed
