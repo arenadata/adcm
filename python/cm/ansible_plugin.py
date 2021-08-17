@@ -134,7 +134,7 @@ class ContextActionModule(ActionBase):
     def _do_component_by_name(self, task_vars, context):
         raise NotImplementedError
 
-    def _do_component_by_service_and_component_name(self, task_vars, context):
+    def _do_provider(self, task_vars, context):
         raise NotImplementedError
 
     def run(self, tmp=None, task_vars=None):  # pylint: disable=too-many-branches
