@@ -4,7 +4,6 @@ from contextlib import contextmanager
 from typing import Callable, TypeVar, Any, Union, Optional, Dict, Tuple
 
 import allure
-
 from adcm_client.objects import ADCMClient, Cluster
 from adcm_pytest_plugin.utils import random_string, wait_until_step_succeeds
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -185,3 +184,13 @@ def wait_and_assert_ui_info(
 
     with allure.step('Check information is correct on UI'):
         wait_until_step_succeeds(check_info_from_ui, timeout=timeout, period=period)
+
+
+def check_host_value(key: str, actual_value, expected_value):
+    """
+    Assert that actual value equals to expected value
+    Argument `key` is used in failed assertion message
+    """
+    assert (
+        actual_value == expected_value
+    ), f"Host {key} should be {expected_value}, not {actual_value}"
