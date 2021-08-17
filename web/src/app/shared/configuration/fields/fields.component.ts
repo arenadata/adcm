@@ -63,13 +63,8 @@ export class ConfigFieldsComponent extends BaseDirective {
   set model(data: IConfig) {
     if (!data) return;
     this.rawConfig = data;
-    console.log('1. ', data);
     this.groupsForm = this.service.toGroupsFormGroup(data.attr.group_keys);
-    console.log('2. ', this.groupsForm);
-
     this.dataOptions = this.service.getPanels(data, this.groupsForm);
-    console.log('3. ', this.dataOptions);
-
     this.form = this.service.toFormGroup(this.dataOptions);
     this.isAdvanced = data.config.some((a) => a.ui_options && a.ui_options.advanced);
     this.shapshot = { ...this.form.value };

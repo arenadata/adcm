@@ -53,7 +53,6 @@ export class MainService {
   constructor(private fields: FieldService,
               public cluster: ClusterService,
               injector: Injector) {
-    console.log(cluster);
     const current: TypeName | undefined = cluster.Current?.typeName;
     if (current === 'configgroup') {
       this.configService = injector.get(ConfigGroupService);

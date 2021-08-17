@@ -25,9 +25,8 @@ export class ConfigGroupService implements IConfigService {
 
   getHistoryList(url: string, currentVersionId: number): Observable<CompareConfig[]> {
     return this.api.get<IConfigResponse>(url).pipe(
-      switchMap((config) => this.api.get<IConfigListResponse | IConfig[]>(config.history)),
-      // ToDo remove it when API will be consistent
-      map((value) => Array.isArray(value) ? value as IConfig[] : value.results),
+      switchMap((config) => this.api.get<IConfigListResponse>(config.history)),
+      map((value) => value.results),
       map((h) => h.filter((a) => a.id !== currentVersionId).map((b) => ({
         ...b,
         color: getRandomColor()
