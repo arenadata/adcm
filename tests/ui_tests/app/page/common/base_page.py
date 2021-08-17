@@ -138,7 +138,9 @@ class BasePageObject:
                 f"{self.driver.current_url} for {loc_timeout} seconds",
             )
 
-    def find_children(self, element: WebElement, child: Locator, timeout: int = None) -> List[WebElement]:
+    def find_children(
+        self, element: WebElement, child: Locator, timeout: int = None
+    ) -> List[WebElement]:
         """Find children element on current page."""
 
         loc_timeout = timeout or self.default_loc_timeout
