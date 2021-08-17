@@ -43,7 +43,7 @@ class ClusterListPage(BasePageObject):
         self.wait_element_visible(popup.block)
         self.find_element(popup.upload_bundle_btn).send_keys(bundle)
         if description:
-            self.find_element(popup.description_input).send_keys(description)
+            self.send_text_to_element(popup.description_input, description)
         self.find_and_click(popup.create_btn)
         if is_license:
             self.wait_element_visible(ClusterListLocators.LicensePopup.block)
