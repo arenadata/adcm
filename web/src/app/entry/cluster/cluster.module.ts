@@ -73,7 +73,7 @@ const clusterRoutes: Routes = [
       { path: 'host', component: ConfigGroupHostListComponent },
       {
         path: 'config', component: ConfigComponent, data: {
-          isGroupConfig: true
+          isGroupConfig: true,
         }
       },
     ],

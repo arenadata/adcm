@@ -34,7 +34,6 @@ import { ServiceComponentService } from '@app/services/service-component.service
 import { EntityNames } from '@app/models/entity-names';
 import { HttpResponseBase } from '@angular/common/http';
 import { setPathOfRoute } from '@app/store/navigation/navigation.store';
-import { ConfigGroupListService } from '@app/config-groups/service/config-group-list.service';
 import { EntityService } from '@app/abstract/entity-service';
 
 export interface WorkerInstance {
@@ -67,7 +66,6 @@ export class ClusterService {
   constructor(
     protected api: ApiService,
     protected serviceComponentService: ServiceComponentService,
-    protected configGroupService: ConfigGroupListService,
     protected store: Store,
   ) {}
 

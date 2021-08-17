@@ -40,8 +40,8 @@ import { ActivatedRoute } from '@angular/router';
   templateUrl: './config.component.html',
   styleUrls: ['./config.component.scss'],
   animations: historyAnime,
-  providers: [MainService],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [MainService]
 })
 export class ConfigComponent extends SocketListenerDirective implements OnChanges, OnInit {
   loadingStatus = 'Loading...';
@@ -76,7 +76,6 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   ) {
     super(socket);
     this.isGroupConfig = route.snapshot.data['isGroupConfig'];
-    console.log('cons ', this.isGroupConfig);
     this.worker$ = service.worker$.pipe(this.takeUntil());
   }
 

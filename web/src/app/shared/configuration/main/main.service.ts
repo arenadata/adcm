@@ -10,12 +10,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { animate, state, style, transition, trigger } from '@angular/animations';
-import { Injectable } from '@angular/core';
-import { isObject } from '@app/core/types';
+import { Injectable, InjectionToken, Injector } from '@angular/core';
+import { isObject, TypeName } from '@app/core/types';
 import { FieldService, IOutput, TFormOptions } from '../services/field.service';
 import { CompareConfig, IFieldOptions, IFieldStack } from '../types';
-import { ConfigService } from '@app/shared/configuration/services/config.service';
+import { ConfigService, IConfigService } from '@app/shared/configuration/services/config.service';
 import { ClusterService } from '@app/core/services/cluster.service';
+import { ConfigGroupService } from '@app/config-groups/service/config-group.service';
 
 /**
  *```
@@ -27,6 +28,9 @@ export interface ISearchParam {
   advanced: boolean;
   search: string;
 }
+
+export const CONFIG_SERVICE = new InjectionToken<IConfigService>('ConfigService');
+
 
 export const historyAnime = [
   trigger('history', [
@@ -44,9 +48,18 @@ export const historyAnime = [
   providedIn: 'root'
 })
 export class MainService {
+  configService: IConfigService;
+
   constructor(private fields: FieldService,
-              private configService: ConfigService,
-              public cluster: ClusterService) {
+              public cluster: ClusterService,
+              injector: Injector) {
+    console.log(cluster);
+    const current: TypeName | undefined = cluster.Current?.typeName;
+    if (current === 'configgroup') {
+      this.configService = injector.get(ConfigGroupService);
+    } else {
+      this.configService = injector.get(ConfigService);
+    }
   }
 
   get worker$() {
