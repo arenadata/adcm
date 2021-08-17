@@ -142,15 +142,6 @@ class ActionModule(ContextActionModule):
         res['state'] = self._task.args["state"]
         return res
 
-    def _do_host_from_provider(self, task_vars, context):
-        res = self._wrap_call(
-            set_host_multi_state,
-            self._task.args['host_id'],
-            self._task.args["state"],
-        )
-        res['state'] = self._task.args["state"]
-        return res
-
     def _do_provider(self, task_vars, context):
         res = self._wrap_call(
             set_provider_multi_state,
