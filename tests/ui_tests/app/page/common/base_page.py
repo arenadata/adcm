@@ -10,8 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional
-from typing import Union
+from typing import (
+    Optional,
+    List,
+    Union,
+)
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -83,7 +86,10 @@ class BasePageObject:
             if self.driver.current_url != url:
                 with allure.step(f"Open {url}"):
                     self.driver.get(url)
-                    assert self.path in self.driver.current_url
+                    assert self.path in self.driver.current_url, (
+                        "Page URL didn't change. "
+                        f'Actual URL: {self.driver.current_url}. Expected URL: {url}.'
+                    )
 
         wait_until_step_succeeds(
             open_page, period=0.5, timeout=timeout or self.default_page_timeout
@@ -132,6 +138,19 @@ class BasePageObject:
                 f"{self.driver.current_url} for {loc_timeout} seconds",
             )
 
+    def find_children(
+        self, element: WebElement, child: Locator, timeout: int = None
+    ) -> List[WebElement]:
+        """Find children element on current page."""
+
+        loc_timeout = timeout or self.default_loc_timeout
+        with allure.step(f'Find element "{child.name}" on page'):
+            return WDW(element, loc_timeout).until(
+                EC.presence_of_all_elements_located([child.by, child.value]),
+                message=f"Can't find {child.name} on page "
+                f"{self.driver.current_url} for {loc_timeout} seconds",
+            )
+
     def find_elements(self, locator: Locator, timeout: int = None) -> [WebElement]:
         """Find elements on current page."""
 
@@ -160,7 +179,10 @@ class BasePageObject:
         def send_keys_and_check():
             input_element = self.find_element(locator, timeout)
             input_element.send_keys(text)
-            assert input_element.get_property('value') == expected_value
+            assert (actual_value := input_element.get_property('value')) == expected_value, (
+                f'Value of input {locator} expected to be '
+                f'"{expected_value}", but "{actual_value}" was found'
+            )
 
         wait_until_step_succeeds(send_keys_and_check, period=0.5, timeout=1.5)
 
@@ -371,7 +393,9 @@ class PageHeader(BasePageObject):
         self.find_and_click(AuthorizedHeaderLocators.account_button)
 
     def check_job_popup(self):
-        assert self.is_element_displayed(AuthorizedHeaderLocators.job_popup)
+        assert self.is_element_displayed(
+            AuthorizedHeaderLocators.job_popup
+        ), 'Job popup should be displayed'
 
     def check_help_popup(self):
         self.wait_element_visible(AuthorizedHeaderLocators.block)
