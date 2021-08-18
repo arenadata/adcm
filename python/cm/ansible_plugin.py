@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=line-too-long
+
 from ansible.errors import AnsibleError
 from ansible.plugins.action import ActionBase
 from ansible.utils.vars import merge_hash
@@ -45,7 +47,7 @@ MSG_WRONG_CONTEXT = 'Wrong context. Should be "{}", not "{}"'
 MSG_WRONG_CONTEXT_ID = 'Wrong context. There are no "{}" in context'
 MSG_NO_CLUSTER_CONTEXT = (
     "You are trying to change cluster state outside of cluster context. Cluster state can be "
-    "changed in cluster's or service's actions only. Bad Dobby!"
+    "changed in cluster's, service's or component's actions only. Bad Dobby!"
 )
 MSG_NO_CLUSTER_CONTEXT2 = (
     "You are trying to change service state outside of cluster context. Service state can be"
@@ -141,15 +143,15 @@ class ContextActionModule(ActionBase):
         obj_type = self._task.args["type"]
 
         if obj_type == 'cluster':
-            check_context_type(task_vars, 'cluster', 'service')
+            check_context_type(task_vars, 'cluster', 'service', 'component')
             res = self._do_cluster(
                 task_vars, {'cluster_id': self._get_job_var(task_vars, 'cluster_id')}
             )
         elif obj_type == "service" and "service_name" in self._task.args:
-            check_context_type(task_vars, 'cluster', 'service')
+            check_context_type(task_vars, 'cluster', 'service', 'component')
             context = task_vars['context']
             if context['type'] == 'service':
-                service = cm.models.ClusterObject.objects.get(pk=context["service_id"])
+                service = ClusterObject.objects.get(pk=context["service_id"])
                 service_name = service.prototype.name
                 if service_name != self._task.args["service_name"]:
                     # It is forbiden to change one service from another one.
@@ -161,7 +163,7 @@ class ContextActionModule(ActionBase):
                 task_vars, {'cluster_id': self._get_job_var(task_vars, 'cluster_id')}
             )
         elif obj_type == "service":
-            check_context_type(task_vars, 'service')
+            check_context_type(task_vars, 'service', 'component')
             res = self._do_service(
                 task_vars,
                 {
@@ -176,29 +178,22 @@ class ContextActionModule(ActionBase):
             check_context_type(task_vars, 'host')
             res = self._do_host(task_vars, {'host_id': self._get_job_var(task_vars, 'host_id')})
         elif obj_type == "provider":
-            check_context_type(task_vars, 'provider')
+            check_context_type(task_vars, 'provider', 'host')
             res = self._do_provider(
                 task_vars, {'provider_id': self._get_job_var(task_vars, 'provider_id')}
             )
         elif obj_type == "component" and "component_name" in self._task.args:
             check_context_type(task_vars, 'cluster', 'service', 'component')
-            context = task_vars['context']
-            if context['type'] == 'component':
-                res = self._do_component(
-                    task_vars, {'component_id': self._get_job_var(task_vars, 'component_id')}
-                )
-            else:
-                check_context_type(task_vars, 'cluster', 'service')
-                if context['type'] != 'service':
-                    if 'service_name' not in self._task.args:
-                        raise AnsibleError(MSG_NO_SERVICE_NAME)
-                res = self._do_component_by_name(
-                    task_vars,
-                    {
-                        'cluster_id': self._get_job_var(task_vars, 'cluster_id'),
-                        'service_id': task_vars['job'].get('service_id', None),
-                    },
-                )
+            if task_vars['job'].get('service_id', None) is None:
+                if 'service_name' not in self._task.args:
+                    raise AnsibleError(MSG_NO_SERVICE_NAME)
+            res = self._do_component_by_name(
+                task_vars,
+                {
+                    'cluster_id': self._get_job_var(task_vars, 'cluster_id'),
+                    'service_id': task_vars['job'].get('service_id', None),
+                }
+            )
         elif obj_type == "component":
             check_context_type(task_vars, 'component')
             res = self._do_component(
