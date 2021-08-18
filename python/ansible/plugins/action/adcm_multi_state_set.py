@@ -72,17 +72,17 @@ EXAMPLES = r'''
 - adcm_multi_state_set:
     type: "cluster"
     state: "bimba!"
-  
+
 - adcm_multi_state_set:
     type: "service"
     service_name: "First"
     state: "bimba!"
-    
+
 - adcm_multi_state_set:
     type: "component"
     component_name: "another_component"
     state: "bimba!"
-    
+
 - adcm_multi_state_set:
     type: "component"
     service_name: "another service"
