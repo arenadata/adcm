@@ -84,7 +84,7 @@ export interface Cluster extends ApiBase {
   upgradable: boolean;
   upgrade: string;
   status_url: string;
-  group_configs: unknown[];
+  group_configs: string;
 }
 
 export interface Provider extends ApiBase {
@@ -105,6 +105,7 @@ export interface Service extends ApiBase {
   hostcomponent: string;
   display_name: string;
   cluster_id?: number;
+  group_configs: string;
 }
 
 export interface CanLicensed {

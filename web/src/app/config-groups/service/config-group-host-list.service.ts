@@ -38,7 +38,7 @@ export class ConfigGroupHostListService extends EntityService<Host> implements I
     }
 
     const configGroupId = this.cluster.Current.id;
-    const params = convertToParamMap({ ...p, groupconfig: configGroupId });
+    const params = convertToParamMap({ ...p, group_configs: configGroupId });
 
     return this.api.getList(`${environment.apiRoot}host/`, params);
   }

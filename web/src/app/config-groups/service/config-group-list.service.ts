@@ -8,6 +8,7 @@ import { IListService, ListInstance } from '@app/shared/components/list/list-ser
 import { ParamMap } from '@angular/router';
 import { ListResult } from '@app/models/list-result';
 import { ClusterService } from '@app/core/services/cluster.service';
+import { Cluster, Service } from '@app/core/types';
 
 export const CONFIG_GROUP_LIST_SERVICE = new InjectionToken<EntityService<ConfigGroup>>('EntityService');
 
@@ -27,7 +28,7 @@ export class ConfigGroupListService extends EntityService<ConfigGroup> implement
   }
 
   getList(p: ParamMap): Observable<ListResult<ConfigGroup>> {
-    console.log(this.cluster.Current);
+    const current = this.cluster.Current as Cluster | Service;
 
     const listParamStr = localStorage.getItem('list:param');
     if (p?.keys.length) {
@@ -39,7 +40,7 @@ export class ConfigGroupListService extends EntityService<ConfigGroup> implement
       } else localStorage.setItem('list:param', JSON.stringify({ ['group_configs']: param }));
     }
 
-    return this.api.getList(`${environment.apiRoot}group-config/`, p);
+    return this.api.getList(current.group_configs, p);
   }
 
   initInstance(): ListInstance {
