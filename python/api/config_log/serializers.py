@@ -39,19 +39,22 @@ class ConfigLogSerializer(serializers.ModelSerializer):
         return cl
 
 
+class UIConfigField(serializers.JSONField):
+    def to_representation(self, value):
+        obj = value.obj_ref.object
+        if obj is None:
+            raise_AdcmEx('INVALID_CONFIG_UPDATE', 'unknown object type "{}"'.format(value.obj_ref))
+        if isinstance(obj, GroupConfig):
+            obj = obj.object
+        return ui_config(obj, value)
+
+    def to_internal_value(self, data):
+        return {'config': data}
+
+
 class UIConfigLogSerializer(ConfigLogSerializer):
-    config = serializers.SerializerMethodField()
+    config = UIConfigField(source='*')
 
     class Meta:
         model = ConfigLog
-        fields = ('id', 'date', 'description', 'config', 'attr', 'url')
-
-    def get_config(self, config_log):
-        obj = config_log.obj_ref.object
-        if obj is None:
-            raise_AdcmEx(
-                'INVALID_CONFIG_UPDATE', 'unknown object type "{}"'.format(config_log.obj_ref)
-            )
-        if isinstance(obj, GroupConfig):
-            obj = obj.object
-        return ui_config(obj, config_log)
+        fields = ('id', 'date', 'obj_ref', 'description', 'config', 'attr', 'url')

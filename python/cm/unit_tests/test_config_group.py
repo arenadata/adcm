@@ -24,6 +24,29 @@ class GroupConfigTest(TestCase):
         config = {'group': {'string': 'string'}, 'activatable_group': {'integer': 1}}
         attr = {'activatable_group': {'active': True}}
         self.cluster = utils.gen_cluster()
+        utils.gen_prototype_config(
+            prototype=self.cluster.prototype, name='group', field_type='group', display_name='group'
+        )
+        utils.gen_prototype_config(
+            prototype=self.cluster.prototype,
+            name='group',
+            field_type='string',
+            subname='string',
+            display_name='string',
+        )
+        utils.gen_prototype_config(
+            prototype=self.cluster.prototype,
+            name='activatable_group',
+            field_type='group',
+            display_name='activatable_group',
+        )
+        utils.gen_prototype_config(
+            prototype=self.cluster.prototype,
+            name='activatable_group',
+            field_type='integer',
+            subname='integer',
+            display_name='integer',
+        )
         self.cluster.config = utils.gen_config(config=config, attr=attr)
         self.cluster.save()
 
@@ -60,12 +83,33 @@ class GroupConfigTest(TestCase):
         cl.save()
         self.assertDictEqual(group.get_group_config(), {'group': {'string': 'str'}})
 
+    def test_get_config_spec(self):
+        """Test get_config_spec() method"""
+        group = self.create_group('group', self.cluster.id, 'cluster')
+        spec = {
+            'group': {'type': 'group', 'fields': {'string': {'type': 'string'}}},
+            'activatable_group': {'type': 'group', 'fields': {'integer': {'type': 'integer'}}},
+        }
+        self.assertDictEqual(group.get_config_spec(), spec)
+
     def test_create_group_keys(self):
         """Test create_group_keys() method"""
         group = self.create_group('group', self.cluster.id, 'cluster')
         config = {'level1_1': 'str', 'level1_2': 1, 'level1_3': {'level2_1': [1, 2, 3]}}
+        utils.gen_prototype_config(
+            prototype=self.cluster.prototype, name='level1_1', field_type='string'
+        )
+        utils.gen_prototype_config(
+            prototype=self.cluster.prototype, name='level1_2', field_type='integer'
+        )
+        utils.gen_prototype_config(
+            prototype=self.cluster.prototype, name='level1_3', field_type='group'
+        )
+        utils.gen_prototype_config(
+            prototype=self.cluster.prototype, name='level1_3', subname='level2_1', field_type='list'
+        )
         group_keys = {'level1_1': False, 'level1_2': False, 'level1_3': {'level2_1': False}}
-        self.assertDictEqual(group.create_group_keys(config), group_keys)
+        self.assertDictEqual(group.create_group_keys(config, group.get_config_spec()), group_keys)
 
     def test_update_parent_config(self):
         """Test update config group"""

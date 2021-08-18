@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # -*- coding: utf-8 -*-
+# pylint: disable=too-many-lines
+
 from __future__ import unicode_literals
 
 from collections.abc import Mapping
@@ -282,7 +284,7 @@ class ConfigLog(ADCMModel):
                 update(config, diff)
                 group_config.config = config
                 attr = deepcopy(self.attr)
-                attr.update({'group_keys': cg.create_group_keys(self.config)})
+                attr.update({'group_keys': cg.create_group_keys(self.config, cg.get_config_spec())})
                 update(attr, current_group_config.attr)
                 group_config.attr = attr
                 group_config.description = current_group_config.description
@@ -562,7 +564,7 @@ class GroupConfig(ADCMModel):
         """Creating group keys from origin config"""
         if group_keys is None:
             group_keys = {}
-        for k, v in config.items():
+        for k in config.keys():
             if config_spec[k]['type'] == 'group':
                 group_keys.setdefault(k, {})
                 self.create_group_keys(config.get(k, {}), config_spec[k]['fields'], group_keys[k])
