@@ -15,7 +15,7 @@ from ansible.plugins.action import ActionBase
 from ansible.utils.vars import merge_hash
 
 import cm
-import cm.config as config
+from cm import config
 from cm.errors import raise_AdcmEx as err
 from cm.api import push_obj, add_hc, get_hc
 from cm.adcm_config import set_object_config

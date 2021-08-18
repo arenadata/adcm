@@ -25,7 +25,7 @@ from tests.ui_tests.app.page.common.dialogs import (
     ActionDialog,
     DeleteDialog,
 )
-from tests.ui_tests.app.page.common.popups import IssuePopupLocators
+from tests.ui_tests.app.page.common.popups.locator import ListIssuePopupLocators
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 
 
@@ -43,7 +43,7 @@ class ClusterListPage(BasePageObject):
         self.wait_element_visible(popup.block)
         self.find_element(popup.upload_bundle_btn).send_keys(bundle)
         if description:
-            self.find_element(popup.description_input).send_keys(description)
+            self.send_text_to_element(popup.description_input, description)
         self.find_and_click(popup.create_btn)
         if is_license:
             self.wait_element_visible(ClusterListLocators.LicensePopup.block)
@@ -122,8 +122,8 @@ class ClusterListPage(BasePageObject):
 
     def click_on_issue_by_name(self, row: WebElement, issue_name: str):
         self.hover_element(self.find_child(row, self.table.table.ClusterRow.actions))
-        self.wait_element_visible(IssuePopupLocators.block)
-        for issue in self.find_elements(IssuePopupLocators.link_to_issue):
+        self.wait_element_visible(ListIssuePopupLocators.block)
+        for issue in self.find_elements(ListIssuePopupLocators.link_to_issue):
             if issue.text == issue_name:
                 issue.click()
                 return

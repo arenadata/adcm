@@ -9,14 +9,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any, List, Tuple, Optional
-
 import os
+from typing import (
+    List,
+    Tuple,
+    Optional,
+)
+
 import allure
 import pytest
-
 from _pytest.fixtures import SubRequest
-from adcm_client.objects import ADCMClient, Bundle, Provider, Cluster
+from adcm_client.objects import (
+    ADCMClient,
+    Bundle,
+    Provider,
+    Cluster,
+)
 from adcm_pytest_plugin import utils
 
 from tests.ui_tests.app.app import ADCMTest
@@ -24,11 +32,20 @@ from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
-from tests.ui_tests.app.page.host.locators import HostLocators, HostActionsLocators
-from tests.ui_tests.app.page.host.page import HostMainPage, HostActionsPage, HostConfigPage
+from tests.ui_tests.app.page.host.locators import (
+    HostLocators,
+    HostActionsLocators,
+)
+from tests.ui_tests.app.page.host.page import (
+    HostMainPage,
+    HostActionsPage,
+    HostConfigPage,
+)
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
-from tests.ui_tests.app.page.host_list.page import HostListPage, HostRowInfo
-from tests.ui_tests.utils import check_rows_amount
+from tests.ui_tests.app.page.host_list.page import HostListPage
+from tests.ui_tests.app.page.host_list.page import HostRowInfo
+from tests.ui_tests.utils import wait_and_assert_ui_info
+from .utils import check_host_value
 
 # pylint: disable=W0621
 
@@ -117,7 +134,7 @@ def elements_should_be_hidden(page: BasePageObject, locators: List[Locator]):
 @allure.step('Open host config menu from host list')
 def open_config(page) -> HostConfigPage:
     page.click_on_row_child(0, HostListLocators.HostTable.HostRow.config)
-    return HostConfigPage(page.driver, page.base_url, 1)
+    return HostConfigPage(page.driver, page.base_url, 1, None)
 
 
 def check_job_name(sdk: ADCMClient, action_display_name: str):
@@ -127,16 +144,6 @@ def check_job_name(sdk: ADCMClient, action_display_name: str):
         f'Action with name "{action_display_name}" was not ran. '
         f'Job names found: {jobs_display_names}'
     )
-
-
-def check_host_value(key: str, actual_value: Any, expected_value: Any):
-    """
-    Assert that actual value equals to expected value
-    Argument `key` is used in failed assertion message
-    """
-    assert (
-        actual_value == expected_value
-    ), f"Host {key} should be {expected_value}, not {actual_value}"
 
 
 def check_host_info(
@@ -155,7 +162,7 @@ def _check_menu(
     list_page: HostListPage,
 ):
     list_page.click_on_row_child(0, HostListLocators.HostTable.HostRow.fqdn)
-    host_page = HostMainPage(list_page.driver, list_page.base_url, 1)
+    host_page = HostMainPage(list_page.driver, list_page.base_url, 1, None)
     getattr(host_page, f'open_{menu_name}_menu')()
     host_page.check_fqdn_equal_to(HOST_FQDN)
     bundle_label = host_page.get_bundle_label()
@@ -176,9 +183,18 @@ def _check_menu(
 def test_create_host_with_bundle_upload(page: HostListPage, bundle_archive: str):
     """Upload bundle and create host"""
     host_fqdn = 'howdy-host-fqdn'
-    new_provider_name = page.create_provider_and_host(bundle_archive, host_fqdn)
-    host_info = page.get_host_info_from_row(0)
-    check_host_info(host_info, host_fqdn, new_provider_name, None, 'created')
+    page.open_host_creation_popup()
+    new_provider_name = page.host_popup.create_provider_and_host(bundle_archive, host_fqdn)
+    expected_values = {
+        'fqdn': host_fqdn,
+        'provider': new_provider_name,
+        'cluster': None,
+        'state': 'created',
+    }
+    wait_and_assert_ui_info(
+        expected_values,
+        page.get_host_info_from_row,
+    )
 
 
 def test_create_bonded_to_cluster_host(
@@ -188,9 +204,18 @@ def test_create_bonded_to_cluster_host(
 ):
     """Create host bonded to cluster"""
     host_fqdn = 'cluster-host'
-    page.create_host(host_fqdn, cluster=CLUSTER_NAME)
-    host_info = page.get_host_info_from_row(0)
-    check_host_info(host_info, host_fqdn, PROVIDER_NAME, CLUSTER_NAME, 'created')
+    expected_values = {
+        'fqdn': host_fqdn,
+        'provider': PROVIDER_NAME,
+        'cluster': CLUSTER_NAME,
+        'state': 'created',
+    }
+    page.open_host_creation_popup()
+    page.host_popup.create_host(host_fqdn, cluster=CLUSTER_NAME)
+    wait_and_assert_ui_info(
+        expected_values,
+        page.get_host_info_from_row,
+    )
 
 
 @pytest.mark.full()
@@ -198,21 +223,9 @@ def test_create_bonded_to_cluster_host(
 @pytest.mark.usefixtures("_create_many_hosts")
 def test_host_list_pagination(page: HostListPage):
     """Create more than 10 hosts and check pagination"""
-    params = {'hosts_on_first_page': 10, 'hosts_on_second_page': 2}
+    hosts_on_second_page = 2
     page.close_info_popup()
-    with allure.step("Check pagination"):
-        with page.table.wait_rows_change():
-            page.table.click_page_by_number(2)
-        check_rows_amount(page, params['hosts_on_second_page'], 2)
-        with page.table.wait_rows_change():
-            page.table.click_previous_page()
-        check_rows_amount(page, params['hosts_on_first_page'], 1)
-        with page.table.wait_rows_change():
-            page.table.click_next_page()
-        check_rows_amount(page, params['hosts_on_second_page'], 2)
-        with page.table.wait_rows_change():
-            page.table.click_page_by_number(1)
-        check_rows_amount(page, params['hosts_on_first_page'], 1)
+    page.table.check_pagination(hosts_on_second_page)
 
 
 def test_bind_host_to_cluster(
@@ -221,10 +234,19 @@ def test_bind_host_to_cluster(
     upload_and_create_cluster: Tuple[Bundle, Provider],
 ):
     """Create host and go to cluster from host list"""
-    page.create_host(HOST_FQDN)
-    with allure.step("Check host created and isn't bound to a cluster"):
-        host_info = page.get_host_info_from_row(0)
-        check_host_info(host_info, HOST_FQDN, PROVIDER_NAME, None, 'created')
+    expected_values = {
+        'fqdn': HOST_FQDN,
+        'provider': PROVIDER_NAME,
+        'cluster': None,
+        'state': 'created',
+    }
+    page.open_host_creation_popup()
+    page.host_popup.create_host(HOST_FQDN)
+    with allure.step("Check host is created and isn't bound to a cluster"):
+        wait_and_assert_ui_info(
+            expected_values,
+            page.get_host_info_from_row,
+        )
     page.bind_host_to_cluster(0, CLUSTER_NAME)
     page.assert_host_bonded_to_cluster(0, CLUSTER_NAME)
 
@@ -247,7 +269,7 @@ def test_open_host_from_host_list(
     row_child = getattr(HostListLocators.HostTable.HostRow, row_child_name)
     menu_item_locator = getattr(HostLocators.MenuNavigation, menu_item_name)
     page.click_on_row_child(0, row_child)
-    main_host_page = HostMainPage(page.driver, page.base_url, 1)
+    main_host_page = HostMainPage(page.driver, page.base_url, 1, None)
     with allure.step('Check correct menu is opened'):
         main_host_page.check_fqdn_equal_to(HOST_FQDN)
         assert main_host_page.active_menu_is(menu_item_locator)
@@ -260,8 +282,13 @@ def test_delete_host(
     upload_and_create_provider: Tuple[Bundle, Provider],
 ):
     """Create host and delete it"""
-    host_info = page.get_host_info_from_row(0)
-    check_host_info(host_info, HOST_FQDN, PROVIDER_NAME, None, 'created')
+    expected_values = {
+        'fqdn': HOST_FQDN,
+        'provider': PROVIDER_NAME,
+        'cluster': None,
+        'state': 'created',
+    }
+    wait_and_assert_ui_info(expected_values, page.get_host_info_from_row)
     page.delete_host(0)
     page.check_element_should_be_hidden(HostListLocators.HostTable.row)
 
@@ -273,6 +300,8 @@ def test_delete_bonded_host(
 ):
     """Host shouldn't be deleted"""
     page.check_element_should_be_visible(HostListLocators.HostTable.row)
+    page.open_host_creation_popup()
+    page.host_popup.create_host(HOST_FQDN, cluster=CLUSTER_NAME)
     page.delete_host(0)
     page.check_element_should_be_visible(HostListLocators.HostTable.row)
 
@@ -307,7 +336,7 @@ def test_run_action_from_menu(
 ):
     """Run action from host actions menu"""
     page.click_on_row_child(0, HostListLocators.HostTable.HostRow.fqdn)
-    host_main_page = HostMainPage(page.driver, page.base_url, 1)
+    host_main_page = HostMainPage(page.driver, page.base_url, 1, None)
     actions_page: HostActionsPage = host_main_page.open_action_menu()
     actions_before = actions_page.get_action_names()
     assert INIT_ACTION in actions_before, f'Action {INIT_ACTION} should be listed in Actions menu'

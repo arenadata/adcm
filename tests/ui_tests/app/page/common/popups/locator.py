@@ -12,13 +12,17 @@
 
 from selenium.webdriver.common.by import By
 
-from tests.ui_tests.app.helpers.locator import Locator, TemplateLocator
+from tests.ui_tests.app.helpers.locator import (
+    Locator,
+    TemplateLocator,
+)
 
 
 class CommonPopupLocators:
     """ADCM popup locators"""
 
     block = Locator(By.XPATH, "//simple-snack-bar", "Popup block")
+    text = Locator(By.XPATH, "//simple-snack-bar/span", "Popup info message")
     hide_btn = Locator(By.XPATH, "//button[./span[text()='Hide']]", "Hide pop up button")
 
 
@@ -29,7 +33,7 @@ class HostCreationLocators:
     fqdn_input = Locator(
         By.XPATH, "//input[@data-placeholder='Fully qualified domain name']", "Host FQDN input"
     )
-    create_btn = Locator(By.XPATH, "//button[./span[text()='Create']]", "Create button")
+    create_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Create')]]", "Create button")
     cancel_btn = Locator(By.XPATH, "//button[./span[text()='Cancel']]", "Cancel button")
 
     class Provider:
@@ -44,7 +48,9 @@ class HostCreationLocators:
             "//mat-select[contains(@placeholder, 'Hostprovider')]",
             "Chosen provider field",
         )
-        add_btn = Locator(By.XPATH, "//mat-icon[text()='add']", "Add host provider button")
+        add_btn = Locator(
+            By.XPATH, "//mat-form-field//mat-icon[text()='add']", "Add host provider button"
+        )
         new_provider_block = Locator(By.XPATH, "//app-add-provider", "Host provider creation block")
         new_provider_name = Locator(
             By.XPATH, "//input[@formcontrolname='name']", "New host provider name"
@@ -70,8 +76,25 @@ class HostCreationLocators:
         )
 
 
-class IssuePopupLocators:
-    """ADCM popup locators for issues"""
+class HostAddPopupLocators:
+    """Host add popup locators"""
 
-    block = Locator(By.XPATH, "//app-popover", "Popup block")
+    add_new_host_btn = Locator(
+        By.XPATH,
+        "//div[contains(@class, 'actions')]//button[@cdk-describedby-host]",
+        "Button to open popup for host creating",
+    )
+
+
+class ListIssuePopupLocators:
+    """ADCM popup locators for issues in list pages"""
+
+    block = Locator(By.XPATH, "//app-popover", "list pages popup block")
     link_to_issue = Locator(By.XPATH, "//app-popover//a", "Link to issue")
+
+
+class PageIssuePopupLocators:
+    """ADCM popup locators for issues in common pages"""
+
+    block = Locator(By.XPATH, "//app-issue-info", "common pages popup block")
+    link_to_issue = Locator(By.XPATH, "//app-issue-info//a", "Link to issue")
