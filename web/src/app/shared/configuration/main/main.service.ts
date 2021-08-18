@@ -74,7 +74,7 @@ export class MainService {
   }
 
   changeVersion(url: string, id: number) {
-    return this.configService.changeVersion(url, id);
+    return this.configService.changeVersion(id, url);
   }
 
   filterApply(options: TFormOptions[], search: ISearchParam) {
@@ -143,6 +143,10 @@ export class MainService {
   }
 
   findFieldiCompare(key: string, cc: CompareConfig) {
+    console.log(key);
+    console.log(cc);
+
+
     const value = key
       .split('/')
       .reverse()

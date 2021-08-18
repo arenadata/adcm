@@ -26,7 +26,7 @@ export interface IConfigService {
 
   send(url: string, data: any): Observable<IConfig>;
 
-  changeVersion(url: string, id: number): Observable<IConfig>;
+  changeVersion(id: number, url?: string): Observable<IConfig>;
 }
 
 @Injectable({
@@ -35,7 +35,7 @@ export interface IConfigService {
 export class ConfigService implements IConfigService {
   constructor(private api: ApiService) { }
 
-  changeVersion(url: string, id: number): Observable<IConfig> {
+  changeVersion(id: number, url: string): Observable<IConfig> {
     return this.api.get<IConfig>(`${url}history/${id}/`);
   }
 

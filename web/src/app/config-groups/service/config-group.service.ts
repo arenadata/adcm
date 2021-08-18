@@ -9,6 +9,7 @@ import { ApiService } from '@app/core/api';
 import { CompareConfig, IConfig } from '@app/shared/configuration/types';
 import { map, switchMap } from 'rxjs/operators';
 import { getRandomColor } from '@app/core/types';
+import { environment } from '@env/environment';
 
 
 @Injectable({
@@ -17,9 +18,9 @@ import { getRandomColor } from '@app/core/types';
 export class ConfigGroupService implements IConfigService {
   constructor(private api: ApiService) { }
 
-  changeVersion(url: string, id: number): Observable<IConfig> {
-        throw new Error('Method not implemented.');
-    }
+  changeVersion(id: number): Observable<IConfig> {
+    return this.api.get<IConfig>(`${environment.apiRoot}config-log/${id}`);
+  }
 
   getConfig(url: string): Observable<IConfig> {
     return this.api.get<IConfigResponse>(url).pipe(
