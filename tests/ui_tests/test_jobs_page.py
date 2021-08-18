@@ -22,8 +22,6 @@ from adcm_client.objects import (
     Provider,
     Service,
     Host,
-    Component,
-    Action,
 )
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.actions import (
@@ -31,14 +29,11 @@ from adcm_pytest_plugin.steps.actions import (
 )
 
 from tests.ui_tests.app.app import ADCMTest
-from tests.ui_tests.app.page.job.page import JobPage
 from tests.ui_tests.app.page.job_list.page import (
     JobListPage,
     JobStatus,
-    TableTaskInfo,
-    TaskInfo,
 )
-
+from tests.ui_tests.utils import wait_and_assert_ui_info, is_not_empty, is_empty
 
 LONG_ACTION_DISPLAY_NAME = 'Long action'
 SUCCESS_ACTION_DISPLAY_NAME = 'Success action'
@@ -136,29 +131,6 @@ def test_finished_job_has_correct_info(job_info: dict, cluster: Cluster, page: J
     _check_job_info_in_popup(page, expected_info_in_popup)
 
 
-def test_invoker_object_url(cluster: Cluster, provider: Provider, page: JobListPage):
-    """Check link to object that invoked action is correct"""
-    host_fqdn = 'run-on-me'
-    host_job_link = f'{host_fqdn}/{provider.name}'
-    component_link = f'{COMPONENT_NAME}/{SERVICE_NAME}/{CLUSTER_NAME}'
-    host_component_link = f'{host_fqdn}/{component_link}'
-    with allure.step('Run action on component and check job link to it'):
-        service: Service = cluster.service(name=SERVICE_NAME)
-        component: Component = service.component(name=COMPONENT_NAME)
-        component_action = component.action(display_name=COMPONENT_ACTION_DISPLAY_NAME)
-        _check_link_to_invoker_object_in_table('component', component_link, page, component_action)
-    with allure.step('Create host, run action on host and check job link to it'):
-        host = provider.host_create(host_fqdn)
-        host_action = host.action(display_name=FAIL_ACTION_DISPLAY_NAME)
-        _check_link_to_invoker_object_in_table('host', host_job_link, page, host_action)
-    with allure.step('Add host to the cluster, assign component on it'):
-        cluster.host_add(host)
-        cluster.hostcomponent_set((host, component))
-    with allure.step('Run component host action on host and check job link to it'):
-        host_action = host.action(display_name=ON_HOST_ACTION_DISPLAY_NAME)
-        _check_link_to_invoker_object_in_table('host', host_component_link, page, host_action)
-
-
 def _test_run_action(page: JobListPage, action_owner: Union[Cluster, Service, Provider, Host]):
     """
     Run the "Long" action
@@ -189,69 +161,23 @@ def _test_run_action(page: JobListPage, action_owner: Union[Cluster, Service, Pr
 @allure.step('Check running job information in table')
 def _check_running_job_info_in_table(page: JobListPage, expected_info: dict):
     """Get info about job from table and check it"""
-    job_info = page.get_task_info_from_table()
-    __check_basic_job_info(job_info, expected_info)
-    __check_only_finish_date_is_empty(job_info)
+    wait_and_assert_ui_info(
+        {**expected_info, 'start_date': is_not_empty, 'finish_date': is_empty},
+        page.get_task_info_from_table,
+    )
 
 
 @allure.step('Check finished job information in table')
 def _check_finished_job_info_in_table(page: JobListPage, expected_info: dict):
     """Get and check info about successfully finished job from table"""
-    job_info = page.get_task_info_from_table()
-    __check_basic_job_info(job_info, expected_info)
-    __check_both_dates_not_empty(job_info)
+    wait_and_assert_ui_info(
+        {**expected_info, 'start_date': is_not_empty, 'finish_date': is_not_empty},
+        page.get_task_info_from_table,
+    )
 
 
 @allure.step('Check job information in popup')
 def _check_job_info_in_popup(page: JobListPage, expected_info: dict):
     """Get job info from popup and check it"""
     with page.header.open_jobs_popup():
-        job_info = page.get_task_info_from_popup()
-        __check_basic_job_info(job_info, expected_info)
-
-
-def _check_link_to_invoker_object_in_table(
-    link_object_name: str, expected_link: str, page: JobListPage, action: Action
-):
-    """
-    Check that link to object invoked action is correct
-
-    :param link_object_name: Name of object to add in assertion message like 'host', 'component'
-    :param expected_link: "Link" to invoker objects
-    :param page: Page with jobs table
-    :param action: Action to run
-    """
-    with page.table.wait_rows_change():
-        action.run()
-    task_info: TableTaskInfo = page.get_task_info_from_table(full_invoker_objects_link=True)
-    assert (actual_link := task_info.invoker_objects) == expected_link, (
-        f'Link to {link_object_name} object in jobs table '
-        f'should be "{expected_link}", not "{actual_link}"'
-    )
-    detail_page = JobPage(page.driver, page.base_url, action.task_list()[0].id).open()
-    actual_link = detail_page.get_job_info().invoker_objects
-    assert actual_link == expected_link, (
-        f'Link to {link_object_name} object on detailed job page '
-        f'should be "{expected_link}", not "{actual_link}"'
-    )
-    page.open()
-
-
-def __check_basic_job_info(job_info: TaskInfo, expected_info: dict):
-    """Check job info is same as expected (excluding start/finish date check)"""
-    for key in expected_info.keys():
-        assert (actual_value := getattr(job_info, key)) == expected_info[
-            key
-        ], f'Value of field "{key}" should be {expected_info[key]}, not {actual_value}'
-
-
-def __check_only_finish_date_is_empty(job_info: TableTaskInfo):
-    """Check finish date is empty, start date is not"""
-    assert job_info.finish_date == '', 'Finish date should be empty'
-    assert job_info.start_date != '', 'Start date should not be empty'
-
-
-def __check_both_dates_not_empty(job_info: TableTaskInfo):
-    """Check both start and finish dates are not empty"""
-    assert job_info.finish_date != '', 'Finish date should not be empty'
-    assert job_info.start_date != '', 'Start date should not be empty'
+        wait_and_assert_ui_info({**expected_info}, page.get_task_info_from_popup)

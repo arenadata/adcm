@@ -75,7 +75,7 @@ class JobListPage(BasePageObject):
         row = self.table.get_row(row_num)
         row_locators = TaskListLocators.Table.Row
         if full_invoker_objects_link:
-            invoker_objects = self.find_child(row, row_locators.invoker_objects, all_children=True)
+            invoker_objects = self.find_children(row, row_locators.invoker_objects)
             object_link = '/'.join(obj.text.strip() for obj in invoker_objects)
         else:
             object_link = self.find_child(row, row_locators.invoker_objects).text.strip()

@@ -127,18 +127,13 @@ class BasePageObject:
                 f"{self.driver.current_url} for {loc_timeout} seconds",
             )
 
-    def find_child(
-        self, element: WebElement, child: Locator, timeout: int = None, all_children: bool = False
-    ) -> Union[WebElement, List[WebElement]]:
+    def find_child(self, element: WebElement, child: Locator, timeout: int = None) -> WebElement:
         """Find child (or children) element on current page."""
 
         loc_timeout = timeout or self.default_loc_timeout
-        search_method = (
-            EC.presence_of_all_elements_located if all_children else EC.presence_of_element_located
-        )
         with allure.step(f'Find element "{child.name}" on page'):
             return WDW(element, loc_timeout).until(
-                search_method([child.by, child.value]),
+                EC.presence_of_element_located([child.by, child.value]),
                 message=f"Can't find {child.name} on page "
                 f"{self.driver.current_url} for {loc_timeout} seconds",
             )

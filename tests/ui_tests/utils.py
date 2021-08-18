@@ -140,8 +140,20 @@ def is_equal(first_value: T, second_value: T) -> bool:
     return first_value == second_value
 
 
+def is_empty(first_value: T) -> bool:
+    """Check if first value is empty (=='')"""
+    return first_value == ''
+
+
+def is_not_empty(first_value: T) -> bool:
+    """Check if first value is not empty (!='')"""
+    return first_value != ''
+
+
 def wait_and_assert_ui_info(
-    expected_values: Dict[str, Union[T, Tuple[T, Callable[[T, T], bool]]]],
+    expected_values: Dict[
+        str, Union[Union[T, Callable[[T], bool]], Tuple[T, Callable[[T, T], bool]]]
+    ],
     get_info_func: Union[Callable[[Any], D]],
     get_info_kwargs: Optional[dict] = None,
     timeout: Union[int, float] = 5,
@@ -151,12 +163,16 @@ def wait_and_assert_ui_info(
     Wait for some information on UI to be correct.
     Use it to avoid getting data from UI a bit earlier than it is fully loaded.
 
+    As dict value for `expected_values` argument you can provide:
+
+    - simple value to pass it to "is_equal" function as expected value;
+    - tuple with expected value and callable that takes two arguments;
+    - callable that takes exactly 1 argument (actual value).
+    Callable should return bool and in case only callable is provided
+    it's name is used in assertion message.
+
     :param expected_values: Dictionary with values that are expected to be found
                             in UI information object.
-                            You can provide simple value or tuple with value and callable,
-                            that works as comparator: takes two arguments
-                            (first is actual value, second is expected value)
-                            and returns boolean.
     :param get_info_func: Function to get UI information object.
     :param get_info_kwargs: Dictionary with keyword arguments to pass to `get_info_func`.
     :param timeout: Timeout for retries.
@@ -171,12 +187,22 @@ def wait_and_assert_ui_info(
     def check_info_from_ui():
         ui_info: D = get_info_func(**get_info_kwargs)
         for key, value in expected_values.items():
+            actual_value = ui_info[key] if isinstance(ui_info, dict) else getattr(ui_info, key)
+            # we may want if out of loop someday
+            if callable(value):
+                # expected callable with 1 argument like 'is_empty', etc.
+                compare_func = value
+                assert compare_func(actual_value), (
+                    f'{human_key_names[key]} in {ui_info_classname} '
+                    f'failed to pass check "{compare_func.__name__}", '
+                    f'actual value is {actual_value}'
+                )
+                return
             if isinstance(value, tuple):
                 expected_value, compare_func = value
             else:
                 expected_value = value
                 compare_func = is_equal
-            actual_value = ui_info[key] if isinstance(ui_info, dict) else getattr(ui_info, key)
             assert compare_func(actual_value, expected_value), (
                 f'{human_key_names[key]} in {ui_info_classname} '
                 f'should be {expected_value}, not {actual_value}'
