@@ -5,7 +5,17 @@ import { IssueMessage } from '@app/models/issue-message';
 
 @Component({
   selector: 'app-issue-message-ref',
-  templateUrl: './issue-message-ref.component.html',
+  template: `
+    <button
+      appPopover
+      mat-icon-button
+      color="warn"
+      [component]="IssueMessageComponent"
+      [data]="{ message: message }"
+    >
+      <mat-icon>priority_hight</mat-icon>
+    </button>
+  `,
   styleUrls: ['./issue-message-ref.component.scss']
 })
 export class IssueMessageRefComponent {
