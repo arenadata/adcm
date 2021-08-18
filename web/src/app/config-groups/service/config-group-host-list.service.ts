@@ -32,9 +32,9 @@ export class ConfigGroupHostListService extends EntityService<Host> implements I
       const param = p.keys.reduce((a, c) => ({ ...a, [c]: p.get(c) }), {});
       if (listParamStr) {
         const json = JSON.parse(listParamStr);
-        json['configgroup'] = param;
+        json['group_configs'] = param;
         localStorage.setItem('list:param', JSON.stringify(json));
-      } else localStorage.setItem('list:param', JSON.stringify({ ['configgroup']: param }));
+      } else localStorage.setItem('list:param', JSON.stringify({ ['group_configs']: param }));
     }
 
     const configGroupId = this.cluster.Current.id;

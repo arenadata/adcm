@@ -7,6 +7,7 @@ import { ConfigGroup } from '@app/config-groups/model/config-group.model';
 import { IListService, ListInstance } from '@app/shared/components/list/list-service-token';
 import { ParamMap } from '@angular/router';
 import { ListResult } from '@app/models/list-result';
+import { ClusterService } from '@app/core/services/cluster.service';
 
 export const CONFIG_GROUP_LIST_SERVICE = new InjectionToken<EntityService<ConfigGroup>>('EntityService');
 
@@ -20,26 +21,29 @@ export class ConfigGroupListService extends EntityService<ConfigGroup> implement
 
   constructor(
     protected api: ApiService,
+    private cluster: ClusterService
   ) {
     super(api);
   }
 
   getList(p: ParamMap): Observable<ListResult<ConfigGroup>> {
+    console.log(this.cluster.Current);
+
     const listParamStr = localStorage.getItem('list:param');
     if (p?.keys.length) {
       const param = p.keys.reduce((a, c) => ({ ...a, [c]: p.get(c) }), {});
       if (listParamStr) {
         const json = JSON.parse(listParamStr);
-        json['configgroup'] = param;
+        json['group_configs'] = param;
         localStorage.setItem('list:param', JSON.stringify(json));
-      } else localStorage.setItem('list:param', JSON.stringify({ ['configgroup']: param }));
+      } else localStorage.setItem('list:param', JSON.stringify({ ['group_configs']: param }));
     }
 
     return this.api.getList(`${environment.apiRoot}group-config/`, p);
   }
 
   initInstance(): ListInstance {
-    this.current = { typeName: 'configgroup', columns: ['name', 'description', 'remove'] };
+    this.current = { typeName: 'group_configs', columns: ['name', 'description', 'remove'] };
     return this.current;
   }
 

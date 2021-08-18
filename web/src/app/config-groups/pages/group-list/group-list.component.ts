@@ -35,7 +35,7 @@ import { AddConfigGroupComponent } from '../../components/config-group-add/confi
   ],
 })
 export class ConfigGroupListComponent extends AdwpListDirective<any> implements OnInit {
-  type: TypeName = 'configgroup';
+  type: TypeName = 'group_configs';
   addComponent: Type<BaseFormDirective> = AddConfigGroupComponent;
 
   listColumns: IColumns<any> = [

@@ -54,7 +54,7 @@ export class MainService {
               public cluster: ClusterService,
               injector: Injector) {
     const current: TypeName | undefined = cluster.Current?.typeName;
-    if (current === 'configgroup') {
+    if (current === 'group_configs') {
       this.configService = injector.get(ConfigGroupService);
     } else {
       this.configService = injector.get(ConfigService);

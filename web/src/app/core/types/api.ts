@@ -31,7 +31,7 @@ export type TypeName =
   'host2cluster' |
   'servicecomponent' |
   'component' |
-  'configgroup' |
+  'group_configs' |
   'host2configgroup';
 export type Entities = Cluster | Service | Host | Provider | Job | Task | Bundle;
 
@@ -84,7 +84,7 @@ export interface Cluster extends ApiBase {
   upgradable: boolean;
   upgrade: string;
   status_url: string;
-  configgroup: unknown[];
+  group_configs: unknown[];
 }
 
 export interface Provider extends ApiBase {

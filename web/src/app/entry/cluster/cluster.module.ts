@@ -53,7 +53,7 @@ const clusterRoutes: Routes = [
       { path: 'host', component: HostComponent },
       { path: 'host_component', component: HcmapComponent },
       { path: 'config', component: ConfigComponent },
-      { path: 'configgroup', component: ConfigGroupListComponent },
+      { path: 'group_configs', component: ConfigGroupListComponent },
       { path: 'status', component: StatusComponent },
       { path: 'import', component: ImportComponent },
       { path: 'action', component: ActionCardComponent },
