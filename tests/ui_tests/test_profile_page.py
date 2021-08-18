@@ -52,7 +52,7 @@ def test_login_as_new_user(another_user: dict, app_fs: ADCMTest):
 
 
 @pytest.mark.usefixtures("login_to_adcm_over_api")
-def test_change_password(adcm_credentials: dict, app_fs: ADCMTest, restore_admin_password: None):
+def test_change_password(adcm_credentials: dict, app_fs: ADCMTest):
     """Change admin password over UI and login under new credentials"""
     new_credentials = {**adcm_credentials, 'password': 'new_password'}
     profile_page = ProfilePage(app_fs.driver, app_fs.adcm.url).open()

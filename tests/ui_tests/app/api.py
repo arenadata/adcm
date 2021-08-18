@@ -18,7 +18,7 @@ class RequestFailedException(Exception):
     """Request to ADCM API has status code >= 400"""
 
 
-class APIRequester:
+class ADCMDirectAPIClient:
     """Helper to make requests to ADCM API in a browser-like way"""
 
     def __init__(self, base_url: str, admin_credentials: dict):

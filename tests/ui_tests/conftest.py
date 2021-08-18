@@ -21,7 +21,7 @@ import pytest
 from adcm_client.wrappers.docker import ADCM
 from selenium.common.exceptions import WebDriverException
 
-from tests.ui_tests.app.api import APIRequester
+from tests.ui_tests.app.api import ADCMDirectAPIClient
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
 from tests.ui_tests.app.page.login.page import LoginPage
@@ -180,19 +180,8 @@ def login_to_adcm_over_ui(app_fs, adcm_credentials):
 @pytest.fixture()
 def another_user(app_fs: ADCMTest, adcm_credentials: dict) -> Generator[dict, None, None]:
     """Create another user, return it's credentials, remove afterwards"""
-    api = APIRequester(app_fs.adcm.url, adcm_credentials)
+    api = ADCMDirectAPIClient(app_fs.adcm.url, adcm_credentials)
     user_credentials = {'username': 'blondy', 'password': 'goodbadevil'}
     api.create_new_user(user_credentials)
     yield user_credentials
     api.delete_user(user_credentials['username'])
-
-
-@pytest.fixture(params=[{'username': 'admin', 'password': 'new_password'}])
-def restore_admin_password(request, adcm_credentials: dict, adcm_fs: ADCM):
-    """Restores password after test"""
-    new_credentials = request.param
-    yield
-    api = APIRequester(adcm_fs.url, new_credentials)
-    api.change_admin_password(adcm_credentials)
-    # ensure that authorization as default admin user works correctly
-    api.get_authorization_header()

@@ -508,8 +508,9 @@ class TestClusterHostPage:
     ):
         cluster = create_community_cluster
         provider = upload_and_create_provider
-        with allure.step('Create 11 hosts'):
-            for i in range(11):
+        host_count = 11
+        with allure.step(f'Create {host_count} hosts'):
+            for i in range(host_count):
                 host = provider.host_create(f"{HOST_NAME}_{i}")
                 cluster.host_add(host)
         cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
