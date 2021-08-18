@@ -14,11 +14,12 @@ import os
 import tarfile
 from typing import Optional, List
 
-
 import pytest
 import sys
+import yaml
 
 from _pytest.python import Function
+from pathlib import PosixPath
 from allure_commons.model2 import TestResult, Parameter
 from allure_pytest.listener import AllureListener
 
@@ -31,6 +32,17 @@ testdir = os.path.dirname(__file__)
 rootdir = os.path.dirname(testdir)
 pythondir = os.path.abspath(os.path.join(rootdir, 'python'))
 sys.path.append(pythondir)
+
+# can be used to dump it to file to create dummy bundle archives
+DUMMY_CLUSTER_BUNDLE = [
+    {
+        'type': 'cluster',
+        'name': 'test_cluster',
+        'description': 'community description',
+        'version': '1.5',
+        'edition': 'community',
+    }
+]
 
 
 def pytest_generate_tests(metafunc):
@@ -101,3 +113,41 @@ def bundle_archives(request, tmp_path) -> List[str]:
     Prepare multiple bundles as in bundle_archive fixture
     """
     return [_pack_bundle(bundle_path, tmp_path) for bundle_path in request.param]
+
+
+@pytest.fixture(params=[[DUMMY_CLUSTER_BUNDLE]])
+def create_bundle_archives(request, tmp_path: PosixPath) -> List[str]:
+    """
+    Create dummy bundle archives to test pagination
+    It no license required in archive type of params should be List[List[dict]]
+        otherwise Tuple[List[List[dict]], str] is required
+
+    If you need licence then `params` should be of type Tuple[List[List[dict]], str]
+        where first tuple item is a list of bundle configs
+        and second is path to license file (for bundles with licenses)
+    ! License archive is always named 'license.txt'
+
+    :returns: list with paths to archives
+    """
+    archives = []
+    if isinstance(request.param, list):
+        bundle_configs = request.param
+        license_path = 'license.txt'
+    elif isinstance(request.param, tuple) and len(request.param) == 2:
+        bundle_configs, license_path = request.param
+    else:
+        raise TypeError('Request parameter should be either List[dict] or Tuple[List[dict], str]')
+    for i, config in enumerate(bundle_configs):
+        archive_path = tmp_path / f'spam_bundle_{i}.tar'
+        config_fp = (bundle_dir := tmp_path / f'spam_bundle_{i}') / 'config.yaml'
+        bundle_dir.mkdir()
+        with open(config_fp, 'w') as config_file:
+            yaml.safe_dump(config, config_file)
+        with tarfile.open(archive_path, 'w') as archive:
+            archive.add(config_fp, arcname='config.yaml')
+            # assume that ist is declared in first item
+            if 'license' in config[0]:
+                license_fp = os.path.join(license_path)
+                archive.add(license_fp, arcname=config[0]['license'])
+        archives.append(str(archive_path))
+    return archives

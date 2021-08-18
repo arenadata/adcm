@@ -25,6 +25,7 @@ from tests.ui_tests.app.page.common.dialogs import (
     ActionDialog,
     DeleteDialog,
 )
+from tests.ui_tests.app.page.common.popups.locator import ListIssuePopupLocators
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 
 
@@ -42,11 +43,20 @@ class ClusterListPage(BasePageObject):
         self.wait_element_visible(popup.block)
         self.find_element(popup.upload_bundle_btn).send_keys(bundle)
         if description:
-            self.find_element(popup.description_input).send_keys(description)
+            self.send_text_to_element(popup.description_input, description)
         self.find_and_click(popup.create_btn)
         if is_license:
             self.wait_element_visible(ClusterListLocators.LicensePopup.block)
             self.find_and_click(ClusterListLocators.LicensePopup.agree_btn)
+
+    @allure.step("Upload bundle without creating a cluster")
+    def upload_bundle_from_cluster_create_popup(self, bundle: str):
+        self.find_and_click(ClusterListLocators.Tooltip.cluster_add_btn)
+        popup = ClusterListLocators.CreateClusterPopup
+        self.wait_element_visible(popup.block)
+        self.find_element(popup.upload_bundle_btn).send_keys(bundle)
+        self.find_and_click(popup.cancel_btn)
+        self.wait_element_hide(popup.block)
 
     @allure.step("Get cluster info from row {row}")
     def get_cluster_info_from_row(self, row: int) -> dict:
@@ -109,3 +119,12 @@ class ClusterListPage(BasePageObject):
         self.wait_element_visible(DeleteDialog.body)
         self.find_and_click(DeleteDialog.yes)
         self.wait_element_hide(DeleteDialog.body)
+
+    def click_on_issue_by_name(self, row: WebElement, issue_name: str):
+        self.hover_element(self.find_child(row, self.table.table.ClusterRow.actions))
+        self.wait_element_visible(ListIssuePopupLocators.block)
+        for issue in self.find_elements(ListIssuePopupLocators.link_to_issue):
+            if issue.text == issue_name:
+                issue.click()
+                return
+        raise AssertionError(f"Issue name '{issue_name}' not found in row issues")

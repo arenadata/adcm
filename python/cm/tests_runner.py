@@ -16,9 +16,9 @@ from unittest.mock import patch, Mock, mock_open, call
 from django.test import TestCase
 from django.utils import timezone
 
-import cm.config as config
 import job_runner
 import task_runner
+from cm import config
 from cm.logger import log
 from cm.models import TaskLog, JobLog, Bundle, Prototype, Action
 

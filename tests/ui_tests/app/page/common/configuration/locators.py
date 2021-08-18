@@ -63,3 +63,5 @@ class CommonConfigMenu:
         "//div[@adcm_test='{}']//mat-icon[text()='refresh']/ancestor::button",
         "Resfresh button of {}",
     )
+
+    loading_text = Locator(By.XPATH, "//span[text()='Loading...']", "Loading text")

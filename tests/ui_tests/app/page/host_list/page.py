@@ -9,12 +9,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from dataclasses import dataclass
 from typing import Optional
 
 import allure
-
-from dataclasses import dataclass
-
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
@@ -27,7 +25,8 @@ from tests.ui_tests.app.page.common.base_page import (
     PageFooter,
 )
 from tests.ui_tests.app.page.common.dialogs import DeleteDialog, ActionDialog
-from tests.ui_tests.app.page.common.popups import HostCreationLocators
+from tests.ui_tests.app.page.common.popups.locator import HostCreationLocators
+from tests.ui_tests.app.page.common.popups.page import HostCreatePopupObj
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
 
@@ -50,6 +49,7 @@ class HostListPage(BasePageObject):
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url, HostListLocators.HostTable)
+        self.host_popup = HostCreatePopupObj(self.driver, self.base_url)
 
     def get_host_row(self, row_num: int = 0) -> WebElement:
         def table_has_enough_rows():
@@ -87,6 +87,13 @@ class HostListPage(BasePageObject):
         self.open_host_creation_popup()
         self._insert_new_host_info(fqdn, cluster)
         self.click_create_host_in_popup()
+        self.close_host_creation_popup()
+
+    @allure.step("Upload bundle from host creation popup")
+    def upload_bundle_from_host_create_popup(self, bundle_path: str):
+        """Upload bundle in host creation popup and close popup"""
+        self.open_host_creation_popup()
+        self._upload_bundle(bundle_path)
         self.close_host_creation_popup()
 
     @allure.step("Create new provider and host")
@@ -134,7 +141,7 @@ class HostListPage(BasePageObject):
     def bind_host_to_cluster(self, host_row_num: int, cluster_name: str):
         """Assign host to cluster in host list table"""
         self.click_on_row_child(host_row_num, HostListLocators.HostTable.HostRow.cluster)
-        self._wait_and_click_on_cluster_option(
+        self.host_popup.wait_and_click_on_cluster_option(
             cluster_name, HostListLocators.HostTable.cluster_option
         )
 
@@ -170,8 +177,8 @@ class HostListPage(BasePageObject):
 
     def _insert_new_host_info(self, fqdn: str, cluster: Optional[str] = None):
         """Insert new host info in fields of opened popup"""
-        fqdn_input = self.find_element(HostCreationLocators.fqdn_input)
-        fqdn_input.send_keys(fqdn)
+        self.wait_element_visible(HostCreationLocators.fqdn_input)
+        self.send_text_to_element(HostCreationLocators.fqdn_input, fqdn)
         if cluster:
             self._choose_cluster_in_popup(cluster)
 
@@ -203,7 +210,8 @@ class HostListPage(BasePageObject):
             EC.presence_of_element_located(
                 [option_locator.by, option_locator.value.format(cluster_name)]
             ),
-            message=f"Can't find cluster with name {cluster_name} in dropdown on page {self.driver.current_url} "
+            message=f"Can't find cluster with name {cluster_name} "
+            f"in dropdown on page {self.driver.current_url} "
             f"for {self.default_loc_timeout} seconds",
         ).click()
 

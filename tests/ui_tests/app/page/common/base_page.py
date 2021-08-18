@@ -10,7 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional
+from typing import (
+    Optional,
+    List,
+    Union,
+)
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -33,7 +37,7 @@ from tests.ui_tests.app.page.common.header import (
     CommonHeaderLocators,
     AuthorizedHeaderLocators,
 )
-from tests.ui_tests.app.page.common.popups import CommonPopupLocators
+from tests.ui_tests.app.page.common.popups.locator import CommonPopupLocators
 
 
 class BasePageObject:
@@ -82,7 +86,10 @@ class BasePageObject:
             if self.driver.current_url != url:
                 with allure.step(f"Open {url}"):
                     self.driver.get(url)
-                    assert self.path in self.driver.current_url
+                    assert self.path in self.driver.current_url, (
+                        "Page URL didn't change. "
+                        f'Actual URL: {self.driver.current_url}. Expected URL: {url}.'
+                    )
 
         wait_until_step_succeeds(
             open_page, period=0.5, timeout=timeout or self.default_page_timeout
@@ -94,6 +101,10 @@ class BasePageObject:
         if self.is_element_displayed(CommonPopupLocators.block, timeout=5):
             self.find_and_click(CommonPopupLocators.hide_btn)
             self.wait_element_hide(CommonPopupLocators.block)
+
+    @allure.step("Get text from info popup")
+    def get_info_popup_text(self):
+        return self.wait_element_visible(CommonPopupLocators.text, timeout=5).text
 
     @allure.step("Wait url to contain path {path}")
     def wait_url_contains_path(self, path: str, timeout: int = None) -> None:
@@ -127,6 +138,19 @@ class BasePageObject:
                 f"{self.driver.current_url} for {loc_timeout} seconds",
             )
 
+    def find_children(
+        self, element: WebElement, child: Locator, timeout: int = None
+    ) -> List[WebElement]:
+        """Find children element on current page."""
+
+        loc_timeout = timeout or self.default_loc_timeout
+        with allure.step(f'Find element "{child.name}" on page'):
+            return WDW(element, loc_timeout).until(
+                EC.presence_of_all_elements_located([child.by, child.value]),
+                message=f"Can't find {child.name} on page "
+                f"{self.driver.current_url} for {loc_timeout} seconds",
+            )
+
     def find_elements(self, locator: Locator, timeout: int = None) -> [WebElement]:
         """Find elements on current page."""
 
@@ -138,15 +162,43 @@ class BasePageObject:
                 f"{self.driver.current_url} for {loc_timeout} seconds",
             )
 
-    def is_element_displayed(self, locator: Locator, timeout: int = None) -> bool:
-        """Checks if element is displayed.
-        in case you'll need to divide methods for input params element and locator use dispatch decorator
+    def send_text_to_element(self, locator: Locator, text: str, timeout: Optional[int] = None):
         """
+        Writes text to input element found by locator
+
+        If value of input before and after is the same, then retries to send keys again,
+        because sometimes text doesn't appear in input
+
+        :param locator: Locator of element to write into (should be input)
+        :param text: Text to use in .send_keys method
+        :param timeout: Timeout on finding element
+        """
+        element = self.find_element(locator, timeout)
+        expected_value = element.get_property('value') + text
+
+        def send_keys_and_check():
+            input_element = self.find_element(locator, timeout)
+            input_element.send_keys(text)
+            assert (actual_value := input_element.get_property('value')) == expected_value, (
+                f'Value of input {locator} expected to be '
+                f'"{expected_value}", but "{actual_value}" was found'
+            )
+
+        wait_until_step_succeeds(send_keys_and_check, period=0.5, timeout=1.5)
+
+    def is_element_displayed(
+        self, element: Union[Locator, WebElement], timeout: int = None
+    ) -> bool:
+        """Checks if element is displayed."""
 
         try:
-            with allure.step(f'Check "{locator.name}"'):
-                return self.find_element(
-                    locator, timeout=timeout or self.default_loc_timeout
+            with allure.step(
+                f'Check {element.name if isinstance(element, Locator) else element.text}'
+            ):
+                return (
+                    element
+                    if isinstance(element, WebElement)
+                    else self.find_element(element, timeout=timeout or self.default_loc_timeout)
                 ).is_displayed()
         except (
             TimeoutException,
@@ -160,14 +212,16 @@ class BasePageObject:
         """Asserts that list of elements is displayed."""
 
         for loc in locators:
-            assert self.is_element_displayed(loc), f"Locator {loc.name} isn't displayed on page"
+            assert self.is_element_displayed(
+                loc
+            ), f"Locator {loc.name} isn't displayed on page {self.driver.current_url}"
 
     def check_element_should_be_hidden(
-        self, locator: Locator, timeout: Optional[int] = None
+        self, element: Union[Locator, WebElement], timeout: Optional[int] = None
     ) -> None:
         """Raises assertion error if element is still visible after timeout"""
         try:
-            self.wait_element_hide(locator, timeout)
+            self.wait_element_hide(element, timeout)
         except TimeoutException as e:
             raise AssertionError(e.msg)
 
@@ -214,14 +268,17 @@ class BasePageObject:
                 f"{loc_timeout} seconds",
             )
 
-    def wait_element_hide(self, locator: Locator, timeout: int = None) -> None:
+    def wait_element_hide(self, element: Union[Locator, WebElement], timeout: int = None) -> None:
         """Wait the element to hide."""
 
         loc_timeout = timeout or self.default_loc_timeout
-        with allure.step(f'Wait "{locator.name}" to hide'):
+        el_name = element.name if isinstance(element, Locator) else element.text
+        with allure.step(f'Check {el_name} to hide'):
             WDW(self.driver, loc_timeout).until(
-                EC.invisibility_of_element_located([locator.by, locator.value]),
-                message=f"locator {locator.name} hasn't hide for {loc_timeout} seconds",
+                EC.invisibility_of_element_located(
+                    [element.by, element.value] if isinstance(element, Locator) else element
+                ),
+                message=f"locator {el_name} hasn't hide for {loc_timeout} seconds",
             )
 
     def wait_page_is_opened(self, timeout: int = None):
@@ -262,11 +319,13 @@ class BasePageObject:
         self.find_element(CommonLocators.socket, timeout=30)
         self.find_element(CommonLocators.profile, timeout=30)
 
-    def hover_element(self, locator: Locator):
+    def hover_element(self, element: Union[Locator, WebElement]):
         """
         Moves the cursor over an element and hovers it.
         """
-        hover = ActionChains(self.driver).move_to_element(self.find_element(locator))
+        hover = ActionChains(self.driver).move_to_element(
+            element if isinstance(element, WebElement) else self.find_element(element)
+        )
         hover.perform()
 
 
@@ -334,7 +393,9 @@ class PageHeader(BasePageObject):
         self.find_and_click(AuthorizedHeaderLocators.account_button)
 
     def check_job_popup(self):
-        assert self.is_element_displayed(AuthorizedHeaderLocators.job_popup)
+        assert self.is_element_displayed(
+            AuthorizedHeaderLocators.job_popup
+        ), 'Job popup should be displayed'
 
     def check_help_popup(self):
         self.wait_element_visible(AuthorizedHeaderLocators.block)
