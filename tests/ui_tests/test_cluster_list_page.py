@@ -638,3 +638,66 @@ class TestClusterComponentsPage:
             assert (
                 cluster_components_page.check_that_save_btn_disabled()
             ), "Save button should be disabled"
+
+
+class TestClusterConfigPage:
+    @pytest.mark.usefixtures("create_community_cluster")
+    def test_check_cluster_config_page_open_by_tab(self, app_fs):
+        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        cluster_main_page.open_config_tab()
+        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1)
+        cluster_config_page.wait_page_is_opened()
+        cluster_config_page.check_all_elements()
+
+    @pytest.mark.usefixtures("create_community_cluster")
+    def test_check_cluster_config_page_filter_config(self, app_fs):
+        params = {"search_param": "str_param", "group_name": "core-site"}
+        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        with cluster_config_page.wait_rows_change():
+            cluster_config_page.fill_search_input(params["search_param"])
+        with allure.step(f"Check that rows are filtered by {params['search_param']}"):
+            config_rows = cluster_config_page.get_all_config_rows()
+            assert len(config_rows) == 1, "There should be 1 row"
+            assert (
+                cluster_config_page.get_config_row_info(config_rows[0]).name
+                == f"{params['search_param']}:"
+            ), f"Name should be {params['search_param']}"
+        with cluster_config_page.wait_rows_change():
+            cluster_config_page.clear_search_input()
+        with allure.step("Check that rows are not filtered"):
+            config_rows = cluster_config_page.get_all_config_rows()
+            assert len(config_rows) == 4, "There should be 4 row"
+        with cluster_config_page.wait_rows_change():
+            cluster_config_page.click_expansion_button_in_group_by_name(params["group_name"])
+        with allure.step("Check that groups are closed"):
+            config_rows = cluster_config_page.get_all_config_rows()
+            assert len(config_rows) == 2, "There should be 2 row"
+
+    @pytest.mark.usefixtures("create_community_cluster")
+    def test_check_cluster_config_page_save_custom_config(self, app_fs):
+        params = {"new_row_value": "test123", "config_name": "test_name"}
+        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        config_row = cluster_config_page.get_all_config_rows()[0]
+        cluster_config_page.set_value_in_row(config_row, params["new_row_value"])
+
+        cluster_config_page.save_new_config_name(params["config_name"])
+        cluster_config_page.select_comparing_history_by_index(0, 0)
+        with allure.step("Check row history"):
+            row_with_history = cluster_config_page.get_all_config_rows()[0]
+            assert (
+                cluster_config_page.get_history_in_row(row_with_history)[0]
+                == params["new_row_value"]
+            ), "History row should contain new value"
+
+    @pytest.mark.usefixtures("create_community_cluster")
+    def test_check_cluster_config_page_reset_config_in_row(self, app_fs):
+        params = {"new_row_value": "test", "old_row_value": "123", "config_name": "test_name"}
+        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        config_row = cluster_config_page.get_all_config_rows()[0]
+        cluster_config_page.set_value_in_row(config_row, params["new_row_value"])
+        cluster_config_page.save_new_config_name(params["config_name"])
+        cluster_config_page.click_reset_in_row(config_row)
+        with allure.step("Check row reset"):
+            assert (
+                cluster_config_page.get_config_row_info(config_row).value == params["old_row_value"]
+            ), f"Name should be {params['old_row_value']}"
