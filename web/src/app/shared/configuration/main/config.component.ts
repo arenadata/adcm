@@ -163,8 +163,16 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   }
 
   changeVersion(url: string, id: number): void {
+    this.isLoading = true;
     this.reset();
-    this._getConfig(`${url}${id}/`).subscribe();
+    this.service.changeVersion(url, id).pipe(
+      tap((c) => this.rawConfig.next(c)),
+      finalize(() => this.isLoading = false),
+      catchError(() => {
+        this.loadingStatus = 'There is no config for this object.';
+        return of(null);
+      })
+    ).subscribe();
   }
 
   compareVersion(ids: number[]): void {

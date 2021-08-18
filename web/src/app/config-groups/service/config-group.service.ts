@@ -17,6 +17,10 @@ import { getRandomColor } from '@app/core/types';
 export class ConfigGroupService implements IConfigService {
   constructor(private api: ApiService) { }
 
+  changeVersion(url: string, id: number): Observable<IConfig> {
+        throw new Error('Method not implemented.');
+    }
+
   getConfig(url: string): Observable<IConfig> {
     return this.api.get<IConfigResponse>(url).pipe(
       switchMap((config) => this.api.get<IConfig>(config.current))

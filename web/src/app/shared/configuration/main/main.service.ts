@@ -73,6 +73,10 @@ export class MainService {
     return this.configService.getConfig(url);
   }
 
+  changeVersion(url: string, id: number) {
+    return this.configService.changeVersion(url, id);
+  }
+
   filterApply(options: TFormOptions[], search: ISearchParam) {
     this.fields.filterApply(options, search);
   }

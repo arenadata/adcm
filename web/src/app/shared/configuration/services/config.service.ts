@@ -22,9 +22,11 @@ export interface IConfigListResponse {
 export interface IConfigService {
   getConfig(url: string): Observable<IConfig>;
 
-  getHistoryList(url: string, currentVersionId: number): Observable<CompareConfig[]>
+  getHistoryList(url: string, currentVersionId: number): Observable<CompareConfig[]>;
 
-  send(url: string, data: any): Observable<IConfig>
+  send(url: string, data: any): Observable<IConfig>;
+
+  changeVersion(url: string, id: number): Observable<IConfig>;
 }
 
 @Injectable({
@@ -32,6 +34,10 @@ export interface IConfigService {
 })
 export class ConfigService implements IConfigService {
   constructor(private api: ApiService) { }
+
+  changeVersion(url: string, id: number): Observable<IConfig> {
+    return this.api.get<IConfig>(`${url}history/${id}/`);
+  }
 
   getConfig(url: string): Observable<IConfig> {
     return this.api.get<IConfig>(`${url}current/`);
