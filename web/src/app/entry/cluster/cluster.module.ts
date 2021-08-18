@@ -60,7 +60,7 @@ const clusterRoutes: Routes = [
     ],
   },
   {
-    path: ':cluster/configgroup/:configgroup',
+    path: ':cluster/group_configs/:group_configs',
     canActivate: [AuthGuard],
     canActivateChild: [AuthGuard],
     component: DetailComponent,
