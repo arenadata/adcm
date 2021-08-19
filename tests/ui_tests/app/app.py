@@ -101,12 +101,13 @@ class ADCMTest:
     def base_page(self):
         self.driver.get(self.adcm.url)
 
-    @allure.step("Open new tab")
+    @allure.step("Open a new tab")
     def new_tab(self):
         self.driver.execute_script("window.open('');")
-        # close the *old* window
-        self.driver.switch_to.window(self.driver.window_handles[0])
-        self.driver.close()
+        # close all tabs
+        for tab in self.driver.window_handles[:-1]:
+            self.driver.switch_to.window(tab)
+            self.driver.close()
         # set focus to the newly created window
         self.driver.switch_to.window(self.driver.window_handles[-1])
         self.driver.delete_all_cookies()
