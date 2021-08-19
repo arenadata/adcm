@@ -23,7 +23,6 @@ from tests.ui_tests.app.page.cluster.locators import (
     ClusterServicesLocators,
     ClusterHostLocators,
     ClusterComponentsLocators,
-    ClusterConfigLocators,
 )
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
@@ -34,6 +33,7 @@ from tests.ui_tests.app.page.common.common_locators import (
     ObjectPageLocators,
     ObjectPageMenuLocators,
 )
+from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.dialogs import (
     ActionDialog,
@@ -224,93 +224,12 @@ class ClusterConfigPage(ClusterPageMixin):
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
         ClusterMainLocators.text,
-        ClusterConfigLocators.description_input,
-        ClusterConfigLocators.search_input,
-        ClusterConfigLocators.advanced_chbx,
-        ClusterConfigLocators.save_btn,
-        ClusterConfigLocators.history_btn,
+        CommonConfigMenu.description_input,
+        CommonConfigMenu.search_input,
+        CommonConfigMenu.advanced_label,
+        CommonConfigMenu.save_btn,
+        CommonConfigMenu.history_btn,
     ]
-
-    def fill_search_input(self, text: str):
-        self.find_element(ClusterConfigLocators.search_input).clear()
-        self.send_text_to_element(ClusterConfigLocators.search_input, text)
-
-    def click_save_btn(self):
-        self.find_and_click(ClusterConfigLocators.save_btn)
-
-    def click_history_btn(self):
-        self.find_and_click(ClusterConfigLocators.history_btn)
-
-    def select_comparing_history_by_index(self, index_from: int, index_to: int):
-        self.click_history_btn()
-        self.wait_element_visible(ClusterConfigLocators.HistoryRow.history_select).click()
-
-        def click_option(index):
-            self.wait_element_visible(ClusterConfigLocators.HistoryRow.option)
-            self.find_elements(ClusterConfigLocators.HistoryRow.option)[index].click()
-
-        click_option(index_from)
-        self.find_and_click(ClusterConfigLocators.HistoryRow.compare_select)
-        click_option(index_to)
-
-    @allure.step("Save config with name {config_name}")
-    def save_new_config_name(self, config_name: str):
-        self.find_element(ClusterConfigLocators.description_input).clear()
-        self.send_text_to_element(ClusterConfigLocators.description_input, config_name)
-        self.click_save_btn()
-
-    def clear_search_input(self):
-        self.find_and_click(ClusterConfigLocators.search_input_clear_btn)
-
-    def get_all_config_rows(self):
-        return [r for r in self.find_elements(ClusterConfigLocators.row) if r.is_displayed()]
-
-    def get_all_config_groups(self):
-        return self.find_elements(ClusterConfigLocators.group)
-
-    @contextmanager
-    def wait_rows_change(self):
-        """Wait changing rows amount."""
-
-        current_amount = len(self.get_all_config_rows())
-        yield
-
-        def wait_scroll():
-            assert (
-                len(self.get_all_config_rows()) != current_amount
-            ), "Amount of rows on the page hasn't changed"
-
-        wait_until_step_succeeds(wait_scroll, period=1, timeout=10)
-
-    @allure.step("Get info by row")
-    def get_config_row_info(self, row: WebElement):
-        return ConfigRowInfo(
-            name=self.find_child(row, ClusterConfigLocators.Row.name).text,
-            value=self.find_child(row, ClusterConfigLocators.Row.value).get_attribute('value'),
-        )
-
-    @allure.step("Click expansion button in group {group_name}")
-    def click_expansion_button_in_group_by_name(self, group_name: str):
-        config_groups = self.get_all_config_groups()
-        for config_group in config_groups:
-            if self.find_child(config_group, ClusterConfigLocators.Group.name).text == group_name:
-                self.find_child(config_group, ClusterConfigLocators.Group.expansion_btn).click()
-                return
-        raise AssertionError(f"Group name '{group_name}' not found in issues")
-
-    @allure.step("Set value {value} in row")
-    def set_value_in_row(self, row: WebElement, value: str):
-        row_value_element = self.find_child(row, ClusterConfigLocators.Row.value)
-        row_value_element.clear()
-        row_value_element.send_keys(value)
-
-    @allure.step("Get row history")
-    def get_history_in_row(self, row: WebElement):
-        return [h.text for h in self.find_children(row, ClusterConfigLocators.Row.history)]
-
-    @allure.step("Click reset in row")
-    def click_reset_in_row(self, row: WebElement):
-        self.find_child(row, ClusterConfigLocators.Row.reset_btn).click()
 
 
 class ClusterHostPage(ClusterPageMixin):

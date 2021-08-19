@@ -9,13 +9,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import allure
+from contextlib import contextmanager
+from dataclasses import dataclass
+from typing import Optional
 
-from selenium.webdriver.common.keys import Keys
+import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.remote.webdriver import WebElement
 
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
+
+
+@dataclass
+class ConfigRowInfo:
+    """Information from config row on Config page"""
+
+    name: str
+    value: str
 
 
 class CommonConfigMenuObj(BasePageObject):
@@ -79,37 +91,61 @@ class CommonConfigMenuObj(BasePageObject):
 
     @allure.step('Check input of field "{adcm_test_attr_value}" has value "{expected_value}"')
     def assert_input_value_is(
-        self, expected_value: str, adcm_test_attr_value: str, is_password: bool = False
+        self,
+        expected_value: str,
+        adcm_test_attr_value: Optional[str] = None,
+        row: Optional[WebElement] = None,
+        is_password: bool = False,
     ):
         """
         Assert that value in field is expected_value (using retries)
 
         :param expected_value: Value expected to be in input field
         :param adcm_test_attr_value: Value of attribute "adcm_test" to generate Locator
+        :param row: row with required input
         :param is_password: Is field password/confirmation
         """
 
         def assert_value():
-            assert expected_value == self.get_input_value(
-                adcm_test_attr_value, is_password
-            ), f'Value in {adcm_test_attr_value} field should be empty after reset'
+            input_value = (
+                self.get_input_value(adcm_test_attr_value, is_password)
+                if adcm_test_attr_value
+                else self.get_config_row_info(row).value
+            )
+            assert (
+                expected_value == input_value
+            ), f'Expected value was {expected_value} but presented is {input_value}'
 
         wait_until_step_succeeds(assert_value, timeout=4, period=0.5)
 
-    def reset_to_default(self, adcm_test: str):
+    def reset_to_default(self, adcm_test: Optional[str] = None, row: Optional[WebElement] = None):
         """Click reset button"""
-        self.find_and_click(self.config.reset_btn(adcm_test))
+        if adcm_test:
+            self.find_and_click(self.config.reset_btn(adcm_test))
+        else:
+            self.find_child(row, CommonConfigMenu.ConfigRow.reset_btn)
 
     @allure.step('Type "{value}" to {adcm_test} field')
-    def type_in_config_field(self, value: str, adcm_test: str, clear: bool = False):
+    def type_in_config_field(
+        self,
+        value: str,
+        adcm_test: Optional[str] = None,
+        row: Optional[WebElement] = None,
+        clear: bool = False,
+    ):
         """
         Send keys to config value input
 
         :param value: keys to send
         :param adcm_test: value of @adcm_test required for finding input
+        :param row: row with required input
         :param clear: clean input before sending keys or not
         """
-        field = self.find_element(self.config.field_input(adcm_test))
+        field = (
+            self.find_element(self.config.field_input(adcm_test))
+            if adcm_test
+            else self.find_child(row, CommonConfigMenu.ConfigRow.value)
+        )
         if clear:
             field.clear()
         field.send_keys(value)
@@ -159,3 +195,41 @@ class CommonConfigMenuObj(BasePageObject):
         """
         message = f'Confirm [{name}] is required!'
         self.check_element_should_be_visible(self.config.field_error(message))
+
+    def get_all_config_rows(self):
+        return [r for r in self.find_elements(CommonConfigMenu.config_row) if r.is_displayed()]
+
+    @contextmanager
+    def wait_rows_change(self):
+        """Wait changing rows amount."""
+
+        current_amount = len(self.get_all_config_rows())
+        yield
+
+        def wait_scroll():
+            assert (
+                len(self.get_all_config_rows()) != current_amount
+            ), "Amount of rows on the page hasn't changed"
+
+        wait_until_step_succeeds(wait_scroll, period=1, timeout=10)
+
+    @allure.step("Get info by row")
+    def get_config_row_info(self, row: WebElement):
+        return ConfigRowInfo(
+            name=self.find_child(row, CommonConfigMenu.ConfigRow.name).text,
+            value=self.find_child(row, CommonConfigMenu.ConfigRow.value).get_attribute('value'),
+        )
+
+    def clear_search_input(self):
+        self.find_and_click(CommonConfigMenu.search_input_clear_btn)
+
+    @allure.step("Get row history")
+    def get_history_in_row(self, row: WebElement):
+        return [h.text for h in self.find_children(row, CommonConfigMenu.ConfigRow.history)]
+
+    @allure.step("Wait row with history value {value}")
+    def wait_history_row_with_value(self, row: WebElement, value: str):
+        def assert_value():
+            assert self.get_history_in_row(row)[0] == value, "History row should contain old value"
+
+        wait_until_step_succeeds(assert_value, timeout=4, period=0.5)
