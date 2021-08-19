@@ -62,6 +62,10 @@ MSG_MANDATORY_ARGS = "Arguments {} are mandatory. Bad Dobby!"
 MSG_NO_ROUTE = "Incorrect combination of args. Bad Dobby!"
 MSG_WRONG_SERVICE = "Do not try to change one service from another."
 MSG_NO_SERVICE_NAME = "You must specify service name in arguments."
+MSG_NO_MULTI_STATE_TO_DELETE =(
+    "You try to delete absent multi_state. You should define missing_ok as True "
+    "or choose an exsisting multi_state"
+)
 
 
 def check_context_type(task_vars, *context_type, err_msg=None):
@@ -386,3 +390,51 @@ def set_component_config_by_name(cluster_id, service_id, component_name, service
 def set_component_config(component_id, keys, value):
     obj = ServiceComponent.obj.get(id=component_id)
     return set_object_config(obj, keys, value)
+
+
+def check_missing_ok(obj: ADCMEntity, multi_state: str, missing_ok):
+    if missing_ok is False:
+        if multi_state not in obj.multi_state:
+            raise AnsibleError(MSG_NO_MULTI_STATE_TO_DELETE)
+
+
+def _unset_object_multi_state(obj: ADCMEntity, multi_state: str, missing_ok) -> ADCMEntity:
+    check_missing_ok(obj, multi_state, missing_ok)
+    obj.unset_multi_state(multi_state, ctx.event)
+    ctx.event.send_state()
+    return obj
+
+
+def unset_cluster_multi_state(cluster_id, multi_state, missing_ok):
+    obj = Cluster.obj.get(id=cluster_id)
+    return _unset_object_multi_state(obj, multi_state, missing_ok)
+
+
+def unset_service_multi_state(cluster_id, service_name, multi_state, missing_ok):
+    obj = get_service_by_name(cluster_id, service_name)
+    return _unset_object_multi_state(obj, multi_state, missing_ok)
+
+
+def unset_service_multi_state_by_id(cluster_id, service_id, multi_state, missing_ok):
+    obj = ClusterObject.obj.get(id=service_id, cluster__id=cluster_id, prototype__type='service')
+    return _unset_object_multi_state(obj, multi_state, missing_ok)
+
+
+def unset_component_multi_state_by_name(cluster_id, service_id, component_name, service_name, multi_state, missing_ok):
+    obj = get_component_by_name(cluster_id, service_id, component_name, service_name)
+    return _unset_object_multi_state(obj, multi_state, missing_ok)
+
+
+def unset_component_multi_state(component_id, multi_state, missing_ok):
+    obj = ServiceComponent.obj.get(id=component_id)
+    return _unset_object_multi_state(obj, multi_state, missing_ok)
+
+
+def unset_provider_multi_state(provider_id, multi_state, missing_ok):
+    obj = HostProvider.obj.get(id=provider_id)
+    return _unset_object_multi_state(obj, multi_state, missing_ok)
+
+
+def unset_host_multi_state(host_id, multi_state, missing_ok):
+    obj = Host.obj.get(id=host_id)
+    return _unset_object_multi_state(obj, multi_state, missing_ok)
