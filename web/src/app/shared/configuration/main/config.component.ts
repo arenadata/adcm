@@ -102,11 +102,14 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     this.tools.isAdvanced = this.fields.isAdvanced;
     this.tools.description.setValue(this.rawConfig.value.description);
     this.filter(this.tools.filterParams);
-    this.service.getHistoryList(this.configUrl, this.rawConfig.value.id).subscribe((h) => {
-      this.historyComponent.compareConfig = h;
-      this.tools.disabledHistory = !h.length;
-      this.cd.detectChanges();
-    });
+
+    if (!this.isGroupConfig) {
+      this.service.getHistoryList(this.configUrl, this.rawConfig.value.id).subscribe((h) => {
+        this.historyComponent.compareConfig = h;
+        this.tools.disabledHistory = !h.length;
+        this.cd.detectChanges();
+      });
+    }
   };
 
   filter(c: ISearchParam): void {

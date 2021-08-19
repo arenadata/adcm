@@ -5,7 +5,7 @@
 
 </app-tools>
 
-<div [@history]="historyShow ? 'showTools' : 'hideTools'">
+<div [@history]="(historyShow) ? 'showTools' : 'hideTools'">
   <app-history #history (compare)="compareVersion($event)" (version)="changeVersion(configUrl, $event)"></app-history>
 </div>
 
@@ -14,6 +14,7 @@
 </div>
 
 <div class="fields" [@history]="historyShow ? 'show' : 'hide'">
-  <app-config-fields #fls [model]="rawConfig | async" [showCheckbox]="isGroupConfig" (event)="onReady()"></app-config-fields>
+  <app-config-fields #fls [model]="rawConfig | async" [showCheckbox]="isGroupConfig"
+                     (event)="onReady()"></app-config-fields>
 </div>
 
