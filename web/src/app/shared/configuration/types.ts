@@ -97,6 +97,7 @@ export interface IConfig {
   description?: string;
   config: IFieldStack[];
   attr?: IConfigAttr;
+  obj_ref?: number;
 }
 
 /**

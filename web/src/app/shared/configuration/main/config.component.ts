@@ -147,7 +147,8 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
           ...this.fields.attr,
           group_keys: { ...this.fields.groupsForm.value }
         },
-        description: this.tools.description.value
+        description: this.tools.description.value,
+        obj_ref: this.rawConfig.value.obj_ref
       };
       this.isLoading = true;
 
