@@ -1,8 +1,8 @@
 import { Injectable, InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
-import { EntityService } from '../../abstract/entity-service';
-import { ApiService } from '../../core/api';
-import { environment } from '../../../environments/environment';
+import { EntityService } from '@app/abstract/entity-service';
+import { ApiService } from '@app/core/api';
+import { environment } from '@env/environment';
 import { ConfigGroup } from '@app/config-groups/model/config-group.model';
 import { IListService, ListInstance } from '@app/shared/components/list/list-service-token';
 import { ParamMap } from '@angular/router';

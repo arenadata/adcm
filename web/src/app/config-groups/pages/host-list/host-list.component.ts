@@ -6,10 +6,10 @@ import { ListFactory } from '../../../factories/list-factory';
 import { IHost } from '../../../models/host';
 import { LIST_SERVICE_PROVIDER } from '../../../shared/components/list/list-service-token';
 import { ADD_SERVICE_PROVIDER } from '../../../shared/add-component/add-service-token';
-import { ConfigGroupHostListService } from '../../service/config-group-host-list.service';
-import { ConfigGroupHostAddService } from '../../service/config-group-host-add.service';
+import { ConfigGroupHostListService } from '../../service';
+import { ConfigGroupHostAddService } from '../../service';
 import { BaseFormDirective } from '../../../shared/add-component';
-import { AddHostToConfigGroupComponent } from '../../components/config-group-host-add/config-group-host-add.component';
+import { AddHostToConfigGroupComponent } from '../../components';
 
 
 @Component({

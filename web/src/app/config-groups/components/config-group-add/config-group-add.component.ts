@@ -13,9 +13,9 @@ import { Component, forwardRef, OnInit } from '@angular/core';
 
 import { BaseFormDirective } from '../../../shared/add-component';
 import { ADD_SERVICE_PROVIDER } from '../../../shared/add-component/add-service-token';
-import { ConfigGroupAddService } from '../../service/config-group-add.service';
+import { ConfigGroupAddService } from '../../service';
 import { clearEmptyField } from '../../../core/types';
-import { ConfigGroup } from '../../model/config-group.model';
+import { ConfigGroup } from '../../model';
 import { take } from 'rxjs/operators';
 
 @Component({

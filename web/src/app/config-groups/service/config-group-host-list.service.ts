@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { EntityService } from '../../abstract/entity-service';
 import { ApiService } from '../../core/api';
 import { convertToParamMap, ParamMap } from '@angular/router';
 import { IListService, ListInstance } from '../../shared/components/list/list-service-token';
@@ -14,7 +13,7 @@ import { environment } from '../../../environments/environment';
 @Injectable({
   providedIn: 'root'
 })
-export class ConfigGroupHostListService extends EntityService<Host> implements IListService<Host> {
+export class ConfigGroupHostListService implements IListService<Host> {
 
   current: ListInstance;
 
@@ -22,7 +21,6 @@ export class ConfigGroupHostListService extends EntityService<Host> implements I
     protected api: ApiService,
     protected cluster: ClusterService
   ) {
-    super(api);
   }
 
 
@@ -46,13 +44,6 @@ export class ConfigGroupHostListService extends EntityService<Host> implements I
   initInstance(): ListInstance {
     this.current = { typeName: 'host2configgroup', columns: ['name', 'remove'] };
     return this.current;
-  }
-
-  get(id: number): Observable<Host> {
-    // ToDo
-    console.log('delete');
-
-    return of(null);
   }
 
   delete(row: Host): Observable<Object> {

@@ -16,7 +16,7 @@ import { Observable } from 'rxjs';
 
 import { BaseFormDirective } from '../../../shared/add-component';
 import { MatDialog } from '@angular/material/dialog';
-import { ConfigGroupHostAddService } from '../../service/config-group-host-add.service';
+import { ConfigGroupHostAddService } from '../../service';
 import { ClusterService } from '../../../core/services/cluster.service';
 
 @Component({

@@ -8,7 +8,7 @@ import { Observable } from 'rxjs';
 import { of } from 'rxjs/internal/observable/of';
 import { ApiService } from '../../core/api';
 import { environment } from '../../../environments/environment';
-import { ConfigGroup } from '../model/config-group.model';
+import { ConfigGroup } from '../model';
 
 const newConfigGroupForm = () =>
   new FormGroup({
