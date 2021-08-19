@@ -119,7 +119,12 @@ def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
     except AttributeError:
         # rep_setup and rep_call attributes are generated in runtime and can be absent
         pass
-    web_driver.new_tab()
+    try:
+        web_driver.new_tab()
+    except WebDriverException:
+        # this exception could be raised in case
+        # when driver was crashed for some reason
+        web_driver.create_driver()
 
 
 @pytest.fixture(scope='session')
