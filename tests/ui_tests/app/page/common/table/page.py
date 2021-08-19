@@ -22,6 +22,7 @@ from selenium.webdriver.remote.webelement import WebElement
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
+from tests.ui_tests.utils import assert_enough_rows
 
 
 class CommonTableObj(BasePageObject):
@@ -47,11 +48,11 @@ class CommonTableObj(BasePageObject):
 
     def get_row(self, row_num: int = 0) -> WebElement:
         def table_has_enough_rows():
-            self.__assert_enough_rows(row_num, self.row_count)
+            assert_enough_rows(row_num, self.row_count)
 
         wait_until_step_succeeds(table_has_enough_rows, timeout=5, period=0.1)
         rows = self.get_all_rows()
-        self.__assert_enough_rows(row_num, len(rows))
+        assert_enough_rows(row_num, len(rows))
         return rows[row_num]
 
     def click_previous_page(self):
@@ -108,13 +109,3 @@ class CommonTableObj(BasePageObject):
         assert (
             self.row_count == params["fist_page_cluster_amount"]
         ), f"Previous page should contains {params['fist_page_cluster_amount']} items"
-
-    @staticmethod
-    def __assert_enough_rows(required_row_num: int, row_count: int):
-        """
-        Assert that row "is presented" by comparing row index and amount of rows
-        Provide row as index (starting with 0)
-        """
-        assert (
-            required_row_num + 1 <= row_count
-        ), f"Table has only {row_count} rows when row #{required_row_num} was requested"

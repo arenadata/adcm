@@ -38,6 +38,7 @@ from tests.ui_tests.app.page.common.header import (
     AuthorizedHeaderLocators,
 )
 from tests.ui_tests.app.page.common.popups.locator import CommonPopupLocators
+from tests.ui_tests.utils import assert_enough_rows
 
 
 class BasePageObject:
@@ -128,7 +129,7 @@ class BasePageObject:
             )
 
     def find_child(self, element: WebElement, child: Locator, timeout: int = None) -> WebElement:
-        """Find child (or children) element on current page."""
+        """Find child element on current page."""
 
         loc_timeout = timeout or self.default_loc_timeout
         with allure.step(f'Find element "{child.name}" on page'):
@@ -481,22 +482,13 @@ class PageHeader(BasePageObject):
         """Get single job row from *opened* popup"""
 
         def popup_table_has_enough_rows():
-            self.__assert_enough_rows(row_num, self.popup_jobs_row_count)
+            assert_enough_rows(row_num, self.popup_jobs_row_count)
 
-        wait_until_step_succeeds(popup_table_has_enough_rows, timeout=5, period=0.1)
+        with allure.step('Check popup table has enough rows'):
+            wait_until_step_succeeds(popup_table_has_enough_rows, timeout=5, period=0.1)
         rows = self.get_job_rows_from_popup()
-        self.__assert_enough_rows(row_num, len(rows))
+        assert_enough_rows(row_num, len(rows))
         return rows[row_num]
-
-    @staticmethod
-    def __assert_enough_rows(required_row_num: int, row_count: int):
-        """
-        Assert that row "is presented" by comparing row index and amount of rows
-        Provide row as index (starting with 0)
-        """
-        assert (
-            required_row_num + 1 <= row_count
-        ), f"Popup table has only {row_count} rows when row #{required_row_num} was requested"
 
 
 class PageFooter(BasePageObject):

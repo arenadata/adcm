@@ -220,3 +220,13 @@ def check_host_value(key: str, actual_value, expected_value):
     assert (
         actual_value == expected_value
     ), f"Host {key} should be {expected_value}, not {actual_value}"
+
+
+def assert_enough_rows(required_row_num: int, row_count: int):
+    """
+    Assert that row "is presented" by comparing row index and amount of rows
+    Provide row as index (starting with 0)
+    """
+    assert (
+        required_row_num + 1 <= row_count
+    ), f"Table has only {row_count} rows when row #{required_row_num} was requested"
