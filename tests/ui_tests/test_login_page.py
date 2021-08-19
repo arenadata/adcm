@@ -17,6 +17,7 @@ from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
 from tests.ui_tests.app.page.login.page import LoginPage
 
 
+@pytest.mark.smoke()
 def test_check_login_to_adcm(app_fs, adcm_credentials):
     login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
     login_page.check_all_elements()
@@ -40,6 +41,7 @@ def test_check_login_button_unavailable(app_fs, name, password):
     login_page.check_check_login_button_unavailable()
 
 
+@pytest.mark.smoke()
 @pytest.mark.parametrize(
     ("name", "password"),
     [("admin1", "admin"), ("admin", "admin1")],
@@ -52,6 +54,7 @@ def test_check_error_in_login(app_fs, name, password):
     login_page.check_error_message(params["error_text"])
 
 
+@pytest.mark.smoke()
 def test_check_header_links_in_login_page_unauthorised(app_fs):
     params = {"error_text": "User is not authorized!"}
     login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
