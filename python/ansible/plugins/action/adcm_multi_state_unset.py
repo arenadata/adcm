@@ -37,7 +37,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1', 'supported_by': 'Arenadata'}
 DOCUMENTATION = r'''
 ---
 module: adcm_multi_state_set
-short_description: Unset one state from multi_state field and raise Error 
+short_description: Unset one state from multi_state field and raise Error
 description:
   - This is special ADCM only module which is usefull for deleting multi_state from various ADCM objects.
   - There is support of cluster, service, host, component and providers states
