@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from contextlib import contextmanager
 from typing import (
     Optional,
     List,
@@ -38,6 +38,7 @@ from tests.ui_tests.app.page.common.header import (
     AuthorizedHeaderLocators,
 )
 from tests.ui_tests.app.page.common.popups.locator import CommonPopupLocators
+from tests.ui_tests.utils import assert_enough_rows
 
 
 class BasePageObject:
@@ -281,6 +282,23 @@ class BasePageObject:
                 message=f"locator {el_name} hasn't hide for {loc_timeout} seconds",
             )
 
+    def wait_element_attribute(
+        self, locator: Locator, attribute: str, expected_value: str, timeout: int = 5
+    ):
+        """
+        Wait for the element to have `expected_value` in the locator's attribute
+        """
+
+        def assert_attribute_value():
+            assert (
+                actual_value := self.find_element(locator).get_attribute(attribute)
+            ) == expected_value, (
+                f'Attribute {attribute} of element "{locator}" '
+                f'should be {expected_value}, not {actual_value}'
+            )
+
+        wait_until_step_succeeds(assert_attribute_value, period=0.5, timeout=timeout)
+
     def wait_page_is_opened(self, timeout: int = None):
         """Wait for current page to be opened"""
         timeout = timeout or self.default_page_timeout
@@ -334,6 +352,10 @@ class PageHeader(BasePageObject):
 
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url)
+
+    @property
+    def popup_jobs_row_count(self):
+        return len(self.get_job_rows_from_popup())
 
     @allure.step('Check elements in header for authorized user')
     def check_auth_page_elements(self):
@@ -443,6 +465,30 @@ class PageHeader(BasePageObject):
         return self.find_element(AuthorizedHeaderLocators.JobPopup.in_progress_jobs).text.split(
             "\n"
         )[1]
+
+    @contextmanager
+    def open_jobs_popup(self):
+        """Open jobs popup by hovering icon and hover JOBS menu item afterwards"""
+        self.hover_element(AuthorizedHeaderLocators.job_block_previous)
+        yield
+        self.hover_element(AuthorizedHeaderLocators.jobs)
+
+    def get_job_rows_from_popup(self) -> List[WebElement]:
+        """Get job rows from *opened* popup"""
+        self.wait_element_visible(AuthorizedHeaderLocators.job_popup)
+        return self.find_elements(AuthorizedHeaderLocators.JobPopup.job_row)
+
+    def get_single_job_row_from_popup(self, row_num: int = 0) -> WebElement:
+        """Get single job row from *opened* popup"""
+
+        def popup_table_has_enough_rows():
+            assert_enough_rows(row_num, self.popup_jobs_row_count)
+
+        with allure.step('Check popup table has enough rows'):
+            wait_until_step_succeeds(popup_table_has_enough_rows, timeout=5, period=0.1)
+        rows = self.get_job_rows_from_popup()
+        assert_enough_rows(row_num, len(rows))
+        return rows[row_num]
 
 
 class PageFooter(BasePageObject):
