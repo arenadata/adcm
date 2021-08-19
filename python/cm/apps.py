@@ -11,13 +11,11 @@
 # limitations under the License.
 # -*- coding: utf-8 -*-
 
-import casestyle
+from functools import partial
 
 from django.apps import AppConfig
 from django.db.models.signals import post_save, post_delete, post_migrate
-
-from cm.status_api import post_event
-
+from adwp_events.signals import model_change, model_delete
 
 ops_model_list = [
     'adcm',
@@ -78,15 +76,6 @@ def fill_role(apps, **kwargs):
     fill_admin_role(Role, Permission)
 
 
-def get_names(sender, **kwargs):
-    '''getting model name, module name and object'''
-    if hasattr(sender, 'get_endpoint'):
-        name = sender.get_endpoint()
-    else:
-        name = casestyle.kebabcase(sender.__name__)
-    return (name, sender.__module__, kwargs['instance'])
-
-
 def filter_out_event(module, name):
     # We filter the sending of events only for the cm application
     if module[0:2] != 'cm':
@@ -96,31 +85,12 @@ def filter_out_event(module, name):
     return False
 
 
-def model_change(sender, **kwargs):
-    '''post_save handler'''
-    name, module, obj = get_names(sender, **kwargs)
-    if filter_out_event(module, name):
-        return
-    action = 'update'
-    if kwargs['created']:
-        action = 'create'
-    post_event(action, name, obj.pk, {'module': module})
-
-
-def model_delete(sender, **kwargs):
-    '''post_delete handler'''
-    name, module, obj = get_names(sender, **kwargs)
-    # We filter the sending of events only for the adss project and adwp applications
-    if filter_out_event(module, name):
-        return
-    action = 'delete'
-    post_event(action, name, obj.pk, {'module': module})
-
-
 class CmConfig(AppConfig):
     name = 'cm'
+    model_change = partial(model_change, filter_out=filter_out_event)
+    model_delete = partial(model_delete, filter_out=filter_out_event)
 
     def ready(self):
         post_migrate.connect(fill_role, sender=self)
-        post_save.connect(model_change, dispatch_uid='model_change')
-        post_delete.connect(model_delete, dispatch_uid='model_delete')
+        post_save.connect(self.model_change, dispatch_uid='model_change')
+        post_delete.connect(self.model_delete, dispatch_uid='model_delete')
