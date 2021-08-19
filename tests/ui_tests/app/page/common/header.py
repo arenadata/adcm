@@ -66,6 +66,12 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
         )
         failed_jobs = Locator(By.XPATH, "//div[@mattooltip='Show failed jobs']", "Failed jobs")
 
+        job_row = Locator(
+            By.XPATH, "//div/div[contains(@class, 'notification')]", "Job row in popup list"
+        )
+        job_status = Locator(By.XPATH, "./mat-icon", "Job status in job row")
+        job_name = Locator(By.XPATH, "./a", "Job name in job row")
+
     class HelpPopup:
         """ADCM header popup with help links"""
 
