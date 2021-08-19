@@ -9,6 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# pylint:disable=redefined-outer-name
 import os
 from typing import (
     List,
@@ -46,9 +48,6 @@ from tests.ui_tests.app.page.host_list.page import HostListPage
 from tests.ui_tests.app.page.host_list.page import HostRowInfo
 from tests.ui_tests.utils import wait_and_assert_ui_info
 from .utils import check_host_value
-
-# pylint: disable=W0621
-
 
 # defaults
 HOST_FQDN = 'best-host'
@@ -120,6 +119,7 @@ def upload_and_create_cluster(cluster_bundle: Bundle) -> Tuple[Bundle, Cluster]:
 
 
 @pytest.fixture()
+# pylint: disable-next=unused-argument
 def page(app_fs: ADCMTest, login_to_adcm_over_api) -> HostListPage:
     return HostListPage(app_fs.driver, app_fs.adcm.url).open()
 
@@ -197,11 +197,8 @@ def test_create_host_with_bundle_upload(page: HostListPage, bundle_archive: str)
     )
 
 
-def test_create_bonded_to_cluster_host(
-    page: HostListPage,
-    upload_and_create_provider: Tuple[Bundle, Provider],
-    upload_and_create_cluster: Tuple[Bundle, Provider],
-):
+@pytest.mark.usefixtures("upload_and_create_provider", "upload_and_create_cluster")
+def test_create_bonded_to_cluster_host(page: HostListPage):
     """Create host bonded to cluster"""
     host_fqdn = 'cluster-host'
     expected_values = {
@@ -228,11 +225,8 @@ def test_host_list_pagination(page: HostListPage):
     page.table.check_pagination(hosts_on_second_page)
 
 
-def test_bind_host_to_cluster(
-    page: HostListPage,
-    upload_and_create_provider: Tuple[Bundle, Provider],
-    upload_and_create_cluster: Tuple[Bundle, Provider],
-):
+@pytest.mark.usefixtures("upload_and_create_provider", "upload_and_create_cluster")
+def test_bind_host_to_cluster(page: HostListPage):
     """Create host and go to cluster from host list"""
     expected_values = {
         'fqdn': HOST_FQDN,
@@ -276,11 +270,7 @@ def test_open_host_from_host_list(
 
 
 @pytest.mark.usefixtures("_create_host")
-def test_delete_host(
-    sdk_client_fs: ADCMClient,
-    page: HostListPage,
-    upload_and_create_provider: Tuple[Bundle, Provider],
-):
+def test_delete_host(page: HostListPage):
     """Create host and delete it"""
     expected_values = {
         'fqdn': HOST_FQDN,
@@ -294,10 +284,7 @@ def test_delete_host(
 
 
 @pytest.mark.usefixtures("_create_bonded_host")
-def test_delete_bonded_host(
-    sdk_client_fs: ADCMClient,
-    page: HostListPage,
-):
+def test_delete_bonded_host(page: HostListPage):
     """Host shouldn't be deleted"""
     page.check_element_should_be_visible(HostListLocators.HostTable.row)
     page.open_host_creation_popup()
@@ -311,7 +298,6 @@ def test_delete_bonded_host(
 @pytest.mark.usefixtures('_create_host')
 def test_open_menu(
     upload_and_create_provider: Tuple[Bundle, Provider],
-    upload_and_create_cluster,
     page: HostListPage,
     menu: str,
 ):

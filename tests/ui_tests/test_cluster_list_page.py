@@ -42,8 +42,7 @@ from tests.ui_tests.app.page.service.page import (
     ServiceConfigPage,
     ServiceImportPage,
 )
-from tests.ui_tests.utils import wait_and_assert_ui_info
-from .utils import check_host_value
+from tests.ui_tests.utils import wait_and_assert_ui_info, check_host_value
 
 BUNDLE_COMMUNITY = "cluster_community"
 BUNDLE_ENTERPRISE = "cluster_enterprise"
@@ -59,24 +58,24 @@ PROVIDER_WITH_ISSUE_NAME = 'provider_with_issue'
 COMPONENT_NAME = "first"
 
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,no-self-use
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
 
 
 @pytest.fixture()
-def create_community_cluster(sdk_client_fs: ADCMClient, app_fs):
+def create_community_cluster(sdk_client_fs: ADCMClient):
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
     return bundle.cluster_create(name=CLUSTER_NAME)
 
 
 @pytest.fixture()
-def _create_community_cluster_with_service(sdk_client_fs: ADCMClient, app_fs):
+def _create_community_cluster_with_service(sdk_client_fs: ADCMClient):
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
     bundle.cluster_create(name=CLUSTER_NAME).service_add(name=SERVICE_NAME)
 
 
 @pytest.fixture()
-def _create_import_cluster_with_service(sdk_client_fs: ADCMClient, app_fs):
+def _create_import_cluster_with_service(sdk_client_fs: ADCMClient):
     params = {
         "import_cluster_name": "Import cluster",
         "import_service_name": "Pre-uploaded Dummy service to import",
@@ -103,21 +102,19 @@ def provider_bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
 
 
 @pytest.fixture()
-@allure.title("Create provider")
+@allure.title("Create provider from uploaded bundle")
 def upload_and_create_provider(provider_bundle) -> Provider:
     return provider_bundle.provider_create(PROVIDER_NAME)
 
 
 @pytest.fixture()
-def _create_community_cluster_with_host(
-    sdk_client_fs: ADCMClient, app_fs, upload_and_create_provider, create_host
-):
+def _create_community_cluster_with_host(sdk_client_fs: ADCMClient, create_host):
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
     bundle.cluster_create(name=CLUSTER_NAME).host_add(create_host)
 
 
 @pytest.fixture()
-def create_community_cluster_with_host_and_service(sdk_client_fs: ADCMClient, app_fs, create_host):
+def create_community_cluster_with_host_and_service(sdk_client_fs: ADCMClient, create_host):
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
     cluster = bundle.cluster_create(name=CLUSTER_NAME)
     cluster.service_add(name=SERVICE_NAME)
@@ -206,7 +203,7 @@ class TestClusterListPage:
             ), "There should be 1 success cluster job in header"
 
     @pytest.mark.usefixtures("_create_import_cluster_with_service")
-    def test_check_cluster_list_page_import_run(self, sdk_client_fs: ADCMClient, app_fs):
+    def test_check_cluster_list_page_import_run(self, app_fs):
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         row = cluster_page.get_row_by_cluster_name(CLUSTER_NAME)
         cluster_page.click_import_btn_in_row(row)
@@ -448,8 +445,8 @@ class TestClusterHostPage:
             ), "No message about host duplication"
 
     @pytest.mark.parametrize('provider_bundle', [PROVIDER_WITH_ISSUE_NAME], indirect=True)
-    @pytest.mark.usefixtures("_create_community_cluster_with_host")
-    def test_check_open_host_issue_from_cluster_host_page(self, app_fs, provider_bundle):
+    @pytest.mark.usefixtures("_create_community_cluster_with_host", "provider_bundle")
+    def test_check_open_host_issue_from_cluster_host_page(self, app_fs):
         params = {"issue_name": "Configuration"}
         cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
         cluster_host_page.wait_page_is_opened()

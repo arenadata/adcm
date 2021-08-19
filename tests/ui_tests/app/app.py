@@ -12,7 +12,6 @@
 
 # Created by a1wen at 27.02.19
 
-# pylint: disable=E0401, E0611, W0611, W0621
 
 import os
 
@@ -84,8 +83,8 @@ class ADCMTest:
         return ClustersList(self)
 
     def wait_for(self, condition: EC, locator: tuple, timer=5):
-        def get_element(el):
-            return WDW(self.driver, timer).until(condition(el))
+        def get_element(element):
+            return WDW(self.driver, timer).until(condition(element))
 
         return get_element(locator)
 

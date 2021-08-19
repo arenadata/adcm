@@ -1,3 +1,16 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# pylint:disable=redefined-outer-name
 import os
 import time
 
@@ -5,7 +18,6 @@ import allure
 import pytest
 from adcm_pytest_plugin.utils import get_data_dir
 
-# pylint: disable=W0611, W0621
 from tests.ui_tests.app.configuration import Configuration
 from tests.ui_tests.app.locators import Common
 
@@ -51,13 +63,8 @@ def service(sdk_client_fs):
 
 @pytest.fixture()
 @allure.step("Open ADCM tab Configuration")
-def ui_config(app_fs, login_to_adcm_over_api, service):
-    return Configuration(
-        app_fs.driver,
-        "{}/cluster/{}/service/{}/config".format(
-            app_fs.adcm.url, service.cluster_id, service.service_id
-        ),
-    )
+def ui_config(app_fs, service, login_to_adcm_over_api):  # pylint: disable=unused-argument
+    return Configuration.from_service(app_fs, service)
 
 
 @pytest.mark.parametrize("required_field", REQUIRED_FIELDS)

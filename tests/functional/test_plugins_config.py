@@ -9,7 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=W0611, W0621
+
+# pylint:disable=redefined-outer-name
 import copy
 
 import allure
@@ -228,15 +229,15 @@ PROVIDERS = list(INITIAL_PROVIDERS_CONFIG.keys())
 
 
 def sparse_matrix(*vectors):
-    lengs = []
-    for a in vectors:
-        lengs.append(len(a))
+    lengths = []
+    for vector in vectors:
+        lengths.append(len(vector))
 
-    max_lengs_vector_idx = lengs.index(max(lengs))
-    for i, _ in enumerate(vectors[max_lengs_vector_idx]):
+    max_lengths_vector_idx = lengths.index(max(lengths))
+    for i, _ in enumerate(vectors[max_lengths_vector_idx]):
         tmp = []
-        for j, a in enumerate(vectors):
-            tmp.append(a[i % lengs[j]])
+        for j, vector in enumerate(vectors):
+            tmp.append(vector[i % lengths[j]])
         yield tuple(tmp)
 
 

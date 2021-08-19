@@ -16,8 +16,10 @@ import unittest
 import requests
 import websocket
 
+from .test_api import ApiTestCase
 
-class TestStatusAPI(unittest.TestCase):
+
+class TestStatusAPI(ApiTestCase):
     # debug = False
     _TOKEN_FILENAME = "/adcm/data/var/secrets.json"
     debug = True
@@ -28,57 +30,30 @@ class TestStatusAPI(unittest.TestCase):
         self._read_key()
 
     def _read_key(self):
-        with open(self._TOKEN_FILENAME, encoding='utf_8') as f:
-            data = json.load(f)
+        with open(self._TOKEN_FILENAME, encoding='utf_8') as file:
+            data = json.load(file)
             self.token = data['token']
-
-    def api(self, path, res, data=''):
-        self.print_result(path, res, data)
-        return res
-
-    def token_hdr(self):
-        return {"Authorization": "Token " + self.token}
-
-    def api_get(self, path):
-        return self.api(path, requests.get(self.url + path, headers=self.token_hdr()))
-
-    def api_delete(self, path):
-        return self.api(path, requests.delete(self.url + path, headers=self.token_hdr()))
-
-    def api_post(self, path, data):
-        return self.api(
-            path,
-            requests.post(
-                self.url + path,
-                data=json.dumps(data),
-                headers={
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Token ' + self.token,
-                },
-                timeout=0.1,
-            ),
-            data,
-        )
 
     def ws_connect(self, url):
         return websocket.create_connection(url, subprotocols=["adcm", self.token])
 
-    def ws_recv(self, ws):
-        r1 = ws.recv()
+    def ws_recv(self, socket):
+        received = socket.recv()
         if self.debug:
-            print('WS IN: {}'.format(r1))
-        return json.loads(r1)
+            print(f'WS IN: {received}')
+        return json.loads(received)
 
-    def print_result(self, path, r, data=''):
+    def print_result(self, path, response, data=''):
         if self.debug:
-            print("IN:  {}".format(path))
+            print(f"IN: {path}")
             if data:
-                print("DATA:{}".format(data))
-            print("OUT: {} {}".format(r.status_code, r.text))
+                print(f"DATA:{data}")
+            print(f"OUT: {response.status_code} {response.text}")
             # print("HDR: {}".format(r.headers))
             print("")
 
-    def smap(self):
+    @staticmethod
+    def smap():
         return {
             'service': {"1": [5]},
             'host': {"1": [1, 2]},
@@ -93,180 +68,180 @@ class TestStatusAPI(unittest.TestCase):
         api = ('servicemap', 'event', 'host/1/component/2')
         for path in api:
             url = self.url + '/' + path + '/'
-            r1 = self.api(url, requests.post(url, {}))
-            self.assertEqual(r1.status_code, 401)
-            self.assertEqual(r1.json()['code'], 'AUTH_ERROR')
+            response = self.api(url, requests.post(url, {}))
+            self.assertEqual(response.status_code, 401)
+            self.assertEqual(response.json()['code'], 'AUTH_ERROR')
 
     def test_get_access(self):
         api = ('servicemap', 'host/1/component/2')
         for path in api:
             url = self.url + '/' + path + '/'
-            r1 = self.api(url, requests.get(url))
-            self.assertEqual(r1.status_code, 401)
-            self.assertEqual(r1.json()['code'], 'AUTH_ERROR')
+            response = self.api(url, requests.get(url))
+            self.assertEqual(response.status_code, 401)
+            self.assertEqual(response.json()['code'], 'AUTH_ERROR')
 
     def test_service_map(self):
         sm_in = self.smap()
-        r1 = self.api_post('/servicemap/', sm_in)
-        self.assertEqual(r1.status_code, 200)
+        response = self.api_post('/servicemap/', sm_in)
+        self.assertEqual(response.status_code, 200)
 
-        r1 = self.api_get('/servicemap/')
-        self.assertEqual(r1.status_code, 200)
-        sm_out = r1.json()
+        response = self.api_get('/servicemap/')
+        self.assertEqual(response.status_code, 200)
+        sm_out = response.json()
         self.assertEqual(sm_in['host'], sm_out['host'])
         self.assertEqual(sm_in['service'], sm_out['service'])
         self.assertEqual(sm_in['component'], sm_out['component'])
         self.assertEqual(sm_in['hostservice'], sm_out['hostservice'])
 
     def test_host(self):
-        sm = self.smap()
-        r1 = self.api_post('/servicemap/', sm)
-        self.assertEqual(r1.status_code, 200)
+        servicemap = self.smap()
+        response = self.api_post('/servicemap/', servicemap)
+        self.assertEqual(response.status_code, 200)
 
-        r1 = self.api_post('/host/1/', {'status': 0})
-        self.assertTrue(r1.status_code in (200, 201))
+        response = self.api_post('/host/1/', {'status': 0})
+        self.assertTrue(response.status_code in (200, 201))
 
-        r1 = self.api_get('/host/1/')
-        self.assertEqual(r1.status_code, 200)
-        self.assertEqual(r1.json()['status'], 0)
+        response = self.api_get('/host/1/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 0)
 
-        r1 = self.api_post('/host/1/', {'status': 42})
-        self.assertEqual(r1.status_code, 200)
+        response = self.api_post('/host/1/', {'status': 42})
+        self.assertEqual(response.status_code, 200)
 
-        r1 = self.api_get('/host/1/')
-        self.assertEqual(r1.status_code, 200)
-        self.assertEqual(r1.json()['status'], 42)
+        response = self.api_get('/host/1/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 42)
 
     def test_service(self):
-        sm = self.smap()
-        r1 = self.api_post('/servicemap/', sm)
-        self.assertEqual(r1.status_code, 200)
+        servicemap = self.smap()
+        response = self.api_post('/servicemap/', servicemap)
+        self.assertEqual(response.status_code, 200)
 
-        r1 = self.api_get('/cluster/1/service/5/')
-        if r1.status_code == 409:
-            self.assertEqual(r1.json()['code'], 'STATUS_UNDEFINED')
+        response = self.api_get('/cluster/1/service/5/')
+        if response.status_code == 409:
+            self.assertEqual(response.json()['code'], 'STATUS_UNDEFINED')
         else:
-            self.assertEqual(r1.status_code, 200)
+            self.assertEqual(response.status_code, 200)
             self.api_post('/host/1/component/7/', {'status': 1})
-            self.assertEqual(r1.status_code, 200)
+            self.assertEqual(response.status_code, 200)
 
-        r1 = self.api_post('/host/2/component/7/', {'status': 0})
-        self.assertIn(r1.status_code, (200, 201))
+        response = self.api_post('/host/2/component/7/', {'status': 0})
+        self.assertIn(response.status_code, (200, 201))
 
-        r1 = self.api_get('/cluster/1/service/5/')
-        self.assertEqual(r1.status_code, 200)
-        self.assertEqual(r1.json()['status'], 1)
+        response = self.api_get('/cluster/1/service/5/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 1)
 
-        r1 = self.api_post('/host/1/component/7/', {'status': 0})
-        self.assertIn(r1.status_code, (200, 201))
+        response = self.api_post('/host/1/component/7/', {'status': 0})
+        self.assertIn(response.status_code, (200, 201))
 
-        r1 = self.api_get('/cluster/1/service/5/')
-        self.assertEqual(r1.status_code, 200)
-        self.assertEqual(r1.json()['status'], 0)
+        response = self.api_get('/cluster/1/service/5/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 0)
 
-        r1 = self.api_post('/host/1/component/7/', {'status': 1})
-        self.assertEqual(r1.status_code, 200)
+        response = self.api_post('/host/1/component/7/', {'status': 1})
+        self.assertEqual(response.status_code, 200)
 
-        r1 = self.api_get('/cluster/1/service/5/')
-        self.assertEqual(r1.status_code, 200)
-        self.assertEqual(r1.json()['status'], 1)
+        response = self.api_get('/cluster/1/service/5/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 1)
 
-        r1 = self.api_post('/host/1/component/7/', {'status': 0})
-        self.assertEqual(r1.status_code, 200)
+        response = self.api_post('/host/1/component/7/', {'status': 0})
+        self.assertEqual(response.status_code, 200)
 
     def check_event(
-        self, ev, event, obj_type, obj_id, det_type, det_val, det_id=None
+        self, received_event, event, obj_type, obj_id, det_type, det_val, det_id=None
     ):  # pylint: disable=too-many-arguments
-        self.assertEqual(ev['event'], event)
-        self.assertEqual(ev['object']['type'], obj_type)
-        self.assertEqual(ev['object']['id'], obj_id)
-        self.assertEqual(ev['object']['details']['type'], det_type)
-        self.assertEqual(ev['object']['details']['value'], str(det_val))
+        self.assertEqual(received_event['event'], event)
+        self.assertEqual(received_event['object']['type'], obj_type)
+        self.assertEqual(received_event['object']['id'], obj_id)
+        self.assertEqual(received_event['object']['details']['type'], det_type)
+        self.assertEqual(received_event['object']['details']['value'], str(det_val))
         if det_id:
-            self.assertEqual(ev['object']['details']['id'], str(det_id))
+            self.assertEqual(received_event['object']['details']['id'], str(det_id))
 
     def test_status_ws(self):  # pylint: disable=too-many-statements
-        ws = self.ws_connect("ws://localhost:8020/ws/event/")
+        socket = self.ws_connect("ws://localhost:8020/ws/event/")
 
-        r1 = self.api_post('/servicemap/', self.smap())
-        self.assertEqual(r1.status_code, 200)
+        response = self.api_post('/servicemap/', self.smap())
+        self.assertEqual(response.status_code, 200)
 
-        r1 = self.api_get('/cluster/1/service/5/')
-        if r1.status_code == 200:
-            if r1.json()['status'] == 0:
-                r1 = self.api_post('/host/1/component/7/', {'status': 42})
-                self.assertIn(r1.status_code, (200, 201))
+        response = self.api_get('/cluster/1/service/5/')
+        if response.status_code == 200:
+            if response.json()['status'] == 0:
+                response = self.api_post('/host/1/component/7/', {'status': 42})
+                self.assertIn(response.status_code, (200, 201))
 
-        r1 = self.api_get('/cluster/1/service/5/')
-        self.assertEqual(r1.status_code, 200)
-        self.assertEqual(r1.json()['status'], 42)
+        response = self.api_get('/cluster/1/service/5/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 42)
 
-        r1 = self.api_post('/host/2/component/7/', {'status': 0})
-        self.assertIn(r1.status_code, (200, 201))
+        response = self.api_post('/host/2/component/7/', {'status': 0})
+        self.assertIn(response.status_code, (200, 201))
 
-        j1 = self.ws_recv(ws)
-        self.check_event(j1, "change_status", "hostcomponent", 1, "status", 42, 7)
+        socket_received = self.ws_recv(socket)
+        self.check_event(socket_received, "change_status", "hostcomponent", 1, "status", 42, 7)
 
-        j1 = self.ws_recv(ws)
-        self.check_event(j1, "change_status", "component", 7, "status", 42)
+        socket_received = self.ws_recv(socket)
+        self.check_event(socket_received, "change_status", "component", 7, "status", 42)
 
-        j1 = self.ws_recv(ws)
-        self.check_event(j1, "change_status", "service", 5, "status", 42)
+        socket_received = self.ws_recv(socket)
+        self.check_event(socket_received, "change_status", "service", 5, "status", 42)
 
-        j1 = self.ws_recv(ws)
-        self.check_event(j1, "change_status", "cluster", 1, "status", 42)
+        socket_received = self.ws_recv(socket)
+        self.check_event(socket_received, "change_status", "cluster", 1, "status", 42)
 
-        r1 = self.api_post('/host/1/component/7/', {'status': 0})
-        self.assertIn(r1.status_code, (200, 201))
+        response = self.api_post('/host/1/component/7/', {'status': 0})
+        self.assertIn(response.status_code, (200, 201))
 
-        j1 = self.ws_recv(ws)
-        self.check_event(j1, "change_status", "hostcomponent", 1, "status", 0, 7)
+        socket_received = self.ws_recv(socket)
+        self.check_event(socket_received, "change_status", "hostcomponent", 1, "status", 0, 7)
 
-        j1 = self.ws_recv(ws)
-        self.check_event(j1, "change_status", "component", 7, "status", 0)
+        socket_received = self.ws_recv(socket)
+        self.check_event(socket_received, "change_status", "component", 7, "status", 0)
 
-        j1 = self.ws_recv(ws)
-        self.check_event(j1, "change_status", "service", 5, "status", 0)
+        socket_received = self.ws_recv(socket)
+        self.check_event(socket_received, "change_status", "service", 5, "status", 0)
 
-        j1 = self.ws_recv(ws)
-        self.check_event(j1, "change_status", "cluster", 1, "status", 0)
+        socket_received = self.ws_recv(socket)
+        self.check_event(socket_received, "change_status", "cluster", 1, "status", 0)
 
-        r1 = self.api_post('/host/1/component/7/', {'status': 0})
-        self.assertIn(r1.status_code, (200, 201))
+        response = self.api_post('/host/1/component/7/', {'status': 0})
+        self.assertIn(response.status_code, (200, 201))
 
-        r1 = self.api_post('/host/1/component/7/', {'status': 1})
-        self.assertEqual(r1.status_code, 200)
+        response = self.api_post('/host/1/component/7/', {'status': 1})
+        self.assertEqual(response.status_code, 200)
 
-        j1 = self.ws_recv(ws)
-        self.check_event(j1, "change_status", "hostcomponent", 1, "status", 1, 7)
+        socket_received = self.ws_recv(socket)
+        self.check_event(socket_received, "change_status", "hostcomponent", 1, "status", 1, 7)
 
-        j1 = self.ws_recv(ws)
-        self.check_event(j1, "change_status", "component", 7, "status", 1)
+        socket_received = self.ws_recv(socket)
+        self.check_event(socket_received, "change_status", "component", 7, "status", 1)
 
-        j1 = self.ws_recv(ws)
-        self.check_event(j1, "change_status", "service", 5, "status", 1)
+        socket_received = self.ws_recv(socket)
+        self.check_event(socket_received, "change_status", "service", 5, "status", 1)
 
-        j1 = self.ws_recv(ws)
-        self.check_event(j1, "change_status", "cluster", 1, "status", 1)
+        socket_received = self.ws_recv(socket)
+        self.check_event(socket_received, "change_status", "cluster", 1, "status", 1)
 
-        r1 = self.api_post('/host/1/component/7/', {'status': 0})
-        self.assertEqual(r1.status_code, 200)
+        response = self.api_post('/host/1/component/7/', {'status': 0})
+        self.assertEqual(response.status_code, 200)
 
-        j1 = self.ws_recv(ws)
-        self.check_event(j1, "change_status", "hostcomponent", 1, "status", 0, 7)
+        socket_received = self.ws_recv(socket)
+        self.check_event(socket_received, "change_status", "hostcomponent", 1, "status", 0, 7)
 
-        j1 = self.ws_recv(ws)
-        self.check_event(j1, "change_status", "component", 7, "status", 0)
+        socket_received = self.ws_recv(socket)
+        self.check_event(socket_received, "change_status", "component", 7, "status", 0)
 
-        j1 = self.ws_recv(ws)
-        self.check_event(j1, "change_status", "service", 5, "status", 0)
+        socket_received = self.ws_recv(socket)
+        self.check_event(socket_received, "change_status", "service", 5, "status", 0)
 
-        ws.close()
+        socket.close()
 
     def test_state(self):
         obj_id = 4
-        st = 'installed'
-        ws = self.ws_connect("ws://localhost:8020/ws/event/")
+        state = 'installed'
+        socket = self.ws_connect("ws://localhost:8020/ws/event/")
 
         url = '/event/'
         for obj_type in ('cluster', 'service', 'host'):
@@ -277,20 +252,20 @@ class TestStatusAPI(unittest.TestCase):
                     'id': int(obj_id),
                     'details': {
                         'type': 'state',
-                        'value': st,
+                        'value': state,
                     },
                 },
             }
-            r1 = self.api_post(url, data)
-            self.assertEqual(r1.status_code, 200)
+            response = self.api_post(url, data)
+            self.assertEqual(response.status_code, 200)
 
-            j1 = self.ws_recv(ws)
-            self.assertEqual(j1['event'], 'change_state')
-            self.assertEqual(j1['object']['id'], obj_id)
-            self.assertEqual(j1['object']['type'], obj_type)
-            self.assertEqual(j1['object']['details']['value'], st)
+            socket_received = self.ws_recv(socket)
+            self.assertEqual(socket_received['event'], 'change_state')
+            self.assertEqual(socket_received['object']['id'], obj_id)
+            self.assertEqual(socket_received['object']['type'], obj_type)
+            self.assertEqual(socket_received['object']['details']['value'], state)
 
-        ws.close()
+        socket.close()
 
 
 if __name__ == '__main__':

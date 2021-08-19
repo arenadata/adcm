@@ -21,7 +21,6 @@ from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
 from jsonschema import validate
 
-# pylint: disable=W0611, W0621, W0212
 from tests.library import errorcodes
 from tests.library.errorcodes import ADCMError
 
@@ -48,8 +47,11 @@ def test_service_wo_actions(sdk_client_fs: ADCMClient):
     stack_dir = utils.get_data_dir(__file__, "service_wo_action")
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Get service without actions"):
-        service_prototype = sdk_client_fs.service_prototype()._data
-        schema = json.load(open(SCHEMAS + "/stack_list_item_schema.json", encoding='utf_8'))
+        service_prototype = (
+            sdk_client_fs.service_prototype()._data  # pylint: disable=protected-access
+        )
+        with open(SCHEMAS + "/stack_list_item_schema.json", encoding='utf_8') as file:
+            schema = json.load(file)
     with allure.step("Check service"):
         assert validate(service_prototype, schema) is None
 
@@ -58,8 +60,11 @@ def test_cluster_proto_wo_actions(sdk_client_fs: ADCMClient):
     stack_dir = utils.get_data_dir(__file__, "cluster_proto_wo_actions")
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Get cluster without actions"):
-        cluster_prototype = sdk_client_fs.cluster_prototype()._data
-        schema = json.load(open(SCHEMAS + "/stack_list_item_schema.json", encoding='utf_8'))
+        cluster_prototype = (
+            sdk_client_fs.cluster_prototype()._data  # pylint: disable=protected-access
+        )
+        with open(SCHEMAS + "/stack_list_item_schema.json", encoding='utf_8') as file:
+            schema = json.load(file)
     with allure.step("Check cluster"):
         assert validate(cluster_prototype, schema) is None
 
@@ -68,8 +73,9 @@ def test_host_proto_wo_actions(sdk_client_fs: ADCMClient):
     stack_dir = utils.get_data_dir(__file__, "host_proto_wo_action")
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Get host without actions"):
-        host_prototype = sdk_client_fs.host_prototype()._data
-        schema = json.load(open(SCHEMAS + "/stack_list_item_schema.json", encoding='utf_8'))
+        host_prototype = sdk_client_fs.host_prototype()._data  # pylint: disable=protected-access
+        with open(SCHEMAS + "/stack_list_item_schema.json", encoding='utf_8') as file:
+            schema = json.load(file)
     with allure.step("Check host prototype"):
         assert validate(host_prototype, schema) is None
 
@@ -164,7 +170,6 @@ def test_config_has_one_definition_and_two_diff_types(sdk_client_fs: ADCMClient,
         sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Check error: definition in cluster type bundle"):
         errorcodes.BUNDLE_ERROR.equal(e, entity + " definition in cluster type bundle")
-    # TODO: Fix assertion after completed ADCM-146
 
 
 def test_check_cluster_bundle_versions_as_a_string(sdk_client_fs: ADCMClient):

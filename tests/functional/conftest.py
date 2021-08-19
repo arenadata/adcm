@@ -2,6 +2,12 @@
 import pytest
 import allure
 
+only_clean_adcm = pytest.mark.parametrize(
+    "additional_adcm_init_config",
+    [pytest.param({}, id="clean_adcm")],
+    indirect=True,
+)
+
 
 @allure.title("Additional ADCM init config")
 @pytest.fixture(

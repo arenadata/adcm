@@ -9,7 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=W0621
+
+# pylint:disable=redefined-outer-name
 import json
 import tempfile
 import requests
@@ -166,8 +167,8 @@ def _process_browser_log_entry(entry):
 
 def _write_json_file(f_name, j_data):
     f_path = "/".join([tempfile.mkdtemp(), f_name])
-    with open(f_path, 'w', encoding='utf_8') as f:
-        json.dump(j_data, f, indent=2)
+    with open(f_path, 'w', encoding='utf_8') as file:
+        json.dump(j_data, file, indent=2)
     return f_path
 
 

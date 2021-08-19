@@ -52,11 +52,11 @@ def _get_cases_paths(path: str) -> List[ParameterSet]:
     for i, bundle_path in enumerate(bundles_paths):
         for sub_path in ["positive", "negative"]:
             case_dir = os.path.join(bundle_path, CASES_PATH, sub_path)
-            for b in os.listdir(case_dir):
+            for bundle_file in os.listdir(case_dir):
                 params.append(
                     pytest.param(
-                        os.path.join(case_dir, b),
-                        id=f"{bundles_ids[i]}_{sub_path}_{b.strip('.yaml')}",
+                        os.path.join(case_dir, bundle_file),
+                        id=f"{bundles_ids[i]}_{sub_path}_{bundle_file.strip('.yaml')}",
                     )
                 )
     return params

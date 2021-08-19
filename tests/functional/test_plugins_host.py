@@ -9,14 +9,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=W0611, W0621
-import time
 
+# pylint:disable=redefined-outer-name
 import adcm_client.base
 import allure
 import pytest
 from adcm_client.objects import ADCMClient, Bundle, Provider
-from adcm_pytest_plugin.utils import get_data_dir
+from adcm_pytest_plugin.utils import get_data_dir, wait_until_step_succeeds
 
 
 @pytest.fixture()
@@ -56,13 +55,13 @@ def test_create_one_host(second_p: Provider):
     2. Create host on one of the providers
     3. Ensure host exists
     """
-    HOSTNAME = "second_h"
+    hostname = "second_h"
     with allure.step('Run action create host'):
-        second_p.action(name="create_host").run(config_diff={'fqdn': HOSTNAME}).try_wait()
-        second_h = second_p.host(fqdn=HOSTNAME)
+        second_p.action(name="create_host").run(config_diff={'fqdn': hostname}).try_wait()
+        second_h = second_p.host(fqdn=hostname)
     with allure.step('Check if host is created'):
         assert second_h.provider().id == second_p.id
-        assert second_h.fqdn == HOSTNAME
+        assert second_h.fqdn == hostname
 
 
 def test_create_multi_host_and_delete_one(first_p: Provider, third_p: Provider):
@@ -91,19 +90,13 @@ def test_create_multi_host_and_delete_one(first_p: Provider, third_p: Provider):
             first_p.host(fqdn="one_two")
 
 
-def _wait_for_object(f, timeout=10, **kwargs):
-    t = 0
-    obj = None
-    while t < 10 and obj is None:
-        try:
-            obj = f(**kwargs)
-        except adcm_client.base.ObjectNotFound:
-            pass
-        time.sleep(0.1)
-        t = t + 0.1
+def _assert_that_object_exists(get_object_func, *args, **kwargs):
+    try:
+        obj = get_object_func(*args, **kwargs)
+    except adcm_client.base.ObjectNotFound as error:
+        raise AssertionError("Object still not found") from error
     if obj is None:
-        raise adcm_client.base.ObjectNotFound
-    return obj
+        raise AssertionError("Object is None")
 
 
 def test_check_host_lock_during_operations(forth_p: Provider):
@@ -126,7 +119,10 @@ def test_check_host_lock_during_operations(forth_p: Provider):
     with allure.step('Run job that creates the second host on provider'):
         job = forth_p.action(name="create_host").run(config={'fqdn': "forth_two", 'sleep': 2})
     with allure.step('Wait until second host will be created'):
-        forth_two_h = _wait_for_object(forth_p.host, fqdn='forth_two')
+        wait_until_step_succeeds(
+            _assert_that_object_exists, period=0.5, get_object_func=forth_p.host, fqdn="forth_two"
+        )
+        forth_two_h = forth_p.host(fqdn="forth_two")
         forth_one_h = forth_p.host(fqdn='forth_one')
     with allure.step('Check that both host has "locked" state'):
         assert forth_one_h.state == 'locked'

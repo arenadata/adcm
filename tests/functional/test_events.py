@@ -22,17 +22,13 @@ import websocket
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
 
+from tests.functional.conftest import only_clean_adcm
+
 DATADIR = utils.get_data_dir(__file__)
 R_WWW_PREFIX = re.compile(r"https?://(www.\.)?")
 
 
-pytestmark = [
-    pytest.mark.parametrize(
-        "additional_adcm_init_config",
-        [pytest.param({}, id="clean_adcm")],
-        indirect=True,
-    ),
-]
+pytestmark = [only_clean_adcm]
 
 
 def repr_template(event_type, obj_type, obj_id, dtype=None, value=None):
@@ -46,12 +42,12 @@ def prep_url(url):
     return R_WWW_PREFIX.sub('', url).strip().strip('/')
 
 
-def assert_events(ws, *expected_events):
+def assert_events(websocket_connection, *expected_events):
     expected_list = list(expected_events)
     count = 1
     try:
         while expected_list != [] and count < 100:
-            data = json.loads(ws.recv())
+            data = json.loads(websocket_connection.recv())
             for event in expected_list:
                 if event == data:
                     expected_list.remove(event)
@@ -63,7 +59,7 @@ def assert_events(ws, *expected_events):
 
 
 @pytest.fixture()
-def ws(sdk_client_fs: ADCMClient, max_conn=10):
+def websocket_connection(sdk_client_fs: ADCMClient, max_conn=10):
     last_error = None
     while max_conn:
         try:
@@ -85,13 +81,13 @@ def ws(sdk_client_fs: ADCMClient, max_conn=10):
 
 @pytest.fixture()
 def cluster_with_svc_and_host(sdk_client_fs):
-    cl = cluster(sdk_client_fs)
-    svc = cl.service_add(name='zookeeper')
+    cluster_instance = cluster(sdk_client_fs)
+    svc = cluster_instance.service_add(name='zookeeper')
     hst = host(sdk_client_fs)
-    cl.host_add(hst)
+    cluster_instance.host_add(hst)
     components = svc.component_list()
-    cl.hostcomponent_set((hst, components[0]), (hst, components[1]))
-    return cl, svc, hst
+    cluster_instance.hostcomponent_set((hst, components[0]), (hst, components[1]))
+    return cluster_instance, svc, hst
 
 
 def cluster_bundle(sdk_client_fs):
@@ -160,46 +156,59 @@ svc_actions = [
 
 
 @pytest.mark.parametrize(('adcm_object', 'event_type', 'obj_type'), create_adcm_obj)
-def test_event_when_create_(obj_type, adcm_object, event_type, sdk_client_fs, ws):
+def test_event_when_create_(obj_type, adcm_object, event_type, sdk_client_fs, websocket_connection):
     with allure.step(f'Create {obj_type}'):
         obj = adcm_object(sdk_client_fs)
     with allure.step(f'Check created {obj_type}'):
-        assert_events(ws, repr_template(event_type, obj_type, obj.id))
+        assert_events(websocket_connection, repr_template(event_type, obj_type, obj.id))
 
 
-def test_event_when_create_host(sdk_client_fs, ws):
+def test_event_when_create_host(sdk_client_fs, websocket_connection):
     obj = host(sdk_client_fs, fqdn=utils.random_string())
     with allure.step('Check created host'):
-        assert_events(ws, repr_template('create', 'host', obj.id, 'provider', str(obj.provider_id)))
+        assert_events(
+            websocket_connection,
+            repr_template('create', 'host', obj.id, 'provider', str(obj.provider_id)),
+        )
 
 
-def test_event_when_host_added_to_cluster(sdk_client_fs, ws):
-    cl = cluster(sdk_client_fs)
+def test_event_when_host_added_to_cluster(sdk_client_fs, websocket_connection):
+    cluster_instance = cluster(sdk_client_fs)
     hst = host(sdk_client_fs)
-    cl.host_add(hst)
+    cluster_instance.host_add(hst)
     with allure.step('Check host'):
-        assert_events(ws, repr_template('add', 'host', hst.host_id, 'cluster', str(cl.cluster_id)))
+        assert_events(
+            websocket_connection,
+            repr_template('add', 'host', hst.host_id, 'cluster', str(cluster_instance.cluster_id)),
+        )
 
 
-def test_event_when_add_service(sdk_client_fs, ws):
+def test_event_when_add_service(sdk_client_fs, websocket_connection):
     obj = service(sdk_client_fs)
-    assert_events(ws, repr_template('add', 'service', obj.id, 'cluster', str(obj.cluster_id)))
+    assert_events(
+        websocket_connection,
+        repr_template('add', 'service', obj.id, 'cluster', str(obj.cluster_id)),
+    )
 
 
 @pytest.mark.parametrize(('case', 'action_name', 'expected'), cluster_actions)
-def test_events_when_cluster_action_(case, action_name, expected, ws, cluster_with_svc_and_host):
+def test_events_when_cluster_action_(
+    case, action_name, expected, websocket_connection, cluster_with_svc_and_host
+):
     cluster, _, _ = cluster_with_svc_and_host
     job = cluster.action(name=action_name).run()
-    with allure.step('Check job'):
-        assert_events(ws, *expected(cluster, job))
+    with allure.step(f'Check {case}'):
+        assert_events(websocket_connection, *expected(cluster, job))
 
 
 @pytest.mark.parametrize(('case', 'action_name', 'expected'), svc_actions)
-def test_events_when_service_(case, action_name, expected, ws, cluster_with_svc_and_host):
+def test_events_when_service_(
+    case, action_name, expected, websocket_connection, cluster_with_svc_and_host
+):
     _, zookeeper, _ = cluster_with_svc_and_host
     job = zookeeper.action(name=action_name).run()
-    with allure.step('Check job'):
-        assert_events(ws, *expected(zookeeper, job))
+    with allure.step(f'Check {case}'):
+        assert_events(websocket_connection, *expected(zookeeper, job))
 
 
 @pytest.mark.parametrize(

@@ -9,9 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=W0621
 
 import allure
+import pytest
 
 from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
 from tests.ui_tests.app.page.admin_setttings.page import AdminSettingsPage
@@ -32,8 +32,10 @@ from tests.ui_tests.utils import (
     close_current_tab,
 )
 
+pytestmark = [pytest.mark.usefixtures("login_to_adcm_over_api")]
 
-def test_check_header_tabs_for_authorised_user(app_fs, login_to_adcm_over_api):
+
+def test_check_header_tabs_for_authorised_user(app_fs):
     header = PageHeader(app_fs.driver, app_fs.adcm.url)
 
     header.click_arenadata_logo_in_header()
@@ -66,7 +68,7 @@ def test_check_header_tabs_for_authorised_user(app_fs, login_to_adcm_over_api):
     header.check_job_popup()
 
 
-def test_check_header_help_links_for_authorised_user(app_fs, login_to_adcm_over_api):
+def test_check_header_help_links_for_authorised_user(app_fs):
     params = {"help_link": "t.me/joinchat/", "docs_link": "docs.arenadata.io/adcm/"}
     header = PageHeader(app_fs.driver, app_fs.adcm.url)
     header.click_help_button_in_header()
@@ -83,7 +85,7 @@ def test_check_header_help_links_for_authorised_user(app_fs, login_to_adcm_over_
         BasePageObject(app_fs.driver, app_fs.adcm.url).wait_url_contains_path(params["docs_link"])
 
 
-def test_check_header_user_settings_for_authorised_user(app_fs, login_to_adcm_over_api):
+def test_check_header_user_settings_for_authorised_user(app_fs):
     header = PageHeader(app_fs.driver, app_fs.adcm.url)
     header.click_account_button_in_header()
     header.check_account_popup()
@@ -99,7 +101,7 @@ def test_check_header_user_settings_for_authorised_user(app_fs, login_to_adcm_ov
     header.wait_url_contains_path(LoginPage(app_fs.driver, app_fs.adcm.url).path)
 
 
-def test_check_footer_for_authorised_user(app_fs, login_to_adcm_over_api):
+def test_check_footer_for_authorised_user(app_fs):
     params = {"docs": "docs.arenadata.io/adcm/notes"}
     footer = PageFooter(app_fs.driver, app_fs.adcm.url)
     footer.check_all_elements()

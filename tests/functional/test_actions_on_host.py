@@ -9,7 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=redefined-outer-name
+
+# pylint: disable=redefined-outer-name, no-self-use
 from typing import Union
 
 import allure
@@ -115,7 +116,7 @@ class TestClusterActionsOnHost:
 
     @allure.issue("https://arenadata.atlassian.net/browse/ADCM-1799")
     @pytest.mark.parametrize("action_name", [ACTION_ON_HOST, ACTION_ON_HOST_MULTIJOB])
-    def test_two_clusters(self, action_name, cluster: Cluster, provider: Provider, sdk_client_fs):
+    def test_two_clusters(self, action_name, cluster: Cluster, provider: Provider):
         """
         Test that cluster actions on host works fine on two clusters
         """
@@ -203,9 +204,7 @@ class TestServiceActionOnHost:
 
     @allure.issue("https://arenadata.atlassian.net/browse/ADCM-1799")
     @pytest.mark.parametrize("action_name", [ACTION_ON_HOST, ACTION_ON_HOST_MULTIJOB])
-    def test_two_clusters(
-        self, action_name, cluster_with_service: Cluster, provider: Provider, sdk_client_fs
-    ):
+    def test_two_clusters(self, action_name, cluster_with_service: Cluster, provider: Provider):
         """
         Test that service actions on host works fine on two clusters
         """
@@ -297,9 +296,7 @@ class TestComponentActionOnHost:
 
     @allure.issue("https://arenadata.atlassian.net/browse/ADCM-1799")
     @pytest.mark.parametrize("action_name", [ACTION_ON_HOST, ACTION_ON_HOST_MULTIJOB])
-    def test_two_clusters(
-        self, action_name, cluster_with_components: Cluster, provider: Provider, sdk_client_fs
-    ):
+    def test_two_clusters(self, action_name, cluster_with_components: Cluster, provider: Provider):
         """
         Test that component actions on host works fine on two clusters
         """

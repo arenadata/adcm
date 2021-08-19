@@ -53,7 +53,7 @@ def test_custom_ansible_forks(sdk_client_fs, testing_cluster):
 
 
 @pytest.mark.parametrize("forks_count", [0, 101], ids=["0 forks", "101 fork"])
-def test_negate_values(sdk_client_fs, testing_cluster, forks_count):
+def test_negate_values(sdk_client_fs, forks_count):
     """
     Check that incorrect fork values is unacceptable
     """

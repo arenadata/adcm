@@ -49,6 +49,7 @@ COMPONENT_NAME = 'test_component'
 
 
 @pytest.fixture()
+# pylint: disable-next=unused-argument
 def page(app_fs: ADCMTest, login_to_adcm_over_api) -> JobListPage:
     return JobListPage(app_fs.driver, app_fs.adcm.url).open()
 

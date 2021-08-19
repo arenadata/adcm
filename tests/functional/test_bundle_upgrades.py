@@ -9,15 +9,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import allure
 import coreapi
 import pytest
-
-# pylint: disable=W0611, W0621
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
 
 from tests.library.errorcodes import INVALID_VERSION_DEFINITION, UPGRADE_ERROR, UPGRADE_NOT_FOUND
-import allure
+
+# pylint: disable=redefined-outer-name
 
 
 @pytest.fixture()

@@ -1,16 +1,17 @@
 import json
 
 import allure
+from adcm_client.objects import Service
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.remote.webelement import WebElement
 
+from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.locators import Common, ConfigurationLocators
 from tests.ui_tests.app.pages import BasePage
 
 
-# pylint: disable=R0904
-class Configuration(BasePage):
+class Configuration(BasePage):  # pylint: disable=too-many-public-methods
     """Class for configuration page."""
 
     def __init__(self, driver, url=None):
@@ -19,6 +20,13 @@ class Configuration(BasePage):
         if self.url:
             self.get(self.url, "config")
         self._wait_for_page_loaded()
+
+    @staticmethod
+    def from_service(app: ADCMTest, service: Service):
+        return Configuration(
+            app.driver,
+            f"{app.adcm.url}/cluster/{service.cluster_id}/service/{service.service_id}/config",
+        )
 
     def _wait_for_page_loaded(self):
         self._wait_element_present(ConfigurationLocators.app_conf_form, 15)
@@ -92,12 +100,14 @@ class Configuration(BasePage):
         err_msg = "Expected text not presented: {}.".format(expected_text)
         assert result, err_msg
 
-    def get_map_key(self, item_element):
+    @staticmethod
+    def get_map_key(item_element):
         form_field = item_element.find_element(*ConfigurationLocators.map_key_field)
         inp = form_field.find_element(*Common.mat_input_element)
         return inp.get_attribute("value")
 
-    def get_map_value(self, item_element):
+    @staticmethod
+    def get_map_value(item_element):
         form_field = item_element.find_element(*ConfigurationLocators.map_value_field)
         inp = form_field.find_element(*Common.mat_input_element)
         return inp.get_attribute("value")
@@ -187,8 +197,9 @@ class Configuration(BasePage):
                 return group
         return False
 
+    @staticmethod
     @allure.step('Check if mat slide toggle is checked')
-    def group_is_active_by_element(self, group_element):
+    def group_is_active_by_element(group_element):
         toggle = group_element.find_element(*Common.mat_slide_toggle)
         if 'mat-checked' in toggle.get_attribute("class"):
             return True
@@ -227,6 +238,16 @@ class Configuration(BasePage):
     @allure.step('Click advanced')
     def click_advanced(self):
         self._click_element(Common.mat_checkbox, name="Advanced")
+
+    @allure.step('Show advanced')
+    def show_advanced(self):
+        if not self.advanced:
+            self.click_advanced()
+
+    @allure.step('Hide advanced')
+    def hide_advanced(self):
+        if self.advanced:
+            self.click_advanced()
 
     @allure.step('Get form field text')
     def get_form_field_text(self, form_field_element):
@@ -319,15 +340,10 @@ class Configuration(BasePage):
     def editable_element(element):
         el_class = element.get_attribute("class")
         el_readonly_attr = element.get_attribute("readonly")
-        if "field-disabled" in el_class:
-            return False
-        elif 'read-only' in el_class:
-            return False
-        elif el_readonly_attr == 'true':
-            return False
-        if element.is_enabled():
-            return True
-        return True
+        editable = True
+        if "field-disabled" in el_class or 'read-only' in el_class or el_readonly_attr == 'true':
+            editable = False
+        return editable
 
     @allure.step('Check that fields and group are invisible')
     def check_that_fields_and_group_are_invisible(self):

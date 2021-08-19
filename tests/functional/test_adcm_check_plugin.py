@@ -9,11 +9,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=W0611, W0621
+
 import allure
 import pytest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
+from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 from adcm_pytest_plugin.steps.asserts import assert_action_result
 
 from tests.library.consts import States, MessageStates
@@ -25,10 +26,6 @@ NO_FIELD = [
     "only_success",
     "only_fail",
     "bad_result",
-]
-ALL_FIELDS_DATA = [
-    ("all_fields", "Group success", "Task success", True, True),
-    ("all_fields_fail", "Group fail", "Task fail", False, False),
 ]
 
 
@@ -56,27 +53,31 @@ def test_field_validation(sdk_client_fs: ADCMClient, missed_field):
 
 
 @pytest.mark.parametrize(
-    ("name", "group_msg", "task_msg", "group_result", "task_result"), ALL_FIELDS_DATA
+    ("name", "result"),
+    [
+        ("all_fields", ("Group success", "Task success", True, True)),
+        ("all_fields_fail", ("Group fail", "Task fail", False, False)),
+    ],
 )
-def test_all_fields(
-    sdk_client_fs: ADCMClient, name, group_msg, task_msg, group_result, task_result
-):
+def test_all_fields(sdk_client_fs: ADCMClient, name, result):
     """Check that we can run jobs with all fields for
-     adcm_check task and check all fields after action
+    adcm_check task and check all fields after action
     execution.
     """
+    group_msg, task_msg, group_result, task_result = result
     params = {
         "action": "adcm_check",
         "expected_state": States.success,
         "expected_title": "Name of group check.",
         "content_title": "Check",
     }
-    bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, name))
-    cluster = bundle.cluster_create(utils.random_string())
-    task = cluster.action(name=params["action"]).run()
-    task.wait()
+    cluster = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, name)).cluster_create(
+        utils.random_string()
+    )
+    task = run_cluster_action_and_assert_result(
+        cluster, action=params["action"], status=params["expected_state"]
+    )
     job = task.job()
-    assert_action_result(result=job.status, status=params["expected_state"], name=params["action"])
     with allure.step("Check all fields after action execution"):
         logs = job.log_list()
         content = job.log(job_id=job.id, log_id=logs[2].id).content[0]
