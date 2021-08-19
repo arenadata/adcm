@@ -718,7 +718,7 @@ class TestClusterConfigPage:
             'not_req_name': 'Just item',
             'wrong_value': 'test',
         }
-        with allure.step("Create main cluster"):
+        with allure.step("Create cluster"):
             bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_REQUIRED_FIELDS)
             bundle.cluster_create(name=CLUSTER_NAME)
         cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1).open()
