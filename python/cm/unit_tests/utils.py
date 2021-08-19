@@ -35,6 +35,13 @@ def gen_prototype(bundle: models.Bundle, proto_type):
     )
 
 
+def gen_prototype_config(prototype: models.Prototype, name: str, field_type: str, **kwargs):
+    """Generate prototype for config field"""
+    return models.PrototypeConfig.objects.create(
+        prototype=prototype, name=name, type=field_type, **kwargs
+    )
+
+
 def gen_adcm():
     """Generate or return existing the only ADCM object"""
     try:
