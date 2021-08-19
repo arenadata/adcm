@@ -13,7 +13,9 @@ export class IssueMessageComponent {
   private ownMessage: IssueMessage;
   @Input() set message(message: IssueMessage) {
     this.ownMessage = message;
-    this.preparedMessage = this.issueMessageService.parse(this.message.message);
+    if (this.message) {
+      this.preparedMessage = this.issueMessageService.parse(this.message.message);
+    }
   }
   get message(): IssueMessage {
     return this.ownMessage;
