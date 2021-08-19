@@ -14,7 +14,7 @@ import { Component, ViewChild, ViewContainerRef } from '@angular/core';
 import { ChannelService, keyChannelStrim } from '@app/core/services';
 import { DynamicComponent } from '@app/shared/directives';
 import { BaseFormDirective } from './base-form.directive';
-import { FormModel } from '@app/shared/add-component/add-service-token';
+import { FormModel } from '@app/shared/add-component/add-service-model';
 
 @Component({
   selector: 'app-add-form',
@@ -52,11 +52,11 @@ export class AddFormComponent implements DynamicComponent {
 
   @ViewChild('cc') container: BaseFormDirective;
 
-  onEnterKey() {
+  onEnterKey(): void {
     if (this.container.form.valid) this.container.save();
   }
 
-  message(m: string) {
+  message(m: string): void {
     this.channel.next(keyChannelStrim.notifying, m);
   }
 

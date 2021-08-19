@@ -5,7 +5,7 @@ import { IColumns } from '@adwp-ui/widgets';
 import { ListFactory } from '../../../factories/list-factory';
 import { ConfigGroupListService } from '../../service';
 import { LIST_SERVICE_PROVIDER } from '../../../shared/components/list/list-service-token';
-import { ADD_SERVICE_PROVIDER } from '../../../shared/add-component/add-service-token';
+import { ADD_SERVICE_PROVIDER } from '../../../shared/add-component/add-service-model';
 import { ConfigGroupAddService } from '../../service';
 import { BaseFormDirective } from '../../../shared/add-component';
 import { AddConfigGroupComponent } from '../../components';

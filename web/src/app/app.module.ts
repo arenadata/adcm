@@ -32,7 +32,7 @@ import { appInitializer, translateLoader } from '@app/shared/translate/intialize
 import { AppRoutingModule } from '@app/app-routing.module';
 import { ListService } from '@app/shared/components/list/list.service';
 import { LIST_SERVICE_PROVIDER } from '@app/shared/components/list/list-service-token';
-import { ADD_SERVICE_PROVIDER } from '@app/shared/add-component/add-service-token';
+import { ADD_SERVICE_PROVIDER } from '@app/shared/add-component/add-service-model';
 import { AddService } from '@app/shared/add-component/add.service';
 
 @NgModule({

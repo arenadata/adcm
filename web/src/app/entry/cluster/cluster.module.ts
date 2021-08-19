@@ -26,13 +26,13 @@ import { ServicesComponent } from '@app/components/cluster/services/services.com
 import { AuthGuard } from '../../core/auth/auth.guard';
 import { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';
 import { ServiceComponentsComponent } from '@app/components/service-components.component';
-import { ConfigGroupListComponent } from '../../config-groups/pages';
-import { ConfigGroupModule } from '../../config-groups/config-group.module';
-import { ConfigGroupHostListComponent } from '../../config-groups/pages/host-list/host-list.component';
+import { ConfigGroupListComponent } from '../../config-groups';
+import { ConfigGroupModule } from '../../config-groups';
+import { ConfigGroupHostListComponent } from '../../config-groups';
 import {
   CONFIG_GROUP_LIST_SERVICE,
   ConfigGroupListService
-} from '../../config-groups/service/config-group-list.service';
+} from '../../config-groups';
 
 
 const clusterRoutes: Routes = [

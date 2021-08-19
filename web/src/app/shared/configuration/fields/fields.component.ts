@@ -49,9 +49,8 @@ export class ConfigFieldsComponent extends BaseDirective {
   @Input() form = this.service.toFormGroup();
   @Input() groupsForm: FormGroup;
   @Input() showCheckbox: boolean = false;
-
   @Output()
-  event: EventEmitter<{ name: string; data?: any }> = new EventEmitter<{ name: string; data?: any }>();
+  event = new EventEmitter<{ name: string; data?: any }>();
 
 
   rawConfig: IConfig;
@@ -68,7 +67,7 @@ export class ConfigFieldsComponent extends BaseDirective {
     this.form = this.service.toFormGroup(this.dataOptions);
     this.isAdvanced = data.config.some((a) => a.ui_options && a.ui_options.advanced);
     this.shapshot = { ...this.form.value };
-    this.event.emit({ name: 'isLoad' });
+    this.event.emit({ name: 'load', data: { form: this.form } });
     this.stableView();
   }
 

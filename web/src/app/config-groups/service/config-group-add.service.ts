@@ -1,16 +1,13 @@
 import { Injectable } from '@angular/core';
-import { FormModel, IAddService } from '../../shared/add-component/add-service-token';
+import { FormModel, IAddService } from '../../shared/add-component/add-service-model';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { ClusterService } from '../../core/services/cluster.service';
-import { Host, TypeName } from '../../core/types';
-import { Params } from '@angular/router';
 import { Observable } from 'rxjs';
-import { of } from 'rxjs/internal/observable/of';
 import { ApiService } from '../../core/api';
 import { environment } from '../../../environments/environment';
 import { ConfigGroup } from '../model';
 
-const newConfigGroupForm = () =>
+const newConfigGroupForm = (): FormGroup =>
   new FormGroup({
     name: new FormControl('', Validators.required),
     description: new FormControl(),
@@ -39,19 +36,13 @@ export class ConfigGroupAddService implements IAddService {
     };
   }
 
-  add(group: Partial<ConfigGroup>): Observable<any> {
+  add<T>(group: Partial<ConfigGroup>): Observable<T> {
     const params = { ...group };
+
+    //ToDo what to do with the service & components
     params.object_type = 'cluster';
     params.object_id = this.Cluster.id;
-    return this.api.post<unknown>(`${environment.apiRoot}group-config/`, params);
-  }
-
-  getList<T>(type: TypeName, param: Params = {}): Observable<T[]> {
-    return of([]);
-  }
-
-  addHost(host: Partial<Host>): Observable<Host> {
-    return of(null);
+    return this.api.post<T>(`${environment.apiRoot}group-config/`, params);
   }
 
 }

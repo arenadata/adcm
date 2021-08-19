@@ -24,7 +24,7 @@ import { Host, Prototype, ServicePrototype, StackBase, TypeName } from '@app/cor
 import { DialogComponent } from '@app/shared/components/dialog.component';
 import { GenName } from './naming';
 import { MainService } from '@app/shared/configuration/main/main.service';
-import { FormModel, IAddService } from '@app/shared/add-component/add-service-token';
+import { FormModel, IAddService } from '@app/shared/add-component/add-service-model';
 
 
 const fromBundle = () =>

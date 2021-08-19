@@ -15,7 +15,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { DialogComponent } from '@app/shared/components';
 import { BaseDirective } from '@app/shared/directives';
 import { AddFormComponent } from './add-form.component';
-import { ADD_SERVICE_PROVIDER, IAddService } from '@app/shared/add-component/add-service-token';
+import { ADD_SERVICE_PROVIDER, IAddService } from '@app/shared/add-component/add-service-model';
 import { BaseFormDirective } from '@app/shared/add-component/base-form.directive';
 
 @Component({
@@ -45,7 +45,7 @@ export class AddButtonComponent extends BaseDirective implements OnDestroy {
     super();
   }
 
-  showForm() {
+  showForm(): void {
     const model = this.service.model(this.name);
     model.component = this.component;
 

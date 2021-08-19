@@ -24,7 +24,7 @@ export interface IAddService {
 
   add?<T>(data: any, name?: TypeName): Observable<T>;
 
-  getList<T>(type: TypeName, param: Params): Observable<T[]>;
+  getList?<T>(type: TypeName, param: Params): Observable<T[]>;
 
   addHost?(host: Partial<Host>): Observable<Host>;
 

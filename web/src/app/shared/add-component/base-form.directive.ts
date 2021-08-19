@@ -13,8 +13,8 @@ import { Directive, Inject } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 
-import { BaseDirective } from '../directives/base.directive';
-import { ADD_SERVICE_PROVIDER, IAddService } from '@app/shared/add-component/add-service-token';
+import { BaseDirective } from '@app/shared/directives';
+import { ADD_SERVICE_PROVIDER, IAddService } from '@app/shared/add-component/add-service-model';
 
 @Directive({
   selector: '[appBaseForm]',
@@ -26,7 +26,7 @@ export class BaseFormDirective extends BaseDirective {
     super();
   }
 
-  onCancel() {
+  onCancel(): void {
     this.form.reset();
     this.dialog.closeAll();
   }

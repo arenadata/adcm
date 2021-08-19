@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { FormModel, IAddService } from '../../shared/add-component/add-service-token';
+import { FormModel, IAddService } from '../../shared/add-component/add-service-model';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { ClusterService } from '../../core/services/cluster.service';
 import { Host, TypeName } from '../../core/types';

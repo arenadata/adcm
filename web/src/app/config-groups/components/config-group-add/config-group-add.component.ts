@@ -12,7 +12,7 @@
 import { Component, forwardRef, OnInit } from '@angular/core';
 
 import { BaseFormDirective } from '../../../shared/add-component';
-import { ADD_SERVICE_PROVIDER } from '../../../shared/add-component/add-service-token';
+import { ADD_SERVICE_PROVIDER } from '../../../shared/add-component/add-service-model';
 import { ConfigGroupAddService } from '../../service';
 import { clearEmptyField } from '../../../core/types';
 import { ConfigGroup } from '../../model';

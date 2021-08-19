@@ -5,9 +5,8 @@ import { TypeName } from '../../../core/types';
 import { ListFactory } from '../../../factories/list-factory';
 import { IHost } from '../../../models/host';
 import { LIST_SERVICE_PROVIDER } from '../../../shared/components/list/list-service-token';
-import { ADD_SERVICE_PROVIDER } from '../../../shared/add-component/add-service-token';
-import { ConfigGroupHostListService } from '../../service';
-import { ConfigGroupHostAddService } from '../../service';
+import { ADD_SERVICE_PROVIDER } from '../../../shared/add-component/add-service-model';
+import { ConfigGroupHostAddService, ConfigGroupHostListService } from '../../service';
 import { BaseFormDirective } from '../../../shared/add-component';
 import { AddHostToConfigGroupComponent } from '../../components';
 
@@ -54,7 +53,8 @@ export class ConfigGroupHostListComponent extends AdwpListDirective<IHost> {
   ] as IColumns<IHost>;
 
   clickRow(data: RowEventData): void {
-    console.log('clickRow');
+    data.event.preventDefault();
+    data.event.stopPropagation();
     return;
   }
 
