@@ -26,12 +26,12 @@ import { ServicesComponent } from '@app/components/cluster/services/services.com
 import { AuthGuard } from '../../core/auth/auth.guard';
 import { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';
 import { ServiceComponentsComponent } from '@app/components/service-components.component';
-import { ConfigGroupListComponent } from '../../config-groups';
-import { ConfigGroupModule } from '../../config-groups';
-import { ConfigGroupHostListComponent } from '../../config-groups';
 import {
   CONFIG_GROUP_LIST_SERVICE,
-  ConfigGroupListService
+  ConfigGroupHostListComponent,
+  ConfigGroupListComponent,
+  ConfigGroupListService,
+  ConfigGroupModule
 } from '../../config-groups';
 
 
@@ -68,14 +68,9 @@ const clusterRoutes: Routes = [
       entityService: CONFIG_GROUP_LIST_SERVICE
     },
     children: [
-      { path: '', redirectTo: 'main', pathMatch: 'full' },
-      { path: 'main', component: MainInfoComponent },
+      { path: '', redirectTo: 'host', pathMatch: 'full' },
       { path: 'host', component: ConfigGroupHostListComponent },
-      {
-        path: 'config', component: ConfigComponent, data: {
-          isGroupConfig: true,
-        }
-      },
+      { path: 'config', component: ConfigComponent, data: { isGroupConfig: true } },
     ],
   },
   {

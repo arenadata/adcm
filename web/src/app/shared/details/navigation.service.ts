@@ -92,7 +92,7 @@ export const Config = {
   menu: {
     cluster: [main, config, group_configs, m_status, m_import, actions, services, hosts, host_components].sort((a, b) => a.id - b.id),
     service: [main, components, config, group_configs, m_status, m_import, actions],
-    group_configs: [main, hosts, config],
+    group_configs: [hosts, config],
     host: [main, config, m_status, actions],
     provider: [main, config, actions],
     bundle: [main, license],
