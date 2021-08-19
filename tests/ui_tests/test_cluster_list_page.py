@@ -296,7 +296,7 @@ class TestClusterMainPage:
         with allure.step("Check success job"):
             assert (
                 cluster_main_page.header.get_in_progress_job_amount_from_header() == "1"
-            ), "There should be 1 in progress jtest_check_cluster_list_page_open_cluster_configob in header"
+            ), "There should be 1 in progress job in header"
 
 
 class TestClusterServicePage:
