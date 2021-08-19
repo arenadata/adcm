@@ -36,7 +36,7 @@ export class ConfigGroupHostListService implements IListService<Host> {
     }
 
     const configGroupId = this.cluster.Current.id;
-    const params = convertToParamMap({ ...p, group_configs: configGroupId });
+    const params = convertToParamMap({ ...p, groupconfig: configGroupId });
 
     return this.api.getList(`${environment.apiRoot}host/`, params);
   }
