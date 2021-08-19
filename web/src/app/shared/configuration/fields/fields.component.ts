@@ -96,13 +96,11 @@ export class ConfigFieldsComponent extends BaseDirective {
     return item.name;
   }
 
-  onToggleCheckbox;
-
   /**
    * This method detects the moment rendering final of all fields and groups (with internal fields) on the page
    * it's need for test
    *
-   * @memberof ConfigFieldsComponent
+   * @member ConfigFieldsComponent
    */
   stableView() {
     this.fr.stableView(() => this.radio.next(keyChannelStrim.load_complete, 'Config has been loaded'));
