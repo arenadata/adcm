@@ -122,8 +122,10 @@ class CommonConfigMenuObj(BasePageObject):
         """Click reset button"""
         if adcm_test:
             self.find_and_click(self.config.reset_btn(adcm_test))
-        else:
+        elif row:
             self.find_child(row, CommonConfigMenu.ConfigRow.reset_btn)
+        else:
+            raise AssertionError("Need to indicate adcm_test or row")
 
     @allure.step('Type "{value}" to {adcm_test} field')
     def type_in_config_field(
