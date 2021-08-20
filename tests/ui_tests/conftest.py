@@ -68,13 +68,6 @@ def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
     Attach ADCM API to ADCMTest object and open new tab in browser for test
     Collect logs on failure and close browser tab after test is done
     """
-    try:
-        web_driver.new_tab()
-    # Recreate session on WebDriverException
-    except WebDriverException:
-        # this exception could be raised in case
-        # when all tabs were closed in process of creating new one
-        web_driver.create_driver()
     web_driver.attache_adcm(adcm_fs)
     yield web_driver
     try:
@@ -89,6 +82,11 @@ def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
                 web_driver.driver.get_screenshot_as_png(),
                 name="screenshot",
                 attachment_type=allure.attachment_type.PNG,
+            )
+            allure.attach(
+                json.dumps(web_driver.driver.execute_script("return localStorage"), indent=2),
+                name="localStorage",
+                attachment_type=allure.attachment_type.JSON,
             )
             # this way of getting logs does not work for Firefox, see ADCM-1497
             if web_driver.capabilities['browserName'] != 'firefox':
@@ -122,6 +120,12 @@ def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
     except AttributeError:
         # rep_setup and rep_call attributes are generated in runtime and can be absent
         pass
+    try:
+        web_driver.new_tab()
+    except WebDriverException:
+        # this exception could be raised in case
+        # when driver was crashed for some reason
+        web_driver.create_driver()
 
 
 @pytest.fixture(scope='session')
@@ -151,12 +155,14 @@ def _write_json_file(f_name, j_data):
 def login_to_adcm_over_api(app_fs, adcm_credentials):
     """Perform login via API call"""
     login_endpoint = f'{app_fs.adcm.url.rstrip("/")}/api/v1/token/'
-    app_fs.driver.get(app_fs.adcm.url)
+    LoginPage(app_fs.driver, app_fs.adcm.url).open()
     token = requests.post(login_endpoint, json=adcm_credentials).json()['token']
     with allure.step("Set token to localStorage"):
         auth = {'login': adcm_credentials['username'], 'token': token}
-        script = f'localStorage.setItem("auth", JSON.stringify({auth}))'
+        script = f'localStorage.setItem("auth", JSON.stringify({json.dumps(auth)}))'
         app_fs.driver.execute_script(script)
+        auth = app_fs.driver.execute_script("return localStorage.auth")
+        assert token in auth, "Token was not set in localStorage"
     AdminIntroPage(app_fs.driver, app_fs.adcm.url).open().wait_config_loaded()
 
 
