@@ -283,18 +283,24 @@ class BasePageObject:
             )
 
     def wait_element_attribute(
-        self, locator: Locator, attribute: str, expected_value: str, timeout: int = 5
+        self,
+        locator: Locator,
+        attribute: str,
+        expected_value: str,
+        exact_match: bool = True,
+        timeout: int = 5,
     ):
         """
-        Wait for the element to have `expected_value` in the locator's attribute
+        Wait for element to has locator's attribute equals to `expected_value`
+        If exact match is False then __contains__ is used
         """
+        comparator = '__eq__' if exact_match else '__contains__'
 
         def assert_attribute_value():
-            assert (
-                actual_value := self.find_element(locator).get_attribute(attribute)
-            ) == expected_value, (
+            actual_value = self.find_element(locator).get_attribute(attribute)
+            assert getattr(actual_value, comparator)(expected_value), (
                 f'Attribute {attribute} of element "{locator}" '
-                f'should be {expected_value}, not {actual_value}'
+                f'should be/has "{expected_value}", but "{actual_value}" was found'
             )
 
         wait_until_step_succeeds(assert_attribute_value, period=0.5, timeout=timeout)

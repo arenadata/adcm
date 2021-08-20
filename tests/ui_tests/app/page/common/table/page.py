@@ -42,7 +42,7 @@ class CommonTableObj(BasePageObject):
     @allure.step("Get all rows from the table")
     def get_all_rows(self) -> list:
         try:
-            return self.find_elements(self.table.row, timeout=5)
+            return self.find_elements(self.table.visible_row, timeout=5)
         except TimeoutException:
             return []
 

@@ -10,12 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=W0621
+import py
 import json
 import tempfile
 import requests
 import allure
 import pytest
 
+from _pytest.fixtures import SubRequest
+from _pytest.tmpdir import TempdirFactory
 from adcm_client.wrappers.docker import ADCM
 from deprecated import deprecated
 from selenium.common.exceptions import WebDriverException
@@ -44,13 +47,35 @@ def additional_adcm_init_config(request) -> dict:
 
 
 @pytest.fixture(scope="session")
-def web_driver(browser):
+def downloads_directory(tmpdir_factory: TempdirFactory) -> py.path.local:
+    """Folder in which browser downloads will be stored"""
+    downloads_dirname = 'browser-downloads'
+    return tmpdir_factory.mktemp(downloads_dirname)
+
+
+@pytest.fixture()
+def clean_downloads_fs(request: SubRequest, downloads_directory: py.path.local):
+    """Clean downloads directory before use"""
+    for item in downloads_directory.listdir():
+        item.remove()
+    yield
+    if request.node.rep_setup.passed and request.node.rep_call.failed:
+        allure.attach(
+            '\n'.join(str(doc) for doc in downloads_directory.listdir()),
+            name='Files in "Downloads" directory',
+            attachment_type=allure.attachment_type.TEXT,
+        )
+
+
+@pytest.fixture(scope="session")
+def web_driver(browser, downloads_directory):
     """
     Create ADCMTest object and initialize web driver session
     Destroy session after test is done
     :param browser: browser name from pytest_generate_tests hook
+    :param downloads_directory: directory to store browser downloads
     """
-    driver = ADCMTest(browser)
+    driver = ADCMTest(browser, downloads=downloads_directory)
     driver.create_driver()
     yield driver
     try:
