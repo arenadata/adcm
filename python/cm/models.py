@@ -14,9 +14,6 @@
 # limitations under the License.
 
 from __future__ import unicode_literals
-from itertools import chain
-from typing import Iterable, Optional
-
 from enum import Enum
 from itertools import chain
 from typing import Iterable, List, Optional

@@ -162,15 +162,6 @@ def gen_job_log(task) -> models.JobLog:
     )
 
 
-def gen_job_log(task) -> models.JobLog:
-    return models.JobLog.objects.create(
-        task=task,
-        status='CREATED',
-        start_date=timezone.now(),
-        finish_date=timezone.now(),
-    )
-
-
 def generate_hierarchy():  # pylint: disable=too-many-locals,too-many-statements
     """
     Generates hierarchy:
