@@ -13,7 +13,7 @@
 
 from django.test import TestCase
 
-import cm.models as models
+from cm import models
 from cm.unit_tests import utils
 
 
