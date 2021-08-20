@@ -29,6 +29,7 @@ from tests.ui_tests.app.page.common.popups.locator import HostCreationLocators
 from tests.ui_tests.app.page.common.popups.page import HostCreatePopupObj
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
+from tests.ui_tests.utils import assert_enough_rows
 
 
 @dataclass
@@ -54,11 +55,11 @@ class HostListPage(BasePageObject):
     @allure.step('Get host information from row #{row_num}')
     def get_host_row(self, row_num: int = 0) -> WebElement:
         def table_has_enough_rows():
-            self.__assert_enough_rows(row_num, self.table.row_count)
+            assert_enough_rows(row_num, self.table.row_count)
 
         wait_until_step_succeeds(table_has_enough_rows, timeout=5, period=0.1)
         rows = self.table.get_all_rows()
-        self.__assert_enough_rows(row_num, len(rows))
+        assert_enough_rows(row_num, len(rows))
         return rows[row_num]
 
     @allure.step('Get host information from table row #{row_num}')
