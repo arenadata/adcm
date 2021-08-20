@@ -17,7 +17,6 @@ from ansible.plugins.action import ActionBase
 from ansible.utils.vars import merge_hash
 
 import cm
-from cm import config
 from cm.api import add_hc, get_hc
 from cm.api_context import ctx
 from cm.adcm_config import set_object_config
@@ -193,7 +192,7 @@ class ContextActionModule(ActionBase):
                 {
                     'cluster_id': self._get_job_var(task_vars, 'cluster_id'),
                     'service_id': task_vars['job'].get('service_id', None),
-                }
+                },
             )
         elif obj_type == "component":
             check_context_type(task_vars, 'component')
@@ -292,7 +291,9 @@ def set_service_multi_state_by_id(cluster_id, service_id, multi_state):
     return _set_object_multi_state(obj, multi_state)
 
 
-def set_component_multi_state_by_name(cluster_id, service_id, component_name, service_name, multi_state):
+def set_component_multi_state_by_name(
+    cluster_id, service_id, component_name, service_name, multi_state
+):
     obj = get_component_by_name(cluster_id, service_id, component_name, service_name)
     return _set_object_multi_state(obj, multi_state)
 

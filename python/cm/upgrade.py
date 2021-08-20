@@ -15,7 +15,6 @@ import functools
 from django.db import transaction
 from version_utils import rpm
 
-from cm import config
 import cm.issue
 import cm.status_api
 from cm.adcm_config import proto_ref, obj_ref, switch_config
