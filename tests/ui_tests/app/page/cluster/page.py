@@ -23,6 +23,8 @@ from tests.ui_tests.app.page.cluster.locators import (
     ClusterServicesLocators,
     ClusterHostLocators,
     ClusterComponentsLocators,
+    ClusterStatusLocators,
+    ClusterActionLocators,
 )
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
@@ -57,6 +59,22 @@ class ComponentsHostRowInfo:
 
     name: str
     components: str
+
+
+@dataclass
+class StatusGroupInfo:
+    """Information from group on Status page"""
+
+    service: str
+    hosts: list
+
+
+@dataclass
+class ImportItemInfo:
+    """Information from import item on Import page"""
+
+    name: str
+    description: str
 
 
 class ClusterPageMixin(BasePageObject):
@@ -202,9 +220,35 @@ class ClusterImportPage(ClusterPageMixin):
     """Cluster page import menu"""
 
     MENU_SUFFIX = 'import'
+    MAIN_ELEMENTS = [
+        ObjectPageLocators.title,
+        ObjectPageLocators.subtitle,
+        ClusterImportLocators.save_btn,
+        ClusterImportLocators.import_item_block,
+    ]
 
     def get_import_items(self):
         return self.find_elements(ClusterImportLocators.import_item_block)
+
+    def click_checkbox_in_import_item(self, import_item: WebElement):
+        self.find_child(import_item, ClusterImportLocators.ImportItem.import_chbx).click()
+
+    @allure.step("Check if checkbox is checked")
+    def is_chxb_in_item_checked(self, import_item: WebElement) -> bool:
+        return "checked" in self.find_child(
+            import_item, ClusterImportLocators.ImportItem.import_chbx
+        ).get_attribute("class")
+
+    def click_save_btn(self):
+        self.find_and_click(ClusterImportLocators.save_btn)
+
+    def get_import_item_info(self, import_item: WebElement):
+        return ImportItemInfo(
+            name=self.find_child(import_item, ClusterImportLocators.ImportItem.name).text,
+            description=self.find_child(
+                import_item, ClusterImportLocators.ImportItem.description
+            ).text,
+        )
 
 
 class ClusterConfigPage(ClusterPageMixin):
@@ -420,3 +464,84 @@ class ClusterComponentsPage(ClusterPageMixin):
             self.find_element(ClusterComponentsLocators.save_btn).get_attribute("disabled")
             == "true"
         )
+
+
+class ClusterStatusPage(ClusterPageMixin):
+    """Cluster page config menu"""
+
+    MENU_SUFFIX = 'status'
+    MAIN_ELEMENTS = [
+        ObjectPageLocators.title,
+        ObjectPageLocators.subtitle,
+        ClusterMainLocators.text,
+    ]
+
+    def click_collapse_all_btn(self):
+        self.find_and_click(ClusterStatusLocators.collapse_btn)
+
+    def get_all_config_groups(self):
+        return [r for r in self.find_elements(ClusterStatusLocators.group_row) if r.is_displayed()]
+
+    @allure.step("Get group info by row")
+    def get_config_group_info(self, row: WebElement):
+        components_items = list()
+        self.wait_group_opened(row)
+        for item in self.find_children(row, ClusterStatusLocators.GroupRow.service_group):
+            components_items.append(
+                StatusGroupInfo(
+                    service=self.find_child(
+                        item, ClusterStatusLocators.GroupRow.ServiceGroupRow.service_name
+                    ).text.split("\n")[0],
+                    hosts=[
+                        h.text.split("\n")[1]
+                        for h in self.find_children(
+                            item, ClusterStatusLocators.GroupRow.ServiceGroupRow.host_name
+                        )
+                    ],
+                )
+            )
+        return components_items
+
+    def wait_group_opened(self, group_row):
+        """Wait when group info is visible."""
+
+        def wait_visible():
+            assert "visibility: visible;" in self.find_child(
+                group_row, ClusterStatusLocators.GroupRow.service_group
+            ).get_attribute("style"), "Group has not been opened"
+
+        wait_until_step_succeeds(wait_visible, period=1, timeout=10)
+
+    def wait_group_closed(self, group_row):
+        """Wait when group info is not visible."""
+
+        def wait_hide():
+            assert "visibility: hidden;" in self.find_child(
+                group_row, ClusterStatusLocators.GroupRow.service_group
+            ).get_attribute("style"), "Group has not been hidden"
+
+        wait_until_step_succeeds(wait_hide, period=1, timeout=10)
+
+
+class ClusterActionPage(ClusterPageMixin):
+    """Cluster page action menu"""
+
+    MENU_SUFFIX = 'action'
+    MAIN_ELEMENTS = [
+        ObjectPageLocators.title,
+        ObjectPageLocators.subtitle,
+        ClusterActionLocators.action_card,
+    ]
+
+    def get_all_actions(self):
+        return self.find_elements(ClusterActionLocators.action_card)
+
+    @allure.step("Run action")
+    def click_run_btn_in_action(self, action: WebElement):
+        self.find_child(action, ClusterActionLocators.ActionCard.play_btn).click()
+        self.wait_element_visible(ActionDialog.body)
+        self.find_and_click(ActionDialog.run)
+
+    @allure.step("Check that action page is empty")
+    def check_empty_page(self):
+        assert "Nothing to display." in self.find_element(ClusterActionLocators.info_text).text

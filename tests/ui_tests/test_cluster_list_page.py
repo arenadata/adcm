@@ -31,6 +31,9 @@ from tests.ui_tests.app.page.cluster.page import (
     ClusterServicesPage,
     ClusterComponentsPage,
     ComponentsHostRowInfo,
+    ClusterStatusPage,
+    ImportItemInfo,
+    ClusterActionPage,
 )
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.host.page import (
@@ -638,3 +641,86 @@ class TestClusterComponentsPage:
             assert (
                 cluster_components_page.check_that_save_btn_disabled()
             ), "Save button should be disabled"
+
+
+class TestClusterStatusPage:
+    @pytest.mark.usefixtures("create_community_cluster")
+    def test_open_by_tab_cluster_status_page(self, app_fs):
+        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        cluster_main_page.open_status_tab()
+        cluster_status_page = ClusterStatusPage(app_fs.driver, app_fs.adcm.url, 1)
+        cluster_status_page.wait_page_is_opened()
+        cluster_status_page.check_all_elements()
+
+    def test_filter_cluster_status_page(
+        self, app_fs, create_community_cluster_with_host_and_service
+    ):
+        cluster, host = create_community_cluster_with_host_and_service
+        cluster.hostcomponent_set(
+            (host, cluster.service(name=SERVICE_NAME).component(name=COMPONENT_NAME))
+        )
+        cluster_status_page = ClusterStatusPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        group_row = cluster_status_page.get_all_config_groups()[0]
+        cluster_status_page.click_collapse_all_btn()
+        cluster_status_page.wait_group_opened(group_row)
+        cluster_status_page.click_collapse_all_btn()
+        cluster_status_page.wait_group_closed(group_row)
+        cluster_status_page.config.click_on_group(title=SERVICE_NAME)
+        with allure.step("Check group rows"):
+            group_info = cluster_status_page.get_config_group_info(group_row)
+            assert (
+                group_info[0].service == COMPONENT_NAME
+            ), f"Component name should be {COMPONENT_NAME} and not {group_info[0].service}"
+            assert (
+                group_info[0].hosts[0] == HOST_NAME
+            ), f"Host name should be {HOST_NAME} and not {group_info[0].hosts[0]}"
+
+
+class TestClusterImportPage:
+    @pytest.mark.usefixtures("create_community_cluster")
+    def test_open_by_tab_cluster_import_page(self, app_fs):
+        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        cluster_main_page.open_import_tab()
+        cluster_status_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, 1)
+        cluster_status_page.wait_page_is_opened()
+        cluster_status_page.check_all_elements()
+
+    @pytest.mark.usefixtures("_create_import_cluster_with_service")
+    def test_check_cluster_import_from_cluster_import_page(self, app_fs):
+        params = {"message": "Successfully saved"}
+        import_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        import_item = import_page.get_import_items()[0]
+        with allure.step("Check import on import page"):
+            assert import_page.get_import_item_info(import_item) == ImportItemInfo(
+                'Pre-uploaded Dummy cluster to import', 'Pre-uploaded Dummy cluster to import 2.5'
+            ), "Text in import item changed"
+        import_page.close_info_popup()
+        import_page.click_checkbox_in_import_item(import_item)
+        import_page.click_save_btn()
+        with allure.step("Check that import is saved"):
+            assert (
+                import_page.get_info_popup_text() == params["message"]
+            ), "No message about success"
+            assert import_page.is_chxb_in_item_checked(
+                import_item
+            ), "Checkbox with import should have been checked"
+
+
+@pytest.mark.usefixtures("create_community_cluster")
+class TestClusterActionPage:
+    def test_open_by_tab_cluster_action_page(self, app_fs):
+        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        cluster_main_page.open_actions_tab()
+        cluster_action_page = ClusterActionPage(app_fs.driver, app_fs.adcm.url, 1)
+        cluster_action_page.wait_page_is_opened()
+        cluster_action_page.check_all_elements()
+
+    def test_run_action_on_cluster_action_page(self, app_fs):
+        cluster_action_page = ClusterActionPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        cluster_action = cluster_action_page.get_all_actions()[0]
+        cluster_action_page.click_run_btn_in_action(cluster_action)
+        cluster_action_page.check_empty_page()
+        with allure.step("Check success cluster job"):
+            assert (
+                cluster_action_page.header.get_in_progress_job_amount_from_header() == "1"
+            ), "There should be 1 in progress cluster job in header"
