@@ -114,13 +114,19 @@ ERRORS = {
     'NO_JOBS_RUNNING': ("no jobs running", rfs.HTTP_409_CONFLICT, ERR),
     'BAD_QUERY_PARAMS': ("bad query params", rfs.HTTP_400_BAD_REQUEST),
     'DUMP_LOAD_CLUSTER_ERROR': ("Dumping or Loading error", rfs.HTTP_409_CONFLICT),
-    'HOST_GROUP_ERROR': (
-        "host already is a member of another group of this object",
-        rfs.HTTP_409_CONFLICT,
+    'GROUP_CONFIG_HOST_ERROR': (
+        (
+            "host is not available for this object,"
+            " or host already is a member of another group of this object"
+        ),
+        rfs.HTTP_400_BAD_REQUEST,
     ),
     'NOT_CHANGEABLE_FIELDS': ("fields cannot be changed", rfs.HTTP_400_BAD_REQUEST, ERR),
     'GROUP_CONFIG_TYPE_ERROR': (
-        "invalid type object for group config",
+        (
+            "invalid type object for group config,"
+            " valid types: `cluster`, `service`, `component` and `provider`"
+        ),
         rfs.HTTP_400_BAD_REQUEST,
         ERR,
     ),

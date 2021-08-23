@@ -11,12 +11,16 @@
 # limitations under the License.
 
 
+from django.contrib.contenttypes.models import ContentType
+from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import FilterSet, CharFilter
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
+from api.host.serializers import HostSerializer
 from cm.models import GroupConfig
 from .serializers import GroupConfigSerializer, revert_model_name
-from django_filters.rest_framework import FilterSet, CharFilter
-from django.contrib.contenttypes.models import ContentType
 
 
 class GroupConfigFilterSet(FilterSet):
@@ -38,3 +42,13 @@ class GroupConfigViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
     queryset = GroupConfig.objects.all()
     serializer_class = GroupConfigSerializer
     filterset_class = GroupConfigFilterSet
+
+    @action(methods=['GET'], detail=True)
+    def host_candidate(self, request, pk):
+        obj = get_object_or_404(self.queryset, pk=pk)
+        if 'limit' in request.query_params or 'offset' in request.query_params:
+            page = self.paginate_queryset(obj.host_candidate())
+            serializer = HostSerializer(page, many=True, context={'request': request})
+            return self.get_paginated_response(serializer.data)
+        serializer = HostSerializer(obj.host_candidate(), many=True, context={'request': request})
+        return Response(serializer.data)

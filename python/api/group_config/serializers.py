@@ -16,13 +16,21 @@ from rest_framework import serializers
 from rest_framework.reverse import reverse
 
 from cm.errors import AdcmEx
-from cm.models import GroupConfig, Host
+from cm.models import GroupConfig, Host, Cluster, ClusterObject, ServiceComponent, HostProvider
 
 
 class HostFlexFieldsSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
     class Meta:
         model = Host
-        fields = ('id', 'cluster_id', 'prototype_id', 'provider_id', 'config_id', 'fqdn', 'state')
+        fields = (
+            'id',
+            'cluster_id',
+            'prototype_id',
+            'provider_id',
+            'config_id',
+            'fqdn',
+            'state',
+        )
 
 
 def check_object_type(type_name):
@@ -72,11 +80,49 @@ class GroupConfigsHyperlinkedIdentityField(serializers.HyperlinkedIdentityField)
         return f'{url}?object_id={obj.id}&object_type={obj.prototype.type}'
 
 
+class HostCandidateHyperlinkedIdentityField(serializers.HyperlinkedIdentityField):
+    """Return url for host candidate for group config use action"""
+
+    view_name = 'group-config-host-candidate'
+
+    def get_url(self, obj, view_name, request, format):  # pylint: disable=redefined-builtin
+        return reverse(viewname=view_name, args=[obj.pk], request=request, format=format)
+
+
+class HostCandidateHyperlinkedIdentityFieldAlternative(serializers.HyperlinkedIdentityField):
+    """Return url for host candidate for group config use filters"""
+
+    view_name = 'host'
+
+    def get_url(self, obj, view_name, request, format):  # pylint: disable=redefined-builtin
+        url = reverse(viewname=view_name, request=request, format=format)
+        obj = obj.object
+        if isinstance(obj, Cluster):
+            query = f'?cluster_id={obj.id}'
+        elif isinstance(obj, HostProvider):
+            query = f'?provider_id={obj.id}'
+        elif isinstance(obj, ClusterObject):
+            query = f'?hostcomponent__service_id={obj.id}'
+        elif isinstance(obj, ServiceComponent):
+            query = f'?hostcomponent_component_id={obj.id}'
+        else:
+            raise AdcmEx('GROUP_CONFIG_TYPE_ERROR')
+        group_config_ids = ','.join(map(str, obj.group_configs.all().values_list('id', flat=True)))
+        query = f'{query}&exclude_groupconfig__in={group_config_ids}'
+        return f'{url}{query}'
+
+
 class GroupConfigSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
     object_type = ObjectTypeField()
     url = serializers.HyperlinkedIdentityField(view_name='group-config-detail')
     hosts = serializers.SerializerMethodField()
     config = serializers.HyperlinkedRelatedField(view_name='config-detail', read_only=True)
+    host_candidate = HostCandidateHyperlinkedIdentityField(
+        view_name=HostCandidateHyperlinkedIdentityField.view_name
+    )
+    host_candidate_alternative = HostCandidateHyperlinkedIdentityFieldAlternative(
+        view_name=HostCandidateHyperlinkedIdentityFieldAlternative.view_name
+    )
 
     class Meta:
         model = GroupConfig
@@ -88,9 +134,14 @@ class GroupConfigSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializ
             'description',
             'hosts',
             'config',
+            'host_candidate',
+            'host_candidate_alternative',
             'url',
         )
-        expandable_fields = {'hosts': (HostFlexFieldsSerializer, {'many': True})}
+        expandable_fields = {
+            'hosts': (HostFlexFieldsSerializer, {'many': True}),
+            'host_candidate': (HostFlexFieldsSerializer, {'many': True}),
+        }
 
     def get_hosts(self, obj):
         url = reverse(

@@ -592,6 +592,24 @@ class GroupConfig(ADCMModel):
         group_keys = cl.attr.get('group_keys', {})
         return get_diff(config, group_keys)
 
+    def host_candidate(self):
+        """Returns candidate hosts valid to add to the group"""
+        if isinstance(self.object, (Cluster, HostProvider)):
+            hosts = self.object.host_set.all()
+        elif isinstance(self.object, ClusterObject):
+            hosts = Host.objects.filter(
+                cluster=self.object.cluster, hostcomponent__service=self.object
+            ).distinct()
+        elif isinstance(self.object, ServiceComponent):
+            hosts = Host.objects.filter(
+                cluster=self.object.cluster, hostcomponent__component=self.object
+            ).distinct()
+        else:
+            raise AdcmEx('GROUP_CONFIG_TYPE_ERROR')
+        return hosts.difference(
+            Host.objects.filter(groupconfig__in=self.object.group_configs.all())
+        )
+
     @transaction.atomic()
     def save(self, *args, **kwargs):
         obj = self.object_type.model_class().obj.get(id=self.object_id)
@@ -625,12 +643,8 @@ class GroupConfigHost(ADCMModel):
         unique_together = ['group', 'host']
 
     def save(self, *args, **kwargs):
-        groups = GroupConfig.objects.filter(
-            object_id=self.group.object_id, object_type=self.group.object_type
-        )
-        for group in groups:
-            if self.host in group.hosts.all():
-                raise AdcmEx('HOST_GROUP_ERROR')
+        if self.host not in self.group.host_candidate():
+            raise AdcmEx('GROUP_CONFIG_HOST_ERROR')
         super().save(*args, **kwargs)
 
 
