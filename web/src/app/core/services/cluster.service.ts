@@ -115,7 +115,7 @@ export class ClusterService {
       .pipe(
         tap((cluster) => (this.Cluster = cluster)),
         switchMap((cluster) => {
-          if (cluster && !!service) {
+          if (typeName === 'group_configs') {
             return service.get(id);
           } else if (cluster && typeName === 'servicecomponent') {
             return this.serviceComponentService.get(id);
