@@ -19,7 +19,7 @@ from coreapi.exceptions import ErrorMessage
 pytestmark = allure.link(url="https://arenadata.atlassian.net/browse/ADCM-1540", name="Test cases")
 
 
-@pytest.fixture
+@pytest.fixture()
 def testing_cluster(sdk_client_fs):
     """
     Prepared cluster for test

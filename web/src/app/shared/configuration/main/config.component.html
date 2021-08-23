@@ -4,9 +4,8 @@
 <div [@history]="historyShow ? 'showTools' : 'hideTools'">
   <app-history #history (compare)="compareVersion($event)" (version)="changeVersion($event)"></app-history>
 </div>
-<ng-container *ngIf="config$ | async; else dumb"></ng-container>
-<ng-template #dumb><div class="pre-load"><span>{{ loadingStatus }}</span></div></ng-template>
+<div class="pre-load" *ngIf="isLoading"><span>{{ loadingStatus }}</span></div>
 <div class="fields" [@history]="historyShow ? 'show' : 'hide'">
-  <app-config-fields #fls [model]="rawConfig" (event)="onReady()"></app-config-fields>
+  <app-config-fields #fls [model]="rawConfig | async" (event)="onReady()"></app-config-fields>
 </div>
 

@@ -18,6 +18,7 @@ from rest_framework.authtoken.models import Token
 import cm
 from cm.errors import AdcmEx
 from cm.models import UserProfile, Role
+from cm.stack import MAX_NAME_LENGTH
 from api.api_views import check_obj, hlink
 from api.serializers import UrlField
 
@@ -65,13 +66,22 @@ class GroupDetailSerializer(GroupSerializer):
 
 
 class UserSerializer(serializers.Serializer):
-    username = serializers.CharField()
+    username = serializers.CharField(max_length=MAX_NAME_LENGTH)
     password = serializers.CharField(write_only=True)
     url = hlink('user-details', 'username', 'username')
     change_group = hlink('add-user-group', 'username', 'username')
     change_password = hlink('user-passwd', 'username', 'username')
     change_role = hlink('change-user-role', 'username', 'username')
     is_superuser = serializers.BooleanField(required=False)
+
+    def to_internal_value(self, data):
+        username = data['username']
+        if len(username) > MAX_NAME_LENGTH:
+            raise AdcmEx(
+                'LONG_NAME',
+                f'User name is too long, up to {MAX_NAME_LENGTH} symbols required',
+            )
+        return super().to_internal_value(data)
 
     @transaction.atomic
     def create(self, validated_data):
@@ -99,7 +109,7 @@ class UserDetailSerializer(UserSerializer):
 class AddUser2GroupSerializer(serializers.Serializer):
     name = serializers.CharField()
 
-    def update(self, user, validated_data):  # pylint: disable=arguments-differ
+    def update(self, user, validated_data):  # pylint: disable=arguments-renamed
         group = check_obj(Group, {'name': validated_data.get('name')}, 'GROUP_NOT_FOUND')
         group.user_set.add(user)
         return group
@@ -109,7 +119,7 @@ class AddUserRoleSerializer(serializers.Serializer):
     role_id = serializers.IntegerField()
     name = serializers.CharField(read_only=True)
 
-    def update(self, user, validated_data):  # pylint: disable=arguments-differ
+    def update(self, user, validated_data):  # pylint: disable=arguments-renamed
         role = check_obj(Role, {'id': validated_data.get('role_id')}, 'ROLE_NOT_FOUND')
         return cm.api.add_user_role(user, role)
 
@@ -118,7 +128,7 @@ class AddGroupRoleSerializer(serializers.Serializer):
     role_id = serializers.IntegerField()
     name = serializers.CharField(read_only=True)
 
-    def update(self, group, validated_data):  # pylint: disable=arguments-differ
+    def update(self, group, validated_data):  # pylint: disable=arguments-renamed
         role = check_obj(Role, {'id': validated_data.get('role_id')}, 'ROLE_NOT_FOUND')
         return cm.api.add_group_role(group, role)
 
@@ -128,7 +138,7 @@ class UserPasswdSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     @transaction.atomic
-    def update(self, user, validated_data):  # pylint: disable=arguments-differ
+    def update(self, user, validated_data):  # pylint: disable=arguments-renamed
         user.set_password(validated_data.get('password'))
         user.save()
         token = Token.objects.get(user=user)

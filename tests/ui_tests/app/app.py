@@ -41,6 +41,11 @@ class ADCMTest:
         self.opts.add_argument("--start-maximized")
         self.opts.add_argument("--enable-logging")
         self.opts.add_argument("--enable-automation")
+        if browser == "Chrome":
+            self.opts.add_argument("--window-size=1366,768")
+        else:
+            self.opts.add_argument("--width=1366")
+            self.opts.add_argument("--height=768")
         self.capabilities = self.opts.capabilities.copy()
         self.capabilities["acceptSslCerts"] = True
         self.capabilities["acceptInsecureCerts"] = True
@@ -67,7 +72,6 @@ class ADCMTest:
                 if self.capabilities["browserName"] == "firefox"
                 else webdriver.Chrome(options=self.opts, desired_capabilities=self.capabilities)
             )
-        self.driver.set_window_size(1800, 1000)
         self.driver.implicitly_wait(1)
         self.ui = Ui(self.driver)
 
@@ -97,20 +101,21 @@ class ADCMTest:
     def base_page(self):
         self.driver.get(self.adcm.url)
 
-    @allure.step("Open new tab")
+    @allure.step("Open a new tab")
     def new_tab(self):
+        self.driver.execute_script("window.open('');")
+        # close all tabs
+        for tab in self.driver.window_handles[:-1]:
+            self.driver.switch_to.window(tab)
+            self.driver.close()
+        # set focus to the newly created window
+        self.driver.switch_to.window(self.driver.window_handles[-1])
         self.driver.delete_all_cookies()
         try:
             self.driver.execute_script("window.localStorage.clear();")
         except WebDriverException:
             # we skip JS error here since we have no simple way to detect localStorage availability
             pass
-        self.driver.execute_script("window.open('');")
-
-    @allure.step("Close tab")
-    def close_tab(self):
-        self.driver.close()
-        self.driver.switch_to.window(self.driver.window_handles[-1])
 
     def destroy(self):
         self.driver.quit()

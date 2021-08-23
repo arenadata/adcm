@@ -23,7 +23,7 @@ from django.db import IntegrityError
 
 from adcm.settings import ADCM_VERSION
 from cm.logger import log
-import cm.config as config
+from cm import config
 import cm.stack
 import cm.status_api
 from cm.adcm_config import proto_ref, get_prototype_config, init_object_config, switch_config
@@ -570,6 +570,7 @@ def copy_stage(bundle_hash, bundle_proto):
     try:
         bundle.save()
     except IntegrityError:
+        shutil.rmtree(os.path.join(config.BUNDLE_DIR, bundle.hash))
         msg = 'Bundle "{}" {} already installed'
         err('BUNDLE_ERROR', msg.format(bundle_proto.name, bundle_proto.version))
 

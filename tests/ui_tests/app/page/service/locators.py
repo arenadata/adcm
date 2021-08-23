@@ -10,13 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 from selenium.webdriver.common.by import By
 
 from tests.ui_tests.app.helpers.locator import Locator
 
 
-class CommonPopupLocators:
-    """ADCM ppopu locators"""
+class ServiceImportLocators:
+    """Service import page elements locators"""
 
-    block = Locator(By.XPATH, "//simple-snack-bar", "Popup block")
-    hide_btn = Locator(By.XPATH, "//button[./span[text()='Hide']]", "Hide pop up button")
+    import_item_block = Locator(By.XPATH, "//div[@class='items']/div", "Import item block")

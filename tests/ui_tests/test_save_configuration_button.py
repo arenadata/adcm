@@ -132,7 +132,7 @@ def cluster(bundle: Bundle) -> Cluster:
 
 
 @pytest.fixture()
-def cluster_config_page(app_fs, cluster: Cluster, login_to_adcm):
+def cluster_config_page(app_fs, cluster: Cluster, login_to_adcm_over_api):
     return Configuration(
         app_fs.driver, "{}/cluster/{}/config".format(app_fs.adcm.url, cluster.cluster_id)
     )
@@ -145,7 +145,7 @@ def service(cluster: Cluster, sdk_client_fs: ADCMClient) -> Service:
 
 
 @pytest.fixture()
-def service_config_page(app_fs, service: Service, login_to_adcm) -> Configuration:
+def service_config_page(app_fs, service: Service, login_to_adcm_over_api) -> Configuration:
     return Configuration(
         app_fs.driver,
         "{}/cluster/{}/service/{}/config".format(app_fs.adcm.url, service.cluster_id, service.id),
@@ -158,7 +158,7 @@ def provider(bundle: Bundle) -> Provider:
 
 
 @pytest.fixture()
-def provider_config_page(app_fs, provider: Provider, login_to_adcm) -> Configuration:
+def provider_config_page(app_fs, provider: Provider, login_to_adcm_over_api) -> Configuration:
 
     return Configuration(
         app_fs.driver,
@@ -172,7 +172,7 @@ def host(provider: Provider) -> Host:
 
 
 @pytest.fixture()
-def host_config_page(app_fs, host: Host, login_to_adcm) -> Configuration:
+def host_config_page(app_fs, host: Host, login_to_adcm_over_api) -> Configuration:
     return Configuration(
         app_fs.driver,
         "{}/host/{}/config".format(app_fs.adcm.url, host.id),
@@ -199,7 +199,7 @@ def _update_config_property(config_page: Configuration, field, field_type: str):
 
 
 def _test_save_configuration_button(
-        config_page: Configuration, prop_types: list, group_name=None, use_advanced=False
+    config_page: Configuration, prop_types: list, group_name=None, use_advanced=False
 ):
     if use_advanced:
         config_page.click_advanced()
@@ -225,9 +225,8 @@ def _test_save_configuration_button(
             value_to_check = _get_test_value(field_type)
             if field_type == "boolean":
                 assert (
-                    config_page.get_checkbox_element_status(
-                        config_page.get_field_checkbox(field)
-                    ) == value_to_check
+                    config_page.get_checkbox_element_status(config_page.get_field_checkbox(field))
+                    == value_to_check
                 )
             else:
                 if field_type == "structure":

@@ -10,26 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=W0621
-import json
 import os
-import sys
 import tarfile
-import tempfile
-from typing import Optional
+from typing import Optional, List
 
-import allure
 import pytest
+import sys
+import yaml
+
 from _pytest.python import Function
-from adcm_client.wrappers.docker import ADCM
+from pathlib import PosixPath
 from allure_commons.model2 import TestResult, Parameter
 from allure_pytest.listener import AllureListener
-from deprecated import deprecated
-from selenium.common.exceptions import WebDriverException
 
-from tests.ui_tests.app.app import ADCMTest
-from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
-from tests.ui_tests.app.page.login.page import LoginPage
-from tests.ui_tests.app.pages import LoginPage as DeprecatedLoginPage
 
 pytest_plugins = "adcm_pytest_plugin"
 
@@ -40,17 +33,16 @@ rootdir = os.path.dirname(testdir)
 pythondir = os.path.abspath(os.path.join(rootdir, 'python'))
 sys.path.append(pythondir)
 
-
-def process_browser_log_entry(entry):
-    response = json.loads(entry['message'])['message']
-    return response
-
-
-def write_json_file(f_name, j_data):
-    f_path = "/".join([tempfile.mkdtemp(), f_name])
-    with open(f_path, 'w') as f:
-        json.dump(j_data, f, indent=2)
-    return f_path
+# can be used to dump it to file to create dummy bundle archives
+DUMMY_CLUSTER_BUNDLE = [
+    {
+        'type': 'cluster',
+        'name': 'test_cluster',
+        'description': 'community description',
+        'version': '1.5',
+        'edition': 'community',
+    }
+]
 
 
 def pytest_generate_tests(metafunc):
@@ -99,101 +91,12 @@ def _get_listener_by_item_if_present(item: Function) -> Optional[AllureListener]
     return None
 
 
-@pytest.fixture(scope="session")
-def web_driver(browser):
-    """
-    Create ADCMTest object and initialize web driver session
-    Destroy session after test is done
-    :param browser: browser name from pytest_generate_tests hook
-    """
-    driver = ADCMTest(browser)
-    driver.create_driver()
-    yield driver
-    try:
-        driver.destroy()
-    # If session connection was lost just pass
-    # session will be closed automatically on driver side after timeout
-    except WebDriverException:
-        pass
-
-
 @pytest.fixture()
-def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
+def bundle_archive(request, tmp_path):
     """
-    Attach ADCM API to ADCMTest object and open new tab in browser for test
-    Collect logs on failure and close browser tab after test is done
+    Prepare tar file from dir without using bundle packer
     """
-    try:
-        web_driver.new_tab()
-    # Recreate session on WebDriverException
-    except WebDriverException:
-        web_driver.create_driver()
-    web_driver.attache_adcm(adcm_fs)
-    yield web_driver
-    try:
-        if request.node.rep_setup.failed or request.node.rep_call.failed:
-            allure.attach(
-                web_driver.driver.page_source,
-                name="page_source",
-                attachment_type=allure.attachment_type.TEXT,
-            )
-            web_driver.driver.execute_script("document.body.bgColor = 'white';")
-            allure.attach(
-                web_driver.driver.get_screenshot_as_png(),
-                name="screenshot",
-                attachment_type=allure.attachment_type.PNG,
-            )
-            # this way of getting logs does not work for Firefox, see ADCM-1497
-            if web_driver.capabilities['browserName'] != 'firefox':
-                console_logs = web_driver.driver.get_log('browser')
-                perf_log = web_driver.driver.get_log("performance")
-                events = [process_browser_log_entry(entry) for entry in perf_log]
-                network_logs = [event for event in events if 'Network.response' in event['method']]
-                events_json = write_json_file("all_logs", events)
-                network_console_logs = write_json_file("network_log", network_logs)
-                console_logs = write_json_file("console_logs", console_logs)
-                allure.attach(
-                    web_driver.driver.current_url,
-                    name='Current URL',
-                    attachment_type=allure.attachment_type.TEXT,
-                )
-                allure.attach.file(
-                    console_logs, name="console_log", attachment_type=allure.attachment_type.TEXT
-                )
-                allure.attach.file(
-                    network_console_logs,
-                    name="network_log",
-                    attachment_type=allure.attachment_type.TEXT,
-                )
-                allure.attach.file(
-                    events_json, name="all_events_log", attachment_type=allure.attachment_type.TEXT
-                )
-    except AttributeError:
-        # rep_setup and rep_call attributes are generated in runtime and can be absent
-        pass
-    web_driver.close_tab()
-
-
-@pytest.fixture(scope='session')
-def adcm_credentials():
-    """
-    Provides ADCM username and password by default
-    Examples:
-        login(**adcm_credentials)
-    """
-    return {'username': 'admin', 'password': 'admin'}
-
-
-@deprecated("Use auth_to_adcm")
-@pytest.fixture(scope="function")
-def login_to_adcm(app_fs, adcm_credentials):
-    """Perform login on Login page ADCM
-    :param app_fs:
-    :param adcm_credentials:
-    """
-    app_fs.driver.get(app_fs.adcm.url)
-    login = DeprecatedLoginPage(app_fs.driver)
-    login.login(**adcm_credentials)
+    return _pack_bundle(request.param, tmp_path)
 
 
 def _pack_bundle(stack_dir, archive_dir):
@@ -205,17 +108,46 @@ def _pack_bundle(stack_dir, archive_dir):
 
 
 @pytest.fixture()
-def bundle_archive(request, tmp_path):
+def bundle_archives(request, tmp_path) -> List[str]:
     """
-    Prepare tar file from dir without using bundle packer
+    Prepare multiple bundles as in bundle_archive fixture
     """
-    return _pack_bundle(request.param, tmp_path)
+    return [_pack_bundle(bundle_path, tmp_path) for bundle_path in request.param]
 
 
-@pytest.fixture(scope="function")
-def auth_to_adcm(app_fs, adcm_credentials):
-    """Perform login on Login page ADCM"""
+@pytest.fixture(params=[[DUMMY_CLUSTER_BUNDLE]])
+def create_bundle_archives(request, tmp_path: PosixPath) -> List[str]:
+    """
+    Create dummy bundle archives to test pagination
+    It no license required in archive type of params should be List[List[dict]]
+        otherwise Tuple[List[List[dict]], str] is required
 
-    login = LoginPage(app_fs.driver, app_fs.adcm.url).open()
-    login.login_user(**adcm_credentials)
-    login.wait_url_contains_path(AdminIntroPage(app_fs.driver, app_fs.adcm.url).path)
+    If you need licence then `params` should be of type Tuple[List[List[dict]], str]
+        where first tuple item is a list of bundle configs
+        and second is path to license file (for bundles with licenses)
+    ! License archive is always named 'license.txt'
+
+    :returns: list with paths to archives
+    """
+    archives = []
+    if isinstance(request.param, list):
+        bundle_configs = request.param
+        license_path = 'license.txt'
+    elif isinstance(request.param, tuple) and len(request.param) == 2:
+        bundle_configs, license_path = request.param
+    else:
+        raise TypeError('Request parameter should be either List[dict] or Tuple[List[dict], str]')
+    for i, config in enumerate(bundle_configs):
+        archive_path = tmp_path / f'spam_bundle_{i}.tar'
+        config_fp = (bundle_dir := tmp_path / f'spam_bundle_{i}') / 'config.yaml'
+        bundle_dir.mkdir()
+        with open(config_fp, 'w') as config_file:
+            yaml.safe_dump(config, config_file)
+        with tarfile.open(archive_path, 'w') as archive:
+            archive.add(config_fp, arcname='config.yaml')
+            # assume that ist is declared in first item
+            if 'license' in config[0]:
+                license_fp = os.path.join(license_path)
+                archive.add(license_fp, arcname=config[0]['license'])
+        archives.append(str(archive_path))
+    return archives

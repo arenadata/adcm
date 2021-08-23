@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from dataclasses import dataclass
+
 from selenium.webdriver.common.by import By
 
 
@@ -21,3 +22,15 @@ class Locator:
     by: By
     value: str
     name: str
+
+
+@dataclass
+class TemplateLocator(Locator):
+    """
+    Similar to Locator, but with template in `value`
+    and ability to generate Locators from template
+    """
+
+    def __call__(self, *args) -> Locator:
+        """Get regular Locator by passing arguments to format function"""
+        return Locator(by=self.by, value=self.value.format(*args), name=self.name.format(*args))

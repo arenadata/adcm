@@ -22,8 +22,8 @@ export class ObjectsHelper {
     return [
       ObjectsHelper.getObject(objects, 'host'),
       ObjectsHelper.getObject(objects, 'provider'),
-      ObjectsHelper.getObject(objects, 'service'),
       ObjectsHelper.getObject(objects, 'component'),
+      ObjectsHelper.getObject(objects, 'service'),
       ObjectsHelper.getObject(objects, 'cluster'),
     ].filter(Boolean);
   }

@@ -1,11 +1,12 @@
 import os
 
 
-VARIABLES = [("2.2", "3.0", 'max', 'min', "2.5"),
-             ("2.2", "3.0", 'max', 'min_strict', "3.0"),
-             ("2.2", "3.0", 'max_strict', 'min_strict', "2.5"),
-             ("2.2", "3.0", 'max_strict', 'min', "2.2"),
-             ]
+VARIABLES = [
+    ("2.2", "3.0", 'max', 'min', "2.5"),
+    ("2.2", "3.0", 'max', 'min_strict', "3.0"),
+    ("2.2", "3.0", 'max_strict', 'min_strict', "2.5"),
+    ("2.2", "3.0", 'max_strict', 'min', "2.2"),
+]
 
 TEMPLATE_EXPORT_CLUSTER = """
 # Licensed under the Apache License, Version 2.0 (the "License");
