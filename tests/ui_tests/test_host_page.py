@@ -15,7 +15,6 @@ import os
 from typing import (
     List,
     Tuple,
-    Optional,
 )
 
 import allure
@@ -31,7 +30,7 @@ from adcm_pytest_plugin import utils
 
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.helpers.locator import Locator
-from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
+from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.host.locators import (
@@ -45,9 +44,7 @@ from tests.ui_tests.app.page.host.page import (
 )
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
 from tests.ui_tests.app.page.host_list.page import HostListPage
-from tests.ui_tests.app.page.host_list.page import HostRowInfo
 from tests.ui_tests.utils import wait_and_assert_ui_info
-from .utils import check_host_value
 
 # defaults
 HOST_FQDN = 'best-host'
@@ -143,14 +140,6 @@ def check_job_name(sdk: ADCMClient, action_display_name: str):
     assert action_display_name in jobs_display_names, (
         f'Action with name "{action_display_name}" was not ran. ' f'Job names found: {jobs_display_names}'
     )
-
-
-def check_host_info(host_info: HostRowInfo, fqdn: str, provider: str, cluster: Optional[str], state: str):
-    """Check all values in host info"""
-    check_host_value('FQDN', host_info.fqdn, fqdn)
-    check_host_value('provider', host_info.provider, provider)
-    check_host_value('cluster', host_info.cluster, cluster)
-    check_host_value('state', host_info.state, state)
 
 
 def _check_menu(
@@ -440,7 +429,7 @@ def test_field_validation(
         'wrong_value': 'etonechislo',
     }
     host_page = open_config(page)
-    host_page.wait_element_visible(host_page.config.config.field_input(REGULAR_FIELD_ADCM_TEST))
+    host_page.wait_element_visible(host_page.config.locators.field_input(REGULAR_FIELD_ADCM_TEST))
     host_page.config.check_password_confirm_required(params['pass_name'])
     host_page.config.check_field_is_required(params['req_name'])
     host_page.config.type_in_config_field(params['wrong_value'], REGULAR_FIELD_ADCM_TEST)

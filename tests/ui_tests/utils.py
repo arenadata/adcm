@@ -12,7 +12,7 @@
 
 from collections import UserDict
 from contextlib import contextmanager
-from typing import Callable, TypeVar, Any, Union, Optional, Dict, Tuple
+from typing import Callable, TypeVar, Any, Union, Optional, Dict, Tuple, Sized
 
 import allure
 from adcm_client.objects import ADCMClient, Cluster
@@ -262,3 +262,16 @@ def check_that_all_fields_and_groups_invisible(sdk_client: ADCMClient, path, app
         assert (
             not field.is_displayed()
         ), f"Advanced field should be invisible. Field classes: {field.get_attribute('class')}"
+
+
+@contextmanager
+def expect_rows_amount_change(get_all_rows: Callable[[], Sized]):
+    """Waits for row count to be changed"""
+    current_amount = len(get_all_rows())
+
+    yield
+
+    def check_rows_amount_is_changed():
+        assert len(get_all_rows()) != current_amount, "Amount of rows on the page hasn't changed"
+
+    wait_until_step_succeeds(check_rows_amount_is_changed, period=1, timeout=10)

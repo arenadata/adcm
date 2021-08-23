@@ -20,7 +20,7 @@ from adcm_client.objects import ADCMClient, Bundle
 
 from tests.conftest import DUMMY_CLUSTER_BUNDLE
 from tests.ui_tests.app.app import ADCMTest
-from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
+from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.bundle.page import BundlePage
 from tests.ui_tests.app.page.bundle_list.page import BundleListPage, BundleInfo
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
@@ -145,9 +145,9 @@ def test_delete_bundle(create_bundle_archives: List[str], page: BundleListPage):
 )
 def test_two_bundles(create_bundle_archives: List[str], page: BundleListPage):
     """Upload two bundles"""
-    with page.table.wait_rows_change():
+    with page.table.expect_rows_amount_change():
         page.upload_bundle(create_bundle_archives[0])
-    with page.table.wait_rows_change():
+    with page.table.expect_rows_amount_change():
         page.upload_bundle(create_bundle_archives[1])
     with allure.step('Check amount of rows'):
         rows = page.table.row_count

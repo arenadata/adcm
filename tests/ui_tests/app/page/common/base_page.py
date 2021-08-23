@@ -14,6 +14,7 @@ from typing import (
     Optional,
     List,
     Union,
+    Callable,
 )
 
 import allure
@@ -180,20 +181,25 @@ class BasePageObject:
     def is_element_displayed(self, element: Union[Locator, WebElement], timeout: int = None) -> bool:
         """Checks if element is displayed."""
 
-        try:
-            with allure.step(f'Check {element.name if isinstance(element, Locator) else element.text}'):
-                return (
-                    element
-                    if isinstance(element, WebElement)
-                    else self.find_element(element, timeout=timeout or self.default_loc_timeout)
-                ).is_displayed()
-        except (
-            TimeoutException,
-            NoSuchElementException,
-            StaleElementReferenceException,
-            TimeoutError,
-        ):
-            return False
+        def find_element():
+            return (
+                element
+                if isinstance(element, WebElement)
+                else self.find_element(element, timeout=timeout or self.default_loc_timeout)
+            )
+
+        element_name = element.name if isinstance(element, Locator) else element.text
+        return self._is_displayed(element_name, find_element)
+
+    def is_child_displayed(
+        self, parent: WebElement, child: Locator, timeout: Optional[int] = None
+    ) -> bool:
+        """Checks if child element is displayed"""
+
+        def find_child():
+            return self.find_child(parent, child, timeout=timeout or self.default_loc_timeout)
+
+        return self._is_displayed(child.name, find_child)
 
     def assert_displayed_elements(self, locators: list) -> None:
         """Asserts that list of elements is displayed."""
@@ -321,6 +327,20 @@ class BasePageObject:
         )
         hover.perform()
 
+    @staticmethod
+    def _is_displayed(element_name: str, find_element_func: Callable[[], WebElement]) -> bool:
+        """Calls `is_displayed` method on element returned by passed function"""
+        try:
+            with allure.step(f'Check {element_name}'):
+                return find_element_func().is_displayed()
+        except (
+            TimeoutException,
+            NoSuchElementException,
+            StaleElementReferenceException,
+            TimeoutError,
+        ):
+            return False
+
 
 class PageHeader(BasePageObject):
     """Class for header manipulating."""
@@ -436,6 +456,12 @@ class PageHeader(BasePageObject):
         self.hover_element(AuthorizedHeaderLocators.job_block_previous)
         self.wait_element_visible(AuthorizedHeaderLocators.job_popup)
         return self.find_element(AuthorizedHeaderLocators.JobPopup.in_progress_jobs).text.split("\n")[1]
+
+    @allure.step('Logout using account popup in header')
+    def logout(self):
+        """Logout using account popup"""
+        self.click_account_button_in_header()
+        self.click_logout_in_acc_popup()
 
     @contextmanager
     def open_jobs_popup(self):

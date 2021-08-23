@@ -22,7 +22,7 @@ from adcm_client.objects import (
 )
 from adcm_pytest_plugin import utils
 
-from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
+from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.cluster.page import (
     ClusterImportPage,
     ClusterConfigPage,
@@ -224,7 +224,7 @@ class TestClusterListPage:
     def test_check_cluster_list_page_delete_cluster(self, app_fs):
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         row = cluster_page.table.get_all_rows()[0]
-        with cluster_page.table.wait_rows_change():
+        with cluster_page.table.expect_rows_amount_change():
             cluster_page.delete_cluster_by_row(row)
         with allure.step("Check there are no rows"):
             assert len(cluster_page.table.get_all_rows()) == 0, "Cluster table should be empty"
@@ -457,7 +457,7 @@ class TestClusterHostPage:
     def test_check_delete_host_from_cluster_host_page(self, app_fs):
         cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
         row = cluster_host_page.table.get_all_rows()[0]
-        with cluster_host_page.table.wait_rows_change():
+        with cluster_host_page.table.expect_rows_amount_change():
             cluster_host_page.delete_host_by_row(row)
         with allure.step("Check there are no rows"):
             assert len(cluster_host_page.table.get_all_rows()) == 0, "Host table should be empty"
