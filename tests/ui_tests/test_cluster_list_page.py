@@ -773,7 +773,9 @@ class TestClusterImportPage:
         cluster_status_page.wait_page_is_opened()
         cluster_status_page.check_all_elements()
 
-    def test_check_cluster_import_from_cluster_import_page(self, app_fs, create_import_cluster_with_service):
+    def test_check_cluster_import_from_cluster_import_page(
+        self, app_fs, create_import_cluster_with_service
+    ):
         params = {"message": "Successfully saved"}
         cluster, _, _, _ = create_import_cluster_with_service
         import_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
