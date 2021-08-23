@@ -10,14 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=W0621,R0914
-from typing import Generator, Tuple, Union
+from typing import Tuple, Union
 
 import allure
 import pytest
+
 from adcm_client.base import ObjectNotFound
 from adcm_client.objects import ADCMClient, Cluster, Host, Service
 from adcm_pytest_plugin.docker_utils import ADCM
-from adcm_pytest_plugin.fixtures import _adcm
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
 from adcm_pytest_plugin.utils import catch_failed, get_data_dir, random_string
 from version_utils import rpm
@@ -32,16 +32,6 @@ def upgrade_target(cmd_opts) -> Tuple[str, str]:
 
 def old_adcm_images():
     return parametrized_by_adcm_version(adcm_min_version="2019.10.08")[0]
-
-
-@allure.title("[FS] Upgradable ADCM Container")
-@pytest.fixture()
-def adcm_fs(image, cmd_opts, request, adcm_api_credentials) -> Generator[ADCM, None, None]:
-    """Runs adcm container from the previously initialized image.
-    Operates '--dontstop' option.
-    Returns authorized instance of ADCM object
-    """
-    yield from _adcm(image, cmd_opts, request, adcm_api_credentials, upgradable=True)
 
 
 @allure.step("Check that version has been changed")
@@ -88,6 +78,7 @@ def _check_encryption(obj: Union[Cluster, Service]) -> None:
     assert obj.action(name="check-password").run().wait() == "success"
 
 
+@pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
 @pytest.mark.parametrize("image", old_adcm_images(), ids=repr)
 def test_upgrade_adcm(
     adcm_fs: ADCM,
@@ -106,6 +97,7 @@ def test_upgrade_adcm(
     _check_that_host_exists(cluster, host)
 
 
+@pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
 @pytest.mark.parametrize("image", old_adcm_images(), ids=repr)
 def test_pass_in_config_encryption_after_upgrade(
     adcm_fs: ADCM,
