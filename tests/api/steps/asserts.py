@@ -15,6 +15,7 @@ class ExpectedBody:
     In POST PATCH PUT cases we check only changed or created fields
     and response body contains other fields (without checking their values)
     """
+
     fields: dict = field(default_factory=dict)
 
 
@@ -35,9 +36,7 @@ def body_should_be(response: Response, expected_body: ExpectedBody):
     """Assert response body and attach it"""
     actual_body: dict = response.json()
     expected_fields_values = {
-        key: value
-        for key, value in expected_body.fields.items()
-        if not isinstance(value, NotSet)
+        key: value for key, value in expected_body.fields.items() if not isinstance(value, NotSet)
     }
     with allure.step("Body should contains fields"):
         try:
@@ -51,9 +50,7 @@ def body_should_be(response: Response, expected_body: ExpectedBody):
     if expected_fields_values:
         with allure.step("Fields values should be"):
             actual_fields_values = {
-                key: value
-                for key, value in actual_body.items()
-                if key in expected_fields_values
+                key: value for key, value in actual_body.items() if key in expected_fields_values
             }
             allure.attach(
                 json.dumps(expected_fields_values, indent=2),
@@ -66,8 +63,8 @@ def body_should_be(response: Response, expected_body: ExpectedBody):
                 attachment_type=allure.attachment_type.JSON,
             )
             try:
-                assert actual_fields_values == expected_fields_values, (
-                    "Response fields values assertion failed!"
-                )
+                assert (
+                    actual_fields_values == expected_fields_values
+                ), "Response fields values assertion failed!"
             except AssertionError as error:
                 raise BodyAssertionError(error) from error
