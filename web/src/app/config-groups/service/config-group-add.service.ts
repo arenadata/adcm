@@ -4,8 +4,8 @@ import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { ClusterService } from '../../core/services/cluster.service';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../core/api';
-import { environment } from '../../../environments/environment';
 import { ConfigGroup } from '../model';
+import { environment } from '../../../environments/environment';
 
 const newConfigGroupForm = (): FormGroup =>
   new FormGroup({
@@ -38,10 +38,8 @@ export class ConfigGroupAddService implements IAddService {
 
   add<T>(group: Partial<ConfigGroup>): Observable<T> {
     const params = { ...group };
-
-    //ToDo what to do with the service & components
-    params.object_type = 'cluster';
-    params.object_id = this.Cluster.id;
+    params.object_type = this.service.Current.typeName;
+    params.object_id = this.service.Current.id;
     return this.api.post<T>(`${environment.apiRoot}group-config/`, params);
   }
 

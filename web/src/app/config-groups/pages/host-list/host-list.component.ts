@@ -40,16 +40,7 @@ export class ConfigGroupHostListComponent extends AdwpListDirective<IHost> {
 
   listColumns = [
     ListFactory.fqdnColumn(),
-    {
-      type: 'buttons',
-      className: 'list-control',
-      headerClassName: 'list-control',
-      buttons: [{
-        icon: 'delete',
-        tooltip: 'Remove from config group',
-        callback: (row, event) => this.delete(event, row),
-      }],
-    }
+    ListFactory.deleteColumn(this),
   ] as IColumns<IHost>;
 
   clickRow(data: RowEventData): void {

@@ -82,10 +82,25 @@ const clusterRoutes: Routes = [
       { path: '', redirectTo: 'main', pathMatch: 'full' },
       { path: 'main', component: MainInfoComponent },
       { path: 'config', component: ConfigComponent },
+      { path: 'group_configs', component: ConfigGroupListComponent },
       { path: 'status', component: StatusComponent },
       { path: 'import', component: ImportComponent },
       { path: 'action', component: ActionCardComponent },
       { path: 'component', component: ServiceComponentsComponent },
+    ],
+  },
+  {
+    path: ':cluster/service/:service/group_configs/:group_configs',
+    canActivate: [AuthGuard],
+    canActivateChild: [AuthGuard],
+    component: DetailComponent,
+    data: {
+      entityService: CONFIG_GROUP_LIST_SERVICE
+    },
+    children: [
+      { path: '', redirectTo: 'host', pathMatch: 'full' },
+      { path: 'host', component: ConfigGroupHostListComponent },
+      { path: 'config', component: ConfigComponent, data: { isGroupConfig: true } },
     ],
   },
   {
