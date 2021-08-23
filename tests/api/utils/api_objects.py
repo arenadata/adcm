@@ -64,7 +64,8 @@ class ADCMTestApiWrapper:
                 params=url_params,
                 json=request.data,
                 headers={
-                    **request.headers, **{"Authorization": f"Token {self._api_wrapper.api_token}"}
+                    **request.headers,
+                    **{"Authorization": f"Token {self._api_wrapper.api_token}"},
                 },
             )
 
