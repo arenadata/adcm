@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
-import { RouterModule } from '@angular/router';
-import { Routes } from '@angular/router';
+import { RouterModule, Routes } from '@angular/router';
 
 import { LogComponent } from '@app/ws-logs/log.component';
 import { AuthGuard } from '@app/core/auth/auth.guard';
@@ -14,6 +13,7 @@ import { MainInfoComponent, StatusComponent } from '@app/shared/components';
 import { ConfigComponent } from '@app/shared/configuration/main/config.component';
 import { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';
 import { HostproviderComponent } from '@app/components/hostprovider/hostprovider.component';
+import { CONFIG_GROUP_LIST_SERVICE, ConfigGroupHostListComponent, ConfigGroupListComponent } from '@app/config-groups';
 
 const routes: Routes = [
   {
@@ -70,12 +70,27 @@ const routes: Routes = [
       { path: '', redirectTo: 'main', pathMatch: 'full' },
       { path: 'main', component: MainInfoComponent },
       { path: 'config', component: ConfigComponent },
+      { path: 'group_configs', component: ConfigGroupListComponent },
       { path: 'action', component: ActionCardComponent },
+    ],
+  },
+  {
+    path: 'provider/:provider/group_configs/:group_configs',
+    canActivate: [AuthGuard],
+    canActivateChild: [AuthGuard],
+    component: DetailComponent,
+    data: {
+      entityService: CONFIG_GROUP_LIST_SERVICE
+    },
+    children: [
+      { path: '', redirectTo: 'host', pathMatch: 'full' },
+      { path: 'host', component: ConfigGroupHostListComponent },
+      { path: 'config', component: ConfigComponent, data: { isGroupConfig: true } },
     ],
   },
 
   { path: '', redirectTo: 'admin', pathMatch: 'full' },
-  { path: 'log', component: LogComponent, canActivate: [AuthGuard]  },
+  { path: 'log', component: LogComponent, canActivate: [AuthGuard] },
   { path: 'login', component: LoginComponent },
   { path: 'profile', component: ProfileComponent, canActivate: [AuthGuard] },
   { path: 'support', component: SupportComponent },
@@ -93,4 +108,5 @@ const routes: Routes = [
   imports: [RouterModule.forRoot(routes, { relativeLinkResolution: 'legacy' })],
   exports: [RouterModule]
 })
-export class AppRoutingModule { }
+export class AppRoutingModule {
+}

@@ -94,7 +94,7 @@ export const Config = {
     service: [main, components, config, group_configs, m_status, m_import, actions],
     group_configs: [hosts, config],
     host: [main, config, m_status, actions],
-    provider: [main, config, actions],
+    provider: [main, config, group_configs, actions],
     bundle: [main, license],
     servicecomponent: [main, config, group_configs, m_status, actions],
   },
