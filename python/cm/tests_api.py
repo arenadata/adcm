@@ -62,7 +62,6 @@ class TestApi(TestCase):
                 'description': '',
                 'config_id': self.object_config.id,
                 'state': 'installed',
-                'issue': {},
             }
         )
 

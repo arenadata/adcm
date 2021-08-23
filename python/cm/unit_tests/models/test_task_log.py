@@ -12,6 +12,7 @@
 
 from django.test import TestCase
 
+from cm import models
 from cm.unit_tests import utils
 
 
@@ -24,7 +25,7 @@ class TaskLogLockTest(TestCase):
     def test_lock_affected__lock_is_single(self):
         cluster = utils.gen_cluster()
         task = utils.gen_task_log(cluster)
-        task.lock = utils.gen_concern_item()
+        task.lock = utils.gen_concern_item(models.ConcernType.Lock)
         task.save()
 
         task.lock_affected([cluster])

@@ -210,5 +210,5 @@ def change_concern(obj: ADCMEntity):
         obj_type=obj.prototype.type,
         obj_id=obj.pk,
         det_type='concern',
-        det_val=[i.reason for i in obj.concern.all()],
+        det_val=[i.reason for i in obj.concerns.all()],
     )

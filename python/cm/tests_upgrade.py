@@ -14,7 +14,8 @@ from django.test import TestCase
 
 import cm.api
 import cm.job
-from cm import adcm_config
+import cm.upgrade
+from cm import adcm_config, issue
 from cm.errors import AdcmEx
 from cm.models import (
     Bundle,
@@ -22,6 +23,7 @@ from cm.models import (
     ConfigLog,
     Host,
     HostComponent,
+    IssueType,
     Prototype,
     PrototypeConfig,
     ServiceComponent,
@@ -42,9 +44,7 @@ class TestUpgradeVersion(TestCase):
 
     def check_upgrade(self, obj, upgrade, result):
         ok, msg = cm.upgrade.check_upgrade(obj, upgrade)
-        if not ok:
-            print("check_upgrade msg: ", msg)
-        self.assertEqual(ok, result)
+        self.assertEqual(ok, result, f'check_upgrade msg: {msg or None}')
 
     def test_version(self):
         obj = utils.gen_cluster()
@@ -94,7 +94,7 @@ class TestUpgradeVersion(TestCase):
 
     def test_issue(self):
         obj = utils.gen_cluster()
-        obj.issue = {"config": False}
+        issue.create_issue(obj, IssueType.Config)
         upgrade = self.cook_upgrade()
         self.check_upgrade(obj, upgrade, False)
 

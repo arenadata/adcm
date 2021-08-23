@@ -22,7 +22,6 @@ from api.cluster.serializers import BindSerializer
 from api.component.serializers import ComponentUISerializer
 from api.concern.serializers import ConcernItemSerializer
 from api.serializers import StringListSerializer
-from cm import issue
 from cm import status_api
 from cm.api import add_service_to_cluster, multi_bind, bind
 from cm.errors import AdcmEx
@@ -68,7 +67,6 @@ class ServiceDetailSerializer(ServiceSerializer):
     prototype_id = serializers.IntegerField(read_only=True)
     description = serializers.CharField(read_only=True)
     bundle_id = serializers.IntegerField(read_only=True)
-    issue = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     monitoring = serializers.CharField(read_only=True)
     action = CommonAPIURL(read_only=True, view_name='object-action')
@@ -83,9 +81,6 @@ class ServiceDetailSerializer(ServiceSerializer):
     )
     multi_state = StringListSerializer(read_only=True)
     concern = ConcernItemSerializer(many=True, read_only=True)
-
-    def get_issue(self, obj):
-        return issue.aggregate_issues(obj)
 
     def get_status(self, obj):
         return status_api.get_service_status(obj.cluster.id, obj.id)
