@@ -30,7 +30,7 @@ TEMPLATE = DATADIR + '/template.yaml'
 @allure.step('Read template file')
 def read_conf(template_file_name):
     try:
-        with open(template_file_name) as file:
+        with open(template_file_name, encoding='utf_8') as file:
             data = file.read()
     except FileNotFoundError:
         print("Can't open template file: '{}'".format(template_file_name))
@@ -45,7 +45,7 @@ def render(template, context):
 
 @allure.step('Save template')
 def save_conf(rendered_template, out_dir, out_file_name='/config.yaml'):
-    with open(out_dir + out_file_name, 'w') as out:
+    with open(out_dir + out_file_name, 'w', encoding='utf_8') as out:
         out.write(yaml.dump(rendered_template, default_flow_style=False))
 
 

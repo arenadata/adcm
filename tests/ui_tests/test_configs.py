@@ -276,9 +276,9 @@ def prepare_config(config):
 
     os.makedirs(d_name)
     if config[0][0]['config'][0]['name'] == 'file':
-        with open("{}/file.txt".format(d_name), 'w') as f:
+        with open("{}/file.txt".format(d_name), 'w', encoding='utf_8') as f:
             f.write("test")
-    with open("{}/config.yaml".format(d_name), 'w') as yaml_file:
+    with open("{}/config.yaml".format(d_name), 'w', encoding='utf_8') as yaml_file:
         yaml.dump(config[0], yaml_file)
     return config[0][0], config[1], d_name
 
@@ -311,9 +311,9 @@ def prepare_group_config(config):
     d_name = "{}/configs/groups/{}".format(temdir, config_folder_name)
     os.makedirs(d_name)
     if config[0]['config'][0]['subs'][0]['name'] == 'file':
-        with open("{}/file.txt".format(d_name), 'w') as f:
+        with open("{}/file.txt".format(d_name), 'w', encoding='utf_8') as f:
             f.write("test")
-    with open("{}/config.yaml".format(d_name), 'w') as yaml_file:
+    with open("{}/config.yaml".format(d_name), 'w', encoding='utf_8') as yaml_file:
         yaml.dump(list(config), yaml_file)
     return config[0], d_name
 
