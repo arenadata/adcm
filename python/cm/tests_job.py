@@ -446,7 +446,7 @@ class TestJob(TestCase):
                     job_config['job']['hostgroup'] = '127.0.0.1'
 
                 mock_open.assert_called_with(
-                    '{}/{}/config.json'.format(config.RUN_DIR, job.id), 'w'
+                    '{}/{}/config.json'.format(config.RUN_DIR, job.id), 'w', encoding='utf_8'
                 )
                 mock_dump.assert_called_with(job_config, fd, indent=3, sort_keys=True)
                 mock_get_adcm_config.assert_called()
