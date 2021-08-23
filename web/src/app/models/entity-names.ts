@@ -1,3 +1,3 @@
 import { TypeName } from '../core/types';
 
-export const EntityNames: TypeName[] = ['servicecomponent', 'host', 'service', 'group_configs', 'cluster', 'provider', 'job', 'task', 'bundle'];
+export const EntityNames: TypeName[] = ['servicecomponent', 'host', 'group_configs', 'service', 'cluster', 'provider', 'job', 'task', 'bundle'];
