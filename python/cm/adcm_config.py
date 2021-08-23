@@ -248,14 +248,14 @@ def switch_config(
 
     # go from flat config to 2-level dictionary
     unflat_conf = {}
-    for key in new_conf:
+    for key, value in new_conf.items():
         k1, k2 = key.split('/')
         if k2 == '':
-            unflat_conf[k1] = new_conf[key]
+            unflat_conf[k1] = value
         else:
             if k1 not in unflat_conf:
                 unflat_conf[k1] = {}
-            unflat_conf[k1][k2] = new_conf[key]
+            unflat_conf[k1][k2] = value
 
     # skip inactive groups and set attributes for new config
     for key in unflat_conf:

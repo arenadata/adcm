@@ -37,9 +37,7 @@ def test_validate_provider_prototype(sdk_client_fs: ADCMClient):
     bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
     with allure.step("Load provider prototype"):
         provider_prototype = bundle.provider_prototype()._data
-        schema = json.load(
-            open(SCHEMAS + '/stack_list_item_schema.json')
-        )
+        schema = json.load(open(SCHEMAS + '/stack_list_item_schema.json'))
     with allure.step("Check provider prototype"):
         assert validate(provider_prototype, schema) is None
 
@@ -55,17 +53,14 @@ def test_should_create_provider_wo_description(sdk_client_fs: ADCMClient):
 def test_should_create_provider_w_description(sdk_client_fs: ADCMClient):
     bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
     description = utils.random_string(140)
-    provider = bundle.provider_create(
-        name=utils.random_string(),
-        description=description)
+    provider = bundle.provider_create(name=utils.random_string(), description=description)
     with allure.step("Check provider with description"):
         assert provider.description == description
 
 
 def test_get_provider_config(sdk_client_fs: ADCMClient):
     bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
-    provider = bundle.provider_create(
-        name=utils.random_string())
+    provider = bundle.provider_create(name=utils.random_string())
     with allure.step("Check provider config"):
         assert provider.config() is not None
 
@@ -84,17 +79,13 @@ def test_provider_shouldnt_be_deleted_when_it_has_host(sdk_client_fs: ADCMClient
 
 def test_shouldnt_create_host_with_unknown_prototype(sdk_client_fs):
     bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
-    provider = bundle.provider_create(
-        name=utils.random_string()
-    )
+    provider = bundle.provider_create(name=utils.random_string())
     with allure.step("Delete provider"):
         provider.delete()
     with allure.step("Create host"):
         with pytest.raises(exceptions.ErrorMessage) as e:
             # Using lack of auto refresh of object as workaround.
             # If adcm_client object behaviour will be changed, test may fall.
-            provider.host_create(
-                fqdn=utils.random_string()
-            )
+            provider.host_create(fqdn=utils.random_string())
     with allure.step("Check error provider doesnt exist"):
         errorcodes.PROVIDER_NOT_FOUND.equal(e, "HostProvider", "does not exist")

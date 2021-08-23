@@ -145,9 +145,9 @@ INITIAL_HOST_STATE = {
 @pytest.fixture()
 def host_bundle(sdk_client_fs: ADCMClient):
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "hostprovider"))
-    for name in INITIAL_HOST_STATE:
+    for name, value in INITIAL_HOST_STATE.items():
         provider = bundle.provider_create(name)
-        for hname in INITIAL_HOST_STATE[name]['hosts']:
+        for hname in value['hosts']:
             provider.host_create(fqdn=hname)
     return bundle
 

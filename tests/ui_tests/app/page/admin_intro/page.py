@@ -18,7 +18,6 @@ from tests.ui_tests.app.page.common.base_page import (
 
 
 class AdminIntroPage(BasePageObject):
-
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/admin/intro")
         self.header = PageHeader(self.driver, self.base_url)

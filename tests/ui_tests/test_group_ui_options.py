@@ -36,7 +36,7 @@ def service(sdk_client_fs):
 
 @pytest.fixture()
 @allure.step('Open Configuration page')
-def ui_config(app_fs, login_to_adcm, service):
+def ui_config(app_fs, login_to_adcm_over_api, service):
     return Configuration(
         app_fs.driver,
         "{}/cluster/{}/service/{}/config".format(
@@ -84,7 +84,7 @@ def test_save_groups(group_elements, ui_config, sdk_client_fs: ADCMClient):
             input_element = textbox.find_element(*Common.mat_input_element)
             ui_config.clear_element(input_element)
             time.sleep(2)
-            input_element.send_keys("shalalala")
+            input_element.send_keys("new value")
             break
     ui_config.save_configuration()
     service = sdk_client_fs.cluster(name="group_ui_options_test").service(
@@ -93,11 +93,11 @@ def test_save_groups(group_elements, ui_config, sdk_client_fs: ADCMClient):
     config = service.config()
     with allure.step('Check that configuration was saved'):
         assert (
-            config['group_ui_options_disabled']['field_for_group_without_options'] == 'shalalala'
-        ), config['group_ui_options_disabled']['field_for_group_without_options']
+            config['group_ui_options_disabled']['field_for_group_without_options'] == 'new value'
+        ), "New configuration value wasn't applied"
         assert len(config.keys()) == 12
         for group in INVISIBLE_GROUPS:
-            assert group in config.keys(), config
+            assert group in config.keys(), "Invisible group should be present in config object"
 
 
 @pytest.mark.parametrize(
