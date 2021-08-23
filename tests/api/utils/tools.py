@@ -70,7 +70,7 @@ def get_if_type(if_ip):
     Get interface type from /sys/class/net/{if_name}/type
     """
     if_name = get_if_name_by_ip(if_ip)
-    with open(f"/sys/class/net/{if_name}/type", "r") as file:
+    with open(f"/sys/class/net/{if_name}/type", "r", encoding='utf_8') as file:
         return file.readline().strip()
 
 
