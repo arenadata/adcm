@@ -105,7 +105,7 @@ def bundle_content(request, tmp_path):
     bundle_filename = "config.yaml"
     bundle_path = os.path.join(tmp_path, bundle_filename)
     with allure.step("Dump YAML config to file"):
-        with open(bundle_path, "w") as stream:
+        with open(bundle_path, "w", encoding='utf_8') as stream:
             yaml.dump(request.param["bundle"], stream, sort_keys=False)
             allure.attach.file(
                 bundle_path,

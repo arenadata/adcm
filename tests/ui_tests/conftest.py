@@ -166,7 +166,7 @@ def _process_browser_log_entry(entry):
 
 def _write_json_file(f_name, j_data):
     f_path = "/".join([tempfile.mkdtemp(), f_name])
-    with open(f_path, 'w') as f:
+    with open(f_path, 'w', encoding='utf_8') as f:
         json.dump(j_data, f, indent=2)
     return f_path
 
