@@ -21,10 +21,10 @@ import cm.checker
 
 
 def check_config(data_file, schema_file, print_ok=True):
-    rules = ruyaml.round_trip_load(open(schema_file))
+    rules = ruyaml.round_trip_load(open(schema_file, encoding='utf_8'))
     try:
         # ruyaml.version_info=(0, 15, 0)   # switch off duplicate key error
-        data = ruyaml.round_trip_load(open(data_file), version="1.1")
+        data = ruyaml.round_trip_load(open(data_file, encoding='utf_8'), version="1.1")
     except FileNotFoundError as e:
         print(e)
         return 1

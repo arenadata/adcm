@@ -18,5 +18,5 @@ for config in [
 ]:
     d_name = "password_confirm_{0}_required_{1}/".format(config[0], config[1])
     os.makedirs(d_name)
-    with open("{}/config.yaml".format(d_name), "w+") as f:
+    with open("{}/config.yaml".format(d_name), "w+", encoding='utf_8') as f:
         f.write(template.format(config[0], config[1]))
