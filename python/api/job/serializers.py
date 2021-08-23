@@ -260,7 +260,7 @@ class LogStorageSerializer(serializers.Serializer):
             config.RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}'
         )
         try:
-            with open(path_file, 'r') as f:
+            with open(path_file, 'r', encoding='utf_8') as f:
                 content = f.read()
         except FileNotFoundError:
             msg = f'File "{obj.name}-{obj.type}.{obj.format}" not found'
@@ -330,7 +330,7 @@ class LogSerializer(serializers.Serializer):
                 path_file = os.path.join(
                     config.RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}'
                 )
-                with open(path_file, 'r') as f:
+                with open(path_file, 'r', encoding='utf_8') as f:
                     content = f.read()
         elif obj.type == 'check':
             if content is None:
