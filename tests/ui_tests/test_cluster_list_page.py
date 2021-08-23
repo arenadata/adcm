@@ -640,23 +640,25 @@ class TestClusterComponentsPage:
 
 
 class TestClusterConfigPage:
-    @pytest.mark.usefixtures("create_community_cluster")
-    def test_cluster_config_page_open_by_tab(self, app_fs):
-        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    def test_cluster_config_page_open_by_tab(self, app_fs, create_community_cluster):
+        cluster_main_page = ClusterMainPage(
+            app_fs.driver, app_fs.adcm.url, create_community_cluster.id
+        ).open()
         cluster_main_page.open_config_tab()
         cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1)
         cluster_config_page.wait_page_is_opened()
         cluster_config_page.check_all_elements()
 
-    @pytest.mark.usefixtures("create_community_cluster")
-    def test_filter_config_on_cluster_config_page(self, app_fs):
+    def test_filter_config_on_cluster_config_page(self, app_fs, create_community_cluster):
         params = {"search_param": "str_param", "group_name": "core-site"}
-        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        cluster_config_page = ClusterConfigPage(
+            app_fs.driver, app_fs.adcm.url, create_community_cluster.id
+        ).open()
         with cluster_config_page.config.wait_rows_change():
             cluster_config_page.config.search(params["search_param"])
         with allure.step(f"Check that rows are filtered by {params['search_param']}"):
             config_rows = cluster_config_page.config.get_all_config_rows()
-            assert len(config_rows) == 1, "There should be 1 row"
+            assert len(config_rows) == 1, "Rows are not filtered: there should be 1 row"
             assert (
                 cluster_config_page.config.get_config_row_info(config_rows[0]).name
                 == f"{params['search_param']}:"
@@ -665,22 +667,23 @@ class TestClusterConfigPage:
             cluster_config_page.config.clear_search_input()
         with allure.step("Check that rows are not filtered"):
             config_rows = cluster_config_page.config.get_all_config_rows()
-            assert len(config_rows) == 4, "There should be 4 row"
+            assert len(config_rows) == 4, "Rows are not filtered: there should be 4 row"
         with cluster_config_page.config.wait_rows_change():
             cluster_config_page.config.click_on_group(params["group_name"])
         with allure.step("Check that groups are closed"):
             config_rows = cluster_config_page.config.get_all_config_rows()
-            assert len(config_rows) == 2, "There should be 2 row"
+            assert len(config_rows) == 2, "Rows are not filtered: there should be 2 row"
 
-    @pytest.mark.usefixtures("create_community_cluster")
-    def test_save_custom_config_on_cluster_config_page(self, app_fs):
+    def test_save_custom_config_on_cluster_config_page(self, app_fs, create_community_cluster):
         params = {
             "row_value_new": "test",
             "row_value_old": "123",
             "config_name_new": "test_name",
             "config_name_old": "init",
         }
-        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        cluster_config_page = ClusterConfigPage(
+            app_fs.driver, app_fs.adcm.url, create_community_cluster.id
+        ).open()
         config_row = cluster_config_page.config.get_all_config_rows()[0]
         cluster_config_page.config.type_in_config_field(
             row=config_row, value=params["row_value_new"], clear=True, adcm_test=None
@@ -695,10 +698,11 @@ class TestClusterConfigPage:
                 row_with_history, params["row_value_old"]
             )
 
-    @pytest.mark.usefixtures("create_community_cluster")
-    def test_reset_config_in_row_on_cluster_config_page(self, app_fs):
+    def test_reset_config_in_row_on_cluster_config_page(self, app_fs, create_community_cluster):
         params = {"row_value_new": "test", "row_value_old": "123", "config_name": "test_name"}
-        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        cluster_config_page = ClusterConfigPage(
+            app_fs.driver, app_fs.adcm.url, create_community_cluster.id
+        ).open()
         config_row = cluster_config_page.config.get_all_config_rows()[0]
         cluster_config_page.config.type_in_config_field(
             row=config_row, value=params["row_value_new"], clear=True, adcm_test=None
@@ -720,8 +724,8 @@ class TestClusterConfigPage:
         }
         with allure.step("Create cluster"):
             bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_REQUIRED_FIELDS)
-            bundle.cluster_create(name=CLUSTER_NAME)
-        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1).open()
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_config_page.config.check_password_confirm_required(params['pass_name'])
         cluster_config_page.config.check_field_is_required(params['req_name'])
         config_row = cluster_config_page.config.get_all_config_rows()[0]

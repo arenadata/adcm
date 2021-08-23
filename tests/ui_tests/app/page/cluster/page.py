@@ -60,14 +60,6 @@ class ComponentsHostRowInfo:
     components: str
 
 
-@dataclass
-class ConfigRowInfo:
-    """Information from config row on Config page"""
-
-    name: str
-    value: str
-
-
 class ClusterPageMixin(BasePageObject):
     """Helpers for working with cluster page"""
 
