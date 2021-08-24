@@ -113,7 +113,8 @@ def upload_and_create_provider(provider_bundle) -> Provider:
 
 
 @pytest.fixture()
-def create_community_cluster_with_host(sdk_client_fs: ADCMClient, app_fs, upload_and_create_provider, create_host):
+@pytest.mark.usefixtures("app_fs", "upload_and_create_provider")
+def create_community_cluster_with_host(sdk_client_fs: ADCMClient, create_host):
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
     cluster = bundle.cluster_create(name=CLUSTER_NAME)
     return cluster, cluster.host_add(create_host)
@@ -431,9 +432,7 @@ class TestClusterHostPage:
             ), "No message about host duplication"
 
     @pytest.mark.parametrize('provider_bundle', [PROVIDER_WITH_ISSUE_NAME], indirect=True)
-    def test_check_open_host_issue_from_cluster_host_page(
-        self, app_fs, provider_bundle, create_community_cluster_with_host
-    ):
+    def test_check_open_host_issue_from_cluster_host_page(self, app_fs, create_community_cluster_with_host):
         params = {"issue_name": "Configuration"}
         cluster, host = create_community_cluster_with_host
         cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
