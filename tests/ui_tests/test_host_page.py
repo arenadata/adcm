@@ -11,15 +11,16 @@
 # limitations under the License.
 
 # pylint:disable=redefined-outer-name
-import os
 from typing import (
     List,
     Tuple,
     Optional,
 )
 
+import os
 import allure
 import pytest
+
 from _pytest.fixtures import SubRequest
 from adcm_client.objects import (
     ADCMClient,
@@ -171,6 +172,7 @@ def _check_menu(
 # !===== TESTS =====!
 
 
+@pytest.mark.smoke()
 @pytest.mark.parametrize(
     "bundle_archive",
     [utils.get_data_dir(__file__, "provider")],
@@ -194,6 +196,7 @@ def test_create_host_with_bundle_upload(page: HostListPage, bundle_archive: str)
     )
 
 
+@pytest.mark.smoke()
 @pytest.mark.usefixtures("upload_and_create_provider", "upload_and_create_cluster")
 def test_create_bonded_to_cluster_host(page: HostListPage):
     """Create host bonded to cluster"""
@@ -212,7 +215,6 @@ def test_create_bonded_to_cluster_host(page: HostListPage):
     )
 
 
-@pytest.mark.full()
 @pytest.mark.parametrize("_create_many_hosts", [12], indirect=True)
 @pytest.mark.usefixtures("_create_many_hosts")
 def test_host_list_pagination(page: HostListPage):
@@ -222,6 +224,7 @@ def test_host_list_pagination(page: HostListPage):
     page.table.check_pagination(hosts_on_second_page)
 
 
+@pytest.mark.smoke()
 @pytest.mark.usefixtures("upload_and_create_provider", "upload_and_create_cluster")
 def test_bind_host_to_cluster(page: HostListPage):
     """Create host and go to cluster from host list"""
@@ -245,9 +248,9 @@ def test_bind_host_to_cluster(page: HostListPage):
 @pytest.mark.parametrize(
     ('row_child_name', 'menu_item_name'),
     [
-        pytest.param('fqdn', 'main_tab', id='open_host_main'),
-        pytest.param('status', 'status_tab', id='open_status_menu', marks=pytest.mark.full),
-        pytest.param('config', 'config_tab', id='open_config_menu', marks=pytest.mark.full),
+        pytest.param('fqdn', 'main_tab', id='open_host_main', marks=pytest.mark.smoke),
+        pytest.param('status', 'status_tab', id='open_status_menu'),
+        pytest.param('config', 'config_tab', id='open_config_menu'),
     ],
 )
 @pytest.mark.usefixtures('_create_host')
@@ -266,6 +269,7 @@ def test_open_host_from_host_list(
         assert main_host_page.active_menu_is(menu_item_locator)
 
 
+@pytest.mark.smoke()
 @pytest.mark.usefixtures("_create_host", "upload_and_create_provider")
 def test_delete_host(page: HostListPage):
     """Create host and delete it"""
@@ -280,6 +284,7 @@ def test_delete_host(page: HostListPage):
     page.check_element_should_be_hidden(HostListLocators.HostTable.row)
 
 
+@pytest.mark.smoke()
 @pytest.mark.usefixtures("_create_bonded_host")
 def test_delete_bonded_host(page: HostListPage):
     """Host shouldn't be deleted"""
@@ -290,7 +295,7 @@ def test_delete_bonded_host(page: HostListPage):
     page.check_element_should_be_visible(HostListLocators.HostTable.row)
 
 
-@pytest.mark.full()
+@pytest.mark.smoke()
 @pytest.mark.parametrize('menu', ['main', 'config', 'status', 'action'])
 @pytest.mark.usefixtures('_create_host')
 def test_open_menu(
@@ -298,10 +303,11 @@ def test_open_menu(
     page: HostListPage,
     menu: str,
 ):
-    """Open main page and open menu from side navigation"""
+    """Open detailed host page and open menu from side navigation"""
     _check_menu(menu, upload_and_create_provider[0], page)
 
 
+@pytest.mark.smoke()
 @pytest.mark.usefixtures('_create_host')
 def test_run_action_on_new_host(
     page: HostListPage,
@@ -312,6 +318,7 @@ def test_run_action_on_new_host(
     page.assert_host_state(0, 'running')
 
 
+@pytest.mark.smoke()
 @pytest.mark.usefixtures('_create_host')
 def test_run_action_from_menu(
     sdk_client_fs: ADCMClient,
@@ -335,7 +342,6 @@ def test_run_action_from_menu(
         assert actions_before != actions_after, 'Action set did not change after "Init" action'
 
 
-@pytest.mark.full()
 @pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
 @pytest.mark.usefixtures('_create_host')
 def test_filter_config(
@@ -370,6 +376,7 @@ def test_filter_config(
         host_page.check_element_should_be_hidden(advanced_option)
 
 
+@pytest.mark.smoke()
 @pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
 @pytest.mark.usefixtures('_create_host')
 def test_custom_name_config(
@@ -398,7 +405,6 @@ def test_custom_name_config(
         host_page.config.config_diff_is_presented(params['password_expected'], PASSWORD_FIELD_ADCM_TEST)
 
 
-@pytest.mark.full()
 @pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
 @pytest.mark.usefixtures('_create_host')
 def test_reset_configuration(
@@ -426,7 +432,6 @@ def test_reset_configuration(
     host_page.config.assert_input_value_is(params['init_value'], params['pass_adcm_test'], is_password=True)
 
 
-@pytest.mark.full()
 @pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
 @pytest.mark.usefixtures('_create_host')
 def test_field_validation(
@@ -447,7 +452,6 @@ def test_field_validation(
     host_page.config.check_field_is_invalid(params['not_req_name'])
 
 
-@pytest.mark.full()
 @pytest.mark.usefixtures('_create_host')
 def test_open_adcm_main_menu(page: HostListPage):
     """Open main menu by clicking on the menu icon in toolbar"""
