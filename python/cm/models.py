@@ -281,7 +281,7 @@ class ADCMEntity(ADCMModel):
         Get object ID chain for front-end URL generation in message templates
         result looks like {'cluster': 12, 'service': 34, 'component': 45}
         """
-        ids = dict()
+        ids = {}
         ids[self.prototype.type] = self.pk
         for attr in ['cluster', 'service', 'provider']:
             value = getattr(self, attr, None)
