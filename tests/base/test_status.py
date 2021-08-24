@@ -28,7 +28,7 @@ class TestStatusAPI(unittest.TestCase):
         self._read_key()
 
     def _read_key(self):
-        with open(self._TOKEN_FILENAME) as f:
+        with open(self._TOKEN_FILENAME, encoding='utf_8') as f:
             data = json.load(f)
             self.token = data['token']
 

@@ -123,7 +123,7 @@ class TestJobRunner(TestCase):
     def test_open_file(self, _mock_open):
         file_path = "{}/{}/{}.txt".format('root', 'tag', 1)
         job_runner.open_file('root', 1, 'tag')
-        _mock_open.assert_called_once_with(file_path, 'w')
+        _mock_open.assert_called_once_with(file_path, 'w', encoding='utf_8')
 
     @patch('json.load')
     @patch('builtins.open', create=True)
@@ -132,7 +132,7 @@ class TestJobRunner(TestCase):
         mock_json.return_value = {}
         conf = job_runner.read_config(1)
         file_name = '{}/{}/config.json'.format(config.RUN_DIR, 1)
-        _mock_open.assert_called_once_with(file_name)
+        _mock_open.assert_called_once_with(file_name, encoding='utf_8')
         self.assertDictEqual(conf, {})
 
     @patch('cm.job.set_job_status')

@@ -141,7 +141,7 @@ def create_bundle_archives(request, tmp_path: PosixPath) -> List[str]:
         archive_path = tmp_path / f'spam_bundle_{i}.tar'
         config_fp = (bundle_dir := tmp_path / f'spam_bundle_{i}') / 'config.yaml'
         bundle_dir.mkdir()
-        with open(config_fp, 'w') as config_file:
+        with open(config_fp, 'w', encoding='utf_8') as config_file:
             yaml.safe_dump(config, config_file)
         with tarfile.open(archive_path, 'w') as archive:
             archive.add(config_fp, arcname='config.yaml')

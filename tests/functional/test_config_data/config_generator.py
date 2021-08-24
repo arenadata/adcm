@@ -117,7 +117,7 @@ yaml.add_representer(OrderedDict, represent_ordereddict)
 
 
 def write_yaml(path, data):
-    with open(path, 'w') as f:
+    with open(path, 'w', encoding='utf_8') as f:
         yaml.dump(data, stream=f, explicit_start=True)
 
 
@@ -434,7 +434,7 @@ def run():
 
             if config_type == 'file':
                 for file_name in [entity, additional_entity]:
-                    with open(f'{path}{file_name}_file', 'w') as f:
+                    with open(f'{path}{file_name}_file', 'w', encoding='utf_8') as f:
                         f.write('file content\n')
 
             if config_type == 'structure':

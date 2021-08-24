@@ -214,9 +214,9 @@ for variable in VARIABLES:
     import_dir = d_name + "/import"
     for d in d_name, export_dir, import_dir:
         os.makedirs(d)
-    with open("{}/import/config.yaml".format(d_name), "w+") as f:
+    with open("{}/import/config.yaml".format(d_name), "w+", encoding='utf_8') as f:
         f.write(TEMPLATE_SERVICE.format(variable[0], variable[1], variable[2], variable[3]))
-    with open("{}/export/config.yaml".format(d_name), "w+") as f:
+    with open("{}/export/config.yaml".format(d_name), "w+", encoding='utf_8') as f:
         f.write(TEMPLATE_EXPORT_SERVICE.format(variable[4]))
 
 for variable in VARIABLES:
@@ -225,7 +225,7 @@ for variable in VARIABLES:
     import_dir = d_name + "/import"
     for d in d_name, export_dir, import_dir:
         os.makedirs(d)
-    with open("{}/import/config.yaml".format(d_name), "w+") as f:
+    with open("{}/import/config.yaml".format(d_name), "w+", encoding='utf_8') as f:
         f.write(TEMPLATE_CLUSTER.format(variable[0], variable[1], variable[2], variable[3]))
-    with open("{}/export/config.yaml".format(d_name), "w+") as f:
+    with open("{}/export/config.yaml".format(d_name), "w+", encoding='utf_8') as f:
         f.write(TEMPLATE_EXPORT_CLUSTER.format(variable[4]))
