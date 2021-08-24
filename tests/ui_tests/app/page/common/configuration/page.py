@@ -110,9 +110,7 @@ class CommonConfigMenuObj(BasePageObject):
                 if adcm_test_attr_value
                 else self.get_config_row_info(row).value
             )
-            assert (
-                expected_value == input_value
-            ), f'Expected value was {expected_value} but presented is {input_value}'
+            assert expected_value == input_value, f'Expected value was {expected_value} but presented is {input_value}'
 
         wait_until_step_succeeds(assert_value, timeout=4, period=0.5)
 
@@ -207,9 +205,7 @@ class CommonConfigMenuObj(BasePageObject):
         yield
 
         def wait_scroll():
-            assert (
-                len(self.get_all_config_rows()) != current_amount
-            ), "Amount of rows on the page hasn't changed"
+            assert len(self.get_all_config_rows()) != current_amount, "Amount of rows on the page hasn't changed"
 
         wait_until_step_succeeds(wait_scroll, period=1, timeout=10)
 
