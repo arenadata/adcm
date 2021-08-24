@@ -17,6 +17,7 @@ from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.app.page.profile.page import ProfilePage
 
 # pylint: disable=redefined-outer-name
+pytestmark = [pytest.mark.smoke()]
 
 
 @pytest.mark.usefixtures("login_to_adcm_over_api")
