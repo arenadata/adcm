@@ -49,7 +49,7 @@ class CommonConfigMenu:
         "//app-field[.//div[@adcm_test='{}']]//mat-list-item//span[contains(text(), '{}')]",
         'Config diff of option "{}" with "{}" in text',
     )
-    config_row = TemplateLocator(By.XPATH, "//app-field", "Configuration row")
+    config_row = Locator(By.XPATH, "//app-field", "Configuration row")
 
     field_input = TemplateLocator(
         By.XPATH,
