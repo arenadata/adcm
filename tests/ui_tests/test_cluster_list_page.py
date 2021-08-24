@@ -60,6 +60,7 @@ BUNDLE_WITH_REQUIRED_FIELDS = "cluster_required_fields"
 
 
 # pylint: disable=redefined-outer-name,no-self-use
+# noqa: PT025
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
 
 
