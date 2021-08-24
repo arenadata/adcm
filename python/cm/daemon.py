@@ -61,7 +61,7 @@ class Daemon:
             sys.exit(1)
 
         try:
-            pidfile = open(self.pidfile, 'w+')
+            pidfile = open(self.pidfile, 'w+', encoding='utf_8')
         except IOError as e:
             sys.stderr.write("Can't open pid file %s\n" % self.pidfile)
             sys.stderr.write("%s\n" % e.strerror)
@@ -70,9 +70,9 @@ class Daemon:
         # redirect standard file descriptors
         sys.stdout.flush()
         sys.stderr.flush()
-        si = open(self.stdin, 'r')
-        so = open(self.stdout, 'a+')
-        se = open(self.stderr, 'w+')
+        si = open(self.stdin, 'r', encoding='utf_8')
+        so = open(self.stdout, 'a+', encoding='utf_8')
+        se = open(self.stderr, 'w+', encoding='utf_8')
         os.dup2(si.fileno(), sys.stdin.fileno())
         os.dup2(so.fileno(), sys.stdout.fileno())
         os.dup2(se.fileno(), sys.stderr.fileno())
@@ -88,7 +88,7 @@ class Daemon:
     def getpid(self):
         '''get pid from pidfile'''
         try:
-            pf = open(self.pidfile, 'r')
+            pf = open(self.pidfile, 'r', encoding='utf_8')
             try:
                 pid = int(pf.read().strip())
             except ValueError:

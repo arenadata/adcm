@@ -30,7 +30,7 @@ def get_value(path, entity, value_type):
     if isinstance(entity, Host):
         file_name = os.path.join(path, 'provider', 'host_action.yaml')
 
-    with open(file_name, 'r') as f:
+    with open(file_name, 'r', encoding='utf_8') as f:
         data = yaml.full_load(f)
         playbook_vars = data[0]['vars']
         return playbook_vars[value_type]

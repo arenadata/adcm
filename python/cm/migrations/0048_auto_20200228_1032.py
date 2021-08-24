@@ -24,7 +24,7 @@ from cm import config
 def get_body(job, name, type_log, format_log):
     file_path = os.path.join(config.LOG_DIR, f'{job.id}-{name}-{type_log}.{format_log}')
     if os.path.exists(file_path):
-        with open(file_path, 'r') as f:
+        with open(file_path, 'r', encoding='utf_8') as f:
             body = f.read()
         return body
     else:

@@ -83,7 +83,7 @@ class TestApi(TestCase):
                 cluster = api_module.push_obj(self.cluster, state)
                 self.assertEqual(cluster.stack, [state])
 
-    @patch('cm.status_api.load_service_map')
+    @patch('cm.api.load_service_map')
     @patch('cm.issue.update_hierarchy_issues')
     @patch('cm.status_api.post_event')
     def test_save_hc(self, mock_post_event, mock_update_issues, mock_load_service_map):
@@ -112,7 +112,7 @@ class TestApi(TestCase):
         mock_update_issues.assert_called_once_with(self.cluster)
         mock_load_service_map.assert_called_once()
 
-    @patch('cm.status_api.load_service_map')
+    @patch('cm.api.load_service_map')
     @patch('cm.issue.update_hierarchy_issues')
     @patch('cm.status_api.post_event')
     def test_save_hc__big_update__locked_hierarchy(self, mock_post, mock_update, mock_load):
@@ -169,7 +169,7 @@ class TestApi(TestCase):
         self.assertEqual(host_3.state, config.Job.LOCKED)
         self.assertListEqual(host_1.stack, ['created'])
 
-    @patch('cm.status_api.load_service_map')
+    @patch('cm.api.load_service_map')
     @patch('cm.issue.update_hierarchy_issues')
     @patch('cm.status_api.post_event')
     def test_save_hc__big_update__unlocked_hierarchy(self, mock_post, mock_update, mock_load):
