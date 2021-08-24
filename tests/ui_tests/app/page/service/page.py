@@ -38,9 +38,7 @@ class ServicePageMixin(BasePageObject):
     def __init__(self, driver, base_url, cluster_id: int, service_id: int):
         if self.MENU_SUFFIX is None:
             raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
-        super().__init__(
-            driver, base_url, f"/cluster/{cluster_id}/service/{service_id}/{self.MENU_SUFFIX}"
-        )
+        super().__init__(driver, base_url, f"/cluster/{cluster_id}/service/{service_id}/{self.MENU_SUFFIX}")
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)

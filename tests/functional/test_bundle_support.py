@@ -16,7 +16,6 @@ import pytest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
 
-# pylint: disable=E0401, E0611, W0611, W0621
 from tests.library import errorcodes as err
 
 
@@ -62,9 +61,20 @@ def test_bundle_can_be_removed_when_no_object_associated_with(
         assert len(sdk_client_fs.bundle_list()) == init_bundle_count
 
 
-# TODO: Make this test to cover ADCM-202
-# def test_default_values_should_according_to_their_datatypes(client):
-#     bundle = os.path.join(BUNDLES, "")
+def test_default_values_should_according_to_their_datatypes(sdk_client_fs: ADCMClient):
+    bundle_path = utils.get_data_dir(__file__, "cluster_with_config_default_values")
+    bundle = sdk_client_fs.upload_from_fs(bundle_path)
+    cluster = bundle.cluster_prototype().cluster_create(name="Cluster")
+    config = cluster.config()
+    assert isinstance(config.get("str_key"), str)
+    assert isinstance(config.get("text_key"), str)
+    assert isinstance(config.get("int_key"), int)
+    assert isinstance(config.get("float_key"), float)
+    assert isinstance(config.get("bool"), bool)
+    assert isinstance(config.get("password"), str)
+    assert isinstance(config.get("json"), dict)
+    assert isinstance(config.get("list"), list)
+    assert isinstance(config.get("map"), dict)
 
 
 empty_bundles_fields = [
@@ -90,9 +100,7 @@ cluster_fields = [
 
 
 @pytest.mark.parametrize(("cluster_bundle", "state"), cluster_fields)
-def test_check_cluster_state_after_run_action_when_empty(
-    cluster_bundle, state, sdk_client_fs: ADCMClient
-):
+def test_check_cluster_state_after_run_action_when_empty(cluster_bundle, state, sdk_client_fs: ADCMClient):
     bundle_path = utils.get_data_dir(__file__, "empty_states", cluster_bundle)
     bundle = sdk_client_fs.upload_from_fs(bundle_path)
     cluster = bundle.cluster_prototype().cluster_create(name=utils.random_string())
@@ -109,9 +117,7 @@ host_fields = [
 
 
 @pytest.mark.parametrize(("host_bundle", "state"), host_fields)
-def test_check_host_state_after_run_action_when_empty(
-    host_bundle, state, sdk_client_fs: ADCMClient
-):
+def test_check_host_state_after_run_action_when_empty(host_bundle, state, sdk_client_fs: ADCMClient):
     bundle_path = utils.get_data_dir(__file__, "empty_states", host_bundle)
     bundle = sdk_client_fs.upload_from_fs(bundle_path)
     provider = bundle.provider_prototype().provider_create(name=utils.random_string())

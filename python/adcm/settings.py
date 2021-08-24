@@ -39,7 +39,7 @@ CONFIG_FILE = BASE_DIR + '/config.json'
 
 # Load secret key from filesystem
 if os.path.exists(SECRET_KEY_FILE):
-    with open(SECRET_KEY_FILE) as f:
+    with open(SECRET_KEY_FILE, encoding='utf_8') as f:
         SECRET_KEY = f.read().strip()
 else:
     # If we have no SECRET_KEY_FILE than we are running in some tricky fashion.
@@ -49,7 +49,7 @@ else:
 
 
 if os.path.exists(CONFIG_FILE):
-    with open(CONFIG_FILE) as f:
+    with open(CONFIG_FILE, encoding='utf_8') as f:
         ADCM_VERSION = json.load(f)['version']
 else:
     ADCM_VERSION = '2019.02.07.00'

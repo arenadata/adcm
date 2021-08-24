@@ -57,17 +57,13 @@ PROVIDER_CONFIG = [
 def _assert_bundle_info_value(attribute: str, actual_info: BundleInfo, expected_info: BundleInfo):
     actual_value = getattr(actual_info, attribute)
     expected_value = getattr(expected_info, attribute)
-    assert (
-        actual_value == expected_value
-    ), f"Bundle's {attribute} should be {expected_value}, not {actual_value}"
+    assert actual_value == expected_value, f"Bundle's {attribute} should be {expected_value}, not {actual_value}"
 
 
 # pylint: disable=redefined-outer-name
 @allure.step('Check bundle list is empty')
 def _check_bundle_list_is_empty(page: BundleListPage):
-    assert (
-        row_count := page.table.row_count
-    ) == 0, f'Bundle list should be empty, but {row_count} records was found'
+    assert (row_count := page.table.row_count) == 0, f'Bundle list should be empty, but {row_count} records was found'
 
 
 @allure.step('Check bundle is listed in table')
@@ -90,6 +86,7 @@ def check_bundle_info_is_equal(actual_info: BundleInfo, expected_info: BundleInf
 
 
 @pytest.fixture()
+# pylint: disable-next=unused-argument
 def page(app_fs: ADCMTest, login_to_adcm_over_api) -> BundleListPage:
     """Get BundleListPage after authorization"""
     return BundleListPage(app_fs.driver, app_fs.adcm.url).open()
@@ -117,9 +114,7 @@ def test_ce_bundle_upload(create_bundle_archives: List[str], page: BundleListPag
     check_bundle_info_is_equal(bundle_info, bundle_params)
 
 
-@pytest.mark.parametrize(
-    "create_bundle_archives", [([CLUSTER_EE_CONFIG], LICENSE_FP)], indirect=True
-)
+@pytest.mark.parametrize("create_bundle_archives", [([CLUSTER_EE_CONFIG], LICENSE_FP)], indirect=True)
 def test_ee_bundle_upload(create_bundle_archives: List[str], page: BundleListPage):
     """Upload enterprise bundle and accept licence"""
     bundle_params = BundleInfo(
@@ -207,9 +202,7 @@ def test_upload_provider_bundle_from_another_page(
     """
     Upload bundle from host list and check it is presented in table
     """
-    expected_info = BundleInfo(
-        name='test_provider', version='2.15-dev', edition='community', description=''
-    )
+    expected_info = BundleInfo(name='test_provider', version='2.15-dev', edition='community', description='')
     _check_bundle_list_is_empty(page)
     with allure.step('Create bundle from host creation popup'):
         host_list_page = HostListPage(app_fs.driver, app_fs.adcm.url).open()
@@ -239,12 +232,7 @@ def test_upload_cluster_bundle_from_another_page(
 
 @pytest.mark.parametrize(
     "create_bundle_archives",
-    [
-        [
-            [{'type': 'cluster', 'name': f'ihavetodance-{i}', 'version': f'{i}-ver'}]
-            for i in range(12)
-        ]
-    ],
+    [[[{'type': 'cluster', 'name': f'ihavetodance-{i}', 'version': f'{i}-ver'}] for i in range(12)]],
     indirect=True,
 )
 @pytest.mark.usefixtures("upload_bundles")

@@ -1,3 +1,15 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import time
 
 import allure
@@ -11,7 +23,7 @@ from adcm_pytest_plugin import utils
 
 from tests.ui_tests.app.actions_page import ActionPage
 
-# pylint: disable=W0621
+# pylint: disable=redefined-outer-name
 
 
 @allure.step("Upload bundle and create cluster")
@@ -24,7 +36,7 @@ def cluster(sdk_client_fs: ADCMClient):
 
 @allure.step("Open ADCM tab Action")
 @pytest.fixture()
-def cluster_action_page(app_fs, login_to_adcm_over_api, cluster):
+def cluster_action_page(app_fs, cluster, login_to_adcm_over_api):  # pylint: disable=unused-argument
     return ActionPage(app_fs.driver, url=app_fs.adcm.url, cluster_id=cluster.cluster_id)
 
 
@@ -48,14 +60,10 @@ def check_verbosity(log, verbose_state):
 
 def test_check_verbose_checkbox_of_action_run_form_is_displayed(cluster_action_page):
     with allure.step("Check if verbose checkbox is displayed in popup from Action page"):
-        assert (
-            cluster_action_page.check_verbose_chbx_displayed()
-        ), "Verbose checkbox is not displayed in the popup"
+        assert cluster_action_page.check_verbose_chbx_displayed(), "Verbose checkbox is not displayed in the popup"
 
 
-@pytest.mark.parametrize(
-    "verbose_state", [True, False], ids=["verbose_state_true", "verbose_state_false"]
-)
+@pytest.mark.parametrize("verbose_state", [True, False], ids=["verbose_state_true", "verbose_state_false"])
 def test_check_verbose_info_of_action_run_form(cluster_action_page, cluster, verbose_state):
     cluster_action_page.run_action(is_verbose=verbose_state)
     job = wait_for_job_creation(cluster)
