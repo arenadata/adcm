@@ -81,26 +81,31 @@ def provider(provider_bundle: Bundle) -> Provider:
     return provider_bundle.provider_create('Awesome Provider')
 
 
+@pytest.mark.smoke()
 def test_cluster_action_job(cluster: Cluster, page: JobListPage):
     """Run action on cluster and validate job in table and popup"""
     _test_run_action(page, cluster)
 
 
+@pytest.mark.smoke()
 def test_service_action_job(cluster: Cluster, page: JobListPage):
     """Run action on service and validate job in table and popup"""
     _test_run_action(page, cluster.service_list()[0])
 
 
+@pytest.mark.smoke()
 def test_provider_action_job(provider: Provider, page: JobListPage):
     """Run action on host provider and validate job in table and popup"""
     _test_run_action(page, provider)
 
 
+@pytest.mark.smoke()
 def test_host_action_job(provider: Provider, page: JobListPage):
     """Run action on host and validate job in table and popup"""
     _test_run_action(page, provider.host_create('some-fqdn'))
 
 
+@pytest.mark.smoke()
 @pytest.mark.parametrize(
     'job_info',
     [
