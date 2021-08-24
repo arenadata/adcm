@@ -187,11 +187,7 @@ class TestComponentLock:
         Test that component lock also locks child objects:
             - Host
         """
-        task = _lock_obj(
-            complete_cluster.service(name="first_service").component(
-                name="first_service_component_1"
-            )
-        )
+        task = _lock_obj(complete_cluster.service(name="first_service").component(name="first_service_component_1"))
         is_locked(host)
         task.wait()
         is_free(host)
