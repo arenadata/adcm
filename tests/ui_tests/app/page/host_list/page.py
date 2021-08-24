@@ -70,9 +70,7 @@ class HostListPage(BasePageObject):
         return HostRowInfo(
             fqdn=self.find_child(row, row_elements.fqdn).text,
             provider=self.find_child(row, row_elements.provider).text,
-            cluster=cluster_value
-            if cluster_value != HostRowInfo.UNASSIGNED_CLUSTER_VALUE
-            else None,
+            cluster=cluster_value if cluster_value != HostRowInfo.UNASSIGNED_CLUSTER_VALUE else None,
             state=self.find_child(row, row_elements.state).text,
         )
 
@@ -145,9 +143,7 @@ class HostListPage(BasePageObject):
     def bind_host_to_cluster(self, host_row_num: int, cluster_name: str):
         """Assign host to cluster in host list table"""
         self.click_on_row_child(host_row_num, HostListLocators.HostTable.HostRow.cluster)
-        self.host_popup.wait_and_click_on_cluster_option(
-            cluster_name, HostListLocators.HostTable.cluster_option
-        )
+        self.host_popup.wait_and_click_on_cluster_option(cluster_name, HostListLocators.HostTable.cluster_option)
 
     @allure.step('Assert host in row {row_num} is assigned to cluster {cluster_name}')
     def assert_host_bonded_to_cluster(self, row_num: int, cluster_name: str):
@@ -214,9 +210,7 @@ class HostListPage(BasePageObject):
 
     def _wait_and_click_on_cluster_option(self, cluster_name: str, option_locator: Locator):
         WDW(self.driver, self.default_loc_timeout).until(
-            EC.presence_of_element_located(
-                [option_locator.by, option_locator.value.format(cluster_name)]
-            ),
+            EC.presence_of_element_located([option_locator.by, option_locator.value.format(cluster_name)]),
             message=f"Can't find cluster with name {cluster_name} "
             f"in dropdown on page {self.driver.current_url} "
             f"for {self.default_loc_timeout} seconds",

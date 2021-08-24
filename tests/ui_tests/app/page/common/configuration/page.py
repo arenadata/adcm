@@ -72,15 +72,11 @@ class CommonConfigMenuObj(BasePageObject):
         :param is_password: Is field password/confirmation
         :returns: Value of input
         """
-        template = (
-            CommonConfigMenu.field_input if not is_password else CommonConfigMenu.password_inputs
-        )
+        template = CommonConfigMenu.field_input if not is_password else CommonConfigMenu.password_inputs
         return self.find_element(template(adcm_test_attr_value)).get_property("value")
 
     @allure.step('Check input of field "{adcm_test_attr_value}" has value "{expected_value}"')
-    def assert_input_value_is(
-        self, expected_value: str, adcm_test_attr_value: str, is_password: bool = False
-    ):
+    def assert_input_value_is(self, expected_value: str, adcm_test_attr_value: str, is_password: bool = False):
         """
         Assert that value in field is expected_value (using retries)
 
