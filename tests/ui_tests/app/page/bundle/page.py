@@ -25,7 +25,7 @@ class BundlePage(BasePageObject):
     config: CommonConfigMenuObj
 
     def __init__(self, driver, base_url, bundle_id: int):
-        super().__init__(driver, base_url, f"/bundle/{bundle_id}/main")
+        super().__init__(driver, base_url, "/bundle/{bundle_id}/main", bundle_id=bundle_id)
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)

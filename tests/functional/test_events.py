@@ -12,7 +12,7 @@
 import json
 import os
 import re
-from time import gmtime, strftime
+from datetime import datetime, timedelta
 
 import allure
 import pytest
@@ -209,4 +209,11 @@ def test_check_timestamp_in_job_logs(sdk_client_fs: ADCMClient, verbose_state):
     with allure.step("Check timestamps presence in job logs"):
         task.wait()
         log = task.job().log()
-        assert strftime("%A %d %B %Y  %H:%M", gmtime()) in log.content, "There are no timestamps in job logs"
+        possible_timestamps = [
+            (datetime.utcnow() - timedelta(seconds=2)).strftime("%A %d %B %Y  %H:%M"),
+            (datetime.utcnow() - timedelta(seconds=1)).strftime("%A %d %B %Y  %H:%M"),
+            (datetime.utcnow()).strftime("%A %d %B %Y  %H:%M"),
+        ]
+        assert any(
+            timestamp in log.content for timestamp in possible_timestamps
+        ), f"There are no timestamps in job logs: \n{log.content}"

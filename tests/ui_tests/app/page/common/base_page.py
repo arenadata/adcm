@@ -46,7 +46,7 @@ class BasePageObject:
     BasePageObject is parent class for all ADCM's pages.
     :param driver: Selenium WebDriver object, drives a browser
     :param base_url: string with page base url
-    :param path: string with path to a specific page
+    :param path_template: string template with path to a specific page. Template variables passed as kwargs
     :param header: header object, eg PageHeader
     :param footer: footer object, eg PageFooter
     :param default_page_timeout: default timeout for actions with page, eg open page or reload
@@ -68,15 +68,20 @@ class BasePageObject:
         self,
         driver: WebDriver,
         base_url: str,
-        path: str = "",
+        path_template: str = "",
         default_page_timeout: int = 10,
         default_loc_timeout: int = 15,
+        **kwargs,
     ):
+        if any(str.isdigit(char) for char in path_template):
+            raise ValueError(f"Path template {path_template} should not contain any digits. "
+                             "Please use template string and pass values as kwargs")
         self.driver = driver
         self.base_url = base_url
-        self.path = path
+        self.path = path_template.format(**kwargs)
         self.default_page_timeout = default_page_timeout
         self.default_loc_timeout = default_loc_timeout
+        allure.dynamic.label("page_url", path_template)
 
     def open(self, timeout: int = None):
         """Open page by its url and path."""
