@@ -9,7 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=W0621
+
+# pylint:disable=redefined-outer-name
 import json
 import tempfile
 import requests
@@ -101,17 +102,13 @@ def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
                     name='Current URL',
                     attachment_type=allure.attachment_type.TEXT,
                 )
-                allure.attach.file(
-                    console_logs, name="console_log", attachment_type=allure.attachment_type.TEXT
-                )
+                allure.attach.file(console_logs, name="console_log", attachment_type=allure.attachment_type.TEXT)
                 allure.attach.file(
                     network_console_logs,
                     name="network_log",
                     attachment_type=allure.attachment_type.TEXT,
                 )
-                allure.attach.file(
-                    events_json, name="all_events_log", attachment_type=allure.attachment_type.TEXT
-                )
+                allure.attach.file(events_json, name="all_events_log", attachment_type=allure.attachment_type.TEXT)
         elif web_driver.capabilities['browserName'] != 'firefox':
             with allure.step("Flush browser logs so as not to affect next tests"):
                 web_driver.driver.get_log('browser')
@@ -166,8 +163,8 @@ def _process_browser_log_entry(entry):
 
 def _write_json_file(f_name, j_data):
     f_path = "/".join([tempfile.mkdtemp(), f_name])
-    with open(f_path, 'w', encoding='utf_8') as f:
-        json.dump(j_data, f, indent=2)
+    with open(f_path, 'w', encoding='utf_8') as file:
+        json.dump(j_data, file, indent=2)
     return f_path
 
 

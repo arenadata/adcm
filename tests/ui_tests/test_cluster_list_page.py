@@ -45,8 +45,7 @@ from tests.ui_tests.app.page.service.page import (
     ServiceConfigPage,
     ServiceImportPage,
 )
-from tests.ui_tests.utils import wait_and_assert_ui_info
-from .utils import check_host_value
+from tests.ui_tests.utils import wait_and_assert_ui_info, check_host_value
 
 BUNDLE_COMMUNITY = "cluster_community"
 BUNDLE_ENTERPRISE = "cluster_enterprise"
@@ -62,25 +61,25 @@ PROVIDER_WITH_ISSUE_NAME = 'provider_with_issue'
 COMPONENT_NAME = "first"
 
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,no-self-use
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
 
 
 @pytest.fixture()
-def create_community_cluster(sdk_client_fs: ADCMClient, app_fs):
+def create_community_cluster(sdk_client_fs: ADCMClient):
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
     return bundle.cluster_create(name=CLUSTER_NAME)
 
 
 @pytest.fixture()
-def create_community_cluster_with_service(sdk_client_fs: ADCMClient, app_fs):
+def create_community_cluster_with_service(sdk_client_fs: ADCMClient):
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
     cluster = bundle.cluster_create(name=CLUSTER_NAME)
     return cluster, cluster.service_add(name=SERVICE_NAME)
 
 
 @pytest.fixture()
-def create_import_cluster_with_service(sdk_client_fs: ADCMClient, app_fs):
+def create_import_cluster_with_service(sdk_client_fs: ADCMClient):
     params = {
         "import_cluster_name": "Import cluster",
         "import_service_name": "Pre-uploaded Dummy service to import",
@@ -108,7 +107,7 @@ def provider_bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
 
 
 @pytest.fixture()
-@allure.title("Create provider")
+@allure.title("Create provider from uploaded bundle")
 def upload_and_create_provider(provider_bundle) -> Provider:
     return provider_bundle.provider_create(PROVIDER_NAME)
 
@@ -123,7 +122,7 @@ def create_community_cluster_with_host(
 
 
 @pytest.fixture()
-def create_community_cluster_with_host_and_service(sdk_client_fs: ADCMClient, app_fs, create_host):
+def create_community_cluster_with_host_and_service(sdk_client_fs: ADCMClient, create_host):
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
     cluster = bundle.cluster_create(name=CLUSTER_NAME)
     cluster.service_add(name=SERVICE_NAME)
@@ -164,9 +163,7 @@ class TestClusterListPage:
         }
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         with allure.step("Check no cluster rows"):
-            assert (
-                len(cluster_page.table.get_all_rows()) == 0
-            ), "There should be no row with clusters"
+            assert len(cluster_page.table.get_all_rows()) == 0, "There should be no row with clusters"
         cluster_page.create_cluster(
             bundle_archive, cluster_params['description'], is_license=bool(edition == "enterprise")
         )
@@ -174,16 +171,14 @@ class TestClusterListPage:
             assert len(cluster_page.table.get_all_rows()) == 1, "There should be 1 row with cluster"
             uploaded_cluster = cluster_page.get_cluster_info_from_row(0)
             assert cluster_params['bundle'] == uploaded_cluster['bundle'], (
-                f"Cluster bundle should be {cluster_params['bundle']} and "
-                f"not {uploaded_cluster['bundle']}"
+                f"Cluster bundle should be {cluster_params['bundle']} and " f"not {uploaded_cluster['bundle']}"
             )
             assert cluster_params['description'] == uploaded_cluster['description'], (
                 f"Cluster description should be {cluster_params['description']} and "
                 f"not {uploaded_cluster['description']}"
             )
             assert cluster_params['state'] == uploaded_cluster['state'], (
-                f"Cluster state should be {cluster_params['state']} "
-                f"and not {uploaded_cluster['state']}"
+                f"Cluster state should be {cluster_params['state']} " f"and not {uploaded_cluster['state']}"
             )
 
     def test_check_cluster_list_page_pagination(self, sdk_client_fs: ADCMClient, app_fs):
@@ -219,9 +214,7 @@ class TestClusterListPage:
         import_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, cluster.id)
         import_page.wait_page_is_opened()
         with allure.step("Check import on import page"):
-            assert (
-                len(import_page.get_import_items()) == 1
-            ), "Cluster import page should contain 1 import"
+            assert len(import_page.get_import_items()) == 1, "Cluster import page should contain 1 import"
 
     def test_check_cluster_list_page_open_cluster_config(self, app_fs, create_community_cluster):
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
@@ -393,9 +386,7 @@ class TestClusterServicePage:
         import_page = ServiceImportPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id)
         import_page.wait_page_is_opened()
         with allure.step("Check import on import page"):
-            assert (
-                len(import_page.get_import_items()) == 1
-            ), "Service import page should contain 1 import"
+            assert len(import_page.get_import_items()) == 1, "Service import page should contain 1 import"
 
     def test_check_service_list_page_open_service_config(
         self, app_fs, create_community_cluster_with_service
@@ -441,9 +432,7 @@ class TestClusterHostPage:
         cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_host_page.wait_page_is_opened()
         cluster_host_page.click_add_host_btn(is_not_first_host=False)
-        new_provider_name = cluster_host_page.host_popup.create_provider_and_host(
-            bundle_archive, HOST_NAME
-        )
+        new_provider_name = cluster_host_page.host_popup.create_provider_and_host(bundle_archive, HOST_NAME)
         expected_values = {
             'fqdn': HOST_NAME,
             'provider': new_provider_name,
@@ -492,8 +481,7 @@ class TestClusterHostPage:
         cluster_host_page.host_popup.create_host(HOST_NAME)
         with allure.step("Check error message"):
             assert (
-                cluster_host_page.get_info_popup_text()
-                == '[ CONFLICT ] HOST_CONFLICT -- duplicate host'
+                cluster_host_page.get_info_popup_text() == '[ CONFLICT ] HOST_CONFLICT -- duplicate host'
             ), "No message about host duplication"
 
     @pytest.mark.parametrize('provider_bundle', [PROVIDER_WITH_ISSUE_NAME], indirect=True)
@@ -558,9 +546,7 @@ class TestClusterHostPage:
         cluster_host_page.click_config_btn_in_row(row)
         HostConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, host.id).wait_page_is_opened()
 
-    def test_check_pagination_on_cluster_host_page(
-        self, app_fs, upload_and_create_provider, create_community_cluster
-    ):
+    def test_check_pagination_on_cluster_host_page(self, app_fs, upload_and_create_provider, create_community_cluster):
         cluster = create_community_cluster
         provider = upload_and_create_provider
         for i in range(11):
@@ -612,9 +598,7 @@ class TestClusterComponentsPage:
             app_fs.driver, app_fs.adcm.url, create_community_cluster.id
         ).open()
         cluster_components_page.click_add_host_btn()
-        cluster_components_page.host_popup.create_provider_and_host(
-            bundle_path=bundle_archive, fqdn=HOST_NAME
-        )
+        cluster_components_page.host_popup.create_provider_and_host(bundle_path=bundle_archive, fqdn=HOST_NAME)
         host_row = cluster_components_page.get_host_rows()[0]
         check_components_host_info(cluster_components_page.get_row_info(host_row), HOST_NAME, "0")
 
@@ -634,17 +618,11 @@ class TestClusterComponentsPage:
         cluster_components_page.close_info_popup()
         cluster_components_page.click_save_btn()
         with allure.step("Check that host and component are linked"):
-            assert (
-                cluster_components_page.get_info_popup_text() == params["message"]
-            ), "No message about success"
+            assert cluster_components_page.get_info_popup_text() == params["message"], "No message about success"
             host_row = cluster_components_page.get_host_rows()[0]
-            check_components_host_info(
-                cluster_components_page.get_row_info(host_row), HOST_NAME, "1"
-            )
+            check_components_host_info(cluster_components_page.get_row_info(host_row), HOST_NAME, "1")
             component_row = cluster_components_page.get_components_rows()[0]
-            check_components_host_info(
-                cluster_components_page.get_row_info(component_row), COMPONENT_NAME, "1"
-            )
+            check_components_host_info(cluster_components_page.get_row_info(component_row), COMPONENT_NAME, "1")
 
     def test_check_cluster_components_page_restore_components(
         self, app_fs, create_community_cluster_with_host_and_service
@@ -662,13 +640,9 @@ class TestClusterComponentsPage:
         cluster_components_page.click_restore_btn()
         with allure.step("Check that host and component are not linked"):
             host_row = cluster_components_page.get_host_rows()[0]
-            check_components_host_info(
-                cluster_components_page.get_row_info(host_row), HOST_NAME, "0"
-            )
+            check_components_host_info(cluster_components_page.get_row_info(host_row), HOST_NAME, "0")
             component_row = cluster_components_page.get_components_rows()[0]
-            check_components_host_info(
-                cluster_components_page.get_row_info(component_row), COMPONENT_NAME, "0"
-            )
+            check_components_host_info(cluster_components_page.get_row_info(component_row), COMPONENT_NAME, "0")
 
     def test_check_cluster_components_page_delete_host_from_component(
         self, app_fs, create_community_cluster_with_host_and_service
@@ -689,17 +663,11 @@ class TestClusterComponentsPage:
 
         with allure.step("Check that host and component are not linked"):
             host_row = cluster_components_page.get_host_rows()[0]
-            check_components_host_info(
-                cluster_components_page.get_row_info(host_row), HOST_NAME, "0"
-            )
+            check_components_host_info(cluster_components_page.get_row_info(host_row), HOST_NAME, "0")
             component_row = cluster_components_page.get_components_rows()[0]
-            check_components_host_info(
-                cluster_components_page.get_row_info(component_row), COMPONENT_NAME, "0"
-            )
+            check_components_host_info(cluster_components_page.get_row_info(component_row), COMPONENT_NAME, "0")
 
-    def test_check_cluster_components_page_add_few_hosts_to_component(
-        self, sdk_client_fs, app_fs, create_host
-    ):
+    def test_check_cluster_components_page_add_few_hosts_to_component(self, sdk_client_fs, app_fs, create_host):
         with allure.step("Create cluster with service and host"):
             bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_SERVICES)
             cluster = bundle.cluster_create(name=CLUSTER_NAME)
@@ -714,12 +682,8 @@ class TestClusterComponentsPage:
 
         cluster_components_page.click_host(host_row)
         cluster_components_page.click_component(component_row)
-        with allure.step(
-            "Check that save button is disabled when not all required amount of hosts are linked"
-        ):
-            assert (
-                cluster_components_page.check_that_save_btn_disabled()
-            ), "Save button should be disabled"
+        with allure.step("Check that save button is disabled when not all required amount of hosts are linked"):
+            assert cluster_components_page.check_that_save_btn_disabled(), "Save button should be disabled"
 
 
 class TestClusterStatusPage:

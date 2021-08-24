@@ -15,6 +15,8 @@ from deprecated import deprecated
 
 from tests.ui_tests.app.helpers import bys
 
+# pylint: disable=too-few-public-methods
+
 
 @deprecated("Use CommonHeaderLocators or AuthorizedHeaderLocators")
 class Menu:
@@ -80,8 +82,8 @@ class Common:
     mat_raised_button = bys.by_class("mat-raised-button")
     mat_form_field = bys.by_tag("mat-form-field")
 
-    # Comon elements
-    all_childs = bys.by("*")
+    # Common elements
+    all_childs = bys.by_css("*")
 
 
 class Cluster:

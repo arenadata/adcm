@@ -31,10 +31,10 @@ from tests.ui_tests.app.helpers import bys
 from tests.ui_tests.app.locators import Menu, Common, Cluster, Provider, Host, Service
 
 
-def element_text(e):
-    if not e:
+def element_text(element):
+    if not element:
         raise NoSuchElementException("Asked for text of None element")
-    text = e.get_attribute("innerText")
+    text = element.get_attribute("innerText")
     if not text:
         return ""
     return text.strip()
@@ -55,10 +55,10 @@ class BasePage:
         self._contains_url(url_path, timer=timeout)
 
     @allure.step('Find elements')
-    def _elements(self, locator: tuple, f, **kwargs):
+    def _elements(self, locator: tuple, func, **kwargs):
         """Find elements
         :param locator: locator
-        :param f: function that takes in elements and does something
+        :param func: function that takes in elements and does something
                   n.b. DO NOT RETURN ELEMENTS FROM THIS FUNCTION, ONLY DERIVED DATA (e.g., strings)
         :kwparam name: (optional) element text to look for
         :kwparam parent: (optional) locator of parent in which we should find element.
@@ -71,7 +71,7 @@ class BasePage:
             if len(elements) == 0:
                 raise NoSuchElementException(f"Could not find element {locator}")
             if name:
-                elements = [e for e in elements if name in element_text(e)]
+                elements = [element for element in elements if name in element_text(element)]
                 if len(elements) == 0:
                     raise NoSuchElementException(f"Could not find element {name}")
             return elements
@@ -85,7 +85,7 @@ class BasePage:
             parent_element = get_elements(kwargs["parent"], parent_name, self.driver)[parent_idx]
 
         name = kwargs["name"] if "name" in kwargs else ""
-        return f(get_elements(locator, name, parent_element))
+        return func(get_elements(locator, name, parent_element))
 
     def _wait_element(self, locator: tuple, **kwargs):
         """see _elements"""
@@ -124,9 +124,9 @@ class BasePage:
         )
 
     def _click_element_in_list(self, element_name):
-        for el in self._getelements(Common.list_text):
-            if el.text == element_name:
-                el.click()
+        for element in self._getelements(Common.list_text):
+            if element.text == element_name:
+                element.click()
                 return True
         return False
 
@@ -154,7 +154,8 @@ class BasePage:
         )
         return subel.find_element(*locator)
 
-    def _wait_text_element_in_element(self, element, locator: tuple, timer=5, text=""):
+    @staticmethod
+    def _wait_text_element_in_element(element, locator: tuple, timer=5, text=""):
         WDW(element, timer).until(
             EC.text_to_be_present_in_element(locator, text),
             message=f"Can't find text in locator for {timer} seconds",
@@ -192,8 +193,9 @@ class BasePage:
         """
         return "mat-checkbox-checked" in element.get_attribute("class")
 
+    @staticmethod
     @allure.step('Clear element')
-    def clear_element(self, element):
+    def clear_element(element):
         element.send_keys(Keys.CONTROL + "a")
         element.send_keys(Keys.BACK_SPACE)
         return element
@@ -207,9 +209,7 @@ class BasePage:
 
     def _click_with_offset(self, element: tuple, x_offset, y_offset):
         actions = ActionChains(self.driver)
-        actions.move_to_element_with_offset(
-            self._getelement(element), x_offset, y_offset
-        ).click().perform()
+        actions.move_to_element_with_offset(self._getelement(element), x_offset, y_offset).click().perform()
 
     def _contains_url(self, url: str, timer=5):
         WDW(self.driver, timer).until(
@@ -227,10 +227,9 @@ class BasePage:
         )
 
     def _menu_click(self, locator: tuple):
-        if self._is_element_clickable(locator):
-            return self._click_element(locator)
-        else:
+        if not self._is_element_clickable(locator):
             raise InvalidElementStateException
+        return self._click_element(locator)
 
 
 class Ui(BasePage):
@@ -272,9 +271,7 @@ class Ui(BasePage):
 class ListPage(BasePage):
     """Basic methods under the lists pages"""
 
-    _inactive_tabs = bys.by_xpath(
-        "//a[@class='mat-list-item ng-star-inserted']//div[@class='mat-list-item-content']"
-    )
+    _inactive_tabs = bys.by_xpath("//a[@class='mat-list-item ng-star-inserted']//div[@class='mat-list-item-content']")
 
     def _press_add(self):
         self._click_element(Common.add_btn)
@@ -481,7 +478,7 @@ class ClusterDetails(Details, ListPage):
 
     @allure.step('Create host from cluster')
     def create_host_from_cluster(self, provider_name, fqdn):
-        self.host_tab  # pylint: disable=W0104
+        _ = self.host_tab
         self._press_add()
         self._wait_add_form()
         self._click_element(Host.prototype)
