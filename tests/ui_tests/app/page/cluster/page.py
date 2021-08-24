@@ -233,9 +233,9 @@ class ClusterImportPage(ClusterPageMixin):
 
     @allure.step("Check if checkbox is checked")
     def is_chxb_in_item_checked(self, import_item: WebElement) -> bool:
-        return "checked" in self.find_child(
-            import_item, ClusterImportLocators.ImportItem.import_chbx
-        ).get_attribute("class")
+        return "checked" in self.find_child(import_item, ClusterImportLocators.ImportItem.import_chbx).get_attribute(
+            "class"
+        )
 
     def click_save_btn(self):
         self.find_and_click(ClusterImportLocators.save_btn)
@@ -243,9 +243,7 @@ class ClusterImportPage(ClusterPageMixin):
     def get_import_item_info(self, import_item: WebElement):
         return ImportItemInfo(
             name=self.find_child(import_item, ClusterImportLocators.ImportItem.name).text,
-            description=self.find_child(
-                import_item, ClusterImportLocators.ImportItem.description
-            ).text,
+            description=self.find_child(import_item, ClusterImportLocators.ImportItem.description).text,
         )
 
 
@@ -481,9 +479,7 @@ class ClusterStatusPage(ClusterPageMixin):
                     ).text.split("\n")[0],
                     hosts=[
                         h.text.split("\n")[1]
-                        for h in self.find_children(
-                            item, ClusterStatusLocators.GroupRow.ServiceGroupRow.host_name
-                        )
+                        for h in self.find_children(item, ClusterStatusLocators.GroupRow.ServiceGroupRow.host_name)
                     ],
                 )
             )
