@@ -62,7 +62,6 @@ COMPONENT_NAME = "first"
 
 
 # pylint: disable=redefined-outer-name,no-self-use
-# noqa: PT025
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
 
 
@@ -118,7 +117,8 @@ def upload_and_create_provider(provider_bundle) -> Provider:
 def create_community_cluster_with_host(sdk_client_fs: ADCMClient, create_host):
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
     cluster = bundle.cluster_create(name=CLUSTER_NAME)
-    return cluster, cluster.host_add(create_host)
+    host = cluster.host_add(create_host)
+    return cluster, host
 
 
 @pytest.fixture()
