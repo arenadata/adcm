@@ -26,9 +26,7 @@ class CommonConfigMenu:
     )
     advanced_label = Locator(By.XPATH, "//mat-checkbox//span[text()='Advanced']", "Advanced label")
     search_input = Locator(By.ID, "config_search_input", "Search input")
-    search_input_clear_btn = Locator(
-        By.XPATH, "//app-search//button[@aria-label='Clear']", "Clear search input button"
-    )
+    search_input_clear_btn = Locator(By.XPATH, "//app-search//button[@aria-label='Clear']", "Clear search input button")
     description_input = Locator(
         By.XPATH,
         "//input[@data-placeholder='Description configuration']",
@@ -80,7 +78,5 @@ class CommonConfigMenu:
 
     class HistoryRow:
         history_select = Locator(By.XPATH, "//mat-select[@placeholder='History']", "History select")
-        compare_select = Locator(
-            By.XPATH, "//mat-select[@placeholder='Compare to']", "Compare select"
-        )
+        compare_select = Locator(By.XPATH, "//mat-select[@placeholder='Compare to']", "Compare select")
         option = Locator(By.XPATH, "//mat-option", "Option in select")

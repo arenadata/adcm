@@ -108,20 +108,14 @@ class ClusterComponentsLocators:
 class ClusterStatusLocators:
     """Cluster status page elements locators"""
 
-    collapse_btn = Locator(
-        By.XPATH, "//mat-card-content//button[@cdk-describedby-host]", "Collapse list button"
-    )
+    collapse_btn = Locator(By.XPATH, "//mat-card-content//button[@cdk-describedby-host]", "Collapse list button")
     group_row = Locator(By.XPATH, "//mat-expansion-panel", "Group row")
 
     class GroupRow:
-        service_group = Locator(
-            By.XPATH, ".//div[contains(@class, 'mat-expansion-panel-content')]", "Service group"
-        )
+        service_group = Locator(By.XPATH, ".//div[contains(@class, 'mat-expansion-panel-content')]", "Service group")
 
         class ServiceGroupRow:
-            service_name = Locator(
-                By.XPATH, ".//div[not(contains(@class, 'component'))]/span", "Service name"
-            )
+            service_name = Locator(By.XPATH, ".//div[not(contains(@class, 'component'))]/span", "Service name")
             host_name = Locator(By.XPATH, ".//div[contains(@class, 'component')]/span", "Host name")
 
 
