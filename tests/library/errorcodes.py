@@ -12,7 +12,7 @@
 from delayed_assert import expect, assert_expectations
 
 
-class ADCMError:
+class ADCMError:  # pylint: disable=too-few-public-methods
     def __init__(self, title, code):
         self.title = title
         self.code = code

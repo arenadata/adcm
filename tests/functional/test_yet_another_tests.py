@@ -13,7 +13,6 @@ import allure
 import coreapi
 import pytest
 
-# pylint: disable=W0611, W0621
 from adcm_pytest_plugin import utils
 from adcm_client.packer.bundle_build import build
 
