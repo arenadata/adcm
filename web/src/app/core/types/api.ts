@@ -30,7 +30,9 @@ export type TypeName =
   'service2cluster' |
   'host2cluster' |
   'servicecomponent' |
-  'component';
+  'component' |
+  'group_configs' |
+  'host2configgroup';
 export type Entities = Cluster | Service | Host | Provider | Job | Task | Bundle;
 
 /**
@@ -51,17 +53,24 @@ export interface ApiBase {
   display_name?: string;
   description?: string;
   url: string;
-  state: string;
+  state?: string;
   config: string;
-  action: string;
-  actions: IAction[];
-  issue: Issue;
-  prototype_id: number;
-  prototype_name: string;
+  action?: string;
+  actions?: IAction[];
+  issue?: Issue;
+  prototype_id?: number;
+  prototype_name?: string;
   prototype_display_name?: string;
-  prototype_version: string;
-  bundle_id: number;
-  status: number | string;
+  prototype_version?: string;
+  bundle_id?: number;
+  status?: number | string;
+}
+
+export interface ApiFlat {
+  id: number;
+  object_id: number;
+  object_type: TypeName;
+  url: string;
 }
 
 export interface Cluster extends ApiBase {
@@ -75,6 +84,7 @@ export interface Cluster extends ApiBase {
   upgradable: boolean;
   upgrade: string;
   status_url: string;
+  group_configs: string;
 }
 
 export interface Provider extends ApiBase {
@@ -95,6 +105,7 @@ export interface Service extends ApiBase {
   hostcomponent: string;
   display_name: string;
   cluster_id?: number;
+  group_configs: string;
 }
 
 export interface CanLicensed {

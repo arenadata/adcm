@@ -14,9 +14,8 @@ import { ParamMap } from '@angular/router';
 import { clearMessages, EventMessage, getMessage, SocketState } from '@app/core/store';
 import { Bundle, Cluster, EmmitRow, Entities, Host as AdcmHost, TypeName } from '@app/core/types';
 import { select, Store } from '@ngrx/store';
-import { filter, mergeMap, switchMap, tap } from 'rxjs/operators';
+import { filter, mergeMap, switchMap, takeUntil, tap } from 'rxjs/operators';
 import { IListResult } from '@adwp-ui/widgets';
-import { takeUntil } from 'rxjs/operators';
 import { Sort } from '@angular/material/sort';
 import { Observable, Subject } from 'rxjs';
 
@@ -83,6 +82,7 @@ export class BaseListDirective {
   }
 
   routeListener(limit: number, page: number, ordering: string, params: ParamMap) {
+
     this.parent.paginator.pageSize = limit;
     if (page === 0) {
       this.parent.paginator.firstPage();
@@ -186,7 +186,7 @@ export class BaseListDirective {
     const nav = (a: string[]) => this.parent.router.navigateByUrl(createUrl(a));
 
     this.row = event.row;
-    const { cmd, item } = event;
+    const { cmd, row, item } = event;
 
     if (['title', 'status', 'config', 'import'].includes(cmd)) {
       nav(cmd === 'title' ? [] : [cmd]);
@@ -194,7 +194,7 @@ export class BaseListDirective {
       const url = this.parent.router.serializeUrl(createUrl([]));
       window.open(url, '_blank');
     } else {
-      this[cmd](item);
+      this[cmd](row || item);
     }
   }
 
@@ -227,9 +227,9 @@ export class BaseListDirective {
     this.service.getLicenseInfo(row.license_url).pipe(this.takeUntil(), mergeMap(showDialog)).subscribe();
   }
 
-  delete() {
+  delete(item?: Entities) {
     this.service
-      .delete(this.row)
+      .delete(item ?? this.row)
       .pipe(this.takeUntil())
       .subscribe(() => (this.parent.current = null));
   }

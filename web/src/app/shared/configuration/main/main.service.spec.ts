@@ -12,7 +12,7 @@
 import { TestBed } from '@angular/core/testing';
 
 import { MainService } from './main.service';
-import { FieldService } from '../field.service';
+import { FieldService } from '../services/field.service';
 import { ApiService } from '@app/core/api';
 import { Store } from '@ngrx/store';
 

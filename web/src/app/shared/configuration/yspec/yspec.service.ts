@@ -13,7 +13,7 @@ import { Injectable } from '@angular/core';
 import { IRoot } from '@app/core/types';
 
 import { IFieldOptions, controlType, IValidator, TNBase, TNReq } from '../types';
-import { getControlType, getPattern } from '../field.service';
+import { getControlType, getPattern } from '../services/field.service';
 
 export type TMatch = TNBase | TNReq;
 
@@ -41,7 +41,7 @@ interface IYRoot {
 }
 
 /**
- *``` 
+ *```
  {
     [key: string]: IYRoot;
  }

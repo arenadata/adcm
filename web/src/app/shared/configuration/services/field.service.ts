@@ -11,11 +11,23 @@
 // limitations under the License.
 
 import { Injectable } from '@angular/core';
-import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
-import { isEmptyObject } from '@app/core/types';
+import { AbstractControl, FormBuilder, FormControl, FormGroup, ValidatorFn, Validators } from '@angular/forms';
+import { isBoolean, isEmptyObject } from '@app/core/types';
 
-import { ISearchParam } from './main/main.service';
-import { controlType, IConfig, IConfigAttr, IFieldOptions, IFieldStack, ILimits, IPanelOptions, IValidator, resultTypes, TNBase, TNForm } from './types';
+import { ISearchParam } from '../main/main.service';
+import {
+  controlType,
+  IConfig,
+  IConfigAttr,
+  IFieldOptions,
+  IFieldStack,
+  ILimits,
+  IPanelOptions,
+  IValidator,
+  resultTypes,
+  TNBase,
+  TNForm
+} from '../types';
 
 export type TFormOptions = IFieldOptions | IPanelOptions;
 
@@ -84,30 +96,44 @@ export const getValidator = (required: boolean, min: number, max: number, type: 
   pattern: getPattern(type),
 });
 
-const getField = (item: IFieldStack): IFieldOptions => ({
-  ...item,
-  key: getKey(item.name, item.subname),
-  value: getValue(item.type)(item.value, item.default, item.required),
-  validator: getValidator(item.required, item.limits?.min, item.limits?.max, item.type),
-  controlType: getControlType(item.type),
-  hidden: item.name === '__main_info' || isHidden(item),
-  compare: [],
-});
+
+export const getGroupControl = (item: IFieldStack, group: FormGroup): FormControl | null => {
+  if (!Object.keys(group.controls)) return null;
+
+  if (item.subname) {
+    return group.get(item.name)?.get(item.subname) as FormControl;
+  }
+
+  return group.get(item.name) as FormControl;
+};
+
+const getField = (item: IFieldStack, group?: FormGroup): IFieldOptions => {
+  return {
+    ...item,
+    key: getKey(item.name, item.subname),
+    value: getValue(item.type)(item.value, item.default, item.required),
+    validator: getValidator(item.required, item.limits?.min, item.limits?.max, item.type),
+    controlType: getControlType(item.type),
+    hidden: item.name === '__main_info' || isHidden(item),
+    compare: [],
+    configGroup: getGroupControl(item, group)
+  };
+};
 
 const fo = (n: string) => (b: IFieldStack) => b.type !== 'group' && b.subname && b.name === n;
 const isActive = (a: IConfigAttr, n: string) => a[n]?.active;
-export const getOptions = (a: IFieldStack, d: IConfig) =>
+export const getOptions = (a: IFieldStack, d: IConfig, group?: FormGroup) =>
   d.config
     .filter(fo(a.name))
-    .map(getField)
+    .map((f) => getField(f, group))
     // switch off validation for field if !(activatable: true && active: false) - line: 146
     .map((c) => ({ ...c, name: c.subname, activatable: a.activatable && !isActive(d.attr, a.name) }));
 
-const getPanel = (a: IFieldStack, d: IConfig): IPanelOptions => ({
+const getPanel = (a: IFieldStack, d: IConfig, group?: FormGroup): IPanelOptions => ({
   ...a,
   hidden: isHidden(a),
   active: a.activatable ? isActive(d.attr, a.name) : true,
-  options: getOptions(a, d),
+  options: getOptions(a, d, group),
 });
 
 const handleTree = (c: ISearchParam): ((a: TFormOptions) => TFormOptions) => (a: TFormOptions): TFormOptions => {
@@ -129,13 +155,13 @@ export class FieldService {
   /**
    * Parse and prepare source data from backend
    */
-  public getPanels(data: IConfig): TFormOptions[] {
+  public getPanels(data: IConfig, group?: FormGroup): TFormOptions[] {
     return data?.config
       ?.filter((a) => a.name !== '__main_info')
       .reduce((p, c) => {
         if (c.subname) return p;
-        if (c.type !== 'group') return [...p, getField(c)];
-        else return [...p, getPanel(c, data)];
+        if (c.type !== 'group') return [...p, getField(c, group)];
+        else return [...p, getPanel(c, data, group)];
       }, []);
   }
 
@@ -147,8 +173,8 @@ export class FieldService {
     const check = (a: TFormOptions): boolean =>
       'options' in a
         ? a.activatable
-          ? isVisibleField(a) // if group.activatable - only visible
-          : isVisibleField(a) && !a.read_only // else visible an not read_only
+        ? isVisibleField(a) // if group.activatable - only visible
+        : isVisibleField(a) && !a.read_only // else visible an not read_only
           ? a.options.some((b) => check(b)) // check inner fields
           : false
         : isVisibleField(a) && !a.read_only; // for fields in group
@@ -159,6 +185,16 @@ export class FieldService {
         validator: () => (options.filter(check).length === 0 ? { error: 'Form is empty' } : null),
       }
     );
+  }
+
+  toGroupsFormGroup(params: { [group: string]: any } = {}): FormGroup {
+    return this.fb.group(Object.entries(params).map(([key, value]) => [key, value]).reduce((acc, [key, value]) => {
+      if (isBoolean(value) || isEmptyObject(value)) {
+        return { ...acc, [key]: value };
+      } else if (!isEmptyObject(value)) {
+        return { ...acc, [key]: this.toGroupsFormGroup(value) };
+      }
+    }, {}));
   }
 
   // TODO:
@@ -186,6 +222,7 @@ export class FieldService {
   /**
    * External use (scheme.service) to set validator for FormControl by type
    * @param field Partial<FieldOptions>{ ValidatorInfo, controlType }
+   * @param controlToCompare
    */
   public setValidator(field: { validator: IValidator; controlType: controlType }, controlToCompare?: AbstractControl) {
     const v: ValidatorFn[] = [];

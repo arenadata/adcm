@@ -10,7 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { IYspec } from './yspec/yspec.service';
-import { TFormOptions } from './field.service';
+import { TFormOptions } from './services/field.service';
+import { FormControl } from '@angular/forms';
 
 export type stateType = 'created' | 'locked';
 
@@ -96,17 +97,20 @@ export interface IConfig {
   description?: string;
   config: IFieldStack[];
   attr?: IConfigAttr;
+  obj_ref?: number;
 }
 
 /**
  *```
-{
+ {
     [group: string]: { active: boolean };
 }
-```
+ ```
  */
 export interface IConfigAttr {
-  [group: string]: { active: boolean };
+  [group: string]: { active?: boolean };
+
+  'group_keys'?: any;
 }
 
 //#region Modified data for ngForm build
@@ -114,15 +118,26 @@ export interface IConfigAttr {
 /**
  * Mark for rendering required component
  */
-export type controlType = 'boolean' | 'textbox' | 'textarea' | 'json' | 'password' | 'list' | 'map' | 'dropdown' | 'file' | 'text' | 'structure';
+export type controlType =
+  'boolean'
+  | 'textbox'
+  | 'textarea'
+  | 'json'
+  | 'password'
+  | 'list'
+  | 'map'
+  | 'dropdown'
+  | 'file'
+  | 'text'
+  | 'structure';
 
 /**
-  *```
-    pattern?: string | RegExp;
-    required?: boolean;
-    max?: number;
-    min?: number;
-```
+ *```
+ pattern?: string | RegExp;
+ required?: boolean;
+ max?: number;
+ min?: number;
+ ```
  */
 export interface IValidator {
   pattern?: string | RegExp;
@@ -156,5 +171,7 @@ export interface IFieldOptions extends IFormOptions {
   controlType: controlType;
   validator: IValidator;
   compare: ICompare[];
+  configGroup?: FormControl;
 }
+
 //#endregion

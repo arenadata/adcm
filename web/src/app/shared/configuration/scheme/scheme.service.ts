@@ -13,7 +13,7 @@ import { Injectable } from '@angular/core';
 import { AbstractControl, FormArray, FormControl, FormGroup, ValidatorFn } from '@angular/forms';
 import { isObject } from '@app/core/types/func';
 
-import { FieldService } from '../field.service';
+import { FieldService } from '../services/field.service';
 import { IFieldOptions, TNForm, TNReq, TValue } from '../types';
 import { IYContainer, IYField } from '../yspec/yspec.service';
 

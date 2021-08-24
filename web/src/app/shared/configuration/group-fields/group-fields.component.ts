@@ -13,7 +13,7 @@ import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { AbstractControl, FormGroup } from '@angular/forms';
 import { MatExpansionPanel } from '@angular/material/expansion';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
-import { FieldService } from '@app/shared/configuration/field.service';
+import { FieldService } from '@app/shared/configuration/services/field.service';
 
 import { IFieldOptions, IPanelOptions } from '../types';
 
@@ -31,6 +31,7 @@ export class GroupFieldsComponent implements OnInit {
   active = true;
   @Input() panel: IPanelOptions;
   @Input() form: FormGroup;
+  @Input() groupForm: FormGroup;
   @ViewChild('ep') expanel: MatExpansionPanel;
 
   constructor(private service: FieldService) {}

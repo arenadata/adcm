@@ -9,12 +9,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Directive } from '@angular/core';
+import { Directive, Inject } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 
-import { BaseDirective } from '../directives/base.directive';
-import { AddService } from './add.service';
+import { BaseDirective } from '@app/shared/directives';
+import { ADD_SERVICE_PROVIDER, IAddService } from '@app/shared/add-component/add-service-model';
 
 @Directive({
   selector: '[appBaseForm]',
@@ -22,11 +22,11 @@ import { AddService } from './add.service';
 export class BaseFormDirective extends BaseDirective {
   form = new FormGroup({});
 
-  constructor(public service: AddService, public dialog: MatDialog) {
+  constructor(@Inject(ADD_SERVICE_PROVIDER) public service: IAddService, public dialog: MatDialog) {
     super();
   }
 
-  onCancel() {
+  onCancel(): void {
     this.form.reset();
     this.dialog.closeAll();
   }

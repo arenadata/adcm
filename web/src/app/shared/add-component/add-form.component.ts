@@ -9,13 +9,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, ViewChild } from '@angular/core';
+import { Component, ViewChild, ViewContainerRef } from '@angular/core';
 
-import { ChannelService } from '@app/core/services';
-import { keyChannelStrim } from '@app/core/services';
+import { ChannelService, keyChannelStrim } from '@app/core/services';
 import { DynamicComponent } from '@app/shared/directives';
-import { FormModel } from './add.service';
 import { BaseFormDirective } from './base-form.directive';
+import { FormModel } from '@app/shared/add-component/add-service-model';
 
 @Component({
   selector: 'app-add-form',
@@ -37,21 +36,28 @@ import { BaseFormDirective } from './base-form.directive';
         <ng-container *ngSwitchCase="'host2cluster'">
           <app-add-host2cluster (event)="message($event)" #cc></app-add-host2cluster>
         </ng-container>
+        <ng-container *ngSwitchDefault>
+          <ng-container *ngIf="!!model.component">
+            <ng-container #cc *ngComponentOutlet="model.component"></ng-container>
+          </ng-container>
+        </ng-container>
       </ng-container>
     </div>
   `,
 })
 export class AddFormComponent implements DynamicComponent {
   model: FormModel;
-  constructor(private channel: ChannelService) {}
+
+  constructor(private channel: ChannelService, public viewContainer: ViewContainerRef) {}
 
   @ViewChild('cc') container: BaseFormDirective;
 
-  onEnterKey() {
+  onEnterKey(): void {
     if (this.container.form.valid) this.container.save();
   }
 
-  message(m: string) {
+  message(m: string): void {
     this.channel.next(keyChannelStrim.notifying, m);
   }
+
 }
