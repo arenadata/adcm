@@ -23,13 +23,13 @@ import adcm.init_django  # pylint: disable=unused-import
 
 from cm.ansible_plugin import (
     ContextActionModule,
-    set_cluster_multi_state,
-    set_host_multi_state,
-    set_service_multi_state,
-    set_service_multi_state_by_id,
-    set_provider_multi_state,
-    set_component_multi_state_by_name,
-    set_component_multi_state,
+    unset_cluster_multi_state,
+    unset_host_multi_state,
+    unset_service_multi_state,
+    unset_service_multi_state_by_id,
+    unset_provider_multi_state,
+    unset_component_multi_state_by_name,
+    unset_component_multi_state,
 )
 
 ANSIBLE_METADATA = {'metadata_version': '1.1', 'supported_by': 'Arenadata'}
@@ -37,9 +37,9 @@ ANSIBLE_METADATA = {'metadata_version': '1.1', 'supported_by': 'Arenadata'}
 DOCUMENTATION = r'''
 ---
 module: adcm_multi_state_set
-short_description: Add one state to multi_state field
+short_description: Unset one state from multi_state field and raise Error
 description:
-  - This is special ADCM only module which is usefull for changing multi_state for various ADCM objects.
+  - This is special ADCM only module which is usefull for deleting multi_state from various ADCM objects.
   - There is support of cluster, service, host, component and providers states
   - This one is allowed to be used in various execution contexts.
 options:
@@ -67,28 +67,35 @@ options:
     required: false
     type: string
     description: usefull in cluster and component context only. In that context you are able to set the state for a component belongs to the service
+
+  - option-name: missing_ok
+    required: false
+    type: boolean
+    default: false
+    description: if missing_ok is true then we should not rise any exception if there is no such multi state on object
 '''
 
 EXAMPLES = r'''
-- adcm_multi_state_set:
+- adcm_multi_state_unset:
     type: "cluster"
     state: "bimba!"
 
-- adcm_multi_state_set:
+- adcm_multi_state_unset:
     type: "service"
     service_name: "First"
     state: "bimba!"
 
-- adcm_multi_state_set:
+- adcm_multi_state_unset:
     type: "component"
     component_name: "another_component"
     state: "bimba!"
 
-- adcm_multi_state_set:
+- adcm_multi_state_unset:
     type: "component"
     service_name: "another service"
     component_name: "another_component"
     state: "bimba!"
+    missing_ok: true ## false is default value of this parameter if parameter is absent
 '''
 
 RETURN = r'''
@@ -102,73 +109,80 @@ state:
 class ActionModule(ContextActionModule):
 
     TRANSFERS_FILES = False
-    _VALID_ARGS = frozenset(('type', 'service_name', 'component_name', 'state'))
+    _VALID_ARGS = frozenset(('type', 'service_name', 'component_name', 'state', 'missing_ok'))
     _MANDATORY_ARGS = ('type', 'state')
 
     def _do_cluster(self, task_vars, context):
         res = self._wrap_call(
-            set_cluster_multi_state,
+            unset_cluster_multi_state,
             context['cluster_id'],
-            self._task.args["state"]
+            self._task.args["state"],
+            self._task.args.get("missing_ok", False),
         )
         res['state'] = self._task.args["state"]
         return res
 
     def _do_service_by_name(self, task_vars, context):
         res = self._wrap_call(
-            set_service_multi_state,
+            unset_service_multi_state,
             context['cluster_id'],
             self._task.args["service_name"],
             self._task.args["state"],
+            self._task.args.get("missing_ok", False),
         )
         res['state'] = self._task.args["state"]
         return res
 
     def _do_service(self, task_vars, context):
         res = self._wrap_call(
-            set_service_multi_state_by_id,
+            unset_service_multi_state_by_id,
             context['cluster_id'],
             context['service_id'],
             self._task.args["state"],
+            self._task.args.get("missing_ok", False),
         )
         res['state'] = self._task.args["state"]
         return res
 
     def _do_host(self, task_vars, context):
         res = self._wrap_call(
-            set_host_multi_state,
+            unset_host_multi_state,
             context['host_id'],
             self._task.args["state"],
+            self._task.args.get("missing_ok", False),
         )
         res['state'] = self._task.args["state"]
         return res
 
     def _do_provider(self, task_vars, context):
         res = self._wrap_call(
-            set_provider_multi_state,
+            unset_provider_multi_state,
             context['provider_id'],
-            self._task.args["state"]
+            self._task.args["state"],
+            self._task.args.get("missing_ok", False),
         )
         res['state'] = self._task.args["state"]
         return res
 
     def _do_component_by_name(self, task_vars, context):
         res = self._wrap_call(
-            set_component_multi_state_by_name,
+            unset_component_multi_state_by_name,
             context['cluster_id'],
             context['service_id'],
             self._task.args['component_name'],
-            self._task.args.get('service_name', None),
             self._task.args['state'],
+            self._task.args.get('service_name', None),
+            self._task.args.get("missing_ok", False),
         )
         res['state'] = self._task.args['state']
         return res
 
     def _do_component(self, task_vars, context):
         res = self._wrap_call(
-            set_component_multi_state,
+            unset_component_multi_state,
             context['component_id'],
             self._task.args['state'],
+            self._task.args.get("missing_ok", False),
         )
         res['state'] = self._task.args['state']
         return res
