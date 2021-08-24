@@ -158,8 +158,12 @@ def test_reset_config(settings_page: AdminSettingsPage):
     with allure.step('Save config'):
         settings_page.config.save_config()
         config_field_row = settings_page.config.get_config_row(params['field_display_name'])
-        settings_page.config.assert_input_value_is(params['changed_value'], row=config_field_row)
+        settings_page.config.assert_input_value_is(
+            params['changed_value'], params['field_display_name']
+        )
     with allure.step(f'Reset value of {params["field_display_name"]}'):
         config_field_row = settings_page.config.get_config_row(params['field_display_name'])
-        settings_page.config.reset_to_default(row=config_field_row)
-        settings_page.config.assert_input_value_is(params['init_value'], row=config_field_row)
+        settings_page.config.reset_to_default(config_field_row)
+        settings_page.config.assert_input_value_is(
+            params['init_value'], params['field_display_name']
+        )

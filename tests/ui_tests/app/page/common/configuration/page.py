@@ -9,12 +9,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Optional, List
+from typing import List, Collection
 
 import allure
 
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import TimeoutException
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
 from tests.ui_tests.app.page.common.base_page import BasePageObject
@@ -30,7 +31,14 @@ class CommonConfigMenuObj(BasePageObject):
 
     def get_all_config_rows(self) -> List[WebElement]:
         """Return all config field rows"""
-        return [r for r in self.find_elements(CommonConfigMenu.config_row) if r.is_displayed()]
+        try:
+            return [
+                r
+                for r in self.find_elements(CommonConfigMenu.config_row, timeout=5)
+                if r.is_displayed()
+            ]
+        except TimeoutException:
+            return []
 
     def get_config_row(self, display_name: str) -> WebElement:
         """Return config field row with provided display name"""
@@ -69,17 +77,9 @@ class CommonConfigMenuObj(BasePageObject):
         # to hide select panel so it won't block other actions
         self.find_element(self.locators.compare_to_select).send_keys(Keys.ESCAPE)
 
-    def config_diff_is_presented(self, value: str, adcm_test: str):
-        """
-        Check if `value` is listed as change of field that can be located with `adcm_test`
-        """
-        loc = self.locators.config_diff(adcm_test, value)
-        self.wait_element_visible(loc)
-
     def get_input_value(
         self,
-        adcm_test_attr_value: Optional[str] = None,
-        row: Optional[WebElement] = None,
+        row: WebElement,
         *,
         is_password: bool = False,
     ) -> str:
@@ -89,30 +89,20 @@ class CommonConfigMenuObj(BasePageObject):
         If is_password is True, then special field is used for search
         You can't get password confirmation method
 
-        :param adcm_test_attr_value: Value of attribute "adcm_test" to generate Locator
         :param row: Field row element
         :param is_password: Is field password/confirmation
         :returns: Value of input
         """
-        if adcm_test_attr_value:
-            template = (
-                CommonConfigMenu.field_input
-                if not is_password
-                else CommonConfigMenu.password_inputs
-            )
-            return self.find_element(template(adcm_test_attr_value)).get_property("value")
-        elif row:
-            row_locators = CommonConfigMenu.ConfigRow
-            locator = row_locators.value if not is_password else row_locators.password
-            return self.find_child(row, locator).get_property("value")
-        raise ValueError
 
-    @allure.step('Check input of field "{adcm_test_attr_value}" has value "{expected_value}"')
+        row_locators = CommonConfigMenu.ConfigRow
+        locator = row_locators.value if not is_password else row_locators.password
+        return self.find_child(row, locator).get_property("value")
+
+    @allure.step('Check field "{display_name}" has value "{expected_value}"')
     def assert_input_value_is(
         self,
         expected_value: str,
-        adcm_test_attr_value: Optional[str] = None,
-        row: Optional[WebElement] = None,
+        display_name: str,
         *,
         is_password: bool = False,
     ):
@@ -120,19 +110,14 @@ class CommonConfigMenuObj(BasePageObject):
         Assert that value in field is expected_value (using retries)
 
         :param expected_value: Value expected to be in input field
-        :param adcm_test_attr_value: Value of attribute "adcm_test" to generate Locator
-        :param row: Row with required input
+        :param display_name: Config field display name
         :param is_password: Is field password/confirmation
         """
-        kwargs = {
-            'adcm_test_attr_value': adcm_test_attr_value,
-            'row': row,
-            'is_password': is_password,
-        }
 
         def assert_value():
-
-            input_value = self.get_input_value(**kwargs)
+            input_value = self.get_input_value(
+                row=self.get_config_row(display_name), is_password=is_password
+            )
 
             assert (
                 expected_value == input_value
@@ -140,21 +125,15 @@ class CommonConfigMenuObj(BasePageObject):
 
         wait_until_step_succeeds(assert_value, timeout=4, period=0.5)
 
-    def reset_to_default(self, adcm_test: Optional[str] = None, row: Optional[WebElement] = None):
+    def reset_to_default(self, row: WebElement):
         """Click reset button"""
-        if adcm_test:
-            self.find_and_click(self.locators.reset_btn(adcm_test))
-        elif row:
-            self.find_child(row, CommonConfigMenu.ConfigRow.reset_btn).click()
-        else:
-            raise ValueError('Either adcm_test or row should be passed')
+        self.find_child(row, CommonConfigMenu.ConfigRow.reset_btn).click()
 
     @allure.step('Type "{value}" into config field')
     def type_in_config_field(
         self,
         value: str,
-        adcm_test: Optional[str] = None,
-        row: Optional[WebElement] = None,
+        row: WebElement,
         *,
         clear: bool = False,
     ):
@@ -162,32 +141,27 @@ class CommonConfigMenuObj(BasePageObject):
         Send keys to config value input
 
         :param value: keys to send
-        :param adcm_test: value of @adcm_test required for finding input
         :param row: Config field row
         :param clear: clean input before sending keys or not
         """
-        if adcm_test:
-            field = self.find_element(self.locators.field_input(adcm_test))
-        elif row:
-            field = self.find_child(row, self.locators.ConfigRow.value)
-        else:
-            raise AssertionError('Either adcm_test or row should not be None')
+        field = self.find_child(row, self.locators.ConfigRow.value)
         if clear:
             field.clear()
         field.send_keys(value)
 
     @allure.step(
-        "Filling in {adcm_test} field's password {password} and confirmation {confirmation}"
+        "Filling in {display_name} field's password {password} and confirmation {confirmation}"
     )
-    def fill_password_and_confirm_fields(self, password: str, confirmation: str, adcm_test: str):
+    def fill_password_and_confirm_fields(self, password: str, confirmation: str, display_name: str):
         """
         Fill password in clean fields and confirm password fields
         """
         # there are invisible inputs, so we need special locator
         # if field is not empty or isn't required it can behave not so predictably
-        password_input = self.find_elements(self.locators.password_inputs(adcm_test))[0]
+        row = self.get_config_row(display_name)
+        password_input = self.find_child(row, self.locators.ConfigRow.password)
         password_input.send_keys(password)
-        confirm_input = self.find_elements(self.locators.password_inputs(adcm_test))[1]
+        confirm_input = self.find_child(row, self.locators.ConfigRow.confirm_password)
         confirm_input.send_keys(confirmation)
 
     @allure.step('Click on group {title}')
@@ -230,6 +204,28 @@ class CommonConfigMenuObj(BasePageObject):
         """
         message = f'Confirm [{name}] is required!'
         self.check_element_should_be_visible(self.locators.field_error(message))
+
+    @allure.step("Check that correct fields are (in)visible")
+    def check_config_fields_visibility(
+        self, visible_fields: Collection[str] = (), invisible_fields: Collection[str] = ()
+    ):
+        """
+        Checks if all provided fields meets visibility expectations.
+        Collection items should be display names of config fields (not groups).
+        """
+        falsely_visible = set()
+        visible_fields = set(visible_fields)
+        for row in self.get_all_config_rows():
+            if (
+                row_name := self.find_child(row, self.locators.ConfigRow.name).text[:-1]
+            ) in invisible_fields:
+                falsely_visible.add(row_name)
+            elif row_name in visible_fields:
+                visible_fields.remove(row_name)
+        assert (
+            len(falsely_visible) == 0
+        ), f"Those fields shouldn't be visible in configuration: {falsely_visible}"
+        assert len(visible_fields) == 0, f"Those fields should be visible: {visible_fields}"
 
     @allure.step("Get row history")
     def get_history_in_row(self, row: WebElement):

@@ -26,9 +26,7 @@ class CommonConfigMenu:
     )
     advanced_label = Locator(By.XPATH, "//mat-checkbox//span[text()='Advanced']", "Advanced label")
     search_input = Locator(By.ID, "config_search_input", "Search input")
-    search_input_clear_btn = Locator(
-        By.XPATH, "//app-search//button[@aria-label='Clear']", "Clear search input button"
-    )
+    search_input_clear_btn = Locator(By.XPATH, "//app-search//button[@aria-label='Clear']", "Clear search input button")
     description_input = Locator(
         By.XPATH,
         "//input[@data-placeholder='Description configuration']",
@@ -41,32 +39,9 @@ class CommonConfigMenu:
     config_version_option = TemplateLocator(
         By.XPATH, "//mat-option//span[contains(text(), '{}')]", "Config version with text: {}"
     )
-    # use it to check config diff existence by finding text entry
-    config_diff = TemplateLocator(
-        By.XPATH,
-        "//app-field[.//div[@adcm_test='{}']]//mat-list-item//span[contains(text(), '{}')]",
-        'Config diff of option "{}" with "{}" in text',
-    )
 
-    field_input = TemplateLocator(
-        By.XPATH,
-        "//app-field[.//div[@adcm_test='{}']]//input",
-        'Input of option "{}" in group',
-    )
-    password_inputs = TemplateLocator(
-        By.XPATH,
-        "//app-field[.//div[@adcm_test='{}']]//app-fields-password/div[not(contains(@style, 'none'))]//input",
-        "Password inputs",
-    )
     field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
-    reset_btn = TemplateLocator(
-        By.XPATH,
-        "//div[@adcm_test='{}']//mat-icon[text()='refresh']/ancestor::button",
-        "Resfresh button of {}",
-    )
-
     loading_text = Locator(By.XPATH, "//span[text()='Loading...']", "Loading text")
-
     config_row = Locator(By.XPATH, "//app-field", "Configuration row")
 
     class ConfigRow:
@@ -74,12 +49,12 @@ class CommonConfigMenu:
         value = Locator(By.XPATH, ".//input", "Row value")
         password = Locator(
             By.XPATH,
-            ".//app-fields-password/div[not(contains(@style, 'none'))]//input[1]",
+            "(.//app-fields-password/div[not(contains(@style, 'none'))]//input)[1]",
             "Password input",
         )
         confirm_password = Locator(
             By.XPATH,
-            ".//app-fields-password/div[not(contains(@style, 'none'))]//input[2]",
+            "(.//app-fields-password/div[not(contains(@style, 'none'))]//input)[2]",
             "Confirm password input",
         )
         history = Locator(By.XPATH, ".//mat-list-item//span[2]", "Row history")
@@ -91,7 +66,5 @@ class CommonConfigMenu:
 
     class HistoryRow:
         history_select = Locator(By.XPATH, "//mat-select[@placeholder='History']", "History select")
-        compare_select = Locator(
-            By.XPATH, "//mat-select[@placeholder='Compare to']", "Compare select"
-        )
+        compare_select = Locator(By.XPATH, "//mat-select[@placeholder='Compare to']", "Compare select")
         option = Locator(By.XPATH, "//mat-option", "Option in select")
