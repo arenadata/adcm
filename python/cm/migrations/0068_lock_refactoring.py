@@ -64,42 +64,42 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='adcm',
-            name='concern',
+            name='concerns',
             field=models.ManyToManyField(
                 blank=True, related_name='adcm_entities', to='cm.ConcernItem'
             ),
         ),
         migrations.AddField(
             model_name='cluster',
-            name='concern',
+            name='concerns',
             field=models.ManyToManyField(
                 blank=True, related_name='cluster_entities', to='cm.ConcernItem'
             ),
         ),
         migrations.AddField(
             model_name='clusterobject',
-            name='concern',
+            name='concerns',
             field=models.ManyToManyField(
                 blank=True, related_name='clusterobject_entities', to='cm.ConcernItem'
             ),
         ),
         migrations.AddField(
             model_name='host',
-            name='concern',
+            name='concerns',
             field=models.ManyToManyField(
                 blank=True, related_name='host_entities', to='cm.ConcernItem'
             ),
         ),
         migrations.AddField(
             model_name='hostprovider',
-            name='concern',
+            name='concerns',
             field=models.ManyToManyField(
                 blank=True, related_name='hostprovider_entities', to='cm.ConcernItem'
             ),
         ),
         migrations.AddField(
             model_name='servicecomponent',
-            name='concern',
+            name='concerns',
             field=models.ManyToManyField(
                 blank=True, related_name='servicecomponent_entities', to='cm.ConcernItem'
             ),

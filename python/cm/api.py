@@ -87,7 +87,7 @@ def add_host(proto, provider, fqdn, desc=''):
             prototype=proto, provider=provider, fqdn=fqdn, config=obj_conf, description=desc
         )
         host.save()
-        host.add_to_concern(ctx.lock)
+        host.add_to_concerns(ctx.lock)
         process_file_type(host, spec, conf)
         cm.issue.update_hierarchy_issues(host)
     ctx.event.send_state()
@@ -116,7 +116,7 @@ def add_host_provider(proto, name, desc=''):
         obj_conf = init_object_config(spec, conf, attr)
         provider = HostProvider(prototype=proto, name=name, config=obj_conf, description=desc)
         provider.save()
-        provider.add_to_concern(ctx.lock)
+        provider.add_to_concerns(ctx.lock)
         process_file_type(provider, spec, conf)
         cm.issue.update_hierarchy_issues(provider)
     ctx.event.send_state()
@@ -146,7 +146,7 @@ def add_host_to_cluster(cluster, host):
     with transaction.atomic():
         host.cluster = cluster
         host.save()
-        host.add_to_concern(ctx.lock)
+        host.add_to_concerns(ctx.lock)
         cm.issue.update_hierarchy_issues(host)
     cm.status_api.post_event('add', 'host', host.id, 'cluster', str(cluster.id))
     cm.status_api.load_service_map()
@@ -284,7 +284,7 @@ def remove_host_from_cluster(host):
     with transaction.atomic():
         host.cluster = None
         host.save()
-        host.remove_from_concern(ctx.lock)
+        host.remove_from_concerns(ctx.lock)
         cm.issue.update_hierarchy_issues(cluster)
     ctx.event.send_state()
     cm.status_api.post_event('remove', 'host', host.id, 'cluster', str(cluster.id))
@@ -541,9 +541,9 @@ def save_hc(cluster, host_comp_list):
     old_hosts = {i.host for i in hc_queryset.select_related('host').all()}
     new_hosts = {i[1] for i in host_comp_list}
     for removed_host in old_hosts.difference(new_hosts):
-        removed_host.remove_from_concern(ctx.lock)
+        removed_host.remove_from_concerns(ctx.lock)
     for added_host in new_hosts.difference(old_hosts):
-        added_host.add_to_concern(ctx.lock)
+        added_host.add_to_concerns(ctx.lock)
 
     hc_queryset.delete()
     result = []
@@ -748,20 +748,20 @@ def multi_bind(cluster, service, bind_list):  # pylint: disable=too-many-locals,
         new_bind[cook_key(export_cluster, export_co)] = (pi, cbind, export_obj)
 
     with transaction.atomic():
-        for key in new_bind:
+        for key, value in new_bind.items():
             if key in old_bind:
                 continue
-            (pi, cb, export_obj) = new_bind[key]
+            (pi, cb, export_obj) = value
             check_multi_bind(pi, cluster, service, cb.source_cluster, cb.source_service, cb_list)
             cb.save()
             log.info('bind %s to %s', obj_ref(export_obj), obj_ref(import_obj))
 
-        for key in old_bind:
+        for key, value in old_bind.items():
             if key in new_bind:
                 continue
-            export_obj = get_bind_obj(old_bind[key].source_cluster, old_bind[key].source_service)
+            export_obj = get_bind_obj(value.source_cluster, value.source_service)
             check_import_default(import_obj, export_obj)
-            old_bind[key].delete()
+            value.delete()
             log.info('unbind %s from %s', obj_ref(export_obj), obj_ref(import_obj))
 
         cm.issue.update_hierarchy_issues(cluster)

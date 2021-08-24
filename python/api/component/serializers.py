@@ -19,7 +19,7 @@ from api.action.serializers import ActionShort
 from api.api_views import hlink, filter_actions, get_api_url_kwargs, CommonAPIURL
 from api.concern.serializers import ConcernItemSerializer
 from api.serializers import StringListSerializer
-from cm import issue, status_api
+from cm import status_api
 from cm.models import Action
 
 
@@ -48,15 +48,11 @@ class ComponentDetailSerializer(ComponentSerializer):
     bundle_id = serializers.IntegerField(read_only=True)
     monitoring = serializers.CharField(read_only=True)
     status = serializers.SerializerMethodField()
-    issue = serializers.SerializerMethodField()
     action = CommonAPIURL(read_only=True, view_name='object-action')
     config = CommonAPIURL(read_only=True, view_name='object-config')
     prototype = hlink('component-type-details', 'prototype_id', 'prototype_id')
     multi_state = StringListSerializer(read_only=True)
     concern = ConcernItemSerializer(many=True, read_only=True)
-
-    def get_issue(self, obj):
-        return issue.aggregate_issues(obj)
 
     def get_status(self, obj):
         return status_api.get_component_status(obj.id)

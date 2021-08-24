@@ -20,6 +20,7 @@ class BundleListLocators:
     """Bundle List page elements locators"""
 
     class Tooltip:
+        apps_btn = Locator(By.XPATH, "//a[.//mat-icon[text()='apps']]", "Apps button")
         upload_btn = Locator(
             By.XPATH, "//input[@value='upload_bundle_file']", "Bundle upload button"
         )

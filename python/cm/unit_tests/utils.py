@@ -12,9 +12,8 @@
 
 from uuid import uuid4
 
+from cm import models
 from django.utils import timezone
-
-import cm.models as models
 
 
 def _gen_name(prefix: str, name='name'):
@@ -121,9 +120,11 @@ def gen_host_component(component, host) -> models.HostComponent:
     )
 
 
-def gen_concern_item(name=None, reason='Test') -> models.ConcernItem:
+def gen_concern_item(concern_type, name=None, reason='Test', blocking=True) -> models.ConcernItem:
     """Generate ConcernItem object"""
-    return models.ConcernItem.objects.create(name=name, reason=reason)
+    return models.ConcernItem.objects.create(
+        type=concern_type, name=name, reason=reason, blocking=blocking
+    )
 
 
 def gen_action(name='', bundle=None, prototype=None) -> models.Action:

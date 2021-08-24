@@ -14,7 +14,7 @@ from django.test import TestCase
 
 import cm.api
 import cm.issue
-from cm.models import Bundle, Prototype, PrototypeImport, ClusterBind
+from cm.models import Bundle, Prototype, PrototypeImport, ClusterBind, IssueType
 
 
 class TestImport(TestCase):
@@ -93,7 +93,9 @@ class TestImport(TestCase):
         _, _, cluster2 = self.cook_cluster('Not_Monitoring', 'Cluster2')
         ClusterBind.objects.create(cluster=cluster1, source_cluster=cluster2)
 
-        self.assertEqual(cm.issue.check_for_issue(cluster1), {'required_import': False})
+        cm.issue.recheck_issues(cluster1)
+        issue = cluster1.get_own_issue(IssueType.RequiredImport)
+        self.assertIsNotNone(issue)
 
     def test_issue_cluster_imported(self):
         _, proto1, cluster1 = self.cook_cluster('Hadoop', 'Cluster1')
@@ -102,7 +104,9 @@ class TestImport(TestCase):
         _, _, cluster2 = self.cook_cluster('Monitoring', 'Cluster2')
         ClusterBind.objects.create(cluster=cluster1, source_cluster=cluster2)
 
-        self.assertEqual(cm.issue.check_for_issue(cluster1), {})
+        cm.issue.recheck_issues(cluster1)
+        issue = cluster1.get_own_issue(IssueType.RequiredImport)
+        self.assertIsNone(issue)
 
     def test_issue_service_required_import(self):
         b1, _, cluster1 = self.cook_cluster('Hadoop', 'Cluster1')
@@ -113,7 +117,9 @@ class TestImport(TestCase):
         _, _, cluster2 = self.cook_cluster('Non_Monitoring', 'Cluster2')
         ClusterBind.objects.create(cluster=cluster1, service=service, source_cluster=cluster2)
 
-        self.assertEqual(cm.issue.check_for_issue(service), {'required_import': False})
+        cm.issue.recheck_issues(service)
+        issue = service.get_own_issue(IssueType.RequiredImport)
+        self.assertIsNotNone(issue)
 
     def test_issue_service_imported(self):
         b1, _, cluster1 = self.cook_cluster('Hadoop', 'Cluster1')
@@ -124,4 +130,6 @@ class TestImport(TestCase):
         _, _, cluster2 = self.cook_cluster('Monitoring', 'Cluster2')
         ClusterBind.objects.create(cluster=cluster1, service=service, source_cluster=cluster2)
 
-        self.assertEqual(cm.issue.check_for_issue(service), {})
+        cm.issue.recheck_issues(service)
+        issue = service.get_own_issue(IssueType.RequiredImport)
+        self.assertIsNone(issue)

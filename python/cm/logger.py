@@ -13,7 +13,7 @@
 import logging
 import os
 
-import cm.config as config
+from cm import config
 
 log = logging.getLogger('adcm')
 log.setLevel(logging.DEBUG)

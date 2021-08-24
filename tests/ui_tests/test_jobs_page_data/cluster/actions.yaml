@@ -10,8 +10,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- type: cluster
-  name: test_cluster
-  description: "community description"
-  version: 1.5
-  edition: community
+---
+- name: "SeeMeInAction"
+  hosts: localhost
+  tasks:
+    - name: "Success"
+      assert:
+        that:
+          - 1 == 1
+        msg: "Never gonna give you up"
+      tags:
+        - success
+    - name: "Fail"
+      assert:
+        that:
+          - 1 != 1
+        msg: "Never gonna give you up"
+      tags:
+        - fail
+    - name: "Pause"
+      pause:
+        minutes: 1
+      tags:
+        - pause

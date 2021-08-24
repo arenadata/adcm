@@ -19,7 +19,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 import cm
-import cm.config as config
+from cm import config
 import cm.job as job_module
 from cm import models
 from cm.logger import log

@@ -10,143 +10,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import defaultdict
-
-import cm.status_api
 from cm.adcm_config import proto_ref, obj_ref, get_prototype_config
 from cm.errors import AdcmEx, raise_AdcmEx as err
 from cm.hierarchy import Tree
 from cm.logger import log
 from cm.models import (
-    ADCMModel,
+    ADCMEntity,
+    Cluster,
     ClusterBind,
     ClusterObject,
+    ConcernItem,
+    ConcernType,
     ConfigLog,
     Host,
     HostComponent,
+    IssueType,
+    MessageTemplate as MsgTpl,
+    PrototypeEnum,
     Prototype,
     PrototypeImport,
 )
 
 
-class IssueReporter:
-    """Cache, compare, and report updated issues"""
-
-    def __init__(self, obj: ADCMModel):
-        self.tree = Tree(obj)
-        self._affected_nodes = self.tree.get_directly_affected(self.tree.built_from)
-        self._cache = {}
-        self._init_cache()
-
-    def _init_cache(self):
-        for node in self._affected_nodes:
-            self._cache[node.key] = aggregate_issues(node.value, self.tree)
-
-    def update_issues(self):
-        for node in self._affected_nodes:
-            obj = node.value
-            issue = check_for_issue(obj)
-            if obj.issue != issue:
-                obj.issue = issue
-                obj.save()
-
-    def report_changed(self):
-        for node in self._affected_nodes:
-            new_issue = aggregate_issues(node.value, self.tree)
-            old_issue = self._cache[node.key]
-            if new_issue != old_issue:
-                if issue_to_bool(new_issue):
-                    cm.status_api.post_event('clear_issue', node.type, node.id)
-                else:
-                    cm.status_api.post_event('raise_issue', node.type, node.id, 'issue', new_issue)
-
-
-def update_hierarchy_issues(obj: ADCMModel):
-    """Update issues on all directly connected objects"""
-    reporter = IssueReporter(obj)
-    reporter.update_issues()
-    reporter.report_changed()
-
-
-def check_for_issue(obj: ADCMModel):
-    type_check_map = {
-        'cluster': check_cluster_issue,
-        'service': check_service_issue,
-        'component': check_config_issue,
-        'provider': check_config_issue,
-        'host': check_config_issue,
-        'adcm': lambda x: {},
-    }
-    if obj.prototype.type not in type_check_map:
-        err('NOT_IMPLEMENTED', 'unknown object type')
-    issue = {k: v for k, v in type_check_map[obj.prototype.type](obj).items() if v is False}
-    # log.debug('%s issue: %s', obj_ref(obj), issue)
-    return issue
-
-
-def issue_to_bool(issue):
-    if isinstance(issue, dict):
-        return all(map(issue_to_bool, issue.values()))
-    elif isinstance(issue, list):
-        return all(map(issue_to_bool, issue))
-    else:
-        return bool(issue)
-
-
-def aggregate_issues(obj: ADCMModel, tree: Tree = None) -> dict:
-    """
-    Get own issue extended with issues of all nested objects
-    TODO: unify behavior for hosts (in `Host.serialized_issue`) and providers
-    """
-    issue = defaultdict(list)
-    issue.update(obj.issue)
-
-    if obj.prototype.type == 'provider':
-        return issue
-
-    tree = tree or Tree(obj)
-    node = tree.get_node(obj)
-    for child in tree.get_directly_affected(node):
-
-        if child.key == node.key:  # skip itself
-            continue
-
-        if obj.prototype.type == 'provider':
-            continue
-
-        child_issue = child.value.serialized_issue
-        if child_issue:
-            issue[child.type].append(child_issue)
-
-    return issue
-
-
-def check_cluster_issue(cluster):
-    return {
-        'config': check_config(cluster),
-        'required_service': check_required_services(cluster),
-        'required_import': check_required_import(cluster),
-        'host_component': check_hc(cluster),
-    }
-
-
-def check_service_issue(service):
-    return {
-        'config': check_config(service),
-        'required_import': check_required_import(service.cluster, service),
-    }
-
-
-def check_config_issue(obj):
-    return {'config': check_config(obj)}
-
-
 def check_config(obj):  # pylint: disable=too-many-branches
     spec, _, _, _ = get_prototype_config(obj.prototype)
     conf, attr = get_obj_config(obj)
-    for key in spec:  # pylint: disable=too-many-nested-blocks
-        if 'required' in spec[key]:
-            if spec[key]['required']:
+    for key, value in spec.items():  # pylint: disable=too-many-nested-blocks
+        if 'required' in value:
+            if value['required']:
                 if key in conf and conf[key] is None:
                     log.debug('required config key %s of %s is missing', key, obj_ref(obj))
                     return False
@@ -154,8 +45,8 @@ def check_config(obj):  # pylint: disable=too-many-branches
             if key in attr:
                 if 'active' in attr[key] and not attr[key]['active']:
                     continue
-            for subkey in spec[key]:
-                if spec[key][subkey]['required']:
+            for subkey in value:
+                if value[subkey]['required']:
                     if key not in conf:
                         log.debug('required config group %s of %s is missing', key, obj_ref(obj))
                         return False
@@ -182,7 +73,15 @@ def check_required_services(cluster):
     return True
 
 
-def check_required_import(cluster, service=None):
+def check_required_import(obj: [Cluster, ClusterObject]):
+    if obj.prototype.type == PrototypeEnum.Cluster.value:
+        cluster = obj
+        service = None
+    elif obj.prototype.type == PrototypeEnum.Service.value:
+        service = obj
+        cluster = obj.cluster
+    else:
+        raise TypeError('Could not check import for %s' % obj)
     res, _ = do_check_import(cluster, service)
     return res
 
@@ -341,3 +240,77 @@ def check_component_constraint(service, hc_in):
 
     for c in Prototype.objects.filter(parent=service.prototype, type='component'):
         check(c, c.constraint)
+
+
+_issue_check_map = {
+    IssueType.Config: check_config,
+    IssueType.RequiredImport: check_required_import,
+    IssueType.RequiredService: check_required_services,
+    IssueType.HostComponent: check_hc,
+}
+_prototype_issue_map = {
+    PrototypeEnum.ADCM.value: tuple(),
+    PrototypeEnum.Cluster.value: (
+        IssueType.Config,
+        IssueType.RequiredImport,
+        IssueType.RequiredService,
+        IssueType.HostComponent,
+    ),
+    PrototypeEnum.Service.value: (IssueType.Config, IssueType.RequiredImport),
+    PrototypeEnum.Component.value: (IssueType.Config,),
+    PrototypeEnum.Provider.value: (IssueType.Config,),
+    PrototypeEnum.Host.value: (IssueType.Config,),
+}
+_issue_type_name_map = {
+    IssueType.Config: MsgTpl.KnownNames.ConfigIssue,
+    IssueType.RequiredImport: MsgTpl.KnownNames.RequiredImportIssue,
+    IssueType.RequiredService: MsgTpl.KnownNames.RequiredServiceIssue,
+    IssueType.HostComponent: MsgTpl.KnownNames.HostComponentIssue,
+}
+
+
+def create_issue(obj: ADCMEntity, issue_type: IssueType) -> None:
+    """Create newly discovered issue and add it to linked objects concerns"""
+    if obj.get_own_issue(issue_type):
+        return
+
+    msg_name = _issue_type_name_map[issue_type]
+    reason = MsgTpl.get_message_from_template(msg_name.value, source=obj)
+    issue_name = issue_type.gen_issue_name(obj)
+    issue = ConcernItem.objects.create(type=ConcernType.Issue, name=issue_name, reason=reason)
+
+    tree = Tree(obj)
+    affected_nodes = tree.get_directly_affected(tree.built_from)
+    for node in affected_nodes:
+        node.value.add_to_concerns(issue)
+
+
+def remove_issue(obj: ADCMEntity, issue_type: IssueType) -> None:
+    """Remove outdated issue from other's concerns"""
+    issue = obj.get_own_issue(issue_type)
+    if not issue:
+        return
+
+    for entity in issue.related_objects:
+        entity.remove_from_concerns(issue)
+
+    issue.delete()
+
+
+def recheck_issues(obj: ADCMEntity) -> None:
+    """Re-check for object's type-specific issues"""
+    issue_types = _prototype_issue_map.get(obj.prototype.type, [])
+    for issue_type in issue_types:
+        if not _issue_check_map[issue_type](obj):
+            create_issue(obj, issue_type)
+        else:
+            remove_issue(obj, issue_type)
+
+
+def update_hierarchy_issues(obj: ADCMEntity):
+    """Update issues on all directly connected objects"""
+    tree = Tree(obj)
+    affected_nodes = tree.get_directly_affected(tree.built_from)
+    for node in affected_nodes:
+        obj = node.value
+        recheck_issues(obj)

@@ -197,9 +197,9 @@ def check_upgrade_import(obj, upgrade):  # pylint: disable=too-many-branches
 
 
 def check_upgrade(obj, upgrade):
-    issue = cm.issue.aggregate_issues(obj)
-    if not cm.issue.issue_to_bool(issue):
-        return False, '{} has issue: {}'.format(obj_ref(obj), issue)
+    if obj.is_locked:
+        concerns = [i.name or 'Action lock' for i in obj.concerns.all()]
+        return False, f'{obj} has blocking concerns to address: {concerns}'
 
     check_list = [
         check_upgrade_version,

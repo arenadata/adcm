@@ -9,9 +9,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from typing import Optional
-from typing import Union
+from contextlib import contextmanager
+from typing import (
+    Optional,
+    List,
+    Union,
+)
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -34,7 +37,8 @@ from tests.ui_tests.app.page.common.header import (
     CommonHeaderLocators,
     AuthorizedHeaderLocators,
 )
-from tests.ui_tests.app.page.common.popups import CommonPopupLocators
+from tests.ui_tests.app.page.common.popups.locator import CommonPopupLocators
+from tests.ui_tests.utils import assert_enough_rows
 
 
 class BasePageObject:
@@ -83,7 +87,10 @@ class BasePageObject:
             if self.driver.current_url != url:
                 with allure.step(f"Open {url}"):
                     self.driver.get(url)
-                    assert self.path in self.driver.current_url
+                    assert self.path in self.driver.current_url, (
+                        "Page URL didn't change. "
+                        f'Actual URL: {self.driver.current_url}. Expected URL: {url}.'
+                    )
 
         wait_until_step_succeeds(
             open_page, period=0.5, timeout=timeout or self.default_page_timeout
@@ -95,6 +102,10 @@ class BasePageObject:
         if self.is_element_displayed(CommonPopupLocators.block, timeout=5):
             self.find_and_click(CommonPopupLocators.hide_btn)
             self.wait_element_hide(CommonPopupLocators.block)
+
+    @allure.step("Get text from info popup")
+    def get_info_popup_text(self):
+        return self.wait_element_visible(CommonPopupLocators.text, timeout=5).text
 
     @allure.step("Wait url to contain path {path}")
     def wait_url_contains_path(self, path: str, timeout: int = None) -> None:
@@ -128,6 +139,19 @@ class BasePageObject:
                 f"{self.driver.current_url} for {loc_timeout} seconds",
             )
 
+    def find_children(
+        self, element: WebElement, child: Locator, timeout: int = None
+    ) -> List[WebElement]:
+        """Find children element on current page."""
+
+        loc_timeout = timeout or self.default_loc_timeout
+        with allure.step(f'Find element "{child.name}" on page'):
+            return WDW(element, loc_timeout).until(
+                EC.presence_of_all_elements_located([child.by, child.value]),
+                message=f"Can't find {child.name} on page "
+                f"{self.driver.current_url} for {loc_timeout} seconds",
+            )
+
     def find_elements(self, locator: Locator, timeout: int = None) -> [WebElement]:
         """Find elements on current page."""
 
@@ -156,7 +180,10 @@ class BasePageObject:
         def send_keys_and_check():
             input_element = self.find_element(locator, timeout)
             input_element.send_keys(text)
-            assert input_element.get_property('value') == expected_value
+            assert (actual_value := input_element.get_property('value')) == expected_value, (
+                f'Value of input {locator} expected to be '
+                f'"{expected_value}", but "{actual_value}" was found'
+            )
 
         wait_until_step_succeeds(send_keys_and_check, period=0.5, timeout=1.5)
 
@@ -255,6 +282,23 @@ class BasePageObject:
                 message=f"locator {el_name} hasn't hide for {loc_timeout} seconds",
             )
 
+    def wait_element_attribute(
+        self, locator: Locator, attribute: str, expected_value: str, timeout: int = 5
+    ):
+        """
+        Wait for the element to have `expected_value` in the locator's attribute
+        """
+
+        def assert_attribute_value():
+            assert (
+                actual_value := self.find_element(locator).get_attribute(attribute)
+            ) == expected_value, (
+                f'Attribute {attribute} of element "{locator}" '
+                f'should be {expected_value}, not {actual_value}'
+            )
+
+        wait_until_step_succeeds(assert_attribute_value, period=0.5, timeout=timeout)
+
     def wait_page_is_opened(self, timeout: int = None):
         """Wait for current page to be opened"""
         timeout = timeout or self.default_page_timeout
@@ -308,6 +352,10 @@ class PageHeader(BasePageObject):
 
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url)
+
+    @property
+    def popup_jobs_row_count(self):
+        return len(self.get_job_rows_from_popup())
 
     @allure.step('Check elements in header for authorized user')
     def check_auth_page_elements(self):
@@ -367,7 +415,9 @@ class PageHeader(BasePageObject):
         self.find_and_click(AuthorizedHeaderLocators.account_button)
 
     def check_job_popup(self):
-        assert self.is_element_displayed(AuthorizedHeaderLocators.job_popup)
+        assert self.is_element_displayed(
+            AuthorizedHeaderLocators.job_popup
+        ), 'Job popup should be displayed'
 
     def check_help_popup(self):
         self.wait_element_visible(AuthorizedHeaderLocators.block)
@@ -415,6 +465,30 @@ class PageHeader(BasePageObject):
         return self.find_element(AuthorizedHeaderLocators.JobPopup.in_progress_jobs).text.split(
             "\n"
         )[1]
+
+    @contextmanager
+    def open_jobs_popup(self):
+        """Open jobs popup by hovering icon and hover JOBS menu item afterwards"""
+        self.hover_element(AuthorizedHeaderLocators.job_block_previous)
+        yield
+        self.hover_element(AuthorizedHeaderLocators.jobs)
+
+    def get_job_rows_from_popup(self) -> List[WebElement]:
+        """Get job rows from *opened* popup"""
+        self.wait_element_visible(AuthorizedHeaderLocators.job_popup)
+        return self.find_elements(AuthorizedHeaderLocators.JobPopup.job_row)
+
+    def get_single_job_row_from_popup(self, row_num: int = 0) -> WebElement:
+        """Get single job row from *opened* popup"""
+
+        def popup_table_has_enough_rows():
+            assert_enough_rows(row_num, self.popup_jobs_row_count)
+
+        with allure.step('Check popup table has enough rows'):
+            wait_until_step_succeeds(popup_table_has_enough_rows, timeout=5, period=0.1)
+        rows = self.get_job_rows_from_popup()
+        assert_enough_rows(row_num, len(rows))
+        return rows[row_num]
 
 
 class PageFooter(BasePageObject):

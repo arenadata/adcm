@@ -28,6 +28,7 @@ from rest_framework.permissions import DjangoModelPermissions
 from adcm.settings import REST_FRAMEWORK
 
 import cm.upgrade
+from cm import config
 from cm.errors import AdcmEx
 from cm.models import Action, ADCMEntity, PrototypeConfig
 
