@@ -388,7 +388,7 @@ def test_custom_name_config(
         )
         host_page.config.save_config()
     with allure.step('Compare configurations'):
-        host_page.config.compare_current_to(init_config_desc)
+        host_page.config.compare_versions(init_config_desc)
         required_row = host_page.config.get_config_row(REQUIRED_FIELD_NAME)
         host_page.config.wait_history_row_with_value(required_row, params['required_expected'])
         password_row = host_page.config.get_config_row(PASSWORD_FIELD_NAME)

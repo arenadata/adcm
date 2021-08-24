@@ -35,7 +35,8 @@ class CommonConfigMenu:
     save_btn = Locator(By.XPATH, "//button[.//span[text()='Save']]", "Save configuration button")
     history_btn = Locator(By.XPATH, "//button[.//mat-icon[text()='history']]", "History button")
 
-    compare_to_select = Locator(By.XPATH, "//mat-select[@placeholder='Compare to']", "Compare to select")
+    compare_version_select = Locator(By.XPATH, "//mat-select[@placeholder='History']", "Base version to compare")
+    compare_to_select = Locator(By.XPATH, "//mat-select[@placeholder='Compare to']", "Compare to version select")
     config_version_option = TemplateLocator(
         By.XPATH, "//mat-option//span[contains(text(), '{}')]", "Config version with text: {}"
     )

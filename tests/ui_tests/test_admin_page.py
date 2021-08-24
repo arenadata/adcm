@@ -136,7 +136,7 @@ def test_save_settings_with_different_name(settings_page: AdminSettingsPage):
         config_field_row = settings_page.config.get_config_row(params['field_display_name'])
         settings_page.config.type_in_config_field(params['field_value'], row=config_field_row)
     settings_page.config.save_config()
-    settings_page.config.compare_current_to(params['new_name'])
+    settings_page.config.compare_versions(params['new_name'], 'init')
     with allure.step('Check history'):
         config_field_row = settings_page.config.get_config_row(params['field_display_name'])
         history = settings_page.config.get_history_in_row(config_field_row)
@@ -157,7 +157,6 @@ def test_reset_config(settings_page: AdminSettingsPage):
         settings_page.config.type_in_config_field(params['changed_value'], row=config_field_row)
     with allure.step('Save config'):
         settings_page.config.save_config()
-        config_field_row = settings_page.config.get_config_row(params['field_display_name'])
         settings_page.config.assert_input_value_is(
             params['changed_value'], params['field_display_name']
         )

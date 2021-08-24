@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import List, Collection
+from typing import List, Collection, Optional
 
 import allure
 
@@ -32,11 +32,7 @@ class CommonConfigMenuObj(BasePageObject):
     def get_all_config_rows(self) -> List[WebElement]:
         """Return all config field rows"""
         try:
-            return [
-                r
-                for r in self.find_elements(CommonConfigMenu.config_row, timeout=5)
-                if r.is_displayed()
-            ]
+            return [r for r in self.find_elements(CommonConfigMenu.config_row, timeout=5) if r.is_displayed()]
         except TimeoutException:
             return []
 
@@ -66,16 +62,22 @@ class CommonConfigMenuObj(BasePageObject):
         ) == description, f'Description value should be {description}, not {current_description}'
         return previous_description
 
-    @allure.step('Compare current configuration to {description}')
-    def compare_current_to(self, description: str):
+    def compare_versions(self, compare_with: str, base_compare_version: Optional[str] = None):
         """
         Click on history button and select compare to config option by its description
         """
-        self.find_and_click(self.locators.history_btn)
-        self.find_and_click(self.locators.compare_to_select)
-        self.find_and_click(self.locators.config_version_option(description))
-        # to hide select panel so it won't block other actions
-        self.find_element(self.locators.compare_to_select).send_keys(Keys.ESCAPE)
+        base_version = f'"{base_compare_version}"' if base_compare_version else 'current'
+        with allure.step(f'Compare {base_version} configuration with {compare_with}'):
+            self.find_and_click(self.locators.history_btn)
+            if base_compare_version:
+                self.find_and_click(self.locators.compare_version_select)
+                base_version_option = self.locators.config_version_option(base_compare_version)
+                self.find_and_click(base_version_option)
+                self.wait_element_hide(base_version_option)
+            self.find_and_click(self.locators.compare_to_select)
+            self.find_and_click(self.locators.config_version_option(compare_with))
+            # to hide select panel so it won't block other actions
+            self.find_element(self.locators.compare_to_select).send_keys(Keys.ESCAPE)
 
     def get_input_value(
         self,
@@ -115,13 +117,9 @@ class CommonConfigMenuObj(BasePageObject):
         """
 
         def assert_value():
-            input_value = self.get_input_value(
-                row=self.get_config_row(display_name), is_password=is_password
-            )
+            input_value = self.get_input_value(row=self.get_config_row(display_name), is_password=is_password)
 
-            assert (
-                expected_value == input_value
-            ), f'Expected value was {expected_value} but presented is {input_value}'
+            assert expected_value == input_value, f'Expected value was {expected_value} but presented is {input_value}'
 
         wait_until_step_succeeds(assert_value, timeout=4, period=0.5)
 
@@ -149,9 +147,7 @@ class CommonConfigMenuObj(BasePageObject):
             field.clear()
         field.send_keys(value)
 
-    @allure.step(
-        "Filling in {display_name} field's password {password} and confirmation {confirmation}"
-    )
+    @allure.step("Filling in {display_name} field's password {password} and confirmation {confirmation}")
     def fill_password_and_confirm_fields(self, password: str, confirmation: str, display_name: str):
         """
         Fill password in clean fields and confirm password fields
@@ -216,15 +212,11 @@ class CommonConfigMenuObj(BasePageObject):
         falsely_visible = set()
         visible_fields = set(visible_fields)
         for row in self.get_all_config_rows():
-            if (
-                row_name := self.find_child(row, self.locators.ConfigRow.name).text[:-1]
-            ) in invisible_fields:
+            if (row_name := self.find_child(row, self.locators.ConfigRow.name).text[:-1]) in invisible_fields:
                 falsely_visible.add(row_name)
             elif row_name in visible_fields:
                 visible_fields.remove(row_name)
-        assert (
-            len(falsely_visible) == 0
-        ), f"Those fields shouldn't be visible in configuration: {falsely_visible}"
+        assert len(falsely_visible) == 0, f"Those fields shouldn't be visible in configuration: {falsely_visible}"
         assert len(visible_fields) == 0, f"Those fields should be visible: {visible_fields}"
 
     @allure.step("Get row history")
