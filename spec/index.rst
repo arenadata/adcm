@@ -7,3 +7,4 @@ ADCM Specs
 
    usecase/index.rst
    system/index.rst
+   ui/index.rst

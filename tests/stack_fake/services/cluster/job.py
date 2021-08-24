@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=import-error
 from cm.logger import log
 from cm.errors import AdcmEx
 
@@ -19,9 +20,7 @@ from cm.models import Prototype, Action
 def task_generator(action, selector):
     log.debug("call task_generator: %s", action)
     try:
-        service = Prototype.objects.get(
-            type='service', name='Simple_service', version='new_version'
-        )
+        service = Prototype.objects.get(type='service', name='Simple_service', version='new_version')
     except Prototype.DoesNotExist:
         raise AdcmEx('TASK_GENERATOR_ERROR', 'service Simple_service not found') from None
 
@@ -33,9 +32,7 @@ def task_generator(action, selector):
     try:
         start = Action.objects.get(context='service', context_id=service.id, name='start')
     except Prototype.DoesNotExist:
-        raise AdcmEx(
-            'TASK_GENERATOR_ERROR', 'action start of service ZOOKEEPER not found'
-        ) from None
+        raise AdcmEx('TASK_GENERATOR_ERROR', 'action start of service ZOOKEEPER not found') from None
 
     return (
         {'action': stop, 'selector': selector},

@@ -10,14 +10,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
-import { ApiService } from '@app/core/api';
-import { settingsSave, State } from '@app/core/store';
-import { ApiBase } from '@app/core/types/api';
-import { DynamicEvent } from '@app/shared/directives';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 
+import { ApiService } from '@app/core/api';
+import { settingsSave, State } from '@app/core/store';
+import { ApiBase } from '@app/core/types/api';
+import { DynamicEvent } from '@app/shared/directives';
 
 @Component({
   selector: 'app-settings',
@@ -32,7 +32,7 @@ export class SettingsComponent implements OnInit {
   ngOnInit() {
     this.set$ = this.api.root.pipe(
       switchMap((root) => this.api.get<ApiBase>(root.adcm)),
-      map((adcm) => adcm[0])
+      map((adcm) => adcm[0]),
     );
   }
 

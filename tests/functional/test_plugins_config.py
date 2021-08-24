@@ -9,7 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=W0611, W0621
+
+# pylint:disable=redefined-outer-name
 import copy
 
 import allure
@@ -88,9 +89,7 @@ def assert_cluster_config(bundle: Bundle, statemap: dict):
         for k, v in expected_cnf.items():
             expect(
                 v == actual_cnf[k],
-                'Cluster {} config "{}" is "{}" while expected "{}"'.format(
-                    cname, k, str(actual_cnf[k]), str(v)
-                ),
+                'Cluster {} config "{}" is "{}" while expected "{}"'.format(cname, k, str(actual_cnf[k]), str(v)),
             )
         for sname, service_expected_cnf in clv['services'].items():
             service_actual_cnf = bundle.cluster(name=cname).service(name=sname).config()
@@ -228,15 +227,15 @@ PROVIDERS = list(INITIAL_PROVIDERS_CONFIG.keys())
 
 
 def sparse_matrix(*vectors):
-    lengs = []
-    for a in vectors:
-        lengs.append(len(a))
+    lengths = []
+    for vector in vectors:
+        lengths.append(len(vector))
 
-    max_lengs_vector_idx = lengs.index(max(lengs))
-    for i, _ in enumerate(vectors[max_lengs_vector_idx]):
+    max_lengths_vector_idx = lengths.index(max(lengths))
+    for i, _ in enumerate(vectors[max_lengths_vector_idx]):
         tmp = []
-        for j, a in enumerate(vectors):
-            tmp.append(a[i % lengs[j]])
+        for j, vector in enumerate(vectors):
+            tmp.append(vector[i % lengths[j]])
         yield tuple(tmp)
 
 
@@ -248,9 +247,7 @@ def assert_provider_config(bundle: Bundle, statemap: dict):
         for k, v in expected_cnf.items():
             expect(
                 v == actual_cnf[k],
-                'Provider {} config "{}" is "{}" while expected "{}"'.format(
-                    pname, k, str(actual_cnf[k]), str(v)
-                ),
+                'Provider {} config "{}" is "{}" while expected "{}"'.format(pname, k, str(actual_cnf[k]), str(v)),
             )
         for hname, host_expected_cnf in plv['hosts'].items():
             host_actual_cnf = bundle.provider(name=pname).host(fqdn=hname).config()
@@ -267,9 +264,9 @@ def assert_provider_config(bundle: Bundle, statemap: dict):
 @pytest.fixture()
 def provider_bundle(sdk_client_fs: ADCMClient):
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "provider"))
-    for name in INITIAL_PROVIDERS_CONFIG:
+    for name, value in INITIAL_PROVIDERS_CONFIG.items():
         provider = bundle.provider_create(name)
-        for fqdn in INITIAL_PROVIDERS_CONFIG[name]['hosts']:
+        for fqdn in value['hosts']:
             provider.host_create(fqdn=fqdn)
     return bundle
 

@@ -12,26 +12,22 @@
 from selenium.webdriver.common.by import By
 
 from tests.ui_tests.app.helpers.locator import Locator, TemplateLocator
+from tests.ui_tests.app.page.common.common_locators import (
+    ObjectPageMenuLocators,
+)
 
 
 class HostLocators:
     """Host main page elements locators"""
 
-    class MenuNavigation:
-        main = Locator(By.XPATH, "//a[@adcm_test='tab_main']", "Main link in side menu")
-        config = Locator(
-            By.XPATH, "//a[@adcm_test='tab_config']", "Configuration link in side menu"
-        )
-        status = Locator(By.XPATH, "//a[@adcm_test='tab_status']", "Status in side menu")
-        actions = Locator(By.XPATH, "//a[@adcm_test='tab_action']", "Actions in side menu")
+    class MenuNavigation(ObjectPageMenuLocators):
+        ...
 
 
 class HostActionsLocators(HostLocators):
     """Locators for Actions menu on host page"""
 
-    action_name = Locator(
-        By.XPATH, "//app-action-card//mat-card-title", "Action title in Actions menu"
-    )
+    action_name = Locator(By.XPATH, "//app-action-card//mat-card-title", "Action title in Actions menu")
     action_btn = TemplateLocator(
         By.XPATH,
         "//mat-card-title[text()='{}']/ancestor::mat-card-header//button",

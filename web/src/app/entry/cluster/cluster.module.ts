@@ -14,7 +14,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
 import { DetailComponent } from '@app/shared/details/detail.component';
-import { ConfigComponent } from '@app/shared/configuration/main/main.component';
+import { ConfigComponent } from '../../shared/configuration/main/config.component';
 import { MainInfoComponent, StatusComponent, ImportComponent } from '@app/shared/components';
 import { SharedModule } from '@app/shared/shared.module';
 

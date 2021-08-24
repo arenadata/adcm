@@ -254,22 +254,22 @@ def cook_delta(cluster, new_hc, action_hc, old=None):  # pylint: disable=too-man
             add_to_dict(old, key, hc.host.fqdn, hc.host)
 
     delta = {'add': {}, 'remove': {}}
-    for key in new:
+    for key, value in new.items():
         if key in old:
-            for host in new[key]:
+            for host in value:
                 if host not in old[key]:
-                    add_delta(delta, 'add', key, host, new[key][host])
+                    add_delta(delta, 'add', key, host, value[host])
             for host in old[key]:
-                if host not in new[key]:
+                if host not in value:
                     add_delta(delta, 'remove', key, host, old[key][host])
         else:
-            for host in new[key]:
-                add_delta(delta, 'add', key, host, new[key][host])
+            for host in value:
+                add_delta(delta, 'add', key, host, value[host])
 
-    for key in old:
+    for key, value in old.items():
         if key not in new:
-            for host in old[key]:
-                add_delta(delta, 'remove', key, host, old[key][host])
+            for host in value:
+                add_delta(delta, 'remove', key, host, value[host])
 
     log.debug('OLD: %s', old)
     log.debug('NEW: %s', new)
@@ -509,7 +509,7 @@ def prepare_job_config(
     if conf:
         job_conf['job']['config'] = conf
 
-    fd = open(os.path.join(config.RUN_DIR, f'{job_id}/config.json'), 'w')
+    fd = open(os.path.join(config.RUN_DIR, f'{job_id}/config.json'), 'w', encoding='utf_8')
     json.dump(job_conf, fd, indent=3, sort_keys=True)
     fd.close()
 
@@ -761,7 +761,7 @@ def check_all_status():
 
 
 def run_task(task, event, args=''):
-    err_file = open(os.path.join(config.LOG_DIR, 'task_runner.err'), 'a+')
+    err_file = open(os.path.join(config.LOG_DIR, 'task_runner.err'), 'a+', encoding='utf_8')
     proc = subprocess.Popen(
         [os.path.join(config.CODE_DIR, 'task_runner.py'), str(task.id), args], stderr=err_file
     )
@@ -835,7 +835,9 @@ def prepare_ansible_config(job_id, action, sub_action):
     if 'jinja2_native' in params:
         config_parser['defaults']['jinja2_native'] = str(params['jinja2_native'])
 
-    with open(os.path.join(config.RUN_DIR, f'{job_id}/ansible.cfg'), 'w') as config_file:
+    with open(
+        os.path.join(config.RUN_DIR, f'{job_id}/ansible.cfg'), 'w', encoding='utf_8'
+    ) as config_file:
         config_parser.write(config_file)
 
 

@@ -20,7 +20,7 @@ from ansible.parsing.vault import VaultSecret, VaultAES256
 from django.conf import settings
 from django.db.utils import OperationalError
 
-import cm.config as config
+from cm import config
 import cm.variant
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
@@ -115,7 +115,7 @@ def read_bundle_file(proto, fname, bundle_hash, pattern, ref=None):
     else:
         path = os.path.join(config.BUNDLE_DIR, bundle_hash, fname)
     try:
-        fd = open(path, 'r')
+        fd = open(path, 'r', encoding='utf_8')
     except FileNotFoundError:
         msg = '{} "{}" is not found ({})'
         err('CONFIG_TYPE_ERROR', msg.format(pattern, path, ref))
@@ -248,14 +248,14 @@ def switch_config(
 
     # go from flat config to 2-level dictionary
     unflat_conf = {}
-    for key in new_conf:
+    for key, value in new_conf.items():
         k1, k2 = key.split('/')
         if k2 == '':
-            unflat_conf[k1] = new_conf[key]
+            unflat_conf[k1] = value
         else:
             if k1 not in unflat_conf:
                 unflat_conf[k1] = {}
-            unflat_conf[k1][k2] = new_conf[key]
+            unflat_conf[k1][k2] = value
 
     # skip inactive groups and set attributes for new config
     for key in unflat_conf:
@@ -313,7 +313,7 @@ def save_file_type(obj, key, subkey, value):
         if value != '':
             if value[-1] == '-':
                 value += '\n'
-    fd = open(filename, 'w')
+    fd = open(filename, 'w', encoding='utf_8')
     fd.write(value)
     fd.close()
     os.chmod(filename, 0o0600)
