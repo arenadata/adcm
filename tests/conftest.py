@@ -11,18 +11,16 @@
 # limitations under the License.
 # pylint: disable=W0621
 import os
+import sys
 import tarfile
+from pathlib import PosixPath
 from typing import Optional, List
 
 import pytest
-import sys
 import yaml
-
 from _pytest.python import Function
-from pathlib import PosixPath
 from allure_commons.model2 import TestResult, Parameter
 from allure_pytest.listener import AllureListener
-
 
 pytest_plugins = "adcm_pytest_plugin"
 
@@ -141,7 +139,7 @@ def create_bundle_archives(request, tmp_path: PosixPath) -> List[str]:
         archive_path = tmp_path / f'spam_bundle_{i}.tar'
         config_fp = (bundle_dir := tmp_path / f'spam_bundle_{i}') / 'config.yaml'
         bundle_dir.mkdir()
-        with open(config_fp, 'w') as config_file:
+        with open(config_fp, 'w', encoding='utf_8') as config_file:
             yaml.safe_dump(config, config_file)
         with tarfile.open(archive_path, 'w') as archive:
             archive.add(config_fp, arcname='config.yaml')
