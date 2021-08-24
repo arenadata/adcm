@@ -52,9 +52,7 @@ def test_ui_option_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path
     config.click_advanced()
     assert config.advanced
     groups = config.get_field_groups()
-    with allure.step(
-        'Check that field is not visible by default but with enabled advanced visible'
-    ):
+    with allure.step('Check that field is not visible by default but with enabled advanced visible'):
         for group in groups:
             assert group.is_displayed(), group.get_attribute("class")
 

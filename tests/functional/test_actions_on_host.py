@@ -208,21 +208,15 @@ class TestServiceActionOnHost:
         """
         Test that service actions on host works fine on two clusters
         """
-        second_cluster = (
-            cluster_with_service.bundle().cluster_prototype().cluster_create(name="Second cluster")
-        )
+        second_cluster = cluster_with_service.bundle().cluster_prototype().cluster_create(name="Second cluster")
         service_on_first_cluster = cluster_with_service.service_add(name=FIRST_SERVICE)
         service_on_second_cluster = second_cluster.service_add(name=FIRST_SERVICE)
         first_host = provider.host_create("host_in_first_cluster")
         second_host = provider.host_create("host_in_second_cluster")
         cluster_with_service.host_add(first_host)
         second_cluster.host_add(second_host)
-        cluster_with_service.hostcomponent_set(
-            (first_host, service_on_first_cluster.component(name=FIRST_COMPONENT))
-        )
-        second_cluster.hostcomponent_set(
-            (second_host, service_on_second_cluster.component(name=FIRST_COMPONENT))
-        )
+        cluster_with_service.hostcomponent_set((first_host, service_on_first_cluster.component(name=FIRST_COMPONENT)))
+        second_cluster.hostcomponent_set((second_host, service_on_second_cluster.component(name=FIRST_COMPONENT)))
 
         action_in_object_is_present(action_name, first_host)
         action_in_object_is_present(action_name, second_host)
@@ -300,11 +294,7 @@ class TestComponentActionOnHost:
         """
         Test that component actions on host works fine on two clusters
         """
-        second_cluster = (
-            cluster_with_components.bundle()
-            .cluster_prototype()
-            .cluster_create(name="Second cluster")
-        )
+        second_cluster = cluster_with_components.bundle().cluster_prototype().cluster_create(name="Second cluster")
         service_on_first_cluster = cluster_with_components.service_add(name=FIRST_SERVICE)
         component_on_first_cluster = service_on_first_cluster.component(name=FIRST_COMPONENT)
         service_on_second_cluster = second_cluster.service_add(name=FIRST_SERVICE)
@@ -322,9 +312,7 @@ class TestComponentActionOnHost:
         run_host_action_and_assert_result(second_host, action_name, status="success")
 
 
-def test_target_group_in_inventory(
-    cluster_with_target_group_action: Cluster, provider: Provider, sdk_client_fs
-):
+def test_target_group_in_inventory(cluster_with_target_group_action: Cluster, provider: Provider, sdk_client_fs):
     """
     Test that target group action has inventory_hostname info
     """

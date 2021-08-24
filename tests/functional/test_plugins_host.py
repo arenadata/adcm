@@ -119,9 +119,7 @@ def test_check_host_lock_during_operations(forth_p: Provider):
     with allure.step('Run job that creates the second host on provider'):
         job = forth_p.action(name="create_host").run(config={'fqdn': "forth_two", 'sleep': 2})
     with allure.step('Wait until second host will be created'):
-        wait_until_step_succeeds(
-            _assert_that_object_exists, period=0.5, get_object_func=forth_p.host, fqdn="forth_two"
-        )
+        wait_until_step_succeeds(_assert_that_object_exists, period=0.5, get_object_func=forth_p.host, fqdn="forth_two")
         forth_two_h = forth_p.host(fqdn="forth_two")
         forth_one_h = forth_p.host(fqdn='forth_one')
     with allure.step('Check that both host has "locked" state'):

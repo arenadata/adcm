@@ -54,9 +54,7 @@ def _check_that_field_is_invisible_if_group_active_or_not(sdk_client: ADCMClient
 
 
 @allure.step('Check that field invisible if activatable group active and not')
-def _check_that_field_invisible_if_activatable_group_active_and_not(
-    sdk_client: ADCMClient, path, app
-):
+def _check_that_field_invisible_if_activatable_group_active_and_not(sdk_client: ADCMClient, path, app):
     """Check that field invisible if activatable group active and not."""
 
     _, config = prepare_cluster_and_get_config(sdk_client, path, app)
@@ -87,9 +85,7 @@ def _check_that_field_invisible_if_activatable_group_active_and_not(
 
 
 @allure.step('Check that field is visible if advanced and activatable true')
-def _check_that_all_field_is_visible_if_advanced_and_activatable_true(
-    sdk_client: ADCMClient, path, app
-):
+def _check_that_all_field_is_visible_if_advanced_and_activatable_true(sdk_client: ADCMClient, path, app):
     """Field visible if advanced and activatable true"""
 
     _, config = prepare_cluster_and_get_config(sdk_client, path, app)

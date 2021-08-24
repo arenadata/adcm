@@ -55,9 +55,7 @@ class Configuration(BasePage):  # pylint: disable=too-many-public-methods
                 assert set(map_config.keys()) == set(map_config.keys())
                 assert set(map_config.values()) == set(map_config.values())
             else:
-                assert (
-                    current_value == expected_value
-                ), f"Field value with type {field_type} doesn't equal expected"
+                assert current_value == expected_value, f"Field value with type {field_type} doesn't equal expected"
 
     @allure.step('Check that frontend errors presented on screen and error type in text')
     def assert_alerts_presented(self, field_type):
@@ -74,9 +72,7 @@ class Configuration(BasePage):  # pylint: disable=too-many-public-methods
         if status:
             assert self.group_is_active_by_element(group_element), "Group element should be active"
         else:
-            assert not self.group_is_active_by_element(
-                group_element
-            ), "Group element should not be active"
+            assert not self.group_is_active_by_element(group_element), "Group element should not be active"
 
     @allure.step('Check that mat form field text have expected value: {expected_text}')
     def assert_form_field_text_equal(self, form_field_element: WebElement, expected_text: str):
@@ -87,16 +83,12 @@ class Configuration(BasePage):  # pylint: disable=too-many-public-methods
     @allure.step('Check that expected text in form field: {expected_text}')
     def assert_form_field_text_in(self, form_field_element: WebElement, expected_text: str):
         field_text = self.get_form_field_text(form_field_element)
-        err_msg = "Actual field text: {}. Expected part of text: {}".format(
-            field_text, expected_text
-        )
+        err_msg = "Actual field text: {}. Expected part of text: {}".format(field_text, expected_text)
         assert expected_text in field_text, err_msg
 
     @allure.step('Check that expected text in form field: {expected_text}')
     def assert_text_in_form_field_element(self, element: WebElement, expected_text: str):
-        result = self._wait_text_element_in_element(
-            element, Common.mat_form_field, text=expected_text
-        )
+        result = self._wait_text_element_in_element(element, Common.mat_form_field, text=expected_text)
         err_msg = "Expected text not presented: {}.".format(expected_text)
         assert result, err_msg
 
@@ -304,9 +296,7 @@ class Configuration(BasePage):  # pylint: disable=too-many-public-methods
     @allure.step('Get password elements')
     def get_password_elements(self):
         base_password_fields = self.driver.find_elements(*ConfigurationLocators.app_fields_password)
-        return base_password_fields[0].find_elements(
-            *ConfigurationLocators.displayed_password_fields
-        )
+        return base_password_fields[0].find_elements(*ConfigurationLocators.displayed_password_fields)
 
     @allure.step('Get display names')
     def get_display_names(self):

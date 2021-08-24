@@ -73,10 +73,7 @@ def websocket_connection(sdk_client_fs: ADCMClient, max_conn=10):
         else:
             return ws_conn
         max_conn -= 1
-    raise ValueError(
-        f"Could not create websocket connection in {max_conn} attempts. "
-        f"Last error is:\n{last_error}"
-    )
+    raise ValueError(f"Could not create websocket connection in {max_conn} attempts. " f"Last error is:\n{last_error}")
 
 
 @pytest.fixture()
@@ -99,9 +96,7 @@ def cluster(sdk_client_fs, name=utils.random_string()):
 
 
 def provider(sdk_client_fs, name=utils.random_string()):
-    return sdk_client_fs.upload_from_fs(os.path.join(DATADIR, 'hostprovider')).provider_create(
-        name=name
-    )
+    return sdk_client_fs.upload_from_fs(os.path.join(DATADIR, 'hostprovider')).provider_create(name=name)
 
 
 def host(sdk_client_fs, fqdn=utils.random_string()):
@@ -192,9 +187,7 @@ def test_event_when_add_service(sdk_client_fs, websocket_connection):
 
 
 @pytest.mark.parametrize(('case', 'action_name', 'expected'), cluster_actions)
-def test_events_when_cluster_action_(
-    case, action_name, expected, websocket_connection, cluster_with_svc_and_host
-):
+def test_events_when_cluster_action_(case, action_name, expected, websocket_connection, cluster_with_svc_and_host):
     cluster, _, _ = cluster_with_svc_and_host
     job = cluster.action(name=action_name).run()
     with allure.step(f'Check {case}'):
@@ -202,24 +195,18 @@ def test_events_when_cluster_action_(
 
 
 @pytest.mark.parametrize(('case', 'action_name', 'expected'), svc_actions)
-def test_events_when_service_(
-    case, action_name, expected, websocket_connection, cluster_with_svc_and_host
-):
+def test_events_when_service_(case, action_name, expected, websocket_connection, cluster_with_svc_and_host):
     _, zookeeper, _ = cluster_with_svc_and_host
     job = zookeeper.action(name=action_name).run()
     with allure.step(f'Check {case}'):
         assert_events(websocket_connection, *expected(zookeeper, job))
 
 
-@pytest.mark.parametrize(
-    "verbose_state", [True, False], ids=["verbose_state_true", "verbose_state_false"]
-)
+@pytest.mark.parametrize("verbose_state", [True, False], ids=["verbose_state_true", "verbose_state_false"])
 def test_check_timestamp_in_job_logs(sdk_client_fs: ADCMClient, verbose_state):
     """Test that timestamps are presented in Job logs for both ordinary and verbose modes."""
     task = cluster_action_run(sdk_client_fs, name="install", verbose=verbose_state)
     with allure.step("Check timestamps presence in job logs"):
         task.wait()
         log = task.job().log()
-        assert (
-            strftime("%A %d %B %Y  %H:%M", gmtime()) in log.content
-        ), "There are no timestamps in job logs"
+        assert strftime("%A %d %B %Y  %H:%M", gmtime()) in log.content, "There are no timestamps in job logs"

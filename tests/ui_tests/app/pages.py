@@ -209,9 +209,7 @@ class BasePage:
 
     def _click_with_offset(self, element: tuple, x_offset, y_offset):
         actions = ActionChains(self.driver)
-        actions.move_to_element_with_offset(
-            self._getelement(element), x_offset, y_offset
-        ).click().perform()
+        actions.move_to_element_with_offset(self._getelement(element), x_offset, y_offset).click().perform()
 
     def _contains_url(self, url: str, timer=5):
         WDW(self.driver, timer).until(
@@ -273,9 +271,7 @@ class Ui(BasePage):
 class ListPage(BasePage):
     """Basic methods under the lists pages"""
 
-    _inactive_tabs = bys.by_xpath(
-        "//a[@class='mat-list-item ng-star-inserted']//div[@class='mat-list-item-content']"
-    )
+    _inactive_tabs = bys.by_xpath("//a[@class='mat-list-item ng-star-inserted']//div[@class='mat-list-item-content']")
 
     def _press_add(self):
         self._click_element(Common.add_btn)

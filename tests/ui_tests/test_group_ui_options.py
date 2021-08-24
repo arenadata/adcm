@@ -97,9 +97,7 @@ def test_save_groups(ui_config, sdk_client_fs: ADCMClient):
             input_element.send_keys("new value")
             break
     ui_config.save_configuration()
-    service = sdk_client_fs.cluster(name="group_ui_options_test").service(
-        name="group_ui_options_test"
-    )
+    service = sdk_client_fs.cluster(name="group_ui_options_test").service(name="group_ui_options_test")
     config = service.config()
     with allure.step('Check that configuration was saved'):
         assert (
@@ -110,9 +108,7 @@ def test_save_groups(ui_config, sdk_client_fs: ADCMClient):
             assert group in config.keys(), "Invisible group should be present in config object"
 
 
-@pytest.mark.parametrize(
-    ("config_name", "activatable"), ACTIVATABLE_GROUPS, ids=["Active True", "Active False"]
-)
+@pytest.mark.parametrize(("config_name", "activatable"), ACTIVATABLE_GROUPS, ids=["Active True", "Active False"])
 def test_activatable_group_status(config_name, activatable, ui_config):
     """Check activatable group status after config creation
     Scenario:
@@ -133,8 +129,5 @@ def test_activatable_group_status(config_name, activatable, ui_config):
 
 
 def test_activatable_with_not_filled_required_fields(activatable_with_not_filled_required_fields):
-    with allure.step(
-        'Check that can save config if we have '
-        'disabed activatable group with empty required fields'
-    ):
+    with allure.step('Check that can save config if we have ' 'disabed activatable group with empty required fields'):
         assert activatable_with_not_filled_required_fields

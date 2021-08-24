@@ -86,9 +86,7 @@ class TestHost:
         """
         Check that hostcomponent is set
         """
-        bundle = sdk_client_fs.upload_from_fs(
-            get_data_dir(__file__, "cluster_service_hostcomponent")
-        )
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_service_hostcomponent"))
         cluster = bundle.cluster_create(utils.random_string())
         host = provider.host_create(utils.random_string())
         cluster.host_add(host)

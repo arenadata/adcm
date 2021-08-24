@@ -150,9 +150,7 @@ def config_generate(name, entity, config_type, is_required, is_default):
         }
     )
 
-    body = OrderedDict(
-        {'name': name, 'type': entity, 'version': '1.0', 'config': config, 'actions': actions}
-    )
+    body = OrderedDict({'name': name, 'type': entity, 'version': '1.0', 'config': config, 'actions': actions})
 
     return body
 
@@ -407,9 +405,7 @@ def run():  # pylint: disable=too-many-locals
             else:
                 additional_entity = 'host'
 
-            entity_config = config_generate(
-                f'{entity}_{name}', entity, config_type, is_required, is_default
-            )
+            entity_config = config_generate(f'{entity}_{name}', entity, config_type, is_required, is_default)
             additional_entity_config = config_generate(
                 f'{additional_entity}_{name}',
                 additional_entity,
@@ -421,9 +417,7 @@ def run():  # pylint: disable=too-many-locals
             config = [entity_config, additional_entity_config]
             write_yaml(f'{path}config.yaml', config)
 
-            entity_action = action_generate(
-                name, entity, config_type, is_required, is_default, sent_value_type
-            )
+            entity_action = action_generate(name, entity, config_type, is_required, is_default, sent_value_type)
             write_yaml(f'{path}{entity}_action.yaml', entity_action)
 
             additional_entity_action = action_generate(

@@ -138,9 +138,7 @@ def check_rows_amount(page, expected_amount: int, table_page_num: int):
     """
     assert (
         row_count := page.table.row_count
-    ) == expected_amount, (
-        f'Page #{table_page_num} should contain {expected_amount}, not {row_count}'
-    )
+    ) == expected_amount, f'Page #{table_page_num} should contain {expected_amount}, not {row_count}'
 
 
 # !===== UI Information Comparator Function =====!
@@ -219,8 +217,7 @@ def wait_and_assert_ui_info(
                 expected_value = value
                 compare_func = is_equal
             assert compare_func(actual_value, expected_value), (
-                f'{human_key_names[key]} in {ui_info_classname} '
-                f'should be {expected_value}, not {actual_value}'
+                f'{human_key_names[key]} in {ui_info_classname} ' f'should be {expected_value}, not {actual_value}'
             )
 
     with allure.step('Check information is correct on UI'):
@@ -232,9 +229,7 @@ def check_host_value(key: str, actual_value, expected_value):
     Assert that actual value equals to expected value
     Argument `key` is used in failed assertion message
     """
-    assert (
-        actual_value == expected_value
-    ), f"Host {key} should be {expected_value}, not {actual_value}"
+    assert actual_value == expected_value, f"Host {key} should be {expected_value}, not {actual_value}"
 
 
 def assert_enough_rows(required_row_num: int, row_count: int):
@@ -255,9 +250,7 @@ def check_that_all_fields_and_groups_invisible(sdk_client: ADCMClient, path, app
 
     fields = config.get_field_groups()
     for field in fields:
-        assert (
-            not field.is_displayed()
-        ), f"Field should be invisible. Field classes: {field.get_attribute('class')}"
+        assert not field.is_displayed(), f"Field should be invisible. Field classes: {field.get_attribute('class')}"
     group_names = config.get_group_elements()
     assert not group_names, "Group elements should be invisible"
     config.show_advanced()

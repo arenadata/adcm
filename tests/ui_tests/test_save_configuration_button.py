@@ -78,9 +78,7 @@ def _generate_bundle_config(bundle_type, entity_type, prop_types):
         ]  # scalar types
 
         if "structure" in prop_types:
-            struct_property = FieldDefinition(
-                prop_type="structure", prop_name=f"structure_{PROPERTY_NAME}"
-            )
+            struct_property = FieldDefinition(prop_type="structure", prop_name=f"structure_{PROPERTY_NAME}")
             struct_property["yspec"] = "struct_conf.yaml"
             config_proto.append(struct_property)
 
@@ -146,12 +144,8 @@ def cluster(bundle: Bundle) -> Cluster:
 
 
 @pytest.fixture()
-def cluster_config_page(
-    app_fs, cluster: Cluster, login_to_adcm_over_api
-):  # pylint: disable=unused-argument
-    return Configuration(
-        app_fs.driver, "{}/cluster/{}/config".format(app_fs.adcm.url, cluster.cluster_id)
-    )
+def cluster_config_page(app_fs, cluster: Cluster, login_to_adcm_over_api):  # pylint: disable=unused-argument
+    return Configuration(app_fs.driver, "{}/cluster/{}/config".format(app_fs.adcm.url, cluster.cluster_id))
 
 
 @pytest.fixture()
@@ -214,9 +208,7 @@ def _update_config_property(config_page: Configuration, field, field_type: str):
     assert config_page.save_button_status()
 
 
-def _test_save_configuration_button(
-    config_page: Configuration, prop_types: list, group_name=None, use_advanced=False
-):
+def _test_save_configuration_button(config_page: Configuration, prop_types: list, group_name=None, use_advanced=False):
     if use_advanced:
         config_page.click_advanced()
     if group_name:
@@ -240,10 +232,7 @@ def _test_save_configuration_button(
         for field_type, field in zip(prop_types, config_page.get_app_fields()):
             value_to_check = _get_test_value(field_type)
             if field_type == "boolean":
-                assert (
-                    config_page.get_checkbox_element_status(config_page.get_field_checkbox(field))
-                    == value_to_check
-                )
+                assert config_page.get_checkbox_element_status(config_page.get_field_checkbox(field)) == value_to_check
             else:
                 if field_type == "structure":
                     # workaround

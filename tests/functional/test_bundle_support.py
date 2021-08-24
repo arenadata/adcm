@@ -100,9 +100,7 @@ cluster_fields = [
 
 
 @pytest.mark.parametrize(("cluster_bundle", "state"), cluster_fields)
-def test_check_cluster_state_after_run_action_when_empty(
-    cluster_bundle, state, sdk_client_fs: ADCMClient
-):
+def test_check_cluster_state_after_run_action_when_empty(cluster_bundle, state, sdk_client_fs: ADCMClient):
     bundle_path = utils.get_data_dir(__file__, "empty_states", cluster_bundle)
     bundle = sdk_client_fs.upload_from_fs(bundle_path)
     cluster = bundle.cluster_prototype().cluster_create(name=utils.random_string())
@@ -119,9 +117,7 @@ host_fields = [
 
 
 @pytest.mark.parametrize(("host_bundle", "state"), host_fields)
-def test_check_host_state_after_run_action_when_empty(
-    host_bundle, state, sdk_client_fs: ADCMClient
-):
+def test_check_host_state_after_run_action_when_empty(host_bundle, state, sdk_client_fs: ADCMClient):
     bundle_path = utils.get_data_dir(__file__, "empty_states", host_bundle)
     bundle = sdk_client_fs.upload_from_fs(bundle_path)
     provider = bundle.provider_prototype().provider_create(name=utils.random_string())

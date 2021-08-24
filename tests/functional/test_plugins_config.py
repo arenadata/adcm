@@ -89,9 +89,7 @@ def assert_cluster_config(bundle: Bundle, statemap: dict):
         for k, v in expected_cnf.items():
             expect(
                 v == actual_cnf[k],
-                'Cluster {} config "{}" is "{}" while expected "{}"'.format(
-                    cname, k, str(actual_cnf[k]), str(v)
-                ),
+                'Cluster {} config "{}" is "{}" while expected "{}"'.format(cname, k, str(actual_cnf[k]), str(v)),
             )
         for sname, service_expected_cnf in clv['services'].items():
             service_actual_cnf = bundle.cluster(name=cname).service(name=sname).config()
@@ -249,9 +247,7 @@ def assert_provider_config(bundle: Bundle, statemap: dict):
         for k, v in expected_cnf.items():
             expect(
                 v == actual_cnf[k],
-                'Provider {} config "{}" is "{}" while expected "{}"'.format(
-                    pname, k, str(actual_cnf[k]), str(v)
-                ),
+                'Provider {} config "{}" is "{}" while expected "{}"'.format(pname, k, str(actual_cnf[k]), str(v)),
             )
         for hname, host_expected_cnf in plv['hosts'].items():
             host_actual_cnf = bundle.provider(name=pname).host(fqdn=hname).config()

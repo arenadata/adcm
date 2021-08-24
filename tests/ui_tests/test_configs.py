@@ -130,9 +130,7 @@ def generate_group_expected_result(group_config) -> dict:
     field_invisible = group_config['field_ui_options']['invisible']
     expected_result['field_visible_advanced'] = field_advanced and not field_invisible
     expected_result['field_visible'] = not field_invisible
-    config_valid = validate_config(
-        group_config['required'], group_config['default'], group_config['read_only']
-    )
+    config_valid = validate_config(group_config['required'], group_config['default'], group_config['read_only'])
     expected_result['config_valid'] = config_valid
     invisible = group_invisible or field_invisible
     if group_config['activatable']:
@@ -140,9 +138,7 @@ def generate_group_expected_result(group_config) -> dict:
         default = group_config['default']
         group_active = group_config['active']
         expected_result['field_visible'] = group_active and not field_invisible
-        expected_result['field_visible_advanced'] = (
-            field_advanced and group_active and not field_invisible
-        )
+        expected_result['field_visible_advanced'] = field_advanced and group_active and not field_invisible
         if group_active and (required and not default):
             expected_result['save'] = False
         else:
@@ -281,9 +277,7 @@ def prepare_config(config):
         config[0][0]['config'][0]['ui_options']['advanced'],
     )
     temdir = tempfile.mkdtemp()
-    d_name = "{}/configs/fields/{}/{}".format(
-        temdir, config[0][0]['config'][0]['type'], config_folder_name
-    )
+    d_name = "{}/configs/fields/{}/{}".format(temdir, config[0][0]['config'][0]['type'], config_folder_name)
 
     os.makedirs(d_name)
     if config[0][0]['config'][0]['name'] == 'file':
@@ -371,9 +365,7 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs):
             for field in fields:
                 ui_config.assert_field_editable(field, expected['editable'])
             if expected['content']:
-                ui_config.assert_field_content_equal(
-                    field_type, fields[0], config['config'][0]['default']
-                )
+                ui_config.assert_field_content_equal(field_type, fields[0], config['config'][0]['default'])
             if expected['alerts']:
                 ui_config.assert_alerts_presented(field_type)
         else:

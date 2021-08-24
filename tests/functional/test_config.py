@@ -389,14 +389,10 @@ def assert_config_type(path, config_type, entities, is_required, is_default, sen
     Running test scenario for cluster, service, provider and host
     """
     for entity in entities:
-        ASSERT_TYPE[config_type](
-            path, config_type, entity, is_required, is_default, sent_value_type
-        )
+        ASSERT_TYPE[config_type](path, config_type, entity, is_required, is_default, sent_value_type)
 
 
-@fixture_parametrized_by_data_subdirs(
-    __file__, 'not_required', 'with_default', 'sent_correct_value'
-)
+@fixture_parametrized_by_data_subdirs(__file__, 'not_required', 'with_default', 'sent_correct_value')
 def nr_wd_cv(sdk_client_fs: ADCMClient, request):
     return processing_data(sdk_client_fs, request, 'not_required_with_default_sent_correct_value')
 
@@ -462,25 +458,17 @@ def test_not_required_with_default_sent_null_value(nr_wd_nv):
     assert_config_type(*nr_wd_nv, False, True, 'null_value')
 
 
-@fixture_parametrized_by_data_subdirs(
-    __file__, 'not_required', 'without_default', 'sent_correct_value'
-)
+@fixture_parametrized_by_data_subdirs(__file__, 'not_required', 'without_default', 'sent_correct_value')
 def nr_wod_cv(sdk_client_fs: ADCMClient, request):
-    return processing_data(
-        sdk_client_fs, request, 'not_required_without_default_sent_correct_value'
-    )
+    return processing_data(sdk_client_fs, request, 'not_required_without_default_sent_correct_value')
 
 
-@fixture_parametrized_by_data_subdirs(
-    __file__, 'not_required', 'without_default', 'sent_empty_value'
-)
+@fixture_parametrized_by_data_subdirs(__file__, 'not_required', 'without_default', 'sent_empty_value')
 def nr_wod_ev(sdk_client_fs: ADCMClient, request):
     return processing_data(sdk_client_fs, request, 'not_required_without_default_sent_empty_value')
 
 
-@fixture_parametrized_by_data_subdirs(
-    __file__, 'not_required', 'without_default', 'sent_null_value'
-)
+@fixture_parametrized_by_data_subdirs(__file__, 'not_required', 'without_default', 'sent_null_value')
 def nr_wod_nv(sdk_client_fs: ADCMClient, request):
     return processing_data(sdk_client_fs, request, 'not_required_without_default_sent_null_value')
 

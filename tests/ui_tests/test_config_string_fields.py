@@ -77,9 +77,7 @@ def test_required_string_frontend_error(ui_config, required_field):
     """
 
     textboxes = ui_config.get_textboxes()
-    with allure.step(
-        'Check that we have frontend error for required field and ave button is not active'
-    ):
+    with allure.step('Check that we have frontend error for required field and ave button is not active'):
         for textbox in textboxes:
             name = textbox.text.split(":")[0]
             if name == required_field:

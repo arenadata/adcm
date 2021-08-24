@@ -115,9 +115,7 @@ def run_ambari_command(folder, script, command, command_id):
     log.debug("command.py called as: %s", sys.argv)
     log.info('%s run %s', command_id, command)
 
-    with open_file(LOG_DIR, 'out', command_id) as out_file, open_file(
-        LOG_DIR, 'err', command_id
-    ) as err_file:
+    with open_file(LOG_DIR, 'out', command_id) as out_file, open_file(LOG_DIR, 'err', command_id) as err_file:
 
         pipe = cook_command_pipe(hook_dir, (base_dir, py_script, command))
         log.debug('%s %s pipe: %s', command_id, command, pipe)

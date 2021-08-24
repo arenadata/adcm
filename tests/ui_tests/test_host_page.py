@@ -141,14 +141,11 @@ def check_job_name(sdk: ADCMClient, action_display_name: str):
     """Check job with correct name is launched"""
     jobs_display_names = {job.display_name for job in sdk.job_list()}
     assert action_display_name in jobs_display_names, (
-        f'Action with name "{action_display_name}" was not ran. '
-        f'Job names found: {jobs_display_names}'
+        f'Action with name "{action_display_name}" was not ran. ' f'Job names found: {jobs_display_names}'
     )
 
 
-def check_host_info(
-    host_info: HostRowInfo, fqdn: str, provider: str, cluster: Optional[str], state: str
-):
+def check_host_info(host_info: HostRowInfo, fqdn: str, provider: str, cluster: Optional[str], state: str):
     """Check all values in host info"""
     check_host_value('FQDN', host_info.fqdn, fqdn)
     check_host_value('provider', host_info.provider, provider)
@@ -354,9 +351,7 @@ def test_filter_config(
     advanced_option = field_input(ADVANCED_FIELD_ADCM_TEST)
     with allure.step('Check unfiltered configuration'):
         host_page.assert_displayed_elements([not_required_option, required_option, password_fields])
-        assert not host_page.is_element_displayed(
-            advanced_option
-        ), 'Advanced option should not be visible'
+        assert not host_page.is_element_displayed(advanced_option), 'Advanced option should not be visible'
     with allure.step('Check group roll up'):
         host_page.config.click_on_group(params['group'])
         elements_should_be_hidden(host_page, [not_required_option, required_option])
@@ -370,9 +365,7 @@ def test_filter_config(
     with allure.step('Check search filtration'):
         host_page.config.search(params['search_text'])
         host_page.is_element_displayed(advanced_option)
-        elements_should_be_hidden(
-            host_page, [not_required_option, required_option, password_fields]
-        )
+        elements_should_be_hidden(host_page, [not_required_option, required_option, password_fields])
         host_page.find_and_click(CommonConfigMenu.advanced_label)
         host_page.check_element_should_be_hidden(advanced_option)
 
@@ -401,12 +394,8 @@ def test_custom_name_config(
         host_page.config.save_config()
     with allure.step('Compare configurations'):
         host_page.config.compare_current_to(init_config_desc)
-        host_page.config.config_diff_is_presented(
-            params['required_expected'], REQUIRED_FIELD_ADCM_TEST
-        )
-        host_page.config.config_diff_is_presented(
-            params['password_expected'], PASSWORD_FIELD_ADCM_TEST
-        )
+        host_page.config.config_diff_is_presented(params['required_expected'], REQUIRED_FIELD_ADCM_TEST)
+        host_page.config.config_diff_is_presented(params['password_expected'], PASSWORD_FIELD_ADCM_TEST)
 
 
 @pytest.mark.full()
@@ -434,9 +423,7 @@ def test_reset_configuration(
     host_page.config.reset_to_default(params['req_field_adcm_test'])
     host_page.config.assert_input_value_is(params['init_value'], params['req_field_adcm_test'])
     host_page.config.reset_to_default(params['pass_adcm_test'])
-    host_page.config.assert_input_value_is(
-        params['init_value'], params['pass_adcm_test'], is_password=True
-    )
+    host_page.config.assert_input_value_is(params['init_value'], params['pass_adcm_test'], is_password=True)
 
 
 @pytest.mark.full()

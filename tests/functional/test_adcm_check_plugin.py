@@ -71,19 +71,13 @@ def test_all_fields(sdk_client_fs: ADCMClient, name, result):
         "expected_title": "Name of group check.",
         "content_title": "Check",
     }
-    cluster = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, name)).cluster_create(
-        utils.random_string()
-    )
-    task = run_cluster_action_and_assert_result(
-        cluster, action=params["action"], status=params["expected_state"]
-    )
+    cluster = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, name)).cluster_create(utils.random_string())
+    task = run_cluster_action_and_assert_result(cluster, action=params["action"], status=params["expected_state"])
     job = task.job()
     with allure.step("Check all fields after action execution"):
         logs = job.log_list()
         content = job.log(job_id=job.id, log_id=logs[2].id).content[0]
-        assert (
-            content["message"] == group_msg
-        ), f'Expected message {group_msg}. Current message {content["message"]}'
+        assert content["message"] == group_msg, f'Expected message {group_msg}. Current message {content["message"]}'
         assert content["result"] is group_result
         assert (
             content["title"] == params["expected_title"]
@@ -93,9 +87,7 @@ def test_all_fields(sdk_client_fs: ADCMClient, name, result):
             content_title == params["content_title"]
         ), f'Expected title {params["content_title"]}. Current title {content_title}'
         content_message = content["content"][0]["message"]
-        assert (
-            content_message == task_msg
-        ), f"Expected message {task_msg}. Current message {content_message}"
+        assert content_message == task_msg, f"Expected message {task_msg}. Current message {content_message}"
         assert content["content"][0]["result"] is task_result
 
 
@@ -125,9 +117,7 @@ def test_message_with_other_field(sdk_client_fs: ADCMClient, name):
         logs = job.log_list()
         log = job.log(log_id=logs[2].id)
         content = log.content[0]
-        assert (
-            content["message"] == name
-        ), f'Expected content message {name}. Current {content["message"]}'
+        assert content["message"] == name, f'Expected content message {name}. Current {content["message"]}'
 
 
 def test_success_and_fail_msg_on_success(sdk_client_fs: ADCMClient):
@@ -152,8 +142,7 @@ def test_success_and_fail_msg_on_success(sdk_client_fs: ADCMClient):
         content = log.content[0]
         assert content["result"], f'Result is {content["result"]} expected True'
         assert content["message"] == params["expected_message"], (
-            f'Expected message: {params["expected_message"]}. '
-            f'Current message {content["message"]}'
+            f'Expected message: {params["expected_message"]}. ' f'Current message {content["message"]}'
         )
 
 
@@ -179,8 +168,7 @@ def test_success_and_fail_msg_on_fail(sdk_client_fs: ADCMClient):
         content = log.content[0]
         assert not content["result"], f'Result is {content["result"]} expected True'
         assert content["message"] == params["expected_message"], (
-            f'Expected message: {params["expected_message"]}. '
-            f'Current message {content["message"]}'
+            f'Expected message: {params["expected_message"]}. ' f'Current message {content["message"]}'
         )
 
 
@@ -219,12 +207,8 @@ def test_multiple_tasks(sdk_client_fs: ADCMClient):
             assert (
                 result[0] == log_entry["message"]
             ), f"Expected message {result[0]}. Actual message {log_entry['message']}"
-            assert (
-                result[1] == log_entry["title"]
-            ), f"Expected title {result[1]}. Actual title {log_entry['title']}"
-            assert (
-                result[2] is log_entry["result"]
-            ), f"Expected result {result[2]}. Actual result {log_entry['result']}"
+            assert result[1] == log_entry["title"], f"Expected title {result[1]}. Actual title {log_entry['title']}"
+            assert result[2] is log_entry["result"], f"Expected result {result[2]}. Actual result {log_entry['result']}"
 
 
 def test_multiple_group_tasks(sdk_client_fs: ADCMClient):
@@ -236,14 +220,12 @@ def test_multiple_group_tasks(sdk_client_fs: ADCMClient):
     group1_expected = [
         (
             "Check log 1",
-            "This is message. Params: "
-            "group_title, group_success_msg, group_fail_msg, msg. result=yes",
+            "This is message. Params: group_title, group_success_msg, group_fail_msg, msg. result=yes",
             True,
         ),
         (
             "Check log 2",
-            "This is message. Params: "
-            "group_title, group_success_msg, group_fail_msg, msg. result=no",
+            "This is message. Params: group_title, group_success_msg, group_fail_msg, msg. result=no",
             False,
         ),
     ]
@@ -272,37 +254,25 @@ def test_multiple_group_tasks(sdk_client_fs: ADCMClient):
             assert (
                 result[0] == log_entry["message"]
             ), f"Expected message {result[0]}. Actual message {log_entry['message']}"
-            assert (
-                result[1] == log_entry["title"]
-            ), f"Expected title {result[1]}. Actual title {log_entry['title']}"
-            assert (
-                result[2] is log_entry["result"]
-            ), f"Expected result {result[2]}. Actual result {log_entry['result']}"
+            assert result[1] == log_entry["title"], f"Expected title {result[1]}. Actual title {log_entry['title']}"
+            assert result[2] is log_entry["result"], f"Expected result {result[2]}. Actual result {log_entry['result']}"
     with allure.step("Check group content"):
         group1 = log.content[0]["content"]
         group2 = log.content[1]
         for result in group1_expected:
             log_entry = group1[group1_expected.index(result)]
-            assert (
-                result[0] == log_entry["title"]
-            ), f"Expected title {result[0]}. Actual message {log_entry['title']}"
+            assert result[0] == log_entry["title"], f"Expected title {result[0]}. Actual message {log_entry['title']}"
             assert (
                 result[1] == log_entry["message"]
             ), f"Expected message {result[1]}. Actual message {log_entry['message']}"
-            assert (
-                result[2] is log_entry["result"]
-            ), f"Expected result {result[2]}. Actual result {log_entry['result']}"
+            assert result[2] is log_entry["result"], f"Expected result {result[2]}. Actual result {log_entry['result']}"
         for result in group2_expected:
             log_entry = group2["content"][group2_expected.index(result)]
-            assert (
-                result[0] == log_entry["title"]
-            ), f"Expected title {result[0]}. Actual message {log_entry['title']}"
+            assert result[0] == log_entry["title"], f"Expected title {result[0]}. Actual message {log_entry['title']}"
             assert (
                 result[1] == log_entry["message"]
             ), f"Expected message {result[1]}. Actual message {log_entry['message']}"
-            assert (
-                result[2] is log_entry["result"]
-            ), f"Expected result {result[2]}. Actual result {log_entry['result']}"
+            assert result[2] is log_entry["result"], f"Expected result {result[2]}. Actual result {log_entry['result']}"
 
 
 def test_multiple_group_tasks_without_group_title(sdk_client_fs: ADCMClient):

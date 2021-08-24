@@ -14,9 +14,7 @@ only_clean_adcm = pytest.mark.parametrize(
     scope="session",
     params=[
         pytest.param({}, id="clean_adcm"),
-        pytest.param(
-            {"fill_dummy_data": True}, id="adcm_with_dummy_data", marks=[pytest.mark.full]
-        ),
+        pytest.param({"fill_dummy_data": True}, id="adcm_with_dummy_data", marks=[pytest.mark.full]),
     ],
 )
 def additional_adcm_init_config(request) -> dict:

@@ -24,15 +24,11 @@ def test_check_login_to_adcm(app_fs, adcm_credentials):
         intro_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url)
         login_page.wait_url_contains_path(intro_page.path)
         login_page.wait_config_loaded()
-        assert (
-            intro_page.path in app_fs.driver.current_url
-        ), f"Page '{intro_page.path}' has not been opened"
+        assert intro_page.path in app_fs.driver.current_url, f"Page '{intro_page.path}' has not been opened"
         intro_page.header.check_auth_page_elements()
 
 
-@pytest.mark.parametrize(
-    ("name", "password"), [("", "admin"), ("admin", "")], ids=("no_name", "no_password")
-)
+@pytest.mark.parametrize(("name", "password"), [("", "admin"), ("admin", "")], ids=("no_name", "no_password"))
 def test_check_login_button_unavailable(app_fs, name, password):
     login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
     login_page.fill_login_user_form(name, password)

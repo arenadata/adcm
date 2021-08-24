@@ -23,9 +23,7 @@ pytestmark = [pytest.mark.usefixtures("login_to_adcm_over_api")]
 
 
 @allure.step("Check invisible and advanced for groups false for fields true")
-def _check_invisible_and_advanced_for_groups_false_for_fields_true(
-    sdk_client: ADCMClient, path, app
-):
+def _check_invisible_and_advanced_for_groups_false_for_fields_true(sdk_client: ADCMClient, path, app):
     _, config = prepare_cluster_and_get_config(sdk_client, path, app)
     fields = config.get_field_groups()
     for field in fields:
@@ -58,9 +56,7 @@ def _check_groups_and_fields_visible_if_advanced_enabled(sdk_client: ADCMClient,
         assert field.is_displayed(), field.get_attribute("class")
 
 
-@parametrize_by_data_subdirs(
-    __file__, "group_advanced_false_invisible_false_field_advanced_false_invisible_false"
-)
+@parametrize_by_data_subdirs(__file__, "group_advanced_false_invisible_false_field_advanced_false_invisible_false")
 def test_all_false(sdk_client_fs: ADCMClient, path, app_fs):
     """Check group and field ui options when advanced and invisible is false
     Scenario:
@@ -76,9 +72,7 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app_fs):
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    config = Configuration(
-        app_fs.driver, "{}/cluster/{}/config".format(app_fs.adcm.url, cluster.cluster_id)
-    )
+    config = Configuration(app_fs.driver, "{}/cluster/{}/config".format(app_fs.adcm.url, cluster.cluster_id))
 
     groups = config.get_field_groups()
     for group in groups:
@@ -100,9 +94,7 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app_fs):
             assert group.is_displayed(), group.get_attribute("class")
 
 
-@parametrize_by_data_subdirs(
-    __file__, "group_advanced_true_invisible_true_field_advanced_true_invisible_true"
-)
+@parametrize_by_data_subdirs(__file__, "group_advanced_true_invisible_true_field_advanced_true_invisible_true")
 def test_all_true(sdk_client_fs: ADCMClient, path, app_fs):
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     groups = config.get_field_groups()
@@ -120,18 +112,14 @@ def test_all_true(sdk_client_fs: ADCMClient, path, app_fs):
             assert not group.is_displayed(), group.get_attribute("class")
 
 
-@parametrize_by_data_subdirs(
-    __file__, "group_advanced_false_invisible_false_field_advanced_true_invisible_true"
-)
+@parametrize_by_data_subdirs(__file__, "group_advanced_false_invisible_false_field_advanced_true_invisible_true")
 def test_groups_false_fields_true(sdk_client_fs: ADCMClient, path, app_fs):
     """Invisible and advanced for groups false for fields true."""
 
     _check_invisible_and_advanced_for_groups_false_for_fields_true(sdk_client_fs, path, app_fs)
 
 
-@parametrize_by_data_subdirs(
-    __file__, "group_advanced_true_invisible_true_field_advanced_false_invisible_false"
-)
+@parametrize_by_data_subdirs(__file__, "group_advanced_true_invisible_true_field_advanced_false_invisible_false")
 def test_groups_true_fields_false(sdk_client_fs: ADCMClient, path, app_fs):
     """Invisible and advanced for groups true for fields false.
     In this case no elements presented on page
@@ -139,9 +127,7 @@ def test_groups_true_fields_false(sdk_client_fs: ADCMClient, path, app_fs):
     check_that_all_fields_and_groups_invisible(sdk_client_fs, path, app_fs)
 
 
-@parametrize_by_data_subdirs(
-    __file__, "group_advanced_false_invisible_true_field_advanced_false_invisible_true"
-)
+@parametrize_by_data_subdirs(__file__, "group_advanced_false_invisible_true_field_advanced_false_invisible_true")
 def test_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path, app_fs):
     """Invisible and advanced for groups true for fields false.
     In this case no elements presented on page
@@ -149,17 +135,13 @@ def test_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path, app_fs):
     check_that_all_fields_and_groups_invisible(sdk_client_fs, path, app_fs)
 
 
-@parametrize_by_data_subdirs(
-    __file__, "group_advanced_true_invisible_false_field_advanced_true_invisible_false"
-)
+@parametrize_by_data_subdirs(__file__, "group_advanced_true_invisible_false_field_advanced_true_invisible_false")
 def test_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app_fs):
     """Fields and groups visible only if advanced enabled."""
     _check_groups_and_fields_visible_if_advanced_enabled(sdk_client_fs, path, app_fs)
 
 
-@parametrize_by_data_subdirs(
-    __file__, "group_advanced_false_invisible_false_field_advanced_false_invisible_true"
-)
+@parametrize_by_data_subdirs(__file__, "group_advanced_false_invisible_false_field_advanced_false_invisible_true")
 def test_group_advanced_false_invisible_false_field_advanced_false_invisible_true(
     sdk_client_fs: ADCMClient, path, app_fs
 ):
@@ -167,9 +149,7 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_tru
     _check_invisible_and_advanced_for_groups_false_for_fields_true(sdk_client_fs, path, app_fs)
 
 
-@parametrize_by_data_subdirs(
-    __file__, "group_advanced_false_invisible_false_field_advanced_true_invisible_false"
-)
+@parametrize_by_data_subdirs(__file__, "group_advanced_false_invisible_false_field_advanced_true_invisible_false")
 def test_group_advanced_false_invisible_false_field_advanced_true_invisible_false(
     sdk_client_fs: ADCMClient, path, app_fs
 ):
@@ -189,9 +169,7 @@ def test_group_advanced_false_invisible_false_field_advanced_true_invisible_fals
             assert field.is_displayed(), field.get_attribute("class")
 
 
-@parametrize_by_data_subdirs(
-    __file__, "group_advanced_false_invisible_true_field_advanced_false_invisible_false"
-)
+@parametrize_by_data_subdirs(__file__, "group_advanced_false_invisible_true_field_advanced_false_invisible_false")
 def test_group_advanced_false_invisible_true_field_advanced_false_invisible_false(
     sdk_client_fs: ADCMClient, path, app_fs
 ):
@@ -201,9 +179,7 @@ def test_group_advanced_false_invisible_true_field_advanced_false_invisible_fals
     check_that_all_fields_and_groups_invisible(sdk_client_fs, path, app_fs)
 
 
-@parametrize_by_data_subdirs(
-    __file__, "group_advanced_false_invisible_true_field_advanced_true_invisible_false"
-)
+@parametrize_by_data_subdirs(__file__, "group_advanced_false_invisible_true_field_advanced_true_invisible_false")
 def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false(
     sdk_client_fs: ADCMClient, path, app_fs
 ):
@@ -213,9 +189,7 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false
     check_that_all_fields_and_groups_invisible(sdk_client_fs, path, app_fs)
 
 
-@parametrize_by_data_subdirs(
-    __file__, "group_advanced_false_invisible_true_field_advanced_true_invisible_true"
-)
+@parametrize_by_data_subdirs(__file__, "group_advanced_false_invisible_true_field_advanced_true_invisible_true")
 def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true(
     sdk_client_fs: ADCMClient, path, app_fs
 ):
@@ -225,9 +199,7 @@ def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true(
     check_that_all_fields_and_groups_invisible(sdk_client_fs, path, app_fs)
 
 
-@parametrize_by_data_subdirs(
-    __file__, "group_advanced_true_invisible_false_field_advanced_false_invisible_false"
-)
+@parametrize_by_data_subdirs(__file__, "group_advanced_true_invisible_false_field_advanced_false_invisible_false")
 def test_group_advanced_true_invisible_false_field_advanced_false_invisible_false(
     sdk_client_fs: ADCMClient, path, app_fs
 ):
@@ -235,9 +207,7 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_fals
     _check_groups_and_fields_visible_if_advanced_enabled(sdk_client_fs, path, app_fs)
 
 
-@parametrize_by_data_subdirs(
-    __file__, "group_advanced_true_invisible_false_field_advanced_false_invisible_true"
-)
+@parametrize_by_data_subdirs(__file__, "group_advanced_true_invisible_false_field_advanced_false_invisible_true")
 def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true(
     sdk_client_fs: ADCMClient, path, app_fs
 ):
@@ -257,9 +227,7 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true
             assert not field.is_displayed(), field.get_attribute("class")
 
 
-@parametrize_by_data_subdirs(
-    __file__, "group_advanced_true_invisible_false_field_advanced_true_invisible_true"
-)
+@parametrize_by_data_subdirs(__file__, "group_advanced_true_invisible_false_field_advanced_true_invisible_true")
 def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true(
     sdk_client_fs: ADCMClient, path, app_fs
 ):
@@ -280,9 +248,7 @@ def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true(
             assert not field.is_displayed(), field.get_attribute("class")
 
 
-@parametrize_by_data_subdirs(
-    __file__, "group_advanced_true_invisible_true_field_advanced_false_invisible_true"
-)
+@parametrize_by_data_subdirs(__file__, "group_advanced_true_invisible_true_field_advanced_false_invisible_true")
 def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true(
     sdk_client_fs: ADCMClient, path, app_fs
 ):
@@ -292,9 +258,7 @@ def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true(
     check_that_all_fields_and_groups_invisible(sdk_client_fs, path, app_fs)
 
 
-@parametrize_by_data_subdirs(
-    __file__, "group_advanced_true_invisible_true_field_advanced_true_invisible_false"
-)
+@parametrize_by_data_subdirs(__file__, "group_advanced_true_invisible_true_field_advanced_true_invisible_false")
 def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false(
     sdk_client_fs: ADCMClient, path, app_fs
 ):

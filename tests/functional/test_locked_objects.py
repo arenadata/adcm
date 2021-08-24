@@ -498,6 +498,5 @@ def is_free(obj: Union[Cluster, Service, Component, Provider, Host]):
     with allure.step(f"Assert that {obj.__class__.__name__} is free"):
         assert_state(obj, state="created")
         assert obj.action_list(), (
-            f"{obj.__class__.__name__} action list is empty. "
-            f"Actions should be available for unlocked objects"
+            f"{obj.__class__.__name__} action list is empty. " f"Actions should be available for unlocked objects"
         )
