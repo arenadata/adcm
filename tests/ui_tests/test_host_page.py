@@ -269,7 +269,7 @@ def test_open_host_from_host_list(
         assert main_host_page.active_menu_is(menu_item_locator)
 
 
-@pytest.mark.usefixtures("_create_host")
+@pytest.mark.usefixtures("_create_host", "upload_and_create_provider")
 def test_delete_host(page: HostListPage):
     """Create host and delete it"""
     expected_values = {
