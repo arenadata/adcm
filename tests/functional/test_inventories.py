@@ -9,23 +9,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import pytest
 import json
+
 import allure
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.docker_utils import get_file_from_container
-
-# pylint: disable=W0611, W0621
 from adcm_pytest_plugin.utils import random_string
 
+from tests.functional.conftest import only_clean_adcm
 
-pytestmark = [
-    pytest.mark.parametrize(
-        "additional_adcm_init_config",
-        [pytest.param({}, id="clean_adcm")],
-        indirect=True,
-    ),
-]
+pytestmark = [only_clean_adcm]
 
 
 def test_check_inventories_file(adcm_fs, sdk_client_fs):
@@ -40,7 +33,7 @@ def test_check_inventories_file(adcm_fs, sdk_client_fs):
         text = get_file_from_container(adcm_fs, '/adcm/data/run/1/', 'inventory.json')
         inventory = json.loads(text.read().decode('utf8'))
     with allure.step('Check inventory file'):
-        template = open(utils.get_data_dir(__file__, 'cluster-inventory.json'), 'rb')
-        expected = json.loads(template.read().decode('utf8'))
-        expected["all"]["children"]["CLUSTER"]["vars"]["cluster"]["name"] = cluster_name
-        assert inventory == expected
+        with open(utils.get_data_dir(__file__, 'cluster-inventory.json'), 'rb') as template:
+            expected = json.loads(template.read().decode('utf8'))
+            expected["all"]["children"]["CLUSTER"]["vars"]["cluster"]["name"] = cluster_name
+            assert inventory == expected

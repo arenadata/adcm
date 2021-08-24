@@ -9,7 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=redefined-outer-name
+
+# pylint: disable=redefined-outer-name, no-self-use
 from typing import Union
 
 import allure
@@ -115,7 +116,7 @@ class TestClusterActionsOnHost:
 
     @allure.issue("https://arenadata.atlassian.net/browse/ADCM-1799")
     @pytest.mark.parametrize("action_name", [ACTION_ON_HOST, ACTION_ON_HOST_MULTIJOB])
-    def test_two_clusters(self, action_name, cluster: Cluster, provider: Provider, sdk_client_fs):
+    def test_two_clusters(self, action_name, cluster: Cluster, provider: Provider):
         """
         Test that cluster actions on host works fine on two clusters
         """
@@ -203,27 +204,19 @@ class TestServiceActionOnHost:
 
     @allure.issue("https://arenadata.atlassian.net/browse/ADCM-1799")
     @pytest.mark.parametrize("action_name", [ACTION_ON_HOST, ACTION_ON_HOST_MULTIJOB])
-    def test_two_clusters(
-        self, action_name, cluster_with_service: Cluster, provider: Provider, sdk_client_fs
-    ):
+    def test_two_clusters(self, action_name, cluster_with_service: Cluster, provider: Provider):
         """
         Test that service actions on host works fine on two clusters
         """
-        second_cluster = (
-            cluster_with_service.bundle().cluster_prototype().cluster_create(name="Second cluster")
-        )
+        second_cluster = cluster_with_service.bundle().cluster_prototype().cluster_create(name="Second cluster")
         service_on_first_cluster = cluster_with_service.service_add(name=FIRST_SERVICE)
         service_on_second_cluster = second_cluster.service_add(name=FIRST_SERVICE)
         first_host = provider.host_create("host_in_first_cluster")
         second_host = provider.host_create("host_in_second_cluster")
         cluster_with_service.host_add(first_host)
         second_cluster.host_add(second_host)
-        cluster_with_service.hostcomponent_set(
-            (first_host, service_on_first_cluster.component(name=FIRST_COMPONENT))
-        )
-        second_cluster.hostcomponent_set(
-            (second_host, service_on_second_cluster.component(name=FIRST_COMPONENT))
-        )
+        cluster_with_service.hostcomponent_set((first_host, service_on_first_cluster.component(name=FIRST_COMPONENT)))
+        second_cluster.hostcomponent_set((second_host, service_on_second_cluster.component(name=FIRST_COMPONENT)))
 
         action_in_object_is_present(action_name, first_host)
         action_in_object_is_present(action_name, second_host)
@@ -297,17 +290,11 @@ class TestComponentActionOnHost:
 
     @allure.issue("https://arenadata.atlassian.net/browse/ADCM-1799")
     @pytest.mark.parametrize("action_name", [ACTION_ON_HOST, ACTION_ON_HOST_MULTIJOB])
-    def test_two_clusters(
-        self, action_name, cluster_with_components: Cluster, provider: Provider, sdk_client_fs
-    ):
+    def test_two_clusters(self, action_name, cluster_with_components: Cluster, provider: Provider):
         """
         Test that component actions on host works fine on two clusters
         """
-        second_cluster = (
-            cluster_with_components.bundle()
-            .cluster_prototype()
-            .cluster_create(name="Second cluster")
-        )
+        second_cluster = cluster_with_components.bundle().cluster_prototype().cluster_create(name="Second cluster")
         service_on_first_cluster = cluster_with_components.service_add(name=FIRST_SERVICE)
         component_on_first_cluster = service_on_first_cluster.component(name=FIRST_COMPONENT)
         service_on_second_cluster = second_cluster.service_add(name=FIRST_SERVICE)
@@ -325,9 +312,7 @@ class TestComponentActionOnHost:
         run_host_action_and_assert_result(second_host, action_name, status="success")
 
 
-def test_target_group_in_inventory(
-    cluster_with_target_group_action: Cluster, provider: Provider, sdk_client_fs
-):
+def test_target_group_in_inventory(cluster_with_target_group_action: Cluster, provider: Provider, sdk_client_fs):
     """
     Test that target group action has inventory_hostname info
     """

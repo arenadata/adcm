@@ -19,33 +19,30 @@ from jinja2 import Template
 
 def render(template_file_name, context):
     try:
-        fd = open(template_file_name, encoding='utf_8')
+        with open(template_file_name, encoding='utf_8') as file:
+            tmpl = Template(file.read())
     except FileNotFoundError:
         print("Can't open template file: '{}'".format(template_file_name))
         sys.exit(2)
-    tmpl = Template(fd.read())
-    fd.close()
     return tmpl.render(c=context)
 
 
 def render_to_file(template_file_name, out_file_name, context):
     try:
-        fd = open(out_file_name, 'w', encoding='utf_8')
+        with open(out_file_name, 'w', encoding='utf_8') as file:
+            file.write(render(template_file_name, context))
     except FileNotFoundError:
         print("Can't open output file: '{}'".format(out_file_name))
         sys.exit(2)
-    fd.write(render(template_file_name, context))
-    fd.close()
 
 
 def read_json(json_file_name):
     try:
-        fd = open(json_file_name, encoding='utf_8')
+        with open(json_file_name, encoding='utf_8') as file:
+            config = json.load(file)
     except FileNotFoundError:
         print("Can't open json config file: '{}'".format(json_file_name))
         sys.exit(2)
-    config = json.load(fd)
-    fd.close()
     return config
 
 
@@ -54,7 +51,7 @@ def template(tmpl, out_file, config):
     render_to_file(tmpl, out_file, json_conf)
 
 
-def do():
+def main():
     if len(sys.argv) < 4:
         print("\nUsage:\n{} template out_file config.json\n".format(os.path.basename(sys.argv[0])))
         sys.exit(4)
@@ -63,4 +60,4 @@ def do():
 
 
 if __name__ == '__main__':
-    do()
+    main()
