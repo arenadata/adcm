@@ -9,6 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# pylint:disable=redefined-outer-name
 import shutil
 from tempfile import mkdtemp
 
@@ -20,7 +22,6 @@ from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
 from jinja2 import Template
 
-# pylint: disable=W0611, W0621
 from tests.library import errorcodes as err
 
 DATADIR = utils.get_data_dir(__file__)

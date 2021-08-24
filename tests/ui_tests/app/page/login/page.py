@@ -53,9 +53,7 @@ class LoginPage(BasePageObject):
         self.wait_element_visible(LoginPageLocators.login_warning)
         current_error = self.get_login_warning_text()
         with allure.step(f"Check message '{message}'"):
-            assert (
-                current_error == message
-            ), f"There should be error '{message}' and not '{current_error}'"
+            assert current_error == message, f"There should be error '{message}' and not '{current_error}'"
 
     @allure.step('Check login button unavailable')
     def check_check_login_button_unavailable(self):

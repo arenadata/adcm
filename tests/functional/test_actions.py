@@ -18,9 +18,7 @@ from adcm_pytest_plugin import utils
 from tests.ui_tests.test_actions_page import check_verbosity
 
 
-@pytest.mark.parametrize(
-    "verbose_state", [True, False], ids=["verbose_state_true", "verbose_state_false"]
-)
+@pytest.mark.parametrize("verbose_state", [True, False], ids=["verbose_state_true", "verbose_state_false"])
 def test_check_verbose_option_of_action_run(sdk_client_fs: ADCMClient, verbose_state):
     """Test action run with verbose switch"""
     bundle_dir = utils.get_data_dir(__file__, "verbose_state")

@@ -148,9 +148,7 @@ class ClusterServicesPage(ClusterPageMixin):
         self.find_and_click(ClusterServicesLocators.add_services_btn)
         self.wait_element_visible(ClusterServicesLocators.AddServicePopup.block)
         for service in self.find_elements(ClusterServicesLocators.AddServicePopup.service_row):
-            service_text = self.find_child(
-                service, ClusterServicesLocators.AddServicePopup.ServiceRow.text
-            )
+            service_text = self.find_child(service, ClusterServicesLocators.AddServicePopup.ServiceRow.text)
             if service_text.text == service_name:
                 service_text.click()
         self.find_and_click(ClusterServicesLocators.AddServicePopup.create_btn)
@@ -246,9 +244,7 @@ class ClusterHostPage(ClusterPageMixin):
             self.wait_element_visible(HostAddPopupLocators.add_new_host_btn).click()
 
     @allure.step("Get info about host row")
-    def get_host_info_from_row(
-        self, row_num: int = 0, table_has_cluster_column: bool = True
-    ) -> HostRowInfo:
+    def get_host_info_from_row(self, row_num: int = 0, table_has_cluster_column: bool = True) -> HostRowInfo:
         """
         Compile the values of the fields describing the host.
 
@@ -375,9 +371,7 @@ class ClusterComponentsPage(ClusterPageMixin):
 
     def find_component_row_by_name(self, component_name: str):
         for component_row in self.get_components_rows():
-            component_name_element = self.find_child(
-                component_row, ClusterComponentsLocators.Row.name
-            )
+            component_name_element = self.find_child(component_row, ClusterComponentsLocators.Row.name)
             if component_name_element.text == component_name:
                 return component_row
         raise AssertionError(f"There are no component with name '{component_name}'")
@@ -404,19 +398,12 @@ class ClusterComponentsPage(ClusterPageMixin):
     def delete_related_item_in_row_by_name(self, row: WebElement, item_name: str):
         self.wait_element_visible(ClusterComponentsLocators.Row.relations_row)
         for item_row in self.find_children(row, ClusterComponentsLocators.Row.relations_row):
-            item_name_element = self.find_child(
-                item_row, ClusterComponentsLocators.Row.RelationsRow.name
-            )
+            item_name_element = self.find_child(item_row, ClusterComponentsLocators.Row.RelationsRow.name)
             if item_name_element.text == item_name:
-                self.find_child(
-                    item_row, ClusterComponentsLocators.Row.RelationsRow.delete_btn
-                ).click()
+                self.find_child(item_row, ClusterComponentsLocators.Row.RelationsRow.delete_btn).click()
                 return
         raise AssertionError(f"There are no item with name '{item_name}'")
 
     @allure.step("Check that save button is disabled")
     def check_that_save_btn_disabled(self):
-        return (
-            self.find_element(ClusterComponentsLocators.save_btn).get_attribute("disabled")
-            == "true"
-        )
+        return self.find_element(ClusterComponentsLocators.save_btn).get_attribute("disabled") == "true"

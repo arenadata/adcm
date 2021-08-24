@@ -21,9 +21,7 @@ class BundleListLocators:
 
     class Tooltip:
         apps_btn = Locator(By.XPATH, "//a[.//mat-icon[text()='apps']]", "Apps button")
-        upload_btn = Locator(
-            By.XPATH, "//input[@value='upload_bundle_file']", "Bundle upload button"
-        )
+        upload_btn = Locator(By.XPATH, "//input[@value='upload_bundle_file']", "Bundle upload button")
 
     class Table(CommonTable):
         class Row:

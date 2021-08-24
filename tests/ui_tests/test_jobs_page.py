@@ -49,6 +49,7 @@ COMPONENT_NAME = 'test_component'
 
 
 @pytest.fixture()
+# pylint: disable-next=unused-argument
 def page(app_fs: ADCMTest, login_to_adcm_over_api) -> JobListPage:
     return JobListPage(app_fs.driver, app_fs.adcm.url).open()
 
@@ -150,9 +151,7 @@ def _test_run_action(page: JobListPage, action_owner: Union[Cluster, Service, Pr
     ), page.table.wait_rows_change():
         long_action = action_owner.action(display_name=LONG_ACTION_DISPLAY_NAME)
         long_action.run()
-    _check_job_info_in_popup(
-        page, {'status': expected_info['status'], 'action_name': expected_info['action_name']}
-    )
+    _check_job_info_in_popup(page, {'status': expected_info['status'], 'action_name': expected_info['action_name']})
     _check_running_job_info_in_table(page, expected_info)
     page.select_filter_running_tab()
     _check_running_job_info_in_table(page, expected_info)
