@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from contextlib import contextmanager
+from dataclasses import dataclass
 from typing import List, Collection, Optional
 
 import allure
@@ -17,9 +20,19 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.remote.webdriver import WebElement
 
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
+
+
+@dataclass
+class ConfigRowInfo:
+    """Information from config row on Config page"""
+
+    name: str
+    value: str
 
 
 class CommonConfigMenuObj(BasePageObject):
@@ -95,7 +108,6 @@ class CommonConfigMenuObj(BasePageObject):
         :param is_password: Is field password/confirmation
         :returns: Value of input
         """
-
         row_locators = CommonConfigMenu.ConfigRow
         locator = row_locators.value if not is_password else row_locators.password
         return self.find_child(row, locator).get_property("value")
@@ -118,7 +130,6 @@ class CommonConfigMenuObj(BasePageObject):
 
         def assert_value():
             input_value = self.get_input_value(row=self.get_config_row(display_name), is_password=is_password)
-
             assert expected_value == input_value, f'Expected value was {expected_value} but presented is {input_value}'
 
         wait_until_step_succeeds(assert_value, timeout=4, period=0.5)
@@ -218,6 +229,31 @@ class CommonConfigMenuObj(BasePageObject):
                 visible_fields.remove(row_name)
         assert len(falsely_visible) == 0, f"Those fields shouldn't be visible in configuration: {falsely_visible}"
         assert len(visible_fields) == 0, f"Those fields should be visible: {visible_fields}"
+
+    def get_all_config_rows(self):
+        return [r for r in self.find_elements(CommonConfigMenu.config_row) if r.is_displayed()]
+
+    @contextmanager
+    def wait_rows_change(self):
+        """Wait changing rows amount."""
+
+        current_amount = len(self.get_all_config_rows())
+        yield
+
+        def wait_scroll():
+            assert len(self.get_all_config_rows()) != current_amount, "Amount of rows on the page hasn't changed"
+
+        wait_until_step_succeeds(wait_scroll, period=1, timeout=10)
+
+    @allure.step("Get info by row")
+    def get_config_row_info(self, row: WebElement):
+        return ConfigRowInfo(
+            name=self.find_child(row, CommonConfigMenu.ConfigRow.name).text,
+            value=self.find_child(row, CommonConfigMenu.ConfigRow.value).get_attribute('value'),
+        )
+
+    def clear_search_input(self):
+        self.find_and_click(CommonConfigMenu.search_input_clear_btn)
 
     @allure.step("Get row history")
     def get_history_in_row(self, row: WebElement):

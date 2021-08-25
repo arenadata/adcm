@@ -40,10 +40,16 @@ class CommonConfigMenu:
     config_version_option = TemplateLocator(
         By.XPATH, "//mat-option//span[contains(text(), '{}')]", "Config version with text: {}"
     )
+    # use it to check config diff existence by finding text entry
+    config_diff = TemplateLocator(
+        By.XPATH,
+        "//app-field[.//div[@adcm_test='{}']]//mat-list-item//span[contains(text(), '{}')]",
+        'Config diff of option "{}" with "{}" in text',
+    )
+    config_row = Locator(By.XPATH, "//app-field", "Configuration row")
 
     field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
     loading_text = Locator(By.XPATH, "//span[text()='Loading...']", "Loading text")
-    config_row = Locator(By.XPATH, "//app-field", "Configuration row")
 
     class ConfigRow:
         name = Locator(By.XPATH, ".//label", "Row name")
