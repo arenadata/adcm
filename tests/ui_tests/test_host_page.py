@@ -390,9 +390,7 @@ def test_custom_name_config(
     with allure.step('Change config values'):
         required_row = host_page.config.get_config_row(REQUIRED_FIELD_NAME)
         host_page.config.type_in_config_field(params['type_in_required'], row=required_row)
-        host_page.config.fill_password_and_confirm_fields(
-            params['password'], params['password'], PASSWORD_FIELD_NAME
-        )
+        host_page.config.fill_password_and_confirm_fields(params['password'], params['password'], PASSWORD_FIELD_NAME)
         host_page.config.save_config()
     with allure.step('Compare configurations'):
         host_page.config.compare_versions(init_config_desc)
@@ -414,9 +412,7 @@ def test_reset_configuration(
         'init_value': '',
     }
     host_page = open_config(page)
-    host_page.config.fill_password_and_confirm_fields(
-        params['password'], params['password'], PASSWORD_FIELD_NAME
-    )
+    host_page.config.fill_password_and_confirm_fields(params['password'], params['password'], PASSWORD_FIELD_NAME)
     host_page.config.type_in_config_field(
         params['type_in_req_field'],
         row=host_page.config.get_config_row(REQUIRED_FIELD_NAME),

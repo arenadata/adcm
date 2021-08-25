@@ -21,12 +21,14 @@ from tests.ui_tests.utils import expect_rows_amount_change
 
 
 @pytest.fixture()
+# pylint: disable-next=unused-argument
 def users_page(app_fs: ADCMTest, login_to_adcm_over_api) -> AdminUsersPage:
     """Get Admin Users Page"""
     return AdminUsersPage(app_fs.driver, app_fs.adcm.url).open()
 
 
 @pytest.fixture()
+# pylint: disable-next=unused-argument
 def settings_page(app_fs: ADCMTest, login_to_adcm_over_api) -> AdminSettingsPage:
     """Get Admin Settings Page"""
     return AdminSettingsPage(app_fs.driver, app_fs.adcm.url).open()
@@ -37,9 +39,7 @@ def test_new_user_creation(users_page: AdminUsersPage):
     params = {'username': 'testuser', 'password': 'test_pass', 'new_password': 'testtest'}
     users_page.create_user(params['username'], params['password'])
     with allure.step(f'Check user {params["username"]} is listed in users list'):
-        assert users_page.is_user_presented(
-            params['username']
-        ), f'User {params["username"]} was not created'
+        assert users_page.is_user_presented(params['username']), f'User {params["username"]} was not created'
     users_page.change_user_password(params['username'], params['new_password'])
     users_page.header.logout()
     with allure.step(f'Login as user {params["username"]} with password {params["new_password"]}'):
@@ -55,9 +55,7 @@ def test_delete_user(users_page: AdminUsersPage):
     users_page.check_delete_button_not_presented(params['current_user'])
     with allure.step(f'Create user {params["username"]}'):
         users_page.create_user(params['username'], params['password'])
-        assert users_page.is_user_presented(
-            params['username']
-        ), f'User {params["username"]} was not created'
+        assert users_page.is_user_presented(params['username']), f'User {params["username"]} was not created'
     with allure.step(f'Delete user {params["username"]}'):
         users_page.delete_user(params['username'])
         assert not users_page.is_user_presented(
@@ -101,8 +99,7 @@ def test_settings_filter(settings_page: AdminSettingsPage):
     }
     get_rows_func = settings_page.config.get_all_config_rows
     with allure.step(
-        f'Search {params["search_text"]} and check {params["field_display_name"]} '
-        'is presented after search'
+        f'Search {params["search_text"]} and check {params["field_display_name"]} ' 'is presented after search'
     ):
         with expect_rows_amount_change(get_rows_func):
             settings_page.config.search(params['search_text'])
@@ -118,8 +115,7 @@ def test_settings_filter(settings_page: AdminSettingsPage):
         with pytest.raises(AssertionError):
             settings_page.config.get_config_row(params["field_display_name"])
     with allure.step(
-        f'Click on {params["group"]} group and check {params["field_display_name"]} '
-        'is presented after group expand'
+        f'Click on {params["group"]} group and check {params["field_display_name"]} ' 'is presented after group expand'
     ):
         with expect_rows_amount_change(get_rows_func):
             settings_page.config.click_on_group(params['group'])
@@ -130,9 +126,7 @@ def test_save_settings_with_different_name(settings_page: AdminSettingsPage):
     """Save settings with different name"""
     params = {'new_name': 'test_settings', 'field_display_name': 'client_id', 'field_value': '123'}
     settings_page.config.set_description(params['new_name'])
-    with allure.step(
-        f'Change value of field {params["field_display_name"]} to {params["field_value"]}'
-    ):
+    with allure.step(f'Change value of field {params["field_display_name"]} to {params["field_value"]}'):
         config_field_row = settings_page.config.get_config_row(params['field_display_name'])
         settings_page.config.type_in_config_field(params['field_value'], row=config_field_row)
     settings_page.config.save_config()
@@ -140,12 +134,9 @@ def test_save_settings_with_different_name(settings_page: AdminSettingsPage):
     with allure.step('Check history'):
         config_field_row = settings_page.config.get_config_row(params['field_display_name'])
         history = settings_page.config.get_history_in_row(config_field_row)
-        assert (
-            len(history) == 1
-        ), f'History should has exactly one entry for field {params["field_display_name"]}'
+        assert len(history) == 1, f'History should has exactly one entry for field {params["field_display_name"]}'
         assert (actual_value := history[0]) == (expected_value := params['field_value']), (
-            f'History entry for field {params["field_display_name"]} '
-            f'should be {expected_value}, not {actual_value}'
+            f'History entry for field {params["field_display_name"]} ' f'should be {expected_value}, not {actual_value}'
         )
 
 
@@ -157,12 +148,8 @@ def test_reset_config(settings_page: AdminSettingsPage):
         settings_page.config.type_in_config_field(params['changed_value'], row=config_field_row)
     with allure.step('Save config'):
         settings_page.config.save_config()
-        settings_page.config.assert_input_value_is(
-            params['changed_value'], params['field_display_name']
-        )
+        settings_page.config.assert_input_value_is(params['changed_value'], params['field_display_name'])
     with allure.step(f'Reset value of {params["field_display_name"]}'):
         config_field_row = settings_page.config.get_config_row(params['field_display_name'])
         settings_page.config.reset_to_default(config_field_row)
-        settings_page.config.assert_input_value_is(
-            params['init_value'], params['field_display_name']
-        )
+        settings_page.config.assert_input_value_is(params['init_value'], params['field_display_name'])

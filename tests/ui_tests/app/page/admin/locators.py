@@ -29,18 +29,14 @@ class AdminSettingsLocators(CommonConfigMenu):
 class AdminUsersLocators:
     """Locators for Admin Users menu"""
 
-    add_user_btn = Locator(
-        By.XPATH, "//button[./span[contains(text(), 'Add user')]]", "Add user button"
-    )
+    add_user_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Add user')]]", "Add user button")
     user_row = Locator(By.XPATH, "//mat-row", "Table row")
 
     class Row:
         """Existing user row"""
 
         username = Locator(By.XPATH, "./mat-cell[1]", "Username in row")
-        password = Locator(
-            By.XPATH, "./mat-cell[2]//input[@data-placeholder='Password']", "Password in row"
-        )
+        password = Locator(By.XPATH, "./mat-cell[2]//input[@data-placeholder='Password']", "Password in row")
         password_confirm = Locator(
             By.XPATH,
             "./mat-cell[2]//input[@data-placeholder='Confirm Password']",
@@ -51,21 +47,13 @@ class AdminUsersLocators:
             ".//button[.//mat-icon[text()='done']]",
             "Confirm password update button in row",
         )
-        delete_btn = Locator(
-            By.XPATH, ".//button[.//mat-icon[text()='delete']]", "Delete user button in row"
-        )
+        delete_btn = Locator(By.XPATH, ".//button[.//mat-icon[text()='delete']]", "Delete user button in row")
 
     class AddUserPopup:
         """Popup with new user info"""
 
-        block = Locator(
-            By.XPATH, "//mat-card[contains(@class, 'users-add-card')]", "Add user popup block"
-        )
+        block = Locator(By.XPATH, "//mat-card[contains(@class, 'users-add-card')]", "Add user popup block")
         username = Locator(By.XPATH, "//input[@formcontrolname='username']", "New user username")
         password = Locator(By.XPATH, "//input[@formcontrolname='password']", "New user password")
-        password_confirm = Locator(
-            By.XPATH, "//input[@formcontrolname='cpassword']", "New user password confirmation"
-        )
-        save_btn = Locator(
-            By.XPATH, "//button[./span[contains(text(), 'Save')]]", "Add user save button"
-        )
+        password_confirm = Locator(By.XPATH, "//input[@formcontrolname='cpassword']", "New user password confirmation")
+        save_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Save')]]", "Add user save button")

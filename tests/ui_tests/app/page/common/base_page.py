@@ -191,9 +191,7 @@ class BasePageObject:
         element_name = element.name if isinstance(element, Locator) else element.text
         return self._is_displayed(element_name, find_element)
 
-    def is_child_displayed(
-        self, parent: WebElement, child: Locator, timeout: Optional[int] = None
-    ) -> bool:
+    def is_child_displayed(self, parent: WebElement, child: Locator, timeout: Optional[int] = None) -> bool:
         """Checks if child element is displayed"""
 
         def find_child():
