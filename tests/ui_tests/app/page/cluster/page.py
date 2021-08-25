@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from contextlib import contextmanager
+from dataclasses import dataclass
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -21,6 +22,7 @@ from tests.ui_tests.app.page.cluster.locators import (
     ClusterMainLocators,
     ClusterServicesLocators,
     ClusterHostLocators,
+    ClusterComponentsLocators,
 )
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
@@ -31,6 +33,7 @@ from tests.ui_tests.app.page.common.common_locators import (
     ObjectPageLocators,
     ObjectPageMenuLocators,
 )
+from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.dialogs import (
     ActionDialog,
@@ -47,6 +50,14 @@ from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
 from tests.ui_tests.app.page.host_list.page import HostRowInfo
+
+
+@dataclass
+class ComponentsHostRowInfo:
+    """Information from host row about host on Components page"""
+
+    name: str
+    components: str
 
 
 class ClusterPageMixin(BasePageObject):
@@ -138,9 +149,7 @@ class ClusterServicesPage(ClusterPageMixin):
         self.find_and_click(ClusterServicesLocators.add_services_btn)
         self.wait_element_visible(ClusterServicesLocators.AddServicePopup.block)
         for service in self.find_elements(ClusterServicesLocators.AddServicePopup.service_row):
-            service_text = self.find_child(
-                service, ClusterServicesLocators.AddServicePopup.ServiceRow.text
-            )
+            service_text = self.find_child(service, ClusterServicesLocators.AddServicePopup.ServiceRow.text)
             if service_text.text == service_name:
                 service_text.click()
         self.find_and_click(ClusterServicesLocators.AddServicePopup.create_btn)
@@ -201,6 +210,16 @@ class ClusterConfigPage(ClusterPageMixin):
     """Cluster page config menu"""
 
     MENU_SUFFIX = 'config'
+    MAIN_ELEMENTS = [
+        ObjectPageLocators.title,
+        ObjectPageLocators.subtitle,
+        ClusterMainLocators.text,
+        CommonConfigMenu.description_input,
+        CommonConfigMenu.search_input,
+        CommonConfigMenu.advanced_label,
+        CommonConfigMenu.save_btn,
+        CommonConfigMenu.history_btn,
+    ]
 
 
 class ClusterHostPage(ClusterPageMixin):
@@ -220,9 +239,11 @@ class ClusterHostPage(ClusterPageMixin):
     def click_add_host_btn(self, is_not_first_host: bool = True):
         """
         Click on the button 'Add host' under the host table.
-        In case there are any hosts that have been added earlier (no matter from this popup or from host list page)
+        In case there are any hosts that have been added earlier
+        (no matter from this popup or from host list page)
         there will be a popup with the list of the existing hosts,
-        so to open creating host popup you need again to click on a special button for creating hosts.
+        so to open creating host popup you need again to click on
+        a special button for creating hosts.
         In case there are no hosts at all, creating hosts popup will be open instantly.
 
         :param is_not_first_host: flag to indicate if there are any created hosts in adcm.
@@ -234,9 +255,7 @@ class ClusterHostPage(ClusterPageMixin):
             self.wait_element_visible(HostAddPopupLocators.add_new_host_btn).click()
 
     @allure.step("Get info about host row")
-    def get_host_info_from_row(
-        self, row_num: int = 0, table_has_cluster_column: bool = True
-    ) -> HostRowInfo:
+    def get_host_info_from_row(self, row_num: int = 0, table_has_cluster_column: bool = True) -> HostRowInfo:
         """
         Compile the values of the fields describing the host.
 
@@ -312,3 +331,90 @@ class ClusterHostPage(ClusterPageMixin):
         self.wait_element_visible(DeleteDialog.body)
         self.find_and_click(DeleteDialog.yes)
         self.wait_element_hide(DeleteDialog.body)
+
+
+class ClusterComponentsPage(ClusterPageMixin):
+    """Cluster page components menu"""
+
+    MENU_SUFFIX = 'host_component'
+    MAIN_ELEMENTS = [
+        ObjectPageLocators.title,
+        ObjectPageLocators.subtitle,
+        ClusterComponentsLocators.restore_btn,
+        ClusterComponentsLocators.save_btn,
+        ClusterComponentsLocators.components_title,
+        ClusterComponentsLocators.hosts_title,
+        ClusterComponentsLocators.service_page_link,
+        ClusterComponentsLocators.hosts_page_link,
+    ]
+
+    def click_service_page_link(self):
+        self.find_and_click(ClusterComponentsLocators.service_page_link)
+
+    def click_hosts_page_link(self):
+        self.find_and_click(ClusterComponentsLocators.hosts_page_link)
+
+    def click_add_host_btn(self):
+        self.find_and_click(ClusterComponentsLocators.create_hosts_btn)
+        self.wait_element_visible(HostCreationLocators.block)
+
+    @allure.step("Get all host rows")
+    def get_host_rows(self):
+        return self.find_elements(ClusterComponentsLocators.host_row)
+
+    @allure.step("Get all components rows")
+    def get_components_rows(self):
+        return self.find_elements(ClusterComponentsLocators.component_row)
+
+    @allure.step("Get info by row")
+    def get_row_info(self, row: WebElement):
+        return ComponentsHostRowInfo(
+            name=self.find_child(row, ClusterComponentsLocators.Row.name).text,
+            components=self.find_child(row, ClusterComponentsLocators.Row.number).text,
+        )
+
+    def find_host_row_by_name(self, host_name: str):
+        for host_row in self.get_host_rows():
+            host_name_element = self.find_child(host_row, ClusterComponentsLocators.Row.name)
+            if host_name_element.text == host_name:
+                return host_row
+        raise AssertionError(f"There are no host with name '{host_name}'")
+
+    def find_component_row_by_name(self, component_name: str):
+        for component_row in self.get_components_rows():
+            component_name_element = self.find_child(component_row, ClusterComponentsLocators.Row.name)
+            if component_name_element.text == component_name:
+                return component_row
+        raise AssertionError(f"There are no component with name '{component_name}'")
+
+    @allure.step("Click on host row")
+    def click_host(self, host_row: WebElement):
+        self.find_child(host_row, ClusterComponentsLocators.Row.name).click()
+
+    @allure.step("Click on component row")
+    def click_component(self, component_row: WebElement):
+        self.find_child(component_row, ClusterComponentsLocators.Row.name).click()
+
+    @allure.step("Click on number in component row")
+    def click_number_in_component(self, component_row: WebElement):
+        self.find_child(component_row, ClusterComponentsLocators.Row.number).click()
+
+    def click_save_btn(self):
+        self.find_and_click(ClusterComponentsLocators.save_btn)
+
+    def click_restore_btn(self):
+        self.find_and_click(ClusterComponentsLocators.restore_btn)
+
+    @allure.step("Delete item {item_name} from row")
+    def delete_related_item_in_row_by_name(self, row: WebElement, item_name: str):
+        self.wait_element_visible(ClusterComponentsLocators.Row.relations_row)
+        for item_row in self.find_children(row, ClusterComponentsLocators.Row.relations_row):
+            item_name_element = self.find_child(item_row, ClusterComponentsLocators.Row.RelationsRow.name)
+            if item_name_element.text == item_name:
+                self.find_child(item_row, ClusterComponentsLocators.Row.RelationsRow.delete_btn).click()
+                return
+        raise AssertionError(f"There are no item with name '{item_name}'")
+
+    @allure.step("Check that save button is disabled")
+    def check_that_save_btn_disabled(self):
+        return self.find_element(ClusterComponentsLocators.save_btn).get_attribute("disabled") == "true"

@@ -20,9 +20,7 @@ class CommonHeaderLocators:
 
     block = Locator(By.XPATH, "//app-top/mat-toolbar", "Header block")
 
-    arenadata_logo = Locator(
-        By.XPATH, "//a[./img[@alt='Arenadata cluster manager']]", "Header logo Arenadata"
-    )
+    arenadata_logo = Locator(By.XPATH, "//a[./img[@alt='Arenadata cluster manager']]", "Header logo Arenadata")
 
     clusters = Locator(By.CLASS_NAME, "topmenu_clusters", "Header button Clusters")
     hostproviders = Locator(By.CLASS_NAME, "topmenu_hostproviders", "Header button Hostproviders")
@@ -46,25 +44,21 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
     success_job_button = Locator(
         By.XPATH, "//button[@mattooltip='Show success jobs']", "Header button for success Jobs"
     )
-    failed_job_button = Locator(
-        By.XPATH, "//button[@mattooltip='Show failed jobs']", "Header button for failed Jobs"
-    )
+    failed_job_button = Locator(By.XPATH, "//button[@mattooltip='Show failed jobs']", "Header button for failed Jobs")
     help_button = Locator(By.XPATH, "//button[@adcm_test='help']", "Header button for help")
-    account_button = Locator(
-        By.XPATH, "//button[@adcm_test='account']", "Header button for account settings"
-    )
-    popup_block = Locator(
-        By.XPATH, "//div[contains(@class, 'mat-menu-content')]", "Header popup block"
-    )
+    account_button = Locator(By.XPATH, "//button[@adcm_test='account']", "Header button for account settings")
+    popup_block = Locator(By.XPATH, "//div[contains(@class, 'mat-menu-content')]", "Header popup block")
 
     class JobPopup:
         """ADCM header popup with jobs"""
 
         success_jobs = Locator(By.XPATH, "//div[@mattooltip='Show success jobs']", "Success jobs")
-        in_progress_jobs = Locator(
-            By.XPATH, "//div[@mattooltip='Show jobs in progress']", "In progress jobs"
-        )
+        in_progress_jobs = Locator(By.XPATH, "//div[@mattooltip='Show jobs in progress']", "In progress jobs")
         failed_jobs = Locator(By.XPATH, "//div[@mattooltip='Show failed jobs']", "Failed jobs")
+
+        job_row = Locator(By.XPATH, "//div/div[contains(@class, 'notification')]", "Job row in popup list")
+        job_status = Locator(By.XPATH, "./mat-icon", "Job status in job row")
+        job_name = Locator(By.XPATH, "./a", "Job name in job row")
 
     class HelpPopup:
         """ADCM header popup with help links"""

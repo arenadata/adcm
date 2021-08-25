@@ -33,9 +33,7 @@ def test_default_ansible_forks(testing_cluster):
     Check that default ansible fork count is 5
     """
     run_cluster_action_and_assert_result(testing_cluster, "assert_fork", config=dict(fork_count=5))
-    run_cluster_action_and_assert_result(
-        testing_cluster, "assert_fork_multijob", config=dict(fork_count=5)
-    )
+    run_cluster_action_and_assert_result(testing_cluster, "assert_fork_multijob", config=dict(fork_count=5))
 
 
 def test_custom_ansible_forks(sdk_client_fs, testing_cluster):
@@ -44,16 +42,14 @@ def test_custom_ansible_forks(sdk_client_fs, testing_cluster):
     """
     custom_forks_count = 10
     sdk_client_fs.adcm().config_set_diff({"ansible_settings": {"forks": custom_forks_count}})
-    run_cluster_action_and_assert_result(
-        testing_cluster, "assert_fork", config=dict(fork_count=custom_forks_count)
-    )
+    run_cluster_action_and_assert_result(testing_cluster, "assert_fork", config=dict(fork_count=custom_forks_count))
     run_cluster_action_and_assert_result(
         testing_cluster, "assert_fork_multijob", config=dict(fork_count=custom_forks_count)
     )
 
 
 @pytest.mark.parametrize("forks_count", [0, 101], ids=["0 forks", "101 fork"])
-def test_negate_values(sdk_client_fs, testing_cluster, forks_count):
+def test_negate_values(sdk_client_fs, forks_count):
     """
     Check that incorrect fork values is unacceptable
     """

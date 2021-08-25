@@ -4,7 +4,7 @@
 
 # Arenadata Cluster Manager
 
-That is Areandata Cluster Manager Project (aka Chapelnik)
+That is Arenadata Cluster Manager Project (aka Chapelnik)
 
 # Documentation
 
@@ -29,7 +29,7 @@ There is a Makefile in repo. It could be used for building application.
 
 ## Fast start with make
 
-You have to have GNU Make on your host and Docker daemon accessable for a user. Besides you have to have access to ci.arenadata.io
+You have to have GNU Make on your host and Docker daemon accessible for a user. Also, you have to have access to ci.arenadata.io
 
 ```sh
 # Clone repo
@@ -41,11 +41,11 @@ cd adcm
 make build
 ```
 
-That will be image ci.arenadata.io/adcm:<branch_name> as a result of the operation above.
+That will be an image hub.adsw.io/adcm/adcm:<branch_name> as a result of the operation above.
 
 ## Makefile description
 
-Makefile has selfdocumented help message. Just type.
+Makefile has self-documented help message. Just type.
 
 ```sh
 $ make
@@ -62,7 +62,7 @@ And check out the description for every operation available.
 
 ## Pre-commit hook
 
-We are using black, pylint and pre-commit to care about code formating and linting.
+We are using black, pylint and pre-commit to care about code formatting and linting.
 
 So you have to install pre-commit hook before you do something with code.
 

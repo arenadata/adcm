@@ -13,10 +13,11 @@ import allure
 import coreapi
 import pytest
 
-# pylint: disable=W0611, W0621
 from adcm_pytest_plugin import utils
 
 from tests.library.errorcodes import CONFIG_VALUE_ERROR
+
+# pylint: disable=too-many-arguments,redefined-outer-name
 
 TEST_DATA = [
     ("read-only-when-runned", False, True, "run", False, True),

@@ -19,6 +19,9 @@
   name: test_service_1
   description: Test service 1
   version: '1.2'
+  components:
+    first:
+      constraint: [2,+]
 
 - type: service
   name: test_service_2

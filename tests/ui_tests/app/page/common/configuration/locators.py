@@ -26,6 +26,7 @@ class CommonConfigMenu:
     )
     advanced_label = Locator(By.XPATH, "//mat-checkbox//span[text()='Advanced']", "Advanced label")
     search_input = Locator(By.ID, "config_search_input", "Search input")
+    search_input_clear_btn = Locator(By.XPATH, "//app-search//button[@aria-label='Clear']", "Clear search input button")
     description_input = Locator(
         By.XPATH,
         "//input[@data-placeholder='Description configuration']",
@@ -34,9 +35,7 @@ class CommonConfigMenu:
     save_btn = Locator(By.XPATH, "//button[.//span[text()='Save']]", "Save configuration button")
     history_btn = Locator(By.XPATH, "//button[.//mat-icon[text()='history']]", "History button")
 
-    compare_to_select = Locator(
-        By.XPATH, "//mat-select[@placeholder='Compare to']", "Compare to select"
-    )
+    compare_to_select = Locator(By.XPATH, "//mat-select[@placeholder='Compare to']", "Compare to select")
     config_version_option = TemplateLocator(
         By.XPATH, "//mat-option//span[contains(text(), '{}')]", "Config version with text: {}"
     )
@@ -46,6 +45,7 @@ class CommonConfigMenu:
         "//app-field[.//div[@adcm_test='{}']]//mat-list-item//span[contains(text(), '{}')]",
         'Config diff of option "{}" with "{}" in text',
     )
+    config_row = Locator(By.XPATH, "//app-field", "Configuration row")
 
     field_input = TemplateLocator(
         By.XPATH,
@@ -65,3 +65,18 @@ class CommonConfigMenu:
     )
 
     loading_text = Locator(By.XPATH, "//span[text()='Loading...']", "Loading text")
+
+    class ConfigRow:
+        name = Locator(By.XPATH, ".//label", "Row name")
+        value = Locator(By.XPATH, ".//input", "Row value")
+        history = Locator(By.XPATH, ".//mat-list-item//span[2]", "Row history")
+        reset_btn = Locator(By.XPATH, ".//button[@mattooltip='Reset to default']", "Reset button")
+
+    class ConfigGroup:
+        name = Locator(By.XPATH, ".//mat-panel-title/span", "Group name")
+        expansion_btn = Locator(By.XPATH, ".//mat-expansion-panel-header", "Expansion button")
+
+    class HistoryRow:
+        history_select = Locator(By.XPATH, "//mat-select[@placeholder='History']", "History select")
+        compare_select = Locator(By.XPATH, "//mat-select[@placeholder='Compare to']", "Compare select")
+        option = Locator(By.XPATH, "//mat-option", "Option in select")

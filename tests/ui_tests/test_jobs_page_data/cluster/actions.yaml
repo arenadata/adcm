@@ -9,3 +9,27 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+---
+- name: "SeeMeInAction"
+  hosts: localhost
+  tasks:
+    - name: "Success"
+      assert:
+        that:
+          - 1 == 1
+        msg: "Never gonna give you up"
+      tags:
+        - success
+    - name: "Fail"
+      assert:
+        that:
+          - 1 != 1
+        msg: "Never gonna give you up"
+      tags:
+        - fail
+    - name: "Pause"
+      pause:
+        minutes: 1
+      tags:
+        - pause

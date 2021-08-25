@@ -12,6 +12,7 @@
 from contextlib import contextmanager
 
 import allure
+
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support import expected_conditions as EC
@@ -21,6 +22,7 @@ from selenium.webdriver.remote.webelement import WebElement
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
+from tests.ui_tests.utils import assert_enough_rows
 
 
 class CommonTableObj(BasePageObject):
@@ -45,16 +47,12 @@ class CommonTableObj(BasePageObject):
             return []
 
     def get_row(self, row_num: int = 0) -> WebElement:
-        """Get exactly one row"""
-
         def table_has_enough_rows():
-            current_row_count = self.row_count
-            assert (
-                row_num + 1 <= current_row_count
-            ), f"Table has only {current_row_count} rows when row #{row_num} was requested"
+            assert_enough_rows(row_num, self.row_count)
 
         wait_until_step_succeeds(table_has_enough_rows, timeout=5, period=0.1)
         rows = self.get_all_rows()
+        assert_enough_rows(row_num, len(rows))
         return rows[row_num]
 
     def click_previous_page(self):
@@ -71,9 +69,7 @@ class CommonTableObj(BasePageObject):
         yield
 
         def wait_scroll():
-            assert (
-                len(self.get_all_rows()) != current_amount
-            ), "Amount of rows on the page hasn't changed"
+            assert len(self.get_all_rows()) != current_amount, "Amount of rows on the page hasn't changed"
 
         self.wait_element_hide(CommonToolbarLocators.progress_bar)
         wait_until_step_succeeds(wait_scroll, period=1, timeout=10)
@@ -93,9 +89,7 @@ class CommonTableObj(BasePageObject):
         self.wait_element_hide(CommonToolbarLocators.progress_bar, timeout=30)
         with self.wait_rows_change():
             self.click_page_by_number(2)
-        assert (
-            self.row_count == second_page_item_amount
-        ), f"Second page should contains {second_page_item_amount} items"
+        assert self.row_count == second_page_item_amount, f"Second page should contains {second_page_item_amount} items"
         with self.wait_rows_change():
             self.click_page_by_number(1)
         assert (
@@ -103,9 +97,7 @@ class CommonTableObj(BasePageObject):
         ), f"First page should contains {params['fist_page_cluster_amount']} items"
         with self.wait_rows_change():
             self.click_next_page()
-        assert (
-            self.row_count == second_page_item_amount
-        ), f"Next page should contains {second_page_item_amount} items"
+        assert self.row_count == second_page_item_amount, f"Next page should contains {second_page_item_amount} items"
         with self.wait_rows_change():
             self.click_previous_page()
         assert (

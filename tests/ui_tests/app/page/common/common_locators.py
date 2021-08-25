@@ -26,12 +26,8 @@ class CommonLocators:
 class ObjectPageLocators:
     """Common locators for object's detailed page"""
 
-    title = Locator(
-        By.XPATH, "//mat-drawer-content/mat-card/mat-card-header/div/mat-card-title", "Title"
-    )
-    subtitle = Locator(
-        By.XPATH, "//mat-drawer-content/mat-card/mat-card-header/div/mat-card-subtitle", "Subtitle"
-    )
+    title = Locator(By.XPATH, "//mat-drawer-content/mat-card/mat-card-header/div/mat-card-title", "Title")
+    subtitle = Locator(By.XPATH, "//mat-drawer-content/mat-card/mat-card-header/div/mat-card-subtitle", "Subtitle")
 
 
 class ObjectPageMenuLocators:
