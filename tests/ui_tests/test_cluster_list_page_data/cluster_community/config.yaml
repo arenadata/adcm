@@ -28,6 +28,24 @@
           versions:
              max: 3.0
              min: 2.2
+  config:
+    str_param:
+      type: string
+      required: false
+      default: '123'
+      description: must be changed to bar()
+    int:
+      type: integer
+      required: false
+      default: 2
+      description: must be changed to 5
+    core-site:
+      param1:
+          type: string
+          required: false
+      param2:
+          type: integer
+          required: false
 
 - type: service
   name: test_service
