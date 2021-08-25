@@ -10,30 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
----
-- type: provider
-  name: test_provider
-  version: 2.15
-  actions:
-    test_action:
-      type: job
-      script: dummy_action.yaml
-      script_type: ansible
-      states:
-        available:
-          - created
-        on_success: installed
 
-- type: host
-  name: "Test Host"
-  description: "Test Host Description"
-  version: 0.1.13
-  actions:
-    test_action:
-      type: job
-      script: dummy_action.yaml
-      script_type: ansible
-      states:
-        available:
-          - created
-        on_success: installed
+class ProviderMainLocators:
+    """Provider main page elements locators"""
+
+    ...

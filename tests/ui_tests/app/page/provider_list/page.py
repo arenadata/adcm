@@ -9,16 +9,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Optional
 
 import allure
+from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webelement import WebElement
 
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
     PageHeader,
     PageFooter,
+)
+from tests.ui_tests.app.page.common.dialogs import (
+    ActionDialog,
 )
 from tests.ui_tests.app.page.common.popups.page import HostCreatePopupObj
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
@@ -63,3 +68,29 @@ class ProviderListPage(BasePageObject):
             bundle=self.find_child(row, row_elements.bundle).text,
             state=self.find_child(row, row_elements.state).text,
         )
+
+    def click_action_btn_in_row(self, row: WebElement):
+        self.find_child(row, ProviderListLocators.ProviderTable.ProviderRow.actions).click()
+
+    def click_upgrade_btn_in_row(self, row: WebElement):
+        self.find_child(row, ProviderListLocators.ProviderTable.ProviderRow.upgrade).click()
+
+    @allure.step("Run action {action_name} for provider")
+    def run_action_in_provider_row(self, row: WebElement, action_name: str):
+        self.click_action_btn_in_row(row)
+        self.wait_element_visible(self.table.table.ActionPopup.block)
+        self.find_and_click(self.table.table.ActionPopup.button(action_name))
+        self.wait_element_visible(ActionDialog.body)
+        self.find_and_click(ActionDialog.run)
+
+    @contextmanager
+    def wait_provider_state_change(self, row: WebElement):
+        state_before = self.get_provider_info_from_row(row).state
+        yield
+
+        def wait_state():
+            state_after = self.get_provider_info_from_row(row).state
+            assert state_after != state_before
+            assert state_after != self.table.LOADING_STATE_TEXT
+
+        wait_until_step_succeeds(wait_state, period=1, timeout=self.default_loc_timeout)

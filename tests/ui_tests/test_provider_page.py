@@ -22,9 +22,9 @@ from adcm_client.objects import (
 )
 from adcm_pytest_plugin import utils
 
+from tests.ui_tests.app.page.provider.page import ProviderMainPage
 from tests.ui_tests.app.page.provider_list.page import ProviderListPage
 
-# pylint: disable=redefined-outer-name,no-self-use
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
 
 PROVIDER_NAME = 'test_provider'
@@ -43,12 +43,13 @@ def upload_and_create_provider(provider_bundle) -> Provider:
 
 
 class TestProviderListPage:
+    @pytest.mark.smoke()
     @pytest.mark.parametrize(
         "bundle_archive", [pytest.param(utils.get_data_dir(__file__, "provider"), id="provider")], indirect=True
     )
     def test_create_provider_on_provider_list_page(self, app_fs, bundle_archive):
         provider_params = {
-            "bundle": "test_provider 2.15-dev community",
+            "bundle": "test_provider 2.15 community",
             "state": "created",
         }
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
@@ -66,6 +67,7 @@ class TestProviderListPage:
                 provider_params['state'] == uploaded_provider.state
             ), f"Provider state should be {provider_params['state']} and not {uploaded_provider.state}"
 
+    @pytest.mark.smoke()
     @pytest.mark.parametrize(
         "bundle_archive", [pytest.param(utils.get_data_dir(__file__, "provider"), id="provider")], indirect=True
     )
@@ -73,7 +75,7 @@ class TestProviderListPage:
         provider_params = {
             "name": "Test Provider",
             "description": "Test",
-            "bundle": "test_provider 2.15-dev community",
+            "bundle": "test_provider 2.15 community",
             "state": "created",
         }
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
@@ -97,3 +99,40 @@ class TestProviderListPage:
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
         provider_page.close_info_popup()
         provider_page.table.check_pagination(second_page_item_amount=1)
+
+    @pytest.mark.smoke()
+    @pytest.mark.usefixtures("upload_and_create_provider")
+    def test_run_action_on_provider_list_page(self, app_fs):
+        params = {"action_name": "test_action", "expected_state": "installed"}
+        provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
+        row = provider_page.table.get_all_rows()[0]
+        with provider_page.wait_provider_state_change(row):
+            provider_page.run_action_in_provider_row(row, params["action_name"])
+        with allure.step("Check provider state has changed"):
+            assert (
+                provider_page.get_provider_info_from_row(row).state == params["expected_state"]
+            ), f"provider state should be {params['expected_state']}"
+        with allure.step("Check success provider job"):
+            assert (
+                provider_page.header.get_success_job_amount_from_header() == "1"
+            ), "There should be 1 success provider job in header"
+
+
+class TestProviderMainPage:
+    @pytest.mark.smoke()
+    def test_run_upgrade_on_provider_page_by_toolbar(self, app_fs, sdk_client_fs, upload_and_create_provider):
+        params = {
+            "upgrade_provider_name": "test_provider",
+            "state": "upgradated",
+        }
+        with allure.step("Create provider to export"):
+            upgr_pr = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), "upgradable_provider"))
+            upgr_pr.provider_create("upgradable_provider")
+        main_page = ProviderMainPage(app_fs.driver, app_fs.adcm.url, upload_and_create_provider.id).open()
+        main_page.toolbar.run_upgrade(params["upgrade_provider_name"], params["upgrade_provider_name"])
+        with allure.step("Check that provider has been upgraded"):
+            provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
+            row = provider_page.table.get_all_rows()[0]
+            assert (
+                provider_page.get_provider_info_from_row(row).state == params["state"]
+            ), f"Provider state should be {params['state']}"
