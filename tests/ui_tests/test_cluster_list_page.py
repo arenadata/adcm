@@ -713,7 +713,7 @@ class TestClusterStatusPage:
         cluster.hostcomponent_set((host, cluster.service(name=SERVICE_NAME).component(name=COMPONENT_NAME)))
         cluster_status_page = ClusterStatusPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         group_rows = cluster_status_page.get_all_config_groups()
-        with allure.step("Check that there is ine group"):
+        with allure.step("Check that there is one group"):
             assert len(group_rows) == 1, "There should be 1 group"
         group_row = group_rows[0]
         cluster_status_page.click_collapse_all_btn()
@@ -723,6 +723,8 @@ class TestClusterStatusPage:
         cluster_status_page.config.click_on_group(title=SERVICE_NAME)
         with allure.step("Check group rows"):
             group_info = cluster_status_page.get_config_group_info(group_row)
+            with allure.step("Check that there is one item in group"):
+                assert len(group_info) == 1, "There should be one item in group"
             assert (
                 group_info[0].service == COMPONENT_NAME
             ), f"Component name should be {COMPONENT_NAME} and not {group_info[0].service}"
