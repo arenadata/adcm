@@ -259,7 +259,7 @@ def wait_file_is_presented(
 
     wait_until_step_succeeds(check_file_is_presented, timeout=timeout, period=period)
 
-    
+
 @allure.step('Check that all fields and groups invisible')
 def check_that_all_fields_and_groups_invisible(sdk_client: ADCMClient, path, app):
     """Prepare cluster from `path` and check that all fields and groups invisible."""

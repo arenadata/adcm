@@ -164,8 +164,7 @@ def test_run_multijob(cluster: Cluster, page: JobListPage):
         expected_jobs = [{'name': job['name'], 'status': JobStatus.SUCCESS} for job in action.subs]
         jobs_info = page.get_all_jobs_info()
         assert (expected_amount := len(expected_jobs)) == (actual_amount := len(jobs_info)), (
-            'Amount of jobs is not correct: '
-            f'should be {expected_amount}, but {actual_amount} was found'
+            'Amount of jobs is not correct: ' f'should be {expected_amount}, but {actual_amount} was found'
         )
         for i in range(actual_amount):
             assert (actual_info := asdict(jobs_info[i])) == (
@@ -185,8 +184,7 @@ def test_filtering_and_pagination(created_hosts: List[Host], page: JobListPage):
         with page.table.wait_rows_change():
             page.select_filter_failed_tab()
         assert (row_count := page.table.row_count) == params['failed'], (
-            f'Tab "Failed" should have {params["failed"]} rows, '
-            f'but {row_count} rows are presented'
+            f'Tab "Failed" should have {params["failed"]} rows, ' f'but {row_count} rows are presented'
         )
         with page.table.wait_rows_change():
             page.select_filter_success_tab()
@@ -241,13 +239,9 @@ def test_download_log(cluster: Cluster, app_fs: ADCMTest, downloads_directory):
     job_page = _open_detailed_job_page(task.jobs[0]['id'], app_fs)
     with allure.step('Download logfiles'):
         job_page.click_on_log_download('stdout')
-        wait_file_is_presented(
-            downloaded_file_template.format(job_id=job_id, log_type='stdout'), downloads_directory
-        )
+        wait_file_is_presented(downloaded_file_template.format(job_id=job_id, log_type='stdout'), downloads_directory)
         job_page.click_on_log_download('stderr')
-        wait_file_is_presented(
-            downloaded_file_template.format(job_id=job_id, log_type='stderr'), downloads_directory
-        )
+        wait_file_is_presented(downloaded_file_template.format(job_id=job_id, log_type='stderr'), downloads_directory)
 
 
 def test_invoker_object_url(cluster: Cluster, provider: Provider, page: JobListPage):
@@ -333,9 +327,7 @@ def _run_actions_on_hosts(hosts: List[Host]):
     and then wait for all of them to be finished
     """
     actions_distribution = [SUCCESS_ACTION_DISPLAY_NAME] * 6 + [FAIL_ACTION_DISPLAY_NAME] * 5
-    task_list = [
-        host.action(display_name=actions_distribution[i]).run() for i, host in enumerate(hosts)
-    ]
+    task_list = [host.action(display_name=actions_distribution[i]).run() for i, host in enumerate(hosts)]
     for task in task_list:
         task.wait(timeout=60)
 
@@ -360,13 +352,11 @@ def _check_link_to_invoker_object_in_table(
         action.run()
     task_info: TableTaskInfo = page.get_task_info_from_table(full_invoker_objects_link=True)
     assert (actual_link := task_info.invoker_objects) == expected_link, (
-        f'Link to {link_object_name} object in jobs table '
-        f'should be "{expected_link}", not "{actual_link}"'
+        f'Link to {link_object_name} object in jobs table ' f'should be "{expected_link}", not "{actual_link}"'
     )
     detail_page = JobPage(page.driver, page.base_url, action.task_list()[0].id).open()
     actual_link = detail_page.get_job_info().invoker_objects
     assert actual_link == expected_link, (
-        f'Link to {link_object_name} object on detailed job page '
-        f'should be "{expected_link}", not "{actual_link}"'
+        f'Link to {link_object_name} object on detailed job page ' f'should be "{expected_link}", not "{actual_link}"'
     )
     page.open()

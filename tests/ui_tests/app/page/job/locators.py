@@ -22,22 +22,16 @@ class JobPageLocators(ObjectPageLocators):
 
     job_info = Locator(By.TAG_NAME, "app-job-info", "Job info section")
     start_time = Locator(By.XPATH, "//div[@class='time-info']/div[1]/span", "Job start time")
-    execution_time = Locator(
-        By.XPATH, "//div[@class='time-info']/div[2]/span", "Job execution time"
-    )
+    execution_time = Locator(By.XPATH, "//div[@class='time-info']/div[2]/span", "Job execution time")
     finish_time = Locator(By.XPATH, "//div[@class='time-info']/div[3]/span", "Job finish time")
 
     class Menu:
         # keep stdout(-err) prefix in naming
-        stdout_tab = Locator(
-            By.XPATH, "//a[.//span[text()='ansible [ stdout ]']]", "stdout menu tab"
-        )
+        stdout_tab = Locator(By.XPATH, "//a[.//span[text()='ansible [ stdout ]']]", "stdout menu tab")
         stdout_download_btn = Locator(
             By.XPATH, "//a[.//span[text()='ansible [ stdout ]']]//button", "Download stdout button"
         )
-        stderr_tab = Locator(
-            By.XPATH, "//a[.//span[text()='ansible [ stderr ]']]", "stdout err tab"
-        )
+        stderr_tab = Locator(By.XPATH, "//a[.//span[text()='ansible [ stderr ]']]", "stdout err tab")
         stderr_download_btn = Locator(
             By.XPATH, "//a[.//span[text()='ansible [ stderr ]']]//button", "Download stdout button"
         )

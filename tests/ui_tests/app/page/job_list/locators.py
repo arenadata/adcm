@@ -32,9 +32,7 @@ class TaskListLocators:
             # but in both cases we can identify status by class
             status = Locator(By.XPATH, ".//app-task-status-column/*", "Status span in row")
 
-            expand_task = Locator(
-                By.XPATH, ".//mat-icon[contains(text(), 'expand_more')]", "Expand task button"
-            )
+            expand_task = Locator(By.XPATH, ".//mat-icon[contains(text(), 'expand_more')]", "Expand task button")
 
         class ExpandedTask:
             block = Locator(By.XPATH, "//app-jobs", "Expanded task block")

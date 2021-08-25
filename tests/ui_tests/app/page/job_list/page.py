@@ -112,9 +112,7 @@ class JobListPage(BasePageObject):
         return [
             SubTaskJobInfo(
                 name=self.find_child(job, expand_task_locators.Row.job_name).text,
-                status=self._get_status_from_class_string(
-                    self.find_child(job, expand_task_locators.Row.job_status)
-                ),
+                status=self._get_status_from_class_string(self.find_child(job, expand_task_locators.Row.job_status)),
             )
             for job in job_rows
         ]

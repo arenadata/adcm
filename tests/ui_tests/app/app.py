@@ -123,9 +123,7 @@ class ADCMTest:
 
     def _configure_downloads(self, browser: str, downloads_directory: os.PathLike):
         if browser == "Chrome":
-            self.opts.add_experimental_option(
-                "prefs", {"download.default_directory": str(downloads_directory)}
-            )
+            self.opts.add_experimental_option("prefs", {"download.default_directory": str(downloads_directory)})
         else:
             # do not use default download directory
             self.opts.set_preference("browser.download.folderList", 2)
