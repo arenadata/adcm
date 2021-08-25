@@ -70,9 +70,7 @@ class JobListPage(BasePageObject):
         self.footer = PageFooter(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url, TaskListLocators.Table)
 
-    def get_task_info_from_table(
-        self, row_num: int = 0, *, full_invoker_objects_link: bool = False
-    ) -> TableTaskInfo:
+    def get_task_info_from_table(self, row_num: int = 0, *, full_invoker_objects_link: bool = False) -> TableTaskInfo:
         """
         Get job information from row
 
@@ -101,9 +99,7 @@ class JobListPage(BasePageObject):
         popup_locators = AuthorizedHeaderLocators.JobPopup
         return PopupTaskInfo(
             action_name=self.find_child(job, popup_locators.job_name).text,
-            status=self._get_status_from_class_string(
-                self.find_child(job, popup_locators.job_status)
-            ),
+            status=self._get_status_from_class_string(self.find_child(job, popup_locators.job_status)),
         )
 
     def get_all_jobs_info(self) -> List[SubTaskJobInfo]:

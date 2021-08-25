@@ -60,6 +60,7 @@ COMPONENT_NAME = 'test_component'
 
 
 @pytest.fixture()
+# pylint: disable-next=unused-argument
 def page(app_fs: ADCMTest, login_to_adcm_over_api) -> JobListPage:
     return JobListPage(app_fs.driver, app_fs.adcm.url).open()
 
@@ -97,26 +98,31 @@ def created_hosts(provider: Provider) -> List[Host]:
     return [provider.host_create(f'host-{i}') for i in range(11)]
 
 
+@pytest.mark.smoke()
 def test_cluster_action_job(cluster: Cluster, page: JobListPage):
     """Run action on cluster and validate job in table and popup"""
     _test_run_action(page, cluster)
 
 
+@pytest.mark.smoke()
 def test_service_action_job(cluster: Cluster, page: JobListPage):
     """Run action on service and validate job in table and popup"""
     _test_run_action(page, cluster.service_list()[0])
 
 
+@pytest.mark.smoke()
 def test_provider_action_job(provider: Provider, page: JobListPage):
     """Run action on host provider and validate job in table and popup"""
     _test_run_action(page, provider)
 
 
+@pytest.mark.smoke()
 def test_host_action_job(provider: Provider, page: JobListPage):
     """Run action on host and validate job in table and popup"""
     _test_run_action(page, provider.host_create('some-fqdn'))
 
 
+@pytest.mark.smoke()
 @pytest.mark.parametrize(
     'job_info',
     [
@@ -289,9 +295,7 @@ def _test_run_action(page: JobListPage, action_owner: Union[Cluster, Service, Pr
     ), page.table.wait_rows_change():
         long_action = action_owner.action(display_name=LONG_ACTION_DISPLAY_NAME)
         long_action.run()
-    _check_job_info_in_popup(
-        page, {'status': expected_info['status'], 'action_name': expected_info['action_name']}
-    )
+    _check_job_info_in_popup(page, {'status': expected_info['status'], 'action_name': expected_info['action_name']})
     _check_running_job_info_in_table(page, expected_info)
     page.select_filter_running_tab()
     _check_running_job_info_in_table(page, expected_info)
