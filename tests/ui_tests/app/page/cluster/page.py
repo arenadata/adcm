@@ -33,6 +33,7 @@ from tests.ui_tests.app.page.common.common_locators import (
     ObjectPageLocators,
     ObjectPageMenuLocators,
 )
+from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.dialogs import (
     ActionDialog,
@@ -209,6 +210,16 @@ class ClusterConfigPage(ClusterPageMixin):
     """Cluster page config menu"""
 
     MENU_SUFFIX = 'config'
+    MAIN_ELEMENTS = [
+        ObjectPageLocators.title,
+        ObjectPageLocators.subtitle,
+        ClusterMainLocators.text,
+        CommonConfigMenu.description_input,
+        CommonConfigMenu.search_input,
+        CommonConfigMenu.advanced_label,
+        CommonConfigMenu.save_btn,
+        CommonConfigMenu.history_btn,
+    ]
 
 
 class ClusterHostPage(ClusterPageMixin):
