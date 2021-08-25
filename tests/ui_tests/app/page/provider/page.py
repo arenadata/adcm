@@ -48,6 +48,6 @@ class ProviderPageMixin(BasePageObject):
 
 
 class ProviderMainPage(ProviderPageMixin):
-    """Cluster page Main menu"""
+    """Provider page Main menu"""
 
     MENU_SUFFIX = 'main'
