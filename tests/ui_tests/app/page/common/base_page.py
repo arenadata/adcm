@@ -74,8 +74,10 @@ class BasePageObject:
         **kwargs,
     ):
         if any(str.isdigit(char) for char in path_template):
-            raise ValueError(f"Path template {path_template} should not contain any digits. "
-                             "Please use template string and pass values as kwargs")
+            raise ValueError(
+                f"Path template {path_template} should not contain any digits. "
+                "Please use template string and pass values as kwargs"
+            )
         self.driver = driver
         self.base_url = base_url
         self.path = path_template.format(**kwargs)
