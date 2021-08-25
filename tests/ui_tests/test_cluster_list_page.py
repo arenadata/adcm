@@ -59,6 +59,7 @@ PROVIDER_NAME = 'test_provider'
 HOST_NAME = 'test-host'
 PROVIDER_WITH_ISSUE_NAME = 'provider_with_issue'
 COMPONENT_NAME = "first"
+BUNDLE_WITH_REQUIRED_FIELDS = "cluster_required_fields"
 
 
 # pylint: disable=redefined-outer-name,no-self-use
@@ -267,7 +268,7 @@ class TestClusterMainPage:
         cluster_import_page.toolbar.click_link_by_name(CLUSTER_NAME)
         cluster_main_page.wait_page_is_opened()
 
-    def test_check_cluster_run_upgrade_on_cluster_page_by_toolbar(self, sdk_client_fs, app_fs):
+    def test_run_upgrade_on_cluster_page_by_toolbar(self, sdk_client_fs, app_fs):
         params = {
             "upgrade_cluster_name": "upgrade cluster",
             "upgrade": "upgrade 2",
@@ -480,7 +481,7 @@ class TestClusterHostPage:
         with allure.step("Check there are no rows"):
             assert len(cluster_host_page.table.get_all_rows()) == 0, "Host table should be empty"
 
-    def test_check_cluster_components_page_delete_linked_host(
+    def test_delete_linked_host_from_cluster_components_page(
         self, app_fs, create_community_cluster_with_host_and_service
     ):
         params = {"message": "[ CONFLICT ] HOST_CONFLICT -- Host #1 has component(s)"}
@@ -602,7 +603,7 @@ class TestClusterComponentsPage:
             component_row = cluster_components_page.get_components_rows()[0]
             check_components_host_info(cluster_components_page.get_row_info(component_row), COMPONENT_NAME, "0")
 
-    def test_check_cluster_components_page_add_few_hosts_to_component(self, sdk_client_fs, app_fs, create_host):
+    def test_add_few_hosts_to_component_on_cluster_components_page(self, sdk_client_fs, app_fs, create_host):
         with allure.step("Create cluster with service and host"):
             bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_SERVICES)
             cluster = bundle.cluster_create(name=CLUSTER_NAME)
@@ -617,6 +618,87 @@ class TestClusterComponentsPage:
         cluster_components_page.click_component(component_row)
         with allure.step("Check that save button is disabled when not all required amount of hosts are linked"):
             assert cluster_components_page.check_that_save_btn_disabled(), "Save button should be disabled"
+
+
+class TestClusterConfigPage:
+    def test_cluster_config_page_open_by_tab(self, app_fs, create_community_cluster):
+        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
+        cluster_main_page.open_config_tab()
+        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1)
+        cluster_config_page.wait_page_is_opened()
+        cluster_config_page.check_all_elements()
+
+    def test_filter_config_on_cluster_config_page(self, app_fs, create_community_cluster):
+        params = {"search_param": "str_param", "group_name": "core-site"}
+        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
+        with cluster_config_page.config.wait_rows_change():
+            cluster_config_page.config.search(params["search_param"])
+        with allure.step(f"Check that rows are filtered by {params['search_param']}"):
+            config_rows = cluster_config_page.config.get_all_config_rows()
+            assert len(config_rows) == 1, "Rows are not filtered: there should be 1 row"
+            assert (
+                cluster_config_page.config.get_config_row_info(config_rows[0]).name == f"{params['search_param']}:"
+            ), f"Name should be {params['search_param']}"
+        with cluster_config_page.config.wait_rows_change():
+            cluster_config_page.config.clear_search_input()
+        with allure.step("Check that rows are not filtered"):
+            config_rows = cluster_config_page.config.get_all_config_rows()
+            assert len(config_rows) == 4, "Rows are filtered: there should be 4 row"
+        with cluster_config_page.config.wait_rows_change():
+            cluster_config_page.config.click_on_group(params["group_name"])
+        with allure.step("Check that groups are closed"):
+            config_rows = cluster_config_page.config.get_all_config_rows()
+            assert len(config_rows) == 2, "Groups are not closed: there should be 2 row"
+
+    def test_save_custom_config_on_cluster_config_page(self, app_fs, create_community_cluster):
+        params = {
+            "row_value_new": "test",
+            "row_value_old": "123",
+            "config_name_new": "test_name",
+            "config_name_old": "init",
+        }
+        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
+        config_row = cluster_config_page.config.get_all_config_rows()[0]
+        cluster_config_page.config.type_in_config_field(
+            row=config_row, value=params["row_value_new"], clear=True, adcm_test=None
+        )
+
+        cluster_config_page.config.set_description(params["config_name_new"])
+        cluster_config_page.config.save_config()
+        cluster_config_page.config.compare_current_to(params["config_name_old"])
+        with allure.step("Check row history"):
+            row_with_history = cluster_config_page.config.get_all_config_rows()[0]
+            cluster_config_page.config.wait_history_row_with_value(row_with_history, params["row_value_old"])
+
+    def test_reset_config_in_row_on_cluster_config_page(self, app_fs, create_community_cluster):
+        params = {"row_value_new": "test", "row_value_old": "123", "config_name": "test_name"}
+        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
+        config_row = cluster_config_page.config.get_all_config_rows()[0]
+        cluster_config_page.config.type_in_config_field(
+            row=config_row, value=params["row_value_new"], clear=True, adcm_test=None
+        )
+        cluster_config_page.config.set_description(params["config_name"])
+        cluster_config_page.config.save_config()
+
+        cluster_config_page.config.reset_to_default(row=config_row)
+        cluster_config_page.config.assert_input_value_is(expected_value=params["row_value_new"], row=config_row)
+
+    def test_field_validation_on_cluster_config_page(self, app_fs, sdk_client_fs):
+        params = {
+            'pass_name': 'Important password',
+            'req_name': 'Required item',
+            'not_req_name': 'Just item',
+            'wrong_value': 'test',
+        }
+        with allure.step("Create cluster"):
+            bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_REQUIRED_FIELDS)
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
+        cluster_config_page.config.check_password_confirm_required(params['pass_name'])
+        cluster_config_page.config.check_field_is_required(params['req_name'])
+        config_row = cluster_config_page.config.get_all_config_rows()[0]
+        cluster_config_page.config.type_in_config_field(params['wrong_value'], row=config_row)
+        cluster_config_page.config.check_field_is_invalid(params['not_req_name'])
 
 
 class TestClusterStatusPage:
