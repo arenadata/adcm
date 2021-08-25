@@ -15,13 +15,7 @@ from tests.ui_tests.app.helpers.locator import Locator
 
 
 class ProfileLocators:
-    username = Locator(
-        By.XPATH, "//p[contains(text(), 'You are authorized as')]/b", "Authorized user name"
-    )
+    username = Locator(By.XPATH, "//p[contains(text(), 'You are authorized as')]/b", "Authorized user name")
     password = Locator(By.XPATH, "//input[@formcontrolname='password']", "New password input field")
-    confirm_password = Locator(
-        By.XPATH, "//input[@formcontrolname='cpassword']", "New password confirmation field"
-    )
-    save_password_btn = Locator(
-        By.XPATH, "//button[./span[text()= 'Save']]", "Save password button"
-    )
+    confirm_password = Locator(By.XPATH, "//input[@formcontrolname='cpassword']", "New password confirmation field")
+    save_password_btn = Locator(By.XPATH, "//button[./span[text()= 'Save']]", "Save password button")

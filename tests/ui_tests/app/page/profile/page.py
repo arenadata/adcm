@@ -58,8 +58,6 @@ class ProfilePage(BasePageObject):
         def check_username_on_profile_page():
             assert (
                 username := self.get_username()
-            ) == expected_username, (
-                f'Expected username is {expected_username}, got {username} instead'
-            )
+            ) == expected_username, f'Expected username is {expected_username}, got {username} instead'
 
         wait_until_step_succeeds(check_username_on_profile_page, timeout=5, period=0.5)
