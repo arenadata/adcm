@@ -1,0 +1,122 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+---
+
+- type: cluster
+  name: Multi state set cluster
+  version: 1
+
+  actions: &actions
+    set_cluster: &general_action
+      type: job
+      script_type: ansible
+      script: actions.yaml
+      states:
+        available: any
+      params:
+        ansible_tags: cluster
+
+    set_service:
+      <<: *general_action
+      params:
+        ansible_tags: service
+
+    set_component:
+      <<: *general_action
+      params:
+        ansible_tags: component
+
+    set_first_service:
+      <<: *general_action
+      params:
+        ansible_tags: first_service
+
+    set_second_service:
+      <<: *general_action
+      params:
+        ansible_tags: second_service
+
+    set_first_component:
+      <<: *general_action
+      params:
+        ansible_tags: first_component
+
+    set_second_component:
+      <<: *general_action
+      params:
+        ansible_tags: second_component
+
+    set_first_service_first_component:
+      <<: *general_action
+      params:
+        ansible_tags: first_service_first_component
+
+    set_first_service_second_component:
+      <<: *general_action
+      params:
+        ansible_tags: first_service_second_component
+
+    set_second_service_first_component:
+      <<: *general_action
+      params:
+        ansible_tags: second_service_first_component
+
+    set_second_service_second_component:
+      <<: *general_action
+      params:
+        ansible_tags: second_service_second_component
+
+    set_cluster_host_action:
+      <<: *general_action
+      params:
+        ansible_tags: cluster
+      host_action: true
+
+- type: service
+  name: first
+  version: 1
+
+  actions: &service_actions
+    <<: *actions
+    set_cluster_host_action:
+      <<: *general_action
+
+    set_service_host_action:
+      <<: *general_action
+      params:
+        ansible_tags: service
+      host_action: true
+
+
+  components: &components
+    first:
+      actions: &component_actions
+        <<: *actions
+        set_cluster_host_action:
+          <<: *general_action
+        set_component_host_action:
+          <<: *general_action
+          display_name: "component_host_action"
+          params:
+            ansible_tags: component
+          host_action: true
+
+    second:
+      actions: *component_actions
+
+- type: service
+  name: second
+  version: 1
+
+  actions: *service_actions
+
+  components: *components
