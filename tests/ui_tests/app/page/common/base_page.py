@@ -199,10 +199,10 @@ class BasePageObject:
 
         return self._is_displayed(child.name, find_child)
 
-    def assert_displayed_elements(self, elements: List[Union[Locator, WebElement]]) -> None:
+    def assert_displayed_elements(self, locators: List[Locator]) -> None:
         """Asserts that list of elements is displayed."""
 
-        for loc in elements:
+        for loc in locators:
             assert self.is_element_displayed(
                 loc
             ), f"Locator {loc.name} isn't displayed on page {self.driver.current_url}"

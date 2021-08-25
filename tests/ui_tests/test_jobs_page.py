@@ -153,7 +153,7 @@ def _test_run_action(page: JobListPage, action_owner: Union[Cluster, Service, Pr
     }
     with allure.step(
         f'Run action "{LONG_ACTION_DISPLAY_NAME}" on {action_owner.__class__}'
-    ), page.table.expect_rows_amount_change():
+    ), page.table.wait_rows_change():
         long_action = action_owner.action(display_name=LONG_ACTION_DISPLAY_NAME)
         long_action.run()
     _check_job_info_in_popup(page, {'status': expected_info['status'], 'action_name': expected_info['action_name']})
