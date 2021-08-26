@@ -25,21 +25,24 @@ from adcm_pytest_plugin import utils
 from tests.ui_tests.app.page.provider.page import ProviderMainPage
 from tests.ui_tests.app.page.provider_list.page import ProviderListPage
 
-pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
 
+# pylint: disable=redefined-outer-name,no-self-use,unused-argument,too-few-public-methods
+
+
+pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
 PROVIDER_NAME = 'test_provider'
 
 
 @pytest.fixture(params=["provider"])
 @allure.title("Upload provider bundle")
-def provider_bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
+def bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
     return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), request.param))
 
 
 @pytest.fixture()
 @allure.title("Create provider from uploaded bundle")
-def upload_and_create_provider(provider_bundle) -> Provider:
-    return provider_bundle.provider_create(PROVIDER_NAME)
+def upload_and_create_test_provider(bundle) -> Provider:
+    return bundle.provider_create(PROVIDER_NAME)
 
 
 class TestProviderListPage:
@@ -92,16 +95,16 @@ class TestProviderListPage:
                 provider_params['name'] == uploaded_provider.name
             ), f"Provider name should be {provider_params['name']} and not {uploaded_provider.name}"
 
-    def test_check_provider_list_page_pagination(self, provider_bundle, app_fs):
+    def test_check_provider_list_page_pagination(self, bundle, app_fs):
         with allure.step("Create 11 providers"):
             for i in range(11):
-                provider_bundle.provider_create(name=f"Test provider {i}")
+                bundle.provider_create(name=f"Test provider {i}")
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
         provider_page.close_info_popup()
         provider_page.table.check_pagination(second_page_item_amount=1)
 
     @pytest.mark.smoke()
-    @pytest.mark.usefixtures("upload_and_create_provider")
+    @pytest.mark.usefixtures("upload_and_create_test_provider")
     def test_run_action_on_provider_list_page(self, app_fs):
         params = {"action_name": "test_action", "expected_state": "installed"}
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
@@ -120,7 +123,7 @@ class TestProviderListPage:
 
 class TestProviderMainPage:
     @pytest.mark.smoke()
-    def test_run_upgrade_on_provider_page_by_toolbar(self, app_fs, sdk_client_fs, upload_and_create_provider):
+    def test_run_upgrade_on_provider_page_by_toolbar(self, app_fs, sdk_client_fs, upload_and_create_test_provider):
         params = {
             "upgrade_provider_name": "test_provider",
             "state": "upgradated",
@@ -128,7 +131,7 @@ class TestProviderMainPage:
         with allure.step("Create provider to export"):
             upgr_pr = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), "upgradable_provider"))
             upgr_pr.provider_create("upgradable_provider")
-        main_page = ProviderMainPage(app_fs.driver, app_fs.adcm.url, upload_and_create_provider.id).open()
+        main_page = ProviderMainPage(app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id).open()
         main_page.toolbar.run_upgrade(params["upgrade_provider_name"], params["upgrade_provider_name"])
         with allure.step("Check that provider has been upgraded"):
             provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
