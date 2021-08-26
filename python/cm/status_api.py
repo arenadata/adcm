@@ -39,6 +39,9 @@ class Event:
     def set_object_state(self, obj_type, obj_id, state):
         self.events.append((set_obj_state, (obj_type, obj_id, state)))
 
+    def change_object_multi_state(self, obj_type, obj_id, multi_state):
+        self.events.append((change_obj_multi_state, (obj_type, obj_id, multi_state)))
+
     def set_job_status(self, job_id, status):
         self.events.append((set_job_status, (job_id, status)))
 
@@ -124,6 +127,15 @@ def set_obj_state(obj_type, obj_id, state):
         log.error('Unknown object type: "%s"', obj_type)
         return None
     return post_event('change_state', obj_type, obj_id, 'state', state)
+
+
+def change_obj_multi_state(obj_type, obj_id, multi_state):
+    if obj_type == 'adcm':
+        return None
+    if obj_type not in ('cluster', 'service', 'host', 'provider', 'component'):
+        log.error('Unknown object type: "%s"', obj_type)
+        return None
+    return post_event('change_state', obj_type, obj_id, 'multi_state', multi_state)
 
 
 def get_status(url):

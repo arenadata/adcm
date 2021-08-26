@@ -20,7 +20,7 @@ from api.action.serializers import ActionShort
 from api.api_views import check_obj, filter_actions, CommonAPIURL, ObjectURL
 from api.cluster.serializers import BindSerializer
 from api.component.serializers import ComponentUISerializer
-from api.concern.serializers import ConcernItemSerializer
+from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.serializers import StringListSerializer
 from cm import status_api
 from cm.api import add_service_to_cluster, multi_bind, bind
@@ -80,7 +80,7 @@ class ServiceDetailSerializer(ServiceSerializer):
         lookup_url_kwarg='prototype_id',
     )
     multi_state = StringListSerializer(read_only=True)
-    concern = ConcernItemSerializer(many=True, read_only=True)
+    concerns = ConcernItemSerializer(many=True, read_only=True)
 
     def get_status(self, obj):
         return status_api.get_service_status(obj.cluster.id, obj.id)
@@ -93,6 +93,7 @@ class ServiceUISerializer(ServiceDetailSerializer):
     version = serializers.SerializerMethodField()
     action = CommonAPIURL(view_name='object-action')
     config = CommonAPIURL(view_name='object-config')
+    concerns = ConcernItemUISerializer(many=True, read_only=True)
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
