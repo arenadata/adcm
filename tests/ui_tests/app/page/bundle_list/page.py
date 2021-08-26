@@ -55,7 +55,7 @@ class BundleListPage(BasePageObject):
     @allure.step('Upload bundle from {bundle_path}')
     def upload_bundle(self, bundle_path: str):
         """Upload bundle with 'Upload bundles' button"""
-        self.find_element(BundleListLocators.Tooltip.upload_btn).send_keys(*bundle_path)
+        self.find_element(BundleListLocators.Tooltip.upload_btn).send_keys(bundle_path)
 
     @allure.step('Upload bundles from {bundle_paths}')
     def upload_bundles(self, bundle_paths: list):
