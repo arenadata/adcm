@@ -67,6 +67,7 @@ class TestProviderListPage:
                 provider_params['bundle'] == uploaded_provider.bundle
             ), f"Provider bundle should be {provider_params['bundle']} and not {uploaded_provider.bundle}"
             assert (
+
                 provider_params['state'] == uploaded_provider.state
             ), f"Provider state should be {provider_params['state']} and not {uploaded_provider.state}"
 
@@ -124,15 +125,12 @@ class TestProviderListPage:
 class TestProviderMainPage:
     @pytest.mark.smoke()
     def test_run_upgrade_on_provider_page_by_toolbar(self, app_fs, sdk_client_fs, upload_and_create_test_provider):
-        params = {
-            "upgrade_provider_name": "test_provider",
-            "state": "upgradated",
-        }
+        params = {"state": "upgradated"}
         with allure.step("Create provider to export"):
             upgr_pr = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), "upgradable_provider"))
             upgr_pr.provider_create("upgradable_provider")
         main_page = ProviderMainPage(app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id).open()
-        main_page.toolbar.run_upgrade(params["upgrade_provider_name"], params["upgrade_provider_name"])
+        main_page.toolbar.run_upgrade(PROVIDER_NAME, PROVIDER_NAME)
         with allure.step("Check that provider has been upgraded"):
             provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
             row = provider_page.table.get_all_rows()[0]
