@@ -210,10 +210,9 @@ def test_check_timestamp_in_job_logs(sdk_client_fs: ADCMClient, verbose_state):
         task.wait()
         log = task.job().log()
         possible_timestamps = [
-            (datetime.utcnow() - timedelta(seconds=2)).strftime("%A %d %B %Y  %H:%M"),
-            (datetime.utcnow() - timedelta(seconds=1)).strftime("%A %d %B %Y  %H:%M"),
-            (datetime.utcnow()).strftime("%A %d %B %Y  %H:%M"),
+            (datetime.utcnow() - timedelta(seconds=delta)).strftime("%A %d %B %Y  %H:%M") for delta in range(3)
         ]
+
         assert any(
             timestamp in log.content for timestamp in possible_timestamps
         ), f"There are no timestamps in job logs: \n{log.content}"
