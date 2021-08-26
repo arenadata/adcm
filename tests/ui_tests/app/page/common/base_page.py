@@ -291,7 +291,9 @@ class BasePageObject:
         def assert_page_is_opened():
             assert self.path in self.driver.current_url, f'Page is not opened at path {self.path} in {timeout}'
 
-        wait_until_step_succeeds(assert_page_is_opened, period=0.5, timeout=timeout)
+        page_name = self.__class__.__name__.replace('Page', '')
+        with allure.step(f'Wait page {page_name} is opened'):
+            wait_until_step_succeeds(assert_page_is_opened, period=0.5, timeout=timeout)
 
     def set_locator_value(self, locator: Locator, value: str) -> None:
         """Fill locator with value."""
@@ -444,6 +446,18 @@ class PageHeader(BasePageObject):
         self.hover_element(AuthorizedHeaderLocators.job_block_previous)
         self.wait_element_visible(AuthorizedHeaderLocators.job_popup)
         return self.find_element(AuthorizedHeaderLocators.JobPopup.in_progress_jobs).text.split("\n")[1]
+
+    @allure.step('Open profile using account popup in header')
+    def open_profile(self):
+        """Open profile page"""
+        self.click_account_button_in_header()
+        self.click_profile_link_in_acc_popup()
+
+    @allure.step('Logout using account popup in header')
+    def logout(self):
+        """Logout using account popup"""
+        self.click_account_button_in_header()
+        self.click_logout_in_acc_popup()
 
     @contextmanager
     def open_jobs_popup(self):
