@@ -75,6 +75,9 @@ class ProviderListPage(BasePageObject):
     def click_upgrade_btn_in_row(self, row: WebElement):
         self.find_child(row, ProviderListLocators.ProviderTable.ProviderRow.upgrade).click()
 
+    def click_config_btn_in_row(self, row: WebElement):
+        self.find_child(row, ProviderListLocators.ProviderTable.ProviderRow.config).click()
+
     @allure.step("Run action {action_name} for provider")
     def run_action_in_provider_row(self, row: WebElement, action_name: str):
         self.click_action_btn_in_row(row)

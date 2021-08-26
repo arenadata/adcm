@@ -22,9 +22,11 @@ from adcm_client.objects import (
 )
 from adcm_pytest_plugin import utils
 
-from tests.ui_tests.app.page.provider.page import ProviderMainPage
+from tests.ui_tests.app.page.provider.page import (
+    ProviderMainPage,
+    ProviderConfigPage,
+)
 from tests.ui_tests.app.page.provider_list.page import ProviderListPage
-
 
 # pylint: disable=redefined-outer-name,no-self-use,unused-argument,too-few-public-methods
 
@@ -67,7 +69,6 @@ class TestProviderListPage:
                 provider_params['bundle'] == uploaded_provider.bundle
             ), f"Provider bundle should be {provider_params['bundle']} and not {uploaded_provider.bundle}"
             assert (
-
                 provider_params['state'] == uploaded_provider.state
             ), f"Provider state should be {provider_params['state']} and not {uploaded_provider.state}"
 
@@ -120,6 +121,12 @@ class TestProviderListPage:
             assert (
                 provider_page.header.get_success_job_amount_from_header() == "1"
             ), "There should be 1 success provider job in header"
+
+    def test_open_config_from_provider_host_page(self, app_fs, upload_and_create_test_provider):
+        provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
+        row = provider_page.table.get_all_rows()[0]
+        provider_page.click_config_btn_in_row(row)
+        ProviderConfigPage(app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id).wait_page_is_opened()
 
 
 class TestProviderMainPage:

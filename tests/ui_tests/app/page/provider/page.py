@@ -51,3 +51,9 @@ class ProviderMainPage(ProviderPageMixin):
     """Provider page Main menu"""
 
     MENU_SUFFIX = 'main'
+
+
+class ProviderConfigPage(ProviderPageMixin):
+    """Provider page Config menu"""
+
+    MENU_SUFFIX = 'config'
