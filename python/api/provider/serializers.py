@@ -17,7 +17,7 @@ import cm
 from api.action.serializers import ActionShort
 from api.api_views import CommonAPIURL, ObjectURL
 from api.api_views import hlink, check_obj, filter_actions, get_upgradable_func
-from api.concern.serializers import ConcernItemSerializer
+from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.serializers import StringListSerializer
 from api.serializers import UpgradeSerializer, UrlField
 from cm.errors import AdcmEx
@@ -59,7 +59,7 @@ class ProviderDetailSerializer(ProviderSerializer):
     upgrade = hlink('provider-upgrade', 'id', 'provider_id')
     host = ObjectURL(read_only=True, view_name='host')
     multi_state = StringListSerializer(read_only=True)
-    concern = ConcernItemSerializer(many=True, read_only=True)
+    concerns = ConcernItemSerializer(many=True, read_only=True)
 
 
 class ProviderUISerializer(ProviderDetailSerializer):
@@ -69,6 +69,7 @@ class ProviderUISerializer(ProviderDetailSerializer):
     prototype_display_name = serializers.SerializerMethodField()
     upgradable = serializers.SerializerMethodField()
     get_upgradable = get_upgradable_func
+    concerns = ConcernItemUISerializer(many=True, read_only=True)
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)

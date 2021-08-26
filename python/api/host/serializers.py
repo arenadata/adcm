@@ -16,7 +16,7 @@ from rest_framework import serializers
 import cm
 from api.action.serializers import ActionShort
 from api.api_views import hlink, check_obj, filter_actions, CommonAPIURL, ObjectURL
-from api.concern.serializers import ConcernItemSerializer
+from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.serializers import StringListSerializer
 from cm.errors import AdcmEx
 from cm.models import Cluster, Host, HostProvider, Prototype, Action
@@ -60,7 +60,7 @@ class HostDetailSerializer(HostSerializer):
     action = CommonAPIURL(view_name='object-action')
     prototype = hlink('host-type-details', 'prototype_id', 'prototype_id')
     multi_state = StringListSerializer(read_only=True)
-    concern = ConcernItemSerializer(many=True, read_only=True)
+    concerns = ConcernItemSerializer(many=True, read_only=True)
 
     def get_status(self, obj):
         return cm.status_api.get_host_status(obj.id)
@@ -101,6 +101,7 @@ class HostUISerializer(HostDetailSerializer):
     prototype_name = serializers.SerializerMethodField()
     prototype_display_name = serializers.SerializerMethodField()
     provider_name = serializers.SerializerMethodField()
+    concerns = ConcernItemUISerializer(many=True, read_only=True)
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
