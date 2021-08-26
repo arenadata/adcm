@@ -14,7 +14,7 @@ import { CommonModule } from '@angular/common';
 import { Routes, RouterModule } from '@angular/router';
 
 import { AuthGuard } from '../../core/auth/auth.guard';
-import { StackComponent, MainComponent, LicenseComponent } from './stack.component';
+import { BundleListComponent, MainComponent, LicenseComponent } from './bundle-list.component';
 import { DetailComponent } from '@app/shared/details/detail.component';
 import { SharedModule } from '@app/shared/shared.module';
 
@@ -22,7 +22,7 @@ const routes: Routes = [
   {
     path: '',
     canActivate: [AuthGuard],
-    component: StackComponent,
+    component: BundleListComponent,
   },
   {
     path: ':bundle',
@@ -43,7 +43,7 @@ const routes: Routes = [
 export class BundleRoutingModule {}
 
 @NgModule({
-  declarations: [StackComponent, MainComponent, LicenseComponent],
+  declarations: [BundleListComponent, MainComponent, LicenseComponent],
   imports: [CommonModule, SharedModule, BundleRoutingModule, RouterModule, BundleRoutingModule],
 })
 export class BundleModule {}
