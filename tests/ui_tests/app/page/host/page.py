@@ -42,9 +42,11 @@ class HostPageMixin(BasePageObject):
         super().__init__(
             driver,
             base_url,
-            f"/cluster/{cluster_id}/host/{host_id}/{self.MENU_SUFFIX}"
+            "/cluster/{cluster_id}/host/{host_id}/" + self.MENU_SUFFIX
             if cluster_id
-            else f"/host/{host_id}/{self.MENU_SUFFIX}",
+            else "/host/{host_id}/" + self.MENU_SUFFIX,
+            cluster_id=cluster_id,
+            host_id=host_id,
         )
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
