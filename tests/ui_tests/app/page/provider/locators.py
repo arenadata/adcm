@@ -11,7 +11,7 @@
 # limitations under the License.
 
 
-class ProviderMainLocators:
+class ProviderMainMenuLocators:
     """Provider main page elements locators"""
 
     ...

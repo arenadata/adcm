@@ -69,12 +69,11 @@ class ProviderListPage(BasePageObject):
             state=self.find_child(row, row_elements.state).text,
         )
 
+    @allure.step("Click action in row")
     def click_action_btn_in_row(self, row: WebElement):
         self.find_child(row, ProviderListLocators.ProviderTable.ProviderRow.actions).click()
 
-    def click_upgrade_btn_in_row(self, row: WebElement):
-        self.find_child(row, ProviderListLocators.ProviderTable.ProviderRow.upgrade).click()
-
+    @allure.step("Click config in row")
     def click_config_btn_in_row(self, row: WebElement):
         self.find_child(row, ProviderListLocators.ProviderTable.ProviderRow.config).click()
 
