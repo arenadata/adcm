@@ -209,6 +209,8 @@ def test_check_timestamp_in_job_logs(sdk_client_fs: ADCMClient, verbose_state):
     with allure.step("Check timestamps presence in job logs"):
         task.wait()
         log = task.job().log()
+        # Job log timestamp can hit for 59 seconds
+        # So it makes sense to check for a range of timestamps rather than a specific minute
         possible_timestamps = [
             (datetime.utcnow() - timedelta(seconds=delta)).strftime("%A %d %B %Y  %H:%M") for delta in range(3)
         ]
