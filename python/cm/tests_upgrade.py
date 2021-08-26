@@ -230,17 +230,26 @@ class TestConfigUpgrade(TestCase):
 
     def test_add_non_active_group(self):
         (proto1, proto2) = self.cook_proto()
+        # Old config with one key "host"
         self.add_conf(prototype=proto1, name='host', type='string', default='arenadata.com')
+
+        # New config with key "host" and activatable group "advance"
         self.add_conf(prototype=proto2, name='host', type='string', default='arenadata.com')
         limits = {"activatable": True, "active": False}
         self.add_conf(prototype=proto2, name='advance', type='group', limits=limits)
         self.add_conf(prototype=proto2, name='advance', subname='port', type='integer', default=42)
+
+        # Create cluster with old config
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
         old_conf, _ = get_config(cluster)
         self.assertEqual(old_conf, {'host': 'arenadata.com'})
+
+        # Upgrde
         cm.adcm_config.switch_config(cluster, proto2, proto1)
         new_config, new_attr = get_config(cluster)
-        self.assertEqual(new_config, {'host': 'arenadata.com', 'advance': None})
+
+        # Check that new activatable but inactive group default values are added to new config
+        self.assertEqual(new_config, {'host': 'arenadata.com', 'advance': {'port': 42}})
         self.assertEqual(new_attr, {'advance': {'active': False}})
 
     def test_add_active_group(self):
@@ -294,6 +303,39 @@ class TestConfigUpgrade(TestCase):
         new_conf, new_attr = get_config(cluster)
         self.assertEqual(new_conf, {'advance': {'port': 33}})
         self.assertEqual(new_attr, {'advance': {'active': True}})
+
+    def test_non_active_group(self):
+        proto1, proto2 = self.cook_proto()
+        # Old config with activatable group "advance"
+        self.add_conf(
+            prototype=proto1,
+            name='advance',
+            type='group',
+            limits={"activatable": True, "active": False},
+        )
+        self.add_conf(prototype=proto1, name='advance', subname='port', type='integer', default=11)
+
+        # New config with the same activatable group "advance"
+        self.add_conf(
+            prototype=proto2,
+            name='advance',
+            type='group',
+            limits={"activatable": True, "active": False},
+        )
+        self.add_conf(prototype=proto2, name='advance', subname='port', type='integer', default=11)
+
+        cluster = cm.api.add_cluster(proto1, 'Cluster1')
+        old_conf, old_attr = get_config(cluster)
+        self.assertEqual(old_conf, {'advance': {'port': 11}})
+        self.assertEqual(old_attr, {'advance': {'active': False}})
+
+        # Ugrade
+        adcm_config.switch_config(cluster, proto2, proto1)
+        new_conf, new_attr = get_config(cluster)
+
+        # Check that activatable but not active group does not disappear from new config
+        self.assertEqual(new_conf, {'advance': {'port': 11}})
+        self.assertEqual(new_attr, {'advance': {'active': False}})
 
 
 class TestUpgrade(TestCase):
