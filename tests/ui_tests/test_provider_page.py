@@ -11,7 +11,7 @@
 # limitations under the License.
 
 import os
-
+from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
 import allure
 import pytest
 from _pytest.fixtures import SubRequest
@@ -123,11 +123,45 @@ class TestProviderListPage:
                 provider_page.header.get_success_job_amount_from_header() == "1"
             ), "There should be 1 success provider job in header"
 
-    def test_open_config_from_provider_host_page(self, app_fs, upload_and_create_test_provider):
+    def test_open_config_from_provider_list_page(self, app_fs, upload_and_create_test_provider):
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
         row = provider_page.table.get_all_rows()[0]
         provider_page.click_config_btn_in_row(row)
         ProviderConfigPage(app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id).wait_page_is_opened()
+
+    @pytest.mark.smoke()
+    def test_open_main_from_provider_list_page(self, app_fs, upload_and_create_test_provider):
+        provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
+        row = provider_page.table.get_all_rows()[0]
+        provider_page.click_name_in_row(row)
+        ProviderMainPage(app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id).wait_page_is_opened()
+
+    @pytest.mark.smoke()
+    @pytest.mark.usefixtures("upload_and_create_test_provider")
+    def test_delete_provider_from_provider_list_page(self, app_fs):
+        provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
+        row = provider_page.table.get_all_rows()[0]
+        with provider_page.table.wait_rows_change():
+            provider_page.delete_provider_by_row(row)
+        with allure.step("Check there are no rows"):
+            assert len(provider_page.table.get_all_rows()) == 0, "Provider table should be empty"
+
+    @pytest.mark.smoke()
+    def test_get_error_from_delete_provider_from_provider_list_page(self, app_fs, upload_and_create_test_provider):
+        params = {"message": '[ CONFLICT ] PROVIDER_CONFLICT -- '
+                             'There is host #1 "test_host" of host provider #1 "test_provider"'}
+        upload_and_create_test_provider.host_create("test_host")
+        provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
+        row = provider_page.table.get_all_rows()[0]
+        provider_page.delete_provider_by_row(row)
+        with allure.step("Check error message"):
+            assert provider_page.get_info_popup_text() == params["message"], "No error message"
+
+    @pytest.mark.usefixtures("upload_and_create_test_provider")
+    def test_open_admin_page_by_toolbar_from_provider_list_page(self, app_fs):
+        provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
+        provider_page.toolbar.click_admin_link()
+        AdminIntroPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
 
 
 class TestProviderMainPage:

@@ -24,7 +24,9 @@ from tests.ui_tests.app.page.common.base_page import (
 )
 from tests.ui_tests.app.page.common.dialogs import (
     ActionDialog,
+    DeleteDialog,
 )
+from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
 from tests.ui_tests.app.page.common.popups.page import HostCreatePopupObj
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
@@ -45,6 +47,7 @@ class ProviderListPage(BasePageObject):
         super().__init__(driver, base_url, "/provider")
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
+        self.toolbar = CommonToolbar(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url, HostListLocators.HostTable)
         self.host_popup = HostCreatePopupObj(self.driver, self.base_url)
 
@@ -77,6 +80,10 @@ class ProviderListPage(BasePageObject):
     def click_config_btn_in_row(self, row: WebElement):
         self.find_child(row, ProviderListLocators.ProviderTable.ProviderRow.config).click()
 
+    @allure.step("Click name in row")
+    def click_name_in_row(self, row: WebElement):
+        self.find_child(row, ProviderListLocators.ProviderTable.ProviderRow.name).click()
+
     @allure.step("Run action {action_name} for provider")
     def run_action_in_provider_row(self, row: WebElement, action_name: str):
         self.click_action_btn_in_row(row)
@@ -96,3 +103,10 @@ class ProviderListPage(BasePageObject):
             assert state_after != self.table.LOADING_STATE_TEXT
 
         wait_until_step_succeeds(wait_state, period=1, timeout=self.default_loc_timeout)
+
+    @allure.step("Delete host")
+    def delete_provider_by_row(self, row: WebElement):
+        self.find_child(row, ProviderListLocators.ProviderTable.ProviderRow.delete_btn).click()
+        self.wait_element_visible(DeleteDialog.body)
+        self.find_and_click(DeleteDialog.yes)
+        self.wait_element_hide(DeleteDialog.body)
