@@ -21,9 +21,9 @@ class RequestFailedException(Exception):
 class ADCMDirectAPIClient:
     """Helper to make requests to ADCM API in a browser-like way"""
 
-    def __init__(self, base_url: str, admin_credentials: dict):
+    def __init__(self, base_url: str, user_credentials: dict):
         self.base_url = base_url.rstrip("/")
-        self.credentials = admin_credentials
+        self.credentials = user_credentials
         self.login_endpoint = f'{base_url}/api/v1/token/'
         self.user_create_endpoint = f'{base_url}/api/v1/user/'
         self.user_delete_ep_template = f'{base_url}/api/v1/user/' + '{}/'
@@ -31,13 +31,13 @@ class ADCMDirectAPIClient:
 
     @allure.step('Get authorization token over API')
     def get_authorization_token(self) -> str:
-        """Returns authorization token for "admin" user"""
+        """Returns authorization token for current user"""
         response = requests.post(self.login_endpoint, json=self.credentials)
         self._check_response(response)
         return response.json()['token']
 
     def get_authorization_header(self) -> dict:
-        """Returns "Authorization" header with token for "admin" user"""
+        """Returns "Authorization" header with token for current user"""
         token = self.get_authorization_token()
         return {'Authorization': f'Token {token}'}
 
@@ -50,15 +50,6 @@ class ADCMDirectAPIClient:
     def delete_user(self, username: str) -> None:
         """Deletes user by name"""
         self._make_authorized_request('delete', self.user_delete_ep_template.format(username))
-
-    def change_admin_password(self, credentials: dict):
-        """
-        Change admin (default ADCM user) password.
-        Saves new credentials to `self.credentials`.
-        """
-        with allure.step(f'Change admin password to {credentials["password"]}'):
-            self._make_authorized_request('patch', self.password_endpoint, json=credentials)
-            self.credentials = credentials
 
     def _make_authorized_request(self, method: str, endpoint: str, **kwargs) -> requests.Response:
         request_function = getattr(requests, method)

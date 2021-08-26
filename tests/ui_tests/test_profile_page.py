@@ -17,10 +17,9 @@ from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.app.page.profile.page import ProfilePage
 
 # pylint: disable=redefined-outer-name
-pytestmark = [pytest.mark.smoke()]
+pytestmark = [pytest.mark.smoke(), pytest.mark.usefixtures('login_to_adcm_over_api')]
 
 
-@pytest.mark.usefixtures("login_to_adcm_over_api")
 def test_open_profile(app_fs: ADCMTest):
     """
     Open profile page via UI elements, check username is correct and required fields presented
@@ -34,7 +33,6 @@ def test_open_profile(app_fs: ADCMTest):
     profile_page.check_username(params['username'])
 
 
-@pytest.mark.usefixtures("login_to_adcm_over_api")
 def test_login_as_new_user(another_user: dict, app_fs: ADCMTest):
     """Login as admin, logout, login as another user, check username"""
     params = {'admin_username': 'admin', 'another_username': another_user['username']}
@@ -52,7 +50,6 @@ def test_login_as_new_user(another_user: dict, app_fs: ADCMTest):
     profile_page.check_username(another_user['username'])
 
 
-@pytest.mark.usefixtures("login_to_adcm_over_api")
 def test_change_password(adcm_credentials: dict, app_fs: ADCMTest):
     """Change admin password over UI and login under new credentials"""
     new_credentials = {**adcm_credentials, 'password': 'new_password'}
