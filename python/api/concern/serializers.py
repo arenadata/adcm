@@ -21,9 +21,14 @@ class ConcernItemSerializer(serializers.Serializer):
     url = hlink('concern-details', 'id', 'concern_id')
 
 
-class ConcernItemDetailSerializer(ConcernItemSerializer):
-    name = serializers.CharField(help_text='Flag name')
+class ConcernItemUISerializer(ConcernItemSerializer):
+    type = serializers.CharField()
+    blocking = serializers.BooleanField()
     reason = serializers.JSONField()
+
+
+class ConcernItemDetailSerializer(ConcernItemUISerializer):
+    name = serializers.CharField()
     related_objects = serializers.SerializerMethodField()
 
     def get_related_objects(self, item):

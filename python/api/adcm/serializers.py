@@ -31,7 +31,7 @@ class AdcmDetailSerializer(AdcmSerializer):
     config = CommonAPIURL(view_name='object-config')
     action = CommonAPIURL(view_name='object-action')
     multi_state = StringListSerializer(read_only=True)
-    concern = ConcernItemSerializer(many=True, read_only=True)
+    concerns = ConcernItemSerializer(many=True, read_only=True)
 
     def get_prototype_version(self, obj):
         return obj.prototype.version

@@ -27,7 +27,7 @@ from api.api_views import (
     hlink,
 )
 from api.component.serializers import ComponentDetailSerializer
-from api.concern.serializers import ConcernItemSerializer
+from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.host.serializers import HostSerializer
 from api.serializers import StringListSerializer
 from cm.errors import AdcmEx
@@ -90,7 +90,7 @@ class ClusterDetailSerializer(ClusterSerializer):
     bind = hlink('cluster-bind', 'id', 'cluster_id')
     prototype = hlink('cluster-type-details', 'prototype_id', 'prototype_id')
     multi_state = StringListSerializer(read_only=True)
-    concern = ConcernItemSerializer(many=True, read_only=True)
+    concerns = ConcernItemSerializer(many=True, read_only=True)
 
     def get_status(self, obj):
         return cm.status_api.get_cluster_status(obj.id)
@@ -103,6 +103,7 @@ class ClusterUISerializer(ClusterDetailSerializer):
     prototype_display_name = serializers.SerializerMethodField()
     upgradable = serializers.SerializerMethodField()
     get_upgradable = get_upgradable_func
+    concerns = ConcernItemUISerializer(many=True, read_only=True)
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
