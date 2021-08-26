@@ -41,6 +41,7 @@ class BundleListPage(BasePageObject):
         self.footer = PageFooter(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url, BundleListLocators.Table)
 
+    @allure.step('Get bundle information from row #{row_num}')
     def get_bundle_info(self, row_num: int = 0) -> BundleInfo:
         """Get information about bundle from row"""
         row = self.table.get_row(row_num)

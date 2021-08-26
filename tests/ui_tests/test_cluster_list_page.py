@@ -502,10 +502,12 @@ class TestClusterHostPage:
     def test_check_pagination_on_cluster_host_page(self, app_fs, upload_and_create_provider, create_community_cluster):
         cluster = create_community_cluster
         provider = upload_and_create_provider
-        for i in range(11):
-            host = provider.host_create(f"{HOST_NAME}_{i}")
-            cluster.host_add(host)
-        cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
+        host_count = 11
+        with allure.step(f'Create {host_count} hosts'):
+            for i in range(host_count):
+                host = provider.host_create(f"{HOST_NAME}_{i}")
+                cluster.host_add(host)
+        cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
         cluster_host_page.table.check_pagination(1)
 
 
