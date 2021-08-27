@@ -142,6 +142,9 @@ class ContextActionModule(ActionBase):
     def _do_provider(self, task_vars, context):
         raise NotImplementedError
 
+    def _do_host_from_provider(self, task_vars, context):
+        raise NotImplementedError
+
     def run(self, tmp=None, task_vars=None):  # pylint: disable=too-many-branches
         self._check_mandatory()
         obj_type = self._task.args["type"]
@@ -153,16 +156,6 @@ class ContextActionModule(ActionBase):
             )
         elif obj_type == "service" and "service_name" in self._task.args:
             check_context_type(task_vars, 'cluster', 'service', 'component')
-            context = task_vars['context']
-            if context['type'] == 'service':
-                service = ClusterObject.objects.get(pk=context["service_id"])
-                service_name = service.prototype.name
-                if service_name != self._task.args["service_name"]:
-                    # It is forbiden to change one service from another one.
-                    # But due to usage pattern it is common case when developers
-                    # use service_name in service playbooks to make them general
-                    # use (for cluster context and for service context)
-                    raise AnsibleError(MSG_WRONG_SERVICE)
             res = self._do_service_by_name(
                 task_vars, {'cluster_id': self._get_job_var(task_vars, 'cluster_id')}
             )
@@ -239,12 +232,6 @@ def _set_object_state(obj: ADCMEntity, state: str) -> ADCMEntity:
     return obj
 
 
-def _set_object_multi_state(obj: ADCMEntity, multi_state: str) -> ADCMEntity:
-    obj.set_multi_state(multi_state, ctx.event)
-    ctx.event.send_state()
-    return obj
-
-
 def set_cluster_state(cluster_id, state):
     obj = Cluster.obj.get(id=cluster_id)
     return _set_object_state(obj, state)
@@ -270,14 +257,20 @@ def set_provider_state(provider_id, state):
     return _set_object_state(obj, state)
 
 
-def set_service_state(cluster_id, service_name, state):
+def set_service_state_by_name(cluster_id, service_name, state):
     obj = get_service_by_name(cluster_id, service_name)
     return _set_object_state(obj, state)
 
 
-def set_service_state_by_id(cluster_id, service_id, state):
+def set_service_state(cluster_id, service_id, state):
     obj = ClusterObject.obj.get(id=service_id, cluster__id=cluster_id, prototype__type='service')
     return _set_object_state(obj, state)
+
+
+def _set_object_multi_state(obj: ADCMEntity, multi_state: str) -> ADCMEntity:
+    obj.set_multi_state(multi_state, ctx.event)
+    ctx.event.send_state()
+    return obj
 
 
 def set_cluster_multi_state(cluster_id, multi_state):
@@ -285,12 +278,12 @@ def set_cluster_multi_state(cluster_id, multi_state):
     return _set_object_multi_state(obj, multi_state)
 
 
-def set_service_multi_state(cluster_id, service_name, multi_state):
+def set_service_multi_state_by_name(cluster_id, service_name, multi_state):
     obj = get_service_by_name(cluster_id, service_name)
     return _set_object_multi_state(obj, multi_state)
 
 
-def set_service_multi_state_by_id(cluster_id, service_id, multi_state):
+def set_service_multi_state(cluster_id, service_id, multi_state):
     obj = ClusterObject.obj.get(id=service_id, cluster__id=cluster_id, prototype__type='service')
     return _set_object_multi_state(obj, multi_state)
 
@@ -372,12 +365,12 @@ def set_provider_config(provider_id, keys, value):
     return set_object_config(provider, keys, value)
 
 
-def set_service_config(cluster_id, service_name, keys, value):
+def set_service_config_by_name(cluster_id, service_name, keys, value):
     obj = get_service_by_name(cluster_id, service_name)
     return set_object_config(obj, keys, value)
 
 
-def set_service_config_by_id(cluster_id, service_id, keys, value):
+def set_service_config(cluster_id, service_id, keys, value):
     obj = ClusterObject.obj.get(id=service_id, cluster__id=cluster_id, prototype__type='service')
     return set_object_config(obj, keys, value)
 
@@ -410,17 +403,19 @@ def unset_cluster_multi_state(cluster_id, multi_state, missing_ok):
     return _unset_object_multi_state(obj, multi_state, missing_ok)
 
 
-def unset_service_multi_state(cluster_id, service_name, multi_state, missing_ok):
+def unset_service_multi_state_by_name(cluster_id, service_name, multi_state, missing_ok):
     obj = get_service_by_name(cluster_id, service_name)
     return _unset_object_multi_state(obj, multi_state, missing_ok)
 
 
-def unset_service_multi_state_by_id(cluster_id, service_id, multi_state, missing_ok):
+def unset_service_multi_state(cluster_id, service_id, multi_state, missing_ok):
     obj = ClusterObject.obj.get(id=service_id, cluster__id=cluster_id, prototype__type='service')
     return _unset_object_multi_state(obj, multi_state, missing_ok)
 
 
-def unset_component_multi_state_by_name(cluster_id, service_id, component_name, service_name, multi_state, missing_ok):
+def unset_component_multi_state_by_name(
+    cluster_id, service_id, component_name, service_name, multi_state, missing_ok
+):
     obj = get_component_by_name(cluster_id, service_id, component_name, service_name)
     return _unset_object_multi_state(obj, multi_state, missing_ok)
 

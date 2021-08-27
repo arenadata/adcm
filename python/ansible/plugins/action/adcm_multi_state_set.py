@@ -26,7 +26,7 @@ from cm.ansible_plugin import (
     set_cluster_multi_state,
     set_host_multi_state,
     set_service_multi_state,
-    set_service_multi_state_by_id,
+    set_service_multi_state_by_name,
     set_provider_multi_state,
     set_component_multi_state_by_name,
     set_component_multi_state,
@@ -39,7 +39,7 @@ DOCUMENTATION = r'''
 module: adcm_multi_state_set
 short_description: Add one state to multi_state field
 description:
-  - This is special ADCM only module which is usefull for changing multi_state for various ADCM objects.
+  - This is special ADCM only module which is useful for changing multi_state for various ADCM objects.
   - There is support of cluster, service, host, component and providers states
   - This one is allowed to be used in various execution contexts.
 options:
@@ -61,12 +61,12 @@ options:
   - option-name: service_name
     required: false
     type: string
-    description: usefull in cluster and component context only. In that context you are able to set the state value for a service belongs to the cluster.
+    description: useful in cluster and component context only. In that context you are able to set the state value for a service belongs to the cluster.
 
   - option-name: component_name
     required: false
     type: string
-    description: usefull in cluster and component context only. In that context you are able to set the state for a component belongs to the service
+    description: useful in cluster and component context only. In that context you are able to set the state for a component belongs to the service
 '''
 
 EXAMPLES = r'''
@@ -107,16 +107,14 @@ class ActionModule(ContextActionModule):
 
     def _do_cluster(self, task_vars, context):
         res = self._wrap_call(
-            set_cluster_multi_state,
-            context['cluster_id'],
-            self._task.args["state"]
+            set_cluster_multi_state, context['cluster_id'], self._task.args["state"]
         )
         res['state'] = self._task.args["state"]
         return res
 
     def _do_service_by_name(self, task_vars, context):
         res = self._wrap_call(
-            set_service_multi_state,
+            set_service_multi_state_by_name(),
             context['cluster_id'],
             self._task.args["service_name"],
             self._task.args["state"],
@@ -126,7 +124,7 @@ class ActionModule(ContextActionModule):
 
     def _do_service(self, task_vars, context):
         res = self._wrap_call(
-            set_service_multi_state_by_id,
+            set_service_multi_state,
             context['cluster_id'],
             context['service_id'],
             self._task.args["state"],
@@ -145,9 +143,16 @@ class ActionModule(ContextActionModule):
 
     def _do_provider(self, task_vars, context):
         res = self._wrap_call(
-            set_provider_multi_state,
-            context['provider_id'],
-            self._task.args["state"]
+            set_provider_multi_state, context['provider_id'], self._task.args["state"]
+        )
+        res['state'] = self._task.args["state"]
+        return res
+
+    def _do_host_from_provider(self, task_vars, context):
+        res = self._wrap_call(
+            set_host_multi_state,
+            self._task.args['host_id'],
+            self._task.args["state"],
         )
         res['state'] = self._task.args["state"]
         return res
