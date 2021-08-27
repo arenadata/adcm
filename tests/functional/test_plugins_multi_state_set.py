@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=redefined-outer-name
+
 from typing import Collection, Optional, Set, Union, Tuple, List, Callable
 
 import pytest
@@ -261,6 +263,7 @@ def test_forbidden_multi_state_set_actions(sdk_client_fs: ADCMClient):
             check_providers_multi_state(sdk_client_fs)
 
 
+# pylint: disable-next=possibly-unused-variable
 def test_multi_state_from_host_actions(
     two_clusters: Tuple[Cluster, Cluster], two_providers: Tuple[Provider, Provider], sdk_client_fs: ADCMClient
 ):
