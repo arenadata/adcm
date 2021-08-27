@@ -666,7 +666,7 @@ class TestClusterConfigPage:
 
         cluster_config_page.config.set_description(params["config_name_new"])
         cluster_config_page.config.save_config()
-        cluster_config_page.config.compare_current_to(params["config_name_old"])
+        cluster_config_page.config.compare_versions(params["config_name_old"])
         with allure.step("Check row history"):
             row_with_history = cluster_config_page.config.get_all_config_rows()[0]
             cluster_config_page.config.wait_history_row_with_value(row_with_history, params["row_value_old"])
