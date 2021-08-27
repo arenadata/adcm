@@ -244,7 +244,7 @@ class TestConfigUpgrade(TestCase):
         old_conf, _ = get_config(cluster)
         self.assertEqual(old_conf, {'host': 'arenadata.com'})
 
-        # Upgrde
+        # Upgrade
         cm.adcm_config.switch_config(cluster, proto2, proto1)
         new_config, new_attr = get_config(cluster)
 
