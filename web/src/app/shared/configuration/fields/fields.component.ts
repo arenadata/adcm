@@ -23,7 +23,7 @@ import { FormGroup } from '@angular/forms';
   selector: 'app-config-fields',
   template: `
     <ng-container *ngFor="let item of dataOptions; trackBy: trackBy">
-      <app-group-fields *ngIf="isPanel(item); else one" [panel]="item" [form]="form"
+      <app-group-fields *ngIf="isPanel(item); else one" [panel]="item" [form]="form" [showCheckbox]="showCheckbox"
                         [groupForm]="groupsForm"></app-group-fields>
       <ng-template #one>
         <div class="row d-flex">
