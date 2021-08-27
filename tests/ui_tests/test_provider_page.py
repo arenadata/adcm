@@ -258,7 +258,12 @@ class TestProviderConfigPage:
             provider_config_page.config.wait_history_row_with_value(row_with_history, params["row_value_old"])
 
     def test_reset_config_in_row_on_provider_config_page(self, app_fs, upload_and_create_test_provider):
-        params = {"row_name": "str_param:", "row_value_new": "test", "row_value_old": "0000", "config_name": "test_name"}
+        params = {
+            "row_name": "str_param:",
+            "row_value_new": "test",
+            "row_value_old": "0000",
+            "config_name": "test_name",
+        }
         provider_config_page = ProviderConfigPage(
             app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
         ).open()
