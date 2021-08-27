@@ -16,10 +16,8 @@ from typing import List, Collection, Optional
 
 import allure
 
-from selenium.webdriver.remote.webelement import WebElement
-from selenium.webdriver.common.keys import Keys
-from selenium.common.exceptions import TimeoutException
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebElement
 
@@ -225,9 +223,6 @@ class CommonConfigMenuObj(BasePageObject):
                 visible_fields.remove(row_name)
         assert len(falsely_visible) == 0, f"Those fields shouldn't be visible in configuration: {falsely_visible}"
         assert len(visible_fields) == 0, f"Those fields should be visible: {visible_fields}"
-
-    def get_all_config_rows(self):
-        return [r for r in self.find_elements(CommonConfigMenu.config_row) if r.is_displayed()]
 
     @contextmanager
     def wait_rows_change(self):

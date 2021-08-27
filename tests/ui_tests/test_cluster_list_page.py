@@ -660,9 +660,7 @@ class TestClusterConfigPage:
         }
         cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
         config_row = cluster_config_page.config.get_all_config_rows()[0]
-        cluster_config_page.config.type_in_config_field(
-            row=config_row, value=params["row_value_new"], clear=True
-        )
+        cluster_config_page.config.type_in_config_field(row=config_row, value=params["row_value_new"], clear=True)
 
         cluster_config_page.config.set_description(params["config_name_new"])
         cluster_config_page.config.save_config()
@@ -675,9 +673,7 @@ class TestClusterConfigPage:
         params = {"row_name": "str_param:", "row_value_new": "test", "row_value_old": "123", "config_name": "test_name"}
         cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
         config_row = cluster_config_page.config.get_all_config_rows()[0]
-        cluster_config_page.config.type_in_config_field(
-            row=config_row, value=params["row_value_new"], clear=True
-        )
+        cluster_config_page.config.type_in_config_field(row=config_row, value=params["row_value_new"], clear=True)
         cluster_config_page.config.set_description(params["config_name"])
         cluster_config_page.config.save_config()
 
