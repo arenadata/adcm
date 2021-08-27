@@ -114,7 +114,7 @@ class ActionModule(ContextActionModule):
 
     def _do_service_by_name(self, task_vars, context):
         res = self._wrap_call(
-            set_service_multi_state_by_name(),
+            set_service_multi_state_by_name,
             context['cluster_id'],
             self._task.args["service_name"],
             self._task.args["state"],
