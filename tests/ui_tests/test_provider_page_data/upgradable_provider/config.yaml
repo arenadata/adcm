@@ -10,10 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
+- type: provider
+  name: test_provider
+  version: 2.16
+  upgrade:
+    - name: test_provider
+      versions: { min: 1.0, max_strict: 2.16 }
+      description: Google Compute Engine bundle upgrade
+      states:
+        available:
+          - created
+        on_success: upgradated
 
-pytestmark = [
-    pytest.mark.allure_label("API Tests", label_type="layer"),
-    pytest.mark.allure_label("Functional Tests", label_type="parentSuite"),
-    pytest.mark.allure_label("Functional Tests", label_type="page_url"),
-]
+- type: host
+  name: "Test Host"
+  description: "Test Host Description"
+  version: 0.1.13
