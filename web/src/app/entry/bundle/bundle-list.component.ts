@@ -14,6 +14,7 @@ import { Store } from '@ngrx/store';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { IColumns } from '@adwp-ui/widgets';
+import { Observable } from 'rxjs';
 
 import { StackService } from '../../core/services';
 import { ClusterService } from '@app/core/services/cluster.service';
@@ -25,10 +26,9 @@ import { IBundle } from '@app/models/bundle';
 import { ListFactory } from '@app/factories/list-factory';
 import { EditionColumnComponent } from '@app/components/columns/edition-column/edition-column.component';
 import { ApiService } from '@app/core/api';
-import { Observable } from 'rxjs';
 
 @Component({
-  selector: 'app-stack',
+  selector: 'app-bundle-list',
   template: `
     <mat-toolbar class="toolbar">
       <app-crumbs [navigation]="[{ url: '/bundle', title: 'bundles' }]"></app-crumbs>
@@ -51,7 +51,7 @@ import { Observable } from 'rxjs';
   `,
   styles: [':host { flex: 1; }'],
 })
-export class StackComponent extends AdwpListDirective<IBundle> {
+export class BundleListComponent extends AdwpListDirective<IBundle> {
 
   type: TypeName = 'bundle';
 
@@ -67,12 +67,7 @@ export class StackComponent extends AdwpListDirective<IBundle> {
       type: 'component',
       component: EditionColumnComponent,
       instanceTaken: (componentRef: ComponentRef<EditionColumnComponent>) => {
-        componentRef.instance.onClick
-          .pipe(this.takeUntil())
-          .subscribe(
-            (data: { event: MouseEvent, action: string, row: any }) =>
-              this.clickCell(data.event, data.action, data.row)
-          );
+        componentRef.instance.onClick = this.license.bind(this);
       }
     },
     ListFactory.descriptionColumn(),
@@ -95,6 +90,10 @@ export class StackComponent extends AdwpListDirective<IBundle> {
 
   upload(data: FormData[]) {
     this.stack.upload(data).subscribe();
+  }
+
+  license(data: { event: MouseEvent, action: string, row: any }) {
+    this.clickCell(data.event, data.action, data.row);
   }
 
 }
