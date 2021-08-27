@@ -20,7 +20,7 @@ const options = { clickAction: 'noop', color: 'accent' };
   selector: 'app-fields-boolean',
   template: `
     <ng-container [formGroup]="form">
-      <mat-checkbox [labelPosition]="'before'" [formControlName]="field.name" [indeterminate]="field.value === null" (click)="cbChange()"></mat-checkbox>
+      <mat-checkbox [formControlName]="field.name" [indeterminate]="field.value === null" (click)="cbChange()"></mat-checkbox>
       <mat-error *ngIf="!isValid"><app-error-info [field]="field" [control]="control"></app-error-info></mat-error>
     </ng-container>
   `,
