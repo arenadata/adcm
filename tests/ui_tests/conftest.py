@@ -13,18 +13,19 @@
 # pylint:disable=redefined-outer-name
 import json
 import tempfile
+from typing import Generator
+
 import requests
 import allure
 import pytest
 
 from adcm_client.wrappers.docker import ADCM
-from deprecated import deprecated
 from selenium.common.exceptions import WebDriverException
 
+from tests.ui_tests.app.api import ADCMDirectAPIClient
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.login.page import LoginPage
-from tests.ui_tests.app.pages import LoginPage as DeprecatedLoginPage
 
 
 @allure.title("Additional ADCM init config")
@@ -134,28 +135,6 @@ def adcm_credentials():
     return {'username': 'admin', 'password': 'admin'}
 
 
-@deprecated("Use auth_to_adcm")
-@pytest.fixture()
-def login_to_adcm(app_fs, adcm_credentials):
-    """Perform login on Login page ADCM
-    :param app_fs:
-    :param adcm_credentials:
-    """
-    app_fs.driver.get(app_fs.adcm.url)
-    login = DeprecatedLoginPage(app_fs.driver)
-    login.login(**adcm_credentials)
-
-
-@pytest.fixture()
-def auth_to_adcm(app_fs, adcm_credentials):
-    """Perform login on Login page ADCM"""
-
-    login = LoginPage(app_fs.driver, app_fs.adcm.url).open()
-    login.login_user(**adcm_credentials)
-    login.wait_url_contains_path(AdminIntroPage(app_fs.driver, app_fs.adcm.url).path)
-    login.wait_config_loaded()
-
-
 def _process_browser_log_entry(entry):
     response = json.loads(entry['message'])['message']
     return response
@@ -193,3 +172,13 @@ def login_to_adcm_over_ui(app_fs, adcm_credentials):
     login.login_user(**adcm_credentials)
     login.wait_url_contains_path(AdminIntroPage(app_fs.driver, app_fs.adcm.url).path)
     login.wait_config_loaded()
+
+
+@pytest.fixture()
+def another_user(app_fs: ADCMTest, adcm_credentials: dict) -> Generator[dict, None, None]:
+    """Create another user, return it's credentials, remove afterwards"""
+    api = ADCMDirectAPIClient(app_fs.adcm.url, adcm_credentials)
+    user_credentials = {'username': 'blondy', 'password': 'goodbadevil'}
+    api.create_new_user(user_credentials)
+    yield user_credentials
+    api.delete_user(user_credentials['username'])

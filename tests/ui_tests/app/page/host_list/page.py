@@ -29,6 +29,7 @@ from tests.ui_tests.app.page.common.popups.locator import HostCreationLocators
 from tests.ui_tests.app.page.common.popups.page import HostCreatePopupObj
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
+from tests.ui_tests.utils import assert_enough_rows
 
 
 @dataclass
@@ -51,6 +52,17 @@ class HostListPage(BasePageObject):
         self.table = CommonTableObj(self.driver, self.base_url, HostListLocators.HostTable)
         self.host_popup = HostCreatePopupObj(self.driver, self.base_url)
 
+    @allure.step('Get host information from row #{row_num}')
+    def get_host_row(self, row_num: int = 0) -> WebElement:
+        def table_has_enough_rows():
+            assert_enough_rows(row_num, self.table.row_count)
+
+        wait_until_step_succeeds(table_has_enough_rows, timeout=5, period=0.1)
+        rows = self.table.get_all_rows()
+        assert_enough_rows(row_num, len(rows))
+        return rows[row_num]
+
+    @allure.step('Get host information from table row #{row_num}')
     def get_host_info_from_row(self, row_num: int = 0) -> HostRowInfo:
         row = self.table.get_row(row_num)
         row_elements = HostListLocators.HostTable.HostRow
@@ -62,6 +74,7 @@ class HostListPage(BasePageObject):
             state=self.find_child(row, row_elements.state).text,
         )
 
+    @allure.step('Click on cell {child_locator} (row #{row_num})')
     def click_on_row_child(self, row_num: int, child_locator: Locator):
         row = self.table.get_row(row_num)
         self.find_child(row, child_locator).click()
@@ -150,14 +163,17 @@ class HostListPage(BasePageObject):
         host_row = self.table.get_row(row_num)
         wait_until_step_succeeds(check_host_state, timeout=10, period=0.5, page=self, row=host_row)
 
+    @allure.step('Open host creation popup')
     def open_host_creation_popup(self):
         self.find_and_click(HostListLocators.Tooltip.host_add_btn)
         self.wait_element_visible(HostCreationLocators.block)
 
+    @allure.step('Close host creation popup')
     def close_host_creation_popup(self):
         """Close popup with `Cancel` button"""
         self.find_and_click(HostCreationLocators.cancel_btn)
 
+    @allure.step('Click "Create host" in popup')
     def click_create_host_in_popup(self):
         """Click create host button in popup"""
         self.find_and_click(HostCreationLocators.create_btn)

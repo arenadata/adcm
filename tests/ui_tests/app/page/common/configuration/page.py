@@ -100,10 +100,8 @@ class CommonConfigMenuObj(BasePageObject):
     ) -> str:
         """
         Get value from field input
-
         If is_password is True, then special field is used for search
         You can't get password confirmation method
-
         :param row: Field row element
         :param is_password: Is field password/confirmation
         :returns: Value of input
@@ -122,7 +120,6 @@ class CommonConfigMenuObj(BasePageObject):
     ):
         """
         Assert that value in field is expected_value (using retries)
-
         :param expected_value: Value expected to be in input field
         :param display_name: Config field display name
         :param is_password: Is field password/confirmation
@@ -148,7 +145,6 @@ class CommonConfigMenuObj(BasePageObject):
     ):
         """
         Send keys to config value input
-
         :param value: keys to send
         :param row: Config field row
         :param clear: clean input before sending keys or not

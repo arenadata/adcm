@@ -47,7 +47,7 @@ class BasePageObject:
     BasePageObject is parent class for all ADCM's pages.
     :param driver: Selenium WebDriver object, drives a browser
     :param base_url: string with page base url
-    :param path: string with path to a specific page
+    :param path_template: string template with path to a specific page. Template variables passed as kwargs
     :param header: header object, eg PageHeader
     :param footer: footer object, eg PageFooter
     :param default_page_timeout: default timeout for actions with page, eg open page or reload
@@ -69,15 +69,22 @@ class BasePageObject:
         self,
         driver: WebDriver,
         base_url: str,
-        path: str = "",
+        path_template: str = "",
         default_page_timeout: int = 10,
         default_loc_timeout: int = 15,
+        **kwargs,
     ):
+        if any(str.isdigit(char) for char in path_template):
+            raise ValueError(
+                f"Path template {path_template} should not contain any digits. "
+                "Please use template string and pass values as kwargs"
+            )
         self.driver = driver
         self.base_url = base_url
-        self.path = path
+        self.path = path_template.format(**kwargs)
         self.default_page_timeout = default_page_timeout
         self.default_loc_timeout = default_loc_timeout
+        allure.dynamic.label("page_url", path_template)
 
     def open(self, timeout: int = None):
         """Open page by its url and path."""
@@ -103,6 +110,7 @@ class BasePageObject:
 
     @allure.step("Get text from info popup")
     def get_info_popup_text(self):
+        self.wait_element_visible(CommonPopupLocators.block)
         return self.wait_element_visible(CommonPopupLocators.text, timeout=5).text
 
     @allure.step("Wait url to contain path {path}")
@@ -287,7 +295,9 @@ class BasePageObject:
         def assert_page_is_opened():
             assert self.path in self.driver.current_url, f'Page is not opened at path {self.path} in {timeout}'
 
-        wait_until_step_succeeds(assert_page_is_opened, period=0.5, timeout=timeout)
+        page_name = self.__class__.__name__.replace('Page', '')
+        with allure.step(f'Wait page {page_name} is opened'):
+            wait_until_step_succeeds(assert_page_is_opened, period=0.5, timeout=timeout)
 
     def set_locator_value(self, locator: Locator, value: str) -> None:
         """Fill locator with value."""
@@ -454,6 +464,12 @@ class PageHeader(BasePageObject):
         self.hover_element(AuthorizedHeaderLocators.job_block_previous)
         self.wait_element_visible(AuthorizedHeaderLocators.job_popup)
         return self.find_element(AuthorizedHeaderLocators.JobPopup.in_progress_jobs).text.split("\n")[1]
+
+    @allure.step('Open profile using account popup in header')
+    def open_profile(self):
+        """Open profile page"""
+        self.click_account_button_in_header()
+        self.click_profile_link_in_acc_popup()
 
     @allure.step('Logout using account popup in header')
     def logout(self):

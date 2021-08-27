@@ -31,6 +31,9 @@ from tests.ui_tests.app.page.cluster.page import (
     ClusterServicesPage,
     ClusterComponentsPage,
     ComponentsHostRowInfo,
+    ClusterStatusPage,
+    ImportItemInfo,
+    ClusterActionPage,
 )
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.host.page import (
@@ -59,8 +62,7 @@ COMPONENT_NAME = "first"
 BUNDLE_WITH_REQUIRED_FIELDS = "cluster_required_fields"
 
 
-# pylint: disable=redefined-outer-name,no-self-use
-# noqa: PT025
+# pylint: disable=redefined-outer-name,no-self-use,unused-argument
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
 
 
@@ -71,23 +73,27 @@ def create_community_cluster(sdk_client_fs: ADCMClient):
 
 
 @pytest.fixture()
-def _create_community_cluster_with_service(sdk_client_fs: ADCMClient):
+def create_community_cluster_with_service(sdk_client_fs: ADCMClient):
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
-    bundle.cluster_create(name=CLUSTER_NAME).service_add(name=SERVICE_NAME)
+    cluster = bundle.cluster_create(name=CLUSTER_NAME)
+    return cluster, cluster.service_add(name=SERVICE_NAME)
 
 
 @pytest.fixture()
-def _create_import_cluster_with_service(sdk_client_fs: ADCMClient):
+def create_import_cluster_with_service(sdk_client_fs: ADCMClient):
     params = {
         "import_cluster_name": "Import cluster",
         "import_service_name": "Pre-uploaded Dummy service to import",
     }
     with allure.step("Create main cluster"):
         bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
-        bundle.cluster_create(name=CLUSTER_NAME).service_add(name=SERVICE_NAME)
+        cluster_main = bundle.cluster_create(name=CLUSTER_NAME)
+        service_main = cluster_main.service_add(name=SERVICE_NAME)
     with allure.step("Create cluster to import"):
         bundle = cluster_bundle(sdk_client_fs, BUNDLE_IMPORT)
-        bundle.cluster_create(name=params["import_cluster_name"]).service_add(name=params["import_service_name"])
+        cluster_import = bundle.cluster_create(name=params["import_cluster_name"])
+        service_import = cluster_import.service_add(name=params["import_service_name"])
+        return cluster_main, service_main, cluster_import, service_import
 
 
 @allure.step("Upload cluster bundle")
@@ -108,9 +114,11 @@ def upload_and_create_provider(provider_bundle) -> Provider:
 
 
 @pytest.fixture()
-def _create_community_cluster_with_host(sdk_client_fs: ADCMClient, create_host):
+def create_community_cluster_with_host(app_fs, sdk_client_fs: ADCMClient, upload_and_create_provider, create_host):
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
-    bundle.cluster_create(name=CLUSTER_NAME).host_add(create_host)
+    cluster = bundle.cluster_create(name=CLUSTER_NAME)
+    host = cluster.host_add(create_host)
+    return cluster, host
 
 
 @pytest.fixture()
@@ -201,31 +209,29 @@ class TestClusterListPage:
             ), "There should be 1 success cluster job in header"
 
     @pytest.mark.smoke()
-    @pytest.mark.usefixtures("_create_import_cluster_with_service")
-    def test_check_cluster_list_page_import_run(self, app_fs):
+    def test_check_cluster_list_page_import_run(self, create_import_cluster_with_service, app_fs):
+        cluster, _, _, _ = create_import_cluster_with_service
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         row = cluster_page.get_row_by_cluster_name(CLUSTER_NAME)
         cluster_page.click_import_btn_in_row(row)
-        import_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, 1)
+        import_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, cluster.id)
         import_page.wait_page_is_opened()
         with allure.step("Check import on import page"):
             assert len(import_page.get_import_items()) == 1, "Cluster import page should contain 1 import"
 
     @pytest.mark.smoke()
-    @pytest.mark.usefixtures("create_community_cluster")
-    def test_check_cluster_list_page_open_cluster_config(self, app_fs):
+    def test_check_cluster_list_page_open_cluster_config(self, app_fs, create_community_cluster):
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         row = cluster_page.table.get_all_rows()[0]
         cluster_page.click_config_button_in_row(row)
-        ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1).wait_page_is_opened()
+        ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).wait_page_is_opened()
 
     @pytest.mark.smoke()
-    @pytest.mark.usefixtures("create_community_cluster")
-    def test_check_cluster_list_page_open_cluster_main(self, app_fs):
+    def test_check_cluster_list_page_open_cluster_main(self, app_fs, create_community_cluster):
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         row = cluster_page.table.get_all_rows()[0]
         cluster_page.click_cluster_name_in_row(row)
-        ClusterMainPage(app_fs.driver, app_fs.adcm.url, 1).wait_page_is_opened()
+        ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).wait_page_is_opened()
 
     @pytest.mark.smoke()
     @pytest.mark.usefixtures("create_community_cluster")
@@ -240,27 +246,24 @@ class TestClusterListPage:
 
 class TestClusterMainPage:
     @pytest.mark.smoke()
-    @pytest.mark.usefixtures("create_community_cluster")
-    def test_open_main_page_by_tab(self, app_fs):
-        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    def test_check_cluster_main_page_open_by_tab(self, app_fs, create_community_cluster):
+        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
         cluster_config_page.open_main_tab()
-        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, 1)
+        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id)
         cluster_main_page.wait_page_is_opened()
         cluster_main_page.check_all_elements()
 
-    @pytest.mark.usefixtures("create_community_cluster")
-    def test_open_admin_page_by_toolbar(self, app_fs):
-        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    def test_check_cluster_admin_page_open_by_toolbar(self, app_fs, create_community_cluster):
+        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
         cluster_main_page.toolbar.click_admin_link()
         AdminIntroPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
 
-    @pytest.mark.usefixtures("create_community_cluster")
-    def test_open_main_page_by_toolbar(self, app_fs):
+    def test_check_cluster_main_page_open_by_toolbar(self, app_fs, create_community_cluster):
         params = {"cluster_list_name": "CLUSTERS"}
-        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
         cluster_main_page.toolbar.click_link_by_name(params["cluster_list_name"])
         ClusterListPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
-        cluster_import_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        cluster_import_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
         cluster_import_page.toolbar.click_link_by_name(CLUSTER_NAME)
         cluster_main_page.wait_page_is_opened()
 
@@ -275,8 +278,8 @@ class TestClusterMainPage:
             bundle.cluster_create(name=CLUSTER_NAME)
         with allure.step("Create cluster to upgrade"):
             bundle = cluster_bundle(sdk_client_fs, BUNDLE_UPGRADE)
-            bundle.cluster_create(name=params["upgrade_cluster_name"])
-        main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, 2).open()
+            cluster_to_upgrade = bundle.cluster_create(name=params["upgrade_cluster_name"])
+        main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, cluster_to_upgrade.id).open()
         main_page.toolbar.run_upgrade(params["upgrade_cluster_name"], params["upgrade"])
         with allure.step("Check that cluster has been upgraded"):
             cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
@@ -285,10 +288,9 @@ class TestClusterMainPage:
                 cluster_page.get_cluster_state_from_row(row) == params["state"]
             ), f"Cluster state should be {params['state']}"
 
-    @pytest.mark.usefixtures("create_community_cluster")
-    def test_run_action_on_cluster_page_by_toolbar(self, app_fs):
+    def test_check_cluster_run_action_on_cluster_page_by_toolbar(self, app_fs, create_community_cluster):
         params = {"action_name": "test_action"}
-        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
         cluster_main_page.toolbar.run_action(CLUSTER_NAME, params["action_name"])
         with allure.step("Check success job"):
             assert (
@@ -298,47 +300,46 @@ class TestClusterMainPage:
 
 class TestClusterServicePage:
     @pytest.mark.smoke()
-    @pytest.mark.usefixtures("create_community_cluster")
-    def test_cluster_service_page_open_by_tab(self, app_fs):
-        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    def test_check_cluster_service_page_open_by_tab(self, app_fs, create_community_cluster):
+        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
         cluster_config_page.open_services_tab()
-        cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, 1)
+        cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id)
         cluster_service_page.wait_page_is_opened()
         cluster_service_page.check_all_elements()
 
     @pytest.mark.smoke()
-    @pytest.mark.usefixtures("create_community_cluster")
-    def test_create_and_open_service_page_from_cluster_page(self, app_fs):
+    def test_check_create_and_open_service_page_from_cluster_page(self, app_fs, create_community_cluster):
         params = {"service_name": "test_service - 1.2"}
-        cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
         cluster_service_page.add_service_by_name(params["service_name"])
         service_row = cluster_service_page.table.get_all_rows()[0]
         service_row.click()
-        ServiceMainPage(app_fs.driver, app_fs.adcm.url, 1, 1).wait_page_is_opened()
+        ServiceMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id, 1).wait_page_is_opened()
 
     def test_check_required_fields_from_cluster_list_page(self, sdk_client_fs: ADCMClient, app_fs):
         params = {"issue_name": "Configuration"}
         bundle = cluster_bundle(sdk_client_fs, BUNDLE_REQUIRED_FIELDS)
-        bundle.cluster_create(name=CLUSTER_NAME)
+        cluster = bundle.cluster_create(name=CLUSTER_NAME)
         cluster_list_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         row = cluster_list_page.table.get_all_rows()[0]
         cluster_list_page.click_on_issue_by_name(row, params["issue_name"])
-        ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1).wait_page_is_opened()
+        ClusterConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id).wait_page_is_opened()
 
     def test_check_required_fields_from_service_list_page(self, sdk_client_fs: ADCMClient, app_fs):
         params = {"issue_name": "Configuration"}
         bundle = cluster_bundle(sdk_client_fs, BUNDLE_REQUIRED_FIELDS)
-        bundle.cluster_create(name=CLUSTER_NAME).service_add(name=SERVICE_NAME)
-        cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        cluster = bundle.cluster_create(name=CLUSTER_NAME).service_add(name=SERVICE_NAME)
+        cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         row = cluster_service_page.table.get_all_rows()[0]
         cluster_service_page.click_on_issue_by_name(row, params["issue_name"])
-        ServiceConfigPage(app_fs.driver, app_fs.adcm.url, 1, 1).wait_page_is_opened()
+        ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, 1).wait_page_is_opened()
 
     @pytest.mark.smoke()
-    @pytest.mark.usefixtures("_create_community_cluster_with_service")
-    def test_check_actions_from_service_list_page(self, app_fs):
+    def test_check_actions_from_service_list_page(self, app_fs, create_community_cluster_with_service):
         params = {"action_name": "test_action", "expected_state": "installed"}
-        cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, 1).open()
+
+        cluster, _ = create_community_cluster_with_service
+        cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         row = cluster_service_page.table.get_all_rows()[0]
         with cluster_service_page.wait_service_state_change(row):
             cluster_service_page.run_action_in_service_row(row, params["action_name"])
@@ -351,46 +352,48 @@ class TestClusterServicePage:
                 cluster_service_page.header.get_success_job_amount_from_header() == "1"
             ), "There should be 1 success service job in header"
 
-    @pytest.mark.usefixtures("_create_import_cluster_with_service")
-    def test_check_service_list_page_import_run(self, app_fs):
-        cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    def test_check_service_list_page_import_run(self, app_fs, create_import_cluster_with_service):
+        cluster, service, _, _ = create_import_cluster_with_service
+        cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         row = cluster_service_page.table.get_all_rows()[0]
         cluster_service_page.click_import_btn_in_row(row)
-        import_page = ServiceImportPage(app_fs.driver, app_fs.adcm.url, 1, 1)
+        import_page = ServiceImportPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id)
         import_page.wait_page_is_opened()
         with allure.step("Check import on import page"):
             assert len(import_page.get_import_items()) == 1, "Service import page should contain 1 import"
 
-    @pytest.mark.usefixtures("_create_community_cluster_with_service")
-    def test_check_service_list_page_open_service_config(self, app_fs):
-        cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    def test_check_service_list_page_open_service_config(self, app_fs, create_community_cluster_with_service):
+        cluster, service = create_community_cluster_with_service
+        cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         row = cluster_service_page.table.get_all_rows()[0]
         cluster_service_page.click_config_btn_in_row(row)
-        ServiceConfigPage(app_fs.driver, app_fs.adcm.url, 1, 1).wait_page_is_opened()
+        ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).wait_page_is_opened()
 
     def test_check_pagination_on_service_list_page(self, sdk_client_fs: ADCMClient, app_fs):
         bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_SERVICES)
-        bundle.cluster_create(name=CLUSTER_NAME)
-        cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        cluster = bundle.cluster_create(name=CLUSTER_NAME)
+        cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_service_page.add_service_by_name(service_name="All")
         cluster_service_page.table.check_pagination(second_page_item_amount=2)
 
 
 class TestClusterHostPage:
     @pytest.mark.smoke()
-    @pytest.mark.usefixtures("_create_community_cluster_with_service")
-    def test_check_required_fields_from_cluster_host_page(self, app_fs):
-        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    def test_check_required_fields_from_cluster_host_page(self, app_fs, create_community_cluster_with_service):
+        cluster, _ = create_community_cluster_with_service
+        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_main_page.open_hosts_tab()
-        cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1)
+        cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id)
         cluster_host_page.wait_page_is_opened()
         cluster_host_page.check_all_elements()
 
     @pytest.mark.smoke()
     @pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, "provider")], indirect=True)
-    @pytest.mark.usefixtures("_create_community_cluster_with_service")
-    def test_create_host_and_hostprovider_from_cluster_host_page(self, app_fs, bundle_archive):
-        cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    def test_check_create_host_and_hostprovider_from_cluster_host_page(
+        self, app_fs, bundle_archive, create_community_cluster_with_service
+    ):
+        cluster, _ = create_community_cluster_with_service
+        cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_host_page.wait_page_is_opened()
         cluster_host_page.click_add_host_btn(is_not_first_host=False)
         new_provider_name = cluster_host_page.host_popup.create_provider_and_host(bundle_archive, HOST_NAME)
@@ -406,16 +409,17 @@ class TestClusterHostPage:
             get_info_kwargs={'table_has_cluster_column': False},
         )
 
-    @pytest.mark.usefixtures("_create_community_cluster_with_service")
+    @pytest.mark.smoke()
     @pytest.mark.usefixtures("upload_and_create_provider")
-    def test_create_host_from_cluster_host_page(self, app_fs):
+    def test_check_create_host_from_cluster_host_page(self, app_fs, create_community_cluster_with_service):
         expected_values = {
             'fqdn': HOST_NAME,
             'provider': PROVIDER_NAME,
             'cluster': None,
             'state': 'created',
         }
-        cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        cluster, _ = create_community_cluster_with_service
+        cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_host_page.wait_page_is_opened()
         cluster_host_page.click_add_host_btn(is_not_first_host=False)
         cluster_host_page.host_popup.create_host(HOST_NAME)
@@ -426,12 +430,12 @@ class TestClusterHostPage:
         )
         host_row = cluster_host_page.table.get_all_rows()[0]
         cluster_host_page.click_on_host_name_in_host_row(host_row)
-        HostMainPage(app_fs.driver, app_fs.adcm.url, 1, 1).wait_page_is_opened()
+        HostMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, 1).wait_page_is_opened()
 
-    @pytest.mark.usefixtures("_create_community_cluster_with_service")
     @pytest.mark.usefixtures('create_host')
-    def test_creating_host_error_from_cluster_host_page(self, app_fs):
-        cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    def test_check_create_host_error_from_cluster_host_page(self, app_fs, create_community_cluster_with_service):
+        cluster, _ = create_community_cluster_with_service
+        cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_host_page.wait_page_is_opened()
         cluster_host_page.close_info_popup()
         cluster_host_page.click_add_host_btn()
@@ -442,19 +446,19 @@ class TestClusterHostPage:
             ), "No message about host duplication"
 
     @pytest.mark.parametrize('provider_bundle', [PROVIDER_WITH_ISSUE_NAME], indirect=True)
-    @pytest.mark.usefixtures("_create_community_cluster_with_host", "provider_bundle")
-    def test_check_open_host_issue_from_cluster_host_page(self, app_fs):
+    def test_check_open_host_issue_from_cluster_host_page(self, app_fs, create_community_cluster_with_host):
         params = {"issue_name": "Configuration"}
-        cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        cluster, host = create_community_cluster_with_host
+        cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_host_page.wait_page_is_opened()
         row = cluster_host_page.table.get_all_rows()[0]
         cluster_host_page.click_on_issue_by_name(row, params["issue_name"])
-        HostConfigPage(app_fs.driver, app_fs.adcm.url, 1, 1).wait_page_is_opened()
+        HostConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, host.id).wait_page_is_opened()
 
-    @pytest.mark.usefixtures("_create_community_cluster_with_host")
-    def test_host_action_run_from_cluster(self, app_fs):
+    def test_check_host_action_run_from_cluster(self, app_fs, create_community_cluster_with_host):
         params = {"action_name": "test_action", "expected_state": "installed"}
-        cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        cluster, _ = create_community_cluster_with_host
+        cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         row = cluster_host_page.table.get_all_rows()[0]
         with cluster_host_page.wait_host_state_change(row):
             cluster_host_page.run_action_in_host_row(row, params["action_name"])
@@ -467,9 +471,9 @@ class TestClusterHostPage:
                 cluster_host_page.header.get_success_job_amount_from_header() == "1"
             ), "There should be 1 success host job in header"
 
-    @pytest.mark.usefixtures("_create_community_cluster_with_host")
-    def test_delete_host_from_cluster_host_page(self, app_fs):
-        cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    def test_check_delete_host_from_cluster_host_page(self, app_fs, create_community_cluster_with_host):
+        cluster, _ = create_community_cluster_with_host
+        cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         row = cluster_host_page.table.get_all_rows()[0]
         with cluster_host_page.table.wait_rows_change():
             cluster_host_page.delete_host_by_row(row)
@@ -482,66 +486,71 @@ class TestClusterHostPage:
         params = {"message": "[ CONFLICT ] HOST_CONFLICT -- Host #1 has component(s)"}
         cluster, host = create_community_cluster_with_host_and_service
         cluster.hostcomponent_set((host, cluster.service(name=SERVICE_NAME).component(name=COMPONENT_NAME)))
-        cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         row = cluster_host_page.table.get_all_rows()[0]
         cluster_host_page.delete_host_by_row(row)
         with allure.step("Check error message"):
             assert cluster_host_page.get_info_popup_text() == params["message"], "No error message"
 
-    @pytest.mark.usefixtures("_create_community_cluster_with_host")
-    def test_open_host_config_from_cluster_host_page(self, app_fs):
-        cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    def test_open_host_config_from_cluster_host_page(self, app_fs, create_community_cluster_with_host):
+        cluster, host = create_community_cluster_with_host
+        cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         row = cluster_host_page.table.get_all_rows()[0]
         cluster_host_page.click_config_btn_in_row(row)
-        HostConfigPage(app_fs.driver, app_fs.adcm.url, 1, 1).wait_page_is_opened()
+        HostConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, host.id).wait_page_is_opened()
 
     def test_check_pagination_on_cluster_host_page(self, app_fs, upload_and_create_provider, create_community_cluster):
         cluster = create_community_cluster
         provider = upload_and_create_provider
-        for i in range(11):
-            host = provider.host_create(f"{HOST_NAME}_{i}")
-            cluster.host_add(host)
+        host_count = 11
+        with allure.step(f'Create {host_count} hosts'):
+            for i in range(host_count):
+                host = provider.host_create(f"{HOST_NAME}_{i}")
+                cluster.host_add(host)
         cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
         cluster_host_page.table.check_pagination(1)
 
 
 class TestClusterComponentsPage:
     @pytest.mark.smoke()
-    @pytest.mark.usefixtures("create_community_cluster")
-    def test_cluster_components_page_open_by_tab(self, app_fs):
-        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    def test_check_cluster_components_page_open_by_tab(self, app_fs, create_community_cluster):
+        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
         cluster_config_page.open_components_tab()
-        cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, 1)
+        cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id)
         cluster_components_page.wait_page_is_opened()
         cluster_components_page.check_all_elements()
 
-    @pytest.mark.usefixtures("create_community_cluster")
-    def test_open_service_page_from_cluster_components_page(self, app_fs):
-        cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    def test_check_cluster_components_page_open_service_page(self, app_fs, create_community_cluster):
+        cluster_components_page = ClusterComponentsPage(
+            app_fs.driver, app_fs.adcm.url, create_community_cluster.id
+        ).open()
         cluster_components_page.click_service_page_link()
-        ClusterServicesPage(app_fs.driver, app_fs.adcm.url, 1).wait_page_is_opened()
+        ClusterServicesPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).wait_page_is_opened()
 
-    @pytest.mark.usefixtures("create_community_cluster")
-    def test_open_hosts_page_from_cluster_components_page(self, app_fs):
-        cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    def test_check_cluster_components_page_open_hosts_page(self, app_fs, create_community_cluster):
+        cluster_components_page = ClusterComponentsPage(
+            app_fs.driver, app_fs.adcm.url, create_community_cluster.id
+        ).open()
         cluster_components_page.click_hosts_page_link()
-        ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).wait_page_is_opened()
+        ClusterHostPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).wait_page_is_opened()
 
     @pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, "provider")], indirect=True)
-    @pytest.mark.usefixtures("create_community_cluster")
-    def test_create_host_on_cluster_components_page(self, app_fs, bundle_archive):
-        cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    def test_check_cluster_components_page_create_host(self, app_fs, bundle_archive, create_community_cluster):
+        cluster_components_page = ClusterComponentsPage(
+            app_fs.driver, app_fs.adcm.url, create_community_cluster.id
+        ).open()
         cluster_components_page.click_add_host_btn()
         cluster_components_page.host_popup.create_provider_and_host(bundle_path=bundle_archive, fqdn=HOST_NAME)
         host_row = cluster_components_page.get_host_rows()[0]
         check_components_host_info(cluster_components_page.get_row_info(host_row), HOST_NAME, "0")
 
     @pytest.mark.smoke()
-    @pytest.mark.usefixtures("create_community_cluster_with_host_and_service")
-    def test_create_components_on_cluster_components_page(self, app_fs):
+    def test_check_cluster_components_page_create_components(
+        self, app_fs, create_community_cluster_with_host_and_service
+    ):
         params = {"message": "Successfully saved."}
-        cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, 1).open()
-
+        cluster, _ = create_community_cluster_with_host_and_service
+        cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         host_row = cluster_components_page.find_host_row_by_name(HOST_NAME)
         component_row = cluster_components_page.find_component_row_by_name(COMPONENT_NAME)
         cluster_components_page.click_host(host_row)
@@ -556,9 +565,11 @@ class TestClusterComponentsPage:
             component_row = cluster_components_page.get_components_rows()[0]
             check_components_host_info(cluster_components_page.get_row_info(component_row), COMPONENT_NAME, "1")
 
-    @pytest.mark.usefixtures("create_community_cluster_with_host_and_service")
-    def test_restore_components_on_cluster_components_page(self, app_fs):
-        cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    def test_check_cluster_components_page_restore_components(
+        self, app_fs, create_community_cluster_with_host_and_service
+    ):
+        cluster, _ = create_community_cluster_with_host_and_service
+        cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         host_row = cluster_components_page.find_host_row_by_name(HOST_NAME)
         component_row = cluster_components_page.find_component_row_by_name(COMPONENT_NAME)
         cluster_components_page.click_host(host_row)
@@ -572,9 +583,11 @@ class TestClusterComponentsPage:
             component_row = cluster_components_page.get_components_rows()[0]
             check_components_host_info(cluster_components_page.get_row_info(component_row), COMPONENT_NAME, "0")
 
-    @pytest.mark.usefixtures("create_community_cluster_with_host_and_service")
-    def test_delete_host_from_component(self, app_fs):
-        cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, 1).open()
+    def test_check_cluster_components_page_delete_host_from_component(
+        self, app_fs, create_community_cluster_with_host_and_service
+    ):
+        cluster, _ = create_community_cluster_with_host_and_service
+        cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         host_row = cluster_components_page.find_host_row_by_name(HOST_NAME)
         component_row = cluster_components_page.find_component_row_by_name(COMPONENT_NAME)
 
@@ -598,7 +611,7 @@ class TestClusterComponentsPage:
             cluster.service_add(name=f"{SERVICE_NAME}_1")
             cluster.host_add(create_host)
 
-        cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, 1).open()
+        cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         host_row = cluster_components_page.find_host_row_by_name(HOST_NAME)
         component_row = cluster_components_page.find_component_row_by_name(COMPONENT_NAME)
 
@@ -659,7 +672,7 @@ class TestClusterConfigPage:
             cluster_config_page.config.wait_history_row_with_value(row_with_history, params["row_value_old"])
 
     def test_reset_config_in_row_on_cluster_config_page(self, app_fs, create_community_cluster):
-        params = {"row_value_new": "test", "row_value_old": "123", "config_name": "test_name"}
+        params = {"row_name": "str_param:", "row_value_new": "test", "row_value_old": "123", "config_name": "test_name"}
         cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
         config_row = cluster_config_page.config.get_all_config_rows()[0]
         cluster_config_page.config.type_in_config_field(
@@ -687,3 +700,80 @@ class TestClusterConfigPage:
         config_row = cluster_config_page.config.get_all_config_rows()[0]
         cluster_config_page.config.type_in_config_field(params['wrong_value'], row=config_row)
         cluster_config_page.config.check_field_is_invalid(params['not_req_name'])
+
+
+class TestClusterStatusPage:
+    def test_open_by_tab_cluster_status_page(self, app_fs, create_community_cluster):
+        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
+        cluster_main_page.open_status_tab()
+        cluster_status_page = ClusterStatusPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id)
+        cluster_status_page.wait_page_is_opened()
+        cluster_status_page.check_all_elements()
+
+    def test_filter_cluster_status_page(self, app_fs, create_community_cluster_with_host_and_service):
+        cluster, host = create_community_cluster_with_host_and_service
+        cluster.hostcomponent_set((host, cluster.service(name=SERVICE_NAME).component(name=COMPONENT_NAME)))
+        cluster_status_page = ClusterStatusPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
+        group_rows = cluster_status_page.get_all_config_groups()
+        with allure.step("Check that there is one group"):
+            assert len(group_rows) == 1, "There should be 1 group"
+        group_row = group_rows[0]
+        cluster_status_page.click_collapse_all_btn()
+        cluster_status_page.wait_group_opened(group_row)
+        cluster_status_page.click_collapse_all_btn()
+        cluster_status_page.wait_group_closed(group_row)
+        cluster_status_page.config.click_on_group(title=SERVICE_NAME)
+        with allure.step("Check group rows"):
+            group_info = cluster_status_page.get_config_group_info(group_row)
+            with allure.step("Check that there is one item in group"):
+                assert len(group_info) == 1, "There should be one item in group"
+            assert (
+                group_info[0].service == COMPONENT_NAME
+            ), f"Component name should be {COMPONENT_NAME} and not {group_info[0].service}"
+            assert (
+                group_info[0].hosts[0] == HOST_NAME
+            ), f"Host name should be {HOST_NAME} and not {group_info[0].hosts[0]}"
+
+
+class TestClusterImportPage:
+    def test_open_by_tab_cluster_import_page(self, app_fs, create_community_cluster):
+        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
+        cluster_main_page.open_import_tab()
+        cluster_status_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id)
+        cluster_status_page.wait_page_is_opened()
+        cluster_status_page.check_all_elements()
+
+    def test_check_cluster_import_from_cluster_import_page(self, app_fs, create_import_cluster_with_service):
+        params = {"message": "Successfully saved"}
+        cluster, _, _, _ = create_import_cluster_with_service
+        import_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
+        import_item = import_page.get_import_items()[0]
+        with allure.step("Check import on import page"):
+            assert import_page.get_import_item_info(import_item) == ImportItemInfo(
+                'Pre-uploaded Dummy cluster to import', 'Pre-uploaded Dummy cluster to import 2.5'
+            ), "Text in import item changed"
+        import_page.close_info_popup()
+        import_page.click_checkbox_in_import_item(import_item)
+        import_page.click_save_btn()
+        with allure.step("Check that import is saved"):
+            assert import_page.get_info_popup_text() == params["message"], "No message about success"
+            assert import_page.is_chxb_in_item_checked(import_item), "Checkbox with import should have been checked"
+
+
+class TestClusterActionPage:
+    def test_open_by_tab_cluster_action_page(self, app_fs, create_community_cluster):
+        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
+        cluster_main_page.open_actions_tab()
+        cluster_action_page = ClusterActionPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id)
+        cluster_action_page.wait_page_is_opened()
+        cluster_action_page.check_all_elements()
+
+    def test_run_action_on_cluster_action_page(self, app_fs, create_community_cluster):
+        cluster_action_page = ClusterActionPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
+        cluster_action = cluster_action_page.get_all_actions()[0]
+        cluster_action_page.click_run_btn_in_action(cluster_action)
+        cluster_action_page.check_empty_page()
+        with allure.step("Check success cluster job"):
+            assert (
+                cluster_action_page.header.get_in_progress_job_amount_from_header() == "1"
+            ), "There should be 1 in progress cluster job in header"
