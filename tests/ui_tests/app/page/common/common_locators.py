@@ -28,6 +28,7 @@ class ObjectPageLocators:
 
     title = Locator(By.XPATH, "//mat-drawer-content/mat-card/mat-card-header/div/mat-card-title", "Title")
     subtitle = Locator(By.XPATH, "//mat-drawer-content/mat-card/mat-card-header/div/mat-card-subtitle", "Subtitle")
+    text = Locator(By.XPATH, "//mat-card-content", "Cluster main page text")
 
 
 class ObjectPageMenuLocators:
@@ -41,3 +42,13 @@ class ObjectPageMenuLocators:
     status_tab = Locator(By.XPATH, "//a[@adcm_test='tab_status']", "Tab status")
     import_tab = Locator(By.XPATH, "//a[@adcm_test='tab_import']", "Tab import")
     actions_tab = Locator(By.XPATH, "//a[@adcm_test='tab_action']", "Tab actions")
+
+
+class CommonActionLocators:
+    """Common action page elements locators"""
+
+    action_card = Locator(By.XPATH, "//app-action-card", "Action card")
+    info_text = Locator(By.XPATH, "//app-action-card/p", "Text on action page")
+
+    class ActionCard:
+        play_btn = Locator(By.XPATH, ".//button", "Action run button")

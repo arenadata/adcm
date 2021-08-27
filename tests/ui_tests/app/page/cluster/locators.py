@@ -19,12 +19,6 @@ from tests.ui_tests.app.helpers.locator import (
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
 
 
-class ClusterMainLocators:
-    """Cluster main page elements locators"""
-
-    text = Locator(By.XPATH, "//mat-card-content", "Cluster main page text")
-
-
 class ClusterServicesLocators:
     """Cluster main page elements locators"""
 
@@ -119,13 +113,3 @@ class ClusterStatusLocators:
         class ServiceGroupRow:
             service_name = Locator(By.XPATH, ".//div[not(contains(@class, 'component'))]/span", "Service name")
             host_name = Locator(By.XPATH, ".//div[contains(@class, 'component')]/span", "Host name")
-
-
-class ClusterActionLocators:
-    """Cluster action page elements locators"""
-
-    action_card = Locator(By.XPATH, "//app-action-card", "Action card")
-    info_text = Locator(By.XPATH, "//app-action-card/p", "Text on action page")
-
-    class ActionCard:
-        play_btn = Locator(By.XPATH, ".//button", "Action run button")

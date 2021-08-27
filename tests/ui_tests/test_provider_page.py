@@ -11,7 +11,7 @@
 # limitations under the License.
 
 import os
-from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
+
 import allure
 import pytest
 from _pytest.fixtures import SubRequest
@@ -22,9 +22,11 @@ from adcm_client.objects import (
 )
 from adcm_pytest_plugin import utils
 
+from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
 from tests.ui_tests.app.page.provider.page import (
     ProviderMainPage,
     ProviderConfigPage,
+    ProviderActionsPage,
 )
 from tests.ui_tests.app.page.provider_list.page import ProviderListPage
 
@@ -123,6 +125,7 @@ class TestProviderListPage:
                 provider_page.header.get_success_job_amount_from_header() == "1"
             ), "There should be 1 success provider job in header"
 
+    @pytest.mark.smoke()
     def test_open_config_from_provider_list_page(self, app_fs, upload_and_create_test_provider):
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
         row = provider_page.table.get_all_rows()[0]
@@ -148,8 +151,10 @@ class TestProviderListPage:
 
     @pytest.mark.smoke()
     def test_get_error_from_delete_provider_from_provider_list_page(self, app_fs, upload_and_create_test_provider):
-        params = {"message": '[ CONFLICT ] PROVIDER_CONFLICT -- '
-                             'There is host #1 "test_host" of host provider #1 "test_provider"'}
+        params = {
+            "message": '[ CONFLICT ] PROVIDER_CONFLICT -- '
+            'There is host #1 "test_host" of host provider #1 "test_provider"'
+        }
         upload_and_create_test_provider.host_create("test_host")
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
         row = provider_page.table.get_all_rows()[0]
@@ -166,6 +171,16 @@ class TestProviderListPage:
 
 class TestProviderMainPage:
     @pytest.mark.smoke()
+    def test_open_by_tab_provider_main_page(self, app_fs, upload_and_create_test_provider):
+        provider_config_page = ProviderConfigPage(
+            app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
+        ).open()
+        provider_config_page.open_main_tab()
+        provider_main_page = ProviderMainPage(app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id)
+        provider_main_page.wait_page_is_opened()
+        provider_main_page.check_all_elements()
+
+    @pytest.mark.smoke()
     def test_run_upgrade_on_provider_page_by_toolbar(self, app_fs, sdk_client_fs, upload_and_create_test_provider):
         params = {"state": "upgradated"}
         with allure.step("Create provider to export"):
@@ -181,3 +196,120 @@ class TestProviderMainPage:
             assert (
                 provider_page.get_provider_info_from_row(row).state == params["state"]
             ), f"Provider state should be {params['state']}"
+
+
+class TestProviderConfigPage:
+    @pytest.mark.smoke()
+    def test_open_by_tab_provider_config_page(self, app_fs, upload_and_create_test_provider):
+        provider_config_page = ProviderMainPage(
+            app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
+        ).open()
+        provider_config_page.open_config_tab()
+        provider_main_page = ProviderConfigPage(app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id)
+        provider_main_page.wait_page_is_opened()
+        provider_main_page.check_all_elements()
+
+    @pytest.mark.smoke()
+    def test_filter_config_on_provider_config_page(self, app_fs, upload_and_create_test_provider):
+        params = {"search_param": "str_param", "group_name": "core-site"}
+        provider_config_page = ProviderConfigPage(
+            app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
+        ).open()
+        with provider_config_page.config.wait_rows_change():
+            provider_config_page.config.search(params["search_param"])
+        with allure.step(f"Check that rows are filtered by {params['search_param']}"):
+            config_rows = provider_config_page.config.get_all_config_rows()
+            assert len(config_rows) == 1, "Rows are not filtered: there should be 1 row"
+            assert (
+                provider_config_page.config.get_config_row_info(config_rows[0]).name == f"{params['search_param']}:"
+            ), f"Name should be {params['search_param']}"
+        with provider_config_page.config.wait_rows_change():
+            provider_config_page.config.clear_search_input()
+        with allure.step("Check that rows are not filtered"):
+            config_rows = provider_config_page.config.get_all_config_rows()
+            assert len(config_rows) == 4, "Rows are filtered: there should be 4 row"
+        with provider_config_page.config.wait_rows_change():
+            provider_config_page.config.click_on_group(params["group_name"])
+        with allure.step("Check that groups are closed"):
+            config_rows = provider_config_page.config.get_all_config_rows()
+            assert len(config_rows) == 2, "Groups are not closed: there should be 2 row"
+
+    @pytest.mark.smoke()
+    def test_save_custom_config_on_provider_config_page(self, app_fs, upload_and_create_test_provider):
+        params = {
+            "row_value_new": "test",
+            "row_value_old": "123",
+            "config_name_new": "test_name",
+            "config_name_old": "init",
+        }
+        provider_config_page = ProviderConfigPage(
+            app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
+        ).open()
+        config_row = provider_config_page.config.get_all_config_rows()[0]
+        provider_config_page.config.type_in_config_field(
+            row=config_row, value=params["row_value_new"], clear=True, adcm_test=None
+        )
+
+        provider_config_page.config.set_description(params["config_name_new"])
+        provider_config_page.config.save_config()
+        provider_config_page.config.compare_current_to(params["config_name_old"])
+        with allure.step("Check row history"):
+            row_with_history = provider_config_page.config.get_all_config_rows()[0]
+            provider_config_page.config.wait_history_row_with_value(row_with_history, params["row_value_old"])
+
+    def test_reset_config_in_row_on_provider_config_page(self, app_fs, upload_and_create_test_provider):
+        params = {"row_name": "str_param:", "row_value_new": "test", "row_value_old": "123", "config_name": "test_name"}
+        provider_config_page = ProviderConfigPage(
+            app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
+        ).open()
+        config_row = provider_config_page.config.get_all_config_rows()[0]
+        provider_config_page.config.type_in_config_field(
+            row=config_row, value=params["row_value_new"], clear=True, adcm_test=None
+        )
+        provider_config_page.config.set_description(params["config_name"])
+        provider_config_page.config.save_config()
+
+        provider_config_page.config.reset_to_default(row=config_row)
+        provider_config_page.config.assert_input_value_is(expected_value=params["row_value_new"], row=config_row)
+
+    @pytest.mark.parametrize("bundle", ["provider_required_fields"], indirect=True)
+    def test_field_validation_on_provider_config_page(
+        self, app_fs, sdk_client_fs, bundle, upload_and_create_test_provider
+    ):
+        params = {
+            'pass_name': 'Important password',
+            'req_name': 'Required item',
+            'not_req_name': 'Just item',
+            'wrong_value': 'test',
+        }
+        provider_config_page = ProviderConfigPage(
+            app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
+        ).open()
+        provider_config_page.config.check_password_confirm_required(params['pass_name'])
+        provider_config_page.config.check_field_is_required(params['req_name'])
+        config_row = provider_config_page.config.get_all_config_rows()[0]
+        provider_config_page.config.type_in_config_field(params['wrong_value'], row=config_row)
+        provider_config_page.config.check_field_is_invalid(params['not_req_name'])
+
+
+class TestProviderActionPage:
+    @pytest.mark.smoke()
+    def test_open_by_tab_provider_action_page(self, app_fs, upload_and_create_test_provider):
+        provider_main_page = ProviderMainPage(app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id).open()
+        provider_main_page.open_actions_tab()
+        provider_action_page = ProviderActionsPage(app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id)
+        provider_action_page.wait_page_is_opened()
+        provider_action_page.check_all_elements()
+
+    @pytest.mark.smoke()
+    def test_run_action_on_provider_action_page(self, app_fs, upload_and_create_test_provider):
+        provider_action_page = ProviderActionsPage(
+            app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
+        ).open()
+        provider_action = provider_action_page.get_all_actions()[0]
+        provider_action_page.click_run_btn_in_action(provider_action)
+        provider_action_page.check_empty_page()
+        with allure.step("Check success provider job"):
+            assert (
+                provider_action_page.header.get_in_progress_job_amount_from_header() == "1"
+            ), "There should be 1 in progress provider job in header"
