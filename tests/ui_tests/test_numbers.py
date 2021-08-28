@@ -1,3 +1,15 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import allure
 import pytest
 from adcm_client.objects import ADCMClient
@@ -6,7 +18,8 @@ from adcm_pytest_plugin.utils import parametrize_by_data_subdirs, get_data_dir
 from tests.ui_tests.app.locators import Common
 from .utils import prepare_cluster_and_get_config
 
-# pylint: disable=W0611, W0621
+
+pytestmark = [pytest.mark.usefixtures("login_to_adcm_over_api")]
 
 
 RANGE_VALUES = [
@@ -20,7 +33,7 @@ RANGE_VALUES = [
 
 
 @parametrize_by_data_subdirs(__file__, 'bundles')
-def test_number_validation(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api):
+def test_number_validation(sdk_client_fs: ADCMClient, path, app_fs):
     """Check that we have errors and save button is not active
     for number field with values out of range
     """
@@ -44,9 +57,7 @@ def test_number_validation(sdk_client_fs: ADCMClient, path, app_fs, login_to_adc
 
 
 @pytest.mark.parametrize(("number_type", "value"), RANGE_VALUES)
-def test_number_in_range_values(
-    sdk_client_fs: ADCMClient, value, app_fs, number_type, login_to_adcm_over_api
-):
+def test_number_in_range_values(sdk_client_fs: ADCMClient, value, app_fs, number_type):
     path = get_data_dir(__file__) + "/bundles/{}-positive_and_negative".format(number_type)
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     fields = config.get_app_fields()
@@ -56,7 +67,7 @@ def test_number_in_range_values(
         assert config.save_button_status()
 
 
-def test_float_in_integer_field(sdk_client_fs: ADCMClient, app_fs, login_to_adcm_over_api):
+def test_float_in_integer_field(sdk_client_fs: ADCMClient, app_fs):
     path = get_data_dir(__file__) + "/bundles/integer-positive_and_negative"
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     fields = config.get_app_fields()

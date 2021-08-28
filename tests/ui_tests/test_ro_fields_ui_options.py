@@ -1,14 +1,28 @@
-# pylint: disable=W0611, W0621
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import allure
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import parametrize_by_data_subdirs
+import pytest
 
 from .utils import prepare_cluster_and_get_config
 
+pytestmark = [pytest.mark.usefixtures("login_to_adcm_over_api")]
+
 
 @parametrize_by_data_subdirs(__file__, "invisible_false_advanced_false")
-def test_all_false(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api):
+@pytest.mark.usefixtures("login_to_adcm_over_api")
+def test_all_false(sdk_client_fs: ADCMClient, path, app_fs):
     """Check RO fields with UI options as false
     Scenario:
     1. Check that field visible
@@ -25,8 +39,7 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_a
             assert group.is_displayed(), group.get_attribute("class")
     with allure.step('Check that save button not active'):
         assert not config.save_button_status()
-    if not config.advanced:
-        config.click_advanced()
+    config.show_advanced()
     assert config.advanced
     groups = config.get_field_groups()
     with allure.step('Check that field visible'):
@@ -42,7 +55,8 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_a
 
 
 @parametrize_by_data_subdirs(__file__, "invisible_true_advanced_true")
-def test_all_true(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api):
+@pytest.mark.usefixtures("login_to_adcm_over_api")
+def test_all_true(sdk_client_fs: ADCMClient, path, app_fs):
     """Check RO fields with UI options in true
     Scenario:
     1. Check that field invisible
@@ -58,8 +72,7 @@ def test_all_true(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_ap
             assert not group.is_displayed(), group.get_attribute("class")
     with allure.step('Check that save button not active'):
         assert not config.save_button_status()
-    if not config.advanced:
-        config.click_advanced()
+    config.show_advanced()
     assert config.advanced
     with allure.step('Check that field invisible'):
         groups = config.get_field_groups()
@@ -68,9 +81,8 @@ def test_all_true(sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_ap
 
 
 @parametrize_by_data_subdirs(__file__, "invisible_false_advanced_true")
-def test_invisible_false_advanced_true(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
-):
+@pytest.mark.usefixtures("login_to_adcm_over_api")
+def test_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app_fs):
     """Check RO fields with advanced true and invisible false
     Scenario:
     1. Check that field invisible
@@ -86,8 +98,7 @@ def test_invisible_false_advanced_true(
             assert not group.is_displayed(), group.get_attribute("class")
     with allure.step('Check that save button not active'):
         assert not config.save_button_status()
-    if not config.advanced:
-        config.click_advanced()
+    config.show_advanced()
     assert config.advanced
     groups = config.get_field_groups()
     with allure.step('Check that field visible'):
@@ -103,9 +114,8 @@ def test_invisible_false_advanced_true(
 
 
 @parametrize_by_data_subdirs(__file__, "invisible_true_advanced_false")
-def test_invisible_true_advanced_false(
-    sdk_client_fs: ADCMClient, path, app_fs, login_to_adcm_over_api
-):
+@pytest.mark.usefixtures("login_to_adcm_over_api")
+def test_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path, app_fs):
     """Check RO field with invisible true and advanced false
     Scenario:
     1. Check that field invisible
@@ -121,8 +131,7 @@ def test_invisible_true_advanced_false(
             assert not group.is_displayed(), group.get_attribute("class")
     with allure.step('Check that save button not active'):
         assert not config.save_button_status()
-    if not config.advanced:
-        config.click_advanced()
+    config.show_advanced()
     assert config.advanced
     with allure.step('Check that field invisible'):
         groups = config.get_field_groups()

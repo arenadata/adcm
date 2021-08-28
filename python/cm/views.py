@@ -19,7 +19,7 @@ import social_django.views
 from social_core.exceptions import AuthForbidden
 from rest_framework.authtoken.models import Token
 
-import cm.config as config
+from cm import config
 from cm.logger import log
 from cm.models import UserProfile
 

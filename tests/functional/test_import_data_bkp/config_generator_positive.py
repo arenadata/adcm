@@ -91,12 +91,12 @@ for t in SERVICE_VERSIONS:
     for variable in VARIABLES:
         d_name = "cluster_import_service_check_{}_{}/{}".format(variable[0], variable[1], t[0])
         os.makedirs(d_name)
-        with open("{}/config.yaml".format(d_name), "w+") as f:
+        with open("{}/config.yaml".format(d_name), "w+", encoding='utf_8') as f:
             f.write(TEMPLATE_CLUSTER.format(variable[0], variable[1], t[1], t[2]))
 
 for t in CLUSTER_VERSIONS:
     for variable in VARIABLES:
         d_name = "cluster_import_check_{}_{}/{}".format(variable[0], variable[1], t[0])
         os.makedirs(d_name)
-        with open("{}/config.yaml".format(d_name), "w+") as f:
+        with open("{}/config.yaml".format(d_name), "w+", encoding='utf_8') as f:
             f.write(TEMPLATE_CLUSTER.format(variable[0], variable[1], t[1], t[2]))

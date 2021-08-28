@@ -23,7 +23,7 @@ from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 from jsonschema import validate
 
-# pylint: disable=E0401, W0601, W0611, W0621, W0212
+# pylint: disable=no-self-use,redefined-outer-name
 from tests.library import errorcodes as err
 
 BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
@@ -58,14 +58,15 @@ def provider(provider_bundle: Bundle) -> Provider:
 
 def _get_prev_config(obj: BaseAPIObject, full=False):
     """Copy of config() method"""
-    history_entry = obj._subcall("config", "previous", "list")
+    # TODO: Fix after https://arenadata.atlassian.net/browse/ADCM-1651
+    history_entry = obj._subcall("config", "previous", "list")  # pylint: disable=protected-access
     if full:
         return history_entry
     return history_entry["config"]
 
 
 def _get_config_history(obj: BaseAPIObject):
-    return obj._subcall("config", "history", "list")
+    return obj._subcall("config", "history", "list")  # pylint: disable=protected-access
 
 
 class TestClusterServiceConfig:
@@ -293,9 +294,7 @@ class TestClusterServiceConfig:
         with allure.step("Check host conflict"):
             err.HOST_CONFLICT.equal(e)
 
-    def test_should_throws_exception_when_havent_previous_config(
-        self, cluster_with_service: Tuple[Cluster, Service]
-    ):
+    def test_should_throws_exception_when_havent_previous_config(self, cluster_with_service: Tuple[Cluster, Service]):
         _, service = cluster_with_service
         with allure.step("Try to get previous version of the service config"):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
@@ -306,9 +305,7 @@ class TestClusterServiceConfig:
 
 class TestClusterServiceConfigHistory:
     # Do we really need this test?
-    def test_config_history_url_must_point_to_the_service_config(
-        self, cluster_with_service: Tuple[Cluster, Service]
-    ):
+    def test_config_history_url_must_point_to_the_service_config(self, cluster_with_service: Tuple[Cluster, Service]):
         _, service = cluster_with_service
         config_str = {
             "ssh-key": "eulav",
@@ -328,9 +325,7 @@ class TestClusterServiceConfigHistory:
                 # url changed, because request is related to the service
                 assert "/service/{}".format(service.id) in conf["url"]
 
-    def test_get_config_from_nonexistant_cluster_service(
-        self, cluster_with_service: Tuple[Cluster, Service]
-    ):
+    def test_get_config_from_nonexistant_cluster_service(self, cluster_with_service: Tuple[Cluster, Service]):
         _, service = cluster_with_service
         with allure.step(f"Removing service id={service.id}"):
             service.delete()
@@ -356,7 +351,8 @@ class TestClusterConfig:
         config = cluster.config(full=True)
         config_json = utils.ordered_dict_to_dict(config)
         with allure.step("Load schema"):
-            schema = json.load(open(SCHEMAS + "/config_item_schema.json"))
+            with open(SCHEMAS + "/config_item_schema.json", encoding='utf_8') as file:
+                schema = json.load(file)
         with allure.step("Check schema"):
             assert validate(config_json, schema) is None
 

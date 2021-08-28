@@ -109,7 +109,7 @@ class UserDetailSerializer(UserSerializer):
 class AddUser2GroupSerializer(serializers.Serializer):
     name = serializers.CharField()
 
-    def update(self, user, validated_data):  # pylint: disable=arguments-differ
+    def update(self, user, validated_data):  # pylint: disable=arguments-renamed
         group = check_obj(Group, {'name': validated_data.get('name')}, 'GROUP_NOT_FOUND')
         group.user_set.add(user)
         return group
@@ -119,7 +119,7 @@ class AddUserRoleSerializer(serializers.Serializer):
     role_id = serializers.IntegerField()
     name = serializers.CharField(read_only=True)
 
-    def update(self, user, validated_data):  # pylint: disable=arguments-differ
+    def update(self, user, validated_data):  # pylint: disable=arguments-renamed
         role = check_obj(Role, {'id': validated_data.get('role_id')}, 'ROLE_NOT_FOUND')
         return cm.api.add_user_role(user, role)
 
@@ -128,7 +128,7 @@ class AddGroupRoleSerializer(serializers.Serializer):
     role_id = serializers.IntegerField()
     name = serializers.CharField(read_only=True)
 
-    def update(self, group, validated_data):  # pylint: disable=arguments-differ
+    def update(self, group, validated_data):  # pylint: disable=arguments-renamed
         role = check_obj(Role, {'id': validated_data.get('role_id')}, 'ROLE_NOT_FOUND')
         return cm.api.add_group_role(group, role)
 
@@ -138,7 +138,7 @@ class UserPasswdSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     @transaction.atomic
-    def update(self, user, validated_data):  # pylint: disable=arguments-differ
+    def update(self, user, validated_data):  # pylint: disable=arguments-renamed
         user.set_password(validated_data.get('password'))
         user.save()
         token = Token.objects.get(user=user)

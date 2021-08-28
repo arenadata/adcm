@@ -9,16 +9,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=W0611, W0621, W0404, W0212, C1801
-from typing import List
+from typing import List, Union, Type
 
 import allure
 import pytest
-from adcm_client.base import ResponseTooLong
+from adcm_client.base import ResponseTooLong, BaseAPIListObject, BaseAPIObject
 from adcm_client.objects import (
     Action,
     ADCMClient,
-    Bundle,  # ActionList,
+    Bundle,
     BundleList,
     Cluster,
     ClusterList,
@@ -38,10 +37,13 @@ from adcm_client.objects import (
     ProviderPrototypeList,
     Task,
     TaskList,
+    Service,
 )
 from adcm_pytest_plugin.utils import get_data_dir, get_subdirs_iter
 from delayed_assert import assert_expectations, expect
 from pytest_lazyfixture import lazy_fixture
+
+# pylint: disable=redefined-outer-name,protected-access
 
 
 @pytest.fixture()
@@ -152,7 +154,7 @@ def one_host_provider_id_attr(one_host: Host):
 
 
 @pytest.mark.parametrize(
-    'TestedClass',
+    'tested_class',
     [
         pytest.param(Bundle, id="Bundle"),
         pytest.param(Prototype, id="Prototype"),
@@ -166,38 +168,34 @@ def one_host_provider_id_attr(one_host: Host):
         pytest.param(Job, id="Job"),
     ],
 )
-def test_coreapi_schema(sdk_client_fs: ADCMClient, TestedClass):
+def test_coreapi_schema(sdk_client_fs: ADCMClient, tested_class: Type[BaseAPIObject]):
     def get_params(link):
         result = {}
-        for f in link.fields:
-            result[f.name] = True
+        for field in link.fields:
+            result[field.name] = True
         return result
 
     schema_obj = sdk_client_fs._api.schema
-    with allure.step(f'Get {TestedClass.__name__} schema objects'):
-        for p in TestedClass.PATH:
-            assert p in schema_obj.data
-            schema_obj = schema_obj[p]
+    with allure.step(f'Get {tested_class.__name__} schema objects'):
+        for path in tested_class.PATH:
+            assert path in schema_obj.data
+            schema_obj = schema_obj[path]
         params = get_params(schema_obj.links['list'])
-    with allure.step(f'Check if filters are acceptable for coreapi {TestedClass.__name__}'):
-        for f in TestedClass.FILTERS:
+    with allure.step(f'Check if filters are acceptable for coreapi {tested_class.__name__}'):
+        for _filter in tested_class.FILTERS:
             expect(
-                f in params,
-                "Filter {} should be acceptable for coreapi in class {}".format(
-                    f, TestedClass.__name__
-                ),
+                _filter in params,
+                "Filter {} should be acceptable for coreapi in class {}".format(_filter, tested_class.__name__),
             )
         assert_expectations()
 
 
 @pytest.mark.parametrize(
-    ('sdk_client', 'TestedClass'),
+    ('sdk_client', 'tested_class'),
     [
         pytest.param(lazy_fixture('cluster_bundles'), ClusterPrototypeList, id="Cluster Prototype"),
         pytest.param(lazy_fixture('cluster_bundles'), PrototypeList, id="Prototype"),
-        pytest.param(
-            lazy_fixture('provider_bundles'), ProviderPrototypeList, id="Provider Prototype"
-        ),
+        pytest.param(lazy_fixture('provider_bundles'), ProviderPrototypeList, id="Provider Prototype"),
         pytest.param(lazy_fixture('provider_bundles'), HostPrototypeList, id="Host Prototype"),
         pytest.param(lazy_fixture('provider_bundles'), BundleList, id="Bundle"),
         pytest.param(lazy_fixture('clusters'), ClusterList, id="Cluster"),
@@ -206,22 +204,19 @@ def test_coreapi_schema(sdk_client_fs: ADCMClient, TestedClass):
         pytest.param(lazy_fixture('hosts_with_jobs'), JobList, id="Job"),
     ],
 )
-def test_paging_fail(sdk_client, TestedClass):
+def test_paging_fail(sdk_client, tested_class: Type[BaseAPIListObject]):
     """Scenario:
     * Prepare a lot of objects in ADCM
     * Call listing api over objects.*List classes
     * Expecting to have ResponseTooLong error
     """
-    with allure.step(
-        f'Prepare a lot of objects: {TestedClass.__name__} '
-        f'in ADCM and check ResponseTooLong error'
-    ):
+    with allure.step(f'Prepare a lot of objects: {tested_class.__name__} ' f'in ADCM and check ResponseTooLong error'):
         with pytest.raises(ResponseTooLong):
-            TestedClass(sdk_client._api)
+            tested_class(sdk_client._api)
 
 
 @pytest.mark.parametrize(
-    ('sdk_client', 'TestedClass', 'TestedListClass', 'search_args', 'expected_args'),
+    ('sdk_client', 'tested_class', 'tested_list_class', 'search_args', 'expected_args'),
     [
         pytest.param(
             lazy_fixture('cluster_bundles'),
@@ -393,7 +388,7 @@ def test_paging_fail(sdk_client, TestedClass):
         ),
     ],
 )
-def test_filter(sdk_client: ADCMClient, TestedClass, TestedListClass, search_args, expected_args):
+def test_filter(sdk_client: ADCMClient, tested_class, tested_list_class, search_args, expected_args):
     """Scenario:
     * Create a lot of objects in ADCM (more than allowed to get without paging)
     * Call listing over *List class with tested filter as search args.
@@ -404,24 +399,23 @@ def test_filter(sdk_client: ADCMClient, TestedClass, TestedListClass, search_arg
     * Check that we found what we need
     """
     with allure.step('Create a lot of objects in ADCM'):
-        lo = TestedListClass(sdk_client._api, **search_args)
+        objects = tested_list_class(sdk_client._api, **search_args)
     with allure.step('Inspect first (and only) element of list'):
         for k, v in expected_args.items():
-            assert getattr(lo[0], k) == v
+            assert getattr(objects[0], k) == v
     with allure.step(
-        'Create single object over class call (like Cluster or Bundle) '
-        'with tested filter as search args'
+        'Create single object over class call (like Cluster or Bundle) ' 'with tested filter as search args'
     ):
-        o = TestedClass(sdk_client._api, **search_args)
+        single_object = tested_class(sdk_client._api, **search_args)
     with allure.step('Check created object'):
         for k, v in expected_args.items():
-            assert getattr(o, k) == v
+            assert getattr(single_object, k) == v
 
 
 @pytest.fixture()
 def cluster_with_actions(sdk_client_fs: ADCMClient):
-    b = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_with_actions'))
-    return b.cluster_create(name="cluster_with_actions")
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_with_actions'))
+    return bundle.cluster_create(name="cluster_with_actions")
 
 
 @pytest.fixture()
@@ -431,8 +425,8 @@ def service_with_actions(cluster_with_actions: Cluster):
 
 @pytest.fixture()
 def provider_with_actions(sdk_client_fs: ADCMClient):
-    b = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'provider_with_actions'))
-    return b.provider_create(name="provider_with_actions")
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'provider_with_actions'))
+    return bundle.provider_create(name="provider_with_actions")
 
 
 @pytest.fixture()
@@ -474,7 +468,7 @@ def task_action_id_attr(host_ok_action: Action):
 
 
 @pytest.fixture()
-def task_status_attr(host_ok_action: Action):
+def task_status_attr():
     return {'status': 'success'}
 
 
@@ -516,7 +510,7 @@ def job_task_id_attr(host_ok_action: Action):
 
 
 @pytest.mark.parametrize(
-    ('TestedParentClass', 'search_args', 'expected_args'),
+    ('tested_parent_class', 'search_args', 'expected_args'),
     [
         pytest.param(
             lazy_fixture('cluster_with_actions'),
@@ -536,12 +530,12 @@ def job_task_id_attr(host_ok_action: Action):
             {'name': 'ok14'},
             id="on Provider",
         ),
-        pytest.param(
-            lazy_fixture('host_with_actions'), {'name': 'fail15'}, {'name': 'fail15'}, id="on Host"
-        ),
+        pytest.param(lazy_fixture('host_with_actions'), {'name': 'fail15'}, {'name': 'fail15'}, id="on Host"),
     ],
 )
-def test_actions_name_filter(TestedParentClass, search_args, expected_args):
+def test_actions_name_filter(
+    tested_parent_class: Union[Provider, Service, Cluster], search_args: dict, expected_args: dict
+):
     """Scenario:
     * Create object with a lot of actions
     * Call action_list() with tested filter as search args.
@@ -550,13 +544,13 @@ def test_actions_name_filter(TestedParentClass, search_args, expected_args):
     * Call action() with tested filter as search args
     * Check that we found what we need
     """
-    with allure.step(f'Create {TestedParentClass} with a lot of actions'):
-        lo = TestedParentClass.action_list(**search_args)
+    with allure.step(f'Create {tested_parent_class} with a lot of actions'):
+        actions = tested_parent_class.action_list(**search_args)
     with allure.step('Inspect first (and only) element of list'):
         for k, v in expected_args.items():
-            assert getattr(lo[0], k) == v
+            assert getattr(actions[0], k) == v
     with allure.step('Call action() with tested filter as search args'):
-        o = TestedParentClass.action(**search_args)
+        action = tested_parent_class.action(**search_args)
     with allure.step('Check action name'):
         for k, v in expected_args.items():
-            assert getattr(o, k) == v
+            assert getattr(action, k) == v

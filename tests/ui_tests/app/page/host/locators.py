@@ -27,9 +27,7 @@ class HostLocators:
 class HostActionsLocators(HostLocators):
     """Locators for Actions menu on host page"""
 
-    action_name = Locator(
-        By.XPATH, "//app-action-card//mat-card-title", "Action title in Actions menu"
-    )
+    action_name = Locator(By.XPATH, "//app-action-card//mat-card-title", "Action title in Actions menu")
     action_btn = TemplateLocator(
         By.XPATH,
         "//mat-card-title[text()='{}']/ancestor::mat-card-header//button",

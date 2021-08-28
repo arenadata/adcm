@@ -31,3 +31,25 @@
       - required
       - str-key
       - int_key
+
+- type: service
+  name: Pre-uploaded Dummy service to import
+  description: Test service
+  version: '2.5'
+  actions:
+    test_action:
+      type: job
+      script: dummy_action.yaml
+      script_type: ansible
+      states:
+          available: any
+  config:
+    core-site:
+      param1:
+        type: string
+        required: false
+      param2:
+        type: integer
+        required: false
+  export:
+      - core-site

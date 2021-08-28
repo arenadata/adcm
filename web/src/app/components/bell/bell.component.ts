@@ -23,17 +23,21 @@ export interface NotificationsData {
   selector: 'app-bell',
   template: `
     <div
-      class="circle"
-      [ngStyle]="{ background: bellGradient }"
-      routerLink="/task"
       appPopover
       [component]="NotificationsComponent"
       [event]="bindedPopoverEvent"
       [data]="{ counts: counts, tasks: tasks }"
+      class="bell-wrapper"
     >
-      <div class="animation hide" (animationstart)="onAnimationStart()" (animationend)="onAnimationEnd()" #animation></div>
-      <div class="insider">
-        <mat-icon>notifications</mat-icon>
+      <div
+        class="circle"
+        [ngStyle]="{ background: bellGradient }"
+        routerLink="/task"
+      >
+        <div class="animation hide" (animationstart)="onAnimationStart()" (animationend)="onAnimationEnd()" #animation></div>
+        <div class="insider">
+          <mat-icon>notifications</mat-icon>
+        </div>
       </div>
     </div>
   `,
@@ -78,6 +82,7 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
       this.successCount.next(0);
       this.runningCount.next(0);
       this.failedCount.next(0);
+      this.afterCountChanged(false);
     }
   }
 
@@ -103,7 +108,7 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
     }
   }
 
-  afterCountChanged() {
+  afterCountChanged(animationNeeds = true) {
     const total =  this.runningCount.value + this.successCount.value + this.failedCount.value;
     if (total > 0) {
       const degOne = 360 / total;
@@ -117,7 +122,9 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
     } else {
       this.bellGradient = 'transparent';
     }
-    this.startAnimation();
+    if (animationNeeds) {
+      this.startAnimation();
+    }
   }
 
   getChangeTaskObservable(): Observable<EventMessage> {
@@ -179,13 +186,20 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
       this.taskService.list({ ordering: '-finish_date', status: 'failed', limit: '5' }),
       this.taskService.list({ ordering: '-finish_date', status: 'success', limit: '5' }),
       this.taskService.list({ ordering: '-start_date', status: 'running', limit: '5' }),
-    ).pipe(map(([failed, succeed, running]) => {
-      return [...failed.results, ...succeed.results, ...running.results].sort((a, b) => {
+      this.profileService.getProfile(),
+    ).pipe(map(([failed, succeed, running, user]) => {
+      let tasks = [...failed.results, ...succeed.results, ...running.results].sort((a, b) => {
         const getDateField = (task: Task) => task.status === 'failed' || task.status === 'success' ? task.finish_date : task.start_date;
         const aDate = new Date(getDateField(a));
         const bDate = new Date(getDateField(b));
         return aDate.getDate() - bDate.getDate();
       }).slice(0, 5);
+
+      if (user.profile?.lastViewedTask?.id) {
+        tasks = tasks.filter(task => task.id > user.profile.lastViewedTask.id);
+      }
+
+      return tasks;
     }));
   }
 
@@ -207,7 +221,7 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
           this.runningCount.next(stats.running);
           this.successCount.next(stats.success);
           this.failedCount.next(stats.failed);
-          this.afterCountChanged();
+          this.afterCountChanged(!!(stats.running || stats.success || stats.failed));
           this.tasks.next(tasks);
           this.listenToJobs();
         });

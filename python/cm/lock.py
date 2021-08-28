@@ -12,7 +12,7 @@
 
 # pylint: disable=too-many-branches,
 
-import cm.config as config
+from cm import config
 from cm.adcm_config import obj_ref
 from cm.hierarchy import Tree
 from cm.logger import log

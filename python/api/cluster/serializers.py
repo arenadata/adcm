@@ -244,11 +244,11 @@ class HCComponentSerializer(ComponentDetailSerializer):
 
         process_requires(obj.requires)
         out = []
-        for service_name in comp_list:
+        for service_name, value in comp_list.items():
             comp_out = []
-            service = comp_list[service_name]['service']
-            for comp_name in comp_list[service_name]['components']:
-                comp = comp_list[service_name]['components'][comp_name]
+            service = value['service']
+            for comp_name in value['components']:
+                comp = value['components'][comp_name]
                 comp_out.append(
                     {
                         'prototype_id': comp.id,

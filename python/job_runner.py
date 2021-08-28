@@ -19,7 +19,7 @@ import subprocess
 import sys
 
 import adcm.init_django  # DO NOT DELETE !!!
-import cm.config as config
+from cm import config
 import cm.job
 import cm.lock
 from cm.logger import log
@@ -29,12 +29,12 @@ from cm.status_api import Event
 
 def open_file(root, tag, job_id):
     fname = '{}/{}/{}.txt'.format(root, job_id, tag)
-    f = open(fname, 'w')
+    f = open(fname, 'w', encoding='utf_8')
     return f
 
 
 def read_config(job_id):
-    fd = open('{}/{}/config.json'.format(config.RUN_DIR, job_id))
+    fd = open('{}/{}/config.json'.format(config.RUN_DIR, job_id), encoding='utf_8')
     conf = json.load(fd)
     fd.close()
     return conf

@@ -9,7 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=W0611, W0621
+
+# pylint:disable=redefined-outer-name
 import copy
 
 import allure
@@ -145,23 +146,23 @@ INITIAL_HOST_STATE = {
 @pytest.fixture()
 def host_bundle(sdk_client_fs: ADCMClient):
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "hostprovider"))
-    for name in INITIAL_HOST_STATE:
+    for name, value in INITIAL_HOST_STATE.items():
         provider = bundle.provider_create(name)
-        for hname in INITIAL_HOST_STATE[name]['hosts']:
+        for hname in value['hosts']:
             provider.host_create(fqdn=hname)
     return bundle
 
 
 @allure.step('Check host state')
 def assert_provider_host_states(bundle: Bundle, statemap: dict):
-    for pname, pv in statemap.items():
+    for pname, expected_state in statemap.items():
         pstate = bundle.provider(name=pname).state
-        pstate_expected = pv['state']
+        pstate_expected = expected_state['state']
         expect(
             pstate == pstate_expected,
             f"Provider \"{pname}\" is \"{pstate}\" while expected \"{pstate_expected}\"",
         )
-        for hname, hstate_expected in pv['hosts'].items():
+        for hname, hstate_expected in expected_state['hosts'].items():
             hstate = bundle.provider(name=pname).host(fqdn=hname).state
             expect(
                 hstate == hstate_expected,

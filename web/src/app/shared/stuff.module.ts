@@ -33,6 +33,8 @@ import { IssueMessageService } from '@app/services/issue-message.service';
 import { IssueMessageItemComponent } from '@app/components/issue-message/issue-message-item/issue-message-item.component';
 import { IssueMessagePlaceholderPipe } from '@app/pipes/issue-message-placeholder.pipe';
 import { IssueMessageRefComponent } from '@app/components/issue-message/issue-message-ref/issue-message-ref.component';
+import { IssueMessageListComponent } from '@app/components/issue-message/issue-message-list/issue-message-list.component';
+import { IssueMessageListRefComponent } from '@app/components/issue-message/issue-message-list-ref/issue-message-list-ref.component';
 
 @NgModule({
   declarations: [
@@ -58,6 +60,8 @@ import { IssueMessageRefComponent } from '@app/components/issue-message/issue-me
     IssueMessageItemComponent,
     IssueMessagePlaceholderPipe,
     IssueMessageRefComponent,
+    IssueMessageListComponent,
+    IssueMessageListRefComponent,
     KeysPipe,
     IsArrayPipe,
     IssuePathPipe,
@@ -90,6 +94,7 @@ import { IssueMessageRefComponent } from '@app/components/issue-message/issue-me
     IssueMessageItemComponent,
     IssueMessagePlaceholderPipe,
     IssueMessageRefComponent,
+    IssueMessageListComponent,
     KeysPipe,
     IsArrayPipe,
     IssuePathPipe,

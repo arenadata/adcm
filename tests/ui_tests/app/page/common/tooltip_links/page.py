@@ -24,10 +24,11 @@ class CommonToolbar(BasePageObject):
         super().__init__(driver, base_url)
 
     def click_admin_link(self):
-        self.wait_element_visible(CommonToolbarLocators.admin_link)
-        self.find_and_click(CommonToolbarLocators.admin_link)
+        self.wait_element_hide(CommonToolbarLocators.progress_bar)
+        self.wait_element_visible(CommonToolbarLocators.admin_link).click()
 
     def click_link_by_name(self, link_name: str):
+        self.wait_element_hide(CommonToolbarLocators.progress_bar)
         self.wait_element_visible(CommonToolbarLocators.admin_link)
         self.find_and_click(CommonToolbarLocators.text_link(link_name.upper().strip("_")))
 

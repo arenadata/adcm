@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import cm.config as config
+from cm import config
 
 if __name__ == '__main__':
     print(config.ANSIBLE_SECRET)

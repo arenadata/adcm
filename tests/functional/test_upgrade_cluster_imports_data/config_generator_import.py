@@ -104,11 +104,11 @@ TEMPLATE_CLUSTER = """
 for t in SERVICE_VERSIONS:
     d_name = "upgradable_cluster_with_incorrect_version/{}".format(t[0])
     os.makedirs(d_name)
-    with open("{}/config.yaml".format(d_name), "w+") as f:
+    with open("{}/config.yaml".format(d_name), "w+", encoding='utf_8') as f:
         f.write(TEMPLATE_SERVICE.format(t[1], t[2]))
 
 for t in CLUSTER_VERSIONS:
     d_name = "upgradable_cluster_with_incorrect_version/{}".format(t[0])
     os.makedirs(d_name)
-    with open("{}/config.yaml".format(d_name), "w+") as f:
+    with open("{}/config.yaml".format(d_name), "w+", encoding='utf_8') as f:
         f.write(TEMPLATE_CLUSTER.format(t[1], t[2]))

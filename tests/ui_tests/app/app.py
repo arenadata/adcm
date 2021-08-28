@@ -12,7 +12,6 @@
 
 # Created by a1wen at 27.02.19
 
-# pylint: disable=E0401, E0611, W0611, W0621
 
 import os
 
@@ -84,8 +83,8 @@ class ADCMTest:
         return ClustersList(self)
 
     def wait_for(self, condition: EC, locator: tuple, timer=5):
-        def get_element(el):
-            return WDW(self.driver, timer).until(condition(el))
+        def get_element(element):
+            return WDW(self.driver, timer).until(condition(element))
 
         return get_element(locator)
 
@@ -101,12 +100,13 @@ class ADCMTest:
     def base_page(self):
         self.driver.get(self.adcm.url)
 
-    @allure.step("Open new tab")
+    @allure.step("Open a new tab")
     def new_tab(self):
         self.driver.execute_script("window.open('');")
-        # close the *old* window
-        self.driver.switch_to.window(self.driver.window_handles[0])
-        self.driver.close()
+        # close all tabs
+        for tab in self.driver.window_handles[:-1]:
+            self.driver.switch_to.window(tab)
+            self.driver.close()
         # set focus to the newly created window
         self.driver.switch_to.window(self.driver.window_handles[-1])
         self.driver.delete_all_cookies()

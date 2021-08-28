@@ -24,7 +24,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 
 import adcm.init_django  # DO NOT DELETE !!!
-import cm.config as config
+from cm import config
 import cm.job
 from cm.logger import log
 from cm.models import TaskLog, JobLog, LogStorage
@@ -82,7 +82,7 @@ def set_body_ansible(job):
     log_storage = LogStorage.objects.filter(job=job, name='ansible', type__in=['stdout', 'stderr'])
     for ls in log_storage:
         file_path = os.path.join(config.RUN_DIR, f'{ls.job.id}', f'ansible-{ls.type}.{ls.format}')
-        with open(file_path, 'r') as f:
+        with open(file_path, 'r', encoding='utf_8') as f:
             body = f.read()
         LogStorage.objects.filter(job=job, name=ls.name, type=ls.type).update(body=body)
 
@@ -101,7 +101,7 @@ def run_task(task_id, args=None):
         cm.job.finish_task(task, None, config.Job.FAILED)
         return
 
-    err_file = open(os.path.join(config.LOG_DIR, 'job_runner.err'), 'a+')
+    err_file = open(os.path.join(config.LOG_DIR, 'job_runner.err'), 'a+', encoding='utf_8')
 
     log.info("run task #%s", task_id)
 

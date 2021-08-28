@@ -326,7 +326,7 @@ def dump(cluster_id, output):
     result = json.dumps(data, indent=2)
 
     if output is not None:
-        with open(output, 'w') as f:
+        with open(output, 'w', encoding='utf_8') as f:
             f.write(result)
     else:
         sys.stdout.write(result)
