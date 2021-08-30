@@ -203,7 +203,7 @@ def generate_provider_success_params() -> List[ParameterSet]:
     ('action_name', 'get_object_to_be_changed', 'get_action_owner_object'), generate_cluster_success_params()
 )
 @pytest.mark.usefixtures("two_clusters")
-def test_cluster_related_objects_successful_multi_state_set(
+def test_cluster_related_objects(
     action_name: str,
     get_object_to_be_changed: ADCMClusterObjectGetter,
     get_action_owner_object: ADCMClusterObjectGetter,
@@ -227,7 +227,7 @@ def test_cluster_related_objects_successful_multi_state_set(
     ('action_name', 'get_object_to_be_changed', 'get_action_owner_object'), generate_provider_success_params()
 )
 @pytest.mark.usefixtures("two_providers")
-def test_provider_related_objects_successful_multi_state_set(
+def test_provider_related_objects(
     action_name: str,
     get_object_to_be_changed: ADCMProviderObjectGetter,
     get_action_owner_object: ADCMProviderObjectGetter,
@@ -310,26 +310,17 @@ def _test_successful_multi_state_set(
 ):
     """Test successful multi state set"""
     object_to_be_changed = get_object_to_be_changed(sdk_client_fs)
-    changed_object_type = object_to_be_changed.__class__.__name__
-    changed_object_name = (
-        object_to_be_changed.name if not isinstance(object_to_be_changed, Host) else object_to_be_changed.fqdn
-    )
+    changed_object_name = _compose_adcm_object_name(object_to_be_changed)
     action_owner_object = get_action_owner_object(sdk_client_fs)
-    action_owner_type = action_owner_object.__class__.__name__
-    action_owner_name = (
-        action_owner_object.name if not isinstance(action_owner_object, Host) else action_owner_object.fqdn
-    )
-    with allure.step(
-        f'Change multi state of {changed_object_type} "{changed_object_name}" with action '
-        f'from {action_owner_type} "{action_owner_name}"'
-    ):
+    action_owner_name = _compose_adcm_object_name(action_owner_object)
+    with allure.step(f'Change multi state of {changed_object_name} with action from {action_owner_name}'):
         task = action_owner_object.action(name=action_name).run()
         with catch_failed(
             TaskFailed,
-            f'Action {action_name} should have succeeded when ran on {action_owner_type} "{action_owner_name}"',
+            f'Action {action_name} should have succeeded when ran on {action_owner_name}',
         ):
             task.try_wait()
-    with allure.step(f'Check only state of {changed_object_type} "{changed_object_name}" was changed'):
+    with allure.step(f'Check only state of {changed_object_name} was changed'):
         check_multi_state_func(sdk_client_fs, {object_to_be_changed})
 
 
@@ -393,10 +384,17 @@ def _compare_multi_states(
     adcm_object: Union[Cluster, Service, Component, Provider, Host], expected_multi_state: Set[str]
 ):
     """Compare multi state of ADCM object with expected one"""
-    adcm_object_name = adcm_object.name if not isinstance(adcm_object, Host) else adcm_object.fqdn
-    adcm_object_type = adcm_object.__class__.__name__
+    adcm_object_name = _compose_adcm_object_name(adcm_object)
     adcm_object.reread()
-    assert (multi_state := set(adcm_object.multi_state)) == expected_multi_state, (
-        f'Multi state of {adcm_object_type} "{adcm_object_name}" '
-        f'should be {expected_multi_state}, not {multi_state}'
-    )
+    assert (
+        multi_state := set(adcm_object.multi_state)
+    ) == expected_multi_state, f'Multi state of {adcm_object_name} should be {expected_multi_state}, not {multi_state}'
+
+
+def _compose_adcm_object_name(adcm_object: Union[Cluster, Service, Component, Provider, Host]):
+    """Compose "good and readable" name from adcm_object"""
+    if isinstance(adcm_object, Host):
+        return f'Host "{adcm_object.fqdn}"'
+    if description := getattr(adcm_object, 'description', ''):
+        return description
+    return f'{adcm_object.__class__.__name__} "{adcm_object.name}"'

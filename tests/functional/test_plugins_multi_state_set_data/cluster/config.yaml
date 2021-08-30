@@ -83,6 +83,7 @@
 
 - type: service
   name: first
+  description: "First Service"
   version: 1
 
   actions: &service_actions
@@ -97,8 +98,9 @@
       host_action: true
 
 
-  components: &components
-    first:
+  components:
+    first: &first_component
+      description: "First Component of First Service"
       actions: &component_actions
         <<: *actions
         set_cluster_host_action:
@@ -110,13 +112,22 @@
             ansible_tags: component
           host_action: true
 
-    second:
+    second: &second_component
+      description: "Second Component of First Service"
       actions: *component_actions
 
 - type: service
   name: second
+  description: "Second Service"
   version: 1
 
   actions: *service_actions
 
-  components: *components
+  components:
+    first:
+      <<: *first_component
+      description: "First Component of Second Service"
+
+    second:
+      <<: *second_component
+      description: "Second Component of Second Service"
