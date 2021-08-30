@@ -677,9 +677,10 @@ class TestClusterConfigPage:
         cluster_config_page.config.set_description(params["config_name"])
         cluster_config_page.config.save_config()
 
+        config_row = cluster_config_page.config.get_all_config_rows()[0]
         cluster_config_page.config.reset_to_default(row=config_row)
         cluster_config_page.config.assert_input_value_is(
-            expected_value=params["row_value_new"], display_name=params["row_name"]
+            expected_value=params["row_value_old"], display_name=params["row_name"]
         )
 
     def test_field_validation_on_cluster_config_page(self, app_fs, sdk_client_fs):
