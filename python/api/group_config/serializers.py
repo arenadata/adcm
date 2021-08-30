@@ -73,7 +73,7 @@ class ObjectTypeField(serializers.Field):
 
 
 class GroupConfigsHyperlinkedIdentityField(serializers.HyperlinkedIdentityField):
-    """Return url for group_configs for Cluster, Provider, Component or Service"""
+    """Return url for group_config for Cluster, Provider, Component or Service"""
 
     def get_url(self, obj, view_name, request, format):  # pylint: disable=redefined-builtin
         url = reverse(viewname=view_name, request=request, format=format)

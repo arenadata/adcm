@@ -277,7 +277,7 @@ class ConfigLog(ADCMModel):
         obj = self.obj_ref.object
         if isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
             # Sync group configs with object config
-            for cg in obj.group_configs.all():
+            for cg in obj.group_config.all():
                 diff = cg.get_group_config()
                 group_config = ConfigLog()
                 current_group_config = ConfigLog.objects.get(id=cg.config.current)
@@ -303,7 +303,7 @@ class ADCMEntity(ADCMModel):
     state = models.CharField(max_length=64, default='created')
     stack = models.JSONField(default=list)
     issue = models.JSONField(default=dict)
-    group_configs = GenericRelation(
+    group_config = GenericRelation(
         'GroupConfig',
         object_id_field='object_id',
         content_type_field='object_type',
@@ -329,7 +329,7 @@ class ADCMEntity(ADCMModel):
 
 class ADCM(ADCMEntity):
     name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
-    group_configs = None
+    group_config = None
 
     @property
     def bundle_id(self):
@@ -412,7 +412,7 @@ class Host(ADCMEntity):
     description = models.TextField(blank=True)
     provider = models.ForeignKey(HostProvider, on_delete=models.CASCADE, null=True, default=None)
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
-    group_configs = None
+    group_config = None
 
     __error_code__ = 'HOST_NOT_FOUND'
 
@@ -609,7 +609,7 @@ class GroupConfig(ADCMModel):
         else:
             raise AdcmEx('GROUP_CONFIG_TYPE_ERROR')
         return hosts.difference(
-            Host.objects.filter(groupconfig__in=self.object.group_configs.all())
+            Host.objects.filter(groupconfig__in=self.object.group_config.all())
         )
 
     def check_host_candidate(self, host):
