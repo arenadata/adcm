@@ -9,31 +9,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from dataclasses import dataclass
-
 from selenium.webdriver.common.by import By
 
-
-@dataclass
-class Locator:
-    """Describes a locator on a webpage"""
-
-    by: By
-    value: str
-    name: str
-
-    def __repr__(self):
-        return self.name
+from tests.ui_tests.app.helpers.locator import Locator
 
 
-@dataclass
-class TemplateLocator(Locator):
-    """
-    Similar to Locator, but with template in `value`
-    and ability to generate Locators from template
-    """
-
-    def __call__(self, *args) -> Locator:
-        """Get regular Locator by passing arguments to format function"""
-        return Locator(by=self.by, value=self.value.format(*args), name=self.name.format(*args))
+class ProfileLocators:
+    username = Locator(By.XPATH, "//p[contains(text(), 'You are authorized as')]/b", "Authorized user name")
+    password = Locator(By.XPATH, "//input[@formcontrolname='password']", "New password input field")
+    confirm_password = Locator(By.XPATH, "//input[@formcontrolname='cpassword']", "New password confirmation field")
+    save_password_btn = Locator(By.XPATH, "//button[./span[text()= 'Save']]", "Save password button")

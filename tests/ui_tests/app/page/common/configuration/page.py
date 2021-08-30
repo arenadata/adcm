@@ -76,10 +76,8 @@ class CommonConfigMenuObj(BasePageObject):
     def get_input_value(self, adcm_test_attr_value: str, is_password: bool = False) -> str:
         """
         Get value from field input
-
         If is_password is True, then special field is used for search
         You can't get password confirmation method
-
         :param adcm_test_attr_value: Value of attribute "adcm_test" to generate Locator
         :param is_password: Is field password/confirmation
         :returns: Value of input
@@ -97,7 +95,6 @@ class CommonConfigMenuObj(BasePageObject):
     ):
         """
         Assert that value in field is expected_value (using retries)
-
         :param expected_value: Value expected to be in input field
         :param adcm_test_attr_value: Value of attribute "adcm_test" to generate Locator
         :param row: row with required input
@@ -133,7 +130,6 @@ class CommonConfigMenuObj(BasePageObject):
     ):
         """
         Send keys to config value input
-
         :param value: keys to send
         :param adcm_test: value of @adcm_test required for finding input
         :param row: row with required input
@@ -148,7 +144,7 @@ class CommonConfigMenuObj(BasePageObject):
             field.clear()
         field.send_keys(value)
 
-    @allure.step("Filling in {adcm_test} field's password {} and confirmation {}")
+    @allure.step("Filling in {adcm_test} field's password {password} and confirmation {confirmation}")
     def fill_password_and_confirm_fields(self, password: str, confirmation: str, adcm_test: str):
         """
         Fill password in clean fields and confirm password fields
