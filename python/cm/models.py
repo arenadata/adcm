@@ -604,7 +604,7 @@ class TaskLog(ADCMModel):
     object_id = models.PositiveIntegerField()
     object_type = models.ForeignKey(ContentType, null=True, on_delete=models.CASCADE)
     task_object = GenericForeignKey('object_type', 'object_id')
-    action = models.ForeignKey(Action, on_delete=models.CASCADE, null=True, default=None)
+    action = models.ForeignKey(Action, on_delete=models.SET_NULL, null=True, default=None)
     pid = models.PositiveIntegerField(blank=True, default=0)
     selector = models.JSONField(default=dict)
     status = models.CharField(max_length=16, choices=JOB_STATUS)
