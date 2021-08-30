@@ -1,13 +1,19 @@
-<button
-  appPopover
-  mat-icon-button
-  color="warn"
-  *ngIf="!notIssue(row?.issue); else actions"
-  [component]="IssuesComponent"
-  [data]="{ row: row, issueType: issueType }"
->
-  <mat-icon>priority_hight</mat-icon>
-</button>
+<!--<button-->
+<!--  appPopover-->
+<!--  mat-icon-button-->
+<!--  color="warn"-->
+<!--  *ngIf="!notIssue(row?.issue); else actions"-->
+<!--  [component]="IssuesComponent"-->
+<!--  [data]="{ row: row, issueType: issueType }"-->
+<!--&gt;-->
+<!--  <mat-icon>priority_hight</mat-icon>-->
+<!--</button>-->
+
+<app-concern-list-ref
+  *ngIf="!notIssue(row?.concerns); else actions"
+  [concerns]="row?.concerns"
+></app-concern-list-ref>
+
 <ng-template #actions>
   <app-action-list
     *ngIf="row"

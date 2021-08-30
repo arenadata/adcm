@@ -6,7 +6,7 @@ export enum IMPlaceholderItemType {
 export interface IMPlaceholderItem {
   type: IMPlaceholderItemType;
   name: string;
-   ids: { [id: string]: number };
+  ids: { [id: string]: number };
 }
 
 export interface IMPlaceholderAction extends IMPlaceholderItem {
@@ -32,8 +32,7 @@ export interface IMPlaceholder {
   [itemKey: string]: IMPlaceholderItem;
 }
 
-export interface IssueMessage {
+export interface ConcernReason {
   message: string;
-  id: number;
   placeholder: IMPlaceholder;
 }

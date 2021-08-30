@@ -28,13 +28,12 @@ import { IssuesComponent } from '@app/components/issues/issues.component';
 import { KeysPipe } from '@app/pipes/keys.pipe';
 import { IsArrayPipe } from '@app/pipes/is-array.pipe';
 import { IssuePathPipe } from '@app/pipes/issue-path.pipe';
-import { IssueMessageComponent } from '@app/components/issue-message/issue-message.component';
-import { IssueMessageService } from '@app/services/issue-message.service';
-import { IssueMessageItemComponent } from '@app/components/issue-message/issue-message-item/issue-message-item.component';
+import { ConcernComponent } from '@app/components/concern/concern.component';
+import { ConcernService } from '@app/services/concern.service';
+import { ConcernItemComponent } from '@app/components/concern/concern-item/concern-item.component';
 import { IssueMessagePlaceholderPipe } from '@app/pipes/issue-message-placeholder.pipe';
-import { IssueMessageRefComponent } from '@app/components/issue-message/issue-message-ref/issue-message-ref.component';
-import { IssueMessageListComponent } from '@app/components/issue-message/issue-message-list/issue-message-list.component';
-import { IssueMessageListRefComponent } from '@app/components/issue-message/issue-message-list-ref/issue-message-list-ref.component';
+import { ConcernListComponent } from '@app/components/concern/concern-list/concern-list.component';
+import { ConcernListRefComponent } from '@app/components/concern/concern-list-ref/concern-list-ref.component';
 
 @NgModule({
   declarations: [
@@ -56,12 +55,11 @@ import { IssueMessageListRefComponent } from '@app/components/issue-message/issu
     PopoverDirective,
     PopoverComponent,
     IssuesComponent,
-    IssueMessageComponent,
-    IssueMessageItemComponent,
+    ConcernComponent,
+    ConcernItemComponent,
     IssueMessagePlaceholderPipe,
-    IssueMessageRefComponent,
-    IssueMessageListComponent,
-    IssueMessageListRefComponent,
+    ConcernListComponent,
+    ConcernListRefComponent,
     KeysPipe,
     IsArrayPipe,
     IssuePathPipe,
@@ -71,36 +69,36 @@ import { IssueMessageListRefComponent } from '@app/components/issue-message/issu
     MaterialModule,
     RouterModule,
   ],
-  exports: [
-    ForTestDirective,
-    TooltipDirective,
-    TooltipComponent,
-    MTextareaDirective,
-    BaseDirective,
-    SocketListenerDirective,
-    CrumbsComponent,
-    UpgradeComponent,
-    ScrollDirective,
-    InfinityScrollDirective,
-    ActionsComponent,
-    ActionsDirective,
-    ActionListComponent,
-    MenuItemComponent,
-    CardItemComponent,
-    PopoverDirective,
-    PopoverComponent,
-    IssuesComponent,
-    IssueMessageComponent,
-    IssueMessageItemComponent,
-    IssueMessagePlaceholderPipe,
-    IssueMessageRefComponent,
-    IssueMessageListComponent,
-    KeysPipe,
-    IsArrayPipe,
-    IssuePathPipe,
-  ],
+    exports: [
+        ForTestDirective,
+        TooltipDirective,
+        TooltipComponent,
+        MTextareaDirective,
+        BaseDirective,
+        SocketListenerDirective,
+        CrumbsComponent,
+        UpgradeComponent,
+        ScrollDirective,
+        InfinityScrollDirective,
+        ActionsComponent,
+        ActionsDirective,
+        ActionListComponent,
+        MenuItemComponent,
+        CardItemComponent,
+        PopoverDirective,
+        PopoverComponent,
+        IssuesComponent,
+        ConcernComponent,
+        ConcernItemComponent,
+        IssueMessagePlaceholderPipe,
+        ConcernListComponent,
+        KeysPipe,
+        IsArrayPipe,
+        IssuePathPipe,
+        ConcernListRefComponent,
+    ],
   providers: [
-    IssueMessageService,
+    ConcernService,
   ],
 })
 export class StuffModule {}
