@@ -145,12 +145,19 @@ export class BaseListDirective {
     const stype = (x: string) => `${m.object.type}${m.object.details.type ? `2${m.object.details.type}` : ''}` === x;
 
     const checkUpgradable = () => (m.event === 'create' || m.event === 'delete') && m.object.type === 'bundle' && this.typeName === 'cluster';
-    const changeList = () => stype(this.typeName) && (m.event === 'create' || m.event === 'delete' || m.event === 'add' || m.event === 'remove');
+    const changeList = (name?: string) => stype(name ?? this.typeName) && (m.event === 'create' || m.event === 'delete' || m.event === 'add' || m.event === 'remove');
     const createHostPro = () => stype('host2provider') && m.event === 'create';
     const jobComplete = () => (m.event === 'change_job_status') && m.object.type === 'task' && m.object.details.value === 'success';
     const rewriteRow = (row: Entities) => this.service.checkItem(row).subscribe((item) => Object.keys(row).map((a) => (row[a] = item[a])));
 
-    if (checkUpgradable() || changeList() || createHostPro() || jobComplete()) {
+    let temporaryName;
+    if (this.typeName === 'group_configs') {
+      temporaryName = 'group-config';
+    } else if (this.typeName === 'host2configgroup') {
+      temporaryName = 'group-config-host';
+    }
+
+    if (checkUpgradable() || changeList(temporaryName) || createHostPro() || jobComplete()) {
       this.refresh(m.object.id);
       return;
     }
