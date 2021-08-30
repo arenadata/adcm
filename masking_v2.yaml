@@ -1,4 +1,7 @@
-# masking
+# masking V2, final
+#
+# no 'unavalable' for both,
+# absent === forbidden for both
 #
 # is_action_available = masking_OK
 # masking_OK = state_OK AND multistate_OK
