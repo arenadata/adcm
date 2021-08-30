@@ -23,6 +23,8 @@ from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelatio
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction
+from django.db.models.signals import m2m_changed
+from django.dispatch import receiver
 
 from cm.errors import AdcmEx
 from cm.logger import log
@@ -531,7 +533,7 @@ class GroupConfig(ADCMModel):
     object = GenericForeignKey('object_type', 'object_id')
     name = models.CharField(max_length=30)
     description = models.TextField(blank=True)
-    hosts = models.ManyToManyField(Host, blank=True, through='GroupConfigHost')
+    hosts = models.ManyToManyField(Host, blank=True)
     config = models.OneToOneField(
         ObjectConfig, on_delete=models.CASCADE, null=True, related_name='group_config'
     )
@@ -610,6 +612,11 @@ class GroupConfig(ADCMModel):
             Host.objects.filter(groupconfig__in=self.object.group_configs.all())
         )
 
+    def check_host_candidate(self, host):
+        """Checking host candidate for group"""
+        if host not in self.host_candidate():
+            raise AdcmEx('GROUP_CONFIG_HOST_ERROR')
+
     @transaction.atomic()
     def save(self, *args, **kwargs):
         obj = self.object_type.model_class().obj.get(id=self.object_id)
@@ -631,21 +638,17 @@ class GroupConfig(ADCMModel):
         super().save(*args, **kwargs)
 
 
-class GroupConfigHost(ADCMModel):
-    group = models.ForeignKey(GroupConfig, on_delete=models.CASCADE)
-    host = models.ForeignKey(Host, on_delete=models.CASCADE)
+@receiver(m2m_changed, sender=GroupConfig.hosts.through)
+def verify_host_candidate_for_group_config(sender, **kwargs):
+    """Checking host candidate for group config before add to group"""
+    group_config = kwargs.get('instance')
+    action = kwargs.get('action')
+    host_ids = kwargs.get('pk_set')
 
-    __error_code__ = 'GROUP_CONFIG_HOST_NOT_FOUND'
-
-    not_changeable_fields = ('id',)
-
-    class Meta:
-        unique_together = ['group', 'host']
-
-    def save(self, *args, **kwargs):
-        if self.host not in self.group.host_candidate():
-            raise AdcmEx('GROUP_CONFIG_HOST_ERROR')
-        super().save(*args, **kwargs)
+    if action == 'pre_add':
+        for host_id in host_ids:
+            host = Host.objects.get(id=host_id)
+            group_config.check_host_candidate(host)
 
 
 ACTION_TYPE = (

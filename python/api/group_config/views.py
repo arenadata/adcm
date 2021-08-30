@@ -12,15 +12,25 @@
 
 
 from django.contrib.contenttypes.models import ContentType
-from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import FilterSet, CharFilter
-from rest_framework.decorators import action
+from rest_framework import status
+from rest_framework import viewsets
+from rest_framework.mixins import (
+    ListModelMixin,
+    CreateModelMixin,
+    RetrieveModelMixin,
+    DestroyModelMixin,
+)
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet
+from rest_framework_extensions.mixins import NestedViewSetMixin
 
-from api.host.serializers import HostSerializer
-from cm.models import GroupConfig
-from .serializers import GroupConfigSerializer, revert_model_name
+from cm.models import GroupConfig, Host
+from .serializers import (
+    GroupConfigSerializer,
+    revert_model_name,
+    GroupConfigHostSerializer,
+    GroupConfigHostCandidateSerializer,
+)
 
 
 class GroupConfigFilterSet(FilterSet):
@@ -38,17 +48,46 @@ class GroupConfigFilterSet(FilterSet):
         fields = ('object_id', 'object_type')
 
 
-class GroupConfigViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
+class GroupConfigHostViewSet(
+    NestedViewSetMixin,
+    ListModelMixin,
+    CreateModelMixin,
+    RetrieveModelMixin,
+    DestroyModelMixin,
+    viewsets.GenericViewSet,
+):  # pylint: disable=too-many-ancestors
+    queryset = Host.objects.all()
+    serializer_class = GroupConfigHostSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        group_config = GroupConfig.obj.get(id=self.kwargs.get('parent_lookup_groupconfig'))
+        host = self.get_object()
+        group_config.hosts.remove(host)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        group_config = GroupConfig.obj.get(id=self.kwargs.get('parent_lookup_groupconfig'))
+        context.update({'groupconfig': group_config})
+        return context
+
+
+class GroupConfigHostCandidateViewSet(NestedViewSetMixin, ListModelMixin, viewsets.GenericViewSet):
+    queryset = Host.objects.all()
+    serializer_class = GroupConfigHostCandidateSerializer
+
+    def list(self, request, *args, **kwargs):
+        group_config = GroupConfig.obj.get(id=self.kwargs.get('parent_lookup_groupconfig'))
+        page = self.paginate_queryset(group_config.host_candidate())
+        serializer = self.serializer_class(
+            page, many=True, context={'request': request, 'groupconfig': group_config}
+        )
+        return self.get_paginated_response(serializer.data)
+
+
+class GroupConfigViewSet(
+    NestedViewSetMixin, viewsets.ModelViewSet
+):  # pylint: disable=too-many-ancestors
     queryset = GroupConfig.objects.all()
     serializer_class = GroupConfigSerializer
     filterset_class = GroupConfigFilterSet
-
-    @action(methods=['GET'], detail=True)
-    def host_candidate(self, request, pk):
-        obj = get_object_or_404(self.queryset, pk=pk)
-        if 'limit' in request.query_params or 'offset' in request.query_params:
-            page = self.paginate_queryset(obj.host_candidate())
-            serializer = HostSerializer(page, many=True, context={'request': request})
-            return self.get_paginated_response(serializer.data)
-        serializer = HostSerializer(obj.host_candidate(), many=True, context={'request': request})
-        return Response(serializer.data)

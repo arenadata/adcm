@@ -6,7 +6,8 @@ django-cors-headers
 django-filter
 django-rest-swagger
 djangorestframework
-drf-flex-fields
+drf-flex-fields==0.9.1
+drf-extensions
 django-background-tasks
 social-auth-app-django
 git+git://github.com/arenadata/django-generate-secret-key.git
@@ -20,7 +21,6 @@ uwsgi
 version_utils
 ruyaml
 yspec
-drf-flex-fields
 # Custom bundle libs
 apache-libcloud
 jmespath
