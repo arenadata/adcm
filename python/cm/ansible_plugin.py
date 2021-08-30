@@ -186,6 +186,7 @@ class ContextActionModule(ActionBase):
                     task_vars,
                     {
                         'cluster_id': self._get_job_var(task_vars, 'cluster_id'),
+                        'service_id': None,
                     },
                 )
             else:
