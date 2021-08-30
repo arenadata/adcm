@@ -28,8 +28,8 @@
       params:
         ansible_tags: host_from_provider
       config:
-        - name: fqdn
-          type: string
+        - name: host_id
+          type: integer
 
     set_host:
       <<: *general_action

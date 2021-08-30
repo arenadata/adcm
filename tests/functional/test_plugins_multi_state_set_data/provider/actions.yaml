@@ -23,10 +23,10 @@
 
     - adcm_multi_state_set:
         type: "host"
+        host_id: "{{job.config.host_id}}"
         state: "ifeelgood!"
       tags:
         - host_from_provider
-      when: inventory_hostname == job.config.fqdn
 
     - adcm_multi_state_set:
         type: "host"

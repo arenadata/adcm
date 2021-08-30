@@ -247,6 +247,18 @@ def test_provider_related_objects(
     )
 
 
+def test_host_from_provider(two_providers: Tuple[Provider, Provider], sdk_client_fs: ADCMClient):
+    """Change host multi state from provider"""
+    provider = two_providers[0]
+    host = provider.host_list()[0]
+    provider_name = _compose_adcm_object_name(provider)
+    host_name = _compose_adcm_object_name(host)
+    with allure.step(f'Change multi state of {host_name} with action from {provider_name}'):
+        run_provider_action_and_assert_result(provider, 'set_host_from_provider', config={'host_id': host.id})
+    with allure.step(f'Check only state of {host_name} was changed'):
+        check_provider_related_objects_multi_state(sdk_client_fs, {host})
+
+
 @pytest.mark.parametrize("two_clusters", ["cluster_double_call"], indirect=True)
 def test_double_call_to_multi_state_set(two_clusters: Tuple[Cluster, Cluster], sdk_client_fs: ADCMClient):
     """Test that double call to plugin from two files doesn't fail"""
