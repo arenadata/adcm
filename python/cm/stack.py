@@ -74,26 +74,27 @@ def get_config_files(path, bundle_hash):
         ('config.yml', 'yaml'),
     ]
     if not os.path.isdir(path):
-        return err('STACK_LOAD_ERROR', f'no directory: {path}', status.HTTP_404_NOT_FOUND)
+        err('STACK_LOAD_ERROR', f'no directory: {path}', status.HTTP_404_NOT_FOUND)
     for root, _, files in os.walk(path):
         for conf_file, conf_type in conf_types:
             if conf_file in files:
                 dirs = root.split('/')
-                path = os.path.join('', *dirs[dirs.index(bundle_hash) + 1:])
+                start_index = dirs.index(bundle_hash) + 1
+                path = os.path.join('', *dirs[start_index:])
                 conf_list.append((path, root + '/' + conf_file, conf_type))
                 break
     if not conf_list:
-        return err('STACK_LOAD_ERROR', f'no config files in stack directory "{path}"')
+        err('STACK_LOAD_ERROR', f'no config files in stack directory "{path}"')
     return conf_list
 
 
 def check_adcm_config(conf_file):
     warnings.simplefilter('error', ruyaml.error.ReusedAnchorWarning)
     schema_file = os.path.join(config.CODE_DIR, 'cm', 'adcm_schema.yaml')
-    with open(schema_file) as fd:
+    with open(schema_file, encoding='utf_8') as fd:
         rules = ruyaml.round_trip_load(fd)
     try:
-        with open(conf_file) as fd:
+        with open(conf_file, encoding='utf_8') as fd:
             ruyaml.version_info = (0, 15, 0)  # switch off duplicate keys error
             data = ruyaml.round_trip_load(fd, version="1.1")
     except (ruyaml.parser.ParserError, ruyaml.scanner.ScannerError, NotImplementedError) as e:
@@ -520,7 +521,7 @@ def validate_name(value, name):
     if p.fullmatch(value) is None:
         err("WRONG_NAME", msg1.format(name))
     if len(value) > MAX_NAME_LENGTH:
-        raise err("LONG_NAME", f'{name} is too long. Max length is {MAX_NAME_LENGTH}')  # pylint: disable=raising-bad-type
+        err("LONG_NAME", f'{name} is too long. Max length is {MAX_NAME_LENGTH}')
     return value
 
 

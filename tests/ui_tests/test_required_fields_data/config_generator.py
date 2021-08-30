@@ -53,5 +53,5 @@ for t in TYPES:
         d_name = "{}/{}".format(config, t)
         os.makedirs(d_name)
         tmpl = ''
-        with open("{}/config.yaml".format(d_name), "w+") as f:
+        with open("{}/config.yaml".format(d_name), "w+", encoding='utf_8') as f:
             f.write(TEMPLATES[t].format(t, config))

@@ -19,6 +19,7 @@ import {
 } from '@app/store/navigation/navigation.store';
 import { EventMessage, socketResponse } from '@app/core/store/sockets/socket.reducer';
 import { IClusterService } from '@app/models/cluster-service';
+import { ConfigGroupListService } from '@app/config-groups/service/config-group-list.service';
 
 @Injectable()
 export class NavigationEffects {
@@ -70,7 +71,8 @@ export class NavigationEffects {
     private api: ApiService,
     private serviceComponentService: ServiceComponentService,
     private store: Store,
-    private clusterService: ClusterService
+    private clusterService: ClusterService,
+    private configGroupService: ConfigGroupListService
   ) {}
 
   entityGetter(type: TypeName, id: number): Observable<AdcmTypedEntity> {
@@ -93,14 +95,20 @@ export class NavigationEffects {
           this.serviceComponentService.get(id),
           type,
         );
-      } if (type === 'service') {
+      }
+      if (type === 'service') {
         return entityToTypedEntity(
           this.api.getOne<any>(type, id),
           type,
         ).pipe(switchMap((entity) => {
           return this.api.getOne<any>('cluster', (entity as any as IClusterService).cluster_id)
-            .pipe(map(cluster => ({...entity, cluster})));
+            .pipe(map(cluster => ({ ...entity, cluster })));
         }));
+      } else if (type === 'group_configs') {
+        return entityToTypedEntity(
+          this.configGroupService.get(id),
+          type,
+        );
       } else {
         return entityToTypedEntity(
           this.api.getOne<any>(type, id),

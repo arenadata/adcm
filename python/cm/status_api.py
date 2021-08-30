@@ -15,7 +15,6 @@ import requests
 import simplejson
 
 from cm.logger import log
-from cm.models import HostComponent, ServiceComponent, ClusterObject, Host
 from cm.config import STATUS_SECRET_KEY
 
 API_URL = "http://localhost:8020/api/v1"
@@ -102,6 +101,7 @@ def post_event(event, obj_type, obj_id, det_type=None, det_val=None):
             'details': details,
         },
     }
+    log.debug('post_event %s', data)
     return api_post('/event/', data)
 
 
@@ -154,47 +154,3 @@ def get_hc_status(host_id, comp_id):
 
 def get_component_status(comp_id):
     return get_status('/component/{}/'.format(comp_id))
-
-
-def load_service_map():
-    comps = {}
-    hosts = {}
-    hc_map = {}
-    services = {}
-    passive = {}
-    for c in ServiceComponent.objects.filter(prototype__monitoring='passive'):
-        passive[c.id] = True
-
-    for hc in HostComponent.objects.all():
-        if hc.component.id in passive:
-            continue
-        key = '{}.{}'.format(hc.host.id, hc.component.id)
-        hc_map[key] = {'cluster': hc.cluster.id, 'service': hc.service.id}
-        if str(hc.cluster.id) not in comps:
-            comps[str(hc.cluster.id)] = {}
-        if str(hc.service.id) not in comps[str(hc.cluster.id)]:
-            comps[str(hc.cluster.id)][str(hc.service.id)] = []
-        comps[str(hc.cluster.id)][str(hc.service.id)].append(key)
-
-    for host in Host.objects.filter(prototype__monitoring='active'):
-        if host.cluster:
-            cluster_id = host.cluster.id
-        else:
-            cluster_id = 0
-        if cluster_id not in hosts:
-            hosts[cluster_id] = []
-        hosts[cluster_id].append(host.id)
-
-    for co in ClusterObject.objects.filter(prototype__monitoring='active'):
-        if co.cluster.id not in services:
-            services[co.cluster.id] = []
-        services[co.cluster.id].append(co.id)
-
-    m = {
-        'hostservice': hc_map,
-        'component': comps,
-        'service': services,
-        'host': hosts,
-    }
-    log.debug("service map: %s", m)
-    return api_post('/servicemap/', m)

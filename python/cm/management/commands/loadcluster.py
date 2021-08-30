@@ -249,7 +249,7 @@ def load(file_path):
     :type file_path: str
     """
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path, 'r', encoding='utf_8') as f:
             data = json.load(f)
     except FileNotFoundError as err:
         raise AdcmEx('DUMP_LOAD_CLUSTER_ERROR') from err

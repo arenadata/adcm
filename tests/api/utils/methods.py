@@ -45,7 +45,7 @@ class Methods(Enum):
     POST = Method(
         function=requests.post,
         url_template=_OBJECTS_URL_TEMPLATE,
-        default_success_code=HTTPStatus.CREATED
+        default_success_code=HTTPStatus.CREATED,
     )
     PUT = Method(function=requests.put, url_template=_OBJECT_URL_TEMPLATE)
     PATCH = Method(function=requests.patch, url_template=_OBJECT_URL_TEMPLATE)

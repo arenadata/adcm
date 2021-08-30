@@ -82,7 +82,7 @@ TEMPLATE_CLUSTER = """
 for variable in VARIABLES:
     d_name = "service_import_check_negative/{}_{}_{}".format(variable[0], variable[3], variable[4])
     os.makedirs(d_name)
-    with open("{}/config.yaml".format(d_name), "w+") as f:
+    with open("{}/config.yaml".format(d_name), "w+", encoding='utf_8') as f:
         f.write(
             TEMPLATE_SERVICE.format(variable[1], variable[2], variable[3], variable[4], variable[5])
         )
@@ -90,7 +90,7 @@ for variable in VARIABLES:
 for variable in VARIABLES:
     d_name = "cluster_import_check_negative/{}_{}_{}".format(variable[0], variable[3], variable[4])
     os.makedirs(d_name)
-    with open("{}/config.yaml".format(d_name), "w+") as f:
+    with open("{}/config.yaml".format(d_name), "w+", encoding='utf_8') as f:
         f.write(
             TEMPLATE_CLUSTER.format(variable[1], variable[2], variable[3], variable[4], variable[5])
         )

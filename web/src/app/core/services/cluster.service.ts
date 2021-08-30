@@ -23,16 +23,18 @@ import {
   Host,
   IAction,
   IImport,
-  Job, License,
+  Job,
+  License,
   LogFile,
   Provider,
   Service
 } from '@app/core/types';
 import { environment } from '@env/environment';
 import { ServiceComponentService } from '@app/services/service-component.service';
-import { setPathOfRoute } from '@app/store/navigation/navigation.store';
 import { EntityNames } from '@app/models/entity-names';
 import { HttpResponseBase } from '@angular/common/http';
+import { setPathOfRoute } from '@app/store/navigation/navigation.store';
+import { EntityService } from '@app/abstract/entity-service';
 
 export interface WorkerInstance {
   current: Entities;
@@ -103,30 +105,30 @@ export class ClusterService {
     return this.api.get<Bundle>(`${environment.apiRoot}stack/bundle/${id}/`);
   }
 
-  getContext(param: ParamMap): Observable<WorkerInstance> {
+  getContext(param: ParamMap, service?: EntityService<any>): Observable<WorkerInstance> {
     this.store.dispatch(setPathOfRoute({ params: param }));
 
     const typeName = EntityNames.find((a) => param.keys.some((b) => a === b));
     const id = +param.get(typeName);
     const cluster$ = param.has('cluster') ? this.api.getOne<Cluster>('cluster', +param.get('cluster')) : of(null);
-
     return cluster$
       .pipe(
         tap((cluster) => (this.Cluster = cluster)),
         switchMap((cluster) => {
-          if (cluster && typeName === 'servicecomponent') {
+          if (typeName === 'group_configs') {
+            return service.get(id);
+          } else if (cluster && typeName === 'servicecomponent') {
             return this.serviceComponentService.get(id);
           } else if (cluster && typeName !== 'cluster') {
             return this.api.get<Entities>(`${cluster[typeName]}${id}/`);
           } else {
             return this[`one_${typeName}`](id);
           }
-        })
+        }),
       )
       .pipe(
-        map((a: Entities) => {
-          a.typeName = typeName;
-          this.worker.current = { ...a, name: a.display_name || a.name || (a as Host).fqdn };
+        map((a: any) => {
+          this.worker.current = { ...a, name: (a?.display_name || a?.name || (a as Host)?.fqdn) ?? '', typeName };
           this.workerSubject.next(this.worker);
           return this.worker;
         })

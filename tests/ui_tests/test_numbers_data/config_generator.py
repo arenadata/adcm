@@ -43,11 +43,11 @@ integer_template = """
 for fl in floats:
     d_name = "bundles/{}".format("float-{}".format(fl[3]))
     os.makedirs(d_name)
-    with open("{}/config.yaml".format(d_name), "w+") as f:
+    with open("{}/config.yaml".format(d_name), "w+", encoding='utf_8') as f:
         f.write(float_template.format(fl[0], fl[1], fl[2]))
 
 for i in integers:
     d_name = "bundles/{}".format("integer-{}".format(i[3]))
     os.makedirs(d_name)
-    with open("{}/config.yaml".format(d_name), "w+") as f:
+    with open("{}/config.yaml".format(d_name), "w+", encoding='utf_8') as f:
         f.write(integer_template.format(i[0], i[1], i[2]))

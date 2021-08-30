@@ -328,7 +328,7 @@ for t in TYPES:
         os.makedirs(d_name)
         os.makedirs("{}_{}_{}_{}/{}/ansible".format(config[0], config[1], config[2], config[3], t))
         tmpl = ''
-        with open("{}/config.yaml".format(d_name), "w+") as f:
+        with open("{}/config.yaml".format(d_name), "w+", encoding='utf_8') as f:
             f.write(TEMPLATES[t].format(config[0], config[1], config[2], config[3], t))
-        with open("{}/ansible/install.yaml".format(d_name), "w+") as f:
+        with open("{}/ansible/install.yaml".format(d_name), "w+", encoding='utf_8') as f:
             f.write(INSTALL)

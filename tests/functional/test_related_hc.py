@@ -71,7 +71,7 @@ def _test_related_hc(client: ADCMClient, case_path: str):
         cluster_bundle = client.upload_from_fs(bundle_path)
         created_cluster = cluster_bundle.cluster_prototype().cluster_create(random_string())
     with allure.step("Parse case description from YAML file and set host-component map"):
-        with open(case_path) as file:
+        with open(case_path, encoding='utf_8') as file:
             case_template = yaml.safe_load(file)
         allure.dynamic.description(case_template["description"])
         hostcomponent_list = []

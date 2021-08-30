@@ -49,7 +49,7 @@ def test_service_wo_actions(sdk_client_fs: ADCMClient):
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Get service without actions"):
         service_prototype = sdk_client_fs.service_prototype()._data
-        schema = json.load(open(SCHEMAS + "/stack_list_item_schema.json"))
+        schema = json.load(open(SCHEMAS + "/stack_list_item_schema.json", encoding='utf_8'))
     with allure.step("Check service"):
         assert validate(service_prototype, schema) is None
 
@@ -59,7 +59,7 @@ def test_cluster_proto_wo_actions(sdk_client_fs: ADCMClient):
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Get cluster without actions"):
         cluster_prototype = sdk_client_fs.cluster_prototype()._data
-        schema = json.load(open(SCHEMAS + "/stack_list_item_schema.json"))
+        schema = json.load(open(SCHEMAS + "/stack_list_item_schema.json", encoding='utf_8'))
     with allure.step("Check cluster"):
         assert validate(cluster_prototype, schema) is None
 
@@ -69,7 +69,7 @@ def test_host_proto_wo_actions(sdk_client_fs: ADCMClient):
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Get host without actions"):
         host_prototype = sdk_client_fs.host_prototype()._data
-        schema = json.load(open(SCHEMAS + "/stack_list_item_schema.json"))
+        schema = json.load(open(SCHEMAS + "/stack_list_item_schema.json", encoding='utf_8'))
     with allure.step("Check host prototype"):
         assert validate(host_prototype, schema) is None
 

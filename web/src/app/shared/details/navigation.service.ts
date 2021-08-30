@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Injectable } from '@angular/core';
-import { ApiBase, Cluster, isIssue, Issue, Job, TypeName, IAction, LogFile, JobObject } from '@app/core/types';
+import { ApiBase, Cluster, IAction, isIssue, Issue, Job, JobObject, LogFile, TypeName } from '@app/core/types';
 import { AdcmTypedEntity } from '@app/models/entity';
 
 export const ISSUE_MESSAGE = 'Something is wrong with your cluster configuration, please review it.';
@@ -71,15 +71,16 @@ const all = [
   { id: 0, title: 'Main', url: 'main' },
   { id: 8, title: 'License', url: 'license' },
   { id: 4, title: 'Configuration', url: 'config' },
-  { id: 5, title: 'Status', url: 'status' },
-  { id: 6, title: 'Import', url: 'import' },
-  { id: 7, title: 'Actions', url: 'action' },
+  { id: 5, title: 'Configuration groups', url: 'group_configs' },
+  { id: 6, title: 'Status', url: 'status' },
+  { id: 7, title: 'Import', url: 'import' },
+  { id: 8, title: 'Actions', url: 'action' },
   { id: 1, title: 'Services', url: 'service' },
   { id: 2, title: 'Hosts', url: 'host' },
   { id: 3, title: 'Hosts - Components', url: 'host_component' },
 ];
 
-const [main, license, config, m_status, m_import, actions, services, hosts, host_components] = all;
+const [main, license, config, group_configs, m_status, m_import, actions, services, hosts, host_components] = all;
 
 const components = {
   id: 8,
@@ -89,12 +90,13 @@ const components = {
 
 export const Config = {
   menu: {
-    cluster: [main, config, m_status, m_import, actions, services, hosts, host_components].sort((a, b) => a.id - b.id),
-    service: [main, components, config, m_status, m_import, actions],
+    cluster: [main, config, group_configs, m_status, m_import, actions, services, hosts, host_components].sort((a, b) => a.id - b.id),
+    service: [main, components, config, group_configs, m_status, m_import, actions],
+    group_configs: [hosts, config],
     host: [main, config, m_status, actions],
-    provider: [main, config, actions],
+    provider: [main, config, group_configs, actions],
     bundle: [main, license],
-    servicecomponent: [main, config, m_status, actions],
+    servicecomponent: [main, config, group_configs, m_status, actions],
   },
 };
 
@@ -125,7 +127,7 @@ export class NavigationService {
     const issue = (i: Issue) => (isIssue(i) ? ISSUE_MESSAGE : '');
     const link = (p: { typeName: string; id: number }) => (p ? `/${p.typeName}/${p.id}` : '');
     const typeObj = (type: string, prev: string) => ({ url: `${prev}/${type}`, title: `${type}s` });
-    const fullLink = (c: { parent?: Cluster; typeName: TypeName; id: number; name: string; issue: Issue }): INavItem[] => [
+    const fullLink = (c: { parent?: Cluster; typeName: TypeName; id: number; name: string; issue?: Issue }): INavItem[] => [
       typeObj(c.typeName === 'job' ? 'task' : c.typeName, link(c.parent)),
       {
         id: c.id,

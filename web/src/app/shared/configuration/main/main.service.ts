@@ -10,26 +10,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { animate, state, style, transition, trigger } from '@angular/animations';
-import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
-
-import { ApiService } from '@app/core/api';
+import { Injectable, InjectionToken, Injector } from '@angular/core';
+import { isObject, TypeName } from '@app/core/types';
+import { FieldService, IOutput, TFormOptions } from '../services/field.service';
+import { CompareConfig, IFieldOptions, IFieldStack } from '../types';
+import { ConfigService, IConfigService } from '@app/shared/configuration/services/config.service';
 import { ClusterService } from '@app/core/services/cluster.service';
-import { getRandomColor, isObject } from '@app/core/types';
-import { FieldService, IOutput, TFormOptions } from '../field.service';
-import { CompareConfig, IConfig, IFieldOptions, IFieldStack } from '../types';
+import { ConfigGroupService } from '@app/config-groups/service/config-group.service';
 
 /**
  *```
-  advanced: boolean;
-  search: string;
-  ```
+ advanced: boolean;
+ search: string;
+ ```
  */
 export interface ISearchParam {
   advanced: boolean;
   search: string;
 }
+
+export const CONFIG_SERVICE = new InjectionToken<IConfigService>('ConfigService');
+
 
 export const historyAnime = [
   trigger('history', [
@@ -43,16 +44,37 @@ export const historyAnime = [
   ]),
 ];
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class MainService {
-  constructor(private fields: FieldService, private api: ApiService, private current: ClusterService) {}
+  configService: IConfigService;
 
-  get Current() {
-    return this.current.Current;
+  constructor(private fields: FieldService,
+              public cluster: ClusterService,
+              injector: Injector) {
+    const current: TypeName | undefined = cluster.Current?.typeName;
+    if (current === 'group_configs') {
+      this.configService = injector.get(ConfigGroupService);
+    } else {
+      this.configService = injector.get(ConfigService);
+    }
   }
 
-  getConfig(url: string): Observable<IConfig> {
-    return this.api.get<IConfig>(url);
+  get worker$() {
+    return this.cluster.worker$;
+  }
+
+  get Current() {
+    return this.cluster.Current;
+  }
+
+  getConfig(url: string) {
+    return this.configService.getConfig(url);
+  }
+
+  changeVersion(url: string, id: number) {
+    return this.configService.changeVersion(id, url);
   }
 
   filterApply(options: TFormOptions[], search: ISearchParam) {
@@ -64,11 +86,11 @@ export class MainService {
   }
 
   send(url: string, data: any) {
-    return this.api.post<IConfig>(url, data);
+    return this.configService.send(url, data);
   }
 
   getHistoryList(url: string, currentVersionId: number) {
-    return this.api.get<IConfig[]>(url).pipe(map((h) => h.filter((a) => a.id !== currentVersionId).map((b) => ({ ...b, color: getRandomColor() }))));
+    return this.configService.getHistoryList(url, currentVersionId);
   }
 
   compareConfig(ids: number[], dataOptions: TFormOptions[], compareConfig: CompareConfig[]) {
@@ -95,13 +117,24 @@ export class MainService {
       .map((c) => {
         const co = this.findFieldiCompare(a.key, c);
         if (!co) {
-          if (String(a.value) && String(a.value) !== 'null') a.compare.push({ id: c.id, date: c.date, color: c.color, value: 'null' });
+          if (String(a.value) && String(a.value) !== 'null') a.compare.push({
+            id: c.id,
+            date: c.date,
+            color: c.color,
+            value: 'null'
+          });
         } else {
           if (isObject(co.value)) {
             if (isObject(a.value)) {
-              if (JSON.stringify(a.value) !== JSON.stringify(co.value)) a.compare.push({ ...co, value: JSON.stringify(co.value) });
+              if (JSON.stringify(a.value) !== JSON.stringify(co.value)) a.compare.push({
+                ...co,
+                value: JSON.stringify(co.value)
+              });
             } else if (typeof a.value === 'string') {
-              if (JSON.stringify(JSON.parse(a.value)) !== JSON.stringify(co.value)) a.compare.push({ ...co, value: JSON.stringify(co.value) });
+              if (JSON.stringify(JSON.parse(a.value)) !== JSON.stringify(co.value)) a.compare.push({
+                ...co,
+                value: JSON.stringify(co.value)
+              });
             }
           } else if (String(co.value) !== String(a.value)) a.compare.push(co);
         }
@@ -110,6 +143,10 @@ export class MainService {
   }
 
   findFieldiCompare(key: string, cc: CompareConfig) {
+    console.log(key);
+    console.log(cc);
+
+
     const value = key
       .split('/')
       .reverse()
@@ -119,4 +156,5 @@ export class MainService {
       return { id, date, color, value };
     }
   }
+
 }

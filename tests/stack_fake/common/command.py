@@ -35,13 +35,13 @@ def get_log_handler(fname):
 
 def open_file(root, tag, command_id):
     fname = "{}/{}-{}.txt".format(root, command_id, tag)
-    f = open(fname, 'w')
+    f = open(fname, 'w', encoding='utf_8')
     return f
 
 
 def print_log(root, tag, command_id):
     fname = "{}/{}-{}.txt".format(root, command_id, tag)
-    f = open(fname, 'r')
+    f = open(fname, 'r', encoding='utf_8')
     flog = f.read()
     sys.stderr.write(flog)
     f.close()

@@ -60,7 +60,9 @@ class DbFiller:
         full_item = get_object_data(
             adcm=self.adcm,
             endpoint=endpoint,
-            object_id=self._get_or_create_data_for_endpoint(endpoint=endpoint,)[0]['id'],
+            object_id=self._get_or_create_data_for_endpoint(endpoint=endpoint,)[
+                0
+            ]['id'],
         )
         # GET, DELETE
         if method in (Methods.GET, Methods.DELETE):
@@ -185,7 +187,9 @@ class DbFiller:
                         field.f_type.relates_on.field.f_type.fk_link
                     ),
                     object_id=_data[related_field_name],
-                )["current"]  # get current config link
+                )[
+                    "current"
+                ]  # get current config link
                 split_url = config_url.strip("/").split("/")
                 path = split_url[-2]
                 object_id = int(split_url[-1])
@@ -252,11 +256,9 @@ class DbFiller:
             attempts_count = 10
             while True:
                 new_data = self._prepare_data_for_object_creation(endpoint=endpoint, force=True)
-                if (
-                    (new_data["object_type"], new_data["object_id"])
-                    not in
-                    [(old_obj["object_type"], old_obj["object_id"]) for old_obj in old_data]
-                ):
+                if (new_data["object_type"], new_data["object_id"]) not in [
+                    (old_obj["object_type"], old_obj["object_id"]) for old_obj in old_data
+                ]:
                     break
                 attempts_count -= 1
                 if attempts_count == 0:

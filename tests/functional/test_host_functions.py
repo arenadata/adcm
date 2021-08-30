@@ -64,7 +64,7 @@ class TestHost:
         Validate provider object schema
         """
         host_prototype = sdk_client_fs.host_prototype()._data
-        schema = json.load(open(SCHEMAS + "/stack_list_item_schema.json"))
+        schema = json.load(open(SCHEMAS + "/stack_list_item_schema.json", encoding='utf_8'))
         with allure.step("Match prototype with schema"):
             assert validate(host_prototype, schema) is None
 

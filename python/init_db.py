@@ -41,7 +41,7 @@ def create_status_user():
     password = random_string(40)
     token = random_string(40)
     User.objects.create_superuser(user, "", password)
-    with open(SECRETS_FILE, 'w') as f:
+    with open(SECRETS_FILE, 'w', encoding='utf_8') as f:
         json.dump({'adcmuser': {'user': user, 'password': password}, 'token': token}, f)
     log.info('Update secret file %s OK', SECRETS_FILE)
 
