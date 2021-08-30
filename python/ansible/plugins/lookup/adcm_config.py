@@ -29,7 +29,7 @@ import adcm.init_django  # pylint: disable=unused-import
 from cm.logger import log
 from cm.ansible_plugin import (
     set_service_config,
-    set_service_config_by_id,
+    set_service_config_by_name,
     set_cluster_config,
     set_provider_config,
     set_host_config,
@@ -83,9 +83,11 @@ class LookupModule(LookupBase):
                 raise AnsibleError('there is no cluster in hostvars')
             cluster = variables['cluster']
             if 'service_name' in kwargs:
-                res = set_service_config(cluster['id'], kwargs['service_name'], terms[1], terms[2])
+                res = set_service_config_by_name(
+                    cluster['id'], kwargs['service_name'], terms[1], terms[2]
+                )
             elif 'job' in variables and 'service_id' in variables['job']:
-                res = set_service_config_by_id(
+                res = set_service_config(
                     cluster['id'], variables['job']['service_id'], terms[1], terms[2]
                 )
             else:

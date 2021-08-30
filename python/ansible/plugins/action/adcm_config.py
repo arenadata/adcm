@@ -25,7 +25,7 @@ from cm.ansible_plugin import (
     ContextActionModule,
     set_cluster_config,
     set_service_config,
-    set_service_config_by_id,
+    set_service_config_by_name,
     set_host_config,
     set_provider_config,
     set_component_config,
@@ -39,7 +39,7 @@ DOCUMENTATION = r'''
 module: adcm_config
 short_description: Change values in config in runtime
 description:
-  - This is special ADCM only module which is usefull for seting of specified config key for various ADCM objects.
+  - This is special ADCM only module which is useful for setting of specified config key for various ADCM objects.
   - There is support of cluster, service, host and providers config.
   - This one is allowed to be used in various execution contexts.
 options:
@@ -64,7 +64,7 @@ options:
   - option-name: service_name
     required: false
     type: string
-    description: usefull in cluster context only. In that context you are able to set a config value for a service belongs to the cluster.
+    description: useful in cluster context only. In that context you are able to set a config value for a service belongs to the cluster.
 
 notes:
   - If type is 'service', there is no needs to specify service_name
@@ -108,7 +108,7 @@ class ActionModule(ContextActionModule):
 
     def _do_service_by_name(self, task_vars, context):
         res = self._wrap_call(
-            set_service_config,
+            set_service_config_by_name,
             context['cluster_id'],
             self._task.args["service_name"],
             self._task.args["key"],
@@ -119,7 +119,7 @@ class ActionModule(ContextActionModule):
 
     def _do_service(self, task_vars, context):
         res = self._wrap_call(
-            set_service_config_by_id,
+            set_service_config,
             context['cluster_id'],
             context['service_id'],
             self._task.args["key"],
