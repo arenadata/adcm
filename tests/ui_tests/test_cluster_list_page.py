@@ -22,7 +22,7 @@ from adcm_client.objects import (
 )
 from adcm_pytest_plugin import utils
 
-from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
+from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.cluster.page import (
     ClusterImportPage,
     ClusterConfigPage,
@@ -660,29 +660,28 @@ class TestClusterConfigPage:
         }
         cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
         config_row = cluster_config_page.config.get_all_config_rows()[0]
-        cluster_config_page.config.type_in_config_field(
-            row=config_row, value=params["row_value_new"], clear=True, adcm_test=None
-        )
+        cluster_config_page.config.type_in_config_field(row=config_row, value=params["row_value_new"], clear=True)
 
         cluster_config_page.config.set_description(params["config_name_new"])
         cluster_config_page.config.save_config()
-        cluster_config_page.config.compare_current_to(params["config_name_old"])
+        cluster_config_page.config.compare_versions(params["config_name_old"])
         with allure.step("Check row history"):
             row_with_history = cluster_config_page.config.get_all_config_rows()[0]
             cluster_config_page.config.wait_history_row_with_value(row_with_history, params["row_value_old"])
 
     def test_reset_config_in_row_on_cluster_config_page(self, app_fs, create_community_cluster):
-        params = {"row_name": "str_param:", "row_value_new": "test", "row_value_old": "123", "config_name": "test_name"}
+        params = {"row_name": "str_param", "row_value_new": "test", "row_value_old": "123", "config_name": "test_name"}
         cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
         config_row = cluster_config_page.config.get_all_config_rows()[0]
-        cluster_config_page.config.type_in_config_field(
-            row=config_row, value=params["row_value_new"], clear=True, adcm_test=None
-        )
+        cluster_config_page.config.type_in_config_field(row=config_row, value=params["row_value_new"], clear=True)
         cluster_config_page.config.set_description(params["config_name"])
         cluster_config_page.config.save_config()
 
+        config_row = cluster_config_page.config.get_all_config_rows()[0]
         cluster_config_page.config.reset_to_default(row=config_row)
-        cluster_config_page.config.assert_input_value_is(expected_value=params["row_value_new"], row=config_row)
+        cluster_config_page.config.assert_input_value_is(
+            expected_value=params["row_value_old"], display_name=params["row_name"]
+        )
 
     def test_field_validation_on_cluster_config_page(self, app_fs, sdk_client_fs):
         params = {

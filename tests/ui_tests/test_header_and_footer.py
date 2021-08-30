@@ -13,8 +13,7 @@
 import allure
 import pytest
 
-from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
-from tests.ui_tests.app.page.admin_setttings.page import AdminSettingsPage
+from tests.ui_tests.app.page.admin.page import AdminIntroPage, AdminSettingsPage
 from tests.ui_tests.app.page.bundle_list.page import BundleListPage
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.common.base_page import (

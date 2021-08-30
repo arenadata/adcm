@@ -35,7 +35,8 @@ class CommonConfigMenu:
     save_btn = Locator(By.XPATH, "//button[.//span[text()='Save']]", "Save configuration button")
     history_btn = Locator(By.XPATH, "//button[.//mat-icon[text()='history']]", "History button")
 
-    compare_to_select = Locator(By.XPATH, "//mat-select[@placeholder='Compare to']", "Compare to select")
+    compare_version_select = Locator(By.XPATH, "//mat-select[@placeholder='History']", "Base version to compare")
+    compare_to_select = Locator(By.XPATH, "//mat-select[@placeholder='Compare to']", "Compare to version select")
     config_version_option = TemplateLocator(
         By.XPATH, "//mat-option//span[contains(text(), '{}')]", "Config version with text: {}"
     )
@@ -47,28 +48,22 @@ class CommonConfigMenu:
     )
     config_row = Locator(By.XPATH, "//app-field", "Configuration row")
 
-    field_input = TemplateLocator(
-        By.XPATH,
-        "//app-field[.//div[@adcm_test='{}']]//input",
-        'Input of option "{}" in group',
-    )
-    password_inputs = TemplateLocator(
-        By.XPATH,
-        "//app-field[.//div[@adcm_test='{}']]//app-fields-password/div[not(contains(@style, 'none'))]//input",
-        "Password inputs",
-    )
     field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
-    reset_btn = TemplateLocator(
-        By.XPATH,
-        "//div[@adcm_test='{}']//mat-icon[text()='refresh']/ancestor::button",
-        "Resfresh button of {}",
-    )
-
     loading_text = Locator(By.XPATH, "//span[text()='Loading...']", "Loading text")
 
     class ConfigRow:
         name = Locator(By.XPATH, ".//label", "Row name")
         value = Locator(By.XPATH, ".//input", "Row value")
+        password = Locator(
+            By.XPATH,
+            "(.//app-fields-password/div[not(contains(@style, 'none'))]//input)[1]",
+            "Password input",
+        )
+        confirm_password = Locator(
+            By.XPATH,
+            "(.//app-fields-password/div[not(contains(@style, 'none'))]//input)[2]",
+            "Confirm password input",
+        )
         history = Locator(By.XPATH, ".//mat-list-item//span[2]", "Row history")
         reset_btn = Locator(By.XPATH, ".//button[@mattooltip='Reset to default']", "Reset button")
 
