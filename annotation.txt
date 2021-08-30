@@ -1,0 +1,20 @@
+There are three variants of adding multi_state in action masking:
+1. original 'masking', proposed by @cab - described in ADSS-1996
+2. 'simplified masking'
+   - removed 'unavailable' from state,
+   - removed 'any' from unavailable multi_states
+3. 'extended legacy'
+   - no 'masking' key
+   - 'state' key has same behavior as before
+   - 'multi_state' has same behavior as in 'simplified masking'
+
+
+Exammples for each variant cover these cases:
+- action available for state `installed`
+- action available for state `installed` and multi_state `kerberized`
+- action available for state `installed` and multi_state `kerberized` except `custom kerberos`
+- action available for any state and multi_state `kerberized`
+
+Each example has full version and version without default values (when applicable).
+
+Keys 'on_fail' and 'on_success' were intentionally ommited.

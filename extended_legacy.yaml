@@ -1,0 +1,73 @@
+#    extended legacy behavior
+#
+# is_action_available = state_OK AND multistate_OK
+#
+# state_OK = [ OR(s, s, ...) | any ] OR False
+#
+# multistate_OK = AVAIL_M AND NOT UNAVAIL_M
+# AVAIL_M = [ OR(avail_m, avail_m, ...) | any ] OR True
+# UNAVAIL_M = OR(unavail_m, unavail_m, ...) OR False
+
+
+## action available for state `installed`
+---
+### full variant
+state:
+  - installed
+multi_state:
+  available: any
+  unavailable: []
+
+---
+### drop defaults
+state:
+  - installed
+
+
+## action available for state `installed` and multi_state `kerberized`
+---
+### full variant
+state:
+  - installed
+multi_state:
+  available:
+    - kerberized
+  unavailable: []
+
+---
+### drop defaults
+state:
+  - installed
+multi_state:
+  available:
+    - kerberized
+
+
+## action available for state `installed` and multi_state `kerberized` except `custom kerberos`
+---
+### full variant
+state:
+  - installed
+multi_state:
+  available:
+    - kerberized
+  unavailable:
+    - custom kerberos
+  # no defaults remain
+
+
+## action available for any state and multi_state `kerberized`
+---
+### full variant
+state: any
+multi_state:
+  available:
+    - kerberized
+  unavailable: []
+
+---
+### drop defaults
+state: any  # still required
+multi_state:
+  available:
+    - kerberized
