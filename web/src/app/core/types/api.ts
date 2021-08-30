@@ -30,7 +30,8 @@ export type TypeName =
   'service2cluster' |
   'host2cluster' |
   'servicecomponent' |
-  'component';
+  'component' |
+  'concern';
 export type Entities = Cluster | Service | Host | Provider | Job | Task | Bundle;
 
 /**
