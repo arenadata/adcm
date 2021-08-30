@@ -255,18 +255,30 @@ def test_change_config(sdk_client_fs: ADCMClient):
 
 
 @allure.issue("https://arenadata.atlassian.net/browse/ADCM-1971")
-def test_upgrade_cluster_with_group_and_readonly_field(sdk_client_fs):
-    with allure.step('Create cluster with activatable group and single read-only field'):
-        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_with_group'))
-        sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster_with_group'))
+def test_upgrade_cluster_with_config_groups(sdk_client_fs):
+    with allure.step('Create cluster with different groups on config'):
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_with_groups'))
+        sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster_with_groups'))
         cluster = bundle.cluster_create("test")
         service = cluster.service_add(name="zookeeper")
     with allure.step('Upgrade cluster with new change values to 1.6'):
         upgrade = cluster.upgrade(name='upgrade to 1.6')
         upgrade.do()
     with allure.step('Assert that configs save success after upgrade'):
-        cluster.config_set({})
-        service.config_set({})
+        cluster.config_set(
+            {
+                **cluster.config(),
+                "activatable_group_with_ro": {"readonly-key": "value"},
+                "activatable_group": {"required": 10, "writable-key": "value"},
+            }
+        )
+        service.config_set(
+            {
+                **cluster.config(),
+                "activatable_group_with_ro": {"readonly-key": "value"},
+                "activatable_group": {"required": 10, "writable-key": "value"},
+            }
+        )
 
 
 def test_cannot_upgrade_with_state(sdk_client_fs: ADCMClient):
