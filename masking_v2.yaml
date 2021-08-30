@@ -1,0 +1,56 @@
+# masking
+#
+# is_action_available = masking_OK
+# masking_OK = state_OK AND multistate_OK
+# state_OK = [ OR(avail_s, avail_s, ...) | any ] OR False
+# multistate_OK = [ OR(avail_m, avail_m, ...) | any ] OR False
+
+
+## action available for state `installed`
+---
+### full variant
+masking:
+  state:
+    available:
+      - installed
+  multi_state:
+    available: any
+
+---
+### drop defaults
+# no defaults to drop
+
+
+## action available for state `installed` and multi_state `kerberized`
+---
+### full variant
+masking:
+  state:
+    available:
+      - installed
+  multi_state:
+    available:
+      - kerberized
+
+---
+### drop defaults
+# no defaults to drop
+
+
+## action available for state `installed` and multi_state `kerberized` except `custom kerberos`
+# imopssible without 'unavailable'
+
+
+## action available for any state and multi_state `kerberized`
+---
+### full variant
+masking:
+  state:
+    available: any
+  multi_state:
+    available:
+      - kerberized
+
+---
+### drop defaults
+# no defaults to drop
