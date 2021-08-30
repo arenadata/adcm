@@ -257,12 +257,11 @@ def switch_config(
                 unflat_conf[k1] = {}
             unflat_conf[k1][k2] = value
 
-    # skip inactive groups and set attributes for new config
+    # set activatable groups attributes for new config
     for key in unflat_conf:
         if key in active_groups:
             cl.attr[key] = {'active': True}
         if key in inactive_groups:
-            unflat_conf[key] = None
             cl.attr[key] = {'active': False}
 
     save_obj_config(obj.config, unflat_conf, cl.attr, 'upgrade')
