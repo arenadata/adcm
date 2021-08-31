@@ -23,6 +23,8 @@ from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelatio
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction
+from django.db.models.signals import m2m_changed
+from django.dispatch import receiver
 
 from cm.errors import AdcmEx
 from cm.logger import log
@@ -275,7 +277,7 @@ class ConfigLog(ADCMModel):
         obj = self.obj_ref.object
         if isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
             # Sync group configs with object config
-            for cg in obj.group_configs.all():
+            for cg in obj.group_config.all():
                 diff = cg.get_group_config()
                 group_config = ConfigLog()
                 current_group_config = ConfigLog.objects.get(id=cg.config.current)
@@ -301,7 +303,7 @@ class ADCMEntity(ADCMModel):
     state = models.CharField(max_length=64, default='created')
     stack = models.JSONField(default=list)
     issue = models.JSONField(default=dict)
-    group_configs = GenericRelation(
+    group_config = GenericRelation(
         'GroupConfig',
         object_id_field='object_id',
         content_type_field='object_type',
@@ -327,7 +329,7 @@ class ADCMEntity(ADCMModel):
 
 class ADCM(ADCMEntity):
     name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
-    group_configs = None
+    group_config = None
 
     @property
     def bundle_id(self):
@@ -410,7 +412,7 @@ class Host(ADCMEntity):
     description = models.TextField(blank=True)
     provider = models.ForeignKey(HostProvider, on_delete=models.CASCADE, null=True, default=None)
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
-    group_configs = None
+    group_config = None
 
     __error_code__ = 'HOST_NOT_FOUND'
 
@@ -531,7 +533,7 @@ class GroupConfig(ADCMModel):
     object = GenericForeignKey('object_type', 'object_id')
     name = models.CharField(max_length=30)
     description = models.TextField(blank=True)
-    hosts = models.ManyToManyField(Host, blank=True, through='GroupConfigHost')
+    hosts = models.ManyToManyField(Host, blank=True)
     config = models.OneToOneField(
         ObjectConfig, on_delete=models.CASCADE, null=True, related_name='group_config'
     )
@@ -592,6 +594,29 @@ class GroupConfig(ADCMModel):
         group_keys = cl.attr.get('group_keys', {})
         return get_diff(config, group_keys)
 
+    def host_candidate(self):
+        """Returns candidate hosts valid to add to the group"""
+        if isinstance(self.object, (Cluster, HostProvider)):
+            hosts = self.object.host_set.all()
+        elif isinstance(self.object, ClusterObject):
+            hosts = Host.objects.filter(
+                cluster=self.object.cluster, hostcomponent__service=self.object
+            ).distinct()
+        elif isinstance(self.object, ServiceComponent):
+            hosts = Host.objects.filter(
+                cluster=self.object.cluster, hostcomponent__component=self.object
+            ).distinct()
+        else:
+            raise AdcmEx('GROUP_CONFIG_TYPE_ERROR')
+        return hosts.difference(
+            Host.objects.filter(groupconfig__in=self.object.group_config.all())
+        )
+
+    def check_host_candidate(self, host):
+        """Checking host candidate for group"""
+        if host not in self.host_candidate():
+            raise AdcmEx('GROUP_CONFIG_HOST_ERROR')
+
     @transaction.atomic()
     def save(self, *args, **kwargs):
         obj = self.object_type.model_class().obj.get(id=self.object_id)
@@ -613,25 +638,17 @@ class GroupConfig(ADCMModel):
         super().save(*args, **kwargs)
 
 
-class GroupConfigHost(ADCMModel):
-    group = models.ForeignKey(GroupConfig, on_delete=models.CASCADE)
-    host = models.ForeignKey(Host, on_delete=models.CASCADE)
+@receiver(m2m_changed, sender=GroupConfig.hosts.through)
+def verify_host_candidate_for_group_config(sender, **kwargs):
+    """Checking host candidate for group config before add to group"""
+    group_config = kwargs.get('instance')
+    action = kwargs.get('action')
+    host_ids = kwargs.get('pk_set')
 
-    __error_code__ = 'GROUP_CONFIG_HOST_NOT_FOUND'
-
-    not_changeable_fields = ('id',)
-
-    class Meta:
-        unique_together = ['group', 'host']
-
-    def save(self, *args, **kwargs):
-        groups = GroupConfig.objects.filter(
-            object_id=self.group.object_id, object_type=self.group.object_type
-        )
-        for group in groups:
-            if self.host in group.hosts.all():
-                raise AdcmEx('HOST_GROUP_ERROR')
-        super().save(*args, **kwargs)
+    if action == 'pre_add':
+        for host_id in host_ids:
+            host = Host.objects.get(id=host_id)
+            group_config.check_host_candidate(host)
 
 
 ACTION_TYPE = (

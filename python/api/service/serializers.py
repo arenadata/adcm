@@ -80,7 +80,7 @@ class ServiceDetailSerializer(ServiceSerializer):
         lookup_field='prototype_id',
         lookup_url_kwarg='prototype_id',
     )
-    group_configs = GroupConfigsHyperlinkedIdentityField(view_name='group-config-list')
+    group_config = GroupConfigsHyperlinkedIdentityField(view_name='group-config-list')
 
     def get_issue(self, obj):
         return issue.aggregate_issues(obj)

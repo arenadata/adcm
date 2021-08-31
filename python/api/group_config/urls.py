@@ -11,11 +11,23 @@
 # limitations under the License.
 
 
-from rest_framework.routers import DefaultRouter
+from rest_framework_extensions.routers import ExtendedDefaultRouter as DefaultRouter
 
 from . import views
 
 router = DefaultRouter()
-router.register(r'', views.GroupConfigViewSet, basename='group-config')
 
+root = router.register(r'', views.GroupConfigViewSet, basename='group-config')
+root.register(
+    r'host',
+    views.GroupConfigHostViewSet,
+    basename='group-config-host',
+    parents_query_lookups=['groupconfig'],
+)
+root.register(
+    r'host-candidate',
+    views.GroupConfigHostCandidateViewSet,
+    basename='group-config-host-candidate',
+    parents_query_lookups=['groupconfig'],
+)
 urlpatterns = router.urls

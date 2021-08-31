@@ -11,14 +11,18 @@
 # limitations under the License.
 
 from django_filters import rest_framework as drf_filters
-from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.response import Response
 
 import cm
-from cm.errors import AdcmEx
-from cm.models import Cluster, HostProvider, Host, GroupConfig
 from api.api_views import PageView, DetailViewDelete, create, check_obj
+from cm.errors import AdcmEx
+from cm.models import Cluster, HostProvider, Host, GroupConfig, ClusterObject, ServiceComponent
 from . import serializers
+
+
+class NumberInFilter(drf_filters.BaseInFilter, drf_filters.NumberFilter):
+    pass
 
 
 class HostFilter(drf_filters.FilterSet):
@@ -27,10 +31,37 @@ class HostFilter(drf_filters.FilterSet):
     groupconfig = drf_filters.ModelChoiceFilter(
         queryset=GroupConfig.objects.all(), field_name='groupconfig', label='GroupConfig'
     )
+    hostcomponent__service_id = drf_filters.ModelChoiceFilter(
+        queryset=ClusterObject.objects.all(),
+        field_name='hostcomponent__service_id',
+        label='HostComponentService',
+        distinct=True,
+    )
+    hostcomponent__component_id = drf_filters.ModelChoiceFilter(
+        queryset=ServiceComponent.objects.all(),
+        field_name='hostcomponent__component_id',
+        label='HostComponentComponent',
+        distinct=True,
+    )
+
+    exclude_groupconfig__in = NumberInFilter(
+        field_name='groupconfig', lookup_expr='in', label='ExcludeGroupConfigIn', exclude=True
+    )
 
     class Meta:
         model = Host
-        fields = ['cluster_id', 'prototype_id', 'provider_id', 'fqdn', 'groupconfig']
+        fields = [
+            'cluster_id',
+            'prototype_id',
+            'provider_id',
+            'fqdn',
+            'cluster_is_null',
+            'provider_is_null',
+            'groupconfig',
+            'hostcomponent__service_id',
+            'hostcomponent__component_id',
+            'exclude_groupconfig__in',
+        ]
 
 
 class HostList(PageView):
@@ -51,9 +82,12 @@ class HostList(PageView):
         'prototype_id',
         'provider_id',
         'fqdn',
-        'groupconfig',
         'cluster_is_null',
         'provider_is_null',
+        'groupconfig',
+        'hostcomponent__service_id',
+        'hostcomponent__component_id',
+        'exclude_groupconfig__in',
     )  # just for documentation
     ordering_fields = (
         'fqdn',

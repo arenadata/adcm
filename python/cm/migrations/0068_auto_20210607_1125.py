@@ -49,35 +49,10 @@ class Migration(migrations.Migration):
                 'abstract': False,
             },
         ),
-        migrations.CreateModel(
-            name='GroupConfigHost',
-            fields=[
-                (
-                    'id',
-                    models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
-                    ),
-                ),
-                (
-                    'group',
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, to='cm.groupconfig'
-                    ),
-                ),
-                (
-                    'host',
-                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.host'),
-                ),
-            ],
-        ),
-        migrations.AlterUniqueTogether(
-            name='groupconfighost',
-            unique_together={('group', 'host')},
-        ),
         migrations.AddField(
             model_name='groupconfig',
             name='hosts',
-            field=models.ManyToManyField(blank=True, through='cm.GroupConfigHost', to='cm.Host'),
+            field=models.ManyToManyField(blank=True, to='cm.Host'),
         ),
         migrations.AddField(
             model_name='groupconfig',
