@@ -102,7 +102,7 @@ state:
 class ActionModule(ContextActionModule):
 
     TRANSFERS_FILES = False
-    _VALID_ARGS = frozenset(('type', 'service_name', 'component_name', 'state'))
+    _VALID_ARGS = frozenset(('type', 'service_name', 'component_name', 'state', 'host_id'))
     _MANDATORY_ARGS = ('type', 'state')
 
     def _do_cluster(self, task_vars, context):
