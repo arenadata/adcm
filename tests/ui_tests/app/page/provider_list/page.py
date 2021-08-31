@@ -26,9 +26,9 @@ from tests.ui_tests.app.page.common.dialogs import (
     ActionDialog,
     DeleteDialog,
 )
-from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
 from tests.ui_tests.app.page.common.popups.page import HostCreatePopupObj
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
+from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
 from tests.ui_tests.app.page.provider_list.locators import ProviderListLocators
 
@@ -105,7 +105,7 @@ class ProviderListPage(BasePageObject):
         wait_until_step_succeeds(wait_state, period=1, timeout=self.default_loc_timeout)
 
     @allure.step("Delete host")
-    def delete_provider_by_row(self, row: WebElement):
+    def delete_provider_in_row(self, row: WebElement):
         self.find_child(row, ProviderListLocators.ProviderTable.ProviderRow.delete_btn).click()
         self.wait_element_visible(DeleteDialog.body)
         self.find_and_click(DeleteDialog.yes)

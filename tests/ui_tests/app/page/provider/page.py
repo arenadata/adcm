@@ -60,12 +60,15 @@ class ProviderPageMixin(BasePageObject):
 
     def open_main_tab(self):
         self.find_and_click(ObjectPageMenuLocators.main_tab)
+        return ProviderMainPage(self.driver, self.base_url, self.provider_id)
 
     def open_config_tab(self):
         self.find_and_click(ObjectPageMenuLocators.config_tab)
+        return ProviderConfigPage(self.driver, self.base_url, self.provider_id)
 
     def open_actions_tab(self):
         self.find_and_click(ObjectPageMenuLocators.actions_tab)
+        return ProviderActionsPage(self.driver, self.base_url, self.provider_id)
 
     @allure.step("Check all main elements on the page are presented")
     def check_all_elements(self):
@@ -120,5 +123,5 @@ class ProviderActionsPage(ProviderPageMixin):
         self.find_and_click(ActionDialog.run)
 
     @allure.step("Check that action page is empty")
-    def check_empty_page(self):
+    def check_no_actions_presented(self):
         assert "Nothing to display." in self.find_element(CommonActionLocators.info_text).text

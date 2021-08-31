@@ -15,7 +15,6 @@ from dataclasses import dataclass
 from typing import List, Collection, Optional
 
 import allure
-
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.keys import Keys
@@ -112,7 +111,8 @@ class CommonConfigMenuObj(BasePageObject):
     def assert_input_value_is(
         self,
         expected_value: str,
-        display_name: str,
+        display_name: str = "",
+        row: WebElement = None,
         *,
         is_password: bool = False,
     ):
@@ -120,11 +120,14 @@ class CommonConfigMenuObj(BasePageObject):
         Assert that value in field is expected_value (using retries)
         :param expected_value: Value expected to be in input field
         :param display_name: Config field display name
+        :param row: row to check
         :param is_password: Is field password/confirmation
         """
 
         def assert_value():
-            input_value = self.get_input_value(row=self.get_config_row(display_name), is_password=is_password)
+            input_value = self.get_input_value(
+                row=row if row else self.get_config_row(display_name), is_password=is_password
+            )
             assert expected_value == input_value, f'Expected value was {expected_value} but presented is {input_value}'
 
         wait_until_step_succeeds(assert_value, timeout=4, period=0.5)
