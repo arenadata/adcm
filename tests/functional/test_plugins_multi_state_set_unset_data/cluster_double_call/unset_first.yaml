@@ -15,9 +15,9 @@
   connection: local
   gather_facts: false
   tasks:
-    - adcm_multi_state_set:
+    - adcm_multi_state_unset:
         type: "cluster"
-        state: "actually"
-    - adcm_multi_state_set:
+        state: "much"
+    - adcm_multi_state_unset:
         type: "cluster"
-        state: "the best"
+        state: "much"

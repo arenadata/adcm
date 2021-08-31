@@ -19,7 +19,7 @@
     set_cluster: &general_action
       type: job
       script_type: ansible
-      script: actions.yaml
+      script: set.yaml
       states:
         available: any
       params:
@@ -81,6 +81,81 @@
         ansible_tags: cluster
       host_action: true
 
+    unset_cluster: &unset_action
+      type: job
+      script_type: ansible
+      script: unset.yaml
+      states:
+        available: any
+      params:
+        ansible_tags: cluster
+
+    unset_service:
+      <<: *unset_action
+      params:
+        ansible_tags: service
+
+    unset_service_missing:
+      <<: *unset_action
+      params:
+        ansible_tags: service_missing
+
+    unset_component:
+      <<: *unset_action
+      params:
+        ansible_tags: component
+
+    unset_component_missing:
+      <<: *unset_action
+      params:
+        ansible_tags: component_missing
+
+    unset_first_service:
+      <<: *unset_action
+      params:
+        ansible_tags: first_service
+
+    unset_second_service:
+      <<: *unset_action
+      params:
+        ansible_tags: second_service
+
+    unset_first_component:
+      <<: *unset_action
+      params:
+        ansible_tags: first_component
+
+    unset_second_component:
+      <<: *unset_action
+      params:
+        ansible_tags: second_component
+
+    unset_first_service_first_component:
+      <<: *unset_action
+      params:
+        ansible_tags: first_service_first_component
+
+    unset_first_service_second_component:
+      <<: *unset_action
+      params:
+        ansible_tags: first_service_second_component
+
+    unset_second_service_first_component:
+      <<: *unset_action
+      params:
+        ansible_tags: second_service_first_component
+
+    unset_second_service_second_component:
+      <<: *unset_action
+      params:
+        ansible_tags: second_service_second_component
+
+    unset_cluster_host_action:
+      <<: *unset_action
+      params:
+        ansible_tags: cluster
+      host_action: true
+
 - type: service
   name: first
   description: "First Service"
@@ -97,6 +172,15 @@
         ansible_tags: service
       host_action: true
 
+    unset_cluster_host_action:
+      <<: *unset_action
+
+    unset_service_host_action:
+      <<: *unset_action
+      params:
+        ansible_tags: service
+      host_action: true
+
 
   components:
     first: &first_component
@@ -107,7 +191,14 @@
           <<: *general_action
         set_component_host_action:
           <<: *general_action
-          display_name: "component_host_action"
+          params:
+            ansible_tags: component
+          host_action: true
+
+        unset_cluster_host_action:
+          <<: *unset_action
+        unset_component_host_action:
+          <<: *unset_action
           params:
             ansible_tags: component
           host_action: true
