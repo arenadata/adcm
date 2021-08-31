@@ -20,7 +20,7 @@ from adcm_client.objects import ADCMClient, Bundle
 
 from tests.conftest import DUMMY_CLUSTER_BUNDLE
 from tests.ui_tests.app.app import ADCMTest
-from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
+from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.bundle.page import BundlePage
 from tests.ui_tests.app.page.bundle_list.page import BundleListPage, BundleInfo
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage

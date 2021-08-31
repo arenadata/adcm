@@ -41,3 +41,6 @@ class ObjectPageMenuLocators:
     status_tab = Locator(By.XPATH, "//a[@adcm_test='tab_status']", "Tab status")
     import_tab = Locator(By.XPATH, "//a[@adcm_test='tab_import']", "Tab import")
     actions_tab = Locator(By.XPATH, "//a[@adcm_test='tab_action']", "Tab actions")
+    intro_tab = Locator(By.XPATH, "//a[@adcm_test='tab_intro']", "Tab admin intro")
+    settings_tab = Locator(By.XPATH, "//a[@adcm_test='tab_settings']", "Tab admin settings")
+    users_tab = Locator(By.XPATH, "//a[@adcm_test='tab_users']", "Tab admin users")
