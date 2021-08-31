@@ -120,8 +120,9 @@ def gen_host_component(component, host) -> models.HostComponent:
     )
 
 
-def gen_concern_item(concern_type, name=None, reason='Test', blocking=True) -> models.ConcernItem:
+def gen_concern_item(concern_type, name=None, reason=None, blocking=True) -> models.ConcernItem:
     """Generate ConcernItem object"""
+    reason = reason or {'message': 'Test', 'placeholder': {}}
     return models.ConcernItem.objects.create(
         type=concern_type, name=name, reason=reason, blocking=blocking
     )

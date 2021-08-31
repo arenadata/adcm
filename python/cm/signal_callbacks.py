@@ -37,7 +37,10 @@ def on_concern_change(sender, **kwargs):
     assert 'model' in kwargs
     assert kwargs['model'] == models.ConcernItem
 
-    ctx.event.change_concern(instance)
+    # fetch related objects before instance is disconnected from DB
+    concern_reasons = [i.reason for i in instance.concerns.all()]
+
+    ctx.event.change_concern(instance, concern_reasons)
 
 
 signals.m2m_changed.connect(on_concern_change, sender=models.ADCM.concerns.through)

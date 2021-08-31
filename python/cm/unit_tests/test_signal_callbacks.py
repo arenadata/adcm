@@ -14,6 +14,7 @@ from unittest.mock import Mock
 from django.test import TestCase
 
 import cm.signal_callbacks  # pylint: disable=unused-import
+import cm.status_api
 from cm import models
 from cm.api_context import ctx
 from cm.unit_tests import utils
@@ -24,7 +25,7 @@ class ConcernSignalTest(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        ctx.event.send_state = Mock()
+        cm.status_api.api_post = Mock()
         super().setUpClass()
 
     def setUp(self):
