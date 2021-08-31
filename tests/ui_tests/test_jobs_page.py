@@ -239,9 +239,13 @@ def test_download_log(cluster: Cluster, app_fs: ADCMTest, downloads_directory):
     job_page = _open_detailed_job_page(task.jobs[0]['id'], app_fs)
     with allure.step('Download logfiles'):
         job_page.click_on_log_download('stdout')
-        wait_file_is_presented(downloaded_file_template.format(job_id=job_id, log_type='stdout'), downloads_directory)
+        wait_file_is_presented(
+            app_fs, downloaded_file_template.format(job_id=job_id, log_type='stdout'), downloads_directory
+        )
         job_page.click_on_log_download('stderr')
-        wait_file_is_presented(downloaded_file_template.format(job_id=job_id, log_type='stderr'), downloads_directory)
+        wait_file_is_presented(
+            app_fs, downloaded_file_template.format(job_id=job_id, log_type='stderr'), downloads_directory
+        )
 
 
 def test_invoker_object_url(cluster: Cluster, provider: Provider, page: JobListPage):

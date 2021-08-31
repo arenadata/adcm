@@ -17,6 +17,7 @@ from typing import Callable, TypeVar, Any, Union, Optional, Dict, Tuple
 
 import os
 import allure
+import requests
 
 from adcm_client.objects import ADCMClient, Cluster
 from adcm_pytest_plugin.utils import random_string, wait_until_step_succeeds
@@ -24,6 +25,7 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
 
+from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.configuration import Configuration
 
 ValueType = TypeVar('ValueType')
@@ -247,15 +249,24 @@ def assert_enough_rows(required_row_num: int, row_count: int):
 
 @allure.step('Wait file {filename} is presented in directory {dirname}')
 def wait_file_is_presented(
+    app_fs: ADCMTest,
     filename: str,
     dirname: os.PathLike,
     timeout: Union[int, float] = 70,
     period: Union[int, float] = 1,
 ):
     """Checks if file is presented in directory"""
+    _ = dirname
+    file_url = (
+        f'http://{app_fs.selenoid["host"]}:{app_fs.selenoid["port"]}/download/{app_fs.driver.session_id}/{filename}'
+    )
 
     def check_file_is_presented():
-        assert filename in os.listdir(dirname), f'File {filename} not found in {dirname}'
+        response = requests.get(file_url)
+        assert (
+            response.status_code < 400
+        ), f'Request for file ended with {response.status_code} and test: {response.text}'
+        # assert filename in os.listdir(dirname), f'File {filename} not found in {dirname}'
 
     wait_until_step_succeeds(check_file_is_presented, timeout=timeout, period=period)
 
