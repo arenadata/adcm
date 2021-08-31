@@ -229,8 +229,8 @@ def test_open_log_menu(log_type: str, cluster: Cluster, app_fs: ADCMTest):
         )
 
 
-@pytest.mark.usefixtures("login_to_adcm_over_api", "clean_downloads_fs")
-def test_download_log(cluster: Cluster, app_fs: ADCMTest, downloads_directory):
+@pytest.mark.usefixtures("login_to_adcm_over_api")
+def test_download_log(cluster: Cluster, app_fs: ADCMTest):
     """Download log file from detailed page menu"""
     downloaded_file_template = '{job_id}-ansible-{log_type}.txt'
     action = cluster.action(display_name=SUCCESS_ACTION_DISPLAY_NAME)
@@ -239,13 +239,9 @@ def test_download_log(cluster: Cluster, app_fs: ADCMTest, downloads_directory):
     job_page = _open_detailed_job_page(task.jobs[0]['id'], app_fs)
     with allure.step('Download logfiles'):
         job_page.click_on_log_download('stdout')
-        wait_file_is_presented(
-            app_fs, downloaded_file_template.format(job_id=job_id, log_type='stdout'), downloads_directory
-        )
+        wait_file_is_presented(app_fs, downloaded_file_template.format(job_id=job_id, log_type='stdout'))
         job_page.click_on_log_download('stderr')
-        wait_file_is_presented(
-            app_fs, downloaded_file_template.format(job_id=job_id, log_type='stderr'), downloads_directory
-        )
+        wait_file_is_presented(app_fs, downloaded_file_template.format(job_id=job_id, log_type='stderr'))
 
 
 def test_invoker_object_url(cluster: Cluster, provider: Provider, page: JobListPage):

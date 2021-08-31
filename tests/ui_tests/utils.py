@@ -15,7 +15,6 @@ from collections import UserDict
 from contextlib import contextmanager
 from typing import Callable, TypeVar, Any, Union, Optional, Dict, Tuple, Sized
 
-import os
 import allure
 import requests
 
@@ -251,22 +250,20 @@ def assert_enough_rows(required_row_num: int, row_count: int):
 def wait_file_is_presented(
     app_fs: ADCMTest,
     filename: str,
-    dirname: os.PathLike,
     timeout: Union[int, float] = 70,
     period: Union[int, float] = 1,
 ):
     """Checks if file is presented in directory"""
-    _ = dirname
-    file_url = (
-        f'http://{app_fs.selenoid["host"]}:{app_fs.selenoid["port"]}/download/{app_fs.driver.session_id}/{filename}'
-    )
+    dir_url = f'http://{app_fs.selenoid["host"]}:{app_fs.selenoid["port"]}/download/{app_fs.driver.session_id}'
+    file_url = f'{dir_url}/{filename}'
 
     def check_file_is_presented():
+        dir_response = requests.get(dir_url)
         response = requests.get(file_url)
-        assert (
-            response.status_code < 400
-        ), f'Request for file ended with {response.status_code} and test: {response.text}'
-        # assert filename in os.listdir(dirname), f'File {filename} not found in {dirname}'
+        assert response.status_code < 400, (
+            f'Request for file ended with {response.status_code}, file request text: {response.text}. '
+            f'Directory request finished with {dir_response.status_code} and text: {dir_response.text}'
+        )
 
     wait_until_step_succeeds(check_file_is_presented, timeout=timeout, period=period)
 

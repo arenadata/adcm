@@ -37,7 +37,7 @@ class JobPage(BasePageObject):
     """Job detailed page"""
 
     def __init__(self, driver, base_url, job_id: int):
-        super().__init__(driver, base_url, f"/job/{job_id}")
+        super().__init__(driver, base_url, "/job/{job_id}", job_id=job_id)
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
 
