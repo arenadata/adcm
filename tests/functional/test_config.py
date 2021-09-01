@@ -73,7 +73,7 @@ def assert_list_type(*args):
     sent_data = {config_type: get_value(path, entity, 'sent_value')}
 
     if is_required:
-        if sent_value_type == 'null_value':
+        if sent_value_type in ['empty_value', 'null_value']:
             assert_config_value_error(entity, sent_data)
         else:
             assert entity.config_set(sent_data) == sent_data
@@ -100,7 +100,7 @@ def assert_map_type(*args):
     sent_data = {config_type: get_value(path, entity, 'sent_value')}
 
     if is_required:
-        if sent_value_type == 'null_value':
+        if sent_value_type in ['empty_value', 'null_value']:
             assert_config_value_error(entity, sent_data)
         else:
             assert entity.config_set(sent_data) == sent_data
