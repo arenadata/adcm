@@ -60,15 +60,21 @@ class ProviderPageMixin(BasePageObject):
 
     def open_main_tab(self):
         self.find_and_click(ObjectPageMenuLocators.main_tab)
-        return ProviderMainPage(self.driver, self.base_url, self.provider_id)
+        provider_main_page = ProviderMainPage(self.driver, self.base_url, self.provider_id)
+        provider_main_page.wait_page_is_opened()
+        return provider_main_page
 
     def open_config_tab(self):
         self.find_and_click(ObjectPageMenuLocators.config_tab)
-        return ProviderConfigPage(self.driver, self.base_url, self.provider_id)
+        provider_conf_page = ProviderConfigPage(self.driver, self.base_url, self.provider_id)
+        provider_conf_page.wait_page_is_opened()
+        return provider_conf_page
 
     def open_actions_tab(self):
         self.find_and_click(ObjectPageMenuLocators.actions_tab)
-        return ProviderActionsPage(self.driver, self.base_url, self.provider_id)
+        provider_action_page = ProviderActionsPage(self.driver, self.base_url, self.provider_id)
+        provider_action_page.wait_page_is_opened()
+        return provider_action_page
 
     @allure.step("Check all main elements on the page are presented")
     def check_all_elements(self):
@@ -113,7 +119,7 @@ class ProviderActionsPage(ProviderPageMixin):
         CommonActionLocators.action_card,
     ]
 
-    def get_all_actions(self):
+    def get_all_actions(self) -> [WebElement]:
         return self.find_elements(CommonActionLocators.action_card)
 
     @allure.step("Run action")
@@ -124,4 +130,6 @@ class ProviderActionsPage(ProviderPageMixin):
 
     @allure.step("Check that action page is empty")
     def check_no_actions_presented(self):
-        assert "Nothing to display." in self.find_element(CommonActionLocators.info_text).text
+        assert (
+            "Nothing to display." in self.find_element(CommonActionLocators.info_text).text
+        ), "There should be message 'Nothing to display'"
