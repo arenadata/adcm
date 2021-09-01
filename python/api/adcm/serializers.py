@@ -32,6 +32,7 @@ class AdcmDetailSerializer(AdcmSerializer):
     action = CommonAPIURL(view_name='object-action')
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
+    locked = serializers.BooleanField(read_only=True, source='is_locked')
 
     def get_prototype_version(self, obj):
         return obj.prototype.version

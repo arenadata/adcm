@@ -91,6 +91,7 @@ class ClusterDetailSerializer(ClusterSerializer):
     prototype = hlink('cluster-type-details', 'prototype_id', 'prototype_id')
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
+    locked = serializers.BooleanField(read_only=True, source='is_locked')
 
     def get_status(self, obj):
         return cm.status_api.get_cluster_status(obj.id)

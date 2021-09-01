@@ -53,6 +53,7 @@ class ComponentDetailSerializer(ComponentSerializer):
     prototype = hlink('component-type-details', 'prototype_id', 'prototype_id')
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
+    locked = serializers.BooleanField(read_only=True, source='is_locked')
 
     def get_status(self, obj):
         return status_api.get_component_status(obj.id)
