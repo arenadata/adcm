@@ -32,25 +32,17 @@ class CommonHeaderLocators:
 class AuthorizedHeaderLocators(CommonHeaderLocators):
     """ADCM header locators for authorized user"""
 
-    job_block_previous = Locator(By.CSS_SELECTOR, "app-bell div", "Header jobs block previous version")
-    job_block = Locator(By.CSS_SELECTOR, ".job-status", "Header jobs block")
+    job_block = Locator(By.CSS_SELECTOR, "app-bell div", "Header jobs block previous version")
     job_popup = Locator(By.CSS_SELECTOR, "app-popover", "Header jobs pop up")
 
-    in_progress_job_button = Locator(
-        By.CSS_SELECTOR, "button[mattooltip='Show jobs in progress']", "Header button for in progress Jobs"
-    )
-    success_job_button = Locator(
-        By.CSS_SELECTOR, "button[mattooltip='Show success jobs']", "Header button for success Jobs"
-    )
-    failed_job_button = Locator(
-        By.CSS_SELECTOR, "button[mattooltip='Show failed jobs']", "Header button for failed Jobs"
-    )
     help_button = Locator(By.CSS_SELECTOR, "button[adcm_test='help']", "Header button for help")
     account_button = Locator(By.CSS_SELECTOR, "button[adcm_test='account']", "Header button for account settings")
     popup_block = Locator(By.CSS_SELECTOR, ".*mat-menu-content", "Header popup block")
 
     class JobPopup:
         """ADCM header popup with jobs"""
+
+        block = Locator(By.CSS_SELECTOR, "app-popover", "Popup block with jobs")
 
         success_jobs = Locator(By.CSS_SELECTOR, "div[mattooltip='Show success jobs']", "Success jobs")
         in_progress_jobs = Locator(By.CSS_SELECTOR, "div[mattooltip='Show jobs in progress']", "In progress jobs")
@@ -59,6 +51,8 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
         job_row = Locator(By.CSS_SELECTOR, "div>div[class*='notification']", "Job row in popup list")
         job_status = Locator(By.CSS_SELECTOR, "mat-icon", "Job status in job row")
         job_name = Locator(By.CSS_SELECTOR, "a", "Job name in job row")
+
+        show_all_link = Locator(By.CSS_SELECTOR, "app-popover a[href='/task']", "Link to task page")
 
     class HelpPopup:
         """ADCM header popup with help links"""
