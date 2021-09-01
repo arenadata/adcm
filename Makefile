@@ -2,7 +2,7 @@
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 
 ADCMBASE_IMAGE ?= hub.arenadata.io/adcm/base
-ADCMBASE_TAG ?= 20210830171352
+ADCMBASE_TAG ?= 20210901163306
 
 APP_IMAGE ?= hub.adsw.io/adcm/adcm
 APP_TAG ?= $(subst /,_,$(BRANCH_NAME))
