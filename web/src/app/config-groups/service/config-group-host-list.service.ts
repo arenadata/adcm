@@ -24,7 +24,7 @@ export class ConfigGroupHostListService implements IListService<Host> {
   }
 
 
-  getList(p: ParamMap, typeName): Observable<ListResult<Host>> {
+  getList(p: ParamMap): Observable<ListResult<Host>> {
     const listParamStr = localStorage.getItem('list:param');
     if (p?.keys.length) {
       const param = p.keys.reduce((a, c) => ({ ...a, [c]: p.get(c) }), {});
@@ -36,9 +36,9 @@ export class ConfigGroupHostListService implements IListService<Host> {
     }
 
     const configGroupId = this.cluster.Current.id;
-    const params = convertToParamMap({ ...p, groupconfig: configGroupId });
+    const params = convertToParamMap({});
 
-    return this.api.getList(`${environment.apiRoot}host/`, params);
+    return this.api.getList(`${environment.apiRoot}group-config/${configGroupId}/host/`, params);
   }
 
   initInstance(): ListInstance {
