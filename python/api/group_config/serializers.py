@@ -174,6 +174,11 @@ class GroupConfigHostSerializer(serializers.ModelSerializer):
         group_config.hosts.add(host)
         return host
 
+    def validate_id(self, value):
+        if self.context['groupconfig'].hosts.filter(id=value.id):
+            raise AdcmEx('GROUP_CONFIG_HOST_EXISTS')
+        return value
+
 
 class GroupConfigHostCandidateSerializer(GroupConfigHostSerializer):
     """Serializer for host candidate"""

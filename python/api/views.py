@@ -17,6 +17,7 @@ from rest_framework import viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 import api.serializers
 import cm.api
@@ -100,9 +101,8 @@ class LogOut(GenericAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ADCMInfo(GenericAPIView):
+class ADCMInfo(APIView):
     permission_classes = (rest_framework.permissions.AllowAny,)
-    serializer_class = api.serializers.EmptySerializer
 
     def get(self, request):
         """

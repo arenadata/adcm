@@ -120,6 +120,10 @@ ERRORS = {
         ),
         rfs.HTTP_400_BAD_REQUEST,
     ),
+    'GROUP_CONFIG_HOST_EXISTS': (
+        'the host is already a member of this group ',
+        rfs.HTTP_400_BAD_REQUEST,
+    ),
     'NOT_CHANGEABLE_FIELDS': ("fields cannot be changed", rfs.HTTP_400_BAD_REQUEST, ERR),
     'GROUP_CONFIG_TYPE_ERROR': (
         (
