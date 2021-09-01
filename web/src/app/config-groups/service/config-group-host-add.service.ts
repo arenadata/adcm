@@ -40,7 +40,7 @@ export class ConfigGroupHostAddService implements IAddService {
   }
 
   add(data: { host: number, group: number }[]): Observable<any> {
-    return forkJoin(data.map((o) => this.api.post<unknown>(`${environment.apiRoot}group-config-host/`, o)));
+    return forkJoin(data.map((o) => this.api.post<unknown>(`${environment.apiRoot}group-config/${o.group}/host/`, { id: o.host })));
   }
 
   getList(type: TypeName, param: Params = {}): Observable<any[]> {
