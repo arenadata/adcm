@@ -1,13 +1,13 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { ApiService } from '../../core/api';
+import { ApiService } from '@app/core/api';
 import { convertToParamMap, ParamMap } from '@angular/router';
-import { IListService, ListInstance } from '../../shared/components/list/list-service-token';
-import { ListResult } from '../../models/list-result';
+import { IListService, ListInstance } from '@app/shared/components/list/list-service-token';
+import { ListResult } from '@app/models/list-result';
 import { of } from 'rxjs/internal/observable/of';
-import { Host } from '../../core/types';
-import { ClusterService } from '../../core/services/cluster.service';
-import { environment } from '../../../environments/environment';
+import { Host } from '@app/core/types';
+import { ClusterService } from '@app/core/services/cluster.service';
+import { environment } from '@env/environment';
 
 
 @Injectable({
@@ -30,9 +30,9 @@ export class ConfigGroupHostListService implements IListService<Host> {
       const param = p.keys.reduce((a, c) => ({ ...a, [c]: p.get(c) }), {});
       if (listParamStr) {
         const json = JSON.parse(listParamStr);
-        json['group_configs'] = param;
+        json['group_config'] = param;
         localStorage.setItem('list:param', JSON.stringify(json));
-      } else localStorage.setItem('list:param', JSON.stringify({ ['group_configs']: param }));
+      } else localStorage.setItem('list:param', JSON.stringify({ ['group_config']: param }));
     }
 
     const configGroupId = this.cluster.Current.id;

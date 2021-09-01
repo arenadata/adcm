@@ -151,7 +151,7 @@ export class BaseListDirective {
     const rewriteRow = (row: Entities) => this.service.checkItem(row).subscribe((item) => Object.keys(row).map((a) => (row[a] = item[a])));
 
     let temporaryName;
-    if (this.typeName === 'group_configs') {
+    if (this.typeName === 'group_config') {
       temporaryName = 'group-config';
     } else if (this.typeName === 'host2configgroup') {
       temporaryName = 'group-config-host';
