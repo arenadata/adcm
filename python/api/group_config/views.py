@@ -67,8 +67,10 @@ class GroupConfigHostViewSet(
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        group_config = GroupConfig.obj.get(id=self.kwargs.get('parent_lookup_groupconfig'))
-        context.update({'groupconfig': group_config})
+        group_config_id = self.kwargs.get('parent_lookup_groupconfig')
+        if group_config_id is not None:
+            group_config = GroupConfig.obj.get(id=group_config_id)
+            context.update({'groupconfig': group_config})
         return context
 
 
