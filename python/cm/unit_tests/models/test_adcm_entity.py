@@ -24,7 +24,7 @@ class ADCMEntityConcernTest(TestCase):
 
     def test_is_locked__false(self):
         for obj in self.hierarchy.values():
-            self.assertFalse(obj.is_locked)
+            self.assertFalse(obj.locked)
 
             for item in obj.concerns.all():
                 self.assertFalse(item, 'No locks expected')
@@ -33,7 +33,7 @@ class ADCMEntityConcernTest(TestCase):
         lock = utils.gen_concern_item(models.ConcernType.Lock)
         for obj in self.hierarchy.values():
             obj.add_to_concerns(lock)
-            self.assertTrue(obj.is_locked)
+            self.assertTrue(obj.locked)
 
     def test_is_locked__deleted(self):
         lock = utils.gen_concern_item(models.ConcernType.Lock)
@@ -42,25 +42,25 @@ class ADCMEntityConcernTest(TestCase):
 
         lock.delete()
         for obj in self.hierarchy.values():
-            self.assertFalse(obj.is_locked)
+            self.assertFalse(obj.locked)
 
     def test_add_to_concern__none(self):
         lock = None
         for obj in self.hierarchy.values():
             obj.add_to_concerns(lock)
-            self.assertFalse(obj.is_locked)
+            self.assertFalse(obj.locked)
 
     def test_add_to_concern__deleted(self):
         lock = models.ConcernItem(type=models.ConcernType.Lock, name=None, reason='unsaved')
         for obj in self.hierarchy.values():
             obj.add_to_concerns(lock)
-            self.assertFalse(obj.is_locked)
+            self.assertFalse(obj.locked)
 
     def test_add_to_concern(self):
         lock = utils.gen_concern_item(models.ConcernType.Lock)
         for obj in self.hierarchy.values():
             obj.add_to_concerns(lock)
-            self.assertTrue(obj.is_locked)
+            self.assertTrue(obj.locked)
             locks = obj.concerns.all()
             self.assertEqual(len(locks), 1)
             self.assertEqual(locks[0].pk, lock.pk)
@@ -71,7 +71,7 @@ class ADCMEntityConcernTest(TestCase):
         for obj in self.hierarchy.values():
             obj.add_to_concerns(lock)
             obj.remove_from_concerns(nolock)
-            self.assertTrue(obj.is_locked)
+            self.assertTrue(obj.locked)
 
     def test_remove_from_concern__deleted(self):
         nolock = models.ConcernItem(type=models.ConcernType.Lock, name=None, reason='unsaved')
@@ -79,7 +79,7 @@ class ADCMEntityConcernTest(TestCase):
         for obj in self.hierarchy.values():
             obj.add_to_concerns(lock)
             obj.remove_from_concerns(nolock)
-            self.assertTrue(obj.is_locked)
+            self.assertTrue(obj.locked)
 
     def test_get_own_issue__empty(self):
         cluster = self.hierarchy['cluster']

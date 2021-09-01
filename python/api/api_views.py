@@ -63,7 +63,7 @@ def update(serializer, **kwargs):
 
 
 def filter_actions(obj: ADCMEntity, actions_set):
-    if obj.is_locked:
+    if obj.locked:
         return []
     filtered = []
     for act in actions_set:

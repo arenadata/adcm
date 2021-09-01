@@ -114,7 +114,7 @@ def check_upgrade_edition(obj, upgrade):
 
 
 def check_upgrade_state(obj, upgrade):
-    if obj.is_locked:
+    if obj.locked:
         return False, 'object is locked'
     if upgrade.state_available:
         available = upgrade.state_available
@@ -197,7 +197,7 @@ def check_upgrade_import(obj, upgrade):  # pylint: disable=too-many-branches
 
 
 def check_upgrade(obj, upgrade):
-    if obj.is_locked:
+    if obj.locked:
         concerns = [i.name or 'Action lock' for i in obj.concerns.all()]
         return False, f'{obj} has blocking concerns to address: {concerns}'
 

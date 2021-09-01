@@ -81,7 +81,7 @@ class ServiceDetailSerializer(ServiceSerializer):
     )
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
-    locked = serializers.BooleanField(read_only=True, source='is_locked')
+    locked = serializers.BooleanField(read_only=True)
 
     def get_status(self, obj):
         return status_api.get_service_status(obj.cluster.id, obj.id)

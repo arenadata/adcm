@@ -226,7 +226,7 @@ class ADCMEntity(ADCMModel):
         abstract = True
 
     @property
-    def is_locked(self) -> bool:
+    def locked(self) -> bool:
         """Check if actions could be run over entity"""
         return self.concerns.filter(blocking=True).exists()
 

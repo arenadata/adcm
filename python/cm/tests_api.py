@@ -126,9 +126,9 @@ class TestApi(TestCase):
         host_1.refresh_from_db()
         host_2.refresh_from_db()
         host_3.refresh_from_db()
-        self.assertTrue(host_1.is_locked)
-        self.assertTrue(host_2.is_locked)
-        self.assertFalse(host_3.is_locked)
+        self.assertTrue(host_1.locked)
+        self.assertTrue(host_2.locked)
+        self.assertFalse(host_3.locked)
 
         new_hc_list = [
             (service, host_1, component_1),
@@ -140,9 +140,9 @@ class TestApi(TestCase):
         host_1.refresh_from_db()
         host_2.refresh_from_db()
         host_3.refresh_from_db()
-        self.assertTrue(host_1.is_locked)
-        self.assertFalse(host_2.is_locked)
-        self.assertTrue(host_3.is_locked)
+        self.assertTrue(host_1.locked)
+        self.assertFalse(host_2.locked)
+        self.assertTrue(host_3.locked)
 
     @patch('cm.status_api.load_service_map')
     @patch('cm.issue.update_hierarchy_issues')
@@ -168,9 +168,9 @@ class TestApi(TestCase):
         host_1.refresh_from_db()
         host_2.refresh_from_db()
         host_3.refresh_from_db()
-        self.assertFalse(host_1.is_locked)
-        self.assertFalse(host_2.is_locked)
-        self.assertFalse(host_3.is_locked)
+        self.assertFalse(host_1.locked)
+        self.assertFalse(host_2.locked)
+        self.assertFalse(host_3.locked)
 
         new_hc_list = [
             (service, host_1, component_1),
@@ -182,6 +182,6 @@ class TestApi(TestCase):
         host_1.refresh_from_db()
         host_2.refresh_from_db()
         host_3.refresh_from_db()
-        self.assertFalse(host_1.is_locked)
-        self.assertFalse(host_2.is_locked)
-        self.assertFalse(host_3.is_locked)
+        self.assertFalse(host_1.locked)
+        self.assertFalse(host_2.locked)
+        self.assertFalse(host_3.locked)

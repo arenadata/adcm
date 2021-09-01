@@ -179,7 +179,7 @@ def check_action_state(action, task_object, cluster):
     else:
         obj = task_object
 
-    if obj.is_locked:
+    if obj.locked:
         err('TASK_ERROR', 'object is locked')
     available = action.state_available
     if available == 'any':
