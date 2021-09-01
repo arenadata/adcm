@@ -10,15 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageHeader,
-    PageFooter,
-)
 
+class ProviderMainMenuLocators:
+    """Provider main page elements locators"""
 
-class AdminSettingsPage(BasePageObject):
-    def __init__(self, driver, base_url):
-        super().__init__(driver, base_url, "/admin/settings")
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
+    ...

@@ -9,16 +9,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+---
+- name: Dummy action
+  hosts: all
+  connection: local
+  gather_facts: no
 
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageHeader,
-    PageFooter,
-)
-
-
-class AdminIntroPage(BasePageObject):
-    def __init__(self, driver, base_url):
-        super().__init__(driver, base_url, "/admin/intro")
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
+  tasks:
+    - name: Dummy?
+      debug:
+        msg: "Some message"
