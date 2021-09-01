@@ -4,7 +4,6 @@ import { ApiService } from '@app/core/api';
 import { convertToParamMap, ParamMap } from '@angular/router';
 import { IListService, ListInstance } from '@app/shared/components/list/list-service-token';
 import { ListResult } from '@app/models/list-result';
-import { of } from 'rxjs/internal/observable/of';
 import { Host } from '@app/core/types';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { environment } from '@env/environment';
@@ -47,10 +46,7 @@ export class ConfigGroupHostListService implements IListService<Host> {
   }
 
   delete(row: Host): Observable<Object> {
-    // ToDo
-    console.log('delete');
-
-    return of(null);
+    return this.api.delete(row.url);
   }
 
 }
