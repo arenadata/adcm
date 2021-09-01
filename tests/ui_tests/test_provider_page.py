@@ -253,7 +253,7 @@ class TestProviderConfigPage:
 
     def test_reset_config_in_row_on_provider_config_page(self, app_fs, upload_and_create_test_provider):
         params = {
-            "row_name": "str_param:",
+            "row_name": "str_param",
             "row_value_new": "test",
             "row_value_old": "0000",
             "config_name": "test_name",
@@ -267,7 +267,9 @@ class TestProviderConfigPage:
         provider_config_page.config.save_config()
 
         provider_config_page.config.reset_to_default(row=config_row)
-        provider_config_page.config.assert_input_value_is(expected_value=params["row_value_old"], row=config_row)
+        provider_config_page.config.assert_input_value_is(
+            expected_value=params["row_value_old"], display_name=params["row_name"]
+        )
 
     @pytest.mark.parametrize("bundle", ["provider_required_fields"], indirect=True)
     def test_field_validation_on_provider_config_page(
