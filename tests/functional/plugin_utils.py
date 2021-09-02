@@ -9,18 +9,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Union, Callable, Any, TypeVar, Collection, Type, Optional, List
+"""
+Common functions and helpers for testing plugins (state, multi_state, config)
+"""
+
+from typing import Union, Callable, Any, TypeVar, Collection, Type, Optional, List, Tuple
 
 import allure
 import pytest
 
 from _pytest.mark.structures import ParameterSet
+from adcm_pytest_plugin import utils as plugin_utils
 from adcm_client.objects import Cluster, Service, Component, Provider, Host, ADCMClient
 
 ClusterRelatedObject = Union[Cluster, Service, Component]
 ProviderRelatedObject = Union[Provider, Host]
 AnyADCMObject = Union[ClusterRelatedObject, ProviderRelatedObject]
 ADCMObjectField = TypeVar('ADCMObjectField')
+
+DEFAULT_OBJECT_NAMES = ('first', 'second')
 
 
 def generate_cluster_success_params(action_prefix: str, id_template: str) -> List[ParameterSet]:
@@ -195,16 +202,17 @@ def compose_name(adcm_object: AnyADCMObject) -> str:
 
 def build_objects_comparator(
     get_compare_field: Callable[[AnyADCMObject], ADCMObjectField],
+    field_name: str,
     field_converter: Callable[[Any], ADCMObjectField] = str,
 ) -> Callable[[AnyADCMObject, ADCMObjectField], None]:
     """Get function to compare value of ADCM object's field with expected one"""
 
-    def compare(adcm_object: AnyADCMObject, expected_value: ADCMObjectField):
+    def compare(adcm_object: AnyADCMObject, expected_value: Union[ADCMObjectField, Collection[ADCMObjectField]]):
         adcm_object_name = compose_name(adcm_object)
         adcm_object.reread()
         assert (
             actual_value := field_converter(get_compare_field(adcm_object))
-        ) == expected_value, f'Multi state of {adcm_object_name} should be {expected_value}, not {actual_value}'
+        ) == expected_value, f'{field_name} of {adcm_object_name} should be {expected_value}, not {actual_value}'
 
     return compare
 
@@ -287,3 +295,36 @@ def _check_provider_related_objects(
                     comparator(host, unchanged)
 
     return wrapped
+
+
+def create_two_clusters(adcm_client: ADCMClient, caller_file: str, bundle_dir: str) -> Tuple[Cluster, Cluster]:
+    """
+    Create two clusters with two services on each with "default object names"
+    :param adcm_client: ADCM client
+    :param caller_file: Pass __file__ here
+    :param bundle_dir: Bundle directory name (e.g. "cluster", "provider")
+    """
+    uploaded_bundle = adcm_client.upload_from_fs(plugin_utils.get_data_dir(caller_file, bundle_dir))
+    first_cluster = uploaded_bundle.cluster_create(name=DEFAULT_OBJECT_NAMES[0])
+    second_cluster = uploaded_bundle.cluster_create(name=DEFAULT_OBJECT_NAMES[1])
+    clusters = (first_cluster, second_cluster)
+    for cluster in clusters:
+        for name in DEFAULT_OBJECT_NAMES:
+            cluster.service_add(name=name)
+    return clusters
+
+
+def create_two_providers(adcm_client: ADCMClient, caller_file: str, bundle_dir: str) -> Tuple[Provider, Provider]:
+    """
+    Create two providers with two hosts
+    :param adcm_client: ADCM client
+    :param caller_file: Pass __file__ here
+    :param bundle_dir: Bundle directory name (e.g. "cluster", "provider")
+    """
+    uploaded_bundle = adcm_client.upload_from_fs(plugin_utils.get_data_dir(caller_file, bundle_dir))
+    first_provider, second_provider, *_ = [uploaded_bundle.provider_create(name=name) for name in DEFAULT_OBJECT_NAMES]
+    providers = (first_provider, second_provider)
+    for provider in providers:
+        for suffix in DEFAULT_OBJECT_NAMES:
+            provider.host_create(fqdn=f'{provider.name}-{suffix}')
+    return providers

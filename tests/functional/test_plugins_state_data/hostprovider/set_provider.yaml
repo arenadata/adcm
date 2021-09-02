@@ -5,10 +5,4 @@
   tasks:
     - adcm_state:
         type: "provider"
-        state: "pstatex"
-      register: out
-
-    - name: "Check return value"
-      fail:
-        msg: "Expected value is pstatex, actual value is {{ out.state }}"
-      when: out.state != "pstatex"
+        state: "ifeelgood!"
