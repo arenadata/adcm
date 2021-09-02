@@ -141,7 +141,7 @@ def check_rows_amount(page, expected_amount: int, table_page_num: int):
     :param table_page_num: Number of the current page (for assertion error message)
     """
     assert (
-        row_count := page.table.row_count
+        row_count := page.locators.row_count
     ) == expected_amount, f'Page #{table_page_num} should contain {expected_amount}, not {row_count}'
 
 

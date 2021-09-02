@@ -70,16 +70,16 @@ class ClusterListPage(BasePageObject):
         }
 
     def click_action_btn_in_row(self, row: WebElement):
-        self.find_child(row, self.table.table.ClusterRow.actions).click()
+        self.find_child(row, self.table.locators.ClusterRow.actions).click()
 
     def click_import_btn_in_row(self, row: WebElement):
-        self.find_child(row, self.table.table.ClusterRow.imports).click()
+        self.find_child(row, self.table.locators.ClusterRow.imports).click()
 
     @allure.step("Run action {action_name} for cluster")
     def run_action_in_cluster_row(self, row: WebElement, action_name: str):
         self.click_action_btn_in_row(row)
-        self.wait_element_visible(self.table.table.ActionPopup.block)
-        self.find_and_click(self.table.table.ActionPopup.button(action_name))
+        self.wait_element_visible(self.table.locators.ActionPopup.block)
+        self.find_and_click(self.table.locators.ActionPopup.button(action_name))
         self.wait_element_visible(ActionDialog.body)
         self.find_and_click(ActionDialog.run)
 
@@ -97,31 +97,31 @@ class ClusterListPage(BasePageObject):
 
     @allure.step("Get cluster state")
     def get_cluster_state_from_row(self, row: WebElement):
-        return self.find_child(row, self.table.table.ClusterRow.state).text
+        return self.find_child(row, self.table.locators.ClusterRow.state).text
 
     @allure.step("Get row by cluster name '{cluster_name}'")
     def get_row_by_cluster_name(self, cluster_name: str) -> WebElement:
         rows = self.table.get_all_rows()
         for row in rows:
-            if self.find_child(row, self.table.table.ClusterRow.name).text == cluster_name:
+            if self.find_child(row, self.table.locators.ClusterRow.name).text == cluster_name:
                 return row
         raise AssertionError(f"Cluster '{cluster_name}' not found in table rows")
 
     def click_config_button_in_row(self, row: WebElement):
-        self.find_child(row, self.table.table.ClusterRow.config).click()
+        self.find_child(row, self.table.locators.ClusterRow.config).click()
 
     def click_cluster_name_in_row(self, row: WebElement):
-        self.find_child(row, self.table.table.ClusterRow.name).click()
+        self.find_child(row, self.table.locators.ClusterRow.name).click()
 
     @allure.step("Delete cluster")
     def delete_cluster_by_row(self, row: WebElement):
-        self.find_child(row, self.table.table.ClusterRow.delete_btn).click()
+        self.find_child(row, self.table.locators.ClusterRow.delete_btn).click()
         self.wait_element_visible(DeleteDialog.body)
         self.find_and_click(DeleteDialog.yes)
         self.wait_element_hide(DeleteDialog.body)
 
     def click_on_issue_by_name(self, row: WebElement, issue_name: str):
-        self.hover_element(self.find_child(row, self.table.table.ClusterRow.actions))
+        self.hover_element(self.find_child(row, self.table.locators.ClusterRow.actions))
         self.wait_element_visible(ListIssuePopupLocators.block)
         for issue in self.find_elements(ListIssuePopupLocators.link_to_issue):
             if issue.text == issue_name:

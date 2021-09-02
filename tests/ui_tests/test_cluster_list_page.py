@@ -164,12 +164,12 @@ class TestClusterListPage:
         }
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         with allure.step("Check no cluster rows"):
-            assert len(cluster_page.table.get_all_rows()) == 0, "There should be no row with clusters"
+            assert len(cluster_page.locators.get_all_rows()) == 0, "There should be no row with clusters"
         cluster_page.create_cluster(
             bundle_archive, cluster_params['description'], is_license=bool(edition == "enterprise")
         )
         with allure.step("Check uploaded cluster"):
-            assert len(cluster_page.table.get_all_rows()) == 1, "There should be 1 row with cluster"
+            assert len(cluster_page.locators.get_all_rows()) == 1, "There should be 1 row with cluster"
             uploaded_cluster = cluster_page.get_cluster_info_from_row(0)
             assert cluster_params['bundle'] == uploaded_cluster['bundle'], (
                 f"Cluster bundle should be {cluster_params['bundle']} and " f"not {uploaded_cluster['bundle']}"
@@ -189,14 +189,14 @@ class TestClusterListPage:
                 bundle.cluster_create(name=f"Test cluster {i}")
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         cluster_page.close_info_popup()
-        cluster_page.table.check_pagination(second_page_item_amount=1)
+        cluster_page.locators.check_pagination(second_page_item_amount=1)
 
     @pytest.mark.smoke()
     @pytest.mark.usefixtures("create_community_cluster")
     def test_check_cluster_list_page_action_run(self, app_fs):
         params = {"action_name": "test_action", "expected_state": "installed"}
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
-        row = cluster_page.table.get_all_rows()[0]
+        row = cluster_page.locators.get_all_rows()[0]
         with cluster_page.wait_cluster_state_change(row):
             cluster_page.run_action_in_cluster_row(row, params["action_name"])
         with allure.step("Check cluster state has changed"):
@@ -222,14 +222,14 @@ class TestClusterListPage:
     @pytest.mark.smoke()
     def test_check_cluster_list_page_open_cluster_config(self, app_fs, create_community_cluster):
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
-        row = cluster_page.table.get_all_rows()[0]
+        row = cluster_page.locators.get_all_rows()[0]
         cluster_page.click_config_button_in_row(row)
         ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).wait_page_is_opened()
 
     @pytest.mark.smoke()
     def test_check_cluster_list_page_open_cluster_main(self, app_fs, create_community_cluster):
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
-        row = cluster_page.table.get_all_rows()[0]
+        row = cluster_page.locators.get_all_rows()[0]
         cluster_page.click_cluster_name_in_row(row)
         ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).wait_page_is_opened()
 
@@ -237,11 +237,11 @@ class TestClusterListPage:
     @pytest.mark.usefixtures("create_community_cluster")
     def test_check_cluster_list_page_delete_cluster(self, app_fs):
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
-        row = cluster_page.table.get_all_rows()[0]
-        with cluster_page.table.wait_rows_change():
+        row = cluster_page.locators.get_all_rows()[0]
+        with cluster_page.locators.wait_rows_change():
             cluster_page.delete_cluster_by_row(row)
         with allure.step("Check there are no rows"):
-            assert len(cluster_page.table.get_all_rows()) == 0, "Cluster table should be empty"
+            assert len(cluster_page.locators.get_all_rows()) == 0, "Cluster table should be empty"
 
 
 class TestClusterMainPage:
@@ -312,7 +312,7 @@ class TestClusterServicePage:
         params = {"service_name": "test_service - 1.2"}
         cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
         cluster_service_page.add_service_by_name(params["service_name"])
-        service_row = cluster_service_page.table.get_all_rows()[0]
+        service_row = cluster_service_page.locators.get_all_rows()[0]
         service_row.click()
         ServiceMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id, 1).wait_page_is_opened()
 
@@ -321,7 +321,7 @@ class TestClusterServicePage:
         bundle = cluster_bundle(sdk_client_fs, BUNDLE_REQUIRED_FIELDS)
         cluster = bundle.cluster_create(name=CLUSTER_NAME)
         cluster_list_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
-        row = cluster_list_page.table.get_all_rows()[0]
+        row = cluster_list_page.locators.get_all_rows()[0]
         cluster_list_page.click_on_issue_by_name(row, params["issue_name"])
         ClusterConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id).wait_page_is_opened()
 
@@ -330,7 +330,7 @@ class TestClusterServicePage:
         bundle = cluster_bundle(sdk_client_fs, BUNDLE_REQUIRED_FIELDS)
         cluster = bundle.cluster_create(name=CLUSTER_NAME).service_add(name=SERVICE_NAME)
         cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
-        row = cluster_service_page.table.get_all_rows()[0]
+        row = cluster_service_page.locators.get_all_rows()[0]
         cluster_service_page.click_on_issue_by_name(row, params["issue_name"])
         ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, 1).wait_page_is_opened()
 
@@ -340,7 +340,7 @@ class TestClusterServicePage:
 
         cluster, _ = create_community_cluster_with_service
         cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
-        row = cluster_service_page.table.get_all_rows()[0]
+        row = cluster_service_page.locators.get_all_rows()[0]
         with cluster_service_page.wait_service_state_change(row):
             cluster_service_page.run_action_in_service_row(row, params["action_name"])
         with allure.step("Check service state has changed"):
@@ -355,7 +355,7 @@ class TestClusterServicePage:
     def test_check_service_list_page_import_run(self, app_fs, create_import_cluster_with_service):
         cluster, service, _, _ = create_import_cluster_with_service
         cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
-        row = cluster_service_page.table.get_all_rows()[0]
+        row = cluster_service_page.locators.get_all_rows()[0]
         cluster_service_page.click_import_btn_in_row(row)
         import_page = ServiceImportPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id)
         import_page.wait_page_is_opened()
@@ -365,7 +365,7 @@ class TestClusterServicePage:
     def test_check_service_list_page_open_service_config(self, app_fs, create_community_cluster_with_service):
         cluster, service = create_community_cluster_with_service
         cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
-        row = cluster_service_page.table.get_all_rows()[0]
+        row = cluster_service_page.locators.get_all_rows()[0]
         cluster_service_page.click_config_btn_in_row(row)
         ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).wait_page_is_opened()
 
@@ -374,7 +374,7 @@ class TestClusterServicePage:
         cluster = bundle.cluster_create(name=CLUSTER_NAME)
         cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_service_page.add_service_by_name(service_name="All")
-        cluster_service_page.table.check_pagination(second_page_item_amount=2)
+        cluster_service_page.locators.check_pagination(second_page_item_amount=2)
 
 
 class TestClusterHostPage:
@@ -428,7 +428,7 @@ class TestClusterHostPage:
             cluster_host_page.get_host_info_from_row,
             get_info_kwargs={'table_has_cluster_column': False},
         )
-        host_row = cluster_host_page.table.get_all_rows()[0]
+        host_row = cluster_host_page.locators.get_all_rows()[0]
         cluster_host_page.click_on_host_name_in_host_row(host_row)
         HostMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, 1).wait_page_is_opened()
 
@@ -451,7 +451,7 @@ class TestClusterHostPage:
         cluster, host = create_community_cluster_with_host
         cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_host_page.wait_page_is_opened()
-        row = cluster_host_page.table.get_all_rows()[0]
+        row = cluster_host_page.locators.get_all_rows()[0]
         cluster_host_page.click_on_issue_by_name(row, params["issue_name"])
         HostConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, host.id).wait_page_is_opened()
 
@@ -459,7 +459,7 @@ class TestClusterHostPage:
         params = {"action_name": "test_action", "expected_state": "installed"}
         cluster, _ = create_community_cluster_with_host
         cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
-        row = cluster_host_page.table.get_all_rows()[0]
+        row = cluster_host_page.locators.get_all_rows()[0]
         with cluster_host_page.wait_host_state_change(row):
             cluster_host_page.run_action_in_host_row(row, params["action_name"])
         with allure.step("Check host state has changed"):
@@ -474,11 +474,11 @@ class TestClusterHostPage:
     def test_check_delete_host_from_cluster_host_page(self, app_fs, create_community_cluster_with_host):
         cluster, _ = create_community_cluster_with_host
         cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
-        row = cluster_host_page.table.get_all_rows()[0]
-        with cluster_host_page.table.wait_rows_change():
+        row = cluster_host_page.locators.get_all_rows()[0]
+        with cluster_host_page.locators.wait_rows_change():
             cluster_host_page.delete_host_by_row(row)
         with allure.step("Check there are no rows"):
-            assert len(cluster_host_page.table.get_all_rows()) == 0, "Host table should be empty"
+            assert len(cluster_host_page.locators.get_all_rows()) == 0, "Host table should be empty"
 
     def test_delete_linked_host_from_cluster_components_page(
         self, app_fs, create_community_cluster_with_host_and_service
@@ -487,7 +487,7 @@ class TestClusterHostPage:
         cluster, host = create_community_cluster_with_host_and_service
         cluster.hostcomponent_set((host, cluster.service(name=SERVICE_NAME).component(name=COMPONENT_NAME)))
         cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
-        row = cluster_host_page.table.get_all_rows()[0]
+        row = cluster_host_page.locators.get_all_rows()[0]
         cluster_host_page.delete_host_by_row(row)
         with allure.step("Check error message"):
             assert cluster_host_page.get_info_popup_text() == params["message"], "No error message"
@@ -495,7 +495,7 @@ class TestClusterHostPage:
     def test_open_host_config_from_cluster_host_page(self, app_fs, create_community_cluster_with_host):
         cluster, host = create_community_cluster_with_host
         cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
-        row = cluster_host_page.table.get_all_rows()[0]
+        row = cluster_host_page.locators.get_all_rows()[0]
         cluster_host_page.click_config_btn_in_row(row)
         HostConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, host.id).wait_page_is_opened()
 
@@ -508,7 +508,7 @@ class TestClusterHostPage:
                 host = provider.host_create(f"{HOST_NAME}_{i}")
                 cluster.host_add(host)
         cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
-        cluster_host_page.table.check_pagination(1)
+        cluster_host_page.locators.check_pagination(1)
 
 
 class TestClusterComponentsPage:
