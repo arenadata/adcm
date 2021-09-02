@@ -19,12 +19,10 @@ from selenium.webdriver.remote.webdriver import WebElement
 
 from tests.ui_tests.app.page.cluster.locators import (
     ClusterImportLocators,
-    ClusterMainLocators,
     ClusterServicesLocators,
     ClusterHostLocators,
     ClusterComponentsLocators,
     ClusterStatusLocators,
-    ClusterActionLocators,
 )
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
@@ -34,6 +32,7 @@ from tests.ui_tests.app.page.common.base_page import (
 from tests.ui_tests.app.page.common.common_locators import (
     ObjectPageLocators,
     ObjectPageMenuLocators,
+    CommonActionLocators,
 )
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
@@ -142,7 +141,7 @@ class ClusterMainPage(ClusterPageMixin):
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
-        ClusterMainLocators.text,
+        ObjectPageLocators.text,
     ]
 
 
@@ -255,7 +254,7 @@ class ClusterConfigPage(ClusterPageMixin):
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
-        ClusterMainLocators.text,
+        ObjectPageLocators.text,
         CommonConfigMenu.description_input,
         CommonConfigMenu.search_input,
         CommonConfigMenu.advanced_label,
@@ -469,7 +468,7 @@ class ClusterStatusPage(ClusterPageMixin):
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
-        ClusterMainLocators.text,
+        ObjectPageLocators.text,
     ]
 
     def click_collapse_all_btn(self):
@@ -524,18 +523,18 @@ class ClusterActionPage(ClusterPageMixin):
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
-        ClusterActionLocators.action_card,
+        CommonActionLocators.action_card,
     ]
 
     def get_all_actions(self):
-        return self.find_elements(ClusterActionLocators.action_card)
+        return self.find_elements(CommonActionLocators.action_card)
 
     @allure.step("Run action")
     def click_run_btn_in_action(self, action: WebElement):
-        self.find_child(action, ClusterActionLocators.ActionCard.play_btn).click()
+        self.find_child(action, CommonActionLocators.ActionCard.play_btn).click()
         self.wait_element_visible(ActionDialog.body)
         self.find_and_click(ActionDialog.run)
 
     @allure.step("Check that action page is empty")
     def check_empty_page(self):
-        assert "Nothing to display." in self.find_element(ClusterActionLocators.info_text).text
+        assert "Nothing to display." in self.find_element(CommonActionLocators.info_text).text
