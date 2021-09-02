@@ -16,7 +16,6 @@ import json
 import tempfile
 from typing import Generator
 
-import py
 import requests
 import allure
 import pytest
@@ -50,14 +49,14 @@ def additional_adcm_init_config(request) -> dict:
 
 
 @pytest.fixture(scope="session")
-def downloads_directory(tmpdir_factory: TempdirFactory) -> py.path.local:
+def downloads_directory(tmpdir_factory: TempdirFactory):
     """Folder in which browser downloads will be stored"""
     downloads_dirname = 'browser-downloads'
     return tmpdir_factory.mktemp(downloads_dirname)
 
 
 @pytest.fixture()
-def clean_downloads_fs(request: SubRequest, downloads_directory: py.path.local):
+def clean_downloads_fs(request: SubRequest, downloads_directory):
     """Clean downloads directory before use"""
     for item in downloads_directory.listdir():
         item.remove()
