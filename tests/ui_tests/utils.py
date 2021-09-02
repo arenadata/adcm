@@ -11,6 +11,7 @@
 # limitations under the License.
 
 # pylint: disable=too-many-ancestors
+import os
 from collections import UserDict
 from contextlib import contextmanager
 from typing import Callable, TypeVar, Any, Union, Optional, Dict, Tuple, Sized
@@ -246,24 +247,29 @@ def assert_enough_rows(required_row_num: int, row_count: int):
     ), f"Table has only {row_count} rows when row #{required_row_num} was requested"
 
 
-@allure.step('Wait file {filename} is presented in directory {dirname}')
+@allure.step('Wait file {filename} was downloaded to {dirname} or directly to selenium')
 def wait_file_is_presented(
-    app_fs: ADCMTest,
     filename: str,
+    app_fs: ADCMTest,
+    dirname: os.PathLike,
     timeout: Union[int, float] = 70,
     period: Union[int, float] = 1,
 ):
     """Checks if file is presented in directory"""
-    dir_url = f'http://{app_fs.selenoid["host"]}:{app_fs.selenoid["port"]}/download/{app_fs.driver.session_id}'
-    file_url = f'{dir_url}/{filename}'
+    if app_fs.selenoid['host']:
+        dir_url = f'http://{app_fs.selenoid["host"]}:{app_fs.selenoid["port"]}/download/{app_fs.driver.session_id}'
+        file_url = f'{dir_url}/{filename}'
 
-    def check_file_is_presented():
-        dir_response = requests.get(dir_url)
-        response = requests.get(file_url)
-        assert response.status_code < 400, (
-            f'Request for file ended with {response.status_code}, file request text: {response.text}. '
-            f'Directory request finished with {dir_response.status_code} and text: {dir_response.text}'
-        )
+        def check_file_is_presented():
+            response = requests.get(file_url)
+            assert (
+                response.status_code < 400
+            ), f'Request for file ended with {response.status_code}, file request text: {response.text}.'
+
+    else:
+
+        def check_file_is_presented():
+            assert filename in os.listdir(dirname), f'File {filename} not found in {dirname}'
 
     wait_until_step_succeeds(check_file_is_presented, timeout=timeout, period=period)
 

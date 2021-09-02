@@ -179,7 +179,7 @@ def test_run_multijob(cluster: Cluster, page: JobListPage):
 def test_filtering_and_pagination(created_hosts: List[Host], page: JobListPage):
     """Check filtering and pagination"""
     params = {'success': 6, 'failed': 5, 'second_page': 1}
-    _run_actions_on_hosts(created_hosts)
+    _run_actions_on_hosts(created_hosts, params['success'], params['failed'])
     with allure.step('Check status filtering'):
         with page.table.wait_rows_change():
             page.select_filter_failed_tab()
@@ -229,19 +229,23 @@ def test_open_log_menu(log_type: str, cluster: Cluster, app_fs: ADCMTest):
         )
 
 
-@pytest.mark.usefixtures("login_to_adcm_over_api")
-def test_download_log(cluster: Cluster, app_fs: ADCMTest):
+@pytest.mark.usefixtures("login_to_adcm_over_api", "clean_downloads_fs")
+def test_download_log(cluster: Cluster, app_fs: ADCMTest, downloads_directory):
     """Download log file from detailed page menu"""
     downloaded_file_template = '{job_id}-ansible-{log_type}.txt'
     action = cluster.action(display_name=SUCCESS_ACTION_DISPLAY_NAME)
     task = run_cluster_action_and_assert_result(cluster, action.name)
     job_id = task.jobs[0]['id']
-    job_page = _open_detailed_job_page(task.jobs[0]['id'], app_fs)
+    job_page = _open_detailed_job_page(job_id, app_fs)
     with allure.step('Download logfiles'):
         job_page.click_on_log_download('stdout')
-        wait_file_is_presented(app_fs, downloaded_file_template.format(job_id=job_id, log_type='stdout'))
+        wait_file_is_presented(
+            downloaded_file_template.format(job_id=job_id, log_type='stdout'), app_fs, dirname=downloads_directory
+        )
         job_page.click_on_log_download('stderr')
-        wait_file_is_presented(app_fs, downloaded_file_template.format(job_id=job_id, log_type='stderr'))
+        wait_file_is_presented(
+            downloaded_file_template.format(job_id=job_id, log_type='stderr'), app_fs, dirname=downloads_directory
+        )
 
 
 def test_invoker_object_url(cluster: Cluster, provider: Provider, page: JobListPage):
@@ -320,13 +324,13 @@ def _check_job_info_in_popup(page: JobListPage, expected_info: dict):
         wait_and_assert_ui_info({**expected_info}, page.get_task_info_from_popup)
 
 
-@allure.step('Run 6 success and 5 failed actions on 11 hosts')
-def _run_actions_on_hosts(hosts: List[Host]):
+@allure.step('Run {success} success and {failed} failed actions on hosts')
+def _run_actions_on_hosts(hosts: List[Host], success: int, failed: int):
     """
-    Run 6 success and 5 failed actions
+    Run success and failed actions
     and then wait for all of them to be finished
     """
-    actions_distribution = [SUCCESS_ACTION_DISPLAY_NAME] * 6 + [FAIL_ACTION_DISPLAY_NAME] * 5
+    actions_distribution = [SUCCESS_ACTION_DISPLAY_NAME] * success + [FAIL_ACTION_DISPLAY_NAME] * failed
     task_list = [host.action(display_name=actions_distribution[i]).run() for i, host in enumerate(hosts)]
     for task in task_list:
         task.wait(timeout=60)

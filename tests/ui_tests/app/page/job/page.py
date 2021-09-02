@@ -52,10 +52,12 @@ class JobPage(BasePageObject):
             finish_date=self.find_element(JobPageLocators.finish_time).text.strip(),
         )
 
+    @allure.step('Open stdout menu')
     def open_stdout_menu(self):
         """Open menu with stdout logs"""
         self._open_menu(JobPageLocators.Menu.stdout_tab)
 
+    @allure.step('Open stderr menu')
     def open_stderr_menu(self):
         """Open menu with stderr logs"""
         self._open_menu(JobPageLocators.Menu.stderr_tab)

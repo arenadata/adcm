@@ -35,8 +35,8 @@ class TaskListLocators:
             expand_task = Locator(By.XPATH, ".//mat-icon[contains(text(), 'expand_more')]", "Expand task button")
 
         class ExpandedTask:
-            block = Locator(By.XPATH, "//app-jobs", "Expanded task block")
-            row = Locator(By.XPATH, "//app-jobs//mat-row", "Job row in expanded Task")
+            block = Locator(By.CSS_SELECTOR, "app-jobs", "Expanded task block")
+            row = Locator(By.CSS_SELECTOR, "app-jobs mat-row", "Job row in expanded Task")
 
             class Row:
                 job_name = Locator(By.XPATH, ".//app-job-name//a", "Job name")
