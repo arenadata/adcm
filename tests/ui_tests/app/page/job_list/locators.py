@@ -39,7 +39,7 @@ class TaskListLocators:
             row = Locator(By.CSS_SELECTOR, "app-jobs mat-row", "Job row in expanded Task")
 
             class Row:
-                job_name = Locator(By.XPATH, ".//app-job-name//a", "Job name")
-                job_start_date = Locator(By.XPATH, "./mat-cell[2]", "Job start date")
-                job_finish_date = Locator(By.XPATH, "./mat-cell[3]", "Job finish date")
-                job_status = Locator(By.XPATH, ".//app-job-status-column/mat-icon", "Job status")
+                job_name = Locator(By.CSS_SELECTOR, "app-job-name a", "Job name")
+                job_start_date = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "Job start date")
+                job_finish_date = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(3)", "Job finish date")
+                job_status = Locator(By.CSS_SELECTOR, "app-job-status-column mat-icon", "Job status")

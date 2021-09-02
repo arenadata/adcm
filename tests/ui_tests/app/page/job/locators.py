@@ -21,9 +21,9 @@ class JobPageLocators(ObjectPageLocators):
     """Locators for detailed job page"""
 
     job_info = Locator(By.TAG_NAME, "app-job-info", "Job info section")
-    start_time = Locator(By.XPATH, "//div[@class='time-info']/div[1]/span", "Job start time")
-    execution_time = Locator(By.XPATH, "//div[@class='time-info']/div[2]/span", "Job execution time")
-    finish_time = Locator(By.XPATH, "//div[@class='time-info']/div[3]/span", "Job finish time")
+    start_time = Locator(By.CSS_SELECTOR, ".time-info div:nth-child(1) span", "Job start time")
+    execution_time = Locator(By.CSS_SELECTOR, ".time-info div:nth-child(2) span", "Job execution time")
+    finish_time = Locator(By.CSS_SELECTOR, ".time-info div:nth-child(3) span", "Job finish time")
 
     class Menu:
         # keep stdout(-err) prefix in naming
