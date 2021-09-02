@@ -21,7 +21,6 @@ import allure
 import pytest
 
 from _pytest.fixtures import SubRequest
-from pytest import TempdirFactory
 from adcm_client.wrappers.docker import ADCM
 from selenium.common.exceptions import WebDriverException
 
@@ -49,7 +48,7 @@ def additional_adcm_init_config(request) -> dict:
 
 
 @pytest.fixture(scope="session")
-def downloads_directory(tmpdir_factory: TempdirFactory):
+def downloads_directory(tmpdir_factory: pytest.TempdirFactory):
     """Folder in which browser downloads will be stored"""
     downloads_dirname = 'browser-downloads'
     return tmpdir_factory.mktemp(downloads_dirname)
