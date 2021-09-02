@@ -25,11 +25,12 @@ import { ListService } from './list.service';
 import { ListDirective } from '@app/abstract-directives/list.directive';
 
 
-const TemporaryEntityNameConverter = (currentName: Partial<TypeName>): 'group-config' | 'group-config-hosts' => {
+const TemporaryEntityNameConverter = (currentName: Partial<TypeName>): string => {
 
   if (currentName === 'group_config') return 'group-config';
   if (currentName === 'group_config_hosts') return 'group-config-hosts';
 
+  return currentName;
 };
 
 interface IRowHost extends AdcmHost {
