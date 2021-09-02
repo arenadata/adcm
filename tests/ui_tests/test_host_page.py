@@ -10,16 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 # pylint:disable=redefined-outer-name
 from typing import (
     List,
     Tuple,
 )
 
-import os
 import allure
 import pytest
-
 from _pytest.fixtures import SubRequest
 from adcm_client.objects import (
     ADCMClient,
@@ -345,11 +345,13 @@ def test_filter_config(
             {REGULAR_FIELD_NAME, REQUIRED_FIELD_NAME, PASSWORD_FIELD_NAME}, {ADVANCED_FIELD_NAME}
         )
     with allure.step('Check group roll up'):
-        host_page.config.click_on_group(params['group'])
+        with expect_rows_amount_change(get_rows_func):
+            host_page.config.click_on_group(params['group'])
         host_page.config.check_config_fields_visibility(
             {PASSWORD_FIELD_NAME}, {REGULAR_FIELD_NAME, REQUIRED_FIELD_NAME}
         )
-        host_page.config.click_on_group(params['group'])
+        with expect_rows_amount_change(get_rows_func):
+            host_page.config.click_on_group(params['group'])
         host_page.config.check_config_fields_visibility({REGULAR_FIELD_NAME})
     with allure.step('Check configuration with "Advanced" turned on'):
         with expect_rows_amount_change(get_rows_func):

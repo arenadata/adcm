@@ -17,6 +17,7 @@ from tests.ui_tests.app.page.admin.page import AdminIntroPage, AdminUsersPage, A
 from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.utils import expect_rows_amount_change
 
+
 # pylint: disable=redefined-outer-name
 
 
@@ -110,13 +111,15 @@ def test_settings_filter(settings_page: AdminSettingsPage):
         f'Click on {params["group"]} group and check {params["field_display_name"]} '
         'is not presented after group roll up'
     ):
-        settings_page.config.click_on_group(params['group'])
+        with expect_rows_amount_change(get_rows_func):
+            settings_page.config.click_on_group(params['group'])
         with pytest.raises(AssertionError):
             settings_page.config.get_config_row(params["field_display_name"])
     with allure.step(
         f'Click on {params["group"]} group and check {params["field_display_name"]} ' 'is presented after group expand'
     ):
-        settings_page.config.click_on_group(params['group'])
+        with expect_rows_amount_change(get_rows_func):
+            settings_page.config.click_on_group(params['group'])
         settings_page.config.get_config_row(params["field_display_name"])
 
 
