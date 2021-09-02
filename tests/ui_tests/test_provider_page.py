@@ -59,10 +59,10 @@ class TestProviderListPage:
         }
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
         with allure.step("Check no provider rows"):
-            assert len(provider_page.locators.get_all_rows()) == 0, "There should be no row with providers"
+            assert len(provider_page.table.get_all_rows()) == 0, "There should be no row with providers"
         provider_page.create_provider(bundle=bundle_archive)
         with allure.step("Check uploaded provider"):
-            rows = provider_page.locators.get_all_rows()
+            rows = provider_page.table.get_all_rows()
             assert len(rows) == 1, "There should be 1 row with providers"
             uploaded_provider = provider_page.get_provider_info_from_row(rows[0])
             assert (
@@ -84,12 +84,12 @@ class TestProviderListPage:
             "state": "created",
         }
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
-        with provider_page.locators.wait_rows_change():
+        with provider_page.table.wait_rows_change():
             provider_page.create_provider(
                 bundle=bundle_archive, name=provider_params['name'], description=provider_params['description']
             )
         with allure.step("Check uploaded provider"):
-            rows = provider_page.locators.get_all_rows()
+            rows = provider_page.table.get_all_rows()
             uploaded_provider = provider_page.get_provider_info_from_row(rows[0])
             assert (
                 provider_params['bundle'] == uploaded_provider.bundle
@@ -104,14 +104,14 @@ class TestProviderListPage:
                 bundle.provider_create(name=f"Test provider {i}")
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
         provider_page.close_info_popup()
-        provider_page.locators.check_pagination(second_page_item_amount=1)
+        provider_page.table.check_pagination(second_page_item_amount=1)
 
     @pytest.mark.smoke()
     @pytest.mark.usefixtures("upload_and_create_test_provider")
     def test_run_action_on_provider_list_page(self, app_fs):
         params = {"action_name": "test_action", "expected_state": "installed"}
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
-        row = provider_page.locators.get_all_rows()[0]
+        row = provider_page.table.get_all_rows()[0]
         with provider_page.wait_provider_state_change(row):
             provider_page.run_action_in_provider_row(row, params["action_name"])
         with allure.step("Check provider state has changed"):
@@ -125,7 +125,7 @@ class TestProviderListPage:
 
     def test_open_config_from_provider_host_page(self, app_fs, upload_and_create_test_provider):
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
-        row = provider_page.locators.get_all_rows()[0]
+        row = provider_page.table.get_all_rows()[0]
         provider_page.click_config_btn_in_row(row)
         ProviderConfigPage(app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id).wait_page_is_opened()
 
@@ -143,7 +143,7 @@ class TestProviderMainPage:
         main_page.toolbar.run_upgrade(PROVIDER_NAME, PROVIDER_NAME)
         with allure.step("Check that provider has been upgraded"):
             provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
-            row = provider_page.locators.get_all_rows()[0]
+            row = provider_page.table.get_all_rows()[0]
             assert (
                 provider_page.get_provider_info_from_row(row).state == params["state"]
             ), f"Provider state should be {params['state']}"
