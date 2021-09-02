@@ -298,7 +298,7 @@ class BasePageObject:
             input_element = self.find_element(locator, timeout)
             input_element.send_keys(text)
             assert (actual_value := input_element.get_property('value')) == expected_value, (
-                f'Value of input {locator.name} expected to be ' f'"{expected_value}", but "{actual_value}" was found'
+                f'Value of input {locator.name} expected to be "{expected_value}", but "{actual_value}" was found'
             )
 
         wait_until_step_succeeds(send_keys_and_check, period=0.5, timeout=1.5)
