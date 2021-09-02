@@ -501,6 +501,22 @@ class PageHeader(BasePageObject):
         assert_enough_rows(row_num, len(rows))
         return rows[row_num]
 
+    def click_all_link_in_job_popup(self):
+        self.wait_element_visible(AuthorizedHeaderLocators.JobPopup.block)
+        self.find_and_click(AuthorizedHeaderLocators.JobPopup.show_all_link)
+
+    def click_in_progress_in_job_popup(self):
+        self.wait_element_visible(AuthorizedHeaderLocators.JobPopup.block)
+        self.find_and_click(AuthorizedHeaderLocators.JobPopup.in_progress_jobs)
+
+    def click_success_jobs_in_job_popup(self):
+        self.wait_element_visible(AuthorizedHeaderLocators.JobPopup.block)
+        self.find_and_click(AuthorizedHeaderLocators.JobPopup.success_jobs)
+
+    def click_failed_jobs_in_job_popup(self):
+        self.wait_element_visible(AuthorizedHeaderLocators.JobPopup.block)
+        self.find_and_click(AuthorizedHeaderLocators.JobPopup.failed_jobs)
+
 
 class PageFooter(BasePageObject):
     """Class for footer manipulating."""
