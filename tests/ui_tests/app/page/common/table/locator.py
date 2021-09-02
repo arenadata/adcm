@@ -22,7 +22,7 @@ from tests.ui_tests.app.helpers.locator import (
 class CommonTable:
     """Common table locators (eg, cluster list page table)."""
 
-    header = Locator(By.CSS_SELECTOR, "mat-header-cell+div", "Table header")
+    header = Locator(By.CSS_SELECTOR, "mat-header-cell>div", "Table header")
     row = Locator(By.CSS_SELECTOR, "mat-row", "Table row")
 
     class ActionPopup:

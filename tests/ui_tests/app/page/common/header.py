@@ -37,7 +37,7 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
 
     help_button = Locator(By.CSS_SELECTOR, "button[adcm_test='help']", "Header button for help")
     account_button = Locator(By.CSS_SELECTOR, "button[adcm_test='account']", "Header button for account settings")
-    popup_block = Locator(By.CSS_SELECTOR, ".*mat-menu-content", "Header popup block")
+    popup_block = Locator(By.CSS_SELECTOR, "*.mat-menu-content", "Header popup block")
 
     class JobPopup:
         """ADCM header popup with jobs"""

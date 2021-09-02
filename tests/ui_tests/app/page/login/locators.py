@@ -18,7 +18,7 @@ from tests.ui_tests.app.helpers.locator import Locator
 class LoginPageLocators:
     """Login page elements locators"""
 
-    login_form_block = Locator(By.CSS_SELECTOR, ".*form-auth", "login block")
+    login_form_block = Locator(By.CSS_SELECTOR, "*.form-auth", "login block")
     login_input = Locator(By.CSS_SELECTOR, "#login", "login input")
     password_input = Locator(By.CSS_SELECTOR, "#password", "password input")
 

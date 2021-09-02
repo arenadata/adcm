@@ -168,9 +168,14 @@ class CommonConfigMenuObj(BasePageObject):
     def click_on_group(self, title: str):
         """Click on group with given title"""
 
+        def check_group_expanded(group: WebElement):
+            return "expanded" in group.get_attribute("class")
+
         def click_group():
-            with self.wait_rows_change():
-                self.find_and_click(self.locators.group_btn(title))
+            group = self.find_element(self.locators.group_btn(title))
+            is_expanded = check_group_expanded(group)
+            group.click()
+            assert check_group_expanded(self.find_element(self.locators.group_btn(title))) != is_expanded
 
         wait_until_step_succeeds(click_group, period=1, timeout=10)
 
