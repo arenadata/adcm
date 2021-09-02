@@ -81,7 +81,7 @@ def assert_list_type(*args):
         if not is_default and isinstance(entity, Cluster):
             assert_action_has_issues(entity)
         else:
-            if sent_value_type == 'null_value' and not is_default:
+            if sent_value_type in ['empty_value', 'null_value'] and not is_default:
                 assert_action_has_issues(entity)
             else:
                 action_status = entity.action(name='job').run().wait()
@@ -107,7 +107,7 @@ def assert_map_type(*args):
         if not is_default and isinstance(entity, Cluster):
             assert_action_has_issues(entity)
         else:
-            if sent_value_type == 'null_value' and not is_default:
+            if sent_value_type in ['empty_value', 'null_value'] and not is_default:
                 assert_action_has_issues(entity)
             else:
                 action_status = entity.action(name='job').run().wait()
