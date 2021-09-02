@@ -5,4 +5,5 @@ export interface ConfigGroup extends ApiFlat {
   description: string;
   hosts: string;
   config: string;
+  host_candidate: string;
 }

@@ -24,6 +24,15 @@ import { ListResult } from '@app/models/list-result';
 import { ListService } from './list.service';
 import { ListDirective } from '@app/abstract-directives/list.directive';
 
+
+const TemporaryEntityNameConverter = (currentName: Partial<TypeName>): string => {
+
+  if (currentName === 'group_config') return 'group-config';
+  if (currentName === 'group_config_hosts') return 'group-config-hosts';
+
+  return currentName;
+};
+
 interface IRowHost extends AdcmHost {
   clusters: Partial<Cluster>[];
   page: number;
@@ -56,7 +65,8 @@ export class BaseListDirective {
   }
 
   initSocket() {
-    this.socket$ = this.store.pipe(this.takeUntil(), select(getMessage), filter(m => !!m && !!m.object));
+    this.socket$ = this.store.pipe(
+      this.takeUntil(), select(getMessage), filter(m => !!m && !!m.object));
   }
 
   initColumns() {
@@ -145,12 +155,12 @@ export class BaseListDirective {
     const stype = (x: string) => `${m.object.type}${m.object.details.type ? `2${m.object.details.type}` : ''}` === x;
 
     const checkUpgradable = () => (m.event === 'create' || m.event === 'delete') && m.object.type === 'bundle' && this.typeName === 'cluster';
-    const changeList = () => stype(this.typeName) && (m.event === 'create' || m.event === 'delete' || m.event === 'add' || m.event === 'remove');
+    const changeList = (name?: string) => stype(name ?? this.typeName) && (m.event === 'create' || m.event === 'delete' || m.event === 'add' || m.event === 'remove');
     const createHostPro = () => stype('host2provider') && m.event === 'create';
     const jobComplete = () => (m.event === 'change_job_status') && m.object.type === 'task' && m.object.details.value === 'success';
     const rewriteRow = (row: Entities) => this.service.checkItem(row).subscribe((item) => Object.keys(row).map((a) => (row[a] = item[a])));
 
-    if (checkUpgradable() || changeList() || createHostPro() || jobComplete()) {
+    if (checkUpgradable() || changeList(TemporaryEntityNameConverter(this.typeName)) || createHostPro() || jobComplete()) {
       this.refresh(m.object.id);
       return;
     }

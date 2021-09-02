@@ -30,7 +30,7 @@ export class ConfigGroupAddService implements IAddService {
 
   model(name?: string): FormModel {
     return {
-      name: 'group_configs',
+      name: 'group_config',
       title: 'Config group',
       form: newConfigGroupForm()
     };
