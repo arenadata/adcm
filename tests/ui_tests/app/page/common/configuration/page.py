@@ -15,7 +15,6 @@ from dataclasses import dataclass
 from typing import List, Collection, Optional
 
 import allure
-
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.keys import Keys
