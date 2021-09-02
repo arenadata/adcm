@@ -49,8 +49,8 @@ Name                Type    Default Nullable :term:`Required` :term:`POSTable`  
 id                  integer auto    False    False            False              False              Object id.
 date                date    auto    False    False            False              False              Object creation date
 obj_ref             FK      null    False    True             True               False              FK on `ObjectConfig` object
-description         string  ''      True     False            True               False              Description
-config              json    {}      False    False            True               False              Configuration
+description         string  ''      False    False            True               False              Description
+config              json    {}      False    True             True               False              Configuration
 attr                json    {}      False    False            True               False              Additional attributes
 url                 link    null    False    False            False              False              Reference to this object
 =================== ======= ======= ======== ================ ================== ================== ===========
@@ -85,14 +85,12 @@ id                  integer auto    False    False            False             
 object_id           integer null    False    True             True               False              Object id for object
 object_type         string  null    False    True             True               False              Object type (`cluster`, `service`, `component`, `provider`)
 name                string  null    False    True             True               True               Name of object.
-description         text    null    True     False            True               True               Extended information provided by user.
-hosts               M2M     null    True     False            False              False              M2M link to Host object.
-config              FK      null    True     False            False              False              FK field on ObjectConfig object
+description         text    null    False    False            True               True               Extended information provided by user.
+hosts               M2M     null    False    False            False              False              M2M link to Host objects.
+host_candidate      link    null    False    False            False              False              Reference to list host candidate for adding to a group
+config              FK      null    False    False            False              False              FK field on ObjectConfig object
 url                 link    null    False    False            False              False              Reference to this object
 =================== ======= ======= ======== ================ ================== ================== ===========
-
-.. note::
-   TODO: Define what is this the config in the group object (diff or full object) and should it has history.
 
 
 API Calls Allowed
@@ -109,24 +107,29 @@ PATCH         True
 DELETE        True
 ============= =======
 
-.. _object-group-config-host:
+.. _object-group-config-hosts:
 
-Group Config Host
+Group Config Hosts
 ~~~~~~~~~~~~
 
-Endpoint: */group-config-host*
+Endpoint: */group-config/<id>/host/*
 
 =================== ======= ======= ======== ================ ================== ================== ===========
 Name                Type    Default Nullable :term:`Required` :term:`POSTable`   :term:`Changeable` Description
 =================== ======= ======= ======== ================ ================== ================== ===========
-id                  integer auto    False    False            False              False              Object ID.
-host                FK      null    False    True             True               True               `Host` object ID
-group               FK      null    False    True             True               True               `GroupConfig` object ID
+id                  integer auto    False    True             True               False              Object ID.
+cluster_id          integer null    False    False            False              False              Cluster object ID
+prototype_id        integer null    False    False            False              False              Prototype object ID
+provider_id         integer null    False    False            False              False              Provider object ID
+fqdn                string  null    False    False            False              False              FQDN host
+description         string  null    False    False            False              False              Host description
+state               string  null    False    False            False              False              Host state
+url                 link    null    False    False            False              False              Reference to this object
 =================== ======= ======= ======== ================ ================== ================== ===========
 
 .. note::
-   Constrains for :term:`Changeable`, the host cannot be a member of different groups of the same object,
-   when you try to modify an object in this way, you will get an error: "HOST_GROUP_ERROR": "host already is a member of another group of this object"
+    POST - Creating relation a host with a group
+    DELETE - Deleting relation a host with a group
 
 
 API Calls Allowed
@@ -138,7 +141,7 @@ Operation     Allowed
 GET           True
 LIST          True
 POST          True
-PUT           True
-PATCH         True
+PUT           False
+PATCH         False
 DELETE        True
 ============= =======

@@ -26,6 +26,7 @@ class ConfigLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = ConfigLog
         fields = ('id', 'date', 'obj_ref', 'description', 'config', 'attr', 'url')
+        extra_kwargs = {'config': {'required': True}}
 
     @atomic
     def create(self, validated_data):
