@@ -39,7 +39,11 @@ class ServicePageMixin(BasePageObject):
         if self.MENU_SUFFIX is None:
             raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
         super().__init__(
-            driver, base_url, f"/cluster/{cluster_id}/service/{service_id}/{self.MENU_SUFFIX}"
+            driver,
+            base_url,
+            "/cluster/{cluster_id}/service/{service_id}/" + self.MENU_SUFFIX,
+            cluster_id=cluster_id,
+            service_id=service_id,
         )
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)

@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,no-self-use
 from typing import Union, Tuple, List
 
 import allure
@@ -75,7 +75,7 @@ class TestClusterLock:
         task.wait()
         is_free(cluster)
 
-    def test_down_lock(self, complete_cluster: Cluster, host: Host, sdk_client_fs: ADCMClient):
+    def test_down_lock(self, complete_cluster: Cluster, sdk_client_fs: ADCMClient):
         """
         Test that cluster lock also locks:
             - all cluster services
@@ -87,15 +87,15 @@ class TestClusterLock:
             is_locked(service)
             for component in service.component_list():
                 is_locked(component)
-        for hc in complete_cluster.hostcomponent():
-            is_locked(sdk_client_fs.host(id=hc["host_id"]))
+        for hc_map in complete_cluster.hostcomponent():
+            is_locked(sdk_client_fs.host(id=hc_map["host_id"]))
         task.wait()
         for service in complete_cluster.service_list():
             is_free(service)
             for component in service.component_list():
                 is_free(component)
-        for hc in complete_cluster.hostcomponent():
-            is_free(sdk_client_fs.host(id=hc["host_id"]))
+        for hc_map in complete_cluster.hostcomponent():
+            is_free(sdk_client_fs.host(id=hc_map["host_id"]))
 
     def test_no_horizontal_lock(self, cluster: Cluster):
         """
@@ -155,7 +155,7 @@ class TestServiceLock:
 
 
 class TestComponentLock:
-    def test_lock_unlock(self, complete_cluster: Cluster, host: Host):
+    def test_lock_unlock(self, complete_cluster: Cluster):
         """
         Test that component locked when action running and unlocked when action ends
         """
@@ -211,7 +211,7 @@ class TestHostLock:
         task.wait()
         is_free(host)
 
-    def test_up_lock(self, complete_cluster: Cluster, host_provider: Provider, host: Host):
+    def test_up_lock(self, complete_cluster: Cluster, host: Host):
         """
         Test that host lock also locks parent objects:
             - Component
@@ -297,9 +297,7 @@ def test_service_should_be_unlocked_when_ansible_task_killed(complete_cluster: C
 @pytest.mark.parametrize("adcm_object", ["Cluster", "Service", "Component"])
 @pytest.mark.parametrize("expand_action", ["expand_success", "expand_failed"])
 def test_host_should_be_unlocked_after_expand_action(
-    sdk_client_fs: ADCMClient,
     cluster_with_two_hosts: Tuple[Cluster, List[Host]],
-    host_provider: Provider,
     adcm_object: str,
     expand_action: str,
 ):
@@ -320,9 +318,7 @@ def test_host_should_be_unlocked_after_expand_action(
 @pytest.mark.parametrize("adcm_object", ["Cluster", "Service", "Component"])
 @pytest.mark.parametrize("shrink_action", ["shrink_success", "shrink_failed"])
 def test_host_should_be_unlocked_after_shrink_action(
-    sdk_client_fs: ADCMClient,
     cluster_with_two_hosts: Tuple[Cluster, List[Host]],
-    host_provider: Provider,
     adcm_object: str,
     shrink_action: str,
 ):
@@ -361,9 +357,7 @@ def test_host_should_be_unlocked_after_shrink_action(
     ],
 )
 def test_host_should_be_unlocked_after_service_action_with_ansible_plugin(
-    sdk_client_fs: ADCMClient,
     cluster_with_two_hosts: Tuple[Cluster, List[Host]],
-    host_provider: Provider,
     action_with_ansible_plugin: str,
 ):
     cluster, _ = cluster_with_two_hosts
@@ -390,9 +384,7 @@ def test_host_should_be_unlocked_after_service_action_with_ansible_plugin(
     ],
 )
 def test_host_should_be_unlocked_after_cluster_action_with_ansible_plugin(
-    sdk_client_fs: ADCMClient,
     cluster_with_two_hosts: Tuple[Cluster, List[Host]],
-    host_provider: Provider,
     action_with_ansible_plugin: str,
 ):
     cluster, _ = cluster_with_two_hosts
@@ -506,6 +498,5 @@ def is_free(obj: Union[Cluster, Service, Component, Provider, Host]):
     with allure.step(f"Assert that {obj.__class__.__name__} is free"):
         assert_state(obj, state="created")
         assert obj.action_list(), (
-            f"{obj.__class__.__name__} action list is empty. "
-            f"Actions should be available for unlocked objects"
+            f"{obj.__class__.__name__} action list is empty. " f"Actions should be available for unlocked objects"
         )

@@ -23,6 +23,9 @@ class Locator:
     value: str
     name: str
 
+    def __repr__(self):
+        return self.name
+
 
 @dataclass
 class TemplateLocator(Locator):

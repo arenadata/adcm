@@ -14,6 +14,7 @@
 import os
 import sys
 import logging
+from contextlib import contextmanager
 from subprocess import call
 
 ROOT_DIR = '/var/lib/ambari-agent'
@@ -33,18 +34,18 @@ def get_log_handler(fname):
     return handler
 
 
+@contextmanager
 def open_file(root, tag, command_id):
     fname = "{}/{}-{}.txt".format(root, command_id, tag)
-    f = open(fname, 'w', encoding='utf_8')
-    return f
+    with open(fname, 'w', encoding='utf_8') as file:
+        yield from file
 
 
 def print_log(root, tag, command_id):
     fname = "{}/{}-{}.txt".format(root, command_id, tag)
-    f = open(fname, 'r', encoding='utf_8')
-    flog = f.read()
-    sys.stderr.write(flog)
-    f.close()
+    with open(fname, 'r', encoding='utf_8') as file:
+        flog = file.read()
+        sys.stderr.write(flog)
 
 
 def add_path(path):
@@ -54,6 +55,7 @@ def add_path(path):
     return env
 
 
+# pylint: disable-next=too-many-arguments
 def run_python_script(base_dir, py_script, command, json_config, out_file, err_file):
     try:
         res = call(
@@ -113,19 +115,15 @@ def run_ambari_command(folder, script, command, command_id):
     log.debug("command.py called as: %s", sys.argv)
     log.info('%s run %s', command_id, command)
 
-    out_file = open_file(LOG_DIR, 'out', command_id)
-    err_file = open_file(LOG_DIR, 'err', command_id)
+    with open_file(LOG_DIR, 'out', command_id) as out_file, open_file(LOG_DIR, 'err', command_id) as err_file:
 
-    pipe = cook_command_pipe(hook_dir, (base_dir, py_script, command))
-    log.debug('%s %s pipe: %s', command_id, command, pipe)
+        pipe = cook_command_pipe(hook_dir, (base_dir, py_script, command))
+        log.debug('%s %s pipe: %s', command_id, command, pipe)
 
-    for (base, py, comm) in pipe:
-        res = run_python_script(base, py, comm, json_config, out_file, err_file)
-        if res != 0:
-            break
-
-    out_file.close()
-    err_file.close()
+        for (base, py_script, comm) in pipe:
+            res = run_python_script(base, py_script, comm, json_config, out_file, err_file)
+            if res != 0:
+                break
 
     if res != 0:
         print_log(LOG_DIR, 'err', command_id)

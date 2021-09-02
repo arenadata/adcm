@@ -15,10 +15,6 @@
 from selenium.webdriver.common.by import By
 
 
-def by(css_selector):
-    return by_css(css_selector)
-
-
 def by_css(css_selector):
     return By.CSS_SELECTOR, css_selector
 

@@ -13,14 +13,10 @@
 
 from selenium.webdriver.common.by import By
 
-from tests.ui_tests.app.helpers.locator import Locator
+from tests.ui_tests.app.helpers.locator import (
+    Locator,
+)
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
-
-
-class ClusterMainLocators:
-    """Cluster main page elements locators"""
-
-    text = Locator(By.XPATH, "//mat-card-content", "Cluster main page text")
 
 
 class ClusterServicesLocators:
@@ -57,7 +53,13 @@ class ClusterServicesLocators:
 class ClusterImportLocators:
     """Cluster import page elements locators"""
 
+    save_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Save')]]", "Save button")
     import_item_block = Locator(By.XPATH, "//div[@class='items']/div", "Import item block")
+
+    class ImportItem:
+        name = Locator(By.XPATH, ".//h3", "Import item name")
+        import_chbx = Locator(By.XPATH, ".//mat-checkbox", "Import checkbox")
+        description = Locator(By.XPATH, ".//app-exports/div/div", "Description text")
 
 
 class ClusterHostLocators:
@@ -72,29 +74,17 @@ class ClusterHostLocators:
 class ClusterComponentsLocators:
     """Cluster components page elements locators"""
 
-    restore_btn = Locator(
-        By.XPATH, "//button[./span[contains(text(), 'Restore')]]", "Restore button"
-    )
+    restore_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Restore')]]", "Restore button")
     save_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Save')]]", "Save button")
 
-    components_title = Locator(
-        By.XPATH, "//h3[./span[contains(text(), 'Components')]]", "Title for Components block"
-    )
-    service_page_link = Locator(
-        By.XPATH, "//mat-card-content//a[contains(@href, 'service')]", "Link to service page"
-    )
+    components_title = Locator(By.XPATH, "//h3[./span[contains(text(), 'Components')]]", "Title for Components block")
+    service_page_link = Locator(By.XPATH, "//mat-card-content//a[contains(@href, 'service')]", "Link to service page")
 
-    hosts_title = Locator(
-        By.XPATH, "//h3[./span[contains(text(), 'Hosts')]]", "Title for Hosts block"
-    )
-    hosts_page_link = Locator(
-        By.XPATH, "//mat-card-content//a[contains(@href, 'host')]", "Link to hosts page"
-    )
+    hosts_title = Locator(By.XPATH, "//h3[./span[contains(text(), 'Hosts')]]", "Title for Hosts block")
+    hosts_page_link = Locator(By.XPATH, "//mat-card-content//a[contains(@href, 'host')]", "Link to hosts page")
     create_hosts_btn = Locator(By.XPATH, "//button[@adcm_test='create-btn']", "Create hosts button")
 
-    host_row = Locator(
-        By.XPATH, "//div[./h3/span[contains(text(), 'Host')]]//app-much-2-many", "Host row"
-    )
+    host_row = Locator(By.XPATH, "//div[./h3/span[contains(text(), 'Host')]]//app-much-2-many", "Host row")
     component_row = Locator(
         By.XPATH,
         "//div[./h3/span[contains(text(), 'Components')]]//app-much-2-many",
@@ -102,14 +92,24 @@ class ClusterComponentsLocators:
     )
 
     class Row:
-        name = Locator(
-            By.XPATH, ".//button[@mat-button]/span/span[not(contains(@class, 'warn'))]", "Item name"
-        )
+        name = Locator(By.XPATH, ".//button[@mat-button]/span/span[not(contains(@class, 'warn'))]", "Item name")
         number = Locator(By.XPATH, ".//button[@mat-raised-button]/span[1]", "Amount of links")
-        relations_row = Locator(
-            By.XPATH, ".//div[contains(@class, 'relations-list')]", "Row with relations"
-        )
+        relations_row = Locator(By.XPATH, ".//div[contains(@class, 'relations-list')]", "Row with relations")
 
         class RelationsRow:
             name = Locator(By.XPATH, "./div/span", "Related item name")
             delete_btn = Locator(By.XPATH, ".//button", "Delete item button")
+
+
+class ClusterStatusLocators:
+    """Cluster status page elements locators"""
+
+    collapse_btn = Locator(By.XPATH, "//mat-card-content//button[@cdk-describedby-host]", "Collapse list button")
+    group_row = Locator(By.XPATH, "//mat-expansion-panel", "Group row")
+
+    class GroupRow:
+        service_group = Locator(By.XPATH, ".//div[contains(@class, 'mat-expansion-panel-content')]", "Service group")
+
+        class ServiceGroupRow:
+            service_name = Locator(By.XPATH, ".//div[not(contains(@class, 'component'))]/span", "Service name")
+            host_name = Locator(By.XPATH, ".//div[contains(@class, 'component')]/span", "Host name")

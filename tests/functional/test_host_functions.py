@@ -23,7 +23,7 @@ from adcm_pytest_plugin.utils import get_data_dir
 from adcm_pytest_plugin import utils
 from jsonschema import validate
 
-# pylint: disable=W0621,W0212
+# pylint: disable=no-self-use,redefined-outer-name
 
 SCHEMAS = os.path.join(os.path.dirname(__file__), "schemas/")
 
@@ -63,8 +63,9 @@ class TestHost:
         """
         Validate provider object schema
         """
-        host_prototype = sdk_client_fs.host_prototype()._data
-        schema = json.load(open(SCHEMAS + "/stack_list_item_schema.json", encoding='utf_8'))
+        host_prototype = sdk_client_fs.host_prototype()._data  # pylint:disable=protected-access
+        with open(SCHEMAS + "/stack_list_item_schema.json", encoding='utf_8') as file:
+            schema = json.load(file)
         with allure.step("Match prototype with schema"):
             assert validate(host_prototype, schema) is None
 
@@ -85,9 +86,7 @@ class TestHost:
         """
         Check that hostcomponent is set
         """
-        bundle = sdk_client_fs.upload_from_fs(
-            get_data_dir(__file__, "cluster_service_hostcomponent")
-        )
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_service_hostcomponent"))
         cluster = bundle.cluster_create(utils.random_string())
         host = provider.host_create(utils.random_string())
         cluster.host_add(host)
@@ -95,10 +94,10 @@ class TestHost:
         component = service.component(name="ZOOKEEPER_CLIENT")
         cluster.hostcomponent_set((host, component))
         with allure.step("Check host component map"):
-            hc = cluster.hostcomponent()
-            assert len(hc) == 1
-            assert hc[0]["host_id"] == host.id
-            assert hc[0]["component_id"] == component.id
+            hc_map = cluster.hostcomponent()
+            assert len(hc_map) == 1
+            assert hc_map[0]["host_id"] == host.id
+            assert hc_map[0]["component_id"] == component.id
 
     def test_get_hostcomponent_list(self, cluster: Cluster, provider: Provider):
         """

@@ -9,7 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=W0611, W0621
+
+# pylint:disable=redefined-outer-name
 import copy
 
 import allure
@@ -154,14 +155,14 @@ def host_bundle(sdk_client_fs: ADCMClient):
 
 @allure.step('Check host state')
 def assert_provider_host_states(bundle: Bundle, statemap: dict):
-    for pname, pv in statemap.items():
+    for pname, expected_state in statemap.items():
         pstate = bundle.provider(name=pname).state
-        pstate_expected = pv['state']
+        pstate_expected = expected_state['state']
         expect(
             pstate == pstate_expected,
             f"Provider \"{pname}\" is \"{pstate}\" while expected \"{pstate_expected}\"",
         )
-        for hname, hstate_expected in pv['hosts'].items():
+        for hname, hstate_expected in expected_state['hosts'].items():
             hstate = bundle.provider(name=pname).host(fqdn=hname).state
             expect(
                 hstate == hstate_expected,

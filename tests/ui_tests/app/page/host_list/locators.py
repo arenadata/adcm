@@ -39,15 +39,7 @@ class HostListLocators:
             state = Locator(By.XPATH, ".//app-state-column", "Host state in row")
             status = Locator(By.XPATH, ".//app-status-column/button", "Host status in row")
             actions = Locator(By.XPATH, ".//app-actions-column//button", "Host actions in row")
-            config = Locator(
-                By.XPATH, ".//button[.//mat-icon[text()='settings']]", "Host config in row"
-            )
-            delete_btn = Locator(
-                By.XPATH, ".//button[.//mat-icon[text()='delete']]", "Host delete button in row"
-            )
-            link_off_btn = Locator(
-                By.XPATH, ".//button[.//mat-icon[text()='link_off']]", "Host link off button in row"
-            )
-            action_option = TemplateLocator(
-                By.XPATH, "//button/span[text()='{}']", "Action dropdown option"
-            )
+            config = Locator(By.XPATH, ".//button[.//mat-icon[text()='settings']]", "Host config in row")
+            delete_btn = Locator(By.XPATH, ".//button[.//mat-icon[text()='delete']]", "Host delete button in row")
+            link_off_btn = Locator(By.XPATH, ".//button[.//mat-icon[text()='link_off']]", "Host link off button in row")
+            action_option = TemplateLocator(By.XPATH, "//button/span[text()='{}']", "Action dropdown option")

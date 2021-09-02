@@ -69,9 +69,7 @@ class HostCreatePopupObj(BasePageObject):
 
     def wait_and_click_on_cluster_option(self, cluster_name: str, option_locator: Locator):
         WDW(self.driver, self.default_loc_timeout).until(
-            EC.presence_of_element_located(
-                [option_locator.by, option_locator.value.format(cluster_name)]
-            ),
+            EC.presence_of_element_located([option_locator.by, option_locator.value.format(cluster_name)]),
             message=f"Can't find cluster with name {cluster_name} in dropdown "
             f"on page {self.driver.current_url} "
             f"for {self.default_loc_timeout} seconds",

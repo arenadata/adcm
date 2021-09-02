@@ -456,10 +456,19 @@ def copy_stage_actons(stage_actions, prototype):
 def copy_stage_sub_actons(bundle):
     sub_actions = []
     for ssubaction in StageSubAction.objects.all():
+        if ssubaction.action.prototype.type == 'component':
+            parent = Prototype.objects.get(
+                bundle=bundle,
+                type='service',
+                name=ssubaction.action.prototype.parent.name,
+            )
+        else:
+            parent = None
         action = Action.objects.get(
             prototype__bundle=bundle,
             prototype__type=ssubaction.action.prototype.type,
             prototype__name=ssubaction.action.prototype.name,
+            prototype__parent=parent,
             prototype__version=ssubaction.action.prototype.version,
             name=ssubaction.action.name,
         )

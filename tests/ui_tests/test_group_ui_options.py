@@ -1,3 +1,15 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 import time
 
@@ -6,9 +18,10 @@ import pytest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import get_data_dir
 
-# pylint: disable=W0611, W0621
 from tests.ui_tests.app.configuration import Configuration
 from tests.ui_tests.app.locators import Common, ConfigurationLocators
+
+# pylint: disable=redefined-outer-name
 
 DATADIR = get_data_dir(__file__)
 BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
@@ -35,23 +48,18 @@ def service(sdk_client_fs):
 
 
 @pytest.fixture()
-@allure.step('Open Configuration page')
-def ui_config(app_fs, login_to_adcm_over_api, service):
-    return Configuration(
-        app_fs.driver,
-        "{}/cluster/{}/service/{}/config".format(
-            app_fs.adcm.url, service.cluster_id, service.service_id
-        ),
-    )
+@allure.title('Open Configuration page')
+def ui_config(app_fs, service, login_to_adcm_over_api):  # pylint: disable=unused-argument
+    return Configuration.from_service(app_fs, service)
 
 
 @pytest.fixture(params=[(False, 3), (True, 6)], ids=['advanced_disabled', 'advanced'])
 def group_elements(ui_config, request):
-    if request.param[0]:
-        if not ui_config.advanced:
-            ui_config.click_advanced()
+    enable_advanced, expected_elements = request.param
+    if enable_advanced:
+        ui_config.show_advanced()
         assert ui_config.advanced
-    return ui_config.get_group_elements(), request.param[1]
+    return ui_config.get_group_elements(), expected_elements
 
 
 @pytest.fixture()
@@ -72,12 +80,14 @@ def activatable_with_not_filled_required_fields(ui_config):
     return ui_config.save_button_status()
 
 
-def test_groups_count(group_elements):
-    with allure.step('Check groups count'):
-        assert len(group_elements[0]) == group_elements[1], len(group_elements)
+def test_group_elements_count(group_elements):
+    elements, expected_elements = group_elements
+    with allure.step('Check group elements count'):
+        assert len(elements) == expected_elements, "Group elements count doesn't equal expected"
 
 
-def test_save_groups(group_elements, ui_config, sdk_client_fs: ADCMClient):
+@pytest.mark.usefixtures("group_elements")
+def test_save_groups(ui_config, sdk_client_fs: ADCMClient):
     app_fields = ui_config.get_app_fields()
     for textbox in app_fields:
         if "field_for_group_without_options:" in textbox.text:
@@ -87,9 +97,7 @@ def test_save_groups(group_elements, ui_config, sdk_client_fs: ADCMClient):
             input_element.send_keys("new value")
             break
     ui_config.save_configuration()
-    service = sdk_client_fs.cluster(name="group_ui_options_test").service(
-        name="group_ui_options_test"
-    )
+    service = sdk_client_fs.cluster(name="group_ui_options_test").service(name="group_ui_options_test")
     config = service.config()
     with allure.step('Check that configuration was saved'):
         assert (
@@ -100,9 +108,7 @@ def test_save_groups(group_elements, ui_config, sdk_client_fs: ADCMClient):
             assert group in config.keys(), "Invisible group should be present in config object"
 
 
-@pytest.mark.parametrize(
-    ("config_name", "activatable"), ACTIVATABLE_GROUPS, ids=["Active True", "Active False"]
-)
+@pytest.mark.parametrize(("config_name", "activatable"), ACTIVATABLE_GROUPS, ids=["Active True", "Active False"])
 def test_activatable_group_status(config_name, activatable, ui_config):
     """Check activatable group status after config creation
     Scenario:
@@ -123,8 +129,5 @@ def test_activatable_group_status(config_name, activatable, ui_config):
 
 
 def test_activatable_with_not_filled_required_fields(activatable_with_not_filled_required_fields):
-    with allure.step(
-        'Check that can save config if we have '
-        'disabed activatable group with empty required fields'
-    ):
+    with allure.step('Check that can save config if we have ' 'disabed activatable group with empty required fields'):
         assert activatable_with_not_filled_required_fields

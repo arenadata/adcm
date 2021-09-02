@@ -1,10 +1,22 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# pylint: disable=redefined-outer-name
 import os
 
 import allure
 import pytest
 from adcm_pytest_plugin.utils import get_data_dir
 
-# pylint: disable=W0611, W0621
 from tests.ui_tests.app.configuration import Configuration
 
 DATADIR = get_data_dir(__file__)
@@ -29,14 +41,9 @@ def prototype_display_names(ui_hell_fs):
 
 
 @pytest.fixture()
-@allure.step('Open Configuration page')
-def ui_display_names(login_to_adcm_over_api, app_fs, ui_hell_fs):
-    ui_config = Configuration(
-        app_fs.driver,
-        "{}/cluster/{}/service/{}/config".format(
-            app_fs.adcm.url, ui_hell_fs.cluster_id, ui_hell_fs.service_id
-        ),
-    )
+@allure.title('Open Configuration page')
+def ui_display_names(app_fs, ui_hell_fs, login_to_adcm_over_api):  # pylint: disable=unused-argument
+    ui_config = Configuration.from_service(app_fs, ui_hell_fs)
     return ui_config.get_display_names()
 
 

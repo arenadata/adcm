@@ -22,6 +22,7 @@ from adcm_pytest_plugin import utils
 
 from tests.library import errorcodes as err
 
+# pylint: disable=no-self-use
 
 DEFAULT_CLUSTER_BUNDLE_PATH = get_data_dir(__file__, "cluster_simple")
 DEFAULT_PROVIDER_BUNDLE_PATH = get_data_dir(__file__, "hostprovider_bundle")

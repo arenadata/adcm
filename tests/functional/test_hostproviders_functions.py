@@ -37,7 +37,8 @@ def test_validate_provider_prototype(sdk_client_fs: ADCMClient):
     bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
     with allure.step("Load provider prototype"):
         provider_prototype = bundle.provider_prototype()._data
-        schema = json.load(open(SCHEMAS + '/stack_list_item_schema.json', encoding='utf_8'))
+        with open(SCHEMAS + '/stack_list_item_schema.json', encoding='utf_8') as file:
+            schema = json.load(file)
     with allure.step("Check provider prototype"):
         assert validate(provider_prototype, schema) is None
 

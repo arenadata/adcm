@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=R0912, R0914, W0612
 import os
 from collections import OrderedDict
 from itertools import product
@@ -151,9 +150,7 @@ def config_generate(name, entity, config_type, is_required, is_default):
         }
     )
 
-    body = OrderedDict(
-        {'name': name, 'type': entity, 'version': '1.0', 'config': config, 'actions': actions}
-    )
+    body = OrderedDict({'name': name, 'type': entity, 'version': '1.0', 'config': config, 'actions': actions})
 
     return body
 
@@ -246,7 +243,7 @@ def get_text_sent_test_value(*args):
 
 
 def get_file_sent_test_value(*args):
-    name, entity, config_type, is_required, is_default, sent_value_type = args
+    _, entity, config_type, is_required, is_default, sent_value_type = args
     sent_value = VARS[config_type][sent_value_type]
 
     test_value = f'/adcm/data/file/{entity}.{{{{ context.{entity}_id }}}}.file.'
@@ -266,7 +263,7 @@ def get_file_sent_test_value(*args):
 
 
 def get_structure_sent_test_value(*args):
-    name, entity, config_type, is_required, is_default, sent_value_type = args
+    _, _, config_type, is_required, is_default, sent_value_type = args
     sent_value = VARS[config_type][sent_value_type]
     test_value = VARS[config_type][sent_value_type]
 
@@ -278,7 +275,7 @@ def get_structure_sent_test_value(*args):
 
 
 def get_boolean_sent_test_value(*args):
-    name, entity, config_type, is_required, is_default, sent_value_type = args
+    _, _, config_type, is_required, is_default, sent_value_type = args
     sent_value = VARS[config_type][sent_value_type]
     test_value = VARS[config_type][sent_value_type]
 
@@ -290,7 +287,7 @@ def get_boolean_sent_test_value(*args):
 
 
 def get_integer_sent_test_value(*args):
-    name, entity, config_type, is_required, is_default, sent_value_type = args
+    _, _, config_type, is_required, is_default, sent_value_type = args
     sent_value = VARS[config_type][sent_value_type]
     test_value = VARS[config_type][sent_value_type]
 
@@ -302,7 +299,7 @@ def get_integer_sent_test_value(*args):
 
 
 def get_float_sent_test_value(*args):
-    name, entity, config_type, is_required, is_default, sent_value_type = args
+    _, _, config_type, is_required, is_default, sent_value_type = args
     sent_value = VARS[config_type][sent_value_type]
     test_value = VARS[config_type][sent_value_type]
 
@@ -314,7 +311,7 @@ def get_float_sent_test_value(*args):
 
 
 def get_option_sent_test_value(*args):
-    name, entity, config_type, is_required, is_default, sent_value_type = args
+    _, _, config_type, is_required, is_default, sent_value_type = args
     sent_value = VARS[config_type][sent_value_type]
     test_value = VARS[config_type][sent_value_type]
 
@@ -380,7 +377,7 @@ def action_generate(name, entity, config_type, is_required, is_default, sent_val
     return body
 
 
-def run():
+def run():  # pylint: disable=too-many-locals
     products = (IS_REQUIRED, IS_DEFAULTS, TYPES, SENT_VALUES_TYPE)
     for is_required, is_default, config_type, sent_value_type in product(*products):
         exclude_empty_value = ['boolean', 'integer', 'float', 'option']
@@ -408,9 +405,7 @@ def run():
             else:
                 additional_entity = 'host'
 
-            entity_config = config_generate(
-                f'{entity}_{name}', entity, config_type, is_required, is_default
-            )
+            entity_config = config_generate(f'{entity}_{name}', entity, config_type, is_required, is_default)
             additional_entity_config = config_generate(
                 f'{additional_entity}_{name}',
                 additional_entity,
@@ -422,9 +417,7 @@ def run():
             config = [entity_config, additional_entity_config]
             write_yaml(f'{path}config.yaml', config)
 
-            entity_action = action_generate(
-                name, entity, config_type, is_required, is_default, sent_value_type
-            )
+            entity_action = action_generate(name, entity, config_type, is_required, is_default, sent_value_type)
             write_yaml(f'{path}{entity}_action.yaml', entity_action)
 
             additional_entity_action = action_generate(

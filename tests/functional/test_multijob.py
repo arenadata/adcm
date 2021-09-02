@@ -9,9 +9,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=W0611, W0621, W0404, W0212, C1801
+
+# pylint:disable=redefined-outer-name
 import allure
-from adcm_client.objects import ADCMClient
+from adcm_client.objects import ADCMClient, Provider, Cluster
 from adcm_pytest_plugin.utils import get_data_dir, fixture_parametrized_by_data_subdirs
 
 
@@ -30,7 +31,7 @@ def test_cluster_state_after_multijob(sdk_client_fs: ADCMClient, cluster):
         assert sdk_client_fs.cluster(name=cluster.name).state == cluster.name
 
 
-def test_service_state_after_multijob(sdk_client_fs: ADCMClient, cluster):
+def test_service_state_after_multijob(cluster: Cluster):
     with allure.step('Run action: multi'):
         cluster.service(name='multi').action(name="multi").run().wait()
     with allure.step('Check service state'):
@@ -85,7 +86,7 @@ def test_provider_state_after_multijob(sdk_client_fs: ADCMClient, provider):
         assert sdk_client_fs.provider(name=provider.name).state == provider.name
 
 
-def test_host_state_after_multijob(sdk_client_fs: ADCMClient, provider):
+def test_host_state_after_multijob(provider: Provider):
     with allure.step('Run host action: multi'):
         provider.host(fqdn=provider.name).action(name="multi").run().wait()
     with allure.step('Check host state'):

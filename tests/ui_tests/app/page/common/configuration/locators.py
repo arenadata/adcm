@@ -25,18 +25,18 @@ class CommonConfigMenu:
         'Group "{}" button',
     )
     advanced_label = Locator(By.XPATH, "//mat-checkbox//span[text()='Advanced']", "Advanced label")
-    search_input = Locator(By.ID, "config_search_input", "Search input")
+    search_input = Locator(By.CSS_SELECTOR, "#config_search_input", "Search input")
+    search_input_clear_btn = Locator(
+        By.CSS_SELECTOR, "app-search button[aria-label='Clear']", "Clear search input button"
+    )
     description_input = Locator(
-        By.XPATH,
-        "//input[@data-placeholder='Description configuration']",
-        "Config description input",
+        By.CSS_SELECTOR, "input[data-placeholder='Description configuration']", "Config description input"
     )
     save_btn = Locator(By.XPATH, "//button[.//span[text()='Save']]", "Save configuration button")
     history_btn = Locator(By.XPATH, "//button[.//mat-icon[text()='history']]", "History button")
 
-    compare_to_select = Locator(
-        By.XPATH, "//mat-select[@placeholder='Compare to']", "Compare to select"
-    )
+    compare_version_select = Locator(By.CSS_SELECTOR, "mat-select[placeholder='History']", "Base version to compare")
+    compare_to_select = Locator(By.CSS_SELECTOR, "mat-select[placeholder='Compare to']", "Compare to version select")
     config_version_option = TemplateLocator(
         By.XPATH, "//mat-option//span[contains(text(), '{}')]", "Config version with text: {}"
     )
@@ -46,22 +46,32 @@ class CommonConfigMenu:
         "//app-field[.//div[@adcm_test='{}']]//mat-list-item//span[contains(text(), '{}')]",
         'Config diff of option "{}" with "{}" in text',
     )
+    config_row = Locator(By.CSS_SELECTOR, "app-field", "Configuration row")
 
-    field_input = TemplateLocator(
-        By.XPATH,
-        "//app-field[.//div[@adcm_test='{}']]//input",
-        'Input of option "{}" in group',
-    )
-    password_inputs = TemplateLocator(
-        By.XPATH,
-        "//app-field[.//div[@adcm_test='{}']]//app-fields-password/div[not(contains(@style, 'none'))]//input",
-        "Password inputs",
-    )
     field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
-    reset_btn = TemplateLocator(
-        By.XPATH,
-        "//div[@adcm_test='{}']//mat-icon[text()='refresh']/ancestor::button",
-        "Resfresh button of {}",
-    )
-
     loading_text = Locator(By.XPATH, "//span[text()='Loading...']", "Loading text")
+
+    class ConfigRow:
+        name = Locator(By.CSS_SELECTOR, "label", "Row name")
+        value = Locator(By.CSS_SELECTOR, "input", "Row value")
+        password = Locator(
+            By.XPATH,
+            "(.//app-fields-password/div[not(contains(@style, 'none'))]//input)[1]",
+            "Password input",
+        )
+        confirm_password = Locator(
+            By.XPATH,
+            "(.//app-fields-password/div[not(contains(@style, 'none'))]//input)[2]",
+            "Confirm password input",
+        )
+        history = Locator(By.CSS_SELECTOR, "mat-list-item span.accent", "Row history")
+        reset_btn = Locator(By.CSS_SELECTOR, "button[mattooltip='Reset to default']", "Reset button")
+
+    class ConfigGroup:
+        name = Locator(By.CSS_SELECTOR, "mat-panel-title>span", "Group name")
+        expansion_btn = Locator(By.CSS_SELECTOR, "mat-expansion-panel-header", "Expansion button")
+
+    class HistoryRow:
+        history_select = Locator(By.CSS_SELECTOR, "mat-select[placeholder='History']", "History select")
+        compare_select = Locator(By.CSS_SELECTOR, "mat-select[placeholder='Compare to']", "Compare select")
+        option = Locator(By.CSS_SELECTOR, "mat-option", "Option in select")

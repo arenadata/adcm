@@ -13,9 +13,7 @@ template = """
 """
 
 
-for config in [
-    (confirm, required) for confirm in ("true", "false") for required in ("true", "false")
-]:
+for config in [(confirm, required) for confirm in ("true", "false") for required in ("true", "false")]:
     d_name = "password_confirm_{0}_required_{1}/".format(config[0], config[1])
     os.makedirs(d_name)
     with open("{}/config.yaml".format(d_name), "w+", encoding='utf_8') as f:
