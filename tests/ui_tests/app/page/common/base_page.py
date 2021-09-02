@@ -297,7 +297,9 @@ class BasePageObject:
                 self.clear_by_keys(locator)
             input_element = self.find_element(locator, timeout)
             input_element.send_keys(text)
-            assert (actual_value := input_element.get_property('value')) == expected_value, (
+            assert (
+                actual_value := input_element.get_property('value')
+            ) == expected_value, (
                 f'Value of input {locator.name} expected to be "{expected_value}", but "{actual_value}" was found'
             )
 

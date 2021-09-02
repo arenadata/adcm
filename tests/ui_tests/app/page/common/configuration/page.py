@@ -167,7 +167,12 @@ class CommonConfigMenuObj(BasePageObject):
     @allure.step('Click on group {title}')
     def click_on_group(self, title: str):
         """Click on group with given title"""
-        self.find_and_click(self.locators.group_btn(title))
+
+        def click_group():
+            with self.wait_rows_change():
+                self.find_and_click(self.locators.group_btn(title))
+
+        wait_until_step_succeeds(click_group, period=1, timeout=10)
 
     @allure.step('Search for {keys}')
     def search(self, keys: str):
@@ -230,10 +235,10 @@ class CommonConfigMenuObj(BasePageObject):
         current_amount = len(self.get_all_config_rows())
         yield
 
-        def wait_scroll():
+        def wait_changing_rows_amount():
             assert len(self.get_all_config_rows()) != current_amount, "Amount of rows on the page hasn't changed"
 
-        wait_until_step_succeeds(wait_scroll, period=1, timeout=10)
+        wait_until_step_succeeds(wait_changing_rows_amount, period=1, timeout=10)
 
     @allure.step("Get info by row")
     def get_config_row_info(self, row: WebElement):

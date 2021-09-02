@@ -110,15 +110,13 @@ def test_settings_filter(settings_page: AdminSettingsPage):
         f'Click on {params["group"]} group and check {params["field_display_name"]} '
         'is not presented after group roll up'
     ):
-        with expect_rows_amount_change(get_rows_func):
-            settings_page.config.click_on_group(params['group'])
+        settings_page.config.click_on_group(params['group'])
         with pytest.raises(AssertionError):
             settings_page.config.get_config_row(params["field_display_name"])
     with allure.step(
         f'Click on {params["group"]} group and check {params["field_display_name"]} ' 'is presented after group expand'
     ):
-        with expect_rows_amount_change(get_rows_func):
-            settings_page.config.click_on_group(params['group'])
+        settings_page.config.click_on_group(params['group'])
         settings_page.config.get_config_row(params["field_display_name"])
 
 
