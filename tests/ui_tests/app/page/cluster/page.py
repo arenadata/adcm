@@ -482,8 +482,15 @@ class ClusterStatusPage(ClusterPageMixin):
         components_items = list()
         self.wait_group_opened(row)
         for item in self.find_children(row, ClusterStatusLocators.GroupRow.service_group):
-            components_items.append(StatusGroupInfo(service=self.find_child(item, ClusterStatusLocators.GroupRow.ServiceGroupRow.service_name).text,
-                                                    hosts=[h.text for h in self.find_children(item, ClusterStatusLocators.GroupRow.ServiceGroupRow.host_name)]))
+            components_items.append(
+                StatusGroupInfo(
+                    service=self.find_child(item, ClusterStatusLocators.GroupRow.ServiceGroupRow.service_name).text,
+                    hosts=[
+                        h.text
+                        for h in self.find_children(item, ClusterStatusLocators.GroupRow.ServiceGroupRow.host_name)
+                    ],
+                )
+            )
         return components_items
 
     def wait_group_opened(self, group_row):
