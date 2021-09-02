@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('contenttypes', '0002_remove_content_type_name'),
-        ('cm', '0067_tasklog_object_type'),
+        ('cm', '0068_alter_tasklog_action'),
     ]
 
     operations = [
