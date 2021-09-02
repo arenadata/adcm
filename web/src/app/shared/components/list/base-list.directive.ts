@@ -24,6 +24,14 @@ import { ListResult } from '@app/models/list-result';
 import { ListService } from './list.service';
 import { ListDirective } from '@app/abstract-directives/list.directive';
 
+
+const TemporaryEntityNameConverter = (currentName: Partial<TypeName>): 'group-config' | 'group-config-hosts' => {
+
+  if (currentName === 'group_config') return 'group-config';
+  if (currentName === 'group_config_hosts') return 'group-config-hosts';
+
+};
+
 interface IRowHost extends AdcmHost {
   clusters: Partial<Cluster>[];
   page: number;
@@ -56,7 +64,8 @@ export class BaseListDirective {
   }
 
   initSocket() {
-    this.socket$ = this.store.pipe(this.takeUntil(), select(getMessage), filter(m => !!m && !!m.object));
+    this.socket$ = this.store.pipe(
+      this.takeUntil(), select(getMessage), filter(m => !!m && !!m.object));
   }
 
   initColumns() {
@@ -150,14 +159,7 @@ export class BaseListDirective {
     const jobComplete = () => (m.event === 'change_job_status') && m.object.type === 'task' && m.object.details.value === 'success';
     const rewriteRow = (row: Entities) => this.service.checkItem(row).subscribe((item) => Object.keys(row).map((a) => (row[a] = item[a])));
 
-    let temporaryName;
-    if (this.typeName === 'group_config') {
-      temporaryName = 'group-config';
-    } else if (this.typeName === 'host2configgroup') {
-      temporaryName = 'group-config-host';
-    }
-
-    if (checkUpgradable() || changeList(temporaryName) || createHostPro() || jobComplete()) {
+    if (checkUpgradable() || changeList(TemporaryEntityNameConverter(this.typeName)) || createHostPro() || jobComplete()) {
       this.refresh(m.object.id);
       return;
     }

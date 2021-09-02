@@ -41,7 +41,7 @@ export class ConfigGroupHostListService implements IListService<Host> {
   }
 
   initInstance(): ListInstance {
-    this.current = { typeName: 'host2configgroup', columns: ['name', 'remove'] };
+    this.current = { typeName: 'group_config_hosts', columns: ['name', 'remove'] };
     return this.current;
   }
 

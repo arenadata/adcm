@@ -32,7 +32,7 @@ export type TypeName =
   'servicecomponent' |
   'component' |
   'group_config' |
-  'host2configgroup';
+  'group_config_hosts';
 export type Entities = Cluster | Service | Host | Provider | Job | Task | Bundle;
 
 /**
