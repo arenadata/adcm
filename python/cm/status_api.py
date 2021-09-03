@@ -50,9 +50,6 @@ class Event:
     def set_task_status(self, task_id, status):
         self.events.append((set_task_status, (task_id, status)))
 
-    def change_concern(self, obj: ADCMEntity, concerns: List[dict]):
-        self.events.append((change_concern, (obj, concerns)))
-
 
 def api_post(path, data):
     url = API_URL + path
@@ -217,13 +214,3 @@ def load_service_map():
     }
     log.debug("service map: %s", m)
     return api_post('/servicemap/', m)
-
-
-def change_concern(obj: ADCMEntity, concerns: List[dict]):
-    return post_event(
-        event='concern_change',
-        obj_type=obj.prototype.type,
-        obj_id=obj.pk,
-        det_type='concern',
-        det_val=concerns,
-    )
