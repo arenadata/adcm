@@ -65,7 +65,25 @@ class TestApi(TestCase):
             }
         )
 
+
     @patch('cm.status_api.load_service_map')
+    def test_push_obj(self):
+
+        data = [
+            ([], 'created'),
+            ('', 'running'),
+            (['created'], 'running'),
+        ]
+
+        for stack, state in data:
+            with self.subTest(stack=stack, state=state):
+                self.cluster.stack = stack
+                self.cluster.save()
+
+                cluster = api_module.push_obj(self.cluster, state)
+                self.assertEqual(cluster.stack, [state])
+
+    @patch('cm.api.load_service_map')
     @patch('cm.issue.update_hierarchy_issues')
     @patch('cm.status_api.post_event')
     def test_save_hc(self, mock_post_event, mock_update_issues, mock_load_service_map):
@@ -96,6 +114,7 @@ class TestApi(TestCase):
 
     @patch('cm.api.ctx')
     @patch('cm.status_api.load_service_map')
+    @patch('cm.api.load_service_map')
     @patch('cm.issue.update_hierarchy_issues')
     def test_save_hc__big_update__locked_hierarchy(self, mock_post, mock_load, ctx):
         """
@@ -144,7 +163,7 @@ class TestApi(TestCase):
         self.assertFalse(host_2.locked)
         self.assertTrue(host_3.locked)
 
-    @patch('cm.status_api.load_service_map')
+    @patch('cm.api.load_service_map')
     @patch('cm.issue.update_hierarchy_issues')
     def test_save_hc__big_update__unlocked_hierarchy(self, mock_update, mock_load):
         """

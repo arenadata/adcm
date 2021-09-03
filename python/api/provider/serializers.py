@@ -15,9 +15,17 @@ from rest_framework import serializers
 
 import cm
 from api.action.serializers import ActionShort
-from api.api_views import CommonAPIURL, ObjectURL
-from api.api_views import hlink, check_obj, filter_actions, get_upgradable_func
+
+from api.api_views import (
+    hlink,
+    check_obj,
+    filter_actions,
+    get_upgradable_func,
+    CommonAPIURL,
+    ObjectURL,
+)
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
+from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.serializers import StringListSerializer
 from api.serializers import UpgradeSerializer, UrlField
 from cm.errors import AdcmEx
@@ -61,6 +69,7 @@ class ProviderDetailSerializer(ProviderSerializer):
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
     locked = serializers.BooleanField(read_only=True)
+    group_config = GroupConfigsHyperlinkedIdentityField(view_name='group-config-list')
 
 
 class ProviderUISerializer(ProviderDetailSerializer):

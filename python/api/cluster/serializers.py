@@ -28,6 +28,7 @@ from api.api_views import (
 )
 from api.component.serializers import ComponentDetailSerializer
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
+from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.host.serializers import HostSerializer
 from api.serializers import StringListSerializer
 from cm.errors import AdcmEx
@@ -92,6 +93,7 @@ class ClusterDetailSerializer(ClusterSerializer):
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
     locked = serializers.BooleanField(read_only=True)
+    group_config = GroupConfigsHyperlinkedIdentityField(view_name='group-config-list')
 
     def get_status(self, obj):
         return cm.status_api.get_cluster_status(obj.id)
@@ -250,11 +252,11 @@ class HCComponentSerializer(ComponentDetailSerializer):
 
         process_requires(obj.requires)
         out = []
-        for service_name, value in comp_list.items():
+        for service_name, params in comp_list.items():
             comp_out = []
-            service = value['service']
-            for comp_name in value['components']:
-                comp = value['components'][comp_name]
+            service = params['service']
+            for comp_name in params['components']:
+                comp = params['components'][comp_name]
                 comp_out.append(
                     {
                         'prototype_id': comp.id,

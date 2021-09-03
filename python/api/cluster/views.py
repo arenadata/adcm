@@ -15,18 +15,16 @@ from itertools import chain
 from rest_framework import status
 from rest_framework.response import Response
 
-import cm.job
+import api.serializers
 import cm.api
 import cm.bundle
+import cm.job
 import cm.status_api
+from api.api_views import ListView, PageView, PageViewAdd, InterfaceView, DetailViewDelete
+from api.api_views import create, update, check_obj, GenericAPIPermView
 from cm.errors import AdcmEx
 from cm.models import Cluster, HostComponent, Prototype
 from cm.models import ClusterObject, Upgrade, ClusterBind
-from cm.logger import log  # pylint: disable=unused-import
-
-import api.serializers
-from api.api_views import create, update, check_obj, GenericAPIPermView
-from api.api_views import ListView, PageView, PageViewAdd, InterfaceView, DetailViewDelete
 from . import serializers
 
 

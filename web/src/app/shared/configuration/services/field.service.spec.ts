@@ -13,9 +13,9 @@ import { TestBed } from '@angular/core/testing';
 import { FormBuilder, Validators } from '@angular/forms';
 
 import { FieldService, getValue, IOutput, ISource } from './field.service';
-import { Configuration, FieldFactory, setValue, toFormOptions } from './tests/configuration';
-import { IFieldStack, resultTypes, TNForm } from './types';
-import { IYspec, IYContainer, IYField } from './yspec/yspec.service';
+import { Configuration, FieldFactory, setValue, toFormOptions } from '../tests/configuration';
+import { IFieldStack, resultTypes, TNForm } from '../types';
+import { IYspec, IYContainer, IYField } from '../yspec/yspec.service';
 
 /**
  * inputData - data from backend for configuration IConfig.config : FieldStack[]

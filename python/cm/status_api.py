@@ -111,6 +111,7 @@ def post_event(event, obj_type, obj_id, det_type=None, det_val=None):
             'details': details,
         },
     }
+    log.debug('post_event %s', data)
     return api_post('/event/', data)
 
 

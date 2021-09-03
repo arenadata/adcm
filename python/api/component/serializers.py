@@ -17,7 +17,9 @@ from rest_framework.reverse import reverse
 
 from api.action.serializers import ActionShort
 from api.api_views import hlink, filter_actions, get_api_url_kwargs, CommonAPIURL
+
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
+from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.serializers import StringListSerializer
 from cm import status_api
 from cm.models import Action
@@ -54,6 +56,7 @@ class ComponentDetailSerializer(ComponentSerializer):
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
     locked = serializers.BooleanField(read_only=True)
+    group_config = GroupConfigsHyperlinkedIdentityField(view_name='group-config-list')
 
     def get_status(self, obj):
         return status_api.get_component_status(obj.id)

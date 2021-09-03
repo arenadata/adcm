@@ -36,10 +36,20 @@ import { ControlsComponent } from './controls.component';
     ProviderComponent,
     ServiceComponent,
     BaseFormDirective,
-    ControlsComponent
+    ControlsComponent,
   ],
   imports: [CommonModule, MaterialModule, StuffModule, FormsModule, ReactiveFormsModule, FormElementsModule],
-  exports: [AddButtonComponent, ProviderComponent, ClusterComponent, HostComponent, ServiceComponent, Host2clusterComponent, BaseFormDirective],
+  exports: [
+    AddButtonComponent,
+    ProviderComponent,
+    ClusterComponent,
+    HostComponent,
+    ServiceComponent,
+    Host2clusterComponent,
+    BaseFormDirective,
+    ControlsComponent,
+  ],
   entryComponents: [AddFormComponent]
 })
-export class AddingModule {}
+export class AddingModule {
+}
