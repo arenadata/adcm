@@ -213,6 +213,7 @@ class Prototype(ADCMModel):
     adcm_min_version = models.CharField(max_length=80, default=None, null=True)
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
     description = models.TextField(blank=True)
+    config_group_customized = models.BooleanField(default=False)
 
     __error_code__ = 'PROTOTYPE_NOT_FOUND'
 
@@ -927,6 +928,7 @@ class StagePrototype(ADCMModel):
     adcm_min_version = models.CharField(max_length=80, default=None, null=True)
     description = models.TextField(blank=True)
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
+    config_group_customized = models.BooleanField(default=False)
 
     __error_code__ = 'PROTOTYPE_NOT_FOUND'
 

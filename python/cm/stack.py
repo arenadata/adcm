@@ -146,6 +146,7 @@ def save_prototype(path, conf, def_type, bundle_hash):
     dict_to_obj(conf, 'description', proto)
     dict_to_obj(conf, 'adcm_min_version', proto)
     dict_to_obj(conf, 'edition', proto)
+    dict_to_obj(conf, 'config_group_customized', proto)
     fix_display_name(conf, proto)
     license_hash = get_license_hash(proto, conf, bundle_hash)
     if license_hash:
@@ -195,6 +196,7 @@ def save_components(proto, conf, bundle_hash):
         dict_to_obj(cc, 'constraint', component)
         dict_to_obj(cc, 'requires', component)
         dict_to_obj(cc, 'bound_to', component)
+        dict_to_obj(cc, 'config_group_customized', component)
         component.save()
         save_actions(component, cc, bundle_hash)
         save_prototype_config(component, cc, bundle_hash)
