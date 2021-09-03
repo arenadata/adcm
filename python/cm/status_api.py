@@ -11,13 +11,12 @@
 # limitations under the License.
 
 import json
-from typing import List
 
 import requests
 
 from cm.config import STATUS_SECRET_KEY
 from cm.logger import log
-from cm.models import HostComponent, ServiceComponent, ClusterObject, Host, ADCMEntity
+from cm.models import HostComponent, ServiceComponent, ClusterObject, Host
 
 API_URL = "http://localhost:8020/api/v1"
 TIMEOUT = 0.01
