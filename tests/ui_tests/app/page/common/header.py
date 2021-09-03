@@ -51,6 +51,7 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
 
     class JobPopup:
         """ADCM header popup with jobs"""
+
         block = Locator(By.CSS_SELECTOR, "app-popover", "Popup block with jobs")
 
         success_jobs = Locator(By.XPATH, "//div[@mattooltip='Show success jobs']", "Success jobs")

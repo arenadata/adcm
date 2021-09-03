@@ -133,9 +133,9 @@ def _check_job_info_in_popup(page: JobListPage, expected_info: dict):
 
 # !===== TESTS =====!
 
+
 @pytest.mark.smoke()
 class TestTaskPage:
-
     def test_cluster_action_job(self, cluster: Cluster, page: JobListPage):
         """Run action on cluster and validate job in table and popup"""
         _test_run_action(page, cluster)
@@ -184,51 +184,32 @@ class TestTaskPage:
 
 
 class TestTaskHeaderPopup:
-
-    def test_link_to_all_jobs_on_task_page(self, login_to_adcm_over_api, app_fs):
+    @pytest.mark.parametrize(
+        'job_link, filter',
+        [
+            ("click_all_link_in_job_popup", "All"),
+            ("click_in_progress_in_job_popup", "In progress"),
+            ("click_success_jobs_in_job_popup", "Success"),
+            ("click_failed_jobs_in_job_popup", "Failed"),
+        ],
+        ids=["all_jobs", 'in_progress_jobs', 'success_jobs', 'failed_jobs'],
+    )
+    def test_link_to_jobs_in_header_popup(self, login_to_adcm_over_api, app_fs, job_link, filter):
         """Link to /task from popup with all filter"""
 
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         cluster_page.header.click_job_block_in_header()
-        cluster_page.header.click_all_link_in_job_popup()
+        open_filter = getattr(cluster_page.header, job_link)
+        open_filter()
         job_page = JobListPage(app_fs.driver, app_fs.adcm.url)
         job_page.wait_page_is_opened()
-        assert job_page.get_selected_filter() == "All", "Jobs should be filtered by All"
-
-    def test_link_to_in_progress_jobs_on_task_page(self, login_to_adcm_over_api, app_fs):
-        """Link to /task from popup with in_progress filter"""
-
-        cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
-        cluster_page.header.click_job_block_in_header()
-        cluster_page.header.click_in_progress_in_job_popup()
-        job_page = JobListPage(app_fs.driver, app_fs.adcm.url)
-        job_page.wait_page_is_opened()
-        assert job_page.get_selected_filter() == "In progress", "Jobs should be filtered by In progress"
-
-    def test_link_to_success_jobs_on_task_page(self, login_to_adcm_over_api, app_fs):
-        """Link to /task from popup with success filter"""
-
-        cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
-        cluster_page.header.click_job_block_in_header()
-        cluster_page.header.click_success_jobs_in_job_popup()
-        job_page = JobListPage(app_fs.driver, app_fs.adcm.url)
-        job_page.wait_page_is_opened()
-        assert job_page.get_selected_filter() == "Success", "Jobs should be filtered by Success"
-
-    def test_link_to_failed_jobs_on_task_page(self, login_to_adcm_over_api, app_fs):
-        """Link to /task from popup with failed filter"""
-
-        cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
-        cluster_page.header.click_job_block_in_header()
-        cluster_page.header.click_failed_jobs_in_job_popup()
-        job_page = JobListPage(app_fs.driver, app_fs.adcm.url)
-        job_page.wait_page_is_opened()
-        assert job_page.get_selected_filter() == "Failed", "Jobs should be filtered by Failed"
+        assert job_page.get_selected_filter() == filter, f"Jobs should be filtered by {filter}"
 
     def test_acknowledge_jobs_in_header_popup(self, cluster: Cluster, page: JobListPage):
         """Run action and click acknowledge in header popup"""
 
         page.header.click_job_block_in_header()
+        page.header
 
     @pytest.mark.parametrize(
         'job_info',

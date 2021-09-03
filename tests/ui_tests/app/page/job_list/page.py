@@ -10,11 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from dataclasses import dataclass
+from enum import Enum
 from typing import TypeVar, Union
 
 import allure
-
-from enum import Enum
 from selenium.webdriver.remote.webelement import WebElement
 
 from tests.ui_tests.app.helpers.locator import Locator

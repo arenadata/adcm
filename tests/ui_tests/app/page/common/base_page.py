@@ -517,6 +517,10 @@ class PageHeader(BasePageObject):
         self.wait_element_visible(AuthorizedHeaderLocators.JobPopup.block)
         self.find_and_click(AuthorizedHeaderLocators.JobPopup.failed_jobs)
 
+    def click_failed_jobs_in_job_popup(self):
+        self.wait_element_visible(AuthorizedHeaderLocators.JobPopup.block)
+        self.find_and_click(AuthorizedHeaderLocators.JobPopup.ac)
+
 
 class PageFooter(BasePageObject):
     """Class for footer manipulating."""
