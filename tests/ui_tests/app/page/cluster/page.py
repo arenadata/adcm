@@ -481,6 +481,7 @@ class ClusterStatusPage(ClusterPageMixin):
     def get_config_group_info(self, row: WebElement):
         components_items = list()
         self.wait_group_opened(row)
+        self.wait_element_visible(ClusterStatusLocators.GroupRow.ServiceGroupRow.service_name)
         for item in self.find_children(row, ClusterStatusLocators.GroupRow.service_group):
             components_items.append(
                 StatusGroupInfo(
